@@ -15,7 +15,7 @@ extern "C"
 	int IDAMAX(long *, double*, int*);
 #else
 	#define IDAMAX idamax_
-	extern void IDAMAX(...);
+	extern int IDAMAX(...);
 #endif
 }
 
