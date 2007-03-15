@@ -828,7 +828,7 @@ void CartesianMesh::computeMembraneCoupling(){
 
 				//sort the neighbor index as needed by sparse matrix format
 				memcpy(arr, pMembraneElement[currentIndex].neighborMEIndex, 4 * sizeof(long));
-				for (int j = 0; j < 4; j ++) {
+				for (int j = 0; j < 3; j ++) {
 					for (int k = j+1; k < 4; k ++) {						
 						if (arr[j] > arr[k]) {
 							long a = arr[j];
@@ -936,9 +936,7 @@ void CartesianMesh::computeMembraneCoupling(){
 				DoubleVector3 centralNormal = wc1 - wc2;
 
 				getNeighborCandidates(neighborCandidates, centralNormal, currentIndex, GOING_OUT_LAYERS);
-				int numCandidates = neighborCandidates.size();
-
-				assert(numCandidates > 1);							
+				assert(neighborCandidates.size() > 1);							
 
 				/*==========================================================
 						start projection
@@ -967,7 +965,7 @@ void CartesianMesh::computeMembraneCoupling(){
 					}
 				}
 
-				double (*points)[2] = new double[numCandidates + 8][2]; // room for up to 4 artificial points at boundary.
+				double (*points)[2] = new double[neighborCandidates.size() + 8][2]; // room for up to 4 artificial points at boundary.
 
 				// current point projection
 				points[0][0] = 0.0;
@@ -1056,7 +1054,7 @@ void CartesianMesh::computeMembraneCoupling(){
 					}
 				}				
 
-				long *vertices = qvoronoi(2, numPoints, points, 0, vrRidges, numCandidates);
+				long *vertices = qvoronoi(2, numPoints, points, 0, vrRidges, neighborCandidates.size());
 				int numRealNeighbors = vrRidges.size();				
 				
 #ifdef WITH_PROJECTION_TO_WALL
@@ -1107,7 +1105,7 @@ void CartesianMesh::computeMembraneCoupling(){
 						vertices[j] = neighborCandidates[vertices[j]]; // change to membrane index
 					}
 
-					for (int j = 0; j < numRealNeighbors; j ++) {
+					for (int j = 0; j < numRealNeighbors - 1; j ++) {
 						for (int k = j + 1; k < numRealNeighbors; k ++) {
 							if (vertices[indexes[j]] > vertices[indexes[k]]) {
 								int a = indexes[j];
@@ -1390,7 +1388,7 @@ int CartesianMesh::computeN(int startingIndex, CurvePlane curvePlane, vector<dou
 			break;
 	}
 	int coeff = 2;
-	int nwave = min(floor(coeff * sqrt((Nx + Ny)/2)), floor(sqrt((double)numPoints)));
+	int nwave = (int)min(floor(coeff * sqrt((Nx + Ny)/2)), floor(sqrt((double)numPoints)));
 	//
 	// find coordinates of nearby points (left,right that are nwave neighbors away) to estimate curvature 
 	// from the secants in each direction and measuring the angles between the secants.  These secants are

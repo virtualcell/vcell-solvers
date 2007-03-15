@@ -309,7 +309,7 @@ boolean SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexSt
 
 					// sort
 					if (bSort) {
-						for (int n = startNeighbor; n <= endNeighbor; n ++) {
+						for (int n = startNeighbor; n < endNeighbor; n ++) {
 							for (int m = n + 1; m <= endNeighbor; m ++) {
 								if (neighborInfos[n][1] > neighborInfos[m][1]) {
 									// switch
