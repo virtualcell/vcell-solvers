@@ -151,6 +151,9 @@ boolean SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexSt
 #endif
 
 	A->clear();  // if it's time dependent diffusion, we need to start over	
+	for (int i = 0; i < (int)dirichletNeighbors.size(); i ++) {
+		delete dirichletNeighbors[i];
+	}
 	dirichletNeighbors.clear();  // to store Aij where point j is dirichlet condition now and later move to right hand side	
 	double (*neighborConvectionCoeffs)[4] = 0; // to store convection coeffecients, only allocate once and release once each timestep
 	if (!bSymmetricStorage) {
