@@ -244,10 +244,38 @@ boolean SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexSt
 
 				// for periodic boundary condition, have to sort to make sure order
 				{
+					if (mask & NEIGHBOR_XM_BOUNDARY && feature->getXmBoundaryType() == BOUNDARY_PERIODIC) {
+						// make sure XM and XP are in the same feature for each periodic bounary point
+						int xpindex = index + SIZEX - 1;
+						if (feature != pVolumeElement[xpindex].feature) {
+							throw "Periodic Boundary Condition (X- and X+): compartments don't match";
+						}
+						int xpmask = pVolumeElement[xpindex].neighborMask;
+						// inherit membrane from XP 
+						mask |= (xpmask & NEIGHBOR_XM_MEMBRANE);
+					}
+					if (mask & NEIGHBOR_YM_BOUNDARY && feature->getYmBoundaryType() == BOUNDARY_PERIODIC) {
+						int ypindex = index + (SIZEY - 1) * SIZEX;
+						if (feature != pVolumeElement[ypindex].feature) {
+							throw "Periodic Boundary Condition (Y- and Y+): compartments don't match";
+						}
+						int ypmask = pVolumeElement[ypindex].neighborMask;
+						mask |= (ypmask & NEIGHBOR_YM_MEMBRANE);
+					}
+					if (mask & NEIGHBOR_ZM_BOUNDARY && feature->getZmBoundaryType() == BOUNDARY_PERIODIC) {
+						int zpindex = index + (SIZEZ - 1) * SIZEXY;
+						if (feature != pVolumeElement[zpindex].feature) {
+							throw "Periodic Boundary Condition (Z- and Z+): compartments don't match";
+						}
+						int zpmask = pVolumeElement[zpindex].neighborMask;
+						mask |= (zpmask & NEIGHBOR_ZM_MEMBRANE);
+					}
+
 					bool bSort = false;
 
 					if ((mask & NEIGHBOR_XM_BOUNDARY) && feature->getXmBoundaryType() == BOUNDARY_PERIODIC) {
-						neighborInfos[2][0] = 0;
+						// remove boundary (keep membrane) if it's periodic
+						neighborInfos[2][0] = NEIGHBOR_XM_MEMBRANE;
 						neighborInfos[2][1] = index + (SIZEX - 2);
 						volumeScale *= 2;
 						lambdaY *= 2.0;
@@ -257,7 +285,7 @@ boolean SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexSt
 						bSort = true;
 					} 
 					if (DIM > 1 && (mask & NEIGHBOR_YM_BOUNDARY) && feature->getYmBoundaryType() == BOUNDARY_PERIODIC) {
-						neighborInfos[1][0] = 0;
+						neighborInfos[1][0] = NEIGHBOR_YM_MEMBRANE;
 						neighborInfos[1][1] = index + (SIZEY - 2) * SIZEX;
 						volumeScale *= 2;
 						lambdaX *= 2.0;
@@ -267,7 +295,7 @@ boolean SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexSt
 						bSort = true;
 					} 
 					if (DIM > 2 && (mask & NEIGHBOR_ZM_BOUNDARY) && feature->getZmBoundaryType() == BOUNDARY_PERIODIC) {
-						neighborInfos[0][0] = 0;
+						neighborInfos[0][0] = NEIGHBOR_ZM_MEMBRANE;
 						neighborInfos[0][1] = index + (SIZEZ - 2) * SIZEXY;
 						volumeScale *= 2;
 						lambdaX *= 2.0;
