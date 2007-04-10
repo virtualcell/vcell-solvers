@@ -29,7 +29,6 @@ public:
 	double getRandomUniform();
 private:
 	IndexedTree *Tree; //the data structure(binary tree) to store all the processes and make each parent smaller than it's children.
-	long** histogram; //the variable used to store the percentage of the ocurrance of a variable at certain value.
 	double* currvals;//array of variable values to be used by expression parser. variables are stored in vector listOfVars.
 	ofstream outfile; //the output file stream where the results are saved.
 	char* outfilename;//the output file name.

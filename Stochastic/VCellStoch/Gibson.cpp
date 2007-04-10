@@ -21,7 +21,6 @@ const double double_infinity = numeric_limits<double>::infinity();
  */
 Gibson::Gibson():StochModel()
 {
-	histogram=NULL;
 	Tree=NULL;
 	currvals=NULL;
 }//end of constructor Gibson()
@@ -34,7 +33,6 @@ Gibson::Gibson():StochModel()
  */
 Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 {
-	histogram=NULL;
 	Tree=NULL;
 	currvals=NULL;
 
@@ -79,10 +77,6 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 		else if (instring == "NUM_TRIAL")
 		{
 			infile >> NUM_TRIAL;
-		}
-		else if (instring == "MAX_NUM_MOLECUES")
-		{
-			infile >> MAX_NUM_MOLECUES;
 		}
 		else if (instring == "SEED")
 		{
@@ -197,7 +191,6 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 	cout << "max iteration:"<< MAX_ITERATION <<endl;
 	cout << "tolerance:"<< TOLERANCE <<endl;
 	cout << "number of trial:"<< NUM_TRIAL <<endl;
-	cout << "max number of molecues:"<< MAX_NUM_MOLECUES <<endl;
 	cout << "------------------model information------------------"<<endl;
 	cout << "size of vars:" << listOfVars.size() << endl <<endl;
 	for (int k=0;k<listOfVarNames.size();k++)
@@ -232,13 +225,6 @@ Gibson::~Gibson()
 {
 	//delete indexedTree
 	delete Tree;
-	//delete histogram
-	if(NUM_TRIAL!=1)
-	{
-		for(int i=0;i<listOfVars.size();i++)
-			delete[] histogram[i];
-		delete[] histogram;
-	}
 	//delete variables
 	for(int i=0;i<listOfVars.size();i++)
 		delete listOfVars[i];
@@ -259,7 +245,7 @@ Gibson::~Gibson()
  *The method is the core function of Gibson method, it does one run for Gibson simulation.
  *The loop will end either by ending_time or max_iteration.
  *For single trial, the values of variables against time will be output at each save_period.
- *For multiple trial, the values of variables will be stored in a histogram array. 
+ *For multiple trial, the results at the ending_time after each trial willl be stored in a the file. 
  */
 int Gibson::core()
 {
@@ -407,15 +393,13 @@ int Gibson::core()
 	{
 		for(i=0;i<listOfVars.size();i++)
 		{
-			int v=*listOfVars.at(i)->getCurr();
-			if((v<=MAX_NUM_MOLECUES)&&(v>=0))
-				histogram[i][v]++;
+			outfile<< "\t" << *listOfVars.at(i)->getCurr();
 		}
+		outfile << endl;
 	}
     //return parameter 0:ends by ending_time  1:ends by max_iteration
 	if(iterationCounter< MAX_ITERATION)
 	{
-		cout << "\n end by ending time";
 		return 0;
 	}
 	else return 1;
@@ -446,6 +430,7 @@ void Gibson::march()
 			outfile<< listOfVarNames.at(i) << ":";
 		}
 		outfile <<endl;
+		//output initial condition at STARTING_TIME
 		outfile << STARTING_TIME << "\t";
 		for(i=0;i<listOfIniValues.size();i++){
 			outfile<< listOfIniValues.at(i) << "\t";
@@ -464,22 +449,22 @@ void Gibson::march()
 	}
 	else if (NUM_TRIAL > 1)
 	{
-		//following segment defines the dimensions of histogram for multitrial simulation
-		histogram=new long*[listOfVars.size()];
-		for(i=0;i<listOfVars.size();i++)
-			histogram[i]=new long[MAX_NUM_MOLECUES+1];
-		for(i=0;i<listOfVars.size();i++)
-			for(int m=0;m<(MAX_NUM_MOLECUES+1);m++)
-				histogram[i][m]=0;
-		//prepare for writing the results to output file
-		//outfile.open(outfilename); //"c:/gibson_deploy/gibson_deploy/output/gibson_multiTrial.txt"
+		clock_t oldTime = clock(); // use to calculate time, send progress every two seconds
 		outfile.open(outfilename);
+		//output file header
+		outfile << "TrialNo:";	  
+		for(i=0;i<listOfVarNames.size();i++){
+			outfile<< listOfVarNames.at(i) << ":";
+		}
+		outfile <<endl;
 		for (long j=SEED;j<NUM_TRIAL+SEED;j++)
 		{
 #ifdef DEBUG
 			cout << "seed:" << SEED <<"\t"<<"Trial No. " << j <<endl;
 #endif
 			srand(j);
+			//output trial number.  PS:results after each trial are printed in core() function.
+			outfile << j-SEED+1;
 			core();
 			//reset to initial values before next simulation
 			for(i=0;i<listOfIniValues.size();i++){
@@ -488,16 +473,18 @@ void Gibson::march()
 			for(i=0;i<listOfProcesses.size();i++){
 				Tree->setProcess(i,listOfProcesses.at(i));
 			}
+			
+			// output progress message every two seconds to Java program 
+			clock_t currentTime = clock();
+			double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
+			if (duration >= 2)
+			{
+				printf("[[[progress:%lg%%]]]", ((j-SEED)*1.0/NUM_TRIAL) * 100.0);
+				fflush(stdout);
+				oldTime = currentTime;
+			}
 		}
-		//output histogram for each variable invloved in the multitrial
-		for (i=0;i<listOfVars.size();i++)
-		{
-			outfile << "---Distribution of " << listOfVarNames.at(i) << "---" << endl << endl;
-			for(int m=0;m<(MAX_NUM_MOLECUES+1);m++)
-				outfile << (double)histogram[i][m]/NUM_TRIAL << endl;
-				//outfile << histogram[i][m] << "\t" <<(double)histogram[i][m]/NUM_TRIAL << endl; //use for debug purpose only, otherwise use previous line
-            outfile << endl << endl;
-		}
+		
 	}
 	else 
 	{

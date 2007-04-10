@@ -39,7 +39,6 @@ class StochModel
 	   double TOLERANCE;//the lowest value for propensity
 	   int SAMPLE_INTERVAL;//the sampling interval, e.g SAMPLE_INTERVAL=3 means sampling once for every three time points
 	   long NUM_TRIAL;//number of trials
-	   int MAX_NUM_MOLECUES;//maximum quantity among all the variables
 	   int SEED;//random seed
 	   vector <StochVar*> listOfVars;//list of stochasic variables in the model
 	   vector <string> listOfVarNames;//list of variable names 

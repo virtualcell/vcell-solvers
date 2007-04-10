@@ -17,7 +17,6 @@ StochModel::StochModel()
 	SAMPLE_INTERVAL=1;
 	TOLERANCE=1e-9;
 	NUM_TRIAL=2000;
-	MAX_NUM_MOLECUES=30;
 	SEED = (unsigned)time( NULL );
 	if (listOfVars.size()>0){
 		listOfVars.erase(listOfVars.begin(),listOfVars.end());
