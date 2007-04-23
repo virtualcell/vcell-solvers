@@ -345,7 +345,7 @@ void SimTool::clearLog()
 		char *dotSim = strstr(simFileName,SIM_FILE_EXT);
 		assert(dotSim);
 		*dotSim = '\0';
-		sprintf(buffer,"%s%s", SIM_FILE_EXT);
+		sprintf(buffer,"%s%s", simFileName, SIM_FILE_EXT);
 		remove(buffer);
 		sprintf(buffer,"%s%s%s",simFileName, SIM_FILE_EXT, PARTICLE_FILE_EXT);
 		remove(buffer);
