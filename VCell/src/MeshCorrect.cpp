@@ -2,8 +2,6 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-// uses Element.h, Mesh.h, Mesh.cpp
-
 #ifdef WIN32
 #include <Windows.h>
 #else
@@ -186,251 +184,155 @@ void CartesianMesh::computeExactNormals() {
 #endif
 }
 
-
 void CartesianMesh::computeNormalsFromNeighbors() {
 	//
 	//averaging over neighbors of arbitrary number  
 	//
-	cout << "CartesianMesh::computeNormalsFromNeighbors(), compute normals from neighbors" << endl;
-	long numMembraneElements = getNumMembraneElements();
-	MembraneElement* meptr = getMembraneElements();
-
-	if (getDimension() == 2) {
-		DoubleVector3 grad[2];
-		DoubleVector3 normal[2];
-		for (long index = 0; index < numMembraneElements; index++){
-
-			memset(normal, 0, 2* sizeof(DoubleVector3));
-
-			WorldCoord wc = getMembraneWorldCoord(index);
-			int numNeighbors[2];
-			getN(index, numNeighbors);
-			if (numNeighbors[0] == 0 && numNeighbors[1] == 0) {
-				meptr[index].unitNormal.x = 0;
-				meptr[index].unitNormal.y = 0;
-				meptr[index].unitNormal.z = 0;
-				long diff = meptr[index].outsideIndexNear - meptr[index].insideIndexNear;
-				if (diff == 1) {
-					meptr[index].unitNormal.x = 1;
-				} else if (diff == -1) {
-					meptr[index].unitNormal.x = -1;
-				} else if (diff == numX) {
-					meptr[index].unitNormal.y = 1;
-				} else if (diff == -numX) {
-					meptr[index].unitNormal.y = -1;
-				}
-			} else {
-				int neighborCount = 0;
-				while (true) {
-					neighborCount = 0;
-
-					long neighborIndex0 = getNeighbor(numNeighbors[0], index, 0);
-					long neighborIndex1 = getNeighbor(numNeighbors[1], index, 1);
-					if( neighborIndex0 >= 0){
-						WorldCoord wc0 = getMembraneWorldCoord(neighborIndex0);
-						grad[0].x = wc.y - wc0.y;
-						grad[0].y = -(wc.x - wc0.x);	 
-						grad[0].z = 0;
-						double length = sqrt(grad[0].x*grad[0].x + grad[0].y*grad[0].y);
-						normal[0].x = grad[0].x/length;
-						normal[0].y = grad[0].y/length;
-						normal[0].z = 0;
-						neighborCount++;	 
-					}else{
-						normal[0].x = 0;
-						normal[0].y = 0;
-						normal[0].z = 0;
-					}
-					if(neighborIndex1 >= 0){
-						WorldCoord wc1 = getMembraneWorldCoord(neighborIndex1);
-						grad[1].x = wc1.y - wc.y;
-						grad[1].y = -(wc1.x - wc.x);	 
-						grad[1].z = 0;	 
-						double length = sqrt(grad[1].x*grad[1].x + grad[1].y*grad[1].y);
-						normal[1].x = grad[1].x/length;
-						normal[1].y = grad[1].y/length;
-						normal[1].z = 0;
-						neighborCount++;	 
-					}else{
-						normal[1].x = 0;
-						normal[1].y = 0;
-						normal[1].z = 0;	 
-					}
-					if (neighborCount > 0) {
-						break;
-					} else {
-						if (numNeighbors[0] > 1) {
-							numNeighbors[0] --;
-						}
-						if (numNeighbors[1] > 1) {
-							numNeighbors[1] --;
-						}
-					}
-				}
-				computeNormal(meptr[index], normal, neighborCount);
-			}
-		}
-	} else if(getDimension() == 3) {
-		DoubleVector3 grad[4];
-		DoubleVector3 normal[4];
-		for(long index = 0; index < numMembraneElements; index++)
-		{
-			memset(normal, 0, 4* sizeof(DoubleVector3));
-
-			WorldCoord wc = getMembraneWorldCoord(index);
-			int numNeighbors[4];
-			getN(index, numNeighbors);
-			if (numNeighbors[0] == 0 && numNeighbors[1] == 0 && numNeighbors[2] == 0 && numNeighbors[3] == 0) {
-				meptr[index].unitNormal.x = 0;
-				meptr[index].unitNormal.y = 0;
-				meptr[index].unitNormal.z = 0;
-				long diff = meptr[index].outsideIndexNear - meptr[index].insideIndexNear;
-				if (diff == 1) {
-					meptr[index].unitNormal.x = 1;
-				} else if (diff == -1) {
-					meptr[index].unitNormal.x = -1;
-				} else if (diff == numX) {
-					meptr[index].unitNormal.y = 1;
-				} else if (diff == -numX) {
-					meptr[index].unitNormal.y = -1;
-				} else if (diff == numXY) {
-					meptr[index].unitNormal.z = 1;
-				} else if (diff == -numXY) {
-					meptr[index].unitNormal.z = -1;
-				}
-			} else {
-				int neighborCount = 0;
-				while (true) {
-					neighborCount = 0;
-
-					long neighborIndex0 = getNeighbor(numNeighbors[0], index, 0);
-					long neighborIndex1 = getNeighbor(numNeighbors[1], index, 1);
-					long neighborIndex2 = getNeighbor(numNeighbors[2], index, 2);
-					long neighborIndex3 = getNeighbor(numNeighbors[3], index, 3);				
-					WorldCoord wc0;
-					if (neighborIndex0 >= 0){ 
-	 					wc0 = getMembraneWorldCoord(neighborIndex0);
-					}
-					WorldCoord wc1;
-	 				if (neighborIndex1 >= 0){
- 						wc1 = getMembraneWorldCoord(neighborIndex1);
-					}
-					WorldCoord wc2;
-					if (neighborIndex2 >= 0){
-						wc2 = getMembraneWorldCoord(neighborIndex2);
-					}
-					WorldCoord wc3;
-					if (neighborIndex3 >= 0){
-						wc3 = getMembraneWorldCoord(neighborIndex3);
-					}
-					if((neighborIndex0 >= 0)&&(neighborIndex1 >= 0)){
-						grad[0].x = (wc.y - wc0.y)*(wc.z - wc1.z) - (wc.y - wc1.y)*(wc.z - wc0.z);
-						grad[0].y = (wc.z - wc0.z)*(wc.x - wc1.x) - (wc.z - wc1.z)*(wc.x - wc0.x);	 
-						grad[0].z = (wc.x - wc0.x)*(wc.y - wc1.y) - (wc.x - wc1.x)*(wc.y - wc0.y);
-						double length = sqrt(grad[0].x*grad[0].x + grad[0].y*grad[0].y + grad[0].z*grad[0].z);
-						if(length>0){
-							normal[0].x = grad[0].x/length;	 
-							normal[0].y = grad[0].y/length;	 
-							normal[0].z = grad[0].z/length;
-							neighborCount++;
-						}else{	 
-							normal[0].x = 0;
-							normal[0].y = 0;
-							normal[0].z = 0;
-						}
-					}else{
-						normal[0].x = 0;
-						normal[0].y = 0;
-						normal[0].z = 0;
-					}
-					if((neighborIndex1 >= 0)&&(neighborIndex2 >= 0)){
-						grad[1].x = (wc.y - wc1.y)*(wc.z - wc2.z) - (wc.y - wc2.y)*(wc.z - wc1.z);
-						grad[1].y = (wc.z - wc1.z)*(wc.x - wc2.x) - (wc.z - wc2.z)*(wc.x - wc1.x);	 
-						grad[1].z = (wc.x - wc1.x)*(wc.y - wc2.y) - (wc.x - wc2.x)*(wc.y - wc1.y);	 
-						double length = sqrt(grad[1].x*grad[1].x + grad[1].y*grad[1].y + grad[1].z*grad[1].z);
-						if(length>0){
-							normal[1].x = grad[1].x/length;	 
-							normal[1].y = grad[1].y/length;	 
-							normal[1].z = grad[1].z/length;
-							neighborCount++;	 
-						}else{	 
-							normal[1].x = 0;
-							normal[1].y = 0;
-							normal[1].z = 0;
-						}
-					}else{
-						normal[1].x = 0;
-						normal[1].y = 0;
-						normal[1].z = 0;
-					}
-					if((neighborIndex2 >= 0)&&(neighborIndex3 >= 0)){
-						grad[2].x = (wc.y - wc2.y)*(wc.z - wc3.z) - (wc.y - wc3.y)*(wc.z - wc2.z);
-						grad[2].y = (wc.z - wc2.z)*(wc.x - wc3.x) - (wc.z - wc3.z)*(wc.x - wc2.x);	 
-						grad[2].z = (wc.x - wc2.x)*(wc.y - wc3.y) - (wc.x - wc3.x)*(wc.y - wc2.y);	 
-						double length = sqrt(grad[2].x*grad[2].x + grad[2].y*grad[2].y + grad[2].z*grad[2].z);
-						if(length>0){
-							normal[2].x = grad[2].x/length;	 
-							normal[2].y = grad[2].y/length;	 
-							normal[2].z = grad[2].z/length;
-							neighborCount++;	 
-						}else{	 
-							normal[2].x = 0;
-							normal[2].y = 0;
-							normal[2].z = 0;
-						}
-					}else{
-						normal[2].x = 0;
-						normal[2].y = 0;
-						normal[2].z = 0;
-					}
-					if((neighborIndex3 >= 0)&&(neighborIndex0 >= 0)){
-						grad[3].x = (wc.y - wc3.y)*(wc.z - wc0.z) - (wc.y - wc0.y)*(wc.z - wc3.z);
-						grad[3].y = (wc.z - wc3.z)*(wc.x - wc0.x) - (wc.z - wc0.z)*(wc.x - wc3.x);	 
-						grad[3].z = (wc.x - wc3.x)*(wc.y - wc0.y) - (wc.x - wc0.x)*(wc.y - wc3.y);
-						double length = sqrt(grad[3].x*grad[3].x + grad[3].y*grad[3].y + grad[3].z*grad[3].z);
-						if(length>0){
-							normal[3].x = grad[3].x/length;	 
-							normal[3].y = grad[3].y/length;	 
-							normal[3].z = grad[3].z/length;
-							neighborCount++;	 
-						}else{	 
-							normal[3].x = 0;
-							normal[3].y = 0;
-							normal[3].z = 0;
-						}
-					}else{
-						normal[3].x = 0;
-						normal[3].y = 0;
-						normal[3].z = 0;
-					}
-					if (neighborCount > 0) {
-						break;
-					} else {
-						// if failed, decrease N by 1 and try again.							
-						if (numNeighbors[0] > 1) {
-							numNeighbors[0] --;
-						}
-						if (numNeighbors[1] > 1) {
-							numNeighbors[1] --;
-						}
-						if (numNeighbors[2] > 1) {
-							numNeighbors[2] --;
-						}
-						if (numNeighbors[3] > 1) {
-							numNeighbors[3] --;
-						}
-					}
-				}
-				computeNormal(meptr[index], normal, neighborCount);
-			}
-		}
+	if (dimension < 2) {
+		return;
 	}
+	cout << "CartesianMesh::computeNormalsFromNeighbors(), compute normals from neighbors" << endl;
+
+	int numOfNaturalNeighbors = 0;
+	if (dimension == 2) {
+		numOfNaturalNeighbors = 2;
+	} else if (dimension == 3) {
+		numOfNaturalNeighbors = 4;
+	}
+
+	int* tangentN = new int[numOfNaturalNeighbors];
+	int* tangentNeighbors = new int[numOfNaturalNeighbors];
+	DoubleVector3* tangentWc = new DoubleVector3[numOfNaturalNeighbors];
+	DoubleVector3* tangentNormal = new DoubleVector3[numOfNaturalNeighbors];
+	
+	for (long index = 0; index < numMembrane; index ++){
+		WorldCoord wc = getMembraneWorldCoord(index);
+		MembraneElement& meptr = pMembraneElement[index];
+		
+		getN(index, tangentN);
+
+		while (true) {
+			int numOfValidTangentNeighbors = 0;
+			for (int i = 0; i < numOfNaturalNeighbors; i ++) {
+				tangentNeighbors[i] = getNeighbor(tangentN[i], index, i);
+				if (tangentNeighbors[i] >= 0 && tangentNeighbors[i] != index) { 
+					numOfValidTangentNeighbors ++;
+	 				tangentWc[i] = wc - getMembraneWorldCoord(tangentNeighbors[i]);
+				} else {
+					tangentNeighbors[i] = -1;
+				}
+			}
+
+			if (numOfValidTangentNeighbors == 0) {  // if there are no neighbors at all, use face normal
+				meptr.unitNormal = getVolumeWorldCoord(meptr.outsideIndexNear) - getVolumeWorldCoord(meptr.insideIndexNear);
+				meptr.unitNormal.normalize();
+				break;
+			}
+		
+			int tangentNormalCount = 0;
+			memset(tangentNormal, 0, numOfNaturalNeighbors * sizeof(DoubleVector3));
+	
+			// compute tangent normals
+			if (dimension == 2) {
+				if(tangentNeighbors[0] >= 0){
+					tangentNormal[0].x = tangentWc[0].y;
+					tangentNormal[0].y = - tangentWc[0].x;
+					double length = tangentNormal[0].length();
+					if (length > 0) {
+						tangentNormal[0].normalize();
+						tangentNormalCount ++;	 
+					}
+				}
+				if(tangentNeighbors[1] >= 0){
+					tangentNormal[1].x = -tangentWc[1].y;
+					tangentNormal[1].y = tangentWc[1].x;
+					double length = tangentNormal[1].length();
+					if (length > 0) {
+						tangentNormal[1].normalize();
+						tangentNormalCount ++;	 
+					}	 
+				}
+			} else if (dimension == 3) {
+				for (int i = 0; i < numOfNaturalNeighbors; i ++) {
+					int nextIndex = (i+1) % numOfNaturalNeighbors;
+					if((tangentNeighbors[i] >= 0) && (tangentNeighbors[nextIndex] >= 0)){							
+						tangentNormal[i].x = tangentWc[i].y * tangentWc[nextIndex].z - tangentWc[nextIndex].y * tangentWc[i].z;
+						tangentNormal[i].y = tangentWc[i].z * tangentWc[nextIndex].x - tangentWc[nextIndex].z * tangentWc[i].x;
+						tangentNormal[i].z = tangentWc[i].x * tangentWc[nextIndex].y - tangentWc[nextIndex].x * tangentWc[i].y;
+						double length = tangentNormal[i].length();
+						if (length > 0){
+							tangentNormal[i].normalize();
+							tangentNormalCount ++;
+						}
+					}
+				}
+			}
+
+			// average tangent normals
+			if (tangentNormalCount > 0) {
+				computeNormal(meptr, tangentNormal, tangentNormalCount);
+				break;
+			} else {
+				int numChanged = 0;
+				for (int i = 0; i < numOfNaturalNeighbors; i ++) {
+					if (tangentN[i] > 1) {
+						tangentN[i] --;
+						numChanged ++;
+					}
+				}
+				if (numChanged == 0) {
+					throw "Mesh is too coarse, found isolated membrane element, please try to refine mesh";
+				}
+			}
+		}		
+	}
+
+	delete[] tangentN;
+	delete[] tangentNeighbors;
+	delete[] tangentWc;
+	delete[] tangentNormal;	
+		//if (tangentNeighborCount == 1) { // there is only one valid neighbor
+		//	assert(validNeighborIndex != -1);
+		//	NormalDirection nd = getFaceNormalDirection(index);
+		//	WorldCoord v1;
+		//	if (nd == NORMAL_DIRECTION_X) {
+		//		v1.x = 1;
+		//	} else if (nd == NORMAL_DIRECTION_Y) {
+		//		v1.y = 1;
+		//	} else if (nd == NORMAL_DIRECTION_Z) {
+		//		v1.z = 1;
+		//	}
+		//	tangentWc[validNeighborIndex].normalize();
+		//	pMembraneElement[index].unitNormal = tangentWc[validNeighborIndex].crossProduct(v1);
+		//	continue;
+		//} else if (tangentNeighborCount == 2 &&  // there are two neighbors, but they are coplanar;
+		//		(tangentNeighbors[0] == -1 && tangentNeighbors[2] == -1 || tangentNeighbors[1] == -1 && tangentNeighbors[3] == -1)) {
+		//	NormalDirection nd = getFaceNormalDirection(index);
+		//	WorldCoord v1;
+		//	if (nd == NORMAL_DIRECTION_X) {
+		//		v1.x = 1;
+		//	} else if (nd == NORMAL_DIRECTION_Y) {
+		//		v1.y = 1;
+		//	} else if (nd == NORMAL_DIRECTION_Z) {
+		//		v1.z = 1;
+		//	}
+		//	// make up a third point to 
+		//	if (tangentNeighbors[0] == -1 && tangentNeighbors[2] == -1) {
+		//		tangentWc[0] = v1;
+		//		tangentWc[1].normalize();
+		//		tangentWc[3].normalize();
+		//	} else {
+		//		tangentWc[1] = v1;
+		//		tangentWc[0].normalize();
+		//		tangentWc[2].normalize();
+		//	}
+		//}		
 }
 
 void CartesianMesh::computeNormal(MembraneElement& meptr, DoubleVector3* normal, int neighborCount) {
 	switch (dimension) {
 		case 2: {
-			// compute normal
+			// average normal
 			int cnt = 2;
 			meptr.unitNormal.x = 0;
 			for (int i = 0; i < cnt; i ++) {
@@ -447,10 +349,8 @@ void CartesianMesh::computeNormal(MembraneElement& meptr, DoubleVector3* normal,
 			meptr.unitNormal.z = 0; // 2D
 			break;
 		}
-		case 3: {						
-			WorldCoord wc = getMembraneWorldCoord(&meptr);
-
-			// compute normal
+		case 3: {
+			// average normal
 			int cnt = 4;
 			meptr.unitNormal.x = 0;
 			for (int i = 0; i < cnt; i ++) {
@@ -471,6 +371,9 @@ void CartesianMesh::computeNormal(MembraneElement& meptr, DoubleVector3* normal,
 			meptr.unitNormal.z /= neighborCount;			
 
 			break;
+		}
+		default: {
+			throw "CartesianMesh::computeNormal(), dimension should be 2 or 3.";
 		}
 	}
 
@@ -514,7 +417,6 @@ void CartesianMesh::adjustMembraneAreaFromNormal(){
 				if (mask & NEIGHBOR_Y_BOUNDARY_MASK) {
 					element.area *= 0.5;
 				}
-				//cout << memIndex << "\t" << element.insideIndexNear << "\t" << element.outsideIndexNear << "\t" << element.area << endl;
 				break;
 			case 3:
 				if (diff==1){
@@ -554,7 +456,6 @@ boolean CartesianMesh::findMembraneNeighbors()
 	long mez = getNumVolumeZ();
 	MembraneElement* meptr = getMembraneElements();
 	long meloop;
-	//int mesearch;
 
 	for(meloop = 0;meloop < mecount;meloop+= 1)
 	{
@@ -566,9 +467,7 @@ boolean CartesianMesh::findMembraneNeighbors()
 
 	for(meloop = 0;meloop < mecount;meloop+= 1)
 	{
-		//   int indexer;
 		long iinloop,oinloop;
-		//   int bm,bp;
 
 		iinloop = meptr[meloop].insideIndexNear;
 		oinloop = meptr[meloop].outsideIndexNear;
@@ -781,7 +680,6 @@ void CartesianMesh::getNeighborCandidates (vector<long>& neighborCandidates, Dou
 			double d = centralNormal.dotProduct(v2);
 
 			// if they are pointing the opposite direction, terminate this neighbor
-			//double d = pMembraneElement[index].unitNormal.dotProduct(pMembraneElement[neighbors[i]].unitNormal);
 			if (d >= 0) {
 				addElementToVector(neighborCandidates, neighbors[i]);			
 				getNeighborCandidates(neighborCandidates, centralNormal, neighbors[i], hierarchy);
@@ -954,12 +852,12 @@ void CartesianMesh::computeMembraneCoupling(){
 					double nxDot = e.dotProduct(currentNormal); 
 
 					// find portion of "e" that is perpendicular to "normal" (this direction will be first unit vector "e1")
-					e1 = e - currentNormal.scale(nxDot);
-					e1.normalize();
+					e1 = e - currentNormal.scale(nxDot);					
 
 					// as long as e wasn't parallel to "normal" (i.e. "e1" wasn't a zero vector)
 					// then compute e2 as unit vector which is perpendicular to both "normal" and "e1"
 					if (e1.length() > 0) {
+						e1.normalize();
 						e2 = currentNormal.crossProduct(e1);
 						break;
 					}
@@ -1036,7 +934,7 @@ void CartesianMesh::computeMembraneCoupling(){
 								// current is the origin 
 								if (project(lc_artificial_offset, e1, e2, prj_artificial_offset) && project(lc_neighbor, e1, e2, prj_neighbor)) {
 									WorldCoord boundary_new_unit(prj_neighbor[0], prj_neighbor[1], 0);
-									boundary_new_unit.normalize();
+									boundary_new_unit.normalize(); // should we protect against zero vector?
 
 									WorldCoord artificial_old(prj_artificial_offset[0], prj_artificial_offset[1], 0);
 									WorldCoord artificial_new = artificial_old - boundary_new_unit.scale(boundary_new_unit.dotProduct(artificial_old));
@@ -1205,7 +1103,6 @@ void CartesianMesh::computeMembraneCoupling(){
 							totalFluxArea += boundary_arclength;
 							boundaryFluxArea[BL_Zm] += boundary_arclength;
 						} else if (commonmask & NEIGHBOR_ZP_BOUNDARY) {
-							//cout << index << "," << neighborIndex << ":" << boundary_arclength << endl;
 							fluxArea[BL_Zp] += boundary_arclength;
 							totalFluxArea += boundary_arclength;
 							boundaryFluxArea[BL_Zp] += boundary_arclength;
@@ -1250,7 +1147,6 @@ void CartesianMesh::computeMembraneCoupling(){
 	
 	for (int index = 0; index < N; index ++) {				
 		pMembraneElement[index].area = membraneElementCoupling->getValue(index, index); // diagonal element is the new area
-		//cout << pMembraneElement[index].area << endl;
 	}	
 }
 
@@ -1305,9 +1201,17 @@ bool CartesianMesh::findCurve(int startingIndex, CurvePlane curvePlane, vector<d
 		bool bFound = false;
 		for (int i = 0; i < 4; i ++) {
 			neighborIndex = pMembraneElement[index].neighborMEIndex[i];
-			if (neighborIndex == -1 || !bOpenCurve && index != startingIndex && neighborIndex == *(indexCurve.end() - 2)
-				|| bOpenCurve && neighborIndex == indexCurve.at(1)) {				
+			if (neighborIndex == -1) {
 				continue;
+			}
+			if (!bOpenCurve) {
+				if (index != startingIndex && neighborIndex == *(indexCurve.end() - 2)) {// if closed, make sure the next point hasn't been added to curve already 
+					continue;
+				}
+			} else {
+				if (neighborIndex == indexCurve.at(1)) { // if open, make sure the next point hasn't been added to curve already
+					continue;
+				}
 			}			
 			neighborWc = getMembraneWorldCoord(neighborIndex);
 			if (is_next_point_on_curve(curvePlane, currentWc, neighborWc)) {
@@ -1335,6 +1239,9 @@ bool CartesianMesh::findCurve(int startingIndex, CurvePlane curvePlane, vector<d
 				break;
 			} else {
 				bOpenCurve = true;
+				if (indexCurve.size() == 1) {
+					break;
+				}
 				index = startingIndex;
 			}		
 		}
@@ -1343,16 +1250,16 @@ bool CartesianMesh::findCurve(int startingIndex, CurvePlane curvePlane, vector<d
 	getXYCurve(curvePlane, curve, curvex, curvey);
 	indexCurve.clear();
 	curve.clear();
-	if (bOpenCurve) {
-		return false;
-	}
-	
-	return true;
+
+	return !bOpenCurve;
 }
 
 int CartesianMesh::computeN(int startingIndex, CurvePlane curvePlane, vector<double> curvex, vector<double> curvey, int currentMeIndexInVector, bool bClose) {
 	assert(curvex.size() == curvey.size());
 	int numPoints = curvex.size();
+	if (numPoints == 1) {
+		return 0;
+	}
 	double maxX = 1E-10, maxY = 1E-10;
 	double minX = 1E10, minY = 1E10;
 	for (int i = 0; i < numPoints; i ++) {
@@ -1473,7 +1380,6 @@ int CartesianMesh::computeN(int startingIndex, CurvePlane curvePlane, vector<dou
 
 //#define N_EQUALS_2
 void CartesianMesh::getN(long index, int* N){		
-	//cout << "CartesianMesh::getN(), finding N to calculate normal" << endl;
 	switch (dimension) {
 		case 2: {
 #ifdef N_EQUALS_2
