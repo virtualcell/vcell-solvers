@@ -168,7 +168,7 @@ void SimTool::loadFinal()
 	}
 	fclose(fp);
 
-	if (tempIteration == 0  || parsedTime <= 0) {
+	if (tempIteration <= 0  || parsedTime <= 0) {
 		clearLog();
 		return;
 	}

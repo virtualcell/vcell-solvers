@@ -8,7 +8,7 @@
 #include <UnixDefs.h>
 #endif
 
-#include <stdio.h>
+#include <VCELL/MembraneEqnBuilderDiffusion.h>
 #include <VCELL/App.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/Solver.h>
@@ -17,36 +17,21 @@
 #include <VCELL/Feature.h>
 #include <VCELL/Element.h>
 #include <VCELL/VarContext.h>
-#include <VCELL/MembraneEqnBuilderDiffusion.h>
 #include <VCELL/Simulation.h>
 
-
-//---------------------------------------------------------------------
-//
-//     dC       d^2 C
-//    ---- = D ------- 
-//     dt       dx^2
-//
-//---------------------------------------------------------------------
 MembraneEqnBuilderDiffusion::MembraneEqnBuilderDiffusion(MembraneVariable *Aspecies, Mesh *Amesh)
 : SparseMatrixEqnBuilder(Aspecies, Amesh)
 {
-	//variable = Aspecies;
-	//mesn = Amesh;
 	SparseMatrixPCG* membraneElementCoupling = ((CartesianMesh*)mesh)->getMembraneCoupling();
 	A = new SparseMatrixPCG(membraneElementCoupling);
-	N = mesh->getNumMembraneElements();
-	B = new double[N];
-	memset(B, 0, N * sizeof(double)); 
+	long size = mesh->getNumMembraneElements();
+	B = new double[size];
+	memset(B, 0, size * sizeof(double)); 
 }
 
 MembraneEqnBuilderDiffusion::~MembraneEqnBuilderDiffusion() {
 	delete A;
 	delete[] B;
-}
-
-long MembraneEqnBuilderDiffusion::getN() {
-	return N;
 }
 
 //------------------------------------------------------------------
@@ -67,7 +52,7 @@ boolean MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIn
 	SparseMatrixPCG* membraneElementCoupling = ((CartesianMesh*)mesh)->getMembraneCoupling();
 
 	MembraneElement* membraneElement = pMembraneElement;
-	for (long index = 0; index < N; index ++, membraneElement ++){		
+	for (long index = membraneIndexStart; index < membraneIndexStart + membraneIndexSize; index ++, membraneElement ++){		
 		ASSERTION(membraneElement->feature);			
 		MembraneVarContext *varContext = membraneElement->feature->getMembraneVarContext((MembraneVariable*)var);		
 		int mask = mesh->getMembraneNeighborMask(membraneElement);
@@ -122,7 +107,7 @@ boolean MembraneEqnBuilderDiffusion::buildEquation(double deltaTime, int volumeI
 	SparseMatrixPCG* membraneElementCoupling = ((CartesianMesh*)mesh)->getMembraneCoupling();
 
 	MembraneElement* membraneElement = pMembraneElement;
-	for (long index = 0;index < N; index ++, membraneElement ++){
+	for (long index = membraneIndexStart; index < membraneIndexStart + membraneIndexSize; index ++, membraneElement ++){
 		ASSERTION(membraneElement->feature);		
 		Feature* feature = membraneElement->feature;
 		MembraneVarContext *varContext = feature->getMembraneVarContext((MembraneVariable*)var);	
