@@ -94,8 +94,8 @@ void SparseVolumeEqnBuilder::init() {
 		} catch (...) {
 			throw "Out of Memory";
 		}
-		for (int i = 0; i < mesh->getNumVolumeElements(); i ++) {
-			GlobalToLocalMap[i] = -1;
+		for (int globalIndex = 0; globalIndex < mesh->getNumVolumeElements(); globalIndex ++) {
+			GlobalToLocalMap[globalIndex] = -1;
 		}
 
 		RegionFirstRow[0] = 0;
@@ -106,9 +106,9 @@ void SparseVolumeEqnBuilder::init() {
 			int numElements = regionToSolve->getNumElements();
 			RegionFirstRow[i + 1] = RegionFirstRow[i] + numElements;
 			for (int j = 0; j < numElements; j ++){
-				int gridindex = regionToSolve->getIndex(j);
-				int rowIndex = RegionFirstRow[i] + j;
-				GlobalToLocalMap[gridindex] = rowIndex;
+				int globalIndex = regionToSolve->getIndex(j);
+				int localIndex = RegionFirstRow[i] + j;
+				GlobalToLocalMap[globalIndex] = localIndex;
 			}
 		}
 		
@@ -121,10 +121,10 @@ void SparseVolumeEqnBuilder::init() {
 		}
 
 		// initialize local to global map
-		for (int i = 0; i < mesh->getNumVolumeElements(); i ++){
-			int localIndex = GlobalToLocalMap[i];
+		for (int globalIndex = 0; globalIndex < mesh->getNumVolumeElements(); globalIndex ++){
+			int localIndex = GlobalToLocalMap[globalIndex];
 			if (localIndex >= 0) {
-				LocalToGlobalMap[localIndex] = i;
+				LocalToGlobalMap[localIndex] = globalIndex;
 			}
 		}
 	}
@@ -180,25 +180,6 @@ void SparseVolumeEqnBuilder::init() {
 	B = new double[size];
 	memset(B, 0, size * sizeof(double)); 
 }
-
-//void SparseVolumeEqnBuilder::setIntialGuess(bool bZeroGuess);
-//	if (bSolveWholeMesh) {
-//		SparseMatrixEqnBuilder::setIntialGuess(bZeroGuess);
-//	} else {
-//		if (bZeroGuess) {
-//			memset(X, 0, getSize() * sizeof(double));
-//		} else {
-//			double* currVal = var->getCurr();
-//
-//			// mapping current solution from local to global
-//			// or set initial guess to zero (need to revisit, we also want to revisit fill-in parameter)			
-//			for (int i = 0; i < getSize(); i ++) {
-//				X[i] = currVal[LocalToGlobalMap[i]];
-//			}
-//		}
-//		return X;
-//	}
-//}
 
 void SparseVolumeEqnBuilder::computeLHS(int index, double* lambdas, double& Aii, int& numCols, int* columnIndices, double* columnValues, bool& bSort)
 {    
@@ -737,10 +718,13 @@ boolean SparseVolumeEqnBuilder::buildEquation(double deltaTime, int volumeIndexS
 			B[index] = computeRHS(index, deltaTime, lambdas, B[index]);
 		}
 	} else {
-		memcpy(B, X, getSize() * sizeof(double));
+		double* currVal = var->getCurr();
 		for (int localIndex = 0; localIndex < getSize() ; localIndex ++) {
 			int globalIndex = LocalToGlobalMap[localIndex];
-			B[localIndex] = computeRHS(globalIndex, deltaTime, lambdas, B[localIndex]);
+			// to initialize X, which will be passed to solver as intial guess and final solution.
+			// or set initial guess to zero (need to revisit, we also want to revisit fill-in parameter)
+			X[localIndex] = currVal[globalIndex];
+			B[localIndex] = computeRHS(globalIndex, deltaTime, lambdas, X[localIndex]);
 		}
 	}
 	// to make the matrix symmetric
@@ -755,105 +739,103 @@ boolean SparseVolumeEqnBuilder::buildEquation(double deltaTime, int volumeIndexS
 		CoupledNeighbors* pn = periodicNeighbors[i];
 		B[pn->centerIndex] += pn->coeff;
 	}	
+
 	return TRUE;
 }
 
 bool SparseVolumeEqnBuilder::checkPeriodicCoupledPairsInRegions(int indexm, int indexp) {
-	if (!bSolveWholeMesh) {
-		int localIndexM = GlobalToLocalMap[indexm];
-		int localIndexP = GlobalToLocalMap[indexp];
-		if (localIndexM != -1 && localIndexP != -1) { // both of them are in the solved regions, add them to the list
-			return true;
-		}
-		if (localIndexM == -1 && localIndexP != -1 	|| localIndexM != -1 && localIndexP == -1) { // one of them is not in the solved regions
-			char ss[128];
-			sprintf(ss, "periodic point (index %d), found  a neighbor (index %d) that's not in solved regions", indexm, indexp);
-			throw ss;
-		} 
-		return false; // both of them are not in the solved regions, so we don't have to add them to the list
+	if (bSolveWholeMesh) {
+		return true;
 	}
-	return true;	
+
+	int localIndexM = GlobalToLocalMap[indexm];
+	int localIndexP = GlobalToLocalMap[indexp];
+	if (localIndexM != -1 && localIndexP != -1) { // both of them are in the solved regions, add them to the list
+		return true;
+	}
+	if (localIndexM == -1 && localIndexP != -1 	|| localIndexM != -1 && localIndexP == -1) { // one of them is not in the solved regions
+		char ss[128];
+		sprintf(ss, "one of two periodic neighbors (index %d) and (index %d) is not in solved regions", indexm, indexp);
+		throw ss;
+	} 
+	return false; // both of them are not in the solved regions, so we don't have to add them to the list
 }
 
 void SparseVolumeEqnBuilder::preProcess() {
-	bool bPeriodic = false;
+	if (bPreProcessed) {
+		return;
+	}
+
+	bPreProcessed = true;	
 
 	// check if there is periodic boundary condition in the model
+	bool bPeriodic = false;
 	Feature* feature = 0;
 	while (feature = theApplication->getModel()->getNextFeature(feature)) {		
 		if (feature->getXmBoundaryType() == BOUNDARY_PERIODIC 
 			|| feature->getYmBoundaryType() == BOUNDARY_PERIODIC 
 			|| feature->getZmBoundaryType() == BOUNDARY_PERIODIC) {
 			bPeriodic = true;
+			break;
 		}
+	}
+
+	if (!bPeriodic) {
+		return;
 	}
 
 	// intialize periodic minus and plus pair, which is used to update plus points at each time step
-	if (bPeriodic) {
-		CartesianMesh* mesh = (CartesianMesh*)getMesh();
-		VolumeElement* pVolumeElement = mesh->getVolumeElements();
+	VolumeElement* pVolumeElement = mesh->getVolumeElements();
 
-		// X direction
-		if (SIZEX > 1) {
-			for (int k = 0; k < SIZEZ; k ++){
-				for (int j = 0; j < SIZEY; j ++){
-					int indexm = k * SIZEXY + j * SIZEX;
-					int indexp = k * SIZEXY + j * SIZEX + SIZEX - 1;				
-					int mask = pVolumeElement[indexm].neighborMask;
-					VolumeVarContext* varContext = pVolumeElement[indexm].feature->getVolumeVarContext((VolumeVariable*)var);	
-					if (mask & NEIGHBOR_XM_BOUNDARY && pVolumeElement[indexm].feature->getXmBoundaryType() == BOUNDARY_PERIODIC) {
-						if (checkPeriodicCoupledPairsInRegions(indexm, indexp)) {
-							periodicCoupledPairs.push_back(new CoupledNeighbors(indexm, indexp, varContext->getXBoundaryPeriodicConstant()));
-						}
-					}
-				}
-			}
-		}
-		// Y direction
-		if (SIZEY > 1) {
-			for (int k = 0; k < SIZEZ; k ++){
-				for (int i = 0; i < SIZEX; i ++){		
-					int indexm = k * SIZEXY + i;
-					int indexp = k * SIZEXY + (SIZEY - 1) * SIZEX + i;
-					int mask = pVolumeElement[indexm].neighborMask;
-					VolumeVarContext* varContext = pVolumeElement[indexm].feature->getVolumeVarContext((VolumeVariable*)var);	
-					if (mask & NEIGHBOR_YM_BOUNDARY && pVolumeElement[indexm].feature->getYmBoundaryType() == BOUNDARY_PERIODIC) {
-						if (checkPeriodicCoupledPairsInRegions(indexm, indexp)) {
-							periodicCoupledPairs.push_back(new CoupledNeighbors(indexm, indexp, varContext->getYBoundaryPeriodicConstant()));
-						}
-					}
-				}
-			}
-		}
-
-		// Z direction
-		if (SIZEZ > 1) {
+	// X direction
+	if (SIZEX > 1) {
+		for (int k = 0; k < SIZEZ; k ++){
 			for (int j = 0; j < SIZEY; j ++){
-				for (int i = 0; i < SIZEX; i ++){
-					int indexm = j * SIZEX + i;
-					int indexp = (SIZEZ - 1) * SIZEXY + j * SIZEX + i;
-					int mask = pVolumeElement[indexm].neighborMask;
-					VolumeVarContext* varContext = pVolumeElement[indexm].feature->getVolumeVarContext((VolumeVariable*)var);	
-					if (mask & NEIGHBOR_ZM_BOUNDARY && pVolumeElement[indexm].feature->getZmBoundaryType() == BOUNDARY_PERIODIC) {
-						if (checkPeriodicCoupledPairsInRegions(indexm, indexp)) {
-							periodicCoupledPairs.push_back(new CoupledNeighbors(indexm, indexp, varContext->getZBoundaryPeriodicConstant()));
-						}
+				int indexm = k * SIZEXY + j * SIZEX;
+				int indexp = k * SIZEXY + j * SIZEX + SIZEX - 1;				
+				int mask = pVolumeElement[indexm].neighborMask;
+				VolumeVarContext* varContext = pVolumeElement[indexm].feature->getVolumeVarContext((VolumeVariable*)var);	
+				if (mask & NEIGHBOR_XM_BOUNDARY && pVolumeElement[indexm].feature->getXmBoundaryType() == BOUNDARY_PERIODIC) {
+					if (bSolveWholeMesh || checkPeriodicCoupledPairsInRegions(indexm, indexp)) {
+						periodicCoupledPairs.push_back(new CoupledNeighbors(indexm, indexp, varContext->getXBoundaryPeriodicConstant()));
 					}
 				}
-			}		
-		}
-	}	
-
-	if (!bSolveWholeMesh) {
-		// to initialize X, which will be passed to solver as intial guess and final solution.
-		// or set initial guess to zero (need to revisit, we also want to revisit fill-in parameter)			
-		double* currVal = var->getCurr();
-		for (int localIndex = 0; localIndex < getSize() ; localIndex ++) {
-			int globalIndex = LocalToGlobalMap[localIndex];
-			X[localIndex] = currVal[globalIndex];						
+			}
 		}
 	}
-	bPreProcessed = true;
+	// Y direction
+	if (SIZEY > 1) {
+		for (int k = 0; k < SIZEZ; k ++){
+			for (int i = 0; i < SIZEX; i ++){		
+				int indexm = k * SIZEXY + i;
+				int indexp = k * SIZEXY + (SIZEY - 1) * SIZEX + i;
+				int mask = pVolumeElement[indexm].neighborMask;
+				VolumeVarContext* varContext = pVolumeElement[indexm].feature->getVolumeVarContext((VolumeVariable*)var);	
+				if (mask & NEIGHBOR_YM_BOUNDARY && pVolumeElement[indexm].feature->getYmBoundaryType() == BOUNDARY_PERIODIC) {
+					if (bSolveWholeMesh || checkPeriodicCoupledPairsInRegions(indexm, indexp)) {
+						periodicCoupledPairs.push_back(new CoupledNeighbors(indexm, indexp, varContext->getYBoundaryPeriodicConstant()));
+					}
+				}
+			}
+		}
+	}
+
+	// Z direction
+	if (SIZEZ > 1) {
+		for (int j = 0; j < SIZEY; j ++){
+			for (int i = 0; i < SIZEX; i ++){
+				int indexm = j * SIZEX + i;
+				int indexp = (SIZEZ - 1) * SIZEXY + j * SIZEX + i;
+				int mask = pVolumeElement[indexm].neighborMask;
+				VolumeVarContext* varContext = pVolumeElement[indexm].feature->getVolumeVarContext((VolumeVariable*)var);	
+				if (mask & NEIGHBOR_ZM_BOUNDARY && pVolumeElement[indexm].feature->getZmBoundaryType() == BOUNDARY_PERIODIC) {
+					if (bSolveWholeMesh || checkPeriodicCoupledPairsInRegions(indexm, indexp)) {
+						periodicCoupledPairs.push_back(new CoupledNeighbors(indexm, indexp, varContext->getZBoundaryPeriodicConstant()));
+					}
+				}
+			}
+		}		
+	}		
 }
 
 void SparseVolumeEqnBuilder::postProcess() {	
