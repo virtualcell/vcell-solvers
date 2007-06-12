@@ -35,10 +35,10 @@ CPPOBJECTS = $(OBJDIR)\VCellIDASolver.obj \
 $(OBJDIR) :
     if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"    
     
-$(SUNDIALS_IDALIB): $(COBJECTS)
+$(SUNDIALS_IDALIB): $(OBJDIR) $(COBJECTS)
 		$(LIBTOOL) /out:$@ $(COBJECTS) 
 		
-$(VCELLIDALIB): $(CPPOBJECTS)
+$(VCELLIDALIB): $(OBJDIR) $(CPPOBJECTS)
 		$(LIBTOOL) /out:$@ $(CPPOBJECTS)		
 				
 clean:
