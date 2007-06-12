@@ -1,0 +1,34 @@
+default: all
+all:
+#	cd blas && nmake -f Makefile.win32
+	cd ExpressionParser && nmake -f Makefile.win32
+	cd fsqp && nmake -f Makefile.win32
+	cd IDAWin && nmake -f Makefile.win32
+	cd IDAStandalone && nmake -f Makefile.win32
+	cd Optimization && nmake -f Makefile.win32
+	cd JavaBinding && nmake -f Makefile.win32
+	cd PCGPack && nmake -f Makefile.win32
+	cd qhull && nmake -f Makefile.win32
+	cd Triangle && nmake -f Makefile.win32
+	cd unzip && nmake -f Makefile.win32
+	cd VCell\src && nmake -f Makefile.win32 
+	cd zip && nmake -f Makefile.win32
+	cd zlib && nmake -f Makefile.win32
+	cd Stochastic\VCellStoch && nmake -f Makefile.win32
+	
+clean:
+#	cd blas && nmake -f Makefile.win32 clean
+	cd ExpressionParser && nmake -f Makefile.win32 clean
+	cd fsqp && nmake -f Makefile.win32 clean
+	cd IDAWin && nmake -f Makefile.win32 clean
+	cd IDAStandalone && nmake -f Makefile.win32 clean
+	cd Optimization && nmake -f Makefile.win32 clean
+	cd JavaBinding && nmake -f Makefile.win32 clean
+	cd PCGPack && nmake -f Makefile.win32 clean
+	cd qhull && nmake -f Makefile.win32 clean
+	cd Triangle && nmake -f Makefile.win32 clean
+	cd unzip && nmake -f Makefile.win32 clean
+	cd VCell\src && nmake -f Makefile.win32 clean 
+	cd zip && nmake -f Makefile.win32 clean
+	cd zlib && nmake -f Makefile.win32 clean
+	cd Stochastic\VCellStoch && nmake -f Makefile.win32 clean

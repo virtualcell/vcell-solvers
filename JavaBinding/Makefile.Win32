@@ -1,0 +1,21 @@
+CPPFLAGS = /GX /O2 /DWIN32 -I..\ExpressionParser -I. -I..\fsqp -I..\IDAWin -I..\JNI\Win32\include -I..\JNI\Win32\include\win32 -I..\Optimization
+
+LIBS =	..\IDAWin\sundials_ida.lib ..\IDAWin\vcellIDA.lib ..\ExpressionParser\ExpParser.lib ..\fsqp\cfsqp.lib ..\Optimization\vcellOpt.lib
+
+DLL_TARGET = NativeSolvers.dll
+
+.SUFFIXES:	.cpp.obj
+
+.cpp.obj:	
+	cl /c $(CPPFLAGS) /Fo$@ $<
+
+default all:	$(DLL_TARGET)
+
+CPPOBJECTS = cbit_vcell_opt_solvers_NativeOptSolver.obj \
+			cbit_vcell_solvers_NativeIDASolver.obj 
+    
+$(DLL_TARGET) : $(CPPOBJECTS) $(LIBS)
+	cl -LD -Fe$@ $(CPPOBJECTS) $(LIBS)	
+		
+clean:
+	del $(DLL_TARGET) $(CPPOBJECTS)

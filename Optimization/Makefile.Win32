@@ -1,0 +1,30 @@
+CFLAGS = /c /GX /O2 /DWIN32 -I..\ExpressionParser -I. -I..\fsqp -I..\IDAWin -I..\JNI\Win32\include -I..\JNI\Win32\include\win32
+
+LIBTOOL = lib	
+
+LIB_TARGET = vcellOpt.lib
+
+.SUFFIXES:		.cpp.obj
+
+OBJDIR = .\Win32
+			
+.cpp{$(OBJDIR)}.obj:	
+	cl /c $(CFLAGS) /Fo$@ $<
+
+default all:	$(LIB_TARGET)
+
+CPPOBJECTS = $(OBJDIR)\CFSQPOptSolver.obj \
+			$(OBJDIR)\Constraint.obj \
+			$(OBJDIR)\OdeOptJob.obj \
+			$(OBJDIR)\OdeMultiShootingOptJob.obj \
+			$(OBJDIR)\OptSolver.obj	\
+			$(OBJDIR)\MemoryManager.obj
+
+$(OBJDIR) :
+    if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"    
+    
+$(LIB_TARGET) : $(OBJDIR) $(CPPOBJECTS)
+	$(LIBTOOL) /out:$@ $(CPPOBJECTS)
+		
+clean:
+	del $(LIB_TARGET) $(CPPOBJECTS)

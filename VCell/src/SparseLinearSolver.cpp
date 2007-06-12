@@ -65,7 +65,7 @@ SparseLinearSolver::SparseLinearSolver(Variable *Var,  SparseMatrixEqnBuilder * 
 			break;
 		case 3:	
 			if (smEqnBuilder->getSymmetricFlag() == MATRIX_SYMMETRIC) {
-				nWork = (long)(size * 11.5 + 2208);
+				nWork = (long)(size * 11.8 + 2208);
 			}else {
 				nWork = size * 40;
 			}	

@@ -1,0 +1,46 @@
+CFLAGS = /GX /O2 /DWIN32 -I..\ExpressionParser -I..\Optimization -I. -I..\JNI\include -I..\JNI\include\win32
+
+SUNDIALS_IDALIB = sundials_ida.lib
+VCELLIDALIB = vcellIDA.lib
+
+LIBTOOL = LIB
+
+.SUFFIXES:	.c.cpp.obj
+
+OBJDIR = .\Win32
+
+.c{$(OBJDIR)}.obj:	
+	cl /c $(CFLAGS) /Fo$@ $<
+			
+.cpp{$(OBJDIR)}.obj:	
+	cl /c $(CFLAGS) /Fo$@ $<
+
+default all:	$(SUNDIALS_IDALIB) $(VCELLIDALIB)
+
+COBJECTS =	 $(OBJDIR)\spgmr.obj	\
+			$(OBJDIR)\nvector.obj	\
+			$(OBJDIR)\llnlmath.obj	\
+			$(OBJDIR)\iterativ.obj	\
+			$(OBJDIR)\idaspgmr.obj	\
+			$(OBJDIR)\idadense.obj	\
+			$(OBJDIR)\idaband.obj	\
+			$(OBJDIR)\ida.obj		\
+			$(OBJDIR)\dense.obj	\
+			$(OBJDIR)\band.obj
+
+CPPOBJECTS = $(OBJDIR)\VCellIDASolver.obj \
+			$(OBJDIR)\OdeResultSet.obj \
+			$(OBJDIR)\StoppedByUserException.obj 
+
+$(OBJDIR) :
+    if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"    
+    
+$(SUNDIALS_IDALIB): $(COBJECTS)
+		$(LIBTOOL) /out:$@ $(COBJECTS) 
+		
+$(VCELLIDALIB): $(CPPOBJECTS)
+		$(LIBTOOL) /out:$@ $(CPPOBJECTS)		
+				
+clean:
+	del $(VCELLIDALIB) 
+	del $(COBJECTS) $(CPPOBJECTS)
