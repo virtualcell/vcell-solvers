@@ -2,28 +2,17 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#ifdef WIN32
-#include <Windows.h>
-#else
-#include <UnixDefs.h>
-#endif
-
 #ifdef VCELL_MPI
 #include "mpi.h"
 #endif
-///////////////////////////////////////////////
-// SimTool.C
-//////////////////////////////////////////////
-#include <string.h>
-#include <stdio.h>
-#include <math.h>
+
 #include <VCELL/SimTypes.h>
-#include <VCELL/App.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/Mesh.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/DataSet.h>
 #include <VCELL/SimulationMessaging.h> 
+#include <VCELL/Histogram.h> 
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -46,16 +35,44 @@
 int zip32(int filecnt, char* zipfile, ...);
 int unzip32(char* zipfile, char* file, char* exdir);
 
-bool SimTool::bStopSimulation = false;
-bool SimTool::bSimZip = true;
+SimTool* SimTool::instance = 0;
 
 static int NUM_TOKENS_PER_LINE = 4;
 //--------------------------------------------------------------
 // SimTool Class
 //--------------------------------------------------------------
-SimTool::SimTool(char *name)
+void SimTool::setModel(VCellModel* model) {
+	if (model == 0) {
+		throw "SimTool::setModel(), model can't be null";
+	}
+	vcellModel = model;
+}
+
+void SimTool::setSimulation(Simulation* sim) {
+	if (sim == 0) {
+		throw "SimTool::setSimulation(), simulation can't be null";
+	}
+	simulation = sim;
+	simulation->setDT_sec(simDeltaTime); 
+}
+
+void SimTool::setTimeStep(double period) {
+	simDeltaTime = period;	
+}
+
+void SimTool::create() {
+	if (instance == 0) {
+		instance = new SimTool();
+	} else {
+		throw "SimTool (singleton) has been created";
+	}
+}
+
+SimTool::SimTool()
 {
-	simulation = NULL;
+	bStopSimulation = false;	
+	bSimZip = true;
+
 	simEndTime = 0.0;
 	currIteration = 0;
 	keepEvery = 100;
@@ -66,6 +83,10 @@ SimTool::SimTool(char *name)
 	bSimFileCompress = false;
 	baseDirName = NULL;
 	baseSimName = NULL;
+
+	_timer = 0;
+	vcellModel = 0;
+	simulation = 0;
 }
 
 SimTool::~SimTool()
@@ -73,6 +94,60 @@ SimTool::~SimTool()
 	delete baseSimName;
 	delete baseDirName;
 	delete baseFileName;
+}
+
+SimTool* SimTool::getInstance() {
+	if (instance == 0) {
+		throw "SimTool (singleton) has not been created";
+	}
+	return instance;
+}
+
+void SimTool::requestNoZip() {
+	bSimZip = false;
+}
+
+void SimTool::requestStop() {
+	bStopSimulation = true;
+}
+
+TimerHandle SimTool::getTimerHandle(string& identifier)
+{
+	if (_timer==NULL){
+		_timer = new Timer();
+	}
+	return _timer->registerID(identifier);
+}
+
+void SimTool::startTimer(TimerHandle hnd)
+{
+	_timer->start(hnd);
+}
+
+void SimTool::stopTimer(TimerHandle hnd)
+{
+	_timer->stop(hnd);
+}
+
+double SimTool::getElapsedTimeSec(TimerHandle hnd)
+{
+	double time=0.0;
+	_timer->getElapsedTimeSec(hnd, time);
+	return time;
+}
+
+void SimTool::showSummary(FILE *fp)
+{
+	fprintf(fp,"--------------- sim summary ----------------\n");
+	simulation->getMesh()->showSummary(fp);
+	fprintf(fp,"\ttime = %lg sec\n",simulation->getTime_sec());
+	fprintf(fp,"\tdT   = %lg sec\n",simulation->getDT_sec());
+	fprintf(fp,"--------------------------------------------\n");
+	if (_timer){
+		fprintf(fp,"--------------- benchmark times ------------\n");
+		_timer->show();
+		fprintf(fp,"--------------------------------------------\n\n\n");
+	}
 }
 
 void SimTool::setBaseFilename(char *fname) { 
@@ -240,7 +315,6 @@ void SimTool::updateLog(double progress, double time, int iteration)
 	}	
 	sprintf(particleFileName,"%s%s",simFileName, PARTICLE_FILE_EXT);
 
-	assert(simulation);
 	if (!simulation->writeData(simFileName,bSimFileCompress)){
 		printf("error writing dump to file %s\n", simFileName);
 		return;
@@ -343,7 +417,9 @@ void SimTool::clearLog()
 			break;			
 		}
 		char *dotSim = strstr(simFileName,SIM_FILE_EXT);
-		assert(dotSim);
+		if (!dotSim) {
+			continue;
+		}
 		*dotSim = '\0';
 		sprintf(buffer,"%s%s", simFileName, SIM_FILE_EXT);
 		remove(buffer);
@@ -377,7 +453,7 @@ void SimTool::start()
 		throw "Invalid base file name for dataset";
 	}
 
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "simulation started ..."));
+	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "simulation started"));
 
 	//
     // destroy any partial results from unfinished iterations
@@ -427,7 +503,7 @@ void SimTool::start()
     //
     // iterate up to but not including end time
     //	
-   double epsilon = 1E-8;
+	double epsilon = 1E-8;
     while ((simulation->getTime_sec()+simulation->getDT_sec())<=(simEndTime+epsilon)){
 		if (bStopSimulation) {
 			return;
@@ -449,10 +525,6 @@ void SimTool::start()
             percentile+=increment;
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec()));	
  		}
-		if (theApplication->checkForInterrupt()){
-			printf("SimTool::start(),  application interrupted\n");
-			return;
-        }
 	}
 
 	if (bStopSimulation) {
@@ -462,7 +534,7 @@ void SimTool::start()
 	}
 
 #ifndef VCELL_MPI
-	simulation->showSummary(stdout);
+	showSummary(stdout);
 #else
    int rank;
    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -472,7 +544,7 @@ void SimTool::start()
 
    printf("SimTool::start(), status for MPI worker %d starting ...\n",rank);
    if (rank == 0){
-      simulation->showSummary(stdout);
+      showSummary(stdout);
    }
    printf("SimTool::start(), status for MPI worker %d ending\n",rank);
 #endif
@@ -513,7 +585,7 @@ void SimTool::startSteady(double tolerance, double maxTime)
     // iterate up to but not including end time
     //
 
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "steady state simulation started ..."));
+	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "steady state simulation started"));
 
     double diff;
 	while (simulation->getTime_sec()<maxTime){
@@ -536,14 +608,11 @@ void SimTool::startSteady(double tolerance, double maxTime)
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec()));	
         }
 
-        if (theApplication->checkForInterrupt()){
-            return;
-        }
 		diff = simulation->getMaxDifference();
 		if (diff < tolerance){
 			printf("steady state reached, max absolute difference = %lg\n", diff);
 			simulation->update();
-			simulation->showSummary(stdout);
+			showSummary(stdout);
 			if (bStoreEnable){
 				updateLog(percentile,simulation->getTime_sec(), currIteration);
 			}
@@ -558,12 +627,25 @@ void SimTool::startSteady(double tolerance, double maxTime)
 	} 
 
 	printf("MAX ITERATIONS EXCEEDED WITHOUT ACHIEVING STEADY STATE\n");
-	simulation->showSummary(stdout);
+	showSummary(stdout);
 	if (bStoreEnable){
 		updateLog(percentile,simulation->getTime_sec(), currIteration);
 	}
 
 	if (!bStopSimulation) {
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));
+	}
+}
+
+void SimTool::addHistogram(Histogram *histogram)
+{
+   histogramList.push_back(histogram);
+}
+
+void SimTool::loadAllHistograms()
+{
+	for (int i=0;i<(int)histogramList.size();i++){
+		Histogram *histogram = histogramList[i];
+		histogram->load();
 	}
 }

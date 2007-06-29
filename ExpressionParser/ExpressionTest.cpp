@@ -127,7 +127,7 @@ void ExpressionTest::testParser(char* filename)
 	/*	
 	exp = new Expression("sqrt(( - (1 * 0.9097624582911913 * 5) * ((0.1156280095277954 * 0.9004846229454024 * 0.5705921628352123) || (0.2422790712041183 + 0.94879464626319 + 0.749322637829414)) * (0.8524685675688051 / 1 * (0.21046361766770427 * 0.1362470304410489 * 0.044029610742542746))))");
 	double d = exp->evaluateConstant();
-	printf("%s=%.20lg\n", exp->infix().data(), d);	
+	printf("%s=%.20lg\n", exp->infix().c_str(), d);	
 	*/
 
 	string ids[] = {"id_0", "id_1", "id_2", "id_3", 
@@ -205,7 +205,7 @@ void ExpressionTest::testParser(char* filename)
 				
 				if (bException) {
 					char chrs[2560];					
-					sprintf(chrs, "%d. C++ throws exception: %s", count, exceptionMsg.data());
+					sprintf(chrs, "%d. C++ throws exception: %s", count, exceptionMsg.c_str());
 					badmsg.push_back(chrs);
 					cout << chrs << " EVAL_NO ";
 					printf("Before/After: %.20g/Exception ", value);	

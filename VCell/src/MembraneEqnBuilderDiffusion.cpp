@@ -2,22 +2,17 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#ifdef WIN32
-#include <Windows.h>
-#else
-#include <UnixDefs.h>
-#endif
 
 #include <VCELL/MembraneEqnBuilderDiffusion.h>
-#include <VCELL/App.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/Solver.h>
-#include <VCELL/Variable.h>
-#include <VCELL/Mesh.h>
+#include <VCELL/MembraneVariable.h>
 #include <VCELL/Feature.h>
 #include <VCELL/Element.h>
-#include <VCELL/VarContext.h>
+#include <VCELL/MembraneVarContext.h>
 #include <VCELL/Simulation.h>
+#include <VCELL/SimTool.h>
+#include <VCELL/CartesianMesh.h>
 
 MembraneEqnBuilderDiffusion::MembraneEqnBuilderDiffusion(MembraneVariable *Aspecies, Mesh *Amesh)
 : SparseMatrixEqnBuilder(Aspecies, Amesh)
@@ -39,7 +34,7 @@ MembraneEqnBuilderDiffusion::~MembraneEqnBuilderDiffusion() {
 // Initializes Matrix only
 //
 //------------------------------------------------------------------
-boolean MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
+bool MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
 				int membraneIndexStart, int membraneIndexSize)
 {   	
 	const double epsilon = 1.0E-8;
@@ -88,7 +83,7 @@ boolean MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIn
 
 	//A->show();
 
-	return TRUE;
+	return true;
 }
 
 //------------------------------------------------------------------
@@ -96,14 +91,14 @@ boolean MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIn
 // updates B vector only with reaction rates and boundary conditions
 //
 //------------------------------------------------------------------
-boolean MembraneEqnBuilderDiffusion::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
+bool MembraneEqnBuilderDiffusion::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
 				int membraneIndexStart, int membraneIndexSize)
 {    
 	VolumeElement *pVolumeElement = mesh->getVolumeElements();
 	MembraneElement *pMembraneElement = mesh->getMembraneElements();
 	ASSERTION(pMembraneElement);	
 
-	Simulation *sim = theApplication->getSimulation();
+	Simulation *sim = SimTool::getInstance()->getSimulation();
 	SparseMatrixPCG* membraneElementCoupling = ((CartesianMesh*)mesh)->getMembraneCoupling();
 
 	MembraneElement* membraneElement = pMembraneElement;
@@ -154,7 +149,7 @@ boolean MembraneEqnBuilderDiffusion::buildEquation(double deltaTime, int volumeI
 					sim->advanceTimeOff();
 
 				}else{
-					assert(0);
+					throw "MembraneEqnBuilderDiffusion::buildEquation() : invalid boundary type";
 				}
 			} else if (mask & BOUNDARY_TYPE_PERIODIC) {
 				throw "periodic boundary conditon for membrane diffusion is not supported at the moment.";
@@ -222,5 +217,5 @@ boolean MembraneEqnBuilderDiffusion::buildEquation(double deltaTime, int volumeI
 		}
 	} // end index
 
-	return TRUE;
+	return true;
 }

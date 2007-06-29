@@ -1,6 +1,8 @@
 #ifndef SPARSEMATRIXPCG
 #define SPARSEMATRIXPCG
 
+#include <VCELL/SimTypes.h>
+
 /*----------------------------------------------------------------------------
 	Sparse matrix stored in PCGPAK2 form
 	SparseMatrixPCG contains all the diagonal elements and all the non-zero off diagonal elements
@@ -49,8 +51,3 @@ private:
 };
 
 #endif
-
-
-
-
-

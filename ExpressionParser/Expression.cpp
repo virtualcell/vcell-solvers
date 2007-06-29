@@ -47,7 +47,7 @@ Expression::Expression(string expString)
 	}
 	if (bNumber) {
 		double value = 0.0;
-		int n = sscanf(expString.data(), "%lf", &value); 
+		int n = sscanf(expString.c_str(), "%lf", &value); 
 		if (n == 1) {
 			rootNode = new ASTFloatNode(value);
 			return;
@@ -118,7 +118,7 @@ string Expression::trim(string str)
 	int len = str.length();
 	int st = 0;
 	int off = 0; 
-	const char* val = str.data();
+	const char* val = str.c_str();
 
 	while ((st < len) && (val[st] <= ' ')) {
 	    st++;
@@ -146,5 +146,13 @@ inline StackMachine* Expression::getStackMachine() {
 void Expression::getSymbols(vector<string>& symbols) {
 	rootNode->getSymbols(symbols, LANGUAGE_DEFAULT, 0);
 }
+
+SymbolTableEntry* Expression::getSymbolBinding(string symbol){
+	return rootNode->getBinding(symbol);
+}
+
+double Expression::evaluateProxy() {
+	return evaluateVector(0);
+};
 
 #endif

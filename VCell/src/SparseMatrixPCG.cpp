@@ -1,16 +1,4 @@
-#ifdef WIN32
-#include <Windows.h>
-#else
-#include <UnixDefs.h>
-#endif
-
-#include <string.h>
-#include <stdio.h>
-#include <VCELL/SimTypes.h>
 #include <VCELL/SparseMatrixPCG.h>
-#include <iostream>
-#include <fstream>
-using namespace std;
 
 /*----------------------------------------------------------------------------
 	SparseMatrixPCG contains all the diagonal elements and all the non-zero off diagonal elements
@@ -94,18 +82,24 @@ void SparseMatrixPCG::show()
 
 void SparseMatrixPCG::setsa(long index, double value)
 {
-	assert(index>=0 && index<numNonZeros+1);
+	if (index < 0 ||  index >= numNonZeros+1) {
+		throw "SparseMatrixPCG::setsa(): index out of bound";
+	}
 	sa[index]=value;
 }
 
 void SparseMatrixPCG::setija(long index, long value)
 {
-	assert(index>=0 && index<numNonZeros+1);
+	if (index < 0 || index >= numNonZeros+1) {
+		throw "SparseMatrixPCG::setija() : index out of bound";
+	}
 	ija[index]=value;
 }
 
 double SparseMatrixPCG::getValue(long i, long j) {
-	assert(i >= 0 && j >= 0 && i<N && j<N);
+	if (i < 0 || j < 0 ||  i >= N ||  j >= N) {
+		throw "SparseMatrixPCG::getValue() : index out of bound";
+	}
 	if (i == j) {
 		return sa[i];
 	}
@@ -121,7 +115,9 @@ double SparseMatrixPCG::getValue(long i, long j) {
 }
 
 void SparseMatrixPCG::setValue(long i, long j, double value) {
-	assert(i >= 0 && j >= 0 && i<N && j<N && currentRow == N-1);
+	if (i < 0 || j < 0 || i >= N || j >= N || currentRow != N-1) {
+		throw "SparseMatrixPCG::setValue() : index out of bound";
+	}
 	if (i == j) {
 		sa[i] = value;
 	}
@@ -141,20 +137,29 @@ void SparseMatrixPCG::addNewRow() {
 	ija[currentRow + 1] = currentIndex + 1;
 	currentRow ++;
 	currentCol = -1;
-	assert(currentRow<N);
+	if (currentRow >= N) {
+		throw "SparseMatrixPCG::addNewRow() : index out of bound";
+	}
 }
 
 void SparseMatrixPCG::setDiag(long row, double value) {
-	assert(row < N && row >= 0);	
+	if (row >= N || row < 0) {
+		throw "SparseMatrixPCG::setDiag() : index out of bound";
+	}
 	sa[row] = value;
 }
 
 void SparseMatrixPCG::setCol(long col, double value) {
-	assert(col < N && col >= 0);	
+	if (col >= N || col < 0) {
+		throw "SparseMatrixPCG::setCol() : index out of bound";
+	}
+
 	if (col == currentRow) {
 		sa[currentRow] = value;
 	} else {
-		assert(col>currentCol);
+		if (col <= currentCol) {
+			throw "SparseMatrixPCG::setCol() : index out of order";
+		}
 		currentCol = col;
 		currentIndex ++;
 		sa[currentIndex] = value;
@@ -173,7 +178,9 @@ void SparseMatrixPCG::setRow(double diag, int numCols, int* cols, double* values
 }
 
 void SparseMatrixPCG::close() {
-	assert(currentRow < N);
+	if (currentRow >= N) {
+		throw "SparseMatrixPCG::close() : index out of bound";
+	}
 	ija[currentRow + 1] = currentIndex + 1;
 	for (int i = currentRow + 2; i <= N; i ++) {
 		ija[i] = ija[currentRow + 1];
@@ -192,7 +199,9 @@ INT32* SparseMatrixPCG::getFortranIJA() {
 }
 
 int SparseMatrixPCG::getColumns(long i, INT32*& columns, double*& values) {
-	assert(i >= 0 && i<N);
+	if (i < 0 || i >= N) {
+		throw "SparseMatrixPCG::getColumns() : index out of bound";
+	}
 	columns = ija + ija[i];
 	values = sa + ija[i];
 	return ija[i+1] - ija[i];

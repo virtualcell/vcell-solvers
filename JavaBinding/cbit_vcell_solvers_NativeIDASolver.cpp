@@ -2,6 +2,7 @@
 #include "VCellIDASolver.h"
 #include "OdeResultSet.h"
 #include "Exception.h"
+using namespace VCell;
 
 JNIEnv* jniEnv = NULL;
 jmethodID mid_NativeIDASolver_isStopRequested;

@@ -17,9 +17,9 @@ class SparseMatrixEqnBuilder : public EqnBuilder
 public:
 	SparseMatrixEqnBuilder(Variable *var, Mesh *mesh);
 
-	virtual boolean initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
+	virtual bool initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
 				int membraneIndexStart, int membraneIndexSize)=0;
-	virtual boolean buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
+	virtual bool buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
 				int membraneIndexStart, int membraneIndexSize)=0;
 
 	SparseMatrixPCG* getA();

@@ -30,17 +30,35 @@ struct WorkerEvent {
 	double progress;
 	double timepoint;
 	char* eventMessage;	
+
 	WorkerEvent(const WorkerEvent* aWorkerEvent) {
 		status = aWorkerEvent->status;
 		progress = aWorkerEvent->progress;
 		timepoint = aWorkerEvent->timepoint;
 		eventMessage = NULL;
 		if (aWorkerEvent->eventMessage != NULL) {
-			int len = strlen(aWorkerEvent->eventMessage) + 1;
+			int len = (int)strlen(aWorkerEvent->eventMessage) + 1;
 			eventMessage = new char[len];
 			memset(eventMessage, 0, len);
 			strcpy(eventMessage, aWorkerEvent->eventMessage);
 		}
+	}
+
+	WorkerEvent(jint arg_status, jdouble arg_progress, jdouble arg_timepoint) {
+		status = arg_status;
+		progress = arg_progress;
+		timepoint = arg_timepoint;
+		eventMessage = NULL;
+	}
+
+	WorkerEvent(jint arg_status, const char* arg_eventMessage) {
+		status = arg_status;
+		int len = (int)strlen(arg_eventMessage) + 1;
+		eventMessage = new char[len];
+		memset(eventMessage, 0, len);
+		strcpy(eventMessage, arg_eventMessage);
+		progress = 0.0;
+		timepoint = 0.0;
 	}
 
 	bool equals(WorkerEvent* aWorkerEvent) {
@@ -57,19 +75,6 @@ struct WorkerEvent {
 		}
 
 		return true;
-	}
-
-	WorkerEvent(jint arg_status, jdouble arg_progress, jdouble arg_timepoint) {
-		status = arg_status;
-		progress = arg_progress;
-		timepoint = arg_timepoint;
-		eventMessage = NULL;
-	}
-	WorkerEvent(jint arg_status, char* arg_eventMessage) {
-		status = arg_status;
-		eventMessage = arg_eventMessage;
-		progress = 0.0;
-		timepoint = 0.0;
 	}
 };
 

@@ -1,0 +1,108 @@
+#
+# (C) Copyright University of Connecticut Health Center 2001.
+# All rights reserved.
+#
+#
+# (C) Copyright University of Connecticut Health Center 2001.
+# All rights reserved.
+#
+CC = cl
+CPPFLAGS =	/nologo /c /GX /Ox /G6 /DWIN32 /GR /MT /D_WIN32_WINNT=0x2000 /DFINITEVOLUME_STANDALONE /I..\..\SonicCClient\Win32\include \
+	/I..\..\SonicCClient\Win32\include\CPP /I..\include /I..\..\zlib /I..\..\ExpressionParser
+LIBS = Ws2_32.lib user32.lib advapi32.lib ..\..\IFortran\mkl_c.lib ..\..\ExpressionParser\ExpParserMT.lib \
+	..\..\PCGPack\pcgpack_dbl.lib ..\..\qhull\qhull.lib ..\..\zlib\zlib.lib ..\..\zip\zip32.lib ..\..\unzip\\unzip32.lib \
+	..\..\SonicCClient\win32\lib\libsmq.lib ..\..\SonicCClient\win32\lib\libsmqj.lib /link /NODEFAULTLIB:LIBCD /NODEFAULTLIB:LIBC /LIBPATH:..\..\IFortran\
+
+TARGET=	FiniteVolume.exe
+OBJDIR = .\Win32_Standalone
+
+FC = ifort
+#FOPTIONS = /Gm /O3 /Qipo /Qprec-div- /QxN /compile_only /thread
+FOPTIONS = /O3 /Qprec-div- /QxN /compile_only /MT /nologo /names:lowercase
+
+.SUFFIXES:	.cpp.obj.f
+
+.f{$(OBJDIR)}.obj :
+	$(FC) $(FOPTIONS) /object:$@ $<
+
+.cpp{$(OBJDIR)}.obj :		
+	$(CC) $(CPPFLAGS) /Fo$@ $<
+
+default all: $(TARGET)
+
+$(OBJDIR) :
+    if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"
+
+CPPOBJECTS = 	\
+		$(OBJDIR)\AlgebraicSystem.obj				\
+		$(OBJDIR)\CartesianMesh.obj			\
+		$(OBJDIR)\Contour.obj			\
+		$(OBJDIR)\ContourSubdomain.obj			\
+		$(OBJDIR)\ContourVarContext.obj			\
+		$(OBJDIR)\ContourVariable.obj			\
+		$(OBJDIR)\DataSet.obj			\
+#		$(OBJDIR)\DomainPDEScheduler.obj		\
+		$(OBJDIR)\EqnBuilder.obj			\
+#		$(OBJDIR)\EqnBuilderReactionDiffusionConvection.obj		\
+#		$(OBJDIR)\EqnBuilderReactionDiffusion.obj	\
+		$(OBJDIR)\EqnBuilderReactionForward.obj	\
+		$(OBJDIR)\FastSystem.obj			\
+		$(OBJDIR)\FastSystemExpression.obj			\
+		$(OBJDIR)\Feature.obj			\
+		$(OBJDIR)\FieldData.obj		\
+		$(OBJDIR)\FVUtils.obj			\
+		$(OBJDIR)\Histogram.obj			\
+		$(OBJDIR)\MembraneEqnBuilderForward.obj	\
+		$(OBJDIR)\MembraneEqnBuilderDiffusion.obj	\
+		$(OBJDIR)\MembraneRegion.obj	\
+		$(OBJDIR)\MembraneRegionEqnBuilder.obj	\
+		$(OBJDIR)\MembraneRegionVarContext.obj	\
+		$(OBJDIR)\MembraneRegionVarContextExpression.obj	\
+		$(OBJDIR)\MembraneRegionVariable.obj	\
+		$(OBJDIR)\MembraneVarContext.obj		\
+		$(OBJDIR)\MembraneVarContextExpression.obj	\
+		$(OBJDIR)\MembraneVariable.obj		\
+		$(OBJDIR)\Mesh.obj			\
+		$(OBJDIR)\ODESolver.obj	\
+		$(OBJDIR)\ParticleContext.obj		\
+		$(OBJDIR)\PDESolver.obj	\
+#		$(OBJDIR)\PdeSolverDiana.obj		\
+		$(OBJDIR)\Region.obj			\
+		$(OBJDIR)\Scheduler.obj			\
+		$(OBJDIR)\SerialScheduler.obj			\
+		$(OBJDIR)\SimTool.obj			\
+		$(OBJDIR)\Simulation.obj			\
+		$(OBJDIR)\SimulationMessaging.obj	\
+		$(OBJDIR)\Solver.obj			\
+		$(OBJDIR)\SparseLinearSolver.obj		\
+#		$(OBJDIR)\SparseMatrix.obj		\
+		$(OBJDIR)\SparseMatrixEqnBuilder.obj		\
+		$(OBJDIR)\SparseMatrixPCG.obj		\
+		$(OBJDIR)\SparseVolumeEqnBuilder.obj		\
+#		$(OBJDIR)\TIFFImage.obj			\
+#		$(OBJDIR)\SplitScheduler.obj			\
+		$(OBJDIR)\StructuredPDESolver.obj			\
+		$(OBJDIR)\Timer.obj			\
+#		$(OBJDIR)\TriDiagMatrix.obj		\
+		$(OBJDIR)\VarContext.obj			\
+		$(OBJDIR)\Variable.obj			\
+		$(OBJDIR)\VCellModel.obj			\
+		$(OBJDIR)\VolumeRegion.obj			\
+		$(OBJDIR)\VolumeRegionEqnBuilder.obj			\
+		$(OBJDIR)\VolumeRegionVarContext.obj			\
+		$(OBJDIR)\VolumeRegionVarContextExpression.obj			\
+		$(OBJDIR)\VolumeRegionVariable.obj			\
+		$(OBJDIR)\VolumeVarContext.obj			\
+		$(OBJDIR)\VolumeVarContextExpression.obj			\
+		$(OBJDIR)\VolumeVariable.obj
+
+MAIN_OBJS = $(OBJDIR)\FiniteVolume.obj
+
+FOROBJECTS =	$(OBJDIR)\pcgwrapper.obj
+	
+$(TARGET): $(OBJDIR) $(MAIN_OBJS) $(CPPOBJECTS) $(FOROBJECTS)
+	$(CC) /Fe$@ $(MAIN_OBJS) $(CPPOBJECTS) $(FOROBJECTS) $(LIBS)
+			
+clean:
+	if exist "$(OBJDIR)" del /Q $(OBJDIR)\*.*
+	del $(TARGET)

@@ -2,15 +2,10 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#ifdef WIN32 
-#include <Windows.h>
-#else
-#include <UnixDefs.h>
-#endif
-
 #include <VCELL/SparseMatrixEqnBuilder.h>
 #include <VCELL/SparseMatrixPCG.h>
 #include <VCELL/Variable.h>
+#include <assert.h>
 
 SparseMatrixEqnBuilder::SparseMatrixEqnBuilder(Variable *var, Mesh *mesh) : EqnBuilder(var, mesh)
 {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Exception.h"
+using namespace VCell;
 
 class StoppedByUserException : public Exception
 {

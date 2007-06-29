@@ -134,7 +134,7 @@ string SimpleNode::getNodeSummary(double* values, Node* node){
 						value = symbolTableEntry->getExpression()->evaluateVector(values);
 					}
 					char chrs[1000];
-					sprintf(chrs, "\t%s = %lf\n\0", symbolTableEntry->getName().data(), value);
+					sprintf(chrs, "\t%s = %lf\n\0", symbolTableEntry->getName().c_str(), value);
                     errorMsg += chrs;
                 } else if (symbolTableEntry->getIndex() > -1) {
 					if (values == 0) {
@@ -143,14 +143,13 @@ string SimpleNode::getNodeSummary(double* values, Node* node){
 						value = values[symbolTableEntry->getIndex()];
 					}
 					char chrs[1000];
-					sprintf(chrs, "\t%s = %lf\n\0", symbolTableEntry->getName().data(), value);
+					sprintf(chrs, "\t%s = %lf\n\0", symbolTableEntry->getName().c_str(), value);
 					errorMsg += chrs;
                 } else {
                     errorMsg += "\t" + symbolTableEntry->getName() + " = <<<UNBOUND IDENTIFIER>>>\n";
                 }
             } catch (Exception& e) {
-                //cout << "SimpleNode::getFunctionDomainError(), error evaluating " << symbols.at(i) << endl;
-                throw ExpressionException(errorMsg + "      " + symbolTableEntry->getName().data() + " = <<<ERROR>>> " + e.getMessage() + "\n");
+				throw ExpressionException(errorMsg + "      " + symbolTableEntry->getName().c_str() + " = <<<ERROR>>> " + e.getMessage() + "\n");
             }
         }
 	} else {

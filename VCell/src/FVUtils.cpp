@@ -6,6 +6,7 @@
 #include <float.h>
 #include <iostream>
 #include <limits>
+#include <sstream>
 using namespace std;
 
 extern "C"
@@ -41,20 +42,20 @@ bool isInfinity(double number) {
 	return false;
 }
 
-void validateNumber(char* variableName, int index, char* coeffName, double coeffValue) {
+void validateNumber(string& variableName, int index, char* coeffName, double coeffValue) {
 	if (isNAN(coeffValue)) {
-		char errormsg[256];
-		sprintf(errormsg, "Exception: %s for variable %s is NaN at index %d", coeffName, variableName, index);
-		throw errormsg;
+		stringstream ss;
+		ss << "Exception: " << coeffName << " for variable " << variableName << " is NaN at index " << index;
+		throw ss.str().c_str();
 	}
 	if (isInfinity(coeffValue)) {
-		char errormsg[256];
-		sprintf(errormsg, "Exception: %s for variable %s is Infinity at index %d", coeffName, variableName, index);
-		throw errormsg;
+		stringstream ss;
+		ss << "Exception: " << coeffName << " for variable " << variableName << " is Infinity at index " << index;
+		throw ss.str().c_str();
 	}
 }
 
-double computeRHSscale(long length, double* rhs, char* varname) {
+double computeRHSscale(long length, double* rhs, string& varname) {
 	int increment = 1;
 	int max_rhs_index = IDAMAX(&length, rhs, &increment);
 	double RHSMagnitude = rhs[max_rhs_index - 1];
@@ -73,9 +74,9 @@ double computeRHSscale(long length, double* rhs, char* varname) {
 		RHSscale = 1.0/RHSMagnitude;		
 		count ++;
 		if (count >= 100) {
-			char errormsg[256];
-			sprintf(errormsg, "Exception: Unable to scale RHS for variable %s, too many tries", varname);
-			throw errormsg;
+			stringstream ss;
+			ss << "Exception: Unable to scale RHS for variable " << varname << ", too many tries";
+			throw ss.str().c_str();
 		}
 	} 	
 	return RHSscale;

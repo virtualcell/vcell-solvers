@@ -1,6 +1,7 @@
 #include "VCellIDASolver.h"
 #include "OdeResultSet.h"
 #include "Exception.h"
+using namespace VCell;
 #include <stdio.h>
 
 int main(int argc, char *argv[]) {

@@ -2,18 +2,19 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#ifdef WIN32
-#include <Windows.h>
-#else
-#include <UnixDefs.h>
-#endif
-
-#include <VCELL/Mesh.h>
+#include <assert.h>
+#include <VCELL/CartesianMesh.h>
 #include <VCELL/Element.h>
-#include <stdlib.h>
-#include <iomanip>
 #include <VCELL/Feature.h>
 #include <VCELL/FVUtils.h>
+#include <VCELL/VolumeRegion.h>
+#include <VCELL/MembraneRegion.h>
+#include <VCELL/SimTool.h>
+#include <VCELL/VCellModel.h>
+#include <VCELL/MembraneVariable.h>
+#include <VCELL/VolumeVariable.h>
+#include <sstream>
+#include <iomanip>
 using namespace std;
 
 #define MAXNEIGHBOR_2D 3
@@ -54,6 +55,995 @@ double a = 3.0, b = 2.0, c = 1.0;
 double a2 = 9, b2 = 4, c2 = 1.0;
 //double a2 = 9, b2 = 1, c2 = 1.0/9;
 #endif
+
+extern "C"
+{
+#include "zlib.h"
+}
+
+CartesianMesh::CartesianMesh(char* arg_geoFile, double AcaptureNeighborhood)
+: Mesh(AcaptureNeighborhood)
+{
+	geoFile = arg_geoFile;
+	pVolumeRegions.erase(pVolumeRegions.begin(), pVolumeRegions.end());
+	pMembraneRegions.erase(pMembraneRegions.begin(), pMembraneRegions.end());	
+	
+	if (!resolveFeatureReferences()){
+		throw "CartesianMesh::resolveFeatureReferences() failed";
+	}	
+}
+
+bool CartesianMesh::setVolumeLists()
+{
+	if(getDimension()==1){
+		return true;
+	}
+	if(!getNumContourElements()){
+		cout << "no contour elements exist" << endl;
+		return true;
+	}
+    
+	double distance =captureNeighborhood;
+	volumeLists = new vector<ContourElement*>[numVolume];
+
+	for(long volumeIndex=0;volumeIndex<numVolume;volumeIndex++){
+		volumeLists[volumeIndex].clear();
+	}
+	for(long index=0;index<getNumContourElements(); index++){
+		ContourElement *contourElement = getContourElement(index);
+		long volumeIndex = contourElement->getVolumeIndex();
+		WorldCoord wc_center = getVolumeWorldCoord(volumeIndex);
+		FeatureHandle handle = pVolumeElement[volumeIndex].feature->getHandle();
+		WorldCoord wc = wc_center;
+		FeatureHandle currHandle;
+		if(getDimension()==2){
+			double deltaX = getXScale_um();
+			double deltaY = getYScale_um();
+			int sizeX = (int)ceil(distance/deltaX);
+			int sizeY = (int)ceil(distance/deltaY);
+			for(int i=-sizeX;i<sizeX+1;i++){
+				wc.x = wc_center.x + deltaX*i;
+				if((wc.x>=domainOriginX)&&(wc.x<=domainSizeX)){
+					for(int j=-sizeY;j<sizeY+1;j++){
+						wc.y = wc_center.y + deltaY*j;
+						if((wc.y>=domainOriginY)&&(wc.y<=domainSizeY)){
+							long currVolumeIndex = getVolumeIndex(wc);
+							currHandle = pVolumeElement[currVolumeIndex].feature->getHandle();
+							if(currHandle==handle){
+								addElementToVolumeList(currVolumeIndex, contourElement);
+							}  
+						}
+					}
+				}  
+			}
+		} else if(getDimension()==3){
+			double deltaX = getXScale_um();
+			double deltaY = getYScale_um();
+			double deltaZ = getZScale_um();
+			int sizeX = (int)ceil(distance/deltaX);
+			int sizeY = (int)ceil(distance/deltaY);
+			int sizeZ = (int)ceil(distance/deltaZ);
+
+			for(int i=-sizeX;i<sizeX+1;i++){
+				wc.x = wc_center.x + deltaX*i;
+				if((wc.x>=domainOriginX)&&(wc.x<=domainSizeX)){
+					for(int j=-sizeY;j<sizeY+1;j++){
+						wc.y = wc_center.y + deltaY*j;
+						if((wc.y>=domainOriginY)&&(wc.y<=domainSizeY)){
+							for(int k=-sizeZ;k<sizeZ+1;k++){
+								wc.z = wc_center.z + deltaZ*k;
+								if((wc.z>=domainOriginZ)&&(wc.z<=domainSizeZ)){
+									long currVolumeIndex = getVolumeIndex(wc);
+									currHandle = pVolumeElement[currVolumeIndex].feature->getHandle();
+									if(currHandle==handle){
+										addElementToVolumeList(currVolumeIndex, contourElement);
+									}  
+								}  
+							}
+						}
+					}  
+				}
+			}	
+		}
+	}
+
+	return true;
+}
+
+bool CartesianMesh::resolveFeatureReferences()
+{
+	if (pVolumeElement!=NULL) return true;
+
+	readGeometryFile();
+	initScale();
+
+	if(!sampleContours()){
+		printf("error in sampling contours\n");
+	}
+	if(!setVolumeLists()){
+		printf("error in setting volumeLists\n");
+	}
+	
+	printf("numVolume=%d\n",numVolume);
+
+	setBoundaryConditions();
+
+	if (!findMembraneNeighbors()){
+		printf("error sorting membrane patches\n");
+		return false;
+	}
+
+	adjustMembraneAreaFromNormal();
+
+	return true;
+}
+
+unsigned char fromHex(unsigned char* src) {
+	char chs[5];
+	chs[0] = '0';
+	chs[1] = 'x';
+	chs[2] = src[0];
+	chs[3] = src[1];
+	chs[4] = 0;
+	int v;
+	sscanf(chs, "%x", &v);
+	return (unsigned char)v;
+}
+
+void CartesianMesh::readGeometryFile() {
+	if (geoFile == NULL) {
+		throw "Geometry file doesn't exist!";
+	}
+
+	stringstream ss;
+	cout << "Reading mesh from file '" << geoFile << "'" << endl;
+
+	ifstream ifs(geoFile);
+	if (!ifs.is_open()) {
+		ss << "Can't open geometry file '" <<  geoFile << "'";
+		throw ss.str().c_str();
+	}
+	char line[100000];
+	string name;
+	// name
+	ifs.getline(line,100000);
+	// dimension
+	ifs.getline(line,100000);
+	ss.clear();
+	ss.str(line);
+	ss >> name >> dimension;
+	//size
+	ifs.getline(line, 100000);
+	ss.clear();
+	ss.str(line);
+	switch (dimension) {
+		case 1:			
+			ss >> name >> domainSizeX;
+			domainSizeY = 1;
+			domainSizeZ = 1;
+			break;
+		case 2:
+			ss >> name >>  domainSizeX >> domainSizeY;
+			domainSizeZ = 1;
+			break;
+		case 3:
+			ss >> name >> domainSizeX >> domainSizeY >> domainSizeZ;
+			break;
+	}
+	//origin
+	ifs.getline(line, 100000);
+	ss.clear();
+	ss.str(line);
+	switch (dimension) {
+		case 1:
+			ss >> name >> domainOriginX;
+			domainOriginY = 0;
+			domainOriginZ = 0;
+			break;
+		case 2:
+			ss >> name >> domainOriginX >> domainOriginY;
+			domainOriginZ = 0;
+			break;
+		case 3:
+			ss >> name >> domainOriginX >> domainOriginY >> domainOriginZ;
+			break;
+	}
+	//volumeRegions
+	ifs.getline(line, 100000);	
+	int numVolumeRegions;
+	ss.clear();
+	ss.str(line);
+	ss >> name >> numVolumeRegions;
+
+	for (int i = 0; i < numVolumeRegions; i ++) {		
+		int fhi;
+		double volume;
+		ifs.getline(line, 100000);
+		ss.clear();
+		ss.str(line);
+		ss >> name >> volume >> fhi;
+		FeatureHandle fh = (FeatureHandle)fhi;
+		VolumeRegion* vr = new VolumeRegion(this);
+		vr->setId(i);
+		vr->setName(name);		
+		vr->setFeature(SimTool::getInstance()->getModel()->getFeature(fh));
+		vr->setVolume(volume);				
+		pVolumeRegions.push_back(vr);
+	}
+	//membraneRegions
+	ifs.getline(line, 100000);	
+	int numMembraneRegions;
+	ss.clear();
+	ss.str(line);
+	ss >> name >> numMembraneRegions;
+
+	for (int i = 0; i < numMembraneRegions; i ++) {		
+		int inside, outside;
+		double area;
+		ifs.getline(line, 100000);
+		ss.clear();
+		ss.str(line);
+		ss >> name >> area >> inside >> outside;
+		MembraneRegion* mr = new MembraneRegion(this);	
+		mr->setSurface(area);
+		mr->setId(i);
+		VolumeRegion* regionIn = pVolumeRegions[inside];
+		VolumeRegion *regionOut = pVolumeRegions[outside];
+
+		regionIn->addMembrane(mr);
+		regionOut->addMembrane(mr);	
+		if (regionIn->getFeature()->getPriority() < regionOut->getFeature()->getPriority()) {
+			mr->setRegionInside(regionOut);  
+			mr->setRegionOutside(regionIn);  
+		} else {
+			mr->setRegionInside(regionIn);  
+			mr->setRegionOutside(regionOut);  
+		}
+		pMembraneRegions.push_back(mr);
+	}
+
+	//volumeSamples
+	ifs.getline(line, 100000);
+	ss.clear();
+	ss.str(line);
+	switch (dimension) {
+		case 1:
+			ss >> name >> numX;
+			numY = 1;
+			numZ = 1;
+			break;
+		case 2:
+			ss >> name >>  numX >> numY;
+			numZ = 1;
+			break;
+		case 3:
+			ss >> name >> numX >> numY >> numZ;
+			break;
+	}
+
+	numXY = numX * numY;
+	numVolume = numXY * numZ;
+
+	//volumeSamples compressed
+	unsigned char* bytes_from_compressed = new unsigned char[numVolume+1000];
+	memset(bytes_from_compressed, 0, (numVolume+1000) * sizeof(unsigned char));
+
+	unsigned char* compressed_hex = new unsigned char[numVolume+1000];
+	memset(compressed_hex, 0, (numVolume + 1000) * sizeof(unsigned char));
+	ifs.getline((char*)compressed_hex, numVolume + 1000);	
+	long compressed_len = ifs.gcount();
+
+	if (compressed_len <= 1) {
+		throw "CartesianMesh::readGeometryFile() : invalid compressed volume";
+	}
+	
+	for (int i = 0, j = 0; i < compressed_len; i += 2, j ++) {
+		bytes_from_compressed[j] = fromHex(compressed_hex + i);
+	}
+
+	unsigned char* inflated_bytes = new unsigned char[numVolume+1];
+	memset(inflated_bytes, 0, (numVolume+1) * sizeof(unsigned char));
+
+	unsigned long inflated_len = numVolume;
+	int retVal = uncompress(inflated_bytes, &inflated_len, bytes_from_compressed, compressed_len/2);
+
+	pVolumeElement = new VolumeElement[numVolume];
+	for(i = 0; i < numVolume; i ++){
+		int regionIndex = (unsigned char)inflated_bytes[i];
+		VolumeRegion* vr = pVolumeRegions[regionIndex];
+		vr->addIndex(i);
+		pVolumeElement[i].feature = vr->getFeature();
+		pVolumeElement[i].neighborMask = 0;
+		pVolumeElement[i].regionIndex = (vr->getNumElements())-1; 
+		pVolumeElement[i].region = vr;
+	}	
+
+	delete[] compressed_hex;
+	delete[] bytes_from_compressed;
+	delete[] inflated_bytes;
+
+	// cells
+	ifs.getline(line, 100000);
+	ss.clear();
+	ss.str(line);
+	ss >> name >> numMembrane;
+	pMembraneElement = new MembraneElement[numMembrane];
+
+	// cell data
+	int numFlipped = 0;
+
+	for (int i = 0; i < numMembrane; i ++) {
+		ifs.getline(line, 100000);
+		int cellID, vindex1, vindex2;
+
+		MembraneElement& memElement = pMembraneElement[i];
+		ss.clear();
+		ss.str(line);
+		ss >> cellID >> vindex1 >> vindex2 >> memElement.area >> memElement.smoothedCoord.x >> memElement.smoothedCoord.y >> memElement.smoothedCoord.z 
+			>> memElement.unitNormal.x >> memElement.unitNormal.y >> memElement.unitNormal.z;
+
+		// inside/outside near
+		if (pVolumeElement[vindex1].feature->getPriority() > pVolumeElement[vindex2].feature->getPriority()) {
+			memElement.insideIndexNear = vindex1;
+			memElement.outsideIndexNear = vindex2;
+		} else {
+			// flip the direction of the normal if we flip the inside and the outside volume elements
+			memElement.insideIndexNear = vindex2;
+			memElement.outsideIndexNear = vindex1;
+			memElement.unitNormal = memElement.unitNormal.scale(-1);
+			numFlipped ++;
+		}		
+
+		int iin = memElement.insideIndexNear;
+		int oin = memElement.outsideIndexNear;
+		memElement.index = i;
+		memElement.feature = pVolumeElement[iin].feature;
+
+		// for the purpose of finding neighbors of membrane elements later 
+		pVolumeElement[iin].adjacentMembraneIndexes.push_back(memElement.index);
+		pVolumeElement[oin].adjacentMembraneIndexes.push_back(memElement.index);
+		
+		for (int j = 0; j < (int)pMembraneRegions.size(); j ++) {
+			if (pVolumeElement[iin].region->getId() == pMembraneRegions[j]->getRegionInside()->getId()
+					&& pVolumeElement[oin].region->getId() == pMembraneRegions[j]->getRegionOutside()->getId()) {
+				memElement.region = pMembraneRegions.at(j);
+				pMembraneRegions[j]->addIndex(memElement.index);
+				break;
+			}
+		}
+
+		// try to figure out inside/outside far and neighbor mask of volume elements
+		int possible[3];
+		possible[0] = 1;
+		possible[1] = numX;
+		possible[2] = numXY;
+		for (int j = 0; j < dimension; j ++) {
+			int incandidate1 = iin + possible[j];
+			int outcandidate1 = oin - possible[j];
+			int incandidate2 = iin - possible[j];			
+			int outcandidate2 = oin + possible[j];
+			if (iin - oin == possible[j]) {
+				memElement.insideIndexFar = incandidate1 < numVolume && pVolumeElement[incandidate1].feature->getHandle() == pVolumeElement[iin].feature->getHandle() ? incandidate1 : -1;
+				memElement.outsideIndexFar = outcandidate1 >= 0 && pVolumeElement[outcandidate1].feature->getHandle() == pVolumeElement[oin].feature->getHandle() ? outcandidate1 : -1;				
+				switch (j) {
+					case 0:
+						pVolumeElement[iin].neighborMask |= NEIGHBOR_XM_MEMBRANE;
+						pVolumeElement[oin].neighborMask |= NEIGHBOR_XP_MEMBRANE;
+						break;
+					case 1:
+						pVolumeElement[iin].neighborMask |= NEIGHBOR_YM_MEMBRANE;
+						pVolumeElement[oin].neighborMask |= NEIGHBOR_YP_MEMBRANE;
+						break;
+					case 2:
+						pVolumeElement[iin].neighborMask |= NEIGHBOR_ZM_MEMBRANE;
+						pVolumeElement[oin].neighborMask |= NEIGHBOR_ZP_MEMBRANE;
+						break;
+				}
+				break;
+			} else if (iin - oin == -possible[j]) {
+				memElement.insideIndexFar = incandidate2 >= 0  && pVolumeElement[incandidate2].feature->getHandle() == pVolumeElement[iin].feature->getHandle() ? incandidate2 : -1;
+				memElement.outsideIndexFar = outcandidate2 < numVolume && pVolumeElement[outcandidate2].feature->getHandle() == pVolumeElement[oin].feature->getHandle() ? outcandidate2 : -1;
+				switch (j) {
+					case 0:
+						pVolumeElement[iin].neighborMask |= NEIGHBOR_XP_MEMBRANE;
+						pVolumeElement[oin].neighborMask |= NEIGHBOR_XM_MEMBRANE;
+						break;
+					case 1:
+						pVolumeElement[iin].neighborMask |= NEIGHBOR_YP_MEMBRANE;
+						pVolumeElement[oin].neighborMask |= NEIGHBOR_YM_MEMBRANE;
+						break;
+					case 2:
+						pVolumeElement[iin].neighborMask |= NEIGHBOR_ZP_MEMBRANE;
+						pVolumeElement[oin].neighborMask |= NEIGHBOR_ZM_MEMBRANE;
+						break;
+				}
+				break;
+			}			
+		} 
+	}
+	cout << "------------>Total " << numMembrane << ", Flipped " << numFlipped << endl;
+}
+
+bool CartesianMesh::setBoundaryConditions()
+{
+	switch (dimension){
+		case 1:{			
+			long index;
+			int boundaryType;
+
+			index = 0;
+			pVolumeElement[index].neighborMask |= NEIGHBOR_XM_BOUNDARY;
+			boundaryType = pVolumeElement[index].feature->getXmBoundaryType();
+			if (boundaryType == BOUNDARY_VALUE){
+				pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;      
+			} else if (boundaryType == BOUNDARY_PERIODIC) {
+				pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_PERIODIC;
+			} else if (boundaryType == BOUNDARY_FLUX) {
+				pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_NEUMANN;
+			}
+			pVolumeElement[index].neighborMask |= VOLUME_HALF;
+
+			index = numX - 1;
+			pVolumeElement[index].neighborMask |= NEIGHBOR_XP_BOUNDARY;
+			boundaryType = pVolumeElement[index].feature->getXpBoundaryType();
+			if (boundaryType == BOUNDARY_VALUE){
+				pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;      
+			} else if (boundaryType == BOUNDARY_PERIODIC) {
+				pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_PERIODIC;
+			} else if (boundaryType == BOUNDARY_FLUX) {
+				pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_NEUMANN;
+			}
+			pVolumeElement[index].neighborMask |= VOLUME_HALF;
+			
+			break;
+		}
+		case 2: {
+			int boundaryType;
+			long index;
+			// set volume mask and boundary type for X boundaries.
+			int xBoundary[2];
+			xBoundary[0] = 0;
+			xBoundary[1] = numX - 1;
+			int j = 0;
+			for (j = 0; j < numY; j ++){
+				for (int i = 0; i < 2; i ++ ){		
+					index = j * numX + xBoundary[i];
+					if (i == 0) {
+						pVolumeElement[index].neighborMask |= NEIGHBOR_XM_BOUNDARY;
+						boundaryType = pVolumeElement[index].feature->getXmBoundaryType();
+					} else {
+						pVolumeElement[index].neighborMask |= NEIGHBOR_XP_BOUNDARY;
+						boundaryType = pVolumeElement[index].feature->getXpBoundaryType();
+					}
+					if (boundaryType == BOUNDARY_VALUE){
+						pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;      
+					} else if (boundaryType == BOUNDARY_PERIODIC) {
+						pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_PERIODIC;
+					} else if (boundaryType == BOUNDARY_FLUX) {
+						pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_NEUMANN;
+					}	
+					if (j == 0 || j == numY - 1) {
+						pVolumeElement[index].neighborMask |= VOLUME_QUARTER;
+					} else {
+						pVolumeElement[index].neighborMask |= VOLUME_HALF;
+					}
+				} // end i
+			} // end j
+
+			// set volume mask and boundary type for Y boundaries.
+			int yBoundary[2];
+			yBoundary[0] = 0;
+			yBoundary[1] = numY - 1;
+			for (j = 0; j < 2; j ++){				
+				for (int i = 0 ; i < numX; i ++){
+					index = yBoundary[j] * numX + i;
+					if (j == 0) {						
+						pVolumeElement[index].neighborMask |= NEIGHBOR_YM_BOUNDARY;
+						boundaryType = pVolumeElement[index].feature->getYmBoundaryType();
+					} else {
+						pVolumeElement[index].neighborMask |= NEIGHBOR_YP_BOUNDARY;
+						boundaryType = pVolumeElement[index].feature->getYpBoundaryType();
+					}
+					if (boundaryType == BOUNDARY_VALUE){
+						pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;      
+					} else if (boundaryType == BOUNDARY_PERIODIC) {
+						pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_PERIODIC;
+					} else if (boundaryType == BOUNDARY_FLUX) {
+						pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_NEUMANN;
+					}
+					if (i == 0 || i == numX - 1) {
+						pVolumeElement[index].neighborMask |= VOLUME_QUARTER;
+					} else {
+						pVolumeElement[index].neighborMask |= VOLUME_HALF;
+					}
+				}// end i
+			}// end j
+			break;
+		}
+		case 3:{
+			long index = 0;
+			int boundaryCount;
+			int boundaryType;
+
+			// X direction
+			int xBoundary[2];
+			xBoundary[0] = 0;
+			xBoundary[1] = numX - 1;
+			int k = 0;
+			for (k = 0; k < numZ; k ++){
+				for (int j = 0; j < numY; j ++){
+					for (int i = 0; i < 2; i ++){						
+						boundaryCount = 1;
+						if (k == 0 || k == numZ - 1) {
+							boundaryCount ++;
+						}
+						if (j == 0 || j == numY - 1) {
+							boundaryCount ++;
+						}
+						index = k * numXY + j * numX + xBoundary[i];
+						if (i == 0) {
+							pVolumeElement[index].neighborMask |= NEIGHBOR_XM_BOUNDARY;
+							boundaryType = pVolumeElement[index].feature->getXmBoundaryType();
+						} else {
+							pVolumeElement[index].neighborMask |= NEIGHBOR_XP_BOUNDARY;
+							boundaryType = pVolumeElement[index].feature->getXpBoundaryType();
+						}
+
+						if (boundaryType == BOUNDARY_VALUE){
+							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;      
+						} else if (boundaryType == BOUNDARY_PERIODIC) {
+							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_PERIODIC;
+						} else if (boundaryType == BOUNDARY_FLUX) {
+							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_NEUMANN;
+						}
+						switch (boundaryCount){
+							case 1:
+								pVolumeElement[index].neighborMask |= VOLUME_HALF;
+								break;
+							case 2:
+								pVolumeElement[index].neighborMask |= VOLUME_QUARTER;
+								break;
+							case 3:
+								pVolumeElement[index].neighborMask |= VOLUME_EIGHTH;
+								break;
+						}
+					}
+				}
+			}
+			// Y direction
+			int yBoundary[2];
+			yBoundary[0] = 0;
+			yBoundary[1] = numY - 1;
+			for (k = 0; k < numZ; k ++){
+				for (int j = 0; j < 2; j ++){
+					for (int i = 0; i < numX; i ++){						
+						boundaryCount = 1;
+						if (k == 0 || k == numZ - 1) {
+							boundaryCount ++;
+						}
+						if (i == 0 || i == numX - 1) {
+							boundaryCount ++;
+						}
+						index = k * numXY + yBoundary[j] * numX + i;
+						if (j == 0) {
+							pVolumeElement[index].neighborMask |= NEIGHBOR_YM_BOUNDARY;
+							boundaryType = pVolumeElement[index].feature->getYmBoundaryType();
+						} else {
+							pVolumeElement[index].neighborMask |= NEIGHBOR_YP_BOUNDARY;
+							boundaryType = pVolumeElement[index].feature->getYpBoundaryType();
+						}
+
+						if (boundaryType == BOUNDARY_VALUE){
+							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;      
+						} else if (boundaryType == BOUNDARY_PERIODIC) {
+							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_PERIODIC;
+						} else if (boundaryType == BOUNDARY_FLUX) {
+							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_NEUMANN;
+						}
+						switch (boundaryCount){
+							case 1:
+								pVolumeElement[index].neighborMask |= VOLUME_HALF;
+								break;
+							case 2:
+								pVolumeElement[index].neighborMask |= VOLUME_QUARTER;
+								break;
+							case 3:
+								pVolumeElement[index].neighborMask |= VOLUME_EIGHTH;
+								break;
+						}
+					}
+				}
+			}
+
+			// Z direction
+			int zBoundary[2];
+			zBoundary[0] = 0;
+			zBoundary[1] = numZ - 1;
+			for (k = 0; k < 2; k ++){
+				for (int j = 0; j < numY; j ++){
+					for (int i = 0; i < numX; i ++){						
+						boundaryCount = 1;
+						if (j == 0 || j == numY - 1) {
+							boundaryCount ++;
+						}
+						if (i == 0 || i == numX - 1) {
+							boundaryCount ++;
+						}
+						index = zBoundary[k] * numXY + j * numX + i;
+						if (k == 0) {
+							pVolumeElement[index].neighborMask |= NEIGHBOR_ZM_BOUNDARY;
+							boundaryType = pVolumeElement[index].feature->getZmBoundaryType();
+						} else {
+							pVolumeElement[index].neighborMask |= NEIGHBOR_ZP_BOUNDARY;
+							boundaryType = pVolumeElement[index].feature->getZpBoundaryType();
+						}
+
+						if (boundaryType == BOUNDARY_VALUE){
+							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;      
+						} else if (boundaryType == BOUNDARY_PERIODIC) {
+							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_PERIODIC;
+						} else if (boundaryType == BOUNDARY_FLUX) {
+							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_NEUMANN;
+						}
+						switch (boundaryCount){
+							case 1:
+								pVolumeElement[index].neighborMask |= VOLUME_HALF;
+								break;
+							case 2:
+								pVolumeElement[index].neighborMask |= VOLUME_QUARTER;
+								break;
+							case 3:
+								pVolumeElement[index].neighborMask |= VOLUME_EIGHTH;
+								break;
+						}
+					}// end i
+				}// end j
+			}// end k
+			break;
+		}
+	}// end switch (getDimension())
+
+	return true;
+}
+
+VolumeRegion* CartesianMesh::getVolumeRegion(int i){
+	int numRegions = (int)pVolumeRegions.size();
+	if ((i >= numRegions) || (i < 0)) {
+		throw "CartesianMesh::getVolumeRegion(), index out of bound";
+	}
+	return pVolumeRegions[i]; 
+}
+
+MembraneRegion* CartesianMesh::getMembraneRegion(int i){
+	int numRegions = (int)pMembraneRegions.size();
+	if ((i >= numRegions) || (i <0)) {
+		throw "CartesianMesh::getMembraneRegion(), index out of bound";
+	}
+	return pMembraneRegions[i]; 
+}
+
+double CartesianMesh::getInsideOld(VolumeVariable *var,
+                                   MembraneElement *element)
+{
+	if (element->insideIndexFar<0){
+		return var->getOld(element->insideIndexNear);
+	}else{
+		return 1.5 * var->getOld(element->insideIndexNear) -
+				0.5 * var->getOld(element->insideIndexFar);
+	}
+}
+
+double CartesianMesh::getOutsideOld(VolumeVariable *var,
+                                    MembraneElement *element)
+{
+   if (element->outsideIndexFar<0){
+      return var->getOld(element->outsideIndexNear);
+   }else{
+      return 1.5 * var->getOld(element->outsideIndexNear) -
+             0.5 * var->getOld(element->outsideIndexFar);
+   }
+}
+
+double CartesianMesh::getVolumeOfElement_cu(long volumeIndex)
+{
+	int mask = pVolumeElement[volumeIndex].neighborMask;
+	double VOLUME = getVolume_cu();
+	if(!(mask&VOLUME_MASK)){
+		return VOLUME;
+	}else{
+		return VOLUME/(mask&VOLUME_MASK);
+	}
+}
+
+void CartesianMesh::initScale()
+{
+	const double decimeter_per_um=1.0/100000.0;            
+
+	scaleX_um = (numX>1) ? (domainSizeX/(numX-1)) : domainSizeX;
+	scaleY_um = (numY>1) ? (domainSizeY/(numY-1)) : domainSizeY;
+	scaleZ_um = (numZ>1) ? (domainSizeZ/(numZ-1)) : domainSizeZ;
+
+	areaX_squm = scaleY_um * scaleZ_um;
+	areaY_squm = scaleX_um * scaleZ_um;
+	areaZ_squm = scaleX_um * scaleY_um;
+
+	volume_cu = (scaleX_um*scaleY_um*scaleZ_um);
+}
+
+void CartesianMesh::showSummary(FILE *fp)
+{
+   fprintf(fp,"Cartesian Mesh: Domain    x:[%lg,%lg] y:[%lg,%lg] z:[%lg,%lg]\n",
+		domainOriginX, domainOriginX+ domainSizeX, 
+		domainOriginY, domainOriginY+ domainSizeY, 
+		domainOriginZ, domainOriginZ+ domainSizeZ);
+   fprintf(fp,"                Elements  numX=%ld numY=%ld numZ=%ld\n\n",
+        numX,numY,numZ);
+}
+
+bool CartesianMesh::write(FILE *fp)
+{
+	//
+	// 'Version 1.1' added membrane connectivity
+	// 'Version 1.2' added regions
+	//
+	fprintf(fp,"Version 1.2\n");
+	fprintf(fp,"CartesianMesh {\n");//Begin CartesianMesh
+	//
+	writeCartesianMeshHeader(fp);
+	fprintf(fp,"\n");
+	writeVolumeRegionsMapSubvolume(fp);
+	fprintf(fp,"\n");
+	writeMembraneRegionMapVolumeRegion(fp);
+	fprintf(fp,"\n");
+	writeVolumeElementsMapVolumeRegion(fp);
+	fprintf(fp,"\n");
+	writeMembraneElements_Connectivity_Region(fp);
+	fprintf(fp,"\n");
+	if(!writeContourElements(fp)){
+		return false;
+	}
+	//
+	fprintf(fp,"}\n");//End CartesianMesh
+	return true;
+}
+
+void CartesianMesh::writeVolumeRegionsMapSubvolume(FILE *fp)
+{
+	int numVolumeRegions = getNumVolumeRegions();
+	fprintf(fp,"\tVolumeRegionsMapSubvolume {\n");
+	fprintf(fp,"\t%d\n",numVolumeRegions);
+	fprintf(fp,"\t//%8s %10s %10s\n","VolRegID","SubvolID","Volume");
+	for(int c = 0;c < numVolumeRegions;c+= 1){
+		VolumeRegion *volumeRegion = getVolumeRegion(c);
+		fprintf(fp,"\t%10ld %10ld %10.17lg //%s\n",
+				volumeRegion->getId(),
+				volumeRegion->getFeature()->getHandle(),
+				volumeRegion->getVolume(),
+				volumeRegion->getFeature()->getName().c_str());
+	}
+	fprintf(fp,"\t}\n");
+}
+void CartesianMesh::writeVolumeElementsMapVolumeRegion(FILE *fp)
+{
+	int numVolumeElements = getNumVolumeElements();
+	VolumeElement *volumeElements = getVolumeElements();
+	fprintf(fp,"\tVolumeElementsMapVolumeRegion {\n");
+	if(numVolumeElements < 0){
+		fprintf(fp,"\t%d UnCompressed",numVolumeElements);
+		for(int c = 0;c < numVolumeElements;c+= 1){
+			int volumeRegionId = volumeElements[c].region->getId();
+			if(c%numX == 0){
+				fprintf(fp,"\n\t");
+			}
+			fprintf(fp,"%3ld ",volumeRegionId);
+		}
+	}else{
+		fprintf(fp,"\t%d Compressed",numVolumeElements);
+		unsigned char *src = new unsigned char[numVolumeElements];
+		for(int c = 0;c < numVolumeElements; c++){
+			int volumeRegionId = volumeElements[c].region->getId();
+			src[c] = (unsigned char)volumeRegionId;
+		}
+		unsigned long destLen = numVolumeElements*2;
+		if (destLen<1000){
+			destLen = 1000;  // minimum size compressed data buffer
+		}
+		unsigned char *dest = new unsigned char[destLen];
+		int retVal = compress(dest,&destLen,src,numVolumeElements);
+		for(int c = 0; c < (int)destLen; c++){
+			if(c%40 == 0){
+				fprintf(fp,"\n\t");
+			}
+			fprintf(fp,"%2.2X",dest[c]);
+		}
+		delete[] dest;
+		delete[] src;
+
+	}
+	fprintf(fp,"\n\t}\n");
+}
+
+void CartesianMesh::writeMembraneRegionMapVolumeRegion(FILE *fp)
+{
+	int numMembraneRegions = getNumMembraneRegions();
+	fprintf(fp,"\tMembraneRegionsMapVolumeRegion {\n");
+	fprintf(fp,"\t%d\n",numMembraneRegions);
+	fprintf(fp,"\t//%8s %10s %10s %10s\n","MemRegID","VolRegIn","VolRegOut","Surface");
+	for(int c = 0;c < numMembraneRegions;c+= 1){
+		MembraneRegion *membraneRegion = getMembraneRegion(c);
+		VolumeRegion *vrInside = membraneRegion->getRegionInside();
+		VolumeRegion *vrOutside= membraneRegion->getRegionOutside();
+		fprintf(fp,"\t%10ld %10ld %10ld %10.17lg\n",
+					membraneRegion->getId(),
+					vrInside->getId(),
+					vrOutside->getId(),
+					membraneRegion->getSurface());
+	}
+	fprintf(fp,"\t}\n");
+}
+
+void CartesianMesh::writeCartesianMeshHeader(FILE *fp)
+{
+	fprintf(fp,"\t%s     %10s %10s %10s\n","//","X","Y","Z");
+	fprintf(fp,"\tSize   %10ld %10ld %10ld\n",numX,numY,numZ);
+	fprintf(fp,"\tExtent %10.17lg %10.17lg %10.17lg\n",domainSizeX,domainSizeY,domainSizeZ);
+	fprintf(fp,"\tOrigin %10.17lg %10.17lg %10.17lg\n",domainOriginX,domainOriginY,domainOriginZ);
+}
+
+bool CartesianMesh::writeMeshMetrics(FILE *fp)
+{
+	fprintf(fp,"MembraneElements {\n");
+	fprintf(fp,"%d\n",(int)getNumMembraneElements());
+	fprintf(fp,"%5s %11s %17s %25s %25s %25s %25s %25s %25s\n","Index","RegionIndex","X","Y","Z","Area","Nx","Ny","Nz");
+	for (int i=0;i<getNumMembraneElements();i++){
+		MembraneElement *memEl = pMembraneElement + i;
+		WorldCoord wc = getMembraneWorldCoord(i);
+		fprintf(fp,"%-5ld %11ld %25.17lg %25.17lg %25.17lg %25.17lg %25.17lg %25.17lg %25.17lg\n",
+			memEl->index,
+			memEl->region->getId(),
+			wc.x,
+			wc.y,
+			wc.z,
+			memEl->area,
+			memEl->unitNormal.x,
+			memEl->unitNormal.y,
+			memEl->unitNormal.z);
+	}
+	fprintf(fp,"}");
+	return true;
+}
+
+
+void CartesianMesh::writeMembraneElements_Connectivity_Region(FILE *fp)
+{
+	fprintf(fp,"\tMembraneElements {\n");
+	fprintf(fp,"\t%d\n",(int)getNumMembraneElements());
+	fprintf(fp,"\t//%4s %4s %4s %4s %4s %4s %4s %4s\n","Indx","VIn","VOut","Conn0","Conn1","Conn2","Conn3","MemRegID");
+	for (int i=0;i<getNumMembraneElements();i++){
+		MembraneElement *memEl = getMembraneElements()+i;
+		fprintf(fp,"\t%6ld %4ld %4ld %5ld %5ld %5ld %5ld %8d\n",
+			memEl->index,
+			memEl->insideIndexNear,
+			memEl->outsideIndexNear,
+			memEl->neighborMEIndex[0],
+			memEl->neighborMEIndex[1],
+			memEl->neighborMEIndex[2],
+			memEl->neighborMEIndex[3],
+			memEl->region->getId());
+
+	}
+	fprintf(fp,"    }\n");
+}
+
+bool CartesianMesh::writeContourElements(FILE *fp)
+{
+	//
+	// write out contour elements (if present)
+	//
+	if (getNumContourElements()>0){
+		fprintf(fp,"    ContourElements {\n");
+		fprintf(fp,"           %d\n",(int)getNumContourElements());
+		//
+		// index volumeIndex begin.x begin.y begin.z  end.x, end.y end.z neighbor(prev) neighbor(next)
+		//
+		for (int i = 0; i < getNumContourElements(); i++){
+			ContourElement *cEl = getContourElement(i);
+			int neighborPrev = -1;
+			int neighborNext = -1;
+			if (cEl->getBorder() == CONTOUR_BEGIN){
+				neighborPrev = -1;
+				neighborNext = i+1;
+			}else if (cEl->getBorder() == CONTOUR_END){
+				neighborPrev = i-1;
+				neighborNext = -1;
+			}else if (cEl->getBorder() == CONTOUR_INTERIOR){
+				neighborPrev = i-1;
+				neighborNext = i+1;
+			}else{
+				printf("Error writing contour mesh, contour element(%ld) has an illegal ContourBorder type = %d\n",i,cEl->getBorder());
+				return false;
+			}
+			fprintf(fp,"           %ld %ld %lg %lg %lg %lg %lg %lg %ld %ld\n",cEl->getElementIndex(),cEl->getVolumeIndex(),
+						cEl->getBegin().x,cEl->getBegin().y,cEl->getBegin().z,
+						cEl->getEnd().x,  cEl->getEnd().y,  cEl->getEnd().z,
+						neighborPrev, neighborNext);
+		}
+		fprintf(fp,"    }\n");  // end ContourElements
+	}
+	return true;
+}
+
+
+WorldCoord CartesianMesh::getVolumeWorldCoord(long volumeIndex)
+{
+	MeshCoord mc = getMeshCoord(volumeIndex);
+	WorldCoord unit, wc;
+
+	unit.x = (numX>1)?(((double)(mc.x))/(numX-1)):0.5;
+	unit.y = (numY>1)?(((double)(mc.y))/(numY-1)):0.5;
+	unit.z = (numZ>1)?(((double)(mc.z))/(numZ-1)):0.5;
+
+	wc.x = domainOriginX + domainSizeX*(unit.x);
+	wc.y = domainOriginY + domainSizeY*(unit.y);
+	wc.z = domainOriginZ + domainSizeZ*(unit.z);
+
+	return wc; 
+}
+
+WorldCoord CartesianMesh::getMembraneWorldCoord(long membraneIndex)
+{
+	return getMembraneWorldCoord(pMembraneElement + membraneIndex);
+}
+
+WorldCoord CartesianMesh::getMembraneWorldCoord(MembraneElement *element)
+{
+	WorldCoord wc_membrane, wc_inside, wc_outside;
+
+	long insideIndex = element->insideIndexNear;
+	long outsideIndex = element->outsideIndexNear;
+
+	wc_inside = getVolumeWorldCoord(insideIndex);
+	wc_outside = getVolumeWorldCoord(outsideIndex);
+
+	wc_membrane.x = (wc_inside.x + wc_outside.x)/2.0;
+	wc_membrane.y = (wc_inside.y + wc_outside.y)/2.0;
+	wc_membrane.z = (wc_inside.z + wc_outside.z)/2.0;
+
+	return wc_membrane; 
+}
+
+long CartesianMesh::getVolumeIndex(WorldCoord coord)
+{
+	MeshCoord meshCoord;
+
+	ASSERTION(coord.x>=domainOriginX);
+	ASSERTION(coord.x<=(domainOriginX + domainSizeX));
+	ASSERTION(coord.y>=domainOriginY);
+	ASSERTION(coord.y<=(domainOriginY + domainSizeY));
+	ASSERTION(coord.z>=domainOriginZ);
+	ASSERTION(coord.z<=(domainOriginZ + domainSizeZ));
+
+	meshCoord.x = (int)((coord.x-domainOriginX) * (numX-1)/domainSizeX + 0.5);
+	meshCoord.y = (int)((coord.y-domainOriginY) * (numY-1)/domainSizeY + 0.5);
+	meshCoord.z = (int)((coord.z-domainOriginZ) * (numZ-1)/domainSizeZ + 0.5);
+
+	return getIndex(meshCoord);
+}
+
+MeshCoord CartesianMesh::getMeshCoord(long index)
+{
+	MeshCoord mc;
+	mc.x = index%numX; 
+	mc.y = (index/numX)%numY;
+	mc.z = index/(numXY);
+	return mc;        
+}
+
+long CartesianMesh::getIndex(MeshCoord coord)
+{
+	return coord.x + numX*(coord.y + numY*coord.z);
+}
+
 
 double getExactVolume() {
 #if (defined(SPHERE))
@@ -448,7 +1438,7 @@ void CartesianMesh::adjustMembraneAreaFromNormal(){
 	}
 }
 
-boolean CartesianMesh::findMembraneNeighbors()
+bool CartesianMesh::findMembraneNeighbors()
 {
 	long mecount = getNumMembraneElements();
 	long mex = getNumVolumeX();
@@ -509,10 +1499,10 @@ boolean CartesianMesh::findMembraneNeighbors()
 				meptr[meloop].neighborMEIndex[3] = orthoIndex(iinloop,oinloop,1,NEIGHBOR_XP_BOUNDARY);
 			}
 		}
-		else return TRUE;
+		else return true;
 
 	}
-	return TRUE;
+	return true;
 }
 
 int CartesianMesh::getMembraneNeighborMask(long meindex) {
@@ -769,7 +1759,9 @@ void CartesianMesh::computeMembraneCoupling(){
 					if (sum_arclength != 0) {
 						volLength = sum_arclength/2;
 					} else {
-						throw (char*)(CString("Unexpected zero area membrane element [") + CString(currentIndex) + "]"); 
+						stringstream ss;
+						ss << "Unexpected zero area membrane element [" << currentIndex << + "]"; 
+						throw ss.str();
 					}
 				}
 				smat->setDiag(i, volLength); // set diagonal elements		
@@ -952,8 +1944,8 @@ void CartesianMesh::computeMembraneCoupling(){
 					}
 				}				
 
-				long *vertices = qvoronoi(2, numPoints, points, 0, vrRidges, neighborCandidates.size());
-				int numRealNeighbors = vrRidges.size();				
+				long *vertices = qvoronoi(2, numPoints, points, 0, vrRidges, (int)neighborCandidates.size());
+				int numRealNeighbors = (int)vrRidges.size();				
 				
 #ifdef WITH_PROJECTION_TO_WALL
 				if (currentMask & NEIGHBOR_BOUNDARY_MASK) {
@@ -1113,7 +2105,9 @@ void CartesianMesh::computeMembraneCoupling(){
 					vol = pMembraneElement[index].area;
 				} else {
 					if (vol == 0) {
-						throw (char*)(CString("Unexpected zero area membrane element [") + CString(index) + "]"); 
+						stringstream ss;
+						ss << "Unexpected zero area membrane element [" << index << + "]"; 
+						throw ss.str();
 					}
 				}
 				smat->setDiag(index, vol);
@@ -1256,7 +2250,7 @@ bool CartesianMesh::findCurve(int startingIndex, CurvePlane curvePlane, vector<d
 
 int CartesianMesh::computeN(int startingIndex, CurvePlane curvePlane, vector<double> curvex, vector<double> curvey, int currentMeIndexInVector, bool bClose) {
 	assert(curvex.size() == curvey.size());
-	int numPoints = curvex.size();
+	int numPoints = (int)curvex.size();
 	if (numPoints == 1) {
 		return 0;
 	}
@@ -1396,7 +2390,6 @@ void CartesianMesh::getN(long index, int* N){
 			N[1] = N[0];
 			curvex.clear();
 			curvey.clear();
-			assert(N[0] >= 0 && N[0] < numMembrane); 
 #endif
 			break;
 		}
@@ -1485,12 +2478,6 @@ void CartesianMesh::getN(long index, int* N){
 			curve1y.clear();
 			curve2x.clear();
 			curve2y.clear();
-			for (int i = 0; i < 4; i ++) {
-				long neighborIndex = pMembraneElement[index].neighborMEIndex[i];
-				if (neighborIndex >= 0) {
-					assert(N[i] >= 0 && N[i] < numMembrane);
-				}
-			}
 #endif
 			break;
 		}

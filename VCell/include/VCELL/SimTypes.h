@@ -5,19 +5,7 @@
 #ifndef SIMTYPES_H
 #define SIMTYPES_H
 
-#include <assert.h>
-#include <math.h>
-
-#if (defined(WIN32) || defined(CXX))
-#define VCELL_USES_NAMESPACES
-#endif
-
-#if (!defined(VCELL_USES_NAMESPACES) || defined(VC60))
-#include <iostream.h>
-#else
-#include <iostream>
-using namespace std;
-#endif
+#include <VCELL/DoubleVector3.h>
 
 #if (defined(IRIX) || defined(CXX) || defined(LINUX))
 #define UNIX_TIMER
@@ -32,10 +20,6 @@ typedef unsigned long  uint32;
 typedef int INT32;
 typedef int            int32;
 typedef unsigned int   uint32;
-#endif
-
-#ifndef M_PI
-#define M_PI 3.14159265359
 #endif
 
 #ifdef VCELL_DEBUG
@@ -76,83 +60,6 @@ typedef enum {
 	BOUNDARY_PERIODIC
 } BoundaryType;
 
-struct DoubleVector3 {
-	double x;
-	double y;
-	double z;
-
-	DoubleVector3() {
-		x = 0.0;
-		y = 0.0;
-		z = 0.0;
-	}
-
-	DoubleVector3(double arg_x, double arg_y, double arg_z) {
-		x = arg_x;
-		y = arg_y;
-		z = arg_z;
-	}
-
-	double length() {
-		return sqrt(x * x + y * y + z * z);
-	}
-
-	double lengthSquare() {
-		return x * x + y * y + z * z;
-	}
-
-	DoubleVector3 scale(double scaler) {
-		return DoubleVector3(x * scaler, y * scaler, z * scaler);
-	}
-
-	void normalize() {
-		double l = length();
-		if (l > 0) {
-			x /= l; 
-			y /= l; 
-			z /= l;
-		} else {
-			throw "DoubleVector3::normalize(), Can't normalize zero-length vector";
-		}
-	}
-
-	double dotProduct(const DoubleVector3& wc) {
-		return x * wc.x + y * wc.y + z * wc.z;
-	}
-
-	DoubleVector3 crossProduct(const DoubleVector3& wc) { // cross product
-		return DoubleVector3(
-			y * wc.z - z * wc.y,
-			z * wc.x - x * wc.z,
-            x * wc.y - y * wc.x
-		);
-	}
-
-	DoubleVector3 operator-(const DoubleVector3& wc) {
-		return DoubleVector3(x - wc.x, y - wc.y, z - wc.z);
-	}
-
-	void operator-=(const DoubleVector3& wc) {
-		x = x - wc.x;
-		y = y - wc.y;
-		z = z - wc.z;
-	}
-
-	DoubleVector3 operator+(const DoubleVector3& wc) {
-		return DoubleVector3(x + wc.x, y + wc.y, z + wc.z);
-	}
-
-	void operator+=(const DoubleVector3& wc) {
-		x = x + wc.x;
-		y = y + wc.y;
-		z = z + wc.z;
-	}
-
-	friend ostream& operator<<(ostream& os, const DoubleVector3& wc) {
-		os << "[" << wc.x << "," << wc.y << "," << wc.z << "]";
-		return os;
-	}
-};
 typedef struct {
 	double u;
 	double v;

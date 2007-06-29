@@ -1,0 +1,117 @@
+#
+# (C) Copyright University of Connecticut Health Center 2001.
+# All rights reserved.
+#
+CC = cl
+CPPFLAGS =	/nologo /c /GX /Ox /G6 /DWIN32 /MT /D_WIN32_WINNT=0x2000 /I..\..\SonicCClient\Win32\include /I..\..\SonicCClient\Win32\include\CPP /I..\include /I..\..\zlib
+#CPPFLAGS =	/O /I..\include\ /I..\..\zlib\ /DWIN32 /GX /O2 /G6  
+#CPPFLAGS =	/O /I..\include\ /DVCELL_DEBUG /DWIN32 /GX /O2 /G6  
+
+!ifdef VC60
+CPPFLAGS = $(CPPFLAGS) /DVC60 
+TARGET=	vcellWin32_VC60.lib
+OBJDIR = .\Win32_VC60
+!else
+CPPFLAGS = $(CPPFLAGS)
+TARGET=	vcellWin32.lib
+OBJDIR = .\Win32
+!endif
+
+TARGETF = pcgwrapper.lib
+
+FC= ifort
+#FOPTIONS = /Gm /O3 /Qipo /Qprec-div- /QxN /compile_only /thread
+FOPTIONS = /O3 /Qprec-div- /QxN /compile_only /MT /nologo /names:lowercase
+
+LIBTOOL = xilib
+
+.SUFFIXES:	.cpp.obj.f
+
+.f{$(OBJDIR)}.obj :
+	$(FC) $(FOPTIONS) /object:$@ $<
+
+.cpp{$(OBJDIR)}.obj :		
+	$(CC) $(CPPFLAGS) /Fo$@ $<
+
+default all: $(TARGET) $(TARGETF)
+
+$(OBJDIR) :
+    if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"
+
+CPPOBJECTS = 	\
+		$(OBJDIR)\AlgebraicSystem.obj				\
+		$(OBJDIR)\CartesianMesh.obj			\
+		$(OBJDIR)\Contour.obj			\
+		$(OBJDIR)\ContourSubdomain.obj			\
+		$(OBJDIR)\ContourVarContext.obj			\
+		$(OBJDIR)\ContourVariable.obj			\
+		$(OBJDIR)\DataSet.obj			\
+#		$(OBJDIR)\DomainPDEScheduler.obj		\
+		$(OBJDIR)\EqnBuilder.obj			\
+		$(OBJDIR)\EqnBuilderReactionDiffusionConvection.obj		\
+		$(OBJDIR)\EqnBuilderReactionDiffusion.obj	\
+		$(OBJDIR)\EqnBuilderReactionForward.obj	\
+		$(OBJDIR)\FastSystem.obj			\
+#		$(OBJDIR)\FastSystemExpression.obj			\
+		$(OBJDIR)\Feature.obj			\
+		$(OBJDIR)\FieldData.obj		\
+		$(OBJDIR)\FVUtils.obj			\
+		$(OBJDIR)\Histogram.obj			\
+		$(OBJDIR)\MembraneEqnBuilderForward.obj	\
+		$(OBJDIR)\MembraneEqnBuilderDiffusion.obj	\
+		$(OBJDIR)\MembraneRegion.obj	\
+		$(OBJDIR)\MembraneRegionEqnBuilder.obj	\
+		$(OBJDIR)\MembraneRegionVarContext.obj	\
+#		$(OBJDIR)\MembraneRegionVarContextExpression.obj	\
+		$(OBJDIR)\MembraneRegionVariable.obj	\
+		$(OBJDIR)\MembraneVarContext.obj		\
+#		$(OBJDIR)\MembraneVarContextExpression.obj	\
+		$(OBJDIR)\MembraneVariable.obj		\
+		$(OBJDIR)\Mesh.obj			\
+		$(OBJDIR)\ODESolver.obj	\
+		$(OBJDIR)\ParticleContext.obj		\
+		$(OBJDIR)\PDESolver.obj	\
+		$(OBJDIR)\PdeSolverDiana.obj		\
+		$(OBJDIR)\Region.obj			\
+		$(OBJDIR)\Scheduler.obj			\
+		$(OBJDIR)\SerialScheduler.obj			\
+		$(OBJDIR)\SimTool.obj			\
+		$(OBJDIR)\Simulation.obj			\
+		$(OBJDIR)\SimulationMessaging.obj	\
+		$(OBJDIR)\Solver.obj			\
+		$(OBJDIR)\SparseLinearSolver.obj		\
+#		$(OBJDIR)\SparseMatrix.obj		\
+		$(OBJDIR)\SparseMatrixEqnBuilder.obj		\
+		$(OBJDIR)\SparseMatrixPCG.obj		\
+		$(OBJDIR)\SparseVolumeEqnBuilder.obj		\
+#		$(OBJDIR)\TIFFImage.obj			\
+#		$(OBJDIR)\SplitScheduler.obj			\
+		$(OBJDIR)\StructuredPDESolver.obj			\
+		$(OBJDIR)\Timer.obj			\
+		$(OBJDIR)\TriDiagMatrix.obj		\
+		$(OBJDIR)\VarContext.obj			\
+		$(OBJDIR)\Variable.obj			\
+		$(OBJDIR)\VCellModel.obj			\
+		$(OBJDIR)\VolumeRegion.obj			\
+		$(OBJDIR)\VolumeRegionEqnBuilder.obj			\
+		$(OBJDIR)\VolumeRegionVarContext.obj			\
+#		$(OBJDIR)\VolumeRegionVarContextExpression.obj			\
+		$(OBJDIR)\VolumeRegionVariable.obj			\
+		$(OBJDIR)\VolumeVarContext.obj			\
+#		$(OBJDIR)\VolumeVarContextExpression.obj			\
+		$(OBJDIR)\VolumeVariable.obj
+
+FOROBJECTS =	$(OBJDIR)\pcgwrapper.obj
+
+$(TARGET):	$(OBJDIR) $(CPPOBJECTS) $(FOROBJECTS)
+	$(LIBTOOL) $(CPPOBJECTS) $(FOROBJECTS) /out:$@
+		
+$(TARGETF): $(FOROBJECTS)
+	$(LIBTOOL) /out:$(TARGETF) $(FOROBJECTS)
+	
+clean:
+	if exist "$(OBJDIR)" del /Q $(OBJDIR)\*.*
+	del $(TARGET)	
+	
+cleanf:
+	del $(FOROBJECTS)

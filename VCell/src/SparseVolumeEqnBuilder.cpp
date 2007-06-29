@@ -4,26 +4,23 @@
  */
 #ifdef WIN32
 #include <Windows.h>
-#else
-#include <UnixDefs.h>
 #endif
 
 #include <VCELL/SparseVolumeEqnBuilder.h>
-#include <VCELL/App.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/Solver.h>
-#include <VCELL/Variable.h>
+#include <VCELL/VolumeVariable.h>
 #include <VCELL/Mesh.h>
 #include <VCELL/Feature.h>
 #include <VCELL/Element.h>
+#include <VCELL/VolumeVarContext.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/FVUtils.h>
-#include <VCELL/Region.h>
+#include <VCELL/SimTool.h>
+#include <VCELL/CartesianMesh.h>
+#include <VCELL/VolumeRegion.h>
 #include <VCELL/VCellModel.h>
-
-#ifndef WIN32
-#define max(a,b) (((a)>(b))?(a):(b))
-#endif
+#include <assert.h>
 
 static double epsilon = 1e-10;    // zero diffusion threshold at 1e-10 micron^2/second
 
@@ -453,7 +450,7 @@ void sortColumns(int numCols, int* columnIndices, double* columnValues) {
 // Left Hand Side
 //
 //------------------------------------------------------------------
-boolean SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
+bool SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
 {    
 	/**
 	 * we decided to scale both sides with deltaT/VOLUME
@@ -556,12 +553,12 @@ boolean SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexSt
 	delete[] columnIndices;
 	delete[] columnValues;
 
-    return TRUE;
+    return true;
 }
 
 double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* lambdas, double bInit) {
 	double b = bInit;
-	Simulation *sim = theApplication->getSimulation();
+	Simulation* sim = SimTool::getInstance()->getSimulation();
 	VolumeElement *pVolumeElement = mesh->getVolumeElements();
 	MembraneElement *pMembraneElement = mesh->getMembraneElements();
 
@@ -603,7 +600,7 @@ double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* l
 		} else {
 			assert(0);
 		}	
-	
+
 	} else if (((mask & NEIGHBOR_XP_BOUNDARY) && feature->getXpBoundaryType() == BOUNDARY_PERIODIC)  // periodic and plus direction
 			|| ((mask & NEIGHBOR_YP_BOUNDARY) && feature->getYpBoundaryType() == BOUNDARY_PERIODIC) 
 			|| ((mask & NEIGHBOR_ZP_BOUNDARY) && feature->getZpBoundaryType() == BOUNDARY_PERIODIC)) {   
@@ -705,7 +702,7 @@ double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* l
 // Right Hand side
 //
 //------------------------------------------------------------------
-boolean SparseVolumeEqnBuilder::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
+bool SparseVolumeEqnBuilder::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
 {    
 	double lambdaAreaX = deltaTime/DELTAX;   
 	double lambdaAreaY = deltaTime/DELTAY;
@@ -740,7 +737,7 @@ boolean SparseVolumeEqnBuilder::buildEquation(double deltaTime, int volumeIndexS
 		B[pn->centerIndex] += pn->coeff;
 	}	
 
-	return TRUE;
+	return true;
 }
 
 bool SparseVolumeEqnBuilder::checkPeriodicCoupledPairsInRegions(int indexm, int indexp) {
@@ -771,7 +768,7 @@ void SparseVolumeEqnBuilder::preProcess() {
 	// check if there is periodic boundary condition in the model
 	bool bPeriodic = false;
 	Feature* feature = 0;
-	while (feature = theApplication->getModel()->getNextFeature(feature)) {		
+	while (feature = SimTool::getInstance()->getModel()->getNextFeature(feature)) {		
 		if (feature->getXmBoundaryType() == BOUNDARY_PERIODIC 
 			|| feature->getYmBoundaryType() == BOUNDARY_PERIODIC 
 			|| feature->getZmBoundaryType() == BOUNDARY_PERIODIC) {

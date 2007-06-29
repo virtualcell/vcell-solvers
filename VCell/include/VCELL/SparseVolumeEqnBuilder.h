@@ -5,7 +5,7 @@
 #ifndef SPARSEVOLUMEEQNBUILDER_H
 #define SPARSEVOLUMEEQNBUILDER_H
 
-#include <VCELL/VarContext.h>
+#include <VCELL/VolumeVarContext.h>
 #include <VCELL/SparseMatrixEqnBuilder.h>
 #include <vector>
 using namespace std;
@@ -90,9 +90,9 @@ public:
 	SparseVolumeEqnBuilder(VolumeVariable *species, CartesianMesh *mesh, bool bNoConvection, int numSolveRegions=0, int* solveRegions=0);
 	~SparseVolumeEqnBuilder();
 
-	boolean initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
+	bool initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
 			int membraneIndexStart, int membraneIndexSize);
-	boolean buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
+	bool buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
 			int membraneIndexStart, int membraneIndexSize);
 	void postProcess();
 
