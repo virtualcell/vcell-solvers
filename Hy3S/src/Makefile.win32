@@ -1,0 +1,43 @@
+#
+#Fortran compiler
+FC= ifort
+# Compilation options  .... removed /names:lowercase
+#FOPTIONS = /Gm /O3 /Qipo /Qprec-div- /QxN /compile_only /thread
+#FOPTIONS = /O3 /Qprec-div- /QxN /MT /nologo /I..\..\netcdf-3.6.2\f90 /I..\..\IFortran /names:lowercase
+#FOPTIONS = /O3 /nologo /I..\..\netcdf-3.6.2\f90 /I..\..\IFortran
+FOPTIONS = /I..\..\netcdf-3.6.2\f90 /iface:mixed_str_len_arg /check:bounds
+LINKOPTIONS = /link /LIBPATH:..\..\IFortran
+DEFMILSTEIN = -DMILSTEIN
+
+LIBS = ..\..\netcdf-3.6.2\fortran\netcdf_for.lib ..\..\netcdf-3.6.2\libsrc\netcdf.lib ..\..\netcdf-3.6.2\f90\netcdf_f90.lib
+
+.SUFFIXES: obj.f90
+
+#
+# Source File Names
+#
+SOURCE  =  f2kcli.f90 \
+		globalvariables.f90 \
+		ratelaws.f90 \
+		dataio.f90 \
+		randomgen.f90 \
+		priorityqueue.f90 \
+		specialevents.f90 \
+		SDEintegration.f90 \
+		propagators-HyJCMSS.f90 \
+		mainprogram-HyJCMSS.f90
+
+default all: Hybrid_EM.exe Hybrid_MIL.exe
+
+Hybrid_EM.exe: $(SOURCE)
+	$(FC) $(FOPTIONS) $(SOURCE) $(LINKOPTIONS) $(LIBS) /out:$@
+	
+Hybrid_MIL.exe: $(SOURCE)
+	$(FC) $(FOPTIONS) $(DEFMILSTEIN) $(SOURCE) $(LINKOPTIONS) $(LIBS) /out:$@
+
+clean:
+	del Hybrid_EM.exe
+	del Hybrid_MIL.exe
+	del *.obj
+	del *.mod
+# 

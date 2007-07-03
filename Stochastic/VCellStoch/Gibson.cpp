@@ -182,7 +182,6 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 	infile.close();
 	//initialization of the double array currvals
 	currvals=new double[listOfIniValues.size()+1];
-	
 #ifdef DEBUG
 	cout << "-------------------control information----------------"<<endl;
 	cout << "starting time:"<<STARTING_TIME <<endl;
@@ -251,83 +250,106 @@ int Gibson::core()
 {
 	double outputTimer = STARTING_TIME;//time counter used for save output by save_period
 	double simtime = STARTING_TIME;//time calculated for next reaction
+	double* lastStepVals = new double[listOfIniValues.size()];//to remember the last step values, used for save output by save_period
 	double p, r; //temp variables used for propability and random number
 	int sampleCount = SAMPLE_INTERVAL; //sampling counter
 	int iterationCounter=0;//counter used for termination of the loop when max_iteration is reached
 	int i; //loop variable
 	double prog = 0.19; // to control the output of progress, start from >0.19....>0.99
     clock_t oldTime = clock(); // to control the output of data, output data every 2 seconds.
-	
+	int varLen = listOfIniValues.size(); //variables' length
 	//reset the indexed tree
 	for(i=0;i<Tree->getSize();i++)
 	{
 		Jump *jump = Tree->getProcess(i);
 		jump->setNode(i);
-		//get current values for evaluating the probability expression
-		int len = listOfIniValues.size();
-		for(int k=0;k<len;k++)
+
+		//get current values for evaluating the probability expression & also reset last setp values
+		for(int k=0;k<varLen;k++)
 		{
 			currvals[k]=listOfIniValues[k];
+			lastStepVals[k]=*listOfVars.at(k)->getCurr();
 		}
-		currvals[len] = simtime;
+		currvals[varLen] = simtime;
 		p = jump->getProbabilityRate(currvals);
-		r = getRandomUniform();
-        if(!(r>0)){
-			jump->setLogRand(double_infinity);
+		//amended May 17th, we can not take the first time random number to be 0.
+		//Otherwise, there is a situation that no previous random number to be reused.
+		do
+		{
+			r = getRandomUniform();
 		}
-		else{
-			jump->setLogRand(-log(r));
-		}
+		while(r <= 0);
+		jump->setLogRand(-log(r));
 		if(!(p>0)){
 			jump->setTime(double_infinity);
 		}
 		else{
 			jump->setTime(jump->getLogRand()/p);
 		}
-#ifdef DEBUG
+#ifdef DEBUG 
 		cout<<"Initial r & P:" << r <<"\t" <<p <<endl;
-#endif
+#endif 
 	}
 	Tree->build();
 	//the while loop does one trial for simulation and ends by ending_time or max_iteration.
 	while(simtime <= ENDING_TIME)
 	{
-		if(iterationCounter <= MAX_ITERATION)
-		{
-			iterationCounter++;
-
-			//get next reaction with shortest absolute time
+		//if(iterationCounter <= MAX_ITERATION)
+		//{
+			//iterationCounter++;
+			
+			//save last step variables' values
+			for(i = 0;i<varLen;i++){
+				lastStepVals[i]=*listOfVars.at(i)->getCurr();
+			}
+		    //get next reaction with shortest absolute time
 			Jump* event = Tree->getProcess(0);
 			//update time
 			simtime = event->getTime();
 			if(simtime > ENDING_TIME)
+			{
+				//simulation time exceed ending time. Before we quit the simulation
+				//output data between the last step simulation time and ending time if we have SAVE_PERIOD on. 
+				if((NUM_TRIAL ==1) && (flag_savePeriod))
+				{
+					while((outputTimer+SAVE_PERIOD) < ENDING_TIME)
+					{
+						outfile << outputTimer+SAVE_PERIOD << "\t";
+						for(i=0;i<varLen;i++){
+							outfile<< lastStepVals[i] << "\t";
+						}
+						outfile << endl;
+						outputTimer = outputTimer + SAVE_PERIOD;
+					}
+				}
 				break;
-			//update affected variables 
+			}
+			//update affected variables
 			int numVars = event->getNumVars();
 			for(i = 0;i<numVars;i++){
 				event->getVar(i)->updateCurr();
 			}			
 			//get current values for evaluate the probability expression
-			int len = listOfIniValues.size();
-			for(int k=0;k<len;k++)
+			for(int k=0;k<varLen;k++)
 			{
 				currvals[k]=*listOfVars.at(k)->getCurr();
 			}
-			currvals[len] = simtime;
+			currvals[varLen] = simtime;
 			//update the jump that occured
 			double r = getRandomUniform();
 			p = event->getProbabilityRate(currvals);
-			if(!(r>0)){
-				event->setLogRand(double_infinity);
-			}
-			else{
+			//amended May 17th. The previous sentence will cause the time of a process stuck in double_infinity when r<=0
+			if(r>0)
+			{
 				event->setLogRand(-log(r));
+				if(p>0)
+					Tree->updateTree(event, (event->getLogRand())/p+simtime);
+				else
+					Tree->updateTree(event, double_infinity);
 			}
-			if(!(p>0)){
+			else
+			{
 				Tree->updateTree(event, double_infinity);
-			}
-			else{
-				Tree->updateTree(event, (event->getLogRand())/p+simtime);
 			}
 			//update dependent jumps 
 			int numDependentJumps = event->getNumDependentJumps();
@@ -337,7 +359,8 @@ int Gibson::core()
 				double p_old = dJump->getOldProbabilityRate();
 				double p_new = dJump->getProbabilityRate(currvals);
 				double tau = dJump->getTime();
-				if(p_old>0){
+				//amended May 17th. to make sure that tau is a finite double 
+				if(tau != double_infinity && (-tau != double_infinity) && tau == tau){
 					dJump->setLogRand(p_old*(tau-simtime));
 				}
 				if(!((p_new)>0)){
@@ -347,23 +370,51 @@ int Gibson::core()
 					Tree->updateTree(dJump, (dJump->getLogRand())/p_new+simtime);
 				}
 			}
-						
-			//output the result to file if the num_trial is one and the outputTimer reaches the new save period
+#ifdef DEBUG
+			int treeLen = Tree->getSize();
+			bool infAll=true;
+			for(i=0; i<treeLen; i++)
+			{
+				if(Tree->getProcess(i)->getTime() != double_infinity)
+					infAll=false;
+			}
+			if(infAll)
+				cout << "all times are set infinity.";
+#endif
 			if(NUM_TRIAL ==1)
 			{
 				if(sampleCount == SAMPLE_INTERVAL)
 				{
-					if((flag_savePeriod)&&(simtime >= (outputTimer+SAVE_PERIOD)))
+					//output the result to file if the num_trial is one and the outputTimer reaches the new save period
+ 					if(flag_savePeriod)
 					{
-						outfile << outputTimer+SAVE_PERIOD << "\t";
-						outputTimer=outputTimer+SAVE_PERIOD;
+						while((outputTimer+SAVE_PERIOD) < simtime)
+						{
+							outfile << outputTimer+SAVE_PERIOD << "\t";
+							for(i=0;i<varLen;i++){
+								outfile<< lastStepVals[i] << "\t";
+							}
+							outfile << endl;
+							outputTimer = outputTimer + SAVE_PERIOD;
+						}
+						if(outputTimer+SAVE_PERIOD == simtime)
+						{
+							outfile << outputTimer+SAVE_PERIOD << "\t";
+							for(i=0;i<varLen;i++){
+								outfile<< *listOfVars.at(i)->getCurr() << "\t";
+							outfile << endl;
+							}
+							outputTimer = outputTimer + SAVE_PERIOD;
+						}
 					}
-					else
+					else //output according to simulation time
+					{
 						outfile << simtime << "\t";
-					for(i=0;i<listOfVars.size();i++){
-						outfile<< *listOfVars.at(i)->getCurr()<< "\t";
+						for(i=0;i<varLen;i++){
+							outfile<< *listOfVars.at(i)->getCurr()<< "\t";
+						}
+						outfile << endl;
 					}
-					outfile << endl;
 					// output data message every two seconds to Java program (useful for long simulation, user can view results during simulation)
 					clock_t currentTime = clock();
 					double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
@@ -385,9 +436,19 @@ int Gibson::core()
 					prog = prog + 0.2;
 				}
 			}//if(NUM_TRIAL ==1)
-		}//end of if(iterationCounter < MAX_ITERATION)
-		else break;
+		//}//end of if(iterationCounter < MAX_ITERATION)
+		//else break;
 	}//end of while loop
+	//output the variable's vals at the ending time point.
+	if((simtime > ENDING_TIME) && (NUM_TRIAL == 1))
+	{
+		outfile << ENDING_TIME ;
+		for(i=0;i<listOfVars.size();i++)
+		{
+			outfile<< "\t" << *listOfVars.at(i)->getCurr();
+		}
+		outfile << endl;
+	}
 	//to save the (last-step)values of varaibles after one run of simulation
 	if(NUM_TRIAL >1)
 	{
@@ -410,18 +471,19 @@ int Gibson::core()
  */
 void Gibson::march()
 {
+#ifdef DEBUG
+	// Count performance time in milliseconds for the simulation
+	int ntime=0;
+	LARGE_INTEGER ntime1,ntime2;
+	LARGE_INTEGER freq;
+	QueryPerformanceFrequency(&freq);
+	QueryPerformanceCounter(&ntime1);
+#endif
 	int i;
 	if(NUM_TRIAL==1)
 	{
 		srand(SEED);
-#ifdef DEBUG
-		// Count performance time in milliseconds for single trial
-		int ntime=0;
-		LARGE_INTEGER ntime1,ntime2;
-		LARGE_INTEGER freq;
-		QueryPerformanceFrequency(&freq);
-		QueryPerformanceCounter(&ntime1);
-#endif		
+
 		//prepare for writing the results to output file
 		outfile.open (outfilename);//"c:/gibson_deploy/gibson_deploy/output/gibson_singleTrial.txt"
 		//output file header
@@ -438,14 +500,7 @@ void Gibson::march()
 		outfile << endl;
 		//run the simulation
 		core();
-		
-#ifdef DEBUG
-		//Count performance time for single trial
-		QueryPerformanceCounter(&ntime2);
-		//get ntime in millisecs
-		ntime = (ntime2.QuadPart-ntime1.QuadPart)/(freq.QuadPart/1000);
-		cout << endl << "Total time used(ms): " << ntime;
-#endif		
+	
 	}
 	else if (NUM_TRIAL > 1)
 	{
@@ -460,7 +515,7 @@ void Gibson::march()
 		for (long j=SEED;j<NUM_TRIAL+SEED;j++)
 		{
 #ifdef DEBUG
-			cout << "seed:" << SEED <<"\t"<<"Trial No. " << j <<endl;
+			cout << "Trial No. " << j <<endl;
 #endif
 			srand(j);
 			//output trial number.  PS:results after each trial are printed in core() function.
@@ -490,6 +545,13 @@ void Gibson::march()
 	{
 		cerr << "Number of trial smaller than 1!";
 	}
+#ifdef DEBUG
+	//Count performance time for single trial
+	QueryPerformanceCounter(&ntime2);
+	//get ntime in millisecs
+	ntime = (ntime2.QuadPart-ntime1.QuadPart)/(freq.QuadPart/1000);
+	cout << endl << "Total time used(ms): " << ntime;
+#endif
 	outfile.close();
 }//end of method march()
 	
