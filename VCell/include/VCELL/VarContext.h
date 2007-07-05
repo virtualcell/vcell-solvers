@@ -8,14 +8,18 @@
 #include <VCELL/SimTypes.h>
 #include <VCELL/Mesh.h>
 
-#ifdef FINITEVOLUME_STANDALONE
+#include <string>
+using namespace std;
+
 enum EXPRESSION_INDEX {INITIAL_VALUE_EXP=0, DIFF_RATE_EXP, REACT_RATE_EXP, BOUNDARY_XM_EXP, BOUNDARY_XP_EXP, 
 	BOUNDARY_YM_EXP, BOUNDARY_YP_EXP, BOUNDARY_ZM_EXP, BOUNDARY_ZP_EXP, VELOCITY_X_EXP, VELOCITY_Y_EXP, VELOCITY_Z_EXP,
 	IN_FLUX_EXP, OUT_FLUX_EXP, UNIFORM_RATE_EXP};
+static string String_Expression_Index[] = {"INITIAL_VALUE_EXP", "DIFF_RATE_EXP", "REACT_RATE_EXP", "BOUNDARY_XM_EXP", "BOUNDARY_XP_EXP", 
+	"BOUNDARY_YM_EXP", "BOUNDARY_YP_EXP", "BOUNDARY_ZM_EXP", "BOUNDARY_ZP_EXP", "VELOCITY_X_EXP", "VELOCITY_Y_EXP", "VELOCITY_Z_EXP",
+	"IN_FLUX_EXP", "OUT_FLUX_EXP", "UNIFORM_RATE_EXP"};
 #define TOTAL_NUM_EXPRESSIONS (UNIFORM_RATE_EXP + 1)
 class Expression;
-class SimpleSymbolTable;
-#endif
+class SymbolTable;
 
 class Variable;
 class VolumeVariable;
@@ -46,10 +50,8 @@ public:
 	VarContext    *getNext() { return next; }
 	Feature       *getParent() { return feature; }
 
-#ifdef FINITEVOLUME_STANDALONE
 	void setExpression(Expression* newexp, int expIndex);
-	void bindAll(SimpleSymbolTable* symbolTable);
-#endif
+	void bindAll(SymbolTable* symbolTable);
 
 protected:
     VarContext(Feature *feature, string& speciesName);
@@ -62,22 +64,20 @@ protected:
     double        *initialValue;
     Mesh          *mesh;
     Simulation    *sim;
-    EqnBuilder    *eqnBuilder;
 
-#ifdef FINITEVOLUME_STANDALONE
 	Expression** expressions;	
 	double** constantValues;
 	bool* needsXYZ;
 
-	double getValue(long volIndex, long expIndex);
-	double getConstantValue(long expIndex);
-	double getValue(MembraneElement* element, long expIndex);
-#endif
+	double getExpressionValue(long volIndex, long expIndex);
+	double getExpressionConstantValue(long expIndex);
+	double getExpressionValue(MembraneElement* element, long expIndex);
+	virtual bool isNullExpressionOK(int expIndex) { return false; }
 
 private:
     friend class Feature;
     friend class Contour;
-    VarContext    *next;     
+    VarContext    *next;	
 };
 
 #endif

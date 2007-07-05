@@ -5,6 +5,9 @@
 #include <VCELL/VolumeVarContextExpression.h>
 #include <Expression.h>
 #include <VCELL/Simulation.h>
+#include <VCELL/SimulationExpression.h>
+#include <VCELL/SimTool.h>
+#include <VCELL/Solver.h>
 #include <VCELL/Mesh.h>
 #include <VCELL/Region.h>
 #include <Exception.h>
@@ -19,93 +22,119 @@ VolumeVarContextExpression::~VolumeVarContextExpression()
 {
 }
 
+bool VolumeVarContextExpression::resolveReferences(Simulation* sim) {
+	bool bResolved = VarContext::resolveReferences(sim);
+	if (bResolved) {
+		bindAll(((SimulationExpression*)sim)->getOldSymbolTable());
+	}
+	return bResolved;
+}
+
 double VolumeVarContextExpression::getInitialValue(long volIndex) {
-	return getValue(volIndex, INITIAL_VALUE_EXP);
+	return getExpressionValue(volIndex, INITIAL_VALUE_EXP);
 }
 
 double VolumeVarContextExpression::getDiffusionRate(long volIndex)
 {
-	return getValue(volIndex, DIFF_RATE_EXP);
+	return getExpressionValue(volIndex, DIFF_RATE_EXP);
 }
 
 double VolumeVarContextExpression::getReactionRate(long volIndex)
 {
-	return getValue(volIndex, REACT_RATE_EXP);
+	return getExpressionValue(volIndex, REACT_RATE_EXP);
 }
 
 double VolumeVarContextExpression::getXmBoundaryValue(long volIndex){
-	return getValue(volIndex, BOUNDARY_XM_EXP);
+	return getExpressionValue(volIndex, BOUNDARY_XM_EXP);
 }
 
 double VolumeVarContextExpression::getXpBoundaryValue(long volIndex) {
-	return getValue(volIndex, BOUNDARY_XP_EXP);
+	return getExpressionValue(volIndex, BOUNDARY_XP_EXP);
 }
 
 double VolumeVarContextExpression::getYmBoundaryValue(long volIndex) {
-	return getValue(volIndex, BOUNDARY_YM_EXP);
+	return getExpressionValue(volIndex, BOUNDARY_YM_EXP);
 }
 
 double VolumeVarContextExpression::getYpBoundaryValue(long volIndex){
-	return getValue(volIndex, BOUNDARY_YP_EXP);
+	return getExpressionValue(volIndex, BOUNDARY_YP_EXP);
 }
 
 double VolumeVarContextExpression::getZmBoundaryValue(long volIndex){
-	return getValue(volIndex, BOUNDARY_ZM_EXP);	
+	return getExpressionValue(volIndex, BOUNDARY_ZM_EXP);	
 }
 
 double VolumeVarContextExpression::getZpBoundaryValue(long volIndex){
-	return getValue(volIndex, BOUNDARY_ZP_EXP);
+	return getExpressionValue(volIndex, BOUNDARY_ZP_EXP);
 }
 
 double VolumeVarContextExpression::getXmBoundaryFlux(long volIndex){
-	return getValue(volIndex, BOUNDARY_XM_EXP);
+	return getExpressionValue(volIndex, BOUNDARY_XM_EXP);
 }
 
 double VolumeVarContextExpression::getXpBoundaryFlux(long volIndex){
-	return getValue(volIndex, BOUNDARY_XP_EXP);
+	return getExpressionValue(volIndex, BOUNDARY_XP_EXP);
 }
 
 double VolumeVarContextExpression::getYmBoundaryFlux(long volIndex){
-	return getValue(volIndex, BOUNDARY_YM_EXP);
+	return getExpressionValue(volIndex, BOUNDARY_YM_EXP);
 }
 
 double VolumeVarContextExpression::getYpBoundaryFlux(long volIndex){
-	return getValue(volIndex, BOUNDARY_YP_EXP);
+	return getExpressionValue(volIndex, BOUNDARY_YP_EXP);
 }
 
 double VolumeVarContextExpression::getZmBoundaryFlux(long volIndex){
-	return getValue(volIndex, BOUNDARY_ZM_EXP);	
+	return getExpressionValue(volIndex, BOUNDARY_ZM_EXP);	
 }
 
 double VolumeVarContextExpression::getZpBoundaryFlux(long volIndex){
-	return getValue(volIndex, BOUNDARY_ZP_EXP);
+	return getExpressionValue(volIndex, BOUNDARY_ZP_EXP);
 }   
     
 double VolumeVarContextExpression::getXBoundaryPeriodicConstant() {
-	return getConstantValue(BOUNDARY_XM_EXP);
+	return getExpressionConstantValue(BOUNDARY_XM_EXP);
 }
 
 double VolumeVarContextExpression::getYBoundaryPeriodicConstant() {
-	return getConstantValue(BOUNDARY_YM_EXP);
+	return getExpressionConstantValue(BOUNDARY_YM_EXP);
 }
 
 double VolumeVarContextExpression::getZBoundaryPeriodicConstant() {
-	return getConstantValue(BOUNDARY_ZM_EXP);
+	return getExpressionConstantValue(BOUNDARY_ZM_EXP);
 }
 
 double VolumeVarContextExpression::getConvectionVelocity_X(long volIndex){
-	return getValue(volIndex, VELOCITY_X_EXP);
+	return getExpressionValue(volIndex, VELOCITY_X_EXP);
 }
 
 double VolumeVarContextExpression::getConvectionVelocity_Y(long volIndex){
-	return getValue(volIndex, VELOCITY_Y_EXP);
+	return getExpressionValue(volIndex, VELOCITY_Y_EXP);
 }
 
 double VolumeVarContextExpression::getConvectionVelocity_Z(long volIndex){
-	return getValue(volIndex, VELOCITY_Z_EXP);
+	return getExpressionValue(volIndex, VELOCITY_Z_EXP);
 }
 
 void VolumeVarContextExpression::getFlux(MembraneElement *element, double *inFlux, double *outFlux) {
-	*inFlux = getValue(element, IN_FLUX_EXP);	
-	*outFlux = getValue(element, OUT_FLUX_EXP);	
+	*inFlux = getExpressionValue(element, IN_FLUX_EXP);	
+	*outFlux = getExpressionValue(element, OUT_FLUX_EXP);	
+}
+
+bool VolumeVarContextExpression::isNullExpressionOK(int expIndex) {
+	if (expIndex == INITIAL_VALUE_EXP || expIndex == REACT_RATE_EXP) {
+		return false;
+	}
+
+	if (SimTool::getInstance()->getSimulation()->getSolverFromVariable(species)->isPDESolver()) {
+		if (expIndex == DIFF_RATE_EXP) {
+			return false;
+		}
+		if ((mesh->getDimension() >= 1 && (expIndex == BOUNDARY_XM_EXP || expIndex == BOUNDARY_XP_EXP || expIndex == VELOCITY_X_EXP)) 
+			|| (mesh->getDimension() >= 2 && (expIndex == BOUNDARY_YM_EXP || expIndex == BOUNDARY_YP_EXP || expIndex == VELOCITY_Y_EXP))
+			|| (mesh->getDimension() >= 3 && (expIndex == BOUNDARY_ZM_EXP || expIndex == BOUNDARY_ZP_EXP || expIndex == VELOCITY_Z_EXP))) {
+			return false;
+		}
+	}
+	return true;
 }

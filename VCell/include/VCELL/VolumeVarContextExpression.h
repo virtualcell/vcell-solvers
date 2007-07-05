@@ -13,6 +13,8 @@ public:
 	VolumeVarContextExpression(Feature *feature, string& varName);
 	~VolumeVarContextExpression();
 
+	bool resolveReferences(Simulation *sim);
+
 	double getInitialValue(long index);
 	double getDiffusionRate(long index);
 	double  getReactionRate(long volumeIndex);
@@ -39,6 +41,9 @@ public:
     double getConvectionVelocity_X(long index);
     double getConvectionVelocity_Y(long index);
     double getConvectionVelocity_Z(long index);
+
+protected:
+	bool isNullExpressionOK(int expIndex);
 };
 
 #endif

@@ -21,7 +21,7 @@ protected:
     MembraneRegionVarContext(Feature *feature, string& speciesName);
     bool uniformFlux;
     bool uniformRate;
-    bool zeroFluxBoundary;     
+    bool zeroFluxBoundary;
 };
 
 #endif

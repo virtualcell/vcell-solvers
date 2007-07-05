@@ -3,7 +3,7 @@
  * All rights reserved.
  */
 #include <VCELL/VolumeRegionVarContextExpression.h>
-#include <VCELL/Simulation.h>
+#include <VCELL/SimulationExpression.h>
 #include <VCELL/VolumeRegion.h>
 #include <Expression.h>
 
@@ -12,8 +12,20 @@ VolumeRegionVarContextExpression:: VolumeRegionVarContextExpression(Feature *fea
 {
 }
 
+bool VolumeRegionVarContextExpression::resolveReferences(Simulation* sim) {
+	bool bResolved = VarContext::resolveReferences(sim);
+	if (bResolved) {
+		bindAll(((SimulationExpression*)sim)->getOldSymbolTable());
+	}
+	return bResolved;
+}
+
+double VolumeRegionVarContextExpression::getInitialValue(long regionIndex) {
+	return getIndexValue(regionIndex, INITIAL_VALUE_EXP);
+}
+
 double VolumeRegionVarContextExpression::getReactionRate(long volumeIndex) {
-	return getValue(volumeIndex, REACT_RATE_EXP);
+	return getExpressionValue(volumeIndex, REACT_RATE_EXP);
 }
 
 double VolumeRegionVarContextExpression::getUniformRate(VolumeRegion *region){
@@ -21,14 +33,26 @@ double VolumeRegionVarContextExpression::getUniformRate(VolumeRegion *region){
 }
 
 void VolumeRegionVarContextExpression::getFlux(MembraneElement *element, double *inFlux, double *outFlux){
-	*inFlux = getValue(element, IN_FLUX_EXP);
-	*outFlux = getValue(element, OUT_FLUX_EXP);
+	*inFlux = getExpressionValue(element, IN_FLUX_EXP);
+	*outFlux = getExpressionValue(element, OUT_FLUX_EXP);
 }
 
 
 double VolumeRegionVarContextExpression::getRegionValue(VolumeRegion *region, long expIndex)
 {
-	int* indices = sim->getIndices();
-	indices[VAR_VOLUME_REGION_INDEX] = region->getId();
+	return getIndexValue(region->getId(), expIndex);
+}
+
+double VolumeRegionVarContextExpression::getIndexValue(long regionIndex, long expIndex)
+{
+	int* indices = ((SimulationExpression*)sim)->getIndices();
+	indices[VAR_VOLUME_REGION_INDEX] = regionIndex;
 	return expressions[expIndex]->evaluateProxy();	
+}
+
+bool VolumeRegionVarContextExpression::isNullExpressionOK(int expIndex) {
+	if (expIndex == INITIAL_VALUE_EXP || expIndex == REACT_RATE_EXP || expIndex == UNIFORM_RATE_EXP) {
+		return false;
+	}
+	return true;
 }

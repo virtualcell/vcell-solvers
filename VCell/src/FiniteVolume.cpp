@@ -27,6 +27,7 @@
 #include <VCELL/MembraneVarContextExpression.h>
 #include <VCELL/MembraneRegionVarContextExpression.h>
 #include <VCELL/SimulationMessaging.h>
+#include <VCELL/SimulationExpression.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/FieldData.h>
 
@@ -209,9 +210,9 @@ string trim(string& str) {
 	return str.substr(leftIndex, len);
 }
 
-Simulation* loadSimulation(ifstream& ifsInput, CartesianMesh* mesh) {
+SimulationExpression* loadSimulation(ifstream& ifsInput, CartesianMesh* mesh) {
 	//cout << "loading simulation" << endl;
-	Simulation* sim = new Simulation(mesh);
+	SimulationExpression* sim = new SimulationExpression(mesh);
 	string nextToken;
 	long sizeX = mesh->getNumVolumeX();
 	long sizeY = mesh->getNumVolumeY();
@@ -642,7 +643,7 @@ void loadFastSystem(ifstream& ifsInput, Feature* feature, FastSystemExpression* 
 	}	
 }
 
-void loadFeature(ifstream& ifsInput, Feature* feature, Simulation* sim) {
+void loadFeature(ifstream& ifsInput, Feature* feature, SimulationExpression* sim) {
 	//cout << "loading feature " << feature->getName() << endl;
 	string nextToken;
 
@@ -860,7 +861,7 @@ CartesianMesh* loadMesh(ifstream& ifsInput) {
 	return mesh;
 }
 
-void loadFieldData(ifstream& ifsInput, Simulation* sim) {
+void loadFieldData(ifstream& ifsInput, SimulationExpression* sim) {
 	if (sim == 0) {
 		throw "Simulation has to be initialized before loading field data";
 	}
@@ -899,7 +900,7 @@ void createSimTool(ifstream& ifsInput)
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "preprocessing started"));
 	SimTool::create();
 
-	Simulation *sim = NULL;
+	SimulationExpression *sim = NULL;
 	VCellModel *model = NULL;
 	CartesianMesh *mesh = NULL;
 	string meshfile;
@@ -967,7 +968,7 @@ void createSimTool(ifstream& ifsInput)
 }
 
 void printUsage() {
-	cout << "Arguments : [-d output] [-nz] fvInputFile [taskID]" <<  endl;
+	cout << "Arguments : [-d output] [-nz] [-tid taskID] fvInputFile" <<  endl;
 }
 
 #include <math.h>
@@ -998,20 +999,23 @@ int main(int argc, char *argv[])
 					exit(1);
 				}
 				outputPath = argv[i];
-			} else {
-				fvInputFile = argv[i];
+			} else if (!strcmp(argv[i], "-tid")) {
 				i ++;
 				if (i >= argc) {
-					break;
+					cout << "Missing taskID!" << endl;
+					printUsage();
+					exit(1);
 				}
 				for (int j = 0; j < (int)strlen(argv[i]); j ++) {
 					if (argv[i][j] < '0' || argv[i][j] > '9') {
-						cout << "Wrong argument : " << argv[i] << endl;
+						cout << "Wrong argument : " << argv[i] << ", taskID must be an integer!" << endl;
 						printUsage();
 						exit(1);
 					}
 				}
 				taskID = atoi(argv[i]);
+			} else {
+				fvInputFile = argv[i];
 			}
 		}
 		struct stat buf;

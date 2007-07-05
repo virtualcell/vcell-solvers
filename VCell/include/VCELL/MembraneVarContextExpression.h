@@ -6,12 +6,15 @@
 #define MEMBRANEVARCONTEXTEXPRESSION_H
 
 #include <VCELL/MembraneVarContext.h>
+class Feature;
 
 class MembraneVarContextExpression : public MembraneVarContext
 {
 public:
 	MembraneVarContextExpression(Feature *feature, string& varName);
     MembraneVarContextExpression(Feature *feature, string& varName, Expression* ivexp, Expression* drexp, Expression* rrexp);
+
+	bool resolveReferences(Simulation *sim);
 
     double  getInitialValue(MembraneElement *element);
     double  getMembraneReactionRate(MembraneElement *element);
@@ -30,6 +33,9 @@ public:
     double getYpBoundaryFlux(MembraneElement *element);
     double getZmBoundaryFlux(MembraneElement *element);
     double getZpBoundaryFlux(MembraneElement *element);
+
+protected:
+	bool isNullExpressionOK(int expIndex);
 };
 
 #endif

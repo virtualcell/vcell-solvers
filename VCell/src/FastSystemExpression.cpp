@@ -3,7 +3,7 @@
  * All rights reserved.
  */
 #include <VCELL/FastSystemExpression.h>
-#include <VCELL/Simulation.h>
+#include <VCELL/SimulationExpression.h>
 #include <VCELL/Variable.h>
 #include <Expression.h>
 #include <SimpleSymbolTable.h>
@@ -13,7 +13,7 @@
 //  class FastSystem
 //
 //-----------------------------------------------------------------
-FastSystemExpression::FastSystemExpression(int dimension, int numDepend, Simulation* sim) 
+FastSystemExpression::FastSystemExpression(int dimension, int numDepend, SimulationExpression* sim) 
 : FastSystem(dimension, numDepend)
 {	
 	simulation = sim;

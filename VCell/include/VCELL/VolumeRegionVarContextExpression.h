@@ -10,14 +10,21 @@
 class VolumeRegionVarContextExpression : public VolumeRegionVarContext
 {
 public:
-    virtual double  getReactionRate(long volumeIndex);
-    virtual double  getUniformRate(VolumeRegion *region);
-    virtual void    getFlux(MembraneElement *element, double *inFlux, double *outFlux);
+	bool resolveReferences(Simulation *sim);
+
+	double getInitialValue(long index);
+    double getReactionRate(long volumeIndex);
+    double getUniformRate(VolumeRegion *region);
+    void  getFlux(MembraneElement *element, double *inFlux, double *outFlux);
 
     VolumeRegionVarContextExpression(Feature *feature, string& speciesName);
 
 private:
 	double getRegionValue(VolumeRegion *region, long expIndex);	
+	double getIndexValue(long regionIndex, long expIndex);	
+
+protected:
+	bool isNullExpressionOK(int expIndex);
 };
 
 #endif

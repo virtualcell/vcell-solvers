@@ -3,24 +3,23 @@
 # All rights reserved.
 #
 CC = cl
-CPPFLAGS =	/nologo /c /GX /Ox /G6 /DWIN32 /MT /D_WIN32_WINNT=0x2000 /I..\..\SonicCClient\Win32\include /I..\..\SonicCClient\Win32\include\CPP /I..\include /I..\..\zlib
-#CPPFLAGS =	/O /I..\include\ /I..\..\zlib\ /DWIN32 /GX /O2 /G6  
-#CPPFLAGS =	/O /I..\include\ /DVCELL_DEBUG /DWIN32 /GX /O2 /G6  
+CPPFLAGS =	/nologo /c /GX /Ox /G6 /GR /DWIN32 /MT /D_WIN32_WINNT=0x2000 /I..\..\SonicCClient\Win32\include /I..\..\SonicCClient\Win32\include\CPP \
+			/I../../ExpressionParser /I..\include /I..\..\zlib
 
 !ifdef VC60
 CPPFLAGS = $(CPPFLAGS) /DVC60 
-TARGET=	vcellWin32_VC60.lib
+TARGET_LIB=	vcellWin32_VC60.lib
 OBJDIR = .\Win32_VC60
 !else
 CPPFLAGS = $(CPPFLAGS)
-TARGET=	vcellWin32.lib
+TARGET_LIB=	vcellWin32.lib
 OBJDIR = .\Win32
 !endif
 
-TARGETF = pcgwrapper.lib
+TARGET_FORLIB = pcgwrapper.lib
+TARGET_STANDALONE = FiniteVolume.exe
 
 FC= ifort
-#FOPTIONS = /Gm /O3 /Qipo /Qprec-div- /QxN /compile_only /thread
 FOPTIONS = /O3 /Qprec-div- /QxN /compile_only /MT /nologo /names:lowercase
 
 LIBTOOL = xilib
@@ -33,11 +32,13 @@ LIBTOOL = xilib
 .cpp{$(OBJDIR)}.obj :		
 	$(CC) $(CPPFLAGS) /Fo$@ $<
 
-default all: $(TARGET) $(TARGETF)
+default all: $(TARGET) $(TARGET_FORLIB) $(TARGET_STANDALONE)
 
 $(OBJDIR) :
     if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"
 
+STANDALONE_MAIN_OBJ = $(OBJDIR)\FiniteVolume.obj
+FOR_OBJECTS = $(OBJDIR)\pcgwrapper.obj
 CPPOBJECTS = 	\
 		$(OBJDIR)\AlgebraicSystem.obj				\
 		$(OBJDIR)\CartesianMesh.obj			\
@@ -48,11 +49,11 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\DataSet.obj			\
 #		$(OBJDIR)\DomainPDEScheduler.obj		\
 		$(OBJDIR)\EqnBuilder.obj			\
-		$(OBJDIR)\EqnBuilderReactionDiffusionConvection.obj		\
-		$(OBJDIR)\EqnBuilderReactionDiffusion.obj	\
+#		$(OBJDIR)\EqnBuilderReactionDiffusionConvection.obj		\
+#		$(OBJDIR)\EqnBuilderReactionDiffusion.obj	\
 		$(OBJDIR)\EqnBuilderReactionForward.obj	\
 		$(OBJDIR)\FastSystem.obj			\
-#		$(OBJDIR)\FastSystemExpression.obj			\
+		$(OBJDIR)\FastSystemExpression.obj			\
 		$(OBJDIR)\Feature.obj			\
 		$(OBJDIR)\FieldData.obj		\
 		$(OBJDIR)\FVUtils.obj			\
@@ -62,21 +63,22 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\MembraneRegion.obj	\
 		$(OBJDIR)\MembraneRegionEqnBuilder.obj	\
 		$(OBJDIR)\MembraneRegionVarContext.obj	\
-#		$(OBJDIR)\MembraneRegionVarContextExpression.obj	\
+		$(OBJDIR)\MembraneRegionVarContextExpression.obj	\
 		$(OBJDIR)\MembraneRegionVariable.obj	\
 		$(OBJDIR)\MembraneVarContext.obj		\
-#		$(OBJDIR)\MembraneVarContextExpression.obj	\
+		$(OBJDIR)\MembraneVarContextExpression.obj	\
 		$(OBJDIR)\MembraneVariable.obj		\
 		$(OBJDIR)\Mesh.obj			\
 		$(OBJDIR)\ODESolver.obj	\
 		$(OBJDIR)\ParticleContext.obj		\
 		$(OBJDIR)\PDESolver.obj	\
-		$(OBJDIR)\PdeSolverDiana.obj		\
+#		$(OBJDIR)\PdeSolverDiana.obj		\
 		$(OBJDIR)\Region.obj			\
 		$(OBJDIR)\Scheduler.obj			\
 		$(OBJDIR)\SerialScheduler.obj			\
 		$(OBJDIR)\SimTool.obj			\
 		$(OBJDIR)\Simulation.obj			\
+		$(OBJDIR)\SimulationExpression.obj	\
 		$(OBJDIR)\SimulationMessaging.obj	\
 		$(OBJDIR)\Solver.obj			\
 		$(OBJDIR)\SparseLinearSolver.obj		\
@@ -86,32 +88,37 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\SparseVolumeEqnBuilder.obj		\
 #		$(OBJDIR)\TIFFImage.obj			\
 #		$(OBJDIR)\SplitScheduler.obj			\
-		$(OBJDIR)\StructuredPDESolver.obj			\
+		$(OBJDIR)\StructuredPDESolver.obj		\
 		$(OBJDIR)\Timer.obj			\
-		$(OBJDIR)\TriDiagMatrix.obj		\
+#		$(OBJDIR)\TriDiagMatrix.obj		\
 		$(OBJDIR)\VarContext.obj			\
 		$(OBJDIR)\Variable.obj			\
 		$(OBJDIR)\VCellModel.obj			\
 		$(OBJDIR)\VolumeRegion.obj			\
 		$(OBJDIR)\VolumeRegionEqnBuilder.obj			\
 		$(OBJDIR)\VolumeRegionVarContext.obj			\
-#		$(OBJDIR)\VolumeRegionVarContextExpression.obj			\
+		$(OBJDIR)\VolumeRegionVarContextExpression.obj			\
 		$(OBJDIR)\VolumeRegionVariable.obj			\
 		$(OBJDIR)\VolumeVarContext.obj			\
-#		$(OBJDIR)\VolumeVarContextExpression.obj			\
+		$(OBJDIR)\VolumeVarContextExpression.obj			\
 		$(OBJDIR)\VolumeVariable.obj
 
-FOROBJECTS =	$(OBJDIR)\pcgwrapper.obj
+LIBS = Ws2_32.lib user32.lib advapi32.lib $(TARGET_LIB) ..\..\IFortran\mkl_c.lib ..\..\ExpressionParser\ExpParserMT.lib \
+	..\..\PCGPack\pcgpack_dbl.lib ..\..\qhull\qhull.lib ..\..\zlib\zlib.lib ..\..\zip\zip32.lib ..\..\unzip\\unzip32.lib \
+	..\..\SonicCClient\win32\lib\libsmq.lib ..\..\SonicCClient\win32\lib\libsmqj.lib /link /NODEFAULTLIB:LIBCD /NODEFAULTLIB:LIBC /LIBPATH:..\..\IFortran\
 
-$(TARGET):	$(OBJDIR) $(CPPOBJECTS) $(FOROBJECTS)
-	$(LIBTOOL) $(CPPOBJECTS) $(FOROBJECTS) /out:$@
+$(TARGET_LIB):	$(OBJDIR) $(CPPOBJECTS) $(FOR_OBJECTS)
+	$(LIBTOOL) $(CPPOBJECTS) $(FOR_OBJECTS) /out:$@
 		
-$(TARGETF): $(FOROBJECTS)
-	$(LIBTOOL) /out:$(TARGETF) $(FOROBJECTS)
+$(TARGET_FORLIB): $(FOR_OBJECTS)
+	$(LIBTOOL) /out:$(TARGET_FORLIB) $(FOR_OBJECTS)
+	
+$(TARGET_STANDALONE) : $(TARGET_LIB) $(TARGET_FORLIB) $(STANDALONE_MAIN_OBJ)
+	$(CC) /Fe$@ $(STANDALONE_MAIN_OBJ) $(CPPOBJECTS) $(FOR_OBJECTS) $(LIBS)
 	
 clean:
 	if exist "$(OBJDIR)" del /Q $(OBJDIR)\*.*
-	del $(TARGET)	
+	del $(TARGET_LIB) $(TARGET_FORLIB) $(STANDALONE_MAIN_OBJ)
 	
 cleanf:
 	del $(FOROBJECTS)

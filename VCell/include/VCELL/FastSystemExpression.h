@@ -5,7 +5,7 @@
 #include <string>
 using namespace std;
 
-class Simulation;
+class SimulationExpression;
 class SimpleSymbolTable;
 class Expression;
 
@@ -16,7 +16,7 @@ class Expression;
 //-----------------------------------------------------------------
 class FastSystemExpression : public FastSystem {
 public:
-    FastSystemExpression(int dimension, int numDepend, Simulation* sim);
+    FastSystemExpression(int dimension, int numDepend, SimulationExpression* sim);
 	~FastSystemExpression();
 	
 	virtual bool resolveReferences(Simulation *sim);
@@ -37,7 +37,7 @@ public:
 
 private:
 	string* pseudoSymbols;
-	Simulation* simulation;
+	SimulationExpression* simulation;
 	double* pseudoConstants;
 	SimpleSymbolTable* indepPseudoFieldSymbolTable;
 	double* indepPseudoFieldValues;	
