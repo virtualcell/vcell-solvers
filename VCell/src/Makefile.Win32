@@ -32,7 +32,7 @@ LIBTOOL = xilib
 .cpp{$(OBJDIR)}.obj :		
 	$(CC) $(CPPFLAGS) /Fo$@ $<
 
-default all: $(TARGET) $(TARGET_FORLIB) $(TARGET_STANDALONE)
+default all: $(TARGET_LIB) $(TARGET_FORLIB) $(TARGET_STANDALONE)
 
 $(OBJDIR) :
     if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"
@@ -110,7 +110,7 @@ LIBS = Ws2_32.lib user32.lib advapi32.lib $(TARGET_LIB) ..\..\IFortran\mkl_c.lib
 $(TARGET_LIB):	$(OBJDIR) $(CPPOBJECTS) $(FOR_OBJECTS)
 	$(LIBTOOL) $(CPPOBJECTS) $(FOR_OBJECTS) /out:$@
 		
-$(TARGET_FORLIB): $(FOR_OBJECTS)
+$(TARGET_FORLIB): $(OBJDIR) $(FOR_OBJECTS)
 	$(LIBTOOL) /out:$(TARGET_FORLIB) $(FOR_OBJECTS)
 	
 $(TARGET_STANDALONE) : $(TARGET_LIB) $(TARGET_FORLIB) $(STANDALONE_MAIN_OBJ)
