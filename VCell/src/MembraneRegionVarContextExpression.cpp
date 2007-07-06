@@ -51,7 +51,7 @@ double MembraneRegionVarContextExpression::getIndexValue(long regionIndex, long 
 }
 
 bool MembraneRegionVarContextExpression::isNullExpressionOK(int expIndex) {
-	if (expIndex == INITIAL_VALUE_EXP || expIndex == REACT_RATE_EXP || expIndex == UNIFORM_RATE_EXP) {
+	if (expIndex == INITIAL_VALUE_EXP || expIndex == REACT_RATE_EXP || expIndex == UNIFORM_RATE_EXP || expIndex == IN_FLUX_EXP || expIndex == OUT_FLUX_EXP) {
 		return false;
 	}
 	return true;

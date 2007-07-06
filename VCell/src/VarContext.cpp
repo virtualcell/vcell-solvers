@@ -113,7 +113,7 @@ void VarContext::bindAll(SymbolTable* symbolTable) {
 double VarContext::getExpressionValue(MembraneElement* element, long expIndex)
 {
 	if (expressions[expIndex] == 0) { // not defined
-		throw "VarContext::getValue(), expression not defined";
+		throw "VarContext::getExpressionValue(), expression not defined";
 	}
 	if (constantValues[expIndex] != NULL) {
 		return constantValues[expIndex][0];
@@ -130,14 +130,14 @@ double VarContext::getExpressionConstantValue(long expIndex)
 {	
 	// for periodic boundary condition
 	if (expressions[expIndex] == 0 || constantValues[expIndex] == 0) { // not defined
-		throw "VarContext::getConstantValue() : expression not defined OR not a constant expression";
+		throw "VarContext::getExpressionConstantValue() : expression not defined OR not a constant expression";
 	}
 	return constantValues[expIndex][0];	
 }
 
 double VarContext::getExpressionValue(long volIndex, long expIndex) {	
 	if (expressions[expIndex] == 0) { // not defined
-		throw "VarContext::getValue(), expression not defined";
+		throw "VarContext::getExpressionValue(), expression not defined";
 	}
 	if (constantValues[expIndex] != NULL) {
 		return constantValues[expIndex][0];

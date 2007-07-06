@@ -423,6 +423,9 @@ VarContext* loadEquation(ifstream& ifsInput, Feature* feature, Variable* var) {
 		} else if (nextToken == "RATE") {
 			Expression* react_exp = readExpression(ifsInput, var_name);
 			varContext->setExpression(react_exp, REACT_RATE_EXP);
+		} else if (nextToken == "UNIFORMRATE") {
+			Expression* react_exp = readExpression(ifsInput, var_name);
+			varContext->setExpression(react_exp, UNIFORM_RATE_EXP);
 		} else if (nextToken == "BOUNDARY_XM") {
 			Expression* boundaryexp = readExpression(ifsInput, var_name);
 			varContext->setExpression(boundaryexp, BOUNDARY_XM_EXP);
@@ -450,8 +453,14 @@ VarContext* loadEquation(ifstream& ifsInput, Feature* feature, Variable* var) {
 		} else if (nextToken == "VELOCITY_Z") {
 			Expression* velexp = readExpression(ifsInput, var_name);
 			varContext->setExpression(velexp, VELOCITY_Z_EXP);
-		}
-	}
+		} else if (nextToken == "INFLUX") {
+			Expression* inexp = readExpression(ifsInput, var_name);
+			varContext->setExpression(inexp, IN_FLUX_EXP);
+		} else if (nextToken == "OUTFLUX") {
+			Expression* outexp = readExpression(ifsInput, var_name);
+			varContext->setExpression(outexp, OUT_FLUX_EXP);
+		} 
+	}	
 	return varContext;
 }
 
