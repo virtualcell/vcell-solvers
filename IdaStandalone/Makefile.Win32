@@ -1,6 +1,6 @@
-CFLAGS =	/c /GX /O2 /DWIN32 -I..\IDAWin -I..\ExpressionParser
+CFLAGS =	/c /GX /O2 /DWIN32 -I..\IDAWin -I..\ExpressionParser -I ..\sundials\include -I ..\sundials\src
 
-LIBS =	..\IDAWin\sundials_ida.lib ..\IDAWin\vcellIDA.lib ..\ExpressionParser\ExpParser.lib
+LIBS =	..\sundials\lib\sundials.lib ..\sundials\lib\sundials_nvecserial.lib ..\sundials\lib\sundials_ida.lib ..\IDAWin\vcellIDA.lib ..\ExpressionParser\ExpParser.lib
 
 STDALONE_TARGET = IDAStandalone.exe
 

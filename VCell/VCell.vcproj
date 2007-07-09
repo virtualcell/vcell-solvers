@@ -97,6 +97,85 @@
 			<Tool
 				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
+		<Configuration
+			Name="MTD|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="4"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000"
+				MinimalRebuild="TRUE"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				RuntimeTypeInfo="TRUE"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="4"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)/VCell.lib"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+		<Configuration
+			Name="MT|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="4"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_WIN32_WINNT=0x2000"
+				RuntimeLibrary="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="3"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLibrarianTool"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
 	</Configurations>
 	<References>
 	</References>
@@ -106,22 +185,28 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
-				RelativePath=".\src\App.cpp">
+				RelativePath=".\src\AlgebraicSystem.cpp">
+			</File>
+			<File
+				RelativePath=".\src\CartesianMesh.cpp">
 			</File>
 			<File
 				RelativePath=".\src\Contour.cpp">
 			</File>
 			<File
+				RelativePath=".\src\ContourRegionVariable.cpp">
+			</File>
+			<File
 				RelativePath=".\src\ContourSubdomain.cpp">
 			</File>
 			<File
-				RelativePath=".\src\CString.cpp">
+				RelativePath=".\src\ContourVarContext.cpp">
+			</File>
+			<File
+				RelativePath=".\src\ContourVariable.cpp">
 			</File>
 			<File
 				RelativePath=".\src\DataSet.cpp">
-			</File>
-			<File
-				RelativePath=".\src\DomainPDEScheduler.cpp">
 			</File>
 			<File
 				RelativePath=".\src\EqnBuilder.cpp">
@@ -139,13 +224,19 @@
 				RelativePath=".\src\FastSystem.cpp">
 			</File>
 			<File
+				RelativePath=".\src\FastSystemExpression.cpp">
+			</File>
+			<File
 				RelativePath=".\src\Feature.cpp">
 			</File>
 			<File
-				RelativePath=".\src\FieldDataSet.cpp">
+				RelativePath=".\src\FieldData.cpp">
 			</File>
 			<File
 				RelativePath=".\src\FVUtils.cpp">
+			</File>
+			<File
+				RelativePath=".\src\Histogram.cpp">
 			</File>
 			<File
 				RelativePath=".\src\MembraneEqnBuilderDiffusion.cpp">
@@ -154,13 +245,40 @@
 				RelativePath=".\src\MembraneEqnBuilderForward.cpp">
 			</File>
 			<File
+				RelativePath=".\src\MembraneRegion.cpp">
+			</File>
+			<File
+				RelativePath=".\src\MembraneRegionEqnBuilder.cpp">
+			</File>
+			<File
+				RelativePath=".\src\MembraneRegionVarContext.cpp">
+			</File>
+			<File
+				RelativePath=".\src\MembraneRegionVarContextExpression.cpp">
+			</File>
+			<File
+				RelativePath=".\src\MembraneRegionVariable.cpp">
+			</File>
+			<File
+				RelativePath=".\src\MembraneVarContext.cpp">
+			</File>
+			<File
+				RelativePath=".\src\MembraneVarContextExpression.cpp">
+			</File>
+			<File
+				RelativePath=".\src\MembraneVariable.cpp">
+			</File>
+			<File
 				RelativePath=".\src\Mesh.cpp">
 			</File>
 			<File
-				RelativePath=".\src\MeshCorrect.cpp">
+				RelativePath=".\src\ODESolver.cpp">
 			</File>
 			<File
 				RelativePath=".\src\ParticleContext.cpp">
+			</File>
+			<File
+				RelativePath=".\src\PDESolver.cpp">
 			</File>
 			<File
 				RelativePath=".\src\PdeSolverDiana.cpp">
@@ -169,16 +287,19 @@
 				RelativePath=".\src\Region.cpp">
 			</File>
 			<File
-				RelativePath=".\src\RegionEqnBuilder.cpp">
+				RelativePath=".\src\Scheduler.cpp">
 			</File>
 			<File
-				RelativePath=".\src\Scheduler.cpp">
+				RelativePath=".\src\SerialScheduler.cpp">
 			</File>
 			<File
 				RelativePath=".\src\SimTool.cpp">
 			</File>
 			<File
 				RelativePath=".\src\Simulation.cpp">
+			</File>
+			<File
+				RelativePath=".\src\SimulationExpression.cpp">
 			</File>
 			<File
 				RelativePath=".\src\SimulationMessaging.cpp">
@@ -202,7 +323,7 @@
 				RelativePath=".\src\SparseVolumeEqnBuilder.cpp">
 			</File>
 			<File
-				RelativePath=".\src\TIFFImage.cpp">
+				RelativePath=".\src\StructuredPDESolver.cpp">
 			</File>
 			<File
 				RelativePath=".\src\Timer.cpp">
@@ -219,28 +340,64 @@
 			<File
 				RelativePath=".\src\VCellModel.cpp">
 			</File>
+			<File
+				RelativePath=".\src\VolumeRegion.cpp">
+			</File>
+			<File
+				RelativePath=".\src\VolumeRegionEqnBuilder.cpp">
+			</File>
+			<File
+				RelativePath=".\src\VolumeRegionVarContext.cpp">
+			</File>
+			<File
+				RelativePath=".\src\VolumeRegionVarContextExpression.cpp">
+			</File>
+			<File
+				RelativePath=".\src\VolumeRegionVariable.cpp">
+			</File>
+			<File
+				RelativePath=".\src\VolumeVarContext.cpp">
+			</File>
+			<File
+				RelativePath=".\src\VolumeVarContextExpression.cpp">
+			</File>
+			<File
+				RelativePath=".\src\VolumeVariable.cpp">
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
-				RelativePath=".\include\Vcell\App.h">
+				RelativePath=".\include\Vcell\AlgebraicSystem.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\CartesianMesh.h">
 			</File>
 			<File
 				RelativePath=".\include\Vcell\Contour.h">
 			</File>
 			<File
+				RelativePath=".\include\Vcell\ContourRegionVariable.h">
+			</File>
+			<File
 				RelativePath=".\include\Vcell\ContourSubdomain.h">
 			</File>
 			<File
-				RelativePath=".\include\Vcell\CString.h">
+				RelativePath=".\include\Vcell\ContourVarContext.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\ContourVariable.h">
 			</File>
 			<File
 				RelativePath=".\include\Vcell\DataSet.h">
 			</File>
 			<File
 				RelativePath=".\include\Vcell\DomainPDEScheduler.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\DoubleVector3.h">
 			</File>
 			<File
 				RelativePath=".\include\Vcell\Element.h">
@@ -261,16 +418,19 @@
 				RelativePath=".\include\Vcell\FastSystem.h">
 			</File>
 			<File
+				RelativePath=".\include\Vcell\FastSystemExpression.h">
+			</File>
+			<File
 				RelativePath=".\include\Vcell\Feature.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\FieldData.h">
 			</File>
 			<File
 				RelativePath=".\include\Vcell\FVUtils.h">
 			</File>
 			<File
-				RelativePath=".\include\Vcell\ilTIFF.h">
-			</File>
-			<File
-				RelativePath=".\include\Vcell\Image.h">
+				RelativePath=".\include\Vcell\Histogram.h">
 			</File>
 			<File
 				RelativePath=".\include\Vcell\IncidenceMatrix.h">
@@ -282,10 +442,43 @@
 				RelativePath=".\include\Vcell\MembraneEqnBuilderForward.h">
 			</File>
 			<File
+				RelativePath=".\include\Vcell\MembraneRegion.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\MembraneRegionEqnBuilder.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\MembraneRegionVarContext.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\MembraneRegionVarContextExpression.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\MembraneRegionVariable.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\MembraneVarContext.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\MembraneVarContextExpression.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\MembraneVariable.h">
+			</File>
+			<File
 				RelativePath=".\include\Vcell\Mesh.h">
 			</File>
 			<File
+				RelativePath=".\include\Vcell\ODESolver.h">
+			</File>
+			<File
 				RelativePath=".\include\Vcell\ParticleContext.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\PDEScheduler.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\PDESolver.h">
 			</File>
 			<File
 				RelativePath=".\include\Vcell\PdeSolverDiana.h">
@@ -294,13 +487,10 @@
 				RelativePath=".\include\Vcell\Region.h">
 			</File>
 			<File
-				RelativePath=".\include\Vcell\RegionEqnBuilder.h">
-			</File>
-			<File
 				RelativePath=".\include\Vcell\Scheduler.h">
 			</File>
 			<File
-				RelativePath=".\include\Vcell\SimConstants.h">
+				RelativePath=".\include\Vcell\SerialScheduler.h">
 			</File>
 			<File
 				RelativePath=".\include\Vcell\SimTool.h">
@@ -310,6 +500,9 @@
 			</File>
 			<File
 				RelativePath=".\include\Vcell\Simulation.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\SimulationExpression.h">
 			</File>
 			<File
 				RelativePath=".\include\Vcell\SimulationMessaging.h">
@@ -333,7 +526,7 @@
 				RelativePath=".\include\Vcell\SparseVolumeEqnBuilder.h">
 			</File>
 			<File
-				RelativePath=".\include\Vcell\TIFFImage.h">
+				RelativePath=".\include\Vcell\StructuredPDESolver.h">
 			</File>
 			<File
 				RelativePath=".\include\Vcell\Timer.h">
@@ -351,6 +544,30 @@
 				RelativePath=".\include\Vcell\VCellModel.h">
 			</File>
 			<File
+				RelativePath=".\include\Vcell\VolumeRegion.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\VolumeRegionEqnBuilder.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\VolumeRegionVarContext.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\VolumeRegionVarContextExpression.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\VolumeRegionVariable.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\VolumeVarContext.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\VolumeVarContextExpression.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\VolumeVariable.h">
+			</File>
+			<File
 				RelativePath=".\include\Vcell\VoronoiRidge.h">
 			</File>
 		</Filter>
@@ -358,6 +575,9 @@
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
+			<File
+				RelativePath=".\src\Makefile.Win32">
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

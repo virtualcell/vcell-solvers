@@ -1,102 +1,73 @@
-#include "VCellIDASolver.h"
+#include "VCellCVodeSolver.h"
 #include "Expression.h"
 #include "SimpleSymbolTable.h"
-#include "VCellIDASolver.h"
-#include "OdeResultSet.h"
 #include "Exception.h"
 #include "OdeResultSet.h"
-#include "StoppedByUserException.h"
-using namespace VCell;
-
 #include <assert.h>
-#include <ida/ida.h>
-#include <ida/ida_dense.h>
-#include <nvector/nvector_serial.h>
+#include "StoppedByUserException.h"
 
-char* getIDAErrorMessage(int Status) {
-	char *errMsg = NULL;
-	switch (Status) {
-		case IDA_SUCCESS: {
-			return "IDA_SUCCESS: IDASolve succeeded and no roots were found";
+#include <cvode/cvode.h>             /* prototypes for CVODE fcts. and consts. */
+#include <nvector/nvector_serial.h>  /* serial N_Vector types, fcts., and macros */
+#include <cvode/cvode_dense.h>       /* prototype for CVDense */
+#include <sundials/sundials_dense.h> /* definitions DenseMat DENSE_ELEM */
+#include <sundials/sundials_types.h> /* definition of type realtype */
+
+char* getCVodeErrorMessage(int returnCode) {
+	switch (returnCode){
+		case CV_SUCCESS: {
+			return "CV_SUCCESS: CVode succeeded and no roots were found.";
+		}						 
+		case CV_ROOT_RETURN: {
+			return "CV_ROOT_RETURN: CVode succeeded, and found one or more roots. If nrtfn > 1, call CVodeGetRootInfo to see which g_i were found to have a root at (*tret).";
+		}   
+		case CV_TSTOP_RETURN: {
+			return "CV_TSTOP_RETURN: CVode succeeded and returned at tstop.";
 		}
-		case IDA_ROOT_RETURN:  {
-			return "IDA_ROOT_RETURN: IDASolve succeeded, and found one or more roots. If nrtfn > 1, call IDAGetRootInfo to see which g_i were found to have a root at (*tret).";
+		case CV_MEM_NULL:{
+			return "CV_MEM_NULL: mem argument was null";
 		}
-		case IDA_TSTOP_RETURN: {
-			return "IDA_TSTOP_RETURN: IDASolve returns computed results for the independent variable value tstop. That is, tstop was reached.";
+		case CV_ILL_INPUT:{
+			return "CV_ILL_INPUT: one of the inputs to CVode is illegal";
 		}
-		case IDA_MEM_NULL: {
-			return "IDA_MEM_NULL: The IDA_mem argument was NULL";
+		case CV_TOO_MUCH_WORK:{
+			return "CV_TOO_MUCH_WORK: took mxstep internal steps but could not reach tout";
 		}
-		case IDA_ILL_INPUT: {
-			return "IDA_ILL_INPUT: One of the inputs to IDASolve is illegal";
+		case CV_TOO_MUCH_ACC:{
+			return "CV_TOO_MUCH_ACC: could not satisfy the accuracy demanded by the user for some internal step";
 		}
-		case IDA_TOO_MUCH_WORK: {
-			return "IDA_TOO_MUCH_WORK: The solver took mxstep internal steps but could not reach tout. The default value for mxstep is MXSTEP_DEFAULT = 500";			
+		case CV_ERR_FAILURE:{
+			return "CV_ERR_FAILURE: error test failures occurred too many times during one internal step";
 		}
-		case IDA_TOO_MUCH_ACC: {
-			return "IDA_TOO_MUCH_ACC: The solver could not satisfy the accuracy demanded by the user for some internal step.";
+		case CV_CONV_FAILURE:{
+			return "CV_CONV_FAILURE: convergence test failures occurred too many times during one internal step";
 		}
-		case IDA_ERR_FAIL: {
-			return "IDA_ERR_FAIL: Error test failures occurred too many times (=MXETF = 10) during one internal step";
+		case CV_LINIT_FAIL:{
+			return "CV_LINIT_FAIL: the linear solver's initialization function failed.";
 		}
-		case IDA_CONV_FAIL: {
-			return "IDA_CONV_FAIL: Convergence test failures occurred too many times (= MXNCF = 10) during one internal step.";
+		case CV_LSETUP_FAIL:{
+			return "CV_LSETUP_FAIL: the linear solver's setup routine failed in an unrecoverable manner.";
 		}
-		case IDA_LSETUP_FAIL:{
-			return "IDA_LSETUP_FAIL: The linear solver's setup routine failed in an unrecoverable manner.";
-		}
-		case IDA_LSOLVE_FAIL:{
-			return "IDA_LSOLVE_FAIL: The linear solver's solve routine failed  in an unrecoverable manner.";
-		}
-		case IDA_CONSTR_FAIL:{
-			return "IDA_CONSTR_FAIL: The inequality constraints were violated, and the solver was unable to recover.";
-		}
-		case IDA_REP_RES_ERR:{
-			return "IDA_REP_RES_ERR: The user's residual function repeatedly returned a recoverable error flag, but the solver was unable to recover.";
-		}
-		case IDA_RES_FAIL:{
-			return "IDA_RES_FAIL: The user's residual function returned a nonrecoverable error flag.";
+		case CV_LSOLVE_FAIL:{
+			return "CV_LSOLVE_FAIL: the linear solver's solve routine failed in an unrecoverable manner";
 		}
 		default:
-			return "IDA: unknown error";
-	}
+			return "CVode: unknown error";
+	}	
 }
 
-VCellIDASolver::VCellIDASolver(istream& inputstream, bool arg_bPrintProgress) : VCellSundialsSolver(inputstream, arg_bPrintProgress) {
+VCellCVodeSolver::VCellCVodeSolver(istream& inputstream, bool bPrintProgress) : VCellSundialsSolver(inputstream, bPrintProgress) {
 	rateExpressions = 0;
 	rateSymbolTable = 0;
-
-	yp = 0;
 
 	readInput(inputstream);
 }
 
-
-VCellIDASolver::~VCellIDASolver() {
-	N_VDestroy_Serial(yp);
-
+VCellCVodeSolver::~VCellCVodeSolver() {
 	for (int i = 0; i < NEQ; i ++) {
 		delete rateExpressions[i];
 	}
 	delete[] rateExpressions;
 	delete rateSymbolTable;
-}
-
-//  Residual
-int VCellIDASolver::Residual_callback(realtype t, N_Vector y, N_Vector yp, N_Vector r, void *rdata) {
-	VCellIDASolver* solver = (VCellIDASolver*)rdata;
-	return solver->Residual(t, y, yp, r);
-}
-
-//  Residual
-int VCellIDASolver::Residual(realtype t, N_Vector y, N_Vector yp, N_Vector r) {
-	values[0] = t;	
-	memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
-	for (int i = 0; i < NEQ; i ++) {
-		NV_Ith_S(r, i) = rateExpressions[i]->evaluateVector(values) - NV_Ith_S(yp, i);
-	}
-	return 0;
 }
 
 /*
@@ -114,7 +85,7 @@ Input format: (NUM_EQUATIONS must be the last parameter before VARIABLES)
 	NUM_EQUATIONS 1
 	ODE S2 INIT 0.0 RATE (1000000.0 * asech((5.0E-7 * (1000000.0 - S2))));
 */
-void VCellIDASolver::readInput(istream& inputstream) { 
+void VCellCVodeSolver::readInput(istream& inputstream) { 
 	try {
 		string name;
 		while (true) {
@@ -141,9 +112,7 @@ void VCellIDASolver::readInput(istream& inputstream) {
 					outputTimes.push_back(timePoint);
 					count ++;
 				}
-				if (outputTimes[outputTimes.size() - 1] < ENDING_TIME) {
-					outputTimes.push_back(ENDING_TIME);
-				}
+				ENDING_TIME = outputTimes[outputTimes.size() - 1];
 			} else if (name == "OUTPUT_TIMES") {
 				int totalNumTimePoints;	
 				double timePoint;
@@ -154,7 +123,9 @@ void VCellIDASolver::readInput(istream& inputstream) {
 						outputTimes.push_back(timePoint);
 					}
 				}
-				ENDING_TIME = outputTimes[outputTimes.size() - 1];
+				if (outputTimes[outputTimes.size() - 1] < ENDING_TIME) {
+					outputTimes.push_back(ENDING_TIME);
+				}
 			} else if (name == "NUM_PARAMETERS") {
 				inputstream >> NPARAM;
 				for (int i = 0; i < NPARAM; i ++) {
@@ -237,23 +208,40 @@ void VCellIDASolver::readInput(istream& inputstream) {
 
 		y = N_VNew_Serial(NEQ);
 		check_flag((void *)y, "N_VNew_Serial", 0);
-		yp = N_VNew_Serial(NEQ);
-		check_flag((void *)yp, "N_VNew_Serial", 0);
-	} catch (const char* ex) {
-		throw Exception(string("VCellIDASolver::readInput() : ") + ex);
+	} catch (char* ex) {
+		throw Exception(string("VCellCVodeSolver::readInput() : ") + ex);
 	} catch (Exception& ex) {
-		throw Exception(string("VCellIDASolver::readInput() : ") + ex.getMessage());
+		throw Exception(string("VCellCVodeSolver::readInput() : ") + ex.getMessage());
 	} catch (...) {
-		throw "VCellIDASolver::readInput() : caught unknown exception";
+		throw "VCellCVodeSolver::readInput() : caught unknown exception";
 	}
 }
 
-void VCellIDASolver::solve(double* paramValues, FILE* outputFile, void (*checkStopRequested)(double, long)) {
+void VCellCVodeSolver::RHS (realtype t, N_Vector y, N_Vector r) {	
+	values[0] = t;
+	memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
+	double* r_data = NV_DATA_S(r);
+	for (int i = 0; i < NEQ; i ++) {
+		r_data[i] = rateExpressions[i]->evaluateVector(values);
+	}	
+}
+
+double VCellCVodeSolver::RHS (double* allValues, int equationIndex) {	
+	return rateExpressions[equationIndex]->evaluateVector(allValues);		
+}
+
+int VCellCVodeSolver::RHS_callback(realtype t, N_Vector y, N_Vector r, void *fdata) {
+	VCellCVodeSolver* solver = (VCellCVodeSolver*)fdata;
+	solver->RHS(t, y, r);
+	return 0;
+}
+
+void VCellCVodeSolver::solve(double* paramValues, FILE* outputFile, void (*checkStopRequested)(double, long)) {
 	if (checkStopRequested != 0) {
 		checkStopRequested(STARTING_TIME, 0);
 	}
 
-	if (outputFile != 0) {
+	if (outputFile != 0) {	
 		//  Print header...
 		for (int i = 0; i < odeResultSet->getNumColumns(); i++) {
 			fprintf(outputFile, "%s:", odeResultSet->getColumnName(i).data());
@@ -267,34 +255,24 @@ void VCellIDASolver::solve(double* paramValues, FILE* outputFile, void (*checkSt
 	// copy parameter values to the end of values, these will stay the same during solving
 	memset(values, 0, (NEQ + 1) * sizeof(double));
 	memcpy(values + NEQ + 1, paramValues, NPARAM * sizeof(double));
-	
-	// Initialize y and y'.
-	for (int i = 0; i < NEQ; i ++) {
-		NV_Ith_S(y,i) = initialConditionExpressions[i]->evaluateVector(paramValues);		
-	}
-	//  This might be replaced by a call to IDACalcIC() or something...later...
-	//  For now, this computes y'...later we might want to compute y' AND equilibrate...
-	values[0] = Time;
-	memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
-	for (int i = 0; i < NEQ; i ++) {
-		NV_Ith_S(yp, i) = rateExpressions[i]->evaluateVector(values);
-	}		
-	// Scalar relative tolerance, scalar absolute tolerance...
-	// Later turn absolute tolerance into a vector...
-	int ToleranceType = IDA_SS;
 
-	void* ida_mem = IDACreate();
-	check_flag((void *)ida_mem, "IDACreate", 0);
-	// Call IDAMalloc to set up problem memory.
-	int flag = IDAMalloc(ida_mem, Residual_callback, STARTING_TIME, y, yp, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
-	check_flag(&flag, "IDAMalloc", 1);
-	IDASetRdata(ida_mem, this);
-	flag = IDADense(ida_mem, NEQ);
-	check_flag(&flag, "IDADense", 1);		
-	
-	// write initial conditions
+	//Initialize y
+	for (int i = 0; i < NEQ; i ++) {
+		NV_Ith_S(y, i) = initialConditionExpressions[i]->evaluateVector(paramValues);		
+	}		
+
+	int ToleranceType = CV_SS;
+	void* cvode_mem = CVodeCreate(CV_BDF, CV_NEWTON);
+	check_flag((void *)cvode_mem, "CVodeCreate", 0);
+	int flag = CVodeMalloc(cvode_mem, RHS_callback, STARTING_TIME, y, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
+	check_flag(&flag, "CVodeMalloc", 1);
+	CVodeSetFdata(cvode_mem, this);
+	flag = CVDense(cvode_mem, NEQ);
+	check_flag(&flag, "CVDense", 1);
+
+	// write intial conditions
 	writeData(Time, y, outputFile);
-	
+
 	double percentile=0.00;
 	double increment =0.01;
 	long iterationCount=0;
@@ -304,22 +282,22 @@ void VCellIDASolver::solve(double* paramValues, FILE* outputFile, void (*checkSt
 		while (Time < ENDING_TIME) {
 			if (checkStopRequested != 0) {
 				checkStopRequested(Time, iterationCount);
-			}			
+			}								
 			
 			double tstop = min(ENDING_TIME, Time + 2 * maxTimeStep + (1e-15));
-			IDASetStopTime(ida_mem, tstop);
-			int returnCode = IDASolve(ida_mem, ENDING_TIME, &Time, y, yp, IDA_ONE_STEP_TSTOP);
-			iterationCount++;				
+			CVodeSetStopTime(cvode_mem, tstop);
+			int returnCode = CVode(cvode_mem, ENDING_TIME, y, &Time, CV_ONE_STEP_TSTOP);
+			iterationCount++;
 
-			// save data if return IDA_TSTOP_RETURN (meaning reached end of time or max time step 
-			// before one normal step) or IDA_SUCCESS (meaning one normal step)
-			if (returnCode == IDA_TSTOP_RETURN || returnCode == IDA_SUCCESS) {					
-				if (iterationCount%keepEvery == 0 || Time >= ENDING_TIME){
+			// save data if return CV_TSTOP_RETURN (meaning reached end of time or max time step 
+			// before one normal step) or CV_SUCCESS (meaning one normal step)
+			if (returnCode == CV_TSTOP_RETURN || returnCode == CV_SUCCESS) {						
+				if (iterationCount % keepEvery == 0 || Time >= ENDING_TIME){
 					saveCount++;
-					if (((double)saveCount)*(NEQ + 1) * bytesPerSample > (double)MaxFileSizeBytes){ 
+					if (((double)saveCount) * (NEQ + 1) * bytesPerSample > (double)MaxFileSizeBytes){ 
 						/* if more than one gigabyte, then fail */ 
 						char msg[100];
-						sprintf(msg, "output exceeded %ld bytes\n", MaxFileSizeBytes);
+						sprintf(msg, "output exceeded maximum %ld bytes", MaxFileSizeBytes);
 						throw Exception(msg);
 					}
 					writeData(Time, y, outputFile);
@@ -328,31 +306,31 @@ void VCellIDASolver::solve(double* paramValues, FILE* outputFile, void (*checkSt
 					}
 				}
 			} else {
-				throw getIDAErrorMessage(returnCode);
+				throw getCVodeErrorMessage(returnCode);
 			}				
-		} 
+		}
 	} else {
 		double sampleTime = 0.0;
 		int outputCount = 0;
 		assert(outputTimes[0] > STARTING_TIME);
 		while (Time < ENDING_TIME && outputCount < (int)outputTimes.size()) {
 			if (checkStopRequested != 0) {
-				checkStopRequested(Time, iterationCount);
+				checkStopRequested(Time, iterationCount);			
 			}
 
 			sampleTime = outputTimes[outputCount];	
 			while (Time < sampleTime) {
 				if (checkStopRequested != 0) {
-					checkStopRequested(Time, iterationCount);
+					checkStopRequested(Time, iterationCount);		
 				}
 
 				double tstop = min(sampleTime, Time + 2 * maxTimeStep + (1e-15));
-				IDASetStopTime(ida_mem, tstop);
-				int returnCode = IDASolve(ida_mem, sampleTime, &Time, y, yp, IDA_NORMAL_TSTOP);
-				iterationCount++;					
-						
-				// if return IDA_SUCCESS, this is an intermediate result, continue without saving data.
-				if (returnCode == IDA_TSTOP_RETURN || returnCode == IDA_SUCCESS) {
+				CVodeSetStopTime(cvode_mem, tstop);
+				int returnCode = CVode(cvode_mem, sampleTime, y, &Time, CV_NORMAL_TSTOP);
+				iterationCount++;	
+
+				// if return CV_SUCCESS, this is an intermediate result, continue without saving data.
+				if (returnCode == CV_TSTOP_RETURN || returnCode == CV_SUCCESS) {
 					if (Time == sampleTime) {
 						writeData(Time, y, outputFile);
 						if (bPrintProgress) {
@@ -362,11 +340,10 @@ void VCellIDASolver::solve(double* paramValues, FILE* outputFile, void (*checkSt
 						break;
 					}
 				} else {
-					throw getIDAErrorMessage(returnCode);
-				}
-			}				
-		} 
-	}
-
-	IDAFree(&ida_mem);
+					throw getCVodeErrorMessage(returnCode);
+				}									
+			}
+		}
+	}	
+	CVodeFree(&cvode_mem);
 }

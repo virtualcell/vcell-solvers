@@ -4,17 +4,25 @@
 using namespace VCell;
 #include <stdio.h>
 
+#define CLOSE_FILES 		\
+		if (outputFile != NULL) {\
+			fclose(outputFile);\
+		}\
+		if (inputstream.is_open()) {\
+			inputstream.close();\
+		}
+
 int main(int argc, char *argv[]) {
 	if (argc < 3) {
-		fprintf(stderr, "Usage: IDAStandalone input output\n");
-		return(1);
+		cerr << "Usage: IDAStandalone input output" << endl;
+		return 1;
 	}
 
 	FILE* outputFile = NULL;
 	ifstream inputstream(argv[1]);
 	try {		
 		if (!inputstream.is_open()) {
-			throw Exception(string("IDA input file [") + argv[1] + "] doens't exit!");
+			throw Exception(string("input file [") + argv[1] + "] doens't exit!");
 		}
 
 		// Open the output file...		
@@ -28,23 +36,22 @@ int main(int argc, char *argv[]) {
 		inputstream.close();
 		delete idaSolver;
 		return 0;
+
+	} catch (const char* ex) {
+		CLOSE_FILES
+		cerr << "IDAStandalone failed : " << ex << endl;
+		return -1;
+	} catch (string& ex) {
+		CLOSE_FILES
+		cerr << "IDAStandalone failed : " << ex << endl;
+		return -1;
 	} catch (Exception& ex) {
-		if (outputFile != NULL) {
-			fclose(outputFile);
-		}
-		if (inputstream.is_open()) {
-			inputstream.close();
-		}
-		cerr << "Solver exception:\n\t " << ex.getMessage() << endl;
+		CLOSE_FILES
+		cerr << "IDAStandalone failed : " << ex.getMessage() << endl;
 		return -1;
 	} catch (...) {
-		if (outputFile != NULL) {
-			fclose(outputFile);
-		}
-		if (inputstream.is_open()) {
-			inputstream.close();
-		}
-		cerr << "Unknown solver exception." << endl;
+		CLOSE_FILES
+		cerr << "IDAStandalone failed : unknown error." << endl;
 		return -1;
 	}
 }

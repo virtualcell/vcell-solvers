@@ -1,5 +1,5 @@
 #include "OdeMultiShootingOptJob.h"
-#include "VCellIDASolver.h"
+#include "VCellCVodeSolver.h"
 #include "OdeResultSet.h"
 #include "Expression.h"
 #include "Exception.h"
@@ -25,15 +25,15 @@ OdeMultiShootingOptJob::OdeMultiShootingOptJob(int arg_numParameters, char** arg
 
 	maxTimeStep = arg_maxTimeStep;
 	istringstream inputStream(arg_inputChars);
-	idaSolver = new VCellIDASolver(inputStream);
+	cvodeSolver = new VCellCVodeSolver(inputStream);
 
 	computeTimePoints();
 
-	numVariables = idaSolver->getNumEquations();
+	numVariables = cvodeSolver->getNumEquations();
 	allValues = new double[1 + numParameters + numVariables];
 	testResultSet = new OdeResultSet();
 	for (int i = 0; i < numVariables + 1; i ++) {
-		testResultSet->addColumn(idaSolver->getResultSet()->getColumnName(i));
+		testResultSet->addColumn(cvodeSolver->getResultSet()->getColumnName(i));
 	}
 	for (int i = 1; i < referenceData->getNumColumns(); i ++) {
 		string columnName = referenceData->getColumnName(i);
@@ -42,10 +42,10 @@ OdeMultiShootingOptJob::OdeMultiShootingOptJob(int arg_numParameters, char** arg
 			testResultSet->addFunctionColumn(columnName, refColumnMappingExpressions[i-1]);
 		}
 	}
-	testResultSet->bindFunctionExpression(idaSolver->getSymbolTable());
+	testResultSet->bindFunctionExpression(cvodeSolver->getSymbolTable());
 
 	// preallocating storage
-	testResultSet->addEmptyRows(timePoints.size());
+	testResultSet->addEmptyRows((int)timePoints.size());
 
 	computeGradObjectiveMask();
 
@@ -55,7 +55,7 @@ OdeMultiShootingOptJob::OdeMultiShootingOptJob(int arg_numParameters, char** arg
 	variableScales = new double[numVariables];
 	memset(variableScales, 0, numVariables * sizeof(double));
 
-	Expression**  initialConditionExpressions = idaSolver->getInitialConditionExpressions();
+	Expression**  initialConditionExpressions = cvodeSolver->getInitialConditionExpressions();
 	for (int i = 0; i < numVariables; i ++) {	
 		double varInitGuess = initialConditionExpressions[i]->evaluateVector((double*)initGuess); // at t=0
 		if (abs(varInitGuess) < 1e-10) {
@@ -70,24 +70,24 @@ OdeMultiShootingOptJob::~OdeMultiShootingOptJob(){
 
 	timePoints.clear();
 	delete testResultSet;
-	delete idaSolver;
+	delete cvodeSolver;
 	delete[] allValues;
 	delete[] gradObjectiveMask;
 	delete[] variableScales;
 }
 
 int OdeMultiShootingOptJob::getNumParameters() { 
-	return numParameters + timePoints.size() * numVariables; 
+	return numParameters + (int)timePoints.size() * numVariables; 
 }
 
 int OdeMultiShootingOptJob::getNumNonlinearEquality() { 
-	return numNonLinearEquality + (timePoints.size() - 1) * numVariables; 
+	return numNonLinearEquality + ((int)timePoints.size() - 1) * numVariables; 
 }
 
 void OdeMultiShootingOptJob::getLimits(double* bl, double* bu) {
 	CFSQPOptJob::getLimits(bl, bu);
 
-	Expression**  initialConditionExpressions = idaSolver->getInitialConditionExpressions();
+	Expression**  initialConditionExpressions = cvodeSolver->getInitialConditionExpressions();
 	for (int i = 0; i < numVariables; i ++) {
 		// if initial conditions are fixed, enforce with bounds equal to that value				
 		try {
@@ -124,7 +124,7 @@ void OdeMultiShootingOptJob::getLimits(double* bl, double* bu) {
 			bu[index]  /= variableScales[i];
 		}
 	}
-	for (int i = numParameters + numVariables; i < numParameters + timePoints.size() * numVariables; i ++) {
+	for (int i = numParameters + numVariables; i < numParameters + (int)timePoints.size() * numVariables; i ++) {
 		bl[i] = -(DBL_MAX/2);
 		bu[i] = DBL_MAX;
 	}
@@ -132,7 +132,7 @@ void OdeMultiShootingOptJob::getLimits(double* bl, double* bu) {
 
 void OdeMultiShootingOptJob::getInitialGuess(double* x) {
 	memcpy(x, initGuess, numParameters * sizeof(double));
-	Expression**  initialConditionExpressions = idaSolver->getInitialConditionExpressions();
+	Expression**  initialConditionExpressions = cvodeSolver->getInitialConditionExpressions();
 	for (int i = 0; i < numVariables; i ++) {		
 		x[i + numParameters] = initialConditionExpressions[i]->evaluateVector((double*)initGuess); // at t=0
 		string varname = testResultSet->getColumnName(i + 1); // t is the first column
@@ -150,8 +150,8 @@ void OdeMultiShootingOptJob::getInitialGuess(double* x) {
 				double* refRowData = referenceData->getRowData(j);			
 				double currRefTime = refRowData[0];
 				double currRefValue = refRowData[refIndex];
-				if (testRowIndex < timePoints.size() && timePoints[testRowIndex] <= currRefTime) {					
-					while (testRowIndex < timePoints.size() && timePoints[testRowIndex] <= currRefTime) {
+				if (testRowIndex < (int)timePoints.size() && timePoints[testRowIndex] <= currRefTime) {					
+					while (testRowIndex < (int)timePoints.size() && timePoints[testRowIndex] <= currRefTime) {
 						x[numParameters + testRowIndex * numVariables + i] = prevRefValue + 
 							(currRefValue - prevRefValue) * (timePoints[testRowIndex] - prevRefTime) / (currRefTime - prevRefTime);
 						testRowIndex ++;
@@ -162,7 +162,7 @@ void OdeMultiShootingOptJob::getInitialGuess(double* x) {
 			}
 		} else {	
 			// for variable i, set the rest of the time points to be the same as t=0
-			for (int j = 1; j < timePoints.size(); j ++) {
+			for (int j = 1; j < (int)timePoints.size(); j ++) {
 				x[numParameters + j * numVariables + i] = x[numParameters + i];
 			}
 		}
@@ -172,7 +172,7 @@ void OdeMultiShootingOptJob::getInitialGuess(double* x) {
 
 void OdeMultiShootingOptJob::scaleX(const double* unscaled_x, double* scaled_x) {
 	CFSQPOptJob::scaleX(unscaled_x, scaled_x);
-	for (int i = 0; i < timePoints.size(); i ++) {
+	for (int i = 0; i < (int)timePoints.size(); i ++) {
 		for (int j = 0; j < numVariables; j ++) {
 			int index = numParameters + i * numVariables + j;
 			scaled_x[index]  = unscaled_x[index] / variableScales[j];			
@@ -182,7 +182,7 @@ void OdeMultiShootingOptJob::scaleX(const double* unscaled_x, double* scaled_x) 
 
 void OdeMultiShootingOptJob::unscaleX(const double* scaled_x, double* unscaled_x) {
 	CFSQPOptJob::unscaleX(scaled_x, unscaled_x);
-	for (int i = 0; i < timePoints.size(); i ++) {
+	for (int i = 0; i < (int)timePoints.size(); i ++) {
 		for (int j = 0; j < numVariables; j ++) {
 			int index = numParameters + i * numVariables + j;
 			unscaled_x[index] = scaled_x[index] * variableScales[j];
@@ -198,7 +198,7 @@ void OdeMultiShootingOptJob::objective(int nparams, double* x, double* f) {
 	numObjFuncEvals ++;
 
 	unscaleX(x, unscaled_x);
-	for (int i = 0; i < timePoints.size(); i ++) {
+	for (int i = 0; i < (int)timePoints.size(); i ++) {
 		double* data = testResultSet->getRowData(i);
 		data[0] = timePoints[i];
 		memcpy(data + 1, unscaled_x + numParameters + i * numVariables, numVariables * sizeof(double));
@@ -238,7 +238,7 @@ void OdeMultiShootingOptJob::computeGradObjectiveMask() {
 		} else {
 			expSymbols.clear();
 			exp->getSymbols(expSymbols);
-			for (int j = 0; j < expSymbols.size(); j ++) {
+			for (int j = 0; j < (int)expSymbols.size(); j ++) {
 				testColumnIndex = testResultSet->findColumn(expSymbols[j]);
 				if (testColumnIndex != -1 ) {
 					stateVariableMask[testColumnIndex - 1] = 1;
@@ -321,7 +321,7 @@ void OdeMultiShootingOptJob::constraints(int nparams, int j, double* x, double* 
 	unscaleX(x, unscaled_x);
 
 	int numConstraintsLow = numNonLinearInequality + numLinearInequality + numNonLinearEquality;
-	int numShootingConstraints = (timePoints.size() - 1) * numVariables; //excluding time 0
+	int numShootingConstraints = ((int)timePoints.size() - 1) * numVariables; //excluding time 0
 	if (j <= numConstraintsLow) {
 		*gj = constraintList.at(j - 1)->evaluate(x);
 	} else if (j <= numConstraintsLow + numShootingConstraints) {
@@ -334,7 +334,7 @@ void OdeMultiShootingOptJob::constraints(int nparams, int j, double* x, double* 
 		memcpy(allValues + 1, unscaled_x + numParameters + timeIndex * numVariables, numVariables * sizeof(double));
 		memcpy(allValues + 1 + numVariables, unscaled_x, numParameters * sizeof(double));
 		double A0 = allValues[1 + equationIndex];
-		double f0 = idaSolver->RHS(allValues, equationIndex);
+		double f0 = cvodeSolver->RHS(allValues, equationIndex);
 
 		// compute RHS_A1(t1,A1,B1, p)
 		double t1 = timePoints[timeIndex + 1];
@@ -342,7 +342,7 @@ void OdeMultiShootingOptJob::constraints(int nparams, int j, double* x, double* 
 		memcpy(allValues + 1, unscaled_x + numParameters + (timeIndex + 1) * numVariables, numVariables * sizeof(double));
 		memcpy(allValues + 1 + numVariables, unscaled_x, numParameters * sizeof(double));
 		double A1 = allValues[1 + equationIndex];
-		double f1 = idaSolver->RHS(allValues, equationIndex);		
+		double f1 = cvodeSolver->RHS(allValues, equationIndex);		
 
 		// trapezoidal rule
 		// compute constraint_A1(A1 - A0 - (RHS_A0(t0,A0,B0, p) + RHS_A1(t1,A1,B1, p))/2 * deltaT)

@@ -8,7 +8,7 @@ JNIEnv* jniEnv = NULL;
 jmethodID mid_NativeIDASolver_isStopRequested;
 jobject obj_NativeIDASolver;
 
-void checkStopRequested_IDA(real Time, long iterationCount) {
+void checkStopRequested_IDA(double Time, long iterationCount) {
 	jboolean bStopRequested = jniEnv->CallBooleanMethod(obj_NativeIDASolver, mid_NativeIDASolver_isStopRequested);
 	if (bStopRequested) {
 		char msg[200];

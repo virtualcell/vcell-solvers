@@ -4,6 +4,7 @@ all:
 	cd ExpressionParser && nmake -f Makefile.win32 && nmake -f MakefileMT.win32
 	cd fsqp && nmake -f Makefile.win32
 	cd IDAWin && nmake -f Makefile.win32
+	cd CVodeStandalone && nmake -f Makefile.win32
 	cd IDAStandalone && nmake -f Makefile.win32
 	cd Optimization && nmake -f Makefile.win32
 	cd JavaBinding && nmake -f Makefile.win32
@@ -13,7 +14,7 @@ all:
 	cd unzip && nmake -f Makefile.win32
 	cd zlib && nmake -f Makefile.win32
 	cd zip && nmake -f Makefile.win32
-	cd VCell\src && nmake -f Makefile.win32 && nmake -f Makefile_Standalone.win32
+	cd VCell\src && nmake -f Makefile.win32
 	cd Stochastic\VCellStoch && nmake -f Makefile.win32
 	cd netcdf-3.6.2 && nmake -f Makefile.win32
 	cd Hy3S\src && nmake -f Makefile.win32
@@ -23,6 +24,7 @@ clean:
 	cd ExpressionParser && nmake -f Makefile.win32 clean  && nmake -f MakefileMT.win32 clean
 	cd fsqp && nmake -f Makefile.win32 clean
 	cd IDAWin && nmake -f Makefile.win32 clean
+	cd CVodeStandalone && nmake -f Makefile.win32 clean
 	cd IDAStandalone && nmake -f Makefile.win32 clean
 	cd Optimization && nmake -f Makefile.win32 clean
 	cd JavaBinding && nmake -f Makefile.win32 clean
@@ -30,7 +32,7 @@ clean:
 	cd qhull && nmake -f Makefile.win32 clean
 	cd Triangle && nmake -f Makefile.win32 clean
 	cd unzip && nmake -f Makefile.win32 clean
-	cd VCell\src && nmake -f Makefile.win32 clean && nmake -f Makefile_Standalone.win32 clean
+	cd VCell\src && nmake -f Makefile.win32 clean
 	cd zip && nmake -f Makefile.win32 clean
 	cd zlib && nmake -f Makefile.win32 clean
 	cd Stochastic\VCellStoch && nmake -f Makefile.win32 clean

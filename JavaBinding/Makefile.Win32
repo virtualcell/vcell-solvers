@@ -1,6 +1,8 @@
-CPPFLAGS = /GX /O2 /DWIN32 -I..\ExpressionParser -I. -I..\fsqp -I..\IDAWin -I..\JNI\Win32\include -I..\JNI\Win32\include\win32 -I..\Optimization
+CPPFLAGS = /GX /O2 /DWIN32 -I..\ExpressionParser -I. -I..\fsqp -I..\IDAWin -I..\JNI\Win32\include -I..\JNI\Win32\include\win32 -I..\Optimization \
+	-I..\sundials\include -I..\sundials\src
 
-LIBS =	..\IDAWin\sundials_ida.lib ..\IDAWin\vcellIDA.lib ..\ExpressionParser\ExpParser.lib ..\fsqp\cfsqp.lib ..\Optimization\vcellOpt.lib
+LIBS =	..\sundials\lib\sundials.lib ..\sundials\lib\sundials_nvecserial.lib ..\sundials\lib\sundials_cvode.lib ..\sundials\lib\sundials_ida.lib \
+	..\IDAWin\vcellIDA.lib ..\ExpressionParser\ExpParser.lib ..\fsqp\cfsqp.lib ..\Optimization\vcellOpt.lib
 
 DLL_TARGET = NativeSolvers.dll
 
