@@ -16,15 +16,6 @@ MembraneVarContextExpression::MembraneVarContextExpression(Feature *feature, str
 {
 }
 
-MembraneVarContextExpression::~MembraneVarContextExpression()
-{
-
-	for (int i = 0; i < TOTAL_NUM_EXPRESSIONS; i ++) {
-		delete expressions[i];		
-	}	
-	delete[] expressions;
-}
-
 bool MembraneVarContextExpression::resolveReferences(Simulation* sim) {
 	bool bResolved = VarContext::resolveReferences(sim);
 	if (bResolved) {

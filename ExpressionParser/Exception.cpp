@@ -77,7 +77,7 @@ void VCell::Exception::rethrowException(Exception& ex)
 	throw ex;
 }
 
-#ifndef WIN32
+#if ( !defined(WIN32) && !defined(WIN64) )
 char* itoa( int value, char* result, int base ) {	
 	
 	if (base < 2 || base > 16) { 

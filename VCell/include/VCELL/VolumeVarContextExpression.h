@@ -11,8 +11,7 @@ class VolumeVarContextExpression : public VolumeVarContext
 {
 public:	
 	VolumeVarContextExpression(Feature *feature, string& varName);
-	~VolumeVarContextExpression();
-
+	
 	bool resolveReferences(Simulation *sim);
 
 	double getInitialValue(long index);

@@ -2,10 +2,6 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#ifdef WIN32 
-#include <Windows.h>
-#endif
-
 #include <VCELL/Simulation.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/Solver.h>

@@ -26,7 +26,7 @@
 #define LOG_FILE_EXT ".log"
 #define ZIP_FILE_EXT ".zip"
 
-#ifdef WIN32
+#if ( defined(WIN32) || defined(WIN64) )
 #define DIRECTORY_SEPARATOR '\\'
 #else
 #define DIRECTORY_SEPARATOR '/'

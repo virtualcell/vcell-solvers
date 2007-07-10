@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <VCELL/SimTypes.h>
 
-#ifndef WIN32
+#if ( !defined(WIN32) && !defined(WIN64) )
 #include <sys/time.h>
 #else
 #include <time.h>
@@ -55,7 +55,7 @@ protected:
 	double readTimer();
 	void resetTimer();
 
-#ifndef WIN32
+#if ( !defined(WIN32) && !defined(WIN64) )
 	int which;  // which timer ... ITIMER_REAL, ITIMER_VIRTUAL, ITIMER_PROF 
 	struct  itimerval time;
 	double  interval;       // value to initialize itimer

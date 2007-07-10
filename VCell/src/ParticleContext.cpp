@@ -135,7 +135,7 @@ double ParticleContext::getInitialValue(long)
 
 double ParticleContext::getRandomUniform()
 {
-#ifndef WIN32
+#if ( !defined(WIN32) && !defined(WIN64) )
 	long r = random();
 	srand48(r);
    
@@ -249,7 +249,7 @@ long VolumeParticleContext::getRandomIndex()
 	long numVolEl = mesh->getNumVolumeElements(); 
 	do{
 		count++; 
-#ifndef WIN32
+#if ( !defined(WIN32) && !defined(WIN64) )
 		long randVar = random();
 #else
 		const long NUM_RAND = RAND_MAX+1;

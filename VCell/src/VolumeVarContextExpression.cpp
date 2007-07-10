@@ -18,10 +18,6 @@ VolumeVarContextExpression::VolumeVarContextExpression(Feature *feature, string&
 {
 }
 
-VolumeVarContextExpression::~VolumeVarContextExpression()
-{
-}
-
 bool VolumeVarContextExpression::resolveReferences(Simulation* sim) {
 	bool bResolved = VarContext::resolveReferences(sim);
 	if (bResolved) {

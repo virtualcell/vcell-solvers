@@ -41,17 +41,21 @@ using namespace std;
 static char* outputPath = 0;
 
 void vcellExit(int returnCode, string& errorMsg) {
-	if (!SimTool::getInstance()->isStopped()) {
+	if (SimulationMessaging::getInstVar() == 0) {
+		cerr << errorMsg << endl;
+	} else if (!SimTool::getInstance()->isStopped()) {
 		if (returnCode != 0) {
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_FAILURE, errorMsg.c_str()));
 		}
+#ifdef USE_MESSAGING
 		SimulationMessaging::getInstVar()->waitUntilFinished();
+#endif
 	}
 	delete SimulationMessaging::getInstVar();
 	delete SimTool::getInstance();
 }
 
-void loadJMSInfo(ifstream& ifsInput, jint taskID, bool bMessaging) {
+void loadJMSInfo(ifstream& ifsInput, int taskID) {
 	char *broker = new char[256];
 	char *smqusername = new char[256];
 	char *password = new char[256];
@@ -59,7 +63,7 @@ void loadJMSInfo(ifstream& ifsInput, jint taskID, bool bMessaging) {
 	char *tname = new char[256];
 	char *vcusername = new char[256];
 	string nextToken;
-	jint simKey, jobIndex;
+	int simKey, jobIndex;
 
 	while (!ifsInput.eof()) {			
 		nextToken = "";
@@ -68,8 +72,6 @@ void loadJMSInfo(ifstream& ifsInput, jint taskID, bool bMessaging) {
 			continue;
 		} else if (nextToken[0] == '#') {
 			getline(ifsInput, nextToken);
-			continue;
-		}  else if (nextToken == "JMS_PARAM_BEGIN") {
 			continue;
 		}  else if (nextToken == "JMS_PARAM_END") {
 			break;
@@ -97,12 +99,16 @@ void loadJMSInfo(ifstream& ifsInput, jint taskID, bool bMessaging) {
 			continue;
 		} 
 	}
-	
-	if (bMessaging) {
+
+#ifdef USE_MESSAGING	
+	if (taskID >= 0) {
 		SimulationMessaging::create(broker, smqusername, password, qname, tname, vcusername, simKey, jobIndex, taskID);
 	} else {
 		SimulationMessaging::create();
 	}
+#else
+	SimulationMessaging::create();
+#endif
 }
 
 VCellModel *loadModel(ifstream& ifsInput) {
@@ -904,10 +910,12 @@ void loadFieldData(ifstream& ifsInput, SimulationExpression* sim) {
 	}
 }
 
-void createSimTool(ifstream& ifsInput)
-{
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "preprocessing started"));
+void createSimTool(ifstream& ifsInput, int taskID)
+{	
 	SimTool::create();
+	if (taskID < 0) { // no messaging
+		SimulationMessaging::create();
+	}
 
 	SimulationExpression *sim = NULL;
 	VCellModel *model = NULL;
@@ -924,6 +932,12 @@ void createSimTool(ifstream& ifsInput)
 		} else if (nextToken[0] == '#') {
 			getline(ifsInput, nextToken);
 			continue;
+		} else if (nextToken == "JMS_PARAM_BEGIN") {
+			loadJMSInfo(ifsInput, taskID);
+#ifdef USE_MESSAGING
+			SimulationMessaging::getInstVar()->start(); // start the thread
+#endif
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "preprocessing started"));
 		} else if (nextToken == "SIMULATION_PARAM_BEGIN") {
 			loadSimulationParameters(ifsInput);
 		} else if (nextToken == "MODEL_BEGIN") {
@@ -977,7 +991,11 @@ void createSimTool(ifstream& ifsInput)
 }
 
 void printUsage() {
+#ifdef USE_MESSAGING
 	cout << "Arguments : [-d output] [-nz] [-tid taskID] fvInputFile" <<  endl;
+#else
+	cout << "Arguments : [-d output] [-nz] fvInputFile" <<  endl;
+#endif
 }
 
 #include <math.h>
@@ -991,7 +1009,7 @@ int main(int argc, char *argv[])
 	ifstream ifsInput;
 	bool bSimZip = true;
 	try {
-		jint taskID = -1;
+		int taskID = -1;
 		if (argc < 2) {
 			cout << "Missing arguments!" << endl;
 			printUsage();
@@ -1009,6 +1027,7 @@ int main(int argc, char *argv[])
 				}
 				outputPath = argv[i];
 			} else if (!strcmp(argv[i], "-tid")) {
+#ifdef USE_MESSAGING
 				i ++;
 				if (i >= argc) {
 					cout << "Missing taskID!" << endl;
@@ -1023,6 +1042,11 @@ int main(int argc, char *argv[])
 					}
 				}
 				taskID = atoi(argv[i]);
+#else
+				cout << "Wrong argument : " << argv[i] << endl;
+				printUsage();
+				exit(1);
+#endif
 			} else {
 				fvInputFile = argv[i];
 			}
@@ -1039,24 +1063,19 @@ int main(int argc, char *argv[])
 			cout << "File doesn't exist: " << fvInputFile << endl;
 			exit(102);
 		}
-		bool bMessaging = true;
-		if (taskID == -1) {
-			bMessaging = false;
-		}			
-		loadJMSInfo(ifsInput, taskID, bMessaging);
-		SimulationMessaging::getInstVar()->start(); // start the thread
 
-		createSimTool(ifsInput);
+		createSimTool(ifsInput, taskID);
 		if (bSimZip == false) {
 			SimTool::getInstance()->requestNoZip();
 		}
 		ifsInput.close();
 
 		SimTool::getInstance()->start();
-
+#ifdef USE_MESSAGING
 		if (!SimTool::getInstance()->isStopped()) {
 			SimulationMessaging::getInstVar()->waitUntilFinished();
 		}
+#endif
 	} catch (const char *exStr){
 		errorMsg += exStr;
 		returnCode = 1;

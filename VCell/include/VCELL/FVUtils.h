@@ -7,8 +7,10 @@
 
 extern "C"
 {
+#if ( defined(WIN32) || defined(WIN64) )
 #ifdef WIN32
 	#define PCGWRAPPER pcgwrapper
+#endif
 	void PCGWRAPPER(long *, long *, int *, INT32 *, double *, double *, double *, double *, int *, double *, double *, double *, double*);
 #else
 	#define PCGWRAPPER pcgwrapper_
@@ -23,9 +25,12 @@ bool isNAN(double number);
 bool isInfinity(double number);
 void validateNumber(string& variableName, int index, char* coeffName, double coeffValue);
 
-#ifndef WIN32
-#define min(a,b)   (((a)<(b))?(a):(b))
-#define max(a,b)   (((a)<(b))?(b):(a))
+#ifndef max
+#define max(a,b)            (((a) > (b)) ? (a) : (b))
+#endif
+
+#ifndef min
+#define min(a,b)            (((a) < (b)) ? (a) : (b))
 #endif
 
 #ifndef PCG_TOLERANCE

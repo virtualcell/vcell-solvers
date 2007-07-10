@@ -1,13 +1,14 @@
 #ifndef _SIMULATIONMESSAGING_H_
 #define _SIMULATIONMESSAGING_H_
 
-#ifdef WIN32
+#if ( defined(WIN32) || defined(WIN64) )
     #include <windows.h>	
 #else
     #include <pthread.h>
     #include <unistd.h>
 #endif
 
+#ifdef USE_MESSAGING
 #include <time.h>
 #include <progress/message/jclient/package.h>
 using namespace progress::message::jclient;
@@ -15,18 +16,20 @@ using namespace progress::message::jclient;
 static const int ONE_SECOND = 1000;
 static const int ONE_MINUTE = 60 * ONE_SECOND;
 static const int DEFAULT_TTL = 10 * ONE_MINUTE;
+#endif
+
 static const int WORKEREVENT_OUTPUT_MODE_STDOUT = 0;
 static const int WORKEREVENT_OUTPUT_MODE_MESSAGING = 1;
 
-static const jint JOB_STARTING = 999;
-static const jint JOB_DATA = 1000;
-static const jint JOB_PROGRESS = 1001;
-static const jint JOB_FAILURE = 1002;
-static const jint JOB_COMPLETED = 1003;
-static const jint JOB_WORKER_ALIVE = 1004;	
+static const int JOB_STARTING = 999;
+static const int JOB_DATA = 1000;
+static const int JOB_PROGRESS = 1001;
+static const int JOB_FAILURE = 1002;
+static const int JOB_COMPLETED = 1003;
+static const int JOB_WORKER_ALIVE = 1004;
 
 struct WorkerEvent {
-	jint status;
+	int status;
 	double progress;
 	double timepoint;
 	char* eventMessage;	
@@ -44,14 +47,14 @@ struct WorkerEvent {
 		}
 	}
 
-	WorkerEvent(jint arg_status, jdouble arg_progress, jdouble arg_timepoint) {
+	WorkerEvent(int arg_status, double arg_progress, double arg_timepoint) {
 		status = arg_status;
 		progress = arg_progress;
 		timepoint = arg_timepoint;
 		eventMessage = NULL;
 	}
 
-	WorkerEvent(jint arg_status, const char* arg_eventMessage) {
+	WorkerEvent(int arg_status, const char* arg_eventMessage) {
 		status = arg_status;
 		int len = (int)strlen(arg_eventMessage) + 1;
 		eventMessage = new char[len];
@@ -78,28 +81,40 @@ struct WorkerEvent {
 	}
 };
 
-class SimulationMessaging : public progress::message::jclient::ExceptionListener, progress::message::jclient::MessageListener {
+#ifdef USE_MESSAGING
+class SimulationMessaging : public progress::message::jclient::ExceptionListener, progress::message::jclient::MessageListener
+#else
+class SimulationMessaging
+#endif
+{
 public:
 	static SimulationMessaging *m_inst;
 
     ~SimulationMessaging();
 	static SimulationMessaging* create();
-	static SimulationMessaging* create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, jlong simKey, jint jobIndex, jint taskID, jint ttl=DEFAULT_TTL);
+	static SimulationMessaging* getInstVar();
+	void start();
+	void setWorkerEvent(WorkerEvent* workerEvent);	
+
+#ifdef USE_MESSAGING
+	static SimulationMessaging* create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, jint simKey, jint jobIndex, jint taskID, jint ttl=DEFAULT_TTL);
     void onException(JMSExceptionRef anException);
 	void onMessage(MessageRef aMessage);
-	static SimulationMessaging* getInstVar();	
-	void waitUntilFinished();
-
-	void setWorkerEvent(WorkerEvent* workerEvent);
-	void start();
+	void waitUntilFinished();	
 	friend void startMessagingThread(void* param);
+#endif
 
 private:
 	SimulationMessaging();
-	SimulationMessaging(char* broker, char* smqusername, char* passwd, char* qname, char*tname, char* vcusername, jlong simKey, jint jobIndex,  jint taskID, jint ttl=DEFAULT_TTL);
+	WorkerEvent* workerEvent;
+	int workerEventOutputMode;
+
+	WorkerEvent* sendStatus();
+
+#ifdef USE_MESSAGING
+	SimulationMessaging(char* broker, char* smqusername, char* passwd, char* qname, char*tname, char* vcusername, jint simKey, jint jobIndex,  jint taskID, jint ttl=DEFAULT_TTL);
 
 	WorkerEvent* getWorkerEvent();
-	WorkerEvent* sendStatus();
 	void keepAlive();
 	static char* trim(char* str);
 	void setupConnection ();    //synchronized
@@ -109,8 +124,7 @@ private:
 	TextMessageRef initWorkerEventMessage();
 	HANDLE hNewWorkerEvent;
 	HANDLE hMessagingThreadEndEvent;
-	WorkerEvent* workerEvent;
-	bool  m_connActive;
+	bool m_connActive;
 
 	QueueRef m_queue;
 	QueueConnectionRef m_qConnect;
@@ -136,7 +150,6 @@ private:
 
 	char m_hostname[256];    
 	jint  m_ttl;
-	int workerEventOutputMode;
 	time_t lastSentEventTime;
 
 	char* getStatusString(jint status);
@@ -167,6 +180,7 @@ private:
 #ifdef UNIX
     static pthread_mutex_t mp;
 #endif	
+#endif
 };
 
 #endif // _SIMULATIONMESSAGING_H_

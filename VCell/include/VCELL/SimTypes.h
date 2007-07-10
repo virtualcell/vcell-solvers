@@ -23,7 +23,7 @@ typedef unsigned int   uint32;
 #endif
 
 #ifdef VCELL_DEBUG
-#ifdef WIN32
+#if ( defined(WIN32) || defined(WIN64) )
 #define ASSERTION(x) \
 	if (!(x)) { \
 		char str[300]; \

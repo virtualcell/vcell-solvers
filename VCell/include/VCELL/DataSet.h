@@ -5,10 +5,6 @@
 #ifndef DATASET_H
 #define DATASET_H
 
-#ifdef WIN32
-#define INTEL
-#endif
-
 #include <VCELL/SimTypes.h>
 
 #define DATABLOCK_STRING_SIZE  124

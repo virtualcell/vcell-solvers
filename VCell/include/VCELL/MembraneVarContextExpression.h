@@ -12,7 +12,6 @@ class MembraneVarContextExpression : public MembraneVarContext
 {
 public:
 	MembraneVarContextExpression(Feature *feature, string& varName);
-    MembraneVarContextExpression(Feature *feature, string& varName, Expression* ivexp, Expression* drexp, Expression* rrexp);
 
 	bool resolveReferences(Simulation *sim);
 

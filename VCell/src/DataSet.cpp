@@ -2,7 +2,7 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#ifdef WIN32
+#if ( defined(WIN32) || defined(WIN64) )
 #define INTEL
 #endif
 

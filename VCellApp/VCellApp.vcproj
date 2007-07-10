@@ -20,7 +20,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\VCell\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;..\zlib"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;USE_MESSAGING"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -116,7 +116,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\VCell\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;..\zlib"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;USE_MESSAGING"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -130,7 +130,7 @@
 				AdditionalDependencies="Ws2_32.lib VCell.lib pcgwrapper.lib pcgpack_dbl.lib qhull.lib mkl_c.lib zip32.lib unzip32.lib zlib.lib libsmq.lib libsmqj.lib ExpressionParser.lib"
 				OutputFile="$(OutDir)/VCellApp.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\ExpressionParser\MTD;..\VCell\src;..\VCell\Debug;..\PCGPack;..\SonicCClient\Win32\lib;src;..\unzip;..\zlib;..\zip;..\qhull;..\IFortran"
+				AdditionalLibraryDirectories="..\ExpressionParser\MTD;..\VCell\src;..\PCGPack;..\SonicCClient\Win32\lib;..\VCell\MTD;..\unzip;..\zlib;..\zip;..\qhull;..\IFortran"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/VCellApp.pdb"
 				SubSystem="1"
@@ -218,6 +218,9 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
+			<File
+				RelativePath=".\SimID_22563370_0_.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
