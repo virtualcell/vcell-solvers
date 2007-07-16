@@ -82,6 +82,11 @@ void SimulationExpression::advanceTimeOff() {
 	valueProxyTime->setValue(_time_sec);
 }
 
+void SimulationExpression::update() {
+	Simulation::update();
+	valueProxyTime->setValue(_time_sec);
+}
+
 void SimulationExpression::createSymbolTable() {	
 	if (oldSymbolTable != NULL) {
 		return;

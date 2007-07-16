@@ -22,9 +22,10 @@ public:
 	SimulationExpression(Mesh *mesh);
 	~SimulationExpression();
 
-	virtual bool initSimulation();   // initializes to t=0
-	virtual void advanceTimeOn();
-	virtual void advanceTimeOff();
+	bool initSimulation();   // initializes to t=0
+	void update();           // copies new to old values 
+	void advanceTimeOn();
+	void advanceTimeOff();
 
 	void addFieldData(FieldData* fd) {
 		fieldDataList.push_back(fd);

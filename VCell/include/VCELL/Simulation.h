@@ -31,7 +31,7 @@ public:
 	virtual bool initSimulation();   // initializes to t=0
 	void    setScheduler(Scheduler *scheduler);
 	void iterate();          // computes 1 time step
-	void    update();           // copies new to old values 
+	virtual void    update();           // copies new to old values 
 	void    reset();            // initializes to t=last time step
 	double  getMaxDifference();
 
