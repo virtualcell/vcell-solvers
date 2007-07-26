@@ -1,6 +1,6 @@
 //#define DEBUG //enable it when debug is needed.
 #ifdef DEBUG
-  #include <Windows.h>
+#include <Windows.h>
 #endif
 #include <iostream>
 #include <vector>
@@ -15,7 +15,7 @@
 #include "StochVar.h"
 using namespace std;
 const double double_infinity = numeric_limits<double>::infinity();
-
+const double EPSILON = 1E-12;
 /*
  *Empty constructor of Gibson. It will use the defalt settings in StochModel.
  */
@@ -272,7 +272,7 @@ int Gibson::core()
 		}
 		currvals[varLen] = simtime;
 		p = jump->getProbabilityRate(currvals);
-		//amended May 17th, we can not take the first time random number to be 0.
+		//amended May 17th,2007 we can not take the first time random number to be 0.
 		//Otherwise, there is a situation that no previous random number to be reused.
 		do
 		{
@@ -291,13 +291,9 @@ int Gibson::core()
 #endif 
 	}
 	Tree->build();
-	//the while loop does one trial for simulation and ends by ending_time or max_iteration.
-	while(simtime <= ENDING_TIME)
+	//the while loop does one trial for simulation and ends by ending_time.
+	while(simtime < ENDING_TIME)
 	{
-		//if(iterationCounter <= MAX_ITERATION)
-		//{
-			//iterationCounter++;
-			
 			//save last step variables' values
 			for(i = 0;i<varLen;i++){
 				lastStepVals[i]=*listOfVars.at(i)->getCurr();
@@ -311,8 +307,8 @@ int Gibson::core()
 				//simulation time exceed ending time. Before we quit the simulation
 				//output data between the last step simulation time and ending time if we have SAVE_PERIOD on. 
 				if((NUM_TRIAL ==1) && (flag_savePeriod))
-				{
-					while((outputTimer+SAVE_PERIOD) < ENDING_TIME)
+				{	//use EPSILON here to make sure that a double 0.99999999999995(usually happen in C) is not regarded as a number that smaller than 1. It should be 1. 
+					while((outputTimer+SAVE_PERIOD+EPSILON) < ENDING_TIME)
 					{
 						outfile << outputTimer+SAVE_PERIOD << "\t";
 						for(i=0;i<varLen;i++){
@@ -420,7 +416,9 @@ int Gibson::core()
 					double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
 					if (duration >= 2)
 					{
+						printf("[[[progress:%lg%%]]]", (simtime/ENDING_TIME) * 100.0);
 						printf("[[[data:%lg]]]", simtime);
+						fflush(stdout);
 						oldTime = currentTime;
 					}
 				}
@@ -429,15 +427,13 @@ int Gibson::core()
 				else 
 					sampleCount--;
 				// output simulaiton progress message
-                if((simtime/ENDING_TIME) > prog)
-				{
-					printf("[[[progress:%lg%%]]]", (simtime/ENDING_TIME) * 100.0);
-					fflush(stdout);
-					prog = prog + 0.2;
-				}
+//              if((simtime/ENDING_TIME) > prog)
+//				{
+//					printf("[[[progress:%lg%%]]]", (simtime/ENDING_TIME) * 100.0);
+//					fflush(stdout);
+//					prog = prog + 0.2;
+//				}
 			}//if(NUM_TRIAL ==1)
-		//}//end of if(iterationCounter < MAX_ITERATION)
-		//else break;
 	}//end of while loop
 	//output the variable's vals at the ending time point.
 	if((simtime > ENDING_TIME) && (NUM_TRIAL == 1))
@@ -535,6 +531,7 @@ void Gibson::march()
 			if (duration >= 2)
 			{
 				printf("[[[progress:%lg%%]]]", ((j-SEED)*1.0/NUM_TRIAL) * 100.0);
+				//printf("[[[data:%lg]]]", (j-SEED));
 				fflush(stdout);
 				oldTime = currentTime;
 			}
