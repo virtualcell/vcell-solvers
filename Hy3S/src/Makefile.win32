@@ -8,6 +8,7 @@ FC= ifort
 FOPTIONS = /I..\..\netcdf-3.6.2\f90 /iface:mixed_str_len_arg /check:bounds
 LINKOPTIONS = /link /LIBPATH:..\..\IFortran
 DEFMILSTEIN = -DMILSTEIN
+DEFADAPTIVE = -DADAPTIVE
 
 LIBS = ..\..\netcdf-3.6.2\fortran\netcdf_for.lib ..\..\netcdf-3.6.2\libsrc\netcdf.lib ..\..\netcdf-3.6.2\f90\netcdf_f90.lib
 
@@ -27,7 +28,7 @@ SOURCE  =  f2kcli.f90 \
 		propagators-HyJCMSS.f90 \
 		mainprogram-HyJCMSS.f90
 
-default all: Hybrid_EM.exe Hybrid_MIL.exe
+default all: Hybrid_EM.exe Hybrid_MIL.exe Hybrid_MIL_Adaptive.exe
 
 Hybrid_EM.exe: $(SOURCE)
 	$(FC) $(FOPTIONS) $(SOURCE) $(LINKOPTIONS) $(LIBS) /out:$@
@@ -35,9 +36,13 @@ Hybrid_EM.exe: $(SOURCE)
 Hybrid_MIL.exe: $(SOURCE)
 	$(FC) $(FOPTIONS) $(DEFMILSTEIN) $(SOURCE) $(LINKOPTIONS) $(LIBS) /out:$@
 
+Hybrid_MIL_Adaptive.exe: $(SOURCE)
+	$(FC) $(FOPTIONS) $(DEFADAPTIVE) $(DEFMILSTEIN) $(SOURCE) $(LINKOPTIONS) $(LIBS) /out:$@
+	
 clean:
 	del Hybrid_EM.exe
 	del Hybrid_MIL.exe
+	del Hybrid_MIL_Adaptive.exe
 	del *.obj
 	del *.mod
 # 

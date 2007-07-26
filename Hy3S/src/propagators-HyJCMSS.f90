@@ -602,6 +602,7 @@ do while ((TStop - t)/(TStop - TStart) > eps)          !Main time iterative loop
 	  	  print*, "X = ", X + dXslow + dXfast
 	  	  print*, "Time = ", t + deltat
 	  	  ierror = 1
+	  	  close(unit = 0)
 	  	  return
        end if
      

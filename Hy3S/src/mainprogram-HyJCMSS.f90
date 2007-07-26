@@ -358,12 +358,13 @@ do j=LastModel+1,NumModels
    !Make sure each processor has its own Random Seed
    RandSeed = RandSeed * (me + 1)
    Call Random_Seed(Put = RandSeed)
-   
+!  Amended in July 2007 by Tracy LI, to send progress message to VCell 
    CALL CPU_TIME(time1)
    print*,'[[[progress:0%]]]'
    
    !Trials loop
    do i = LastTrial + me + 1, Trials, NumProcs
+!  Amended in July 2007 by Tracy LI, to send progress every 2 seconds to VCell for multiple trials
    If (Trials > 1) THEN
  		CALL CPU_TIME(time2)
  		if ((time2-time1) >= 2) THEN
@@ -371,6 +372,7 @@ do j=LastModel+1,NumModels
  			time1=time2
  		end if
    end if
+!Commented in July 2007 by Tracy LI, to avoid too much messaging to VCell
 !!  print*, "Trial #",i, " running on processor #", me
 
       Call cpu_time(t2)
@@ -416,6 +418,7 @@ do j=LastModel+1,NumModels
     
             stop 1
          end if
+! Amended in July 2007 by Tracy LI. To send progress every 2 seconds to VCell for a single trajetory.
          If (Trials == 1) THEN
          	CALL CPU_TIME(time2)
   			if ((time2-time1) >= 2) THEN
