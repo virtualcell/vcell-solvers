@@ -46,12 +46,12 @@ void validateNumber(string& variableName, int index, char* coeffName, double coe
 	if (isNAN(coeffValue)) {
 		stringstream ss;
 		ss << "Exception: " << coeffName << " for variable " << variableName << " is NaN at index " << index;
-		throw ss.str().c_str();
+		throw ss.str();
 	}
 	if (isInfinity(coeffValue)) {
 		stringstream ss;
 		ss << "Exception: " << coeffName << " for variable " << variableName << " is Infinity at index " << index;
-		throw ss.str().c_str();
+		throw ss.str();
 	}
 }
 
@@ -76,7 +76,7 @@ double computeRHSscale(long length, double* rhs, string& varname) {
 		if (count >= 100) {
 			stringstream ss;
 			ss << "Exception: Unable to scale RHS for variable " << varname << ", too many tries";
-			throw ss.str().c_str();
+			throw ss.str();
 		}
 	} 	
 	return RHSscale;

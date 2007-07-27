@@ -139,7 +139,7 @@ void Scheduler::solveFastSystem(int volStart, int volSize, int memStart, int mem
 			if(!fs->solveSystem()){
 				stringstream ss;
 				ss << "Scheduler::solveFastSystem() - error solving FastSystem in " << feature->getName();
-				throw ss.str().c_str();
+				throw ss.str();
 			}else{
 				fs->updateVars();
 			}
@@ -160,7 +160,7 @@ void Scheduler::solveFastSystem(int volStart, int volSize, int memStart, int mem
 			if(!fs->solveSystem()){
 				stringstream ss;
 				ss << "Scheduler::solveFastSystem() - error solving FastSystem in " << feature->getName();
-				throw ss.str().c_str();
+				throw ss.str();
 			}else{
 				fs->updateVars();
 			}

@@ -201,7 +201,7 @@ void CartesianMesh::readGeometryFile() {
 	ifstream ifs(geoFile);
 	if (!ifs.is_open()) {
 		ss << "Can't open geometry file '" <<  geoFile << "'";
-		throw ss.str().c_str();
+		throw ss.str();
 	}
 	char line[100000];
 	string name;
