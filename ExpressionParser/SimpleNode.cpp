@@ -1,6 +1,3 @@
-#ifndef SIMPLENODE_CPP
-#define SIMPLENODE_CPP
-
 #include "SimpleNode.h"
 #include "Expression.h"
 #include "Exception.h"
@@ -161,4 +158,3 @@ string SimpleNode::getNodeSummary(double* values, Node* node){
 	}
 	return errorMsg;
 }
-#endif

@@ -133,7 +133,8 @@ int* SparseLinearSolver::PCGSolve(bool bRecomputeIncompleteFactorization)
 	// set number of unknowns (size of linear system to solve)
 	long size = smEqnBuilder->getSize();
 
-	TimerHandle tHndPCG = SimTool::getInstance()->getTimerHandle(var->getName() + " PCG");
+	string timername = var->getName() + " PCG";
+	TimerHandle tHndPCG = SimTool::getInstance()->getTimerHandle(timername);
 
 	int* IParm = new int[75];
 	memset(IParm, 0, 75 * sizeof(int));
@@ -155,7 +156,8 @@ int* SparseLinearSolver::PCGSolve(bool bRecomputeIncompleteFactorization)
 
 	SimTool::getInstance()->startTimer(tHndPCG);
 
-	double RHSscale = computeRHSscale(size, pRHS, var->getName());
+	string varname = var->getName();
+	double RHSscale = computeRHSscale(size, pRHS, varname);
 
 	PCGWRAPPER(&size, &Nrsp, &symmetricflg, ija, sa, pRHS, pNew, &PCG_Tolerance, IParm, RParm, pcg_workspace, pcg_workspace, &RHSscale); 
 	SimTool::getInstance()->stopTimer(tHndPCG);

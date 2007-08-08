@@ -1,6 +1,3 @@
-#ifndef EXPRESSION_CPP
-#define EXPRESSION_CPP
-
 #include "Expression.h"
 #include "ExpressionParser.h"
 #include "ASTFloatNode.h"
@@ -153,6 +150,4 @@ SymbolTableEntry* Expression::getSymbolBinding(string symbol){
 
 double Expression::evaluateProxy() {
 	return evaluateVector(0);
-};
-
-#endif
+}

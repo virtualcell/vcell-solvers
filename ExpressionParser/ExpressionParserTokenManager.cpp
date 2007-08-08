@@ -1,6 +1,3 @@
-#ifndef EXPRESSIONPARSERTOKENMANAGER_CPP
-#define EXPRESSIONPARSERTOKENMANAGER_CPP
-
 #include "ExpressionParserTokenManager.h"
 #include "RuntimeException.h"
 #include "IOException.h"
@@ -624,4 +621,3 @@ Token* ExpressionParserTokenManager::getNextToken(void)
 EOFLoop :
 	return 0;
 }
-#endif

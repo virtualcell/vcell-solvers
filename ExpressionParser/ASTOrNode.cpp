@@ -1,6 +1,3 @@
-#ifndef ASTORNODE_CPP
-#define ASTORNODE_CPP
-
 #include "ASTOrNode.h"
 #include "ExpressionException.h"
 
@@ -56,4 +53,3 @@ double ASTOrNode::evaluate(int evalType, double* values) {
 	} 
 	return 0.0;
 }
-#endif

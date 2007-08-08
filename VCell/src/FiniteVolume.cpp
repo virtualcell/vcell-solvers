@@ -379,7 +379,8 @@ SimulationExpression* loadSimulation(ifstream& ifsInput, CartesianMesh* mesh) {
 Expression* readExpression(ifstream& ifsInput, string& var_name, string prefix="") {	
 	string expStr = "";
 	getline(ifsInput, expStr);
-	expStr = trim(prefix + expStr);	
+	string newstr = prefix + expStr;
+	expStr = trim(newstr);
 	if (expStr[expStr.size()-1] != ';') {
 		stringstream msg;
 		msg << "Expression for [" << var_name << "] is not terminated by ';'";
@@ -543,8 +544,9 @@ void loadFastRates(ifstream& ifsInput, FastSystemExpression* fastSystem) {
 			continue;
 		} else if (nextToken == "FAST_RATE_END") {
 			break;
-		} else {			
-			expressions[count] = readExpression(ifsInput, string("fastRate"), nextToken);
+		} else {
+			string varname("fastRate");
+			expressions[count] = readExpression(ifsInput, varname, nextToken);
 			count ++;
 		} 		 
 	}	
@@ -602,8 +604,9 @@ void loadJacobians(ifstream& ifsInput, FastSystemExpression* fastSystem) {
 			continue;
 		} else if (nextToken == "JACOBIAN_END") {
 			break;
-		} else {			
-			expressions[count] = readExpression(ifsInput, string("jacobian"), nextToken);
+		} else {
+			string varname("jacobian");
+			expressions[count] = readExpression(ifsInput, varname, nextToken);
 			count ++;
 		} 		 
 	}	

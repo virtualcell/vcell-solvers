@@ -1,0 +1,18 @@
+default: all
+all:
+	cd ExpressionParser ; make -f Makefile.linux 
+	cd PCGPack ; make -f Makefile.linux
+	cd qhull ; make -f Makefile.linux
+	cd unzip ; make -f Makefile.linux
+	cd zlib ; make -f Makefile.linux
+	cd zip ; make -f Makefile.linux
+	cd VCell/src ; make -f Makefile.linux
+	
+clean:
+	cd ExpressionParser ; make -f Makefile.linux clean
+	cd PCGPack ; make -f Makefile.linux clean
+	cd qhull ; make -f Makefile.linux clean
+	cd unzip ; make -f Makefile.linux clean
+	cd zip ; make -f Makefile.linux clean
+	cd zlib ; make -f Makefile.linux clean
+	cd VCell/src ; make -f Makefile.linux clean

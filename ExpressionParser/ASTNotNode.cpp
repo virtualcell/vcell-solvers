@@ -1,6 +1,3 @@
-#ifndef ASTNOTNODE_CPP
-#define ASTNOTNODE_CPP
-
 #include "ASTNotNode.h"
 #include "DivideByZeroException.h"
 #include "ExpressionException.h"
@@ -38,4 +35,3 @@ double ASTNotNode::evaluate(int evalType, double* values) {
 		return 0.0;
 	}
 }
-#endif

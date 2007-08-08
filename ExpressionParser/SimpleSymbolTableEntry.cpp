@@ -1,6 +1,3 @@
-#ifndef SIMPLESYMBOLTABLEENTRY_CPP
-#define SIMPLESYMBOLTABLEENTRY_CPP
-
 #include "SimpleSymbolTableEntry.h"
 #include "ExpressionException.h"
 
@@ -52,4 +49,3 @@ void SimpleSymbolTableEntry::setConstantValue(double v)
 	value = v;
 	bConstant = true;
 }
-#endif

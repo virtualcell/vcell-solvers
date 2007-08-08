@@ -1,6 +1,3 @@
-#ifndef SIMPLESYMBOLTABLE_CPP
-#define SIMPLESYMBOLTABLE_CPP
-
 #include "SimpleSymbolTable.h"
 
 SimpleSymbolTable::SimpleSymbolTable(string* symbols, int symbolCount, ValueProxy** valueProxies)
@@ -47,4 +44,3 @@ SymbolTableEntry* SimpleSymbolTable::getLocalEntry(string identifier)
 	}
 	return null;
 }
-#endif

@@ -2,10 +2,12 @@
 #define _SIMULATIONMESSAGING_H_
 
 #if ( defined(WIN32) || defined(WIN64) )
-    #include <windows.h>	
+#include <windows.h>	
 #else
-    #include <pthread.h>
-    #include <unistd.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <memory.h>
 #endif
 
 #ifdef USE_MESSAGING
@@ -101,7 +103,7 @@ public:
     void onException(JMSExceptionRef anException);
 	void onMessage(MessageRef aMessage);
 	void waitUntilFinished();	
-	friend void startMessagingThread(void* param);
+	friend void* startMessagingThread(void* param);
 #endif
 
 private:
@@ -122,8 +124,6 @@ private:
 	QueueSenderRef getQueueSender();	
 
 	TextMessageRef initWorkerEventMessage();
-	HANDLE hNewWorkerEvent;
-	HANDLE hMessagingThreadEndEvent;
 	bool m_connActive;
 
 	QueueRef m_queue;
@@ -154,32 +154,26 @@ private:
 
 	char* getStatusString(jint status);
 
-	//Platform specific methods
-	void createCriticalSection();
-	void destroyCriticalSection();
-	bool enterCriticalSection(bool iftry=false);
-	void leaveCriticalSection();
+	bool lockMessaging();
+	void unlockMessaging();
 	void delay(jint duration);
 
-	bool lockWorkerEvent(bool iftry=false);
+	bool lockWorkerEvent(bool bTry=false);
 	void unlockWorkerEvent();
 
 #ifdef WIN32
-    CRITICAL_SECTION lock;
+    CRITICAL_SECTION lockForMessaging;
 	CRITICAL_SECTION lockForWorkerEvent;
+	HANDLE hNewWorkerEvent;
+	HANDLE hMessagingThreadEndEvent;
+#else // UNIX
+	pthread_t newWorkerEventThread;
+	pthread_mutex_t mutex_messaging;
+    pthread_mutex_t mutex_workerEvent;
+    pthread_mutex_t mutex_cond_workerEvent;
+	pthread_cond_t cond_workerEvent;
+	bool bNewWorkerEvent;
 #endif
-#ifdef SOLARIS
-    static pthread_mutexattr_t mattr;
-#endif
-#ifdef HPUX
-	static pthread_mutexattr_t mattr;
-#endif
-#ifdef AIX
-        static pthread_mutexattr_t mattr;
-#endif
-#ifdef UNIX
-    static pthread_mutex_t mp;
-#endif	
 #endif
 };
 

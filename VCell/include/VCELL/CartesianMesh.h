@@ -14,8 +14,8 @@
 #include <map>
 using namespace std;
 
-#include <VCell/Mesh.h>
-#include <VCell/SparseMatrixPCG.h>
+#include <VCELL/Mesh.h>
+#include <VCELL/SparseMatrixPCG.h>
 #include <VCELL/IncidenceMatrix.h>
 #include <VCELL/VoronoiRidge.h>
 

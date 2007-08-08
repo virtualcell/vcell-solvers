@@ -1,6 +1,3 @@
-#ifndef ASTIDNODE_CPP
-#define ASTIDNODE_CPP
-
 #include "ASTIdNode.h"
 #include "ExpressionException.h"
 #include "ExpressionBindingException.h"
@@ -112,4 +109,3 @@ void ASTIdNode::getSymbols(vector<string>& symbols, int language, NameScope* nam
 	}
 	symbols.push_back(infix);
 }
-#endif

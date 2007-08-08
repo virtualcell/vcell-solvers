@@ -158,7 +158,7 @@ template<class TYPE> void IncidenceMatrix<TYPE>::setValue(long i, long j, TYPE v
 		throw "IncidenceMatrix<TYPE>::setValue() : failed";
 	}
 
-	for (k = ija[i + 1] - 2; k >= insPos; k --) {
+	for (INT32 k = ija[i + 1] - 2; k >= insPos; k --) {
 		if (ija[k] == -1) {
 			continue;
 		}

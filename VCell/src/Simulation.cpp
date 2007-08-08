@@ -142,7 +142,8 @@ Variable *Simulation::getVariableFromName(string& varName)
 
 Variable *Simulation::getVariableFromName(char* varName)
 {
-	return getVariableFromName(string(varName));
+	string vn(varName);
+	return getVariableFromName(vn);
 }
 
 Solver *Simulation::getSolverFromVariable(Variable *var)

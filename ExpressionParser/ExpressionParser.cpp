@@ -1,6 +1,3 @@
-#ifndef EXPRESSIONPARSER_CPP
-#define EXPRESSIONPARSER_CPP
-
 #include "ASTOrNode.h"
 #include "ASTAndNode.h"
 #include "ASTRelationalNode.h"
@@ -1026,5 +1023,3 @@ void ExpressionParser::jj_rescan_token(void)
     }
     jj_rescan = false;
 }
-
-#endif

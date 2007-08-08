@@ -5,7 +5,7 @@
 #ifndef PDESOLVER_H
 #define PDESOLVER_H
 
-#include <VCELL\Solver.h>
+#include <VCELL/Solver.h>
 
 class Variable;
 class VolumeVariable;

@@ -1,6 +1,3 @@
-#ifndef ASTMULTNODE_CPP
-#define ASTMULTNODE_CPP
-
 #include "ASTMultNode.h"
 #include "ASTInvertTermNode.h"
 #include "ExpressionException.h"
@@ -93,4 +90,3 @@ double ASTMultNode::evaluate(int evalType, double* values) {
 	}	
 	return product;
 }
-#endif

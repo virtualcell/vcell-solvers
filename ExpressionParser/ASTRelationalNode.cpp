@@ -1,6 +1,3 @@
-#ifndef ASTRELATIONALNODE_CPP
-#define ASTRELATIONALNODE_CPP
-
 #include "ASTRelationalNode.h"
 #include "RuntimeException.h"
 #include "ExpressionException.h"
@@ -124,4 +121,3 @@ double ASTRelationalNode::evaluate(int evalType, double* values)
     }
     throw ExpressionException("unsupported relational operation");
 }
-#endif

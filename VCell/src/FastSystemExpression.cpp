@@ -237,8 +237,9 @@ void FastSystemExpression::updateMatrix()
 {
 	updateIndepValues();
 	double mvalue = 0;
-	for (int i = 0; i < dimension; i ++) {
-		for (int j = 0; j < dimension; j ++) {			
+	int i, j;
+	for (i = 0; i < dimension; i ++) {
+		for (j = 0; j < dimension; j ++) {			
 			mvalue = jacobianExpressions[i * dimension + j]->evaluateVector(indepPseudoFieldValues);
 			setMatrix(i, j, mvalue);		
 		}

@@ -181,6 +181,7 @@ void SparseVolumeEqnBuilder::init() {
 void SparseVolumeEqnBuilder::computeLHS(int index, double* lambdas, double& Aii, int& numCols, int* columnIndices, double* columnValues, bool& bSort)
 {    
 	// here all the indices are global indices.
+	string varname = var->getName();
 	VolumeElement* pVolumeElement = mesh->getVolumeElements();
 	Feature* feature = pVolumeElement[index].feature;
 	VolumeVarContext* varContext = feature->getVolumeVarContext( (VolumeVariable*)var);	
@@ -204,7 +205,7 @@ void SparseVolumeEqnBuilder::computeLHS(int index, double* lambdas, double& Aii,
 		double lambdaAreaZ = lambdas[5];
 
 		double Di = varContext->getDiffusionRate(index);
-		validateNumber(var->getName(), index, "Diffusion term", Di);
+		validateNumber(varname, index, "Diffusion term", Di);
 
 		if (mask & NEIGHBOR_BOUNDARY_MASK){   // boundary
 			volumeScale /= (mask & VOLUME_MASK);
@@ -378,15 +379,15 @@ void SparseVolumeEqnBuilder::computeLHS(int index, double* lambdas, double& Aii,
 					double convectionDirection = volumeNeighbors[n].convectionDirection;
 					double Vi = volumeNeighbors[n].Vi, Vj = volumeNeighbors[n].Vj;
 					double lamdaArea = neighborLambdaAreas[n];
-					validateNumber(var->getName(), index, "Velocity term", Vi);
-					validateNumber(var->getName(), neighborIndex, "Velocity term", Vj);
+					validateNumber(varname, index, "Velocity term", Vi);
+					validateNumber(varname, neighborIndex, "Velocity term", Vj);
 					double V = 0.5 * (Vi + Vj);
 					Aij = max(D * lambda + convectionDirection * 0.5 * V * lamdaArea, max(convectionDirection * V * lamdaArea, 0));
 					Aii += max(D * lambda - convectionDirection * 0.5 * V * lamdaArea, max(- convectionDirection * V * lamdaArea, 0));
 				}
 				if (Aij != 0.0) {
 					int neighborMask = pVolumeElement[neighborIndex].neighborMask;
-					validateNumber(var->getName(), index, "LHS", Aij);
+					validateNumber(varname, index, "LHS", Aij);
 					if (neighborMask & BOUNDARY_TYPE_DIRICHLET) { // dirichlet 
 						dirichletNeighbors.push_back(new CoupledNeighbors(index, neighborIndex, Aij));
 					} else if (!bSymmetricStorage || neighborIndex > index) {
@@ -424,7 +425,7 @@ void SparseVolumeEqnBuilder::computeLHS(int index, double* lambdas, double& Aii,
 				} // end if (Aij != 0.0)
 			} // end (neighborIndex >= 0)
 		} // end for n
-		validateNumber(var->getName(), index, "LHS", Aii);
+		validateNumber(varname, index, "LHS", Aii);
 	} // end if else (mask & BOUNDARY_TYPE_DIRICHLET)
 }
 
@@ -557,6 +558,7 @@ bool SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart
 }
 
 double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* lambdas, double bInit) {
+	string varname = var->getName();
 	double b = bInit;
 	Simulation* sim = SimTool::getInstance()->getSimulation();
 	VolumeElement *pVolumeElement = mesh->getVolumeElements();
@@ -692,7 +694,7 @@ double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* l
 			}
 		} // end if (mask & NEIGHBOR_MEMBRANE_MASK)
 	} // end if else (mask & BOUNDARY_TYPE_DIRICHLET)
-	validateNumber(var->getName(), index, "RHS", b);
+	validateNumber(varname, index, "RHS", b);
 	return b;
 }
 

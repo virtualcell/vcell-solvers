@@ -53,7 +53,7 @@ long Mesh::getNumVolumeElements()
 { 
 	if (!pVolumeElement){ 
 		if (!resolveFeatureReferences()){
-			return NULL;
+			return 0;
 		} 
 		ASSERTION(pVolumeElement);
 	}
@@ -75,7 +75,7 @@ long Mesh::getNumMembraneElements()
 { 
 	if (!pMembraneElement){ 
 		if (!resolveFeatureReferences()){
-			return NULL;
+			return 0;
 		} 
 	}
 	return numMembrane;

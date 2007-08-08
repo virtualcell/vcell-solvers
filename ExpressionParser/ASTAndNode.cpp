@@ -1,6 +1,3 @@
-#ifndef ASTANDNODE_CPP
-#define ASTANDNODE_CPP
-
 #include "ASTAndNode.h"
 #include "ExpressionException.h"
 
@@ -58,4 +55,3 @@ double ASTAndNode::evaluate(int evalType, double* values) {
 		return sum;
 	}
 }
-#endif

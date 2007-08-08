@@ -18,13 +18,14 @@ void VolumeVariable::show(ofstream& fp)
 {
 	double *pCurr=curr;
 	fp << getName() << endl;
-	for (int k=0;k<sizeZ;k++){
+	int i, j, k;
+	for (k=0;k<sizeZ;k++){
 		if (sizeZ > 1) 
 			fp << "z=" << k << ",";
-		for (int j = 0; j < sizeY; j ++){
+		for (j = 0; j < sizeY; j ++){
 			if (sizeY > 1) 
 				fp << "y=" << j << ",";
-			for (int i = 0; i < sizeX; i ++){
+			for (i = 0; i < sizeX; i ++){
 				fp << *pCurr << " ";
 				pCurr++;
 				if (i % 10 == 9) 

@@ -22,7 +22,7 @@ ODESolver::ODESolver(Variable *Var, Mesh *Amesh, int numSolveRegions, int *solve
 		}
 		Gridmap = new long[arraySize];
 		long index = 0;
-		for(i = 0; i<numSolveRegions; i++) {
+		for(int i = 0; i<numSolveRegions; i++) {
 			VolumeRegion *regionToSolve = ((CartesianMesh*)mesh)->getVolumeRegion(solveRegions[i]); 
 			long numInRegion = regionToSolve->getNumElements();
 			for(long indexInRegion = 0; indexInRegion < numInRegion; indexInRegion++) {

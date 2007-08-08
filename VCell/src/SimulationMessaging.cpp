@@ -1,39 +1,19 @@
 #include <VCELL/SimulationMessaging.h>
+#include <utility>
 #include <iostream>
 using namespace std;
 
 #ifdef USE_MESSAGING
-#ifdef LINUX
+#if ( !defined(WIN32) && !defined(WIN64) ) // UNIX
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#endif
-#ifdef UNIX
 #include <signal.h>
+#include <errno.h>
 #endif
 
 #include <VCELL/SimTool.h>
 #include <jmsconstants.h>
-
-#if defined (SOLARIS) || defined(SOLARIS_GCC)
-pthread_mutexattr_t SimulationMessaging::mattr;
-pthread_mutex_t SimulationMessaging::mp = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
-#ifdef HPUX
-pthread_mutexattr_t SimulationMessaging::mattr;
-pthread_mutex_t SimulationMessaging::mp = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
-#ifdef AIX
-pthread_mutexattr_t SimulationMessaging::mattr;
-pthread_mutex_t SimulationMessaging::mp = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
-#ifdef LINUX
-pthread_mutex_t SimulationMessaging::mp = /* PTHREAD_MUTEX_RECURSIVE_NP;*/
-      {0, 0, 0, PTHREAD_MUTEX_RECURSIVE_NP, __LOCK_INITIALIZER};
-#endif
 
 static const char* MESSAGE_TYPE_PROPERTY	= "MessageType";
 static const char* MESSAGE_TYPE_WORKEREVENT_VALUE	= "WorkerEvent";
@@ -87,17 +67,30 @@ SimulationMessaging::SimulationMessaging(char* broker, char* smqusername, char* 
 		memset(m_hostname, 0, 256);
 
 		// get hostname
+#if ( defined(WIN32) || defined(WIN64) )
 		WSADATA wsaData;
 		WORD wVersionRequested = MAKEWORD( 2, 2 );		 
 		WSAStartup( wVersionRequested, &wsaData );			
+#endif
 		gethostname(m_hostname, 256);
 		//cout << "hostname is " << m_hostname << endl;		
 	}
 
 	time(&lastSentEventTime);
 
-    createCriticalSection();
 	workerEventOutputMode = WORKEREVENT_OUTPUT_MODE_MESSAGING;
+
+#if ( defined(WIN32) || defined(WIN64) )
+    InitializeCriticalSection(&lockForMessaging);
+	InitializeCriticalSection(&lockForWorkerEvent);
+#else // UNIX
+	pthread_mutex_init(&mutex_messaging, NULL);
+	pthread_mutex_init(&mutex_workerEvent, NULL);
+	pthread_mutex_init(&mutex_cond_workerEvent, NULL);
+	pthread_cond_init(&cond_workerEvent, NULL);
+	bNewWorkerEvent = false;
+#endif
+
 }
 #endif
 
@@ -118,11 +111,17 @@ SimulationMessaging::~SimulationMessaging()
 		if (m_tConnect != null) {
 			m_tConnect->close();
 		}
-		destroyCriticalSection();
 	} catch (JMSExceptionRef jmse) {
-		destroyCriticalSection();
-		onException(jmse);
 	}
+#if ( defined(WIN32) || defined(WIN64) )
+    DeleteCriticalSection(&lockForMessaging);
+	DeleteCriticalSection(&lockForWorkerEvent);
+#else // UNIX
+    pthread_mutex_destroy(&mutex_messaging);
+	pthread_mutex_destroy(&mutex_workerEvent);
+	pthread_mutex_destroy(&mutex_cond_workerEvent);
+	pthread_cond_destroy(&cond_workerEvent);
+#endif
 
 #endif
 }
@@ -223,7 +222,12 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 
 		time(&lastSentEventTime);
 		if (newWorkerEvent->status == JOB_COMPLETED || newWorkerEvent->status == JOB_FAILURE) {
+#if ( defined(WIN32) || defined(WIN64) )
 			SetEvent(hMessagingThreadEndEvent);
+#else // UNIX
+			cout <<  "!!!thread exiting" << endl;
+			pthread_exit(NULL);
+#endif
 		}
 
 		return newWorkerEvent;
@@ -271,8 +275,15 @@ void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
 			if (succ) {
 				delete workerEvent;
 				workerEvent = arg_workerEvent;
-				SetEvent(hNewWorkerEvent);
 				unlockWorkerEvent();
+#if ( defined(WIN32) || defined(WIN64) )				
+				SetEvent(hNewWorkerEvent);
+#else  //UNIX
+				pthread_mutex_lock(&mutex_cond_workerEvent);
+				bNewWorkerEvent = true;
+				pthread_cond_signal(&cond_workerEvent);
+				pthread_mutex_unlock(&mutex_cond_workerEvent);
+#endif
 			}
 		}
 #else
@@ -291,7 +302,7 @@ void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
  * onException handler.)
  */
 void SimulationMessaging::setupConnection () { //synchronized
-    enterCriticalSection();
+	lockMessaging();
 
     // Eliminate a damaged connection
     if (!m_connActive) {
@@ -342,7 +353,7 @@ void SimulationMessaging::setupConnection () { //synchronized
         }
     }   //end-while
 
-    leaveCriticalSection();
+    unlockMessaging();
 }
 
 /**
@@ -350,11 +361,9 @@ void SimulationMessaging::setupConnection () { //synchronized
  */
 void SimulationMessaging::delay(jint duration)
 {
-#ifdef WIN32
+#if ( defined(WIN32) || defined(WIN64) )
     Sleep(duration);
-#endif
-
-#ifdef UNIX
+#else // UNIX
     sleep(duration/1000);
 #endif
 }
@@ -405,166 +414,58 @@ void SimulationMessaging::onException(JMSExceptionRef e)
 	}
 }
 
-/**
- * The following functions contain platform-dependent code for managing
- * thread synchronization, and for suspending the current thread for a 
- * specified amount of time.
- */
-void SimulationMessaging::createCriticalSection()
+bool SimulationMessaging::lockMessaging()
 {
-#ifdef WIN32
-    InitializeCriticalSection(&lock);
-	InitializeCriticalSection(&lockForWorkerEvent);
-#endif
-
-#if defined (SOLARIS) || defined(SOLARIS_GCC)
-    /* Initialize an attribute to default value */
-    if (pthread_mutexattr_init(&mattr) != 0) {
-        fprintf(stderr, "Could not initialize mutex, fatal error.\n");
-        exit(1);
-    }
-
-#ifdef SOLARIS_2_6
-#else
-    if (pthread_mutexattr_settype(&mattr , PTHREAD_MUTEX_RECURSIVE) != 0) {
-        fprintf(stderr, "Could not set mutex type, fatal error.\n");
-        pthread_mutexattr_destroy(&mattr);
-        exit(1);
-    }
-#endif
-
-    if (pthread_mutex_init(&mp, &mattr) != 0) {
-        fprintf(stderr, "Could not initialize mutex, fatal error.\n");
-        pthread_mutexattr_destroy(&mattr);
-        exit(1);
-    }
-#endif
-
-#ifdef HPUX
-	/* Initialize an attribute to default value */
-	if (pthread_mutexattr_init(&mattr) != 0) {
-		fprintf(stderr, "Could not initialize mutex, fatal error.\n");
-		exit(1);
-	}
-
-	if (pthread_mutexattr_settype(&mattr , PTHREAD_MUTEX_RECURSIVE) != 0) {
-		fprintf(stderr, "Could not set mutex type, fatal error.\n");
-		pthread_mutexattr_destroy(&mattr);
-		exit(1);
-	}
-
-	if (pthread_mutex_init(&mp, &mattr) != 0) {
-		fprintf(stderr, "Could not initialize mutex, fatal error.\n");
-		pthread_mutexattr_destroy(&mattr);
-		exit(1);
-	}
-#endif
-
-#ifdef AIX
-        /* Initialize an attribute to default value */
-        if (pthread_mutexattr_init(&mattr) != 0) {
-                fprintf(stderr, "Could not initialize mutex, fatal error.\n");
-                exit(1);
-        }
-
-        if (pthread_mutexattr_settype(&mattr , PTHREAD_MUTEX_RECURSIVE) != 0) {
-                fprintf(stderr, "Could not set mutex type, fatal error.\n");
-                pthread_mutexattr_destroy(&mattr);
-                exit(1);
-        }
-
-        if (pthread_mutex_init(&mp, &mattr) != 0) {
-                fprintf(stderr, "Could not initialize mutex, fatal error.\n");
-                pthread_mutexattr_destroy(&mattr);
-                exit(1);
-        }
-#endif
-
-#ifdef LINUX
-// Nothing to do. Static initialization took care of it
-#endif
-}
-
-void SimulationMessaging::destroyCriticalSection()
-{
-#ifdef WIN32
-    DeleteCriticalSection(&lock);
-	DeleteCriticalSection(&lockForWorkerEvent);
-#endif
-
-#ifdef UNIX
-    pthread_mutex_destroy(&mp);
-#if defined (SOLARIS) || defined(SOLARIS_GCC)
-    pthread_mutexattr_destroy(&mattr);
-#endif
-#ifdef HPUX
-	pthread_mutexattr_destroy(&mattr);
-#endif
-#ifdef AIX
-        pthread_mutexattr_destroy(&mattr);
-#endif
-#endif
-}
-
-bool SimulationMessaging::enterCriticalSection(bool iftry)
-{
-#ifdef WIN32
-	if (iftry) {
-		return (bool)TryEnterCriticalSection(&lock);
-	}
-    EnterCriticalSection(&lock);
+#if ( defined(WIN32) || defined(WIN64) )
+    EnterCriticalSection(&lockForMessaging);
 	return true;
-#endif
-
-#ifdef UNIX
-    int ret;
-    if ((ret = pthread_mutex_lock(&mp)) != 0) {
-        /* This indicates a programming error. The mutex is recursive. */
-        fprintf(stderr, "Cannot acquire mutex, fatal error.\n");
+#else // UNIX
+    if (pthread_mutex_lock(&mutex_messaging)) {
+        cout << "Cannot acquire mutex, fatal error." << endl;
         exit(1);
     }
 #endif
 }
 
-void SimulationMessaging::leaveCriticalSection()
+void SimulationMessaging::unlockMessaging()
 {
-#ifdef WIN32
-    LeaveCriticalSection(&lock);
-#endif
-
-#ifdef UNIX
-    pthread_mutex_unlock(&mp);
+#if ( defined(WIN32) || defined(WIN64) )
+    LeaveCriticalSection(&lockForMessaging);
+#else // UNIX
+    pthread_mutex_unlock(&mutex_workerEvent);
 #endif
 }
 
-bool SimulationMessaging::lockWorkerEvent(bool iftry)
+
+bool SimulationMessaging::lockWorkerEvent(bool bTry)
 {	
-#ifdef WIN32
-	if (iftry) {
+#if ( defined(WIN32) || defined(WIN64) )
+	if (bTry) {
 		return (bool)TryEnterCriticalSection(&lockForWorkerEvent);
 	}
-    EnterCriticalSection(&lockForWorkerEvent);
+	try {
+		EnterCriticalSection(&lockForWorkerEvent);
+	} catch (...) {
+		return false;
+	}
 	return true;
-#endif
-
-#ifdef UNIX
-    int ret;
-    if ((ret = pthread_mutex_lock(&mp)) != 0) {
-        /* This indicates a programming error. The mutex is recursive. */
-        fprintf(stderr, "Cannot acquire mutex, fatal error.\n");
-        exit(1);
+#else // UNIX
+	if (bTry) {
+		return (pthread_mutex_trylock(&mutex_workerEvent) == 0);
+	}
+    if (pthread_mutex_lock(&mutex_workerEvent) != 0) {
+        return false;
     }
+	return true;
 #endif
 }
 
 void SimulationMessaging::unlockWorkerEvent()
 {
-#ifdef WIN32
+#if ( defined(WIN32) || defined(WIN64) )
     LeaveCriticalSection(&lockForWorkerEvent);
-#endif
-
-#ifdef UNIX
-    pthread_mutex_unlock(&mp);
+#else // UNIX
+    pthread_mutex_unlock(&mutex_workerEvent);
 #endif
 }
 
@@ -667,7 +568,7 @@ void SimulationMessaging::waitUntilFinished() {
 	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
 		return;
 	}
-
+#if ( defined(WIN32) || defined(WIN64) )
 	DWORD dwWaitResult = WaitForSingleObject(hMessagingThreadEndEvent, INFINITE);
 	switch (dwWaitResult) {
 	case WAIT_OBJECT_0: 
@@ -678,13 +579,17 @@ void SimulationMessaging::waitUntilFinished() {
 		cout << "Wait error: " << GetLastError() << endl;
 		break;
 	}
+#else
+	cout << "!!!waiting for thread to exit" << endl;
+	pthread_join(newWorkerEventThread, NULL);
+#endif
 }
 
 void SimulationMessaging::start() {
 	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
 		return;
 	}
-#ifdef WIN32
+#if ( defined(WIN32) || defined(WIN64) )
 	HANDLE hThread; 
 	DWORD IDThread; 
 
@@ -737,14 +642,16 @@ void SimulationMessaging::start() {
 	{
 		throw "CreateThread failed for messaging thread";
 	}
+#else // UNIX
+	int retv = pthread_create(&newWorkerEventThread, NULL, startMessagingThread, this);
 #endif
 }
 
 
-void startMessagingThread(void* lpParam){	
+void* startMessagingThread(void* lpParam){	
 	SimulationMessaging::getInstVar()->setupConnection();
 
-#ifdef WIN32
+#if ( defined(WIN32) || defined(WIN64) )
     DWORD dwWaitResult;
     HANDLE hEvent; 
 	
@@ -756,14 +663,6 @@ void startMessagingThread(void* lpParam){
 		switch (dwWaitResult) {
 		case WAIT_OBJECT_0: 
 			{
-				/*
-				bool succ = true;
-				if (SimulationMessaging::m_inst->workerEvent->status == JOB_PROGRESS) {
-					succ = SimulationMessaging::m_inst->enterCriticalSection(true);
-				} else {
-					succ = SimulationMessaging::m_inst->enterCriticalSection();
-				}*/					
-			
 				WorkerEvent* sentWorkerEvent = SimulationMessaging::getInstVar()->sendStatus();
 				SimulationMessaging::getInstVar()->lockWorkerEvent();
 				if (sentWorkerEvent != NULL 
@@ -782,11 +681,58 @@ void startMessagingThread(void* lpParam){
 			break; 
 
 		default:
-			printf("Wait error: %d\n", GetLastError()); 
+			cout << "Wait error: " << GetLastError() << endl; 
 			break;
 		}
 	}
-#else
+#else // UNIX
+	int waitReturn = 0;
+	struct timespec timeout;
+	struct timeval now;
+	struct timeval start;
+	SimulationMessaging* simMessaging = (SimulationMessaging*)lpParam;
+
+	while (true) {
+		waitReturn = 1;
+		gettimeofday(&start, NULL);		
+		// condition might be signalled before this thread gets blocked
+		// so this thread might miss signal and doesn't get wakened
+		// if this happens don't want to wait too long to check if there 
+		// is new worker event. This is the reason for the loop and 2 sec timeout
+		pthread_mutex_lock(&simMessaging->mutex_cond_workerEvent);
+		while (timeout.tv_sec - start.tv_sec < 5 * 60) {
+			// at this point, there are two possibilities
+			// 1. this thread has been awakened, waited < 2 secs, waitReturn is 0
+			// 2. this thread has waited full 2 sec timout, waitReturn is non zero
+			// in either case, check if there is new worker event.
+			if (simMessaging->bNewWorkerEvent) {
+				simMessaging->bNewWorkerEvent = false;
+				waitReturn = 0;
+				break;
+			}
+			gettimeofday(&now, NULL);
+			timeout.tv_sec = now.tv_sec + 2;
+			timeout.tv_nsec = now.tv_usec * 1000;
+			waitReturn = pthread_cond_timedwait(&simMessaging->cond_workerEvent, &simMessaging->mutex_cond_workerEvent, &timeout);			
+		}
+		pthread_mutex_unlock(&simMessaging->mutex_cond_workerEvent);
+		
+		switch (waitReturn) {
+			case 0:  { // new event
+				WorkerEvent* sentWorkerEvent = simMessaging->sendStatus();
+				delete sentWorkerEvent;
+				break; 
+			}
+
+			case ETIMEDOUT: // time out
+				simMessaging->keepAlive();
+				break; 
+
+			default:
+				cout << "Wait error: " << waitReturn << endl; 
+				break;
+		}
+	}
 #endif		
 }
 #endif

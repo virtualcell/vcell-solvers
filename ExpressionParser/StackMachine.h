@@ -54,6 +54,5 @@ public:
 	~StackMachine();
 	double evaluate(double* values=0);	
 };
-
 	
 #endif

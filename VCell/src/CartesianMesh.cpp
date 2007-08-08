@@ -348,7 +348,7 @@ void CartesianMesh::readGeometryFile() {
 	int retVal = uncompress(inflated_bytes, &inflated_len, bytes_from_compressed, compressed_len/2);
 
 	pVolumeElement = new VolumeElement[numVolume];
-	for(i = 0; i < numVolume; i ++){
+	for(int i = 0; i < numVolume; i ++){
 		int regionIndex = (unsigned char)inflated_bytes[i];
 		VolumeRegion* vr = pVolumeRegions[regionIndex];
 		vr->addIndex(i);

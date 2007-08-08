@@ -1,0 +1,78 @@
+# Makefile for Zip, ZipCloak, ZipNote and ZipSplit for
+# 32-bit Microsoft Visual C++
+
+# To use, do "nmake -f makefile.w32"
+
+# Add -DNO_ASM to CFLAGS and comment out the ASMOBJS definition if
+# you do not have masm 6.1X.
+
+# Optional nonstandard preprocessor flags (as -DMEDIUM_MEM or -DNO_ASM)
+# should be added to the environment via "set LOCAL_ZIP=-DFOO" or added
+# to the declaration of LOC here:
+LOC = $(LOCAL_ZIP)
+
+# Uncomment the following macro to use the optimized assembler
+# routines in Zip:
+ASMOBJS = 
+#match32.obj
+
+# ------------- 32-bit Microsoft Visual C++ -------------
+CC=cl -nologo /TP
+CFLAGS=-W3 -O2 -DWIN32 -DMSDOS -DUSE_ZIPMAIN -DSTATIC_LIB -DNO_ASM $(LOC) /MT
+UTILFLAGS=$(CFLAGS) -DUTIL -Fo$@
+
+# Remove "-coff" from ASFLAGS if you do not have MASM 6.11.
+
+AS=ml -nologo
+ASFLAGS=-c -coff -Cx
+
+# If you build 16-bit executables with MS Visual C++ v1.0/1.5 and link them
+# with the /KNOWEAS switch, you can build dual-mode MS-DOS/Win32 executables
+# by passing the -stub switch to the 32-bit linker to specify the 16-bit part.
+
+LD=link 
+LDFLAGS= 
+#advapi32.lib
+
+# variables
+OBJDIR = .\release
+OBJZ = $(OBJDIR)\zip.obj $(OBJDIR)\crypt.obj $(OBJDIR)\ttyio.obj $(OBJDIR)\zipfile.obj \
+	$(OBJDIR)\zipup.obj $(OBJDIR)\fileio.obj $(OBJDIR)\util.obj \
+	$(OBJDIR)\crc32.obj $(OBJDIR)\crctab.obj $(OBJDIR)\globals.obj
+
+OBJI = $(OBJDIR)\deflate.obj $(OBJDIR)\trees.obj $(OBJDIR)\win32.obj \
+	$(OBJDIR)\win32zip.obj $(OBJDIR)\nt.obj
+#$(OBJDIR)\$(ASMOBJS)	
+
+ZIP_H = zip.h ziperr.h tailor.h win32/osdep.h
+
+SUFFIX = .c.asm.obj
+
+ZIPLIB = zip32.lib
+
+ALL:   $(ZIPLIB)
+
+$(OBJDIR) :
+    if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"
+
+$(ZIPLIB): $(OBJDIR) $(OBJZ) $(OBJI)
+	$(LD) -lib /out:$@  $(LDFLAGS) $(OBJZ) $(OBJI)
+	
+.c{$(OBJDIR)}.obj :		
+	$(CC) -c $(CFLAGS) /Fo$@ $<
+	
+$(OBJDIR)\win32.obj:
+	$(CC) -c $(CFLAGS) /Fo$@ win32\win32.c
+	
+$(OBJDIR)\win32zip.obj:
+	$(CC) -c $(CFLAGS) /Fo$@ win32\win32zip.c
+	
+$(OBJDIR)\nt.obj:
+	$(CC) -c $(CFLAGS) /Fo$@ win32\nt.c
+		
+$(OBJDIR)\match32.obj:  win32\match32.asm
+	$(AS) $(ASFLAGS) -Fo$@ win32\match32.asm	
+
+clean:
+	del $(ZIPLIB) $(OBJZ) $(OBJI)
+	

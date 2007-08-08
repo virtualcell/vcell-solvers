@@ -16,7 +16,7 @@
 #include <map>
 using namespace std;
 
-#include <VCell/SparseMatrixPCG.h>
+#include <VCELL/SparseMatrixPCG.h>
 #include <VCELL/IncidenceMatrix.h>
 #include <VCELL/VoronoiRidge.h>
 

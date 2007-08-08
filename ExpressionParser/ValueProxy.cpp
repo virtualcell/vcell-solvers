@@ -20,6 +20,3 @@ ValueProxy::ValueProxy(double* arg_values, int arg_indexindex, int* arg_indices)
 double ValueProxy::evaluate(){
 	return values[indices[indexindex]];
 }
-
-
-

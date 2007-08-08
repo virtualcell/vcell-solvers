@@ -134,7 +134,8 @@ void Scheduler::solveFastSystem(int volStart, int volSize, int memStart, int mem
 		ASSERTION(feature);
 		if (fs = feature->getFastSystem()){
 			fs->setCurrIndex(i);
-			fs->setCoordinates(sim->getTime_sec(), mesh->getVolumeWorldCoord(i));
+			WorldCoord wc = mesh->getVolumeWorldCoord(i);
+			fs->setCoordinates(sim->getTime_sec(), wc);
 			fs->initVars();			
 			if(!fs->solveSystem()){
 				stringstream ss;
@@ -155,7 +156,8 @@ void Scheduler::solveFastSystem(int volStart, int volSize, int memStart, int mem
 		ASSERTION(feature);
 		if (fs = feature->getMembraneFastSystem()){
 			fs->setCurrIndex(i);
-			fs->setCoordinates(sim->getTime_sec(), mesh->getMembraneWorldCoord(i));
+			WorldCoord wc = mesh->getMembraneWorldCoord(i);
+			fs->setCoordinates(sim->getTime_sec(), wc);
 			fs->initVars();
 			if(!fs->solveSystem()){
 				stringstream ss;

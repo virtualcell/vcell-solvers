@@ -85,7 +85,7 @@ double* FieldData::getData() {
 	   
 	if (data == 0) {
 		char errMsg[512];
-		sprintf(errMsg, "Data not found for variable '%s' in field '%s'", fdVarName, fdName);		
+		sprintf(errMsg, "Data not found for variable '%s' in field '%s'", fdVarName.c_str(), fdName.c_str());
 		throw errMsg;
 	}
 	fclose(fp);

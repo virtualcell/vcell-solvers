@@ -1,6 +1,3 @@
-#ifndef ASTFUNCNODE_CPP
-#define ASTFUNCNODE_CPP
-
 #include "ASTFuncNode.h"
 #include "RuntimeException.h"
 #include "ExpressionException.h"
@@ -622,4 +619,3 @@ double ASTFuncNode::evaluate(int evalType, double* values)
 	}
 	return result;
 }
-#endif

@@ -75,8 +75,10 @@ void SerialScheduler::iterate()
 	int volumeSize = sim->getMesh()->getNumVolumeElements(); 
 	int membraneSize = sim->getMesh()->getNumMembraneElements(); 
 	while (solver=sim->getNextSolver(solver)){
-		TimerHandle tHndBuild = SimTool::getInstance()->getTimerHandle(solver->getVar()->getName() + " Build");
-		TimerHandle tHndSolve = SimTool::getInstance()->getTimerHandle(solver->getVar()->getName() + " Solve");
+		string timername = solver->getVar()->getName() + " Build";
+		TimerHandle tHndBuild = SimTool::getInstance()->getTimerHandle(timername);
+		timername = solver->getVar()->getName() + " Solve";
+		TimerHandle tHndSolve = SimTool::getInstance()->getTimerHandle(timername);
 		//
 		// initialize equations first time around
 		//

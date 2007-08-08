@@ -118,8 +118,8 @@ double VarContext::getExpressionValue(MembraneElement* element, long expIndex)
 	if (constantValues[expIndex] != NULL) {
 		return constantValues[expIndex][0];
 	}
-	WorldCoord wc;
-	((SimulationExpression*)sim)->setCurrentCoordinate(mesh->getMembraneWorldCoord(element));
+	WorldCoord wc = mesh->getMembraneWorldCoord(element);
+	((SimulationExpression*)sim)->setCurrentCoordinate(wc);
 	int* indices = ((SimulationExpression*)sim)->getIndices();
 	indices[VAR_MEMBRANE_INDEX] = element->index;
 	indices[VAR_MEMBRANE_REGION_INDEX] = element->region->getId();

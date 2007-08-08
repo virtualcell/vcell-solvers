@@ -1,6 +1,3 @@
-#ifndef EXPRESSIONTEST_CPP
-#define EXPRESSIONTEST_CPP
-
 #include "Exception.h"
 #include "ExpressionTest.h"
 #include "Expression.h"
@@ -250,4 +247,3 @@ label_1:
 		cout << badmsg[i] << endl;
 	}
 }
-#endif

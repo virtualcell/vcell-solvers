@@ -1,0 +1,106 @@
+#
+# (C) Copyright University of Connecticut Health Center 2001.
+# All rights reserved.
+#
+CC = g++
+LINKER = g++
+CPPFLAGS =-exceptions -c -DINTEL -DUNIX -DLINUX -O2 -g -D__USE_GNU -DUSE_MESSAGING -I../include -I../../zlib -I../../SonicCClient/Linux_AS21/include/CPP -I../../SonicCClient/Linux_AS21/include -I../../ExpressionParser
+
+TARGET_LIB=	libvcell.a
+TARGET_STANDALONE = FiniteVolume
+
+FC= g77
+FOPTIONS = -c -exceptions -O2
+LIBS =  libvcell.a \
+		../../ExpressionParser/libExpParser.a \
+		../../qhull/libqhull.a \
+		../../zlib/libz.a \
+		../../zip/libzip32.a \
+		../../unzip/libunzip32.a \
+		../../PCGPack/libpcgpack.a \
+		-L../../SonicCClient/Linux_AS21/bin/release/ -lsmq \
+		-lblas -lpthread -lm -lg2c
+
+LIBTOOL = ar cru
+
+.SUFFIXES:	.cpp.o.f
+
+.f.o :
+		$(FC) $(FOPTIONS) $<
+
+.cpp.o :		
+		$(CC) $(CPPFLAGS) $<
+
+
+CPPOBJECTS = 	\
+	AlgebraicSystem.o					\
+	CartesianMesh.o					     \
+	Contour.o 							\
+	ContourSubdomain.o     				 \
+	ContourVarContext.o					\
+	ContourVariable.o         \
+	DataSet.o  								 \
+	EqnBuilder.o    \
+	EqnBuilderReactionForward.o \
+	FastSystem.o              \
+	FastSystemExpression.o            \
+	Feature.o         \
+	FieldData.o         \
+	FVUtils.o         \
+	Histogram.o       \
+	MembraneEqnBuilderForward.o \
+	MembraneEqnBuilderDiffusion.o       \
+	MembraneRegion.o    \
+	MembraneRegionEqnBuilder.o  \
+	MembraneRegionVarContext.o  \
+	MembraneRegionVarContextExpression.o        \
+	MembraneRegionVariable.o    \
+	MembraneVarContext.o                \
+	MembraneVarContextExpression.o      \
+	MembraneVariable.o  \
+	Mesh.o              \
+	ODESolver.o \
+	ParticleContext.o   \
+	PDESolver.o \
+	Region.o          \
+	Scheduler.o       \
+	SerialScheduler.o                   \
+	SimTool.o                   \
+	Simulation.o                        \
+	SimulationExpression.o      \
+	SimulationMessaging.o       \
+	Solver.o                    \
+	SparseLinearSolver.o                \
+	SparseMatrixEqnBuilder.o            \
+	SparseMatrixPCG.o           \
+	SparseVolumeEqnBuilder.o            \
+	StructuredPDESolver.o               \
+	Timer.o                     \
+	VarContext.o                        \
+	Variable.o                  \
+	VCellModel.o                        \
+	VolumeRegion.o                      \
+	VolumeRegionEqnBuilder.o                    \
+	VolumeRegionVarContext.o                    \
+	VolumeRegionVarContextExpression.o                  \
+	VolumeRegionVariable.o                      \
+	VolumeVarContext.o                  \
+	VolumeVarContextExpression.o                        \
+	VolumeVariable.o
+
+
+FOROBJECTS = pcgwrapper.o
+STANDALONE_MAIN_OBJ = FiniteVolume.o
+
+default all: $(TARGET_STANDALONE) 
+
+$(TARGET_LIB):	$(CPPOBJECTS) $(FOROBJECTS)
+		$(LIBTOOL) $@ $(CPPOBJECTS) $(FOROBJECTS)
+		ranlib $@
+
+$(TARGET_STANDALONE) : $(TARGET_LIB) $(STANDALONE_MAIN_OBJ)
+	$(CC) -o $@ $(STANDALONE_MAIN_OBJ) $(LIBS)
+
+clean:
+	rm *.o
+	rm $(TARGET_LIB)	

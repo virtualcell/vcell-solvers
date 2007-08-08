@@ -1,6 +1,3 @@
-#ifndef	EXCEPTION_CPP
-#define EXCEPTION_CPP
-
 #include "Exception.h"
 #include "ParserException.h"
 #include "RuntimeException.h"
@@ -151,5 +148,3 @@ string VCell::Exception::add_escapes(string str)
     }
     return retval;
 }
-
-#endif

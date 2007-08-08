@@ -1,4 +1,5 @@
-#pragma once
+#ifndef HISTOGRAM_H
+#define HISTOGRAM_H
 
 #include <VCELL/SimTypes.h>
 
@@ -26,3 +27,5 @@ private:
     int             particleState;
     LocationContext locationContext;
 };
+
+#endif
