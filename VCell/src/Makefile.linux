@@ -11,14 +11,14 @@ TARGET_STANDALONE = FiniteVolume
 
 FC= g77
 FOPTIONS = -c -exceptions -O2
-LIBS =  libvcell.a \
+VCELL_LIBS =  libvcell.a \
 		../../ExpressionParser/libExpParser.a \
 		../../qhull/libqhull.a \
 		../../zlib/libz.a \
 		../../zip/libzip32.a \
 		../../unzip/libunzip32.a \
-		../../PCGPack/libpcgpack.a \
-		-L../../SonicCClient/Linux_AS21/bin/release/ -lsmq \
+		../../PCGPack/libpcgpack.a
+LIBS = -L../../SonicCClient/Linux_AS21/bin/release/ -lsmq \
 		-lblas -lpthread -lm -lg2c
 
 LIBTOOL = ar cru
@@ -98,8 +98,8 @@ $(TARGET_LIB):	$(CPPOBJECTS) $(FOROBJECTS)
 		$(LIBTOOL) $@ $(CPPOBJECTS) $(FOROBJECTS)
 		ranlib $@
 
-$(TARGET_STANDALONE) : $(TARGET_LIB) $(STANDALONE_MAIN_OBJ)
-	$(CC) -o $@ $(STANDALONE_MAIN_OBJ) $(LIBS)
+$(TARGET_STANDALONE) : $(TARGET_LIB) $(STANDALONE_MAIN_OBJ) $(VCELL_LIBS)
+	$(CC) -o $@ $(STANDALONE_MAIN_OBJ) $(LIBS) $(VCELL_LIBS)
 
 clean:
 	rm *.o

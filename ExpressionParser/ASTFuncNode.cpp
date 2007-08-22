@@ -212,7 +212,7 @@ double ASTFuncNode::evaluate(int evalType, double* values)
 						throw FunctionDomainException(errorMsg);
 					}
 					result = pow(mantissa, exponent);
-					if (numeric_limits<double>::infinity( ) == -result || numeric_limits<double>::infinity( ) == result || result != result) {
+					if (EP_double_infinity == -result || EP_double_infinity == result || result != result) {
 						char problem[1000];
 						sprintf(problem, "u^v evaluated to %lf, u=%lf, v=%lf", result, mantissa);
 						string errorMsg = getFunctionDomainError(problem, values, "u", mantissaChild, "v", exponentChild);
@@ -612,7 +612,7 @@ double ASTFuncNode::evaluate(int evalType, double* values)
 			}
 	}
 	//result is NAN
-	if (numeric_limits<double>::infinity( )==-result || numeric_limits<double>::infinity( )==result || result != result) {
+	if (EP_double_infinity == -result || EP_double_infinity == result || result != result) {
 		char problem[1000];
 		sprintf(problem, "%s evaluated to infinity or NaN", infixString(LANGUAGE_DEFAULT,0).c_str(), functionNamesVCML[funcType].c_str());
 		throw ExpressionException(problem);

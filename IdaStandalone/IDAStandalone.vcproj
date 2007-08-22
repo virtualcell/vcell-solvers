@@ -31,10 +31,10 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sundials.lib sundials_nvecserial.lib sundials_ida.lib IDAWin.lib ExpressionParser.lib"
+				AdditionalDependencies="sundials.lib sundials_nvecserial.lib sundials_ida.lib"
 				OutputFile="$(OutDir)/IDAStandalone.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\ExpressionParser\Debug;..\IDAWin\Debug;..\sundials\lib"
+				AdditionalLibraryDirectories="..\sundials\lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/IDAStandalone.pdb"
 				SubSystem="1"

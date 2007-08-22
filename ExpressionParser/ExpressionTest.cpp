@@ -5,7 +5,6 @@
 #include "RuntimeException.h"
 #include "IOException.h"
 #include <math.h>
-#include <limits>
 
 ExpressionTest::ExpressionTest(void)
 {
@@ -61,7 +60,6 @@ void ExpressionTest::testEvaluateConstant(void)
 void ExpressionTest::testParser(int count, char* javaresult, double cvalue, char* expStr, SymbolTable* symbolTable, double* values) {
 	Expression* exp = 0;
 	string badmsg;
-	double double_infinity = numeric_limits<double>::infinity();
 	try {
 		double javavalue = -0.0;
 		double d = 0.0;
@@ -69,9 +67,9 @@ void ExpressionTest::testParser(int count, char* javaresult, double cvalue, char
 		if (strcmp(javaresult, "NaN") == 0) {
 			javavalue = log(-1.0);
 		} else if (strcmp(javaresult, "Infinity") == 0) {
-			javavalue = double_infinity;
+			javavalue = EP_double_infinity;
 		} else if (strcmp(javaresult, "-Infinity") == 0) {
-			javavalue = -double_infinity;
+			javavalue = -EP_double_infinity;
 		} else {
 			n = sscanf(javaresult, "%lg", &javavalue);
 			if (n != 1) {

@@ -7,6 +7,11 @@ all:
 	cd zlib ; make -f Makefile.linux
 	cd zip ; make -f Makefile.linux
 	cd VCell/src ; make -f Makefile.linux
+	cd Stochastic/VCellStoch; make -f Makefile.linux
+	cd sundials/src; make -f Makefile.linux
+	cd IDAWin; make -f Makefile.linux
+	cd CVodeStandalone; make -f Makefile.linux
+	cd IdaStandalone; make -f Makefile.linux
 	
 clean:
 	cd ExpressionParser ; make -f Makefile.linux clean
@@ -16,3 +21,8 @@ clean:
 	cd zip ; make -f Makefile.linux clean
 	cd zlib ; make -f Makefile.linux clean
 	cd VCell/src ; make -f Makefile.linux clean
+	cd Stochastic/VCellStoch; make -f Makefile.linux clean
+	cd sundials/src; make -f Makefile.linux clean
+	cd IDAWin; make -f Makefile.linux clean
+	cd CVodeStandalone; make -f Makefile.linux clean
+	cd IdaStandalone; make -f Makefile.linux clean

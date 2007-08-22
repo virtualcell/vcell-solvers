@@ -31,10 +31,9 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ExpressionParser.lib"
 				OutputFile="$(OutDir)/Stochastic.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\ExpressionParser\Debug"
+				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/Stochastic.pdb"
 				SubSystem="1"

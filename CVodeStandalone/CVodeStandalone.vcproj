@@ -31,10 +31,10 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sundials.lib sundials_nvecserial.lib sundials_cvode.lib IDAWin.lib ExpressionParser.lib"
+				AdditionalDependencies="sundials.lib sundials_nvecserial.lib sundials_cvode.lib"
 				OutputFile="$(OutDir)/CVodeStandalone.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\IDAWin\Debug;..\sundials\lib\;..\ExpressionParser\Debug"
+				AdditionalLibraryDirectories="..\sundials\lib\"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/CVodeStandalone.pdb"
 				SubSystem="1"

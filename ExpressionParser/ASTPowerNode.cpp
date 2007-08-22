@@ -88,7 +88,7 @@ double ASTPowerNode::evaluate(int evalType, double* values) {
 			throw FunctionDomainException(errorMsg);
 		} else {
 			double result = pow(baseValue, exponentValue);
-			if (numeric_limits<double>::infinity( ) == -result || numeric_limits<double>::infinity( ) == result || result != result) {
+			if (EP_double_infinity == -result || EP_double_infinity == result || result != result) {
 				char problem[1000];
 				sprintf(problem, "u^v evaluated to %lf, u=%lf, v=%lf", result, baseValue);
 				string errorMsg = getFunctionDomainError(problem, values, "u", baseChild, "v", exponentChild);

@@ -10,15 +10,6 @@
 #include "DivideByZeroException.h"
 #include "FunctionDomainException.h"
 #include "Exception.h"
-//#include <time.h>
-
-#ifdef LINUX
-#include <cmath>
-static double double_infinity = INFINITY;
-#else
-#include <limits>
-static double double_infinity = numeric_limits<double>::infinity();
-#endif
 
 StackMachine::StackMachine(StackElement* arg_elements, int size) {
 	elements = arg_elements;
@@ -138,7 +129,7 @@ double StackMachine::evaluate(double* values){
 					*tos = 1.0;
 				} else {
 					double result = pow(*tos, arg2);	
-					if (double_infinity == -result || double_infinity == result || result != result) {
+					if (EP_double_infinity == -result || EP_double_infinity == result || result != result) {
 						char problem[1000];
 						sprintf(problem, "u^v evaluated to %lf, u=%lf, v=%lf", result, *tos, arg2);
 						throw FunctionDomainException(string(problem));
@@ -335,7 +326,7 @@ double StackMachine::evaluate(double* values){
 			default:
 				throw Exception("StackMachine: unknown stack element type " + token->type);
 		}
-		if (double_infinity == -*tos || double_infinity == *tos) {
+		if (EP_double_infinity == -*tos || EP_double_infinity == *tos) {
 			throw Exception("Evaluated to infinity");
 		} else if (*tos != *tos) {
 			throw Exception("Evaluated to NaN");

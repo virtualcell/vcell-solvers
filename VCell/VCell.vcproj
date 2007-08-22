@@ -106,7 +106,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
+				AdditionalIncludeDirectories="..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;USE_MESSAGING;_WIN32_WINNT=0x2000"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -323,6 +323,9 @@
 				RelativePath=".\src\SparseVolumeEqnBuilder.cpp">
 			</File>
 			<File
+				RelativePath=".\src\SplitScheduler.cpp">
+			</File>
+			<File
 				RelativePath=".\src\StructuredPDESolver.cpp">
 			</File>
 			<File
@@ -524,6 +527,9 @@
 			</File>
 			<File
 				RelativePath=".\include\Vcell\SparseVolumeEqnBuilder.h">
+			</File>
+			<File
+				RelativePath=".\include\Vcell\SplitScheduler.h">
 			</File>
 			<File
 				RelativePath=".\include\Vcell\StructuredPDESolver.h">

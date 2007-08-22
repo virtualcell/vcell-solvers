@@ -1,4 +1,5 @@
-#pragma once
+#ifndef STOPPEDBYUSEREXCEPTION_H
+#define STOPPEDBYUSEREXCEPTION_H
 
 #include "Exception.h"
 using namespace VCell;
@@ -9,3 +10,5 @@ public:
 	StoppedByUserException(string msg);
 	~StoppedByUserException(void);
 };
+
+#endif

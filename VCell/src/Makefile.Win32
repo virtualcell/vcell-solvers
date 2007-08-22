@@ -22,7 +22,7 @@ TARGET_STANDALONE = FiniteVolume.exe
 FC= ifort
 FOPTIONS = /O3 /Qprec-div- /QxN /compile_only /MT /nologo /names:lowercase
 
-LIBTOOL = xilib
+LIBTOOL = lib
 
 .SUFFIXES:	.cpp.obj.f
 
