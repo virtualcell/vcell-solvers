@@ -324,14 +324,15 @@ void CartesianMesh::readGeometryFile() {
 	numXY = numX * numY;
 	numVolume = numXY * numZ;
 
-	//volumeSamples compressed
-	unsigned char* bytes_from_compressed = new unsigned char[numVolume+1000];
-	memset(bytes_from_compressed, 0, (numVolume+1000) * sizeof(unsigned char));
+	//volumeSamples compressed, changed from byte to short
+	int twiceNumVolume = 2 * numVolume;
+	unsigned char* bytes_from_compressed = new unsigned char[twiceNumVolume + 1000];
+	memset(bytes_from_compressed, 0, (twiceNumVolume + 1000) * sizeof(unsigned char));
 
-	unsigned char* compressed_hex = new unsigned char[numVolume+1000];
-	memset(compressed_hex, 0, (numVolume + 1000) * sizeof(unsigned char));
-	ifs.getline((char*)compressed_hex, numVolume + 1000);	
-	long compressed_len = ifs.gcount();
+	unsigned char* compressed_hex = new unsigned char[twiceNumVolume + 1000];
+	memset(compressed_hex, 0, (twiceNumVolume + 1000) * sizeof(unsigned char));
+	ifs.getline((char*)compressed_hex, twiceNumVolume + 1000);	
+	int compressed_len = ifs.gcount();
 
 	if (compressed_len <= 1) {
 		throw "CartesianMesh::readGeometryFile() : invalid compressed volume";
@@ -341,26 +342,41 @@ void CartesianMesh::readGeometryFile() {
 		bytes_from_compressed[j] = fromHex(compressed_hex + i);
 	}
 
-	unsigned char* inflated_bytes = new unsigned char[numVolume+1];
-	memset(inflated_bytes, 0, (numVolume+1) * sizeof(unsigned char));
+	unsigned char* inflated_bytes = new unsigned char[twiceNumVolume + 1];
+	memset(inflated_bytes, 0, (twiceNumVolume + 1) * sizeof(unsigned char));
 
-	unsigned long inflated_len = numVolume;
+	unsigned long inflated_len = twiceNumVolume;
 	int retVal = uncompress(inflated_bytes, &inflated_len, bytes_from_compressed, compressed_len/2);
+
+	unsigned short* volsamples = new unsigned short[numVolume];
+	if (inflated_len == numVolume) {
+		for (int i = 0; i < inflated_len; i ++) {		
+			volsamples[i] = inflated_bytes[i];
+		}
+	} else if (inflated_len == twiceNumVolume) {
+		// convert two bytes to short
+		for (int i = 0, j = 0; i < inflated_len; i += 2, j ++) {
+			volsamples[j] = inflated_bytes[i] | (inflated_bytes[i + 1] << 8);
+		}
+	} else {
+		throw "CartesianMesh : unexpected number of volume samples";
+	}
 
 	pVolumeElement = new VolumeElement[numVolume];
 	for(int i = 0; i < numVolume; i ++){
-		int regionIndex = (unsigned char)inflated_bytes[i];
+		int regionIndex = volsamples[i];
 		VolumeRegion* vr = pVolumeRegions[regionIndex];
 		vr->addIndex(i);
 		pVolumeElement[i].feature = vr->getFeature();
 		pVolumeElement[i].neighborMask = 0;
 		pVolumeElement[i].regionIndex = (vr->getNumElements())-1; 
 		pVolumeElement[i].region = vr;
-	}	
-
+	}
+		
 	delete[] compressed_hex;
 	delete[] bytes_from_compressed;
 	delete[] inflated_bytes;
+	delete[] volsamples;
 
 	// cells
 	ifs.getline(line, 100000);
@@ -839,26 +855,26 @@ void CartesianMesh::writeVolumeElementsMapVolumeRegion(FILE *fp)
 		}
 	}else{
 		fprintf(fp,"\t%d Compressed",numVolumeElements);
-		unsigned char *src = new unsigned char[numVolumeElements];
-		for(int c = 0;c < numVolumeElements; c++){
-			int volumeRegionId = volumeElements[c].region->getId();
-			src[c] = (unsigned char)volumeRegionId;
+		unsigned char *src = new unsigned char[2 * numVolumeElements];
+		for(int c = 0, b = 0; c < numVolumeElements * 2; b ++, c += 2){
+			int volumeRegionId = volumeElements[b].region->getId();
+			src[c] = (unsigned char)(volumeRegionId & 0x000000ff);
+			src[c + 1] = (unsigned char)((volumeRegionId & 0x0000ff00) >> 8);
 		}
-		unsigned long destLen = numVolumeElements*2;
-		if (destLen<1000){
+		unsigned long destLen = numVolumeElements * 2 * 2;
+		if (destLen < 1000){
 			destLen = 1000;  // minimum size compressed data buffer
 		}
 		unsigned char *dest = new unsigned char[destLen];
-		int retVal = compress(dest,&destLen,src,numVolumeElements);
-		for(int c = 0; c < (int)destLen; c++){
-			if(c%40 == 0){
+		int retVal = compress(dest, &destLen, src, numVolumeElements * 2);
+		for(int c = 0; c < (int)destLen; c ++){
+			if(c % 40 == 0){
 				fprintf(fp,"\n\t");
 			}
 			fprintf(fp,"%2.2X",dest[c]);
 		}
 		delete[] dest;
 		delete[] src;
-
 	}
 	fprintf(fp,"\n\t}\n");
 }
