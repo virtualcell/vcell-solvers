@@ -38,10 +38,58 @@ string ASTMultNode::infixString(int lang, NameScope* nameScope)
 }
 
 void ASTMultNode::getStackElements(vector<StackElement>& elements) {
+	
+	int startSize = elements.size();
+	
+	//
+	// Add the stack machine instructions for each boolean child (followed by a branch "BZ" with unknown offset).
+	// If it is the last term in the product, there is no need to insert the branch instruction.
+	//
+	// The "BZ" instruction is inserted before the offset is known (will be updated at the end).
+	// this enforces any "false" evaluation to skip the rest of the terms in this product (children).
+	//
+	int indexBooleanChildren = 0;
 	for (int i=0;i<jjtGetNumChildren();i++){
-		jjtGetChild(i)->getStackElements(elements);
-		if (i > 0)
-			elements.push_back(StackElement(TYPE_MULT));
+		if (jjtGetChild(i)->isBoolean()){
+			jjtGetChild(i)->getStackElements(elements);
+			if (indexBooleanChildren < jjtGetNumChildren()-1){
+				elements.push_back(StackElement(TYPE_BZ));
+			}
+			indexBooleanChildren++;
+		}
+	}
+	
+	//
+	// add stack machine instructions for all non-boolean children
+	//
+	int indexNonBooleanChildren = 0;
+	for (int i=0;i<jjtGetNumChildren();i++){
+		if (!jjtGetChild(i)->isBoolean()){
+			jjtGetChild(i)->getStackElements(elements);
+			if (indexNonBooleanChildren > 0){
+				elements.push_back(StackElement(TYPE_MULT));
+			}
+			indexNonBooleanChildren++;
+		}
+	}
+
+	//
+	// go back an fill in the offsets for each "BZ" added earlier.  This is done by starting at the end with a
+	// reverse iterator and counting the instructions to each "BZ" that has a zero offset and is part of this product.
+	// The check for zero offset eliminates setting "BZ" instructions of children of this product.
+	// This will ensure that any "false" evaluation of a boolean child will skip all non-boolean children 
+	// so will protect against function domain exceptions.  
+	//
+	if (indexBooleanChildren>0 && indexNonBooleanChildren>0){
+		int finalSize = elements.size();
+		int size = finalSize-startSize;
+		vector<StackElement>::reverse_iterator iter = elements.rbegin();
+		for (int offset = 0; offset < size; ++offset) {
+			if ((*iter).type==TYPE_BZ && (*iter).branchOffset==0){
+				(*iter).branchOffset = offset+1;
+			}
+			iter++;			
+		}
 	}
 }
 

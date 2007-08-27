@@ -10,7 +10,8 @@ public:
 	Expression(string expString);
 	~Expression(void);
 	double evaluateConstant(void);
-	// exercise the old way of evaluating vector by traversing abstract syntax tree
+	// exercise the old way of evaluating constant and vector by traversing abstract syntax tree
+	double evaluateConstantTree();
 	double evaluateVectorTree(double* values);
 	// exercise the new way of evaluating vector by using stack machine
 	double evaluateVector(double* values);
@@ -22,6 +23,8 @@ public:
 
 	SymbolTableEntry* getSymbolBinding(string symbol);
 	double evaluateProxy();
+	
+	void showStackInstructions();
 
 private:
 	ExpressionParser* parser;

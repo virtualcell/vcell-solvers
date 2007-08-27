@@ -58,21 +58,35 @@ Expression::Expression(string expString)
 	parseExpression(trimstr);
 }
 
+void Expression::showStackInstructions(void)
+{
+	getStackMachine()->showInstructions();
+	cout.flush();
+}
+
 double Expression::evaluateConstant(void)
+{
+	return getStackMachine()->evaluate(null);
+}
+
+double Expression::evaluateConstantTree()
 {
 	return rootNode->evaluate(EVALUATE_CONSTANT);
 }
 
 double Expression::evaluateVectorTree(double* values)
 {
-	return rootNode->evaluate(EVALUATE_VECTOR, values);
+	try {
+		return rootNode->evaluate(EVALUATE_VECTOR, values);
+	} catch (Exception& ex) {
+		throw Exception(ex.getMessage() + " in " + rootNode->getNodeSummary(values, rootNode));
+	}
 }
 
 double Expression::evaluateVector(double* values)
 {
 	try {
-		//return getStackMachine()->evaluate(values);
-		return evaluateVectorTree(values);
+		return getStackMachine()->evaluate(values);
 	} catch (Exception& ex) {
 		throw Exception(ex.getMessage() + " in " + rootNode->getNodeSummary(values, rootNode));
 	}
