@@ -66,8 +66,14 @@ double StackMachine::evaluate(double* values){
 					// branch offset
 					//
 					int offset = token->branchOffset;
+					if (offset == 0) {
+						showInstructions();
+						throw "StackMachine::evaluate(), BZ with zero offset, should never happend";
+					}
 					token+=(offset-1); // because token++, i++ will add one
 					i+=(offset-1);
+				} else {
+					tos --;
 				}
 				break;
 			case TYPE_LT: // 2: pop 2 push 1
@@ -365,7 +371,10 @@ double StackMachine::evaluate(double* values){
 		} else if (*tos != *tos) {
 			throw Exception("Evaluated to NaN");
 		}
-		//cout << *tos << " " << (tos-workingStack) << endl;
+		//cout << "------" << i << "--------" << endl;
+		//for (int c = 0; c < tos-workingStack+1; c++) {
+		//	cout << c << " " << workingStack[c]  << endl;
+		//}
 	}		
 	return *tos;
 }

@@ -80,7 +80,7 @@ void ASTMultNode::getStackElements(vector<StackElement>& elements) {
 	// This will ensure that any "false" evaluation of a boolean child will skip all non-boolean children 
 	// so will protect against function domain exceptions.  
 	//
-	if (indexBooleanChildren>0 && indexNonBooleanChildren>0){
+	if (indexBooleanChildren>0){
 		int finalSize = elements.size();
 		int size = finalSize-startSize;
 		vector<StackElement>::reverse_iterator iter = elements.rbegin();

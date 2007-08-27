@@ -63,6 +63,7 @@ void ExpressionTest::testParser(int count, char* javaresult, double cvalue, char
 	try {
 		double javavalue = -0.0;
 		double d = 0.0;
+		double dtree = 0.0;
 		int n = -1;
 		if (strcmp(javaresult, "NaN") == 0) {
 			javavalue = log(-1.0);
@@ -83,14 +84,15 @@ void ExpressionTest::testParser(int count, char* javaresult, double cvalue, char
 		string exceptionMsg = "";
 		try {
 			exp->bindExpression(symbolTable);
-			d = exp->evaluateVector(values);			
+			d = exp->evaluateVector(values);
+			dtree = exp->evaluateVectorTree(values);
 		} catch (Exception& ex) {
 			bException = true;
 			exceptionMsg = ex.getMessage();
 		}
 		if (d != d && javavalue != javavalue && cvalue != cvalue) {
 			//cout << count << " EVAL_YES :: all NaN" << endl;
-		} else if (javavalue == d && d == cvalue 
+		} else if (javavalue == d && d == cvalue && d == dtree 
 			|| fabs(javavalue - d) < 1E-14 && fabs(cvalue - d) < 1E-14 
 			|| fabs(javavalue - d)/max(fabs(d),fabs(javavalue)) < 1E-14 && fabs(cvalue - d)/max(fabs(d),fabs(cvalue)) < 1E-14 ) {
 			//cout << count << " EVAL_YES " << endl;
@@ -104,8 +106,8 @@ void ExpressionTest::testParser(int count, char* javaresult, double cvalue, char
 				//cout << expStr << endl;
 			} else {
 				cout << endl << "-------------------------------------------" << endl;
-				printf("%d.  EVAL_NO Java/Infix_C/C++: %.20lg/%.20lg/%.20lg\n", count, javavalue, cvalue, d);	
-				printf("Java~Infix_C/Java~C++/Infix_C~C++: %.20lg/%.20lg/%.20lg\n", fabs((javavalue-cvalue)/javavalue), fabs((javavalue-d)/javavalue), fabs((d-cvalue)/cvalue));	
+				printf("%d.  EVAL_NO Java/Infix_C/C++ Tree/C++: %.20lg/%.20lg/%.20lg/%.20lg\n", count, javavalue, cvalue, dtree, d);	
+				printf("Java~Infix_C/Java~C++/Infix_C~C++: %.20lg/%.20lg/%.20lg/%.20lg\n", fabs((javavalue-cvalue)/javavalue), fabs((javavalue-d)/javavalue), fabs((dtree-cvalue)/cvalue), fabs((d-cvalue)/cvalue));	
 				cout << expStr << endl;
 			}	
 		}
