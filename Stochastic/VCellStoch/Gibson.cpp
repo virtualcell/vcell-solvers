@@ -9,12 +9,17 @@
 #include <sys/types.h>
 #include <sys/timeb.h>
 #include <time.h>
-#include <limits>
 #include "Jump.h"
 #include "Gibson.h"
 #include "StochVar.h"
 using namespace std;
+#ifdef LINUX
+#include <cmath>
+const double double_infinity = INFINITY;
+#else
+#include <limits>
 const double double_infinity = numeric_limits<double>::infinity();
+#endif
 const double EPSILON = 1E-12;
 /*
  *Empty constructor of Gibson. It will use the defalt settings in StochModel.
