@@ -39,4 +39,4 @@ $(IDA_LIB): $(IDA_OBJ_FILES)
 	cp $@ $(LIBDIR)
 
 clean:
-	rm *.o $(IDA_OBJ_FILES)
+	rm *.o $(IDA_LIB)

@@ -100,7 +100,7 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 				infile >> amount;
 				listOfVarNames.push_back(name);
 				listOfIniValues.push_back((int)amount);
-				StochVar *var=new StochVar(amount);
+				StochVar *var=new StochVar((int)amount);
 				listOfVars.push_back(var);
 			}
 		}
@@ -563,8 +563,12 @@ void Gibson::march()
  */
 double Gibson::getRandomUniform()
 {
+#ifdef WIN32
    const long NUM_RAND = RAND_MAX+1;
    const double RAND_TOTAL_MAX = NUM_RAND*NUM_RAND - 1.0;
    long r = (NUM_RAND)*rand()+rand();
    return r / RAND_TOTAL_MAX;
+#else
+	return ((double)rand()) / RAND_MAX;
+#endif
 }//end of method getRandomUniform()

@@ -39,4 +39,4 @@ $(SUNDIALS_LIB): $(SUNDIALS_OBJ_FILES)
 	cp $@ $(LIBDIR)	
 
 clean:
-	rm *.o SUNDIALS_LIB)
+	rm *.o $(SUNDIALS_LIB)
