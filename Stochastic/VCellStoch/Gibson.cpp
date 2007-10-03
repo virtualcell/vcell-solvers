@@ -398,7 +398,7 @@ int Gibson::core()
 							outfile << endl;
 							outputTimer = outputTimer + SAVE_PERIOD;
 						}
-						if(outputTimer+SAVE_PERIOD == simtime)
+						if(outputTimer+SAVE_PERIOD <= simtime + EPSILON)
 						{
 							outfile << outputTimer+SAVE_PERIOD << "\t";
 							for(i=0;i<varLen;i++){
@@ -441,7 +441,7 @@ int Gibson::core()
 			}//if(NUM_TRIAL ==1)
 	}//end of while loop
 	//output the variable's vals at the ending time point.
-	if((simtime > ENDING_TIME) && (NUM_TRIAL == 1))
+	if((simtime > ENDING_TIME) && (NUM_TRIAL == 1) && (flag_savePeriod))
 	{
 		outfile << ENDING_TIME ;
 		for(i=0;i<listOfVars.size();i++)
@@ -480,22 +480,22 @@ void Gibson::march()
 	QueryPerformanceFrequency(&freq);
 	QueryPerformanceCounter(&ntime1);
 #endif
-	int i;
+	
+	//prepare for writing the results to output file
+	outfile.open (outfilename);//"c:/gibson_deploy/gibson_deploy/output/gibson_singleTrial.txt"
+	outfile << setprecision(10); // set precision to output file
 	if(NUM_TRIAL==1)
 	{
 		srand(SEED);
-
-		//prepare for writing the results to output file
-		outfile.open (outfilename);//"c:/gibson_deploy/gibson_deploy/output/gibson_singleTrial.txt"
 		//output file header
 		outfile << "t:";	  
-		for(i=0;i<listOfVarNames.size();i++){
+		for(int i=0;i<listOfVarNames.size();i++){
 			outfile<< listOfVarNames.at(i) << ":";
 		}
 		outfile <<endl;
 		//output initial condition at STARTING_TIME
 		outfile << STARTING_TIME << "\t";
-		for(i=0;i<listOfIniValues.size();i++){
+		for(int i=0;i<listOfIniValues.size();i++){
 			outfile<< listOfIniValues.at(i) << "\t";
 		}
 		outfile << endl;
@@ -506,10 +506,9 @@ void Gibson::march()
 	else if (NUM_TRIAL > 1)
 	{
 		clock_t oldTime = clock(); // use to calculate time, send progress every two seconds
-		outfile.open(outfilename);
 		//output file header
 		outfile << "TrialNo:";	  
-		for(i=0;i<listOfVarNames.size();i++){
+		for(int i=0;i<listOfVarNames.size();i++){
 			outfile<< listOfVarNames.at(i) << ":";
 		}
 		outfile <<endl;
@@ -523,10 +522,10 @@ void Gibson::march()
 			outfile << j-SEED+1;
 			core();
 			//reset to initial values before next simulation
-			for(i=0;i<listOfIniValues.size();i++){
+			for(int i=0;i<listOfIniValues.size();i++){
 				listOfVars[i]->setCurr(listOfIniValues.at(i));
 			}
-			for(i=0;i<listOfProcesses.size();i++){
+			for(int i=0;i<listOfProcesses.size();i++){
 				Tree->setProcess(i,listOfProcesses.at(i));
 			}
 			

@@ -21,7 +21,8 @@ int main(int argc, char *argv[])
 				
 		if (s2.compare("gibson")==0)
 		{
-			Gibson *gb=new Gibson(argv[2],argv[3]); // e.g new Gibson("./input/testInput.txt","./output/multiTrail.txt");
+			Gibson *gb=new Gibson(argv[2],argv[3]); // e.g 
+//			Gibson *gb = new Gibson("c:/sim.txt","c:/sim_out.txt");
 	   		gb->march();
 			delete gb;
 			return 0;
