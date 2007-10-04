@@ -48,7 +48,7 @@ LD = $(CC)#	must match, else "unresolved symbol:  ___main" is possible)
 AS = as
 LOC = $(LOCAL_UNZIP)
 AF = $(LOC)
-CF = -O -I. $(LOC)
+CF = -O -fexceptions -I. $(LOC)
 LF = -o unzip
 LF2 = -s
 

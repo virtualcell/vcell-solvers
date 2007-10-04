@@ -1,7 +1,7 @@
 CC = gcc
 
 # Compilation options
-COPTIONS = -c -O2 -I../linux -I../libsrc -DHAVE_CONFIG_H 
+COPTIONS = -c -O2 -fexceptions -I../linux -I../libsrc -DHAVE_CONFIG_H 
 
 FORLIB = libnetcdf_for.a
 

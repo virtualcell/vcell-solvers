@@ -4,7 +4,7 @@
 #
 CC = g++
 LINKER = g++
-CPPFLAGS =-exceptions -c -DINTEL -DUNIX -DLINUX -O2 -g -D__USE_GNU -DUSE_MESSAGING -I../include -I../../zlib -I../../SonicCClient/Linux_AS21/include/CPP -I../../SonicCClient/Linux_AS21/include -I../../ExpressionParser
+CPPFLAGS =-fexceptions -c -DINTEL -DUNIX -DLINUX -O2 -g -D__USE_GNU -DUSE_MESSAGING -I../include -I../../zlib -I../../SonicCClient/Linux_AS21/include/CPP -I../../SonicCClient/Linux_AS21/include -I../../ExpressionParser
 
 TARGET_LIB=	libvcell.a
 TARGET_STANDALONE = FiniteVolume

@@ -4,7 +4,7 @@
 #
 
 CC = g++
-CPPFLAGS =	-DLINUX -O2 -exceptions -I.
+CPPFLAGS =	-DLINUX -O2 -fexceptions -I.
 ifndef MULTITHREADED
 TARGET= libExpParser.a
 else

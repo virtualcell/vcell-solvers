@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -c -O2 -DUNIX -DLINUX -I../../ExpressionParser 
+CFLAGS = -c -O2 -fexceptions -DUNIX -DLINUX -I../../ExpressionParser 
 
 LIBS = ../../ExpressionParser/libExpParser.a
 

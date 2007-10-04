@@ -1,5 +1,5 @@
 CC     = g++
-CCOPTS1 = -c -O2 -exceptions -pthread -I../VCell/include
+CCOPTS1 = -c -O2 -fexceptions -pthread -I../VCell/include
 
 
 OBJS = user.o global.o stat.o io.o geom2.o poly2.o \

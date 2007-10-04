@@ -1,6 +1,6 @@
 CC = g++
 
-CFLAGS = -c -O2 -DLINUX -I../IDAWin -I../ExpressionParser -I ../sundials/include -I ../sundials/src
+CFLAGS = -c -O2 -fexceptions -DLINUX -I../IDAWin -I../ExpressionParser -I ../sundials/include -I ../sundials/src
 
 LIBS =	\
 	../IDAWin/libvcellIDA.a \

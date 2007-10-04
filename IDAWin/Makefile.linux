@@ -1,6 +1,6 @@
 CC = g++
 
-CFLAGS = -O2 -DLINUX -I. -I../ExpressionParser -I../sundials/include -I../sundials/src
+CFLAGS = -O2 -fexceptions -DLINUX -I. -I../ExpressionParser -I../sundials/include -I../sundials/src
 
 VCELLIDALIB = libvcellIDA.a
 
