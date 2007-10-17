@@ -1,0 +1,26 @@
+CPP = cl.exe
+LINK32 = link.exe
+
+ERASE = del
+
+OUTDIR=..\..\..\bin\Win32
+
+ALL : "$(OUTDIR)\sbmlj.dll"
+
+CLEAN :
+	$(ERASE) "*.obj" "$(OUTDIR)\sbmlj.dll" "$(OUTDIR)\sbmlj.exp" "$(OUTDIR)\sbmlj.lib"
+
+"$(OUTDIR)" :
+    if not exist "$(OUTDIR)" mkdir "$(OUTDIR)"
+
+CPP_PROJ = /O2 /D "WIN32" /D "_WINDOWS" /D "_USRDLL" /D "LIBSBML_EXPORTS" /D "USE_EXPAT" /D "LIBLAX_EXPORTS" /D "USE_LAYOUT" /D "_WINDLL" /EHsc /MT /GR /nologo /c /I..\..\..\include\ /I..\..\..\src\bindings\swig /I..\..\..\..\JNI\Win32\include /I..\..\..\..\JNI\Win32\include\win32
+
+.cpp.obj :
+   $(CPP) $(CPP_PROJ) /Fo$@ $< 
+
+
+LINK32_FLAGS=/nologo /dll /out:"$(OUTDIR)\sbmlj.dll" /INCREMENTAL:NO
+LINK32_OBJS= libsbml_wrap.obj local.obj 
+
+"$(OUTDIR)\sbmlj.dll" : "$(OUTDIR)" $(LINK32_OBJS)
+	$(LINK32) $(LINK32_FLAGS) $(LINK32_OBJS) $(OUTDIR)\libsbml.lib $(OUTDIR)\libexpatMT.lib
