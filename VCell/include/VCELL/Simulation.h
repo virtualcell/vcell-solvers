@@ -35,8 +35,9 @@ public:
 	void    reset();            // initializes to t=last time step
 	double  getMaxDifference();
 
-	double  getTime_sec() { return _time_sec; }
-	void    setTime_sec(double time) { _time_sec = time; }
+	double  getTime_sec() { return _advanced ? (currIteration + 1) * _dT_sec : currIteration * _dT_sec; }
+	void    setCurrIteration(int curriter) { currIteration = curriter; }
+	int getCurrIteration() { return currIteration; }
 	double  getDT_sec() { return _dT_sec; }
 	void    setDT_sec(double dT) { _dT_sec = dT; }
 	virtual void advanceTimeOn();
@@ -64,7 +65,8 @@ public:
 protected:
 	int numVariables;
 
-	double          _time_sec;                // seconds
+	int currIteration;  // first iteration is currIteration=0
+
 	double          _dT_sec;                  // seconds
 	Scheduler      *_scheduler;
 	Solver          *_solverList;

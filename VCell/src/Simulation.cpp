@@ -29,7 +29,7 @@ Simulation::Simulation(Mesh *mesh)
 	// initialize size of voxel array to 0
 	//
 	_dT_sec = 0;   // seconds
-	_time_sec = 0; // seconds
+	currIteration = 0;
 	_mesh = mesh;
 	_solverList = NULL;
 	_varList = NULL;
@@ -55,16 +55,14 @@ void Simulation::advanceTimeOn() {
 	if (_advanced) {
 		throw "Simulation::advanceTimeOn() : time has already been advanced on";
 	}
-	_advanced=true; 
-	_time_sec+=_dT_sec; 
+	_advanced=true;	
 }
 
 void Simulation::advanceTimeOff() {
 	if (!_advanced) {
 		throw "Simulation::advanceTimeOff() : time has already been advanced off";
 	}
-	_advanced=false; 
-	_time_sec-=_dT_sec; 
+	_advanced=false;	 
 }
    
 void Simulation::iterate()
@@ -89,7 +87,7 @@ void Simulation::update()
 {
 	_scheduler->update();
 
-	_time_sec += _dT_sec;
+	currIteration ++;
 }
 
 void Simulation::reset()
@@ -301,7 +299,7 @@ bool Simulation::initSimulation()
 	// Initialize Potential
 	//
 
-	_time_sec = 0.0;
+	currIteration = 0;
 
 	return true;
 }

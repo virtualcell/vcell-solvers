@@ -74,7 +74,6 @@ SimTool::SimTool()
 	bSimZip = true;
 
 	simEndTime = 0.0;
-	currIteration = 0;
 	keepEvery = 100;
 	bStoreEnable = true;
 	baseFileName=0;
@@ -273,8 +272,7 @@ void SimTool::loadFinal()
 	}
 	DataSet dataSet;
 	if (dataSet.read(dataFileName, simulation)){
-		simulation->setTime_sec(parsedTime);
-		currIteration = tempIteration;
+		simulation->setCurrIteration(tempIteration);
 		simFileCount = tempFileCount;				
 	
 		if (bSimZip) {
@@ -466,7 +464,7 @@ void SimTool::start()
     // store initial log if enabled
     //
 	if (bStoreEnable) {
-		if (currIteration==0) {
+		if (simulation->getCurrIteration()==0) {
 			// simulation starts from scratch
 			ASSERTION(startTime == 0.0);			
 			FILE *fp = NULL;
@@ -503,18 +501,17 @@ void SimTool::start()
     //
     // iterate up to but not including end time
     //	
-	double epsilon = 1E-8;
+	double epsilon = 1e-12;
     while ((simulation->getTime_sec()+simulation->getDT_sec())<=(simEndTime+epsilon)){
 		if (bStopSimulation) {
 			return;
 		}
 
 		simulation->iterate();
-		currIteration++;
 		simulation->update();
         if (bStoreEnable){
-            if (currIteration % keepEvery==0){				 
-				updateLog(percentile,simulation->getTime_sec(), currIteration);
+            if (simulation->getCurrIteration() % keepEvery==0){				 
+				updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
             }
         }
 		while ((percentile+increment)*simEndTime < simulation->getTime_sec()){			  
@@ -572,7 +569,7 @@ void SimTool::startSteady(double tolerance, double maxTime)
     // store initial log if enabled
     //
 	if (bStoreEnable){
-		if (currIteration==0){
+		if (simulation->getCurrIteration()==0){
 			ASSERTION(simulation->getTime_sec()==0.0);
 			clearLog();
 			updateLog(0.0, 0.0, 0);
@@ -594,10 +591,9 @@ void SimTool::startSteady(double tolerance, double maxTime)
 		}
 
 		simulation->iterate();
-		currIteration++;
 		if (bStoreEnable){
-			if (currIteration%keepEvery==0){
-				updateLog(percentile,simulation->getTime_sec(), currIteration);
+			if (simulation->getCurrIteration()%keepEvery==0){
+				updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
 			}
 		}
         while ((startTime + ((percentile+increment)*(simEndTime-startTime))) < simulation->getTime_sec()){
@@ -614,11 +610,11 @@ void SimTool::startSteady(double tolerance, double maxTime)
 			simulation->update();
 			showSummary(stdout);
 			if (bStoreEnable){
-				updateLog(percentile,simulation->getTime_sec(), currIteration);
+				updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
 			}
 			return;
 		}
-		printf("iteration(%7ld), diff=%lg\n",(long)currIteration,diff);
+		printf("iteration(%7ld), diff=%lg\n",(long)simulation->getCurrIteration(),diff);
 		simulation->update();
 	}
 
@@ -629,7 +625,7 @@ void SimTool::startSteady(double tolerance, double maxTime)
 	printf("MAX ITERATIONS EXCEEDED WITHOUT ACHIEVING STEADY STATE\n");
 	showSummary(stdout);
 	if (bStoreEnable){
-		updateLog(percentile,simulation->getTime_sec(), currIteration);
+		updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
 	}
 
 	if (!bStopSimulation) {

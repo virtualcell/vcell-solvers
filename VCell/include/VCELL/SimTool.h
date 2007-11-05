@@ -67,7 +67,6 @@ private:
 	bool bSimFileCompress;
 	double simEndTime;
 	double simDeltaTime;
-	int currIteration;
 	int keepEvery;
 	bool bStoreEnable;	
 	char* baseFileName;

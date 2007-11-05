@@ -74,17 +74,17 @@ SimulationExpression::~SimulationExpression()
 
 void SimulationExpression::advanceTimeOn() {
 	Simulation::advanceTimeOn();
-	valueProxyTime->setValue(_time_sec); 
+	valueProxyTime->setValue(getTime_sec()); 
 }
 
 void SimulationExpression::advanceTimeOff() {
 	Simulation::advanceTimeOff();
-	valueProxyTime->setValue(_time_sec);
+	valueProxyTime->setValue(getTime_sec());
 }
 
 void SimulationExpression::update() {
 	Simulation::update();
-	valueProxyTime->setValue(_time_sec);
+	valueProxyTime->setValue(getTime_sec());
 }
 
 void SimulationExpression::createSymbolTable() {	
