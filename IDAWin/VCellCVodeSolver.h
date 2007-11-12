@@ -19,9 +19,8 @@ protected:
 private:
 	Expression** rateExpressions; 
 	SymbolTable* rateSymbolTable;
-
 	
-	void RHS (realtype t, N_Vector y, N_Vector yp);
+	int RHS(realtype t, N_Vector y, N_Vector yp);
 	static int RHS_callback(realtype t, N_Vector y, N_Vector r, void *fdata);	
 };
 

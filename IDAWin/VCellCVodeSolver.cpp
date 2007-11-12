@@ -4,6 +4,9 @@
 #include "Exception.h"
 #include "OdeResultSet.h"
 #include <assert.h>
+#include "DivideByZeroException.h"
+#include "FunctionDomainException.h"
+#include "FunctionRangeException.h"
 #include "StoppedByUserException.h"
 
 #include <cvode/cvode.h>             /* prototypes for CVODE fcts. and consts. */
@@ -51,8 +54,14 @@ char* getCVodeErrorMessage(int returnCode) {
 			return "CV_LSOLVE_FAIL: the linear solver's solve routine failed in an unrecoverable manner";
 		}
 		default:
-			return "CVode: unknown error";
+			return CVodeGetReturnFlagName(returnCode);
 	}	
+}
+
+void checkCVodeFlag(int flag) {
+	if (flag != CV_SUCCESS){
+		throw getCVodeErrorMessage(flag);
+	}
 }
 
 VCellCVodeSolver::VCellCVodeSolver(istream& inputstream, bool bPrintProgress) : VCellSundialsSolver(inputstream, bPrintProgress) {
@@ -162,28 +171,26 @@ void VCellCVodeSolver::readInput(istream& inputstream) {
 			inputstream >> name;
 			memset(exp, 0, MAX_EXPRESSION_LENGTH*sizeof(char));
 			inputstream.getline(exp, MAX_EXPRESSION_LENGTH);
-			char* pexp = exp;
-			pexp = trim(pexp);
-			if (pexp[strlen(pexp)-1] != ';') {
-				string msg = "Initial condition expression for [" + variableName + "] is not terminated by ';', it is either an invalid expression or longer than MAX_EXPRESSION_LENGTH (40000)";
+			char* trimmedExp = trim(exp);
+			if (trimmedExp[strlen(trimmedExp)-1] != ';') {
+				string msg = "Initial condition expression for [" + variableName + "]" + BAD_EXPRESSION_MSG;
 				throw Exception(msg);
 			}
-			initialConditionExpressions[i] = new Expression(pexp);
-			delete[] pexp;			
+			initialConditionExpressions[i] = new Expression(trimmedExp);
+			delete[] trimmedExp;			
 
 			// RATE
 			inputstream >> name;
 
 			memset(exp, 0, MAX_EXPRESSION_LENGTH*sizeof(char));
 			inputstream.getline(exp, MAX_EXPRESSION_LENGTH);
-			pexp = exp;
-			pexp = trim(pexp);
-			if (pexp[strlen(pexp)-1] != ';') {
-				string msg = "Rate expression for [" + variableName + "] is not terminated by ';', it is either an invalid expression or longer than MAX_EXPRESSION_LENGTH (40000)";
+			trimmedExp = trim(exp);
+			if (trimmedExp[strlen(trimmedExp)-1] != ';') {
+				string msg = "Rate expression for [" + variableName + "]" + BAD_EXPRESSION_MSG;
 				throw Exception(msg);
 			}
-			rateExpressions[i] = new Expression(pexp);
-			delete[] pexp;
+			rateExpressions[i] = new Expression(trimmedExp);
+			delete[] trimmedExp;
 		}
 
 		// add parameters to symbol table
@@ -207,7 +214,9 @@ void VCellCVodeSolver::readInput(istream& inputstream) {
 		delete[] VariableNames;
 
 		y = N_VNew_Serial(NEQ);
-		check_flag((void *)y, "N_VNew_Serial", 0);
+		if (y == 0) {
+			throw "Out of Memory";
+		}
 	} catch (char* ex) {
 		throw Exception(string("VCellCVodeSolver::readInput() : ") + ex);
 	} catch (Exception& ex) {
@@ -217,13 +226,25 @@ void VCellCVodeSolver::readInput(istream& inputstream) {
 	}
 }
 
-void VCellCVodeSolver::RHS (realtype t, N_Vector y, N_Vector r) {	
-	values[0] = t;
-	memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
-	double* r_data = NV_DATA_S(r);
-	for (int i = 0; i < NEQ; i ++) {
-		r_data[i] = rateExpressions[i]->evaluateVector(values);
-	}	
+int VCellCVodeSolver::RHS (realtype t, N_Vector y, N_Vector r) {	
+	try {
+		values[0] = t;
+		memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
+		double* r_data = NV_DATA_S(r);
+		for (int i = 0; i < NEQ; i ++) {
+			r_data[i] = rateExpressions[i]->evaluateVector(values);
+		}
+		return 0;
+	}catch (DivideByZeroException e){
+		cout << "failed to evaluate residual: " << e.getMessage() << endl;
+		return 1;
+	}catch (FunctionDomainException e){
+		cout << "failed to evaluate residual: " << e.getMessage() << endl;
+		return 1;
+	}catch (FunctionRangeException e){
+		cout << "failed to evaluate residual: " << e.getMessage() << endl;
+		return 1;
+	}
 }
 
 double VCellCVodeSolver::RHS (double* allValues, int equationIndex) {	
@@ -232,8 +253,7 @@ double VCellCVodeSolver::RHS (double* allValues, int equationIndex) {
 
 int VCellCVodeSolver::RHS_callback(realtype t, N_Vector y, N_Vector r, void *fdata) {
 	VCellCVodeSolver* solver = (VCellCVodeSolver*)fdata;
-	solver->RHS(t, y, r);
-	return 0;
+	return solver->RHS(t, y, r);
 }
 
 void VCellCVodeSolver::solve(double* paramValues, FILE* outputFile, void (*checkStopRequested)(double, long)) {
@@ -263,12 +283,14 @@ void VCellCVodeSolver::solve(double* paramValues, FILE* outputFile, void (*check
 
 	int ToleranceType = CV_SS;
 	void* cvode_mem = CVodeCreate(CV_BDF, CV_NEWTON);
-	check_flag((void *)cvode_mem, "CVodeCreate", 0);
+	if (cvode_mem == 0) {
+		throw "Out of memory";
+	}
 	int flag = CVodeMalloc(cvode_mem, RHS_callback, STARTING_TIME, y, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
-	check_flag(&flag, "CVodeMalloc", 1);
+	checkCVodeFlag(flag);
 	CVodeSetFdata(cvode_mem, this);
 	flag = CVDense(cvode_mem, NEQ);
-	check_flag(&flag, "CVDense", 1);
+	checkCVodeFlag(flag);
 
 	// write intial conditions
 	writeData(Time, y, outputFile);

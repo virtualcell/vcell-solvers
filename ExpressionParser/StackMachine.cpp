@@ -9,6 +9,7 @@
 #include "MathUtil.h"
 #include "DivideByZeroException.h"
 #include "FunctionDomainException.h"
+#include "FunctionRangeException.h"
 #include "Exception.h"
 
 StackMachine::StackMachine(StackElement* arg_elements, int size) {
@@ -367,9 +368,9 @@ double StackMachine::evaluate(double* values){
 				throw Exception("StackMachine: unknown stack element type " + token->type);
 		}
 		if (EP_double_infinity == -*tos || EP_double_infinity == *tos) {
-			throw Exception("Evaluated to infinity");
+			throw FunctionRangeException("Evaluated to infinity");
 		} else if (*tos != *tos) {
-			throw Exception("Evaluated to NaN");
+			throw FunctionRangeException("Evaluated to NaN");
 		}
 		//cout << "------" << i << "--------" << endl;
 		//for (int c = 0; c < tos-workingStack+1; c++) {

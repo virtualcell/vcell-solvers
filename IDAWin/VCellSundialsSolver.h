@@ -16,6 +16,7 @@ class OdeResultSet;
 #define MAX_EXPRESSION_LENGTH 40000
 #define bytesPerSample 25
 #define MaxFileSizeBytes 1000000000 /* 1 gigabyte */	
+#define BAD_EXPRESSION_MSG " is not terminated by ';', it is either an invalid expression or longer than MAX_EXPRESSION_LENGTH (40000)"
 
 class VCellSundialsSolver {
 public:
@@ -58,11 +59,10 @@ protected:
 	vector<string> paramNames;
 
 	N_Vector y;	
-	void writeData(double currTime, N_Vector y, FILE* outputFile);
+	virtual void writeData(double currTime, N_Vector y, FILE* outputFile);
 	void printProgress(double currTime, double& percentile, double increment);
 };
 
 char* trim(char* str);
-int check_flag(void *flagvalue, char *funcname, int opt);
 
 #endif

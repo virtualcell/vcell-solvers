@@ -79,7 +79,7 @@ double Expression::evaluateVectorTree(double* values)
 	try {
 		return rootNode->evaluate(EVALUATE_VECTOR, values);
 	} catch (Exception& ex) {
-		throw Exception(ex.getMessage() + " in " + rootNode->getNodeSummary(values, rootNode));
+		Exception::rethrowException(ex, ex.getMessage() + " in " + rootNode->getNodeSummary(values, rootNode));
 	}
 }
 
@@ -88,7 +88,7 @@ double Expression::evaluateVector(double* values)
 	try {
 		return getStackMachine()->evaluate(values);
 	} catch (Exception& ex) {
-		throw Exception(ex.getMessage() + " in " + rootNode->getNodeSummary(values, rootNode));
+		Exception::rethrowException(ex, ex.getMessage()+ " in " + rootNode->getNodeSummary(values, rootNode));
 	}
 }
 

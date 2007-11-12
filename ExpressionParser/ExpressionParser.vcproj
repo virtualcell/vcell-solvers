@@ -240,6 +240,9 @@
 				RelativePath=".\FunctionDomainException.cpp">
 			</File>
 			<File
+				RelativePath=".\FunctionRangeException.cpp">
+			</File>
+			<File
 				RelativePath=".\IOException.cpp">
 			</File>
 			<File
@@ -354,6 +357,9 @@
 			</File>
 			<File
 				RelativePath=".\FunctionDomainException.h">
+			</File>
+			<File
+				RelativePath=".\FunctionRangeException.h">
 			</File>
 			<File
 				RelativePath=".\IOException.h">

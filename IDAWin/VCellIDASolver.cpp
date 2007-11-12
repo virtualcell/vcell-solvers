@@ -1,11 +1,12 @@
 #include "VCellIDASolver.h"
 #include "Expression.h"
 #include "SimpleSymbolTable.h"
-#include "VCellIDASolver.h"
 #include "OdeResultSet.h"
 #include "Exception.h"
-#include "OdeResultSet.h"
 #include "StoppedByUserException.h"
+#include "DivideByZeroException.h"
+#include "FunctionDomainException.h"
+#include "FunctionRangeException.h"
 using namespace VCell;
 
 #include <assert.h>
@@ -13,9 +14,9 @@ using namespace VCell;
 #include <ida/ida_dense.h>
 #include <nvector/nvector_serial.h>
 
-char* getIDAErrorMessage(int Status) {
+char* getIDAErrorMessage(int returnCode) {
 	char *errMsg = NULL;
-	switch (Status) {
+	switch (returnCode) {
 		case IDA_SUCCESS: {
 			return "IDA_SUCCESS: IDASolve succeeded and no roots were found";
 		}
@@ -31,6 +32,9 @@ char* getIDAErrorMessage(int Status) {
 		case IDA_ILL_INPUT: {
 			return "IDA_ILL_INPUT: One of the inputs to IDASolve is illegal";
 		}
+		case IDA_NO_MALLOC: {
+			return "IDA_NO_MALLOC: The allocation function IDAMalloc has not been called.";
+		}
 		case IDA_TOO_MUCH_WORK: {
 			return "IDA_TOO_MUCH_WORK: The solver took mxstep internal steps but could not reach tout. The default value for mxstep is MXSTEP_DEFAULT = 500";			
 		}
@@ -43,11 +47,17 @@ char* getIDAErrorMessage(int Status) {
 		case IDA_CONV_FAIL: {
 			return "IDA_CONV_FAIL: Convergence test failures occurred too many times (= MXNCF = 10) during one internal step.";
 		}
+		case IDA_LINIT_FAIL: {
+			return "IDA_LINIT_FAIL: The linear solver's initialization function failed.";
+		}
 		case IDA_LSETUP_FAIL:{
 			return "IDA_LSETUP_FAIL: The linear solver's setup routine failed in an unrecoverable manner.";
 		}
 		case IDA_LSOLVE_FAIL:{
-			return "IDA_LSOLVE_FAIL: The linear solver's solve routine failed  in an unrecoverable manner.";
+			return "IDA_LSOLVE_FAIL: The linear solver's solve routine failed in an unrecoverable manner.";
+		}
+		case IDA_RES_FAIL:{
+			return "IDA_RES_FAIL: The user's residual function returned a nonrecoverable error flag.";
 		}
 		case IDA_CONSTR_FAIL:{
 			return "IDA_CONSTR_FAIL: The inequality constraints were violated, and the solver was unable to recover.";
@@ -55,83 +65,154 @@ char* getIDAErrorMessage(int Status) {
 		case IDA_REP_RES_ERR:{
 			return "IDA_REP_RES_ERR: The user's residual function repeatedly returned a recoverable error flag, but the solver was unable to recover.";
 		}
-		case IDA_RES_FAIL:{
-			return "IDA_RES_FAIL: The user's residual function returned a nonrecoverable error flag.";
+		case IDA_MEM_FAIL:{
+			return "IDA_MEM_FAIL: A memory allocation request has failed.";
+		}
+		case IDA_BAD_T:{
+			return "IDA_BAD_T: ";
+		}
+		case IDA_BAD_EWT:{
+			return "IDA_BAD_EWT: Some component of the error weight vector is zero (illegal).";
+		}
+		case IDA_FIRST_RES_FAIL:{
+			return "IDA_FIRST_RES_FAIL: The user's residual function returned a recoverable error flag on the first call, but IDA was unable to recover.";
+		}
+		case IDA_LINESEARCH_FAIL:{
+			return "IDA_LINESEARCH_FAIL: The linesearch algorithm failed to find a solution with a step larger than steptol in weighted RMS norm.";
+		}
+		case IDA_NO_RECOVERY:{
+			return "IDA_NO_RECOVERY: The user's residual function, or the linear solver's setup or solve function had a recoverable error, but IDA was unable to recover.";
+		}
+		case IDA_RTFUNC_FAIL:{
+			return "IDA_RTFUNC_FAIL: The rootfinding function failed.";
 		}
 		default:
-			return "IDA: unknown error";
+			return IDAGetReturnFlagName(returnCode);
+	}
+}
+
+void checkIDAFlag(int flag) {
+	if (flag != IDA_SUCCESS){
+		throw getIDAErrorMessage(flag);
 	}
 }
 
 VCellIDASolver::VCellIDASolver(istream& inputstream, bool arg_bPrintProgress) : VCellSundialsSolver(inputstream, arg_bPrintProgress) {
-	rateExpressions = 0;
-	rateSymbolTable = 0;
+	rhsExpressions = 0;
+	rhsSymbolTable = 0;
 
+	transformMatrix = 0;
+	inverseTransformMatrix = 0;
 	yp = 0;
+	id = 0;
 
 	readInput(inputstream);
 }
 
-
 VCellIDASolver::~VCellIDASolver() {
 	N_VDestroy_Serial(yp);
+	N_VDestroy_Serial(id);	
 
 	for (int i = 0; i < NEQ; i ++) {
-		delete rateExpressions[i];
+		delete rhsExpressions[i];
 	}
-	delete[] rateExpressions;
-	delete rateSymbolTable;
+	delete[] rhsExpressions;
+	delete rhsSymbolTable;
+
+	for (int i = 0; i < NEQ; i ++) {
+		delete transformMatrix[i];
+		delete inverseTransformMatrix[i];
+	}
+	delete[] transformMatrix;
+	delete[] inverseTransformMatrix;	
 }
 
 //  Residual
-int VCellIDASolver::Residual_callback(realtype t, N_Vector y, N_Vector yp, N_Vector r, void *rdata) {
+int VCellIDASolver::Residual_callback(realtype t, N_Vector y, N_Vector yp, N_Vector residual, void *rdata) {
 	VCellIDASolver* solver = (VCellIDASolver*)rdata;
-	return solver->Residual(t, y, yp, r);
+	return solver->Residual(t, y, yp, residual);
 }
 
 //  Residual
-int VCellIDASolver::Residual(realtype t, N_Vector y, N_Vector yp, N_Vector r) {
-	values[0] = t;	
-	memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
-	for (int i = 0; i < NEQ; i ++) {
-		NV_Ith_S(r, i) = rateExpressions[i]->evaluateVector(values) - NV_Ith_S(yp, i);
+//
+// assume that rate rhsExpressions have been substituted so that they are only functions of state variables
+// and that the massMatrix is constant coefficient.
+//
+// note: we should return 0 for success and 1 for recoverable failure (e.g. y or yp is Inf or NaN)
+//
+int VCellIDASolver::Residual(realtype t, N_Vector y, N_Vector yp, N_Vector residual) {
+	
+	try {		
+		values[0] = t;	
+		for (int i = 0; i < NEQ; i ++) {
+			values[i + 1] = 0;
+			for (int j = 0; j < NEQ; j ++) {
+				values[i + 1] += inverseTransformMatrix[i][j] * NV_Ith_S(y, j);
+			}			
+		}
+		for (int i = 0; i < numDifferential; i ++) {				
+			NV_Ith_S(residual, i) = rhsExpressions[i]->evaluateVector(values) - NV_Ith_S(yp, i);
+		}
+		for (int i = numDifferential; i < numDifferential + numAlgebraic; i ++) {
+			NV_Ith_S(residual, i) = rhsExpressions[i]->evaluateVector(values);
+		}
+		return 0;
+	}catch (DivideByZeroException e){
+		cout << "failed to evaluate residual: " << e.getMessage() << endl;
+		return 1;
+	}catch (FunctionDomainException e){
+		cout << "failed to evaluate residual: " << e.getMessage() << endl;
+		return 1;
+	}catch (FunctionRangeException e){
+		cout << "failed to evaluate residual: " << e.getMessage() << endl;
+		return 1;
 	}
-	return 0;
 }
 
-/*
-Input format: (NUM_EQUATIONS must be the last parameter before VARIABLES)
+/**----------------------------------------------------
+Input format: 
 	STARTING_TIME 0.0
-	ENDING_TIME 0.45
-	RELATIVE_TOLERANCE 1.0E-12
-	ABSOLUTE_TOLERANCE 1.0E-10				
-	MAX_TIME_STEP 4.5E-5
-	[KEEP_EVERY 1 | OUTPUT_TIME_STEP 0.05 | OUTPUT_TIMES NUM_OUTPUT_TIMES time1 time2 time3 ....]
-	NUM_PARAMETERS 3
-	k1
-	k2
-	k3
-	NUM_EQUATIONS 1
-	ODE S2 INIT 0.0 RATE (1000000.0 * asech((5.0E-7 * (1000000.0 - S2))));
-*/
+	ENDING_TIME 1.0
+	RELATIVE_TOLERANCE 1.0E-9
+	ABSOLUTE_TOLERANCE 1.0E-9
+	MAX_TIME_STEP 1.0
+	OUTPUT_TIME_STEP 0.0020
+	NUM_EQUATIONS 3
+	VAR rf_nucleus INIT (5.0);
+	VAR BS_nucleus INIT (20.0);
+	VAR rfB_nucleus INIT (0.0);
+	TRANSFORM
+	0.2 0.0 0.0
+	0.0 0.0 0.2
+	0.0 1.0 0.0
+	INVERSETRANSFORM
+	5.0 0.0 0.0
+	0.0 0.0 1.0
+	0.0 5.0 0.0
+	RHS DIFFERENTIAL 2 ALGEBRAIC 1
+	- (0.2 * ((0.02 * BS_nucleus * rf_nucleus) - (0.1 * rfB_nucleus)));
+	(0.2 * ((0.02 * BS_nucleus * rf_nucleus) - (0.1 * rfB_nucleus)));
+	- ((0.1 * BS_nucleus * (-2.0 - (0.2 * rf_nucleus) + (0.2 * BS_nucleus))) - (0.5 * (4.0 - (0.2 * rfB_nucleus) - (0.2 * BS_nucleus))));
+--------------------------------------------------------------*/
+
 void VCellIDASolver::readInput(istream& inputstream) { 
 	try {
-		string name;
+		string token;
 		while (true) {
-			inputstream >> name;
-			if (name == "STARTING_TIME") {
+			inputstream >> token;
+			if (token == "STARTING_TIME") {
 				inputstream >> STARTING_TIME;
-			} else if (name == "ENDING_TIME") {
+			} else if (token == "ENDING_TIME") {
 				inputstream >> ENDING_TIME;
-			} else if (name == "RELATIVE_TOLERANCE") {
+			} else if (token == "RELATIVE_TOLERANCE") {
 				inputstream >> RelativeTolerance;
-			} else if (name == "ABSOLUTE_TOLERANCE") {
+			} else if (token == "ABSOLUTE_TOLERANCE") {
 				inputstream >> AbsoluteTolerance;
-			} else if (name == "MAX_TIME_STEP") {
+			} else if (token == "MAX_TIME_STEP") {
 				inputstream >> maxTimeStep;
-			} else if (name == "KEEP_EVERY") {
+			} else if (token == "KEEP_EVERY") {
 				inputstream >> keepEvery;
-			} else if (name == "OUTPUT_TIME_STEP") {
+			} else if (token == "OUTPUT_TIME_STEP") {
 				double outputTimeStep = 0.0;
 				inputstream >> outputTimeStep;
 				double timePoint = 0.0;
@@ -144,7 +225,7 @@ void VCellIDASolver::readInput(istream& inputstream) {
 				if (outputTimes[outputTimes.size() - 1] < ENDING_TIME) {
 					outputTimes.push_back(ENDING_TIME);
 				}
-			} else if (name == "OUTPUT_TIMES") {
+			} else if (token == "OUTPUT_TIMES") {
 				int totalNumTimePoints;	
 				double timePoint;
 				inputstream >> totalNumTimePoints;
@@ -155,74 +236,129 @@ void VCellIDASolver::readInput(istream& inputstream) {
 					}
 				}
 				ENDING_TIME = outputTimes[outputTimes.size() - 1];
-			} else if (name == "NUM_PARAMETERS") {
+			} else if (token == "NUM_PARAMETERS") {
 				inputstream >> NPARAM;
 				for (int i = 0; i < NPARAM; i ++) {
-					inputstream >> name;
-					paramNames.push_back(name);
+					inputstream >> token;
+					paramNames.push_back(token);
 				}				
-			} else if (name == "NUM_EQUATIONS") {
+			} else if (token == "NUM_EQUATIONS") {
 				inputstream >> NEQ;
 				break;
 			} else {
-				string msg = "Unexpected token \"" + name + "\" in the input file!";
+				string msg = "Unexpected token \"" + token + "\" in the input file!";
 				throw Exception(msg);
 			}
 		}
 
-		string* VariableNames = new string[NEQ + 1 + NPARAM];
+		string* symbolNames = new string[NEQ + 1 + NPARAM];
 		initialConditionExpressions = new Expression*[NEQ];	
-		rateExpressions = new Expression*[NEQ];
+		rhsExpressions = new Expression*[NEQ];
 		char exp[MAX_EXPRESSION_LENGTH];
 
 		// add "t" first
 		string variableName = "t";
 		odeResultSet->addColumn(variableName);
-		VariableNames[0] = variableName; 
-
+		symbolNames[0] = variableName; 
+		//
+		// test whether it is a "VAR" block (i.e. whether VAR)
+		//
+		inputstream >> token;		
+		if (token != "VAR"){
+			throw "expecting VAR";
+		}
 		for (int i = 0; i < NEQ; i ++) {
-			// ODE
-			inputstream >> name >> variableName;
+			// consume "VAR" token, but first line has it's "VAR" already consumed
+			if (i > 0){
+				inputstream >> token;
+			}		
+			
+			inputstream >> variableName;
 			odeResultSet->addColumn(variableName);
-			// add columns to symbol table
-			VariableNames[i + 1] = variableName;
+			// add vars to symbol table
+			symbolNames[i + 1] = variableName;
 
 			// INIT
-			inputstream >> name;
+			inputstream >> token;
 			memset(exp, 0, MAX_EXPRESSION_LENGTH*sizeof(char));
 			inputstream.getline(exp, MAX_EXPRESSION_LENGTH);
-			char* pexp = exp;
-			pexp = trim(pexp);
-			if (pexp[strlen(pexp)-1] != ';') {
-				string msg = "Initial condition expression for [" + variableName + "] is not terminated by ';', it is either an invalid expression or longer than MAX_EXPRESSION_LENGTH (40000)";
+			char* trimmedExp = trim(exp);
+			if (trimmedExp[strlen(trimmedExp)-1] != ';') {
+				string msg = "Initial condition expression for [" + variableName + "]" + BAD_EXPRESSION_MSG;
 				throw Exception(msg);
 			}
-			initialConditionExpressions[i] = new Expression(pexp);
-			delete[] pexp;			
-
-			// RATE
-			inputstream >> name;
-
-			memset(exp, 0, MAX_EXPRESSION_LENGTH*sizeof(char));
-			inputstream.getline(exp, MAX_EXPRESSION_LENGTH);
-			pexp = exp;
-			pexp = trim(pexp);
-			if (pexp[strlen(pexp)-1] != ';') {
-				string msg = "Rate expression for [" + variableName + "] is not terminated by ';', it is either an invalid expression or longer than MAX_EXPRESSION_LENGTH (40000)";
-				throw Exception(msg);
-			}
-			rateExpressions[i] = new Expression(pexp);
-			delete[] pexp;
+			initialConditionExpressions[i] = new Expression(trimmedExp);
+			delete[] trimmedExp;			
 		}
 
+		//TRANSFORM
+		transformMatrix = new double*[NEQ];	
+		inputstream >> token; 
+		if (token != "TRANSFORM") {
+			throw "expecting TRANSFORM";
+		}
+		inputstream.getline(exp, MAX_EXPRESSION_LENGTH); // go to next line
+		for (int i = 0; i < NEQ; i ++) {
+			transformMatrix[i] = new double[NEQ];
+			for (int j = 0; j < NEQ; j ++) {
+				inputstream >> transformMatrix[i][j];
+			}
+		}
+		//INVERSETRANSFORM
+		inverseTransformMatrix = new double*[NEQ];
+		inputstream >> token; 
+		if (token != "INVERSETRANSFORM") {
+			throw "expecting INVERSETRANSFORM";
+		}
+		inputstream.getline(exp, MAX_EXPRESSION_LENGTH); // go to next line
+		for (int i = 0; i < NEQ; i ++) {
+			inverseTransformMatrix[i] = new double[NEQ];
+			for (int j = 0; j < NEQ; j ++) {
+				inputstream >> inverseTransformMatrix[i][j];
+			}
+		}
+
+		//RHS DIFFERENTIAL 2 ALGEBRAIC 1
+		inputstream >> token; 
+		if (token != "RHS") {
+			throw "expecting RHS";
+		}
+		inputstream >> token;
+		if (token != "DIFFERENTIAL") {
+			throw "expecting DIFFERENTIAL";
+		}
+		inputstream >> numDifferential;
+		inputstream >> token;
+		if (token != "ALGEBRAIC") {
+			throw "expecting ALGEBRAIC";
+		}
+		inputstream >> numAlgebraic;
+		if (numDifferential + numAlgebraic != NEQ) {
+			throw "numDifferential + numAlgebraic != NEQ";
+		}
+		inputstream.getline(exp, MAX_EXPRESSION_LENGTH); // go to next line
+		for (int i = 0; i < NEQ; i ++) {
+			memset(exp, 0, MAX_EXPRESSION_LENGTH * sizeof(char));
+			inputstream.getline(exp, MAX_EXPRESSION_LENGTH);
+			char* trimmedExp = trim(exp);
+			if (trimmedExp[strlen(trimmedExp)-1] != ';') {
+				stringstream ss;
+				ss << "RHS[" << i << "]" << BAD_EXPRESSION_MSG;
+				throw Exception(ss.str());
+			}
+			rhsExpressions[i] = new Expression(trimmedExp);
+			delete[] trimmedExp;
+		}
+		
 		// add parameters to symbol table
 		for (int i = 0 ; i < NPARAM; i ++) {
-			VariableNames[NEQ + 1 + i] = paramNames.at(i); 
+			symbolNames[NEQ + 1 + i] = paramNames.at(i); 
 		}
-		rateSymbolTable = new SimpleSymbolTable(VariableNames, NEQ + 1 + NPARAM);
-		initialConditionSymbolTable = new SimpleSymbolTable(VariableNames + NEQ + 1, NPARAM);
+
+		rhsSymbolTable = new SimpleSymbolTable(symbolNames, 1 + NEQ + NPARAM); // has time, vars, parameters
+		initialConditionSymbolTable = new SimpleSymbolTable(symbolNames + NEQ + 1, NPARAM); // has parameters
 		for (int i = 0; i < NEQ; i ++) {
-			rateExpressions[i]->bindExpression(rateSymbolTable);
+			rhsExpressions[i]->bindExpression(rhsSymbolTable);
 			initialConditionExpressions[i]->bindExpression(initialConditionSymbolTable);			
 		}
 
@@ -233,18 +369,20 @@ void VCellIDASolver::readInput(istream& inputstream) {
 			throw "Out of Memory";
 		}
 
-		delete[] VariableNames;
-
 		y = N_VNew_Serial(NEQ);
-		check_flag((void *)y, "N_VNew_Serial", 0);
 		yp = N_VNew_Serial(NEQ);
-		check_flag((void *)yp, "N_VNew_Serial", 0);
+		id = N_VNew_Serial(NEQ);
+
+		if (y == 0 || yp == 0 || id == 0) {
+			throw "Out of Memory";
+		}		
+		delete[] symbolNames;
 	} catch (const char* ex) {
-		throw Exception(string("VCellIDASolver::readInput() : ") + ex);
+		throw Exception(string("VCellIDASolver::readInput() : ") + ex);		
 	} catch (Exception& ex) {
 		throw Exception(string("VCellIDASolver::readInput() : ") + ex.getMessage());
 	} catch (...) {
-		throw "VCellIDASolver::readInput() : caught unknown exception";
+		throw Exception("VCellIDASolver::readInput() caught unknown exception");
 	}
 }
 
@@ -263,35 +401,84 @@ void VCellIDASolver::solve(double* paramValues, FILE* outputFile, void (*checkSt
 	// clear data in result set before solving
 	odeResultSet->clearData();
 
+	void* ida_mem = initIDA(paramValues);
+	idaSolve(ida_mem, outputFile, checkStopRequested);
+	IDAFree(&ida_mem);
+}
+
+#define DEBUG_PRINT \
+	for (int i = 0; i < NEQ; i ++) {\
+		cout << "y[" << i << "] = " << NV_Ith_S(y,i) << ",  yp[" << i << "] = " << NV_Ith_S(yp,i) << endl; \
+	}
+
+void* VCellIDASolver::initIDA(double* paramValues) {
 	realtype Time = STARTING_TIME;
 	// copy parameter values to the end of values, these will stay the same during solving
-	memset(values, 0, (NEQ + 1) * sizeof(double));
-	memcpy(values + NEQ + 1, paramValues, NPARAM * sizeof(double));
-	
-	// Initialize y and y'.
-	for (int i = 0; i < NEQ; i ++) {
-		NV_Ith_S(y,i) = initialConditionExpressions[i]->evaluateVector(paramValues);		
-	}
-	//  This might be replaced by a call to IDACalcIC() or something...later...
-	//  For now, this computes y'...later we might want to compute y' AND equilibrate...
-	values[0] = Time;
-	memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
-	for (int i = 0; i < NEQ; i ++) {
-		NV_Ith_S(yp, i) = rateExpressions[i]->evaluateVector(values);
-	}		
-	// Scalar relative tolerance, scalar absolute tolerance...
-	// Later turn absolute tolerance into a vector...
-	int ToleranceType = IDA_SS;
+	// values[0] is time, y values will be copied to 1~NEQ of values in residual function
+	memset(values, 0, (NEQ + 1 + NPARAM) * sizeof(double));
+	memcpy(values + NEQ + 1, paramValues, NPARAM * sizeof(double));	
 
+	// create IDA object
 	void* ida_mem = IDACreate();
-	check_flag((void *)ida_mem, "IDACreate", 0);
+	if (ida_mem == 0) {
+		throw "Out of memory";
+	}
+
+	// must initialize y and yp before call IDAMalloc
+	// Initialize y, yp and id.
+	for (int i = 0; i < NEQ; i ++) {
+		NV_Ith_S(id, i) = i < numDifferential ? RCONST(1) : RCONST(0);
+		NV_Ith_S(yp, i) = 0; // Initialize yp  to be 0, they will be reinitialize later.
+		NV_Ith_S(y, i) = 0;		
+		for (int j = 0; j < NEQ; j ++) {
+			NV_Ith_S(y, i) += transformMatrix[i][j] * initialConditionExpressions[j]->evaluateVector(paramValues);
+		}
+	}
+
 	// Call IDAMalloc to set up problem memory.
+	// Scalar relative tolerance, scalar absolute tolerance...
+	int ToleranceType = IDA_SS;
 	int flag = IDAMalloc(ida_mem, Residual_callback, STARTING_TIME, y, yp, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
-	check_flag(&flag, "IDAMalloc", 1);
+	checkIDAFlag(flag);
+
+	// set non-default solver options (in this case the "this" pointer to include in callbacks)
+	//IDASetErrHandlerFn(ida_mem, IDAErrHandlerFn ehfun, eh_data);
 	IDASetRdata(ida_mem, this);
+	IDASetMaxStep(ida_mem, maxTimeStep);	
+
+	// choose the linear solver (Dense "direct" matrix LU decomposition solver).
 	flag = IDADense(ida_mem, NEQ);
-	check_flag(&flag, "IDADense", 1);		
-	
+	checkIDAFlag(flag);
+
+	// calculate initial condition for YA and YDP given YD
+	// time
+	realtype tout1 = min(ENDING_TIME, Time + 2 * maxTimeStep + (1e-15));
+	if (outputTimes.size() > 0){
+		tout1 = outputTimes[0];
+	}
+
+	//cout << "before IDACalcIC" << endl;
+	//DEBUG_PRINT
+
+	IDASetId(ida_mem, id); // used with IDACalcIC( IDA_YA_YDP_INIT ).
+	flag = IDACalcIC(ida_mem, IDA_YA_YDP_INIT, tout1);
+	checkIDAFlag(flag);
+	flag = IDAGetConsistentIC(ida_mem, y, yp);
+	checkIDAFlag(flag);
+
+	//cout << "aftere IDACalcIC" << endl;
+	//DEBUG_PRINT
+
+	return ida_mem;
+}
+
+void VCellIDASolver::idaSolve(void* ida_mem, FILE* outputFile, void (*checkStopRequested)(double, long)) {	
+	if (checkStopRequested != 0) {
+		checkStopRequested(STARTING_TIME, 0);
+	}
+
+	realtype Time = STARTING_TIME;
+
 	// write initial conditions
 	writeData(Time, y, outputFile);
 	
@@ -367,6 +554,25 @@ void VCellIDASolver::solve(double* paramValues, FILE* outputFile, void (*checkSt
 			}				
 		} 
 	}
+}
 
-	IDAFree(&ida_mem);
+
+// override writeData, since y values need to be transformed to the original variables.
+void VCellIDASolver::writeData(double currTime, N_Vector y, FILE* outputFile) {
+	tempRowData[0] = currTime; 
+	for (int i = 0; i < NEQ; i ++) {
+		tempRowData[i + 1] = 0;
+		for (int j = 0; j < NEQ; j ++) {
+			tempRowData[i + 1] += inverseTransformMatrix[i][j] * NV_Ith_S(y, j);
+		}
+	}	
+	odeResultSet->addRow(tempRowData);
+
+	if (outputFile != 0) {
+		fprintf(outputFile, "%0.17E", tempRowData[0]); 
+		for (int i = 1; i < NEQ+1; i++) { 
+			fprintf(outputFile, "\t%0.17E", tempRowData[i]); 			
+		} 
+		fprintf(outputFile, "\n");
+	}
 }

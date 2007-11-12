@@ -9,16 +9,27 @@ public:
 	~VCellIDASolver();
 
 	void readInput(istream& inputstream);
-	void solve(double* paramValues=0, FILE* outputFile=0, void (*checkStopRequested)(double, long)=0);
-	SymbolTable* getSymbolTable() { return rateSymbolTable;}	
+	void solve(double* paramValues=0, FILE* outputFile=0, void (*checkStopRequested)(double, long)=0);	
+	SymbolTable* getSymbolTable() { return rhsSymbolTable;}	
+
+protected:
+	void writeData(double currTime, N_Vector y, FILE* outputFile);
 
 private:
-	Expression** rateExpressions; 
-	SymbolTable* rateSymbolTable;
+	Expression** rhsExpressions;  // can be rate expression in ODE case or RHS expression in DAE case
+	SymbolTable* rhsSymbolTable;
+	double **transformMatrix;
+	double **inverseTransformMatrix;
+	int numDifferential;
+	int numAlgebraic;
 
 	N_Vector yp;
-	int Residual(realtype t, N_Vector y, N_Vector yp, N_Vector r);	
-	static int Residual_callback(realtype t, N_Vector y, N_Vector yp, N_Vector r, void *rdata);	
+	N_Vector id;  // 1 for differential variable, 0 for algebraic variable (used in IDACalcIC()).
+
+	int Residual(realtype t, N_Vector y, N_Vector yp, N_Vector residual);	
+	static int Residual_callback(realtype t, N_Vector y, N_Vector yp, N_Vector residual, void *rdata);
+	void* initIDA(double* paramValues);
+	void idaSolve(void* ida_mem, FILE* outputFile, void (*checkStopRequested)(double, long));
 };
 
 #endif

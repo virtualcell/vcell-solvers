@@ -2,6 +2,7 @@
 #include "ParserException.h"
 #include "RuntimeException.h"
 #include "FunctionDomainException.h"
+#include "FunctionRangeException.h"
 #include "ExpressionException.h"
 #include "DivideByZeroException.h"
 #include "ParseException.h"
@@ -34,8 +35,18 @@ string VCell::Exception::getMessage(void)
 	return title + " : " + getExactMessage();
 }
 
-void VCell::Exception::rethrowException(Exception& ex)
+void VCell::Exception::replaceMessage(string& replacementMessage)
+{
+	message = replacementMessage;
+}
+
+void VCell::Exception::rethrowException(Exception& ex, string replacementMessage)
 {	
+	string message = ex.getExactMessage();
+	if (replacementMessage.size()>0){
+		ex.replaceMessage(replacementMessage);
+	}
+
 	if (typeid(ex) == typeid(ParseException)) {
 		ParseException* castex = dynamic_cast<ParseException*>((Exception*)(&ex));
 		throw (*castex);
@@ -53,6 +64,11 @@ void VCell::Exception::rethrowException(Exception& ex)
 
 	if (typeid(ex) == typeid(FunctionDomainException)) {
 		FunctionDomainException* castex = dynamic_cast<FunctionDomainException*>((Exception*)(&ex));
+		throw (*castex);
+	}
+
+	if (typeid(ex) == typeid(FunctionRangeException)) {
+		FunctionRangeException* castex = dynamic_cast<FunctionRangeException*>((Exception*)(&ex));
 		throw (*castex);
 	}
 
