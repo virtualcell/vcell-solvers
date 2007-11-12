@@ -4,7 +4,7 @@
 #
 
 CC = g++
-CPPFLAGS =	-DLINUX -O2 -fexceptions -I.
+CPPFLAGS =	-DMACOSX -fPIC -O2 -exceptions -I.
 ifndef MULTITHREADED
 TARGET= libExpParser.a
 else
@@ -55,8 +55,7 @@ CPPOBJECTS = ASTAddNode.o \
 	SimpleSymbolTable.o \
 	SimpleSymbolTableEntry.o \
 	StackMachine.o \
-	Token.o  \
-	ValueProxy.o
+	Token.o 
 
 $(TARGET):	$(CPPOBJECTS)	
 	$(LIBTOOL) $@ $(CPPOBJECTS) 

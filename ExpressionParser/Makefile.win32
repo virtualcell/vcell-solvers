@@ -46,6 +46,7 @@ CPPOBJECTS = $(OBJDIR)\ASTAddNode.obj \
 	$(OBJDIR)\ExpressionParserTokenManager.obj \
 	$(OBJDIR)\ExpressionTest.obj \
 	$(OBJDIR)\FunctionDomainException.obj \
+	$(OBJDIR)\FunctionRangeException.obj \
 	$(OBJDIR)\IOException.obj \
 	$(OBJDIR)\JJTExpressionParserState.obj \
 	$(OBJDIR)\MathUtil.obj \
