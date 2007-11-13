@@ -5,11 +5,11 @@
 
 class VCellIDASolver : public VCellSundialsSolver {
 public:
-	VCellIDASolver(istream& inputstream, bool bPrintProgress=false);	
+	VCellIDASolver();	
 	~VCellIDASolver();
 
 	void readInput(istream& inputstream);
-	void solve(double* paramValues=0, FILE* outputFile=0, void (*checkStopRequested)(double, long)=0);	
+	void solve(double* paramValues=0, bool bPrintProgress=false, FILE* outputFile=0, void (*checkStopRequested)(double, long)=0);	
 	SymbolTable* getSymbolTable() { return rhsSymbolTable;}	
 
 protected:
@@ -29,7 +29,7 @@ private:
 	int Residual(realtype t, N_Vector y, N_Vector yp, N_Vector residual);	
 	static int Residual_callback(realtype t, N_Vector y, N_Vector yp, N_Vector residual, void *rdata);
 	void* initIDA(double* paramValues);
-	void idaSolve(void* ida_mem, FILE* outputFile, void (*checkStopRequested)(double, long));
+	void idaSolve(void* ida_mem, bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long));
 };
 
 #endif

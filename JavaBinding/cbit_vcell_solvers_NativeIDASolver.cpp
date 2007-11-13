@@ -33,8 +33,9 @@ JNIEXPORT jobject JNICALL Java_cbit_vcell_solvers_NativeIDASolver_nativeSolve
 			c_paramValues = env->GetDoubleArrayElements(j_paramValues, 0);
 		}
 
-		VCellIDASolver* idaSolver = new VCellIDASolver(inputstream);
-		idaSolver->solve(c_paramValues, 0, checkStopRequested_IDA);
+		VCellIDASolver* idaSolver = new VCellIDASolver();
+		idaSolver->readInput(inputstream);
+		idaSolver->solve(c_paramValues, false, 0, checkStopRequested_IDA);
 		OdeResultSet* odeResultSet = idaSolver->getResultSet();
 		env->ReleaseStringUTFChars(j_idaInput, c_idaInput);
 		if (j_paramValues != 0) {

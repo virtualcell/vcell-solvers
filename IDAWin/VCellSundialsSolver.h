@@ -20,11 +20,11 @@ class OdeResultSet;
 
 class VCellSundialsSolver {
 public:
-	VCellSundialsSolver(istream& inputstream, bool arg_bPrintProgress);	
+	VCellSundialsSolver();	
 	~VCellSundialsSolver();
 
 	virtual void readInput(istream& inputstream) = 0;
-	virtual void solve(double* paramValues=0, FILE* outputFile=0, void (*checkStopRequested)(double, long)=0) = 0;
+	virtual void solve(double* paramValues=0, bool bPrintProgress=false, FILE* outputFile=0, void (*checkStopRequested)(double, long)=0) = 0;
 	OdeResultSet* getResultSet() { return odeResultSet; }
 	int getNumEquations() { return NEQ; }
 	Expression** getInitialConditionExpressions() { return initialConditionExpressions; }
@@ -32,9 +32,7 @@ public:
 	void setEndingTime(realtype newEndingTime) { ENDING_TIME = newEndingTime; }
 	void setOutputTimes(int count, double* newOutputTimes);
 
-protected:
-	bool bPrintProgress;
-	
+protected:	
 	// 0 : t
 	// 1 ~ N : variable values
 	// N+1 ~ N+NPARAM : parameter values 

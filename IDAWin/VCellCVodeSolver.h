@@ -6,15 +6,13 @@
 
 class VCellCVodeSolver : public VCellSundialsSolver {
 public:
-	VCellCVodeSolver(istream& inputstream, bool bPrintProgress=false);	
+	VCellCVodeSolver();	
 	~VCellCVodeSolver();
 
-	void solve(double* paramValues=0, FILE* outputFile=0, void (*checkStopRequested)(double, long)=0);
+	void solve(double* paramValues=0, bool bPrintProgress=false, FILE* outputFile=0, void (*checkStopRequested)(double, long)=0);
 	SymbolTable* getSymbolTable() { return rateSymbolTable;}	
 	double RHS(double* allValues, int equationIndex);	
-
-protected:	
-	virtual void readInput(istream& inputstream);
+	void readInput(istream& inputstream);
 
 private:
 	Expression** rateExpressions; 

@@ -19,7 +19,8 @@ OdeOptJob::OdeOptJob(int arg_numParameters, char** arg_paramNames, double* arg_L
 			   arg_numNonLinearEquality, arg_numLinearEquality, constraintExpressions, arg_referenceData, checkStopRequested) {
 
 	istringstream inputStream(arg_inputChars);
-	idaSolver = new VCellIDASolver(inputStream);
+	idaSolver = new VCellIDASolver();
+	idaSolver->readInput(inputStream);
 
 	testResultSet = idaSolver->getResultSet();
 	for (int i = 1; i < referenceData->getNumColumns(); i ++) { // suppose t is the first column
@@ -45,7 +46,7 @@ void OdeOptJob::objective(int nparams, double* x, double* f) {
 	try {
 		unscaleX(x, unscaled_x);
 
-		idaSolver->solve(unscaled_x, 0, fn_checkStopRequested);
+		idaSolver->solve(unscaled_x, false, 0, fn_checkStopRequested);
 		*f = computeL2error(unscaled_x);
 		if (bestObjectiveFunctionValue > *f) {
 			bestObjectiveFunctionValue = *f;

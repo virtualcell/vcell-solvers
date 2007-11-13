@@ -27,8 +27,9 @@ int main(int argc, char *argv[]) {
 		if ((outputFile = fopen(argv[2], "w")) == NULL) {
 			throw Exception(string("could not open output file[") +  argv[2] + "] for writing.");
 		}
-		VCellCVodeSolver* cvodeSolver = new VCellCVodeSolver(inputstream, true);
-		cvodeSolver->solve(0, outputFile);				
+		VCellCVodeSolver* cvodeSolver = new VCellCVodeSolver();
+		cvodeSolver->readInput(inputstream);
+		cvodeSolver->solve(0, true, outputFile);				
 
 		fclose(outputFile);
 		inputstream.close();

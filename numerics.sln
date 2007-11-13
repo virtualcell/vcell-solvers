@@ -31,6 +31,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JavaBinding", "JavaBinding\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Optimization", "Optimization\Optimization.vcproj", "{857A1BFF-283D-41A6-9F1C-5F307E7A9CDB}"
 	ProjectSection(ProjectDependencies) = postProject
+		{61634B0E-1A94-43AC-9BD7-490002ACDBF5} = {61634B0E-1A94-43AC-9BD7-490002ACDBF5}
+		{1F2CB7B8-7A6D-4DA0-8CBD-750B540070A2} = {1F2CB7B8-7A6D-4DA0-8CBD-750B540070A2}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IDAStandalone", "IDAStandalone\IDAStandalone.vcproj", "{B5DFF8A8-80F1-4F05-B6C7-561952E5907C}"

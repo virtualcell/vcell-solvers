@@ -29,8 +29,9 @@ int main(int argc, char *argv[]) {
 		if ((outputFile = fopen(argv[2], "w")) == NULL) {
 			throw Exception(string("Could not open output file[") +  argv[2] + "] for writing.");
 		}
-		VCellIDASolver* idaSolver = new VCellIDASolver(inputstream, true);
-		idaSolver->solve(0, outputFile);				
+		VCellIDASolver* idaSolver = new VCellIDASolver();
+		idaSolver->readInput(inputstream);
+		idaSolver->solve(0, true, outputFile);				
 
 		fclose(outputFile);
 		inputstream.close();

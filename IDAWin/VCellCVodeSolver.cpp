@@ -64,11 +64,9 @@ void checkCVodeFlag(int flag) {
 	}
 }
 
-VCellCVodeSolver::VCellCVodeSolver(istream& inputstream, bool bPrintProgress) : VCellSundialsSolver(inputstream, bPrintProgress) {
+VCellCVodeSolver::VCellCVodeSolver() : VCellSundialsSolver() {
 	rateExpressions = 0;
 	rateSymbolTable = 0;
-
-	readInput(inputstream);
 }
 
 VCellCVodeSolver::~VCellCVodeSolver() {
@@ -256,7 +254,7 @@ int VCellCVodeSolver::RHS_callback(realtype t, N_Vector y, N_Vector r, void *fda
 	return solver->RHS(t, y, r);
 }
 
-void VCellCVodeSolver::solve(double* paramValues, FILE* outputFile, void (*checkStopRequested)(double, long)) {
+void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long)) {
 	if (checkStopRequested != 0) {
 		checkStopRequested(STARTING_TIME, 0);
 	}

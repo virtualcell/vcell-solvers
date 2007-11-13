@@ -25,7 +25,8 @@ OdeMultiShootingOptJob::OdeMultiShootingOptJob(int arg_numParameters, char** arg
 
 	maxTimeStep = arg_maxTimeStep;
 	istringstream inputStream(arg_inputChars);
-	cvodeSolver = new VCellCVodeSolver(inputStream);
+	cvodeSolver = new VCellCVodeSolver();
+	cvodeSolver->readInput(inputStream);
 
 	computeTimePoints();
 

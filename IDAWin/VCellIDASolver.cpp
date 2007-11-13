@@ -97,16 +97,16 @@ void checkIDAFlag(int flag) {
 	}
 }
 
-VCellIDASolver::VCellIDASolver(istream& inputstream, bool arg_bPrintProgress) : VCellSundialsSolver(inputstream, arg_bPrintProgress) {
+VCellIDASolver::VCellIDASolver() : VCellSundialsSolver() {
 	rhsExpressions = 0;
 	rhsSymbolTable = 0;
 
+	numDifferential = 0;
+	numAlgebraic = 0;
 	transformMatrix = 0;
 	inverseTransformMatrix = 0;
 	yp = 0;
 	id = 0;
-
-	readInput(inputstream);
 }
 
 VCellIDASolver::~VCellIDASolver() {
@@ -253,7 +253,6 @@ void VCellIDASolver::readInput(istream& inputstream) {
 
 		string* symbolNames = new string[NEQ + 1 + NPARAM];
 		initialConditionExpressions = new Expression*[NEQ];	
-		rhsExpressions = new Expression*[NEQ];
 		char exp[MAX_EXPRESSION_LENGTH];
 
 		// add "t" first
@@ -337,6 +336,8 @@ void VCellIDASolver::readInput(istream& inputstream) {
 			throw "numDifferential + numAlgebraic != NEQ";
 		}
 		inputstream.getline(exp, MAX_EXPRESSION_LENGTH); // go to next line
+
+		rhsExpressions = new Expression*[NEQ];
 		for (int i = 0; i < NEQ; i ++) {
 			memset(exp, 0, MAX_EXPRESSION_LENGTH * sizeof(char));
 			inputstream.getline(exp, MAX_EXPRESSION_LENGTH);
@@ -379,14 +380,14 @@ void VCellIDASolver::readInput(istream& inputstream) {
 		delete[] symbolNames;
 	} catch (const char* ex) {
 		throw Exception(string("VCellIDASolver::readInput() : ") + ex);		
-	} catch (Exception& ex) {
+	} catch (Exception& ex) {		
 		throw Exception(string("VCellIDASolver::readInput() : ") + ex.getMessage());
 	} catch (...) {
 		throw Exception("VCellIDASolver::readInput() caught unknown exception");
 	}
 }
 
-void VCellIDASolver::solve(double* paramValues, FILE* outputFile, void (*checkStopRequested)(double, long)) {
+void VCellIDASolver::solve(double* paramValues, bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long)) {
 	if (checkStopRequested != 0) {
 		checkStopRequested(STARTING_TIME, 0);
 	}
@@ -402,7 +403,7 @@ void VCellIDASolver::solve(double* paramValues, FILE* outputFile, void (*checkSt
 	odeResultSet->clearData();
 
 	void* ida_mem = initIDA(paramValues);
-	idaSolve(ida_mem, outputFile, checkStopRequested);
+	idaSolve(ida_mem, bPrintProgress, outputFile, checkStopRequested);
 	IDAFree(&ida_mem);
 }
 
@@ -472,7 +473,7 @@ void* VCellIDASolver::initIDA(double* paramValues) {
 	return ida_mem;
 }
 
-void VCellIDASolver::idaSolve(void* ida_mem, FILE* outputFile, void (*checkStopRequested)(double, long)) {	
+void VCellIDASolver::idaSolve(void* ida_mem, bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long)) {	
 	if (checkStopRequested != 0) {
 		checkStopRequested(STARTING_TIME, 0);
 	}

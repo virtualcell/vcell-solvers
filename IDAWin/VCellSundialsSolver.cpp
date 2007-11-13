@@ -34,9 +34,7 @@ char* trim(char* str) {
 	return newstr;
 }
 
-VCellSundialsSolver::VCellSundialsSolver(istream& inputstream, bool arg_bPrintProgress) {
-	bPrintProgress = arg_bPrintProgress;
-
+VCellSundialsSolver::VCellSundialsSolver() {
 	NEQ = 0;
 	NPARAM = 0;
 	STARTING_TIME = 0.0;
@@ -86,9 +84,6 @@ void VCellSundialsSolver::writeData(double currTime, N_Vector y, FILE* outputFil
 }
 
 void VCellSundialsSolver::printProgress(double currTime, double& percentile, double increment) {	
-	if (!bPrintProgress) {
-		return;
-	}
 	while ((STARTING_TIME + ((percentile + increment) * (ENDING_TIME - STARTING_TIME))) <= currTime) { 
 		percentile += increment; 
 		printf("[[[progress:%lg%%]]]", percentile*100.0); 
