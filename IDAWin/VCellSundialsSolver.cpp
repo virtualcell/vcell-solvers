@@ -44,6 +44,7 @@ VCellSundialsSolver::VCellSundialsSolver() {
 	keepEvery = 0;
 	maxTimeStep = 0.0;		
 
+	solver = 0;
 	initialConditionSymbolTable = 0;
 	initialConditionExpressions = 0;
 	values = 0;
@@ -67,18 +68,35 @@ VCellSundialsSolver::~VCellSundialsSolver() {
 	delete odeResultSet;
 }
 
-void VCellSundialsSolver::writeData(double currTime, N_Vector y, FILE* outputFile) {
+void VCellSundialsSolver::updateTempRowData(double currTime) {
 	tempRowData[0] = currTime; 
 	for (int i = 0; i < NEQ; i++) { 
 		tempRowData[i+1] = NV_Ith_S(y,i); 
 	} 
-	odeResultSet->addRow(tempRowData);
+}
 
+void VCellSundialsSolver::writeData(double currTime, FILE* outputFile) {
+	updateTempRowData(currTime);
+	odeResultSet->addRow(tempRowData);
+	writeFileData(outputFile);
+}
+
+void VCellSundialsSolver::writeFileData(FILE* outputFile) {
 	if (outputFile != 0) {
 		fprintf(outputFile, "%0.17E", tempRowData[0]); 
 		for (int i = 1; i < NEQ+1; i++) { 
 			fprintf(outputFile, "\t%0.17E", tempRowData[i]); 			
 		} 
+		fprintf(outputFile, "\n");
+	}
+}
+
+void VCellSundialsSolver::writeFileHeader(FILE* outputFile) {
+	if (outputFile != 0) {	
+		//  Print header...
+		for (int i = 0; i < odeResultSet->getNumColumns(); i++) {
+			fprintf(outputFile, "%s:", odeResultSet->getColumnName(i).data());
+		}
 		fprintf(outputFile, "\n");
 	}
 }

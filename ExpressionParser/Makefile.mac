@@ -4,7 +4,7 @@
 #
 
 CC = g++
-CPPFLAGS =	-DMACOSX -fPIC -O2 -exceptions -I.
+CPPFLAGS =	-DMACOSX -fPIC -O2 -fexceptions -I.
 ifndef MULTITHREADED
 TARGET= libExpParser.a
 else

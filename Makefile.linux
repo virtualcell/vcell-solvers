@@ -14,6 +14,8 @@ all:
 	cd IdaStandalone; make -f Makefile.linux
 	cd netcdf-3.6.2; make -f Makefile.linux
 	cd Hy3S/src; make -f Makefile.linux
+	cd Optimization; make -f Makefile.linux
+    cd JavaBinding; make -f Makefile.linux       
 	
 clean:
 	cd ExpressionParser ; make -f Makefile.linux clean
@@ -30,3 +32,6 @@ clean:
 	cd IdaStandalone; make -f Makefile.linux clean
 	cd netcdf-3.6.2; make -f Makefile.linux clean
 	cd Hy3S/src; make -f Makefile.linux clean
+	cd Optimization; make -f Makefile.linux clean
+    cd JavaBinding; make -f Makefile.linux clean
+	

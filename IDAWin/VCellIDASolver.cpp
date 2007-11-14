@@ -110,6 +110,8 @@ VCellIDASolver::VCellIDASolver() : VCellSundialsSolver() {
 }
 
 VCellIDASolver::~VCellIDASolver() {
+	IDAFree(&solver);
+
 	N_VDestroy_Serial(yp);
 	N_VDestroy_Serial(id);	
 
@@ -197,6 +199,9 @@ Input format:
 
 void VCellIDASolver::readInput(istream& inputstream) { 
 	try {
+		if (solver != 0) {
+			throw "readInput should only be called once";
+		}
 		string token;
 		while (true) {
 			inputstream >> token;
@@ -392,19 +397,18 @@ void VCellIDASolver::solve(double* paramValues, bool bPrintProgress, FILE* outpu
 		checkStopRequested(STARTING_TIME, 0);
 	}
 
-	if (outputFile != 0) {
-		//  Print header...
-		for (int i = 0; i < odeResultSet->getNumColumns(); i++) {
-			fprintf(outputFile, "%s:", odeResultSet->getColumnName(i).data());
-		}
-		fprintf(outputFile, "\n");
-	}
+	writeFileHeader(outputFile);
+
 	// clear data in result set before solving
 	odeResultSet->clearData();
 
-	void* ida_mem = initIDA(paramValues);
-	idaSolve(ida_mem, bPrintProgress, outputFile, checkStopRequested);
-	IDAFree(&ida_mem);
+	// copy parameter values to the end of values, these will stay the same during solving
+	// values[0] is time, y values will be copied to 1~NEQ of values in residual function
+	memset(values, 0, (NEQ + 1 + NPARAM) * sizeof(double));
+	memcpy(values + NEQ + 1, paramValues, NPARAM * sizeof(double));	
+
+	initIDA(paramValues);
+	idaSolve(bPrintProgress, outputFile, checkStopRequested);	
 }
 
 #define DEBUG_PRINT \
@@ -412,19 +416,7 @@ void VCellIDASolver::solve(double* paramValues, bool bPrintProgress, FILE* outpu
 		cout << "y[" << i << "] = " << NV_Ith_S(y,i) << ",  yp[" << i << "] = " << NV_Ith_S(yp,i) << endl; \
 	}
 
-void* VCellIDASolver::initIDA(double* paramValues) {
-	realtype Time = STARTING_TIME;
-	// copy parameter values to the end of values, these will stay the same during solving
-	// values[0] is time, y values will be copied to 1~NEQ of values in residual function
-	memset(values, 0, (NEQ + 1 + NPARAM) * sizeof(double));
-	memcpy(values + NEQ + 1, paramValues, NPARAM * sizeof(double));	
-
-	// create IDA object
-	void* ida_mem = IDACreate();
-	if (ida_mem == 0) {
-		throw "Out of memory";
-	}
-
+void VCellIDASolver::initIDA(double* paramValues) {
 	// must initialize y and yp before call IDAMalloc
 	// Initialize y, yp and id.
 	for (int i = 0; i < NEQ; i ++) {
@@ -438,22 +430,31 @@ void* VCellIDASolver::initIDA(double* paramValues) {
 
 	// Call IDAMalloc to set up problem memory.
 	// Scalar relative tolerance, scalar absolute tolerance...
+	int flag = 0;
 	int ToleranceType = IDA_SS;
-	int flag = IDAMalloc(ida_mem, Residual_callback, STARTING_TIME, y, yp, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
+	if (solver == 0) {
+		solver = IDACreate();
+		if (solver == 0) {
+			throw "Out of memory";
+		}
+		flag = IDAMalloc(solver, Residual_callback, STARTING_TIME, y, yp, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
+	}  else {
+		flag = IDAReInit(solver, Residual_callback, STARTING_TIME, y, yp, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
+	}
 	checkIDAFlag(flag);
 
 	// set non-default solver options (in this case the "this" pointer to include in callbacks)
 	//IDASetErrHandlerFn(ida_mem, IDAErrHandlerFn ehfun, eh_data);
-	IDASetRdata(ida_mem, this);
-	IDASetMaxStep(ida_mem, maxTimeStep);	
+	IDASetRdata(solver, this);
+	IDASetMaxStep(solver, maxTimeStep);	
 
 	// choose the linear solver (Dense "direct" matrix LU decomposition solver).
-	flag = IDADense(ida_mem, NEQ);
+	flag = IDADense(solver, NEQ);
 	checkIDAFlag(flag);
 
 	// calculate initial condition for YA and YDP given YD
 	// time
-	realtype tout1 = min(ENDING_TIME, Time + 2 * maxTimeStep + (1e-15));
+	realtype tout1 = min(ENDING_TIME, STARTING_TIME + 2 * maxTimeStep + (1e-15));
 	if (outputTimes.size() > 0){
 		tout1 = outputTimes[0];
 	}
@@ -461,19 +462,17 @@ void* VCellIDASolver::initIDA(double* paramValues) {
 	//cout << "before IDACalcIC" << endl;
 	//DEBUG_PRINT
 
-	IDASetId(ida_mem, id); // used with IDACalcIC( IDA_YA_YDP_INIT ).
-	flag = IDACalcIC(ida_mem, IDA_YA_YDP_INIT, tout1);
+	IDASetId(solver, id); // used with IDACalcIC( IDA_YA_YDP_INIT ).
+	flag = IDACalcIC(solver, IDA_YA_YDP_INIT, tout1);
 	checkIDAFlag(flag);
-	flag = IDAGetConsistentIC(ida_mem, y, yp);
+	flag = IDAGetConsistentIC(solver, y, yp);
 	checkIDAFlag(flag);
 
 	//cout << "aftere IDACalcIC" << endl;
 	//DEBUG_PRINT
-
-	return ida_mem;
 }
 
-void VCellIDASolver::idaSolve(void* ida_mem, bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long)) {	
+void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long)) {	
 	if (checkStopRequested != 0) {
 		checkStopRequested(STARTING_TIME, 0);
 	}
@@ -481,7 +480,7 @@ void VCellIDASolver::idaSolve(void* ida_mem, bool bPrintProgress, FILE* outputFi
 	realtype Time = STARTING_TIME;
 
 	// write initial conditions
-	writeData(Time, y, outputFile);
+	writeData(Time, outputFile);
 	
 	double percentile=0.00;
 	double increment =0.01;
@@ -495,8 +494,8 @@ void VCellIDASolver::idaSolve(void* ida_mem, bool bPrintProgress, FILE* outputFi
 			}			
 			
 			double tstop = min(ENDING_TIME, Time + 2 * maxTimeStep + (1e-15));
-			IDASetStopTime(ida_mem, tstop);
-			int returnCode = IDASolve(ida_mem, ENDING_TIME, &Time, y, yp, IDA_ONE_STEP_TSTOP);
+			IDASetStopTime(solver, tstop);
+			int returnCode = IDASolve(solver, ENDING_TIME, &Time, y, yp, IDA_ONE_STEP_TSTOP);
 			iterationCount++;				
 
 			// save data if return IDA_TSTOP_RETURN (meaning reached end of time or max time step 
@@ -510,7 +509,7 @@ void VCellIDASolver::idaSolve(void* ida_mem, bool bPrintProgress, FILE* outputFi
 						sprintf(msg, "output exceeded %ld bytes\n", MaxFileSizeBytes);
 						throw Exception(msg);
 					}
-					writeData(Time, y, outputFile);
+					writeData(Time, outputFile);
 					if (bPrintProgress) {
 						printProgress(Time, percentile, increment);
 					}
@@ -535,14 +534,14 @@ void VCellIDASolver::idaSolve(void* ida_mem, bool bPrintProgress, FILE* outputFi
 				}
 
 				double tstop = min(sampleTime, Time + 2 * maxTimeStep + (1e-15));
-				IDASetStopTime(ida_mem, tstop);
-				int returnCode = IDASolve(ida_mem, sampleTime, &Time, y, yp, IDA_NORMAL_TSTOP);
+				IDASetStopTime(solver, tstop);
+				int returnCode = IDASolve(solver, sampleTime, &Time, y, yp, IDA_NORMAL_TSTOP);
 				iterationCount++;					
 						
 				// if return IDA_SUCCESS, this is an intermediate result, continue without saving data.
 				if (returnCode == IDA_TSTOP_RETURN || returnCode == IDA_SUCCESS) {
 					if (Time == sampleTime) {
-						writeData(Time, y, outputFile);
+						writeData(Time, outputFile);
 						if (bPrintProgress) {
 							printProgress(Time, percentile, increment);
 						}
@@ -558,8 +557,8 @@ void VCellIDASolver::idaSolve(void* ida_mem, bool bPrintProgress, FILE* outputFi
 }
 
 
-// override writeData, since y values need to be transformed to the original variables.
-void VCellIDASolver::writeData(double currTime, N_Vector y, FILE* outputFile) {
+// override updateTempRowData, since y values need to be transformed to the original variables.
+void VCellIDASolver::updateTempRowData(double currTime) {
 	tempRowData[0] = currTime; 
 	for (int i = 0; i < NEQ; i ++) {
 		tempRowData[i + 1] = 0;
@@ -567,13 +566,4 @@ void VCellIDASolver::writeData(double currTime, N_Vector y, FILE* outputFile) {
 			tempRowData[i + 1] += inverseTransformMatrix[i][j] * NV_Ith_S(y, j);
 		}
 	}	
-	odeResultSet->addRow(tempRowData);
-
-	if (outputFile != 0) {
-		fprintf(outputFile, "%0.17E", tempRowData[0]); 
-		for (int i = 1; i < NEQ+1; i++) { 
-			fprintf(outputFile, "\t%0.17E", tempRowData[i]); 			
-		} 
-		fprintf(outputFile, "\n");
-	}
 }

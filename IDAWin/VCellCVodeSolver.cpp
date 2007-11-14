@@ -70,6 +70,8 @@ VCellCVodeSolver::VCellCVodeSolver() : VCellSundialsSolver() {
 }
 
 VCellCVodeSolver::~VCellCVodeSolver() {
+	CVodeFree(&solver);
+
 	for (int i = 0; i < NEQ; i ++) {
 		delete rateExpressions[i];
 	}
@@ -94,6 +96,9 @@ Input format: (NUM_EQUATIONS must be the last parameter before VARIABLES)
 */
 void VCellCVodeSolver::readInput(istream& inputstream) { 
 	try {
+		if (solver != 0) {
+			throw "readInput should only be called once";
+		}
 		string name;
 		while (true) {
 			inputstream >> name;
@@ -259,13 +264,8 @@ void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* out
 		checkStopRequested(STARTING_TIME, 0);
 	}
 
-	if (outputFile != 0) {	
-		//  Print header...
-		for (int i = 0; i < odeResultSet->getNumColumns(); i++) {
-			fprintf(outputFile, "%s:", odeResultSet->getColumnName(i).data());
-		}
-		fprintf(outputFile, "\n");
-	}
+	writeFileHeader(outputFile);
+
 	// clear data in result set before solving
 	odeResultSet->clearData();
 
@@ -279,19 +279,24 @@ void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* out
 		NV_Ith_S(y, i) = initialConditionExpressions[i]->evaluateVector(paramValues);		
 	}		
 
+	int flag = 0;
 	int ToleranceType = CV_SS;
-	void* cvode_mem = CVodeCreate(CV_BDF, CV_NEWTON);
-	if (cvode_mem == 0) {
-		throw "Out of memory";
+	if (solver == 0) {
+		solver = CVodeCreate(CV_BDF, CV_NEWTON);
+		if (solver == 0) {
+			throw "Out of memory";
+		}
+		flag = CVodeMalloc(solver, RHS_callback, STARTING_TIME, y, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
+	} else {
+		flag = CVodeReInit(solver, RHS_callback, STARTING_TIME, y, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
 	}
-	int flag = CVodeMalloc(cvode_mem, RHS_callback, STARTING_TIME, y, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
 	checkCVodeFlag(flag);
-	CVodeSetFdata(cvode_mem, this);
-	flag = CVDense(cvode_mem, NEQ);
+	CVodeSetFdata(solver, this);
+	flag = CVDense(solver, NEQ);
 	checkCVodeFlag(flag);
 
 	// write intial conditions
-	writeData(Time, y, outputFile);
+	writeData(Time, outputFile);
 
 	double percentile=0.00;
 	double increment =0.01;
@@ -305,8 +310,8 @@ void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* out
 			}								
 			
 			double tstop = min(ENDING_TIME, Time + 2 * maxTimeStep + (1e-15));
-			CVodeSetStopTime(cvode_mem, tstop);
-			int returnCode = CVode(cvode_mem, ENDING_TIME, y, &Time, CV_ONE_STEP_TSTOP);
+			CVodeSetStopTime(solver, tstop);
+			int returnCode = CVode(solver, ENDING_TIME, y, &Time, CV_ONE_STEP_TSTOP);
 			iterationCount++;
 
 			// save data if return CV_TSTOP_RETURN (meaning reached end of time or max time step 
@@ -320,7 +325,7 @@ void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* out
 						sprintf(msg, "output exceeded maximum %ld bytes", MaxFileSizeBytes);
 						throw Exception(msg);
 					}
-					writeData(Time, y, outputFile);
+					writeData(Time, outputFile);
 					if (bPrintProgress) {
 						printProgress(Time, percentile, increment);
 					}
@@ -345,14 +350,14 @@ void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* out
 				}
 
 				double tstop = min(sampleTime, Time + 2 * maxTimeStep + (1e-15));
-				CVodeSetStopTime(cvode_mem, tstop);
-				int returnCode = CVode(cvode_mem, sampleTime, y, &Time, CV_NORMAL_TSTOP);
+				CVodeSetStopTime(solver, tstop);
+				int returnCode = CVode(solver, sampleTime, y, &Time, CV_NORMAL_TSTOP);
 				iterationCount++;	
 
 				// if return CV_SUCCESS, this is an intermediate result, continue without saving data.
 				if (returnCode == CV_TSTOP_RETURN || returnCode == CV_SUCCESS) {
 					if (Time == sampleTime) {
-						writeData(Time, y, outputFile);
+						writeData(Time, outputFile);
 						if (bPrintProgress) {
 							printProgress(Time, percentile, increment);
 						}
@@ -365,5 +370,5 @@ void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* out
 			}
 		}
 	}	
-	CVodeFree(&cvode_mem);
+	
 }

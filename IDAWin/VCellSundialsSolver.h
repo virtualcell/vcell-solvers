@@ -40,7 +40,9 @@ protected:
 	// 0 ~ N-1 : equations
 	Expression** initialConditionExpressions; 
 	SymbolTable* initialConditionSymbolTable;
-	OdeResultSet* odeResultSet;
+	OdeResultSet* odeResultSet;		// mainly for parameter optimization use but it also stores column names
+
+	void* solver;	// the memory for solver
 
 	int NEQ;
 	int NPARAM;
@@ -51,13 +53,16 @@ protected:
 	long keepEvery;
 	double maxTimeStep;		
 	vector<double> outputTimes;
-	double* tempRowData;
+	double* tempRowData; // data for current time to be written to output file and to be added to odeResultSet
 	
 	// 0 ~ NAPRAM-1 : parameter names;
 	vector<string> paramNames;
 
 	N_Vector y;	
-	virtual void writeData(double currTime, N_Vector y, FILE* outputFile);
+	void writeData(double currTime, FILE* outputFile);
+	virtual void updateTempRowData(double currTime);
+	void writeFileData(FILE* outputFile);
+	void writeFileHeader(FILE* outputFile);
 	void printProgress(double currTime, double& percentile, double increment);
 };
 

@@ -13,7 +13,7 @@ public:
 	SymbolTable* getSymbolTable() { return rhsSymbolTable;}	
 
 protected:
-	void writeData(double currTime, N_Vector y, FILE* outputFile);
+	void updateTempRowData(double currTime);
 
 private:
 	Expression** rhsExpressions;  // can be rate expression in ODE case or RHS expression in DAE case
@@ -28,8 +28,8 @@ private:
 
 	int Residual(realtype t, N_Vector y, N_Vector yp, N_Vector residual);	
 	static int Residual_callback(realtype t, N_Vector y, N_Vector yp, N_Vector residual, void *rdata);
-	void* initIDA(double* paramValues);
-	void idaSolve(void* ida_mem, bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long));
+	void initIDA(double* paramValues);
+	void idaSolve(bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long));
 };
 
 #endif
