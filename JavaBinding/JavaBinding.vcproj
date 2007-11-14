@@ -31,7 +31,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ExpressionParser.lib IDAWin.lib Optimization.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib sundials_ida.lib cfsqp.lib"
+				AdditionalDependencies="sundials.lib sundials_nvecserial.lib sundials_cvode.lib sundials_ida.lib cfsqp.lib"
 				OutputFile="$(OutDir)/JavaBinding.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\IDAWin;..\fsqp;..\sundials\lib;..\Optimization\Debug;..\IDAWin\Debug;..\ExpressionParser\Debug"
@@ -64,13 +64,13 @@
 			Name="Release|Win32"
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
-			ConfigurationType="1"
+			ConfigurationType="2"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="..\JNI\Win32\include\win32;..\JNI\Win32\include;..\Optimization;..\IDAWin;..\sundials\src;..\sundials\include;..\ExpressionParser"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="4"
-				UsePrecompiledHeader="3"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="3"/>
@@ -78,8 +78,10 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="sundials.lib sundials_nvecserial.lib sundials_cvode.lib sundials_ida.lib cfsqp.lib"
 				OutputFile="$(OutDir)/JavaBinding.exe"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\IDAWin;..\fsqp;..\sundials\lib;..\Optimization\Debug;..\IDAWin\Debug;..\ExpressionParser\Debug"
 				GenerateDebugInformation="TRUE"
 				SubSystem="1"
 				OptimizeReferences="2"
