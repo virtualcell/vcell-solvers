@@ -44,11 +44,12 @@ void StochVarContext::updateCurr()
  *Input para: double, time for the process to take place 
  *            int, position in the indexed tree
  */
-Jump::Jump(double time, int nd)
+Jump::Jump(double time, int nodeIdx, int nameIdx)
 {
     tau = time;
     propensity = 0;
-	nodeIndex = nd;
+	nodeIndex = nodeIdx;
+	nameIndex = nameIdx;
 	log_rand = 1.0;
 
 	varContextList.erase(varContextList.begin(), varContextList.end());
@@ -64,6 +65,7 @@ Jump::Jump()
     tau = 0;
     propensity = 0;
 	nodeIndex = 0;
+	nameIndex = 0;
 	log_rand = 1.0;
 	varContextList.erase(varContextList.begin(), varContextList.end());
 	jumpDependents.erase(jumpDependents.begin(), jumpDependents.end());
@@ -109,6 +111,15 @@ void Jump::setNode(int idx)
 {
 	nodeIndex = idx;
 }//end of method setNode()
+
+/*
+ *Set the jump process's index in listOfProcessNames.
+ *Input para: int, the index in the listOfProcessNames
+ */
+void Jump::setNameIndex(int idx)
+{
+	nameIndex = idx;
+}//end of method setNameIndex()
 
 /*
  *Set random number to calculate tau.

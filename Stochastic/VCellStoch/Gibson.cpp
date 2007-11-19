@@ -129,7 +129,8 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 				infile >> name >> name;// "process name"
 				//find the process in listOfProcesses using it's name
 				idx=getProcessIndex(name);
-				
+				//set the process name index, so that we get find its name later.
+				listOfProcesses[idx]->setNameIndex(idx);
 				infile >> str;// "Propensity"
 				//read expression from fstream
 				char exp[2000];
@@ -277,6 +278,12 @@ int Gibson::core()
 		}
 		currvals[varLen] = simtime;
 		p = jump->getProbabilityRate(currvals);
+		//amended Oct 11th, 2007. Stop the simulation and send error message back if 
+		//anyone of the propensity functions is negtive.
+		if(p < 0){
+			cerr << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(jump->getNameIndex()) <<" turned to be a negtive value. Simulation abort!" << endl;
+			exit(1);
+		}
 		//amended May 17th,2007 we can not take the first time random number to be 0.
 		//Otherwise, there is a situation that no previous random number to be reused.
 		do
@@ -339,6 +346,12 @@ int Gibson::core()
 			//update the jump that occured
 			double r = getRandomUniform();
 			p = event->getProbabilityRate(currvals);
+			//amended Oct 11th, 2007. Stop the simulation and send error message back if 
+			//anyone of the propensity functions is negtive.
+			if(p < 0){
+				cerr << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(event->getNameIndex()) <<" turned to be a negtive value. Simulation abort!" << endl;
+				exit(1);
+			}
 			//amended May 17th. The previous sentence will cause the time of a process stuck in double_infinity when r<=0
 			if(r>0)
 			{
@@ -359,6 +372,12 @@ int Gibson::core()
 				Jump *dJump = event->getDependent(i);
 				double p_old = dJump->getOldProbabilityRate();
 				double p_new = dJump->getProbabilityRate(currvals);
+				//amended Oct 11th, 2007. Stop the simulation and send error message back if 
+				//anyone of the propensity functions is negtive.
+				if(p_new < 0){
+					cerr << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(dJump->getNameIndex()) <<" turned to be a negtive value. Simulation abort!" << endl;
+					exit(1);
+				}
 				double tau = dJump->getTime();
 				//amended May 17th. to make sure that tau is a finite double 
 				if(tau != double_infinity && (-tau != double_infinity) && tau == tau){
