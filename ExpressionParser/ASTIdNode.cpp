@@ -43,6 +43,9 @@ string ASTIdNode::infixString(int lang, NameScope* nameScope)
 }
 
 void ASTIdNode::getStackElements(vector<StackElement>& elements) {
+	if (symbolTableEntry == null){
+		throw ExpressionException("tryin to evaluate unbound identifier '" + infixString(LANGUAGE_DEFAULT, 0)+"'");
+	}	
 	elements.push_back(StackElement(symbolTableEntry->getValueProxy(), symbolTableEntry->getIndex()));
 }
 

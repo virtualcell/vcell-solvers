@@ -681,6 +681,11 @@ double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* l
 				MembraneElement *me = pMembraneElement + pVolumeElement[index].adjacentMembraneIndexes[i];
 				VolumeVarContext* anotherVarContext = me->feature->getVolumeVarContext((VolumeVariable*)var);
 
+				if (anotherVarContext == 0) {
+					char errmsg[128];
+					sprintf(errmsg, "Variable '%s' doesn't exist in inside compartment '%s', so jump condition can't be computed.", var->getName().c_str(), me->feature->getName().c_str());
+					throw errmsg;
+				}
 				double inFlux, outFlux;
 				sim->advanceTimeOn();
 				anotherVarContext->getFlux(me, &inFlux, &outFlux);

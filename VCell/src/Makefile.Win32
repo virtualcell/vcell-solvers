@@ -3,21 +3,28 @@
 # All rights reserved.
 #
 CC = cl
-CPPFLAGS =	/nologo /c /GX /Ox /G6 /GR /DWIN32 /DUSE_MESSAGING /MT /D_WIN32_WINNT=0x2000 /I..\..\SonicCClient\Win32\include /I..\..\SonicCClient\Win32\include\CPP \
-			/I../../ExpressionParser /I..\include /I..\..\zlib
+CPPFLAGS =	/nologo /c /GX /Ox /G6 /GR /DWIN32  /MT /D_WIN32_WINNT=0x2000 /I../../ExpressionParser /I..\include /I..\..\zlib
 
-!ifdef VC60
-CPPFLAGS = $(CPPFLAGS) /DVC60 
-TARGET_LIB=	vcellWin32_VC60.lib
-OBJDIR = .\Win32_VC60
-!else
+!ifdef NO_MESSAGING
 CPPFLAGS = $(CPPFLAGS)
+TARGET_LIB=	vcellWin32_NoMessaging.lib
+OBJDIR = .\Win32_NoMessaging
+TARGET_STANDALONE = FiniteVolumeNoMessaging.exe
+LIBS = Ws2_32.lib user32.lib advapi32.lib ..\..\IFortran\mkl_c.lib ..\..\ExpressionParser\ExpParserMT.lib \
+	..\..\PCGPack\pcgpack_dbl.lib ..\..\qhull\qhull.lib $(TARGET_LIB) $(TARGET_FORLIB) ..\..\zlib\zlib.lib \
+	..\..\zip\zip32.lib ..\..\unzip\\unzip32.lib /link /NODEFAULTLIB:LIBCD /NODEFAULTLIB:LIBC /LIBPATH:..\..\IFortran\
+!else
+CPPFLAGS = $(CPPFLAGS) /DUSE_MESSAGING /I..\..\SonicCClient\Win32\include /I..\..\SonicCClient\Win32\include\CPP
 TARGET_LIB=	vcellWin32.lib
 OBJDIR = .\Win32
+TARGET_STANDALONE = FiniteVolume.exe
+LIBS = Ws2_32.lib user32.lib advapi32.lib ..\..\IFortran\mkl_c.lib ..\..\ExpressionParser\ExpParserMT.lib \
+	..\..\PCGPack\pcgpack_dbl.lib ..\..\qhull\qhull.lib $(TARGET_LIB) $(TARGET_FORLIB) ..\..\zlib\zlib.lib \
+	..\..\zip\zip32.lib ..\..\unzip\\unzip32.lib ..\..\SonicCClient\win32\lib\libsmq.lib \
+	..\..\SonicCClient\win32\lib\libsmqj.lib /link /NODEFAULTLIB:LIBCD /NODEFAULTLIB:LIBC /LIBPATH:..\..\IFortran\
 !endif
 
 TARGET_FORLIB = pcgwrapper.lib
-TARGET_STANDALONE = FiniteVolume.exe
 
 FC= ifort
 FOPTIONS = /O3 /Qprec-div- /QxN /compile_only /MT /nologo /names:lowercase
