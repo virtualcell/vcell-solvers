@@ -75,12 +75,10 @@ bool AlgebraicSystem::solveSystem()
   int i = 0;
 	do{
 		count++;
-		//	cout<<"numIterations = "<<count<<endl;
-		//            printf("numIterations =%d\n",count);
-		//	for(i=0; i<getDimension(); i++){
-		//	    cout<<"x("<<i<<")= "<<getX(i)<<endl;
-		//            printf("x(%d) = %35.30lg\n",i,getX(i));
-		//	}
+		/*cout << "numiterations = " << count << endl;
+		for(i = 0; i < dimension; i ++){
+			cout << "x(" << i << ")= " << x[i] << endl;
+		}*/
 		diff = 0;
 		updateMatrix();
 		if(solveGauss()){
@@ -93,15 +91,14 @@ bool AlgebraicSystem::solveSystem()
 				}
 			}
 		}else{
-			cout << "Matrix is singular" << endl;
+			throw "AlgebraicSystem::solveSystem() : Matrix is singular";
 			return false;
 		}
 	}while((tolerance < diff)&&(count<100));
-	if(tolerance>=diff){
-	//     cout << "Matrix is solved, numIterations in solveGauss is "<< count << endl;
+	if(tolerance>=diff){	
 		return true;
 	}else{
-		cout << "Iterations do not converge"<<endl;
+		throw "AlgebraicSystem::solveSystem() : Iterations do not converge";
 		return false; 
 	}
 }

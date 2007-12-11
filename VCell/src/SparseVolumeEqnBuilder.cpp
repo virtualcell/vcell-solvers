@@ -21,6 +21,8 @@
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/VCellModel.h>
 #include <assert.h>
+#include <sstream>
+using namespace std;
 
 static double epsilon = 1e-10;    // zero diffusion threshold at 1e-10 micron^2/second
 
@@ -682,9 +684,9 @@ double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* l
 				VolumeVarContext* anotherVarContext = me->feature->getVolumeVarContext((VolumeVariable*)var);
 
 				if (anotherVarContext == 0) {
-					char errmsg[128];
-					sprintf(errmsg, "Variable '%s' doesn't exist in inside compartment '%s', so jump condition can't be computed.", var->getName().c_str(), me->feature->getName().c_str());
-					throw errmsg;
+					stringstream ss;
+					ss << "Variable '" << var->getName() << "' doesn't exist in inside compartment '" << me->feature->getName() << "', so jump condition can't be computed.";
+					throw ss.str();
 				}
 				double inFlux, outFlux;
 				sim->advanceTimeOn();
