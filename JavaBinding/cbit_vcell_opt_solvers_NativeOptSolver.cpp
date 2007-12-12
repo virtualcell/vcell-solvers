@@ -252,7 +252,7 @@ jobject nativeSolve(int solverType, JNIEnv *jniEnv, jobject objNativeOptSolver,
 	} catch (Exception& ex) {
 		jclass newExcCls = jniEnv->FindClass("java/lang/Exception");
 		jniEnv->ThrowNew(newExcCls, ex.getMessage().c_str());
-	} catch (char* errMsg) {
+	} catch (const char* errMsg) {
 		jclass newExcCls = jniEnv->FindClass("java/lang/Exception");
 		jniEnv->ThrowNew(newExcCls, errMsg);
 	} catch (string& errMsg) {

@@ -71,8 +71,11 @@ JNIEXPORT jobject JNICALL Java_cbit_vcell_solvers_NativeIDASolver_nativeSolve
 	} catch (Exception& ex) {
 		jclass newExcCls = env->FindClass("java/lang/Exception");
 		env->ThrowNew(newExcCls, ex.getMessage().c_str());
+	} catch (const char* ex) {
+		jclass newExcCls = env->FindClass("java/lang/Exception");
+		env->ThrowNew(newExcCls, ex);
 	} catch (...) {
 		jclass newExcCls = env->FindClass("java/lang/Exception");
-		env->ThrowNew(newExcCls, "Unknown exception");
+		env->ThrowNew(newExcCls, "unknown exception");
 	}
 }
