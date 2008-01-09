@@ -15,6 +15,7 @@ void SimpleCharStream::init(istream* dstream, int startline,  int startcolumn, i
 	prevCharIsLF = false;	
 	maxNextCharInd = 0;
 	inBuf = 0;
+	tabSize = 8;
 
 	inputStream = dstream;
     line = startline;
@@ -185,7 +186,7 @@ void SimpleCharStream::UpdateLineColumn(char c)
            break;
         case '\t' :
            column--;
-           column += (8 - (column & 07));
+           column += (tabSize - (column % tabSize));
            break;
         default :
            break;
