@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------
-# $Revision: 1.5 $
-# $Date: 2006/10/11 16:34:20 $
+# $Revision: 1.4 $
+# $Date: 2006/08/11 23:03:11 $
 # -----------------------------------------------------------------
 # Programmer(s): Radu Serban and Aaron Collier @ LLNL
 # -----------------------------------------------------------------
@@ -9,35 +9,34 @@
 # All rights reserved.
 # For details, see the LICENSE file.
 # -----------------------------------------------------------------
-# Makefile for SHARED module
+# Makefile for IDA module
 #
-# src/sundials/Makefile.  Generated from Makefile.in by configure.
+# src/ida/Makefile.  Generated from Makefile.in by configure.
 # -----------------------------------------------------------------
 
 CC       = gcc
-CFLAGS   = -O2 -fPIC -fexceptions
+CFLAGS   = -O2 -fPIC -fexceptions 
 LDFLAGS  = 
-LIBS     = -lm 
-
-INCLUDES = -I.. -I../../include
+LIBS     = -lm
 
 LIBTOOL = ar cru
 LIBDIR = ../../lib
 
-SUNDIALS_LIB = libsundials.a
-SUNDIALS_OBJ_FILES = sundials_band.o sundials_dense.o sundials_iterative.o sundials_math.o sundials_nvector.o sundials_smalldense.o sundials_spgmr.o sundials_spbcgs.o sundials_sptfqmr.o
+INCLUDES = -I.. -I../../include
+
+IDA_LIB       = libsundials_ida.a
+IDA_OBJ_FILES = ida.o ida_ic.o ida_io.o ida_dense.o ida_band.o ida_spils.o ida_spbcgs.o ida_spgmr.o ida_sptfqmr.o ida_bbdpre.o
 
 .SUFFIXES:		.c.o
 
 .c.o:	
 	$(CC) -c $(CFLAGS) $(INCLUDES) $<
+	
+all: $(IDA_LIB)
 
-all: $(SUNDIALS_LIB)
-
-$(SUNDIALS_LIB): $(SUNDIALS_OBJ_FILES)
-	$(LIBTOOL) $@ $(SUNDIALS_OBJ_FILES)
-	cp $@ $(LIBDIR)	
-	ranlib $(LIBDIR)/$@
+$(IDA_LIB): $(IDA_OBJ_FILES)
+	$(LIBTOOL) $@ $(IDA_OBJ_FILES)
+	cp $@ $(LIBDIR)
 
 clean:
-	rm *.o $(SUNDIALS_LIB)
+	rm *.o $(IDA_LIB)

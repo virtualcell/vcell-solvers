@@ -15,7 +15,7 @@
 # -----------------------------------------------------------------
 
 CC       = gcc
-CFLAGS   = -O2 -fexceptions
+CFLAGS   = -O2 -fPIC -fexceptions
 LDFLAGS  = 
 LIBS     = -lm 
 

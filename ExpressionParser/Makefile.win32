@@ -2,12 +2,13 @@
 # (C) Copyright University of Connecticut Health Center 2001.
 # All rights reserved.
 #
+CPPFLAGS =	/O2 /DWIN32 /GR /EHsc
 !ifndef MULTITHREADED
-CPPFLAGS =	/GX /O2 /G6 /DWIN32 /GR /EHsc
+CPPFLAGS =	$(CPPFLAGS)
 TARGET= ExpParser.lib
 OBJDIR = .\Win32
 !else
-CPPFLAGS =	/GX /O2 /G6 /DWIN32 /GR /EHsc /MT
+CPPFLAGS =	$(CPPFLAGS) /MT
 TARGET= ExpParserMT.lib
 OBJDIR = .\Win32MT
 !endif

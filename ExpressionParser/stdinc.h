@@ -11,7 +11,10 @@
 using namespace std;
 
 #define null 0
+
+#ifndef MACOSX
 #define round(a) (floor((a)+0.5))
+#endif
 
 #ifndef int64
 typedef long long int64;

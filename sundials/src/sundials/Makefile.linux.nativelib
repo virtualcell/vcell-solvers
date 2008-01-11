@@ -37,7 +37,6 @@ all: $(SUNDIALS_LIB)
 $(SUNDIALS_LIB): $(SUNDIALS_OBJ_FILES)
 	$(LIBTOOL) $@ $(SUNDIALS_OBJ_FILES)
 	cp $@ $(LIBDIR)	
-	ranlib $(LIBDIR)/$@
 
 clean:
 	rm *.o $(SUNDIALS_LIB)

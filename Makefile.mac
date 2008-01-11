@@ -1,0 +1,17 @@
+default: all
+all:
+	cd ExpressionParser ; make -f Makefile.mac 
+	cd fsqp ; make -f Makefile.mac
+	cd sundials/src; make -f Makefile.mac
+	cd IDAWin; make -f Makefile.mac
+	cd Optimization; make -f Makefile.mac
+	cd JavaBinding; make -f Makefile.mac
+	
+clean:
+	cd ExpressionParser ; make -f Makefile.mac clean
+	cd fsqp ; make -f Makefile.mac clean
+	cd sundials/src; make -f Makefile.mac clean
+	cd IDAWin; make -f Makefile.mac clean
+	cd Optimization; make -f Makefile.mac clean
+	cd JavaBinding; make -f Makefile.mac clean
+	

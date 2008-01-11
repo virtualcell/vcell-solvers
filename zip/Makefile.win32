@@ -30,7 +30,7 @@ ASFLAGS=-c -coff -Cx
 # with the /KNOWEAS switch, you can build dual-mode MS-DOS/Win32 executables
 # by passing the -stub switch to the 32-bit linker to specify the 16-bit part.
 
-LD=link 
+LD=lib
 LDFLAGS= 
 #advapi32.lib
 
@@ -56,7 +56,7 @@ $(OBJDIR) :
     if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"
 
 $(ZIPLIB): $(OBJDIR) $(OBJZ) $(OBJI)
-	$(LD) -lib /out:$@  $(LDFLAGS) $(OBJZ) $(OBJI)
+	$(LD) /out:$@  $(LDFLAGS) $(OBJZ) $(OBJI)
 	
 .c{$(OBJDIR)}.obj :		
 	$(CC) -c $(CFLAGS) /Fo$@ $<

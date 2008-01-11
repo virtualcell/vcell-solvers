@@ -25,7 +25,6 @@ all: $(CVODE_LIB)
 $(CVODE_LIB): $(CVODE_OBJ_FILES)
 	$(LIBTOOL) $@ $(CVODE_OBJ_FILES)
 	cp $@ $(LIBDIR)	
-	ranlib $(LIBDIR)/$@
 
 clean:
 	rm *.o $(CVODE_LIB)

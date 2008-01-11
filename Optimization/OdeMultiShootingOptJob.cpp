@@ -59,10 +59,10 @@ OdeMultiShootingOptJob::OdeMultiShootingOptJob(int arg_numParameters, char** arg
 	Expression**  initialConditionExpressions = cvodeSolver->getInitialConditionExpressions();
 	for (int i = 0; i < numVariables; i ++) {	
 		double varInitGuess = initialConditionExpressions[i]->evaluateVector((double*)initGuess); // at t=0
-		if (abs(varInitGuess) < 1e-10) {
+		if (fabs(varInitGuess) < 1e-10) {
 			variableScales[i] = 1.0;
 		} else {
-			variableScales[i] = abs(varInitGuess);
+			variableScales[i] = fabs(varInitGuess);
 		}
 	}
 }

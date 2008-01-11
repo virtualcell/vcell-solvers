@@ -3,7 +3,7 @@
 # All rights reserved.
 #
 CC = cl
-CPPFLAGS =	/nologo /c /GX /Ox /G6 /GR /DWIN32  /MT /D_WIN32_WINNT=0x2000 /I../../ExpressionParser /I..\include /I..\..\zlib
+CPPFLAGS =	/nologo /c /Ox /GR /DWIN32  /MT /D_WIN32_WINNT=0x2000 /I../../ExpressionParser /I..\include /I..\..\zlib
 
 !ifdef NO_MESSAGING
 CPPFLAGS = $(CPPFLAGS)
