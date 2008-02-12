@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ODEMULTISHOOTINGOPTJOB_H
+#define ODEMULTISHOOTINGOPTJOB_H
 
 #include "Constraint.h"
 #include "CFSQPSolver.h"
@@ -80,3 +81,5 @@ private:
 	void computeGradObjectiveMask();
 	void createConstraintList(const char* const* constraintExpressions, const char* const* paramNames);
 };
+
+#endif

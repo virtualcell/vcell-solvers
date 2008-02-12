@@ -1,0 +1,68 @@
+#
+# (C) Copyright University of Connecticut Health Center 2001.
+# All rights reserved.
+#
+
+CC = g++
+CPPFLAGS =	-DLINUX -fPIC -O2 -fexceptions -I.
+
+ifndef MULTITHREADED
+TARGET= libExpParser.a
+else
+CPPFLAGS =	$(CPPFLAGS) -pthread
+TARGET= libExpParserMT.a
+endif
+
+LIBTOOL = ar -cru
+
+.SUFFIXES:	.cpp .o
+
+.cpp.o :		
+	$(CC) -c $(CPPFLAGS) $<
+
+default all: $(TARGET)
+
+CPPOBJECTS = ASTAddNode.o \
+	ASTAndNode.o \
+	ASTExpression.o \
+	ASTFloatNode.o \
+	ASTFuncNode.o \
+	ASTIdNode.o \
+	ASTInvertTermNode.o \
+	ASTMinusTermNode.o \
+	ASTMultNode.o \
+	ASTNotNode.o \
+	ASTOrNode.o \
+	ASTPowerNode.o \
+	ASTRelationalNode.o \
+	DivideByZeroException.o \
+	Exception.o \
+	Expression.o \
+	ExpressionBindingException.o \
+	ExpressionException.o \
+	ExpressionParser.o \
+	ExpressionParserTokenManager.o \
+	ExpressionTest.o \
+	FunctionDomainException.o \
+	FunctionRangeException.o \
+	IOException.o \
+	JJTExpressionParserState.o \
+	MathUtil.o \
+	ParseException.o \
+	ParserException.o \
+	RuntimeException.o \
+	SimpleCharStream.o \
+	SimpleNode.o \
+	SimpleSymbolTable.o \
+	SimpleSymbolTableEntry.o \
+	StackMachine.o \
+	Token.o  \
+	ValueProxy.o
+
+$(TARGET):	$(CPPOBJECTS)	
+	$(LIBTOOL) $@ $(CPPOBJECTS) 
+	ranlib $@
+	
+clean:	
+	rm *.o
+	rm $(TARGET)

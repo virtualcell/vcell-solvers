@@ -1,0 +1,17 @@
+default: all
+all:
+	cd ExpressionParser ; make -f Makefile.linux.nativelib
+	cd fsqp ; make -f Makefile.linux.nativelib
+	cd sundials/src; make -f Makefile.linux.nativelib
+	cd IDAWin; make -f Makefile.linux.nativelib
+	cd Optimization; make -f Makefile.linux.nativelib
+	cd JavaBinding; make -f Makefile.linux.nativelib
+	
+clean:
+	cd ExpressionParser ; make -f Makefile.linux.nativelib clean
+	cd fsqp ; make -f Makefile.linux.nativelib clean
+	cd sundials/src; make -f Makefile.linux.nativelib clean
+	cd IDAWin; make -f Makefile.linux.nativelib clean
+	cd Optimization; make -f Makefile.linux.nativelib clean
+	cd JavaBinding; make -f Makefile.linux.nativelib clean
+	
