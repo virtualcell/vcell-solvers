@@ -86,10 +86,9 @@ void handlePCGExceptions(int errorCode, int additional)
 {
 	switch (errorCode){
 		case 1: {
-			throw "PCG Error 1: maximum iterations reached without satisfying stopping criterion";
+			throw "linear solver error 1: maximum iterations reached without satisfying stopping criterion, try reducing time step";
 		}		
-		case 2: {
-			
+		case 2: {			
 			char msg[1000];
 			sprintf(msg,"PCG Error 2: insufficient workspace for iterative method subroutine, additional (%ld) needed",(long)additional);
 			throw msg;
@@ -105,10 +104,10 @@ void handlePCGExceptions(int errorCode, int additional)
 			throw msg;
 		}		
 		case 5: {
-			throw "PCG Error 5: the incomplete factorization failed, zero pivot";
+			throw "linear solver error 5: the incomplete factorization failed, zero pivot, try refining mesh";
 		}
 		case 8: {
-			throw "PCG Error 8: the iteration is stagnant";
+			throw "linear solver error 8: the iteration is stagnant, try reducing time step";
 		}		
 		case 9: {
 			char msg[1000];
