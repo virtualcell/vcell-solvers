@@ -282,7 +282,7 @@ SimulationExpression* loadSimulation(ifstream& ifsInput, CartesianMesh* mesh) {
 			if (time_dependent_diffusion_flag == "true") {
 				bTimeDependent = true;
 			}			
-			SparseMatrixEqnBuilder* builder = new SparseVolumeEqnBuilder(volumeVar,mesh, bNoConvection);
+			SparseMatrixEqnBuilder* builder = new SparseVolumeEqnBuilder(volumeVar,mesh, bNoConvection, numSolveRegions, solveRegions);
 			PDESolver* pdeSolver = new SparseLinearSolver(volumeVar,builder,bTimeDependent);
 			sim->addSolver(pdeSolver);
 			sim->addVariable(volumeVar);
