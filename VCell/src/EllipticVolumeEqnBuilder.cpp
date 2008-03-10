@@ -434,7 +434,6 @@ bool EllipticVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexSta
 			computeLHS(index, Aii, numCols, columnIndices, columnValues, bSort);
 			if (Aii == 0) {
 				Aii = 1;
-				cout << "Note!!! Aii = 0 at point " << index << endl;
 			}
 			if (numCols > 0) {
 				if (bSort) {
@@ -452,7 +451,6 @@ bool EllipticVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexSta
 			computeLHS(globalIndex, Aii, numCols, columnIndices, columnValues, bSort);
 			if (Aii == 0) {
 				Aii = 1;
-				cout << "Note!!! Aii = 0 at point " << globalIndex << endl;
 			}
 			if (numCols > 0) {
 				// has to transfer all the global indices to local indices
