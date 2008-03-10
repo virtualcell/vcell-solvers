@@ -38,9 +38,7 @@ int unzip32(char* zipfile, char* file, char* exdir);
 SimTool* SimTool::instance = 0;
 
 static int NUM_TOKENS_PER_LINE = 4;
-//--------------------------------------------------------------
-// SimTool Class
-//--------------------------------------------------------------
+
 void SimTool::setModel(VCellModel* model) {
 	if (model == 0) {
 		throw "SimTool::setModel(), model can't be null";
@@ -514,14 +512,8 @@ void SimTool::start()
 				updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
             }
         }
-		while ((percentile+increment)*simEndTime < simulation->getTime_sec()){			  
-			if (bStopSimulation) {
-				return;
-			}
-			  
-            percentile+=increment;
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec()));	
- 		}
+		percentile = (simulation->getTime_sec() - startTime)/(simEndTime - startTime);
+		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec())); 		
 	}
 
 	if (bStopSimulation) {
@@ -545,92 +537,6 @@ void SimTool::start()
    }
    printf("SimTool::start(), status for MPI worker %d ending\n",rank);
 #endif
-}
-
-void SimTool::startSteady(double tolerance, double maxTime)
-{
-	if (bStopSimulation) {
-		return;
-	}
-
-	if (simulation == NULL) {
-		throw "NULL simulation";
-	}
-
-	if (bStoreEnable && (baseFileName == NULL || strlen(baseFileName) == 0)) {
-		throw "Invalid base file name for dataset";
-	}
-
-    //
-    // destroy any partial results from unfinished iterations
-    //
-    simulation->reset();
-    //
-    // store initial log if enabled
-    //
-	if (bStoreEnable){
-		if (simulation->getCurrIteration()==0){
-			ASSERTION(simulation->getTime_sec()==0.0);
-			clearLog();
-			updateLog(0.0, 0.0, 0);
-		}
-	}
-    double percentile=0.00;
-    double increment =0.10;
-    double startTime=simulation->getTime_sec();
-    //
-    // iterate up to but not including end time
-    //
-
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "steady state simulation started"));
-
-    double diff;
-	while (simulation->getTime_sec()<maxTime){
-		if (bStopSimulation) {
-			return;
-		}
-
-		simulation->iterate();
-		if (bStoreEnable){
-			if (simulation->getCurrIteration()%keepEvery==0){
-				updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
-			}
-		}
-        while ((startTime + ((percentile+increment)*(simEndTime-startTime))) < simulation->getTime_sec()){
-			if (bStopSimulation) {
-				return;
-			}
-			percentile+=increment;
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec()));	
-        }
-
-		diff = simulation->getMaxDifference();
-		if (diff < tolerance){
-			printf("steady state reached, max absolute difference = %lg\n", diff);
-			simulation->update();
-			showSummary(stdout);
-			if (bStoreEnable){
-				updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
-			}
-			return;
-		}
-		printf("iteration(%7ld), diff=%lg\n",(long)simulation->getCurrIteration(),diff);
-		simulation->update();
-	}
-
-	if (bStopSimulation) {
-		return;
-	} 
-
-	printf("MAX ITERATIONS EXCEEDED WITHOUT ACHIEVING STEADY STATE\n");
-	showSummary(stdout);
-	if (bStoreEnable){
-		updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
-	}
-
-	if (!bStopSimulation) {
-		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));
-	}
 }
 
 void SimTool::addHistogram(Histogram *histogram)

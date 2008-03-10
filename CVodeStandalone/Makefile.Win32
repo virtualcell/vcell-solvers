@@ -1,4 +1,4 @@
-CFLAGS = /GX /O2 /DWIN32 -I..\IDAWin -I..\ExpressionParser -I..\sundials\include -I..\sundials\src
+CFLAGS = /EHsc /O2 /DWIN32 -I..\IDAWin -I..\ExpressionParser -I..\sundials\include -I..\sundials\src
 
 LIBS =	..\sundials\lib\sundials.lib ..\sundials\lib\sundials_nvecserial.lib ..\sundials\lib\sundials_cvode.lib ..\IDAWin\vcellIDA.lib ..\ExpressionParser\ExpParser.lib
 

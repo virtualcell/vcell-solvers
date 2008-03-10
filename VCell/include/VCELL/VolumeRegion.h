@@ -25,12 +25,16 @@ public:
 	double  getVolume();
 	void setVolume(double newVolume);
     
+	void setNotClosed() { closure = false; }
+	void setBoundaryDirichlet() { bBoundaryDirichlet = true; }
+	bool isBoundaryDirichlet() { return bBoundaryDirichlet; }
 private:
 	void recompute();
 	Feature *feature;
 	vector<MembraneRegion*> membranes;
 	bool closure;     //denotes whether the region surface is closed
 	double volume;
+	bool bBoundaryDirichlet;
 };
 
 #endif

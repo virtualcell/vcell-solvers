@@ -24,7 +24,6 @@ public:
 	~SimTool();
 
 	virtual void start();
-	virtual void startSteady(double tolerance, double maxTime);
 	virtual void loadFinal();
 
 	void addHistogram(Histogram *histogram);

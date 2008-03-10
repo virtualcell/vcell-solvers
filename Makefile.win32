@@ -10,6 +10,7 @@ all:
 	cd JavaBinding && nmake -f Makefile.win32
 	cd PCGPack && nmake -f Makefile.win32
 	cd qhull && nmake -f Makefile.win32
+	cd qhull && nmake -f MakefileDebug.win32
 	cd Triangle && nmake -f Makefile.win32
 	cd unzip && nmake -f Makefile.win32
 	cd zlib && nmake -f Makefile.win32
@@ -31,6 +32,7 @@ clean:
 	cd JavaBinding && nmake -f Makefile.win32 clean
 	cd PCGPack && nmake -f Makefile.win32 clean
 	cd qhull && nmake -f Makefile.win32 clean
+	cd qhull && nmake -f MakefileDebug.win32 clean
 	cd Triangle && nmake -f Makefile.win32 clean
 	cd unzip && nmake -f Makefile.win32 clean
 	cd VCell\src && nmake -f Makefile.win32 clean

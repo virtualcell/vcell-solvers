@@ -22,6 +22,8 @@ public:
 
 	Mesh* getMesh() { return mesh; };
 
+	virtual bool isElliptic() { return false; }
+
 protected:
 	Variable   *var;
 	Mesh       *mesh;

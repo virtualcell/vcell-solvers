@@ -1,0 +1,25 @@
+CFLAGS =		/c /EHsc /O2 /DWIN32 /DUSE_VC_MEMORY_MANAGER  -I..\Optimization
+
+TARGETS=		cfsqp.lib
+
+.SUFFIXES:		.c.obj
+
+OBJDIR = .\Win32
+
+.c{$(OBJDIR)}.obj:	
+			cl /c $(CFLAGS) /Fo$@ $<
+
+default all:		$(TARGETS)
+
+COBJECTS =	 	$(OBJDIR)\cfsqp.obj	\
+			$(OBJDIR)\qld.obj		
+
+$(OBJDIR) :
+    if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"    
+			
+$(TARGETS):	$(OBJDIR)	$(COBJECTS)
+			lib $(COBJECTS) /out:$@
+
+
+clean:
+	del $(TARGETS) $(COBJECTS)

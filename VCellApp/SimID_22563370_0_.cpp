@@ -64,7 +64,9 @@ int vcellExit(int returnCode, char* returnMsg) {
 		if (returnCode != 0) {
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_FAILURE, returnMsg));
 		}
+#ifdef USE_MESSAGING
 		SimulationMessaging::getInstVar()->waitUntilFinished();
+#endif
 	}
 	return returnCode;
 }
@@ -79,7 +81,11 @@ int main(int argc, char *argv[])
 	int returnCode = 0;
 	string returnMsg;
 	try {
+#ifdef USE_MESSAGING
 		jint taskID = -1;
+#else
+		int taskID = -1;
+#endif
 		bool bSimZip = true;
 		for (int i = 1; i < argc; i ++) {
 			if (!strcmp(argv[i], "-nz")) {
@@ -106,6 +112,7 @@ int main(int argc, char *argv[])
 		if (taskID == -1) { // no messaging
 			SimulationMessaging::create();
 		} else {
+#ifdef USE_MESSAGING
 			char* broker = "tcp://code:2506";
 			char *smqusername = "serverUser";
 			char *password = "cbittech";
@@ -115,6 +122,7 @@ int main(int argc, char *argv[])
 			jint simKey = 22563370;
 			jint jobIndex = 0;
 			SimulationMessaging::create(broker, smqusername, password, qname, tname, vcusername, simKey, jobIndex, taskID);
+#endif
 		}
 		SimulationMessaging::getInstVar()->start(); // start the thread
 

@@ -1,10 +1,14 @@
 CC     = cl
-CCOPTS1 = /c /Ox /TP /EHsc  /I..\vcell\include
+CCOPTS1 = /c /Ox /TP /EHsc /D_CRT_SECURE_NO_DEPRECATE /I..\vcell\include
 
 !ifdef VCELL_DEBUG
 CCOPTS1 = $(CCOPTS1) /MTd
+TARGET = qhulld.lib
+OBJDIR = .\Win32d
 !else
 CCOPTS1 = $(CCOPTS1) /MT
+TARGET = qhull.lib
+OBJDIR = .\Win32
 !endif
 
 OBJS = $(OBJDIR)\user.obj $(OBJDIR)\global.obj $(OBJDIR)\stat.obj $(OBJDIR)\io.obj $(OBJDIR)\geom2.obj $(OBJDIR)\poly2.obj \
@@ -16,10 +20,7 @@ CFILES= unix.c qhull.c geom.c geom2.c global.c io.c mem.c merge.c poly.c \
         
 HFILES= user.h qhull.h qhull_a.h geom.h io.h mem.h merge.h poly.h qset.h stat.h
 
-TARGET = qhull.lib
 LIBTOOL = lib
-
-OBJDIR = .\Win32
 
 .SUFFIXES:	.c.obj
 

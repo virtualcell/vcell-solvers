@@ -18,6 +18,7 @@
 #include <VCELL/VolumeRegionEqnBuilder.h>
 #include <VCELL/SparseMatrixEqnBuilder.h>
 #include <VCELL/SparseVolumeEqnBuilder.h>
+#include <VCELL/EllipticVolumeEqnBuilder.h>
 #include <VCELL/MembraneEqnBuilderDiffusion.h>
 #include <VCELL/SparseLinearSolver.h>
 #include <VCELL/VarContext.h>
@@ -216,6 +217,32 @@ string trim(string& str) {
 	return str.substr(leftIndex, len);
 }
 
+int loadSolveRegions(CartesianMesh* mesh, string& line, int* solveRegions) {
+	int numVolumeRegions = mesh->getNumVolumeRegions();
+	istringstream instream(line);
+	int regionCount = 0;
+	while (true) {
+		string feature_name = "";
+		instream >> feature_name;					
+		if (feature_name == "") {
+			break;
+		}
+		for (int i = 0; i < numVolumeRegions; i++){
+			VolumeRegion *volRegion = mesh->getVolumeRegion(i);
+			Feature* feature = SimTool::getInstance()->getModel()->getFeature(feature_name);
+			if (feature == NULL) {
+				stringstream ss;
+				ss << "Feature '" << feature_name << "' doesn't exist!";
+				throw ss.str();
+			}
+			if (volRegion->getFeature()->getHandle() == (FeatureHandle)(0xff & feature->getHandle())){ 
+				solveRegions[regionCount++] = volRegion->getId();
+			}
+		}
+	}
+	return regionCount;
+}
+
 SimulationExpression* loadSimulation(ifstream& ifsInput, CartesianMesh* mesh) {
 	//cout << "loading simulation" << endl;
 	SimulationExpression* sim = new SimulationExpression(mesh);
@@ -236,11 +263,16 @@ SimulationExpression* loadSimulation(ifstream& ifsInput, CartesianMesh* mesh) {
 			continue;
 		} else if (nextToken == "VARIABLE_END") {
 			break;
-		} else if (nextToken == "VOLUME_PDE") {
-			bool bNoConvection = true;    // define symmflg = 0 (general) or 1 (symmetric)
+		} else if (nextToken == "VOLUME_PDE" || nextToken == "VOLUME_PDE_STEADY") {
+			bool bSteady = false;
+			if (nextToken == "VOLUME_PDE_STEADY") {
+				bSteady = true;
+			}
+
+			bool bNoConvection = true;
 			bool bTimeDependent = false;
 			string advectionflag, time_dependent_diffusion_flag;
-			ifsInput >> variable_name >> unit >> advectionflag >> time_dependent_diffusion_flag;
+			ifsInput >> variable_name >> unit >> time_dependent_diffusion_flag >> advectionflag;
 
 			string line;
 			getline(ifsInput, line);
@@ -250,29 +282,8 @@ SimulationExpression* loadSimulation(ifstream& ifsInput, CartesianMesh* mesh) {
 			int *solveRegions = NULL;
 
 			if (line.length() != 0) {
-				solveRegions = new int[numVolumeRegions];
-				istringstream instream(line);
-				int regionCount = 0;
-				while (true) {
-					string feature_name = "";
-					instream >> feature_name;					
-					if (feature_name == "") {
-						break;
-					}
-					for (int i = 0; i < numVolumeRegions; i++){
-						VolumeRegion *volRegion = mesh->getVolumeRegion(i);
-						Feature* feature = SimTool::getInstance()->getModel()->getFeature(feature_name);
-						if (feature == NULL) {
-							stringstream ss;
-							ss << "Feature '" << feature_name << "' doesn't exist!";
-							throw ss.str();
-						}
-						if (volRegion->getFeature()->getHandle() == (FeatureHandle)(0xff & feature->getHandle())){ 
-							solveRegions[regionCount++] = volRegion->getId();
-						}
-					}
-				}
-				numSolveRegions = regionCount;
+				solveRegions = new int[numVolumeRegions];				
+				numSolveRegions = loadSolveRegions(mesh, line, solveRegions);
 			}						
 			
 			VolumeVariable* volumeVar = new VolumeVariable(sizeX, sizeY, sizeZ, variable_name, unit);
@@ -282,7 +293,12 @@ SimulationExpression* loadSimulation(ifstream& ifsInput, CartesianMesh* mesh) {
 			if (time_dependent_diffusion_flag == "true") {
 				bTimeDependent = true;
 			}			
-			SparseMatrixEqnBuilder* builder = new SparseVolumeEqnBuilder(volumeVar,mesh, bNoConvection, numSolveRegions, solveRegions);
+			SparseMatrixEqnBuilder* builder = 0;
+			if (bSteady) {
+				builder = new EllipticVolumeEqnBuilder(volumeVar,mesh, numSolveRegions, solveRegions);
+			} else {
+				builder = new SparseVolumeEqnBuilder(volumeVar,mesh, bNoConvection, numSolveRegions, solveRegions);
+			}
 			PDESolver* pdeSolver = new SparseLinearSolver(volumeVar,builder,bTimeDependent);
 			sim->addSolver(pdeSolver);
 			sim->addVariable(volumeVar);
@@ -297,29 +313,8 @@ SimulationExpression* loadSimulation(ifstream& ifsInput, CartesianMesh* mesh) {
 			int *solveRegions = NULL;
 
 			if (line.size() != 0) {
-				solveRegions = new int[numVolumeRegions];
-				istringstream instream(line);
-				int regionCount = 0;
-				while (true) {
-					string feature_name = "";
-					instream >> feature_name;					
-					if (feature_name == "") {
-						break;
-					}
-					for (int i = 0; i < numVolumeRegions; i++){
-						VolumeRegion *volRegion = mesh->getVolumeRegion(i);
-						Feature* feature = SimTool::getInstance()->getModel()->getFeature(feature_name);
-						if (feature == NULL) {
-							stringstream ss;
-							ss << "Feature '" << feature_name << "' doesn't exist!";
-							throw ss.str();
-						}
-						if (volRegion->getFeature()->getHandle() == (FeatureHandle)(0xff & feature->getHandle())){ 
-							solveRegions[regionCount++] = volRegion->getId();
-						}
-					}
-				}
-				numSolveRegions = regionCount;
+				solveRegions = new int[numVolumeRegions];				
+				numSolveRegions = loadSolveRegions(mesh, line, solveRegions);
 			}					
 
 			VolumeVariable* volumeVar = new VolumeVariable(sizeX, sizeY, sizeZ, variable_name, unit);

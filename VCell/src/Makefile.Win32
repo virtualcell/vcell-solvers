@@ -3,7 +3,7 @@
 # All rights reserved.
 #
 CC = cl
-CPPFLAGS = /nologo /c /Ox /GR /DWIN32 /EHsc /MT /D_WIN32_WINNT=0x2000 /I../../ExpressionParser /I..\include /I..\..\zlib
+CPPFLAGS = /nologo /c /O2 /GR /DWIN32 /EHsc /D_CRT_SECURE_NO_DEPRECATE /MT /D_WIN32_WINNT=0x2000 /I../../ExpressionParser /I..\include /I..\..\zlib
 
 !ifdef NO_MESSAGING
 CPPFLAGS = $(CPPFLAGS)
@@ -54,7 +54,7 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\ContourVarContext.obj			\
 		$(OBJDIR)\ContourVariable.obj			\
 		$(OBJDIR)\DataSet.obj			\
-#		$(OBJDIR)\DomainPDEScheduler.obj		\
+		$(OBJDIR)\EllipticVolumeEqnBuilder.obj			\
 		$(OBJDIR)\EqnBuilder.obj			\
 #		$(OBJDIR)\EqnBuilderReactionDiffusionConvection.obj		\
 #		$(OBJDIR)\EqnBuilderReactionDiffusion.obj	\

@@ -6,6 +6,7 @@
 #include <Windows.h>
 #endif
 
+#include <VCELL/EllipticVolumeEqnBuilder.h>
 #include <VCELL/SparseVolumeEqnBuilder.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/Solver.h>
@@ -26,11 +27,9 @@ using namespace std;
 
 static double epsilon = 1e-10;    // zero diffusion threshold at 1e-10 micron^2/second
 
-static int GENERAL_MAX_NONZERO_PERROW[4] = {0, 3, 5, 7};
 static int TRIANGULAR_MAX_NONZERO_PERROW[4] = {0, 2, 3, 4};
-SparseVolumeEqnBuilder::SparseVolumeEqnBuilder(VolumeVariable *arg_species, CartesianMesh *arg_mesh, bool arg_bNoConvection, int arg_numSolveRegions, int* arg_solveRegions) : SparseMatrixEqnBuilder(arg_species, arg_mesh)
+EllipticVolumeEqnBuilder::EllipticVolumeEqnBuilder(VolumeVariable *arg_species, CartesianMesh *arg_mesh, int arg_numSolveRegions, int* arg_solveRegions) : SparseMatrixEqnBuilder(arg_species, arg_mesh)
 {	
-	bSymmetricStorage = arg_bNoConvection;
 	numSolveRegions = arg_numSolveRegions;
 	solveRegions = arg_solveRegions;
 
@@ -47,12 +46,16 @@ SparseVolumeEqnBuilder::SparseVolumeEqnBuilder(VolumeVariable *arg_species, Cart
 	SIZEZ = arg_mesh->getNumVolumeZ();
 	SIZEXY = SIZEX * SIZEY;	
 
+	eLambdas[0] = AREAX / DELTAX;
+	eLambdas[1] = AREAY / DELTAY;
+	eLambdas[2] = AREAZ / DELTAZ;
+
 	bPreProcessed = false;
 
 	init();
 }
 
-SparseVolumeEqnBuilder::~SparseVolumeEqnBuilder() {
+EllipticVolumeEqnBuilder::~EllipticVolumeEqnBuilder() {
 	delete A;
 	delete[] B;
 
@@ -76,7 +79,7 @@ SparseVolumeEqnBuilder::~SparseVolumeEqnBuilder() {
 	}
 }
 
-void SparseVolumeEqnBuilder::init() {
+void EllipticVolumeEqnBuilder::init() {
 	int size;
 	if (numSolveRegions == 0) {
 		bSolveWholeMesh = true;
@@ -133,55 +136,30 @@ void SparseVolumeEqnBuilder::init() {
 	int numNonZeros;
 	switch (DIM) {
 		case 1:
-			if (bSymmetricStorage) {
-				numNonZeros = TRIANGULAR_MAX_NONZERO_PERROW[DIM] * size;
-			} else {
-				numNonZeros = GENERAL_MAX_NONZERO_PERROW[DIM] * size;
-			}
+			numNonZeros = TRIANGULAR_MAX_NONZERO_PERROW[DIM] * size;
 			break;
 		case 2:
-			if (bSymmetricStorage) { // symmetric half-storage
-				numNonZeros = TRIANGULAR_MAX_NONZERO_PERROW[DIM] * size;
-			}else {  // general storage
-				numNonZeros = GENERAL_MAX_NONZERO_PERROW[DIM] * size;
-			}
+			numNonZeros = TRIANGULAR_MAX_NONZERO_PERROW[DIM] * size;
 			// if we solve the whole mesh, we are able to reduce the number of nonzeros 
 			// since we have more information when it's rectangle.
 			if (bSolveWholeMesh) {
-				if (bSymmetricStorage) { // symmetric half-storage
-					numNonZeros -= (SIZEX + SIZEY - 1);
-				}else {  // general storage
-					numNonZeros -= (SIZEX + SIZEY - 2);
-				}
+				numNonZeros -= (SIZEX + SIZEY - 1);
 			}
 			break;
 		case 3:
 			if (bSolveWholeMesh) {
-				if (bSymmetricStorage) {  // symmetric half-storage
-					numNonZeros = TRIANGULAR_MAX_NONZERO_PERROW[2] * SIZEX * SIZEY - SIZEX - SIZEY + 1; //2D
-					numNonZeros += (SIZEZ - 1) * (numNonZeros + SIZEX * SIZEY);
-				} else { // general storage
-					numNonZeros = GENERAL_MAX_NONZERO_PERROW[2] * SIZEX * SIZEY - SIZEX - SIZEY + 2; //2D
-					numNonZeros += (SIZEZ - 1) * (numNonZeros + 2 * SIZEX * SIZEY) + 1;
-				}
+				numNonZeros = TRIANGULAR_MAX_NONZERO_PERROW[2] * SIZEX * SIZEY - SIZEX - SIZEY + 1; //2D
+				numNonZeros += (SIZEZ - 1) * (numNonZeros + SIZEX * SIZEY);
 			} else {
-				if (bSymmetricStorage) {  // symmetric half-storage
-					numNonZeros = TRIANGULAR_MAX_NONZERO_PERROW[DIM] * size;
-				} else { // general storage
-					numNonZeros = GENERAL_MAX_NONZERO_PERROW[DIM] * size;
-				}
+				numNonZeros = TRIANGULAR_MAX_NONZERO_PERROW[DIM] * size;
 			}
 	}
-	if (bSymmetricStorage) {
-		A = new SparseMatrixPCG(size, numNonZeros, MATRIX_SYMMETRIC); // only store upper triangle
-	} else {
-		A = new SparseMatrixPCG(size, numNonZeros, MATRIX_GENERAL);
-	}
+	A = new SparseMatrixPCG(size, numNonZeros, MATRIX_SYMMETRIC); // only store upper triangle
 	B = new double[size];
-	memset(B, 0, size * sizeof(double)); 
+	memset(B, 0, size * sizeof(double)); 	
 }
 
-void SparseVolumeEqnBuilder::computeLHS(int index, double* lambdas, double& Aii, int& numCols, int* columnIndices, double* columnValues, bool& bSort)
+void EllipticVolumeEqnBuilder::computeLHS(int index, double& Aii, int& numCols, int* columnIndices, double* columnValues, bool& bSort)
 {    
 	// here all the indices are global indices.
 	string varname = var->getName();
@@ -193,268 +171,227 @@ void SparseVolumeEqnBuilder::computeLHS(int index, double* lambdas, double& Aii,
 	numCols = 0;
 	Aii = 0.0;
 	bSort = false; // for periodic boundary condition, sometimes have to sort to make sure order
-	if (mask & BOUNDARY_TYPE_DIRICHLET // dirichlet 				
-		|| (mask & NEIGHBOR_XP_BOUNDARY && feature->getXpBoundaryType() == BOUNDARY_PERIODIC)  // periodic plus direction
-		|| (mask & NEIGHBOR_YP_BOUNDARY && feature->getYpBoundaryType() == BOUNDARY_PERIODIC) 
-		|| (mask & NEIGHBOR_ZP_BOUNDARY && feature->getZpBoundaryType() == BOUNDARY_PERIODIC)) {   
-		Aii = 1.0;			
-	} else { // non-dirichlet condition, including neumann or periodic minus or interior
-		double volumeScale = 1.0;	
-		double lambdaX = lambdas[0];
-		double lambdaY = lambdas[1];
-		double lambdaZ = lambdas[2];
-		double lambdaAreaX = lambdas[3];   
-		double lambdaAreaY = lambdas[4];
-		double lambdaAreaZ = lambdas[5];
 
-		double Di = varContext->getDiffusionRate(index);
-		validateNumber(varname, index, "Diffusion term", Di);
+	if ((mask & ELLIPTIC_PINNED) // pinned point
+			|| (mask & BOUNDARY_TYPE_DIRICHLET) // dirichlet 	
+			|| (mask & NEIGHBOR_XP_BOUNDARY && feature->getXpBoundaryType() == BOUNDARY_PERIODIC)  // periodic plus direction
+			|| (mask & NEIGHBOR_YP_BOUNDARY && feature->getYpBoundaryType() == BOUNDARY_PERIODIC) 
+			|| (mask & NEIGHBOR_ZP_BOUNDARY && feature->getZpBoundaryType() == BOUNDARY_PERIODIC)) {   
+		Aii = 1.0;
+		return;
+	}
 
-		if (mask & NEIGHBOR_BOUNDARY_MASK){   // boundary
-			volumeScale /= (mask & VOLUME_MASK);
+	// non-dirichlet condition, including neumann or periodic minus or interior
+	double volumeScale = 1.0;	
+	double lambdaX = eLambdas[0];
+	double lambdaY = eLambdas[1];
+	double lambdaZ = eLambdas[2];
 
-			if (mask & NEIGHBOR_X_BOUNDARY_MASK){
-				lambdaY /= 2.0;
-				lambdaZ /= 2.0;
-				lambdaAreaY /= 2.0;
-				lambdaAreaZ /= 2.0;
-			}
-			if (mask & NEIGHBOR_Y_BOUNDARY_MASK){
-				lambdaX /= 2.0;
-				lambdaZ /= 2.0;
-				lambdaAreaX /= 2.0;
-				lambdaAreaZ /= 2.0;
-			}
-			if (mask & NEIGHBOR_Z_BOUNDARY_MASK){
-				lambdaX /= 2.0;
-				lambdaY /= 2.0;
-				lambdaAreaX /= 2.0;
-				lambdaAreaY /= 2.0;
-			}
+	double Di = varContext->getDiffusionRate(index);
+	validateNumber(varname, index, "Diffusion term", Di);
+
+	if (mask & NEIGHBOR_BOUNDARY_MASK){   // boundary
+		volumeScale /= (mask & VOLUME_MASK);
+
+		if (mask & NEIGHBOR_X_BOUNDARY_MASK){
+			lambdaY /= 2.0;
+			lambdaZ /= 2.0;
 		}
-		
-		VolumeNeighbor volumeNeighbors[6] = {
-			VolumeNeighbor((DIM < 3 || mask & NEIGHBOR_ZM_MASK) ? -1 : index - SIZEXY),  // neighbor index, -1 if there is no such neighbor
-			VolumeNeighbor((DIM < 2 || mask & NEIGHBOR_YM_MASK) ? -1 : index - SIZEX),
-			VolumeNeighbor((mask & NEIGHBOR_XM_MASK) ? -1 : index - 1),
-			VolumeNeighbor((mask & NEIGHBOR_XP_MASK) ? -1 : index + 1),
-			VolumeNeighbor((DIM < 2 || mask & NEIGHBOR_YP_MASK) ? -1 : index + SIZEX),
-			VolumeNeighbor((DIM < 3 || mask & NEIGHBOR_ZP_MASK) ? -1 : index + SIZEXY)
-		};
-
-		XYZNeighbor startNeighbor, endNeighbor;
-		switch (DIM) {
-			case 1:
-				startNeighbor = XM;
-                endNeighbor = XP;
-				break;
-			case 2:
-				startNeighbor = YM;
-                endNeighbor = YP;
-				break;
-			case 3:
-				startNeighbor = ZM;
-                endNeighbor = ZP;
-				break;
+		if (mask & NEIGHBOR_Y_BOUNDARY_MASK){
+			lambdaX /= 2.0;
+			lambdaZ /= 2.0;
 		}
-		{
-			// if I am a periodic boundary point, make minus neighbor of corresponding plus point as one of my neighbors
-			// minus directions inherit membrane from plus directions.
-			if ((mask & NEIGHBOR_XM_BOUNDARY) && feature->getXmBoundaryType() == BOUNDARY_PERIODIC) {
-				// make sure XM and XP are in the same feature for each periodic bounary point
-				int xpindex = index + (SIZEX - 1);
-				if (feature != pVolumeElement[xpindex].feature) {
-					throw "Periodic Boundary Condition (X- and X+): compartments don't match";
-				}
-				int xpmask = pVolumeElement[xpindex].neighborMask;
-				// inherit membrane from XP 
-				mask |= (xpmask & NEIGHBOR_XM_MEMBRANE);
+		if (mask & NEIGHBOR_Z_BOUNDARY_MASK){
+			lambdaX /= 2.0;
+			lambdaY /= 2.0;
+		}
+	}
+	
+	VolumeNeighbor volumeNeighbors[6] = {
+		VolumeNeighbor((DIM < 3 || mask & NEIGHBOR_ZM_MASK) ? -1 : index - SIZEXY),  // neighbor index, -1 if there is no such neighbor
+		VolumeNeighbor((DIM < 2 || mask & NEIGHBOR_YM_MASK) ? -1 : index - SIZEX),
+		VolumeNeighbor((mask & NEIGHBOR_XM_MASK) ? -1 : index - 1),
+		VolumeNeighbor((mask & NEIGHBOR_XP_MASK) ? -1 : index + 1),
+		VolumeNeighbor((DIM < 2 || mask & NEIGHBOR_YP_MASK) ? -1 : index + SIZEX),
+		VolumeNeighbor((DIM < 3 || mask & NEIGHBOR_ZP_MASK) ? -1 : index + SIZEXY)
+	};
 
-				// remove boundary (keep membrane) if it's periodic
-				volumeNeighbors[XM].index = (mask & NEIGHBOR_XM_MEMBRANE) ? -1 : index + (SIZEX - 2);
-				volumeNeighbors[XM].bPeriodic = true;
-				volumeScale *= 2;
-				lambdaY *= 2.0;
-				lambdaZ *= 2.0;
-				lambdaAreaY *= 2.0;
-				lambdaAreaZ *= 2.0;
-				bSort = true;
-			} 
-			if (DIM > 1 && (mask & NEIGHBOR_YM_BOUNDARY) && feature->getYmBoundaryType() == BOUNDARY_PERIODIC) {
-				int ypindex = index + (SIZEY - 1) * SIZEX;
-				if (feature != pVolumeElement[ypindex].feature) {
-					throw "Periodic Boundary Condition (Y- and Y+): compartments don't match";
-				}
-				int ypmask = pVolumeElement[ypindex].neighborMask;
-				mask |= (ypmask & NEIGHBOR_YM_MEMBRANE);
-
-				volumeNeighbors[YM].index = (mask & NEIGHBOR_YM_MEMBRANE) ? -1 : index + (SIZEY - 2) * SIZEX;
-				volumeNeighbors[YM].bPeriodic = true;
-				volumeScale *= 2;
-				lambdaX *= 2.0;
-				lambdaZ *= 2.0;
-				lambdaAreaX *= 2.0;
-				lambdaAreaZ *= 2.0;
-				bSort = true;
-			} 
-			if (DIM > 2 && (mask & NEIGHBOR_ZM_BOUNDARY) && feature->getZmBoundaryType() == BOUNDARY_PERIODIC) {
-				int zpindex = index + (SIZEZ - 1) * SIZEXY;
-				if (feature != pVolumeElement[zpindex].feature) {
-					throw "Periodic Boundary Condition (Z- and Z+): compartments don't match";
-				}
-				int zpmask = pVolumeElement[zpindex].neighborMask;
-				mask |= (zpmask & NEIGHBOR_ZM_MEMBRANE);
-
-				volumeNeighbors[ZM].index = (mask & NEIGHBOR_ZM_MEMBRANE) ? -1 : index + (SIZEZ - 2) * SIZEXY;
-				volumeNeighbors[ZM].bPeriodic = true;
-				volumeScale *= 2;
-				lambdaX *= 2.0;
-				lambdaY *= 2.0;
-				lambdaAreaX *= 2.0;
-				lambdaAreaY *= 2.0;
-				bSort = true;
+	XYZNeighbor startNeighbor, endNeighbor;
+	switch (DIM) {
+		case 1:
+			startNeighbor = XM;
+            endNeighbor = XP;
+			break;
+		case 2:
+			startNeighbor = YM;
+            endNeighbor = YP;
+			break;
+		case 3:
+			startNeighbor = ZM;
+            endNeighbor = ZP;
+			break;
+	}
+	{
+		// if I am a periodic boundary point, make minus neighbor of corresponding plus point as one of my neighbors
+		// minus directions inherit membrane from plus directions.
+		if ((mask & NEIGHBOR_XM_BOUNDARY) && feature->getXmBoundaryType() == BOUNDARY_PERIODIC) {
+			// make sure XM and XP are in the same feature for each periodic bounary point
+			int xpindex = index + (SIZEX - 1);
+			if (feature != pVolumeElement[xpindex].feature) {
+				throw "Periodic Boundary Condition (X- and X+): compartments don't match";
 			}
+			int xpmask = pVolumeElement[xpindex].neighborMask;
+			// inherit membrane from XP 
+			mask |= (xpmask & NEIGHBOR_XM_MEMBRANE);
 
-			// if my neighbor is a plus periodic boundary point, make the corresponding minus point as one of my neighbors
-			int neighborIndex;
-			int neighborMask;
-			Feature* neighborFeature = 0;
-			neighborIndex = volumeNeighbors[XP].index;
-			if (neighborIndex >= 0) {
-				neighborMask = pVolumeElement[neighborIndex].neighborMask;
-				neighborFeature = pVolumeElement[neighborIndex].feature;				
-				if (neighborMask & NEIGHBOR_XP_BOUNDARY && neighborFeature->getXpBoundaryType() == BOUNDARY_PERIODIC) {
-					volumeNeighbors[XP].index = index - (SIZEX - 2);	
-					volumeNeighbors[XP].bPeriodic = true;
-					bSort = true;
-				}
-			}
-
-			neighborIndex = volumeNeighbors[YP].index;
-			if (DIM > 1 && neighborIndex >= 0) {
-				neighborMask = pVolumeElement[neighborIndex].neighborMask;
-				neighborFeature = pVolumeElement[neighborIndex].feature;				
-				if (neighborMask & NEIGHBOR_YP_BOUNDARY && neighborFeature->getYpBoundaryType() == BOUNDARY_PERIODIC) {
-					volumeNeighbors[YP].index = index - (SIZEY - 2) * SIZEX;
-					volumeNeighbors[YP].bPeriodic = true;
-					bSort = true;
-				}
-			}
-
-			neighborIndex = volumeNeighbors[ZP].index;
-			if (DIM > 2 && neighborIndex >= 0) {
-				neighborMask = pVolumeElement[neighborIndex].neighborMask;
-				neighborFeature = pVolumeElement[neighborIndex].feature;				
-				if (neighborMask & NEIGHBOR_ZP_BOUNDARY && neighborFeature->getZpBoundaryType() == BOUNDARY_PERIODIC) {
-					volumeNeighbors[ZP].index = index - (SIZEZ - 2) * SIZEXY;
-					volumeNeighbors[ZP].bPeriodic = true;
-					bSort = true;
-				}
-			}
-		}		
-
-		double neighborLambdas[6] = {lambdaZ, lambdaY, lambdaX, lambdaX, lambdaY, lambdaZ};
-		double neighborLambdaAreas[6] = {lambdaAreaZ, lambdaAreaY, lambdaAreaX, lambdaAreaX, lambdaAreaY, lambdaAreaZ};
-
-		// compute these values only when there is convection				
-		if (!bSymmetricStorage) {			
-			for (int i = startNeighbor; i <= endNeighbor; i ++) {
-				volumeNeighbors[i].setConvectionCoefficients(index, mask, (XYZNeighbor)i, varContext);
-			}
+			// remove boundary (keep membrane) if it's periodic
+			volumeNeighbors[XM].index = (mask & NEIGHBOR_XM_MEMBRANE) ? -1 : index + (SIZEX - 2);
+			volumeNeighbors[XM].bPeriodic = true;
+			volumeScale *= 2;
+			lambdaY *= 2.0;
+			lambdaZ *= 2.0;
+			bSort = true;
 		} 
+		if (DIM > 1 && (mask & NEIGHBOR_YM_BOUNDARY) && feature->getYmBoundaryType() == BOUNDARY_PERIODIC) {
+			int ypindex = index + (SIZEY - 1) * SIZEX;
+			if (feature != pVolumeElement[ypindex].feature) {
+				throw "Periodic Boundary Condition (Y- and Y+): compartments don't match";
+			}
+			int ypmask = pVolumeElement[ypindex].neighborMask;
+			mask |= (ypmask & NEIGHBOR_YM_MEMBRANE);
 
-		Aii = volumeScale;
-		// loop through neighbors to compute Aii and Aij
-		// if there is no convection, we only store upper triangle (neighborIndex > index)
-		// if one of the neighbors is dirichlet point, we store the value into a vector, 
-		// then later when building the right hand side, we added the these values to right hand side.
-		for (int n = startNeighbor; n <= endNeighbor; n ++) {
-			int neighborIndex = volumeNeighbors[n].index;		
-			if (neighborIndex >= 0) {										
-				double lambda = neighborLambdas[n];
-				double Dj = varContext->getDiffusionRate(neighborIndex);
-				double D = (Di + Dj < epsilon) ? (0.0) : (2 * Di * Dj/(Di + Dj));
-				double Aij = 0.0;
-				if (bSymmetricStorage) {
-					Aij = D * lambda;
-					Aii += Aij;
-				} else { // if there is convection
-					double convectionDirection = volumeNeighbors[n].convectionDirection;
-					double Vi = volumeNeighbors[n].Vi, Vj = volumeNeighbors[n].Vj;
-					double lamdaArea = neighborLambdaAreas[n];
-					validateNumber(varname, index, "Velocity term", Vi);
-					validateNumber(varname, neighborIndex, "Velocity term", Vj);
-					double V = 0.5 * (Vi + Vj);
-					Aij = max(D * lambda + convectionDirection * 0.5 * V * lamdaArea, max(convectionDirection * V * lamdaArea, 0));
-					Aii += max(D * lambda - convectionDirection * 0.5 * V * lamdaArea, max(- convectionDirection * V * lamdaArea, 0));
-				}
-				if (Aij != 0.0) {
-					int neighborMask = pVolumeElement[neighborIndex].neighborMask;
+			volumeNeighbors[YM].index = (mask & NEIGHBOR_YM_MEMBRANE) ? -1 : index + (SIZEY - 2) * SIZEX;
+			volumeNeighbors[YM].bPeriodic = true;
+			volumeScale *= 2;
+			lambdaX *= 2.0;
+			lambdaZ *= 2.0;
+			bSort = true;
+		} 
+		if (DIM > 2 && (mask & NEIGHBOR_ZM_BOUNDARY) && feature->getZmBoundaryType() == BOUNDARY_PERIODIC) {
+			int zpindex = index + (SIZEZ - 1) * SIZEXY;
+			if (feature != pVolumeElement[zpindex].feature) {
+				throw "Periodic Boundary Condition (Z- and Z+): compartments don't match";
+			}
+			int zpmask = pVolumeElement[zpindex].neighborMask;
+			mask |= (zpmask & NEIGHBOR_ZM_MEMBRANE);
+
+			volumeNeighbors[ZM].index = (mask & NEIGHBOR_ZM_MEMBRANE) ? -1 : index + (SIZEZ - 2) * SIZEXY;
+			volumeNeighbors[ZM].bPeriodic = true;
+			volumeScale *= 2;
+			lambdaX *= 2.0;
+			lambdaY *= 2.0;
+			bSort = true;
+		}
+
+		// if my neighbor is a plus periodic boundary point, make the corresponding minus point as one of my neighbors
+		int neighborIndex;
+		int neighborMask;
+		Feature* neighborFeature = 0;
+		neighborIndex = volumeNeighbors[XP].index;
+		if (neighborIndex >= 0) {
+			neighborMask = pVolumeElement[neighborIndex].neighborMask;
+			neighborFeature = pVolumeElement[neighborIndex].feature;				
+			if (neighborMask & NEIGHBOR_XP_BOUNDARY && neighborFeature->getXpBoundaryType() == BOUNDARY_PERIODIC) {
+				volumeNeighbors[XP].index = index - (SIZEX - 2);	
+				volumeNeighbors[XP].bPeriodic = true;
+				bSort = true;
+			}
+		}
+
+		neighborIndex = volumeNeighbors[YP].index;
+		if (DIM > 1 && neighborIndex >= 0) {
+			neighborMask = pVolumeElement[neighborIndex].neighborMask;
+			neighborFeature = pVolumeElement[neighborIndex].feature;				
+			if (neighborMask & NEIGHBOR_YP_BOUNDARY && neighborFeature->getYpBoundaryType() == BOUNDARY_PERIODIC) {
+				volumeNeighbors[YP].index = index - (SIZEY - 2) * SIZEX;
+				volumeNeighbors[YP].bPeriodic = true;
+				bSort = true;
+			}
+		}
+
+		neighborIndex = volumeNeighbors[ZP].index;
+		if (DIM > 2 && neighborIndex >= 0) {
+			neighborMask = pVolumeElement[neighborIndex].neighborMask;
+			neighborFeature = pVolumeElement[neighborIndex].feature;				
+			if (neighborMask & NEIGHBOR_ZP_BOUNDARY && neighborFeature->getZpBoundaryType() == BOUNDARY_PERIODIC) {
+				volumeNeighbors[ZP].index = index - (SIZEZ - 2) * SIZEXY;
+				volumeNeighbors[ZP].bPeriodic = true;
+				bSort = true;
+			}
+		}
+	}		
+
+	double neighborLambdas[6] = {lambdaZ, lambdaY, lambdaX, lambdaX, lambdaY, lambdaZ};
+
+	Aii = 0;
+	// loop through neighbors to compute Aii and Aij
+	// if there is no convection, we only store upper triangle (neighborIndex > index)
+	// if one of the neighbors is dirichlet point, we store the value into a vector, 
+	// then later when building the right hand side, we added the these values to right hand side.
+	for (int n = startNeighbor; n <= endNeighbor; n ++) {
+		int neighborIndex = volumeNeighbors[n].index;
+		if (neighborIndex >= 0) {										
+			double lambda = neighborLambdas[n];
+			double Dj = varContext->getDiffusionRate(neighborIndex);
+			double D = (Di + Dj < epsilon) ? (0.0) : (2 * Di * Dj/(Di + Dj));
+			double Aij = 0.0;
+			Aij = D * lambda;
+
+			if (Aij != 0.0) {
+				Aii += Aij;
+				int neighborMask = pVolumeElement[neighborIndex].neighborMask;
+				if (!(neighborMask & ELLIPTIC_PINNED)) { // ignore the pinned point in the matrix					
 					validateNumber(varname, index, "LHS", Aij);
 					if (neighborMask & BOUNDARY_TYPE_DIRICHLET) { // dirichlet 
 						dirichletNeighbors.push_back(new CoupledNeighbors(index, neighborIndex, Aij));
-					} else if (!bSymmetricStorage || neighborIndex > index) {
+					} else if (neighborIndex > index) {
 						columnIndices[numCols] = neighborIndex;
 						columnValues[numCols] = - Aij;
 						numCols ++;
 					}
-					{
-						// for periodic boundary condition						
-						if (volumeNeighbors[n].bPeriodic) {
-							switch (n) {
-								// if I am a periodic boundary point
-								case ZM:
-									periodicNeighbors.push_back(new CoupledNeighbors(index, neighborIndex, - Aij * varContext->getZBoundaryPeriodicConstant()));
-									break;
-								case YM:
-									periodicNeighbors.push_back(new CoupledNeighbors(index, neighborIndex, - Aij * varContext->getYBoundaryPeriodicConstant()));
-									break;
-								case XM:
-									periodicNeighbors.push_back(new CoupledNeighbors(index, neighborIndex, - Aij * varContext->getXBoundaryPeriodicConstant()));
-									break;
-								// if my neighbor is a periodic boundary point
-								case XP:
-									periodicNeighbors.push_back(new CoupledNeighbors(index, neighborIndex, Aij * varContext->getXBoundaryPeriodicConstant()));
-									break;
-								case YP:
-									periodicNeighbors.push_back(new CoupledNeighbors(index, neighborIndex, Aij * varContext->getYBoundaryPeriodicConstant()));
-									break;
-								case ZP:
-									periodicNeighbors.push_back(new CoupledNeighbors(index, neighborIndex, Aij * varContext->getZBoundaryPeriodicConstant()));
-									break;
-							}
+				}
+
+				{
+					// for periodic boundary condition						
+					if (volumeNeighbors[n].bPeriodic) {
+						switch (n) {
+							// if I am a periodic boundary point
+							case ZM:
+								periodicNeighbors.push_back(new CoupledNeighbors(index, neighborIndex, - Aij * varContext->getZBoundaryPeriodicConstant()));
+								break;
+							case YM:
+								periodicNeighbors.push_back(new CoupledNeighbors(index, neighborIndex, - Aij * varContext->getYBoundaryPeriodicConstant()));
+								break;
+							case XM:
+								periodicNeighbors.push_back(new CoupledNeighbors(index, neighborIndex, - Aij * varContext->getXBoundaryPeriodicConstant()));
+								break;
+							// if my neighbor is a periodic boundary point
+							case XP:
+								periodicNeighbors.push_back(new CoupledNeighbors(index, neighborIndex, Aij * varContext->getXBoundaryPeriodicConstant()));
+								break;
+							case YP:
+								periodicNeighbors.push_back(new CoupledNeighbors(index, neighborIndex, Aij * varContext->getYBoundaryPeriodicConstant()));
+								break;
+							case ZP:
+								periodicNeighbors.push_back(new CoupledNeighbors(index, neighborIndex, Aij * varContext->getZBoundaryPeriodicConstant()));
+								break;
 						}
 					}
-				} // end if (Aij != 0.0)
-			} // end (neighborIndex >= 0)
-		} // end for n
-		validateNumber(varname, index, "LHS", Aii);
-	} // end if else (mask & BOUNDARY_TYPE_DIRICHLET)
+				}
+			} // end if (Aij != 0.0)
+		} // end (neighborIndex >= 0)
+	} // end for n
+	validateNumber(varname, index, "LHS", Aii);
 }
 
-void sortColumns(int numCols, int* columnIndices, double* columnValues) {
-	// make sure the indices are in ascending order
-	for (int m = 0; m < numCols - 1; m ++) {
-		for (int n = m + 1; n < numCols; n ++) {
-			if (columnIndices[m] > columnIndices[n]) {
-				// switch
-				int idx = columnIndices[m];
-				double v = columnValues[m];
-				columnIndices[m] = columnIndices[n];
-				columnValues[m] = columnValues[n];
-				columnIndices[n] = idx;
-				columnValues[n] = v;
-			}
-		}
-	}
-}
+extern void sortColumns(int numCols, int* columnIndices, double* columnValues);
 
 //------------------------------------------------------------------
 //
 // Left Hand Side
 //
 //------------------------------------------------------------------
-bool SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
+bool EllipticVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
 {    
 	/**
 	 * we decided to scale both sides with deltaT/VOLUME
@@ -467,15 +404,6 @@ bool SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart
 	 *
 	 * B_i = U_old * volumeScale_i + R * deltaT + boundary conditions
 	 **/
-
-	double LAMBDAX = deltaTime/(DELTAX * DELTAX);
-	double LAMBDAY = deltaTime/(DELTAY * DELTAY);
-	double LAMBDAZ = deltaTime/(DELTAZ * DELTAZ);
-	double LAMBDAAREAX = deltaTime/DELTAX;   
-	double LAMBDAAREAY = deltaTime/DELTAY;
-	double LAMBDAAREAZ = deltaTime/DELTAZ;
-	double lambdas[] = {LAMBDAX, LAMBDAY, LAMBDAZ, LAMBDAAREAX, LAMBDAAREAY, LAMBDAAREAZ};
-
 	if (!bPreProcessed) {
 		preProcess();
 	}
@@ -499,10 +427,15 @@ bool SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart
 	double* columnValues = new double[2 * DIM];	
 	bool bSort = false;
 
+	VolumeElement* pVolumeElement = mesh->getVolumeElements();
 	if (bSolveWholeMesh) {
 		for (int index = volumeIndexStart; index < volumeIndexStart + volumeIndexSize; index ++){
 			A->addNewRow();
-			computeLHS(index, lambdas, Aii, numCols, columnIndices, columnValues, bSort);
+			computeLHS(index, Aii, numCols, columnIndices, columnValues, bSort);
+			if (Aii == 0) {
+				Aii = 1;
+				cout << "Note!!! Aii = 0 at point " << index << endl;
+			}
 			if (numCols > 0) {
 				if (bSort) {
 					sortColumns(numCols, columnIndices, columnValues);
@@ -516,7 +449,11 @@ bool SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart
 		for (int localIndex = 0; localIndex < getSize() ; localIndex ++) {
 			int globalIndex = LocalToGlobalMap[localIndex];
 			A->addNewRow();
-			computeLHS(globalIndex, lambdas, Aii, numCols, columnIndices, columnValues, bSort);
+			computeLHS(globalIndex, Aii, numCols, columnIndices, columnValues, bSort);
+			if (Aii == 0) {
+				Aii = 1;
+				cout << "Note!!! Aii = 0 at point " << globalIndex << endl;
+			}
 			if (numCols > 0) {
 				// has to transfer all the global indices to local indices
 				for (int k = 0; k < numCols; k ++) {
@@ -532,7 +469,7 @@ bool SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart
 				A->setRow(Aii, numCols, columnIndices, columnValues);	
 			} else {
 				A->setDiag(localIndex, Aii);
-			}			
+			}
 		}
 		// do global to local mapping for dirichlet points
 		for (int i = 0; i < (int)dirichletNeighbors.size(); i ++) {
@@ -560,9 +497,9 @@ bool SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart
     return true;
 }
 
-double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* lambdas, double bInit) {
+double EllipticVolumeEqnBuilder::computeRHS(int index) {
 	string varname = var->getName();
-	double b = bInit;
+	double b = 0;
 	Simulation* sim = SimTool::getInstance()->getSimulation();
 	VolumeElement *pVolumeElement = mesh->getVolumeElements();
 	MembraneElement *pMembraneElement = mesh->getMembraneElements();
@@ -570,6 +507,10 @@ double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* l
 	Feature* feature = pVolumeElement[index].feature;
 	VolumeVarContext* varContext = feature->getVolumeVarContext((VolumeVariable*)var);
 	int mask = pVolumeElement[index].neighborMask;
+
+	if (mask & ELLIPTIC_PINNED) {
+		return 0;
+	}
 
 	if (mask & BOUNDARY_TYPE_DIRICHLET){		
 		if ((mask & NEIGHBOR_XM_BOUNDARY) && (feature->getXmBoundaryType() == BOUNDARY_VALUE)){
@@ -612,12 +553,12 @@ double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* l
 		b = 0;
 	
 	} else { // no Dirichlet conditions (interior or neumann or minus periodic)
-		double volumeScale = 1.0;
-		double lambdaAreaX = lambdas[0]; 
-		double lambdaAreaY = lambdas[1];
-		double lambdaAreaZ = lambdas[2];
+		b = -VOLUME * varContext->getReactionRate(index);
 
-		b += varContext->getReactionRate(index) * deltaTime;
+		double volumeScale = 1.0;
+		double lambdaAreaX = AREAX; 
+		double lambdaAreaY = AREAY;
+		double lambdaAreaZ = AREAZ;		
 
 		if (mask & NEIGHBOR_BOUNDARY_MASK){   // boundary
 			volumeScale /= (mask & VOLUME_MASK);
@@ -695,9 +636,9 @@ double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* l
 				sim->advanceTimeOff();		
 
 				if (me->insideIndexNear == index) {
-					b += inFlux * me->area * deltaTime / VOLUME;
+					b += inFlux * me->area;
 				} else if (me->outsideIndexNear == index) {
-					b += outFlux * me->area * deltaTime / VOLUME;
+					b += outFlux * me->area;
 				}
 			}
 		} // end if (mask & NEIGHBOR_MEMBRANE_MASK)
@@ -712,26 +653,16 @@ double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* l
 // Right Hand side
 //
 //------------------------------------------------------------------
-bool SparseVolumeEqnBuilder::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
+bool EllipticVolumeEqnBuilder::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
 {    
-	double lambdaAreaX = deltaTime/DELTAX;   
-	double lambdaAreaY = deltaTime/DELTAY;
-	double lambdaAreaZ = deltaTime/DELTAZ;
-	double lambdas[3] = {lambdaAreaX, lambdaAreaY, lambdaAreaZ};
-
 	if (bSolveWholeMesh) {
-		memcpy(B, var->getCurr(), var->getSize() * sizeof(double));
 		for (int index = volumeIndexStart; index < volumeIndexStart + volumeIndexSize; index ++){
-			B[index] = computeRHS(index, deltaTime, lambdas, B[index]);
+			B[index] = computeRHS(index);
 		}
 	} else {
-		double* currVal = var->getCurr();
 		for (int localIndex = 0; localIndex < getSize() ; localIndex ++) {
-			int globalIndex = LocalToGlobalMap[localIndex];
-			// to initialize X, which will be passed to solver as intial guess and final solution.
-			// or set initial guess to zero (need to revisit, we also want to revisit fill-in parameter)
-			X[localIndex] = currVal[globalIndex];
-			B[localIndex] = computeRHS(globalIndex, deltaTime, lambdas, X[localIndex]);
+			int globalIndex = LocalToGlobalMap[localIndex];			
+			B[localIndex] = computeRHS(globalIndex);
 		}
 	}
 	// to make the matrix symmetric
@@ -750,7 +681,7 @@ bool SparseVolumeEqnBuilder::buildEquation(double deltaTime, int volumeIndexStar
 	return true;
 }
 
-bool SparseVolumeEqnBuilder::checkPeriodicCoupledPairsInRegions(int indexm, int indexp) {
+bool EllipticVolumeEqnBuilder::checkPeriodicCoupledPairsInRegions(int indexm, int indexp) {
 	if (bSolveWholeMesh) {
 		return true;
 	}
@@ -768,7 +699,7 @@ bool SparseVolumeEqnBuilder::checkPeriodicCoupledPairsInRegions(int indexm, int 
 	return false; // both of them are not in the solved regions, so we don't have to add them to the list
 }
 
-void SparseVolumeEqnBuilder::preProcess() {
+void EllipticVolumeEqnBuilder::preProcess() {
 	if (bPreProcessed) {
 		return;
 	}
@@ -845,7 +776,7 @@ void SparseVolumeEqnBuilder::preProcess() {
 	}		
 }
 
-void SparseVolumeEqnBuilder::postProcess() {	
+void EllipticVolumeEqnBuilder::postProcess() {	
 	double* currSol = var->getCurr();
 
 	// if solve for regions, do local to global mapping

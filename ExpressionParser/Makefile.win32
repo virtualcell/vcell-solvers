@@ -2,7 +2,7 @@
 # (C) Copyright University of Connecticut Health Center 2001.
 # All rights reserved.
 #
-CPPFLAGS =	/O2 /DWIN32 /GR /EHsc
+CPPFLAGS =	/O2 /DWIN32 /GR /EHsc /D_CRT_SECURE_NO_DEPRECATE
 !ifndef MULTITHREADED
 CPPFLAGS =	$(CPPFLAGS)
 TARGET= ExpParser.lib

@@ -3,7 +3,7 @@
 # $Date: 2006/08/11 23:03:04 $
 # -----------------------------------------------------------------
 CC       = cl
-CFLAGS   = /GX /O2
+CFLAGS   = /EHsc /O2 /D_CRT_SECURE_NO_DEPRECATE
 LDFLAGS  = 
 LIBS     = -lm
 

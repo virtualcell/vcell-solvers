@@ -15,7 +15,7 @@
 # -----------------------------------------------------------------
 
 CC       = cl
-CFLAGS   = /GX /O2
+CFLAGS   = /EHsc /O2 /D_CRT_SECURE_NO_DEPRECATE
 LDFLAGS  = 
 LIBS     = -lm 
 

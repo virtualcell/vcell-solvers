@@ -9,7 +9,8 @@
 VolumeRegion::VolumeRegion(CartesianMesh *mesh) : Region(mesh)
 {
 	feature = NULL;
-	closure = false;
+	closure = true;
+	bBoundaryDirichlet = false;
 	volume = 0;
 	membranes.erase(membranes.begin(), membranes.end()); 
 }
@@ -25,14 +26,14 @@ void VolumeRegion::recompute()
 	for(long i=0; i < (long)index.size(); i++){
 		volume += mesh->getVolumeOfElement_cu(getIndex(i));
 	}
-	closure = true;
-	for(long i=0; i < (long)index.size(); i++){
-		if(((mesh->getVolumeElements()+getIndex(i))->neighborMask)
-												&(NEIGHBOR_BOUNDARY_MASK)){
-			closure = false;
-			break;
-		}
-	}
+	//closure = true;
+	//for(long i=0; i < (long)index.size(); i++){
+	//	if(((mesh->getVolumeElements()+getIndex(i))->neighborMask)
+	//											&(NEIGHBOR_BOUNDARY_MASK)){
+	//		closure = false;
+	//		break;						
+	//	}
+	//}
 	feature = (mesh->getVolumeElements()+getIndex(0))->feature;	
 }
 

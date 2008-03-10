@@ -18,7 +18,7 @@ ASMOBJS =
 
 # ------------- 32-bit Microsoft Visual C++ -------------
 CC=cl -nologo /TP
-CFLAGS=-W3 -O2 -DWIN32 -DMSDOS -DUSE_ZIPMAIN -DSTATIC_LIB -DNO_ASM $(LOC) /MT
+CFLAGS=-W3 /D_CRT_SECURE_NO_DEPRECATE -O2 -DWIN32 -DMSDOS -DUSE_ZIPMAIN -DSTATIC_LIB -DNO_ASM $(LOC) /MT
 UTILFLAGS=$(CFLAGS) -DUTIL -Fo$@
 
 # Remove "-coff" from ASFLAGS if you do not have MASM 6.11.

@@ -43,7 +43,7 @@ C	1 symmetric, upper triangle- 0 general
 C    sorted index flag: 1 if in ascending order
       IPARM(22) = 0
 C    SET MAXIMUM NUMBER OF ITERATIONS
-      IPARM(5) = 1000
+      IPARM(5) = 3000
       
       IPARM(34) = 0
 C    absolute residual for stopping test when IPARM(34) = 1
@@ -60,9 +60,9 @@ C
 C    PRINT UNIT  
         IPARM(38) = 6
 C    SET ALPHA
-        RPARM(1) = 0.0
+C        RPARM(1) = 0.0
 C    SET OMEGA (row-sum)
-        RPARM(2) = 1.0
+C        RPARM(2) = 1.0
 C    SET EPS1: Tolerance for residual
         RPARM(3) =  Tolerance
 C    SET EPS2 (stagnation parm)

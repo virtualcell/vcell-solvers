@@ -488,10 +488,12 @@ bool CartesianMesh::setBoundaryConditions()
 			int boundaryType;
 
 			index = 0;
+			pVolumeElement[index].region->setNotClosed();
 			pVolumeElement[index].neighborMask |= NEIGHBOR_XM_BOUNDARY;
 			boundaryType = pVolumeElement[index].feature->getXmBoundaryType();
 			if (boundaryType == BOUNDARY_VALUE){
-				pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;      
+				pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;
+				pVolumeElement[index].region->setBoundaryDirichlet();
 			} else if (boundaryType == BOUNDARY_PERIODIC) {
 				pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_PERIODIC;
 			} else if (boundaryType == BOUNDARY_FLUX) {
@@ -500,10 +502,12 @@ bool CartesianMesh::setBoundaryConditions()
 			pVolumeElement[index].neighborMask |= VOLUME_HALF;
 
 			index = numX - 1;
+			pVolumeElement[index].region->setNotClosed();
 			pVolumeElement[index].neighborMask |= NEIGHBOR_XP_BOUNDARY;
 			boundaryType = pVolumeElement[index].feature->getXpBoundaryType();
 			if (boundaryType == BOUNDARY_VALUE){
-				pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;      
+				pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;
+				pVolumeElement[index].region->setBoundaryDirichlet();
 			} else if (boundaryType == BOUNDARY_PERIODIC) {
 				pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_PERIODIC;
 			} else if (boundaryType == BOUNDARY_FLUX) {
@@ -522,8 +526,9 @@ bool CartesianMesh::setBoundaryConditions()
 			xBoundary[1] = numX - 1;
 			int j = 0;
 			for (j = 0; j < numY; j ++){
-				for (int i = 0; i < 2; i ++ ){		
+				for (int i = 0; i < 2; i ++ ){
 					index = j * numX + xBoundary[i];
+					pVolumeElement[index].region->setNotClosed();
 					if (i == 0) {
 						pVolumeElement[index].neighborMask |= NEIGHBOR_XM_BOUNDARY;
 						boundaryType = pVolumeElement[index].feature->getXmBoundaryType();
@@ -532,7 +537,8 @@ bool CartesianMesh::setBoundaryConditions()
 						boundaryType = pVolumeElement[index].feature->getXpBoundaryType();
 					}
 					if (boundaryType == BOUNDARY_VALUE){
-						pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;      
+						pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;
+						pVolumeElement[index].region->setBoundaryDirichlet();
 					} else if (boundaryType == BOUNDARY_PERIODIC) {
 						pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_PERIODIC;
 					} else if (boundaryType == BOUNDARY_FLUX) {
@@ -553,6 +559,7 @@ bool CartesianMesh::setBoundaryConditions()
 			for (j = 0; j < 2; j ++){				
 				for (int i = 0 ; i < numX; i ++){
 					index = yBoundary[j] * numX + i;
+					pVolumeElement[index].region->setNotClosed();
 					if (j == 0) {						
 						pVolumeElement[index].neighborMask |= NEIGHBOR_YM_BOUNDARY;
 						boundaryType = pVolumeElement[index].feature->getYmBoundaryType();
@@ -561,7 +568,8 @@ bool CartesianMesh::setBoundaryConditions()
 						boundaryType = pVolumeElement[index].feature->getYpBoundaryType();
 					}
 					if (boundaryType == BOUNDARY_VALUE){
-						pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;      
+						pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;
+						pVolumeElement[index].region->setBoundaryDirichlet();
 					} else if (boundaryType == BOUNDARY_PERIODIC) {
 						pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_PERIODIC;
 					} else if (boundaryType == BOUNDARY_FLUX) {
@@ -597,6 +605,7 @@ bool CartesianMesh::setBoundaryConditions()
 							boundaryCount ++;
 						}
 						index = k * numXY + j * numX + xBoundary[i];
+						pVolumeElement[index].region->setNotClosed();
 						if (i == 0) {
 							pVolumeElement[index].neighborMask |= NEIGHBOR_XM_BOUNDARY;
 							boundaryType = pVolumeElement[index].feature->getXmBoundaryType();
@@ -606,7 +615,8 @@ bool CartesianMesh::setBoundaryConditions()
 						}
 
 						if (boundaryType == BOUNDARY_VALUE){
-							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;      
+							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;
+							pVolumeElement[index].region->setBoundaryDirichlet();
 						} else if (boundaryType == BOUNDARY_PERIODIC) {
 							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_PERIODIC;
 						} else if (boundaryType == BOUNDARY_FLUX) {
@@ -641,6 +651,7 @@ bool CartesianMesh::setBoundaryConditions()
 							boundaryCount ++;
 						}
 						index = k * numXY + yBoundary[j] * numX + i;
+						pVolumeElement[index].region->setNotClosed();
 						if (j == 0) {
 							pVolumeElement[index].neighborMask |= NEIGHBOR_YM_BOUNDARY;
 							boundaryType = pVolumeElement[index].feature->getYmBoundaryType();
@@ -650,7 +661,8 @@ bool CartesianMesh::setBoundaryConditions()
 						}
 
 						if (boundaryType == BOUNDARY_VALUE){
-							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;      
+							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;
+							pVolumeElement[index].region->setBoundaryDirichlet();
 						} else if (boundaryType == BOUNDARY_PERIODIC) {
 							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_PERIODIC;
 						} else if (boundaryType == BOUNDARY_FLUX) {
@@ -686,6 +698,7 @@ bool CartesianMesh::setBoundaryConditions()
 							boundaryCount ++;
 						}
 						index = zBoundary[k] * numXY + j * numX + i;
+						pVolumeElement[index].region->setNotClosed();
 						if (k == 0) {
 							pVolumeElement[index].neighborMask |= NEIGHBOR_ZM_BOUNDARY;
 							boundaryType = pVolumeElement[index].feature->getZmBoundaryType();
@@ -695,7 +708,8 @@ bool CartesianMesh::setBoundaryConditions()
 						}
 
 						if (boundaryType == BOUNDARY_VALUE){
-							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;      
+							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_DIRICHLET;
+							pVolumeElement[index].region->setBoundaryDirichlet();
 						} else if (boundaryType == BOUNDARY_PERIODIC) {
 							pVolumeElement[index].neighborMask |= BOUNDARY_TYPE_PERIODIC;
 						} else if (boundaryType == BOUNDARY_FLUX) {
@@ -719,6 +733,15 @@ bool CartesianMesh::setBoundaryConditions()
 		}
 	}// end switch (getDimension())
 
+	cout << setprecision(10) << endl;
+	for (int i = 0; i < getNumVolumeRegions(); i ++) {
+		if (!pVolumeRegions[i]->isBoundaryDirichlet()) {
+			int volIndex = pVolumeRegions[i]->getIndex(0);
+			WorldCoord wc = getVolumeWorldCoord(volIndex);
+			pVolumeElement[volIndex].neighborMask |= ELLIPTIC_PINNED;
+			cout << "in region " << pVolumeRegions[i]->getName() << " at point " << volIndex << " " << wc << ", solution is fixed to 0" << endl;
+		}
+	}
 	return true;
 }
 

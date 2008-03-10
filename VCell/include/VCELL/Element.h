@@ -14,6 +14,8 @@ using namespace std;
 #define BOUNDARY_TYPE_NEUMANN	   0x20000   // '0010 0000 0000 0000 0000'b
 #define BOUNDARY_TYPE_PERIODIC	   0x40000   // '0100 0000 0000 0000 0000'b
 
+#define ELLIPTIC_PINNED			   0x80000   // '1000 0000 0000 0000 0000'b
+
 #define VOLUME_MASK                0x0000E   // '0000 0000 0000 0000 1110'b
 #define VOLUME_HALF                0x00002   // '0000 0000 0000 0000 0010'b
 #define VOLUME_QUARTER             0x00004   // '0000 0000 0000 0000 0100'b

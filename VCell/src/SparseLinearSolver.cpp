@@ -149,6 +149,16 @@ int* SparseLinearSolver::PCGSolve(bool bRecomputeIncompleteFactorization)
 		IParm[13] = 1; // reuse all incomplete factorization.
 	}
 
+	// SET ALPHA and OMEGA
+	if (eqnBuilder->isElliptic()) {		
+		memset(pNew, 0, size * sizeof(double)); // for elliptic case, we always start with zero initial guess
+		RParm[0] = 0.0001;
+        RParm[1] = 0.9;
+	} else {
+		RParm[0] = 0.0;
+        RParm[1] = 1.0;
+	}
+
 	// Call fortran wrapper for pcgpack
 	// ---------------------------------
 	// Set tolerance
@@ -158,6 +168,18 @@ int* SparseLinearSolver::PCGSolve(bool bRecomputeIncompleteFactorization)
 
 	string varname = var->getName();
 	double RHSscale = computeRHSscale(size, pRHS, varname);
+
+#ifdef SHOW_MATRIX
+		cout << setprecision(10);
+		cout << "----SparseLinearSolver----Variable " << var->getName() << " at " << SimTool::getInstance()->getSimulation()->getTime_sec() << "---------------" << endl;
+		A->show();
+		cout << "--------SparseLinearSolver----RHS-----------" << endl;
+		for (int index = 0; index < size; index++){
+			//if (pRHS[index] != 0) {
+				cout << index << "\t" << pRHS[index] << endl;
+			//}
+		}
+#endif
 
 	PCGWRAPPER(&size, &Nrsp, &symmetricflg, ija, sa, pRHS, pNew, &PCG_Tolerance, IParm, RParm, pcg_workspace, pcg_workspace, &RHSscale); 
 	SimTool::getInstance()->stopTimer(tHndPCG);
@@ -175,20 +197,11 @@ int* SparseLinearSolver::PCGSolve(bool bRecomputeIncompleteFactorization)
 
 #ifdef SHOW_MATRIX
 	if (IParm[50] == 0) {
-		cout << setprecision(10);
-		cout << "----SparseLinearSolver----Variable " << var->getName() << " at " << SimTool::getInstance()->getSimulation()->getTime_sec() << "---------------" << endl;
-		A->show();
-		cout << "--------SparseLinearSolver----RHS-----------" << endl;
-		for (int index = 0; index < size; index++){
-			if (pRHS[index] != 0) {
-				cout << index << "\t" << pRHS[index] / RHSscale << endl;
-			}
-		}
 		cout << "--------SparseLinearSolver----Solution-----------" << endl;
 		for (int index = 0; index < size; index++){
-			if (pNew[index] != 0) {
+			//if (pNew[index] != 0) {
 				cout << index << "\t" << pNew[index] << endl;
-			}
+			//}
 		}
 	}
 #endif

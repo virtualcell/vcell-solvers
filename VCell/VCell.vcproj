@@ -1,180 +1,268 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="8.00"
 	Name="VCell"
 	ProjectGUID="{4CBF3C66-AA7E-4456-AB4A-D0D83B9755E9}"
-	Keyword="Win32Proj">
+	RootNamespace="VCell"
+	Keyword="Win32Proj"
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
 			ConfigurationType="4"
-			CharacterSet="2">
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000"
-				MinimalRebuild="TRUE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000;USE_MESSAGING"
+				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="4"/>
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="4"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/VCell.lib"/>
+				OutputFile="$(OutDir)/VCell.lib"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
-			ConfigurationType="1"
-			CharacterSet="2">
+			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="4"
-				UsePrecompiledHeader="3"
+				AdditionalIncludeDirectories="..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;USE_MESSAGING;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_DEPRECATE"
+				RuntimeLibrary="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"/>
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
-				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/VCell.exe"
-				LinkIncremental="1"
-				GenerateDebugInformation="TRUE"
-				SubSystem="1"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
-				TargetMachine="1"/>
+				Name="VCResourceCompilerTool"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCLibrarianTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="MTD|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
-			CharacterSet="2">
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;USE_MESSAGING;_WIN32_WINNT=0x2000"
-				MinimalRebuild="TRUE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;USE_MESSAGING;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_DEPRECATE"
+				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				RuntimeTypeInfo="TRUE"
+				RuntimeTypeInfo="true"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="4"/>
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="4"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/VCell.lib"/>
+				OutputFile="$(OutDir)/VCell.lib"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="MT|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
-			CharacterSet="2">
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_WIN32_WINNT=0x2000"
 				RuntimeLibrary="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"/>
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
-				Name="VCLibrarianTool"/>
+				Name="VCResourceCompilerTool"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCLibrarianTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -183,406 +271,551 @@
 		<Filter
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
-			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
+			>
 			<File
-				RelativePath=".\src\AlgebraicSystem.cpp">
+				RelativePath=".\src\AlgebraicSystem.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\CartesianMesh.cpp">
+				RelativePath=".\src\CartesianMesh.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\Contour.cpp">
+				RelativePath=".\src\Contour.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\ContourRegionVariable.cpp">
+				RelativePath=".\src\ContourRegionVariable.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\ContourSubdomain.cpp">
+				RelativePath=".\src\ContourSubdomain.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\ContourVarContext.cpp">
+				RelativePath=".\src\ContourVarContext.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\ContourVariable.cpp">
+				RelativePath=".\src\ContourVariable.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\DataSet.cpp">
+				RelativePath=".\src\DataSet.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\EqnBuilder.cpp">
+				RelativePath=".\src\EllipticVolumeEqnBuilder.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\EqnBuilderReactionDiffusion.cpp">
+				RelativePath=".\src\EqnBuilder.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\EqnBuilderReactionDiffusionConvection.cpp">
+				RelativePath=".\src\EqnBuilderReactionDiffusion.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\EqnBuilderReactionForward.cpp">
+				RelativePath=".\src\EqnBuilderReactionDiffusionConvection.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\FastSystem.cpp">
+				RelativePath=".\src\EqnBuilderReactionForward.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\FastSystemExpression.cpp">
+				RelativePath=".\src\FastSystem.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\Feature.cpp">
+				RelativePath=".\src\FastSystemExpression.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\FieldData.cpp">
+				RelativePath=".\src\Feature.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\FVUtils.cpp">
+				RelativePath=".\src\FieldData.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\Histogram.cpp">
+				RelativePath=".\src\FVUtils.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\MembraneEqnBuilderDiffusion.cpp">
+				RelativePath=".\src\Histogram.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\MembraneEqnBuilderForward.cpp">
+				RelativePath=".\src\MembraneEqnBuilderDiffusion.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\MembraneRegion.cpp">
+				RelativePath=".\src\MembraneEqnBuilderForward.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\MembraneRegionEqnBuilder.cpp">
+				RelativePath=".\src\MembraneRegion.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\MembraneRegionVarContext.cpp">
+				RelativePath=".\src\MembraneRegionEqnBuilder.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\MembraneRegionVarContextExpression.cpp">
+				RelativePath=".\src\MembraneRegionVarContext.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\MembraneRegionVariable.cpp">
+				RelativePath=".\src\MembraneRegionVarContextExpression.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\MembraneVarContext.cpp">
+				RelativePath=".\src\MembraneRegionVariable.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\MembraneVarContextExpression.cpp">
+				RelativePath=".\src\MembraneVarContext.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\MembraneVariable.cpp">
+				RelativePath=".\src\MembraneVarContextExpression.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\Mesh.cpp">
+				RelativePath=".\src\MembraneVariable.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\ODESolver.cpp">
+				RelativePath=".\src\Mesh.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\ParticleContext.cpp">
+				RelativePath=".\src\ODESolver.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\PDESolver.cpp">
+				RelativePath=".\src\ParticleContext.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\PdeSolverDiana.cpp">
+				RelativePath=".\src\PDESolver.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\Region.cpp">
+				RelativePath=".\src\PdeSolverDiana.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\Scheduler.cpp">
+				RelativePath=".\src\Region.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\SerialScheduler.cpp">
+				RelativePath=".\src\Scheduler.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\SimTool.cpp">
+				RelativePath=".\src\SerialScheduler.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\Simulation.cpp">
+				RelativePath=".\src\SimTool.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\SimulationExpression.cpp">
+				RelativePath=".\src\Simulation.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\SimulationMessaging.cpp">
+				RelativePath=".\src\SimulationExpression.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\Solver.cpp">
+				RelativePath=".\src\SimulationMessaging.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\SparseLinearSolver.cpp">
+				RelativePath=".\src\Solver.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\SparseMatrix.cpp">
+				RelativePath=".\src\SparseLinearSolver.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\SparseMatrixEqnBuilder.cpp">
+				RelativePath=".\src\SparseMatrix.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\SparseMatrixPCG.cpp">
+				RelativePath=".\src\SparseMatrixEqnBuilder.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\SparseVolumeEqnBuilder.cpp">
+				RelativePath=".\src\SparseMatrixPCG.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\SplitScheduler.cpp">
+				RelativePath=".\src\SparseVolumeEqnBuilder.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\StructuredPDESolver.cpp">
+				RelativePath=".\src\SplitScheduler.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\Timer.cpp">
+				RelativePath=".\src\StructuredPDESolver.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\TriDiagMatrix.cpp">
+				RelativePath=".\src\Timer.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\VarContext.cpp">
+				RelativePath=".\src\TriDiagMatrix.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\Variable.cpp">
+				RelativePath=".\src\VarContext.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\VCellModel.cpp">
+				RelativePath=".\src\Variable.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\VolumeRegion.cpp">
+				RelativePath=".\src\VCellModel.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\VolumeRegionEqnBuilder.cpp">
+				RelativePath=".\src\VolumeRegion.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\VolumeRegionVarContext.cpp">
+				RelativePath=".\src\VolumeRegionEqnBuilder.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\VolumeRegionVarContextExpression.cpp">
+				RelativePath=".\src\VolumeRegionVarContext.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\VolumeRegionVariable.cpp">
+				RelativePath=".\src\VolumeRegionVarContextExpression.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\VolumeVarContext.cpp">
+				RelativePath=".\src\VolumeRegionVariable.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\VolumeVarContextExpression.cpp">
+				RelativePath=".\src\VolumeVarContext.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\src\VolumeVariable.cpp">
+				RelativePath=".\src\VolumeVarContextExpression.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\VolumeVariable.cpp"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
-			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
+			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
+			>
 			<File
-				RelativePath=".\include\Vcell\AlgebraicSystem.h">
+				RelativePath=".\include\Vcell\AlgebraicSystem.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\CartesianMesh.h">
+				RelativePath=".\include\Vcell\CartesianMesh.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\Contour.h">
+				RelativePath=".\include\Vcell\Contour.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\ContourRegionVariable.h">
+				RelativePath=".\include\Vcell\ContourRegionVariable.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\ContourSubdomain.h">
+				RelativePath=".\include\Vcell\ContourSubdomain.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\ContourVarContext.h">
+				RelativePath=".\include\Vcell\ContourVarContext.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\ContourVariable.h">
+				RelativePath=".\include\Vcell\ContourVariable.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\DataSet.h">
+				RelativePath=".\include\Vcell\DataSet.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\DomainPDEScheduler.h">
+				RelativePath=".\include\Vcell\DomainPDEScheduler.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\DoubleVector3.h">
+				RelativePath=".\include\Vcell\DoubleVector3.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\Element.h">
+				RelativePath=".\include\Vcell\Element.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\EqnBuilder.h">
+				RelativePath=".\include\VCELL\EllipticVolumeEqnBuilder.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\EqnBuilderReactionDiffusion.h">
+				RelativePath=".\include\Vcell\EqnBuilder.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\EqnBuilderReactionDiffusionConvection.h">
+				RelativePath=".\include\Vcell\EqnBuilderReactionDiffusion.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\EqnBuilderReactionForward.h">
+				RelativePath=".\include\Vcell\EqnBuilderReactionDiffusionConvection.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\FastSystem.h">
+				RelativePath=".\include\Vcell\EqnBuilderReactionForward.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\FastSystemExpression.h">
+				RelativePath=".\include\Vcell\FastSystem.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\Feature.h">
+				RelativePath=".\include\Vcell\FastSystemExpression.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\FieldData.h">
+				RelativePath=".\include\Vcell\Feature.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\FVUtils.h">
+				RelativePath=".\include\Vcell\FieldData.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\Histogram.h">
+				RelativePath=".\include\Vcell\FVUtils.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\IncidenceMatrix.h">
+				RelativePath=".\include\Vcell\Histogram.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\MembraneEqnBuilderDiffusion.h">
+				RelativePath=".\include\Vcell\IncidenceMatrix.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\MembraneEqnBuilderForward.h">
+				RelativePath=".\include\Vcell\MembraneEqnBuilderDiffusion.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\MembraneRegion.h">
+				RelativePath=".\include\Vcell\MembraneEqnBuilderForward.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\MembraneRegionEqnBuilder.h">
+				RelativePath=".\include\Vcell\MembraneRegion.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\MembraneRegionVarContext.h">
+				RelativePath=".\include\Vcell\MembraneRegionEqnBuilder.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\MembraneRegionVarContextExpression.h">
+				RelativePath=".\include\Vcell\MembraneRegionVarContext.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\MembraneRegionVariable.h">
+				RelativePath=".\include\Vcell\MembraneRegionVarContextExpression.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\MembraneVarContext.h">
+				RelativePath=".\include\Vcell\MembraneRegionVariable.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\MembraneVarContextExpression.h">
+				RelativePath=".\include\Vcell\MembraneVarContext.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\MembraneVariable.h">
+				RelativePath=".\include\Vcell\MembraneVarContextExpression.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\Mesh.h">
+				RelativePath=".\include\Vcell\MembraneVariable.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\ODESolver.h">
+				RelativePath=".\include\Vcell\Mesh.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\ParticleContext.h">
+				RelativePath=".\include\Vcell\ODESolver.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\PDEScheduler.h">
+				RelativePath=".\include\Vcell\ParticleContext.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\PDESolver.h">
+				RelativePath=".\include\Vcell\PDEScheduler.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\PdeSolverDiana.h">
+				RelativePath=".\include\Vcell\PDESolver.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\Region.h">
+				RelativePath=".\include\Vcell\PdeSolverDiana.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\Scheduler.h">
+				RelativePath=".\include\Vcell\Region.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\SerialScheduler.h">
+				RelativePath=".\include\Vcell\Scheduler.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\SimTool.h">
+				RelativePath=".\include\Vcell\SerialScheduler.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\SimTypes.h">
+				RelativePath=".\include\Vcell\SimTool.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\Simulation.h">
+				RelativePath=".\include\Vcell\SimTypes.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\SimulationExpression.h">
+				RelativePath=".\include\Vcell\Simulation.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\SimulationMessaging.h">
+				RelativePath=".\include\Vcell\SimulationExpression.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\Solver.h">
+				RelativePath=".\include\Vcell\SimulationMessaging.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\SparseLinearSolver.h">
+				RelativePath=".\include\Vcell\Solver.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\SparseMatrix.h">
+				RelativePath=".\include\Vcell\SparseLinearSolver.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\SparseMatrixEqnBuilder.h">
+				RelativePath=".\include\Vcell\SparseMatrix.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\SparseMatrixPCG.h">
+				RelativePath=".\include\Vcell\SparseMatrixEqnBuilder.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\SparseVolumeEqnBuilder.h">
+				RelativePath=".\include\Vcell\SparseMatrixPCG.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\SplitScheduler.h">
+				RelativePath=".\include\Vcell\SparseVolumeEqnBuilder.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\StructuredPDESolver.h">
+				RelativePath=".\include\Vcell\SplitScheduler.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\Timer.h">
+				RelativePath=".\include\Vcell\StructuredPDESolver.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\TriDiagMatrix.h">
+				RelativePath=".\include\Vcell\Timer.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\VarContext.h">
+				RelativePath=".\include\Vcell\TriDiagMatrix.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\Variable.h">
+				RelativePath=".\include\Vcell\VarContext.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\VCellModel.h">
+				RelativePath=".\include\Vcell\Variable.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\VolumeRegion.h">
+				RelativePath=".\include\Vcell\VCellModel.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\VolumeRegionEqnBuilder.h">
+				RelativePath=".\include\Vcell\VolumeRegion.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\VolumeRegionVarContext.h">
+				RelativePath=".\include\Vcell\VolumeRegionEqnBuilder.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\VolumeRegionVarContextExpression.h">
+				RelativePath=".\include\Vcell\VolumeRegionVarContext.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\VolumeRegionVariable.h">
+				RelativePath=".\include\Vcell\VolumeRegionVarContextExpression.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\VolumeVarContext.h">
+				RelativePath=".\include\Vcell\VolumeRegionVariable.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\VolumeVarContextExpression.h">
+				RelativePath=".\include\Vcell\VolumeVarContext.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\VolumeVariable.h">
+				RelativePath=".\include\Vcell\VolumeVarContextExpression.h"
+				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\VoronoiRidge.h">
+				RelativePath=".\include\Vcell\VolumeVariable.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\Vcell\VoronoiRidge.h"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
+			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
+			>
 			<File
-				RelativePath=".\src\Makefile.Win32">
+				RelativePath=".\src\Makefile.Win32"
+				>
+			</File>
+			<File
+				RelativePath=".\src\pcgwrapper.f"
+				>
 			</File>
 		</Filter>
 	</Files>
