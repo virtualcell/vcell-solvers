@@ -367,10 +367,12 @@ double StackMachine::evaluate(double* values){
 			default:
 				throw Exception("StackMachine: unknown stack element type " + token->type);
 		}
-		if (EP_double_infinity == -*tos || EP_double_infinity == *tos) {
-			throw FunctionRangeException("Evaluated to infinity");
-		} else if (*tos != *tos) {
-			throw FunctionRangeException("Evaluated to NaN");
+		if (tos >= workingStack) {
+			if (EP_double_infinity == -*tos || EP_double_infinity == *tos) {
+				throw FunctionRangeException("Evaluated to infinity");
+			} else if (*tos != *tos) {
+				throw FunctionRangeException("Evaluated to NaN");
+			}
 		}
 		//cout << "------" << i << "--------" << endl;
 		//for (int c = 0; c < tos-workingStack+1; c++) {

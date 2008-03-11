@@ -40,6 +40,7 @@ CPPOBJECTS = 	\
 	ContourVarContext.o					\
 	ContourVariable.o         \
 	DataSet.o  								 \
+	EllipticVolumeEqnBuilder.o    \
 	EqnBuilder.o    \
 	EqnBuilderReactionForward.o \
 	FastSystem.o              \
