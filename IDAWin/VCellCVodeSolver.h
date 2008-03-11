@@ -20,6 +20,8 @@ private:
 	
 	int RHS(realtype t, N_Vector y, N_Vector yp);
 	static int RHS_callback(realtype t, N_Vector y, N_Vector r, void *fdata);	
+	char* getCVodeErrorMessage(int returnCode);
+	void checkCVodeFlag(int flag);
 };
 
 #endif

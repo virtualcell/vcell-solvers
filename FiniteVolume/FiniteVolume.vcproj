@@ -121,12 +121,13 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;..\VCell\include;..\zlib;..\IDAWin;..\ExpressionParser"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;USE_MESSAGING;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="0"
-				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
+				ErrorReporting="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -139,9 +140,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="Ws2_32.lib pcgwrapper.lib pcgpack_dbl.lib qhull.lib mkl_c.lib zip32.lib unzip32.lib zlib.lib libsmq.lib libsmqj.lib"
 				OutputFile="$(OutDir)/FiniteVolume.exe"
 				LinkIncremental="1"
-				GenerateDebugInformation="true"
+				AdditionalLibraryDirectories="..\VCell\src;..\PCGPack;..\SonicCClient\Win32\lib;..\unzip;..\zlib;..\zip;..\qhull;..\IFortran"
+				IgnoreDefaultLibraryNames=""
+				GenerateDebugInformation="false"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"

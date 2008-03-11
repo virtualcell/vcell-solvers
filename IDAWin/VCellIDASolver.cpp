@@ -14,7 +14,7 @@ using namespace VCell;
 #include <ida/ida_dense.h>
 #include <nvector/nvector_serial.h>
 
-char* getIDAErrorMessage(int returnCode) {
+char* VCellIDASolver::getIDAErrorMessage(int returnCode) {
 	char *errMsg = NULL;
 	switch (returnCode) {
 		case IDA_SUCCESS: {
@@ -63,7 +63,9 @@ char* getIDAErrorMessage(int returnCode) {
 			return "IDA_CONSTR_FAIL: The inequality constraints were violated, and the solver was unable to recover.";
 		}
 		case IDA_REP_RES_ERR:{
-			return "IDA_REP_RES_ERR: The user's residual function repeatedly returned a recoverable error flag, but the solver was unable to recover.";
+			char* errMsg = new char[MAX_EXPRESSION_LENGTH + 100];
+			sprintf(errMsg, "IDA_REP_RES_ERR: The user's residual function repeatedly returned a recoverable error flag, but the solver was unable to recover.: %s", recoverableErrMsg.c_str());
+			return errMsg;
 		}
 		case IDA_MEM_FAIL:{
 			return "IDA_MEM_FAIL: A memory allocation request has failed.";
@@ -91,7 +93,7 @@ char* getIDAErrorMessage(int returnCode) {
 	}
 }
 
-void checkIDAFlag(int flag) {
+void VCellIDASolver::checkIDAFlag(int flag) {
 	if (flag != IDA_SUCCESS){
 		throw getIDAErrorMessage(flag);
 	}
@@ -158,15 +160,19 @@ int VCellIDASolver::Residual(realtype t, N_Vector y, N_Vector yp, N_Vector resid
 		for (int i = numDifferential; i < numDifferential + numAlgebraic; i ++) {
 			NV_Ith_S(residual, i) = rhsExpressions[i]->evaluateVector(values);
 		}
+		recoverableErrMsg = "";
 		return 0;
 	}catch (DivideByZeroException e){
 		cout << "failed to evaluate residual: " << e.getMessage() << endl;
+		recoverableErrMsg = e.getMessage();
 		return 1;
 	}catch (FunctionDomainException e){
 		cout << "failed to evaluate residual: " << e.getMessage() << endl;
+		recoverableErrMsg = e.getMessage();
 		return 1;
 	}catch (FunctionRangeException e){
 		cout << "failed to evaluate residual: " << e.getMessage() << endl;
+		recoverableErrMsg = e.getMessage();
 		return 1;
 	}
 }

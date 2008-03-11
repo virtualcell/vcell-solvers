@@ -15,7 +15,7 @@
 #include <sundials/sundials_dense.h> /* definitions DenseMat DENSE_ELEM */
 #include <sundials/sundials_types.h> /* definition of type realtype */
 
-char* getCVodeErrorMessage(int returnCode) {
+char* VCellCVodeSolver::getCVodeErrorMessage(int returnCode) {
 	switch (returnCode){
 		case CV_SUCCESS: {
 			return "CV_SUCCESS: CVode succeeded and no roots were found.";
@@ -53,12 +53,22 @@ char* getCVodeErrorMessage(int returnCode) {
 		case CV_LSOLVE_FAIL:{
 			return "CV_LSOLVE_FAIL: the linear solver's solve routine failed in an unrecoverable manner";
 		}
+		case CV_REPTD_RHSFUNC_ERR: {
+			char* errMsg = new char[MAX_EXPRESSION_LENGTH + 100];
+			sprintf(errMsg, "repeated recoverable right-hand side function errors : %s", recoverableErrMsg.c_str());
+			return errMsg;
+		}
+		case CV_UNREC_RHSFUNC_ERR:{
+			char* errMsg = new char[MAX_EXPRESSION_LENGTH + 100];
+			sprintf(errMsg, "the right-hand side failed in a recoverable manner, but no recovery is possible : %s", recoverableErrMsg.c_str());
+			return errMsg;
+		}
 		default:
 			return CVodeGetReturnFlagName(returnCode);
 	}	
 }
 
-void checkCVodeFlag(int flag) {
+void VCellCVodeSolver::checkCVodeFlag(int flag) {
 	if (flag != CV_SUCCESS){
 		throw getCVodeErrorMessage(flag);
 	}
@@ -237,15 +247,19 @@ int VCellCVodeSolver::RHS (realtype t, N_Vector y, N_Vector r) {
 		for (int i = 0; i < NEQ; i ++) {
 			r_data[i] = rateExpressions[i]->evaluateVector(values);
 		}
+		recoverableErrMsg = "";
 		return 0;
 	}catch (DivideByZeroException e){
 		cout << "failed to evaluate residual: " << e.getMessage() << endl;
+		recoverableErrMsg = e.getMessage();
 		return 1;
 	}catch (FunctionDomainException e){
 		cout << "failed to evaluate residual: " << e.getMessage() << endl;
+		recoverableErrMsg = e.getMessage();
 		return 1;
 	}catch (FunctionRangeException e){
 		cout << "failed to evaluate residual: " << e.getMessage() << endl;
+		recoverableErrMsg = e.getMessage();
 		return 1;
 	}
 }

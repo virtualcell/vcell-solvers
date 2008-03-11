@@ -30,6 +30,8 @@ private:
 	static int Residual_callback(realtype t, N_Vector y, N_Vector yp, N_Vector residual, void *rdata);
 	void initIDA(double* paramValues);
 	void idaSolve(bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long));
+	char* getIDAErrorMessage(int returnCode);
+	void checkIDAFlag(int flag);
 };
 
 #endif

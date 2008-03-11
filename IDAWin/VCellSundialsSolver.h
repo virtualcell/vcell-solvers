@@ -43,6 +43,7 @@ protected:
 	OdeResultSet* odeResultSet;		// mainly for parameter optimization use but it also stores column names
 
 	void* solver;	// the memory for solver
+	string recoverableErrMsg;
 
 	int NEQ;
 	int NPARAM;
