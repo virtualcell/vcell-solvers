@@ -458,6 +458,7 @@ void SimTool::start()
     double startTime=simulation->getTime_sec();
     double percentile=startTime/simEndTime;
     double increment =0.01;
+	double lastSentPercentile = percentile;
 	//
     // store initial log if enabled
     //
@@ -513,7 +514,10 @@ void SimTool::start()
             }
         }
 		percentile = (simulation->getTime_sec() - startTime)/(simEndTime - startTime);
-		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec())); 		
+		if (percentile - lastSentPercentile >= increment) {
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec())); 
+			lastSentPercentile = percentile;
+		}
 	}
 
 	if (bStopSimulation) {
