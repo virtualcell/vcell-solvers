@@ -738,8 +738,7 @@ bool CartesianMesh::setBoundaryConditions()
 		if (!pVolumeRegions[i]->isBoundaryDirichlet()) {
 			int volIndex = pVolumeRegions[i]->getIndex(0);
 			WorldCoord wc = getVolumeWorldCoord(volIndex);
-			pVolumeElement[volIndex].neighborMask |= ELLIPTIC_PINNED;
-			cout << "in region " << pVolumeRegions[i]->getName() << " at point " << volIndex << " " << wc << ", solution is fixed to 0" << endl;
+			pVolumeElement[volIndex].neighborMask |= ELLIPTIC_PINNED;			
 		}
 	}
 	return true;

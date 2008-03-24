@@ -507,6 +507,7 @@ double EllipticVolumeEqnBuilder::computeRHS(int index) {
 	int mask = pVolumeElement[index].neighborMask;
 
 	if (mask & ELLIPTIC_PINNED) {
+		cout << endl << "Note!!! for variable " << var->getName() << " in region " << pVolumeElement[index].region->getName() << " at point " << index << ", the solution is fixed to 0" << endl;
 		return 0;
 	}
 
