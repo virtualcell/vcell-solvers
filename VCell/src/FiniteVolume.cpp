@@ -271,57 +271,72 @@ SimulationExpression* loadSimulation(ifstream& ifsInput, CartesianMesh* mesh) {
 
 			bool bNoConvection = true;
 			bool bTimeDependent = false;
-			string advectionflag, time_dependent_diffusion_flag;
-			ifsInput >> variable_name >> unit >> time_dependent_diffusion_flag >> advectionflag;
+			string advectionflag, time_dependent_diffusion_flag, solve_whole_mesh_flag;
+			ifsInput >> variable_name >> unit >> time_dependent_diffusion_flag >> advectionflag >> solve_whole_mesh_flag;			
 
-			string line;
-			getline(ifsInput, line);
-			line = trim(line);
-
+			bool bSolveVariable = true;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
 			int *solveRegions = NULL;
 
-			if (line.length() != 0) {
-				solveRegions = new int[numVolumeRegions];				
-				numSolveRegions = loadSolveRegions(mesh, line, solveRegions);
-			}						
-			
+			if (solve_whole_mesh_flag == "false") {
+				string line;
+				getline(ifsInput, line);
+				line = trim(line);
+
+				if (line.length() == 0) {
+					bSolveVariable = false;
+				} else {
+					solveRegions = new int[numVolumeRegions];				
+					numSolveRegions = loadSolveRegions(mesh, line, solveRegions);
+				}
+			}
+
 			VolumeVariable* volumeVar = new VolumeVariable(sizeX, sizeY, sizeZ, variable_name, unit);
-			if (advectionflag == "true" ) {
-				bNoConvection = false;
+			if (bSolveVariable) {				
+				if (advectionflag == "true" ) {
+					bNoConvection = false;
+				}
+				if (time_dependent_diffusion_flag == "true") {
+					bTimeDependent = true;
+				}				
+				SparseMatrixEqnBuilder* builder = 0;
+				if (bSteady) {
+					builder = new EllipticVolumeEqnBuilder(volumeVar,mesh, numSolveRegions, solveRegions);
+				} else {
+					builder = new SparseVolumeEqnBuilder(volumeVar,mesh, bNoConvection, numSolveRegions, solveRegions);
+				}
+				PDESolver* pdeSolver = new SparseLinearSolver(volumeVar,builder,bTimeDependent);
+				sim->addSolver(pdeSolver);
 			}
-			if (time_dependent_diffusion_flag == "true") {
-				bTimeDependent = true;
-			}			
-			SparseMatrixEqnBuilder* builder = 0;
-			if (bSteady) {
-				builder = new EllipticVolumeEqnBuilder(volumeVar,mesh, numSolveRegions, solveRegions);
-			} else {
-				builder = new SparseVolumeEqnBuilder(volumeVar,mesh, bNoConvection, numSolveRegions, solveRegions);
-			}
-			PDESolver* pdeSolver = new SparseLinearSolver(volumeVar,builder,bTimeDependent);
-			sim->addSolver(pdeSolver);
 			sim->addVariable(volumeVar);
 		} else if (nextToken == "VOLUME_ODE") {
-			ifsInput >> variable_name >> unit;
-
-			string line;
-			getline(ifsInput, line);
-			line = trim(line);
+			string solve_whole_mesh_flag;
+			ifsInput >> variable_name >> unit >> solve_whole_mesh_flag;
 
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
 			int *solveRegions = NULL;
 
-			if (line.size() != 0) {
-				solveRegions = new int[numVolumeRegions];				
-				numSolveRegions = loadSolveRegions(mesh, line, solveRegions);
-			}					
+			bool bSolveVariable = true;
+			if (solve_whole_mesh_flag == "false") {
+				string line;
+				getline(ifsInput, line);
+				line = trim(line);
+
+				if (line.length() == 0) {
+					bSolveVariable = false;
+				} else {
+					solveRegions = new int[numVolumeRegions];				
+					numSolveRegions = loadSolveRegions(mesh, line, solveRegions);
+				}
+			}
 
 			VolumeVariable* volumeVar = new VolumeVariable(sizeX, sizeY, sizeZ, variable_name, unit);
-			ODESolver* odeSolver = new ODESolver(volumeVar,mesh,numSolveRegions,solveRegions);
-			EqnBuilder* builder = new EqnBuilderReactionForward(volumeVar,mesh,odeSolver);
-			odeSolver->setEqnBuilder(builder);
-			sim->addSolver(odeSolver);
+			if (bSolveVariable) {
+				ODESolver* odeSolver = new ODESolver(volumeVar,mesh,numSolveRegions,solveRegions);
+				EqnBuilder* builder = new EqnBuilderReactionForward(volumeVar,mesh,odeSolver);
+				odeSolver->setEqnBuilder(builder);
+				sim->addSolver(odeSolver);
+			}
 			sim->addVariable(volumeVar);
 		} else if (nextToken == "MEMBRANE_ODE") {
 			ifsInput >> variable_name >> unit;
@@ -808,7 +823,8 @@ void loadSimulationParameters(ifstream& ifsInput) {
 		} else if (nextToken == "SIMULATION_PARAM_END") {
 			break;
 		} else if (nextToken == "BASE_FILE_NAME") {
-			ifsInput >> basefilename;
+			getline(ifsInput, basefilename);
+			basefilename = trim(basefilename);
 		} else if (nextToken == "ENDING_TIME") {
 			ifsInput >> end_time;
 		} else if (nextToken == "TIME_STEP") {
@@ -854,7 +870,8 @@ CartesianMesh* loadMesh(ifstream& ifsInput) {
 		} else if (nextToken == "MESH_END") {
 			break;
 		} else if (nextToken == "VCG_FILE") {
-			ifsInput >> meshfile;
+			getline(ifsInput, meshfile);
+			meshfile = trim(meshfile);
 			struct stat buf;
 			if (stat(meshfile.c_str(), &buf)) {
 				stringstream ss;
