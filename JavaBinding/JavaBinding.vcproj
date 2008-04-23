@@ -342,6 +342,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\cbit_vcell_solvers_NativeCVODESolver.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\cbit_vcell_solvers_NativeIDASolver.cpp"
 				>
 			</File>
@@ -353,6 +357,10 @@
 			>
 			<File
 				RelativePath=".\cbit_vcell_opt_solvers_NativeOptSolver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\cbit_vcell_solvers_NativeCVODESolver.h"
 				>
 			</File>
 			<File

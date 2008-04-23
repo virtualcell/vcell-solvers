@@ -22,3 +22,6 @@ $(LIB_TARGET) : $(OBJDIR) $(CPPOBJECTS)
 		
 clean:
 	rm $(LIB_TARGET) $(CPPOBJECTS)
+
+depend:
+	makedepend -Y -f Makefile.linux -- $(CFLAGS) -- *.c *.cpp

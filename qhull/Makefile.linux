@@ -43,4 +43,7 @@ $(TARGET): $(OBJS)
 	$(LIBTOOL) $@ $(OBJS)
 	ranlib $@
 
+depend:
+	makedepend -Y -f Makefile.linux -- $(CCOPTS1) -- *.c *.cpp
+
 # end of Makefile

@@ -104,4 +104,8 @@ $(TARGET_STANDALONE) : $(TARGET_LIB) $(STANDALONE_MAIN_OBJ) $(VCELL_LIBS)
 
 clean:
 	rm *.o
-	rm $(TARGET_LIB)	
+	rm $(TARGET_LIB)
+
+depend:
+	makedepend -Y -f Makefile.linux -- $(CPPFLAGS) -- *.c *.cpp
+	

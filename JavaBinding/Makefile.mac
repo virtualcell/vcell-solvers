@@ -22,10 +22,15 @@ default all: $(DLL_TARGET)
 
 CPPOBJECTS = \
 			cbit_vcell_opt_solvers_NativeOptSolver.o \
-			cbit_vcell_solvers_NativeIDASolver.o
+			cbit_vcell_solvers_NativeIDASolver.o \
+			cbit_vcell_solvers_NativeCVODESolver.o
 
 $(DLL_TARGET) : $(CPPOBJECTS) $(LIBS)
 	$(C++) -bundle -o $@ $(CPPOBJECTS) $(LIBS)	
 		
 clean:
 	rm $(DLL_TARGET) $(CPPOBJECTS)
+
+depend:
+	makedepend -Y -f Makefile.linux -- $(CFLAGS) -- *.c *.cpp
+	

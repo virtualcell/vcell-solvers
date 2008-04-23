@@ -23,3 +23,6 @@ $(STDALONE_TARGET): $(LIBS) $(CPPOBJECTS)
 	
 clean:
 	rm $(STDALONE_TARGET) $(CPPOBJECTS)
+
+depend:
+	makedepend -Y -f Makefile.linux -- $(CFLAGS) -- *.c *.cpp

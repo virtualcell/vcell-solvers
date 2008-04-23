@@ -64,3 +64,7 @@ $(TARGET):	$(CPPOBJECTS)
 clean:	
 	rm *.o
 	rm $(TARGET)
+	
+depend:
+	makedepend -Y -f Makefile.linux -- $(CPPFLAGS) -- *.c *.cpp
+

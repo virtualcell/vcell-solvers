@@ -13,7 +13,7 @@ default all:	$(STDALONE_TARGET)
 
 STDALONE_CPPOBJECTS = CVodeStandalone.obj 
 		
-$(STDALONE_TARGET): $(STDALONE_CPPOBJECTS)
+$(STDALONE_TARGET): $(STDALONE_CPPOBJECTS) ..\IDAWin\vcellIDA.lib ..\ExpressionParser\ExpParser.lib
 	cl -Fe$@ $(STDALONE_CPPOBJECTS) $(LIBS)
 		
 clean:

@@ -30,3 +30,6 @@ $(SRCLIB) : $(OBJS)
 #
 clean:
 	rm $(SRCLIB) $(OBJS)
+
+depend:
+	makedepend -f Makefile.linux -- $(COPTIONS) -- *.c *.cpp

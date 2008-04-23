@@ -22,3 +22,6 @@ $(VCELLIDALIB): $(CPPOBJECTS)
 				
 clean:
 	rm $(VCELLIDALIB) $(CPPOBJECTS)
+
+depend:
+	makedepend -Y -f Makefile.linux -- $(CFLAGS) -- *.c *.cpp

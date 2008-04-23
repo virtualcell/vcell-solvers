@@ -474,7 +474,7 @@ void VCellIDASolver::initIDA(double* paramValues) {
 	flag = IDAGetConsistentIC(solver, y, yp);
 	checkIDAFlag(flag);
 
-	IDASetMaxNumSteps(solver, 3000);
+	IDASetMaxNumSteps(solver, 5000);
 
 	//cout << "aftere IDACalcIC" << endl;
 	//DEBUG_PRINT

@@ -33,3 +33,6 @@ $(FORLIB) : $(OBJS)
 #
 clean:
 	rm $(FORLIB) $(OBJS)
+
+depend:
+	makedepend -f Makefile.linux -- $(COPTIONS) -- *.c *.cpp

@@ -150,7 +150,7 @@ tags:
 	etags *.[ch]
 
 depend:
-	makedepend -- $(CFLAGS) -- *.[ch]
+	makedepend -Y -- $(CFLAGS) -- *.[ch]
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 

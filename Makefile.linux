@@ -37,3 +37,21 @@ clean:
 	cd Optimization; make -f Makefile.linux clean
 	cd JavaBinding; make -f Makefile.linux clean
 	
+depend:
+	cd ExpressionParser ; make -f Makefile.linux depend
+	cd fsqp ; make -f Makefile.linux depend
+	cd PCGPack ; make -f Makefile.linux depend
+	cd qhull ; make -f Makefile.linux depend
+	cd unzip ; make -f Makefile.linux depend
+	cd zip ; make -f Makefile.linux depend
+	cd zlib ; make -f Makefile.linux depend
+	cd VCell/src ; make -f Makefile.linux depend
+	cd Stochastic/VCellStoch; make -f Makefile.linux depend
+	cd sundials/src; make -f Makefile.linux depend
+	cd IDAWin; make -f Makefile.linux depend
+	cd CVodeStandalone; make -f Makefile.linux depend
+	cd IdaStandalone; make -f Makefile.linux depend
+	cd netcdf-3.6.2; make -f Makefile.linux depend
+	cd Hy3S/src; make -f Makefile.linux depend
+	cd Optimization; make -f Makefile.linux depend
+	cd JavaBinding; make -f Makefile.linux depend

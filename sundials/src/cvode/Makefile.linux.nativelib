@@ -28,3 +28,6 @@ $(CVODE_LIB): $(CVODE_OBJ_FILES)
 
 clean:
 	rm *.o $(CVODE_LIB)
+
+depend:
+	makedepend -Y -f Makefile.linux -- $(CFLAGS) $(INCLUDES) -- *.c *.cpp

@@ -15,3 +15,10 @@ clean:
 	cd Optimization; make -f Makefile.linux.nativelib clean
 	cd JavaBinding; make -f Makefile.linux.nativelib clean
 	
+depend:
+	cd ExpressionParser ; make -f Makefile.linux.nativelib depend
+	cd fsqp ; make -f Makefile.linux.nativelib depend
+	cd sundials/src; make -f Makefile.linux.nativelib depend
+	cd IDAWin; make -f Makefile.linux.nativelib depend
+	cd Optimization; make -f Makefile.linux.nativelib depend
+	cd JavaBinding; make -f Makefile.linux.nativelib depend

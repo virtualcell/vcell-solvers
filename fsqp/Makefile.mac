@@ -1,6 +1,6 @@
 CC = gcc
 
-CFLAGS = -c -O2 -fexceptions -DLINUX -DUSE_VC_MEMORY_MANAGER  -I../Optimization
+CFLAGS = -c -O2 -fPIC -DMACOSX -DUSE_VC_MEMORY_MANAGER  -I../Optimization
 
 TARGETS=	libcfsqp.a
 

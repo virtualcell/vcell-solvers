@@ -208,6 +208,9 @@ $(UNZIPLIB) : $(OBJS) $(OBJU)
 	ar cru $@ $(OBJS) 
 	ranlib $@
 
+depend:
+	makedepend -Y -f Makefile.linux -- $(CF) -- *.c *.cpp
+
 unzip$E:	$(OBJS)			# add `&' for parallel makes
 	$(LD) $(LF) $(LOBJS) $(LF2)
 

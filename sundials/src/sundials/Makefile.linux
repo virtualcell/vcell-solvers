@@ -40,3 +40,6 @@ $(SUNDIALS_LIB): $(SUNDIALS_OBJ_FILES)
 
 clean:
 	rm *.o $(SUNDIALS_LIB)
+
+depend:
+	makedepend -Y -f Makefile.linux -- $(CFLAGS) $(INCLUDES) -- *.c *.cpp

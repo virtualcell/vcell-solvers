@@ -129,7 +129,7 @@ void VCellCVodeSolver::readInput(istream& inputstream) {
 				inputstream >> outputTimeStep;
 				double timePoint = 0.0;
 				int count = 1;
-				while (STARTING_TIME + count * outputTimeStep < ENDING_TIME + 1E-12) {
+				while (STARTING_TIME + count * outputTimeStep < ENDING_TIME + 1E-12 * ENDING_TIME) {
 					timePoint = STARTING_TIME + count * outputTimeStep;
 					outputTimes.push_back(timePoint);
 					count ++;
@@ -309,6 +309,8 @@ void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* out
 	flag = CVDense(solver, NEQ);
 	checkCVodeFlag(flag);
 
+	CVodeSetMaxNumSteps(solver, 5000);
+	
 	// write intial conditions
 	writeData(Time, outputFile);
 

@@ -39,4 +39,8 @@ Hybrid_MIL_Adaptive: $(SOURCE) $(LIBS)
 clean:
 	rm Hybrid_EM Hybrid_MIL Hybrid_MIL_Adaptive
 	rm *.o *.mod
+	
+depend:
+	makedepend -f Makefile.linux -- $(FOPTIONS) -- *.c *.cpp
+	
 # 

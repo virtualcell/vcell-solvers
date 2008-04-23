@@ -41,3 +41,6 @@ $(NVECSER_LIB): $(NVECSER_OBJ_FILES)
 
 clean:
 	rm *.o $(NVECSER_LIB)	
+
+depend:
+	makedepend -Y -f Makefile.linux -- $(CFLAGS) $(INCLUDES) -- *.c *.cpp

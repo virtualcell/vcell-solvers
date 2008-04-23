@@ -9,3 +9,9 @@ clean:
 	cd ida; make -f Makefile.linux clean
 	cd nvec_ser; make -f Makefile.linux clean
 	cd sundials; make -f Makefile.linux clean
+
+depend:
+	cd cvode; make -f Makefile.linux depend
+	cd ida; make -f Makefile.linux depend
+	cd nvec_ser; make -f Makefile.linux depend
+	cd sundials; make -f Makefile.linux depend

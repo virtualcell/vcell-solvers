@@ -114,3 +114,6 @@ ${CEXTS}:
 
 clean:
 	rm *.o ${LIBRARY}
+
+depend:
+	makedepend -Y -f Makefile.linux -- $(FFLAGS) -- *.c *.cpp

@@ -106,6 +106,9 @@ $(ZIPLIB): $(OBJZ) $(OBJI)
 	ar cru $@  $(LDFLAGS) $(OBJZ) $(OBJI)
 	ranlib $@
 
+depend:
+	makedepend -Y -f Makefile.linux -- $(CFLAGS) -- *.c *.cpp
+
 zip$E: $(OBJZ) $(OBJI) $(OBJA)
 	$(BIND) -o zip$E $(LFLAGS1) $(OBJZ) $(OBJI) $(OBJA) $(LFLAGS2)
 zipnote$E: $(OBJN)

@@ -1,4 +1,4 @@
-CFLAGS = /GX /O2 /DWIN32 -I..\ExpressionParser -I..\Optimization -I. -I..\JNI\include -I..\JNI\include\win32 -I..\sundials\include -I..\sundials\src
+CFLAGS = /EHsc /O2 /DWIN32 -I..\ExpressionParser -I..\Optimization -I. -I..\JNI\include -I..\JNI\include\win32 -I..\sundials\include -I..\sundials\src
 
 VCELLIDALIB = vcellIDA.lib
 

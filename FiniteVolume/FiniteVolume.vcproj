@@ -62,7 +62,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Ws2_32.lib pcgwrapper.lib pcgpack_dbl.lib qhull.lib mkl_c.lib zip32.lib unzip32.lib zlib.lib libsmq.lib libsmqj.lib ExpressionParserMT.lib"
+				AdditionalDependencies="Ws2_32.lib pcgwrapper.lib pcgpack_dbl.lib qhulld.lib mkl_c.lib zip32.lib unzip32.lib zlib.lib libsmq.lib libsmqj.lib"
 				OutputFile="$(OutDir)/FiniteVolume.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\VCell\src;..\ExpressionParserMT\Debug;..\PCGPack;..\SonicCClient\Win32\lib;src;..\unzip;..\zlib;..\zip;..\qhull;..\IFortran"
