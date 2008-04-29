@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\sundials\src;..\sundials\include;..\fsqp;..\IDAWin;..\ExpressionParser"
+				AdditionalIncludeDirectories="..\tinyxml;..\sundials\src;..\sundials\include;..\fsqp;..\IDAWin;..\ExpressionParser"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -102,7 +102,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\sundials\src;..\sundials\include;..\fsqp;..\IDAWin;..\ExpressionParser"
+				AdditionalIncludeDirectories="..\tinyxml; ..\sundials\src;..\sundials\include;..\fsqp;..\IDAWin;..\ExpressionParser"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				WarningLevel="3"
@@ -309,6 +309,14 @@
 				RelativePath=".\OptSolver.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\OptXmlReader.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\OptXmlWriter.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -341,6 +349,18 @@
 			</File>
 			<File
 				RelativePath=".\OptSolver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\OptXml.h"
+				>
+			</File>
+			<File
+				RelativePath=".\OptXmlReader.h"
+				>
+			</File>
+			<File
+				RelativePath=".\OptXmlWriter.h"
 				>
 			</File>
 		</Filter>

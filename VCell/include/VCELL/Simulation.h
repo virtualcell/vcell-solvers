@@ -64,6 +64,7 @@ public:
 
 protected:
 	int numVariables;
+	int numVolVar;
 
 	int currIteration;  // first iteration is currIteration=0
 

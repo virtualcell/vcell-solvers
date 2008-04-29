@@ -18,6 +18,7 @@ public:
 	virtual void    collectResults(int processRank);
 	void solveFastSystem(int startVolIndex, int VolSize, int startMemIndex, int MemSize);
 	bool hasFastSystem() { return bHasFastSystem; }
+	void resetFirstTime() { bFirstTime = true; }
 protected:
 	Simulation *sim;
 	bool    bFirstTime;

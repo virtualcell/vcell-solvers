@@ -342,6 +342,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\FVSolver.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\FVUtils.cpp"
 				>
 			</File>
@@ -605,6 +609,10 @@
 			</File>
 			<File
 				RelativePath=".\include\Vcell\FieldData.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\VCELL\FVSolver.h"
 				>
 			</File>
 			<File

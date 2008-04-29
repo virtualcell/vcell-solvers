@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\JNI\Win32\include\win32;..\JNI\Win32\include;..\Optimization;..\IDAWin;..\sundials\src;..\sundials\include;..\ExpressionParser"
+				AdditionalIncludeDirectories="..\JNI\Win32\include\win32;..\JNI\Win32\include;..\tinyxml;..\Optimization;..\IDAWin;..\sundials\src;..\sundials\include;..\ExpressionParser;..\Optimization2"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -60,10 +60,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sundials.lib sundials_nvecserial.lib sundials_cvode.lib sundials_ida.lib cfsqp.lib"
+				AdditionalDependencies="tinyxmld.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib sundials_ida.lib cfsqp.lib"
 				OutputFile="$(OutDir)/JavaBinding.dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\IDAWin;..\fsqp;..\sundials\lib;..\Optimization\Debug;..\IDAWin\Debug;..\ExpressionParser\Debug"
+				AdditionalLibraryDirectories="..\tinyxml\debug;..\IDAWin;..\fsqp;..\sundials\lib;..\Optimization\Debug;..\IDAWin\Debug;..\ExpressionParser\Debug"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/JavaBinding.pdb"
 				SubSystem="1"
@@ -119,7 +119,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\JNI\Win32\include\win32;..\JNI\Win32\include;..\Optimization;..\IDAWin;..\sundials\src;..\sundials\include;..\ExpressionParser"
+				AdditionalIncludeDirectories="..\JNI\Win32\include\win32;..\JNI\Win32\include;..\tinyxml;..\Optimization;..\IDAWin;..\sundials\src;..\sundials\include;..\ExpressionParser"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				WarningLevel="3"
@@ -137,10 +137,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sundials.lib sundials_nvecserial.lib sundials_cvode.lib sundials_ida.lib cfsqp.lib"
-				OutputFile="$(OutDir)/JavaBinding.exe"
+				AdditionalDependencies="tinyxml.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib sundials_ida.lib cfsqp.lib"
+				OutputFile="$(OutDir)/JavaBinding.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\IDAWin;..\fsqp;..\sundials\lib;..\Optimization\Debug;..\IDAWin\Debug;..\ExpressionParser\Debug"
+				AdditionalLibraryDirectories="..\tinyxml\release;..\IDAWin;..\fsqp;..\sundials\lib;..\Optimization\Debug;..\IDAWin\Debug;..\ExpressionParser\Debug"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -349,6 +349,10 @@
 				RelativePath=".\cbit_vcell_solvers_NativeIDASolver.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\org_vcell_optimization_NativeOptSolver.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -365,6 +369,10 @@
 			</File>
 			<File
 				RelativePath=".\cbit_vcell_solvers_NativeIDASolver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\org_vcell_optimization_NativeOptSolver.h"
 				>
 			</File>
 		</Filter>

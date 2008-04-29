@@ -7,6 +7,7 @@ using namespace std;
 
 #include "OptSolver.h"
 
+#define OPTSTATUS_UNKNOWN				-1
 #define NORMAL_TERMINATION				 0
 #define NONFEASIBLE_LINEAR				 1
 #define NONFEASIBLE_NONLINEAR			 2

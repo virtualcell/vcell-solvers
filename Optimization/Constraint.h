@@ -13,6 +13,7 @@ public:
 
 	void bindExpression(SymbolTable* symbolTable);
 	double evaluate(double* paramValues);
+	ConstraintType getConstraintType() { return constraintType; }
 
 private:
 	Expression* exp;

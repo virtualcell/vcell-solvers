@@ -37,16 +37,18 @@ public:
 
 	int* getIndices() { return indices; };
 	SimpleSymbolTable* getOldSymbolTable() { return oldSymbolTable; };
-	//SimpleSymbolTable* getCurrSymbolTable() { return currSymbolTable; };
 	void setCurrentCoordinate(WorldCoord& wc) {
 		valueProxyX->setValue(wc.x);
 		valueProxyY->setValue(wc.y);
 		valueProxyZ->setValue(wc.z);
 	}
 
+	void addParameter(string& param);
+	void setParameterValues(double* paramValues);
+
 protected:
 	SimpleSymbolTable* oldSymbolTable;
-	//SimpleSymbolTable* currSymbolTable;
+
 	int* indices;
 	void createSymbolTable();
 
@@ -55,6 +57,9 @@ protected:
 	ScalarValueProxy* valueProxyY;
 	ScalarValueProxy* valueProxyZ;
 	vector<FieldData*> fieldDataList;
+
+	vector<string> paramList;
+	vector<ScalarValueProxy*> paramValueProxies;
 };
 
 #endif

@@ -2,6 +2,8 @@
 #include "OdeOptJob.h"
 #include "OdeMultiShootingOptJob.h"
 #include "OdeResultSet.h"
+#include "OptXMLWriter.h"
+#include "tinyxml.h"
 #include "math.h"
 #include <float.h>
 
@@ -105,7 +107,7 @@ public:
 };
 */
 
-#define NUM_PARAMS 4
+#define NUM_PARAMS 1
 #define NUM_REF_COLUMNS 4
 #define NUM_REF_ROWS 11
 
@@ -176,6 +178,14 @@ int main() {
 	char* columnExpressions[200] = {"BS_nucleus", "(5.0 * (4.0 - (0.2 * rfB_nucleus) - (0.2 * BS_nucleus)))", "(5.0 * (-2.0 - (0.2 * rf_nucleus) + (0.2 * BS_nucleus)))"};
 	
 	OdeOptJob* odeOptJob = new OdeOptJob(NUM_PARAMS, paramNames, LB, UB, initialGuess, scaleFactors, 0, 0, 0, 0, 0, refData, columnExpressions, (char*)input.c_str(), 0);
+
+OptXmlWriter* xmlWriter = new OptXmlWriter();
+TiXmlElement* optXMLNode = xmlWriter->getXML(NUM_PARAMS, paramNames, LB, UB, initialGuess, scaleFactors, 0, 0, 0, 0, 0, refData, columnExpressions, (char*)input.c_str(), 0);
+TiXmlPrinter printer;
+optXMLNode->Accept(&printer);
+std::cout << printer.CStr();
+
+
 	CFSQPOptSolver* cfsqpOptSolver = new CFSQPOptSolver(odeOptJob);
 	OptSolverResultSet* optSolverResultSet = cfsqpOptSolver->solve();
 	optSolverResultSet->show();

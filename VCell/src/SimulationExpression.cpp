@@ -70,6 +70,12 @@ SimulationExpression::SimulationExpression(Mesh *mesh) : Simulation(mesh) {
 SimulationExpression::~SimulationExpression() 
 {
 	delete valueProxyTime;
+	delete valueProxyX;
+	delete valueProxyY;
+	delete valueProxyZ;
+	for (int i = 0; i < paramValueProxies.size(); i ++) {
+		delete paramValueProxies[i];
+	}
 }
 
 void SimulationExpression::advanceTimeOn() {
@@ -87,31 +93,33 @@ void SimulationExpression::update() {
 	valueProxyTime->setValue(getTime_sec());
 }
 
+void SimulationExpression::addParameter(string& param) {
+	paramList.push_back(param);
+	paramValueProxies.push_back(new ScalarValueProxy());
+}
+
 void SimulationExpression::createSymbolTable() {	
 	if (oldSymbolTable != NULL) {
 		return;
 	}
 
 	Variable* var = NULL;
-	string* variableNames = new string[numVariables * 3 + 4 + fieldDataList.size()];	
-	ValueProxy** oldValueProxies = new ValueProxy*[numVariables * 3 + 4 + fieldDataList.size()];
-	//ValueProxy** currValueProxies = new ValueProxy*[numVariables * 3 + 4 + fieldDataList.size()];
+	// t, x, y, z, VAR, VAR_INSIDE, VAR_OUTSIDE, field data, parameters
+	int numSymbols = 4 + numVolVar * 3 + (numVariables - numVolVar) + fieldDataList.size() + paramList.size();
+	string* variableNames = new string[numSymbols];	
+	ValueProxy** oldValueProxies = new ValueProxy*[numSymbols];
 
 	variableNames[0] = "t";
 	oldValueProxies[0] = valueProxyTime;
-	//currValueProxies[0] = new ValueProxySimple();
 
 	variableNames[1] = "x";	
 	oldValueProxies[1] = valueProxyX;
-	//currValueProxies[1] = new ValueProxySimple();
 
 	variableNames[2] = "y";	
 	oldValueProxies[2] = valueProxyY;
-	//currValueProxies[2] = new ValueProxySimple();
 
 	variableNames[3] = "z";	
 	oldValueProxies[3] = valueProxyZ;
-	//currValueProxies[3] = new ValueProxySimple();
 
 	int variableIndex = 4;	
 
@@ -161,8 +169,21 @@ void SimulationExpression::createSymbolTable() {
 		}
 	}	
 
+	// add field data
+	for (int i = 0; i < (int)fieldDataList.size(); i ++) {		
+		oldValueProxies[variableIndex] = new ValueProxy(fieldDataList[i]->getData(), VAR_VOLUME_INDEX, indices);
+		variableNames[variableIndex] = fieldDataList[i]->getID();
+		variableIndex ++;
+	}
+
+	// add parameters
+	for (int i = 0; i < paramList.size(); i ++) {
+		oldValueProxies[variableIndex] = paramValueProxies[i];
+		variableNames[variableIndex] = paramList[i];
+		variableIndex ++;
+	}
+
 	oldSymbolTable = new SimpleSymbolTable(variableNames, variableIndex, oldValueProxies);
-	//currSymbolTable = new SimpleSymbolTable(variableNames, variableIndex, currValueProxies);
 	delete[] variableNames;	
 }   
 
@@ -184,4 +205,16 @@ bool SimulationExpression::initSimulation()
 {   
 	createSymbolTable();
 	return Simulation::initSimulation();
+}
+
+void SimulationExpression::setParameterValues(double* paramValues) {
+	if (paramValues == 0) {
+		if (paramList.size() != 0) {
+			throw "SimulationExpression::setParameterValues(), empty values for parameters";
+		}
+		return;
+	}
+	for (int i = 0; i < paramList.size(); i ++) {
+		paramValueProxies[i]->setValue(paramValues[i]);
+	}
 }

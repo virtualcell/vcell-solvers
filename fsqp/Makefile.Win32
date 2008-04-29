@@ -12,7 +12,8 @@ OBJDIR = .\Win32
 default all:		$(TARGETS)
 
 COBJECTS =	 	$(OBJDIR)\cfsqp.obj	\
-			$(OBJDIR)\qld.obj		
+			$(OBJDIR)\qld.obj	\
+			$(OBJDIR)\globals.obj	
 
 $(OBJDIR) :
     if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"    

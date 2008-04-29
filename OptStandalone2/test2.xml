@@ -1,0 +1,13 @@
+<?xml version="1.0">
+<optProblemDescription>
+   <parameterDescription>
+       <parameter name="x0" low="0" high="100.0" init="0.1" scale="1"/>
+       <parameter name="x1" low="0" high="100.0" init="0.7" scale="1"/>
+       <parameter name="x2" low="0" high="100.0" init="0.2" scale="1"/>
+   </parameterDescription>
+   <constraintDescription>
+      <constraint constraintType="nonlinearInequality">pow(x0,3)-6*x1-4*x2+3</constraint>
+      <constraint constraintType="linearInequality">10-x0-x1-x2</constraint>
+   </constraintDescription>
+   <objectiveFunction type="explicit">pow(x0-1,2)+pow(x1-1,2)+pow(x2-1,2)</objectiveFunction>
+</optProblemDescription>

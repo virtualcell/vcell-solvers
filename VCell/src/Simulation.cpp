@@ -92,6 +92,9 @@ void Simulation::update()
 
 void Simulation::reset()
 {
+	currIteration=0;
+	_scheduler->resetFirstTime();
+	_scheduler->initValues();
 	_scheduler->reset();
 }
 

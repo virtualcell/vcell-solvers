@@ -4,6 +4,7 @@
 #include <math.h>
 #include "MathUtil.h"
 #include "FunctionDomainException.h"
+#include "FunctionRangeException.h"
 #include <limits>
 
 const int EXP = 0;
@@ -615,7 +616,7 @@ double ASTFuncNode::evaluate(int evalType, double* values)
 	if (EP_double_infinity == -result || EP_double_infinity == result || result != result) {
 		char problem[1000];
 		sprintf(problem, "%s evaluated to infinity or NaN", infixString(LANGUAGE_DEFAULT,0).c_str(), functionNamesVCML[funcType].c_str());
-		throw ExpressionException(problem);
+		throw FunctionRangeException(problem);
 	}
 	return result;
 }

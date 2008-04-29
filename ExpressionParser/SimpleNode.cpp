@@ -136,7 +136,11 @@ string SimpleNode::getNodeSummary(double* values, Node* node){
 						errorMsg += chrs;
 					} else if (symbolTableEntry->getIndex() > -1) {
 						if (values == 0) {
-							value = symbolTableEntry->getValueProxy()->evaluate();
+							if (symbolTableEntry->getValueProxy()!=null){
+								value = symbolTableEntry->getValueProxy()->evaluate();
+							}else{
+								value = symbolTableEntry->getConstantValue();
+							}
 						} else {
 							value = values[symbolTableEntry->getIndex()];
 						}

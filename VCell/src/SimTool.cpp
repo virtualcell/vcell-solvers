@@ -38,7 +38,9 @@ int unzip32(char* zipfile, char* file, char* exdir);
 SimTool* SimTool::instance = 0;
 
 static int NUM_TOKENS_PER_LINE = 4;
-
+//--------------------------------------------------------------
+// SimTool Class
+//--------------------------------------------------------------
 void SimTool::setModel(VCellModel* model) {
 	if (model == 0) {
 		throw "SimTool::setModel(), model can't be null";

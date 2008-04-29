@@ -1,3 +1,4 @@
+#include <VCELL/FVSolver.h>
 #include <sys/stat.h>
 #include <VCELL/VolumeVariable.h>
 #include <VCELL/VolumeRegionVariable.h>
@@ -35,6 +36,8 @@
 #include <Exception.h>
 #include <Expression.h>
 
+#include <VCELL/SimulationMessaging.h>
+#include <VCELL/SimTool.h>
 #include <fstream>
 #include <string>
 using namespace std;
@@ -1020,6 +1023,7 @@ int main(int argc, char *argv[])
 	int returnCode = 0;
 	string errorMsg = "Exception : ";
 
+	char* outputPath = 0;
 	char* fvInputFile = 0;
 	ifstream ifsInput;
 	bool bSimZip = true;

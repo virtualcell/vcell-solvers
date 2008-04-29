@@ -13,7 +13,8 @@ TARGETS=	libcfsqp.a
 default all:		$(TARGETS)
 
 COBJECTS =	 cfsqp.o	\
-			qld.o		
+			qld.o	\
+			globals.o	
 
 $(TARGETS):	$(COBJECTS)
 	ar cru $@ $(COBJECTS) 

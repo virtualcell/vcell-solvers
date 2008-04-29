@@ -31,6 +31,7 @@ public:
 	void setStartingTime(realtype newStartingTime) { STARTING_TIME = newStartingTime; }
 	void setEndingTime(realtype newEndingTime) { ENDING_TIME = newEndingTime; }
 	void setOutputTimes(int count, double* newOutputTimes);
+	virtual SymbolTable* getSymbolTable() = 0;
 
 protected:	
 	// 0 : t
