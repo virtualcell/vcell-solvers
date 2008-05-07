@@ -40,9 +40,7 @@ ODESolver::~ODESolver()
 	if (rate) delete[] rate;
 }
 
-bool ODESolver::solveEqn(double deltaTime, 
-                            int volumeIndexStart, int volumeIndexSize, 
-			    int membraneIndexStart, int membraneIndexSize, bool bFirstTime)
+void ODESolver::solveEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime)
 {
 	if(arraySize==0){  
 		ASSERTION((volumeIndexStart>=0) && 
@@ -73,5 +71,4 @@ bool ODESolver::solveEqn(double deltaTime,
 									+ (*(rate + index))*deltaTime;
 		}
 	}
-	return true;
 }

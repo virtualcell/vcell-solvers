@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -314,14 +314,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\EqnBuilderReactionDiffusion.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\EqnBuilderReactionDiffusionConvection.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\src\EqnBuilderReactionForward.cpp"
 				>
 			</File>
@@ -347,10 +339,6 @@
 			</File>
 			<File
 				RelativePath=".\src\FVUtils.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\Histogram.cpp"
 				>
 			</File>
 			<File
@@ -407,10 +395,6 @@
 			</File>
 			<File
 				RelativePath=".\src\PDESolver.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\PdeSolverDiana.cpp"
 				>
 			</File>
 			<File
@@ -617,10 +601,6 @@
 			</File>
 			<File
 				RelativePath=".\include\Vcell\FVUtils.h"
-				>
-			</File>
-			<File
-				RelativePath=".\include\Vcell\Histogram.h"
 				>
 			</File>
 			<File

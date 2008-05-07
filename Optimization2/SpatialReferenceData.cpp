@@ -11,7 +11,7 @@ SpatialReferenceData::SpatialReferenceData(int s) {
 }
 
 SpatialReferenceData::~SpatialReferenceData() {
-	for (int i = 0; i < dataList.size(); i ++) {
+	for (int i = 0; i < (int)dataList.size(); i ++) {
 		delete[] dataList.at(i);
 	}
 }
@@ -36,7 +36,7 @@ const double* SpatialReferenceData::getData(int timeIndex, int varIndex) {
 }
 
 int SpatialReferenceData::getNumTimePoints(){
-	return timePointList.size();
+	return (int)timePointList.size();
 }
 
 double SpatialReferenceData::getTimePoint(int index){

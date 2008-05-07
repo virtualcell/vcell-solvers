@@ -15,12 +15,12 @@ PDESolver::~PDESolver()
 {
 }
 
-bool PDESolver::initEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime) {
+void PDESolver::initEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime) {
 	if (!bFirstTime && !isTimeDependent()) {
-		return true;
+		return;
 	}
 
 	ASSERTION(eqnBuilder);
 
-	return eqnBuilder->initEquation(deltaTime, volumeIndexStart, volumeIndexSize, membraneIndexStart, membraneIndexSize);
+	eqnBuilder->initEquation(deltaTime, volumeIndexStart, volumeIndexSize, membraneIndexStart, membraneIndexSize);
 }

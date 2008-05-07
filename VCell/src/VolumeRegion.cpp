@@ -12,12 +12,11 @@ VolumeRegion::VolumeRegion(CartesianMesh *mesh) : Region(mesh)
 	closure = true;
 	bBoundaryDirichlet = false;
 	volume = 0;
-	membranes.erase(membranes.begin(), membranes.end()); 
 }
 
-void VolumeRegion::addMembrane(MembraneRegion *membrane)
+void VolumeRegion::addMembraneRegion(MembraneRegion *membraneRegion)
 {
-	membranes.push_back(membrane);
+	membraneRegionList.push_back(membraneRegion);
 }
 
 void VolumeRegion::recompute()

@@ -16,7 +16,7 @@ public:
     void    getFlux(MembraneElement *element, double *inFlux, double *outFlux);
 
     MembraneRegionVarContextExpression(Feature *feature, string& speciesName);
-	bool resolveReferences(Simulation *sim);
+	void resolveReferences(Simulation *sim);
 
 private:
 	double getRegionValue(MembraneRegion *region, long expIndex);

@@ -20,7 +20,7 @@ AlgebraicSystem::AlgebraicSystem(int dim)
 	}
 }
 
-bool AlgebraicSystem::solveGauss()
+void AlgebraicSystem::solveGauss()
 {
 	int i, j, k, m;
 	double sum, temp;
@@ -32,7 +32,7 @@ bool AlgebraicSystem::solveGauss()
 			}while(((m<dimension) && matrix[m][k]==0));
 		}
 		if(m==dimension){
-			return false;
+			throw "AlgebraicSystem::solveSystem() : Matrix is singular";
 		}else if(m>k){
 			for(j=k;j<dimension+1;j++){
 				temp = matrix[k][j];
@@ -53,7 +53,7 @@ bool AlgebraicSystem::solveGauss()
 		}
 	}
 	if(matrix[dimension-1][dimension-1]==0){
-		return false;
+		throw "AlgebraicSystem::solveSystem() : Matrix is singular";
 	}else{
 		varIncrements[dimension-1] = matrix[dimension-1][dimension]/matrix[dimension-1][dimension-1];
 	}
@@ -63,12 +63,10 @@ bool AlgebraicSystem::solveGauss()
 			sum += matrix[dimension-i-1][j]*varIncrements[j];
 		}
 		varIncrements[dimension-1-i] = matrix[dimension-1-i][dimension] - sum;
-	}
-	return true;
-  
+	}  
 }
 
-bool AlgebraicSystem::solveSystem()
+void AlgebraicSystem::solveSystem()
 {
   double diff;
   int count = 0;
@@ -81,25 +79,18 @@ bool AlgebraicSystem::solveSystem()
 		}*/
 		diff = 0;
 		updateMatrix();
-		if(solveGauss()){
-			for(i=0; i<dimension; i++){
-				x[i] += varIncrements[i];
-				if(fabs(x[i])<1e-5){
-					diff += fabs(varIncrements[i]);
-				}else{
-					diff += fabs(varIncrements[i]/x[i]);
-				}
+		solveGauss();
+		for(i=0; i<dimension; i++){
+			x[i] += varIncrements[i];
+			if(fabs(x[i])<1e-5){
+				diff += fabs(varIncrements[i]);
+			}else{
+				diff += fabs(varIncrements[i]/x[i]);
 			}
-		}else{
-			throw "AlgebraicSystem::solveSystem() : Matrix is singular";
-			return false;
 		}
-	}while((tolerance < diff)&&(count<100));
-	if(tolerance>=diff){	
-		return true;
-	}else{
+	} while((tolerance < diff)&&(count<100));
+	if(tolerance<diff){	
 		throw "AlgebraicSystem::solveSystem() : Iterations do not converge";
-		return false; 
 	}
 }
 

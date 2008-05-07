@@ -16,7 +16,6 @@ Variable::Variable(long Asize, string& nameStr, string& Aunits)
 	curr = new double[size];
 	units = Aunits;
 	name = nameStr;
-	next = NULL;
 	clear();
 }
 

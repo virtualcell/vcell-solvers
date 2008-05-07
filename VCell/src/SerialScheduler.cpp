@@ -45,8 +45,8 @@ void SerialScheduler::iterate()
 		}
 	}
 	*/
-	Feature *feature = NULL;
-	while (feature = model->getNextFeature(feature)){
+	for (int i = 0; i < model->getNumFeatures(); i ++) {
+		Feature* feature = model->getFeatureFromIndex(i);
 		VolumeParticleContext *vpc = feature->getVolumeParticleContext();
 		ContourParticleContext *cpc = feature->getContourParticleContext();
 		if(vpc != NULL){
@@ -59,8 +59,8 @@ void SerialScheduler::iterate()
 		}
 
 	}
-	feature = NULL;
-	while (feature = model->getNextFeature(feature)){
+	for (int i = 0; i < model->getNumFeatures(); i ++) {
+		Feature* feature = model->getFeatureFromIndex(i);
 		VolumeParticleContext *vpc = feature->getVolumeParticleContext();
 		ContourParticleContext *cpc = feature->getContourParticleContext();
 		if(vpc != NULL){
@@ -74,7 +74,8 @@ void SerialScheduler::iterate()
 	Solver *solver=NULL;
 	int volumeSize = sim->getMesh()->getNumVolumeElements(); 
 	int membraneSize = sim->getMesh()->getNumMembraneElements(); 
-	while (solver=sim->getNextSolver(solver)){
+	for (int i = 0; i < sim->getNumSolvers(); i ++) {
+		solver = sim->getSolver(i);
 		string timername = solver->getVar()->getName() + " Build";
 		TimerHandle tHndBuild = SimTool::getInstance()->getTimerHandle(timername);
 		timername = solver->getVar()->getName() + " Solve";
@@ -82,18 +83,14 @@ void SerialScheduler::iterate()
 		//
 		// initialize equations first time around
 		//
-		if (!solver->initEqn(sim->getDT_sec(),0,volumeSize,0,membraneSize, bFirstTime)){
-			throw "Simulation::iterate() - error init'ing equation";
-		}
+		solver->initEqn(sim->getDT_sec(),0,volumeSize,0,membraneSize, bFirstTime);
+
 		SimTool::getInstance()->startTimer(tHndBuild);
-		if (!solver->buildEqn(sim->getDT_sec(),0,volumeSize,0,membraneSize, bFirstTime)){
-			throw "Simulation::iterate() - error building equation";
-		}
+		solver->buildEqn(sim->getDT_sec(),0,volumeSize,0,membraneSize, bFirstTime);
 		SimTool::getInstance()->stopTimer(tHndBuild);
+
 		SimTool::getInstance()->startTimer(tHndSolve);
-		if (!solver->solveEqn(sim->getDT_sec(),0,volumeSize,0,membraneSize, bFirstTime)){
-			throw "Simulation::iterate() - error solving equation";        
-		}
+		solver->solveEqn(sim->getDT_sec(),0,volumeSize,0,membraneSize, bFirstTime);
 		SimTool::getInstance()->stopTimer(tHndSolve);
 	}
 	if(hasFastSystem()){

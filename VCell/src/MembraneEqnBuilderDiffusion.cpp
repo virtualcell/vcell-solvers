@@ -34,7 +34,7 @@ MembraneEqnBuilderDiffusion::~MembraneEqnBuilderDiffusion() {
 // Initializes Matrix only
 //
 //------------------------------------------------------------------
-bool MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
+void MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
 				int membraneIndexStart, int membraneIndexSize)
 {   	
 	const double epsilon = 1.0E-8;
@@ -80,10 +80,6 @@ bool MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIndex
 		}
 
 	} // end index
-
-	//A->show();
-
-	return true;
 }
 
 //------------------------------------------------------------------
@@ -91,7 +87,7 @@ bool MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIndex
 // updates B vector only with reaction rates and boundary conditions
 //
 //------------------------------------------------------------------
-bool MembraneEqnBuilderDiffusion::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
+void MembraneEqnBuilderDiffusion::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
 				int membraneIndexStart, int membraneIndexSize)
 {    
 	VolumeElement *pVolumeElement = mesh->getVolumeElements();
@@ -216,6 +212,4 @@ bool MembraneEqnBuilderDiffusion::buildEquation(double deltaTime, int volumeInde
 			B[index] = Ap0 * var->getOld(index) + varContext->getMembraneReactionRate(membraneElement) * volume;
 		}
 	} // end index
-
-	return true;
 }

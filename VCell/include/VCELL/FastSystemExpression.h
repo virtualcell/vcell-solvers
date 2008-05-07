@@ -19,7 +19,7 @@ public:
     FastSystemExpression(int dimension, int numDepend, SimulationExpression* sim);
 	~FastSystemExpression();
 	
-	virtual bool resolveReferences(Simulation *sim);
+	virtual void resolveReferences(Simulation *sim);
 	void updateDependentVars();
 
 	void setPseudoConstants(string* symbols, Expression** expressions);

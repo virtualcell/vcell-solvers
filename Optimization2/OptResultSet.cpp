@@ -18,7 +18,7 @@ OptResultSet::~OptResultSet() {
 }
 
 void OptResultSet::show(){
-	for (int i=0;i<paramValues.size();i++){
+	for (int i = 0; i < (int)paramValues.size(); i ++){
 		cout << "p[" << i << "] = " << paramValues[i] << endl;
 	}
 	cout << "objective function value = " << objectiveFunctionValue << endl;

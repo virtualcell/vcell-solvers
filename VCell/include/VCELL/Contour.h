@@ -6,6 +6,8 @@
 #define CONTOUR_H
 
 #include <VCELL/SimTypes.h>
+#include <vector>
+using namespace std;
 
 typedef enum {
 	CONTOUR_INTERIOR, 
@@ -25,27 +27,28 @@ public:
 	Contour(int Atype);
 	~Contour();
 
-	bool resolveReferences(Simulation *sim);
-	virtual bool initElementValues(long elementIndex);
+	void resolveReferences(Simulation *sim);
+	virtual void initElementValues(long elementIndex);
 
 	string getName() { return names[type]; }
-	int             getType() { return type; }
+	int getType() { return type; }
 
-	ContourVarContext   *getContourVarContext(string& contourVarName);
-	ContourVarContext   *getContourVarContext(ContourVariable *var);
-	ContourVarContext   *getNextContourVarContext(ContourVarContext *vc=NULL);
+	ContourVarContext* getContourVarContext(string& contourVarName);
+	ContourVarContext* getContourVarContext(ContourVariable *var);
+	ContourVarContext* getContourVarContext(int index);
+	int getNumContourVarContext() {
+		return (int)contourVarContextList.size();
+	}
 
-	void                addContourVarContext(ContourVarContext *vc);
+	void addContourVarContext(ContourVarContext *vc);
 
-	FastSystem         *getFastSystem(){ return fastSystem; }
+	FastSystem * getFastSystem(){ return fastSystem; }
 
 	static void setContourTypes(string *nameArray);
 	static inline string getNameFromState(int Astate) { return names[Astate]; }
      
 protected:
-
-	ContourVarContext        *currContourVarContext;
-	ContourVarContext        *contourVarContextList;
+	vector<ContourVarContext*> contourVarContextList;
 	FastSystem               *fastSystem;
    
 private:

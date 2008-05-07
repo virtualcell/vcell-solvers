@@ -12,12 +12,9 @@ VolumeRegionVarContextExpression:: VolumeRegionVarContextExpression(Feature *fea
 {
 }
 
-bool VolumeRegionVarContextExpression::resolveReferences(Simulation* sim) {
-	bool bResolved = VarContext::resolveReferences(sim);
-	if (bResolved) {
-		bindAll(((SimulationExpression*)sim)->getOldSymbolTable());
-	}
-	return bResolved;
+void VolumeRegionVarContextExpression::resolveReferences(Simulation* sim) {
+	VarContext::resolveReferences(sim);
+	bindAll(((SimulationExpression*)sim)->getOldSymbolTable());
 }
 
 double VolumeRegionVarContextExpression::getInitialValue(long regionIndex) {

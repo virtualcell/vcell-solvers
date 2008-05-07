@@ -16,24 +16,23 @@
 Solver::Solver(Variable *variable)
 {
 	var = variable;
-	next = NULL;
 	eqnBuilder = NULL;
 }
 
-bool Solver::initEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime)
+void Solver::initEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime)
 {
 	if (!bFirstTime) {
-		return true;
+		return;
 	}
 
 	ASSERTION(eqnBuilder);
 
-	return eqnBuilder->initEquation(deltaTime, volumeIndexStart, volumeIndexSize, membraneIndexStart, membraneIndexSize);
+	eqnBuilder->initEquation(deltaTime, volumeIndexStart, volumeIndexSize, membraneIndexStart, membraneIndexSize);
 }
 
-bool Solver::buildEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime)
+void Solver::buildEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime)
 {
 	ASSERTION(eqnBuilder);
 
-	return eqnBuilder->buildEquation(deltaTime, volumeIndexStart, volumeIndexSize, membraneIndexStart, membraneIndexSize);
+	eqnBuilder->buildEquation(deltaTime, volumeIndexStart, volumeIndexSize, membraneIndexStart, membraneIndexSize);
 }

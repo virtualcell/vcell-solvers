@@ -17,12 +17,9 @@ double MembraneRegionVarContextExpression::getMembraneReactionRate(MembraneEleme
 	return getExpressionValue(element, REACT_RATE_EXP);
 }
 
-bool MembraneRegionVarContextExpression::resolveReferences(Simulation* sim) {
-	bool bResolved = VarContext::resolveReferences(sim);
-	if (bResolved) {
-		bindAll(((SimulationExpression*)sim)->getOldSymbolTable());
-	}
-	return bResolved;
+void MembraneRegionVarContextExpression::resolveReferences(Simulation* sim) {
+	VarContext::resolveReferences(sim);
+	bindAll(((SimulationExpression*)sim)->getOldSymbolTable());
 }
 
 double MembraneRegionVarContextExpression::getInitialValue(long regionIndex) {

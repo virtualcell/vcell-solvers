@@ -80,7 +80,7 @@ SparseLinearSolver::~SparseLinearSolver()
 	delete[] pcg_workspace;	
 }
 
-bool SparseLinearSolver::solveEqn(double dT_sec, 
+void SparseLinearSolver::solveEqn(double dT_sec, 
 				 int volumeIndexStart, int volumeIndexSize, 
 				 int membraneIndexStart, int membraneIndexSize, bool bFirstTime)
 {
@@ -98,22 +98,18 @@ bool SparseLinearSolver::solveEqn(double dT_sec,
 					cout << endl << "!!Note: Insufficient PCG workspace (need additional " << IParm[53] << "), for variable " << var->getName() << ", retry again" << endl;
 					initPCGWorkspace(IParm[53]);
 					delete[] IParm;
-					return solveEqn(dT_sec, volumeIndexStart, volumeIndexSize, membraneIndexStart, membraneIndexSize, true);
+					solveEqn(dT_sec, volumeIndexStart, volumeIndexSize, membraneIndexStart, membraneIndexSize, true);
 				} else {
-					handlePCGExceptions(IParm[50], IParm[53]);
+					handlePCGExceptions(IParm[50], IParm[53]); // this throws exception
 					delete[] IParm;
-					return false;
 				}
 				break;
-			default:				
-				printf("SparseLinearSolver::PCGSolve, error solving system\n");
+			default:
 				handlePCGExceptions(IParm[50], IParm[53]);
 				delete[] IParm;
-				return false;
 		}
 	}
 	delete[] IParm;
-	return true;
 }
 
 // --------------------------------------------------

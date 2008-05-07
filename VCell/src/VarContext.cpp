@@ -25,7 +25,6 @@ VarContext::VarContext(Feature *Afeature, string& AspeciesName)
 	ASSERTION(feature);
 
 	bInitialized = false;
-	next = NULL;
 
 	speciesName = AspeciesName;
 	species = NULL;
@@ -43,20 +42,21 @@ VarContext::VarContext(Feature *Afeature, string& AspeciesName)
 	memset(needsXYZ, 0, TOTAL_NUM_EXPRESSIONS * sizeof(bool));
 }
 
-bool VarContext::resolveReferences(Simulation *Asim)
+void VarContext::resolveReferences(Simulation *Asim)
 {
 	sim = Asim;
 	if (sim == 0) {
-		return false;
+		throw "VarContext::resolveReference(), simulation can't be null";
 	}
 
 	species = sim->getVariableFromName(speciesName);
 	mesh = sim->getMesh();
 
-	if (species && mesh){		
-		return true;
-	}else{
-		return false;
+	if (!species) {
+		throw "VarContext::resolveReference(), variable is null";
+	}
+	if (!mesh) {
+		throw "VarContext::resolveReference(), mesh is null";
 	}
 }
 

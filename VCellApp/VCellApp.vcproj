@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\VCell\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;..\zlib"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;USE_MESSAGING"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;USE_MESSAGING;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -340,6 +340,10 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath="\\cfs01.vcell.uchc.edu\raid\Vcell\users\fgao\SimID_27299903_0_.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"

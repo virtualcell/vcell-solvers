@@ -12,7 +12,6 @@
 #include <VCELL/Simulation.h>
 #include <VCELL/DataSet.h>
 #include <VCELL/SimulationMessaging.h> 
-#include <VCELL/Histogram.h> 
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -38,9 +37,7 @@ int unzip32(char* zipfile, char* file, char* exdir);
 SimTool* SimTool::instance = 0;
 
 static int NUM_TOKENS_PER_LINE = 4;
-//--------------------------------------------------------------
-// SimTool Class
-//--------------------------------------------------------------
+
 void SimTool::setModel(VCellModel* model) {
 	if (model == 0) {
 		throw "SimTool::setModel(), model can't be null";
@@ -270,8 +267,9 @@ void SimTool::loadFinal()
 			return;
 		}
 	}
-	DataSet dataSet;
-	if (dataSet.read(dataFileName, simulation)){
+	try {
+		DataSet dataSet;
+		dataSet.read(dataFileName, simulation);
 		simulation->setCurrIteration(tempIteration);
 		simFileCount = tempFileCount;				
 	
@@ -290,10 +288,12 @@ void SimTool::loadFinal()
 				}
 			}
 		}
-	} else{
-		printf("SimTool::loadFinal() : dataSet.read(%s) failed\n",dataFileName);
+	} catch (const char* msg) {
+		cout << "SimTool::loadFinal() : dataSet.read(" << dataFileName << " failed : " << msg << endl;
 		clearLog();
- 		return;
+	} catch (...) {
+		cout << "SimTool::loadFinal() : dataSet.read(" << dataFileName << " failed : unexpected error" << endl;
+		clearLog();
 	}	 
 }
 
@@ -313,15 +313,13 @@ void SimTool::updateLog(double progress, double time, int iteration)
 	}	
 	sprintf(particleFileName,"%s%s",simFileName, PARTICLE_FILE_EXT);
 
-	if (!simulation->writeData(simFileName,bSimFileCompress)){
-		printf("error writing dump to file %s\n", simFileName);
-		return;
-	}
+	simulation->writeData(simFileName,bSimFileCompress);
 
 	sprintf(logFileName,"%s%s",baseFileName, LOG_FILE_EXT);
 	if ((fp=fopen(logFileName, "a"))==NULL){
-		printf("error opening log file <%s>\n",logFileName);
-		return;
+		char errmsg[512];
+		sprintf(errmsg, "SimTool::updateLog() - error opening log file <%s>", logFileName); 
+		throw errmsg;
 	}
 
    // write zip file first, then write log file, in case that 
@@ -456,7 +454,6 @@ void SimTool::start()
 	//
     // destroy any partial results from unfinished iterations
     //
-    simulation->reset();
     double startTime=simulation->getTime_sec();
     double percentile=startTime/simEndTime;
     double increment =0.01;
@@ -543,17 +540,4 @@ void SimTool::start()
    }
    printf("SimTool::start(), status for MPI worker %d ending\n",rank);
 #endif
-}
-
-void SimTool::addHistogram(Histogram *histogram)
-{
-   histogramList.push_back(histogram);
-}
-
-void SimTool::loadAllHistograms()
-{
-	for (int i=0;i<(int)histogramList.size();i++){
-		Histogram *histogram = histogramList[i];
-		histogram->load();
-	}
 }

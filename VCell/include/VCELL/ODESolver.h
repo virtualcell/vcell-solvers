@@ -16,9 +16,7 @@ public:
 				int   *solveRegions);
 	virtual ~ODESolver();
 
-	virtual bool solveEqn(double deltaTime, 
-        int volumeIndexStart, int volumeIndexSize, 
-        int membraneIndexStart, int membraneIndexSize, bool bFirstTime);
+	virtual void solveEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime);
 
 	double *getRates() { return rate; }
 	long getArraySize() {return arraySize;}

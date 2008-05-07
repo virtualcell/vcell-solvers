@@ -27,18 +27,7 @@ Feature::Feature(string& Aname, FeatureHandle Ahandle, int Priority)
 {
 	priority = Priority;
 	handle = Ahandle;
-	next = NULL;
 	name = Aname;
-	   
-	currVolumeVarContext = NULL;
-	volumeVarContextList = NULL;
-	currMembraneVarContext = NULL;
-	membraneVarContextList = NULL;
-
-	currVolumeRegionVarContext = NULL;
-	volumeRegionVarContextList = NULL;
-	currMembraneRegionVarContext = NULL;
-	membraneRegionVarContextList = NULL;
 
 	vpc = NULL;
 	mpc = NULL;
@@ -61,228 +50,107 @@ double Feature::getMaxIterationTime()
 	return 0.0;
 }
 
-bool Feature::resolveReferences(Simulation *sim)
-{
-	//
-	// initialize VarContexts
-	//
-	VolumeVarContext *volumeVarContext=NULL;
-	while (volumeVarContext = getNextVolumeVarContext(volumeVarContext)){
-		if (!volumeVarContext->resolveReferences(sim)){
-			printf("Feature::resolveReferences(), error \n");
-			return false;
-		}
+void Feature::resolveReferences(Simulation *sim)
+{	
+	for (int i = 0; i < (int)volumeVarContextList.size(); i ++) {
+		VolumeVarContext* volumeVarContext = volumeVarContextList[i];
+		volumeVarContext->resolveReferences(sim);
+	}
+	
+	for (int i = 0; i < (int)membraneVarContextList.size(); i ++) {
+		MembraneVarContext *membraneVarContext = membraneVarContextList[i];
+		membraneVarContext->resolveReferences(sim);
+	}
+	
+	for (int i = 0; i < (int)volumeRegionVarContextList.size(); i ++) {
+		VolumeRegionVarContext *volumeRegionVarContext = volumeRegionVarContextList[i];
+		volumeRegionVarContext->resolveReferences(sim);
 	}    
 
-	MembraneVarContext *membraneVarContext=NULL;
-	while (membraneVarContext = getNextMembraneVarContext(membraneVarContext)){
-		if (!membraneVarContext->resolveReferences(sim)){
-			printf("Feature::resolveReferences(), error \n");
-			return false;
-		}
+	for (int i = 0; i < (int)membraneRegionVarContextList.size(); i ++) {
+		MembraneRegionVarContext* membraneRegionVarContext = membraneRegionVarContextList[i];
+		membraneRegionVarContext->resolveReferences(sim);
 	}    
 
-	VolumeRegionVarContext *volumeRegionVarContext=NULL;
-	while (volumeRegionVarContext = getNextVolumeRegionVarContext(volumeRegionVarContext)){
-		if (!volumeRegionVarContext->resolveReferences(sim)){
-			printf("Feature::resolveReferences(), error \n");
-			return false;
-		}
-	}    
-
-	MembraneRegionVarContext *membraneRegionVarContext=NULL;
-	while (membraneRegionVarContext = getNextMembraneRegionVarContext(membraneRegionVarContext)){
-		if (!membraneRegionVarContext->resolveReferences(sim)){
-			printf("Feature::resolveReferences(), error \n");
-			return false;
-		}
-	}    
-
-	//
-	// initialize ParticleContexts
-	//
 	if(vpc!=NULL){
-		if (!vpc->resolveReferences(sim)){
-			printf("Feature::resolveReferences(), error \n");
-			return false;
-		}
+		vpc->resolveReferences(sim);
 	}
 	if(mpc!=NULL){
-		if (!mpc->resolveReferences(sim)){
-			printf("Feature::resolveReferences(), error \n");
-			return false;
-		}
+		mpc->resolveReferences(sim);
 	}
 	if(cpc!=NULL){
-		if (!cpc->resolveReferences(sim)){
-			printf("Feature::resolveReferences(), error \n");
-			return false;
-		}
+		cpc->resolveReferences(sim);
 	}
-	//
-	// initialize FastSystem
-	//
 	if(fastSystem!=NULL){
-		if(!fastSystem->resolveReferences(sim)){
-			printf("Feature::resolveReferences(), error resolving FastSystem\n");
-			return false;
-		}
+		fastSystem->resolveReferences(sim);
 	}
-	//
-	// initialize MembraneFastSystem
-	//
 	if(membraneFastSystem!=NULL){
-		if(!membraneFastSystem->resolveReferences(sim)){
-			printf("Feature::resolveReferences(), error resolving MembraneFastSystem\n");
-			return false;
-		}
+		membraneFastSystem->resolveReferences(sim);
 	}
-	    
-	return true;
 }
 
-bool Feature::initVolumeValues(long volumeIndex)
+void Feature::initVolumeValues(long volumeIndex)
 {
-	VolumeVariable *var;
-
-	//
-	// initialize VolumeVariables
-	//
-	VolumeVarContext *volumeVarContext=NULL;
-	while (volumeVarContext = getNextVolumeVarContext(volumeVarContext)){
+	for (int i = 0; i < (int)volumeVarContextList.size(); i ++) {
+		VolumeVarContext *volumeVarContext = volumeVarContextList[i];
 		double value = volumeVarContext->getInitialValue(volumeIndex);
-		var = (VolumeVariable *)volumeVarContext->getVar();
+		VolumeVariable* var = (VolumeVariable *)volumeVarContext->getVar();
 		var->setOld(volumeIndex, value);
 		var->setCurr(volumeIndex, value);
 	}
-	return true;
 }
 
-bool Feature::initMembraneValues(MembraneElement *membraneElement)
+void Feature::initMembraneValues(MembraneElement *membraneElement)
 {
-	MembraneVariable *var;
-	long membraneIndex = membraneElement->index;
-	//
-	// initialize MembraneVariables
-	//
-	MembraneVarContext *membraneVarContext=NULL;
-	while (membraneVarContext = getNextMembraneVarContext(membraneVarContext)){
+	for (int i = 0; i < (int)membraneVarContextList.size(); i ++) {
+		MembraneVarContext *membraneVarContext = membraneVarContextList[i];
 		double value = membraneVarContext->getInitialValue(membraneElement);
-		var = (MembraneVariable *)membraneVarContext->getVar();
-		var->setOld(membraneIndex, value);
-		var->setCurr(membraneIndex, value);
+		MembraneVariable* var = (MembraneVariable *)membraneVarContext->getVar();
+		var->setOld(membraneElement->index, value);
+		var->setCurr(membraneElement->index, value);
 	}
-	return true;
 }
 
-bool Feature::initVolumeRegionValues(int volumeRegionIndex)
+void Feature::initVolumeRegionValues(int volumeRegionIndex)
 {
-	VolumeRegionVariable *var;
-
-	//
-	// initialize VolumeRegionVariables
-	//
-	VolumeRegionVarContext *volumeRegionVarContext=NULL;
-	while (volumeRegionVarContext = getNextVolumeRegionVarContext(volumeRegionVarContext)){
+	for (int i = 0; i < (int)volumeRegionVarContextList.size(); i ++) {
+		VolumeRegionVarContext *volumeRegionVarContext = volumeRegionVarContextList[i];
 		double value = volumeRegionVarContext->getInitialValue(volumeRegionIndex);
-		var = (VolumeRegionVariable *)volumeRegionVarContext->getVar();
+		VolumeRegionVariable* var = (VolumeRegionVariable*)volumeRegionVarContext->getVar();
 		var->setOld(volumeRegionIndex, value);
 		var->setCurr(volumeRegionIndex, value);
 	}
-	return true;
 }
 
-bool Feature::initMembraneRegionValues(int membraneRegionIndex)
+void Feature::initMembraneRegionValues(int membraneRegionIndex)
 {
-	MembraneRegionVariable *var;
-
-	//
-	// initialize MembraneRegionVariables
-	//
-	MembraneRegionVarContext *membraneRegionVarContext=NULL;
-	while (membraneRegionVarContext = getNextMembraneRegionVarContext(membraneRegionVarContext)){
+	for (int i = 0; i < (int)membraneRegionVarContextList.size(); i ++) {
+		MembraneRegionVarContext *membraneRegionVarContext = membraneRegionVarContextList[i];
 		double value = membraneRegionVarContext->getInitialValue(membraneRegionIndex);
-		var = (MembraneRegionVariable *)membraneRegionVarContext->getVar();
+		MembraneRegionVariable* var = (MembraneRegionVariable *)membraneRegionVarContext->getVar();
 		var->setOld(membraneRegionIndex, value);
 		var->setCurr(membraneRegionIndex, value);
 	}
-	return true;
 }
 
-VolumeVarContext *Feature::getNextVolumeVarContext(VolumeVarContext *vc)
+void Feature::addVolumeVarContext(VolumeVarContext *vvc)
 {
-	if (vc==NULL){
-		return volumeVarContextList;
-	}else{
-		return (VolumeVarContext *)(vc->getNext());
-	}
+	volumeVarContextList.push_back(vvc);
 }
 
-MembraneVarContext *Feature::getNextMembraneVarContext(MembraneVarContext *vc)
+void Feature::addMembraneVarContext(MembraneVarContext *mvc)
 {
-	if (vc==NULL){
-		return membraneVarContextList;
-	}else{
-		return (MembraneVarContext *)(vc->getNext());
-	}
+	membraneVarContextList.push_back(mvc);
 }
 
-VolumeRegionVarContext *Feature::getNextVolumeRegionVarContext(VolumeRegionVarContext *vc)
+void Feature::addVolumeRegionVarContext(VolumeRegionVarContext *vrvc)
 {
-	if (vc==NULL){
-		return volumeRegionVarContextList;
-	}else{
-		return (VolumeRegionVarContext *)(vc->getNext());
-	}
+	volumeRegionVarContextList.push_back(vrvc);
 }
 
-MembraneRegionVarContext *Feature::getNextMembraneRegionVarContext(MembraneRegionVarContext *vc)
+void Feature::addMembraneRegionVarContext(MembraneRegionVarContext *mrvc)
 {
-	if (vc==NULL){
-		return membraneRegionVarContextList;
-	}else{
-		return (MembraneRegionVarContext *)(vc->getNext());
-	}
-}
-
-void Feature::addVolumeVarContext(VolumeVarContext *vc)
-{
-	//
-	// add 'this' to front of linked list
-	//
-	currVolumeVarContext = vc;
-	vc->next = volumeVarContextList;
-	volumeVarContextList = vc;
-}
-
-void Feature::addMembraneVarContext(MembraneVarContext *vc)
-{
-	//
-	// add 'this' to front of linked list
-	//
-	currMembraneVarContext = vc;
-	vc->next = membraneVarContextList;
-	membraneVarContextList = vc;
-}
-
-void Feature::addVolumeRegionVarContext(VolumeRegionVarContext *vc)
-{
-	//
-	// add 'this' to front of linked list
-	//
-	currVolumeRegionVarContext = vc;
-	vc->next = volumeRegionVarContextList;
-	volumeRegionVarContextList = vc;
-}
-
-void Feature::addMembraneRegionVarContext(MembraneRegionVarContext *vc)
-{
-	//
-	// add 'this' to front of linked list
-	//
-	currMembraneRegionVarContext = vc;
-	vc->next = membraneRegionVarContextList;
-	membraneRegionVarContextList = vc;
+	membraneRegionVarContextList.push_back(mrvc);
 }
 
 FeatureHandle Feature::getHandle()
@@ -291,145 +159,65 @@ FeatureHandle Feature::getHandle()
 }
 
 
-VolumeVarContext *Feature::getVolumeVarContext(VolumeVariable *var)
+VolumeVarContext* Feature::getVolumeVarContext(VolumeVariable *volVar)
 {
-	//
-	// check if current varContext already
-	//
-	if (currVolumeVarContext != NULL){
-		if (currVolumeVarContext->getVar()==var){
-			return currVolumeVarContext;
+	for (int i = 0; i < (int)volumeVarContextList.size(); i ++) {
+		if (volumeVarContextList[i]->getVar() == volVar) {
+			return volumeVarContextList[i];
 		}
 	}
-	//
-	// check if varContext has already been fully created
-	//
-	currVolumeVarContext = volumeVarContextList;
-	while(currVolumeVarContext){
-		if (currVolumeVarContext->getVar()==var) break;
-		currVolumeVarContext = (VolumeVarContext *)(currVolumeVarContext->getNext());
-	}
-	ASSERTION(currVolumeVarContext);
-
-	return currVolumeVarContext;
+	return 0;
 }
 
 
-VolumeVarContext *Feature::getVolumeVarContext(string& volumeVarName)
+VolumeVarContext* Feature::getVolumeVarContext(string& volumeVarName)
 {
-	//
-	// check if current varContext already
-	//
-	if (currVolumeVarContext != NULL){
-		if (currVolumeVarContext->getVarName() == volumeVarName){
-			return currVolumeVarContext;
+	for (int i = 0; i < (int)volumeVarContextList.size(); i ++) {
+		if (volumeVarContextList[i]->getVarName() == volumeVarName) {
+			return volumeVarContextList[i];
 		}
 	}
-	//
-	// check if varContext has already been fully created
-	//
-	currVolumeVarContext = volumeVarContextList;
-	while(currVolumeVarContext){
-		if (currVolumeVarContext->getVarName() == volumeVarName) 
-			break;
-		currVolumeVarContext = (VolumeVarContext *)(currVolumeVarContext->getNext());
-	}
-	ASSERTION(currVolumeVarContext);
-
-	return currVolumeVarContext;
+	return 0;
 }
 
 
-MembraneVarContext *Feature::getMembraneVarContext(MembraneVariable *var)
+MembraneVarContext* Feature::getMembraneVarContext(MembraneVariable *memVar)
 {
-	//
-	// check if current varContext already
-	//
-	if (currMembraneVarContext != NULL){
-		if (currMembraneVarContext->getVar()==var){
-			return currMembraneVarContext;
+	for (int i = 0; i < (int)membraneVarContextList.size(); i ++) {
+		if (membraneVarContextList[i]->getVar() == memVar) {
+			return membraneVarContextList[i];
 		}
 	}
-	//
-	// check if varContext has already been fully created
-	//
-	currMembraneVarContext = membraneVarContextList;
-	while(currMembraneVarContext){
-		if (currMembraneVarContext->getVar()==var) break;
-		currMembraneVarContext = (MembraneVarContext *)(currMembraneVarContext->getNext());
-	}
-	ASSERTION(currMembraneVarContext);
-	   
-	return currMembraneVarContext;
+	return 0;
 }
 
 
-MembraneVarContext *Feature::getMembraneVarContext(string& membraneVarName)
+MembraneVarContext* Feature::getMembraneVarContext(string& membraneVarName)
 {
-	//
-	// check if current varContext already
-	//
-	if (currMembraneVarContext != NULL){
-		if (currMembraneVarContext->getVarName() == membraneVarName){
-			return currMembraneVarContext;
+	for (int i = 0; i < (int)membraneVarContextList.size(); i ++) {
+		if (membraneVarContextList[i]->getVarName() == membraneVarName) {
+			return membraneVarContextList[i];
 		}
 	}
-	//
-	// check if varContext has already been fully created
-	//
-	currMembraneVarContext = membraneVarContextList;
-	while(currMembraneVarContext){
-		if (currMembraneVarContext->getVarName() == membraneVarName) 
-			break;
-		currMembraneVarContext = (MembraneVarContext *)(currMembraneVarContext->getNext());
-	}
-	ASSERTION(currMembraneVarContext);
-	   
-	return currMembraneVarContext;
+	return 0;
 }
 
-VolumeRegionVarContext *Feature::getVolumeRegionVarContext(VolumeRegionVariable *var)
+VolumeRegionVarContext* Feature::getVolumeRegionVarContext(VolumeRegionVariable *volRegionVar)
 {
-	//
-	// check if current varContext already
-	//
-	if (currVolumeRegionVarContext != NULL){
-		if (currVolumeRegionVarContext->getVar()==var){
-			return currVolumeRegionVarContext;
+	for (int i = 0; i < (int)volumeRegionVarContextList.size(); i ++) {
+		if (volumeRegionVarContextList[i]->getVar() == volRegionVar) {
+			return volumeRegionVarContextList[i];
 		}
 	}
-	//
-	// check if varContext has already been fully created
-	//
-	currVolumeRegionVarContext = volumeRegionVarContextList;
-	while(currVolumeRegionVarContext){
-		if (currVolumeRegionVarContext->getVar()==var) break;
-		currVolumeRegionVarContext = (VolumeRegionVarContext *)(currVolumeRegionVarContext->getNext());
-	}
-	ASSERTION(currVolumeRegionVarContext);
-
-	return currVolumeRegionVarContext;
+	return 0;
 }
 
-MembraneRegionVarContext *Feature::getMembraneRegionVarContext(MembraneRegionVariable *var)
+MembraneRegionVarContext* Feature::getMembraneRegionVarContext(MembraneRegionVariable *memRegionVar)
 {
-	//
-	// check if current varContext already
-	//
-	if (currMembraneRegionVarContext != NULL){
-		if (currMembraneRegionVarContext->getVar()==var){
-			return currMembraneRegionVarContext;
+	for (int i = 0; i < (int)membraneRegionVarContextList.size(); i ++) {
+		if (membraneRegionVarContextList[i]->getVar() == memRegionVar) {
+			return membraneRegionVarContextList[i];
 		}
 	}
-	//
-	// check if varContext has already been fully created
-	//
-	currMembraneRegionVarContext = membraneRegionVarContextList;
-	while(currMembraneRegionVarContext){
-		if (currMembraneRegionVarContext->getVar()==var) break;
-		currMembraneRegionVarContext = (MembraneRegionVarContext *)(currMembraneRegionVarContext->getNext());
-	}
-	ASSERTION(currMembraneRegionVarContext);
-	   
-	return currMembraneRegionVarContext;
+	return 0;
 }

@@ -30,82 +30,68 @@ Scheduler::Scheduler(Simulation *Asim)
 	bHasFastSystem = false;
 }
 
-void Scheduler::update()
-{
-	Variable *var = NULL;
-	while (var = sim->getNextVariable(var)){
-		var->update();
-	}
-}
-
-void Scheduler::reset()
-{
-	Variable *var = NULL;
-	while (var = sim->getNextVariable(var)){
-		var->revert();
-	}
-}
-
-void Scheduler::collectResults(int processRank)
-{
-	SimTool::getInstance()->loadAllHistograms();
-}
-
 bool Scheduler::initValues()
 {
-	Feature *feature;
+	bFirstTime = true;
 	//
 	// tell Features to initialize the variables with 
 	// feature specific values
 	//
 	Mesh *mesh = sim->getMesh();
 	VolumeElement *pVolumeElement = mesh->getVolumeElements();
-	long i=0;
-	for (i=0;i<mesh->getNumVolumeElements();i++){
-		if (feature = pVolumeElement->feature){
-			if (!feature->initVolumeValues(i)){
-				cout << "Simulation::initValues() - error init'ing vars in Feature " << feature->getName() << endl;
-			}
-		}
-		pVolumeElement++;
+	for (int i=0;i<mesh->getNumVolumeElements();i++){
+		Feature* feature = pVolumeElement[i].feature;
+		if (feature != 0) { 
+			feature->initVolumeValues(i);
+		} else {
+			char errmsg[512];
+			sprintf(errmsg, "feature is null for volume element %d", i);
+			throw errmsg;
+		} 
 	}
 
 	MembraneElement *pMembraneElement = mesh->getMembraneElements();
-	for (i=0;i<mesh->getNumMembraneElements();i++){
-		if (feature = pMembraneElement->feature){
-			if (!feature->initMembraneValues(pMembraneElement)){
-				cout << "Simulation::initValues() - error init'ing vars in Feature " << feature->getName() << endl;
-			}
+	for (int i=0;i<mesh->getNumMembraneElements();i++){
+		Feature* feature = pMembraneElement[i].feature;
+		if (feature != 0) { 
+			feature->initMembraneValues(&pMembraneElement[i]);
+		} else {
+			char errmsg[512];
+			sprintf(errmsg, "feature is null for membrane element %d", i);
+			throw errmsg;
 		}
-		pMembraneElement++;
 	}
 
 	int numVolumeRegions = ((CartesianMesh*)mesh)->getNumVolumeRegions();
-	if(numVolumeRegions>0){
-		for(int j=0; j<numVolumeRegions; j++){
+	for(int j=0; j<numVolumeRegions; j++){
 		VolumeRegion *region = ((CartesianMesh*)mesh)->getVolumeRegion(j);
-		feature = region->getFeature();
-			if (!feature->initVolumeRegionValues(j)){
-				cout << "Simulation::initValues() - error init'ing vars Feature " << feature->getName() << endl;
-			}
-		}
+		Feature* feature = region->getFeature();
+		if (feature != 0) { 
+			feature->initVolumeRegionValues(j);
+		} else {
+			char errmsg[512];
+			sprintf(errmsg, "feature is null for volume region element %d", j);
+			throw errmsg;
+		} 
 	}
 
 	int numMembraneRegions = ((CartesianMesh*)mesh)->getNumMembraneRegions();
-	if(numMembraneRegions>0){
-		for(int j=0; j<numMembraneRegions; j++){
+	for(int j=0; j<numMembraneRegions; j++){
 		MembraneRegion *membrane = ((CartesianMesh*)mesh)->getMembraneRegion(j);
-		feature = membrane->getRegionInside()->getFeature();
-			if (!feature->initMembraneRegionValues(j)){
-				cout << "Simulation::initValues() - error init'ing vars Feature " << feature->getName() << endl;
-			}
-		}
+		Feature* feature = membrane->getRegionInside()->getFeature();
+		if (feature != 0) { 
+			feature->initMembraneRegionValues(j);
+		} else {
+			char errmsg[512];
+			sprintf(errmsg, "feature is null for membrane region element %d", j);
+			throw errmsg;
+		} 
 	}
 
 	VCellModel *model = SimTool::getInstance()->getModel();
-	feature = NULL;
 	bHasFastSystem = false;
-	while (feature = model->getNextFeature(feature)){
+	for (int i = 0; i < model->getNumFeatures(); i ++) {
+		Feature* feature = model->getFeatureFromIndex(i);
 		if(feature->getFastSystem() || feature->getMembraneFastSystem()){
 			bHasFastSystem = true;
 			break;
@@ -137,13 +123,8 @@ void Scheduler::solveFastSystem(int volStart, int volSize, int memStart, int mem
 			WorldCoord wc = mesh->getVolumeWorldCoord(i);
 			fs->setCoordinates(sim->getTime_sec(), wc);
 			fs->initVars();			
-			if(!fs->solveSystem()){
-				stringstream ss;
-				ss << "Scheduler::solveFastSystem() - error solving FastSystem in " << feature->getName();
-				throw ss.str();
-			}else{
-				fs->updateVars();
-			}
+			fs->solveSystem();
+			fs->updateVars();			
 		}
 		pVolumeElement++;
 	}
@@ -159,13 +140,8 @@ void Scheduler::solveFastSystem(int volStart, int volSize, int memStart, int mem
 			WorldCoord wc = mesh->getMembraneWorldCoord(i);
 			fs->setCoordinates(sim->getTime_sec(), wc);
 			fs->initVars();
-			if(!fs->solveSystem()){
-				stringstream ss;
-				ss << "Scheduler::solveFastSystem() - error solving FastSystem in " << feature->getName();
-				throw ss.str();
-			}else{
-				fs->updateVars();
-			}
+			fs->solveSystem();
+			fs->updateVars();			
 		}
 		pMembraneElement++;
 	}

@@ -31,15 +31,11 @@ Simulation::Simulation(Mesh *mesh)
 	_dT_sec = 0;   // seconds
 	currIteration = 0;
 	_mesh = mesh;
-	_solverList = NULL;
-	_varList = NULL;
 	_advanced = false;
 	_initEquations = false;
 	_scheduler = NULL;
 	globalParticleList.clear();
    
-	numVariables = 0;
-
 #ifdef VCELL_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &mpiRank);
 	MPI_Comm_size(MPI_COMM_WORLD, &mpiSize);
@@ -74,8 +70,8 @@ double Simulation::getMaxDifference()
 {
 	double maxDiff = 0;
 
-	Variable *var = NULL;
-	while (var = getNextVariable(var)){
+	for (int i = 0; i < (int)varList.size(); i ++) {
+		Variable* var = varList[i];
 		double diff = var->getMaxDifference();
 		maxDiff = max(maxDiff, diff);
 	}
@@ -85,55 +81,63 @@ double Simulation::getMaxDifference()
 
 void Simulation::update()
 {
-	_scheduler->update();
-
+	for (int i = 0; i < (int)varList.size(); i ++) {
+		Variable* var = varList[i];
+		var->update();
+	}
+	//_scheduler->update();
 	currIteration ++;
 }
 
 void Simulation::reset()
 {
 	currIteration=0;
-	_scheduler->resetFirstTime();
+	//_scheduler->resetFirstTime();
 	_scheduler->initValues();
-	_scheduler->reset();
+	//_scheduler->reset();
 }
 
 void Simulation::addSolver(Solver *solver)
 {
-   solver->next = _solverList;
-   _solverList = solver;
+	solverList.push_back(solver);
 }
 
-Solver *Simulation::getNextSolver(Solver *solver)
+Solver *Simulation::getSolver(int index)
 {
-	if (solver==NULL){
-		return _solverList;
-	}else{
-		return solver->next;
+	if (index < 0 || index >= (int)solverList.size()) {
+		throw "Simulation: getSolver(index) : index out of bounds";
 	}
+	return solverList.at(index);	
 }
 
 void Simulation::addVariable(Variable *var)
 {
-	var->next = _varList;
-	_varList = var;
-	numVariables ++;
+	varList.push_back(var);
 }
 
-Variable *Simulation::getNextVariable(Variable *var)
-{
-   if (var==NULL){
-      return _varList;
-   }else{
-      return (Variable *)var->next;
-   }
+Variable* Simulation::getVariable(int index) {
+	if (index < 0 || index >= (int)varList.size()) {
+		throw "Simulation: getVariable(index) : index out of bounds";
+	}
+	return varList.at(index);
 }
+
+int Simulation::getNumVolumeVariables() {
+	int numVolVar = 0;
+	for (int i = 0; i < (int)varList.size(); i ++) {
+		if (varList[i]->getVarType() == VAR_VOLUME) {
+			numVolVar ++;
+		}
+	}
+	return numVolVar;
+}
+
 
 Variable *Simulation::getVariableFromName(string& varName)
 {
-	Variable *var=NULL;
 	ASSERTION(varName);
-	while (var=getNextVariable(var)){
+	for (int i = 0; i < (int)varList.size(); i ++) {
+		Variable* var = varList[i];
 		if (varName == var->getName()){
 			return var;
 		}
@@ -149,33 +153,33 @@ Variable *Simulation::getVariableFromName(char* varName)
 
 Solver *Simulation::getSolverFromVariable(Variable *var)
 {
-   Solver *solver=NULL;
    ASSERTION(var);
-   while (solver=getNextSolver(solver)){
-      if (solver->getVar()==var){
-         return solver;
-      }
+   for (int i = 0; i < (int)solverList.size(); i ++) {
+		Solver* solver = solverList[i];
+		if (solver->getVar()==var){
+			return solver;
+		}
    }
    return NULL;
 }
 
-void Simulation::synchronize()
-{
-	//
-	// if applicable, collect results into root process
-	//
-	_scheduler->collectResults(0);
-}
+//void Simulation::synchronize()
+//{
+//	//
+//	// if applicable, collect results into root process
+//	//
+//	_scheduler->collectResults(0);
+//}
 
 void Simulation::addParticle(Particle *particle)
 { 
 	globalParticleList.push_back(particle); 
 }
 
-bool Simulation::writeData(char *filename, bool bCompress)
+void Simulation::writeData(char *filename, bool bCompress)
 {
    
-	synchronize();
+	//synchronize();
 
 #ifdef VCELL_MPI
 	//
@@ -187,8 +191,8 @@ bool Simulation::writeData(char *filename, bool bCompress)
 #endif
 	bool hasParticles = false;
 	VCellModel *model = SimTool::getInstance()->getModel();
-	Feature *feature = NULL;
-	while (feature = model->getNextFeature(feature)){
+	for (int i = 0; i < model->getNumFeatures(); i ++) {
+		Feature* feature = model->getFeatureFromIndex(i);
 		if (feature->getVolumeParticleContext()!=NULL){
 			hasParticles = true;
 		}
@@ -204,8 +208,9 @@ bool Simulation::writeData(char *filename, bool bCompress)
 		FILE *fp = NULL;
 		string newFname = string(filename) + ".particle";
 		if ((fp = fopen(newFname.c_str(),"w"))==NULL){
-			cout << "Simulation::writeData(), error opening file " << newFname << " for writing" << endl;
-			return false;
+			char errmsg[512];
+			sprintf(errmsg, "Simulation::writeData(), error opening file %s for writing", newFname.c_str());
+			throw errmsg;
 		}
 
 		fprintf(fp,"%lg %lg %lg\n", ((CartesianMesh*)_mesh)->getDomainSizeX(), 
@@ -227,17 +232,17 @@ bool Simulation::writeData(char *filename, bool bCompress)
 	}
 
 	DataSet dataset;
-	return dataset.write(filename, this, bCompress);
+	dataset.write(filename, this, bCompress);
 }
 
-bool Simulation::readData(char *filename)
+void Simulation::readData(char *filename)
 {
 	//
 	// all processes read data
 	// (in the future, root could read and then distribute)
 	//
 	DataSet dataset;
-	return dataset.read(filename, this);
+	dataset.read(filename, this);
 }
 
 void Simulation::setScheduler(Scheduler *scheduler)
@@ -248,15 +253,16 @@ void Simulation::setScheduler(Scheduler *scheduler)
 //-------------------------------------------------------
 // determines scheduler and resets _time_sec and initializes var's
 //-------------------------------------------------------
-bool Simulation::initSimulation()
+void Simulation::initSimulation()
 {   
 	if (_scheduler != NULL){
-		return true;
+		return;
 	}
 	int odeCount=0;
 	int pdeCount=0;
 	Solver *solver = NULL;
-	while (solver = getNextSolver(solver)){
+	for (int i = 0; i < (int)solverList.size(); i ++) {
+		solver = solverList[i];
 		if (solver->isPDESolver()){
 			pdeCount++;
 		} else {
@@ -288,21 +294,10 @@ bool Simulation::initSimulation()
 	printf("pdeCount=%d, odeCount=%d\n", pdeCount, odeCount);
 	_scheduler = new SerialScheduler(this);
 #endif	
-	//
-	// determine max iteration time
-	//
-	VCellModel *model = SimTool::getInstance()->getModel();
 
-	if (!model->resolveReferences()){
-		printf("Simulation::initSimulation() failed\n");
-		return false;
-	}
+	VCellModel *model = SimTool::getInstance()->getModel();
+	model->resolveReferences();
 	_scheduler->initValues();
-	//
-	// Initialize Potential
-	//
 
 	currIteration = 0;
-
-	return true;
 }

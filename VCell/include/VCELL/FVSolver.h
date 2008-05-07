@@ -14,7 +14,7 @@ class Feature;
 class FastSystemExpression;
 class SimulationExpression;
 
-extern string trim(string& str);
+extern void trimString(string& str);
 //class PdeResultSet;
 
 class FVSolver {
@@ -41,7 +41,7 @@ public:
 
 	void createSimTool(istream& ifsInput, int taskID);
 	void solve(bool bLoadFinal=true, double* paramValues=0);
-	void init(double *paramValues=0);
+	void init(double* paramValues=0);
 	void step(double* paramValues=0);
 
 	double getCurrentTime();
@@ -52,7 +52,7 @@ public:
 	int getVariableLength(string& varName);
 	double* getValue(string& varName, int arrayID);  // arrayID=0 for "old" and 1 for "current"
 	
-	void reinit(double *paramValues);
+	//void reinit(double *paramValues);
 	//PdeResultSet* getPdeResultSet();
 private:
 	char* outputPath;

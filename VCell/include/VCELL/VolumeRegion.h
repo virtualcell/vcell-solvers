@@ -18,9 +18,9 @@ public:
 	VolumeRegion(CartesianMesh *mesh);
 	Feature *getFeature();
 	void setFeature(Feature* newFeature);
-	void addMembrane(MembraneRegion *membrane);
-	MembraneRegion *getMembrane(int i) { return membranes[i]; }
-	int getNumMembranes() { return (int)membranes.size(); }
+	void addMembraneRegion(MembraneRegion *membraneRegion);
+	MembraneRegion *getMembraneRegion(int i) { return membraneRegionList[i]; }
+	int getNumMembraneRegions() { return (int)membraneRegionList.size(); }
 	bool isClosed();
 	double  getVolume();
 	void setVolume(double newVolume);
@@ -31,7 +31,7 @@ public:
 private:
 	void recompute();
 	Feature *feature;
-	vector<MembraneRegion*> membranes;
+	vector<MembraneRegion*> membraneRegionList;
 	bool closure;     //denotes whether the region surface is closed
 	double volume;
 	bool bBoundaryDirichlet;

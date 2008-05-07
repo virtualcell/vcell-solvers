@@ -5,6 +5,7 @@
 #include <VCELL/FastSystemExpression.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/Variable.h>
+#include <VCELL/CartesianMesh.h>
 #include <Expression.h>
 #include <SimpleSymbolTable.h>
 
@@ -76,14 +77,19 @@ void FastSystemExpression::bindAllExpressions() {
 	}
 
 	//bind pseudo constants;
-	string* indepAndDepSymbols = new string[dimension + numDependents];
+	int numSymbols = 4 + dimension + numDependents;
+	string* indepAndDepSymbols = new string[numSymbols];
+	indepAndDepSymbols[0] = "t";
+	indepAndDepSymbols[1] = "x";
+	indepAndDepSymbols[2] = "y";
+	indepAndDepSymbols[3] = "z";
 	for (int i = 0; i < dimension; i ++) {
-		indepAndDepSymbols[i] = pVars[i]->getName();
+		indepAndDepSymbols[i + 4] = pVars[i]->getName();
 	}
 	for (int i = 0; i < numDependents; i ++) {		
-		indepAndDepSymbols[i + dimension] = pDependentVars[i]->getName();
+		indepAndDepSymbols[i + 4 + dimension] = pDependentVars[i]->getName();
 	}
-	SimpleSymbolTable* simpleSymbolTable = new SimpleSymbolTable(indepAndDepSymbols, dimension + numDependents);	
+	SimpleSymbolTable* simpleSymbolTable = new SimpleSymbolTable(indepAndDepSymbols, numSymbols);	
 	for (int i = 0; i < numDependents; i ++) {
 		pseudoConstantExpressions[i]->bindExpression(simpleSymbolTable);
 	}
@@ -131,15 +137,23 @@ void FastSystemExpression::setCoordinates(double time_sec, WorldCoord& wc) {
 void FastSystemExpression::initVars()
 {
 	// independent variables
-	double* values = new double[dimension + numDependents];
+	int numSymbols = 4 + dimension + numDependents;
+	double* values = new double[numSymbols];
+
+	WorldCoord wc = simulation->getMesh()->getVolumeWorldCoord(currIndex);
+	values[0] = simulation->getTime_sec();
+	values[1] = wc.x;
+	values[2] = wc.y;
+	values[3] = wc.z;
+
 	for (int i = 0; i < dimension; i ++) {		
-		values[i] = pVars[i]->getCurr(currIndex);
-		setX(i, values[i]);		
+		values[4 + i] = pVars[i]->getCurr(currIndex);
+		setX(i, values[4 + i]);		
 	}
 
 	// dependent variables
 	for (int i = 0; i < numDependents; i ++) {
-		values[i + dimension] = pDependentVars[i]->getCurr(currIndex);
+		values[4 + i + dimension] = pDependentVars[i]->getCurr(currIndex);
 	}
 
 	// set values of pseudo constants by using initial values of independent and dependent variables.
@@ -228,9 +242,8 @@ void FastSystemExpression::updateIndepValues() {
 	}	
 }
 
-bool FastSystemExpression::resolveReferences(Simulation *sim) {
+void FastSystemExpression::resolveReferences(Simulation *sim) {
 	bindAllExpressions();
-	return true;
 }
 
 void FastSystemExpression::updateMatrix()

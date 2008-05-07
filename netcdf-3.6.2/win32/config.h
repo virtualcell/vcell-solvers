@@ -74,4 +74,6 @@
 /* The number of bytes in a short.  */
 #define SIZEOF_SHORT 2
 
+#define HAVE_STRERROR
+
 #endif /* !_NCCONFIG_H_ */

@@ -7,7 +7,4 @@
 VolumeRegionVarContext::VolumeRegionVarContext(Feature *Afeature, string& AspeciesName)
 : VarContext(Afeature, AspeciesName)
 {
-	uniformRate = false;
-	uniformFlux = false;
-	zeroFluxBoundary = false;
 }

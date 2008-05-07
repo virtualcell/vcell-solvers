@@ -22,7 +22,7 @@ public:
 	SimulationExpression(Mesh *mesh);
 	~SimulationExpression();
 
-	bool initSimulation();   // initializes to t=0
+	void initSimulation();   // initializes to t=0
 	void update();           // copies new to old values 
 	void advanceTimeOn();
 	void advanceTimeOff();

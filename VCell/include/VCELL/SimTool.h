@@ -15,7 +15,6 @@
 class VCellModel;
 class Mesh;
 class Simulation;
-class  Histogram;
 
 class SimTool {
 public:	
@@ -26,16 +25,18 @@ public:
 	virtual void start();
 	virtual void loadFinal();
 
-	void addHistogram(Histogram *histogram);
-
 	void setModel(VCellModel* model);
 	void setSimulation(Simulation* sim);
 	void setTimeStep(double period);
 	void setEndTimeSec(double timeSec) { simEndTime = timeSec; }
 	void setKeepEvery(int ke) { keepEvery = ke; }
 	void setBaseFilename(char *fname); 
-	void setStoreEnable(bool enable) { bStoreEnable = enable; }
-	void setFileCompress(bool compress) { bSimFileCompress = compress; }
+	void setStoreEnable(bool enable) { 
+		bStoreEnable = enable; 
+	}
+	void setFileCompress(bool compress) { 
+		bSimFileCompress = compress; 
+	}
 	void requestStop();
 	void requestNoZip();
 
@@ -47,7 +48,6 @@ public:
 	void        stopTimer(TimerHandle hnd);
 	double      getElapsedTimeSec(TimerHandle hnd);
 	virtual void showSummary(FILE *fp);
-	void    loadAllHistograms();
 
 private:
 	static SimTool* instance;
@@ -57,7 +57,6 @@ private:
 	VCellModel* vcellModel;
 	Simulation  *simulation;
 	Timer  *_timer;
-	vector<Histogram *> histogramList;
 
 	void updateLog(double progress,double time,int iteration);
 	void clearLog();

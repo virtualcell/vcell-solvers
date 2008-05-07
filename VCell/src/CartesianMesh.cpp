@@ -266,7 +266,7 @@ void CartesianMesh::readGeometryFile() {
 		VolumeRegion* vr = new VolumeRegion(this);
 		vr->setId(i);
 		vr->setName(name);		
-		vr->setFeature(SimTool::getInstance()->getModel()->getFeature(fh));
+		vr->setFeature(SimTool::getInstance()->getModel()->getFeatureFromHandle(fh));
 		vr->setVolume(volume);				
 		pVolumeRegions.push_back(vr);
 	}
@@ -290,8 +290,8 @@ void CartesianMesh::readGeometryFile() {
 		VolumeRegion* regionIn = pVolumeRegions[inside];
 		VolumeRegion *regionOut = pVolumeRegions[outside];
 
-		regionIn->addMembrane(mr);
-		regionOut->addMembrane(mr);	
+		regionIn->addMembraneRegion(mr);
+		regionOut->addMembraneRegion(mr);	
 		if (regionIn->getFeature()->getPriority() < regionOut->getFeature()->getPriority()) {
 			mr->setRegionInside(regionOut);  
 			mr->setRegionOutside(regionIn);  
@@ -350,12 +350,12 @@ void CartesianMesh::readGeometryFile() {
 
 	unsigned short* volsamples = new unsigned short[numVolume];
 	if (inflated_len == numVolume) {
-		for (int i = 0; i < inflated_len; i ++) {		
+		for (unsigned long i = 0; i < inflated_len; i ++) {		
 			volsamples[i] = inflated_bytes[i];
 		}
 	} else if (inflated_len == twiceNumVolume) {
 		// convert two bytes to short
-		for (int i = 0, j = 0; i < inflated_len; i += 2, j ++) {
+		for (unsigned long i = 0, j = 0; i < inflated_len; i += 2, j ++) {
 			volsamples[j] = inflated_bytes[i] | (inflated_bytes[i + 1] << 8);
 		}
 	} else {
@@ -1741,7 +1741,7 @@ void CartesianMesh::computeMembraneCoupling(){
 	switch (getDimension()) {
 		case 2: {
 			double totalLenghth = 0;
-			long arr[4];			
+			long arr[2];			
 
 			SparseMatrixPCG* smat = new SparseMatrixPCG(N, MAXNEIGHBOR_2D * N, MATRIX_GENERAL);	
 			for (int i = 0; i < N; i ++) {				
@@ -1753,21 +1753,17 @@ void CartesianMesh::computeMembraneCoupling(){
 				}
 
 				//sort the neighbor index as needed by sparse matrix format
-				memcpy(arr, pMembraneElement[currentIndex].neighborMEIndex, 4 * sizeof(long));
-				for (int j = 0; j < 3; j ++) {
-					for (int k = j+1; k < 4; k ++) {						
-						if (arr[j] > arr[k]) {
-							long a = arr[j];
-							arr[j] = arr[k];
-							arr[k] = a;
-						}
-					}
+				memcpy(arr, pMembraneElement[currentIndex].neighborMEIndex, 2 * sizeof(long));
+				if (arr[0] > arr[1]) {
+					long a = arr[0];
+					arr[0] = arr[1];
+					arr[1] = a;
 				}
 				
 				smat->addNewRow();
 				double sum_arclength = 0;
 				int numNeighbors = 0;
-				for (int j = 0; j < 4; j ++) {
+				for (int j = 0; j < 2; j ++) {
 					long neighborIndex = arr[j];
 					if (neighborIndex == -1) {
 						continue;

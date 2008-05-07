@@ -454,7 +454,7 @@ void sortColumns(int numCols, int* columnIndices, double* columnValues) {
 // Left Hand Side
 //
 //------------------------------------------------------------------
-bool SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
+void SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
 {    
 	/**
 	 * we decided to scale both sides with deltaT/VOLUME
@@ -556,8 +556,6 @@ bool SparseVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart
 	
 	delete[] columnIndices;
 	delete[] columnValues;
-
-    return true;
 }
 
 double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* lambdas, double bInit) {
@@ -712,7 +710,7 @@ double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* l
 // Right Hand side
 //
 //------------------------------------------------------------------
-bool SparseVolumeEqnBuilder::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
+void SparseVolumeEqnBuilder::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
 {    
 	double lambdaAreaX = deltaTime/DELTAX;   
 	double lambdaAreaY = deltaTime/DELTAY;
@@ -745,9 +743,7 @@ bool SparseVolumeEqnBuilder::buildEquation(double deltaTime, int volumeIndexStar
 	for (int i = 0; i < (int)periodicNeighbors.size(); i ++) {
 		CoupledNeighbors* pn = periodicNeighbors[i];
 		B[pn->centerIndex] += pn->coeff;
-	}	
-
-	return true;
+	}
 }
 
 bool SparseVolumeEqnBuilder::checkPeriodicCoupledPairsInRegions(int indexm, int indexp) {
@@ -777,8 +773,9 @@ void SparseVolumeEqnBuilder::preProcess() {
 
 	// check if there is periodic boundary condition in the model
 	bool bPeriodic = false;
-	Feature* feature = 0;
-	while (feature = SimTool::getInstance()->getModel()->getNextFeature(feature)) {		
+	VCellModel* model = SimTool::getInstance()->getModel();
+	for (int i = 0; i < model->getNumFeatures(); i ++) {
+		Feature* feature = model->getFeatureFromIndex(i);
 		if (feature->getXmBoundaryType() == BOUNDARY_PERIODIC 
 			|| feature->getYmBoundaryType() == BOUNDARY_PERIODIC 
 			|| feature->getZmBoundaryType() == BOUNDARY_PERIODIC) {

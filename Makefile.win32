@@ -1,7 +1,7 @@
 default: all
 all:
 #	cd blas && nmake -f Makefile.win32
-	cd ExpressionParser && nmake -f Makefile.win32 && nmake -f MakefileMT.win32
+	cd ExpressionParser && nmake -f Makefile.win32
 	cd fsqp && nmake -f Makefile.win32
 	cd IDAWin && nmake -f Makefile.win32
 	cd CVodeStandalone && nmake -f Makefile.win32
@@ -11,7 +11,6 @@ all:
 	cd PCGPack && nmake -f Makefile.win32
 	cd qhull && nmake -f Makefile.win32
 	cd qhull && nmake -f MakefileDebug.win32
-	cd Triangle && nmake -f Makefile.win32
 	cd unzip && nmake -f Makefile.win32
 	cd zlib && nmake -f Makefile.win32
 	cd zip && nmake -f Makefile.win32
@@ -23,7 +22,7 @@ all:
 	
 clean:
 #	cd blas && nmake -f Makefile.win32 clean
-	cd ExpressionParser && nmake -f Makefile.win32 clean  && nmake -f MakefileMT.win32 clean
+	cd ExpressionParser && nmake -f Makefile.win32 clean
 	cd fsqp && nmake -f Makefile.win32 clean
 	cd IDAWin && nmake -f Makefile.win32 clean
 	cd CVodeStandalone && nmake -f Makefile.win32 clean
@@ -33,7 +32,6 @@ clean:
 	cd PCGPack && nmake -f Makefile.win32 clean
 	cd qhull && nmake -f Makefile.win32 clean
 	cd qhull && nmake -f MakefileDebug.win32 clean
-	cd Triangle && nmake -f Makefile.win32 clean
 	cd unzip && nmake -f Makefile.win32 clean
 	cd VCell\src && nmake -f Makefile.win32 clean
 	cd VCell\src && nmake -f Makefile_NoMessaging.win32 clean

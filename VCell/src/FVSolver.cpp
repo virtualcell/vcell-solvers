@@ -12,13 +12,13 @@
 #include <VCELL/EqnBuilderReactionForward.h>
 #include <VCELL/MembraneEqnBuilderForward.h>
 #include <VCELL/Element.h>
-#include <VCELL/PdeSolverDiana.h>
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/MembraneRegion.h>
 #include <VCELL/MembraneRegionEqnBuilder.h>
 #include <VCELL/VolumeRegionEqnBuilder.h>
 #include <VCELL/SparseMatrixEqnBuilder.h>
 #include <VCELL/SparseVolumeEqnBuilder.h>
+#include <VCELL/EllipticVolumeEqnBuilder.h>
 #include <VCELL/MembraneEqnBuilderDiffusion.h>
 #include <VCELL/SparseLinearSolver.h>
 #include <VCELL/VarContext.h>
@@ -169,30 +169,45 @@ void FVSolver::loadModel(istream& ifsInput) {
 	}
 }
 
-string trim(string& str) {	
-	if (str.length() == 0) {
-		return str;
-	}
-	int leftIndex, rightIndex;
-	for (leftIndex = 0; leftIndex < (int)str.length(); leftIndex ++) { // remove leading spaces
-		char c = str[leftIndex];
-		if (c != ' ' && c != '\n' && c != '\r') {
-			break;
+void trimString(string& str)
+{
+	string::size_type pos = str.find_last_not_of(" \r\n");
+	if(pos != string::npos) {
+		str.erase(pos + 1);
+		pos = str.find_first_not_of(" \r\n");
+		if(pos != string::npos) {
+			str.erase(0, pos);
 		}
 	}
-	for (rightIndex = (int)str.length() - 1; rightIndex >= 0; rightIndex --) { // remove trailing spaces and new line and carriage return		
-		char c = str[rightIndex];
-		if (c != ' ' && c != '\n' && c != '\r') {
+	else {
+		str.erase(str.begin(), str.end());
+	}
+}
+
+int loadSolveRegions(CartesianMesh* mesh, string& line, int* solveRegions) {
+	int numVolumeRegions = mesh->getNumVolumeRegions();
+	istringstream instream(line);
+	int regionCount = 0;
+	while (true) {
+		string feature_name = "";
+		instream >> feature_name;					
+		if (feature_name == "") {
 			break;
 		}
+		for (int i = 0; i < numVolumeRegions; i++){
+			VolumeRegion *volRegion = mesh->getVolumeRegion(i);
+			Feature* feature = SimTool::getInstance()->getModel()->getFeatureFromName(feature_name);
+			if (feature == NULL) {
+				stringstream ss;
+				ss << "Feature '" << feature_name << "' doesn't exist!";
+				throw ss.str();
+			}
+			if (volRegion->getFeature()->getHandle() == (FeatureHandle)(0xff & feature->getHandle())){ 
+				solveRegions[regionCount++] = volRegion->getId();
+			}
+		}
 	}
-
-	int len = rightIndex - leftIndex + 1;
-	if (len <= 0) {
-		return "";
-	}
-
-	return str.substr(leftIndex, len);
+	return regionCount;
 }
 
 void FVSolver::loadSimulation(istream& ifsInput) {
@@ -215,97 +230,80 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			continue;
 		} else if (nextToken == "VARIABLE_END") {
 			break;
-		} else if (nextToken == "VOLUME_PDE") {
-			bool bNoConvection = true;    // define symmflg = 0 (general) or 1 (symmetric)
+		} else if (nextToken == "VOLUME_PDE" || nextToken == "VOLUME_PDE_STEADY") {
+			bool bSteady = false;
+			if (nextToken == "VOLUME_PDE_STEADY") {
+				bSteady = true;
+			}
+
+			bool bNoConvection = true;
 			bool bTimeDependent = false;
-			string advectionflag, time_dependent_diffusion_flag;
-			ifsInput >> variable_name >> unit >> time_dependent_diffusion_flag >> advectionflag;
+			string advectionflag, time_dependent_diffusion_flag, solve_whole_mesh_flag;
+			ifsInput >> variable_name >> unit >> time_dependent_diffusion_flag >> advectionflag >> solve_whole_mesh_flag;			
 
-			string line;
-			getline(ifsInput, line);
-			line = trim(line);
-
+			bool bSolveVariable = true;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
 			int *solveRegions = NULL;
 
-			if (line.length() != 0) {
-				solveRegions = new int[numVolumeRegions];
-				istringstream instream(line);
-				int regionCount = 0;
-				while (true) {
-					string feature_name = "";
-					instream >> feature_name;					
-					if (feature_name == "") {
-						break;
-					}
-					for (int i = 0; i < numVolumeRegions; i++){
-						VolumeRegion *volRegion = mesh->getVolumeRegion(i);
-						Feature* feature = SimTool::getInstance()->getModel()->getFeature(feature_name);
-						if (feature == NULL) {
-							stringstream ss;
-							ss << "Feature '" << feature_name << "' doesn't exist!";
-							throw ss.str();
-						}
-						if (volRegion->getFeature()->getHandle() == (FeatureHandle)(0xff & feature->getHandle())){ 
-							solveRegions[regionCount++] = volRegion->getId();
-						}
-					}
+			if (solve_whole_mesh_flag == "false") {
+				string line;
+				getline(ifsInput, line);
+				trimString(line);
+
+				if (line.length() == 0) {
+					bSolveVariable = false;
+				} else {
+					solveRegions = new int[numVolumeRegions];				
+					numSolveRegions = loadSolveRegions(mesh, line, solveRegions);
 				}
-				numSolveRegions = regionCount;
-			}						
-			
-			VolumeVariable* volumeVar = new VolumeVariable(sizeX, sizeY, sizeZ, variable_name, unit);
-			if (advectionflag == "true" ) {
-				bNoConvection = false;
 			}
-			if (time_dependent_diffusion_flag == "true") {
-				bTimeDependent = true;
-			}			
-			SparseMatrixEqnBuilder* builder = new SparseVolumeEqnBuilder(volumeVar,mesh, bNoConvection, numSolveRegions, solveRegions);
-			PDESolver* pdeSolver = new SparseLinearSolver(volumeVar,builder,bTimeDependent);
-			simulation->addSolver(pdeSolver);
+
+			VolumeVariable* volumeVar = new VolumeVariable(sizeX, sizeY, sizeZ, variable_name, unit);
+			if (bSolveVariable) {				
+				if (advectionflag == "true" ) {
+					bNoConvection = false;
+				}
+				if (time_dependent_diffusion_flag == "true") {
+					bTimeDependent = true;
+				}				
+				SparseMatrixEqnBuilder* builder = 0;
+				if (bSteady) {
+					builder = new EllipticVolumeEqnBuilder(volumeVar,mesh, numSolveRegions, solveRegions);
+				} else {
+					builder = new SparseVolumeEqnBuilder(volumeVar,mesh, bNoConvection, numSolveRegions, solveRegions);
+				}
+				PDESolver* pdeSolver = new SparseLinearSolver(volumeVar,builder,bTimeDependent);
+				simulation->addSolver(pdeSolver);
+			}
 			simulation->addVariable(volumeVar);
 		} else if (nextToken == "VOLUME_ODE") {
-			ifsInput >> variable_name >> unit;
-
-			string line;
-			getline(ifsInput, line);
-			line = trim(line);
+			string solve_whole_mesh_flag;
+			ifsInput >> variable_name >> unit >> solve_whole_mesh_flag;
 
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
 			int *solveRegions = NULL;
 
-			if (line.size() != 0) {
-				solveRegions = new int[numVolumeRegions];
-				istringstream instream(line);
-				int regionCount = 0;
-				while (true) {
-					string feature_name = "";
-					instream >> feature_name;					
-					if (feature_name == "") {
-						break;
-					}
-					for (int i = 0; i < numVolumeRegions; i++){
-						VolumeRegion *volRegion = mesh->getVolumeRegion(i);
-						Feature* feature = SimTool::getInstance()->getModel()->getFeature(feature_name);
-						if (feature == NULL) {
-							stringstream ss;
-							ss << "Feature '" << feature_name << "' doesn't exist!";
-							throw ss.str();
-						}
-						if (volRegion->getFeature()->getHandle() == (FeatureHandle)(0xff & feature->getHandle())){ 
-							solveRegions[regionCount++] = volRegion->getId();
-						}
-					}
+			bool bSolveVariable = true;
+			if (solve_whole_mesh_flag == "false") {
+				string line;
+				getline(ifsInput, line);
+				trimString(line);
+
+				if (line.length() == 0) {
+					bSolveVariable = false;
+				} else {
+					solveRegions = new int[numVolumeRegions];				
+					numSolveRegions = loadSolveRegions(mesh, line, solveRegions);
 				}
-				numSolveRegions = regionCount;
-			}					
+			}
 
 			VolumeVariable* volumeVar = new VolumeVariable(sizeX, sizeY, sizeZ, variable_name, unit);
-			ODESolver* odeSolver = new ODESolver(volumeVar,mesh,numSolveRegions,solveRegions);
-			EqnBuilder* builder = new EqnBuilderReactionForward(volumeVar,mesh,odeSolver);
-			odeSolver->setEqnBuilder(builder);
-			simulation->addSolver(odeSolver);
+			if (bSolveVariable) {
+				ODESolver* odeSolver = new ODESolver(volumeVar,mesh,numSolveRegions,solveRegions);
+				EqnBuilder* builder = new EqnBuilderReactionForward(volumeVar,mesh,odeSolver);
+				odeSolver->setEqnBuilder(builder);
+				simulation->addSolver(odeSolver);
+			}
 			simulation->addVariable(volumeVar);
 		} else if (nextToken == "MEMBRANE_ODE") {
 			ifsInput >> variable_name >> unit;
@@ -355,10 +353,10 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 }
 
 Expression* FVSolver::readExpression(istream& ifsInput, string& var_name, string prefix) {	
-	string expStr = "";
+	string expStr;
 	getline(ifsInput, expStr);
-	string newstr = prefix + expStr;
-	expStr = trim(newstr);
+	expStr = prefix + expStr;
+	trimString(expStr);
 	if (expStr[expStr.size()-1] != ';') {
 		stringstream msg;
 		msg << "Expression for [" << var_name << "] is not terminated by ';'";
@@ -680,7 +678,7 @@ void FVSolver::loadFeature(istream& ifsInput, Feature* feature) {
 void FVSolver::loadMembrane(istream& ifsInput, Feature* infeature, char* var_name) {
 	//cout << "loading membrane " << var_name << endl;
 	string nextToken;
-	int pdecount = 0;
+	//int pdecount = 0;
 	string btstr[6];
 	int btcount = 0;
 
@@ -712,15 +710,14 @@ void FVSolver::loadMembrane(istream& ifsInput, Feature* infeature, char* var_nam
 			} else {
 				infeature->addMembraneRegionVarContext((MembraneRegionVarContext*)varContext);			
 			}
-			Solver* solver = NULL;
-			while (solver = simulation->getNextSolver(solver)) {
-				if (solver->getVar() == var) {
-					if (typeid(*solver) == typeid(SparseLinearSolver)) {
-						pdecount ++;
-						break;
-					}
+			/*Solver* solver = NULL;
+			for (int i = 0; i < sim->getNumSolvers(); i ++) {
+				solver = sim->getSolver(i);
+				if (solver->getVar() == var && solver->idPdeSolver()) {
+					pdecount ++;
+					break;
 				}
-			}
+			}*/
 		} else if (nextToken == "JUMP_CONDITION_BEGIN") {
 			string var_name;
 			ifsInput >> var_name;
@@ -789,7 +786,8 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 		} else if (nextToken == "SIMULATION_PARAM_END") {
 			break;
 		} else if (nextToken == "BASE_FILE_NAME") {
-			ifsInput >> basefilename;
+			getline(ifsInput, basefilename);
+			trimString(basefilename);
 		} else if (nextToken == "ENDING_TIME") {
 			ifsInput >> end_time;
 		} else if (nextToken == "TIME_STEP") {
@@ -814,7 +812,7 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 	simTool->setTimeStep(time_step);
 	simTool->setEndTimeSec(end_time);
 	simTool->setKeepEvery(keep_every);
-	simTool->setStoreEnable(bStoreEnable);
+	simTool->setStoreEnable(bStoreEnable!=0);
 	//SimTool::getInstance()->setFileCompress(false);
 }
 
@@ -837,7 +835,8 @@ void FVSolver::loadMesh(istream& ifsInput) {
 		} else if (nextToken == "MESH_END") {
 			break;
 		} else if (nextToken == "VCG_FILE") {
-			ifsInput >> meshfile;
+			getline(ifsInput, meshfile);
+			trimString(meshfile);
 			struct stat buf;
 			if (stat(meshfile.c_str(), &buf)) {
 				stringstream ss;
@@ -964,7 +963,7 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 		} else if (nextToken == "COMPARTMENT_BEGIN") {
 			string feature_name;				
 			ifsInput >> feature_name;
-			Feature* feature = model->getFeature(feature_name);
+			Feature* feature = model->getFeatureFromName(feature_name);
 			if (feature != null) {
 				loadFeature(ifsInput, feature);
 			} else {
@@ -974,8 +973,8 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 			char var_name[256];
 			string feature1_name, feature2_name;				
 			ifsInput >> var_name >> feature1_name >> feature2_name;
-			Feature * infeature = model->getFeature(feature1_name);
-			Feature* outfeature = model->getFeature(feature2_name);
+			Feature * infeature = model->getFeatureFromName(feature1_name);
+			Feature* outfeature = model->getFeatureFromName(feature2_name);
 			if (infeature != null && outfeature != null) {
 				if (infeature->getPriority() > outfeature->getPriority()) {
 					loadMembrane(ifsInput, infeature, var_name);		
@@ -1007,7 +1006,9 @@ FVSolver::FVSolver(istream& fvinput, int taskID, char* outdir, bool bSimZip) {
 
 void FVSolver::solve(bool bLoadFinal, double* paramValues)
 {
-	simulation->setParameterValues(paramValues);
+	if (paramValues != 0) {
+		simulation->setParameterValues(paramValues);
+	}
 	simulation->initSimulation();
 	if (bLoadFinal) {
 		simTool->loadFinal();   // initializes to the latest file if it exists
@@ -1024,18 +1025,15 @@ void FVSolver::solve(bool bLoadFinal, double* paramValues)
 }
 
 void FVSolver::init(double* paramValues){
+	// setting initial conditions.
 	simulation->setParameterValues(paramValues);
 	simulation->initSimulation();
-	simTool->getSimulation()->setCurrIteration(0);
-	simTool->getSimulation()->update(); // sets proxy for time
-	simulation->setParameterValues(paramValues);
-	simulation->initSimulation();
-	simTool->getSimulation()->reset();
+	simulation->reset();
 }
 
 void FVSolver::step(double* paramValues)
 {
-	simulation->setParameterValues(paramValues);
+	//simulation->setParameterValues(paramValues);
 	simulation->iterate();
 	simulation->update();
 #ifdef USE_MESSAGING
@@ -1045,32 +1043,20 @@ void FVSolver::step(double* paramValues)
 #endif
 }
 
-std::string FVSolver::getVariableName(int index){
-	int i = 0;
-	Variable* var = 0;
-	while ((var=simulation->getNextVariable(var))!=0){
-		if (i == index){
-			return std::string(var->getName());
-		}
-	}
-	throw "variable index out of range";
+string FVSolver::getVariableName(int index){	
+	return simulation->getVariable(index)->getName();
 }
 
-int FVSolver::getNumVariables(){
-	int i = 0;
-	Variable* var = 0;
-	while ((var=simulation->getNextVariable(var))!=0){
-		i++;
-	}
-	return i;
+int FVSolver::getNumVariables(){	
+	return simulation->getNumVariables();
 }
 
 double* FVSolver::getValue(string& var, int arrayID) {
 	if (arrayID==0){
 		return simulation->getVariableFromName(var)->getOld();
-	}else if (arrayID==1){
+	} else if (arrayID==1){
 		return simulation->getVariableFromName(var)->getCurr();
-	}else{
+	} else {
 		throw "arrayID out of bounds";
 	}
 }
@@ -1080,15 +1066,9 @@ int FVSolver::getVariableLength(string& var) {
 }
 
 double FVSolver::getCurrentTime(){
-	return simTool->getSimulation()->getCurrIteration()*
-		simTool->getSimulation()->getDT_sec();
+	return simulation->getTime_sec();
 }
 
 void FVSolver::setEndTime(double endTime){
 	simTool->setEndTimeSec(endTime);
-}
-
-void FVSolver::reinit(double* paramValues){
-	simulation->setParameterValues(paramValues);
-	simTool->getSimulation()->reset();
 }

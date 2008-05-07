@@ -28,12 +28,12 @@ struct DataBlock {
 	int32   dataOffset;
 };
 
-bool readHeader(FILE *fp, FileHeader *header);
-bool writeHeader(FILE *fp, FileHeader *header);
-bool readDataBlock(FILE *fp, DataBlock *block);
-bool writeDataBlock(FILE *fp, DataBlock *block);
-bool readDoubles(FILE *fp, double *data, int length);
-bool writeDoubles(FILE *fp, double *data, int length);
+void readHeader(FILE *fp, FileHeader *header);
+void writeHeader(FILE *fp, FileHeader *header);
+void readDataBlock(FILE *fp, DataBlock *block);
+void writeDataBlock(FILE *fp, DataBlock *block);
+void readDoubles(FILE *fp, double *data, int length);
+void writeDoubles(FILE *fp, double *data, int length);
 
 class Simulation;
 
@@ -42,8 +42,8 @@ class DataSet
 public:
 	DataSet();
 	    
-	bool read(char *filename, Simulation *sim);
-	bool write(char *filename, Simulation *sim, bool bCompress);
+	void read(char *filename, Simulation *sim);
+	void write(char *filename, Simulation *sim, bool bCompress);
   
 };
 

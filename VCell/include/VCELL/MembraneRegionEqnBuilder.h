@@ -16,9 +16,10 @@ class MembraneRegionEqnBuilder : public EqnBuilder
 {
 public:
     MembraneRegionEqnBuilder(MembraneRegionVariable *var, CartesianMesh *mesh, ODESolver *solver);
-    virtual bool initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize) 
-		{ return true; }
-    virtual bool buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize);          
+    void initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize) 
+	{ }
+
+    void buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize);          
 
 private:
 	ODESolver* odeSolver;

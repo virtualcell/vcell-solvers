@@ -28,13 +28,13 @@ public:
 	EllipticVolumeEqnBuilder(VolumeVariable *species, CartesianMesh *mesh, int numSolveRegions=0, int* solveRegions=0);
 	~EllipticVolumeEqnBuilder();
 
-	bool initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
-			int membraneIndexStart, int membraneIndexSize);
-	bool buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
-			int membraneIndexStart, int membraneIndexSize);
+	void initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize);
+	void buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize);
 	void postProcess();
 
-	bool isElliptic() { return true; }
+	bool isElliptic() { 
+		return true; 
+	}
 
 private:
 	//bool bSymmetricStorage; // always no convection

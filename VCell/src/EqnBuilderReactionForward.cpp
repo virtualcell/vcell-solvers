@@ -22,7 +22,7 @@ EqnBuilderReactionForward::EqnBuilderReactionForward(VolumeVariable *Avar, Mesh 
 	odeSolver = Asolver;
 }
 
-bool EqnBuilderReactionForward::buildEquation(double deltaTime, 
+void EqnBuilderReactionForward::buildEquation(double deltaTime, 
                             int volumeIndexStart, int volumeIndexSize, 
 			    int membraneIndexStart, int membraneIndexSize)
 {
@@ -67,7 +67,6 @@ bool EqnBuilderReactionForward::buildEquation(double deltaTime,
 			// sim->advanceTimeOff();
 
 		}
-	}	
-	return true;
+	}
 }
 

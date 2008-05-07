@@ -21,17 +21,20 @@ public:
 	Contour *getContour(int type);
 
 	int getNumContours();
-	Feature *getFeature(FeatureHandle handle);
-	Feature *getFeature(string&  name);
-	Feature *getNextFeature(Feature *ptr=NULL);
+	int getNumFeatures() {
+		return (int)featureList.size();
+	}
+	Feature* getFeatureFromHandle(FeatureHandle handle);
+	Feature* getFeatureFromName(string&  name);
+	Feature* getFeatureFromIndex(int index);
 	   
-	bool resolveReferences();
+	void resolveReferences();
 	   
 	void addFeature(Feature *feature);
 	void addContour(Contour *contour);
    
 private:
-	Feature *featureList;
+	vector<Feature*> featureList;
 	vector<Contour*> pContours;
 };
 

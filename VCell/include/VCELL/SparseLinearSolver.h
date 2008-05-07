@@ -12,9 +12,7 @@ public:
     SparseLinearSolver(Variable *Var,  SparseMatrixEqnBuilder* eqnbuilder,  bool AbTimeDependent);
     ~SparseLinearSolver(); 
 
-	virtual bool solveEqn(double deltaTime, 
-							int volumeIndexStart, int volumeIndexSize, 
-							int membraneIndexStart, int membraneIndexSize, bool bFirstTime);	
+	virtual void solveEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime);	
 
 private:
 	bool enableRetry;

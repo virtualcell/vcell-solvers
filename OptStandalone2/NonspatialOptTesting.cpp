@@ -27,10 +27,10 @@ void checkStopRequested(double objectiveFunc, long iter){
 }
 
 Expression* readExpression(istream& ifsInput, string prefix) {	
-	string expStr = "";
+	string expStr;
 	getline(ifsInput, expStr);
-	string newstr = prefix + expStr;
-	expStr = trim(newstr);
+	expStr = prefix + expStr;
+	trimString(expStr);
 	if (expStr[expStr.size()-1] != ';') {
 		throw "Expression not terminated by ';'";
 	}

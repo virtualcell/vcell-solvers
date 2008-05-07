@@ -39,7 +39,7 @@ string ASTMultNode::infixString(int lang, NameScope* nameScope)
 
 void ASTMultNode::getStackElements(vector<StackElement>& elements) {
 	
-	int startSize = elements.size();
+	int startSize = (int)elements.size();
 	
 	//
 	// Add the stack machine instructions for each boolean child (followed by a branch "BZ" with unknown offset).
@@ -81,7 +81,7 @@ void ASTMultNode::getStackElements(vector<StackElement>& elements) {
 	// so will protect against function domain exceptions.  
 	//
 	if (indexBooleanChildren>0){
-		int finalSize = elements.size();
+		int finalSize = (int)elements.size();
 		int size = finalSize-startSize;
 		vector<StackElement>::reverse_iterator iter = elements.rbegin();
 		for (int offset = 0; offset < size; ++offset) {

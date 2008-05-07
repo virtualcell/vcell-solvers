@@ -14,17 +14,11 @@ class VolumeVariable;
 class EqnBuilderReactionForward : public EqnBuilder
 {
 public:
-	EqnBuilderReactionForward(VolumeVariable *species, 
-							Mesh *mesh,  
-							ODESolver *solver);
+	EqnBuilderReactionForward(VolumeVariable *species, Mesh *mesh,  ODESolver *solver);
 
-	virtual bool initEquation(double deltaTime, 
-					int volumeIndexStart, int volumeIndexSize, 
-					int membraneIndexStart, int membraneIndexSize)
-	{ return true; }
-	virtual bool buildEquation(double deltaTime, 
-					int volumeIndexStart, int volumeIndexSize, 
-					int membraneIndexStart, int membraneIndexSize);
+	void initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
+	{ }
+	void buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize);
 
 private:
 	ODESolver* odeSolver;

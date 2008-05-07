@@ -5,9 +5,9 @@
 #include <iostream>
 using namespace std;
 
-bool readHeader(FILE *fp, FileHeader *header);
-bool readDataBlock(FILE *fp, DataBlock *block);
-bool readDoubles(FILE *fp, double *data, int length);
+void readHeader(FILE *fp, FileHeader *header);
+void readDataBlock(FILE *fp, DataBlock *block);
+void readDoubles(FILE *fp, double *data, int length);
 
 FieldData::FieldData(int arg_fdIndex, string arg_fdID, string arg_fdName, string arg_fdVarName, double arg_fdTime, string arg_fdFile) {
 	fdIndex = arg_fdIndex;
@@ -33,35 +33,32 @@ double* FieldData::getData() {
 	DataBlock *dataBlock;
 
 	if ((fp=fopen(fdFile.c_str(), "rb"))==NULL){
-		cout << "FieldData::getData() - could not open file '" << fdFile << "'." << endl;
-		return 0;
-	}
-	if (!readHeader(fp,&fileHeader)){
-		cout << "FieldData::getData - could not read header from file '" << fdFile << "'." << endl;
-		return 0;
+		char errmsg[512];
+		sprintf(errmsg, "FieldData::getData() - could not open file '%s'.", fdFile); 
+		throw errmsg;
 	}
 
+	readHeader(fp,&fileHeader);
+
 	if (strcmp(fileHeader.magicString, MAGIC_STRING)){
-		cout << "FieldData::getData - file is not a VCellDump file." << endl;
-		return 0;
+		throw "FieldData::getData() - file is not a VCellDump file.";
 	}
 
 	if (fileHeader.numBlocks <= 0){
-		cout << "FieldData::getData - number of blocks (" << fileHeader.numBlocks << ") less than 1." << endl;
-		return 0;
+		char errmsg[512];
+		sprintf(errmsg, "FieldData::getData() - number of blocks ( %d ) less than 1.", fileHeader.numBlocks); 
+		throw errmsg;
 	}
 	   
 	dataBlock = new DataBlock[fileHeader.numBlocks];
 	   
 	if (fseek(fp, fileHeader.firstBlockOffset, SEEK_SET)){
-		cout << "FieldData::getData - could not find first block at offset " << fileHeader.firstBlockOffset << "." << endl; 
-		return 0;
+		char errmsg[512];
+		sprintf(errmsg, "FieldData::getData() - could not find first block at offset %d.", fileHeader.firstBlockOffset); 
+		throw errmsg;
 	}
 	for (int i = 0; i < fileHeader.numBlocks; i ++){
-		if (!readDataBlock(fp,dataBlock+i)){
-			cout << "FieldData::getData - could not read dataBlock " << i << "." << endl;
-			return 0;
-		}
+		readDataBlock(fp,dataBlock+i);
 	}
 
 	for (int i = 0; i < fileHeader.numBlocks; i ++){
@@ -71,13 +68,11 @@ double* FieldData::getData() {
 		data = new double[dataBlock[i].size];
 	      
 		if (fseek(fp, dataBlock[i].dataOffset, SEEK_SET)){
-			cout << "FieldData::getData - could not find data offset (" << dataBlock[i].dataOffset << ")." << endl;
-			return false;
+			char errmsg[512];
+			sprintf(errmsg, "FieldData::getData() - could not find data offset ( %d ).", dataBlock[i].dataOffset); 
+			throw errmsg;
 		}
-		if (!readDoubles(fp, data, dataBlock[i].size)){
-			cout << "getFieldData - could not read data for field '" << fdName << "'." << endl;
-			return false;
-		}    
+		readDoubles(fp, data, dataBlock[i].size);
 		cout << "read data for field '" << fdName << "'." << endl;
 		break;
 	}

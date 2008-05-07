@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 	expStrs.push_back(string("(1<1)*log(0)"));
 	double* values = new double[1];
 	values[0] = 0.0;
-	for (int i = 0; i < expStrs.size(); ++i) {
+	for (int i = 0; i < (int)expStrs.size(); ++i) {
 		try {
 			Expression expression(expStrs[i]);
 			cout << "compiling " << expression.infix() << endl;

@@ -441,7 +441,7 @@ bool SimulationMessaging::lockWorkerEvent(bool bTry)
 {	
 #if ( defined(WIN32) || defined(WIN64) )
 	if (bTry) {
-		return (bool)TryEnterCriticalSection(&lockForWorkerEvent);
+		return TryEnterCriticalSection(&lockForWorkerEvent)!=0;
 	}
 	try {
 		EnterCriticalSection(&lockForWorkerEvent);

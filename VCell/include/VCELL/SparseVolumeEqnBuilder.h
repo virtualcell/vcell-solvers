@@ -90,10 +90,8 @@ public:
 	SparseVolumeEqnBuilder(VolumeVariable *species, CartesianMesh *mesh, bool bNoConvection, int numSolveRegions=0, int* solveRegions=0);
 	~SparseVolumeEqnBuilder();
 
-	bool initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
-			int membraneIndexStart, int membraneIndexSize);
-	bool buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
-			int membraneIndexStart, int membraneIndexSize);
+	void initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize);
+	void buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize);
 	void postProcess();
 
 private:

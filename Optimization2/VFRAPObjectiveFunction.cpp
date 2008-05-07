@@ -76,8 +76,8 @@ std::cout << "]" << std::endl;
 			double doubleSimTimeIndex1 = (numSimDataTimes==1)?(0.0):((numSimDataTimes-1) * (refDataTime*scale1) / endSimTime);
 			double doubleSimTimeIndex2 = (numSimDataTimes==1)?(0.0):((numSimDataTimes-1) * (refDataTime*scale2) / endSimTime);
 
-			int simTimeIndex1_lo = floor(doubleSimTimeIndex1);
-			int simTimeIndex1_hi = ceil(doubleSimTimeIndex1);
+			int simTimeIndex1_lo = (int)floor(doubleSimTimeIndex1);
+			int simTimeIndex1_hi = (int)ceil(doubleSimTimeIndex1);
 			double fractSimTimeIndex1 = doubleSimTimeIndex1 - simTimeIndex1_lo;
 			if (simTimeIndex1_lo >= numSimDataTimes){
 				simTimeIndex1_lo = numSimDataTimes-1;
@@ -88,8 +88,8 @@ std::cout << "]" << std::endl;
 				fractSimTimeIndex1 = 0.0;
 			}
 
-			int simTimeIndex2_lo = floor(doubleSimTimeIndex2);
-			int simTimeIndex2_hi = ceil(doubleSimTimeIndex2);
+			int simTimeIndex2_lo = (int)floor(doubleSimTimeIndex2);
+			int simTimeIndex2_hi = (int)ceil(doubleSimTimeIndex2);
 			double fractSimTimeIndex2 = doubleSimTimeIndex2 - simTimeIndex2_lo;
 			if (simTimeIndex2_lo >= numSimDataTimes){
 				simTimeIndex2_lo = numSimDataTimes-1;

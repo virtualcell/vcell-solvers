@@ -21,7 +21,7 @@ public:
     void setDependencyMatrix(int i, int j, double value); 
     virtual void updateDependentVars();
     void showVars();
-    virtual bool resolveReferences(Simulation *sim)=0;
+    virtual void resolveReferences(Simulation *sim)=0;
 	virtual void setCoordinates(double time_sec, WorldCoord& wc){};
 
 protected:

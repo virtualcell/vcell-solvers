@@ -47,8 +47,8 @@ CPPOBJECTS = 	\
 	FastSystemExpression.o            \
 	Feature.o         \
 	FieldData.o         \
+	FVSolver.o        \
 	FVUtils.o         \
-	Histogram.o       \
 	MembraneEqnBuilderForward.o \
 	MembraneEqnBuilderDiffusion.o       \
 	MembraneRegion.o    \

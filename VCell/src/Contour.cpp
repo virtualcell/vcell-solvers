@@ -20,9 +20,6 @@ string *Contour::names = NULL;
 Contour::Contour(int Atype)
 {
 	type = Atype;
-
-	currContourVarContext = NULL;
-	contourVarContextList = NULL;
 	fastSystem = NULL;
 }
 
@@ -30,109 +27,73 @@ Contour::~Contour()
 {
 }
 
-bool Contour::resolveReferences(Simulation *sim)
+void Contour::resolveReferences(Simulation *sim)
 {
 	//
 	// initialize ContourVarContexts
 	//
-	ContourVarContext *contourVarContext=NULL;
-	while (contourVarContext = getNextContourVarContext(contourVarContext)){
-		if (!contourVarContext->resolveReferences(sim)){
-			printf("Contour::resolveReferences(), error \n");
-			return false;
-		}
-	}    
+	for (int i = 0; i < (int)contourVarContextList.size(); i ++) {
+		contourVarContextList[i]->resolveReferences(sim);
+	}
 
 	//
 	// initialize FastSystem
 	//
 	if(fastSystem!=NULL){
-		if(!fastSystem->resolveReferences(sim)){
-			printf("Feature::resolveReferences(), error resolving FastSystem\n");
-			return false;
-		}
+		fastSystem->resolveReferences(sim);
 	}
-	    
-	return true;
 }
 
-bool Contour::initElementValues(long elementIndex)
+void Contour::initElementValues(long elementIndex)
 {
-	ContourVariable *var;
-
 	//
 	// initialize ContourVariables
 	//
-	ContourVarContext *contourVarContext=NULL;
-	while (contourVarContext = getNextContourVarContext(contourVarContext)){
+	for (int i = 0; i < (int)contourVarContextList.size(); i ++) {
+		ContourVarContext *contourVarContext=contourVarContextList[i];
 		double value = contourVarContext->getInitialValue(elementIndex);
-		var = (ContourVariable *)contourVarContext->getVar();
+		ContourVariable* var = (ContourVariable *)contourVarContext->getVar();
 		var->setOld(elementIndex, value);
 		var->setCurr(elementIndex, value);
 	}
-	return true;
 }
 
-ContourVarContext *Contour::getContourVarContext(string& contourVarName)
+ContourVarContext* Contour::getContourVarContext(string& contourVarName)
 {
-	//
-	// check if current varContext already
-	//
-	if (currContourVarContext->getVarName() == contourVarName){
-		return currContourVarContext;
+	for (int i = 0; i < (int)contourVarContextList.size(); i ++) {
+		ContourVarContext *contourVarContext = contourVarContextList[i];
+		if (contourVarContext->getVarName() == contourVarName) {
+			return contourVarContext;
+		}
 	}
-	//
-	// check if varContext has already been fully created
-	//
-	currContourVarContext = contourVarContextList;
-	while(currContourVarContext){
-		if (currContourVarContext->getVarName() == contourVarName) 
-			break;
-		currContourVarContext = (ContourVarContext *)(currContourVarContext->getNext());
-	}
-	ASSERTION(currContourVarContext);
 
-	return currContourVarContext;
+	return 0;
 }
 
-ContourVarContext *Contour::getContourVarContext(ContourVariable *var)
+ContourVarContext* Contour::getContourVarContext(ContourVariable *var)
 {
-	//
-	// check if current varContext already
-	//
-	if (currContourVarContext->getVar()==var){
-		return currContourVarContext;
-	}
-	//
-	// check if varContext has already been fully created
-	//
-	currContourVarContext = contourVarContextList;
-	while(currContourVarContext){
-		if (currContourVarContext->getVar()==var) break;
-		currContourVarContext = (ContourVarContext *)(currContourVarContext->getNext());
-	}
-	ASSERTION(currContourVarContext);
 
-	return currContourVarContext;
+	for (int i = 0; i < (int)contourVarContextList.size(); i ++) {
+		ContourVarContext *contourVarContext = contourVarContextList[i];
+		if (contourVarContext->getVar() == var) {
+			return contourVarContext;
+		}		
+	}
+	return 0;
 }
 
-ContourVarContext *Contour::getNextContourVarContext(ContourVarContext *vc)
+ContourVarContext* Contour::getContourVarContext(int index)
 {
-	if (vc==NULL){
-		return contourVarContextList;
-	}else{
-		return (ContourVarContext *)(vc->getNext());
+	if (index < 0 || index >= (int)contourVarContextList.size()) {
+		throw "Contour::getContourVarContext(int index): index out of bounds";
 	}
+
+	return contourVarContextList.at(index);
 }
 
 void Contour::addContourVarContext(ContourVarContext *vc)
 {
-	//
-	// add 'this' to front of linked list
-	//
-	currContourVarContext = vc;
-	vc->next = contourVarContextList;
-	contourVarContextList = vc;
+	contourVarContextList.push_back(vc);
 }
 
 void Contour::setContourTypes(string *nameArray)

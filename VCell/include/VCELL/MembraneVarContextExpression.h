@@ -13,7 +13,7 @@ class MembraneVarContextExpression : public MembraneVarContext
 public:
 	MembraneVarContextExpression(Feature *feature, string& varName);
 
-	bool resolveReferences(Simulation *sim);
+	void resolveReferences(Simulation *sim);
 
     double  getInitialValue(MembraneElement *element);
     double  getMembraneReactionRate(MembraneElement *element);

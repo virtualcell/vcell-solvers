@@ -17,11 +17,8 @@ MembraneEqnBuilderForward::MembraneEqnBuilderForward(MembraneVariable *Avar, Mes
 	odeSolver = Asolver;
 }
 
-bool MembraneEqnBuilderForward::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
+void MembraneEqnBuilderForward::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
 {
-	Feature *feature;
-	MembraneVarContext *varContext;
-
 	Simulation *sim = SimTool::getInstance()->getSimulation();
 
 	ASSERTION((membraneIndexStart>=0) && ((membraneIndexStart+membraneIndexSize)<=mesh->getNumMembraneElements()));
@@ -32,18 +29,16 @@ bool MembraneEqnBuilderForward::buildEquation(double deltaTime, int volumeIndexS
 
 	for (long memIndex=membraneIndexStart;memIndex<(membraneIndexStart+membraneIndexSize);memIndex++){
 
-		feature = pMembraneElement->feature;
+		Feature* feature = pMembraneElement->feature;
 		ASSERTION(feature);
 
-		varContext = feature->getMembraneVarContext((MembraneVariable*)var);
+		MembraneVarContext* memVarContext = feature->getMembraneVarContext((MembraneVariable*)var);
 
 		sim->advanceTimeOn();
-		*pRate = varContext->getMembraneReactionRate(pMembraneElement);
+		*pRate = memVarContext->getMembraneReactionRate(pMembraneElement);
 		sim->advanceTimeOff();
 
 		pMembraneElement++;
 		pRate++;
 	} // end memIndex
- 
-	return true;
 }

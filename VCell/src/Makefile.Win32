@@ -63,8 +63,9 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\FastSystemExpression.obj			\
 		$(OBJDIR)\Feature.obj			\
 		$(OBJDIR)\FieldData.obj		\
+		$(OBJDIR)\FVSolver.obj			\
 		$(OBJDIR)\FVUtils.obj			\
-		$(OBJDIR)\Histogram.obj			\
+#		$(OBJDIR)\Histogram.obj			\
 		$(OBJDIR)\MembraneEqnBuilderForward.obj	\
 		$(OBJDIR)\MembraneEqnBuilderDiffusion.obj	\
 		$(OBJDIR)\MembraneRegion.obj	\
@@ -110,7 +111,7 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\VolumeVarContextExpression.obj			\
 		$(OBJDIR)\VolumeVariable.obj
 
-LIBS = Ws2_32.lib user32.lib advapi32.lib ..\..\IFortran\mkl_c.lib ..\..\ExpressionParser\ExpParserMT.lib \
+LIBS = Ws2_32.lib user32.lib advapi32.lib ..\..\IFortran\mkl_c.lib ..\..\ExpressionParser\ExpParser.lib \
 	..\..\PCGPack\pcgpack_dbl.lib ..\..\qhull\qhull.lib $(TARGET_LIB) $(TARGET_FORLIB) ..\..\zlib\zlib.lib \
 	..\..\zip\zip32.lib ..\..\unzip\\unzip32.lib ..\..\SonicCClient\win32\lib\libsmq.lib \
 	..\..\SonicCClient\win32\lib\libsmqj.lib /link /NODEFAULTLIB:LIBCD /NODEFAULTLIB:LIBC /LIBPATH:..\..\IFortran\

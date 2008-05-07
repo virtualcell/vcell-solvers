@@ -17,51 +17,43 @@ VolumeRegionEqnBuilder::VolumeRegionEqnBuilder(VolumeRegionVariable *Avar, Carte
 	odeSolver = Asolver;
 }
 
-bool VolumeRegionEqnBuilder::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize) {
-	Feature *feature;
-	VolumeRegionVarContext *varContext;
-	VolumeRegion *region;
+void VolumeRegionEqnBuilder::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize) {
 	int size = ((CartesianMesh*)mesh)->getNumVolumeRegions();
 	ASSERTION(size==var->getSize());
 	double *pRate = odeSolver->getRates();
-
 	for(int i=0; i<size; i++){
 		*pRate = 0;    // constant Dirichlet (shortening) is implied
-		region = ((CartesianMesh*)mesh)->getVolumeRegion(i);
-		feature = region->getFeature();
-		varContext = feature->getVolumeRegionVarContext((VolumeRegionVariable*)var);
-		long numElements, j;
-		if((region->isClosed())||(varContext->hasZeroFluxBoundary())){
-			*pRate = varContext->getUniformRate(region);
-			double volume = region->getVolume();
-			ASSERTION(volume>0);
-			if(!(varContext->hasUniformRate())){
-				numElements = region->getNumElements();
-				double volumeIntegral = 0.0;
-				for(j=0; j<numElements; j++){
-					long index = region->getIndex(j); 
-					volumeIntegral += (varContext->getReactionRate(index))*(mesh->getVolumeOfElement_cu(index));
-				}
-				*pRate += volumeIntegral/volume;
-			}
-			if(!(varContext->hasUniformFlux())){
-				int numMembranes = region->getNumMembranes();
-				double surfaceIntegral = 0.0;
-				for(int k=0; k<numMembranes; k++){
-					MembraneRegion *membrane = region->getMembrane(k);
-					numElements = membrane->getNumElements();
-					for(j=0; j<numElements; j++){
-						double inFlux = 0.0;
-						double outFlux = 0.0;
-						MembraneElement *pElement = mesh->getMembraneElements() + membrane->getIndex(j);
-						varContext->getFlux(pElement, &inFlux, &outFlux);
-						surfaceIntegral += inFlux * (pElement->area);
-					}
-				}
-				*pRate += surfaceIntegral/volume; 
+		VolumeRegion* volRegion = ((CartesianMesh*)mesh)->getVolumeRegion(i);
+		Feature* feature = volRegion->getFeature();
+		VolumeRegionVarContext* volRegionVarContext = feature->getVolumeRegionVarContext((VolumeRegionVariable*)var);
+
+		*pRate = volRegionVarContext->getUniformRate(volRegion);
+
+		double volume = volRegion->getVolume();
+		ASSERTION(volume>0);
+		int numElements = volRegion->getNumElements();
+		double volumeIntegral = 0.0;
+		for(int j=0; j<numElements; j++){
+			long index = volRegion->getIndex(j); 
+			volumeIntegral += volRegionVarContext->getReactionRate(index) * mesh->getVolumeOfElement_cu(index);
+		}
+		*pRate += volumeIntegral/volume;
+
+		int numMembraneRegions = volRegion->getNumMembraneRegions();
+		double surfaceIntegral = 0.0;
+		for(int k=0; k<numMembraneRegions; k++){
+			MembraneRegion *membraneRegion = volRegion->getMembraneRegion(k);
+			numElements = membraneRegion->getNumElements();
+			for(int j=0; j<numElements; j++){
+				double inFlux = 0.0;
+				double outFlux = 0.0;
+				MembraneElement *pElement = mesh->getMembraneElements() + membraneRegion->getIndex(j);
+				volRegionVarContext->getFlux(pElement, &inFlux, &outFlux);
+				surfaceIntegral += inFlux * pElement->area;
 			}
 		}
+		*pRate += surfaceIntegral/volume; 
+		
 		pRate++;
 	}
-	return true;
 }

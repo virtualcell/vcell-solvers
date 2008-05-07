@@ -16,12 +16,9 @@ MembraneVarContextExpression::MembraneVarContextExpression(Feature *feature, str
 {
 }
 
-bool MembraneVarContextExpression::resolveReferences(Simulation* sim) {
-	bool bResolved = VarContext::resolveReferences(sim);
-	if (bResolved) {
-		bindAll(((SimulationExpression*)sim)->getOldSymbolTable());
-	}
-	return bResolved;
+void MembraneVarContextExpression::resolveReferences(Simulation* sim) {
+	VarContext::resolveReferences(sim);
+	bindAll(((SimulationExpression*)sim)->getOldSymbolTable());
 }
 
 double MembraneVarContextExpression::getInitialValue(MembraneElement *element){

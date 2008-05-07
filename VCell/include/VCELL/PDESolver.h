@@ -20,11 +20,13 @@ public:
 	PDESolver(Variable *var, bool bTimeDependent);
 	virtual ~PDESolver();
 
-	virtual bool initEqn(double deltaTime, 
-							int volumeIndexStart, int volumeIndexSize, 
-							int membraneIndexStart, int membraneIndexSize, bool bFirstTime);
-	virtual bool isPDESolver() { return true; }
-	bool isTimeDependent() { return bTimeDependent; }
+	virtual void initEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime);
+	virtual bool isPDESolver() { 
+		return true;
+	}
+	bool isTimeDependent() { 
+		return bTimeDependent; 
+	}
 private:
 	bool  bTimeDependent;
 };

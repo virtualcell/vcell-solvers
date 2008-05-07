@@ -36,9 +36,11 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="0"
 				AdditionalIncludeDirectories="..\VCell\include"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="1"
+				DebugInformationFormat="4"
 				CompileAs="2"
 			/>
 			<Tool
@@ -95,6 +97,7 @@
 				Optimization="3"
 				AdditionalIncludeDirectories="..\VCell\include"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE"
+				CompileAs="2"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"

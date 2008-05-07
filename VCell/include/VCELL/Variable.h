@@ -48,8 +48,6 @@ public:
 	void     update();
 	void     revert();
 	void     clear();
-
-	Variable *next; 
    
 protected:
 	string name;

@@ -33,11 +33,11 @@ public:
 	Feature(string& Aname, FeatureHandle handle, int priority);
 	~Feature();
 
-	bool resolveReferences(Simulation *sim);
-	virtual bool initVolumeValues(long volumeIndex);
-	virtual bool initMembraneValues(MembraneElement *membraneElement);
-	virtual bool initVolumeRegionValues(int volumeRegionIndex);
-	virtual bool initMembraneRegionValues(int membraneRegionIndex);
+	void resolveReferences(Simulation *sim);
+	virtual void initVolumeValues(long volumeIndex);
+	virtual void initMembraneValues(MembraneElement *membraneElement);
+	virtual void initVolumeRegionValues(int volumeRegionIndex);
+	virtual void initMembraneRegionValues(int membraneRegionIndex);
 
 	virtual BoundaryType getXmBoundaryType() { return boundaryType[0]; }
 	virtual BoundaryType getXpBoundaryType() { return boundaryType[1]; }
@@ -53,29 +53,25 @@ public:
 	virtual void setZmBoundaryType(BoundaryType bt) { boundaryType[4] = bt; }
 	virtual void setZpBoundaryType(BoundaryType bt) { boundaryType[5] = bt; }
 
-	double          getMaxIterationTime();
-	int             getPriority() { return priority; }   // higher priority is inside   
+	double  getMaxIterationTime();
+	int  getPriority() { return priority; }   // higher priority is inside   
 	string getName() { return name; }
 	FeatureHandle   getHandle();
 	   
 	VolumeVarContext   *getVolumeVarContext(string& volumeVarName);
 	VolumeVarContext   *getVolumeVarContext(VolumeVariable *var);
-	VolumeVarContext   *getNextVolumeVarContext(VolumeVarContext *vc=NULL);
 
 	MembraneVarContext *getMembraneVarContext(string& membraneVarName);
 	MembraneVarContext *getMembraneVarContext(MembraneVariable *var);
-	MembraneVarContext *getNextMembraneVarContext(MembraneVarContext *vc=NULL);
 	   
 	VolumeRegionVarContext   *getVolumeRegionVarContext(VolumeRegionVariable *var);
-	VolumeRegionVarContext   *getNextVolumeRegionVarContext(VolumeRegionVarContext *vc=NULL);
 
 	MembraneRegionVarContext *getMembraneRegionVarContext(MembraneRegionVariable *var);
-	MembraneRegionVarContext *getNextMembraneRegionVarContext(MembraneRegionVarContext *vc=NULL);
 	   
-	void                addVolumeVarContext(VolumeVarContext *vc);
-	void                addMembraneVarContext(MembraneVarContext *vc);
-	void                addVolumeRegionVarContext(VolumeRegionVarContext *vc);
-	void                addMembraneRegionVarContext(MembraneRegionVarContext *vc);
+	void addVolumeVarContext(VolumeVarContext *vc);
+	void addMembraneVarContext(MembraneVarContext *vc);
+	void addVolumeRegionVarContext(VolumeRegionVarContext *vc);
+	void addMembraneRegionVarContext(MembraneRegionVarContext *vc);
 	   
 	VolumeParticleContext     *getVolumeParticleContext(){return vpc;}
 	MembraneParticleContext   *getMembraneParticleContext(){return mpc;}
@@ -94,21 +90,18 @@ protected:
 	VolumeParticleContext     *vpc;
 	MembraneParticleContext   *mpc;
 	ContourParticleContext    *cpc;
-	VolumeVarContext   *currVolumeVarContext;
-	VolumeVarContext   *volumeVarContextList;
-	MembraneVarContext *currMembraneVarContext;
-	MembraneVarContext *membraneVarContextList;
-	VolumeRegionVarContext   *currVolumeRegionVarContext;
-	VolumeRegionVarContext   *volumeRegionVarContextList;
-	MembraneRegionVarContext *currMembraneRegionVarContext;
-	MembraneRegionVarContext *membraneRegionVarContextList;
+	
+	vector<VolumeVarContext*> volumeVarContextList;
+	vector<MembraneVarContext*> membraneVarContextList;
+	vector<VolumeRegionVarContext*> volumeRegionVarContextList;
+	vector<MembraneRegionVarContext*> membraneRegionVarContextList;
+
 	FastSystem         *fastSystem;
 	FastSystem         *membraneFastSystem;
 	   
 	int              priority;
 	FeatureHandle    handle;
-	string          name;	
-	Feature  *next; 
+	string          name;
 
 private:
 	BoundaryType boundaryType[6];

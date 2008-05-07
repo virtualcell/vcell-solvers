@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\Optimization;..\tinyxml; \Developer\Eclipse\workspace\numerics_PdeOpt\VCell\include\;..\sundials\src;..\sundials\include;..\fsqp;..\IDAWin;..\ExpressionParser"
+				AdditionalIncludeDirectories="..\Optimization;..\tinyxml;..\VCell\include\;..\sundials\src;..\sundials\include;..\fsqp;..\IDAWin;..\ExpressionParser"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -103,7 +103,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\sundials\src;..\sundials\include;..\fsqp;..\IDAWin;..\ExpressionParser;\Developer\Eclipse\workspace\numerics_PdeOpt\VCell\include\"
+				AdditionalIncludeDirectories="..\tinyxml;..\sundials\src;..\sundials\include;..\fsqp;..\IDAWin;..\ExpressionParser;..\Optimization;..\VCell\include\"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				WarningLevel="3"

@@ -16,10 +16,8 @@ public:
 	MembraneEqnBuilderDiffusion(MembraneVariable *species, Mesh *mesh);
 	~MembraneEqnBuilderDiffusion();
 
-	bool initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
-			int membraneIndexStart, int membraneIndexSize);
-	bool buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, 
-			int membraneIndexStart, int membraneIndexSize);
+	void initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize);
+	void buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize);
 };    
 
 #endif

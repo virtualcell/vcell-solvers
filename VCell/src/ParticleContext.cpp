@@ -112,15 +112,16 @@ ParticleContext::ParticleContext(Feature *Afeature)
 	numParticles = 0;
 }
 
-bool ParticleContext::resolveReferences(Simulation *Asim)
+void ParticleContext::resolveReferences(Simulation *Asim)
 {
 	sim = Asim;
 	mesh = sim->getMesh();
 	   
-	if (sim && mesh){
-		return true;
-	}else{
-		return false;
+	if (!sim) {		
+		throw "ParticleContext::resolveReferences(), simulation is null";
+	}
+	if (!mesh) {
+		throw "ParticleContext::resolveReferences(), mesh is null";
 	}
 }
 
@@ -604,14 +605,6 @@ double ContourParticleContext::getSpeed(int state, int type)
 	return speed[state][type];
 }
 
-bool ContourParticleContext::resolveReferences(Simulation *Asim)
-{  
-	if (!ParticleContext::resolveReferences(Asim)){
-		return false;
-	}
-	return true;
-}
-
 bool ContourParticleContext::move()
 {
 	double DELTATIME = sim->getDT_sec();
@@ -912,18 +905,14 @@ Granule::Granule(Feature *Afeature)
 	stoichiometry = 0.0;
 }
 
-bool Granule::resolveReferences(Simulation *Asim)
+void Granule::resolveReferences(Simulation *Asim)
 {
-	if (!VolumeParticleContext::resolveReferences(Asim)){
-		return false;
-	}
+	VolumeParticleContext::resolveReferences(Asim);
 	ASSERTION(sim);
 	RNA = (VolumeVariable*)sim->getVariableFromName("RNA");
 	if (RNA==NULL){
-		printf("could not resolve \"RNA\"\n");
-		return false;
+		throw "Granule::resolveReferences(), \"RNA\" is null";
 	}
-	return true;
 }
 
 bool Granule::react()

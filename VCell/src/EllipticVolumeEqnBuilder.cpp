@@ -391,7 +391,7 @@ extern void sortColumns(int numCols, int* columnIndices, double* columnValues);
 // Left Hand Side
 //
 //------------------------------------------------------------------
-bool EllipticVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
+void EllipticVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
 {    
 	/**
 	 * we decided to scale both sides with deltaT/VOLUME
@@ -491,8 +491,6 @@ bool EllipticVolumeEqnBuilder::initEquation(double deltaTime, int volumeIndexSta
 	
 	delete[] columnIndices;
 	delete[] columnValues;
-
-    return true;
 }
 
 double EllipticVolumeEqnBuilder::computeRHS(int index) {
@@ -652,7 +650,7 @@ double EllipticVolumeEqnBuilder::computeRHS(int index) {
 // Right Hand side
 //
 //------------------------------------------------------------------
-bool EllipticVolumeEqnBuilder::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
+void EllipticVolumeEqnBuilder::buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)
 {    
 	if (bSolveWholeMesh) {
 		for (int index = volumeIndexStart; index < volumeIndexStart + volumeIndexSize; index ++){
@@ -675,9 +673,7 @@ bool EllipticVolumeEqnBuilder::buildEquation(double deltaTime, int volumeIndexSt
 	for (int i = 0; i < (int)periodicNeighbors.size(); i ++) {
 		CoupledNeighbors* pn = periodicNeighbors[i];
 		B[pn->centerIndex] += pn->coeff;
-	}	
-
-	return true;
+	}
 }
 
 bool EllipticVolumeEqnBuilder::checkPeriodicCoupledPairsInRegions(int indexm, int indexp) {
@@ -707,8 +703,8 @@ void EllipticVolumeEqnBuilder::preProcess() {
 
 	// check if there is periodic boundary condition in the model
 	bool bPeriodic = false;
-	Feature* feature = 0;
-	while (feature = SimTool::getInstance()->getModel()->getNextFeature(feature)) {		
+	for (int i = 0; i < SimTool::getInstance()->getModel()->getNumFeatures(); i ++) {
+		Feature* feature = SimTool::getInstance()->getModel()->getFeatureFromIndex(i);
 		if (feature->getXmBoundaryType() == BOUNDARY_PERIODIC 
 			|| feature->getYmBoundaryType() == BOUNDARY_PERIODIC 
 			|| feature->getZmBoundaryType() == BOUNDARY_PERIODIC) {

@@ -16,7 +16,7 @@ OdeResultSet::OdeResultSet()
 
 OdeResultSet::~OdeResultSet()
 {
-	for (int i = 0; i < columns.size(); i ++) {
+	for (int i = 0; i < (int)columns.size(); i ++) {
 		delete columns[i].expression;
 	}
 	columns.clear();
@@ -33,7 +33,7 @@ void OdeResultSet::addColumn(const string& aColumn) {
 }
 
 void OdeResultSet::bindFunctionExpression(SymbolTable* symbolTable) {
-	for (int i = 0; i < columns.size(); i ++) {
+	for (int i = 0; i < (int)columns.size(); i ++) {
 		if (columns[i].expression != 0) {
 			columns[i].expression->bindExpression(symbolTable);
 		}
@@ -106,7 +106,7 @@ double OdeResultSet::getColumnWeight(int index) {
 }
 
 int OdeResultSet::getNumColumns() {
-	return columns.size();
+	return (int)columns.size();
 }
 
 string& OdeResultSet::getColumnName(int index) {
@@ -150,11 +150,11 @@ void OdeResultSet::getColumnData(int columnIndex, int numParams, double* paramVa
 void OdeResultSet::copyInto(OdeResultSet* otherOdeResultSet) {
 	// columns
 	if (otherOdeResultSet->columns.size() != columns.size()) {
-		for (int i = 0; i < otherOdeResultSet->columns.size(); i ++) {
+		for (int i = 0; i < (int)otherOdeResultSet->columns.size(); i ++) {
 			delete otherOdeResultSet->columns[i].expression;
 		}
 		otherOdeResultSet->columns.clear();
-		for (int i = 0; i < columns.size(); i ++) {
+		for (int i = 0; i < (int)columns.size(); i ++) {
 			if (columns[i].expression == 0) {
 				otherOdeResultSet->addColumn(columns[i].name);
 			} else {

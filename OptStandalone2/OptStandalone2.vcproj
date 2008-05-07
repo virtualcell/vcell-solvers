@@ -40,7 +40,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\tinyxml; ..\Optimization2; ..\Optimization;..\ExpressionParser; ..\IDAWin; ..\VCell\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -111,6 +111,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"

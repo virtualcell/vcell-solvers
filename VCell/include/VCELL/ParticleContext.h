@@ -64,7 +64,7 @@ public:
     //
     // ALWAYS CALL ParentClass::resolveReferences() first
     //
-    virtual bool resolveReferences(Simulation *sim);
+    virtual void resolveReferences(Simulation *sim);
     virtual double getInitialValue(long index);
         
     virtual bool move()=0;
@@ -128,7 +128,7 @@ class ContourParticleContext : public ParticleContext
 {
 public:
     WorldCoord getWorldCoord(LocalCoord lc, long index);
-    virtual bool resolveReferences(Simulation *sim);
+    virtual void resolveReferences(Simulation *sim);
     virtual bool move();
     virtual bool captureParticles();
     virtual bool releaseParticles();
@@ -159,7 +159,7 @@ private:
 class Granule : public VolumeParticleContext
 {
 public:
-    bool resolveReferences(Simulation *sim);
+    void resolveReferences(Simulation *sim);
     bool react();
         
 protected:

@@ -73,7 +73,7 @@ SimulationExpression::~SimulationExpression()
 	delete valueProxyX;
 	delete valueProxyY;
 	delete valueProxyZ;
-	for (int i = 0; i < paramValueProxies.size(); i ++) {
+	for (int i = 0; i < (int)paramValueProxies.size(); i ++) {
 		delete paramValueProxies[i];
 	}
 }
@@ -103,9 +103,11 @@ void SimulationExpression::createSymbolTable() {
 		return;
 	}
 
-	Variable* var = NULL;
+	int numVariables = (int)varList.size();
+	int numVolVar = getNumVolumeVariables();
+
 	// t, x, y, z, VAR, VAR_INSIDE, VAR_OUTSIDE, field data, parameters
-	int numSymbols = 4 + numVolVar * 3 + (numVariables - numVolVar) + fieldDataList.size() + paramList.size();
+	int numSymbols = 4 + numVolVar * 3 + (numVariables - numVolVar) + (int)fieldDataList.size() + (int)paramList.size();
 	string* variableNames = new string[numSymbols];	
 	ValueProxy** oldValueProxies = new ValueProxy*[numSymbols];
 
@@ -128,7 +130,8 @@ void SimulationExpression::createSymbolTable() {
 		variableNames[variableIndex ++] = fieldDataList[i]->getID();
 	}
 
-	while ( var = getNextVariable(var)) {	
+	for (int i = 0; i < (int)varList.size(); i ++) {
+		Variable* var = varList[i];
 		if (var->getVarType() == VAR_VOLUME) {
 			oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_VOLUME_INDEX, indices);
 			//currValueProxies[variableIndex] = new ValueProxy(var->getCurr(), VAR_VOLUME_INDEX, indices);
@@ -177,7 +180,7 @@ void SimulationExpression::createSymbolTable() {
 	}
 
 	// add parameters
-	for (int i = 0; i < paramList.size(); i ++) {
+	for (int i = 0; i < (int)paramList.size(); i ++) {
 		oldValueProxies[variableIndex] = paramValueProxies[i];
 		variableNames[variableIndex] = paramList[i];
 		variableIndex ++;
@@ -201,10 +204,10 @@ void SimulationExpression::populateFieldValues(double* darray, int index) {
 	}
 }
 
-bool SimulationExpression::initSimulation()
+void SimulationExpression::initSimulation()
 {   
 	createSymbolTable();
-	return Simulation::initSimulation();
+	Simulation::initSimulation();
 }
 
 void SimulationExpression::setParameterValues(double* paramValues) {
@@ -214,7 +217,7 @@ void SimulationExpression::setParameterValues(double* paramValues) {
 		}
 		return;
 	}
-	for (int i = 0; i < paramList.size(); i ++) {
+	for (int i = 0; i < (int)paramList.size(); i ++) {
 		paramValueProxies[i]->setValue(paramValues[i]);
 	}
 }

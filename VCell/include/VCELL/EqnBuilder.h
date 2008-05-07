@@ -13,15 +13,10 @@ class EqnBuilder
 public:
 	EqnBuilder(Variable *var, Mesh *mesh);
 
-	virtual bool initEquation(double deltaTime, 
-				int volumeIndexStart, int volumeIndexSize, 
-				int membraneIndexStart, int membraneIndexSize)=0;
-	virtual bool buildEquation(double deltaTime, 
-				int volumeIndexStart, int volumeIndexSize, 
-				int membraneIndexStart, int membraneIndexSize)=0;
+	virtual void initEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)=0;
+	virtual void buildEquation(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize)=0;
 
 	Mesh* getMesh() { return mesh; };
-
 	virtual bool isElliptic() { return false; }
 
 protected:

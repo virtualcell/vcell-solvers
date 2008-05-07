@@ -12,7 +12,7 @@ class VolumeVarContextExpression : public VolumeVarContext
 public:	
 	VolumeVarContextExpression(Feature *feature, string& varName);
 	
-	bool resolveReferences(Simulation *sim);
+	void resolveReferences(Simulation *sim);
 
 	double getInitialValue(long index);
 	double getDiffusionRate(long index);

@@ -18,12 +18,9 @@ VolumeVarContextExpression::VolumeVarContextExpression(Feature *feature, string&
 {
 }
 
-bool VolumeVarContextExpression::resolveReferences(Simulation* sim) {
-	bool bResolved = VarContext::resolveReferences(sim);
-	if (bResolved) {
-		bindAll(((SimulationExpression*)sim)->getOldSymbolTable());
-	}
-	return bResolved;
+void VolumeVarContextExpression::resolveReferences(Simulation* sim) {
+	VarContext::resolveReferences(sim);
+	bindAll(((SimulationExpression*)sim)->getOldSymbolTable());
 }
 
 double VolumeVarContextExpression::getInitialValue(long volIndex) {

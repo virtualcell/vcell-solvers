@@ -39,7 +39,7 @@ public:
 	//
 	// ALWAYS CALL ParentClass::resolveReferences() first
 	//
-	virtual bool resolveReferences(Simulation *sim);
+	virtual void resolveReferences(Simulation *sim);
 
 	virtual double getInitialValue(long index);
 	
@@ -47,7 +47,6 @@ public:
 	virtual bool hasExact() { return false; }
 	virtual bool hasRemainders() { return false; }
 	
-	VarContext    *getNext() { return next; }
 	Feature       *getParent() { return feature; }
 
 	void setExpression(Expression* newexp, int expIndex);
@@ -77,7 +76,6 @@ protected:
 private:
     friend class Feature;
     friend class Contour;
-    VarContext    *next;	
 };
 
 #endif

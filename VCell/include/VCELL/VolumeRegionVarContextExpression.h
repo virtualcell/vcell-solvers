@@ -10,7 +10,7 @@
 class VolumeRegionVarContextExpression : public VolumeRegionVarContext
 {
 public:
-	bool resolveReferences(Simulation *sim);
+	void resolveReferences(Simulation *sim);
 
 	double getInitialValue(long index);
     double getReactionRate(long volumeIndex);

@@ -22,7 +22,7 @@ public:
 	SpatialReferenceData(int s);
 	~SpatialReferenceData();
 
-	int getNumVariables() { return variableList.size(); }
+	int getNumVariables() { return (int)variableList.size(); }
 	string& getVariable(int index) { return variableList.at(index); }
 
 	int getNumTimePoints();

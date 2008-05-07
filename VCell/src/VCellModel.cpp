@@ -11,23 +11,19 @@
 
 VCellModel::VCellModel()
 {
-	featureList = NULL;
-	pContours.erase(pContours.begin(), pContours.end()); 
 }
 
 VCellModel::~VCellModel()
 {      
-	Feature *feature;
-	while (feature = getNextFeature()){
-		featureList = feature->next;
-		delete feature;
+	for (int i = 0; i < (int)featureList.size(); i ++) {
+		delete featureList[i];
 	}
+	featureList.clear();
  }
                          
 void VCellModel::addFeature(Feature *feature)
 {
-	feature->next = featureList;
-	featureList = feature;
+	featureList.push_back(feature);
 }
                          
 void VCellModel::addContour(Contour *contour)
@@ -45,45 +41,41 @@ int VCellModel::getNumContours()
 	return (int)pContours.size(); 
 }
 
-Feature *VCellModel::getNextFeature(Feature *ptr)
+Feature *VCellModel::getFeatureFromIndex(int index)
 {
-	if (ptr==NULL){
-		return featureList;
-	}else{
-		return ptr->next;
+	if (index < 0 || index >= (int)featureList.size()) {
+		throw "VCellModel: getFeature(index) : index out of bounds";
 	}
+	return featureList.at(index);
 }
 
-Feature *VCellModel::getFeature(FeatureHandle handle)
+Feature *VCellModel::getFeatureFromHandle(FeatureHandle handle)
 {
-	Feature *ptr = featureList;
-	while (ptr){
-	if (handle==ptr->getHandle()) return ptr;
-		ptr = ptr->next;
-	}
-	return NULL;
-}
-
-Feature *VCellModel::getFeature(string& name)
-{
-	Feature *ptr = featureList;
-	while (ptr){
-		if (name == ptr->getName()) 
-			return ptr;
-		ptr = ptr->next;
-	}
-	return NULL;
-}
-
-bool VCellModel::resolveReferences()
-{	
-	Feature *feature = NULL;
-	Simulation* sim = SimTool::getInstance()->getSimulation();
-	while (feature = getNextFeature(feature)){
-		if (!feature->resolveReferences(sim)){
-			printf("error resolving references\n");
-			return false;
+	for (int i = 0; i < (int)featureList.size(); i ++) {
+		Feature* feature = featureList[i];
+		if (handle == feature->getHandle()) {
+			return feature;
 		}
 	}
-	return true;
+	return NULL;
+}
+
+Feature *VCellModel::getFeatureFromName(string& name)
+{
+	for (int i = 0; i < (int)featureList.size(); i ++) {
+		Feature* feature = featureList[i];
+		if (name == feature->getName()) {
+			return feature;
+		}
+	}
+	return NULL;
+}
+
+void VCellModel::resolveReferences()
+{	
+	Simulation* sim = SimTool::getInstance()->getSimulation();
+	for (int i = 0; i < (int)featureList.size(); i ++) {
+		Feature* feature = featureList[i];
+		feature->resolveReferences(sim);		
+	}
 }

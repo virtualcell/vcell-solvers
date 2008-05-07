@@ -8,7 +8,7 @@
 class AlgebraicSystem
 {
 public:
-	bool solveSystem();
+	void solveSystem();
 	virtual void initVars()=0;
 	inline double getX(int index) {return x[index];} 
 	inline int getDimension() {return dimension;} 
@@ -26,7 +26,7 @@ private:
     double tolerance;
     double   *x;
     double **matrix;
-    bool solveGauss();  
+    void solveGauss();  
 };
 
 #endif
