@@ -85,31 +85,33 @@ void SparseLinearSolver::solveEqn(double dT_sec,
 				 int membraneIndexStart, int membraneIndexSize, bool bFirstTime)
 {
 	int* IParm = PCGSolve(bFirstTime);
-	if (IParm[50] != 0) {
-		switch (IParm[50]) {
-			case 2:
-			case 3:
-			case 4:
-			case 9:
-			case 10:
-			case 15:
-				if (enableRetry) {
-					enableRetry = false;						
-					cout << endl << "!!Note: Insufficient PCG workspace (need additional " << IParm[53] << "), for variable " << var->getName() << ", retry again" << endl;
-					initPCGWorkspace(IParm[53]);
-					delete[] IParm;
-					solveEqn(dT_sec, volumeIndexStart, volumeIndexSize, membraneIndexStart, membraneIndexSize, true);
-				} else {
-					handlePCGExceptions(IParm[50], IParm[53]); // this throws exception
-					delete[] IParm;
-				}
-				break;
-			default:
-				handlePCGExceptions(IParm[50], IParm[53]);
-				delete[] IParm;
+	int returnCode = IParm[50];
+	int additionalSpace = IParm[53];
+	delete[] IParm;	
+	switch (returnCode) {
+		case 0: // successful
+			break;
+		case 2:
+		case 3:
+		case 4:
+		case 9:
+		case 10:
+		case 15: {
+			if (enableRetry) {
+				enableRetry = false;
+				cout << endl << "!!Note: Insufficient PCG workspace (need additional " << additionalSpace << "), for variable " << var->getName() << ", retry again" << endl;
+				initPCGWorkspace(additionalSpace);
+				solveEqn(dT_sec, volumeIndexStart, volumeIndexSize, membraneIndexStart, membraneIndexSize, true);
+			} else {
+				handlePCGExceptions(returnCode, additionalSpace); // this throws exception
+			}
+			break;
+		}
+		default: {
+			handlePCGExceptions(returnCode, additionalSpace);
+			break;
 		}
 	}
-	delete[] IParm;
 }
 
 // --------------------------------------------------

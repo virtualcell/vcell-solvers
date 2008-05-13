@@ -353,7 +353,7 @@ void DataSet::write(char *filename, Simulation *sim, bool bCompress)
 		ftell_pos = ftell(fp);
 		if (ftell_pos != dataBlock[i].dataOffset){
 			char errmsg[512];
-			sprintf(errmsg, "DataSet::write() - offset for data is incorrect (block %d, var=%s), ftell() says %d, should be %d", i, var->getName(), ftell_pos, dataBlock[i].dataOffset);
+			sprintf(errmsg, "DataSet::write() - offset for data is incorrect (block %d, var=%s), ftell() says %d, should be %d", i, var->getName().c_str(), ftell_pos, dataBlock[i].dataOffset);
 			throw errmsg;
 		}
 

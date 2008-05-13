@@ -34,7 +34,7 @@ double* FieldData::getData() {
 
 	if ((fp=fopen(fdFile.c_str(), "rb"))==NULL){
 		char errmsg[512];
-		sprintf(errmsg, "FieldData::getData() - could not open file '%s'.", fdFile); 
+		sprintf(errmsg, "FieldData::getData() - could not open file '%s'.", fdFile.c_str()); 
 		throw errmsg;
 	}
 
