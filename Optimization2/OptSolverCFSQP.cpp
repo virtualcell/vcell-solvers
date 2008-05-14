@@ -177,7 +177,7 @@ OptResultSet* OptSolverCFSQP::solve(){
 		delete[] g;
 		delete[] lambda;
 		throw ex;
-	} catch (char* errMsg) {
+	} catch (const char* errMsg) {
 		MemoryManager::deleteInstance();
 		delete[] bl;
 		delete[] bu;

@@ -1,24 +1,24 @@
-CPPFLAGS = /nologo /EHsc /O2 /DWIN32 -I..\ExpressionParser -I. -I..\fsqp -I..\IDAWin -I..\JNI\Win32\include -I..\JNI\Win32\include\win32 -I..\Optimization \
-	-I..\sundials\include -I..\sundials\src
+CC = cl
+CPPFLAGS = /c /nologo /EHsc /O2 /DWIN32 -I..\ExpressionParser -I. -I..\fsqp -I..\IDAWin -I..\JNI\Win32\include -I..\JNI\Win32\include\win32 \
+	-I..\Optimization2 -I..\tinyxml -I..\sundials\include -I..\sundials\src
 
 LIBS =	..\sundials\lib\sundials.lib ..\sundials\lib\sundials_nvecserial.lib ..\sundials\lib\sundials_cvode.lib ..\sundials\lib\sundials_ida.lib \
-	..\IDAWin\vcellIDA.lib ..\ExpressionParser\ExpParser.lib ..\fsqp\cfsqp.lib ..\Optimization\vcellOpt.lib
+	..\tinyxml\tinyxml.lib ..\IDAWin\vcellIDA.lib ..\ExpressionParser\ExpParser.lib ..\fsqp\cfsqp.lib ..\Optimization2\vcellOpt2.lib
+DEL = del
 
 DLL_TARGET = NativeSolvers.dll
 
-.SUFFIXES:	.cpp.obj
-
 .cpp.obj:	
-	cl /c $(CPPFLAGS) /Fo$@ $<
+	$(CC) $(CPPFLAGS) $<
 
-default all:	$(DLL_TARGET)
+all:	$(DLL_TARGET)
 
-CPPOBJECTS = cbit_vcell_opt_solvers_NativeOptSolver.obj \
-			cbit_vcell_solvers_NativeIDASolver.obj \
-			cbit_vcell_solvers_NativeCVODESolver.obj 
+CPPOBJECTS = cbit_vcell_solvers_NativeIDASolver.obj \
+			cbit_vcell_solvers_NativeCVODESolver.obj \
+			org_vcell_optimization_NativeOptSolver.obj
     
 $(DLL_TARGET) : $(CPPOBJECTS) $(LIBS)
-	cl -LD -Fe$@ $(CPPOBJECTS) $(LIBS)	
+	$(CC) -LD -Fe$@ $(CPPOBJECTS) $(LIBS)	
 		
 clean:
-	del $(DLL_TARGET) $(CPPOBJECTS)
+	$(DEL) $(DLL_TARGET) $(CPPOBJECTS)

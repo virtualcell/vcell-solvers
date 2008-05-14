@@ -1,0 +1,68 @@
+#
+# (C) Copyright University of Connecticut Health Center 2001.
+# All rights reserved.
+#
+
+CC = g++
+BASE_CPPFLAGS =	-D$(PLATFORM) -O2 -fexceptions
+TARGET= libExpParser.a
+LIBTOOL = ar -cru
+DEL = rm
+
+ifdef NATIVELIB
+CPPFLAGS = -fPIC $(BASE_CPPFLAGS)
+else
+CPPFLAGS = $(BASE_CPPFLAGS)
+endif
+
+%.o : %.cpp		
+	$(CC) -c $(CPPFLAGS) $<
+
+default all: $(TARGET)
+
+CPPOBJECTS = ASTAddNode.o \
+	ASTAndNode.o \
+	ASTExpression.o \
+	ASTFloatNode.o \
+	ASTFuncNode.o \
+	ASTIdNode.o \
+	ASTInvertTermNode.o \
+	ASTMinusTermNode.o \
+	ASTMultNode.o \
+	ASTNotNode.o \
+	ASTOrNode.o \
+	ASTPowerNode.o \
+	ASTRelationalNode.o \
+	DivideByZeroException.o \
+	Exception.o \
+	Expression.o \
+	ExpressionBindingException.o \
+	ExpressionException.o \
+	ExpressionParser.o \
+	ExpressionParserTokenManager.o \
+	ExpressionTest.o \
+	FunctionDomainException.o \
+	FunctionRangeException.o \
+	IOException.o \
+	JJTExpressionParserState.o \
+	MathUtil.o \
+	ParseException.o \
+	ParserException.o \
+	RuntimeException.o \
+	SimpleCharStream.o \
+	SimpleNode.o \
+	SimpleSymbolTable.o \
+	SimpleSymbolTableEntry.o \
+	StackMachine.o \
+	Token.o  \
+	ValueProxy.o
+
+$(TARGET):	$(CPPOBJECTS)	
+	$(LIBTOOL) $@ $(CPPOBJECTS) 
+	ranlib $@
+	
+clean:	
+	$(DEL) *.o $(TARGET)
+	
+depend:
+	makedepend -Y -f Makefile.linux -- $(CPPFLAGS) -- *.c *.cpp

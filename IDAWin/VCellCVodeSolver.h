@@ -1,8 +1,7 @@
 #ifndef VCELLCVODESOLVER_H
 #define VCELLCVODESOLVER_H
 
-#include <VCellSundialsSolver.h>
-
+#include "VCellSundialsSolver.h"
 
 class VCellCVodeSolver : public VCellSundialsSolver {
 public:

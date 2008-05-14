@@ -1,7 +1,7 @@
 // OptSolverLibrary.cpp : Defines the entry point for the application.
 //
 
-#include "ParameterDescription.h"
+#include "SimpleParameterDescription.h"
 #include "SimpleSymbolTable.h"
 
 #include <float.h>

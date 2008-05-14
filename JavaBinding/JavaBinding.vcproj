@@ -60,10 +60,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="tinyxmld.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib sundials_ida.lib cfsqp.lib"
+				AdditionalDependencies="cfsqp.lib tinyxml.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib sundials_ida.lib"
 				OutputFile="$(OutDir)/JavaBinding.dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\tinyxml\debug;..\IDAWin;..\fsqp;..\sundials\lib;..\Optimization\Debug;..\IDAWin\Debug;..\ExpressionParser\Debug"
+				AdditionalLibraryDirectories="..\fsqp;..\tinyxml;..\sundials\lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/JavaBinding.pdb"
 				SubSystem="1"
@@ -337,10 +337,6 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
-			<File
-				RelativePath=".\cbit_vcell_opt_solvers_NativeOptSolver.cpp"
-				>
-			</File>
 			<File
 				RelativePath=".\cbit_vcell_solvers_NativeCVODESolver.cpp"
 				>

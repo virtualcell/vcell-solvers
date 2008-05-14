@@ -7,14 +7,15 @@ using namespace std;
 #include "OptProblemDescription.h"
 #include "ObjectiveFunction.h"
 #include "ExplicitObjectiveFunction.h"
-#include "ParameterDescription.h"
-#include "ConstraintDescription.h"
+#include "SimpleParameterDescription.h"
+#include "ExplicitConstraintDescription.h"
 #include "OdeObjectiveFunction.h"
 #include "PdeObjectiveFunction.h"
 #include "OdeResultSet.h"
 #include "Constraint.h"
 #include "Expression.h"
 #include "tinyxml.h"
+#include <float.h>
 
 OptXmlReader2::OptXmlReader2(){
 }
@@ -69,7 +70,7 @@ ParameterDescription* OptXmlReader2::parseParameterDescription(TiXmlElement* par
 		scaleVector.push_back(atof(parameter->Attribute(ParameterScale_Attr)));
 		parameter = parameter->NextSiblingElement(Parameter_Tag);
 	}
-	int numParameters = nameVector.size();
+	int numParameters = (int)nameVector.size();
 	double* lows = new double[numParameters];
 	double* highs = new double[numParameters];
 	double* inits = new double[numParameters];
@@ -91,13 +92,13 @@ ConstraintDescription* OptXmlReader2::parseConstraintDescription(TiXmlElement* c
 		const char* constraintType = constraintNode->Attribute(ConstraintType_Attr);
 		ConstraintType cType;
 		if (strcmp(constraintType,ConstraintType_Attr_LinearEquality)!=0){
-			cType = ConstraintType::EQUALITY_LINEAR;
+			cType = EQUALITY_LINEAR;
 		}else if (strcmp(constraintType,ConstraintType_Attr_NonlinearEquality)!=0){
-			cType = ConstraintType::EQUALITY_NONLINEAR;
+			cType = EQUALITY_NONLINEAR;
 		}else if (strcmp(constraintType,ConstraintType_Attr_LinearInequality)!=0){
-			cType = ConstraintType::INEQUALITY_LINEAR;
+			cType = INEQUALITY_LINEAR;
 		}else if (strcmp(constraintType,ConstraintType_Attr_NonlinearInequality)!=0){
-			cType = ConstraintType::INEQUALITY_NONLINEAR;
+			cType = INEQUALITY_NONLINEAR;
 		}
 		TiXmlText* textNode = constraintNode->FirstChild()->ToText();
 		const char* expString = textNode->Value();
@@ -189,7 +190,7 @@ OdeResultSet* OptXmlReader2::parseOdeResultSet(TiXmlElement* dataNode){
 		variableNode = variableNode->NextSiblingElement(Variable_Tag);
 	}
 	// make sure 1st is independent, rest are dependent, and all are dim=1
-	for (int i=0;i<varNames.size();i++){
+	for (int i = 0; i < (int)varNames.size(); i ++){
 		if (varDims[i]!=1){
 			throw "unexpected data variable dimension != 1";
 		}
@@ -209,7 +210,7 @@ OdeResultSet* OptXmlReader2::parseOdeResultSet(TiXmlElement* dataNode){
 		const char* dataText = rowNode->GetText();
 		stringstream ss(dataText);
 		double* rowData = new double[varNames.size()];
-		for (int i=0;i<varNames.size();i++){
+		for (int i = 0; i < (int)varNames.size(); i ++){
 			ss >> rowData[i];
 		}
 		refData->addRow(rowData);

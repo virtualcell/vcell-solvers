@@ -89,7 +89,7 @@ TiXmlElement* OptXmlWriter2::getOptResultSet(OptResultSet* optResultSet){
 		}
 	}
 	optResultSetElement->SetAttribute(OptSolverResultSetStatus_Attr,status.c_str());
-	for (int i=0;i<optResultSet->paramNames.size();i++){
+	for (int i=0;i<(int)optResultSet->paramNames.size();i++){
 		TiXmlElement* paramNode = new TiXmlElement(Parameter_Tag);
 		paramNode->SetAttribute(ParameterName_Attr,optResultSet->paramNames[i].c_str());
 		stringstream ss3;

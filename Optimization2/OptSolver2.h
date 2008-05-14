@@ -2,7 +2,6 @@
 #define OPTSOLVER2_H
 
 #include <vector>
-#include <string>
 using namespace std;
 
 typedef enum {
@@ -43,12 +42,6 @@ protected:
 private:
 	vector<OptSolver2Listener*> optSolverListeners;
 	OptProblemDescription *optProblemDescription;
-};
-
-
-class OptSolver2Listener {
-public:
-	virtual void handleObjectiveFunctionEvalEvent(int numParameters, double* paramValues, double objValue)=0;
 };
 
 #endif

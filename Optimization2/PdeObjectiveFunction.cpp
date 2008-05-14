@@ -2,7 +2,7 @@
 #include "SpatialReferenceData.h"
 #include "ParameterDescription.h"
 #include <VCELL/FVSolver.h>
-#include "Exception.h"
+#include <Exception.h>
 using namespace VCell;
 
 #include <iostream>
@@ -137,4 +137,3 @@ double* PdeObjectiveFunction::getBestParameterValues()
 {
 	return bestParameterValues;
 }
-

@@ -1,7 +1,7 @@
 // OptSolverLibrary.cpp : Defines the entry point for the application.
 //
 
-#include "ConstraintDescription.h"
+#include "ExplicitConstraintDescription.h"
 #include "Constraint.h"
 #include "SymbolTable.h"
 

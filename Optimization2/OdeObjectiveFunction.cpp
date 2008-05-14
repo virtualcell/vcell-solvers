@@ -1,20 +1,21 @@
 // OptSolverLibrary.cpp : Defines the entry point for the application.
 //
 
-#include "OptSolver.h"
 #include "OdeObjectiveFunction.h"
-#include "VCellIDASolver.h"
-#include "VCellCVodeSolver.h"
+#include <VCellIDASolver.h>
+#include <VCellCVodeSolver.h>
 #include "Constraint.h"
 #include "ParameterDescription.h"
 #include "SimpleSymbolTable.h"
-#include "OdeResultSet.h"
+#include <OdeResultSet.h>
 #include "MemoryManager.h"
-#include "StoppedByUserException.h"
+#include <StoppedByUserException.h>
 
 #include <float.h>
 #include <iostream>
 using namespace std;
+
+//#define JNI_DEBUG
 
 OdeObjectiveFunction::OdeObjectiveFunction(
 	ParameterDescription* arg_parameterDescription,
@@ -85,11 +86,13 @@ void OdeObjectiveFunction::objective(int nparams, double* x, double* f) {
 			memcpy(bestParameterValues, unscaled_x, parameterDescription->getNumParameters() * sizeof(double));
 			testResultSet->copyInto(bestResultSet);
 		}
-		std::cout << "objective[" << numObjFuncEvals << "]=" << *f << " best=" << bestObjectiveFunctionValue << " p=[";
+#ifdef JNI_DEBUG
+		cout << "objective[" << numObjFuncEvals << "]=" << *f << " best=" << bestObjectiveFunctionValue << " p=[";
 		for (int i=0;i<nparams;i++){
 			std::cout << unscaled_x[i] << " "; 
 		}
 		std::cout << "]" << std::endl;
+#endif
 	} catch (Exception ex) {
 		*f = 1000;
 	}

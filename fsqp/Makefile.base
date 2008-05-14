@@ -1,0 +1,31 @@
+CC = gcc
+BASE_CFLAGS = -c -O2 -fexceptions -D$(PLATFORM) -DUSE_VC_MEMORY_MANAGER  -I../Optimization2
+LIBTOOL = ar cru
+DEL = rm
+
+ifdef NATIVELIB
+CFLAGS = -fPIC $(BASE_CFLAGS)
+else
+CFLAGS = $(BASE_CFLAGS)
+endif
+
+TARGETS = libcfsqp.a
+
+%.o : %.c	
+	$(CC) $(CFLAGS) $<
+
+all: $(TARGETS)
+
+COBJECTS =	cfsqp.o	\
+			qld.o	\
+			globals.o	
+
+$(TARGETS):	$(COBJECTS)
+	$(LIBTOOL) $@ $(COBJECTS) 
+	ranlib $@
+
+clean:
+	$(DEL) $(TARGETS) $(COBJECTS)
+
+depend:
+	makedepend -Y -f Makefile.linux -- $(CFLAGS) -- *.c *.cpp

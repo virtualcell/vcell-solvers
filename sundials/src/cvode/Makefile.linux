@@ -1,34 +1,4 @@
-# -----------------------------------------------------------------
-# $Revision: 1.4 $
-# $Date: 2006/08/11 23:03:04 $
-# -----------------------------------------------------------------
-CC       = gcc
-CFLAGS   = -O2 -fexceptions
-LDFLAGS  = 
-LIBS     = -lm
 
-LIBTOOL = ar cru
-LIBDIR = ../../lib
+PLATFORM = LINUX
 
-INCLUDES = -I.. -I../../include
-
-CVODE_LIB  = libsundials_cvode.a
-CVODE_OBJ_FILES = cvode.o cvode_io.o cvode_band.o cvode_dense.o cvode_diag.o cvode_spils.o cvode_spbcgs.o cvode_spgmr.o cvode_sptfqmr.o cvode_bandpre.o cvode_bbdpre.o
-
-.SUFFIXES:	.c.o
-
-.c.o:	
-	$(CC) -c $(CFLAGS) $(INCLUDES) $<
-
-all: $(CVODE_LIB)
-
-$(CVODE_LIB): $(CVODE_OBJ_FILES)
-	$(LIBTOOL) $@ $(CVODE_OBJ_FILES)
-	cp $@ $(LIBDIR)	
-
-clean:
-	rm *.o $(CVODE_LIB)
-
-depend:
-	makedepend -Y -f Makefile.linux -- $(CFLAGS) $(INCLUDES) -- *.c *.cpp
-	
+include Makefile.base

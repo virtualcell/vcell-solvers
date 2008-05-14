@@ -1,0 +1,51 @@
+
+CC = g++
+BASE_CPPFLAGS = -c -O2 -fPIC -fexceptions -D$(PLATFORM) -I../Optimization2 -I../ExpressionParser -I../fsqp -I../IDAWin \
+	-I../sundials/include -I../sundials/src -I../tinyxml
+
+ifeq ($(PLATFORM), MACOSX)
+BASE_CPPFLAGS2 = $(BASE_CPPFLAGS) -I../JNI/MacOSX
+LDFLAG = -bundle
+DLL_TARGET = libNativeSolvers.jnilib
+else
+BASE_CPPFLAGS2 = $(BASE_CPPFLAGS) -I../JNI/Linux/include -I../JNI/Linux/include/linux
+LDFLAG = -shared
+DLL_TARGET = libNativeSolvers.so
+endif	
+	
+ifdef NATIVELIB
+CPPFLAGS = -fPIC $(BASE_CPPFLAGS2)
+else
+CPPFLAGS = $(BASE_CPPFLAGS2)
+endif
+
+DEL = rm
+
+LIBS =	../Optimization2/libvcellOpt2.a \
+		../tinyxml/libtinyxml.a  \
+	../IDAWin/libvcellIDA.a \
+	../sundials/lib/libsundials_cvode.a \
+	../sundials/lib/libsundials_ida.a \
+	../sundials/lib/libsundials_nvecserial.a \
+	../sundials/lib/libsundials.a \
+	../ExpressionParser/libExpParser.a \
+	../fsqp/libcfsqp.a
+
+
+%.o : %.cpp
+	$(CC) $(CPPFLAGS) $<
+
+default all:	$(DLL_TARGET)
+
+CPPOBJECTS = cbit_vcell_solvers_NativeIDASolver.o \
+			cbit_vcell_solvers_NativeCVODESolver.o \
+			org_vcell_optimization_NativeOptSolver.o
+
+$(DLL_TARGET) : $(CPPOBJECTS) $(LIBS)
+	$(CC) $(LDFLAG) -o $@ $(CPPOBJECTS) $(LIBS)	
+		
+clean:
+	$(DEL) $(DLL_TARGET) $(CPPOBJECTS)
+
+depend:
+	makedepend -Y -f Makefile.linux -- $(CPPFLAGS) -- *.c *.cpp

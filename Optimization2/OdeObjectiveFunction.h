@@ -1,7 +1,6 @@
-#ifndef OdeObjectiveFunction_H
-#define OdeObjectiveFunction_H
+#ifndef ODEOBJECTIVEFUNCTION_H
+#define ODEOBJECTIVEFUNCTION_H
 
-#include <string>
 #include <vector>
 using namespace std;
 

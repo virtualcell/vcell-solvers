@@ -59,4 +59,3 @@ void SpatialReferenceData::show(){
 		std::cout << std::endl;
 	}
 }
-

@@ -145,4 +145,3 @@ double* VFRAPObjectiveFunction::getBestParameterValues()
 {
 	return bestParameterValues;
 }
-

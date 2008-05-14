@@ -1,9 +1,5 @@
-#ifndef ObjectiveFunction_H
-#define ObjectiveFunction_H
-
-#include <string>
-#include <vector>
-using namespace std;
+#ifndef OBJECTIVEFUNCTION_H
+#define OBJECTIVEFUNCTION_H
 
 class ObjectiveFunction {
 public:

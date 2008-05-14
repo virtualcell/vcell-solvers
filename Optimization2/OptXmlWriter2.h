@@ -1,16 +1,16 @@
 #ifndef OPTXMLWRITER2_H
 #define OPTXMLWRITER2_H
 
-class OptProblemDescription;
-class ObjectiveFunction;
-class ConstraintDescription;
-class ParameterDescription;
-class ExplicitObjectiveFunction;
-class OdeObjectiveFunction;
-class PdeObjectiveFunction;
+//class OptProblemDescription;
+//class ObjectiveFunction;
+//class ConstraintDescription;
+//class ParameterDescription;
+//class ExplicitObjectiveFunction;
+//class OdeObjectiveFunction;
+//class PdeObjectiveFunction;
 class TiXmlElement;
-class SymbolTable;
-class OdeResultSet;
+//class SymbolTable;
+//class OdeResultSet;
 class OptResultSet;
 
 class OptXmlWriter2

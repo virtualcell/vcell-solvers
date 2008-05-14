@@ -1,7 +1,7 @@
 #include "cbit_vcell_solvers_NativeCVODESolver.h"
-#include "VCellCVODESolver.h"
-#include "OdeResultSet.h"
-#include "Exception.h"
+#include <VCellCVodeSolver.h>
+#include <OdeResultSet.h>
+#include <Exception.h>
 using namespace VCell;
 
 JNIEnv* jniEnv_cvode = NULL;
@@ -78,4 +78,5 @@ JNIEXPORT jobject JNICALL Java_cbit_vcell_solvers_NativeCVODESolver_nativeSolve
 		jclass newExcCls = env->FindClass("java/lang/Exception");
 		env->ThrowNew(newExcCls, "unknown exception");
 	}
+	return 0;
 }

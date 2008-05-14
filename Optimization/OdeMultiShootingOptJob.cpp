@@ -400,7 +400,7 @@ double OdeMultiShootingOptJob::computeL2error(double* paramValues) {
 		while (timePoints[testRowIndex] < refTime) {
 			testRowIndex ++;
 		}
-		assert (testRowIndex < timePoints.size());
+		assert (testRowIndex < (int)timePoints.size());
 
 		double* pvar = testResultSet->getRowData(testRowIndex);
 
@@ -454,7 +454,7 @@ void OdeMultiShootingOptJob::computeTimePoints(vector<double>& timePoints, doubl
 		}
 		timePoints.push_back(refTimes[i]);		
 	}
-	for (int i = 0; i < timePoints.size() - 1; i ++) {
+	for (int i = 0; i < (int)timePoints.size() - 1; i ++) {
 		if (timePoints[i + 1] <= timePoints[i]) {
 			throw "Unable to compute timepoints for multiple shooting methods, time points are not in asc order";
 		}

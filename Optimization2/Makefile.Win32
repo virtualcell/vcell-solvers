@@ -1,0 +1,35 @@
+CC = cl
+CPPFLAGS = /c /nologo /EHsc /D_CRT_SECURE_NO_DEPRECATE /O2 /DWIN32 -I..\ExpressionParser \
+	-I..\fsqp -I..\IDAWin -I..\sundials\include -I..\sundials\src -I..\tinyxml -I..\VCell\include
+
+LIBTOOL = lib
+DEL = del	
+
+LIB_TARGET = vcellOpt2.lib
+			
+.cpp.obj :
+	$(CC) $(CPPFLAGS) /Fo$@ $<
+
+default all:	$(LIB_TARGET)
+
+CPPOBJECTS = Constraint.obj \
+		ExplicitConstraintDescription.obj	\
+		ExplicitObjectiveFunction.obj	\
+		MemoryManager.obj \
+		OdeObjectiveFunction.obj	\
+		OptProblemDescription.obj	\
+		OptResultSet.obj	\
+		OptSolver2.obj	\
+		OptSolverCFSQP.obj	\
+		OptXmlReader2.obj	\
+		OptXmlWriter2.obj	\
+		PdeObjectiveFunction.obj	\
+		SimpleParameterDescription.obj	\
+		SpatialReferenceData.obj	\
+		VFRAPObjectiveFunction.obj
+    
+$(LIB_TARGET) : $(OBJDIR) $(CPPOBJECTS)
+	$(LIBTOOL) /out:$@ $(CPPOBJECTS)
+		
+clean:
+	$(DEL) $(LIB_TARGET) $(CPPOBJECTS)

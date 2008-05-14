@@ -1,0 +1,41 @@
+CC = g++
+BASE_CPPFLAGS = -c -O2 -fexceptions -D$(PLATFORM) -DUSE_VC_MEMORY_MANAGER  -I../ExpressionParser -I../IDAWin \
+				-I../sundials/include -I../sundials/src  -I../fsqp -I../tinyxml
+ifdef NATIVELIB
+CPPFLAGS = -fPIC $(BASE_CPPFLAGS)
+else
+CPPFLAGS = $(BASE_CPPFLAGS)
+endif
+				
+LIBTOOL = ar cru
+DEL = rm
+LIB_TARGET = libvcellOpt2.a
+			
+%.o : %.cpp
+	$(CC) $(CPPFLAGS) $<
+
+all:	$(LIB_TARGET)
+
+CPPOBJECTS = Constraint.o \
+		ExplicitConstraintDescription.o	\
+		ExplicitObjectiveFunction.o	\
+		MemoryManager.o  \
+		OdeObjectiveFunction.o	\
+		OptProblemDescription.o	\
+		OptResultSet.o	\
+		OptSolver2.o	\
+		OptSolverCFSQP.o	\
+		OptXmlReader2.o	\
+		OptXmlWriter2.o	\
+		SimpleParameterDescription.o	\
+		SpatialReferenceData.o
+    
+$(LIB_TARGET) : $(OBJDIR) $(CPPOBJECTS)
+	$(LIBTOOL) $@ $(CPPOBJECTS)
+	ranlib $@
+		
+clean:
+	$(DEL) $(LIB_TARGET) $(CPPOBJECTS)
+
+depend:
+	makedepend -Y -f Makefile.linux -- $(CPPFLAGS) -- *.c *.cpp	

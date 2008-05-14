@@ -1,6 +1,6 @@
 #include "OptSolver2.h"
+#include "OptSolver2Listener.h"
 #include "OptResultSet.h"
-//#include "cbit_vcell_opt_solvers_NativeOptSolver.h"
 #include "org_vcell_optimization_NativeOptSolver.h"
 #include "OptSolverCFSQP.h"
 #include "OptProblemDescription.h"
@@ -12,13 +12,15 @@
 #include "MemoryManager.h"
 #include "tinyxml.h"
 
+//#define JNI_DEBUG
+
 static JNIEnv* env_JNI = NULL;
 static jobject obj_OptSolverCallbacks;
 static jmethodID mid_OptSolverCallbacks_addEvaluation;
 static jmethodID mid_OptSolverCallbacks_getStopRequested;
 
-class JavaOptSolverListener : public OptSolver2Listener {
-	virtual void handleObjectiveFunctionEvalEvent(int numParameters, double* paramValues, double objValue) {
+class JavaOptSolver2Listener : public OptSolver2Listener {
+	void handleObjectiveFunctionEvalEvent(int numParameters, double* paramValues, double objValue) {
 		jdoubleArray j_parameterValues = env_JNI->NewDoubleArray(numParameters);
 		env_JNI->SetDoubleArrayRegion(j_parameterValues, 0, numParameters, paramValues);
 		env_JNI->CallVoidMethod(obj_OptSolverCallbacks, mid_OptSolverCallbacks_addEvaluation, j_parameterValues, objValue);
@@ -40,37 +42,48 @@ JNIEXPORT jstring JNICALL Java_org_vcell_optimization_NativeOptSolver_nativeSolv
 {
 	try {
 		// assign global variables.
-std::cout << "in dll 1" << std::endl;
-std::cout.flush();
+#ifdef JNI_DEBUG
+		cout << "in dll 1" << endl;
+		cout.flush();
+#endif
 		env_JNI = jniEnv;		
 		obj_OptSolverCallbacks = object_optSolverCallbacks;
 		jclass class_OptSolverCallbacks = jniEnv->GetObjectClass(object_optSolverCallbacks);
 		mid_OptSolverCallbacks_getStopRequested = jniEnv->GetMethodID(class_OptSolverCallbacks, "getStopRequested", "()Z");
 		mid_OptSolverCallbacks_addEvaluation = jniEnv->GetMethodID(class_OptSolverCallbacks, "addEvaluation", "([DD)V");
-
-std::cout << "in dll 2" << std::endl;
-std::cout.flush();
+#ifdef JNI_DEBUG
+		cout << "in dll 2" << endl;
+		cout.flush();
+#endif
 		// Input string
 		char* c_optProblemDescriptionXMLString = (char*)jniEnv->GetStringUTFChars(j_OptProblemDescriptionXMLString, 0);
 
 		OptXmlReader2* optXmlReader = new OptXmlReader2();
 		OptProblemDescription* optProblemDescription = optXmlReader->parseOptProblemDescription(c_optProblemDescriptionXMLString);
 		jsize numParameters = optProblemDescription->getParameterDescription()->getNumParameters();
-std::cout << "in dll 3" << std::endl;
-std::cout.flush();
+
+#ifdef JNI_DEBUG
+		cout << "in dll 3" << endl;
+		cout.flush();
+#endif
 
 		OptSolverCFSQP* cfsqpOptSolver = new OptSolverCFSQP(optProblemDescription);
-		JavaOptSolverListener* listener = new JavaOptSolverListener();
+		JavaOptSolver2Listener* listener = new JavaOptSolver2Listener();
 		cfsqpOptSolver->addListener(listener);
 		OptResultSet* optResultSet = 0;
 
-std::cout << "in dll 4" << std::endl;
-std::cout.flush();
+#ifdef JNI_DEBUG
+		cout << "in dll 4" << endl;
+		cout.flush();
+#endif
 
 		try {
 			optResultSet = cfsqpOptSolver->solve();
-std::cout << "in dll 5" << std::endl;
-std::cout.flush();
+
+#ifdef JNI_DEBUG
+			cout << "in dll 5" << endl;
+			cout.flush();
+#endif
 		} catch (StoppedByUserException& ex) {
 			optResultSet = new OptResultSet();
 			optResultSet->status = stoppedByUser;			
@@ -82,15 +95,19 @@ std::cout.flush();
 			optResultSet->objectiveFunctionValue = optProblemDescription->getObjectiveFunction()->getBestObjectiveFunctionValue();
 			optResultSet->numObjFuncEvals = optProblemDescription->getObjectiveFunction()->getNumObjFuncEvals();
 		}
-std::cout << "in dll 6" << std::endl;
-std::cout.flush();
+#ifdef JNI_DEBUG
+		cout << "in dll 6" << endl;
+		cout.flush();
+#endif
 
 		cout << "----------Final Parameters--------------" << endl;
 		optResultSet->show();
 		cout << "----------------------------------------" << endl;
-std::cout << "in dll 7" << std::endl;
-std::cout.flush();
 
+#ifdef JNI_DEBUG
+		cout << "in dll 7" << endl;
+		cout.flush();
+#endif
 		/*
 		 * Populate OptimizationResultSet
 		*/
@@ -102,8 +119,10 @@ std::cout.flush();
 		jclass class_String = jniEnv->FindClass("java/lang/String");
 		jstring j_optSolverResultSetXML = jniEnv->NewStringUTF(printer.CStr());
 
-std::cout << "in dll 8" << std::endl;
-std::cout.flush();
+#ifdef JNI_DEBUG
+		cout << "in dll 8" << endl;
+		cout.flush();
+#endif
 		/* 
 		 * release memory
 	    */
@@ -114,9 +133,11 @@ std::cout.flush();
 		//delete listener;
 		//delete optSolverResultSet;
 		delete cfsqpOptSolver;
-std::cout << "in dll 9" << std::endl;
-std::cout.flush();
-		
+
+#ifdef JNI_DEBUG
+		cout << "in dll 9" << endl;
+		cout.flush();
+#endif		
 		return j_optSolverResultSetXML;
 	} catch (Exception& ex) {
 		jclass newExcCls = jniEnv->FindClass("java/lang/Exception");

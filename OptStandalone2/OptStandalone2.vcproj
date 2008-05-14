@@ -59,8 +59,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="tinyxmld.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib sundials_ida.lib Ws2_32.lib pcgwrapper.lib pcgpack_dbl.lib qhulld.lib mkl_c.lib zip32.lib unzip32.lib zlib.lib"
-				AdditionalLibraryDirectories="..\tinyxml\debug;..\sundials\lib\;..\VCell\src;..\VCell\Debug;..\ExpressionParserMT\Debug;..\PCGPack;..\SonicCClient\Win32\lib;src;..\unzip;..\zlib;..\zip;..\qhull;..\IFortran"
+				AdditionalDependencies="tinyxml.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib sundials_ida.lib Ws2_32.lib pcgwrapper.lib pcgpack_dbl.lib qhulld.lib mkl_c.lib zip32.lib unzip32.lib cfsqp.lib zlib.lib"
+				AdditionalLibraryDirectories="..\zip;..\IFortran;..\fsqp;..\qhull;..\PCGPack;..\VCell\src;..\zlib;..\unzip;..\tinyxml;..\sundials\lib\"
 				GenerateDebugInformation="true"
 			/>
 			<Tool
@@ -191,6 +191,34 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath=".\test1.xml"
+				>
+			</File>
+			<File
+				RelativePath=".\test2.xml"
+				>
+			</File>
+			<File
+				RelativePath=".\test3.xml"
+				>
+			</File>
+			<File
+				RelativePath=".\test4.xml"
+				>
+			</File>
+			<File
+				RelativePath=".\test5.xml"
+				>
+			</File>
+			<File
+				RelativePath=".\test6.xml"
+				>
+			</File>
+			<File
+				RelativePath=".\test7.xml"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

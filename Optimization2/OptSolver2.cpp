@@ -1,8 +1,9 @@
 // OptSolver2Library.cpp : Defines the entry point for the application.
 //
 #include <iostream>
-#include <stdio.h>
 using namespace std;
+
+#include "OptSolver2Listener.h"
 #include "OptSolver2.h"
 
 //================================================

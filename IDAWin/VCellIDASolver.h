@@ -1,7 +1,7 @@
 #ifndef VCELLIDASOLVER_H
 #define VCELLIDASOLVER_H
 
-#include <VCellSundialsSolver.h>
+#include "VCellSundialsSolver.h"
 
 class VCellIDASolver : public VCellSundialsSolver {
 public:

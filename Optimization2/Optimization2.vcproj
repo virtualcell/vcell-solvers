@@ -41,8 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\Optimization;..\tinyxml;..\VCell\include\;..\sundials\src;..\sundials\include;..\fsqp;..\IDAWin;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="..\tinyxml;..\VCell\include\;..\sundials\src;..\sundials\include;..\fsqp;..\IDAWin;..\ExpressionParser"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -287,11 +287,19 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\ConstraintDescription.cpp"
+				RelativePath=".\Constraint.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ExplicitConstraintDescription.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\ExplicitObjectiveFunction.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\MemoryManager.cpp"
 				>
 			</File>
 			<File
@@ -304,6 +312,10 @@
 			</File>
 			<File
 				RelativePath=".\OptResultSet.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\OptSolver.cpp"
 				>
 			</File>
 			<File
@@ -323,11 +335,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ParameterDescription.cpp"
+				RelativePath=".\PdeObjectiveFunction.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\PdeObjectiveFunction.cpp"
+				RelativePath=".\SimpleParameterDescription.cpp"
 				>
 			</File>
 			<File
@@ -353,11 +365,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ExplicitConstraintDescription.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ExplicitObjectiveFunction.h"
 				>
 			</File>
 			<File
-				RelativePath=".\NonspatialOptTesting.h"
+				RelativePath=".\MemoryManager.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MemoryUtils.h"
 				>
 			</File>
 			<File
@@ -381,7 +401,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\OptSolver2Listener.h"
+				>
+			</File>
+			<File
 				RelativePath=".\OptSolverCFSQP.h"
+				>
+			</File>
+			<File
+				RelativePath=".\OptXml.h"
 				>
 			</File>
 			<File
@@ -398,6 +426,10 @@
 			</File>
 			<File
 				RelativePath=".\PdeObjectiveFunction.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SimpleParameterDescription.h"
 				>
 			</File>
 			<File

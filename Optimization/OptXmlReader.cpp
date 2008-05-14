@@ -58,7 +58,7 @@ OdeOptJob* OptXmlReader::parseOdeOptJob(TiXmlElement* rootNode){
 		scaleVector.push_back(atof(parameter->Attribute(ParameterScale_Attr)));
 		parameter = parameter->NextSiblingElement(Parameter_Tag);
 	}
-	int numParameters = nameVector.size();
+	int numParameters = (int)nameVector.size();
 	char** paramNames = new char*[numParameters];
 	double* lows = new double[numParameters];
 	double* highs = new double[numParameters];

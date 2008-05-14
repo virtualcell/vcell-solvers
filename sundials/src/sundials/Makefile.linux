@@ -1,45 +1,4 @@
-# -----------------------------------------------------------------
-# $Revision: 1.5 $
-# $Date: 2006/10/11 16:34:20 $
-# -----------------------------------------------------------------
-# Programmer(s): Radu Serban and Aaron Collier @ LLNL
-# -----------------------------------------------------------------
-# Copyright (c) 2002, The Regents of the University of California.
-# Produced at the Lawrence Livermore National Laboratory.
-# All rights reserved.
-# For details, see the LICENSE file.
-# -----------------------------------------------------------------
-# Makefile for SHARED module
-#
-# src/sundials/Makefile.  Generated from Makefile.in by configure.
-# -----------------------------------------------------------------
 
-CC       = gcc
-CFLAGS   = -O2 -fexceptions
-LDFLAGS  = 
-LIBS     = -lm 
+PLATFORM = LINUX
 
-INCLUDES = -I.. -I../../include
-
-LIBTOOL = ar cru
-LIBDIR = ../../lib
-
-SUNDIALS_LIB = libsundials.a
-SUNDIALS_OBJ_FILES = sundials_band.o sundials_dense.o sundials_iterative.o sundials_math.o sundials_nvector.o sundials_smalldense.o sundials_spgmr.o sundials_spbcgs.o sundials_sptfqmr.o
-
-.SUFFIXES:		.c.o
-
-.c.o:	
-	$(CC) -c $(CFLAGS) $(INCLUDES) $<
-
-all: $(SUNDIALS_LIB)
-
-$(SUNDIALS_LIB): $(SUNDIALS_OBJ_FILES)
-	$(LIBTOOL) $@ $(SUNDIALS_OBJ_FILES)
-	cp $@ $(LIBDIR)	
-
-clean:
-	rm *.o $(SUNDIALS_LIB)
-
-depend:
-	makedepend -Y -f Makefile.linux -- $(CFLAGS) $(INCLUDES) -- *.c *.cpp
+include Makefile.base

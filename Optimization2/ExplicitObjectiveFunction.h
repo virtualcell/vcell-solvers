@@ -3,14 +3,9 @@
 
 #include "ObjectiveFunction.h"
 
-#include <string>
-#include <vector>
-using namespace std;
-
 class Expression;
 class SymbolTable;
 class ParameterDescription;
-
 
 class ExplicitObjectiveFunction : public ObjectiveFunction {
 public:

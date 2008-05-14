@@ -4,7 +4,8 @@ all:
 	cd fsqp ; make -f Makefile.linux.nativelib
 	cd sundials/src; make -f Makefile.linux.nativelib
 	cd IDAWin; make -f Makefile.linux.nativelib
-	cd Optimization; make -f Makefile.linux.nativelib
+	cd tinyxml && make -f Makefile.linux.nativelib
+	cd Optimization2; make -f Makefile.linux.nativelib
 	cd JavaBinding; make -f Makefile.linux.nativelib
 	
 clean:
@@ -12,7 +13,8 @@ clean:
 	cd fsqp ; make -f Makefile.linux.nativelib clean
 	cd sundials/src; make -f Makefile.linux.nativelib clean
 	cd IDAWin; make -f Makefile.linux.nativelib clean
-	cd Optimization; make -f Makefile.linux.nativelib clean
+	cd tinyxml && make -f Makefile.linux.nativelib clean
+	cd Optimization2; make -f Makefile.linux.nativelib clean
 	cd JavaBinding; make -f Makefile.linux.nativelib clean
 	
 depend:
@@ -20,5 +22,6 @@ depend:
 	cd fsqp ; make -f Makefile.linux.nativelib depend
 	cd sundials/src; make -f Makefile.linux.nativelib depend
 	cd IDAWin; make -f Makefile.linux.nativelib depend
-	cd Optimization; make -f Makefile.linux.nativelib depend
+	cd tinyxml && make -f Makefile.linux.nativelib depend
+	cd Optimization2; make -f Makefile.linux.nativelib depend
 	cd JavaBinding; make -f Makefile.linux.nativelib depend

@@ -1,27 +1,5 @@
-C++ = g++
 
-CFLAGS = -c -O2 -fPIC -DMACOSX -fexceptions -I../ExpressionParser -I. -I../sundials/include -I../sundials/src
+PLATFORM = MACOSX
+NATIVELIB=1
 
-VCELLIDALIB = libvcellIDA.a
-			
-%.o : %.cpp
-	$(C++) $(CFLAGS) $<
-
-default all : $(VCELLIDALIB)
-
-CPPOBJECTS = VCellSundialsSolver.o \
-			VCellIDASolver.o \
-			VCellCVodeSolver.o \
-			OdeResultSet.o \
-			StoppedByUserException.o 
-
-$(VCELLIDALIB): $(CPPOBJECTS)
-	ar cru $@ $(CPPOBJECTS)
-	ranlib $@
-				
-clean:
-	rm $(VCELLIDALIB) $(CPPOBJECTS)
-
-depend:
-	makedepend -Y -f Makefile.linux -- $(CFLAGS) -- *.c *.cpp
-	
+include Makefile.base

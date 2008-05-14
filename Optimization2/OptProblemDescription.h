@@ -1,5 +1,5 @@
-#ifndef OptProblemDescription_H
-#define OptProblemDescription_H
+#ifndef OPTPROBLEMDESCRIPTION_H
+#define OPTPROBLEMDESCRIPTION_H
 
 class ConstraintDescription;
 class ParameterDescription;

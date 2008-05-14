@@ -1,10 +1,6 @@
 #ifndef OPTSOLVERCFSQP_H
 #define OPTSOLVERCFSQP_H
 
-#include <string>
-#include <vector>
-using namespace std;
-
 #include "OptSolver2.h"
 
 class OptSolverCFSQP;

@@ -1,5 +1,5 @@
-#ifndef PdeObjectiveFunction_H
-#define PdeObjectiveFunction_H
+#ifndef PDEOBJECTIVEFUNCTION_H
+#define PDEOBJECTIVEFUNCTION_H
 
 #include "ObjectiveFunction.h"
 

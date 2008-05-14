@@ -1,5 +1,5 @@
-#ifndef VFRAPObjectiveFunction_H
-#define VFRAPObjectiveFunction_H
+#ifndef VFRAPOBJECTIVEFUNCTION_H
+#define VFRAPOBJECTIVEFUNCTION_H
 
 #include "ObjectiveFunction.h"
 
