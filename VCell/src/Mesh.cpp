@@ -40,43 +40,32 @@ Mesh::~Mesh()
 
 VolumeElement *Mesh::getVolumeElements() 
 { 
-	if (!pVolumeElement){ 
-		if (!resolveFeatureReferences()){
-			return NULL;
-		} 
-		ASSERTION(pVolumeElement);
+	if (!pVolumeElement) {
+		throw "mesh has not been initialized";
 	}
 	return pVolumeElement; 
 }
 
 long Mesh::getNumVolumeElements() 
 { 
-	if (!pVolumeElement){ 
-		if (!resolveFeatureReferences()){
-			return 0;
-		} 
-		ASSERTION(pVolumeElement);
+	if (!pVolumeElement) {
+		throw "mesh has not been initialized";
 	}
 	return numVolume;
 }
 
 MembraneElement *Mesh::getMembraneElements() 
 { 
-	if (!pMembraneElement){ 
-		if (!resolveFeatureReferences()){
-			return NULL;
-		} 
-		ASSERTION(pMembraneElement);
+	if (!pMembraneElement) {
+		throw "mesh has not been initialized";
 	}
 	return pMembraneElement; 
 }
 
 long Mesh::getNumMembraneElements() 
 { 
-	if (!pMembraneElement){ 
-		if (!resolveFeatureReferences()){
-			return 0;
-		} 
+	if (!pMembraneElement) {
+		throw "mesh has not been initialized";
 	}
 	return numMembrane;
 }

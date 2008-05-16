@@ -19,6 +19,7 @@ public:
 	virtual int getNumObjFuncEvals();
 	virtual double getBestObjectiveFunctionValue();
 	virtual double* getBestParameterValues();
+	void setCheckStopRequested(void (*checkStopRequested)(double, long));
 
 private:
 	//

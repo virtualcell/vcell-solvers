@@ -30,8 +30,6 @@ class SparseMatrixPCG;
 class Mesh
 {
 public:
-	virtual bool resolveFeatureReferences()=0;
-
 	virtual double getVolumeOfElement_cu(long volumeIndex)=0;
 
 	virtual WorldCoord getVolumeWorldCoord(long volumeIndex)=0;
@@ -45,8 +43,8 @@ public:
 									MembraneElement *element)=0;
 
 	virtual void showSummary(FILE *fp) { fprintf(fp, "Mesh::showSummary()...\n"); }
-	virtual bool write(FILE *fp) = 0;
-	virtual bool writeMeshMetrics(FILE* fp) = 0;
+	virtual void write(FILE *fp) = 0;
+	virtual void writeMeshMetrics(FILE* fp) = 0;
 	   
 	VolumeElement *getVolumeElements();
 	long getNumVolumeElements();
@@ -59,7 +57,7 @@ public:
 
 	void addElementToVolumeList(long volumeIndex, ContourElement *element);
 	vector<ContourElement*> getContourElementList(long index){return volumeLists[index];}
-	virtual bool setVolumeLists()=0;
+	virtual void setVolumeLists()=0;
 
 	int getNumContourSubdomains(){return (int)pContourSubdomains.size();}
 	ContourSubdomain *getContourSubdomain(int i); //returns the ith

@@ -10,7 +10,7 @@ TARGET_LIB=	libvcell.a
 TARGET_STANDALONE = FiniteVolume
 
 FC= g77
-FOPTIONS = -c -exceptions -O2
+FOPTIONS = -c -fexceptions -O2
 VCELL_LIBS =  libvcell.a \
 		../../ExpressionParser/libExpParser.a \
 		../../qhull/libqhull.a \
@@ -18,33 +18,29 @@ VCELL_LIBS =  libvcell.a \
 		../../zip/libzip32.a \
 		../../unzip/libunzip32.a \
 		../../PCGPack/libpcgpack.a
-LIBS = -L../../SonicCClient/Linux_AS21/bin/release/ -lsmq \
-		-lblas -lpthread -lm -lg2c
+LIBS = -L../../SonicCClient/Linux_AS21/bin/release/ -lsmq -lblas -lpthread -lm -lg2c
 
 LIBTOOL = ar cru
 
-.SUFFIXES:	.cpp.o.f
+%.o : %.f
+	$(FC) $(FOPTIONS) $<
 
-.f.o :
-		$(FC) $(FOPTIONS) $<
-
-.cpp.o :		
-		$(CC) $(CPPFLAGS) $<
-
+%.o : %.cpp		
+	$(CC) $(CPPFLAGS) $<
 
 CPPOBJECTS = 	\
-	AlgebraicSystem.o					\
-	CartesianMesh.o					     \
-	Contour.o 							\
-	ContourSubdomain.o     				 \
-	ContourVarContext.o					\
+	AlgebraicSystem.o		\
+	CartesianMesh.o		   \
+	Contour.o 				\
+	ContourSubdomain.o  	 \
+	ContourVarContext.o		\
 	ContourVariable.o         \
-	DataSet.o  								 \
+	DataSet.o  				 \
 	EllipticVolumeEqnBuilder.o    \
 	EqnBuilder.o    \
 	EqnBuilderReactionForward.o \
 	FastSystem.o              \
-	FastSystemExpression.o            \
+	FastSystemExpression.o       \
 	Feature.o         \
 	FieldData.o         \
 	FVSolver.o        \
@@ -83,10 +79,10 @@ CPPOBJECTS = 	\
 	VolumeRegion.o                      \
 	VolumeRegionEqnBuilder.o                    \
 	VolumeRegionVarContext.o                    \
-	VolumeRegionVarContextExpression.o                  \
-	VolumeRegionVariable.o                      \
+	VolumeRegionVarContextExpression.o	\
+	VolumeRegionVariable.o	\
 	VolumeVarContext.o                  \
-	VolumeVarContextExpression.o                        \
+	VolumeVarContextExpression.o	\
 	VolumeVariable.o
 
 

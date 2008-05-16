@@ -155,8 +155,7 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 			fflush(stdout);
 			break;
 		case JOB_STARTING:
-			printf(workerEvent->eventMessage);
-			fflush(stdout);
+			cout << workerEvent->eventMessage << endl;
 			break;
 		case JOB_COMPLETED:
 			cerr << "Simulation Complete in Main() ... " << endl;

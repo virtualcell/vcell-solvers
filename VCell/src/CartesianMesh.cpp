@@ -13,6 +13,7 @@
 #include <VCELL/VCellModel.h>
 #include <VCELL/MembraneVariable.h>
 #include <VCELL/VolumeVariable.h>
+
 #include <sstream>
 #include <iomanip>
 using namespace std;
@@ -61,26 +62,17 @@ extern "C"
 #include "zlib.h"
 }
 
-CartesianMesh::CartesianMesh(char* arg_geoFile, double AcaptureNeighborhood)
-: Mesh(AcaptureNeighborhood)
-{
-	geoFile = arg_geoFile;
-	pVolumeRegions.erase(pVolumeRegions.begin(), pVolumeRegions.end());
-	pMembraneRegions.erase(pMembraneRegions.begin(), pMembraneRegions.end());	
-	
-	if (!resolveFeatureReferences()){
-		throw "CartesianMesh::resolveFeatureReferences() failed";
-	}	
+CartesianMesh::CartesianMesh(double AcaptureNeighborhood) : Mesh(AcaptureNeighborhood){
 }
 
-bool CartesianMesh::setVolumeLists()
+void CartesianMesh::setVolumeLists()
 {
-	if(getDimension()==1){
-		return true;
+	if (dimension == 1){
+		return;
 	}
 	if(!getNumContourElements()){
 		cout << "no contour elements exist" << endl;
-		return true;
+		return;
 	}
     
 	double distance =captureNeighborhood;
@@ -146,36 +138,25 @@ bool CartesianMesh::setVolumeLists()
 			}	
 		}
 	}
-
-	return true;
 }
 
-bool CartesianMesh::resolveFeatureReferences()
+void CartesianMesh::initialize(istream& ifs)
 {
-	if (pVolumeElement!=NULL) return true;
+	if (pVolumeElement!=NULL) {
+		return;
+	}
 
-	readGeometryFile();
+	readGeometryFile(ifs);
 	initScale();
 
-	if(!sampleContours()){
-		printf("error in sampling contours\n");
-	}
-	if(!setVolumeLists()){
-		printf("error in setting volumeLists\n");
-	}
+	sampleContours();
+	setVolumeLists();
 	
 	printf("numVolume=%d\n",numVolume);
 
 	setBoundaryConditions();
-
-	if (!findMembraneNeighbors()){
-		printf("error sorting membrane patches\n");
-		return false;
-	}
-
+	findMembraneNeighbors();
 	adjustMembraneAreaFromNormal();
-
-	return true;
 }
 
 unsigned char fromHex(unsigned char* src) {
@@ -190,19 +171,9 @@ unsigned char fromHex(unsigned char* src) {
 	return (unsigned char)v;
 }
 
-void CartesianMesh::readGeometryFile() {
-	if (geoFile == NULL) {
-		throw "Geometry file doesn't exist!";
-	}
-
+void CartesianMesh::readGeometryFile(istream& ifs) {
 	stringstream ss;
-	cout << "Reading mesh from file '" << geoFile << "'" << endl;
 
-	ifstream ifs(geoFile);
-	if (!ifs.is_open()) {
-		ss << "Can't open geometry file '" <<  geoFile << "'";
-		throw ss.str();
-	}
 	char line[100000];
 	string name;
 	// name
@@ -480,7 +451,7 @@ void CartesianMesh::readGeometryFile() {
 	cout << "------------>Total " << numMembrane << ", Flipped " << numFlipped << endl;
 }
 
-bool CartesianMesh::setBoundaryConditions()
+void CartesianMesh::setBoundaryConditions()
 {
 	switch (dimension){
 		case 1:{			
@@ -741,7 +712,6 @@ bool CartesianMesh::setBoundaryConditions()
 			pVolumeElement[volIndex].neighborMask |= ELLIPTIC_PINNED;			
 		}
 	}
-	return true;
 }
 
 VolumeRegion* CartesianMesh::getVolumeRegion(int i){
@@ -818,7 +788,7 @@ void CartesianMesh::showSummary(FILE *fp)
         numX,numY,numZ);
 }
 
-bool CartesianMesh::write(FILE *fp)
+void CartesianMesh::write(FILE *fp)
 {
 	//
 	// 'Version 1.1' added membrane connectivity
@@ -837,12 +807,9 @@ bool CartesianMesh::write(FILE *fp)
 	fprintf(fp,"\n");
 	writeMembraneElements_Connectivity_Region(fp);
 	fprintf(fp,"\n");
-	if(!writeContourElements(fp)){
-		return false;
-	}
+	writeContourElements(fp);
 	//
 	fprintf(fp,"}\n");//End CartesianMesh
-	return true;
 }
 
 void CartesianMesh::writeVolumeRegionsMapSubvolume(FILE *fp)
@@ -928,7 +895,7 @@ void CartesianMesh::writeCartesianMeshHeader(FILE *fp)
 	fprintf(fp,"\tOrigin %10.17lg %10.17lg %10.17lg\n",domainOriginX,domainOriginY,domainOriginZ);
 }
 
-bool CartesianMesh::writeMeshMetrics(FILE *fp)
+void CartesianMesh::writeMeshMetrics(FILE *fp)
 {
 	fprintf(fp,"MembraneElements {\n");
 	fprintf(fp,"%d\n",(int)getNumMembraneElements());
@@ -947,8 +914,7 @@ bool CartesianMesh::writeMeshMetrics(FILE *fp)
 			memEl->unitNormal.y,
 			memEl->unitNormal.z);
 	}
-	fprintf(fp,"}");
-	return true;
+	fprintf(fp,"}");	
 }
 
 
@@ -973,14 +939,14 @@ void CartesianMesh::writeMembraneElements_Connectivity_Region(FILE *fp)
 	fprintf(fp,"    }\n");
 }
 
-bool CartesianMesh::writeContourElements(FILE *fp)
+void CartesianMesh::writeContourElements(FILE *fp)
 {
 	//
 	// write out contour elements (if present)
 	//
 	if (getNumContourElements()>0){
-		fprintf(fp,"    ContourElements {\n");
-		fprintf(fp,"           %d\n",(int)getNumContourElements());
+		fprintf(fp,"\tContourElements {\n");
+		fprintf(fp,"\t\t%d\n",(int)getNumContourElements());
 		//
 		// index volumeIndex begin.x begin.y begin.z  end.x, end.y end.z neighbor(prev) neighbor(next)
 		//
@@ -998,17 +964,17 @@ bool CartesianMesh::writeContourElements(FILE *fp)
 				neighborPrev = i-1;
 				neighborNext = i+1;
 			}else{
-				printf("Error writing contour mesh, contour element(%ld) has an illegal ContourBorder type = %d\n",i,cEl->getBorder());
-				return false;
+				char errMsg[512];
+				sprintf(errMsg, "Error writing contour mesh, contour element(%ld) has an illegal ContourBorder type = %d\n",i,cEl->getBorder());
+				throw errMsg;
 			}
-			fprintf(fp,"           %ld %ld %lg %lg %lg %lg %lg %lg %ld %ld\n",cEl->getElementIndex(),cEl->getVolumeIndex(),
+			fprintf(fp,"\t\t%ld %ld %lg %lg %lg %lg %lg %lg %ld %ld\n",cEl->getElementIndex(),cEl->getVolumeIndex(),
 						cEl->getBegin().x,cEl->getBegin().y,cEl->getBegin().z,
 						cEl->getEnd().x,  cEl->getEnd().y,  cEl->getEnd().z,
 						neighborPrev, neighborNext);
 		}
-		fprintf(fp,"    }\n");  // end ContourElements
+		fprintf(fp,"\t}\n");  // end ContourElements
 	}
-	return true;
 }
 
 
@@ -1476,8 +1442,12 @@ void CartesianMesh::adjustMembraneAreaFromNormal(){
 	}
 }
 
-bool CartesianMesh::findMembraneNeighbors()
+void CartesianMesh::findMembraneNeighbors()
 {
+	if (dimension == 1) {
+		return;
+	}
+
 	long mecount = getNumMembraneElements();
 	long mex = getNumVolumeX();
 	long mey = getNumVolumeY();
@@ -1537,10 +1507,7 @@ bool CartesianMesh::findMembraneNeighbors()
 				meptr[meloop].neighborMEIndex[3] = orthoIndex(iinloop,oinloop,1,NEIGHBOR_XP_BOUNDARY);
 			}
 		}
-		else return true;
-
 	}
-	return true;
 }
 
 int CartesianMesh::getMembraneNeighborMask(long meindex) {

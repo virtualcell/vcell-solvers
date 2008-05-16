@@ -14,7 +14,7 @@ class OdeObjectiveFunction : public ObjectiveFunction {
 public:
 	OdeObjectiveFunction(ParameterDescription* parameterDescription, 
 		OdeResultSet* arg_referenceData, 
-		vector<string> refColumnMappingExpressions, 
+		vector<string>& refColumnMappingExpressions, 
 		const char* arg_inputChars,
 		void (*checkStopRequested)(double, long));
 
@@ -25,6 +25,7 @@ public:
 	virtual double getBestObjectiveFunctionValue();
 	virtual double* getBestParameterValues();
 	OdeResultSet* OdeObjectiveFunction::getBestResultSet();
+	void setCheckStopRequested(void (*checkStopRequested)(double, long));
 
 private:
 	VCellSundialsSolver* sundialsSolver;

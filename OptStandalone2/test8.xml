@@ -40,7 +40,7 @@ MESH_END
 
 # Variables : type name unit time_dependent_flag advection_flag solve_regions
 VARIABLE_BEGIN
-VOLUME_PDE calcium uM false false
+VOLUME_PDE calcium uM false false true
 VARIABLE_END
 
 PARAMETER_BEGIN 3
@@ -68,20 +68,6 @@ EQUATION_END
 COMPARTMENT_END
 ]]>
       </model>
-      <mesh type="vcg">
-<![CDATA[
-name abc
-dimension 1
-size 10.0
-origin 0.0
-volumeRegions 1
-cytosol0 10.0 0
-membraneRegions 0
-volumeSamples 10
-789C6360C0040000140001
-cells 0
-]]>
-      </mesh>
       <data>
          <variable type="independent" name="t" dim="1"/>
          <variable type="dependent" name="calcium" dim="10"/>

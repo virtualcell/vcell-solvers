@@ -70,6 +70,7 @@ JNIEXPORT jstring JNICALL Java_org_vcell_optimization_NativeOptSolver_nativeSolv
 		OptSolverCFSQP* cfsqpOptSolver = new OptSolverCFSQP(optProblemDescription);
 		JavaOptSolver2Listener* listener = new JavaOptSolver2Listener();
 		cfsqpOptSolver->addListener(listener);
+		cfsqpOptSolver->setCheckStopRequested(checkStopRequested_NativeOptSolver2);
 		OptResultSet* optResultSet = 0;
 
 #ifdef JNI_DEBUG

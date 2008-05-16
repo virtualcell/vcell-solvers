@@ -167,7 +167,8 @@ refData->show();
 "\n"
 "\n";
 
-	char* columnExpressions[200] = {"calcium"};
+	vector<string> columnExpressions;
+	columnExpressions.push_back("calcium");
 	ParameterDescription* paramDesc = new SimpleParameterDescription(numParams, paramNames, lb, ub, init, scales);
 	PdeObjectiveFunction* pdeObjFunc = new PdeObjectiveFunction(paramDesc,refData,columnExpressions,(char*)input.c_str(),checkStopRequested_PDE);
 	ConstraintDescription* constraintDesc = new ExplicitConstraintDescription(std::vector<Constraint*>(),paramDesc->getSymbolTable());
@@ -314,7 +315,8 @@ OptProblemDescription* createExactPdeNoDiffusion() {
 "MEMBRANE_END\n"
 "\n";
 
-	char* columnExpressions[200] = {"calcium"};
+	vector<string> columnExpressions;
+	columnExpressions.push_back("calcium");
 	ParameterDescription* paramDesc = new SimpleParameterDescription(numParams, paramNames, lb, ub, init, scales);
 	PdeObjectiveFunction* pdeObjFunc = new PdeObjectiveFunction(paramDesc,refData,columnExpressions,(char*)input.c_str(),checkStopRequested_PDE);
 	ConstraintDescription* constraintDesc = new ExplicitConstraintDescription(std::vector<Constraint*>(),paramDesc->getSymbolTable());

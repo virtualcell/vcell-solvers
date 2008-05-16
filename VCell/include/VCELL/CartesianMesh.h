@@ -5,15 +5,14 @@
 #ifndef CARTESIANMESH_H
 #define CARTESIANMESH_H
 
-#include <VCELL/Element.h>
-#include <VCELL/Contour.h>
-#include <VCELL/ContourSubdomain.h>
 #include <vector>
 #include <iostream>
-#include <fstream>
 #include <map>
 using namespace std;
 
+#include <VCELL/Element.h>
+#include <VCELL/Contour.h>
+#include <VCELL/ContourSubdomain.h>
 #include <VCELL/Mesh.h>
 #include <VCELL/SparseMatrixPCG.h>
 #include <VCELL/IncidenceMatrix.h>
@@ -33,7 +32,8 @@ enum BoundaryLocation {BL_Xm = 0, BL_Xp, BL_Ym, BL_Yp, BL_Zm, BL_Zp};
 class CartesianMesh : public Mesh
 {
 public:	   
-	CartesianMesh(char* arg_geoFile, double captureNeighborhood=0);	
+	CartesianMesh(double captureNeighborhood=0);	
+	void initialize(istream& ifs);
 	 
 	virtual WorldCoord getVolumeWorldCoord(long volumeIndex);
 	virtual WorldCoord getMembraneWorldCoord(long membraneIndex);
@@ -48,8 +48,8 @@ public:
 	virtual double getVolumeOfElement_cu(long volumeIndex);
 
 	virtual void showSummary(FILE *fp);
-	virtual bool write(FILE *fp);
-	virtual bool writeMeshMetrics(FILE* fp);
+	virtual void write(FILE *fp);
+	virtual void writeMeshMetrics(FILE* fp);
 
 	inline double getDomainSizeX() { return domainSizeX; }
 	inline double getDomainSizeY() { return domainSizeY; }
@@ -82,18 +82,15 @@ public:
 	int getMembraneNeighborMask(MembraneElement* element);
 	double* getMembraneFluxArea(long index);
 
-protected:
-	char* geoFile;
-
-	bool resolveFeatureReferences();	
-	bool setVolumeLists();
-	void readGeometryFile();
-	bool setBoundaryConditions();
+private:	
+	void setVolumeLists();
+	void readGeometryFile(istream& ifs);
+	void setBoundaryConditions();
 
 	void initScale();
 
 	long getIndex(MeshCoord);
-	bool findMembraneNeighbors();
+	void findMembraneNeighbors();
 	long orthoIndex(long insideIndex, long outsideIndex, long indexer, int boundMask);
 	long getNeighbor(int n,  long index, int neighbor);
 
@@ -124,7 +121,7 @@ protected:
 	void writeVolumeElementsMapVolumeRegion(FILE *fp);
 	void writeMembraneRegionMapVolumeRegion(FILE *fp);
 	void writeMembraneElements_Connectivity_Region(FILE *fp);
-	bool writeContourElements(FILE *fp);
+	void writeContourElements(FILE *fp);
 
 	vector<VolumeRegion*>   pVolumeRegions;
 	vector<MembraneRegion*> pMembraneRegions;	

@@ -23,10 +23,10 @@ CPPOBJECTS = Constraint.obj \
 		OptSolverCFSQP.obj	\
 		OptXmlReader2.obj	\
 		OptXmlWriter2.obj	\
-		PdeObjectiveFunction.obj	\
+#		PdeObjectiveFunction.obj	\
 		SimpleParameterDescription.obj	\
 		SpatialReferenceData.obj	\
-		VFRAPObjectiveFunction.obj
+#		VFRAPObjectiveFunction.obj
     
 $(LIB_TARGET) : $(OBJDIR) $(CPPOBJECTS)
 	$(LIBTOOL) /out:$@ $(CPPOBJECTS)

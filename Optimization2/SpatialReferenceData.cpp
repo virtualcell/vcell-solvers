@@ -1,6 +1,7 @@
 #include "SpatialReferenceData.h"
 #include <assert.h>
 
+#include <sstream>
 #include <iostream>
 using namespace std;
 
@@ -41,6 +42,21 @@ int SpatialReferenceData::getNumTimePoints(){
 
 double SpatialReferenceData::getTimePoint(int index){
 	return timePointList.at(index);
+}
+
+int SpatialReferenceData::findVariable(string& varName) {
+	for (int i = 0; i < (int)variableList.size(); i ++) {
+		if (variableList[i] == varName) {
+			return i;
+		}
+	}
+	stringstream ss;
+	ss << "SpatialReferenceData::findVariable() : no variable [" << varName  << "] found in data";
+	throw ss.str();
+}
+
+void SpatialReferenceData::setWeights(double* w) {
+	weights = w;
 }
 
 void SpatialReferenceData::show(){

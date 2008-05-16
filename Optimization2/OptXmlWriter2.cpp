@@ -5,7 +5,6 @@ using namespace std;
 #include "OptXmlWriter2.h"
 #include "OptXml.h"
 #include "OptProblemDescription.h"
-#include "OptSolver.h"
 #include "OptResultSet.h"
 #include "ObjectiveFunction.h"
 #include "ExplicitObjectiveFunction.h"
@@ -15,8 +14,8 @@ using namespace std;
 #include "PdeObjectiveFunction.h"
 #include "OdeResultSet.h"
 #include "Constraint.h"
-#include "Expression.h"
-#include "tinyxml.h"
+#include <Expression.h>
+#include <tinyxml.h>
 
 OptXmlWriter2::OptXmlWriter2(){
 }

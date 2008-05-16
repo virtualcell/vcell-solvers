@@ -2,6 +2,8 @@
 #define PDEOBJECTIVEFUNCTION_H
 
 #include "ObjectiveFunction.h"
+#include <vector>
+using namespace std;
 
 class SpatialReferenceData;
 class ParameterDescription;
@@ -11,8 +13,8 @@ class PdeObjectiveFunction : public ObjectiveFunction {
 public:
 	PdeObjectiveFunction(ParameterDescription *parameterDescription,
 		SpatialReferenceData* refData,
-		char** refColumnMappingExpressions, 
-		char* inputChars, 
+		vector<string>& refColumnMappingExpressions, 
+		const char* inputChars, 
 		void (*checkStopRequested)(double, long));
 	~PdeObjectiveFunction();
 
@@ -20,6 +22,7 @@ public:
 	virtual int getNumObjFuncEvals();
 	virtual double getBestObjectiveFunctionValue();
 	virtual double* getBestParameterValues();
+	void setCheckStopRequested(void (*checkStopRequested)(double, long));
 
 private:
 	//

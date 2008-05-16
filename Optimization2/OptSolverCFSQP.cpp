@@ -210,6 +210,10 @@ OptResultSet* OptSolverCFSQP::solve(){
 void OptSolverCFSQP::stop(){
 }
 
+void OptSolverCFSQP::setCheckStopRequested(void (*checkStopRequested)(double, long)) {
+	getOptProblemDescription()->getObjectiveFunction()->setCheckStopRequested(checkStopRequested);
+}
+
 void OptSolverCFSQP::obj(int nparam, double *x, double *pobj){
 	ObjectiveFunction* objFunc = getOptProblemDescription()->getObjectiveFunction();
 	objFunc->objective(nparam,x,pobj);	

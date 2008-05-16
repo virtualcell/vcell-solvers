@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\tinyxml;..\VCell\include\;..\sundials\src;..\sundials\include;..\fsqp;..\IDAWin;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;INCLUDE_PDE_OPT"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -312,10 +312,6 @@
 			</File>
 			<File
 				RelativePath=".\OptResultSet.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\OptSolver.cpp"
 				>
 			</File>
 			<File

@@ -7,11 +7,15 @@ class ConstraintDescription;
 class ParameterDescription;
 class ExplicitObjectiveFunction;
 class OdeObjectiveFunction;
-class PdeObjectiveFunction;
 class TiXmlElement;
 class SymbolTable;
 class OdeResultSet;
 class OptSolverResultSet;
+
+#ifdef INCLUDE_PDE_OPT
+class PdeObjectiveFunction;
+class SpatialReferenceData;
+#endif
 
 class OptXmlReader2
 {
@@ -21,15 +25,23 @@ public:
 	OptProblemDescription* readOptProblemDescription(const char* xmlFile);
 	OptSolverResultSet* parseOptSolverResultSet(const char* xmlText);
 	OptSolverResultSet* readOptSolverResultSet(const char* xmlFile);
+
 private:
-	OptProblemDescription* parseOptProblemDescription(TiXmlElement* rootNode);
-	ObjectiveFunction* parseObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);
-	ExplicitObjectiveFunction* parseExplicitObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);
-	OdeObjectiveFunction* parseOdeObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);
-	PdeObjectiveFunction* parsePdeObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);
 	ParameterDescription* parseParameterDescription(TiXmlElement* parmDescNode);
+	OptProblemDescription* parseOptProblemDescription(TiXmlElement* rootNode);
 	ConstraintDescription* parseConstraintDescription(TiXmlElement* constDescNode, SymbolTable* symbolTable);
+	ObjectiveFunction* parseObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);
+
+	ExplicitObjectiveFunction* parseExplicitObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);	
+
+	OdeObjectiveFunction* parseOdeObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);	
 	OdeResultSet* parseOdeResultSet(TiXmlElement* dataNode);
+
+#ifdef INCLUDE_PDE_OPT
+	SpatialReferenceData* parsePdeResultSet(TiXmlElement* dataNode);
+	PdeObjectiveFunction* parsePdeObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);
+#endif
+
 	OptSolverResultSet* parseOptSolverResultSet(TiXmlElement* dataNode);
 };
 

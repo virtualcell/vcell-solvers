@@ -20,7 +20,7 @@ using namespace std;
 OdeObjectiveFunction::OdeObjectiveFunction(
 	ParameterDescription* arg_parameterDescription,
 	OdeResultSet* arg_referenceData, 
-	vector<string> modelMappingExpressions, 
+	vector<string>& modelMappingExpressions, 
 	const char* arg_inputChars,
 	void (*checkStopRequested)(double, long))
 {
@@ -183,3 +183,7 @@ double* OdeObjectiveFunction::getBestParameterValues()
 { 
 	return bestParameterValues; 
 } 
+
+void OdeObjectiveFunction::setCheckStopRequested(void (*checkStopRequested)(double, long)) {
+	fn_checkStopRequested = checkStopRequested;
+}

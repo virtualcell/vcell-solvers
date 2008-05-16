@@ -14,6 +14,8 @@ private:
 	vector<string> variableList;
 	vector<double> timePointList;
 	vector<double**> dataList;
+	double* weights;
+
 	int dataSize;
 	int currentTimeIndex;
 	int currentVarIndex;
@@ -24,6 +26,7 @@ public:
 
 	int getNumVariables() { return (int)variableList.size(); }
 	string& getVariable(int index) { return variableList.at(index); }
+	int findVariable(string& varName);
 
 	int getNumTimePoints();
 	double getTimePoint(int index);
@@ -35,6 +38,7 @@ public:
 	void addTimePoint(double time);
 	void addVariableData(int varIndex, double* data);
 
+	void setWeights(double* w);
 	void show();
 };
 

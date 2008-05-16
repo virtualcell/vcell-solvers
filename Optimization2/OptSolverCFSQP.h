@@ -15,7 +15,7 @@ public:
 	OptResultSet* solve();
 	void stop();
 	void setPrintMode(int newIprint) { iprint = newIprint; }
-
+	void setCheckStopRequested(void (*checkStopRequested)(double, long));
 
 protected:
 	void obj(int nparam, double *x, double *pobj);

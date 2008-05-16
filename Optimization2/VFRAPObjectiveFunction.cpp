@@ -145,3 +145,7 @@ double* VFRAPObjectiveFunction::getBestParameterValues()
 {
 	return bestParameterValues;
 }
+
+void VFRAPObjectiveFunction::setCheckStopRequested(void (*checkStopRequested)(double, long)) {
+	fn_checkStopRequested = checkStopRequested;
+}

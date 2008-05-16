@@ -99,22 +99,22 @@ OdeOptJob* OptXmlReader::parseOdeOptJob(TiXmlElement* rootNode){
 		}
 		constraintNode = constDescNode->NextSiblingElement(Constraint_Tag);
 	}
-	int numNonlinInequ = constraintExpsNI.size();
-	int numLinInequ = constraintExpsLI.size();
-	int numNonlinEqu = constraintExpsNE.size();
-	int numLinEqu = constraintExpsLE.size();
+	int numNonlinInequ = (int)constraintExpsNI.size();
+	int numLinInequ = (int)constraintExpsLI.size();
+	int numNonlinEqu = (int)constraintExpsNE.size();
+	int numLinEqu = (int)constraintExpsLE.size();
 	int numConstraints = numNonlinEqu+numLinEqu+numNonlinInequ+numLinInequ;
 	char** constraintExps = new char*[numConstraints];
-	for (int i=0;i<constraintExpsNI.size();i++){
+	for (int i=0;i<(int)constraintExpsNI.size();i++){
 		constraintExps[i] = constraintExpsNI[i];
 	}
-	for (int i=0;i<constraintExpsLI.size();i++){
+	for (int i=0;i<(int)constraintExpsLI.size();i++){
 		constraintExps[i] = constraintExpsLI[i];
 	}
-	for (int i=0;i<constraintExpsNE.size();i++){
+	for (int i=0;i<(int)constraintExpsNE.size();i++){
 		constraintExps[i] = constraintExpsNE[i];
 	}
-	for (int i=0;i<constraintExpsLE.size();i++){
+	for (int i=0;i<(int)constraintExpsLE.size();i++){
 		constraintExps[i] = constraintExpsLE[i];
 	}
 	//

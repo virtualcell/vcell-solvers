@@ -821,8 +821,9 @@ void FVSolver::loadMesh(istream& ifsInput) {
 		throw "Model has to be initialized before mesh initialization";
 	}
 
-	string meshfile;	
-	string nextToken;	
+	string meshfile = "";
+	string nextToken;
+	string vcgText = "";
 
 	while (!ifsInput.eof()) {			
 		nextToken = "";
@@ -843,15 +844,39 @@ void FVSolver::loadMesh(istream& ifsInput) {
 				ss << "Mesh file(.vcg) [" << meshfile <<"] doesn't exist";
 				throw ss.str();
 			}
-		} else {
-			stringstream ss;
-			ss << "loadMesh(), encountered unknown token " << nextToken << endl;
-			throw ss.str();
+		} else { // VCG In file
+			vcgText += nextToken;
+			while (true) {
+				getline(ifsInput, nextToken);
+				if (nextToken.find("MESH_END") != string::npos) {
+					break;
+				}
+				vcgText += nextToken + "\n";
+			}
+			break;
 		}
 	}
 
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "initializing mesh"));
-	mesh = new CartesianMesh((char*)meshfile.c_str());
+	mesh = new CartesianMesh();
+	if (meshfile.size() != 0) {
+		ifstream ifs(meshfile.c_str());
+		if (!ifs.is_open()){
+			stringstream ss;
+			ss << "Can't open geometry file '" <<  meshfile << "'";
+			throw ss.str();
+		}
+		cout << "Reading mesh from vcg file '" << meshfile << "'" << endl;
+		mesh->initialize(ifs);
+	} else {
+		if (vcgText.size() == 0) {
+			throw "no mesh specified";
+		}		
+		cout << "Reading mesh from text..." << endl;
+		cout << vcgText << endl;
+		istringstream iss(vcgText);
+		mesh->initialize(iss);
+	}
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "mesh initialized"));
 }
 

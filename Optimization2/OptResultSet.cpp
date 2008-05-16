@@ -1,16 +1,11 @@
 // OptSolverLibrary.cpp : Defines the entry point for the application.
 //
 #include <iostream>
-#include <stdio.h>
 using namespace std;
-#include "OptSolver.h"
+
+
 #include "OptResultSet.h"
 
-//================================================
-//
-// class OptResultSet
-//
-//================================================
 OptResultSet::OptResultSet() {
 }
 

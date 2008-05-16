@@ -13,8 +13,9 @@ using namespace std;
 #include "PdeObjectiveFunction.h"
 #include "OdeResultSet.h"
 #include "Constraint.h"
-#include "Expression.h"
-#include "tinyxml.h"
+#include <Expression.h>
+#include <tinyxml.h>
+#include "SpatialReferenceData.h"
 #include <float.h>
 
 OptXmlReader2::OptXmlReader2(){
@@ -115,7 +116,11 @@ ObjectiveFunction* OptXmlReader2::parseObjectiveFunction(TiXmlElement* objFuncNo
 	if (strcmp(objFuncTypeStr, ObjectiveFunctionType_Attr_Explicit)==0){
 		return parseExplicitObjectiveFunction(objFuncNode,paramDesc);
 	}else if (strcmp(objFuncTypeStr, ObjectiveFunctionType_Attr_PDE)==0){
+#ifdef INCLUDE_PDE_OPT
 		return parsePdeObjectiveFunction(objFuncNode,paramDesc);
+#else
+		throw "Pde Optimization not supported.";
+#endif
 	}else if (strcmp(objFuncTypeStr,ObjectiveFunctionType_Attr_ODE)==0){
 		return parseOdeObjectiveFunction(objFuncNode,paramDesc);
 	}else{
@@ -133,10 +138,6 @@ ExplicitObjectiveFunction* OptXmlReader2::parseExplicitObjectiveFunction(TiXmlEl
 	void (*checkStopRequested)(double, long) = 0;
 	ExplicitObjectiveFunction* objFunc = new ExplicitObjectiveFunction(exp,paramDesc,paramDesc->getSymbolTable(),checkStopRequested);
 	return objFunc;
-}
-
-PdeObjectiveFunction* OptXmlReader2::parsePdeObjectiveFunction(TiXmlElement* objFuncNode, ParameterDescription* paramDesc){
-	throw "parsing PdeObjectiveFunction not yet supported";
 }
 
 OdeObjectiveFunction* OptXmlReader2::parseOdeObjectiveFunction(TiXmlElement* objFuncNode, ParameterDescription* paramDesc){
@@ -158,7 +159,6 @@ OdeObjectiveFunction* OptXmlReader2::parseOdeObjectiveFunction(TiXmlElement* obj
 	double* weights = new double[numColumns];
 	memset(weights,0,numColumns*sizeof(double));
 
-	void (*checkStopRequested)(double, long) = 0;
 	//
 	// parse modelMappings into expression strings
 	//
@@ -173,48 +173,148 @@ OdeObjectiveFunction* OptXmlReader2::parseOdeObjectiveFunction(TiXmlElement* obj
 	}
 	refData->setColumnWeights(weights);
 
-	OdeObjectiveFunction* odeObjectiveFunction = new OdeObjectiveFunction(paramDesc,refData,modelMappingExpressions,solverInput,checkStopRequested);
+	OdeObjectiveFunction* odeObjectiveFunction = new OdeObjectiveFunction(paramDesc,refData,modelMappingExpressions,solverInput, 0);
 	return odeObjectiveFunction;
 }
 
 OdeResultSet* OptXmlReader2::parseOdeResultSet(TiXmlElement* dataNode){
 	OdeResultSet* refData = new OdeResultSet();
-	vector<string> varNames;
-	vector<string> varTypes;
-	vector<int> varDims;
+	string varName;
+	string varType;
+	int varDim;
+
+	bool bFirst = true;
 	TiXmlElement* variableNode = dataNode->FirstChildElement(Variable_Tag);
 	while (variableNode!=0){
-		varNames.push_back(variableNode->Attribute(VariableName_Attr));
-		varTypes.push_back(variableNode->Attribute(VariableType_Attr));
-		varDims.push_back(atoi(variableNode->Attribute(VariableDimension_Attr)));
-		variableNode = variableNode->NextSiblingElement(Variable_Tag);
-	}
-	// make sure 1st is independent, rest are dependent, and all are dim=1
-	for (int i = 0; i < (int)varNames.size(); i ++){
-		if (varDims[i]!=1){
-			throw "unexpected data variable dimension != 1";
+		varName = variableNode->Attribute(VariableName_Attr);
+		varType = variableNode->Attribute(VariableType_Attr);
+		varDim = atoi(variableNode->Attribute(VariableDimension_Attr));
+
+		// make sure 1st is independent, rest are dependent, and all are dim=1
+		if (varDim != 1){
+			throw "unexpected ode data variable dimension != 1";
 		}
-		if (i==0){
-			if (varTypes[i] != VariableType_Attr_Independent){
+		if (bFirst){ // t column
+			if (varType != VariableType_Attr_Independent){
 				throw "expected first data variable to be independent";
 			}
-		}else{
-			if (varTypes[i] != VariableType_Attr_Dependent){
+		} else {
+			if (varType != VariableType_Attr_Dependent) {
 				throw "expected remaining data variables to be dependent";
 			}
-		}
-		refData->addColumn(varNames[i]);
+		}		
+		refData->addColumn(varName);
+		bFirst = false;
+		variableNode = variableNode->NextSiblingElement(Variable_Tag);
 	}
+	
 	TiXmlElement* rowNode = dataNode->FirstChildElement(Row_Tag);
+	double* rowData = new double[refData->getNumColumns()];
 	while (rowNode!=0){
 		const char* dataText = rowNode->GetText();
-		stringstream ss(dataText);
-		double* rowData = new double[varNames.size()];
-		for (int i = 0; i < (int)varNames.size(); i ++){
+		stringstream ss(dataText);		
+		for (int i = 0; i < refData->getNumColumns(); i ++){
 			ss >> rowData[i];
 		}
 		refData->addRow(rowData);
 		rowNode = rowNode->NextSiblingElement(Row_Tag);
 	}
+	delete[] rowData;
 	return refData;
 }
+
+#ifdef INCLUDE_PDE_OPT
+PdeObjectiveFunction* OptXmlReader2::parsePdeObjectiveFunction(TiXmlElement* objFuncNode, ParameterDescription* paramDesc){	
+	//
+	// get model (fvInput text)
+	//
+	TiXmlElement* modelNode = objFuncNode->FirstChildElement(Model_Tag);
+	string modelType(modelNode->Attribute(ModelType_Attr));
+	if (modelType!=ModelType_Attr_FVSOLVER){
+		throw "unexpected model type, expecting fvSolver";
+	}
+	const char* solverInput = modelNode->GetText();
+	//
+	// get data set as OdeResultSet
+	//
+	TiXmlElement* dataNode = objFuncNode->FirstChildElement(Data_Tag);
+	SpatialReferenceData* refData = parsePdeResultSet(dataNode);
+	int numColumns = refData->getNumVariables();
+	double* weights = new double[numColumns];
+	memset(weights,0,numColumns*sizeof(double));
+
+	//
+	// parse modelMappings into expression strings
+	//
+	vector<string> modelMappingExpressions;
+	TiXmlElement* modelMappingNode = objFuncNode->FirstChildElement(ModelMapping_Tag);
+	while(modelMappingNode!=0){
+		modelMappingExpressions.push_back(string(modelMappingNode->GetText()));
+		const char* dataColumnName = modelMappingNode->Attribute(ModelMappingDataColumn_Attr);
+		int refVariableIndex = refData->findVariable(string(dataColumnName));
+		weights[refVariableIndex] = atof(modelMappingNode->Attribute(ModelMappingWeight_Attr));
+		modelMappingNode = modelMappingNode->NextSiblingElement(ModelMapping_Tag);
+	}
+	refData->setWeights(weights);
+
+	PdeObjectiveFunction* pdeObjectiveFunction = new PdeObjectiveFunction(paramDesc,refData,modelMappingExpressions,solverInput,0);
+	return pdeObjectiveFunction;	
+}
+
+SpatialReferenceData* OptXmlReader2::parsePdeResultSet(TiXmlElement* dataNode){
+	SpatialReferenceData* refData = 0;
+	string varName;
+	string varType;
+	int varDim;
+	bool bFirst = true;
+
+	TiXmlElement* variableNode = dataNode->FirstChildElement(Variable_Tag);
+	while (variableNode!=0){
+		varName = variableNode->Attribute(VariableName_Attr);
+		varType = variableNode->Attribute(VariableType_Attr);
+		varDim = atoi(variableNode->Attribute(VariableDimension_Attr));
+
+		// make sure 1st is independent, rest are dependent
+		if (bFirst){
+			if (varType != VariableType_Attr_Independent){
+				throw "expected first data variable to be independent";
+			}
+		} else {
+			if (varType != VariableType_Attr_Dependent) {
+				throw "expected remaining data variables to be dependent";
+			}
+		}
+
+		if (!bFirst) { // don't add t
+			if (refData == 0) {
+				refData = new SpatialReferenceData(varDim);
+			} else {
+				if (varDim != refData->getDataSize()) {
+					throw "SpatialReferenceData: all the variable must have same data size";
+				}
+			}		
+			refData->addVariable(varName);
+		}
+		bFirst = false;
+		variableNode = variableNode->NextSiblingElement(Variable_Tag);
+	}
+
+	TiXmlElement* rowNode = dataNode->FirstChildElement(Row_Tag);
+	while (rowNode!=0){
+		const char* dataText = rowNode->GetText();
+		stringstream ss(dataText);
+		double timePoint;		
+		ss >> timePoint;
+		for (int i = 0; i < refData->getNumVariables(); i ++){
+			double* rowData = new double[refData->getDataSize()];
+			for (int j = 0; j < refData->getDataSize(); j ++) {
+				ss >> rowData[j];
+			}
+			refData->addTimePoint(timePoint);
+			refData->addVariableData(i, rowData);
+		}		
+		rowNode = rowNode->NextSiblingElement(Row_Tag);
+	}
+	return refData;
+}
+#endif

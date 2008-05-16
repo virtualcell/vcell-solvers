@@ -64,3 +64,7 @@ double* ExplicitObjectiveFunction::getBestParameterValues()
 { 
 	return bestParameterValues; 
 } 
+
+void ExplicitObjectiveFunction::setCheckStopRequested(void (*checkStopRequested)(double, long)) {
+	fn_checkStopRequested = checkStopRequested;
+}

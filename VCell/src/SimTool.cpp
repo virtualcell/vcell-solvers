@@ -469,25 +469,22 @@ void SimTool::start()
 			char filename[128];
 			sprintf(filename, "%s%s", baseFileName, MESH_FILE_EXT);
 			if ((fp=fopen(filename,"w"))==NULL){
-				printf("cannot open mesh file %s\n", filename);
-				exit(1);
+				char errMsg[256];
+				sprintf(errMsg, "cannot open mesh file %s for writing", filename);
+				throw errMsg;
 			}
-			if (!simulation->getMesh()->write(fp)){
-				printf("error writing mesh file %s\n", filename);
-				exit(1);
-			}
+			simulation->getMesh()->write(fp);
 			fclose(fp);
 			
 			sprintf(filename, "%s%s", baseFileName, MESHMETRICS_FILE_EXT);
 			if ((fp=fopen(filename,"w"))==NULL){
-				printf("cannot open mesh file %s\n", filename);
-				exit(1);
+				char errMsg[256];
+				sprintf(errMsg, "cannot open mesh metrics file %s for writing", filename);
+				throw errMsg;
 			}
-			if (!simulation->getMesh()->writeMeshMetrics(fp)){
-				printf("error writing mesh file %s\n", filename);
-				exit(1);
-			}
+			simulation->getMesh()->writeMeshMetrics(fp);
 			fclose(fp);
+
 			updateLog(0.0, 0.0, 0);		
 		} else {
 			// simulation continues from existing results, send data message

@@ -219,6 +219,10 @@
 				RelativePath=".\test7.xml"
 				>
 			</File>
+			<File
+				RelativePath=".\test8.xml"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

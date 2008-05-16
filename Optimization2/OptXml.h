@@ -12,6 +12,7 @@ static const char* Model_Tag = "model";
 static const char* ModelType_Attr = "modelType";
 static const char* ModelType_Attr_IDA = "ida";
 static const char* ModelType_Attr_CVODE = "cvode";
+static const char* ModelType_Attr_FVSOLVER = "fvSolver";
 static const char* Data_Tag = "data";
 static const char* Variable_Tag = "variable";
 static const char* VariableType_Attr = "type";

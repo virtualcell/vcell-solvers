@@ -12,8 +12,8 @@ using namespace std;
 
 PdeObjectiveFunction::PdeObjectiveFunction(ParameterDescription *arg_parameterDescription,
 	SpatialReferenceData* arg_referenceData,
-	char** arg_refColumnMappingExpressions, 
-	char* arg_inputChars, 
+	vector<string>& arg_refColumnMappingExpressions, 
+	const char* arg_inputChars, 
 	void (*arg_checkStopRequested)(double, long))
 {
 	istringstream inputStream(arg_inputChars);
@@ -136,4 +136,8 @@ double PdeObjectiveFunction::getBestObjectiveFunctionValue()
 double* PdeObjectiveFunction::getBestParameterValues()
 {
 	return bestParameterValues;
+}
+
+void PdeObjectiveFunction::setCheckStopRequested(void (*checkStopRequested)(double, long)) {
+	fn_checkStopRequested = checkStopRequested;
 }
