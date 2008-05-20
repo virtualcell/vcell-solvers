@@ -60,10 +60,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="cfsqp.lib tinyxml.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib sundials_ida.lib"
-				OutputFile="$(OutDir)/JavaBinding.dll"
+				AdditionalDependencies="tinyxml.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib sundials_ida.lib Ws2_32.lib pcgwrapper.lib pcgpack_dbl.lib qhulld.lib mkl_c.lib zip32.lib unzip32.lib cfsqp.lib zlib.lib"
+				OutputFile="$(OutDir)/$(ProjectName).dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\fsqp;..\tinyxml;..\sundials\lib"
+				AdditionalLibraryDirectories="..\zip;..\IFortran;..\fsqp;..\qhull;..\PCGPack;..\VCell\src;..\zlib;..\unzip;..\tinyxml;..\sundials\lib\"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/JavaBinding.pdb"
 				SubSystem="1"

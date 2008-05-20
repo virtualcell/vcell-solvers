@@ -130,7 +130,7 @@ OptResultSet* OptSolverCFSQP::solve(){
 			}
 			case FAILED_ITERATES_STALLED: {
 				status = failedIteratesStalled;
-				statusMessage = "New iterate is numerically equivalent to the previous iterate, through stopping criterion is not yet satisfied.  Relaxing the stopping criterion should solve this problem.";
+				statusMessage = "New iterate is numerically equivalent to the previous iterate, though stopping criterion is not yet satisfied.  Relaxing the stopping criterion should solve this problem.";
 				break;
 			}
 			case FAILED_PENALTY_TOO_LARGE: {

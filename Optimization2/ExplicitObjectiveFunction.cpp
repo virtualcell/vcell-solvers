@@ -42,11 +42,13 @@ void ExplicitObjectiveFunction::objective(int nparams, double* x, double* f)
 		memcpy(bestParameterValues,unscaled_x,nparams*sizeof(double));
 		bestObjectiveFunctionValue = *f;
 	}
-	std::cout << "objective[" << numObjFuncEvals << "]=" << *f << " best=" << bestObjectiveFunctionValue << " p=[";
+#ifdef JNI_DEBUG
+	cout << "objective[" << numObjFuncEvals << "]=" << *f << " best=" << bestObjectiveFunctionValue << " p=[";
 	for (int i=0;i<nparams;i++){
-		std::cout << unscaled_x[i] << " "; 
+		cout << unscaled_x[i] << " "; 
 	}
-	std::cout << "]" << std::endl;
+	cout << "]" << std::endl;
+#endif
 }
 
 

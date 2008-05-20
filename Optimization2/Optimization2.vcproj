@@ -295,6 +295,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ExplicitFitObjectiveFunction.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\ExplicitObjectiveFunction.cpp"
 				>
 			</File>
@@ -362,6 +366,10 @@
 			</File>
 			<File
 				RelativePath=".\ExplicitConstraintDescription.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ExplicitFitObjectiveFunction.h"
 				>
 			</File>
 			<File

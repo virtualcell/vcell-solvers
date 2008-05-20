@@ -887,7 +887,7 @@ void FVSolver::loadFieldData(istream& ifsInput) {
 
 	string nextToken;
 	int fdIndex;
-	string fdID, fdName, fdVarName, fdFile;
+	string fdVarType, fdID, fdName, fdVarName, fdFile;
 	double fdTime;
 
 	while (!ifsInput.eof()) {			
@@ -905,11 +905,19 @@ void FVSolver::loadFieldData(istream& ifsInput) {
 			stringstream ss(nextToken);
 			ss >> fdIndex;
 			fdTime = -1;
-			ifsInput >> fdID >> fdName >> fdVarName >> fdTime >> fdFile;
-			if (fdID == "" || fdName == "" || fdVarName == "" || fdFile == "" || fdIndex < 0 || fdTime < 0) {
+			ifsInput >> fdVarType >> fdID >> fdName >> fdVarName >> fdTime >> fdFile;
+			if (fdVarType == "" || fdID == "" || fdName == "" || fdVarName == "" || fdFile == "" || fdIndex < 0 || fdTime < 0) {
 				throw "loadFieldData(), wrong input";
 			}
-			simulation->addFieldData(new FieldData(fdIndex, fdID, fdName, fdVarName, fdTime, fdFile));
+			VariableType varType = VAR_UNKNOWN;
+			if (fdVarType == "Membrane") {
+				varType = VAR_MEMBRANE;
+			} else if (fdVarType == "Volume") {
+				varType = VAR_VOLUME;
+			} else {
+				throw "field data is only supported for volume and membrane variables";
+			}
+			simulation->addFieldData(new FieldData(fdIndex, varType, fdID, fdName, fdVarName, fdTime, fdFile));
 		}
 	}
 }

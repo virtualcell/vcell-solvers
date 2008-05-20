@@ -9,5 +9,7 @@
       <constraint constraintType="nonlinearInequality">pow(x0,3)-6*x1-4*x2+3</constraint>
       <constraint constraintType="linearInequality">10-x0-x1-x2</constraint>
    </constraintDescription>
-   <objectiveFunction type="explicit">pow(x0-1,2)+pow(x1-1,2)+pow(x2-1,2)</objectiveFunction>
+   <objectiveFunction type="explicit">
+      <expression>pow(x0-1,2)+pow(x1-1,2)+pow(x2-1,2)</expression>
+   </objectiveFunction>
 </optProblemDescription>

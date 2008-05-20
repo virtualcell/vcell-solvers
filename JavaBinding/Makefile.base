@@ -4,7 +4,11 @@ BASE_CPPFLAGS = -c -O2 -fPIC -fexceptions -D$(PLATFORM) -I../Optimization2 -I../
 	-I../sundials/include -I../sundials/src -I../tinyxml
 
 ifeq ($(PLATFORM), MACOSX)
-BASE_CPPFLAGS2 = $(BASE_CPPFLAGS) -I../JNI/MacOSX
+ifeq ($(CPU), G5)
+BASE_CPPFLAGS2 = $(BASE_CPPFLAGS) -I../JNI/MacOSX/G5
+else
+BASE_CPPFLAGS2 = $(BASE_CPPFLAGS) -I../JNI/MacOSX/i386
+endif
 LDFLAG = -bundle
 DLL_TARGET = libNativeSolvers.jnilib
 else

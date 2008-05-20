@@ -7,6 +7,7 @@ using namespace std;
 #include "OptProblemDescription.h"
 #include "ObjectiveFunction.h"
 #include "ExplicitObjectiveFunction.h"
+#include "ExplicitFitObjectiveFunction.h"
 #include "SimpleParameterDescription.h"
 #include "ExplicitConstraintDescription.h"
 #include "OdeObjectiveFunction.h"
@@ -88,6 +89,9 @@ ParameterDescription* OptXmlReader2::parseParameterDescription(TiXmlElement* par
 
 ConstraintDescription* OptXmlReader2::parseConstraintDescription(TiXmlElement* constDescNode, SymbolTable* symbolTable){
 	vector<Constraint*> constraints;
+	if (constDescNode == 0) {
+		return new ExplicitConstraintDescription(constraints, symbolTable);
+	}
 	TiXmlElement* constraintNode = constDescNode->FirstChildElement(Constraint_Tag);
 	while (constraintNode!=0){
 		const char* constraintType = constraintNode->Attribute(ConstraintType_Attr);
@@ -115,6 +119,8 @@ ObjectiveFunction* OptXmlReader2::parseObjectiveFunction(TiXmlElement* objFuncNo
 	const char* objFuncTypeStr = objFuncNode->Attribute(ObjectiveFunctionType_Attr);
 	if (strcmp(objFuncTypeStr, ObjectiveFunctionType_Attr_Explicit)==0){
 		return parseExplicitObjectiveFunction(objFuncNode,paramDesc);
+	}else if (strcmp(objFuncTypeStr,ObjectiveFunctionType_Attr_ExplicitFit)==0){
+		return parseExplicitFitObjectiveFunction(objFuncNode,paramDesc);
 	}else if (strcmp(objFuncTypeStr, ObjectiveFunctionType_Attr_PDE)==0){
 #ifdef INCLUDE_PDE_OPT
 		return parsePdeObjectiveFunction(objFuncNode,paramDesc);
@@ -130,13 +136,36 @@ ObjectiveFunction* OptXmlReader2::parseObjectiveFunction(TiXmlElement* objFuncNo
 }
 
 ExplicitObjectiveFunction* OptXmlReader2::parseExplicitObjectiveFunction(TiXmlElement* objFuncNode, ParameterDescription* paramDesc){
-	TiXmlPrinter printer;
-	TiXmlText* textNode = objFuncNode->FirstChild()->ToText();
-	printer.Visit(*textNode);
-	const char* expString = printer.CStr();
-	Expression* exp = new Expression(string(expString));
+	const char* expressionString = objFuncNode->FirstChildElement(Expression_Tag)->GetText();
+	Expression* exp = new Expression(string(expressionString));
 	void (*checkStopRequested)(double, long) = 0;
 	ExplicitObjectiveFunction* objFunc = new ExplicitObjectiveFunction(exp,paramDesc,paramDesc->getSymbolTable(),checkStopRequested);
+	return objFunc;
+}
+
+ExplicitFitObjectiveFunction* OptXmlReader2::parseExplicitFitObjectiveFunction(TiXmlElement* objFuncNode, ParameterDescription* paramDesc){
+	TiXmlElement* expressionNode = objFuncNode->FirstChildElement(Expression_Tag);
+	//
+	// get function
+	//
+	const char* expressionString = expressionNode->GetText();
+	Expression* exp = new Expression(string(expressionString));
+
+	//
+	// get data set as OdeResultSet
+	//
+	TiXmlElement* dataNode = objFuncNode->FirstChildElement(Data_Tag);
+	OdeResultSet* refData = parseOdeResultSet(dataNode);
+	int numColumns = refData->getNumColumns();
+	double* weights = new double[numColumns];
+	for (int i=0;i<numColumns;i++){
+		weights[i] = 1.0;
+	}
+	refData->setColumnWeights(weights);
+
+
+	void (*checkStopRequested)(double, long) = 0;
+	ExplicitFitObjectiveFunction* objFunc = new ExplicitFitObjectiveFunction(exp,paramDesc,refData,checkStopRequested);
 	return objFunc;
 }
 

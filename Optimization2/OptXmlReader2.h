@@ -6,6 +6,7 @@ class ObjectiveFunction;
 class ConstraintDescription;
 class ParameterDescription;
 class ExplicitObjectiveFunction;
+class ExplicitFitObjectiveFunction;
 class OdeObjectiveFunction;
 class TiXmlElement;
 class SymbolTable;
@@ -33,6 +34,7 @@ private:
 	ObjectiveFunction* parseObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);
 
 	ExplicitObjectiveFunction* parseExplicitObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);	
+	ExplicitFitObjectiveFunction* parseExplicitFitObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);	
 
 	OdeObjectiveFunction* parseOdeObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);	
 	OdeResultSet* parseOdeResultSet(TiXmlElement* dataNode);

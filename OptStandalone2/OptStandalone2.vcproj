@@ -196,6 +196,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\test10.xml"
+				>
+			</File>
+			<File
 				RelativePath=".\test2.xml"
 				>
 			</File>
@@ -221,6 +225,10 @@
 			</File>
 			<File
 				RelativePath=".\test8.xml"
+				>
+			</File>
+			<File
+				RelativePath=".\test9.xml"
 				>
 			</File>
 		</Filter>

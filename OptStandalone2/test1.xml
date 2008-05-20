@@ -8,6 +8,6 @@
       <constraint constraintType="linearInequality">init - koff</constraint>
    </constraintDescription>
    <objectiveFunction type="explicit">
-      init + koff
+      <expression>init + koff</expression>
    </objectiveFunction>
 </optProblemDescription>

@@ -18,6 +18,7 @@ all:	$(LIB_TARGET)
 
 CPPOBJECTS = Constraint.o \
 		ExplicitConstraintDescription.o	\
+		ExplicitFitObjectiveFunction.o	\
 		ExplicitObjectiveFunction.o	\
 		MemoryManager.o  \
 		OdeObjectiveFunction.o	\

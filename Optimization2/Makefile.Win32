@@ -14,6 +14,7 @@ default all:	$(LIB_TARGET)
 
 CPPOBJECTS = Constraint.obj \
 		ExplicitConstraintDescription.obj	\
+		ExplicitFitObjectiveFunction.obj	\
 		ExplicitObjectiveFunction.obj	\
 		MemoryManager.obj \
 		OdeObjectiveFunction.obj	\

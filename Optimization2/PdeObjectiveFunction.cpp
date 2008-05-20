@@ -116,11 +116,13 @@ void PdeObjectiveFunction::objective(int nparams, double* parameterValues, doubl
 		bestObjectiveFunctionValue = *functionValue;
 		memcpy(bestParameterValues, unscaled_x, parameterDescription->getNumParameters() * sizeof(double));
 	}
-	std::cout << "objective[" << numObjFuncEvals << "]=" << *functionValue << " best=" << bestObjectiveFunctionValue << " p=[";
+#ifdef JNI_DEBUG
+	cout << "objective[" << numObjFuncEvals << "]=" << *functionValue << " best=" << bestObjectiveFunctionValue << " p=[";
 	for (int i=0;i<nparams;i++){
-		std::cout << unscaled_x[i] << " "; 
+		cout << unscaled_x[i] << " "; 
 	}
-	std::cout << "]" << std::endl;
+	cout << "]" << std::endl;
+#endif
 }
 
 int PdeObjectiveFunction::getNumObjFuncEvals()

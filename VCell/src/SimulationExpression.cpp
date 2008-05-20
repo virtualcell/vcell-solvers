@@ -123,12 +123,7 @@ void SimulationExpression::createSymbolTable() {
 	variableNames[3] = "z";	
 	oldValueProxies[3] = valueProxyZ;
 
-	int variableIndex = 4;	
-
-	for (int i = 0; i < (int)fieldDataList.size(); i ++) {		
-		oldValueProxies[variableIndex] = new ValueProxy(fieldDataList[i]->getData(), VAR_VOLUME_INDEX, indices);
-		variableNames[variableIndex ++] = fieldDataList[i]->getID();
-	}
+	int variableIndex = 4;
 
 	for (int i = 0; i < (int)varList.size(); i ++) {
 		Variable* var = varList[i];
@@ -174,9 +169,14 @@ void SimulationExpression::createSymbolTable() {
 
 	// add field data
 	for (int i = 0; i < (int)fieldDataList.size(); i ++) {		
-		oldValueProxies[variableIndex] = new ValueProxy(fieldDataList[i]->getData(), VAR_VOLUME_INDEX, indices);
-		variableNames[variableIndex] = fieldDataList[i]->getID();
-		variableIndex ++;
+		if (fieldDataList[i]->getVariableType() == VAR_VOLUME) {
+			oldValueProxies[variableIndex] = new ValueProxy(fieldDataList[i]->getData(), VAR_VOLUME_INDEX, indices);
+		} else if (fieldDataList[i]->getVariableType() == VAR_MEMBRANE) {
+			oldValueProxies[variableIndex] = new ValueProxy(fieldDataList[i]->getData(), VAR_MEMBRANE_INDEX, indices);
+		} else {
+			throw "field data is only supported for volume and membrane variables";
+		}
+		variableNames[variableIndex ++] = fieldDataList[i]->getID();
 	}
 
 	// add parameters

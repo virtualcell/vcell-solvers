@@ -9,8 +9,9 @@ void readHeader(FILE *fp, FileHeader *header);
 void readDataBlock(FILE *fp, DataBlock *block);
 void readDoubles(FILE *fp, double *data, int length);
 
-FieldData::FieldData(int arg_fdIndex, string arg_fdID, string arg_fdName, string arg_fdVarName, double arg_fdTime, string arg_fdFile) {
+FieldData::FieldData(int arg_fdIndex, VariableType arg_varType, string arg_fdID, string arg_fdName, string arg_fdVarName, double arg_fdTime, string arg_fdFile) {	
 	fdIndex = arg_fdIndex;
+	varType = arg_varType;
 	fdID = arg_fdID;
 	fdName = arg_fdName;
 	fdVarName = arg_fdVarName;
