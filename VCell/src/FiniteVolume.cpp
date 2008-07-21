@@ -92,7 +92,6 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
-		fvInputFile = argv[1];
 		ifsInput.open(fvInputFile);
 		if (!ifsInput.is_open()) {
 			cout << "File doesn't exist: " << fvInputFile << endl;

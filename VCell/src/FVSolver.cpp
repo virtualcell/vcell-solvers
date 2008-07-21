@@ -873,7 +873,7 @@ void FVSolver::loadMesh(istream& ifsInput) {
 			throw "no mesh specified";
 		}		
 		cout << "Reading mesh from text..." << endl;
-		cout << vcgText << endl;
+		//cout << vcgText << endl;
 		istringstream iss(vcgText);
 		mesh->initialize(iss);
 	}
@@ -905,7 +905,9 @@ void FVSolver::loadFieldData(istream& ifsInput) {
 			stringstream ss(nextToken);
 			ss >> fdIndex;
 			fdTime = -1;
-			ifsInput >> fdVarType >> fdID >> fdName >> fdVarName >> fdTime >> fdFile;
+			ifsInput >> fdVarType >> fdID >> fdName >> fdVarName >> fdTime;
+			getline(ifsInput,  fdFile);
+			trimString(fdFile);
 			if (fdVarType == "" || fdID == "" || fdName == "" || fdVarName == "" || fdFile == "" || fdIndex < 0 || fdTime < 0) {
 				throw "loadFieldData(), wrong input";
 			}
@@ -1096,6 +1098,22 @@ double* FVSolver::getValue(string& var, int arrayID) {
 
 int FVSolver::getVariableLength(string& var) {
 	return simulation->getVariableFromName(var)->getSize();
+}
+
+void FVSolver::setInitialCondition(string& varName, int dataLength, const double* data) {
+	Variable* var = simulation->getVariableFromName(varName);
+	if (var == 0) {
+		char errMsg[512];
+		sprintf(errMsg, "FVSolver::setInitialCondition() : variable %s doesn't exist", varName);
+		throw errMsg;
+	}
+	if (var->getSize() != dataLength) {
+		char errMsg[512];
+		sprintf(errMsg, "FVSolver::setInitialCondition() : variable %s doesn't match in size, %d, %d", varName, var->getSize(), dataLength);
+		throw errMsg;
+	}
+	memcpy(var->getCurr(), data, dataLength * sizeof(double));
+	var->update();
 }
 
 double FVSolver::getCurrentTime(){

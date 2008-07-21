@@ -51,6 +51,7 @@ public:
 	string getVariableName(int index);
 	int getVariableLength(string& varName);
 	double* getValue(string& varName, int arrayID);  // arrayID=0 for "old" and 1 for "current"
+	void setInitialCondition(string& varName, int dataLength, const double* data);
 	
 	//void reinit(double *paramValues);
 	//PdeResultSet* getPdeResultSet();

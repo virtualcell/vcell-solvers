@@ -245,16 +245,22 @@ void SimTool::loadFinal()
 	}
 
 	if (bSimZip) {
-		// check if zip file exists		
-		if (stat(zipFileName, &buf)) {
-			printf("SimTool::loadFinal(), unable to open zip file %s\n", zipFileName);
+		// check if zip file exists	
+		char zipFileAbsoluteName[512];
+		if (strchr(zipFileName, DIRECTORY_SEPARATOR) != 0) {
+			strcpy(zipFileAbsoluteName,zipFileName);
+		} else {
+			sprintf(zipFileAbsoluteName,"%s%s",baseDirName, zipFileName);
+		}
+		if (stat(zipFileAbsoluteName, &buf)) {
+			printf("SimTool::loadFinal(), unable to open zip file %s\n", zipFileAbsoluteName);
 			clearLog();
 			return;
 		}
 		try {
 			// unzip the file (without directory) into exdir, currently we 
 			// unzip the file to the current working directory
-			unzip32(zipFileName, dataFileName, NULL);
+			unzip32(zipFileAbsoluteName, dataFileName, NULL);
 		} catch (...) {
 			clearLog();
 			return; // when exception occurs, clear all the data files and start over without exiting.
@@ -349,9 +355,13 @@ void SimTool::updateLog(double progress, double time, int iteration)
 	}
 
 	if (bSimZip) {
-		fprintf(fp,"%4d %s %s %lg\n", iteration, simFileName, zipFileName, time);
+		char zipFileNameWithoutPath[512];	
+		sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
+		fprintf(fp,"%4d %s %s %lg\n", iteration, simFileName, zipFileNameWithoutPath, time);
 	} else {
-		fprintf(fp,"%4d %s %lg\n", iteration, simFileName, time);
+		char simFileNameWithoutPath[512];	
+		sprintf(simFileNameWithoutPath,"%s%.4d%s",baseSimName, simFileCount, SIM_FILE_EXT);
+		fprintf(fp,"%4d %s %lg\n", iteration, simFileNameWithoutPath, time);
 	}
 	fclose(fp);
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
