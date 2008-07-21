@@ -25,12 +25,6 @@
 #define LOG_FILE_EXT ".log"
 #define ZIP_FILE_EXT ".zip"
 
-#if ( defined(WIN32) || defined(WIN64) )
-#define DIRECTORY_SEPARATOR '\\'
-#else
-#define DIRECTORY_SEPARATOR '/'
-#endif
-
 int zip32(int filecnt, char* zipfile, ...);
 int unzip32(char* zipfile, char* file, char* exdir);
 

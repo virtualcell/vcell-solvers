@@ -12,6 +12,14 @@
 #include <VCELL/SimTypes.h>
 #include <VCELL/Timer.h>
 
+#ifndef DIRECTORY_SEPARATOR
+#if ( defined(WIN32) || defined(WIN64) )
+#define DIRECTORY_SEPARATOR '\\'
+#else
+#define DIRECTORY_SEPARATOR '/'
+#endif
+#endif
+
 class VCellModel;
 class Mesh;
 class Simulation;

@@ -806,7 +806,15 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 	if (outputPath == 0) {
 		SimTool::getInstance()->setBaseFilename((char*)basefilename.c_str());
 	} else {
-		SimTool::getInstance()->setBaseFilename(outputPath);
+		const char* baseSimName = strrchr(basefilename.c_str(), DIRECTORY_SEPARATOR);
+		if (baseSimName == NULL) {
+			baseSimName = basefilename.c_str();
+		} else {
+			baseSimName += 1;
+		}
+		char newBaseName[512];
+		sprintf(newBaseName, "%s%c%s", outputPath, DIRECTORY_SEPARATOR, baseSimName);
+		SimTool::getInstance()->setBaseFilename(newBaseName);
 	}
 
 	simTool->setTimeStep(time_step);
