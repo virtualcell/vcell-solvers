@@ -15,62 +15,62 @@
 #include <sundials/sundials_dense.h> /* definitions DenseMat DENSE_ELEM */
 #include <sundials/sundials_types.h> /* definition of type realtype */
 
-char* VCellCVodeSolver::getCVodeErrorMessage(int returnCode) {
+void VCellCVodeSolver::throwCVodeErrorMessage(int returnCode) {
 	switch (returnCode){
 		case CV_SUCCESS: {
-			return "CV_SUCCESS: CVode succeeded and no roots were found.";
+			throw "CV_SUCCESS: CVode succeeded and no roots were found.";
 		}						 
 		case CV_ROOT_RETURN: {
-			return "CV_ROOT_RETURN: CVode succeeded, and found one or more roots. If nrtfn > 1, call CVodeGetRootInfo to see which g_i were found to have a root at (*tret).";
-		}   
+			throw "CV_ROOT_RETURN: CVode succeeded, and found one or more roots. If nrtfn > 1, call CVodeGetRootInfo to see which g_i were found to have a root at (*tret).";
+		}
 		case CV_TSTOP_RETURN: {
-			return "CV_TSTOP_RETURN: CVode succeeded and returned at tstop.";
+			throw "CV_TSTOP_RETURN: CVode succeeded and returned at tstop.";
 		}
 		case CV_MEM_NULL:{
-			return "CV_MEM_NULL: mem argument was null";
+			throw "CV_MEM_NULL: mem argument was null";
 		}
 		case CV_ILL_INPUT:{
-			return "CV_ILL_INPUT: one of the inputs to CVode is illegal";
+			throw "CV_ILL_INPUT: one of the inputs to CVode is illegal";
 		}
 		case CV_TOO_MUCH_WORK:{
-			return "CV_TOO_MUCH_WORK: took mxstep internal steps but could not reach tout";
+			throw "CV_TOO_MUCH_WORK: took mxstep internal steps but could not reach tout";
 		}
 		case CV_TOO_MUCH_ACC:{
-			return "CV_TOO_MUCH_ACC: could not satisfy the accuracy demanded by the user for some internal step";
+			throw "CV_TOO_MUCH_ACC: could not satisfy the accuracy demanded by the user for some internal step";
 		}
 		case CV_ERR_FAILURE:{
-			return "CV_ERR_FAILURE: error test failures occurred too many times during one internal step";
+			throw "CV_ERR_FAILURE: error test failures occurred too many times during one internal step";
 		}
 		case CV_CONV_FAILURE:{
-			return "CV_CONV_FAILURE: convergence test failures occurred too many times during one internal step";
+			throw "CV_CONV_FAILURE: convergence test failures occurred too many times during one internal step";
 		}
 		case CV_LINIT_FAIL:{
-			return "CV_LINIT_FAIL: the linear solver's initialization function failed.";
+			throw "CV_LINIT_FAIL: the linear solver's initialization function failed.";
 		}
 		case CV_LSETUP_FAIL:{
-			return "CV_LSETUP_FAIL: the linear solver's setup routine failed in an unrecoverable manner.";
+			throw "CV_LSETUP_FAIL: the linear solver's setup routine failed in an unrecoverable manner.";
 		}
 		case CV_LSOLVE_FAIL:{
-			return "CV_LSOLVE_FAIL: the linear solver's solve routine failed in an unrecoverable manner";
+			throw "CV_LSOLVE_FAIL: the linear solver's solve routine failed in an unrecoverable manner";
 		}
 		case CV_REPTD_RHSFUNC_ERR: {
-			char* errMsg = new char[MAX_EXPRESSION_LENGTH + 100];
-			sprintf(errMsg, "repeated recoverable right-hand side function errors : %s", recoverableErrMsg.c_str());
-			return errMsg;
+			stringstream ss;
+			ss << "repeated recoverable right-hand side function errors : " << recoverableErrMsg;
+			throw ss.str();
 		}
 		case CV_UNREC_RHSFUNC_ERR:{
-			char* errMsg = new char[MAX_EXPRESSION_LENGTH + 100];
-			sprintf(errMsg, "the right-hand side failed in a recoverable manner, but no recovery is possible : %s", recoverableErrMsg.c_str());
-			return errMsg;
+			stringstream ss;
+			ss << "the right-hand side failed in a recoverable manner, but no recovery is possible : " <<  recoverableErrMsg;
+			throw ss.str();
 		}
 		default:
-			return CVodeGetReturnFlagName(returnCode);
+			throw CVodeGetReturnFlagName(returnCode);
 	}	
 }
 
 void VCellCVodeSolver::checkCVodeFlag(int flag) {
 	if (flag != CV_SUCCESS){
-		throw getCVodeErrorMessage(flag);
+		throwCVodeErrorMessage(flag);
 	}
 }
 
@@ -90,152 +90,70 @@ VCellCVodeSolver::~VCellCVodeSolver() {
 }
 
 /*
-Input format: (NUM_EQUATIONS must be the last parameter before VARIABLES)
+Input format:
 	STARTING_TIME 0.0
-	ENDING_TIME 0.45
-	RELATIVE_TOLERANCE 1.0E-12
-	ABSOLUTE_TOLERANCE 1.0E-10				
-	MAX_TIME_STEP 4.5E-5
-	[KEEP_EVERY 1 | OUTPUT_TIME_STEP 0.05 | OUTPUT_TIMES NUM_OUTPUT_TIMES time1 time2 time3 ....]
-	NUM_PARAMETERS 3
-	k1
-	k2
-	k3
-	NUM_EQUATIONS 1
-	ODE S2 INIT 0.0 RATE (1000000.0 * asech((5.0E-7 * (1000000.0 - S2))));
+	ENDING_TIME 0.1
+	RELATIVE_TOLERANCE 1.0E-9
+	ABSOLUTE_TOLERANCE 1.0E-9
+	MAX_TIME_STEP 1.0
+	KEEP_EVERY 1
+	DISCONTINUITIES 1
+	D_B0 (t > 0.0432); (-0.0432 + t);
+	NUM_EQUATIONS 2
+	ODE x_i INIT 0.0;
+		 RATE ((20.0 * x_o * D_B0) - (50.0 * x_i));
+	ODE x_o INIT 0.0;
+		 RATE ( - ((20.0 * x_o * D_B0) - (50.0 * x_i)) + (1505000.0 * (3.322259136212625E-4 - (3.322259136212625E-4 * x_o) - (3.322259136212625E-4 * x_i))) - (100.0 * x_o));
 */
-void VCellCVodeSolver::readInput(istream& inputstream) { 
+void VCellCVodeSolver::readEquations(istream& inputstream) { 
 	try {
-		if (solver != 0) {
-			throw "readInput should only be called once";
-		}
 		string name;
-		while (true) {
-			inputstream >> name;
-			if (name == "STARTING_TIME") {
-				inputstream >> STARTING_TIME;
-			} else if (name == "ENDING_TIME") {
-				inputstream >> ENDING_TIME;
-			} else if (name == "RELATIVE_TOLERANCE") {
-				inputstream >> RelativeTolerance;
-			} else if (name == "ABSOLUTE_TOLERANCE") {
-				inputstream >> AbsoluteTolerance;
-			} else if (name == "MAX_TIME_STEP") {
-				inputstream >> maxTimeStep;
-			} else if (name == "KEEP_EVERY") {
-				inputstream >> keepEvery;
-			} else if (name == "OUTPUT_TIME_STEP") {
-				double outputTimeStep = 0.0;
-				inputstream >> outputTimeStep;
-				double timePoint = 0.0;
-				int count = 1;
-				while (STARTING_TIME + count * outputTimeStep < ENDING_TIME + 1E-12 * ENDING_TIME) {
-					timePoint = STARTING_TIME + count * outputTimeStep;
-					outputTimes.push_back(timePoint);
-					count ++;
-				}
-				ENDING_TIME = outputTimes[outputTimes.size() - 1];
-			} else if (name == "OUTPUT_TIMES") {
-				int totalNumTimePoints;	
-				double timePoint;
-				inputstream >> totalNumTimePoints;
-				for (int i = 0; i < totalNumTimePoints; i ++) {
-					inputstream >> timePoint;
-					if (timePoint > STARTING_TIME && timePoint <= ENDING_TIME) {
-						outputTimes.push_back(timePoint);
-					}
-				}
-				if (outputTimes[outputTimes.size() - 1] < ENDING_TIME) {
-					outputTimes.push_back(ENDING_TIME);
-				}
-			} else if (name == "NUM_PARAMETERS") {
-				inputstream >> NPARAM;
-				for (int i = 0; i < NPARAM; i ++) {
-					inputstream >> name;
-					paramNames.push_back(name);
-				}				
-			} else if (name == "NUM_EQUATIONS") {
-				inputstream >> NEQ;
-				break;
-			} else {
-				string msg = "Unexpected token \"" + name + "\" in the input file!";
-				throw Exception(msg);
-			}
-		}
-
-		string* VariableNames = new string[NEQ + 1 + NPARAM];
-		initialConditionExpressions = new Expression*[NEQ];	
-		rateExpressions = new Expression*[NEQ];
-		char exp[MAX_EXPRESSION_LENGTH];
-
-		// add "t" first
-		string variableName = "t";
-		odeResultSet->addColumn(variableName);
-		VariableNames[0] = variableName; 
+		string exp;
+		
+		rateExpressions = new Expression*[NEQ];		
 
 		for (int i = 0; i < NEQ; i ++) {
 			// ODE
-			inputstream >> name >> variableName;
-			odeResultSet->addColumn(variableName);
-			// add columns to symbol table
-			VariableNames[i + 1] = variableName;
+			inputstream >> name >> variableNames[i];			
 
 			// INIT
 			inputstream >> name;
-			memset(exp, 0, MAX_EXPRESSION_LENGTH*sizeof(char));
-			inputstream.getline(exp, MAX_EXPRESSION_LENGTH);
-			char* trimmedExp = trim(exp);
-			if (trimmedExp[strlen(trimmedExp)-1] != ';') {
-				string msg = "Initial condition expression for [" + variableName + "]" + BAD_EXPRESSION_MSG;
+			exp = "";
+			getline(inputstream, exp);
+			trimString(exp);
+			if (*(exp.end() - 1) != ';') {
+				string msg = "Initial condition expression for [" + variableNames[i] + "]" + BAD_EXPRESSION_MSG;
 				throw Exception(msg);
 			}
-			initialConditionExpressions[i] = new Expression(trimmedExp);
-			delete[] trimmedExp;			
+			initialConditionExpressions[i] = new Expression(exp);
 
 			// RATE
 			inputstream >> name;
-
-			memset(exp, 0, MAX_EXPRESSION_LENGTH*sizeof(char));
-			inputstream.getline(exp, MAX_EXPRESSION_LENGTH);
-			trimmedExp = trim(exp);
-			if (trimmedExp[strlen(trimmedExp)-1] != ';') {
-				string msg = "Rate expression for [" + variableName + "]" + BAD_EXPRESSION_MSG;
+			exp = "";
+			getline(inputstream, exp);
+			trimString(exp);
+			if (*(exp.end() - 1) != ';') {
+				string msg = "Rate expression for [" + variableNames[i] + "]" + BAD_EXPRESSION_MSG;
 				throw Exception(msg);
 			}
-			rateExpressions[i] = new Expression(trimmedExp);
-			delete[] trimmedExp;
-		}
-
-		// add parameters to symbol table
-		for (int i = 0 ; i < NPARAM; i ++) {
-			VariableNames[NEQ + 1 + i] = paramNames.at(i); 
-		}
-		rateSymbolTable = new SimpleSymbolTable(VariableNames, NEQ + 1 + NPARAM);
-		initialConditionSymbolTable = new SimpleSymbolTable(VariableNames + NEQ + 1, NPARAM);
-		for (int i = 0; i < NEQ; i ++) {
-			rateExpressions[i]->bindExpression(rateSymbolTable);
-			initialConditionExpressions[i]->bindExpression(initialConditionSymbolTable);			
-		}
-
-		try {
-			values = new realtype[NEQ + 1 + NPARAM];
-			tempRowData = new realtype[NEQ + 1];
-		} catch (...) {
-			throw "Out of Memory";
-		}
-
-		delete[] VariableNames;
-
-		y = N_VNew_Serial(NEQ);
-		if (y == 0) {
-			throw "Out of Memory";
-		}
+			rateExpressions[i] = new Expression(exp);
+		}				
 	} catch (char* ex) {
 		throw Exception(string("VCellCVodeSolver::readInput() : ") + ex);
 	} catch (Exception& ex) {
 		throw Exception(string("VCellCVodeSolver::readInput() : ") + ex.getMessage());
 	} catch (...) {
 		throw "VCellCVodeSolver::readInput() : caught unknown exception";
+	}
+}
+
+void VCellCVodeSolver::initialize() {
+	VCellSundialsSolver::initialize();
+
+	// rate can be function of variables, parameters and discontinuities.
+	rateSymbolTable = new SimpleSymbolTable(allSymbols, numAllSymbols);
+	for (int i = 0; i < NEQ; i ++) {
+		rateExpressions[i]->bindExpression(rateSymbolTable);
 	}
 }
 
@@ -273,6 +191,20 @@ int VCellCVodeSolver::RHS_callback(realtype t, N_Vector y, N_Vector r, void *fda
 	return solver->RHS(t, y, r);
 }
 
+int VCellCVodeSolver::RootFn(realtype t, N_Vector y, realtype *gout) {
+	values[0] = t;
+	memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
+	for (int i = 0; i < numDiscontinuities; i ++) {
+		gout[i] = odeDiscontinuities[i]->rootFindingExpression->evaluateVector(values);
+	}
+	return 0;
+}
+
+int VCellCVodeSolver::RootFn_callback(realtype t, N_Vector y, realtype *gout, void *g_data) {
+	VCellCVodeSolver* solver = (VCellCVodeSolver*)g_data;
+	return solver->RootFn(t, y, gout);
+}
+
 void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long)) {
 	if (checkStopRequested != 0) {
 		checkStopRequested(STARTING_TIME, 0);
@@ -283,34 +215,58 @@ void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* out
 	// clear data in result set before solving
 	odeResultSet->clearData();
 
-	realtype Time = STARTING_TIME;
 	// copy parameter values to the end of values, these will stay the same during solving
 	memset(values, 0, (NEQ + 1) * sizeof(double));
-	memcpy(values + NEQ + 1, paramValues, NPARAM * sizeof(double));
+	memcpy(values + 1 + NEQ, paramValues, NPARAM * sizeof(double));
+	memset(values + 1 + NEQ + NPARAM, 0, numDiscontinuities * sizeof(double));
 
-	//Initialize y
+	initCVode(paramValues);
+	cvodeSolve(bPrintProgress, outputFile, checkStopRequested);
+}
+
+void VCellCVodeSolver::initCVode(double* paramValues) {
+	//Initialize y, variable portion of values
+	values[0] = STARTING_TIME;
 	for (int i = 0; i < NEQ; i ++) {
-		NV_Ith_S(y, i) = initialConditionExpressions[i]->evaluateVector(paramValues);		
+		values[1 + i] = initialConditionExpressions[i]->evaluateVector(paramValues);
+		NV_Ith_S(y, i) = values[1 + i];	
 	}		
 
+	reInit(STARTING_TIME);
+
+	if (numDiscontinuities > 0) {
+		int flag = CVodeRootInit(solver, numDiscontinuities, RootFn_callback, this);
+		checkCVodeFlag(flag);
+		initDiscontinuities();
+	}
+}
+
+void VCellCVodeSolver::reInit(double t) {
 	int flag = 0;
 	int ToleranceType = CV_SS;
 	if (solver == 0) {
 		solver = CVodeCreate(CV_BDF, CV_NEWTON);
 		if (solver == 0) {
-			throw "Out of memory";
+			throw "VCellCVodeSolver:: Out of memory";
 		}
-		flag = CVodeMalloc(solver, RHS_callback, STARTING_TIME, y, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
+		flag = CVodeMalloc(solver, RHS_callback, t, y, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
+		checkCVodeFlag(flag);
+
+		flag = CVodeSetFdata(solver, this);
+		checkCVodeFlag(flag);
+		flag = CVDense(solver, NEQ);
+		checkCVodeFlag(flag);
+
+		flag = CVodeSetMaxNumSteps(solver, 5000);
 	} else {
-		flag = CVodeReInit(solver, RHS_callback, STARTING_TIME, y, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
+		flag = CVodeReInit(solver, RHS_callback, t, y, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
 	}
 	checkCVodeFlag(flag);
-	CVodeSetFdata(solver, this);
-	flag = CVDense(solver, NEQ);
-	checkCVodeFlag(flag);
+}
 
-	CVodeSetMaxNumSteps(solver, 5000);
-	
+void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long)) {	
+	realtype Time = STARTING_TIME;
+
 	// write intial conditions
 	writeData(Time, outputFile);
 
@@ -332,8 +288,19 @@ void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* out
 
 			// save data if return CV_TSTOP_RETURN (meaning reached end of time or max time step 
 			// before one normal step) or CV_SUCCESS (meaning one normal step)
-			if (returnCode == CV_TSTOP_RETURN || returnCode == CV_SUCCESS) {						
-				if (iterationCount % keepEvery == 0 || Time >= ENDING_TIME){
+			if (returnCode == CV_TSTOP_RETURN || returnCode == CV_SUCCESS || returnCode == CV_ROOT_RETURN) {						
+				if (returnCode == CV_ROOT_RETURN) {
+					cout << setprecision(20);
+					cout << endl << "found root at " << Time << endl;
+					// flip discontinuities				
+					int flag = CVodeGetRootInfo(solver, rootsFound);
+					checkCVodeFlag(flag);
+					updateDiscontinuities();
+					reInit(Time);
+				} else {
+					checkDiscontinuityConsistency(Time, y);
+				}
+				if (returnCode == CV_ROOT_RETURN || iterationCount % keepEvery == 0 || Time >= ENDING_TIME){
 					saveCount++;
 					if (((double)saveCount) * (NEQ + 1) * bytesPerSample > (double)MaxFileSizeBytes){ 
 						/* if more than one gigabyte, then fail */ 
@@ -347,8 +314,8 @@ void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* out
 					}
 				}
 			} else {
-				throw getCVodeErrorMessage(returnCode);
-			}				
+				throwCVodeErrorMessage(returnCode);
+			}
 		}
 	} else {
 		double sampleTime = 0.0;
@@ -356,13 +323,13 @@ void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* out
 		assert(outputTimes[0] > STARTING_TIME);
 		while (Time < ENDING_TIME && outputCount < (int)outputTimes.size()) {
 			if (checkStopRequested != 0) {
-				checkStopRequested(Time, iterationCount);			
+				checkStopRequested(Time, iterationCount);
 			}
 
 			sampleTime = outputTimes[outputCount];	
 			while (Time < sampleTime) {
 				if (checkStopRequested != 0) {
-					checkStopRequested(Time, iterationCount);		
+					checkStopRequested(Time, iterationCount);
 				}
 
 				double tstop = min(sampleTime, Time + 2 * maxTimeStep + (1e-15));
@@ -371,7 +338,16 @@ void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* out
 				iterationCount++;	
 
 				// if return CV_SUCCESS, this is an intermediate result, continue without saving data.
-				if (returnCode == CV_TSTOP_RETURN || returnCode == CV_SUCCESS) {
+				if (returnCode == CV_TSTOP_RETURN || returnCode == CV_SUCCESS || returnCode == CV_ROOT_RETURN) {
+					if (returnCode == CV_ROOT_RETURN) {
+						// flip discontinuities				
+						int flag = CVodeGetRootInfo(solver, rootsFound);
+						checkCVodeFlag(flag);
+						updateDiscontinuities();
+						reInit(Time);
+					}  else {
+						checkDiscontinuityConsistency(Time, y);
+					}
 					if (Time == sampleTime) {
 						writeData(Time, outputFile);
 						if (bPrintProgress) {
@@ -381,10 +357,9 @@ void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* out
 						break;
 					}
 				} else {
-					throw getCVodeErrorMessage(returnCode);
-				}									
+					throwCVodeErrorMessage(returnCode);
+				}
 			}
 		}
 	}	
-	
 }

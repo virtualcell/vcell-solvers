@@ -13,17 +13,22 @@ class Expression;
 class SymbolTable;
 class OdeResultSet;
 
-#define MAX_EXPRESSION_LENGTH 40000
 #define bytesPerSample 25
 #define MaxFileSizeBytes 1000000000 /* 1 gigabyte */	
-#define BAD_EXPRESSION_MSG " is not terminated by ';', it is either an invalid expression or longer than MAX_EXPRESSION_LENGTH (40000)"
+#define BAD_EXPRESSION_MSG " is not terminated by ';'"
+
+struct OdeDiscontinuity {
+	string discontinuitySymbol;
+	Expression* discontinuityExpression;
+	Expression* rootFindingExpression;	
+};
 
 class VCellSundialsSolver {
 public:
 	VCellSundialsSolver();	
 	~VCellSundialsSolver();
 
-	virtual void readInput(istream& inputstream) = 0;
+	void readInput(istream& inputstream);
 	virtual void solve(double* paramValues=0, bool bPrintProgress=false, FILE* outputFile=0, void (*checkStopRequested)(double, long)=0) = 0;
 	OdeResultSet* getResultSet() { return odeResultSet; }
 	int getNumEquations() { return NEQ; }
@@ -37,6 +42,7 @@ protected:
 	// 0 : t
 	// 1 ~ N : variable values
 	// N+1 ~ N+NPARAM : parameter values 
+	// N+NPARAM+1 ~ N+NPARAM+numDiscontinuites : discontinuity values
 	realtype* values; 
 	// 0 ~ N-1 : equations
 	Expression** initialConditionExpressions; 
@@ -56,9 +62,17 @@ protected:
 	double maxTimeStep;		
 	vector<double> outputTimes;
 	double* tempRowData; // data for current time to be written to output file and to be added to odeResultSet
+
+	int numDiscontinuities;
+	OdeDiscontinuity** odeDiscontinuities;
+	SymbolTable* discontinuitySymbolTable;
+	double* discontinuityValues;
+	int* rootsFound;
 	
-	// 0 ~ NAPRAM-1 : parameter names;
-	vector<string> paramNames;
+	string* paramNames;
+	string* variableNames; // variables
+	string* allSymbols;
+	int numAllSymbols;
 
 	N_Vector y;	
 	void writeData(double currTime, FILE* outputFile);
@@ -66,8 +80,16 @@ protected:
 	void writeFileData(FILE* outputFile);
 	void writeFileHeader(FILE* outputFile);
 	void printProgress(double currTime, double& percentile, double increment);
+
+	void readDiscontinuities(istream& inputstream);
+	virtual void readEquations(istream& inputstream) = 0;
+	virtual void initialize();
+
+	void initDiscontinuities();
+	void updateDiscontinuities();
+	void checkDiscontinuityConsistency(realtype t, N_Vector y);
 };
 
-char* trim(char* str);
+void trimString(string& str);
 
 #endif
