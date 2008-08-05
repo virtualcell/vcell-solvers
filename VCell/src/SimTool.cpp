@@ -340,18 +340,17 @@ void SimTool::updateLog(double progress, double time, int iteration)
 			char msg[256];
 			sprintf(msg, "%s: %d", "Writing zip file failed, return code is ", retcode);
 			throw  msg;
-		}		
+		}
+
+		char zipFileNameWithoutPath[512];	
+		sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
+		fprintf(fp,"%4d %s %s %lg\n", iteration, simFileName, zipFileNameWithoutPath, time);
+
 		if (stat(zipFileName, &buf) == 0) { // if exists
 			if (buf.st_size > ZIP_FILE_LIMIT) {
 				zipFileCount ++;
 			}
 		}
-	}
-
-	if (bSimZip) {
-		char zipFileNameWithoutPath[512];	
-		sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
-		fprintf(fp,"%4d %s %s %lg\n", iteration, simFileName, zipFileNameWithoutPath, time);
 	} else {
 		char simFileNameWithoutPath[512];	
 		sprintf(simFileNameWithoutPath,"%s%.4d%s",baseSimName, simFileCount, SIM_FILE_EXT);
