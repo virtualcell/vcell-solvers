@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 	try {
 		cout.precision(30);
 		OptXmlReader2 optXmlReader;
-		const char* filename = "test10.xml";
+		const char* filename = argv[1];
 		OptProblemDescription* optProb = optXmlReader.readOptProblemDescription(filename);
 		OptSolverCFSQP* cfsqpOptSolver = new OptSolverCFSQP(optProb);
 		OptResultSet* optResultSet = cfsqpOptSolver->solve();

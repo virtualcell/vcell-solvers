@@ -81,8 +81,8 @@ OptProblemDescription* createExactPdeDiff() {
 	double* weights = new double[NUM_REF_VARIABLES];
 	weights[0] = 1.0;
 	int varIndex = 0;
-	int numX = 10;
-	int numY = 1;
+	int numX = 200;
+	int numY = 200;
 	SpatialReferenceData* refData = new SpatialReferenceData(numX*numY);
 	char* refNames[20] = {"t", "calcium"};
 //	refData->setColumnWeights(weights);
@@ -110,7 +110,7 @@ OptProblemDescription* createExactPdeDiff() {
 		}
 		refData->addVariableData(varIndex,data);
 	}
-refData->show();
+//refData->show();
 	stringstream ssKoff;
 	ssKoff << SCALE_KOFF_REAL;
 	stringstream ssInit;
@@ -132,12 +132,12 @@ refData->show();
 "\n"
 "# Mesh file\n"
 "MESH_BEGIN\n"
-"VCG_FILE c:\\Vcell\\users\\fgao\\wave200x200.vcg\n"
+"VCG_FILE c:\\wave200x200.vcg\n"
 "MESH_END\n"
 "\n"
 "# Variables : type name unit time_dependent_flag advection_flag solve_regions\n"
 "VARIABLE_BEGIN\n"
-"VOLUME_PDE calcium uM false false\n"
+"VOLUME_PDE calcium uM false false true\n"
 "VARIABLE_END\n"
 "\n"
 "PARAMETER_BEGIN 3\n"

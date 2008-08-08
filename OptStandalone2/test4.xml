@@ -40,7 +40,7 @@ MESH_END
 
 # Variables : type name unit time_dependent_flag advection_flag solve_regions
 VARIABLE_BEGIN
-VOLUME_PDE calcium uM false false
+VOLUME_PDE calcium uM false false true
 VARIABLE_END
 
 PARAMETER_BEGIN 3

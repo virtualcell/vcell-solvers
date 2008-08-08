@@ -1,15 +1,15 @@
 CC = cl
-CFLAGS = /c /EHsc /O2 /nologo /DWIN32 /DUSE_VC_MEMORY_MANAGER  -I..\Optimization
+CFLAGS = /c /EHsc /O2 /nologo /DWIN32 /DUSE_VC_MEMORY_MANAGER  -I..\Optimization2
 
 LIBTOOL = lib /nologo
 DEL = del
 
-TARGET =	cfsqp.lib
+TARGET = cfsqp.lib
 
 .c.obj:	
 	$(CC) /c $(CFLAGS) /Fo$@ $<
 
-default all:		$(TARGETS)
+default all: $(TARGET)
 
 COBJECTS =	cfsqp.obj	\
 			qld.obj	\

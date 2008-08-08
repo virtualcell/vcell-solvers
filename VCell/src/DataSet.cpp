@@ -202,8 +202,7 @@ void readDataBlock(FILE *fp, DataBlock *block)
 {
 #ifndef INTEL
 	if (fread(block, sizeof(DataBlock), 1, fp)!=1){
-		cout << "DataSet::read() - could not read dataBlock (UNIX)" << endl;
-		return false;
+		throw "DataSet::read() - could not read dataBlock (UNIX)";
 	}
 #else
 	if (fread(block->varName, sizeof(char), DATABLOCK_STRING_SIZE, fp)!=DATABLOCK_STRING_SIZE){

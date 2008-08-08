@@ -2,16 +2,13 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#include <VCELL/Timer.h>
 #include <iostream>
 #include <iomanip>
 using namespace std;
 
-//======================================================================
-//
-//  class Timer
-//
-//======================================================================
+#include <VCELL/Timer.h>
+#include <assert.h>
+
 #define TimerResolution 1E-6
 #define DoubleToSec(t)       ((long)(floor((double)(t))))
 #define DoubleToUSec(t)      ((long)((((double)(t)) - DoubleToSec(t))/TimerResolution))

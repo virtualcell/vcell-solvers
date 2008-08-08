@@ -1,0 +1,25 @@
+
+FCC = g77
+FOPT     = -O2
+
+FFLAGS   = ${FOPT} ${SFOPT}
+
+LIBRARY  = libblas.a
+
+# Source File Names
+
+FBLAS  =  $(PRECOPT)dnrm2.o $(PRECOPT)daxpy.o $(PRECOPT)ddot.o \
+          $(PRECOPT)dcopy.o $(PRECOPT)dscal.o $(PRECOPT)idamax.o \
+          $(PRECOPT)dswap.o
+
+blas:    ${LIBRARY}
+
+${LIBRARY}: ${FBLAS}
+	  ar rv ${LIBRARY} *.o
+	  ranlib ${LIBRARY}
+
+${FBLAS}:
+	  $(FCC) $(FFLAGS) -c $*.f
+
+clean :
+	rm *.o $(LIBRARY)

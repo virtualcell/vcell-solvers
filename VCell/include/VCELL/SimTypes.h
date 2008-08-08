@@ -11,16 +11,8 @@
 #define UNIX_TIMER
 #endif
 
-#ifndef SIZE64
-//typedef long INT32;
-typedef int INT32;
-typedef long           int32;
-typedef unsigned long  uint32;
-#else
-typedef int INT32;
-typedef int            int32;
-typedef unsigned int   uint32;
-#endif
+typedef int int32;
+typedef unsigned int uint32;
 
 #ifdef VCELL_DEBUG
 #if ( defined(WIN32) || defined(WIN64) )

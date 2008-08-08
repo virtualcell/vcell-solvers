@@ -15,7 +15,7 @@ SparseMatrixPCG::SparseMatrixPCG(long arg_N, long arg_numNonZeros, int arg_symmf
 
 	try {
 		sa = new double[numNonZeros + 1];
-		ija = new INT32[numNonZeros + 1];
+		ija = new int32[numNonZeros + 1];
 	} catch (...) {
 		throw "Out of memory";
 	}	
@@ -32,13 +32,13 @@ SparseMatrixPCG::SparseMatrixPCG(SparseMatrixPCG* sm)
 
 	try {
 		sa = new double[numNonZeros + 1];
-		ija = new INT32[numNonZeros + 1];
+		ija = new int32[numNonZeros + 1];
 	} catch (...) {
 		throw "Out of memory";
 	}
 
 	memcpy(sa, sm->sa, (numNonZeros + 1) * sizeof(double));
-	memcpy(ija, sm->ija, (numNonZeros + 1) * sizeof(INT32));
+	memcpy(ija, sm->ija, (numNonZeros + 1) * sizeof(int32));
 	currentRow = sm->currentRow;
 	currentCol = sm->currentCol;
 	currentIndex = sm->currentIndex;
@@ -55,7 +55,7 @@ SparseMatrixPCG::~SparseMatrixPCG()
 
 void SparseMatrixPCG::clear() {
 	memset(sa, 0, (numNonZeros + 1) * sizeof(double));
-	memset(ija, 0, (numNonZeros + 1) * sizeof(INT32));
+	memset(ija, 0, (numNonZeros + 1) * sizeof(int32));
 	ija[0] = N + 1;
 	currentRow = -1;
 	currentCol = -1;
@@ -106,7 +106,7 @@ double SparseMatrixPCG::getValue(long i, long j) {
 	if (ija[i] >= numNonZeros + 1) {
 		return 0.0;
 	}
-	for (INT32 k = ija[i]; k < ija[i + 1]; k ++) {
+	for (int32 k = ija[i]; k < ija[i + 1]; k ++) {
 		if (ija[k] == j) {
 			return sa[k];
 		}
@@ -124,7 +124,7 @@ void SparseMatrixPCG::setValue(long i, long j, double value) {
 	if (ija[i] >= numNonZeros + 1) {
 		ASSERTION(0);
 	}
-	for (INT32 k = ija[i]; k < ija[i + 1]; k ++) {
+	for (int32 k = ija[i]; k < ija[i + 1]; k ++) {
 		if (ija[k] == j) {
 			sa[k]=value;
 			return;
@@ -170,7 +170,7 @@ void SparseMatrixPCG::setCol(long col, double value) {
 void SparseMatrixPCG::setRow(double diag, int numCols, int* cols, double* values) {
 	sa[currentRow] = diag;
 	if (numCols > 0) {
-		memcpy(ija + currentIndex + 1, cols, numCols * sizeof(INT32));
+		memcpy(ija + currentIndex + 1, cols, numCols * sizeof(int32));
 		memcpy(sa + currentIndex + 1, values, numCols * sizeof(double));
 		currentIndex += numCols;
 		currentCol = cols[numCols - 1];
@@ -188,9 +188,9 @@ void SparseMatrixPCG::close() {
 	currentRow = N - 1;
 }
 
-INT32* SparseMatrixPCG::getFortranIJA() {
+int32* SparseMatrixPCG::getFortranIJA() {
 	if (fortranIJA == NULL) {
-		fortranIJA  = new INT32[numNonZeros + 1];
+		fortranIJA  = new int32[numNonZeros + 1];
 	}
 	for (int i = 0; i < numNonZeros + 1; i ++) {
 		fortranIJA[i] = ija[i] + 1;
@@ -198,7 +198,7 @@ INT32* SparseMatrixPCG::getFortranIJA() {
 	return fortranIJA;
 }
 
-int SparseMatrixPCG::getColumns(long i, INT32*& columns, double*& values) {
+int SparseMatrixPCG::getColumns(long i, int32*& columns, double*& values) {
 	if (i < 0 || i >= N) {
 		throw "SparseMatrixPCG::getColumns() : index out of bound";
 	}

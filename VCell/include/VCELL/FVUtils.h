@@ -11,7 +11,7 @@ extern "C"
 #ifdef WIN32
 	#define PCGWRAPPER pcgwrapper
 #endif
-	void PCGWRAPPER(long *, long *, int *, INT32 *, double *, double *, double *, double *, int *, double *, double *, double *, double*);
+	void PCGWRAPPER(long *, long *, int *, int32 *, double *, double *, double *, double *, int *, double *, double *, double *, double*);
 #else
 	#define PCGWRAPPER pcgwrapper_
 	extern void PCGWRAPPER(...);

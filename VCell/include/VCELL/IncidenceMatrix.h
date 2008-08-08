@@ -25,14 +25,14 @@ public:
 	void setDiag(long row, TYPE value);
 	void close();
 	TYPE* getsa() { return sa; };
-	int getColumns(long i, INT32*& columns, TYPE*& values);
+	int getColumns(long i, int32*& columns, TYPE*& values);
 
 private:
 	long N;
 	long numNonZeros;
 	int symmflag;
 	TYPE *sa;
-	INT32 *ija;
+	int32 *ija;
 	long currentRow;
 	long currentCol;
 	long currentIndex;
@@ -59,7 +59,7 @@ template<class TYPE> IncidenceMatrix<TYPE>::IncidenceMatrix(long arg_N, long arg
 
 	try {
 		sa = new TYPE[numNonZeros + 1];
-		ija = new INT32[numNonZeros + 1];
+		ija = new int32[numNonZeros + 1];
 	} catch (...) {
 		throw "IncidenceMatrix<TYPE>::IncidenceMatrix() : Out of memory";
 	}
@@ -87,12 +87,12 @@ template<class TYPE>IncidenceMatrix<TYPE>::IncidenceMatrix(IncidenceMatrix* sm)
 
 	try {
 		sa = new TYPE[numNonZeros + 1];
-		ija = new INT32[numNonZeros + 1];
+		ija = new int32[numNonZeros + 1];
 	} catch (...) {
 		throw "IncidenceMatrix<TYPE>::IncidenceMatrix() : Out of memory";
 	}
 	memcpy(sa, sm->sa, (numNonZeros + 1) * sizeof(TYPE));	
-	memcpy(ija, sm->ija, (numNonZeros + 1) * sizeof(INT32));
+	memcpy(ija, sm->ija, (numNonZeros + 1) * sizeof(int32));
 	currentRow = sm->currentRow;
 	currentCol = sm->currentCol;
 	currentIndex = sm->currentIndex;
@@ -114,7 +114,7 @@ template<class TYPE> TYPE* IncidenceMatrix<TYPE>::getValue(long i, long j) {
 	if (ija[i] >= numNonZeros + 1) {
 		return 0;
 	}
-	for (INT32 k = ija[i]; k < ija[i + 1]; k ++) {
+	for (int32 k = ija[i]; k < ija[i + 1]; k ++) {
 		if (ija[k] == j) {
 			return sa + k;
 		} else if (ija[k] == -1) {
@@ -140,7 +140,7 @@ template<class TYPE> void IncidenceMatrix<TYPE>::setValue(long i, long j, TYPE v
 
 	bool bVacant = false;
 	long insPos = -1;
-	for (INT32 k = ija[i]; k < ija[i + 1]; k ++) {
+	for (int32 k = ija[i]; k < ija[i + 1]; k ++) {
 		if (ija[k] == -1) {
 			bVacant = true;		
 			if (insPos == -1) {
@@ -158,7 +158,7 @@ template<class TYPE> void IncidenceMatrix<TYPE>::setValue(long i, long j, TYPE v
 		throw "IncidenceMatrix<TYPE>::setValue() : failed";
 	}
 
-	for (INT32 k = ija[i + 1] - 2; k >= insPos; k --) {
+	for (int32 k = ija[i + 1] - 2; k >= insPos; k --) {
 		if (ija[k] == -1) {
 			continue;
 		}
@@ -228,7 +228,7 @@ template<class TYPE> void IncidenceMatrix<TYPE>::close() {
 }
 
 
-template<class TYPE> int IncidenceMatrix<TYPE>::getColumns(long i, INT32*& columns, TYPE*& values) {
+template<class TYPE> int IncidenceMatrix<TYPE>::getColumns(long i, int32*& columns, TYPE*& values) {
 	if (i >= N || i < 0) {
 		throw "IncidenceMatrix<TYPE>::getColumns() : index out of bound";
 	}

@@ -1112,12 +1112,12 @@ void FVSolver::setInitialCondition(string& varName, int dataLength, const double
 	Variable* var = simulation->getVariableFromName(varName);
 	if (var == 0) {
 		char errMsg[512];
-		sprintf(errMsg, "FVSolver::setInitialCondition() : variable %s doesn't exist", varName);
+		sprintf(errMsg, "FVSolver::setInitialCondition() : variable %s doesn't exist", varName.c_str());
 		throw errMsg;
 	}
 	if (var->getSize() != dataLength) {
 		char errMsg[512];
-		sprintf(errMsg, "FVSolver::setInitialCondition() : variable %s doesn't match in size, %d, %d", varName, var->getSize(), dataLength);
+		sprintf(errMsg, "FVSolver::setInitialCondition() : variable %s doesn't match in size, %d, %d", varName.c_str(), var->getSize(), dataLength);
 		throw errMsg;
 	}
 	memcpy(var->getCurr(), data, dataLength * sizeof(double));

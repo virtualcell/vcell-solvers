@@ -584,6 +584,10 @@ void SimulationMessaging::waitUntilFinished() {
 #endif
 }
 
+#ifdef LINUX64
+void* startMessagingThread(void* param);
+#endif
+
 void SimulationMessaging::start() {
 	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
 		return;

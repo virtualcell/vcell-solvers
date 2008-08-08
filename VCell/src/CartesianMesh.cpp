@@ -2,6 +2,10 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
+#include <sstream>
+#include <iomanip>
+using namespace std;
+
 #include <assert.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/Element.h>
@@ -13,10 +17,6 @@
 #include <VCELL/VCellModel.h>
 #include <VCELL/MembraneVariable.h>
 #include <VCELL/VolumeVariable.h>
-
-#include <sstream>
-#include <iomanip>
-using namespace std;
 
 #define MAXNEIGHBOR_2D 3
 #define MAXNEIGHBOR_3D 20
@@ -2049,7 +2049,7 @@ void CartesianMesh::computeMembraneCoupling(){
 				}
 
 				smat->addNewRow();
-				INT32* columns;
+				int32* columns;
 				VoronoiRidge* vrs;				
 				int numColumns = symmIM->getColumns(index, columns, vrs);				
 				assert(numColumns > 0);
@@ -2057,7 +2057,7 @@ void CartesianMesh::computeMembraneCoupling(){
 				double vol = 0.0;									
 				int numNeighbors = 0;
 				for (int j = 0; j < numColumns; j ++) {							
-					INT32 neighborIndex = columns[j];
+					int32 neighborIndex = columns[j];
 					if (neighborIndex == -1) {
 						break;
 					}
@@ -2488,12 +2488,12 @@ void CartesianMesh::getN(long index, int* N){
 IncidenceMatrix<VoronoiRidge>* CartesianMesh::symmetrize(IncidenceMatrix<VoronoiRidge>* im, long N) {
 	IncidenceMatrix<VoronoiRidge>* symmIM = im;
 	for (int index = 0; index < N; index ++) {
-		INT32* columnIndices = 0;
+		int32* columnIndices = 0;
 		VoronoiRidge* columnValues = 0;
 		int numColumns = symmIM->getColumns(index, columnIndices, columnValues);
 
 		for (int j = 0; j < numColumns; j ++) {	
-			INT32 neighborIndex = columnIndices[j];
+			int32 neighborIndex = columnIndices[j];
 			if (neighborIndex == -1) {
 				break;
 			}

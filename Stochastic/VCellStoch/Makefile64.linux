@@ -1,0 +1,28 @@
+CC = g++
+CFLAGS = -c -O2 -fexceptions -DUNIX -DLINUX64 -I../../ExpressionParser 
+
+LIBS = ../../ExpressionParser/libExpParser.a
+
+STDALONE_TARGET = VCellStoch
+
+%.o : %.cpp
+	$(CC) $(CFLAGS) $<
+
+default all:	$(STDALONE_TARGET)
+
+CPPOBJECTS = \
+			VCellStoch.o	\
+			Gibson.o	\
+			StochModel.o	\
+			IndexedTree.o	\
+			Jump.o	\
+			StochVar.o				
+
+$(STDALONE_TARGET): $(LIBS) $(CPPOBJECTS)
+	$(CC) -o $@ $(CPPOBJECTS) $(LIBS)
+	
+clean:
+	rm $(STDALONE_TARGET) $(CPPOBJECTS)
+
+depend:
+	makedepend -Y -f Makefile64.linux -- $(CFLAGS) -- *.c *.cpp

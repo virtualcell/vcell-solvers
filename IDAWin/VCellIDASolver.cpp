@@ -12,6 +12,7 @@ using namespace VCell;
 #include <assert.h>
 #include <ida/ida.h>
 #include <ida/ida_dense.h>
+//#include <ida/ida_spgmr.h>
 #include <nvector/nvector_serial.h>
 
 void VCellIDASolver::throwIDAErrorMessage(int returnCode) {
@@ -407,6 +408,7 @@ void VCellIDASolver::reInit(double t) {
 
 		// choose the linear solver (Dense "direct" matrix LU decomposition solver).
 		flag = IDADense(solver, NEQ);
+		//flag = IDASpgmr(solver, 0);
 		checkIDAFlag(flag);
 
 		IDASetMaxNumSteps(solver, 5000);
@@ -431,14 +433,16 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 	}
 
 	realtype Time = STARTING_TIME;
-
-	// write initial conditions
-	writeData(Time, outputFile);
-	
 	double percentile=0.00;
 	double increment =0.01;
 	long iterationCount=0;
 	long saveCount=0;
+
+	// write initial conditions
+	writeData(Time, outputFile);
+	if (bPrintProgress) {
+		printProgress(Time, percentile, increment);
+	}
 
 	if (outputTimes.size() == 0) {
 		while (Time < ENDING_TIME) {

@@ -33,9 +33,9 @@ public:
 
 	void setDiag(long row, double value);
 	void close();
-	INT32* getFortranIJA();
+	int32* getFortranIJA();
 	double* getsa() { return sa; };
-	int getColumns(long i, INT32*& columns, double*& values);
+	int getColumns(long i, int32*& columns, double*& values);
 	void clear();
 
 private:
@@ -43,8 +43,8 @@ private:
 	long numNonZeros;
     int symmflag;
     double *sa;
-    INT32 *ija;
-	INT32* fortranIJA;
+    int32 *ija;
+	int32* fortranIJA;
 	long currentRow;
 	long currentCol;
 	long currentIndex;

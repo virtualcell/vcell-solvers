@@ -1,0 +1,85 @@
+#
+# (C) Copyright University of Connecticut Health Center 2001.
+# All rights reserved.
+#
+
+CC = g++
+CPPFLAGS =	-DLINUX64 -O2 -fexceptions -I.
+ifndef MULTITHREADED
+TARGET= libExpParser.a
+else
+CPPFLAGS =	$(CPPFLAGS) -pthread
+TARGET= libExpParserMT.a
+endif
+
+LIBTOOL = ar -cru
+
+.SUFFIXES:	.cpp .o
+
+.cpp.o :		
+	$(CC) -c $(CPPFLAGS) $<
+
+default all: $(TARGET)
+
+CPPOBJECTS = ASTAddNode.o \
+	ASTAndNode.o \
+	ASTExpression.o \
+	ASTFloatNode.o \
+	ASTFuncNode.o \
+	ASTIdNode.o \
+	ASTInvertTermNode.o \
+	ASTMinusTermNode.o \
+	ASTMultNode.o \
+	ASTNotNode.o \
+	ASTOrNode.o \
+	ASTPowerNode.o \
+	ASTRelationalNode.o \
+	DivideByZeroException.o \
+	Exception.o \
+	Expression.o \
+	ExpressionBindingException.o \
+	ExpressionException.o \
+	ExpressionParser.o \
+	ExpressionParserTokenManager.o \
+	ExpressionTest.o \
+	FunctionDomainException.o \
+	FunctionRangeException.o \
+	IOException.o \
+	JJTExpressionParserState.o \
+	MathUtil.o \
+	ParseException.o \
+	ParserException.o \
+	RuntimeException.o \
+	SimpleCharStream.o \
+	SimpleNode.o \
+	SimpleSymbolTable.o \
+	SimpleSymbolTableEntry.o \
+	StackMachine.o \
+	Token.o  \
+	ValueProxy.o
+
+$(TARGET):	$(CPPOBJECTS)	
+	$(LIBTOOL) $@ $(CPPOBJECTS) 
+	ranlib $@
+	
+clean:	
+	rm *.o
+	rm $(TARGET)
+	
+depend:
+	makedepend -Y -f Makefile.linux -- $(CPPFLAGS) -- *.c *.cpp
+# DO NOT DELETE
+
+ASTAddNode.o: ASTAddNode.h SimpleNode.h Node.h stdinc.h SymbolTable.h
+ASTAddNode.o: SymbolTableEntry.h ValueProxy.h StackMachine.h
+ASTAddNode.o: ASTMinusTermNode.h ExpressionException.h Exception.h
+ASTAndNode.o: ASTAndNode.h SimpleNode.h Node.h stdinc.h SymbolTable.h
+ASTAndNode.o: SymbolTableEntry.h ValueProxy.h StackMachine.h
+ASTAndNode.o: ExpressionException.h Exception.h
+ASTExpression.o: ASTExpression.h SimpleNode.h Node.h stdinc.h SymbolTable.h
+ASTExpression.o: SymbolTableEntry.h ValueProxy.h StackMachine.h
+ASTExpression.o: ExpressionException.h Exception.h
+ASTFloatNode.o: ASTFloatNode.h SimpleNode.h Node.h stdinc.h SymbolTable.h
+ASTFloatNode.o: SymbolTableEntry.h ValueProxy.h StackMachine.h
+ASTFloatNode.o: RuntimeException.h Exception.h
+ASTFloatNode.o: ExpressionParserTreeConstants.h

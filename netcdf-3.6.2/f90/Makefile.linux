@@ -3,7 +3,7 @@
 FC= ifort
 
 # Compilation options
-FOPTIONS = -c 
+FOPTIONS = -c -O2
 
 F90LIB = libnetcdf_f90.a
 

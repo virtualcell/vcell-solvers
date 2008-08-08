@@ -140,12 +140,17 @@ void VCellSundialsSolver::writeFileHeader(FILE* outputFile) {
 	}
 }
 
-void VCellSundialsSolver::printProgress(double currTime, double& percentile, double increment) {	
-	while ((STARTING_TIME + ((percentile + increment) * (ENDING_TIME - STARTING_TIME))) <= currTime) { 
-		percentile += increment; 
+void VCellSundialsSolver::printProgress(double currTime, double& percentile, double increment) {
+	if (currTime == STARTING_TIME) { // print 0%
 		printf("[[[progress:%lg%%]]]", percentile*100.0); 
-		fflush(stdout); 
-	} 
+		fflush(stdout);		
+	} else {
+		while ((STARTING_TIME + ((percentile + increment) * (ENDING_TIME - STARTING_TIME))) <= currTime) { 
+			percentile += increment; 
+			printf("[[[progress:%lg%%]]]", percentile*100.0); 
+			fflush(stdout); 
+		}
+	}
 }
 
 void VCellSundialsSolver::readInput(istream& inputstream) { 

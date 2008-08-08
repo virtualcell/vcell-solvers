@@ -10,12 +10,11 @@ using namespace VCell;
 #include <string>
 using namespace std;
 
-PdeObjectiveFunction::PdeObjectiveFunction(ParameterDescription *arg_parameterDescription,
-	SpatialReferenceData* arg_referenceData,
-	vector<string>& arg_refColumnMappingExpressions, 
-	const char* arg_inputChars, 
-	void (*arg_checkStopRequested)(double, long))
-{
+//#define JNI_DEBUG
+
+PdeObjectiveFunction::PdeObjectiveFunction(ParameterDescription *arg_parameterDescription, SpatialReferenceData* arg_referenceData,	
+										   vector<string>& arg_refColumnMappingExpressions, const char* arg_inputChars, 
+										   void (*arg_checkStopRequested)(double, long)) {
 	istringstream inputStream(arg_inputChars);
 	fvSolver = new FVSolver(inputStream);
 	parameterDescription = arg_parameterDescription;
@@ -50,19 +49,31 @@ void PdeObjectiveFunction::objective(int nparams, double* parameterValues, doubl
 	bool done = false;
 	int refDataTimeIndex = 0;
 	double currentSolverTime = 0;
-//std::cout << "calling objective[" << numObjFuncEvals << "], p=[";
-//for (int i=0;i<nparams;i++){
-//	std::cout << unscaled_x[i] << " "; 
-//}
-//std::cout << "]" << std::endl;
+#ifdef JNI_DEBUG
+	std::cout << "calling objective[" << numObjFuncEvals << "], p=[";
+	for (int i=0;i<nparams;i++){
+		std::cout << unscaled_x[i] << " "; 
+	}
+	std::cout << "]" << std::endl;
+#endif
+	int numRefDataVars = referenceData->getNumVariables();
+	int numRefTimePoints = referenceData->getNumTimePoints();
 	try {
 		fvSolver->init(unscaled_x);
+		for (int refDataVarIndex=0; refDataVarIndex<numRefDataVars; refDataVarIndex++){
+			const double* refData = referenceData->getData(0,refDataVarIndex);
+			string& varName = referenceData->getVariable(refDataVarIndex);
+			fvSolver->setInitialCondition(varName, referenceData->getDataSize(), refData);
+		}
+		
 		while (!done){
-
 			double currentSolverTime=fvSolver->getCurrentTime();
 			double refDataTime = referenceData->getTimePoint(refDataTimeIndex);
+			if (refDataTime == 0) {
+				refDataTimeIndex ++;
+				continue;
+			}
 			while (currSolverTime<refDataTime){
-				parameterDescription->unscaleX(parameterValues,unscaled_x);
 				fvSolver->step(unscaled_x);
 				currSolverTime = fvSolver->getCurrentTime();
 			}
@@ -70,28 +81,16 @@ void PdeObjectiveFunction::objective(int nparams, double* parameterValues, doubl
 			// compare curr refData against curr sim data
 			// (initially at t=0)
 			//
-			int numRefDataVars = referenceData->getNumVariables();
-			int numRefTimePoints = referenceData->getNumTimePoints();
 			for (int refDataVarIndex=0; refDataVarIndex<numRefDataVars; refDataVarIndex++){
 				const double* refData = referenceData->getData(refDataTimeIndex,refDataVarIndex);
 				string& varName = fvSolver->getVariableName(refDataVarIndex);
 				double* simData = fvSolver->getValue(varName,1);
 				int varLength = fvSolver->getVariableLength(varName);
-//std::cout << "t=" << currSolverTime << "/" << currSolverTime << " calcium=[ " << refData[0] << "/" << simData[0] << "]" << std::endl;
-				//std::cout << "t=" << currSolverTime << "/" << currSolverTime << " calcium=[ ";
 				for (int arrayIndex=0; arrayIndex<varLength; arrayIndex++){
-					//std::cout << refData[arrayIndex] << "/" << simData[arrayIndex] << ", ";
 					double error = refData[arrayIndex] - simData[arrayIndex];
-					//std::cout << "([" << arrayIndex << "]" << refData[arrayIndex] << "-" << simData[arrayIndex] << "=" << error << ") ";
-//if (arrayIndex==0 || arrayIndex==1 || arrayIndex == 99){
-//	std::cout << "t=(" << currSolverTime << "/" << currSolverTime << ") ";
-//	std::cout << "calcium[" << arrayIndex << "]: " << refData[arrayIndex] << " - " << simData[arrayIndex] << " = " << error << ") " << std::endl;
-//}
 					sumSquaredError += error*error;
 					sampleCount++;
 				}
-				//std::cout << std::endl;
-				//std::cout << "]" << std::endl;
 			}
 			//
 			// go to the next refData time point 
@@ -109,7 +108,7 @@ void PdeObjectiveFunction::objective(int nparams, double* parameterValues, doubl
 		*functionValue = sqrt(sumSquaredError/sampleCount);
 
 	} catch (Exception ex) {
-		std::cout << "caught exception while in pdeObjectiveFunction: " << ex.getMessage() << std::endl;
+		cout << "caught exception while in pdeObjectiveFunction: " << ex.getMessage() << std::endl;
 		*functionValue = 1000000;
 	}
 	if (bestObjectiveFunctionValue > *functionValue) {

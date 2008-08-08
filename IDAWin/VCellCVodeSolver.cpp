@@ -12,6 +12,7 @@
 #include <cvode/cvode.h>             /* prototypes for CVODE fcts. and consts. */
 #include <nvector/nvector_serial.h>  /* serial N_Vector types, fcts., and macros */
 #include <cvode/cvode_dense.h>       /* prototype for CVDense */
+//#include <cvode/cvode_spgmr.h>       /* prototype for CVSPGMR */
 #include <sundials/sundials_dense.h> /* definitions DenseMat DENSE_ELEM */
 #include <sundials/sundials_types.h> /* definition of type realtype */
 
@@ -255,6 +256,7 @@ void VCellCVodeSolver::reInit(double t) {
 		flag = CVodeSetFdata(solver, this);
 		checkCVodeFlag(flag);
 		flag = CVDense(solver, NEQ);
+		//flag = CVSpgmr(solver, PREC_NONE, 0);
 		checkCVodeFlag(flag);
 
 		flag = CVodeSetMaxNumSteps(solver, 5000);
@@ -265,15 +267,21 @@ void VCellCVodeSolver::reInit(double t) {
 }
 
 void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long)) {	
+	if (checkStopRequested != 0) {
+		checkStopRequested(STARTING_TIME, 0);
+	}
+
 	realtype Time = STARTING_TIME;
-
-	// write intial conditions
-	writeData(Time, outputFile);
-
 	double percentile=0.00;
 	double increment =0.01;
 	long iterationCount=0;
 	long saveCount=0;
+
+	// write intial conditions
+	writeData(Time, outputFile);
+	if (bPrintProgress) {
+		printProgress(Time, percentile, increment);
+	}
 
 	if (outputTimes.size() == 0) {
 		while (Time < ENDING_TIME) {

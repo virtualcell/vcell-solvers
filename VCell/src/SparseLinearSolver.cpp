@@ -123,7 +123,7 @@ int* SparseLinearSolver::PCGSolve(bool bRecomputeIncompleteFactorization)
 	SparseMatrixPCG *A = smEqnBuilder->getA();
 	double* sa = A->getsa();
 	double *pRHS = smEqnBuilder->getB();
-	INT32 *ija = A->getFortranIJA(); //before was long
+	int32 *ija = A->getFortranIJA(); //before was long
 	long Nrsp = nWork;
 	double *pNew = smEqnBuilder->getX();
 	int symmetricflg = A->getSymmetricFlag();  // general or symmetric storage format

@@ -2,11 +2,12 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
+#include <fstream>
+using namespace std;
+
 #include <VCELL/SimTypes.h>
 #include <VCELL/Variable.h>
 #include <VCELL/FVUtils.h>
-#include <fstream>
-using namespace std;
 
 Variable::Variable(long Asize, string& nameStr, string& Aunits)
 {
@@ -21,19 +22,14 @@ Variable::Variable(long Asize, string& nameStr, string& Aunits)
 
 Variable::~Variable()
 {
-	if (old) delete[] old;
-	if (curr) delete[] curr;
+	delete[] old;
+	delete[] curr;
 }
 
 void Variable::clear()
 {
-	long i;
-	double *ptrCurr = curr;
-	double *ptrOld = old;
-	for (i=0; i<size; i++){
-		*ptrCurr++ = 0.0;
-		*ptrOld++ = 0.0;
-	}
+	memset(old, 0, size * sizeof(double));
+	memset(curr, 0, size * sizeof(double));
 }
 
 void Variable::show(ofstream& fp)

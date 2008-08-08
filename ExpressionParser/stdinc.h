@@ -12,7 +12,7 @@ using namespace std;
 
 #define null 0
 
-#ifndef MACOSX
+#if (!defined(MACOSX) && !defined(LINUX64))
 #define round(a) (floor((a)+0.5))
 #endif
 

@@ -51,7 +51,7 @@ void MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIndex
 		ASSERTION(membraneElement->feature);			
 		MembraneVarContext *varContext = membraneElement->feature->getMembraneVarContext((MembraneVariable*)var);		
 		int mask = mesh->getMembraneNeighborMask(membraneElement);
-		INT32* columns;
+		int32* columns;
 		double* values;
 		int numColumns = membraneElementCoupling->getColumns(index, columns, values);
 		if (mask & NEIGHBOR_BOUNDARY_MASK && mask & BOUNDARY_TYPE_DIRICHLET){   // boundary and dirichlet
@@ -59,7 +59,7 @@ void MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIndex
 
 			// clear other non zeros
 			for (long j = 0; j < numColumns; j ++) {
-				INT32 neighborIndex = columns[j];
+				int32 neighborIndex = columns[j];
 				A->setValue(index, neighborIndex, 0);
 			}		
 		} else {		
@@ -68,7 +68,7 @@ void MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIndex
 			double Aii = volume/deltaTime;
 
 			for (long j = 0; j < numColumns; j ++) {
-				INT32 neighborIndex = columns[j];
+				int32 neighborIndex = columns[j];
 				double Dj = varContext->getMembraneDiffusionRate(pMembraneElement + neighborIndex);
 				double D = (Di + Dj < epsilon)?(0.0):(2 * Di * Dj/(Di + Dj));
 				double Aij = D * values[j];

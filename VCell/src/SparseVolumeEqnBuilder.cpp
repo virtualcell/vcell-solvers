@@ -6,6 +6,9 @@
 #include <Windows.h>
 #endif
 
+#include <sstream>
+using namespace std;
+
 #include <VCELL/SparseVolumeEqnBuilder.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/Solver.h>
@@ -21,8 +24,6 @@
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/VCellModel.h>
 #include <assert.h>
-#include <sstream>
-using namespace std;
 
 static double epsilon = 1e-10;    // zero diffusion threshold at 1e-10 micron^2/second
 
