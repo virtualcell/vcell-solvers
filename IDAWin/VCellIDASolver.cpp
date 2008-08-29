@@ -375,7 +375,7 @@ void VCellIDASolver::initIDA(double* paramValues) {
 		NV_Ith_S(yp, i) = 0; // Initialize yp  to be 0, they will be reinitialize later.
 		NV_Ith_S(y, i) = 0;		
 		for (int j = 0; j < NEQ; j ++) {
-			NV_Ith_S(y, i) += transformMatrix[i][j] * values[1 + i];
+			NV_Ith_S(y, i) += transformMatrix[i][j] * values[1 + j];
 		}
 	}
 
