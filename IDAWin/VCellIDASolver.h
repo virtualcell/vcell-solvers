@@ -60,6 +60,7 @@ private:
 	void checkIDAFlag(int flag);
 
 	void reInit(double t);
+	bool fixInitialDiscontinuities(double* paramValues);
 };
 
 #endif

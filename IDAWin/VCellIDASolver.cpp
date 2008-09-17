@@ -372,19 +372,23 @@ void VCellIDASolver::initIDA(double* paramValues) {
 	// Initialize y, yp and id.
 	for (int i = 0; i < NEQ; i ++) {
 		NV_Ith_S(id, i) = i < numDifferential ? RCONST(1) : RCONST(0);
-		NV_Ith_S(yp, i) = 0; // Initialize yp  to be 0, they will be reinitialize later.
+		NV_Ith_S(yp, i) = 0; // Initialize yp  to be 0, they will be reinitialized later.
 		NV_Ith_S(y, i) = 0;		
 		for (int j = 0; j < NEQ; j ++) {
 			NV_Ith_S(y, i) += transformMatrix[i][j] * values[1 + j];
 		}
 	}
 
-	reInit(STARTING_TIME);	
+	if (numDiscontinuities > 0) {
+		initDiscontinuities();
+	}
+
+	reInit(STARTING_TIME);
 
 	if (numDiscontinuities > 0) {
+		solveInitialDiscontinuities(paramValues);
 		int flag = IDARootInit(solver, numDiscontinuities, RootFn_callback, this);
 		checkIDAFlag(flag);
-		initDiscontinuities();
 	}
 }
 
@@ -425,6 +429,55 @@ void VCellIDASolver::reInit(double t) {
 	checkIDAFlag(flag);
 	flag = IDAGetConsistentIC(solver, y, yp);
 	checkIDAFlag(flag);
+}
+
+bool VCellIDASolver::fixInitialDiscontinuities(double* paramValues) {
+	double t = STARTING_TIME;
+	double epsilon = 1e-15;
+	IDASetStopTime(solver, t + epsilon);
+	int returnCode = IDASolve(solver, t + epsilon, &t, y, yp, IDA_ONE_STEP_TSTOP);
+	if (returnCode != IDA_TSTOP_RETURN && returnCode != IDA_SUCCESS) {
+		throwIDAErrorMessage(returnCode);
+	}
+
+	bool bInitChanged = false;
+	values[0] = t;
+	for (int i = 0; i < NEQ; i ++) {
+		values[i + 1] = 0;
+		for (int j = 0; j < NEQ; j ++) {
+			values[i + 1] += inverseTransformMatrix[i][j] * NV_Ith_S(y, j);
+		}
+	}
+	for (int i = 0; i < numDiscontinuities; i ++) {
+		double v = odeDiscontinuities[i]->discontinuityExpression->evaluateVector(values);
+		if (v != discontinuityValues[i]) {
+			cout << "update discontinuities at time 0  : " << odeDiscontinuities[i]->discontinuityExpression->infix() << " " << discontinuityValues[i] << " " << v << endl;
+			discontinuityValues[i] = v;			
+			bInitChanged = true;
+		}
+	}
+
+	// initialize variable portion of values
+	values[0] = STARTING_TIME;
+	for (int i = 0; i < NEQ; i ++) {
+		values[1 + i] = initialConditionExpressions[i]->evaluateVector(paramValues);
+	}
+
+	// must initialize y and yp before call IDAMalloc
+	// Initialize y, yp.
+	for (int i = 0; i < NEQ; i ++) {
+		NV_Ith_S(yp, i) = 0; // Initialize yp  to be 0, they will be reinitialized later.
+		NV_Ith_S(y, i) = 0;		
+		for (int j = 0; j < NEQ; j ++) {
+			NV_Ith_S(y, i) += transformMatrix[i][j] * values[1 + j];
+		}
+	}	
+	reInit(STARTING_TIME);
+	if (bInitChanged) {
+		memcpy(values + 1 + NEQ + NPARAM, discontinuityValues, numDiscontinuities * sizeof(double));
+	}
+
+	return bInitChanged;
 }
 
 void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long)) {	

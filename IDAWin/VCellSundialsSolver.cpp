@@ -34,6 +34,8 @@ char* trim(char* str) {
 	return newstr;
 }
 
+#ifndef TRIMSTRING
+#define TRIMSTRING
 void trimString(string& str)
 {
 	string::size_type pos = str.find_last_not_of(" \r\n");
@@ -48,6 +50,7 @@ void trimString(string& str)
 		str.erase(str.begin(), str.end());
 	}
 }
+#endif
 
 VCellSundialsSolver::VCellSundialsSolver() {
 	NEQ = 0;
@@ -288,13 +291,15 @@ void VCellSundialsSolver::initialize() {
 		initialConditionExpressions[i]->bindExpression(initialConditionSymbolTable);			
 	}
 
-	rootsFound = new int[numDiscontinuities];
-	discontinuityValues = new double[numDiscontinuities];
-	// discontinuities can't be function of discontinuity symbols
-	discontinuitySymbolTable = new SimpleSymbolTable(allSymbols, 1 + NEQ + NPARAM);
-	for (int i = 0; i < numDiscontinuities; i ++) {
-		odeDiscontinuities[i]->discontinuityExpression->bindExpression(discontinuitySymbolTable);
-		odeDiscontinuities[i]->rootFindingExpression->bindExpression(discontinuitySymbolTable);
+	if (numDiscontinuities > 0) {
+		rootsFound = new int[numDiscontinuities];
+		discontinuityValues = new double[numDiscontinuities];
+		// discontinuities can't be function of discontinuity symbols
+		discontinuitySymbolTable = new SimpleSymbolTable(allSymbols, 1 + NEQ + NPARAM);
+		for (int i = 0; i < numDiscontinuities; i ++) {
+			odeDiscontinuities[i]->discontinuityExpression->bindExpression(discontinuitySymbolTable);
+			odeDiscontinuities[i]->rootFindingExpression->bindExpression(discontinuitySymbolTable);
+		}
 	}
 	try {
 		values = new realtype[1 + NEQ + NPARAM + numDiscontinuities];
@@ -344,6 +349,38 @@ void VCellSundialsSolver::checkDiscontinuityConsistency(realtype t, N_Vector y) 
 			stringstream ss;
 			ss << "at time " << t << ", discontinuity " << odeDiscontinuities[i]->discontinuityExpression->infix() << " evaluated to " << (realValue ? "TRUE" : "FALSE") << ", solver assumed " << (discontinuityValues[i] ? "TRUE" : "FALSE") << endl;
 			throw ss.str();
+		}
+	}
+}
+
+void VCellSundialsSolver::solveInitialDiscontinuities(double* paramValues) {
+	bool bFoundRoot = false;
+	string roots_at_initial_str = "";
+	for (int i = 0; i < numDiscontinuities; i ++) {
+		double v = odeDiscontinuities[i]->rootFindingExpression->evaluateVector(values);
+		if (fabs(v) < AbsoluteTolerance) {
+			roots_at_initial_str += odeDiscontinuities[i]->discontinuityExpression->infix() + "; ";
+			bFoundRoot = true;
+		}
+	}
+
+	if (bFoundRoot) {
+		int count = 0;
+		int maxCount = (int)pow(2.0, numDiscontinuities);
+		while (count < maxCount) {
+			try {
+				if (!fixInitialDiscontinuities(paramValues)) {
+					break;
+				}
+			} catch (const char* err) {
+				string str = string("found discontinuities at time 0 but unable to initialize : ") + err + "\nDiscontinuities at time 0 are : " + roots_at_initial_str;
+				throw str;
+			}
+			count ++;
+		}
+		if (count >= maxCount) {
+			string str = "found discontinuities at time 0 but unable to initialize due to max iterations.\nDiscontinuities at time 0 are : " + roots_at_initial_str;
+			throw str;
 		}
 	}
 }

@@ -88,6 +88,8 @@ protected:
 	void initDiscontinuities();
 	void updateDiscontinuities();
 	void checkDiscontinuityConsistency(realtype t, N_Vector y);
+	void solveInitialDiscontinuities(double* paramValues);
+	virtual bool fixInitialDiscontinuities(double* paramValues)=0;
 };
 
 void trimString(string& str);

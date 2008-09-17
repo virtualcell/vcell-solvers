@@ -233,12 +233,16 @@ void VCellCVodeSolver::initCVode(double* paramValues) {
 		NV_Ith_S(y, i) = values[1 + i];	
 	}		
 
-	reInit(STARTING_TIME);
+	if (numDiscontinuities > 0) {
+		initDiscontinuities();
+	}
+
+	reInit(STARTING_TIME);	
 
 	if (numDiscontinuities > 0) {
+		solveInitialDiscontinuities(paramValues);
 		int flag = CVodeRootInit(solver, numDiscontinuities, RootFn_callback, this);
 		checkCVodeFlag(flag);
-		initDiscontinuities();
 	}
 }
 
@@ -264,6 +268,42 @@ void VCellCVodeSolver::reInit(double t) {
 		flag = CVodeReInit(solver, RHS_callback, t, y, ToleranceType, RelativeTolerance, &AbsoluteTolerance);
 	}
 	checkCVodeFlag(flag);
+}
+
+bool VCellCVodeSolver::fixInitialDiscontinuities(double* paramValues) {
+	double t = STARTING_TIME;
+	double epsilon = 1e-15;
+	CVodeSetStopTime(solver, t + epsilon);
+	int returnCode = CVode(solver, t + epsilon, y, &t, CV_ONE_STEP_TSTOP);
+	if (returnCode != CV_TSTOP_RETURN && returnCode != CV_SUCCESS) {
+		throwCVodeErrorMessage(returnCode);
+	}
+
+	bool bInitChanged = false;
+	values[0] = t;
+	memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
+	// evaluate discontinuities at t+epsilon
+	for (int i = 0; i < numDiscontinuities; i ++) {
+		double v = odeDiscontinuities[i]->discontinuityExpression->evaluateVector(values);
+		if (v != discontinuityValues[i]) {
+			cout << "update discontinuities at time 0  : " << odeDiscontinuities[i]->discontinuityExpression->infix() << " " << discontinuityValues[i] << " " << v << endl;
+			discontinuityValues[i] = v;			
+			bInitChanged = true;
+		}
+	}
+
+	//Initialize y, variable portion of values
+	values[0] = STARTING_TIME;
+	for (int i = 0; i < NEQ; i ++) {
+		values[1 + i] = initialConditionExpressions[i]->evaluateVector(paramValues);
+		NV_Ith_S(y, i) = values[1 + i];	
+	}
+	reInit(STARTING_TIME);
+	if (bInitChanged) {
+		memcpy(values + 1 + NEQ + NPARAM, discontinuityValues, numDiscontinuities * sizeof(double));
+	}
+
+	return bInitChanged;
 }
 
 void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long)) {	
