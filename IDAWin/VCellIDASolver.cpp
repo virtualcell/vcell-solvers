@@ -507,6 +507,13 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 			IDASetStopTime(solver, tstop);
 			int returnCode = IDASolve(solver, ENDING_TIME, &Time, y, yp, IDA_ONE_STEP_TSTOP);
 			iterationCount++;				
+			values[0] = Time;
+			for (int i = 0; i < NEQ; i ++) {
+				values[i + 1] = 0;
+				for (int j = 0; j < NEQ; j ++) {
+					values[i + 1] += inverseTransformMatrix[i][j] * NV_Ith_S(y, j);
+				}
+			}	
 
 			// save data if return IDA_TSTOP_RETURN (meaning reached end of time or max time step 
 			// before one normal step) or IDA_SUCCESS (meaning one normal step)
@@ -515,10 +522,15 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 					// flip discontinuities				
 					int flag = IDAGetRootInfo(solver, rootsFound);
 					checkIDAFlag(flag);
+					cout << "roots found at time " << Time << endl;
+					//cout << "variable values are" << endl;
+					//for (int i = 0; i < NEQ; i ++) {
+					//	cout << variableNames[i] << " " << values[i + 1] << endl;
+					//}					
 					updateDiscontinuities();
 					reInit(Time);
 				} else {
-					checkDiscontinuityConsistency(Time, y);
+					checkDiscontinuityConsistency();
 				}
 				if (returnCode == IDA_ROOT_RETURN || iterationCount%keepEvery == 0 || Time >= ENDING_TIME){
 					saveCount++;
@@ -563,10 +575,15 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 						// flip discontinuities				
 						int flag = IDAGetRootInfo(solver, rootsFound);
 						checkIDAFlag(flag);
+						cout << "roots found at time " << Time << endl;
+						//cout << "variable values are" << endl;
+						//for (int i = 0; i < NEQ; i ++) {
+						//	cout << variableNames[i] << " " << values[i + 1] << endl;
+						//}					
 						updateDiscontinuities();
 						reInit(Time);
 					}  else {
-						checkDiscontinuityConsistency(Time, y);
+						checkDiscontinuityConsistency();
 					}
 					if (Time == sampleTime) {
 						writeData(Time, outputFile);

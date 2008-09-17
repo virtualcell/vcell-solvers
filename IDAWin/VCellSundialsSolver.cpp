@@ -337,18 +337,16 @@ void VCellSundialsSolver::initDiscontinuities() {
 	memcpy(values + 1 + NEQ + NPARAM, discontinuityValues, numDiscontinuities * sizeof(double));
 }
 
-void VCellSundialsSolver::checkDiscontinuityConsistency(realtype t, N_Vector y) {
+void VCellSundialsSolver::checkDiscontinuityConsistency() {
 	if (numDiscontinuities == 0) {
 		return;
 	}
 
-	values[0] = t;
-	memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
 	for (int i = 0; i < numDiscontinuities; i ++) {
 		double realValue = odeDiscontinuities[i]->discontinuityExpression->evaluateVector(values);
 		if (discontinuityValues[i] != realValue) {
 			stringstream ss;
-			ss << "at time " << t << ", discontinuity " << odeDiscontinuities[i]->discontinuityExpression->infix() << " evaluated to " << (realValue ? "TRUE" : "FALSE") << ", solver assumed " << (discontinuityValues[i] ? "TRUE" : "FALSE") << endl;
+			ss << "at time " << values[0] << ", discontinuity " << odeDiscontinuities[i]->discontinuityExpression->infix() << " evaluated to " << (realValue ? "TRUE" : "FALSE") << ", solver assumed " << (discontinuityValues[i] ? "TRUE" : "FALSE") << endl;
 			throw ss.str();
 		}
 	}

@@ -333,20 +333,26 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 			CVodeSetStopTime(solver, tstop);
 			int returnCode = CVode(solver, ENDING_TIME, y, &Time, CV_ONE_STEP_TSTOP);
 			iterationCount++;
+			values[0] = Time;
+			memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
 
 			// save data if return CV_TSTOP_RETURN (meaning reached end of time or max time step 
 			// before one normal step) or CV_SUCCESS (meaning one normal step)
 			if (returnCode == CV_TSTOP_RETURN || returnCode == CV_SUCCESS || returnCode == CV_ROOT_RETURN) {						
 				if (returnCode == CV_ROOT_RETURN) {
 					cout << setprecision(20);
-					cout << endl << "found root at " << Time << endl;
 					// flip discontinuities				
 					int flag = CVodeGetRootInfo(solver, rootsFound);
 					checkCVodeFlag(flag);
+					cout << "roots found at time " << Time << endl;
+					//cout << "variable values are" << endl;
+					//for (int i = 0; i < NEQ; i ++) {
+					//	cout << variableNames[i] << " " << values[i + 1] << endl;
+					//}					
 					updateDiscontinuities();
 					reInit(Time);
 				} else {
-					checkDiscontinuityConsistency(Time, y);
+					checkDiscontinuityConsistency();
 				}
 				if (returnCode == CV_ROOT_RETURN || iterationCount % keepEvery == 0 || Time >= ENDING_TIME){
 					saveCount++;
@@ -391,10 +397,15 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 						// flip discontinuities				
 						int flag = CVodeGetRootInfo(solver, rootsFound);
 						checkCVodeFlag(flag);
+						cout << "roots found at time " << Time << endl;
+						//cout << "variable values are" << endl;
+						//for (int i = 0; i < NEQ; i ++) {
+						//	cout << variableNames[i] << " " << values[i + 1] << endl;
+						//}					
 						updateDiscontinuities();
 						reInit(Time);
 					}  else {
-						checkDiscontinuityConsistency(Time, y);
+						checkDiscontinuityConsistency();
 					}
 					if (Time == sampleTime) {
 						writeData(Time, outputFile);

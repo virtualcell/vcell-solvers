@@ -87,7 +87,7 @@ protected:
 
 	void initDiscontinuities();
 	void updateDiscontinuities();
-	void checkDiscontinuityConsistency(realtype t, N_Vector y);
+	void checkDiscontinuityConsistency();
 	void solveInitialDiscontinuities(double* paramValues);
 	virtual bool fixInitialDiscontinuities(double* paramValues)=0;
 };
