@@ -40,19 +40,19 @@ int main(int argc, char *argv[]) {
 
 	} catch (const char* ex) {
 		CLOSE_FILES
-		cerr << "IDAStandalone failed : " << ex << endl;
+		cerr << "IDA solver failed : " << ex << endl;
 		return -1;
 	} catch (string& ex) {
 		CLOSE_FILES
-		cerr << "IDAStandalone failed : " << ex << endl;
+		cerr << "IDA solver failed : " << ex << endl;
 		return -1;
 	} catch (Exception& ex) {
 		CLOSE_FILES
-		cerr << "IDAStandalone failed : " << ex.getMessage() << endl;
+		cerr << "IDA solver failed : " << ex.getMessage() << endl;
 		return -1;
 	} catch (...) {
 		CLOSE_FILES
-		cerr << "IDAStandalone failed : unknown error." << endl;
+		cerr << "IDA solver failed : unknown error." << endl;
 		return -1;
 	}
 }

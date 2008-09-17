@@ -38,19 +38,19 @@ int main(int argc, char *argv[]) {
 		return 0;
 	} catch (const char* ex) {
 		CLOSE_FILES
-		cerr << "CVodeStandalone failed : " << ex << endl;
+		cerr << "CVODE solver failed : " << ex << endl;
 		return -1;
 	} catch (string& ex) {
 		CLOSE_FILES
-		cerr << "CVodeStandalone failed : " << ex << endl;
+		cerr << "CVODE solver failed : " << ex << endl;
 		return -1;
 	} catch (Exception& ex) {
 		CLOSE_FILES
-		cerr << "CVodeStandalone failed : " << ex.getMessage() << endl;
+		cerr << "CVODE solver failed : " << ex.getMessage() << endl;
 		return -1;
 	} catch (...) {
 		CLOSE_FILES
-		cerr << "CVode solver failed : unknown error." << endl;
+		cerr << "CVODE solver failed : unknown error." << endl;
 		return -1;
 	}
 }
