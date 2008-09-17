@@ -5,6 +5,7 @@
 #include "VCellSundialsSolver.h"
 #include "OdeResultSet.h"
 #include <assert.h>
+#include <math.h>
 
 char* trim(char* str) {	
 	int leftIndex, rightIndex;
