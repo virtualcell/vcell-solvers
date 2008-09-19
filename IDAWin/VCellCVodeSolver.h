@@ -33,7 +33,7 @@ private:
 		(in which case cvode will attempt to correct), or a negative value if it failed unrecoverably 
 		(in which case the integration is halted and CV RHSFUNC FAIL is returned).
 	*/
-	int RootFn(realtype t, N_Vector y, realtype *gout);
+	//int RootFn(realtype t, N_Vector y, realtype *gout);
 	static int RootFn_callback(realtype t, N_Vector y, realtype *gout, void *g_data);
 	/**
 	Arguments 
@@ -52,8 +52,9 @@ private:
 	void throwCVodeErrorMessage(int returnCode);
 	void checkCVodeFlag(int flag);
 
-	void reInit(double t);
-	bool fixInitialDiscontinuities(double* paramValues);
+	void reInit(realtype t);
+	bool fixInitialDiscontinuities();
+	void updateTandVariableValues(realtype t, N_Vector y);
 
 };
 

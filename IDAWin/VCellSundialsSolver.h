@@ -86,10 +86,17 @@ protected:
 	virtual void initialize();
 
 	void initDiscontinuities();
-	void updateDiscontinuities();
+	void updateDiscontinuities(realtype t);
 	void checkDiscontinuityConsistency();
-	void solveInitialDiscontinuities(double* paramValues);
-	virtual bool fixInitialDiscontinuities(double* paramValues)=0;
+
+	void solveInitialDiscontinuities();
+	virtual bool fixInitialDiscontinuities()=0;
+
+	void printVariableValues(realtype t);
+	void printDiscontinuityValues();
+	virtual void updateTandVariableValues(realtype t, N_Vector y)=0;
+
+	int RootFn(realtype t, N_Vector y, realtype *gout);
 };
 
 void trimString(string& str);

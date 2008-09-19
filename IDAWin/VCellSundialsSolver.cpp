@@ -16,7 +16,7 @@ char* trim(char* str) {
 			break;
 		}
 	}
-	for (rightIndex = len - 1; rightIndex >= 0; rightIndex --) { // remove trailing spaces and new line and carriage return		
+	for (rightIndex = len - 1; rightIndex >= 0; rightIndex --) { // remove trailing spaces and new line and carriage return
 		char c = str[rightIndex];
 		if (c != ' ' && c != '\n' && c != '\r') {
 			break;
@@ -289,11 +289,11 @@ void VCellSundialsSolver::initialize() {
 	// initial condition can only be function of parameters.
 	initialConditionSymbolTable = new SimpleSymbolTable(allSymbols + 1 + NEQ, NPARAM);
 	for (int i = 0; i < NEQ; i ++) {
-		initialConditionExpressions[i]->bindExpression(initialConditionSymbolTable);			
+		initialConditionExpressions[i]->bindExpression(initialConditionSymbolTable);
 	}
 
 	if (numDiscontinuities > 0) {
-		rootsFound = new int[numDiscontinuities];
+		rootsFound = new int[2*numDiscontinuities];
 		discontinuityValues = new double[numDiscontinuities];
 		// discontinuities can't be function of discontinuity symbols
 		discontinuitySymbolTable = new SimpleSymbolTable(allSymbols, 1 + NEQ + NPARAM);
@@ -315,20 +315,37 @@ void VCellSundialsSolver::initialize() {
 	}
 }
 
-void VCellSundialsSolver::updateDiscontinuities() {
-	cout << endl << "updateDiscontinuities" << endl;
+void VCellSundialsSolver::updateDiscontinuities(realtype t) {
+	if (numDiscontinuities == 0) {
+		return;
+	}
+
+	updateTandVariableValues(t, y);
 	for (int i = 0; i < numDiscontinuities; i ++) {
-		cout << odeDiscontinuities[i]->discontinuitySymbol << " " << odeDiscontinuities[i]->discontinuityExpression->infix() << " " << discontinuityValues[i] << " ";
-		if (rootsFound[i]) {
+		cout << odeDiscontinuities[i]->discontinuitySymbol << " " << odeDiscontinuities[i]->discontinuityExpression->infix() << " " << discontinuityValues[i];
+		if (rootsFound[2 * i] && rootsFound[2 * i + 1]) {
+			cout << " inverted ";
 			discontinuityValues[i] = discontinuityValues[i] ? 0.0 : 1.0;
+		} else if (rootsFound[2 * i] || rootsFound[2 * i + 1]) {
+			cout << " evaluated ";
+			discontinuityValues[i] = odeDiscontinuities[i]->discontinuityExpression->evaluateVector(values);
+		} else {
+			cout << " nonroot ";
 		}
 		cout << discontinuityValues[i] << endl;
 	}
+	cout << endl;
+
 	// copy discontinuity values to values to evaluate RHS
 	memcpy(values + 1 + NEQ + NPARAM, discontinuityValues, numDiscontinuities * sizeof(double));
 }
 
 void VCellSundialsSolver::initDiscontinuities() {
+	if (numDiscontinuities == 0) {
+		return;
+	}
+
+	updateTandVariableValues(STARTING_TIME, y);
 	// init discontinuities	
 	for (int i = 0; i < numDiscontinuities; i ++) {
 		discontinuityValues[i] = odeDiscontinuities[i]->discontinuityExpression->evaluateVector(values);
@@ -352,7 +369,8 @@ void VCellSundialsSolver::checkDiscontinuityConsistency() {
 	}
 }
 
-void VCellSundialsSolver::solveInitialDiscontinuities(double* paramValues) {
+void VCellSundialsSolver::solveInitialDiscontinuities() {
+	cout << "------------------solveInitialDiscontinuities--at-time-" << STARTING_TIME << "--------------------------" << endl;
 	bool bFoundRoot = false;
 	string roots_at_initial_str = "";
 	for (int i = 0; i < numDiscontinuities; i ++) {
@@ -364,11 +382,12 @@ void VCellSundialsSolver::solveInitialDiscontinuities(double* paramValues) {
 	}
 
 	if (bFoundRoot) {
+		cout << "solveInitialDiscontinuities() : roots found at time " << STARTING_TIME << "; " << roots_at_initial_str << endl;
 		int count = 0;
 		int maxCount = (int)pow(2.0, numDiscontinuities);
 		while (count < maxCount) {
 			try {
-				if (!fixInitialDiscontinuities(paramValues)) {
+				if (!fixInitialDiscontinuities()) {
 					break;
 				}
 			} catch (const char* err) {
@@ -382,4 +401,42 @@ void VCellSundialsSolver::solveInitialDiscontinuities(double* paramValues) {
 			throw str;
 		}
 	}
+	cout << "-------------------------------------------------------------------------------------------" << endl;
+}
+
+void VCellSundialsSolver::printVariableValues(realtype t) {
+	updateTandVariableValues(t, y);
+	cout << "variable values are" << endl;
+	cout << "t " << values[0] << endl;
+	for (int i = 0; i < NEQ; i ++) {
+		cout << variableNames[i] << " " << values[i + 1] << endl;
+	}
+	cout << endl;
+}
+
+void VCellSundialsSolver::printDiscontinuityValues() {
+	cout << endl << "discontinuities values are" << endl;
+	for (int i = 0; i < numDiscontinuities; i ++) {
+		cout << odeDiscontinuities[i]->discontinuitySymbol << " " << odeDiscontinuities[i]->discontinuityExpression->infix() << " " << discontinuityValues[i] << endl;
+	}
+	cout << endl;
+}
+
+int VCellSundialsSolver::RootFn(realtype t, N_Vector y, realtype *gout) {
+	updateTandVariableValues(t, y);
+	//cout << "RootFn " << endl;
+	//printVariableValues();
+
+	for (int i = 0; i < numDiscontinuities; i ++) {
+		double r = odeDiscontinuities[i]->rootFindingExpression->evaluateVector(values);
+		if (r == 0) {
+			gout[2 * i] = DBL_MIN;
+			gout[2 * i + 1] = -DBL_MIN;
+		} else {
+			gout[2 * i] = r;
+			gout[2 * i + 1] = r;
+		}		
+		//cout << "gout[" << i << "]=" << gout[i] << endl;
+	}	
+	return 0;
 }

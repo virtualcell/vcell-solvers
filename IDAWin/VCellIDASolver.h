@@ -41,7 +41,7 @@ private:
 		error occured (e.g. yy has an illegal value), or a negative value if a nonrecoverable error occured.
 		In the latter case, the integrator halts. If a recoverable error occured, the integrator will attempt to correct and retry.
 	*/
-	int RootFn(realtype t, N_Vector y, N_Vector yp, realtype *gout);
+	//int RootFn(realtype t, N_Vector y, N_Vector yp, realtype *gout);
 	static int RootFn_callback(realtype t, N_Vector y, N_Vector yp, realtype *gout, void *g_data);
 	/*
 	Arguments 
@@ -59,8 +59,9 @@ private:
 	void throwIDAErrorMessage(int returnCode);
 	void checkIDAFlag(int flag);
 
-	void reInit(double t);
-	bool fixInitialDiscontinuities(double* paramValues);
+	void reInit(realtype t);
+	bool fixInitialDiscontinuities();
+	void updateTandVariableValues(realtype t, N_Vector y);
 };
 
 #endif

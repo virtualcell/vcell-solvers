@@ -16,6 +16,8 @@
 #include <sundials/sundials_dense.h> /* definitions DenseMat DENSE_ELEM */
 #include <sundials/sundials_types.h> /* definition of type realtype */
 
+#define ToleranceType CV_SS
+
 void VCellCVodeSolver::throwCVodeErrorMessage(int returnCode) {
 	switch (returnCode){
 		case CV_SUCCESS: {
@@ -160,8 +162,7 @@ void VCellCVodeSolver::initialize() {
 
 int VCellCVodeSolver::RHS (realtype t, N_Vector y, N_Vector r) {	
 	try {
-		values[0] = t;
-		memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
+		updateTandVariableValues(t, y);
 		double* r_data = NV_DATA_S(r);
 		for (int i = 0; i < NEQ; i ++) {
 			r_data[i] = rateExpressions[i]->evaluateVector(values);
@@ -192,15 +193,6 @@ int VCellCVodeSolver::RHS_callback(realtype t, N_Vector y, N_Vector r, void *fda
 	return solver->RHS(t, y, r);
 }
 
-int VCellCVodeSolver::RootFn(realtype t, N_Vector y, realtype *gout) {
-	values[0] = t;
-	memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
-	for (int i = 0; i < numDiscontinuities; i ++) {
-		gout[i] = odeDiscontinuities[i]->rootFindingExpression->evaluateVector(values);
-	}
-	return 0;
-}
-
 int VCellCVodeSolver::RootFn_callback(realtype t, N_Vector y, realtype *gout, void *g_data) {
 	VCellCVodeSolver* solver = (VCellCVodeSolver*)g_data;
 	return solver->RootFn(t, y, gout);
@@ -227,28 +219,25 @@ void VCellCVodeSolver::solve(double* paramValues, bool bPrintProgress, FILE* out
 
 void VCellCVodeSolver::initCVode(double* paramValues) {
 	//Initialize y, variable portion of values
-	values[0] = STARTING_TIME;
 	for (int i = 0; i < NEQ; i ++) {
-		values[1 + i] = initialConditionExpressions[i]->evaluateVector(paramValues);
-		NV_Ith_S(y, i) = values[1 + i];	
-	}		
+		NV_Ith_S(y, i) = initialConditionExpressions[i]->evaluateVector(paramValues);
+	}
 
 	if (numDiscontinuities > 0) {
 		initDiscontinuities();
 	}
 
-	reInit(STARTING_TIME);	
+	reInit(STARTING_TIME);
 
 	if (numDiscontinuities > 0) {
-		solveInitialDiscontinuities(paramValues);
-		int flag = CVodeRootInit(solver, numDiscontinuities, RootFn_callback, this);
+		solveInitialDiscontinuities();
+		int flag = CVodeRootInit(solver, 2 * numDiscontinuities, RootFn_callback, this);
 		checkCVodeFlag(flag);
 	}
 }
 
 void VCellCVodeSolver::reInit(double t) {
 	int flag = 0;
-	int ToleranceType = CV_SS;
 	if (solver == 0) {
 		solver = CVodeCreate(CV_BDF, CV_NEWTON);
 		if (solver == 0) {
@@ -270,43 +259,54 @@ void VCellCVodeSolver::reInit(double t) {
 	checkCVodeFlag(flag);
 }
 
-bool VCellCVodeSolver::fixInitialDiscontinuities(double* paramValues) {
-	double t = STARTING_TIME;
+bool VCellCVodeSolver::fixInitialDiscontinuities() {
+	double* oldy = new double[NEQ];
+	memcpy(oldy, NV_DATA_S(y), NEQ * sizeof(realtype));
+
+#ifdef SUNDIALS_DEBUG
+	cout << "before smallstep" << endl;
+	printVariableValues(STARTING_TIME);
+	printDiscontinuityValues();
+#endif
+
 	double epsilon = 1e-15;
-	CVodeSetStopTime(solver, t + epsilon);
-	int returnCode = CVode(solver, t + epsilon, y, &t, CV_ONE_STEP_TSTOP);
+	double smallstep = STARTING_TIME;	
+	CVodeSetStopTime(solver, smallstep + epsilon);
+	int returnCode = CVode(solver, smallstep + epsilon, y, &smallstep, CV_ONE_STEP_TSTOP);
 	if (returnCode != CV_TSTOP_RETURN && returnCode != CV_SUCCESS) {
 		throwCVodeErrorMessage(returnCode);
 	}
 
+	updateTandVariableValues(smallstep, y);
+#ifdef SUNDIALS_DEBUG
+	cout << "after smallstep" << endl;
+	printVariableValues(smallstep);	
+#endif
+
 	bool bInitChanged = false;
-	values[0] = t;
-	memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
-	// evaluate discontinuities at t+epsilon
 	for (int i = 0; i < numDiscontinuities; i ++) {
+		// evaluate discontinuities at t+epsilon
 		double v = odeDiscontinuities[i]->discontinuityExpression->evaluateVector(values);
 		if (v != discontinuityValues[i]) {
-			cout << "update discontinuities at time 0  : " << odeDiscontinuities[i]->discontinuityExpression->infix() << " " << discontinuityValues[i] << " " << v << endl;
+			cout << "fixInitialDiscontinuities() : update discontinuities at time " << STARTING_TIME << " : " << odeDiscontinuities[i]->discontinuityExpression->infix() << " " << discontinuityValues[i] << " " << v << endl;
 			discontinuityValues[i] = v;			
 			bInitChanged = true;
 		}
-	}
+	}	
 
-	//Initialize y, variable portion of values
-	values[0] = STARTING_TIME;
-	for (int i = 0; i < NEQ; i ++) {
-		values[1 + i] = initialConditionExpressions[i]->evaluateVector(paramValues);
-		NV_Ith_S(y, i) = values[1 + i];	
-	}
+	//revert y
+	memcpy(NV_DATA_S(y), oldy, NEQ * sizeof(realtype));
 	reInit(STARTING_TIME);
+
 	if (bInitChanged) {
 		memcpy(values + 1 + NEQ + NPARAM, discontinuityValues, numDiscontinuities * sizeof(double));
 	}
+	delete[] oldy;
 
 	return bInitChanged;
 }
 
-void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long)) {	
+void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long)) {
 	if (checkStopRequested != 0) {
 		checkStopRequested(STARTING_TIME, 0);
 	}
@@ -333,23 +333,20 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 			CVodeSetStopTime(solver, tstop);
 			int returnCode = CVode(solver, ENDING_TIME, y, &Time, CV_ONE_STEP_TSTOP);
 			iterationCount++;
-			values[0] = Time;
-			memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
 
 			// save data if return CV_TSTOP_RETURN (meaning reached end of time or max time step 
 			// before one normal step) or CV_SUCCESS (meaning one normal step)
-			if (returnCode == CV_TSTOP_RETURN || returnCode == CV_SUCCESS || returnCode == CV_ROOT_RETURN) {						
+			if (returnCode == CV_TSTOP_RETURN || returnCode == CV_SUCCESS || returnCode == CV_ROOT_RETURN) {
 				if (returnCode == CV_ROOT_RETURN) {
 					cout << setprecision(20);
 					// flip discontinuities				
 					int flag = CVodeGetRootInfo(solver, rootsFound);
 					checkCVodeFlag(flag);
-					cout << "roots found at time " << Time << endl;
-					//cout << "variable values are" << endl;
-					//for (int i = 0; i < NEQ; i ++) {
-					//	cout << variableNames[i] << " " << values[i + 1] << endl;
-					//}					
-					updateDiscontinuities();
+					cout << endl << "cvodeSolve() : roots found at time " << Time << endl;
+#ifdef SUNDIALS_DEBUG
+					printVariableValues(Time);
+#endif
+					updateDiscontinuities(Time);
 					reInit(Time);
 				} else {
 					checkDiscontinuityConsistency();
@@ -389,7 +386,7 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 				double tstop = min(sampleTime, Time + 2 * maxTimeStep + (1e-15));
 				CVodeSetStopTime(solver, tstop);
 				int returnCode = CVode(solver, sampleTime, y, &Time, CV_NORMAL_TSTOP);
-				iterationCount++;	
+				iterationCount++;
 
 				// if return CV_SUCCESS, this is an intermediate result, continue without saving data.
 				if (returnCode == CV_TSTOP_RETURN || returnCode == CV_SUCCESS || returnCode == CV_ROOT_RETURN) {
@@ -397,12 +394,11 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 						// flip discontinuities				
 						int flag = CVodeGetRootInfo(solver, rootsFound);
 						checkCVodeFlag(flag);
-						cout << "roots found at time " << Time << endl;
-						//cout << "variable values are" << endl;
-						//for (int i = 0; i < NEQ; i ++) {
-						//	cout << variableNames[i] << " " << values[i + 1] << endl;
-						//}					
-						updateDiscontinuities();
+						cout << endl << "cvodeSolve() : roots found at time " << Time << endl;
+#ifdef SUNDIALS_DEBUG
+						printVariableValues(Time);
+#endif
+						updateDiscontinuities(Time);
 						reInit(Time);
 					}  else {
 						checkDiscontinuityConsistency();
@@ -421,4 +417,9 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 			}
 		}
 	}	
+}
+
+void VCellCVodeSolver::updateTandVariableValues(realtype t, N_Vector y) {
+	values[0] = t;
+	memcpy(values + 1, NV_DATA_S(y), NEQ * sizeof(realtype));
 }
