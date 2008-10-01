@@ -32,4 +32,4 @@ clean:
 	$(DEL) $(VCELLIDALIB) $(CPPOBJECTS)
 
 depend:
-	makedepend -Y -f Makefile.linux -- $(CFLAGS) -- *.c *.cpp
+	makedepend -Y -f Makefile.base -- $(CFLAGS) -- *.c *.cpp

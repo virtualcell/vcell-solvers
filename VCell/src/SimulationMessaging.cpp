@@ -12,7 +12,6 @@ using namespace std;
 #include <errno.h>
 #endif
 
-#include <VCELL/SimTool.h>
 #include <jmsconstants.h>
 
 static const char* MESSAGE_TYPE_PROPERTY	= "MessageType";
@@ -36,6 +35,7 @@ static const int CONNECTION_PING_PERIOD = 30 * ONE_SECOND;
 SimulationMessaging *SimulationMessaging::m_inst = NULL;
 
 SimulationMessaging::SimulationMessaging() {
+	bStopRequested = false;
 	workerEventOutputMode = WORKEREVENT_OUTPUT_MODE_STDOUT;
 }
 
@@ -48,6 +48,7 @@ SimulationMessaging::SimulationMessaging(char* broker, char* smqusername, char* 
     m_tSession = NULL;
     m_tSubscriber = NULL;
 	workerEvent = NULL;
+	bStopRequested = false;
 
 	m_broker = broker;
 	m_smqusername = smqusername;
@@ -112,6 +113,7 @@ SimulationMessaging::~SimulationMessaging()
 			m_tConnect->close();
 		}
 	} catch (JMSExceptionRef jmse) {
+	} catch (...) {		
 	}
 #if ( defined(WIN32) || defined(WIN64) )
     DeleteCriticalSection(&lockForMessaging);
@@ -393,7 +395,7 @@ void SimulationMessaging::onMessage(MessageRef aMessage)
 
 		if (strcmp((const char*)msgType->toAscii(), MESSAGE_TYPE_STOPSIMULATION_VALUE) == 0 && key==m_simKey) {	
 			cout << "Stopped by user" << endl;
-			SimTool::getInstance()->requestStop();
+			bStopRequested = true;
 		}
 
     } catch(JMSExceptionRef jmse) {

@@ -434,10 +434,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\SparseMatrix.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\src\SparseMatrixEqnBuilder.cpp"
 				>
 			</File>
@@ -709,10 +705,6 @@
 			</File>
 			<File
 				RelativePath=".\include\Vcell\SparseLinearSolver.h"
-				>
-			</File>
-			<File
-				RelativePath=".\include\Vcell\SparseMatrix.h"
 				>
 			</File>
 			<File

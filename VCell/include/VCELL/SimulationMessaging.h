@@ -2,7 +2,7 @@
 #define _SIMULATIONMESSAGING_H_
 
 #if ( defined(WIN32) || defined(WIN64) )
-#include <windows.h>	
+#include <windows.h>
 #else
 #include <pthread.h>
 #include <unistd.h>
@@ -11,7 +11,11 @@
 #endif
 
 #ifdef USE_MESSAGING
+#if ( !defined(WIN32) && !defined(WIN64) )
+#include <sys/time.h>
+#else
 #include <time.h>
+#endif
 #include <progress/message/jclient/package.h>
 using namespace progress::message::jclient;
 
@@ -34,7 +38,7 @@ struct WorkerEvent {
 	int status;
 	double progress;
 	double timepoint;
-	char* eventMessage;	
+	char* eventMessage;
 
 	WorkerEvent(const WorkerEvent* aWorkerEvent) {
 		status = aWorkerEvent->status;
@@ -74,7 +78,7 @@ struct WorkerEvent {
 			return false;
 		}
 
-		if (eventMessage != NULL && aWorkerEvent->eventMessage == NULL 
+		if (eventMessage != NULL && aWorkerEvent->eventMessage == NULL
 			|| eventMessage == NULL && aWorkerEvent->eventMessage != NULL) {
 			return false;
 		}
@@ -96,13 +100,17 @@ public:
 	static SimulationMessaging* create();
 	static SimulationMessaging* getInstVar();
 	void start();
-	void setWorkerEvent(WorkerEvent* workerEvent);	
+	void setWorkerEvent(WorkerEvent* workerEvent);
+
+	bool isStopRequested() {
+		return bStopRequested;
+	}
 
 #ifdef USE_MESSAGING
 	static SimulationMessaging* create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, jint simKey, jint jobIndex, jint taskID, jint ttl=DEFAULT_TTL);
     void onException(JMSExceptionRef anException);
 	void onMessage(MessageRef aMessage);
-	void waitUntilFinished();	
+	void waitUntilFinished();
 	friend void* startMessagingThread(void* param);
 #endif
 
@@ -112,6 +120,7 @@ private:
 	int workerEventOutputMode;
 
 	WorkerEvent* sendStatus();
+	bool bStopRequested;
 
 #ifdef USE_MESSAGING
 	SimulationMessaging(char* broker, char* smqusername, char* passwd, char* qname, char*tname, char* vcusername, jint simKey, jint jobIndex,  jint taskID, jint ttl=DEFAULT_TTL);
@@ -121,7 +130,7 @@ private:
 	static char* trim(char* str);
 	void setupConnection ();    //synchronized
 	QueueSessionRef getQueueSession();
-	QueueSenderRef getQueueSender();	
+	QueueSenderRef getQueueSender();
 
 	TextMessageRef initWorkerEventMessage();
 	bool m_connActive;
@@ -136,8 +145,8 @@ private:
 	TopicSessionRef m_tSession;
 	TopicSubscriberRef m_tSubscriber;
 
-	char *m_broker; 
-	char *m_smqusername; 
+	char *m_broker;
+	char *m_smqusername;
 	char *m_password;
 	char *m_qname;
 	char* m_tname;
@@ -148,7 +157,7 @@ private:
 
 	char* m_tListener;
 
-	char m_hostname[256];    
+	char m_hostname[256];
 	jint  m_ttl;
 	time_t lastSentEventTime;
 

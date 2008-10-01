@@ -1,0 +1,44 @@
+default: all
+all:
+	cd blas ; make -f Makefile64.linux
+	cd ExpressionParser ; make -f Makefile64.linux
+	cd PCGPack ; make -f Makefile64.linux
+	cd qhull ; make -f Makefile64.linux
+	cd unzip ; make -f Makefile64.linux
+	cd zlib ; make -f Makefile64.linux
+	cd zip ; make -f Makefile64.linux
+	cd VCell/src ; make -f Makefile64.linux
+	cd Stochastic/VCellStoch; make -f Makefile64.linux
+	cd sundials/src; make -f Makefile64.linux
+	cd IDAWin; make -f Makefile64.linux
+	cd netcdf-3.6.2; make -f Makefile64.linux
+	cd Hy3S/src; make -f Makefile64.linux
+	
+clean:
+	cd blas ; make -f Makefile64.linux clean
+	cd ExpressionParser ; make -f Makefile64.linux clean
+	cd PCGPack ; make -f Makefile64.linux clean
+	cd qhull ; make -f Makefile64.linux clean
+	cd unzip ; make -f Makefile64.linux clean
+	cd zip ; make -f Makefile64.linux clean
+	cd zlib ; make -f Makefile64.linux clean
+	cd VCell/src ; make -f Makefile64.linux clean
+	cd Stochastic/VCellStoch; make -f Makefile64.linux clean
+	cd sundials/src; make -f Makefile64.linux clean
+	cd IDAWin; make -f Makefile64.linux clean
+	cd netcdf-3.6.2; make -f Makefile64.linux clean
+	cd Hy3S/src; make -f Makefile64.linux clean
+	
+depend:
+	cd ExpressionParser ; make -f Makefile64.linux depend
+	cd PCGPack ; make -f Makefile64.linux depend
+	cd qhull ; make -f Makefile64.linux depend
+	cd unzip ; make -f Makefile64.linux depend
+	cd zip ; make -f Makefile64.linux depend
+	cd zlib ; make -f Makefile64.linux depend
+	cd VCell/src ; make -f Makefile64.linux depend
+	cd Stochastic/VCellStoch; make -f Makefile64.linux depend
+	cd sundials/src; make -f Makefile64.linux depend
+	cd IDAWin; make -f Makefile64.linux depend
+	cd netcdf-3.6.2; make -f Makefile64.linux depend
+	cd Hy3S/src; make -f Makefile64.linux depend

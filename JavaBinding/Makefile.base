@@ -6,11 +6,12 @@ BASE_CPPFLAGS = -c -O2 -fPIC -fexceptions -D$(PLATFORM) -I../Optimization2 -I../
 ifeq ($(PLATFORM), MACOSX)
 ifeq ($(CPU), G5)
 BASE_CPPFLAGS2 = $(BASE_CPPFLAGS) -I../JNI/MacOSX/G5
+DLL_TARGET = libNativeSolversG5.jnilib
 else
 BASE_CPPFLAGS2 = $(BASE_CPPFLAGS) -I../JNI/MacOSX/i386
+DLL_TARGET = libNativeSolvers.jnilib
 endif
 LDFLAG = -bundle
-DLL_TARGET = libNativeSolvers.jnilib
 else
 BASE_CPPFLAGS2 = $(BASE_CPPFLAGS) -I../JNI/Linux/include -I../JNI/Linux/include/linux
 LDFLAG = -shared

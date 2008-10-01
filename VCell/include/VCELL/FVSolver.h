@@ -13,8 +13,6 @@ class Variable;
 class Feature;
 class FastSystemExpression;
 class SimulationExpression;
-
-extern void trimString(string& str);
 //class PdeResultSet;
 
 class FVSolver {

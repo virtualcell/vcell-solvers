@@ -45,12 +45,11 @@ public:
 	void setFileCompress(bool compress) { 
 		bSimFileCompress = compress; 
 	}
-	void requestStop();
 	void requestNoZip();
 
 	Simulation* getSimulation() { return simulation; }
 	VCellModel* getModel() { return vcellModel; }
-	bool isStopped() { return bStopSimulation; }
+	bool checkStopRequested();
 	TimerHandle getTimerHandle(string& timerName);
 	void        startTimer(TimerHandle hnd);
 	void        stopTimer(TimerHandle hnd);
@@ -60,7 +59,6 @@ public:
 private:
 	static SimTool* instance;
 
-	bool bStopSimulation;
 	bool bSimZip;
 	VCellModel* vcellModel;
 	Simulation  *simulation;

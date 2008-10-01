@@ -1,11 +1,14 @@
-#include "Expression.h"
-#include "SimpleSymbolTable.h"
-#include "Exception.h"
+#include <Expression.h>
+#include <SimpleSymbolTable.h>
 #include "StoppedByUserException.h"
 #include "VCellSundialsSolver.h"
 #include "OdeResultSet.h"
 #include <assert.h>
 #include <math.h>
+
+#ifdef USE_MESSAGING
+#include <VCELL/SimulationMessaging.h>
+#endif
 
 char* trim(char* str) {	
 	int leftIndex, rightIndex;
@@ -146,13 +149,25 @@ void VCellSundialsSolver::writeFileHeader(FILE* outputFile) {
 
 void VCellSundialsSolver::printProgress(double currTime, double& percentile, double increment) {
 	if (currTime == STARTING_TIME) { // print 0%
+#ifdef USE_MESSAGING
+		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, currTime));
+#else 
 		printf("[[[progress:%lg%%]]]", percentile*100.0); 
 		fflush(stdout);		
+#endif
 	} else {
-		while ((STARTING_TIME + ((percentile + increment) * (ENDING_TIME - STARTING_TIME))) <= currTime) { 
+		while (true) {
+			double midTime = (percentile + increment) * (ENDING_TIME - STARTING_TIME);
+			if (STARTING_TIME + midTime > currTime) { 
+				break;
+			}
 			percentile += increment; 
+#ifdef USE_MESSAGING
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, midTime));
+#else
 			printf("[[[progress:%lg%%]]]", percentile*100.0); 
 			fflush(stdout); 
+#endif
 		}
 	}
 }
@@ -220,14 +235,14 @@ void VCellSundialsSolver::readInput(istream& inputstream) {
 				readEquations(inputstream);				
 			} else {
 				string msg = "Unexpected token \"" + name + "\" in the input file!";
-				throw Exception(msg);
+				throw VCell::Exception(msg);
 			}
 		}
 		initialize();
 	} catch (char* ex) {
-		throw Exception(string("VCellSundialsSolver::readInput() : ") + ex);
-	} catch (Exception& ex) {
-		throw Exception(string("VCellSundialsSolver::readInput() : ") + ex.getMessage());
+		throw VCell::Exception(string("VCellSundialsSolver::readInput() : ") + ex);
+	} catch (VCell::Exception& ex) {
+		throw VCell::Exception(string("VCellSundialsSolver::readInput() : ") + ex.getMessage());
 	} catch (...) {
 		throw "VCellSundialsSolver::readInput() : caught unknown exception";
 	}
@@ -247,7 +262,7 @@ void VCellSundialsSolver::readDiscontinuities(istream& inputstream) {
 		string::size_type pos = line.find(";");
 		if (pos == string::npos) {
 			string msg = string("discontinuity expression ") + BAD_EXPRESSION_MSG;
-			throw Exception(msg);
+			throw VCell::Exception(msg);
 		}
 		exp = line.substr(0, pos + 1);
 		trimString(exp);
@@ -257,7 +272,7 @@ void VCellSundialsSolver::readDiscontinuities(istream& inputstream) {
 		trimString(exp);
 		if (*(exp.end() - 1) != ';') {
 			string msg = string("discontinuity expression ") + BAD_EXPRESSION_MSG;
-			throw Exception(msg);
+			throw VCell::Exception(msg);
 		}
 		od->rootFindingExpression = new Expression(exp);
 
@@ -439,4 +454,12 @@ int VCellSundialsSolver::RootFn(realtype t, N_Vector y, realtype *gout) {
 		//cout << "gout[" << i << "]=" << gout[i] << endl;
 	}	
 	return 0;
+}
+
+void VCellSundialsSolver::checkStopRequested(double time, long numIterations) {
+#ifdef USE_MESSAGING
+	if (SimulationMessaging::getInstVar()->isStopRequested()) {
+		throw StoppedByUserException("stopped by user");
+	}
+#endif
 }

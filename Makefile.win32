@@ -2,13 +2,7 @@ default: all
 all:
 #	cd blas && nmake -f Makefile.win32
 	cd ExpressionParser && nmake -f Makefile.win32
-	cd fsqp && nmake -f Makefile.win32
 	cd IDAWin && nmake -f Makefile.win32
-	cd CVodeStandalone && nmake -f Makefile.win32
-	cd IDAStandalone && nmake -f Makefile.win32
-	cd tinyxml && nmake -f Makefile.win32
-	cd Optimization2 && nmake -f Makefile.win32
-	cd JavaBinding && nmake -f Makefile.win32
 	cd PCGPack && nmake -f Makefile.win32
 	cd qhull && nmake -f Makefile.win32 && nmake -f MakefileDebug.win32
 	cd unzip && nmake -f Makefile.win32
@@ -23,13 +17,7 @@ all:
 clean:
 #	cd blas && nmake -f Makefile.win32 clean
 	cd ExpressionParser && nmake -f Makefile.win32 clean
-	cd fsqp && nmake -f Makefile.win32 clean
 	cd IDAWin && nmake -f Makefile.win32 clean
-	cd CVodeStandalone && nmake -f Makefile.win32 clean
-	cd IDAStandalone && nmake -f Makefile.win32 clean
-	cd tinyxml && nmake -f Makefile.win32 clean
-	cd Optimization2 && nmake -f Makefile.win32 clean
-	cd JavaBinding && nmake -f Makefile.win32 clean
 	cd PCGPack && nmake -f Makefile.win32 clean
 	cd qhull && nmake -f Makefile.win32 clean && nmake -f MakefileDebug.win32 clean
 	cd unzip && nmake -f Makefile.win32 clean

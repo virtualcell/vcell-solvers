@@ -1,10 +1,9 @@
 #ifndef STOPPEDBYUSEREXCEPTION_H
 #define STOPPEDBYUSEREXCEPTION_H
 
-#include "Exception.h"
-using namespace VCell;
+#include <Exception.h>
 
-class StoppedByUserException : public Exception
+class StoppedByUserException : public VCell::Exception
 {
 public:
 	StoppedByUserException(string msg);

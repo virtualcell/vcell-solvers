@@ -12,7 +12,7 @@ using namespace std;
 void vcellExit(int returnCode, string& errorMsg) {
 	if (SimulationMessaging::getInstVar() == 0) {
 		cerr << errorMsg << endl;
-	} else if (!SimTool::getInstance()->isStopped()) {
+	} else if (!SimulationMessaging::getInstVar()->isStopRequested()) {
 		if (returnCode != 0) {
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_FAILURE, errorMsg.c_str()));
 		}

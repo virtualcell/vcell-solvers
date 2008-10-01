@@ -1,13 +1,16 @@
 #include "VCellIDASolver.h"
-#include "Expression.h"
-#include "SimpleSymbolTable.h"
 #include "OdeResultSet.h"
-#include "Exception.h"
+#include <Expression.h>
+#include <SimpleSymbolTable.h>
+#include <Exception.h>
 #include "StoppedByUserException.h"
-#include "DivideByZeroException.h"
-#include "FunctionDomainException.h"
-#include "FunctionRangeException.h"
-using namespace VCell;
+#include <DivideByZeroException.h>
+#include <FunctionDomainException.h>
+#include <FunctionRangeException.h>
+
+#ifdef USE_MESSAGING
+#include <VCELL/SimulationMessaging.h>
+#endif
 
 #include <assert.h>
 #include <ida/ida.h>
@@ -225,7 +228,7 @@ void VCellIDASolver::readEquations(istream& inputstream) {
 			trimString(exp);
 			if (*(exp.end() - 1) != ';') {
 				string msg = "Initial condition expression for [" + variableNames[i] + "]" + BAD_EXPRESSION_MSG;
-				throw Exception(msg);
+				throw VCell::Exception(msg);
 			}
 			initialConditionExpressions[i] = new Expression(exp);
 		}
@@ -285,16 +288,16 @@ void VCellIDASolver::readEquations(istream& inputstream) {
 			if (*(exp.end() - 1) != ';') {
 				stringstream ss;
 				ss << "RHS[" << i << "]" << BAD_EXPRESSION_MSG;
-				throw Exception(ss.str());
+				throw VCell::Exception(ss.str());
 			}
 			rhsExpressions[i] = new Expression(exp);
 		}
 	} catch (const char* ex) {
-		throw Exception(string("VCellIDASolver::readInput() : ") + ex);		
-	} catch (Exception& ex) {		
-		throw Exception(string("VCellIDASolver::readInput() : ") + ex.getMessage());
+		throw VCell::Exception(string("VCellIDASolver::readInput() : ") + ex);		
+	} catch (VCell::Exception& ex) {		
+		throw VCell::Exception(string("VCellIDASolver::readInput() : ") + ex.getMessage());
 	} catch (...) {
-		throw Exception("VCellIDASolver::readInput() caught unknown exception");
+		throw VCell::Exception("VCellIDASolver::readInput() caught unknown exception");
 	}
 }
 
@@ -469,8 +472,8 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 		while (Time < ENDING_TIME) {
 			if (checkStopRequested != 0) {
 				checkStopRequested(Time, iterationCount);
-			}			
-			
+			}
+
 			double tstop = min(ENDING_TIME, Time + 2 * maxTimeStep + (1e-15));
 			IDASetStopTime(solver, tstop);
 			int returnCode = IDASolve(solver, ENDING_TIME, &Time, y, yp, IDA_ONE_STEP_TSTOP);
@@ -498,7 +501,7 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 						/* if more than one gigabyte, then fail */ 
 						char msg[100];
 						sprintf(msg, "output exceeded %ld bytes\n", MaxFileSizeBytes);
-						throw Exception(msg);
+						throw VCell::Exception(msg);
 					}
 					writeData(Time, outputFile);
 					if (bPrintProgress) {
@@ -558,6 +561,9 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 			}
 		} 
 	}
+#ifdef USE_MESSAGING
+	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1, Time));
+#endif
 }
 
 

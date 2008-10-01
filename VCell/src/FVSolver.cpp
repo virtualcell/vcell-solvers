@@ -1060,11 +1060,6 @@ void FVSolver::solve(bool bLoadFinal, double* paramValues)
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "preprocessing finished"));
 
 	simTool->start();
-#ifdef USE_MESSAGING
-	if (!SimTool::getInstance()->isStopped()) {
-		SimulationMessaging::getInstVar()->waitUntilFinished();
-	}
-#endif
 }
 
 void FVSolver::init(double* paramValues){
@@ -1079,11 +1074,6 @@ void FVSolver::step(double* paramValues)
 	//simulation->setParameterValues(paramValues);
 	simulation->iterate();
 	simulation->update();
-#ifdef USE_MESSAGING
-	if (!SimTool::getInstance()->isStopped()) {
-		SimulationMessaging::getInstVar()->waitUntilFinished();
-	}
-#endif
 }
 
 string FVSolver::getVariableName(int index){	

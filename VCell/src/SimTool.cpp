@@ -61,7 +61,6 @@ void SimTool::create() {
 
 SimTool::SimTool()
 {
-	bStopSimulation = false;	
 	bSimZip = true;
 
 	simEndTime = 0.0;
@@ -97,8 +96,8 @@ void SimTool::requestNoZip() {
 	bSimZip = false;
 }
 
-void SimTool::requestStop() {
-	bStopSimulation = true;
+bool SimTool::checkStopRequested() {
+	 return SimulationMessaging::getInstVar()->isStopRequested();
 }
 
 TimerHandle SimTool::getTimerHandle(string& identifier)
@@ -440,7 +439,7 @@ void SimTool::clearLog()
 
 void SimTool::start()
 {
-	if (bStopSimulation) {
+	if (checkStopRequested()) {
 		return;
 	}
 
@@ -501,7 +500,7 @@ void SimTool::start()
     //	
 	double epsilon = 1e-12;
     while ((simulation->getTime_sec()+simulation->getDT_sec())<=(simEndTime+epsilon)){
-		if (bStopSimulation) {
+		if (checkStopRequested()) {
 			return;
 		}
 
@@ -519,7 +518,7 @@ void SimTool::start()
 		}
 	}
 
-	if (bStopSimulation) {
+	if (checkStopRequested()) {
 		return;
 	} else {
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));

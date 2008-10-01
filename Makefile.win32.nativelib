@@ -1,0 +1,16 @@
+default: all
+all:
+	cd ExpressionParser && nmake -f Makefile.win32
+	cd IDAWin && nmake -f Makefile.win32
+	cd tinyxml && nmake -f Makefile.win32
+	cd fsqp && nmake -f Makefile.win32
+	cd Optimization2 && nmake -f Makefile.win32
+	cd JavaBinding && nmake -f Makefile.win32
+	
+clean:
+	cd ExpressionParser && nmake -f Makefile.win32 clean
+	cd fsqp && nmake -f Makefile.win32 clean
+	cd IDAWin && nmake -f Makefile_NoMessaging.win32 clean
+	cd tinyxml && nmake -f Makefile.win32 clean
+	cd Optimization2 && nmake -f Makefile.win32 clean
+	cd JavaBinding && nmake -f Makefile.win32 clean

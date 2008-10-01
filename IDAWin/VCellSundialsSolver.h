@@ -38,6 +38,8 @@ public:
 	void setOutputTimes(int count, double* newOutputTimes);
 	virtual SymbolTable* getSymbolTable() = 0;
 
+	static void checkStopRequested(double, long);
+
 protected:	
 	// 0 : t
 	// 1 ~ N : variable values

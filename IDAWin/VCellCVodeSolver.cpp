@@ -1,13 +1,16 @@
 #include "VCellCVodeSolver.h"
-#include "Expression.h"
-#include "SimpleSymbolTable.h"
-#include "Exception.h"
 #include "OdeResultSet.h"
+#include <Expression.h>
+#include <SimpleSymbolTable.h>
+#include <Exception.h>
 #include <assert.h>
-#include "DivideByZeroException.h"
-#include "FunctionDomainException.h"
-#include "FunctionRangeException.h"
+#include <DivideByZeroException.h>
+#include <FunctionDomainException.h>
+#include <FunctionRangeException.h>
 #include "StoppedByUserException.h"
+#ifdef USE_MESSAGING
+#include <VCELL/SimulationMessaging.h>
+#endif
 
 #include <cvode/cvode.h>             /* prototypes for CVODE fcts. and consts. */
 #include <nvector/nvector_serial.h>  /* serial N_Vector types, fcts., and macros */
@@ -126,7 +129,7 @@ void VCellCVodeSolver::readEquations(istream& inputstream) {
 			trimString(exp);
 			if (*(exp.end() - 1) != ';') {
 				string msg = "Initial condition expression for [" + variableNames[i] + "]" + BAD_EXPRESSION_MSG;
-				throw Exception(msg);
+				throw VCell::Exception(msg);
 			}
 			initialConditionExpressions[i] = new Expression(exp);
 
@@ -137,14 +140,14 @@ void VCellCVodeSolver::readEquations(istream& inputstream) {
 			trimString(exp);
 			if (*(exp.end() - 1) != ';') {
 				string msg = "Rate expression for [" + variableNames[i] + "]" + BAD_EXPRESSION_MSG;
-				throw Exception(msg);
+				throw VCell::Exception(msg);
 			}
 			rateExpressions[i] = new Expression(exp);
 		}				
 	} catch (char* ex) {
-		throw Exception(string("VCellCVodeSolver::readInput() : ") + ex);
-	} catch (Exception& ex) {
-		throw Exception(string("VCellCVodeSolver::readInput() : ") + ex.getMessage());
+		throw VCell::Exception(string("VCellCVodeSolver::readInput() : ") + ex);
+	} catch (VCell::Exception& ex) {
+		throw VCell::Exception(string("VCellCVodeSolver::readInput() : ") + ex.getMessage());
 	} catch (...) {
 		throw "VCellCVodeSolver::readInput() : caught unknown exception";
 	}
@@ -357,7 +360,7 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 						/* if more than one gigabyte, then fail */ 
 						char msg[100];
 						sprintf(msg, "output exceeded maximum %ld bytes", MaxFileSizeBytes);
-						throw Exception(msg);
+						throw VCell::Exception(msg);
 					}
 					writeData(Time, outputFile);
 					if (bPrintProgress) {
@@ -416,7 +419,10 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 				}
 			}
 		}
-	}	
+	}
+#ifdef USE_MESSAGING
+	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1, Time));
+#endif
 }
 
 void VCellCVodeSolver::updateTandVariableValues(realtype t, N_Vector y) {

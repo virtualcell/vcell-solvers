@@ -119,7 +119,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\JNI\Win32\include\win32;..\JNI\Win32\include;..\tinyxml;..\Optimization;..\IDAWin;..\sundials\src;..\sundials\include;..\ExpressionParser"
+				AdditionalIncludeDirectories="..\JNI\Win32\include\win32;..\JNI\Win32\include;..\tinyxml;..\Optimization2;..\IDAWin;..\sundials\src;..\sundials\include;..\ExpressionParser"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				WarningLevel="3"
@@ -140,7 +140,7 @@
 				AdditionalDependencies="tinyxml.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib sundials_ida.lib cfsqp.lib"
 				OutputFile="$(OutDir)/JavaBinding.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\tinyxml\release;..\IDAWin;..\fsqp;..\sundials\lib;..\Optimization\Debug;..\IDAWin\Debug;..\ExpressionParser\Debug"
+				AdditionalLibraryDirectories="..\tinyxml\;..\IDAWin;..\fsqp;..\sundials\lib;..\Optimization\Debug;..\IDAWin\Debug;..\ExpressionParser\Debug"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
