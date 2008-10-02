@@ -81,7 +81,7 @@ protected:
 	virtual void updateTempRowData(double currTime);
 	void writeFileData(FILE* outputFile);
 	void writeFileHeader(FILE* outputFile);
-	void printProgress(double currTime, double& percentile, double increment);
+	void printProgress(double currTime, double& percentile, double increment, FILE* outputFile);
 
 	void readDiscontinuities(istream& inputstream);
 	virtual void readEquations(istream& inputstream) = 0;

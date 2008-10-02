@@ -465,7 +465,7 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 	// write initial conditions
 	writeData(Time, outputFile);
 	if (bPrintProgress) {
-		printProgress(Time, percentile, increment);
+		printProgress(Time, percentile, increment, outputFile);
 	}
 
 	if (outputTimes.size() == 0) {
@@ -505,7 +505,7 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 					}
 					writeData(Time, outputFile);
 					if (bPrintProgress) {
-						printProgress(Time, percentile, increment);
+						printProgress(Time, percentile, increment, outputFile);
 					}
 				}
 			} else {
@@ -550,7 +550,7 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 					if (Time == sampleTime) {
 						writeData(Time, outputFile);
 						if (bPrintProgress) {
-							printProgress(Time, percentile, increment);
+							printProgress(Time, percentile, increment, outputFile);
 						}
 						outputCount ++;
 						break;

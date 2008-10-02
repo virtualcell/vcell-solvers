@@ -323,7 +323,7 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 	// write intial conditions
 	writeData(Time, outputFile);
 	if (bPrintProgress) {
-		printProgress(Time, percentile, increment);
+		printProgress(Time, percentile, increment, outputFile);
 	}
 
 	if (outputTimes.size() == 0) {
@@ -364,7 +364,7 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 					}
 					writeData(Time, outputFile);
 					if (bPrintProgress) {
-						printProgress(Time, percentile, increment);
+						printProgress(Time, percentile, increment, outputFile);
 					}
 				}
 			} else {
@@ -409,7 +409,7 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 					if (Time == sampleTime) {
 						writeData(Time, outputFile);
 						if (bPrintProgress) {
-							printProgress(Time, percentile, increment);
+							printProgress(Time, percentile, increment, outputFile);
 						}
 						outputCount ++;
 						break;
