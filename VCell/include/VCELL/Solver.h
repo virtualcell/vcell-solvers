@@ -20,6 +20,7 @@ public:
 	virtual void initEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime);
 	virtual void buildEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime);
 	virtual void solveEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime)=0;
+	virtual bool checkSteadyState() { return false; }
 
 	Variable *getVar() { return var; }
 	void setEqnBuilder(EqnBuilder *builder) { eqnBuilder = builder; }

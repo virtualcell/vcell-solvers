@@ -36,6 +36,8 @@ public:
 	void setModel(VCellModel* model);
 	void setSimulation(Simulation* sim);
 	void setTimeStep(double period);
+	void setCheckSteadyState(bool bcss) { bCheckSteadyState = bcss; }
+	bool isCheckingSteadyState() { return bCheckSteadyState; }
 	void setEndTimeSec(double timeSec) { simEndTime = timeSec; }
 	void setKeepEvery(int ke) { keepEvery = ke; }
 	void setBaseFilename(char *fname); 
@@ -70,6 +72,7 @@ private:
 
 	bool bSimFileCompress;
 	double simEndTime;
+	bool bCheckSteadyState;
 	double simDeltaTime;
 	int keepEvery;
 	bool bStoreEnable;	

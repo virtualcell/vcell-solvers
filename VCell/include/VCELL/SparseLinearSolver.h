@@ -13,6 +13,7 @@ public:
     ~SparseLinearSolver(); 
 
 	virtual void solveEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime);	
+	bool checkSteadyState() { return smEqnBuilder->checkSteadyState(); }
 
 private:
 	bool enableRetry;

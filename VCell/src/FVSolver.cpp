@@ -771,6 +771,7 @@ void FVSolver::loadMembrane(istream& ifsInput, Feature* infeature, char* var_nam
 void FVSolver::loadSimulationParameters(istream& ifsInput) {
 	string basefilename;
 	double end_time, time_step;
+	string check_steady_state = "";
 	long keep_every;
 	int bStoreEnable=1;
 	string nextToken;	
@@ -792,6 +793,8 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 			ifsInput >> end_time;
 		} else if (nextToken == "TIME_STEP") {
 			ifsInput >> time_step;
+		} else if (nextToken == "CHECK_STEADY_STATE") {
+			ifsInput >> check_steady_state;
 		} else if (nextToken == "KEEP_EVERY") {
 			ifsInput >> keep_every;
 		} else if (nextToken == "STORE_ENABLE") {
@@ -821,6 +824,7 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 	simTool->setEndTimeSec(end_time);
 	simTool->setKeepEvery(keep_every);
 	simTool->setStoreEnable(bStoreEnable!=0);
+	simTool->setCheckSteadyState(check_steady_state == "true");
 	//SimTool::getInstance()->setFileCompress(false);
 }
 

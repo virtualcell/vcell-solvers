@@ -770,7 +770,10 @@ void SparseVolumeEqnBuilder::preProcess() {
 		return;
 	}
 
-	bPreProcessed = true;	
+	bPreProcessed = true;
+	if (SimTool::getInstance()->isCheckingSteadyState()) {
+		computeSteadyStateSolution();
+	}
 
 	// check if there is periodic boundary condition in the model
 	bool bPeriodic = false;
@@ -859,4 +862,57 @@ void SparseVolumeEqnBuilder::postProcess() {
 		CoupledNeighbors* pcp = periodicCoupledPairs[i];		
 		currSol[pcp->neighborIndex] = currSol[pcp->centerIndex] + pcp->coeff;
 	}
+}
+
+void SparseVolumeEqnBuilder::computeSteadyStateSolution() {
+	steadyStateSolution = 0;
+	double V = 0;
+	VolumeElement* pVolumeElement = mesh->getVolumeElements();
+	double* currVal = var->getCurr();
+	if (bSolveWholeMesh) {
+		for (int index = 0; index < getSize(); index ++){
+			int mask = pVolumeElement[index].neighborMask;
+			double volumeScale = 1.0;
+			if (mask & NEIGHBOR_BOUNDARY_MASK){   // boundary
+				volumeScale /= (mask & VOLUME_MASK);
+			}
+			V += VOLUME / volumeScale;
+			steadyStateSolution += currVal[index] * VOLUME / volumeScale;
+		}
+	} else {		
+		for (int localIndex = 0; localIndex < getSize() ; localIndex ++) {
+			int globalIndex = LocalToGlobalMap[localIndex];
+			int mask = pVolumeElement[globalIndex].neighborMask;
+			double volumeScale = 1.0;
+			if (mask & NEIGHBOR_BOUNDARY_MASK){   // boundary
+				volumeScale /= (mask & VOLUME_MASK);
+			}
+			V += VOLUME / volumeScale;
+			steadyStateSolution += currVal[globalIndex] * VOLUME / volumeScale;
+		}
+	}
+	steadyStateSolution /= V;
+	cout << endl << "!!!Steady State solution [" << var->getName() << "] = " << steadyStateSolution << endl;
+}
+
+// steady state error 1%
+static double steadyStateErr = 0.01;
+bool SparseVolumeEqnBuilder::checkSteadyState() {
+	double error = 0;
+	double* currSol = var->getCurr();
+	if (bSolveWholeMesh) {
+		for (int index = 0; index < getSize(); index ++){
+			if (fabs(currSol[index] - steadyStateSolution) > steadyStateErr) {
+				return false;
+			}
+		}
+	} else {		
+		for (int localIndex = 0; localIndex < getSize() ; localIndex ++) {
+			int globalIndex = LocalToGlobalMap[localIndex];
+			if (fabs(currSol[globalIndex] - steadyStateSolution) > steadyStateErr) {
+				return false;
+			}
+		}
+	}
+	return true;
 }

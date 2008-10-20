@@ -11,7 +11,8 @@
 #include <VCELL/Mesh.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/DataSet.h>
-#include <VCELL/SimulationMessaging.h> 
+#include <VCELL/SimulationMessaging.h>
+#include <VCELL/Solver.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -44,11 +45,11 @@ void SimTool::setSimulation(Simulation* sim) {
 		throw "SimTool::setSimulation(), simulation can't be null";
 	}
 	simulation = sim;
-	simulation->setDT_sec(simDeltaTime); 
+	simulation->setDT_sec(simDeltaTime);
 }
 
 void SimTool::setTimeStep(double period) {
-	simDeltaTime = period;	
+	simDeltaTime = period;
 }
 
 void SimTool::create() {
@@ -64,6 +65,7 @@ SimTool::SimTool()
 	bSimZip = true;
 
 	simEndTime = 0.0;
+	bCheckSteadyState = false;
 	keepEvery = 100;
 	bStoreEnable = true;
 	baseFileName=0;
@@ -139,7 +141,7 @@ void SimTool::showSummary(FILE *fp)
 	}
 }
 
-void SimTool::setBaseFilename(char *fname) { 
+void SimTool::setBaseFilename(char *fname) {
 	if (fname == 0 || strlen(fname) == 0) {
 		throw "invalid base file name for data set";
 	}
@@ -154,8 +156,8 @@ void SimTool::setBaseFilename(char *fname) {
 	strcpy(baseDirName, baseFileName);
 	char* p = strrchr(baseDirName, DIRECTORY_SEPARATOR);
 	if (p == NULL) {
-		baseSimName = baseDirName; 
-		baseDirName = NULL;
+		baseSimName = baseDirName;
+		baseDirName = 0;
 	} else {
 		baseSimName = new char[strlen(p+1) + 1];
 		strcpy(baseSimName, p + 1);
@@ -170,7 +172,7 @@ void SimTool::loadFinal()
 		printf("SimTool.loadFinal(), sim=NULL just returning\n");
 		return;
 	}
-      
+
 	//
 	// read '.log' file to determine simulation time and iteration
 	//
@@ -200,7 +202,7 @@ void SimTool::loadFinal()
 	}
 
 	double parsedTime = -1.0;
-	int tempIteration = -1, tempFileCount = 0, tempZipCount = 0; 
+	int tempIteration = -1, tempFileCount = 0, tempZipCount = 0;
 
 	while (!feof(fp)){
 		char logBuffer[201];
@@ -213,7 +215,7 @@ void SimTool::loadFinal()
 		if (strstr(logBuffer, baseSimName)){
 			//
 			// parse iteration number and time
-			//		
+			//
 			int numTokens = 0;
 			if (bSimZip) {
 				numTokens = sscanf(logBuffer, "%d %s %s %lg", &tempIteration, dataFileName, zipFileName, &parsedTime);
@@ -238,12 +240,16 @@ void SimTool::loadFinal()
 	}
 
 	if (bSimZip) {
-		// check if zip file exists	
+		// check if zip file exists
 		char zipFileAbsoluteName[512];
 		if (strchr(zipFileName, DIRECTORY_SEPARATOR) != 0) {
 			strcpy(zipFileAbsoluteName,zipFileName);
 		} else {
-			sprintf(zipFileAbsoluteName,"%s%s",baseDirName, zipFileName);
+			if (baseDirName == 0) { // current directory
+				strcpy(zipFileAbsoluteName, zipFileName);
+			} else {
+				sprintf(zipFileAbsoluteName,"%s%s",baseDirName, zipFileName);  // Jim Schaff made this change ... look at it.
+			}
 		}
 		if (stat(zipFileAbsoluteName, &buf)) {
 			printf("SimTool::loadFinal(), unable to open zip file %s\n", zipFileAbsoluteName);
@@ -251,7 +257,7 @@ void SimTool::loadFinal()
 			return;
 		}
 		try {
-			// unzip the file (without directory) into exdir, currently we 
+			// unzip the file (without directory) into exdir, currently we
 			// unzip the file to the current working directory
 			unzip32(zipFileAbsoluteName, dataFileName, NULL);
 		} catch (...) {
@@ -270,8 +276,8 @@ void SimTool::loadFinal()
 		DataSet dataSet;
 		dataSet.read(dataFileName, simulation);
 		simulation->setCurrIteration(tempIteration);
-		simFileCount = tempFileCount;				
-	
+		simFileCount = tempFileCount;
+
 		if (bSimZip) {
 			remove(dataFileName);
 			zipFileCount = getZipCount(zipFileName);
@@ -293,7 +299,7 @@ void SimTool::loadFinal()
 	} catch (...) {
 		cout << "SimTool::loadFinal() : dataSet.read(" << dataFileName << " failed : unexpected error" << endl;
 		clearLog();
-	}	 
+	}
 }
 
 void SimTool::updateLog(double progress, double time, int iteration)
@@ -309,7 +315,7 @@ void SimTool::updateLog(double progress, double time, int iteration)
 		sprintf(simFileName,"%s%.4d%s",baseSimName, simFileCount, SIM_FILE_EXT);
 	} else {
 		sprintf(simFileName,"%s%.4d%s",baseFileName, simFileCount, SIM_FILE_EXT);
-	}	
+	}
 	sprintf(particleFileName,"%s%s",simFileName, PARTICLE_FILE_EXT);
 
 	simulation->writeData(simFileName,bSimFileCompress);
@@ -317,21 +323,21 @@ void SimTool::updateLog(double progress, double time, int iteration)
 	sprintf(logFileName,"%s%s",baseFileName, LOG_FILE_EXT);
 	if ((fp=fopen(logFileName, "a"))==NULL){
 		char errmsg[512];
-		sprintf(errmsg, "SimTool::updateLog() - error opening log file <%s>", logFileName); 
+		sprintf(errmsg, "SimTool::updateLog() - error opening log file <%s>", logFileName);
 		throw errmsg;
 	}
 
-   // write zip file first, then write log file, in case that 
+   // write zip file first, then write log file, in case that
    // zipping fails
 	if (bSimZip) {
 		sprintf(zipFileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_FILE_EXT);
 		int retcode = 0;
 		struct stat buf;
 		if (stat(particleFileName, &buf) == 0) {	// has particle
-			retcode = zip32(2, zipFileName, simFileName, particleFileName);   
+			retcode = zip32(2, zipFileName, simFileName, particleFileName);
 			remove(particleFileName);
 		} else {
-			retcode = zip32(1, zipFileName, simFileName); 
+			retcode = zip32(1, zipFileName, simFileName);
 		}
 		remove(simFileName);
 
@@ -341,7 +347,7 @@ void SimTool::updateLog(double progress, double time, int iteration)
 			throw  msg;
 		}
 
-		char zipFileNameWithoutPath[512];	
+		char zipFileNameWithoutPath[512];
 		sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
 		fprintf(fp,"%4d %s %s %lg\n", iteration, simFileName, zipFileNameWithoutPath, time);
 
@@ -351,14 +357,14 @@ void SimTool::updateLog(double progress, double time, int iteration)
 			}
 		}
 	} else {
-		char simFileNameWithoutPath[512];	
+		char simFileNameWithoutPath[512];
 		sprintf(simFileNameWithoutPath,"%s%.4d%s",baseSimName, simFileCount, SIM_FILE_EXT);
 		fprintf(fp,"%4d %s %lg\n", iteration, simFileNameWithoutPath, time);
 	}
 	fclose(fp);
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
 
-	simFileCount++;	
+	simFileCount++;
 }
 
 int SimTool::getZipCount(char* zipFileName) {
@@ -412,7 +418,7 @@ void SimTool::clearLog()
 			numTokens =  fscanf(fp,"%4d %s %lg\n", &iteration, simFileName, &time);
 		}
 		if (numTokens != NUM_TOKENS_PER_LINE){
-			break;			
+			break;
 		}
 		char *dotSim = strstr(simFileName,SIM_FILE_EXT);
 		if (!dotSim) {
@@ -446,7 +452,7 @@ void SimTool::start()
 	if (simulation == NULL) {
 		throw "NULL simulation";
 	}
- 
+
 	if (bStoreEnable && (baseFileName == NULL || strlen(baseFileName) == 0)) {
 		throw "Invalid base file name for dataset";
 	}
@@ -466,7 +472,7 @@ void SimTool::start()
 	if (bStoreEnable) {
 		if (simulation->getCurrIteration()==0) {
 			// simulation starts from scratch
-			ASSERTION(startTime == 0.0);			
+			ASSERTION(startTime == 0.0);
 			FILE *fp = NULL;
 			char filename[128];
 			sprintf(filename, "%s%s", baseFileName, MESH_FILE_EXT);
@@ -477,7 +483,7 @@ void SimTool::start()
 			}
 			simulation->getMesh()->write(fp);
 			fclose(fp);
-			
+
 			sprintf(filename, "%s%s", baseFileName, MESHMETRICS_FILE_EXT);
 			if ((fp=fopen(filename,"w"))==NULL){
 				char errMsg[256];
@@ -487,17 +493,20 @@ void SimTool::start()
 			simulation->getMesh()->writeMeshMetrics(fp);
 			fclose(fp);
 
-			updateLog(0.0, 0.0, 0);		
+			updateLog(0.0, 0.0, 0);
 		} else {
 			// simulation continues from existing results, send data message
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, startTime));
 		}
 	}
- 
+
 
     //
     // iterate up to but not including end time
-    //	
+    //
+	if (bCheckSteadyState) {
+		increment = 0.001;
+	}
 	double epsilon = 1e-12;
     while ((simulation->getTime_sec()+simulation->getDT_sec())<=(simEndTime+epsilon)){
 		if (checkStopRequested()) {
@@ -507,14 +516,31 @@ void SimTool::start()
 		simulation->iterate();
 		simulation->update();
         if (bStoreEnable){
-            if (simulation->getCurrIteration() % keepEvery==0){				 
+            if (simulation->getCurrIteration() % keepEvery==0){
 				updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
             }
         }
 		percentile = (simulation->getTime_sec() - startTime)/(simEndTime - startTime);
 		if (percentile - lastSentPercentile >= increment) {
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec())); 
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec()));
 			lastSentPercentile = percentile;
+		}
+
+		if (bCheckSteadyState) {
+			bool steady = true;
+			for (int i = 0; i < simulation->getNumSolvers(); i ++) {
+				Solver* solver = simulation->getSolver(i);
+				if (!solver->checkSteadyState()) {
+					steady = false;
+					break;
+				}
+			}
+			if (steady) {
+				cout << endl << "!!!Steady State reached at " << simulation->getTime_sec() << endl;
+				break;
+			} else {
+				//cout << endl << "!!!Steady State not reached at " << simulation->getTime_sec() << endl;
+			}
 		}
 	}
 

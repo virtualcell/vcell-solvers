@@ -16,6 +16,7 @@ class SparseMatrixEqnBuilder : public EqnBuilder
 {
 public:
 	SparseMatrixEqnBuilder(Variable *var, Mesh *mesh);
+	virtual bool checkSteadyState() { return false; }
 
 	SparseMatrixPCG* getA();
 	double* getB();
