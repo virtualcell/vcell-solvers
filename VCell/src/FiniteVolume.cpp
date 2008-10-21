@@ -92,6 +92,12 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
+		// strip " in case that file name has " around
+		int fl = strlen(fvInputFile);
+        if (fvInputFile[0] == '"' && fvInputFile[fl-1] == '"') {
+                fvInputFile[fl-1] = 0;
+                fvInputFile ++;
+        }
 		ifsInput.open(fvInputFile);
 		if (!ifsInput.is_open()) {
 			cout << "File doesn't exist: " << fvInputFile << endl;

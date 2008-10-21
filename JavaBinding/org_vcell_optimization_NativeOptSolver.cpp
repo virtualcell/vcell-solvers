@@ -140,7 +140,7 @@ JNIEXPORT jstring JNICALL Java_org_vcell_optimization_NativeOptSolver_nativeSolv
 		cout.flush();
 #endif		
 		return j_optSolverResultSetXML;
-	} catch (Exception& ex) {
+	} catch (VCell::Exception& ex) {
 		jclass newExcCls = jniEnv->FindClass("java/lang/Exception");
 		jniEnv->ThrowNew(newExcCls, ex.getMessage().c_str());
 	} catch (const char* errMsg) {

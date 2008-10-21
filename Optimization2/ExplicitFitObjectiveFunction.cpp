@@ -94,7 +94,7 @@ void ExplicitFitObjectiveFunction::objective(int nparams, double* x, double* f) 
 		}
 		std::cout << "]" << std::endl;
 #endif
-	} catch (Exception ex) {
+	} catch (VCell::Exception ex) {
 		cout << "ExplicitFitObjectiveFunction::objective " << ex.getMessage() << endl;
 		*f = 1000;
 	}

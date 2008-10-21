@@ -93,7 +93,7 @@ void OdeObjectiveFunction::objective(int nparams, double* x, double* f) {
 		}
 		std::cout << "]" << std::endl;
 #endif
-	} catch (Exception ex) {
+	} catch (VCell::Exception ex) {
 		*f = 1000;
 	}
 }
@@ -108,14 +108,14 @@ double OdeObjectiveFunction::computeL2error(double* paramValues) {
 
 	int testTimeIndex = testResultSet->findColumn("t");
 	if (testTimeIndex == -1) {
-		throw Exception("computeL2error: No time data in the solution");
+		throw VCell::Exception("computeL2error: No time data in the solution");
 	}
 	double* testTimes = new double[testNumRows];
 	testResultSet->getColumnData(testTimeIndex, numParameters, paramValues, testTimes);
 
 	int refTimeIndex = referenceData->findColumn("t");
 	if (refTimeIndex == -1) {
-		throw Exception("computeL2error: No time data in the reference data");
+		throw VCell::Exception("computeL2error: No time data in the reference data");
 	}
 	double* refTimes = new double[refNumRows];
 	referenceData->getColumnData(refTimeIndex, numParameters, paramValues, refTimes);
@@ -134,7 +134,7 @@ double OdeObjectiveFunction::computeL2error(double* paramValues) {
 		
 		int testIndex = testResultSet->findColumn(aColumn);
 		if (testIndex == -1) {
-			throw Exception(string("computeL2error: No data in the solution for variable ") + aColumn);
+			throw VCell::Exception(string("computeL2error: No data in the solution for variable ") + aColumn);
 		}
 		testResultSet->getColumnData(testIndex, numParameters, paramValues, testData);
 

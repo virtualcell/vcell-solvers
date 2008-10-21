@@ -1,7 +1,8 @@
 // OptSolverLibrary.cpp : Defines the entry point for the application.
 //
-
+#ifndef __STDC__
 #define __STDC__ 1
+#endif
 
 extern "C" {
 #include "cfsqpusr.h"
@@ -168,7 +169,7 @@ OptResultSet* OptSolverCFSQP::solve(){
 		delete[] g;
 		delete[] lambda;
 		throw ex;
-	} catch (Exception ex) {
+	} catch (VCell::Exception ex) {
 		MemoryManager::deleteInstance();
 		delete[] bl;
 		delete[] bu;

@@ -5,7 +5,7 @@
 CC = cl
 CPPFLAGS = /nologo /c /O2 /GR /DWIN32 /EHsc /D_CRT_SECURE_NO_DEPRECATE /MT /D_WIN32_WINNT=0x2000 /I../../ExpressionParser /I..\include /I..\..\zlib
 
-LIBS = Ws2_32.lib ..\..\IFortran\mkl_c.lib ..\..\ExpressionParser\ExpParser.lib \
+LIBS = Ws2_32.lib user32.lib advapi32.lib ..\..\IFortran\mkl_c.lib ..\..\ExpressionParser\ExpParser.lib \
 	..\..\PCGPack\pcgpack_dbl.lib ..\..\qhull\qhull.lib $(TARGET_LIB) $(TARGET_FORLIB) ..\..\zlib\zlib.lib \
 	..\..\zip\zip32.lib ..\..\unzip\\unzip32.lib
 
