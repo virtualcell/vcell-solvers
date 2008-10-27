@@ -195,8 +195,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="..\ExpressionParser;..\VCell\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -215,10 +215,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ExpressionParser.lib"
+				AdditionalDependencies="Ws2_32.lib libsmq.lib libsmqj.lib"
 				OutputFile="$(OutDir)/Stochastic.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\ExpressionParser\Debug"
+				AdditionalLibraryDirectories="..\SonicCClient\Win32\lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/Stochastic.pdb"
 				SubSystem="1"
@@ -344,6 +344,10 @@
 			</File>
 			<File
 				RelativePath=".\VCellStoch\Jump.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\VCell\src\SimulationMessaging.cpp"
 				>
 			</File>
 			<File

@@ -36,6 +36,7 @@ SimulationMessaging *SimulationMessaging::m_inst = NULL;
 
 SimulationMessaging::SimulationMessaging() {
 	bStopRequested = false;
+	workerEvent = NULL;
 	workerEventOutputMode = WORKEREVENT_OUTPUT_MODE_STDOUT;
 }
 
@@ -97,12 +98,12 @@ SimulationMessaging::SimulationMessaging(char* broker, char* smqusername, char* 
 
 SimulationMessaging::~SimulationMessaging()
 {
+	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
+		return;
+	}
 	if (workerEvent != NULL) {
 		delete workerEvent;
 		workerEvent = NULL;
-	}
-	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
-		return;
 	}
 #ifdef USE_MESSAGING
 	try {

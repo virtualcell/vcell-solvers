@@ -1,7 +1,8 @@
 CC = g++
-CFLAGS = -c -O2 -fexceptions -DUNIX -DLINUX64 -I../../ExpressionParser 
+CFLAGS = -c -O2 -fexceptions -DUNIX -DLINUX64 -DUSE_MESSAGING -I../../ExpressionParser  \
+		-I../../VCell/include -I../../SonicCClient64/Linux_AS4_64/include/CPP -I../../SonicCClient64/Linux_AS4_64/include
 
-LIBS = ../../ExpressionParser/libExpParser.a
+LIBS = -L../../ExpressionParser/ -lExpParser -L../../SonicCClient64/Linux_AS4_64/bin/release/ -lsmq -lpthread 
 
 STDALONE_TARGET = VCellStoch
 
@@ -16,10 +17,14 @@ CPPOBJECTS = \
 			StochModel.o	\
 			IndexedTree.o	\
 			Jump.o	\
-			StochVar.o				
+			StochVar.o	\
+			SimulationMessaging.o		
 
-$(STDALONE_TARGET): $(LIBS) $(CPPOBJECTS)
+$(STDALONE_TARGET): $(CPPOBJECTS)
 	$(CC) -o $@ $(CPPOBJECTS) $(LIBS)
+	
+SimulationMessaging.o : ../../VCell/include/VCELL/SimulationMessaging.h ../../VCell/src/SimulationMessaging.cpp
+	$(CC) $(CFLAGS) ../../VCell/src/SimulationMessaging.cpp
 	
 clean:
 	rm $(STDALONE_TARGET) $(CPPOBJECTS)

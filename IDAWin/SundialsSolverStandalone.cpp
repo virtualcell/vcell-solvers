@@ -74,7 +74,7 @@ void loadJMSInfo(istream& ifsInput, int taskID) {
 #endif
 }
 
-void errExit(int returnCode, string& errorMsg) {
+void errExit(int returnCode, string& errorMsg) {	
 #ifdef USE_MESSAGING
 	if (returnCode != 0) {
 		if (!SimulationMessaging::getInstVar()->isStopRequested()) {
@@ -84,7 +84,9 @@ void errExit(int returnCode, string& errorMsg) {
 	SimulationMessaging::getInstVar()->waitUntilFinished();
 	delete SimulationMessaging::getInstVar();
 #else
-	cerr << errorMsg << endl;
+	if (returnCode != 0) {	
+		cerr << errorMsg << endl;
+	}
 #endif
 }
 

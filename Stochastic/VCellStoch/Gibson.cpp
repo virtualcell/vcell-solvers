@@ -12,6 +12,9 @@
 #include "Jump.h"
 #include "Gibson.h"
 #include "StochVar.h"
+#ifdef USE_MESSAGING
+#include <VCELL/SimulationMessaging.h>
+#endif
 using namespace std;
 #ifdef LINUX
 #include <cmath>
@@ -440,9 +443,15 @@ int Gibson::core()
 					double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
 					if (duration >= 2)
 					{
-						printf("[[[progress:%lg%%]]]", (simtime/ENDING_TIME) * 100.0);
+						double percentile = (simtime/ENDING_TIME) * 100.0;
+#ifdef USE_MESSAGING
+						SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simtime));
+						SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simtime));
+#else 
+						printf("[[[progress:%lg%%]]]", percentile);
 						printf("[[[data:%lg]]]", simtime);
 						fflush(stdout);
+#endif
 						oldTime = currentTime;
 					}
 				}
@@ -553,9 +562,14 @@ void Gibson::march()
 			double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
 			if (duration >= 2)
 			{
-				printf("[[[progress:%lg%%]]]", ((j-SEED)*1.0/NUM_TRIAL) * 100.0);
+				double percentile =  ((j-SEED)*1.0/NUM_TRIAL) * 100.0;
+#ifdef USE_MESSAGING
+				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, j));
+#else 
+				printf("[[[progress:%lg%%]]]", percentile);
 				//printf("[[[data:%lg]]]", (j-SEED));
 				fflush(stdout);
+#endif
 				oldTime = currentTime;
 			}
 		}
@@ -573,6 +587,10 @@ void Gibson::march()
 	cout << endl << "Total time used(ms): " << ntime;
 #endif
 	outfile.close();
+
+#ifdef USE_MESSAGING
+	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1, ENDING_TIME));
+#endif
 }//end of method march()
 	
 /*

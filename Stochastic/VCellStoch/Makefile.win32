@@ -1,15 +1,26 @@
-CFLAGS =	/c /EHsc /O2 /DWIN32 -I..\..\ExpressionParser 
+CPPFLAGS =	/c /EHsc /O2 /DWIN32 -I..\..\ExpressionParser 
 
 LIBS =	..\..\ExpressionParser\ExpParser.lib
 
+!ifdef NO_MESSAGING
+CPPFLAGS = $(CPPFLAGS)
+OBJDIR = .\obj_NoMessaging 
+MESSAGING_CPPOBJECTS = 
+STDALONE_TARGET = VCellStoch_NoMessaging.exe
+LIBS =  $(LIBS) $(TARGET_LIB)
+!else
+CPPFLAGS = $(CPPFLAGS) /DUSE_MESSAGING /I..\..\SonicCClient\Win32\include /I..\..\SonicCClient\Win32\include\CPP -I..\..\VCell\include
+OBJDIR = .\obj
+MESSAGING_CPPOBJECTS = $(OBJDIR)\SimulationMessaging.obj
+CPPFLAG_MESSAGING = /nologo /c /O2 /GR /DWIN32 /EHsc /D_CRT_SECURE_NO_DEPRECATE /DUSE_MESSAGING /MT /D_WIN32_WINNT=0x2000 /I..\..\SonicCClient\Win32\include /I..\..\SonicCClient\Win32\include\CPP -I..\..\VCell\include
 STDALONE_TARGET = VCellStoch.exe
+LIBS = Ws2_32.lib $(LIBS) ..\..\SonicCClient\win32\lib\libsmq.lib ..\..\SonicCClient\win32\lib\libsmqj.lib
+!endif
 
-.SUFFIXES:		.c.cpp.obj
-
-OBJDIR = .\Win32
+.SUFFIXES:	.c.cpp.obj
 
 .cpp{$(OBJDIR)}.obj:	
-			cl /c $(CFLAGS) /Fo$@ $<
+			cl /c $(CPPFLAGS) /Fo$@ $<
 
 default all:	$(STDALONE_TARGET)
 
@@ -23,9 +34,11 @@ CPPOBJECTS =	 	$(OBJDIR)\VCellStoch.obj	\
 $(OBJDIR) :
     if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"    
     
-$(STDALONE_TARGET): $(OBJDIR) $(LIBS) $(CPPOBJECTS)
-	cl -Fe$@ $(CPPOBJECTS) $(LIBS)
+$(STDALONE_TARGET): $(OBJDIR) $(CPPOBJECTS) $(MESSAGING_CPPOBJECTS)
+	cl -Fe$@ $(CPPOBJECTS) $(MESSAGING_CPPOBJECTS) $(LIBS)
 	
+$(OBJDIR)\SimulationMessaging.obj : ..\..\VCell\include\VCELL\SimulationMessaging.h ..\..\VCell\src\SimulationMessaging.cpp
+	cl $(CPPFLAG_MESSAGING)  /Fo$@ ..\..\VCell\src\SimulationMessaging.cpp
 	
 clean:
-	del $(STDALONE_TARGET) $(CPPOBJECTS)
+	del $(STDALONE_TARGET) $(CPPOBJECTS) $(MESSAGING_CPPOBJECTS)
