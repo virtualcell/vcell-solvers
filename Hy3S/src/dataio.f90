@@ -33,8 +33,8 @@
 !	ExpTypes identify what sort of 'computational experiment' the simulation will perform.
 !	In order to perform the experiment, different NetCDF variables may be needed.
 !	By reading the ExpType, the DataIO module will read in the required NetCDF
-!	variables, such as simulation parameters or model information. 
-!	
+!	variables, such as simulation parameters or model information.
+!
 !	Strictly speaking, each ExpType has no relation to the simulation method performed.
 !	For example, if two different simulation methods require the same set of variables,
 !	then they may use the same ExpType. The program may distinguish one method from another
@@ -44,19 +44,19 @@
 !	variables, including their dimensions, types, name, and information content.
 !
 !	If you are developing a new simulation method that requires different information from the
-!	input file (either changing the dimensions of any NetCDF variables, their data types, or 
-!	adding new variables or dimensions), then define a new ExpType. Otherwise, use an existing one. 
+!	input file (either changing the dimensions of any NetCDF variables, their data types, or
+!	adding new variables or dimensions), then define a new ExpType. Otherwise, use an existing one.
 !
 !	Here are the current ExpTypes:
 !
 !	1: Single Model - Contains enough information to simulate only a single, defined model.
 !	2: Multiple Models, varying initial conditions and/or kinetic parameters. Each model is fully defined.
-!	3: Multiple Models, varying initial conditions and/or kinetic parameters. 
-!		Each model is somehow changed by the method. This will include any optimization 
+!	3: Multiple Models, varying initial conditions and/or kinetic parameters.
+!		Each model is somehow changed by the method. This will include any optimization
 !		method that changes the kinetic parameters or initial conditions of a model.
-!	4: Multiple Models, varying the system of reactions, initial conditions, and/or kinetic parameters. 
+!	4: Multiple Models, varying the system of reactions, initial conditions, and/or kinetic parameters.
 !		Each model is somehow changed by the method. This will include any evolution in silico
-!		methods.  
+!		methods.
 !	5: TBD -- Add as needed.
 !
 !	This Module Contains MPI Code.
@@ -67,7 +67,7 @@
 Module DataIO
 !Data Input/Output module for NetCDF files
 !Reads command line, reads model data, writes model data, writes state data
-  
+
 USE netcdf
 USE F2KCLI
 USE GLOBALVARIABLES
@@ -87,7 +87,7 @@ private
 Public :: InputModelDataInit, InputModelData, Final_DataInput,  ParseCLA, WriteStateData, check, WriteModelData
 Public :: PrintModelData
 
-!***	
+!***
 CONTAINS
 !-------------------------------------------------------------------------------
 
@@ -103,7 +103,7 @@ CONTAINS
 !	those parameters.
 !
 !	Modified the global variables OverWriteSolution and RandSeed.
-!	
+!
 !SOURCE
 
 Subroutine ParseCLA(NumCLParameters, CLParameters)
@@ -119,7 +119,7 @@ integer :: RandSize, status, neg, NARG, arglen, ierror, me, decpos, engpos
 integer :: CLcounter, i, ScaleFactor, ScaleFactorNeg
 Real*8 :: ParameterNum
 
-Character(len=36) :: fileoption, RandSeedNumChar, ProgramName, arg
+Character(len=36) :: fileoption, RandSeedNumChar, ProgramName, arg, taskIDStr
 
 !Command Line Syntax: <Command> <NetCDF File> <P1> <P2> ... <Pn> [-R <RandSeed>] [-OV]
 !P1 ... Pn are command line parameters passed to the mainprogram within 'CLParameters'
@@ -132,6 +132,8 @@ CLParameters = 0.000000000
 NumCLParameters = 0
 OverWriteSolution = 0
 
+taskID = -1
+
 Call Random_Seed(Size = RandSize)
 Allocate(RandSeed(RandSize))
 
@@ -142,31 +144,46 @@ if (NARG == 0) THEN
 	NumCLParameters = -1
 else
 
-	Call Get_Command_Argument(1,filename)
-	RandSeedNumChar = ''
+Call Get_Command_Argument(1,filename)
+RandSeedNumChar = ''
 
-	CLcounter = 1	
+CLcounter = 1
 
-	do while (CLcounter < NARG)
+do while (CLcounter < NARG)
 	   CLcounter = CLcounter + 1
-	   
+
 	   Call Get_Command_Argument(CLcounter, arg)
-	   
-	   if (arg(1:len_trim(arg)) == '-R'.OR.arg(1:len_trim(arg)) == '-OV') THEN
-	    
-	      if (arg(1:len_trim(arg)) == '-R') THEN
+
+	   if (arg(1:len_trim(arg)) == '-R'.OR.arg(1:len_trim(arg)) == '-OV'.OR.arg(1:len_trim(arg)) == '-tid') THEN
+
+		  if (arg(1:len_trim(arg)) == '-R') THEN
 		!If parameter is '-R', the next parameter is the random seed number
-	      
+
 		 CLcounter = CLcounter + 1
 		 Call Get_Command_Argument(CLcounter,RandSeedNumChar,ierror)
-		 
-	      end if
-	      
-	      if (arg(1:len_trim(arg)) == '-OV') THEN
-		 OverWriteSolution = 1		
-	      end if
-	      
-	   else
+
+		  end if
+
+		  if (arg(1:len_trim(arg)) == '-OV') THEN
+			 OverWriteSolution = 1
+		  end if
+
+		  if (arg(1:len_trim(arg)) == '-tid') THEN
+			 CLcounter = CLcounter + 1
+			 Call Get_Command_Argument(CLcounter,taskIDStr,ierror)
+		     taskID=0
+		     if (taskIDStr(1:1) == '-') THEN
+		     	do i=2,len(trim(taskIDStr))
+		        	taskID = taskID + (ichar(taskIDStr(i:i)) - 48)*10**(len(trim(taskIDStr))-i)
+		     	end do
+		     	taskID = -taskID;
+		     else
+		     	do i=1,len(trim(taskIDStr))
+		        	taskID = taskID + (ichar(taskIDStr(i:i)) - 48)*10**(len(trim(taskIDStr))-i)
+		     	end do
+		     endif
+		endif
+   else
 
 	      !Argument is a parameter
 	      arglen = len_trim(arg)
@@ -202,12 +219,12 @@ else
 	      else
 		 neg = 0
 	      end if
-	      
+
 	      ParameterNum = real(0.000000,8)
 	      do i=1+neg,decpos-1
 		 ParameterNum = ParameterNum + real((ichar(arg(i:i)) - 48),8) * 10**(decpos - 1 - i - neg)
 	      end do
-	      
+
 	      do i=decpos+1, engpos - 1
 		 ParameterNum = ParameterNum + real((ichar(arg(i:i)) - 48),8) / 10**(i - decpos)
 	      end do
@@ -237,12 +254,12 @@ else
 	      if (neg == 1) THEN
   	        ParameterNum = real(-1.00000,8) * ParameterNum
 	      end if
-	      
+
 	      NumCLParameters = NumCLParameters + 1
-	      CLParameters(NumCLParameters) = ParameterNum	     
-	      
-	   end if	   
-	   
+	      CLParameters(NumCLParameters) = ParameterNum
+
+	   end if
+
 	end do
 
 	if (len(trim(RandSeedNumChar)) > 0) THEN
@@ -256,13 +273,13 @@ else
 	     do i=1,len(trim(RandSeedNumChar))
 	        RandSeedNum = RandSeedNum + (ichar(RandSeedNumChar(i:i)) - 48)*10**(len(trim(RandSeedNumChar))-i)
 	     end do
-	   
+
 	     RandSeed = RandSeedNum
-	  end if   
+	  end if
 	else
 	   Call Random_Seed
 	   Call Random_Seed(Get = RandSeed)
-	end if	
+	end if
 end if
 
 End Subroutine ParseCLA
@@ -276,11 +293,11 @@ End Subroutine ParseCLA
 !	that does not change from one model to another. The set of NetCDF variables read into
 !	memory is dependent on the ExpType.
 !
-!	This subroutine calls the CheckAndDefineVariables subroutine. 	
+!	This subroutine calls the CheckAndDefineVariables subroutine.
 !
 !	This subroutine modifies many global variables.
 !
-!	This subroutine should only be called once prior to the simulation of single or 
+!	This subroutine should only be called once prior to the simulation of single or
 !	multiple models. Any NetCDF variables that need to be read in only once should be
 !	placed here.
 !SOURCE
@@ -289,15 +306,14 @@ Subroutine InputModelDataInit
 
 !***
 
-integer :: fileunit, datapointer(10), i, RandSize, status
+integer :: fileunit, datapointer(10), i, RandSize, status, jmsid(8)
 integer :: NdimID, MdimID, TrialsID, TimepointsID, XstateID, TimeID, ProbDistrID, ProbDistrRangeID, DataLenID
 integer :: CDFMaxDepList, CDFMaxDepListID, NumBinsID, ModelsID, NumSavedSpeciesID, NumPerturbationsID
 
 integer :: DataWritten, ierror, me, OldFillMode, NumSavedSpecies, error
 Integer, Allocatable :: SaveSpeciesDataTemp(:)
 
-Character(len = 72) :: errormsg
-
+Character(len = 256) :: errormsg
 
 !MPI code
 !DEC$ IF (Defined(USING_MPI))
@@ -309,28 +325,28 @@ Character(len = 72) :: errormsg
 !If the file does not have its solution data variables pre-defined, the first processor defines them.
 !The rest of the processors wait.
 
-  error = 0  
+  error = 0
 
   if (me == 0) THEN
      !Check the file for inconsistencies, errors, missing variables, etc. Define solution variables if they don't exist.
      !Return errors and error messages
-     
+
      Call CheckAndDefineVariables(error, errormsg)
 
   end if
 
   !Send error value to all processors -- Not Done Yet, But Still Somehow Works Just Fine
 
- 
+
 !DEC$ IF (Defined(USING_MPI))
-   Call MPI_BARRIER(MPI_Comm_World, IERROR)    
+   Call MPI_BARRIER(MPI_Comm_World, IERROR)
 !DEC$ ENDIF
-   
-   if (error == 1) THEN      
+
+   if (error == 1) THEN
       if (me == 0) THEN
-	 print*, trim(errormsg)
-      end if      
-      stop      
+	 	print*, trim(errormsg)
+      end if
+      stop
    end if
 
 !There should be no print statements below here.
@@ -352,23 +368,23 @@ end if
 status = NF90_inq_dimid(fileunit,'NumPerturbations',NumPerturbationsID)
 if (status == NF90_NoErr) THEN
    Call check(NF90_inquire_dimension(fileunit,NumPerturbationsID,len = NumPerturbations))
-   
+
    Call check(NF90_inq_dimid(fileunit,'DataLen',DataLenID))
    Call check(NF90_inquire_dimension(fileunit,DataLenID,len = DataLen))
-   
+
    if (NumPerturbations > 0) THEN
-      
+
       Allocate(PerturbationIDs(NumPerturbations, DataLen))
       Allocate(PerturbationData(NumPerturbations, DataLen))
-      
+
       Call check(NF90_inq_varid(fileunit,'PerturbationIDs',datapointer(8)))
       Call check(NF90_inq_varid(fileunit,'PerturbationData',datapointer(9)))
-      
+
       do i=1,NumPerturbations
          Call check(NF90_get_var(fileunit,datapointer(8),PerturbationIDs(i,:), start = (/1, i/), count = (/DataLen, 1/) ))
          Call check(NF90_get_var(fileunit,datapointer(9),PerturbationData(i,:), start = (/1, i/),  count = (/DataLen, 1/) ))
       end do
-      
+
    end if
 else
    NumPerturbations = 0
@@ -378,16 +394,44 @@ Select Case (ExpType)
 
 Case (1)
 
+   ! jms info
+   !Call check(NF90_def_dim(fileunit,'StringLen',StringLen,StringLenID))
+   !Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))
+
+   Call check(NF90_inq_varid(fileunit,'JMS_BROKER',jmsid(1)))
+   Call check(NF90_get_var(fileunit,jmsid(1),jmsUrl))
+
+   Call check(NF90_inq_varid(fileunit,'JMS_USER',jmsid(2)))
+   Call check(NF90_get_var(fileunit,jmsid(2),jmsUser))
+
+   Call check(NF90_inq_varid(fileunit,'JMS_PASSWORD',jmsid(3)))
+   Call check(NF90_get_var(fileunit,jmsid(3),jmsPassword))
+
+   Call check(NF90_inq_varid(fileunit,'JMS_QUEUE',jmsid(4)))
+   Call check(NF90_get_var(fileunit,jmsid(4),jmsQueue))
+
+   Call check(NF90_inq_varid(fileunit,'JMS_TOPIC',jmsid(5)))
+   Call check(NF90_get_var(fileunit,jmsid(5),jmsTopic))
+
+   Call check(NF90_inq_varid(fileunit,'VCELL_USER',jmsid(6)))
+   Call check(NF90_get_var(fileunit,jmsid(6),vcellUser))
+
+   Call check(NF90_inq_varid(fileunit,'SIMULATION_KEY',jmsid(7)))
+   Call check(NF90_get_var(fileunit,jmsid(7),simKey))
+
+   Call check(NF90_inq_varid(fileunit,'JOB_INDEX',jmsid(8)))
+   Call check(NF90_get_var(fileunit,jmsid(8),jobIndex))
+
    !Time-related variables
    Call check(NF90_inq_varid(fileunit,'TStart',datapointer(1)))
    Call check(NF90_get_var(fileunit,datapointer(1),TStart))
-   
+
    Call check(NF90_inq_varid(fileunit,'TEnd',datapointer(2)))
    Call check(NF90_get_var(fileunit,datapointer(2),TEnd))
-   
+
    Call check(NF90_inq_varid(fileunit,'SaveTime',datapointer(3)))
    Call check(NF90_get_var(fileunit,datapointer(3),SaveTime))
-   
+
    TimePoints = int((TEnd - TStart) / SaveTime) + 1
 
    !Read in last trial simulated
@@ -397,13 +441,13 @@ Case (1)
    else
       LastTrial = 0
    end if
-     
+
    !Set multi-model related variables to default values
    LastModel = 0
    NumModels = 1
    MaxNumModels = 1
- 
-   
+
+
    if (OverWriteSolution == 1) THEN
       !Over write the solution data
       LastModel = 0
@@ -412,12 +456,12 @@ Case (1)
 
    !Read in number of trials
    Call check(NF90_inq_dimid(fileunit,'NumTrials',TrialsID))
-   Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))   
-   
+   Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))
+
    !Read in maximum number of reaction Depend List
    Call check(NF90_inq_dimid(fileunit,'NumMaxDepList',CDFMaxDepListID))
-   Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))   
-   
+   Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))
+
    !Read in number of reactions and species
    Call check(NF90_inq_dimid(fileunit,'NumReactions',MdimID))
    Call check(NF90_inquire_dimension(fileunit,MdimID,len = M))
@@ -426,7 +470,7 @@ Case (1)
    Call check(NF90_inquire_dimension(fileunit,NdimID,len = N))
 
    N_Max = N
-   M_Max = M   
+   M_Max = M
 
 
 Case (2)
@@ -434,10 +478,10 @@ Case (2)
    !Time-related variables
    Call check(NF90_inq_varid(fileunit,'TStart',datapointer(1)))
    Call check(NF90_get_var(fileunit,datapointer(1),TStart))
-   
+
    Call check(NF90_inq_varid(fileunit,'TEnd',datapointer(2)))
    Call check(NF90_get_var(fileunit,datapointer(2),TEnd))
-   
+
    Call check(NF90_inq_varid(fileunit,'SaveTime',datapointer(3)))
    Call check(NF90_get_var(fileunit,datapointer(3),SaveTime))
 
@@ -454,13 +498,13 @@ Case (2)
    !Read in multi-model related variables
    Call check(NF90_inq_varid(fileunit,'LastModel',datapointer(6)))
    Call check(NF90_get_var(fileunit,datapointer(6),LastModel))
-   
+
    Call check(NF90_inq_varid(fileunit,'MaxNumModels',datapointer(7)))
    Call check(NF90_get_var(fileunit,datapointer(7),MaxNumModels))
-   
+
    Call check(NF90_inq_dimid(fileunit,'NumModels',ModelsID))
-   Call check(NF90_inquire_dimension(fileunit,ModelsID,len = NumModels))      
-   
+   Call check(NF90_inquire_dimension(fileunit,ModelsID,len = NumModels))
+
    if (OverWriteSolution == 1) THEN
       !Over write the solution data
       LastModel = 0
@@ -469,12 +513,12 @@ Case (2)
 
    !Read in number of trials
    Call check(NF90_inq_dimid(fileunit,'NumTrials',TrialsID))
-   Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))   
-   
+   Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))
+
    !Read in maximum number of reaction Depend List
    Call check(NF90_inq_dimid(fileunit,'NumMaxDepList',CDFMaxDepListID))
-   Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))   
-   
+   Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))
+
    !Read in number of reactions and species
    Call check(NF90_inq_dimid(fileunit,'NumReactions',MdimID))
    Call check(NF90_inquire_dimension(fileunit,MdimID,len = M))
@@ -491,10 +535,10 @@ Case (3)
    !Time-related variables
    Call check(NF90_inq_varid(fileunit,'TStart',datapointer(1)))
    Call check(NF90_get_var(fileunit,datapointer(1),TStart))
-   
+
    Call check(NF90_inq_varid(fileunit,'TEnd',datapointer(2)))
    Call check(NF90_get_var(fileunit,datapointer(2),TEnd))
-   
+
    Call check(NF90_inq_varid(fileunit,'SaveTime',datapointer(3)))
    Call check(NF90_get_var(fileunit,datapointer(3),SaveTime))
 
@@ -511,32 +555,32 @@ Case (3)
    !Read in multi-model related variables
    Call check(NF90_inq_varid(fileunit,'LastModel',datapointer(6)))
    Call check(NF90_get_var(fileunit,datapointer(6),LastModel))
-   
+
    Call check(NF90_inq_varid(fileunit,'MaxNumModels',datapointer(7)))
    Call check(NF90_get_var(fileunit,datapointer(7),MaxNumModels))
 
    Call check(NF90_inq_dimid(fileunit,'NumModels',ModelsID))
    Call check(NF90_inquire_dimension(fileunit,ModelsID,len = NumModels))
 
-   
+
    if (OverWriteSolution == 1) THEN
       !Over write the solution data
       LastModel = 0
       LastTrial = 0
    end if
-   
+
    !Read in number of trials
    Call check(NF90_inq_dimid(fileunit,'NumTrials',TrialsID))
-   Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))   
-   
+   Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))
+
    !Read in maximum number of reaction Depend List
    Call check(NF90_inq_dimid(fileunit,'NumMaxDepList',CDFMaxDepListID))
-   Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))   
-   
+   Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))
+
    !Read in number of reactions and species
    Call check(NF90_inq_dimid(fileunit,'NumReactions',MdimID))
    Call check(NF90_inquire_dimension(fileunit,MdimID,len = M))
-   
+
    Call check(NF90_inq_dimid(fileunit,'NumSpecies',NdimID))
    Call check(NF90_inquire_dimension(fileunit,NdimID,len = N))
 
@@ -548,10 +592,10 @@ Case (4)
    !Time-related variables
    Call check(NF90_inq_varid(fileunit,'TStart',datapointer(1)))
    Call check(NF90_get_var(fileunit,datapointer(1),TStart))
-   
+
    Call check(NF90_inq_varid(fileunit,'TEnd',datapointer(2)))
    Call check(NF90_get_var(fileunit,datapointer(2),TEnd))
-   
+
    Call check(NF90_inq_varid(fileunit,'SaveTime',datapointer(3)))
    Call check(NF90_get_var(fileunit,datapointer(3),SaveTime))
 
@@ -565,7 +609,7 @@ Case (4)
      LastTrial = 0
   end if
 
-  
+
    !Read in multi-model related variables
    Call check(NF90_inq_varid(fileunit,'LastModel',datapointer(6)))
    Call check(NF90_get_var(fileunit,datapointer(6),LastModel))
@@ -582,19 +626,19 @@ Case (4)
       LastModel = 0
       LastTrial = 0
    end if
-   
+
    !Read in number of trials
    Call check(NF90_inq_dimid(fileunit,'NumTrials',TrialsID))
-   Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))   
+   Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))
 
    !Read in maximum number of reaction Depend List
    Call check(NF90_inq_dimid(fileunit,'NumMaxDepList',CDFMaxDepListID))
-   Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))   
+   Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))
 
    !Read in maximum number of reactions and species
    Call check(NF90_inq_dimid(fileunit,'MaxNumReactions',MdimID))
    Call check(NF90_inquire_dimension(fileunit,MdimID,len = M_Max))
-   
+
    Call check(NF90_inq_dimid(fileunit,'MaxNumSpecies',NdimID))
    Call check(NF90_inquire_dimension(fileunit,NdimID,len = N_Max))
 
@@ -608,7 +652,7 @@ End Select
 Call check(NF90_close(fileunit))
 
 !DEC$ IF (Defined(USING_MPI))
-   Call MPI_BARRIER(MPI_Comm_World, IERROR) 
+   Call MPI_BARRIER(MPI_Comm_World, IERROR)
 !DEC$ ENDIF
 
  End subroutine InputModelDataInit
@@ -642,7 +686,7 @@ Integer, Allocatable :: SplitOnDivisionTemp(:), SaveSpeciesDataTemp(:)
 !Open NetCDF file
 Call check(NF90_open(path = trim(filename),mode = NF90_Share,ncid = fileunit))
 
-!Read into model-dependent variables of the RecNum_th model, dependent on ExpType 
+!Read into model-dependent variables of the RecNum_th model, dependent on ExpType
 
 Select Case (ExpType)
 !Read in number of species or reactions from Model (only necessary when it may vary between models)
@@ -655,12 +699,12 @@ Case (3)
 Case (4)
    Call check(NF90_inq_varid(fileunit,'NumReactions', MVarID))
    Call check(NF90_get_var(fileunit, MVarID, M, start = (/ Model /) ))
-   
+
    Call check(NF90_inq_varid(fileunit,'NumSpecies', NVarID))
    Call check(NF90_get_var(fileunit, NVarID, N, start = (/ Model /) ))
-   
+
 Case (5)
-   
+
 End Select
 
 
@@ -672,67 +716,67 @@ Call AllocateLocalModel(N, M)
 Allocate(SplitOnDivisionTemp(N))
 Allocate(SaveSpeciesDataTemp(N))
 
-Select Case (ExpType)	
+Select Case (ExpType)
 
 Case (1)
-   
+
    !No NetCDF variables have record dimensions
-   
+
    if (Model > 1) THEN
       print*, "Warning: This NetCDF file contains only a single model. That model's data is being read."
    end if
-   
+
    Call check(NF90_inq_varid(fileunit,'Volume',datapointer(1)))
    Call check(NF90_get_var(fileunit,datapointer(1),Vo))
-   
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTime',datapointer(2)))
    Call check(NF90_get_var(fileunit,datapointer(2),CellGrowthTime))
-   
-   
+
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTimeSD',datapointer(3)))
    Call check(NF90_get_var(fileunit,datapointer(3),CellGrowthTimeSD))
-   
+
    Call check(NF90_inq_varid(fileunit,'SpeciesSplitOnDivision',datapointer(4)))
    Call check(NF90_get_var(fileunit,datapointer(4),SplitOnDivisionTemp, count = (/N/) ))
-   
-   
+
+
    where (SplitOnDivisionTemp >= 1)
       SplitOnDivision = .TRUE.
-   elsewhere 
+   elsewhere
       SplitOnDivision = .FALSE.
    end where
-   
+
    Deallocate(SplitOnDivisionTemp)
-   
+
    Call check(NF90_inq_varid(fileunit,'SaveSpeciesData',datapointer(5)))
    Call check(NF90_get_var(fileunit,datapointer(5),SaveSpeciesDataTemp, count = (/N/) ))
-   
+
    where (SaveSpeciesDataTemp >= 1)
       SaveSpeciesData = .TRUE.
    elsewhere
       SaveSpeciesData = .FALSE.
    end where
-   
+
    Deallocate(SaveSpeciesDataTemp)
-   
+
    Call check(NF90_inq_varid(fileunit,'SpeciesIC',datapointer(6)))
-   Call check(NF90_get_var(fileunit,datapointer(6),Xo, count = (/N/) ))	
-   
+   Call check(NF90_get_var(fileunit,datapointer(6),Xo, count = (/N/) ))
+
    Call check(NF90_inq_varid(fileunit,'Reaction_OptionalData',datapointer(7)))
    Call check(NF90_get_var(fileunit,datapointer(7),Rxndata(:)%Data, count = (/M/) ))
-   
+
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Laws',datapointer(8)))
-   Call check(NF90_get_var(fileunit,datapointer(8),Rxndata(:)%Mtype, count = (/ M /) ))     	   
-   
-   
+   Call check(NF90_get_var(fileunit,datapointer(8),Rxndata(:)%Mtype, count = (/ M /) ))
+
+
    !Populate Rxndata(:)%DListLen - Length of dependent species list
    Call check(NF90_inq_varid(fileunit,'Reaction_DListLen',datapointer(9)))
    Call check(NF90_get_var(fileunit,datapointer(9),Rxndata(:)%DListLen, count = (/M/) ))
-   
+
    !Populate Rxndata(:)%SListLen - Length of stoichiometric species list
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichListLen',datapointer(10)))
-   Call check(NF90_get_var(fileunit,datapointer(10),Rxndata(:)%SListLen,count = (/ M /)))	      	
-   
+   Call check(NF90_get_var(fileunit,datapointer(10),Rxndata(:)%SListLen,count = (/ M /)))
+
    forall (i=1:M)
       Rxndata(i)%SList = 0
       Rxndata(i)%DList = 0
@@ -740,79 +784,79 @@ Case (1)
       Rxndata(i)%v = 0
       Rxndata(i)%EList = 0
    end forall
-   
+
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichCoeff',datapointer(11)))
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Constants',datapointer(12)))
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichSpecies',datapointer(13)))
    Call check(NF90_inq_varid(fileunit,'Reaction_DepList',datapointer(14)))
-   
+
    do i=1, M
-      
-      Call check(NF90_get_var(fileunit,datapointer(11),Rxndata(i)%v(1:Rxndata(i)%SListLen), & 
+
+      Call check(NF90_get_var(fileunit,datapointer(11),Rxndata(i)%v(1:Rxndata(i)%SListLen), &
            & start = (/1, i/), count = (/Rxndata(i)%SListLen, 1/) ))
-      
+
       Call check(NF90_get_var(fileunit,datapointer(12),Rxndata(i)%c(1:MaxDepList),start = (/1, i/), count = (/MaxDepList, 1/)))
-      
+
       Call check(NF90_get_var(fileunit,datapointer(13),Rxndata(i)%SList(1:Rxndata(i)%SListLen), &
            & start = (/1, i/), count = (/Rxndata(i)%SListLen, 1/) ))
-      
-      Call check(NF90_get_var(fileunit,datapointer(14),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i/), & 
+
+      Call check(NF90_get_var(fileunit,datapointer(14),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i/), &
            & count = (/Rxndata(i)%DListLen,1 /) ))
-      
+
    end do
-   
+
 Case (2)
-   
+
    !NetCDF Variables 'Reaction_Rate_Constants' and 'SpeciesIC' have record dimensions
-   
+
    Call check(NF90_inq_varid(fileunit,'SpeciesIC',datapointer(1)))
-   Call check(NF90_get_var(fileunit,datapointer(1),Xo, start = (/1, Model /), count = (/N, 1/) ))	
-   
+   Call check(NF90_get_var(fileunit,datapointer(1),Xo, start = (/1, Model /), count = (/N, 1/) ))
+
    Call check(NF90_inq_varid(fileunit,'Volume',datapointer(2)))
    Call check(NF90_get_var(fileunit,datapointer(2),Vo))
-   
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTime',datapointer(3)))
    Call check(NF90_get_var(fileunit,datapointer(3),CellGrowthTime))
-   
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTimeSD',datapointer(4)))
    Call check(NF90_get_var(fileunit,datapointer(4),CellGrowthTimeSD))
-   
+
    Call check(NF90_inq_varid(fileunit,'SpeciesSplitOnDivision',datapointer(5)))
    Call check(NF90_get_var(fileunit,datapointer(5),SplitOnDivisionTemp, count = (/N/) ))
-   
+
    where (SplitOnDivisionTemp == 1)
       SplitOnDivision = .TRUE.
-   elsewhere 
+   elsewhere
       SplitOnDivision = .FALSE.
    end where
    Deallocate(SplitOnDivisionTemp)
-   
-   
+
+
    Call check(NF90_inq_varid(fileunit,'SaveSpeciesData',datapointer(14)))
    Call check(NF90_get_var(fileunit,datapointer(14),SaveSpeciesDataTemp, count = (/N/) ))
-   
+
    where (SaveSpeciesDataTemp >= 1)
       SaveSpeciesData = .TRUE.
    elsewhere
       SaveSpeciesData = .FALSE.
    end where
-   
+
    Deallocate(SaveSpeciesDataTemp)
-   
+
    Call check(NF90_inq_varid(fileunit,'Reaction_OptionalData',datapointer(6)))
    Call check(NF90_get_var(fileunit,datapointer(6),Rxndata(:)%Data, count = (/M/) ))
-   
+
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Laws',datapointer(7)))
-   Call check(NF90_get_var(fileunit,datapointer(7),Rxndata(:)%Mtype, count = (/ M /) ))     	   
-   
+   Call check(NF90_get_var(fileunit,datapointer(7),Rxndata(:)%Mtype, count = (/ M /) ))
+
    !Populate Rxndata(:)%DListLen - Length of dependent species list
    Call check(NF90_inq_varid(fileunit,'Reaction_DListLen',datapointer(8)))
    Call check(NF90_get_var(fileunit,datapointer(8),Rxndata(:)%DListLen, count = (/M/) ))
-   
+
    !Populate Rxndata(:)%SListLen - Length of stoichiometric species list
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichListLen',datapointer(9)))
-   Call check(NF90_get_var(fileunit,datapointer(9),Rxndata(:)%SListLen,count = (/ M /)))	      	
-   
+   Call check(NF90_get_var(fileunit,datapointer(9),Rxndata(:)%SListLen,count = (/ M /)))
+
    forall (i=1:M)
       Rxndata(i)%SList = 0
       Rxndata(i)%DList = 0
@@ -820,81 +864,81 @@ Case (2)
       Rxndata(i)%v = 0
       Rxndata(i)%EList = 0
    end forall
-   
-   
+
+
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichCoeff',datapointer(10)))
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Constants',datapointer(11)))
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichSpecies',datapointer(12)))
    Call check(NF90_inq_varid(fileunit,'Reaction_DepList',datapointer(13)))
-   
+
    do i=1, M
-      
-      Call check(NF90_get_var(fileunit,datapointer(10),Rxndata(i)%v(1:Rxndata(i)%SListLen), & 
+
+      Call check(NF90_get_var(fileunit,datapointer(10),Rxndata(i)%v(1:Rxndata(i)%SListLen), &
            & start = (/1, i/), count = (/Rxndata(i)%SListLen, 1/) ))
-      
-      Call check(NF90_get_var(fileunit,datapointer(11),Rxndata(i)%c(1:MaxDepList),start = (/1, i, Model/), & 
+
+      Call check(NF90_get_var(fileunit,datapointer(11),Rxndata(i)%c(1:MaxDepList),start = (/1, i, Model/), &
            & count = (/MaxDepList, 1, 1/)))
-      
+
       Call check(NF90_get_var(fileunit,datapointer(12),Rxndata(i)%SList(1:Rxndata(i)%SListLen), &
            & start = (/1, i/), count = (/Rxndata(i)%SListLen, 1/) ))
-      
-      Call check(NF90_get_var(fileunit,datapointer(13),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i/), & 
+
+      Call check(NF90_get_var(fileunit,datapointer(13),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i/), &
            & count = (/Rxndata(i)%DListLen,1 /) ))
-      
+
    end do
-   
+
 Case (3)
-   
+
    !NetCDF Variables 'Reaction_Rate_Constants' and 'SpeciesIC' have record dimensions
-   
+
    Call check(NF90_inq_varid(fileunit,'SpeciesIC',datapointer(1)))
-   Call check(NF90_get_var(fileunit,datapointer(1),Xo, start = (/1, Model /), count = (/N, 1/) ))	
-   
+   Call check(NF90_get_var(fileunit,datapointer(1),Xo, start = (/1, Model /), count = (/N, 1/) ))
+
    Call check(NF90_inq_varid(fileunit,'Volume',datapointer(2)))
    Call check(NF90_get_var(fileunit,datapointer(2),Vo))
-   
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTime',datapointer(3)))
    Call check(NF90_get_var(fileunit,datapointer(3),CellGrowthTime))
-   
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTimeSD',datapointer(4)))
    Call check(NF90_get_var(fileunit,datapointer(4),CellGrowthTimeSD))
-   
+
    Call check(NF90_inq_varid(fileunit,'SpeciesSplitOnDivision',datapointer(5)))
    Call check(NF90_get_var(fileunit,datapointer(5),SplitOnDivisionTemp, count = (/N/) ))
-   
+
    where (SplitOnDivisionTemp == 1)
       SplitOnDivision = .TRUE.
-   elsewhere 
+   elsewhere
       SplitOnDivision = .FALSE.
    end where
    Deallocate(SplitOnDivisionTemp)
-   
-   
+
+
    Call check(NF90_inq_varid(fileunit,'SaveSpeciesData',datapointer(14)))
    Call check(NF90_get_var(fileunit,datapointer(14),SaveSpeciesDataTemp, count = (/N/) ))
-   
+
    where (SaveSpeciesDataTemp >= 1)
       SaveSpeciesData = .TRUE.
    elsewhere
       SaveSpeciesData = .FALSE.
    end where
-   
+
    Deallocate(SaveSpeciesDataTemp)
-   
+
    Call check(NF90_inq_varid(fileunit,'Reaction_OptionalData',datapointer(6)))
    Call check(NF90_get_var(fileunit,datapointer(6),Rxndata(:)%Data, count = (/M/) ))
-   
+
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Laws',datapointer(7)))
-   Call check(NF90_get_var(fileunit,datapointer(7),Rxndata(:)%Mtype, count = (/ M /) ))     	   
-   
+   Call check(NF90_get_var(fileunit,datapointer(7),Rxndata(:)%Mtype, count = (/ M /) ))
+
    !Populate Rxndata(:)%DListLen - Length of dependent species list
    Call check(NF90_inq_varid(fileunit,'Reaction_DListLen',datapointer(8)))
    Call check(NF90_get_var(fileunit,datapointer(8),Rxndata(:)%DListLen, count = (/M/) ))
-   
+
    !Populate Rxndata(:)%SListLen - Length of stoichiometric species list
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichListLen',datapointer(9)))
-   Call check(NF90_get_var(fileunit,datapointer(9),Rxndata(:)%SListLen,count = (/ M /)))	      	
-   
+   Call check(NF90_get_var(fileunit,datapointer(9),Rxndata(:)%SListLen,count = (/ M /)))
+
    forall (i=1:M)
       Rxndata(i)%SList = 0
       Rxndata(i)%DList = 0
@@ -902,84 +946,84 @@ Case (3)
       Rxndata(i)%v = 0
       Rxndata(i)%EList = 0
    end forall
-   
-   
+
+
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichCoeff',datapointer(10)))
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Constants',datapointer(11)))
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichSpecies',datapointer(12)))
    Call check(NF90_inq_varid(fileunit,'Reaction_DepList',datapointer(13)))
-   
+
    do i=1, M
 
-      Call check(NF90_get_var(fileunit,datapointer(10),Rxndata(i)%v(1:Rxndata(i)%SListLen), & 
+      Call check(NF90_get_var(fileunit,datapointer(10),Rxndata(i)%v(1:Rxndata(i)%SListLen), &
            & start = (/1, i/), count = (/Rxndata(i)%SListLen, 1/) ))
 
-      Call check(NF90_get_var(fileunit,datapointer(11),Rxndata(i)%c(1:MaxDepList),start = (/1, i, Model/), & 
+      Call check(NF90_get_var(fileunit,datapointer(11),Rxndata(i)%c(1:MaxDepList),start = (/1, i, Model/), &
            & count = (/MaxDepList, 1, 1/)))
 
       Call check(NF90_get_var(fileunit,datapointer(12),Rxndata(i)%SList(1:Rxndata(i)%SListLen), &
            & start = (/1, i/), count = (/Rxndata(i)%SListLen, 1/) ))
 
-      Call check(NF90_get_var(fileunit,datapointer(13),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i/), & 
+      Call check(NF90_get_var(fileunit,datapointer(13),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i/), &
 	      & count = (/Rxndata(i)%DListLen,1 /) ))
 
    end do
 
-   
+
 Case (4)
-   
-   !The following NetCDF variables have record dimensions: SpeciesIC, SpeciesSplitOnDivision, Reaction_Rate_Laws, 
+
+   !The following NetCDF variables have record dimensions: SpeciesIC, SpeciesSplitOnDivision, Reaction_Rate_Laws,
    !Reaction_DListLen, Reaction_StoichListLen, Reaction_DepList, Reaction_StoichCoeff, Reaction_StoichSpecies,
    !Reaction_Rate_Constants, Reaction_OptionalData
-   
+
    Call check(NF90_inq_varid(fileunit,'Volume',datapointer(1)))
    Call check(NF90_get_var(fileunit,datapointer(1),Vo))
-   
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTime',datapointer(2)))
    Call check(NF90_get_var(fileunit,datapointer(2),CellGrowthTime))
-   
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTimeSD',datapointer(3)))
    Call check(NF90_get_var(fileunit,datapointer(3),CellGrowthTimeSD))
-   
+
    Call check(NF90_inq_varid(fileunit,'SpeciesIC',datapointer(4)))
-   Call check(NF90_get_var(fileunit,datapointer(4),Xo, start = (/1, Model /), count = (/N, 1/) ))		   
-   
+   Call check(NF90_get_var(fileunit,datapointer(4),Xo, start = (/1, Model /), count = (/N, 1/) ))
+
    Call check(NF90_inq_varid(fileunit,'SpeciesSplitOnDivision',datapointer(5)))
    Call check(NF90_get_var(fileunit,datapointer(5),SplitOnDivisionTemp, start = (/1, Model/), count = (/N, 1/) ))
-   
+
    where (SplitOnDivisionTemp == 1)
       SplitOnDivision = .TRUE.
-   elsewhere 
+   elsewhere
       SplitOnDivision = .FALSE.
    end where
    Deallocate(SplitOnDivisionTemp)
-   
+
    Call check(NF90_inq_varid(fileunit,'SaveSpeciesData',datapointer(14)))
    Call check(NF90_get_var(fileunit,datapointer(14),SaveSpeciesDataTemp, start = (/1, Model/), count = (/N, 1/) ))
-   
+
    where (SaveSpeciesDataTemp >= 1)
       SaveSpeciesData = .TRUE.
    elsewhere
       SaveSpeciesData = .FALSE.
    end where
-   
+
    Deallocate(SaveSpeciesDataTemp)
-   
-   
+
+
    Call check(NF90_inq_varid(fileunit,'Reaction_OptionalData',datapointer(6)))
    Call check(NF90_get_var(fileunit,datapointer(6),Rxndata(:)%Data, start = (/1, Model /), count = (/M, 1/) ))
-   
+
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Laws',datapointer(7)))
-   Call check(NF90_get_var(fileunit,datapointer(7),Rxndata(:)%Mtype, start = (/1, Model/), count = (/ M, 1/) ))     	   
-   
+   Call check(NF90_get_var(fileunit,datapointer(7),Rxndata(:)%Mtype, start = (/1, Model/), count = (/ M, 1/) ))
+
    !Populate Rxndata(:)%DListLen - Length of dependent species list
    Call check(NF90_inq_varid(fileunit,'Reaction_DListLen',datapointer(8)))
    Call check(NF90_get_var(fileunit,datapointer(8),Rxndata(:)%DListLen, start = (/1, Model/), count = (/M, 1/) ))
-   
+
    !Populate Rxndata(:)%SListLen - Length of stoichiometric species list
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichListLen',datapointer(9)))
-   Call check(NF90_get_var(fileunit,datapointer(9),Rxndata(:)%SListLen, start = (/1, Model/), count = (/ M, 1 /) ))      	
-   
+   Call check(NF90_get_var(fileunit,datapointer(9),Rxndata(:)%SListLen, start = (/1, Model/), count = (/ M, 1 /) ))
+
    forall (i=1:M)
       Rxndata(i)%SList = 0
       Rxndata(i)%DList = 0
@@ -988,33 +1032,33 @@ Case (4)
       Rxndata(i)%EList = 0
    end forall
 
-   
+
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichCoeff',datapointer(10)))
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Constants',datapointer(11)))
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichSpecies',datapointer(12)))
    Call check(NF90_inq_varid(fileunit,'Reaction_DepList',datapointer(13)))
-   
+
    do i=1, M
-      
-      Call check(NF90_get_var(fileunit,datapointer(10),Rxndata(i)%v(1:Rxndata(i)%SListLen), & 
+
+      Call check(NF90_get_var(fileunit,datapointer(10),Rxndata(i)%v(1:Rxndata(i)%SListLen), &
            & start = (/1, i, Model/), count = (/Rxndata(i)%SListLen, 1, 1/) ))
-      
-      Call check(NF90_get_var(fileunit,datapointer(11),Rxndata(i)%c(1:MaxDepList),start = (/1, i, Model/), & 
+
+      Call check(NF90_get_var(fileunit,datapointer(11),Rxndata(i)%c(1:MaxDepList),start = (/1, i, Model/), &
            & count = (/MaxDepList, 1, 1/)))
-      
+
       Call check(NF90_get_var(fileunit,datapointer(12),Rxndata(i)%SList(1:Rxndata(i)%SListLen), &
            & start = (/1, i, Model/), count = (/Rxndata(i)%SListLen, 1, 1/) ))
-      
-      Call check(NF90_get_var(fileunit,datapointer(13),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i, Model/), & 
+
+      Call check(NF90_get_var(fileunit,datapointer(13),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i, Model/), &
            & count = (/Rxndata(i)%DListLen, 1, 1/) ))
-      
+
    end do
-   
-   
+
+
 Case (5)
-   
+
    !TBD
-   
+
 End Select
 
 !Close file
@@ -1034,7 +1078,7 @@ Call MakeDGraph(DGraph,Rxndata)
 !Create EList's -> List of reactions/Events that are triggered on execution of another reaction/event
 !Rxndata(mu)%EList(i) = The Reaction/event # that is affected (waiting time is produced or destroyed)
 !when the mu'th reaction/event has occurred.
-!Rxndata(mu)%EStoichList(i) = The # of waiting times produced (positive) or destroyed (negative) when the m'th reaction/event 
+!Rxndata(mu)%EStoichList(i) = The # of waiting times produced (positive) or destroyed (negative) when the m'th reaction/event
 !has occurred
 !The waiting time may be distributed according to a variety of distributions, but only gamma-distributed is included for now.
 
@@ -1174,36 +1218,36 @@ Select Case (ExpTypeIn)
 Case (1)
 
    !Single model only (ModelIn must == 1)
-   
+
     !No NetCDF variables have record dimensions
-   
+
    if (ModelIn > 1) THEN
       print*, "Warning: This NetCDF file contains only a single model. That model's data is being read."
    end if
-   
+
    Call check(NF90_inq_varid(fileunit,'Volume',datapointer(1)))
    Call check(NF90_put_var(fileunit,datapointer(1),Vo))
-   
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTime',datapointer(2)))
    Call check(NF90_put_var(fileunit,datapointer(2),CellGrowthTime))
-   
-   
+
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTimeSD',datapointer(3)))
    Call check(NF90_put_var(fileunit,datapointer(3),CellGrowthTimeSD))
-   
+
    Allocate(SplitOnDivisionTemp(N))
 
    where (SplitOnDivision)
       SplitOnDivisionTemp = 1
-   elsewhere 
+   elsewhere
       SplitOnDivisionTemp = 0
    end where
 
    Call check(NF90_inq_varid(fileunit,'SpeciesSplitOnDivision',datapointer(4)))
    Call check(NF90_put_var(fileunit,datapointer(4),SplitOnDivisionTemp, count = (/N/) ))
-        
+
    Deallocate(SplitOnDivisionTemp)
-   
+
 
    Allocate(SaveSpeciesDataTemp(N))
 
@@ -1214,74 +1258,74 @@ Case (1)
    end where
 
    Call check(NF90_inq_varid(fileunit,'SaveSpeciesData',datapointer(5)))
-   Call check(NF90_put_var(fileunit,datapointer(5),SaveSpeciesDataTemp, count = (/N/) ))   
-   
+   Call check(NF90_put_var(fileunit,datapointer(5),SaveSpeciesDataTemp, count = (/N/) ))
+
    Deallocate(SaveSpeciesDataTemp)
-   
+
    Call check(NF90_inq_varid(fileunit,'SpeciesIC',datapointer(6)))
-   Call check(NF90_put_var(fileunit,datapointer(6),Xo, count = (/N/) ))	
-   
+   Call check(NF90_put_var(fileunit,datapointer(6),Xo, count = (/N/) ))
+
    Call check(NF90_inq_varid(fileunit,'Reaction_OptionalData',datapointer(7)))
    Call check(NF90_put_var(fileunit,datapointer(7),Rxndata(:)%Data, count = (/M/) ))
-   
+
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Laws',datapointer(8)))
-   Call check(NF90_put_var(fileunit,datapointer(8),Rxndata(:)%Mtype, count = (/ M /) ))     	   
-   
-   
+   Call check(NF90_put_var(fileunit,datapointer(8),Rxndata(:)%Mtype, count = (/ M /) ))
+
+
    !Populate Rxndata(:)%DListLen - Length of dependent species list
    Call check(NF90_inq_varid(fileunit,'Reaction_DListLen',datapointer(9)))
    Call check(NF90_put_var(fileunit,datapointer(9),Rxndata(:)%DListLen, count = (/M/) ))
-   
+
    !Populate Rxndata(:)%SListLen - Length of stoichiometric species list
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichListLen',datapointer(10)))
-   Call check(NF90_put_var(fileunit,datapointer(10),Rxndata(:)%SListLen,count = (/ M /)))	      	    
-   
+   Call check(NF90_put_var(fileunit,datapointer(10),Rxndata(:)%SListLen,count = (/ M /)))
+
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichCoeff',datapointer(11)))
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Constants',datapointer(12)))
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichSpecies',datapointer(13)))
    Call check(NF90_inq_varid(fileunit,'Reaction_DepList',datapointer(14)))
-   
+
    do i=1, M
-      
-      Call check(NF90_put_var(fileunit,datapointer(11),Rxndata(i)%v(1:Rxndata(i)%SListLen), & 
+
+      Call check(NF90_put_var(fileunit,datapointer(11),Rxndata(i)%v(1:Rxndata(i)%SListLen), &
            & start = (/1, i/), count = (/Rxndata(i)%SListLen, 1/) ))
-      
+
       !Call check(NF90_put_var(fileunit,datapointer(12),Rxndata(i)%c(1:MaxDepList),start = (/1, i/), count = (/MaxDepList, 1/)))
       Call check(NF90_put_var(fileunit,datapointer(12),k_temp(i,1:MaxDepList),start = (/1, i/), count = (/MaxDepList, 1/)))
-      
+
       Call check(NF90_put_var(fileunit,datapointer(13),Rxndata(i)%SList(1:Rxndata(i)%SListLen), &
            & start = (/1, i/), count = (/Rxndata(i)%SListLen, 1/) ))
-      
-      Call check(NF90_put_var(fileunit,datapointer(14),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i/), & 
+
+      Call check(NF90_put_var(fileunit,datapointer(14),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i/), &
            & count = (/Rxndata(i)%DListLen,1 /) ))
-      
+
    end do
-   
+
 Case (2)
 
    Call check(NF90_inq_varid(fileunit,'Volume',datapointer(1)))
    Call check(NF90_put_var(fileunit,datapointer(1),Vo))
-   
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTime',datapointer(2)))
    Call check(NF90_put_var(fileunit,datapointer(2),CellGrowthTime))
-   
-   
+
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTimeSD',datapointer(3)))
    Call check(NF90_put_var(fileunit,datapointer(3),CellGrowthTimeSD))
-   
+
    Allocate(SplitOnDivisionTemp(N))
 
    where (SplitOnDivision)
       SplitOnDivisionTemp = 1
-   elsewhere 
+   elsewhere
       SplitOnDivisionTemp = 0
    end where
 
    Call check(NF90_inq_varid(fileunit,'SpeciesSplitOnDivision',datapointer(4)))
    Call check(NF90_put_var(fileunit,datapointer(4),SplitOnDivisionTemp, count = (/N/) ))
-        
+
    Deallocate(SplitOnDivisionTemp)
-   
+
 
    Allocate(SaveSpeciesDataTemp(N))
 
@@ -1292,49 +1336,49 @@ Case (2)
    end where
 
    Call check(NF90_inq_varid(fileunit,'SaveSpeciesData',datapointer(5)))
-   Call check(NF90_put_var(fileunit,datapointer(5),SaveSpeciesDataTemp, count = (/N/) ))   
-   
+   Call check(NF90_put_var(fileunit,datapointer(5),SaveSpeciesDataTemp, count = (/N/) ))
+
    Deallocate(SaveSpeciesDataTemp)
-   
+
    Call check(NF90_inq_varid(fileunit,'SpeciesIC',datapointer(4)))
-   Call check(NF90_get_var(fileunit,datapointer(4),Xo, start = (/1, ModelIn /), count = (/N, 1/) ))	
-   
+   Call check(NF90_get_var(fileunit,datapointer(4),Xo, start = (/1, ModelIn /), count = (/N, 1/) ))
+
    Call check(NF90_inq_varid(fileunit,'Reaction_OptionalData',datapointer(7)))
    Call check(NF90_put_var(fileunit,datapointer(7),Rxndata(:)%Data, count = (/M/) ))
-   
+
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Laws',datapointer(8)))
-   Call check(NF90_put_var(fileunit,datapointer(8),Rxndata(:)%Mtype, count = (/ M /) ))     	   
-   
-   
+   Call check(NF90_put_var(fileunit,datapointer(8),Rxndata(:)%Mtype, count = (/ M /) ))
+
+
    !Populate Rxndata(:)%DListLen - Length of dependent species list
    Call check(NF90_inq_varid(fileunit,'Reaction_DListLen',datapointer(9)))
    Call check(NF90_put_var(fileunit,datapointer(9),Rxndata(:)%DListLen, count = (/M/) ))
-   
+
    !Populate Rxndata(:)%SListLen - Length of stoichiometric species list
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichListLen',datapointer(10)))
-   Call check(NF90_put_var(fileunit,datapointer(10),Rxndata(:)%SListLen,count = (/ M /)))	      	    
-   
+   Call check(NF90_put_var(fileunit,datapointer(10),Rxndata(:)%SListLen,count = (/ M /)))
+
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichCoeff',datapointer(11)))
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Constants',datapointer(12)))
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichSpecies',datapointer(13)))
    Call check(NF90_inq_varid(fileunit,'Reaction_DepList',datapointer(14)))
-   
+
    do i=1, M
-      
-      Call check(NF90_put_var(fileunit,datapointer(10),Rxndata(i)%v(1:Rxndata(i)%SListLen), & 
+
+      Call check(NF90_put_var(fileunit,datapointer(10),Rxndata(i)%v(1:Rxndata(i)%SListLen), &
            & start = (/1, i/), count = (/Rxndata(i)%SListLen, 1/) ))
-      
-      !Call check(NF90_put_var(fileunit,datapointer(11),Rxndata(i)%c(1:MaxDepList),start = (/1, i, ModelIn/), & 
+
+      !Call check(NF90_put_var(fileunit,datapointer(11),Rxndata(i)%c(1:MaxDepList),start = (/1, i, ModelIn/), &
       !     & count = (/MaxDepList, 1, 1/)))
-      Call check(NF90_put_var(fileunit,datapointer(11),k_temp(i,1:MaxDepList),start = (/1, i, ModelIn/), & 
+      Call check(NF90_put_var(fileunit,datapointer(11),k_temp(i,1:MaxDepList),start = (/1, i, ModelIn/), &
            & count = (/MaxDepList, 1, 1/)))
-      
+
       Call check(NF90_put_var(fileunit,datapointer(12),Rxndata(i)%SList(1:Rxndata(i)%SListLen), &
            & start = (/1, i/), count = (/Rxndata(i)%SListLen, 1/) ))
-      
-      Call check(NF90_put_var(fileunit,datapointer(13),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i/), & 
+
+      Call check(NF90_put_var(fileunit,datapointer(13),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i/), &
            & count = (/Rxndata(i)%DListLen,1 /) ))
-      
+
    end do
 
 Case (3)
@@ -1342,35 +1386,35 @@ Case (3)
 !Read in multi-model related variables
    Call check(NF90_inq_varid(fileunit,'LastModel',datapointer(6)))
    Call check(NF90_put_var(fileunit,datapointer(6),LastModel))
-      
+
    Call check(NF90_inq_varid(fileunit,'Volume',datapointer(1)))
    Call check(NF90_put_var(fileunit,datapointer(1),Vo))
 
-   Call check(NF90_inq_varid(fileunit,'MaxNumModels',datapointer(7))) 
+   Call check(NF90_inq_varid(fileunit,'MaxNumModels',datapointer(7)))
    Call check(NF90_put_var(fileunit,datapointer(7),MaxNumModels))
 
    Call check(NF90_inq_varid(fileunit,'CellGrowthTime',datapointer(2)))
    Call check(NF90_put_var(fileunit,datapointer(2),CellGrowthTime))
 
    Call check(NF90_inq_varid(fileunit,'NumModels',datapointer(1)))
-   Call check(NF90_put_var(fileunit,datapointer(1),NumModels))   
-   
+   Call check(NF90_put_var(fileunit,datapointer(1),NumModels))
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTimeSD',datapointer(3)))
    Call check(NF90_put_var(fileunit,datapointer(3),CellGrowthTimeSD))
-   
+
    Allocate(SplitOnDivisionTemp(N))
 
    where (SplitOnDivision)
       SplitOnDivisionTemp = 1
-   elsewhere 
+   elsewhere
       SplitOnDivisionTemp = 0
    end where
 
    Call check(NF90_inq_varid(fileunit,'SpeciesSplitOnDivision',datapointer(4)))
    Call check(NF90_put_var(fileunit,datapointer(4),SplitOnDivisionTemp, count = (/N/) ))
-        
+
    Deallocate(SplitOnDivisionTemp)
-   
+
 
    Allocate(SaveSpeciesDataTemp(N))
 
@@ -1381,83 +1425,83 @@ Case (3)
    end where
 
    Call check(NF90_inq_varid(fileunit,'SaveSpeciesData',datapointer(5)))
-   Call check(NF90_put_var(fileunit,datapointer(5),SaveSpeciesDataTemp, count = (/N/) ))   
-   
+   Call check(NF90_put_var(fileunit,datapointer(5),SaveSpeciesDataTemp, count = (/N/) ))
+
    Deallocate(SaveSpeciesDataTemp)
-   
+
    Call check(NF90_inq_varid(fileunit,'SpeciesIC',datapointer(4)))
-   Call check(NF90_put_var(fileunit,datapointer(4),Xo, start = (/1, ModelIn /), count = (/N, 1/) ))	
- 
+   Call check(NF90_put_var(fileunit,datapointer(4),Xo, start = (/1, ModelIn /), count = (/N, 1/) ))
+
    Call check(NF90_inq_varid(fileunit,'Reaction_OptionalData',datapointer(7)))
    Call check(NF90_put_var(fileunit,datapointer(7),Rxndata(:)%Data, count = (/M/) ))
-   
+
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Laws',datapointer(8)))
-   Call check(NF90_put_var(fileunit,datapointer(8),Rxndata(:)%Mtype, count = (/ M /) ))     	   
-   
-   
+   Call check(NF90_put_var(fileunit,datapointer(8),Rxndata(:)%Mtype, count = (/ M /) ))
+
+
    !Populate Rxndata(:)%DListLen - Length of dependent species list
    Call check(NF90_inq_varid(fileunit,'Reaction_DListLen',datapointer(9)))
    Call check(NF90_put_var(fileunit,datapointer(9),Rxndata(:)%DListLen, count = (/M/) ))
-   
+
    !Populate Rxndata(:)%SListLen - Length of stoichiometric species list
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichListLen',datapointer(10)))
-   Call check(NF90_put_var(fileunit,datapointer(10),Rxndata(:)%SListLen,count = (/ M /)))	      	    
-   
+   Call check(NF90_put_var(fileunit,datapointer(10),Rxndata(:)%SListLen,count = (/ M /)))
+
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichCoeff',datapointer(11)))
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Constants',datapointer(12)))
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichSpecies',datapointer(13)))
    Call check(NF90_inq_varid(fileunit,'Reaction_DepList',datapointer(14)))
-   
+
    do i=1, M
-      
-      Call check(NF90_put_var(fileunit,datapointer(11),Rxndata(i)%v(1:Rxndata(i)%SListLen), & 
+
+      Call check(NF90_put_var(fileunit,datapointer(11),Rxndata(i)%v(1:Rxndata(i)%SListLen), &
            & start = (/1, i/), count = (/Rxndata(i)%SListLen, 1/) ))
-      
-      !Call check(NF90_put_var(fileunit,datapointer(12),Rxndata(i)%c(1:MaxDepList),start = (/1, i, ModelIn/), & 
+
+      !Call check(NF90_put_var(fileunit,datapointer(12),Rxndata(i)%c(1:MaxDepList),start = (/1, i, ModelIn/), &
       !     & count = (/MaxDepList, 1, 1/)))
-      Call check(NF90_put_var(fileunit,datapointer(12),k_temp(i,1:MaxDepList),start = (/1, i, ModelIn/), & 
+      Call check(NF90_put_var(fileunit,datapointer(12),k_temp(i,1:MaxDepList),start = (/1, i, ModelIn/), &
            & count = (/MaxDepList, 1, 1/)))
-      
+
       Call check(NF90_put_var(fileunit,datapointer(13),Rxndata(i)%SList(1:Rxndata(i)%SListLen), &
            & start = (/1, i/), count = (/Rxndata(i)%SListLen, 1/) ))
-      
-      Call check(NF90_put_var(fileunit,datapointer(14),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i/), & 
+
+      Call check(NF90_put_var(fileunit,datapointer(14),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i/), &
            & count = (/Rxndata(i)%DListLen,1 /) ))
-      
+
    end do
-   
+
 Case (4)
 
-    !The following NetCDF variables have record dimensions: SpeciesIC, SpeciesSplitOnDivision, Reaction_Rate_Laws, 
+    !The following NetCDF variables have record dimensions: SpeciesIC, SpeciesSplitOnDivision, Reaction_Rate_Laws,
    !Reaction_DListLen, Reaction_StoichListLen, Reaction_DepList, Reaction_StoichCoeff, Reaction_StoichSpecies,
    !Reaction_Rate_Constants, Reaction_OptionalData
-   
+
    Call check(NF90_inq_varid(fileunit,'Volume',datapointer(1)))
    Call check(NF90_put_var(fileunit,datapointer(1),Vo))
-   
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTime',datapointer(2)))
    Call check(NF90_put_var(fileunit,datapointer(2),CellGrowthTime))
-   
+
    Call check(NF90_inq_varid(fileunit,'CellGrowthTimeSD',datapointer(3)))
    Call check(NF90_put_var(fileunit,datapointer(3),CellGrowthTimeSD))
-   
+
    Call check(NF90_inq_varid(fileunit,'SpeciesIC',datapointer(4)))
-   Call check(NF90_put_var(fileunit,datapointer(4),Xo, start = (/1, ModelIn /), count = (/N, 1/) ))		   
-   
-   
+   Call check(NF90_put_var(fileunit,datapointer(4),Xo, start = (/1, ModelIn /), count = (/N, 1/) ))
+
+
   Allocate(SplitOnDivisionTemp(N))
 
    where (SplitOnDivision)
       SplitOnDivisionTemp = 1
-   elsewhere 
+   elsewhere
       SplitOnDivisionTemp = 0
    end where
 
    Call check(NF90_inq_varid(fileunit,'SpeciesSplitOnDivision',datapointer(5)))
    Call check(NF90_put_var(fileunit,datapointer(5),SplitOnDivisionTemp, start = (/1, ModelIn/), count = (/N, 1/) ))
-        
+
    Deallocate(SplitOnDivisionTemp)
-   
+
    Allocate(SaveSpeciesDataTemp(N))
 
    where (SaveSpeciesData)
@@ -1468,44 +1512,44 @@ Case (4)
 
    Call check(NF90_inq_varid(fileunit,'SaveSpeciesData',datapointer(14)))
    Call check(NF90_put_var(fileunit,datapointer(14),SaveSpeciesDataTemp, start = (/1, ModelIn/), count = (/N, 1/) ))
-   
-   Deallocate(SaveSpeciesDataTemp)   
-   
+
+   Deallocate(SaveSpeciesDataTemp)
+
    Call check(NF90_inq_varid(fileunit,'Reaction_OptionalData',datapointer(6)))
    Call check(NF90_put_var(fileunit,datapointer(6),Rxndata(:)%Data, start = (/1, ModelIn /), count = (/M, 1/) ))
-   
+
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Laws',datapointer(7)))
-   Call check(NF90_put_var(fileunit,datapointer(7),Rxndata(:)%Mtype, start = (/1, ModelIn/), count = (/ M, 1/) ))     	   
-   
+   Call check(NF90_put_var(fileunit,datapointer(7),Rxndata(:)%Mtype, start = (/1, ModelIn/), count = (/ M, 1/) ))
+
    !Populate Rxndata(:)%DListLen - Length of dependent species list
    Call check(NF90_inq_varid(fileunit,'Reaction_DListLen',datapointer(8)))
    Call check(NF90_put_var(fileunit,datapointer(8),Rxndata(:)%DListLen, start = (/1, ModelIn/), count = (/M, 1/) ))
-   
+
    !Populate Rxndata(:)%SListLen - Length of stoichiometric species list
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichListLen',datapointer(9)))
-   Call check(NF90_put_var(fileunit,datapointer(9),Rxndata(:)%SListLen, start = (/1, ModelIn/), count = (/ M, 1 /) ))      	
-       
+   Call check(NF90_put_var(fileunit,datapointer(9),Rxndata(:)%SListLen, start = (/1, ModelIn/), count = (/ M, 1 /) ))
+
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichCoeff',datapointer(10)))
    Call check(NF90_inq_varid(fileunit,'Reaction_Rate_Constants',datapointer(11)))
    Call check(NF90_inq_varid(fileunit,'Reaction_StoichSpecies',datapointer(12)))
    Call check(NF90_inq_varid(fileunit,'Reaction_DepList',datapointer(13)))
-   
+
    do i=1, M
-      
-      Call check(NF90_put_var(fileunit,datapointer(10),Rxndata(i)%v(1:Rxndata(i)%SListLen), & 
+
+      Call check(NF90_put_var(fileunit,datapointer(10),Rxndata(i)%v(1:Rxndata(i)%SListLen), &
            & start = (/1, i, ModelIn/), count = (/Rxndata(i)%SListLen, 1, 1/) ))
-      
-      !Call check(NF90_put_var(fileunit,datapointer(11),Rxndata(i)%c(1:MaxDepList),start = (/1, i, ModelIn/), & 
+
+      !Call check(NF90_put_var(fileunit,datapointer(11),Rxndata(i)%c(1:MaxDepList),start = (/1, i, ModelIn/), &
       !     & count = (/MaxDepList, 1, 1/)))
-      Call check(NF90_put_var(fileunit,datapointer(11),k_temp(i,1:MaxDepList),start = (/1, i, ModelIn/), & 
+      Call check(NF90_put_var(fileunit,datapointer(11),k_temp(i,1:MaxDepList),start = (/1, i, ModelIn/), &
            & count = (/MaxDepList, 1, 1/)))
-      
+
       Call check(NF90_put_var(fileunit,datapointer(12),Rxndata(i)%SList(1:Rxndata(i)%SListLen), &
            & start = (/1, i, ModelIn/), count = (/Rxndata(i)%SListLen, 1, 1/) ))
-      
-      Call check(NF90_put_var(fileunit,datapointer(13),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i, ModelIn/), & 
+
+      Call check(NF90_put_var(fileunit,datapointer(13),Rxndata(i)%DList(1:Rxndata(i)%DListLen), start = (/1, i, ModelIn/), &
            & count = (/Rxndata(i)%DListLen, 1, 1/) ))
-      
+
    end do
 
 Case (5)
@@ -1528,7 +1572,7 @@ End Subroutine WriteModelData
 !	The set of solution variables written to disk is dependent on the ExpType.
 !
 !	The arguments are the ExpType, the Trial #, the Model #, and the state and time
-!	solution variables.	
+!	solution variables.
 !
 !SOURCE
 
@@ -1551,44 +1595,44 @@ Call check(NF90_open(trim(filename),IOR(NF90_Share,NF90_Write),fileunit))
 Call check(NF90_inq_varid(fileunit,'State',XstateID))
 
 Select Case (ExpTypeIn)
-   
+
 Case (1)
- 
+
    NumSavedSpecies = count(SaveSpeciesData)
    Allocate(StateTemp(TimePoints,NumSavedSpecies))
-   
+
    forall (i=1:TimePoints)
       StateTemp(i,:) = pack(State(i,:),mask = SaveSpeciesData)
    end forall
-   
+
    !Saving to disk
-   Call check(NF90_put_var(fileunit,XstateID,transpose(StateTemp),start = (/1, 1, TrialIn/), & 
+   Call check(NF90_put_var(fileunit,XstateID,transpose(StateTemp),start = (/1, 1, TrialIn/), &
         & count = (/NumSavedSpecies, TimePoints, 1/)))
-   
-   Deallocate(StateTemp)    
-   
+
+   Deallocate(StateTemp)
+
    !Time saved the first time.
    if (TrialIn == 1.AND.ModelIn == 1) THEN
       Call check(NF90_inq_varid(fileunit,'Time',TimeID))
       Call check(NF90_put_var(fileunit,TimeID,Time))
    end if
-   
+
 Case (2)
-   
+
    NumSavedSpecies = count(SaveSpeciesData)
    Allocate(StateTemp(TimePoints,NumSavedSpecies))
-   
+
    forall (i=1:TimePoints)
       StateTemp(i,:) = pack(State(i,:),SaveSpeciesData)
    end forall
-   
+
    !Saving to disk
-   Call check(NF90_put_var(fileunit,XstateID,transpose(StateTemp),start = (/1, 1, TrialIn, ModelIn/), & 
+   Call check(NF90_put_var(fileunit,XstateID,transpose(StateTemp),start = (/1, 1, TrialIn, ModelIn/), &
         & count = (/NumSavedSpecies, TimePoints, 1, 1/)))
 
    Deallocate(StateTemp)
-   
-   
+
+
    !Time saved the first time.
    if (TrialIn == 1.AND.ModelIn == 1) THEN
       Call check(NF90_inq_varid(fileunit,'Time',TimeID))
@@ -1601,10 +1645,10 @@ Case (3)
    forall (i=1:TimePoints)
       StateTemp(i,:) = pack(State(i,:),SaveSpeciesData)
    end forall
-   
-   
+
+
    !Saving to disk
-   Call check(NF90_put_var(fileunit,XstateID,transpose(StateTemp),start = (/1, 1, TrialIn, ModelIn/), & 
+   Call check(NF90_put_var(fileunit,XstateID,transpose(StateTemp),start = (/1, 1, TrialIn, ModelIn/), &
         & count = (/NumSavedSpecies, TimePoints, 1, 1/)))
 
    !Time saved the first time.
@@ -1613,36 +1657,36 @@ Case (3)
       Call check(NF90_put_var(fileunit,TimeID,Time))
    end if
 
-   Deallocate(StateTemp)     
+   Deallocate(StateTemp)
 Case (4)
-   
+
    !NumSavedSpecies = count(SaveSpeciesData)
    !Allocate(StateTemp(TimePoints,NumSavedSpecies))
    !Allocate(SaveMask(TimePoints,NumSavedSpecies))
-   
+
    !forall (i=1:TimePoints)
    !   SaveMask(i,:) = SaveSpeciesData
-   !end forall 
-   
+   !end forall
+
    !StateTemp = pack(State, SaveMask)
-   
+
    Allocate(StateTemp(TimePoints, N_Max))
-   
+
    StateTemp(:,1:N) = State(:,1:N)
    StateTemp(:,N+1:N_Max) = -1.0000000000
-   
+
    !Saving to disk
-   Call check(NF90_put_var(fileunit,XstateID,transpose(StateTemp),start = (/1, 1, TrialIn, ModelIn/), & 
+   Call check(NF90_put_var(fileunit,XstateID,transpose(StateTemp),start = (/1, 1, TrialIn, ModelIn/), &
         & count = (/N_Max, TimePoints, 1, 1/)))
-   
+
    Deallocate(StateTemp)
-   
+
    !Time saved the first time.
    if (TrialIn == 1.AND.ModelIn == 1) THEN
       Call check(NF90_inq_varid(fileunit,'Time',TimeID))
       Call check(NF90_put_var(fileunit,TimeID,Time))
    end if
-   
+
 End Select
 
 Call check(NF90_close(fileunit))
@@ -1671,7 +1715,7 @@ integer :: counter, J, I
 
 Do i = 1, M
 	counter=0
-	
+
 	Do j = 1, M
 	   SomeIntersection = intersect(Rxndata(i)%DList(1:Rxndata(i)%DListLen), Rxndata(j)%DList(1:Rxndata(j)%DListLen)) &
 	   & .OR.intersect(Rxndata(i)%DList(1:Rxndata(i)%DListLen), Rxndata(j)%SList(1:Rxndata(j)%SListLen)) &
@@ -1683,7 +1727,7 @@ Do i = 1, M
 	      DGraph(i)%list(counter)=j
 	   end if
 	End Do
-        
+
         DGraph(i)%ListLen = counter
 End Do
 
@@ -1696,25 +1740,25 @@ pure Function intersect(array1,array2)
   integer :: J, counter, size1, size2
   Integer, Dimension(:), intent(in) :: array1, array2
   Logical :: intersect
-  
+
   intersect=.FALSE.
   counter=0
-  
+
   size1 = size(array1)
   size2 = size(array2)
-  
+
   do while ((.NOT.intersect).AND.(counter < size1 ) )
-     
+
      counter = counter + 1
-     
+
      do J=1 , size2
         if (array1(counter) == array2(j)) THEN
            intersect=.TRUE.
         end if
      end do
-     
+
   end do
-  
+
 End Function intersect
 !-------------------------------------------------------------------
 
@@ -1758,21 +1802,21 @@ end do
 do i=1,M
    Rxndata(i)%EList = 0
    Rxndata(i)%EStoichList = 0
-   counter = 0	   
-   
+   counter = 0
+
    do j=1,Rxndata(i)%SListLen
       do k=1,Eventcounter
          if (Rxndata(i)%SList(j) == SpeciesEvents(k).AND.i /= Events(k)) THEN
-            
+
             counter = counter + 1
             Rxndata(i)%EList(counter) = Events(k)
             Rxndata(i)%EStoichList(counter) = Rxndata(i)%v(j)
          end if
       end do
    end do
-   
-   Rxndata(i)%EListLen = counter	   
-   
+
+   Rxndata(i)%EListLen = counter
+
 end do
 
 
@@ -1813,14 +1857,14 @@ Integer, Allocatable :: SaveSpeciesDataTemp(:)
     return
 
  end if
-    
+
  status = NF90_get_att(fileunit,NF90_Global,"Data_Written",DataWritten)
-    
+
  if (status == NF90_NoErr.AND.DataWritten == 1.AND.OverWriteSolution == 0) THEN
     error=1
     errormsg = "Error: This NetCDF file has previously written output data. Use the '-OV' argument to overwrite"
     return
- end if     
+ end if
 
  status = NF90_inq_varid(fileunit,'ExpType',datapointer(4))
  if (status /= NF90_NoErr) THEN
@@ -1834,44 +1878,44 @@ Integer, Allocatable :: SaveSpeciesDataTemp(:)
 
  !Read in all necessary data to define any non-defined variables - dependent on ExpType
  Select Case (ExpType)
-    
+
  Case (1)
-    
+
     Call check(NF90_inq_varid(fileunit,'TStart',datapointer(1)))
     Call check(NF90_get_var(fileunit,datapointer(1),TStart))
-    
+
     Call check(NF90_inq_varid(fileunit,'TEnd',datapointer(2)))
     Call check(NF90_get_var(fileunit,datapointer(2),TEnd))
-    
+
     Call check(NF90_inq_varid(fileunit,'SaveTime',datapointer(3)))
     Call check(NF90_get_var(fileunit,datapointer(3),SaveTime))
 
     Call check(NF90_inq_dimid(fileunit,'NumTrials',TrialsID))
-    Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))   
-      
+    Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))
+
     NumModels = 1
-    
+
     Call check(NF90_inq_dimid(fileunit,'NumSpecies',NdimID))
     Call check(NF90_inquire_dimension(fileunit,NdimID,len = N))
-    
+
     N_Max = N
 
     Allocate(SaveSpeciesDataTemp(N_Max))
-    
+
     status = NF90_inq_varid(fileunit,'SaveSpeciesData',datapointer(5))
     if (status == NF90_NoErr) THEN
        Call check(NF90_get_var(fileunit,datapointer(5),SaveSpeciesDataTemp))
     else
        SaveSpeciesDataTemp = 1
     end if
-    
+
     NumSavedSpecies = count(SaveSpeciesDataTemp == 1)
-    
+
     Deallocate(SaveSpeciesDataTemp)
-    
+
     Call check(NF90_inq_dimid(fileunit,'NumMaxDepList',CDFMaxDepListID))
-    Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))   
-    
+    Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))
+
     if (CDFMaxDepList /= MaxDepList) THEN
        error=1
        errormsg = "Error: The maximum number of kinetic parameters in the NetCDF file is different from the source code's maximum"
@@ -1883,321 +1927,321 @@ Integer, Allocatable :: SaveSpeciesDataTemp(:)
     !Turn off fill for faster variable definition - Make sure you write all data that is defined
     Call check(NF90_Set_Fill(fileunit, NF90_NoFill, OldFillMode))
     Call check(NF90_redef(fileunit))
-    
-    !Define NumTimePoints dimension, if necessary 
+
+    !Define NumTimePoints dimension, if necessary
     status = NF90_inq_dimid(fileunit,'NumTimePoints',TimePointsID)
-    if (status /= NF90_NoErr) THEN	    
-       if ((SaveTime > 0.0).AND.(SaveTime <= (TEnd - TStart))) THEN     
+    if (status /= NF90_NoErr) THEN
+       if ((SaveTime > 0.0).AND.(SaveTime <= (TEnd - TStart))) THEN
           TimePoints = int((TEnd - TStart) / SaveTime) + 1
-          
+
           Call check(NF90_def_dim(fileunit,'NumTimePoints',TimePoints,TimePointsID))
-          
+
        else
-          
-          error = 1 
+
+          error = 1
           errormsg = "Error: SaveTime value is invalid."
           return
        end if
     else
-       
+
        Call check(NF90_inquire_dimension(fileunit,TimePointsID, len = TimePoints))
-       
+
     end if
-    
+
     !Define TimePoints variable, if necessary
-    
+
     status = NF90_inq_varid(fileunit,'Time',TimeID)
     if (status /= NF90_noerr) THEN
        Call check(NF90_def_var(fileunit,'Time', NF90_double, (/TimePointsID/), TimeID))
     end if
-    
+
     !If total number of saved species is not the total number of species, then define a new dimension
     !Then check if the solution variables exist or not. If they don't exist, define them.
-    
+
     !If the total number of saved species is equal to the total number of species, then a new dimension is not needed.
     !Then check if the solution variables exist or not. If they don't eixst, define them.
-   
+
     if (NumSavedSpecies /= N) THEN
 
        status = NF90_inq_dimid(fileunit,'NumSaveSpecies',NumSavedSpeciesID)
        if (status /= NF90_NoErr) THEN
-          Call check(NF90_def_dim(fileunit,'NumSaveSpecies', NumSavedSpecies, NumSavedSpeciesID))   
+          Call check(NF90_def_dim(fileunit,'NumSaveSpecies', NumSavedSpecies, NumSavedSpeciesID))
        end if
 
        !Single model - Solution is State variable: 3D (NumSavedSpecies, NumTimePoints, NumTrials)
-       
+
        status = NF90_inq_varid(fileunit,'State',XstateID)
        if (status /= NF90_noerr) THEN
           print*, "Defining State variable in NetCDF file. This may take some time."
           print*, "Solution data size = ", Trials, "x", TimePoints, "x", NumSavedSpecies
-          
-          Call check(NF90_def_var(fileunit,'State', NF90_double, (/ NumSavedSpeciesID, TimePointsID, TrialsID/), & 
+
+          Call check(NF90_def_var(fileunit,'State', NF90_double, (/ NumSavedSpeciesID, TimePointsID, TrialsID/), &
                & XstateID))
-          
+
        end if
 
     else
-       
+
        !Single model - Solution is State variable: 3D (N, NumTimePoints, NumTrials)
-       
+
        status = NF90_inq_varid(fileunit,'State',XstateID)
        if (status /= NF90_noerr) THEN
           print*, "Defining State variable in NetCDF file. This may take some time."
           print*, "Solution data size = ", Trials, "x", TimePoints, "x", N
-          
+
           Call check(NF90_def_var(fileunit,'State', NF90_double, (/ NdimID, TimePointsID, TrialsID/), XstateID))
-          
+
        end if
     end if
-    
+
  Case (2)
- 
+
     Call check(NF90_inq_varid(fileunit,'TStart',datapointer(1)))
     Call check(NF90_get_var(fileunit,datapointer(1),TStart))
-    
+
     Call check(NF90_inq_varid(fileunit,'TEnd',datapointer(2)))
     Call check(NF90_get_var(fileunit,datapointer(2),TEnd))
-    
+
     Call check(NF90_inq_varid(fileunit,'SaveTime',datapointer(3)))
     Call check(NF90_get_var(fileunit,datapointer(3),SaveTime))
 
     Call check(NF90_inq_dimid(fileunit,'NumTrials',TrialsID))
-    Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))   
-    
+    Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))
+
     Call check(NF90_inq_dimid(fileunit,'NumModels',ModelsID))
     Call check(NF90_inquire_dimension(fileunit,ModelsID,len = NumModels))
 
     Call check(NF90_inq_dimid(fileunit,'NumSpecies',NdimID))
     Call check(NF90_inquire_dimension(fileunit,NdimID,len = N))
-    
+
     N_Max = N
-    
+
     Allocate(SaveSpeciesDataTemp(N_Max))
-    
+
     status = NF90_inq_varid(fileunit,'SaveSpeciesData',datapointer(5))
     if (status == NF90_NoErr) THEN
        Call check(NF90_get_var(fileunit,datapointer(5),SaveSpeciesDataTemp))
     else
        SaveSpeciesDataTemp = 1
     end if
-    
+
     NumSavedSpecies = count(SaveSpeciesDataTemp == 1)
-    
+
     Deallocate(SaveSpeciesDataTemp)
-    
+
     Call check(NF90_inq_dimid(fileunit,'NumMaxDepList',CDFMaxDepListID))
-    Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))   
-    
+    Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))
+
     if (CDFMaxDepList /= MaxDepList) THEN
        error=1
        errormsg = "Error: The maximum number of kinetic parameters in the NetCDF file is different from the source code's maximum"
        return
     end if
-    
+
     !Start defining new variables, where necessary
-    
+
     !Turn off fill for faster variable definition - Make sure you write all data that is defined
     Call check(NF90_Set_Fill(fileunit, NF90_NoFill, OldFillMode))
     Call check(NF90_redef(fileunit))
-    
-    
-    !Define NumTimePoints dimension, if necessary 
+
+
+    !Define NumTimePoints dimension, if necessary
     status = NF90_inq_dimid(fileunit,'NumTimePoints',TimePointsID)
-    if (status /= NF90_NoErr) THEN	    
-       if ((SaveTime > 0.0).AND.(SaveTime <= (TEnd - TStart))) THEN     
+    if (status /= NF90_NoErr) THEN
+       if ((SaveTime > 0.0).AND.(SaveTime <= (TEnd - TStart))) THEN
           TimePoints = int((TEnd - TStart) / SaveTime) + 1
-          
+
           Call check(NF90_def_dim(fileunit,'NumTimePoints',TimePoints,TimePointsID))
-          
+
        else
-          
-          error = 1 
+
+          error = 1
           errormsg = "Error: SaveTime value is invalid."
           return
        end if
     else
-       
+
        Call check(NF90_inquire_dimension(fileunit,TimePointsID, len = TimePoints))
-       
+
     end if
-    
+
     !Define TimePoints variable, if necessary
-    
+
     status = NF90_inq_varid(fileunit,'Time',TimeID)
     if (status /= NF90_noerr) THEN
        Call check(NF90_def_var(fileunit,'Time', NF90_double, (/TimePointsID/), TimeID))
     end if
-    
+
     !Then check if the solution variables exist or not. If they don't exist, define them.
     !If the total number of saved species is equal to the total number of species, then a new dimension is not needed.
     !Then check if the solution variables exist or not. If they don't eixst, define them.
-   
+
     if (NumSavedSpecies /= N) THEN
 
        status = NF90_inq_dimid(fileunit,'NumSaveSpecies',NumSavedSpeciesID)
        if (status /= NF90_NoErr) THEN
-          Call check(NF90_def_dim(fileunit,'NumSaveSpecies', NumSavedSpecies, NumSavedSpeciesID))   
+          Call check(NF90_def_dim(fileunit,'NumSaveSpecies', NumSavedSpecies, NumSavedSpeciesID))
        end if
 
        !Multiple models - Solution is State variable: 4D (NumSaveSpecies, NumTimePoints, NumTrials, NumModels)
-       
+
        status = NF90_inq_varid(fileunit,'State',XstateID)
        if (status /= NF90_noerr) THEN
           print*, "Defining State variable in NetCDF file. This may take some time."
-          print*, "Solution data size = ", NumModels, "x", Trials, "x", TimePoints, "x", NumSavedSpecies	    
-          
-          Call check(NF90_def_var(fileunit,'State', NF90_double, (/NumSavedSpeciesID, TimePointsID, TrialsID, ModelsID/), & 
+          print*, "Solution data size = ", NumModels, "x", Trials, "x", TimePoints, "x", NumSavedSpecies
+
+          Call check(NF90_def_var(fileunit,'State', NF90_double, (/NumSavedSpeciesID, TimePointsID, TrialsID, ModelsID/), &
                & XstateID))
-          
+
        end if
-       
+
     else
-       
+
        !Multiple models - Solution is State variable: 4D (N, NumTimePoints, NumTrials, NumModels)
-	   
+
        status = NF90_inq_varid(fileunit,'State',XstateID)
        if (status /= NF90_noerr) THEN
           print*, "Defining State variable in NetCDF file. This may take some time."
           print*, "Solution data size = ", NumModels, "x", Trials, "x", TimePoints, "x", N
-          
-          
+
+
           Call check(NF90_def_var(fileunit,'State', NF90_double, (/ NdimID, TimePointsID, TrialsID, ModelsID/), XstateID))
-          
+
        end if
     end if
 
  Case (3)
-    
+
     Call check(NF90_inq_varid(fileunit,'TStart',datapointer(1)))
     Call check(NF90_get_var(fileunit,datapointer(1),TStart))
-    
+
     Call check(NF90_inq_varid(fileunit,'TEnd',datapointer(2)))
     Call check(NF90_get_var(fileunit,datapointer(2),TEnd))
-   
+
     Call check(NF90_inq_varid(fileunit,'SaveTime',datapointer(3)))
     Call check(NF90_get_var(fileunit,datapointer(3),SaveTime))
-    
+
     Call check(NF90_inq_dimid(fileunit,'NumTrials',TrialsID))
-    Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))   
-    
+    Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))
+
     Call check(NF90_inq_dimid(fileunit,'NumModels',ModelsID))
     Call check(NF90_inquire_dimension(fileunit,ModelsID,len = NumModels))
-    
+
     Call check(NF90_inq_dimid(fileunit,'NumSpecies',NdimID))
     Call check(NF90_inquire_dimension(fileunit,NdimID,len = N))
-    
+
     N_Max = N
-    
+
    Allocate(SaveSpeciesDataTemp(N_Max))
-   
+
    status = NF90_inq_varid(fileunit,'SaveSpeciesData',datapointer(5))
    if (status == NF90_NoErr) THEN
       Call check(NF90_get_var(fileunit,datapointer(5),SaveSpeciesDataTemp))
    else
       SaveSpeciesDataTemp = 1
    end if
-   
+
    NumSavedSpecies = count(SaveSpeciesDataTemp == 1)
-   
+
    Deallocate(SaveSpeciesDataTemp)
-   
+
    Call check(NF90_inq_dimid(fileunit,'NumMaxDepList',CDFMaxDepListID))
-   Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))   
-   
+   Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))
+
    if (CDFMaxDepList /= MaxDepList) THEN
       error=1
       errormsg = "Error: The maximum number of kinetic parameters in the NetCDF file is different from the source code's maximum"
       return
    end if
-   
+
    !Start defining new variables, where necessary
-   
+
    !Turn off fill for faster variable definition - Make sure you write all data that is defined
    Call check(NF90_Set_Fill(fileunit, NF90_NoFill, OldFillMode))
    Call check(NF90_redef(fileunit))
-   
-   
-   !Define NumTimePoints dimension, if necessary 
+
+
+   !Define NumTimePoints dimension, if necessary
    status = NF90_inq_dimid(fileunit,'NumTimePoints',TimePointsID)
-   if (status /= NF90_NoErr) THEN	    
-      if ((SaveTime > 0.0).AND.(SaveTime <= (TEnd - TStart))) THEN     
+   if (status /= NF90_NoErr) THEN
+      if ((SaveTime > 0.0).AND.(SaveTime <= (TEnd - TStart))) THEN
          TimePoints = int((TEnd - TStart) / SaveTime) + 1
-         
+
          Call check(NF90_def_dim(fileunit,'NumTimePoints',TimePoints,TimePointsID))
-         
+
       else
-         
-         error = 1 
+
+         error = 1
          errormsg = "Error: SaveTime value is invalid."
          return
       end if
    else
 
       Call check(NF90_inquire_dimension(fileunit,TimePointsID, len = TimePoints))
-      
+
    end if
-   
+
    !Define TimePoints variable, if necessary
-   
+
    status = NF90_inq_varid(fileunit,'Time',TimeID)
    if (status /= NF90_noerr) THEN
       Call check(NF90_def_var(fileunit,'Time', NF90_double, (/TimePointsID/), TimeID))
    end if
-   
+
     !If total number of saved species is not the total number of species, then define a new dimension
     !Then check if the solution variables exist or not. If they don't exist, define them.
-    
+
     !If the total number of saved species is equal to the total number of species, then a new dimension is not needed.
     !Then check if the solution variables exist or not. If they don't eixst, define them.
-   
+
     if (NumSavedSpecies /= N) THEN
 
        status = NF90_inq_dimid(fileunit,'NumSaveSpecies',NumSavedSpeciesID)
        if (status /= NF90_NoErr) THEN
-          Call check(NF90_def_dim(fileunit,'NumSaveSpecies', NumSavedSpecies, NumSavedSpeciesID))   
+          Call check(NF90_def_dim(fileunit,'NumSaveSpecies', NumSavedSpecies, NumSavedSpeciesID))
        end if
 
        !Multiple models - Solution is State variable: 4D (NumSaveSpecies, NumTimePoints, NumTrials, NumModels)
-	   
+
        status = NF90_inq_varid(fileunit,'State',XstateID)
        if (status /= NF90_noerr) THEN
           print*, "Defining State variable in NetCDF file. This may take some time."
-          print*, "Solution data size = ", NumModels, "x", Trials, "x", TimePoints, "x", NumSavedSpecies	    
-          
-          Call check(NF90_def_var(fileunit,'State', NF90_double, (/NumSavedSpeciesID, TimePointsID, TrialsID, ModelsID/), & 
+          print*, "Solution data size = ", NumModels, "x", Trials, "x", TimePoints, "x", NumSavedSpecies
+
+          Call check(NF90_def_var(fileunit,'State', NF90_double, (/NumSavedSpeciesID, TimePointsID, TrialsID, ModelsID/), &
                & XstateID))
-          
+
        end if
-       
+
     else
-       
+
        !Multiple models - Solution is State variable: 4D (N, NumTimePoints, NumTrials, NumModels)
-       
+
        status = NF90_inq_varid(fileunit,'State',XstateID)
        if (status /= NF90_noerr) THEN
           print*, "Defining State variable in NetCDF file. This may take some time."
           print*, "Solution data size = ", NumModels, "x", Trials, "x", TimePoints, "x", N
-          
-          
+
+
           Call check(NF90_def_var(fileunit,'State', NF90_double, (/NdimID, TimePointsID, TrialsID, ModelsID/), XstateID))
-          
+
        end if
-       
+
     end if
 
 Case (4)
-   
+
    Call check(NF90_inq_varid(fileunit,'TStart',datapointer(1)))
    Call check(NF90_get_var(fileunit,datapointer(1),TStart))
-   
+
    Call check(NF90_inq_varid(fileunit,'TEnd',datapointer(2)))
    Call check(NF90_get_var(fileunit,datapointer(2),TEnd))
-   
+
    Call check(NF90_inq_varid(fileunit,'SaveTime',datapointer(3)))
    Call check(NF90_get_var(fileunit,datapointer(3),SaveTime))
-   
+
    Call check(NF90_inq_dimid(fileunit,'NumTrials',TrialsID))
-   Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))   
+   Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))
 
    Call check(NF90_inq_dimid(fileunit,'NumModels',ModelsID))
    Call check(NF90_inquire_dimension(fileunit,ModelsID,len = NumModels))
@@ -2215,72 +2259,72 @@ Case (4)
    else
       SaveSpeciesDataTemp = 1
    end if
-   
+
    NumSavedSpecies = count(SaveSpeciesDataTemp == 1)
- 
+
    Deallocate(SaveSpeciesDataTemp)
- 
+
    Call check(NF90_inq_dimid(fileunit,'NumMaxDepList',CDFMaxDepListID))
-   Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))   
-   
+   Call check(NF90_inquire_dimension(fileunit,CDFMaxDepListID,len = CDFMaxDepList))
+
    if (CDFMaxDepList /= MaxDepList) THEN
       error=1
       errormsg = "Error: The maximum number of kinetic parameters in the NetCDF file is different from the source code's maximum"
       return
    end if
-   
+
    !Start defining new variables, where necessary
-   
+
    !Turn off fill for faster variable definition - Make sure you write all data that is defined
    Call check(NF90_Set_Fill(fileunit, NF90_NoFill, OldFillMode))
    Call check(NF90_redef(fileunit))
-   
-   !Define NumTimePoints dimension, if necessary 
+
+   !Define NumTimePoints dimension, if necessary
    status = NF90_inq_dimid(fileunit,'NumTimePoints',TimePointsID)
-   if (status /= NF90_NoErr) THEN	    
-      if ((SaveTime > 0.0).AND.(SaveTime <= (TEnd - TStart))) THEN     
+   if (status /= NF90_NoErr) THEN
+      if ((SaveTime > 0.0).AND.(SaveTime <= (TEnd - TStart))) THEN
          TimePoints = int((TEnd - TStart) / SaveTime) + 1
-         
+
          Call check(NF90_def_dim(fileunit,'NumTimePoints',TimePoints,TimePointsID))
-         
+
       else
-         
-         error = 1 
+
+         error = 1
          errormsg = "Error: SaveTime value is invalid."
          return
       end if
    else
-      
+
       Call check(NF90_inquire_dimension(fileunit,TimePointsID, len = TimePoints))
-      
+
    end if
-   
+
    !Define TimePoints variable, if necessary
-   
+
    status = NF90_inq_varid(fileunit,'Time',TimeID)
    if (status /= NF90_noerr) THEN
       Call check(NF90_def_var(fileunit,'Time', NF90_double, (/TimePointsID/), TimeID))
    end if
-   
+
    !For ExpType = 4, always save N_Max species to disk. Number of real species may change between models.
-   
+
    !Multiple models - Solution is State variable: 4D (N_Max, NumTimePoints, NumTrials, Record Dimension)
-   
+
    status = NF90_inq_varid(fileunit,'State',XstateID)
    if (status /= NF90_noerr) THEN
       print*, "Defining State variable in NetCDF file. This may take some time."
       print*, "Solution data size = ", NumModels, "x", Trials, "x", TimePoints, "x", N_Max
-      
-      
+
+
       Call check(NF90_def_var(fileunit,'State', NF90_double, (/NdimID, TimePointsID, TrialsID, ModelsID/), XstateID))
-      
+
    end if
-   
+
 Case (5)
    !TBD
 
 End Select
-    
+
 Call check(NF90_enddef(fileunit))
 
 Call check(NF90_close(fileunit))
@@ -2293,7 +2337,7 @@ End Subroutine CheckAndDefineVariables
 !	PrintModelData
 !PURPOSE
 !	This subroutine prints out interesting information about the model(s).
-!	
+!
 !SOURCE
 
 Subroutine PrintModelData
@@ -2316,7 +2360,7 @@ End Subroutine PrintModelData
 !	check
 !PURPOSE
 !	A convienant function that converts a NetCDF error message into an error string.
-!SOURCE 
+!SOURCE
 
 Subroutine check(status)
 IMPLICIT NONE

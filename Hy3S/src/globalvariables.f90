@@ -28,7 +28,11 @@ Logical, Allocatable, Public :: SplitOnDivision(:), SaveSpeciesData(:)
 Integer*4, Allocatable, Public :: Xo(:)
 Integer, Allocatable, Public :: RandSeed(:)
 
-Character(len=72), Public :: filename
+Character(len=128), Public :: filename
+
+!JMS info
+Character(len=32), Public :: jmsUrl, jmsUser, jmsPassword, jmsQueue, jmsTopic, vcellUser
+Integer, Public :: simKey, jobIndex, taskID
 
 Type, Public :: RxnDataType
 	Real*8 :: c(MaxDepList)
@@ -60,7 +64,7 @@ Type (DGraphType), Allocatable, Dimension(:), Public :: DGraph
 !VARIABLE
 !	MaxDepList is a parameter that stores the maximum number of kinetic parameters of a reaction.
 !	If you permanently change this parameter, you'll need to make changes to the GUI.
-!	c in RxndataType uses this parameter. 
+!	c in RxndataType uses this parameter.
 !SOURCE
 
 !***
@@ -178,7 +182,7 @@ Type (DGraphType), Allocatable, Dimension(:), Public :: DGraph
 
 !****v dataio/SaveTime
 !VARIABLE
-!	SaveTime is the time interval between sampling the simulation data. 
+!	SaveTime is the time interval between sampling the simulation data.
 !***
 
 !****v dataio/Vo
@@ -194,7 +198,7 @@ Type (DGraphType), Allocatable, Dimension(:), Public :: DGraph
 
 !****v dataio/SaveSpeciesData
 !VARIABLE
-!	SaveSpeciesData is an Allocatable, 1D, Logical (N x 1). 1 if the corresponding species' simulation data 
+!	SaveSpeciesData is an Allocatable, 1D, Logical (N x 1). 1 if the corresponding species' simulation data
 !	is saved to disk
 !***
 
@@ -235,7 +239,7 @@ Type (DGraphType), Allocatable, Dimension(:), Public :: DGraph
 !		SList - The list of species that affect the state of the system (stoichiometry)
 !		v -- The list of stoichiometric coefficients corresponding to the species in SList
 !		EList - The list of events that are created or destroyed when a reaction occurs (such as transcriptional elongation)
-!		EStoichList - The list of stoichiometric coefficients (-1/+1) corresponding to the events in EList. 
+!		EStoichList - The list of stoichiometric coefficients (-1/+1) corresponding to the events in EList.
 !			      +1 is created. -1 is destroyed.
 !***
 

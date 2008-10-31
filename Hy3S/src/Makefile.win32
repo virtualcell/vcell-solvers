@@ -2,18 +2,36 @@
 #Fortran compiler
 FC= ifort
 # Compilation options  .... removed /names:lowercase
-#FOPTIONS = /Gm /O3 /Qipo /Qprec-div- /QxN /compile_only /thread
-#FOPTIONS = /O3 /Qprec-div- /QxN /MT /nologo /I..\..\netcdf-3.6.2\f90 /I..\..\IFortran /names:lowercase
-#FOPTIONS = /O3 /nologo /I..\..\netcdf-3.6.2\f90 /I..\..\IFortran
-FOPTIONS = /I..\..\netcdf-3.6.2\f90 /iface:mixed_str_len_arg /check:bounds
+FOPTIONS = /c /I..\..\netcdf-3.6.2\f90 /iface:mixed_str_len_arg /check:bounds /MT
 LINKOPTIONS = /link /LIBPATH:..\..\IFortran
 DEFMILSTEIN = -DMILSTEIN
 DEFADAPTIVE = -DADAPTIVE
 
-LIBS = ..\..\netcdf-3.6.2\fortran\netcdf_for.lib ..\..\netcdf-3.6.2\libsrc\netcdf.lib ..\..\netcdf-3.6.2\f90\netcdf_f90.lib
+CC = cl
+CFLAGS = /nologo /TP /c /O2 /GR /DWIN32 /EHsc /D_CRT_SECURE_NO_DEPRECATE /DUSE_MESSAGING /MT /D_WIN32_WINNT=0x2000 \
+		/I..\..\SonicCClient\Win32\include /I..\..\SonicCClient\Win32\include\CPP -I..\..\VCell\include
+
+LIBS = ..\..\netcdf-3.6.2\fortran\netcdf_for.lib ..\..\netcdf-3.6.2\libsrc\netcdf.lib ..\..\netcdf-3.6.2\f90\netcdf_f90.lib \
+		
+!ifdef NO_MESSAGING
+COBJECTS =
+TARGET1 = Hybrid_EM_NoMessaging.exe 
+TARGET2 = Hybrid_MIL_NoMessaging.exe 
+TARGET3 = Hybrid_MIL_Adaptive_NoMessaging.exe
+!else
+FOPTIONS = $(FOPTIONS) /DUSE_MESSAGING
+COBJECTS = msgwrapper.obj SimulationMessaging.obj
+LIBS = $(LIBS) Ws2_32.lib ..\..\SonicCClient\win32\lib\libsmq.lib ..\..\SonicCClient\win32\lib\libsmqj.lib
+TARGET1 = Hybrid_EM.exe 
+TARGET2 = Hybrid_MIL.exe 
+TARGET3 = Hybrid_MIL_Adaptive.exe 
+!endif
 
 .SUFFIXES: obj.f90
 
+.f90.obj:	
+	$(FC) $(FOPTIONS) /Fo$@ $<
+	
 #
 # Source File Names
 #
@@ -28,21 +46,43 @@ SOURCE  =  f2kcli.f90 \
 		propagators-HyJCMSS.f90 \
 		mainprogram-HyJCMSS.f90
 
-default all: Hybrid_EM.exe Hybrid_MIL.exe Hybrid_MIL_Adaptive.exe
-
-Hybrid_EM.exe: $(SOURCE)
-	$(FC) $(FOPTIONS) $(SOURCE) $(LINKOPTIONS) $(LIBS) /out:$@
+FOBJECTS  =  f2kcli.obj \
+		globalvariables.obj \
+		ratelaws.obj \
+		dataio.obj \
+		randomgen.obj \
+		priorityqueue.obj \
+		specialevents.obj \
+		SDEintegration.obj \
+		propagators-HyJCMSS.obj \
+		mainprogram-HyJCMSS.obj
+		
+default all: $(TARGET1) $(TARGET2) $(TARGET3)
 	
-Hybrid_MIL.exe: $(SOURCE)
-	$(FC) $(FOPTIONS) $(DEFMILSTEIN) $(SOURCE) $(LINKOPTIONS) $(LIBS) /out:$@
+$(TARGET1): $(SOURCE) $(COBJECTS)
+	del $(FOBJECTS) *.mod
+	$(FC) $(FOPTIONS) $(SOURCE)
+	$(FC) $(FOBJECTS) $(COBJECTS) $(LIBS) $(LINKOPTIONS) /out:$@
+	
+$(TARGET2): $(SOURCE) $(COBJECTS)
+	del $(FOBJECTS) *.mod
+	$(FC) $(FOPTIONS) $(DEFMILSTEIN) $(SOURCE)
+	$(FC) $(FOBJECTS) $(COBJECTS) $(LIBS) $(LINKOPTIONS) /out:$@
 
-Hybrid_MIL_Adaptive.exe: $(SOURCE)
-	$(FC) $(FOPTIONS) $(DEFADAPTIVE) $(DEFMILSTEIN) $(SOURCE) $(LINKOPTIONS) $(LIBS) /out:$@
+$(TARGET3): $(SOURCE) $(COBJECTS)
+	del $(FOBJECTS) *.mod
+	$(FC) $(FOPTIONS) $(DEFADAPTIVE) $(SOURCE)
+	$(FC) $(FOBJECTS) $(COBJECTS) $(LIBS) $(LINKOPTIONS) /out:$@
+	
+msgwrapper.obj : msgwrapper.c
+	$(CC) /Fo$@ $(CFLAGS) msgwrapper.c
+	
+SimulationMessaging.obj : ..\..\VCell\include\VCELL\SimulationMessaging.h ..\..\VCell\src\SimulationMessaging.cpp
+	$(CC) /Fo$@  $(CFLAGS) ..\..\VCell\src\SimulationMessaging.cpp
+	
+cleanf : 
+	if exist "$(FOBJECTS)" del $(FOBJECTS) *.mod
 	
 clean:
-	del Hybrid_EM.exe
-	del Hybrid_MIL.exe
-	del Hybrid_MIL_Adaptive.exe
-	del *.obj
-	del *.mod
+	del $(TARGET1) $(TARGET2) $(TARGET3) *.obj *.mod
 # 
