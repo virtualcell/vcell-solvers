@@ -3,11 +3,9 @@ CPPFLAGS =	/c /EHsc /O2 /DWIN32 -I..\..\ExpressionParser
 LIBS =	..\..\ExpressionParser\ExpParser.lib
 
 !ifdef NO_MESSAGING
-CPPFLAGS = $(CPPFLAGS)
 OBJDIR = .\obj_NoMessaging 
 MESSAGING_CPPOBJECTS = 
 STDALONE_TARGET = VCellStoch_NoMessaging.exe
-LIBS =  $(LIBS) $(TARGET_LIB)
 !else
 CPPFLAGS = $(CPPFLAGS) /DUSE_MESSAGING /I..\..\SonicCClient\Win32\include /I..\..\SonicCClient\Win32\include\CPP -I..\..\VCell\include
 OBJDIR = .\obj

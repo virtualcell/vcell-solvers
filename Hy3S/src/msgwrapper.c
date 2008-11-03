@@ -77,3 +77,13 @@ void send_failed_(char* errmsg) {
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_FAILURE, errmsg));
 	SimulationMessaging::getInstVar()->waitUntilFinished();
 }
+
+extern "C"
+#ifdef WIN32
+bool __cdecl IS_STOP_REQUESTED() {
+#else
+bool is_stop_requested_() {
+#endif
+	//cout << "in wrapper stop requested" << endl;
+	return SimulationMessaging::getInstVar()->isStopRequested();
+}

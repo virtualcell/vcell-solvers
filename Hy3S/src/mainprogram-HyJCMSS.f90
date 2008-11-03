@@ -82,6 +82,8 @@ Integer :: Itercounter, Multicounter
 Real*8 :: AvgTime, AvgNumIter, AvgNumSlowRxns, DiskTime, AvgSlowIter
 Real*8 :: AvgModelTime
 
+Logical :: is_stop_requested
+
 !DEC$ IF (Defined(USING_MPI))
 
 Real*8 :: SumAvgTime, SumAvgNumIter, SumAvgNumSlowRxns, SumDiskTime, SumAvgSlowIter
@@ -375,6 +377,14 @@ do j=LastModel+1,NumModels
 
    !Trials loop
    do i = LastTrial + me + 1, Trials, NumProcs
+
+!DEC$ If (Defined(USE_MESSAGING))
+		if (is_stop_requested()) THEN
+			print*, "stopped by user"
+   			stop 0
+   		end if
+!DEC$ Endif
+
 !  Amended in July 2007 by Tracy LI, to send progress every 2 seconds to VCell for multiple trials
    If (Trials > 1) THEN
  		CALL CPU_TIME(time2)
@@ -415,6 +425,13 @@ do j=LastModel+1,NumModels
       plotcounter = 1
 
       do while (plotcounter < TimePoints)
+
+!DEC$ If (Defined(USE_MESSAGING))
+		if (is_stop_requested()) THEN
+			print*, "stopped by user"
+			stop 0
+   		end if
+!DEC$ Endif
 
       !Call ForwardPropogater(X,t,Rxndata,SaveTime,other parameters,ierror)
       !Propogater is any function, f(X,t,params), that produces X(t+dt) = f(X,t,params)

@@ -18,7 +18,7 @@ CPPOBJECTS = \
 			IndexedTree.o	\
 			Jump.o	\
 			StochVar.o	\
-			SimulationMessaging.o		
+			SimulationMessaging.o
 
 $(STDALONE_TARGET): $(CPPOBJECTS)
 	$(CC) -o $@ $(CPPOBJECTS) $(LIBS)

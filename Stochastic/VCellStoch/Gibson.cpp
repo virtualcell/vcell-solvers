@@ -57,27 +57,27 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 	while(infile >> instring)
 	{
 		//load control info.
-		if (instring == "STARTING_TIME") 
+		if (instring == "STARTING_TIME")
 		{
 			infile >> STARTING_TIME;
-		} 
+		}
 		else if (instring == "ENDING_TIME")
 		{
 			infile >> ENDING_TIME;
-		} 
-		else if (instring == "SAVE_PERIOD") 
+		}
+		else if (instring == "SAVE_PERIOD")
 		{
 			infile >> SAVE_PERIOD;
 			flag_savePeriod=true;
-		} 
-		else if (instring == "MAX_ITERATION") 
+		}
+		else if (instring == "MAX_ITERATION")
 		{
 			infile >> MAX_ITERATION;
 		}
 		else if (instring == "TOLERANCE")
 		{
 			infile >> TOLERANCE;
-		} 
+		}
 		else if (instring == "SAMPLE_INTERVAL")
 		{
 			infile >> SAMPLE_INTERVAL;
@@ -253,7 +253,7 @@ Gibson::~Gibson()
  *The method is the core function of Gibson method, it does one run for Gibson simulation.
  *The loop will end either by ending_time or max_iteration.
  *For single trial, the values of variables against time will be output at each save_period.
- *For multiple trial, the results at the ending_time after each trial willl be stored in a the file. 
+ *For multiple trial, the results at the ending_time after each trial willl be stored in a the file.
  */
 int Gibson::core()
 {
@@ -281,7 +281,7 @@ int Gibson::core()
 		}
 		currvals[varLen] = simtime;
 		p = jump->getProbabilityRate(currvals);
-		//amended Oct 11th, 2007. Stop the simulation and send error message back if 
+		//amended Oct 11th, 2007. Stop the simulation and send error message back if
 		//anyone of the propensity functions is negtive.
 		if(p < 0){
 			cerr << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(jump->getNameIndex()) <<" turned to be a negtive value. Simulation abort!" << endl;
@@ -301,29 +301,123 @@ int Gibson::core()
 		else{
 			jump->setTime(jump->getLogRand()/p);
 		}
-#ifdef DEBUG 
+#ifdef DEBUG
 		cout<<"Initial r & P:" << r <<"\t" <<p <<endl;
-#endif 
+#endif
 	}
 	Tree->build();
 	//the while loop does one trial for simulation and ends by ending_time.
 	while(simtime < ENDING_TIME)
 	{
-			//save last step variables' values
-			for(i = 0;i<varLen;i++){
-				lastStepVals[i]=*listOfVars.at(i)->getCurr();
+#ifdef USE_MESSAGING
+		if (SimulationMessaging::getInstVar()->isStopRequested()) {
+			break;
+		}
+#endif
+
+		//save last step variables' values
+		for(i = 0;i<varLen;i++){
+			lastStepVals[i]=*listOfVars.at(i)->getCurr();
+		}
+	    //get next reaction with shortest absolute time
+		Jump* event = Tree->getProcess(0);
+		//update time
+		simtime = event->getTime();
+		if(simtime > ENDING_TIME)
+		{
+			//simulation time exceed ending time. Before we quit the simulation
+			//output data between the last step simulation time and ending time if we have SAVE_PERIOD on.
+			if((NUM_TRIAL ==1) && (flag_savePeriod))
+			{	//use EPSILON here to make sure that a double 0.99999999999995(usually happen in C) is not regarded as a number that smaller than 1. It should be 1.
+				while((outputTimer+SAVE_PERIOD+EPSILON) < ENDING_TIME)
+				{
+					outfile << outputTimer+SAVE_PERIOD << "\t";
+					for(i=0;i<varLen;i++){
+						outfile<< lastStepVals[i] << "\t";
+					}
+					outfile << endl;
+					outputTimer = outputTimer + SAVE_PERIOD;
+				}
 			}
-		    //get next reaction with shortest absolute time
-			Jump* event = Tree->getProcess(0);
-			//update time
-			simtime = event->getTime();
-			if(simtime > ENDING_TIME)
+			break;
+		}
+		//update affected variables
+		int numVars = event->getNumVars();
+		for(i = 0;i<numVars;i++){
+			event->getVar(i)->updateCurr();
+		}
+		//get current values for evaluate the probability expression
+		for(int k=0;k<varLen;k++)
+		{
+			currvals[k]=*listOfVars.at(k)->getCurr();
+		}
+		currvals[varLen] = simtime;
+		//update the jump that occured
+		double r = getRandomUniform();
+		p = event->getProbabilityRate(currvals);
+		//amended Oct 11th, 2007. Stop the simulation and send error message back if
+		//anyone of the propensity functions is negtive.
+		if(p < 0){
+			cerr << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(event->getNameIndex()) <<" turned to be a negtive value. Simulation abort!" << endl;
+			exit(1);
+		}
+		//amended May 17th. The previous sentence will cause the time of a process stuck in double_infinity when r<=0
+		if(r>0)
+		{
+			event->setLogRand(-log(r));
+			if(p>0)
+				Tree->updateTree(event, (event->getLogRand())/p+simtime);
+			else
+				Tree->updateTree(event, double_infinity);
+		}
+		else
+		{
+			Tree->updateTree(event, double_infinity);
+		}
+		//update dependent jumps
+		int numDependentJumps = event->getNumDependentJumps();
+		for(i=0;i<numDependentJumps;i++)
+		{
+			Jump *dJump = event->getDependent(i);
+			double p_old = dJump->getOldProbabilityRate();
+			double p_new = dJump->getProbabilityRate(currvals);
+			//amended Oct 11th, 2007. Stop the simulation and send error message back if
+			//anyone of the propensity functions is negtive.
+			if(p_new < 0){
+				cerr << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(dJump->getNameIndex()) <<" turned to be a negtive value. Simulation abort!" << endl;
+				exit(1);
+			}
+			double tau = dJump->getTime();
+			//amended May 17th. to make sure that tau is a finite double
+			if(tau != double_infinity && (-tau != double_infinity) && tau == tau){
+				dJump->setLogRand(p_old*(tau-simtime));
+			}
+			if(!((p_new)>0)){
+				Tree->updateTree(dJump, double_infinity);
+			}
+			else{
+				Tree->updateTree(dJump, (dJump->getLogRand())/p_new+simtime);
+			}
+		}
+#ifdef DEBUG
+		int treeLen = Tree->getSize();
+		bool infAll=true;
+		for(i=0; i<treeLen; i++)
+		{
+			if(Tree->getProcess(i)->getTime() != double_infinity)
+				infAll=false;
+		}
+		if(infAll)
+			cout << "all times are set infinity.";
+#endif
+		if(NUM_TRIAL ==1)
+		{
+			if(sampleCount == SAMPLE_INTERVAL)
 			{
-				//simulation time exceed ending time. Before we quit the simulation
-				//output data between the last step simulation time and ending time if we have SAVE_PERIOD on. 
-				if((NUM_TRIAL ==1) && (flag_savePeriod))
-				{	//use EPSILON here to make sure that a double 0.99999999999995(usually happen in C) is not regarded as a number that smaller than 1. It should be 1. 
-					while((outputTimer+SAVE_PERIOD+EPSILON) < ENDING_TIME)
+				//output the result to file if the num_trial is one and the outputTimer reaches the new save period
+				if(flag_savePeriod)
+				{
+					while((outputTimer+SAVE_PERIOD) < simtime)
 					{
 						outfile << outputTimer+SAVE_PERIOD << "\t";
 						for(i=0;i<varLen;i++){
@@ -332,141 +426,53 @@ int Gibson::core()
 						outfile << endl;
 						outputTimer = outputTimer + SAVE_PERIOD;
 					}
-				}
-				break;
-			}
-			//update affected variables
-			int numVars = event->getNumVars();
-			for(i = 0;i<numVars;i++){
-				event->getVar(i)->updateCurr();
-			}			
-			//get current values for evaluate the probability expression
-			for(int k=0;k<varLen;k++)
-			{
-				currvals[k]=*listOfVars.at(k)->getCurr();
-			}
-			currvals[varLen] = simtime;
-			//update the jump that occured
-			double r = getRandomUniform();
-			p = event->getProbabilityRate(currvals);
-			//amended Oct 11th, 2007. Stop the simulation and send error message back if 
-			//anyone of the propensity functions is negtive.
-			if(p < 0){
-				cerr << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(event->getNameIndex()) <<" turned to be a negtive value. Simulation abort!" << endl;
-				exit(1);
-			}
-			//amended May 17th. The previous sentence will cause the time of a process stuck in double_infinity when r<=0
-			if(r>0)
-			{
-				event->setLogRand(-log(r));
-				if(p>0)
-					Tree->updateTree(event, (event->getLogRand())/p+simtime);
-				else
-					Tree->updateTree(event, double_infinity);
-			}
-			else
-			{
-				Tree->updateTree(event, double_infinity);
-			}
-			//update dependent jumps 
-			int numDependentJumps = event->getNumDependentJumps();
-			for(i=0;i<numDependentJumps;i++)
-			{
-				Jump *dJump = event->getDependent(i);
-				double p_old = dJump->getOldProbabilityRate();
-				double p_new = dJump->getProbabilityRate(currvals);
-				//amended Oct 11th, 2007. Stop the simulation and send error message back if 
-				//anyone of the propensity functions is negtive.
-				if(p_new < 0){
-					cerr << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(dJump->getNameIndex()) <<" turned to be a negtive value. Simulation abort!" << endl;
-					exit(1);
-				}
-				double tau = dJump->getTime();
-				//amended May 17th. to make sure that tau is a finite double 
-				if(tau != double_infinity && (-tau != double_infinity) && tau == tau){
-					dJump->setLogRand(p_old*(tau-simtime));
-				}
-				if(!((p_new)>0)){
-					Tree->updateTree(dJump, double_infinity);
-				}
-				else{
-					Tree->updateTree(dJump, (dJump->getLogRand())/p_new+simtime);
-				}
-			}
-#ifdef DEBUG
-			int treeLen = Tree->getSize();
-			bool infAll=true;
-			for(i=0; i<treeLen; i++)
-			{
-				if(Tree->getProcess(i)->getTime() != double_infinity)
-					infAll=false;
-			}
-			if(infAll)
-				cout << "all times are set infinity.";
-#endif
-			if(NUM_TRIAL ==1)
-			{
-				if(sampleCount == SAMPLE_INTERVAL)
-				{
-					//output the result to file if the num_trial is one and the outputTimer reaches the new save period
- 					if(flag_savePeriod)
+					if(outputTimer+SAVE_PERIOD <= simtime + EPSILON)
 					{
-						while((outputTimer+SAVE_PERIOD) < simtime)
-						{
-							outfile << outputTimer+SAVE_PERIOD << "\t";
-							for(i=0;i<varLen;i++){
-								outfile<< lastStepVals[i] << "\t";
-							}
-							outfile << endl;
-							outputTimer = outputTimer + SAVE_PERIOD;
-						}
-						if(outputTimer+SAVE_PERIOD <= simtime + EPSILON)
-						{
-							outfile << outputTimer+SAVE_PERIOD << "\t";
-							for(i=0;i<varLen;i++){
-								outfile<< *listOfVars.at(i)->getCurr() << "\t";
-							outfile << endl;
-							}
-							outputTimer = outputTimer + SAVE_PERIOD;
-						}
-					}
-					else //output according to simulation time
-					{
-						outfile << simtime << "\t";
+						outfile << outputTimer+SAVE_PERIOD << "\t";
 						for(i=0;i<varLen;i++){
-							outfile<< *listOfVars.at(i)->getCurr()<< "\t";
-						}
+							outfile<< *listOfVars.at(i)->getCurr() << "\t";
 						outfile << endl;
-					}
-					// output data message every two seconds to Java program (useful for long simulation, user can view results during simulation)
-					clock_t currentTime = clock();
-					double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
-					if (duration >= 2)
-					{
-						double percentile = (simtime/ENDING_TIME) * 100.0;
-#ifdef USE_MESSAGING
-						SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simtime));
-						SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simtime));
-#else 
-						printf("[[[progress:%lg%%]]]", percentile);
-						printf("[[[data:%lg]]]", simtime);
-						fflush(stdout);
-#endif
-						oldTime = currentTime;
+						}
+						outputTimer = outputTimer + SAVE_PERIOD;
 					}
 				}
-				if(sampleCount == 1) 
-					sampleCount = SAMPLE_INTERVAL;
-				else 
-					sampleCount--;
-				// output simulaiton progress message
+				else //output according to simulation time
+				{
+					outfile << simtime << "\t";
+					for(i=0;i<varLen;i++){
+						outfile<< *listOfVars.at(i)->getCurr()<< "\t";
+					}
+					outfile << endl;
+				}
+				// output data message every two seconds to Java program (useful for long simulation, user can view results during simulation)
+				clock_t currentTime = clock();
+				double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
+				if (duration >= 2)
+				{
+					double percentile = (simtime/ENDING_TIME) * 100.0;
+#ifdef USE_MESSAGING
+					SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simtime));
+					SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simtime));
+#else
+					printf("[[[progress:%lg%%]]]", percentile);
+					printf("[[[data:%lg]]]", simtime);
+					fflush(stdout);
+#endif
+					oldTime = currentTime;
+				}
+			}
+			if(sampleCount == 1)
+				sampleCount = SAMPLE_INTERVAL;
+			else
+				sampleCount--;
+			// output simulaiton progress message
 //              if((simtime/ENDING_TIME) > prog)
 //				{
 //					printf("[[[progress:%lg%%]]]", (simtime/ENDING_TIME) * 100.0);
 //					fflush(stdout);
 //					prog = prog + 0.2;
 //				}
-			}//if(NUM_TRIAL ==1)
+		}//if(NUM_TRIAL ==1)
 	}//end of while loop
 	//output the variable's vals at the ending time point.
 	if((simtime > ENDING_TIME) && (NUM_TRIAL == 1) && (flag_savePeriod))
@@ -508,7 +514,7 @@ void Gibson::march()
 	QueryPerformanceFrequency(&freq);
 	QueryPerformanceCounter(&ntime1);
 #endif
-	
+
 	//prepare for writing the results to output file
 	outfile.open (outfilename);//"c:/gibson_deploy/gibson_deploy/output/gibson_singleTrial.txt"
 	outfile << setprecision(10); // set precision to output file
@@ -516,7 +522,7 @@ void Gibson::march()
 	{
 		srand(SEED);
 		//output file header
-		outfile << "t:";	  
+		outfile << "t:";
 		for(int i=0;i<listOfVarNames.size();i++){
 			outfile<< listOfVarNames.at(i) << ":";
 		}
@@ -529,19 +535,25 @@ void Gibson::march()
 		outfile << endl;
 		//run the simulation
 		core();
-	
+
 	}
 	else if (NUM_TRIAL > 1)
 	{
 		clock_t oldTime = clock(); // use to calculate time, send progress every two seconds
 		//output file header
-		outfile << "TrialNo:";	  
+		outfile << "TrialNo:";
 		for(int i=0;i<listOfVarNames.size();i++){
 			outfile<< listOfVarNames.at(i) << ":";
 		}
 		outfile <<endl;
 		for (long j=SEED;j<NUM_TRIAL+SEED;j++)
 		{
+#ifdef USE_MESSAGING
+		if (SimulationMessaging::getInstVar()->isStopRequested()) {
+			break;
+		}
+#endif
+
 #ifdef DEBUG
 			cout << "Trial No. " << j <<endl;
 #endif
@@ -556,8 +568,8 @@ void Gibson::march()
 			for(int i=0;i<listOfProcesses.size();i++){
 				Tree->setProcess(i,listOfProcesses.at(i));
 			}
-			
-			// output progress message every two seconds to Java program 
+
+			// output progress message every two seconds to Java program
 			clock_t currentTime = clock();
 			double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
 			if (duration >= 2)
@@ -565,7 +577,7 @@ void Gibson::march()
 				double percentile =  ((j-SEED)*1.0/NUM_TRIAL) * 100.0;
 #ifdef USE_MESSAGING
 				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, j));
-#else 
+#else
 				printf("[[[progress:%lg%%]]]", percentile);
 				//printf("[[[data:%lg]]]", (j-SEED));
 				fflush(stdout);
@@ -573,9 +585,8 @@ void Gibson::march()
 				oldTime = currentTime;
 			}
 		}
-		
 	}
-	else 
+	else
 	{
 		cerr << "Number of trial smaller than 1!";
 	}
@@ -589,10 +600,12 @@ void Gibson::march()
 	outfile.close();
 
 #ifdef USE_MESSAGING
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1, ENDING_TIME));
+	if (!SimulationMessaging::getInstVar()->isStopRequested()) {
+		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1, ENDING_TIME));
+	}
 #endif
 }//end of method march()
-	
+
 /*
  * This method generates a random number from uniform distribution.
  * Output: double, the random number generated.
