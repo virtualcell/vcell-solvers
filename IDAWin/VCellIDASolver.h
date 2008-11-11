@@ -15,6 +15,7 @@ protected:
 	void updateTempRowData(double currTime);
 	void readEquations(istream& inputstream);
 	void initialize();
+	string getSolverName() { return "IDA"; }
 
 private:
 	Expression** rhsExpressions;  // can be rate expression in ODE case or RHS expression in DAE case

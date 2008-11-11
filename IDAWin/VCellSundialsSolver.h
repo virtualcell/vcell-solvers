@@ -99,6 +99,7 @@ protected:
 	virtual void updateTandVariableValues(realtype t, N_Vector y)=0;
 
 	int RootFn(realtype t, N_Vector y, realtype *gout);
+	virtual string getSolverName()=0;
 };
 
 void trimString(string& str);

@@ -15,6 +15,7 @@ public:
 protected:
 	void readEquations(istream& inputstream);
 	void initialize();
+	string getSolverName() { return "CVODE"; }
 
 private:
 	Expression** rateExpressions; 

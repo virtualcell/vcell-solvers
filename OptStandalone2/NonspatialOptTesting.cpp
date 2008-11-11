@@ -21,6 +21,7 @@
 #include <string>
 using namespace std;
 
+void trimString(string& str);
 
 void checkStopRequested(double objectiveFunc, long iter){
 //	std::cout << "checkStopRequested " << objectiveFunc << " iter " << iter << std::endl;

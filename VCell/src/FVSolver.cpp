@@ -169,7 +169,7 @@ void FVSolver::loadModel(istream& ifsInput) {
 	}
 }
 
-void trimString(string& str)
+static void trimString(string& str)
 {
 	string::size_type pos = str.find_last_not_of(" \r\n");
 	if(pos != string::npos) {

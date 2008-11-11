@@ -38,8 +38,6 @@ char* trim(char* str) {
 	return newstr;
 }
 
-#ifndef TRIMSTRING
-#define TRIMSTRING
 void trimString(string& str)
 {
 	string::size_type pos = str.find_last_not_of(" \r\n");
@@ -54,7 +52,6 @@ void trimString(string& str)
 		str.erase(str.begin(), str.end());
 	}
 }
-#endif
 
 VCellSundialsSolver::VCellSundialsSolver() {
 	NEQ = 0;
@@ -189,8 +186,13 @@ void VCellSundialsSolver::readInput(istream& inputstream) {
 			inputstream >> name;
 			if (name.empty()) {
 				continue;
-			}
-			if (name == "STARTING_TIME") {
+			}			
+			if (name == "SOLVER") {
+				inputstream >> name;
+				if (name != getSolverName()) {
+					throw "Wrong solver";
+				}
+			} else if (name == "STARTING_TIME") {
 				inputstream >> STARTING_TIME;
 			} else if (name == "ENDING_TIME") {
 				inputstream >> ENDING_TIME;
