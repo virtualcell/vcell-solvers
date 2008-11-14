@@ -34,30 +34,30 @@ ExpressionParser::ExpressionParser(ExpressionParserTokenManager* tm)
 
 ExpressionParser::~ExpressionParser()
 {	
-	delete token;
-	token = 0;
+	while (headToken != 0) {
+		Token* token = headToken;
+		headToken = headToken->next;
+		delete token;
+	}
 	delete token_source;
-	token_source = 0;
 	delete jjtree;
-	jjtree = 0;
 	delete jj_input_stream;
-	jj_input_stream = 0;
 	delete[] jj_lasttokens;
-	jj_lasttokens = 0;
 	delete[] jj_la1;
-	jj_la1 = 0;
 
 	for (int i = 0; i < jj_2_rtns_length; i++) {
+		while (jj_2_rtns[i] != 0) {
+			JJCalls* p = jj_2_rtns[i];
+			jj_2_rtns[i] = jj_2_rtns[i]->next;
+			delete p;
+		}
         delete jj_2_rtns[i];
-		jj_2_rtns[i] = 0;
 	}
 	delete[] jj_2_rtns;
-	jj_2_rtns = 0;
 
 	for (unsigned int i = 0; i < jj_expentries.size(); i ++) {
 		jj_expentries[i]->clear();
 		delete jj_expentries[i];
-		jj_expentries[i] = 0;
 	}
 	jj_expentries.clear();
 }
@@ -83,6 +83,7 @@ void ExpressionParser::init(void)
 	jj_scanpos = 0;
 	jj_lastpos = 0;
     token = new Token();
+	headToken = token;
     jj_ntk = -1;
     jj_gen = 0;
 	jj_rescan = false;
@@ -978,12 +979,12 @@ ParseException& ExpressionParser::generateParseException(void)
 	jj_endpos = 0;
 	jj_rescan_token();
 	jj_add_error_token(0, 0);
-	int numETS = jj_expentries.size();
+	int numETS = (int)jj_expentries.size();
 	int* etsLengthArray = new int[numETS];	
 	int** exptokseq = new int*[numETS];
 	for (int i = 0; i < numETS; i++) {
 		vector<int>* entry = (vector<int>*)(jj_expentries.at(i));
-		etsLengthArray[i] = entry->size();
+		etsLengthArray[i] = (int)entry->size();
 		exptokseq[i] = new int[etsLengthArray[i]];
 		for (int j = 0; j < etsLengthArray[i]; j ++) {
 			exptokseq[i][j] = entry->at(j);

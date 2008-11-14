@@ -4,7 +4,6 @@
 
 int ExpressionParserTokenManager::jjnextStates[] = {35, 36, 41, 42, 31, 32, 31, 32, 33, 22, 23, 39, 40, 43, 44, };
 
-
 string* ExpressionParserTokenManager::jjstrLiteralImages[] = {
 	new string(""), null, null, null, null, null, null, null, null, null, null, null, null, 
 	null, null, new string("\136"), new string("\53"), new string("\55"), new string("\52"), new string("\57"), 
@@ -51,14 +50,13 @@ void ExpressionParserTokenManager::init(SimpleCharStream* stream)
 	jjstateSet = new int[90];
 	memset(jjstateSet, 0, 90 * sizeof(int));
 	input_stream = stream;
+	debugStream = 0;
 }
 
 ExpressionParserTokenManager::~ExpressionParserTokenManager(void)
 {
 	delete[] jjrounds;
-	jjrounds = 0;
 	delete[] jjstateSet;
-	jjstateSet = 0;
 }
 
 int ExpressionParserTokenManager::jjStopStringLiteralDfa_0(int pos, long active0)

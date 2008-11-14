@@ -6,6 +6,7 @@
 class SymbolTable {
 public:
 	virtual SymbolTableEntry* getEntry(string identifierString)=0; 
+	virtual ~SymbolTable() {}
 };
 
 #endif

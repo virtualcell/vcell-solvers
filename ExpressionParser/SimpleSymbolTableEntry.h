@@ -6,12 +6,12 @@
 class SimpleSymbolTableEntry : public SymbolTableEntry
 {
 public:
-	SimpleSymbolTableEntry(string nameValue, int indexVal, NameScope* namescopeVal, ValueProxy* proxyVal);
+	SimpleSymbolTableEntry(string& nameValue, int indexVal, NameScope* namescopeVal, ValueProxy* proxyVal);
 	~SimpleSymbolTableEntry(void);
 	double getConstantValue();
 	Expression* getExpression();
 	int getIndex();
-	string getName();    
+	string& getName();    
 	NameScope* getNameScope();
 	//VCUnitDefinition getUnitDefinition()=0;
 	boolean isConstant();	

@@ -1,6 +1,8 @@
 #ifndef VCELLSUNDIALSSOLVER_H
 #define VCELLSUNDIALSSOLVER_H
 
+#include <Expression.h>
+
 #include <nvector/nvector_serial.h>
 #include <sundials/sundials_types.h>
 
@@ -21,12 +23,17 @@ struct OdeDiscontinuity {
 	string discontinuitySymbol;
 	Expression* discontinuityExpression;
 	Expression* rootFindingExpression;	
+
+	~OdeDiscontinuity() {
+		delete discontinuityExpression;
+		delete rootFindingExpression;
+	}
 };
 
 class VCellSundialsSolver {
 public:
 	VCellSundialsSolver();	
-	~VCellSundialsSolver();
+	virtual ~VCellSundialsSolver();
 
 	void readInput(istream& inputstream);
 	virtual void solve(double* paramValues=0, bool bPrintProgress=false, FILE* outputFile=0, void (*checkStopRequested)(double, long)=0) = 0;

@@ -27,8 +27,7 @@ public:
 	void showStackInstructions();
 
 private:
-	ExpressionParser* parser;
-	SimpleNode* rootNode;
+	SimpleNode  *rootNode, *pRootNode;
 
 	static long flattenCount;
 	static long diffCount;

@@ -13,22 +13,20 @@ long Expression::bindCount = 0;
 
 Expression::Expression(void)
 {
-	rootNode = null;
-	parser = null;
+	rootNode = 0;
+	pRootNode = null;
 	stackMachine = null;
 }
 
 Expression::~Expression(void)
 {
-	delete rootNode;
-	delete parser;
+	delete pRootNode;
 	delete stackMachine;
 }
 
 Expression::Expression(string expString)
 {
 	rootNode = 0;
-	parser = 0;
 	stackMachine = null;
 
 	if (expString.length() == 0) {
@@ -47,6 +45,7 @@ Expression::Expression(string expString)
 		int n = sscanf(expString.c_str(), "%lf", &value); 
 		if (n == 1) {
 			rootNode = new ASTFloatNode(value);
+			pRootNode = rootNode;
 			return;
 		}				
 	} 
@@ -95,19 +94,20 @@ double Expression::evaluateVector(double* values)
 void Expression::parseExpression(string exp)
 {
 	parseCount++;
-	try {	
-
+	try {
 		istringstream* iss = new istringstream(exp);
-		parser = new ExpressionParser(iss);
+		ExpressionParser* parser = new ExpressionParser(iss);
 		rootNode = parser->Expression();
+		pRootNode = rootNode;
 
 		if (typeid(*rootNode) == typeid(ASTExpression)){
-			if (rootNode->jjtGetNumChildren() == 1){
+			if (rootNode->jjtGetNumChildren() == 1){ // we abandon the real root node here, so there is tiny memory leak;
 				rootNode = (SimpleNode*)rootNode->jjtGetChild(0);
 				rootNode->jjtSetParent(null);
 			}
-		}	
+		}
 		delete iss;
+		delete parser;
 	} catch (Exception& e) {
 		throw ParserException("Parse Error while parsing expression " + e.getMessage());
 	}
@@ -126,7 +126,7 @@ void Expression::bindExpression(SymbolTable* symbolTable)
 
 string Expression::trim(string str)
 {
-	int len = str.length();
+	int len = (int)str.length();
 	int st = 0;
 	int off = 0; 
 	const char* val = str.c_str();
@@ -137,7 +137,7 @@ string Expression::trim(string str)
 	while ((st < len) && (val[len - 1] <= ' ')) {
 	    len--;
 	}
-	return ((st > 0) || (len < str.length())) ?  str.substr(st, len-st) : str;
+	return ((st > 0) || (len < (int)str.length())) ?  str.substr(st, len-st) : str;
 }
 
 inline StackMachine* Expression::getStackMachine() {
@@ -149,7 +149,8 @@ inline StackMachine* Expression::getStackMachine() {
 		for (vector<StackElement>::iterator iter = elements_vector.begin(); iter != elements_vector.end(); iter ++) {
 			elements[i ++] = *iter;
 		}
-		stackMachine = new StackMachine(elements, elements_vector.size());
+		stackMachine = new StackMachine(elements, (int)elements_vector.size());
+		elements_vector.clear();
 	}
 	return stackMachine;
 }

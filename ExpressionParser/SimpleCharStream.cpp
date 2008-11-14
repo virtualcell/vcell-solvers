@@ -44,11 +44,8 @@ SimpleCharStream::SimpleCharStream(istream* dstream)
 SimpleCharStream::~SimpleCharStream(void)
 {
 	delete[] buffer;
-	buffer = 0;
 	delete[] bufline;
-	bufline = 0;
 	delete[] bufcolumn;
-	bufcolumn = 0;
 }
 
 void SimpleCharStream::ExpandBuff(boolean wrapAround)

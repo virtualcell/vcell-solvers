@@ -19,6 +19,7 @@ class NameScope;
 class Node
 {
 public:	
+	virtual ~Node() { }
 	/*
 	virtual string code()=0;          
 	virtual Node copyTree()=0;

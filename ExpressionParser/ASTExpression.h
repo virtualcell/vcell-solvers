@@ -3,8 +3,6 @@
 
 #include "SimpleNode.h"
 
-class SimpleNode;
-
 class ASTExpression : public SimpleNode
 {
 public:

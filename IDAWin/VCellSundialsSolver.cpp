@@ -1,4 +1,3 @@
-#include <Expression.h>
 #include <SimpleSymbolTable.h>
 #include "StoppedByUserException.h"
 #include "VCellSundialsSolver.h"
@@ -96,8 +95,6 @@ VCellSundialsSolver::~VCellSundialsSolver() {
 	delete[] allSymbols;
 
 	for (int i = 0; i < numDiscontinuities; i ++) {
-		delete odeDiscontinuities[i]->discontinuityExpression;
-		delete odeDiscontinuities[i]->rootFindingExpression;
 		delete odeDiscontinuities[i];
 	}
 	delete[] odeDiscontinuities;
@@ -109,6 +106,8 @@ VCellSundialsSolver::~VCellSundialsSolver() {
 	delete[] tempRowData;
 	delete initialConditionSymbolTable;
 	delete odeResultSet;
+
+	outputTimes.clear();
 }
 
 void VCellSundialsSolver::updateTempRowData(double currTime) {

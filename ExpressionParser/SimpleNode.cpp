@@ -13,10 +13,8 @@ SimpleNode::SimpleNode(int i) {
 SimpleNode::~SimpleNode() {
 	for (int i = 0; i < numChildren; i ++) {
 		delete children[i];
-		children[i] = 0;
 	}
 	delete[] children;
-	children = 0;
 }
 
 void SimpleNode::jjtOpen() {
@@ -40,7 +38,7 @@ void SimpleNode::jjtAddChild(Node* n, int i) {
 		numChildren = i + 1;
 	} else if (i >= numChildren) {
 		Node** c = new Node*[i + 1];
-		memset(children, 0, (i + 1) * sizeof(Node*));
+		memset(c, 0, (i + 1) * sizeof(Node*));
 		memcpy(c, children, numChildren * sizeof(Node*));
 		delete[] children;	
 		children = c;

@@ -101,6 +101,7 @@ void JJTExpressionParserState::closeNodeScope(Node* n, bool condition)
 	} else {
 		popMark();
 		node_created = false;
+		delete n;
 	}
 }
 

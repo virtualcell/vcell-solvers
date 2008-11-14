@@ -123,8 +123,8 @@ VCellIDASolver::~VCellIDASolver() {
 
 	for (int i = 0; i < NEQ; i ++) {
 		delete rhsExpressions[i];
-		delete transformMatrix[i];
-		delete inverseTransformMatrix[i];
+		delete[] transformMatrix[i];
+		delete[] inverseTransformMatrix[i];
 	}
 	delete[] rhsExpressions;
 	delete rhsSymbolTable;	

@@ -12,7 +12,7 @@ public:
 	virtual double getConstantValue()=0;
 	virtual Expression* getExpression()=0;
 	virtual int getIndex()=0;
-	virtual string getName()=0;    
+	virtual string& getName()=0;    
 	virtual NameScope* getNameScope()=0;
 	//VCUnitDefinition getUnitDefinition()=0;
 	virtual boolean isConstant()=0;

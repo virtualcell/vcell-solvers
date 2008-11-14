@@ -1,7 +1,8 @@
 #include "SimpleSymbolTableEntry.h"
 #include "ExpressionException.h"
 
-SimpleSymbolTableEntry::SimpleSymbolTableEntry(string nameValue, int indexVal, NameScope* namescopeVal, ValueProxy* proxyVal) : name(nameValue), index(indexVal), namescope(namescopeVal), valueProxy(proxyVal)
+SimpleSymbolTableEntry::SimpleSymbolTableEntry(string& nameValue, int indexVal, NameScope* namescopeVal, ValueProxy* proxyVal)
+ : name(nameValue), index(indexVal), namescope(namescopeVal), valueProxy(proxyVal)
 {
 	bConstant = false;
 	value = 0.0;
@@ -27,7 +28,7 @@ int SimpleSymbolTableEntry::getIndex() {
 	return index;
 }
 
-string SimpleSymbolTableEntry::getName() {
+string& SimpleSymbolTableEntry::getName() {
 	return name;
 }
 

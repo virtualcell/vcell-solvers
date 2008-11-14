@@ -18,6 +18,7 @@ StackMachine::StackMachine(StackElement* arg_elements, int size) {
 }
 
 StackMachine::~StackMachine() {
+	delete[] elements;
 }
 //-----------------------------------------------------------------
 //

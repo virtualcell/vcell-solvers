@@ -1,3 +1,13 @@
+#ifdef _DEBUG
+//#define _CRTDBG_MAP_ALLOC
+#ifdef _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+#else
+#include <vld.h>
+#endif
+#endif
+
 #ifdef USE_MESSAGING
 #include <VCELL/SimulationMessaging.h>
 #endif
@@ -171,7 +181,13 @@ int main(int argc, char *argv[]) {
 			throw "Solver not defined ";
 		}
 
+#ifdef _CRTDBG_MAP_ALLOC
+		_CrtMemState s1, s2, s3;
+#endif
 		errMsg += solver + " solver failed : ";
+#ifdef _CRTDBG_MAP_ALLOC
+		_CrtMemCheckpoint( &s1 );
+#endif
 		VCellSundialsSolver* vss = 0;
 		if (solver == IDA_SOLVER) {
 			vss = new VCellIDASolver();
@@ -186,6 +202,12 @@ int main(int argc, char *argv[]) {
 		vss->solve(0, true, outputFile, VCellSundialsSolver::checkStopRequested);
 
 		delete vss;
+#ifdef _CRTDBG_MAP_ALLOC
+		_CrtMemCheckpoint( &s2 );
+		if ( _CrtMemDifference( &s3, &s1, &s2) )
+		_CrtMemDumpStatistics( &s3 );
+		_CrtDumpMemoryLeaks();
+#endif		
 	} catch (const char* ex) {
 		errMsg += ex;
 		returnCode = -1;
@@ -210,5 +232,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	errExit(returnCode, errMsg);
+#ifdef _CRTDBG_MAP_ALLOC
+	_CrtDumpMemoryLeaks();
+#endif
 	return returnCode;
 }

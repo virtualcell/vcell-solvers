@@ -11,7 +11,7 @@ class SimpleNode : public Node
 {
 public:
 	SimpleNode(int i);
-	~SimpleNode(void);
+	virtual ~SimpleNode(void);
 
 	void jjtOpen();
 	void jjtClose();
