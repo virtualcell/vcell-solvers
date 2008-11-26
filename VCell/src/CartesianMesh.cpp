@@ -1444,10 +1444,6 @@ void CartesianMesh::adjustMembraneAreaFromNormal(){
 
 void CartesianMesh::findMembraneNeighbors()
 {
-	if (dimension == 1) {
-		return;
-	}
-
 	long mecount = getNumMembraneElements();
 	long mex = getNumVolumeX();
 	long mey = getNumVolumeY();
@@ -1461,6 +1457,10 @@ void CartesianMesh::findMembraneNeighbors()
 		meptr[meloop].neighborMEIndex[1] = -1;
 		meptr[meloop].neighborMEIndex[2] = -1;
 		meptr[meloop].neighborMEIndex[3] = -1;
+	}
+
+	if (dimension == 1) {
+		return;
 	}
 
 	for(meloop = 0;meloop < mecount;meloop+= 1)
