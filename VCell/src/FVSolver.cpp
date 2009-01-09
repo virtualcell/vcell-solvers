@@ -50,9 +50,9 @@ void FVSolver::loadJMSInfo(istream& ifsInput, int taskID) {
 	string nextToken;
 	int simKey, jobIndex;
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -82,10 +82,10 @@ void FVSolver::loadJMSInfo(istream& ifsInput, int taskID) {
 		} else if (nextToken == "JOB_INDEX") {
 			ifsInput >> jobIndex;
 			continue;
-		} 
+		}
 	}
 
-#ifdef USE_MESSAGING	
+#ifdef USE_MESSAGING
 	if (taskID >= 0) {
 		SimulationMessaging::create(broker, smqusername, password, qname, tname, vcusername, simKey, jobIndex, taskID);
 	} else {
@@ -101,12 +101,12 @@ void FVSolver::loadModel(istream& ifsInput) {
 	model = new VCellModel();
 	string nextToken;
 	string feature_name;
-	int handle, priority;	
+	int handle, priority;
 	int numFeatures = 0;
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -138,7 +138,7 @@ void FVSolver::loadModel(istream& ifsInput) {
 				} else if (btstr == "value") {
 					bt = BOUNDARY_VALUE;
 				} else if (btstr == "periodic") {
-					bt = BOUNDARY_PERIODIC;					
+					bt = BOUNDARY_PERIODIC;
 				} else {
 					stringstream ss1;
 					ss << "loadModel(), wrong boundary type " << btstr;
@@ -164,7 +164,7 @@ void FVSolver::loadModel(istream& ifsInput) {
 						feature->setZpBoundaryType(bt);
 						break;
 				}
-			}			
+			}
 		}
 	}
 }
@@ -190,7 +190,7 @@ int loadSolveRegions(CartesianMesh* mesh, string& line, int* solveRegions) {
 	int regionCount = 0;
 	while (true) {
 		string feature_name = "";
-		instream >> feature_name;					
+		instream >> feature_name;
 		if (feature_name == "") {
 			break;
 		}
@@ -202,7 +202,7 @@ int loadSolveRegions(CartesianMesh* mesh, string& line, int* solveRegions) {
 				ss << "Feature '" << feature_name << "' doesn't exist!";
 				throw ss.str();
 			}
-			if (volRegion->getFeature()->getHandle() == (FeatureHandle)(0xff & feature->getHandle())){ 
+			if (volRegion->getFeature()->getHandle() == (FeatureHandle)(0xff & feature->getHandle())){
 				solveRegions[regionCount++] = volRegion->getId();
 			}
 		}
@@ -220,9 +220,9 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 	int numVolumeRegions = mesh->getNumVolumeRegions();
 	string variable_name, unit;
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -239,7 +239,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			bool bNoConvection = true;
 			bool bTimeDependent = false;
 			string advectionflag, time_dependent_diffusion_flag, solve_whole_mesh_flag;
-			ifsInput >> variable_name >> unit >> time_dependent_diffusion_flag >> advectionflag >> solve_whole_mesh_flag;			
+			ifsInput >> variable_name >> unit >> time_dependent_diffusion_flag >> advectionflag >> solve_whole_mesh_flag;
 
 			bool bSolveVariable = true;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
@@ -253,19 +253,19 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				if (line.length() == 0) {
 					bSolveVariable = false;
 				} else {
-					solveRegions = new int[numVolumeRegions];				
+					solveRegions = new int[numVolumeRegions];
 					numSolveRegions = loadSolveRegions(mesh, line, solveRegions);
 				}
 			}
 
 			VolumeVariable* volumeVar = new VolumeVariable(sizeX, sizeY, sizeZ, variable_name, unit);
-			if (bSolveVariable) {				
+			if (bSolveVariable) {
 				if (advectionflag == "true" ) {
 					bNoConvection = false;
 				}
 				if (time_dependent_diffusion_flag == "true") {
 					bTimeDependent = true;
-				}				
+				}
 				SparseMatrixEqnBuilder* builder = 0;
 				if (bSteady) {
 					builder = new EllipticVolumeEqnBuilder(volumeVar,mesh, numSolveRegions, solveRegions);
@@ -292,7 +292,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				if (line.length() == 0) {
 					bSolveVariable = false;
 				} else {
-					solveRegions = new int[numVolumeRegions];				
+					solveRegions = new int[numVolumeRegions];
 					numSolveRegions = loadSolveRegions(mesh, line, solveRegions);
 				}
 			}
@@ -314,7 +314,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			EqnBuilder* builder = new MembraneEqnBuilderForward(membraneVar,mesh,odeSolver);
 			odeSolver->setEqnBuilder(builder);
 			simulation->addSolver(odeSolver);
-			simulation->addVariable(membraneVar);		
+			simulation->addVariable(membraneVar);
 		} else if (nextToken == "MEMBRANE_PDE") {
 			bool bNoConvection = true;    // define symmflg = 0 (general) or 1 (symmetric)
 			bool bTimeDependent = false;
@@ -352,7 +352,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 	}
 }
 
-Expression* FVSolver::readExpression(istream& ifsInput, string& var_name, string prefix) {	
+Expression* FVSolver::readExpression(istream& ifsInput, string& var_name, string prefix) {
 	string expStr;
 	getline(ifsInput, expStr);
 	expStr = prefix + expStr;
@@ -368,17 +368,17 @@ Expression* FVSolver::readExpression(istream& ifsInput, string& var_name, string
 VarContext* FVSolver::loadEquation(istream& ifsInput, Feature* feature, Variable* var) {
 	string var_name = var->getName();
 
-	//cout << "loading volume var context " << var_name << endl;	
-	
+	//cout << "loading volume var context " << var_name << endl;
+
 	VarContext* varContext = NULL;
 	if (var->getVarType() == VAR_VOLUME) {
-		varContext = new VolumeVarContextExpression(feature, var_name);	
+		varContext = new VolumeVarContextExpression(feature, var_name);
 	} else if (var->getVarType() == VAR_VOLUME_REGION) {
-		varContext = new VolumeRegionVarContextExpression(feature, var_name);	
+		varContext = new VolumeRegionVarContextExpression(feature, var_name);
 	} else if (var->getVarType() == VAR_MEMBRANE) {
-		varContext = new MembraneVarContextExpression(feature, var_name);	
+		varContext = new MembraneVarContextExpression(feature, var_name);
 	} else if (var->getVarType() == VAR_MEMBRANE_REGION) {
-		varContext = new MembraneRegionVarContextExpression(feature, var_name);	
+		varContext = new MembraneRegionVarContextExpression(feature, var_name);
 	} else {
 		stringstream ss;
 		ss << "loadEquation: variable type not supported yet: " << var_name;
@@ -387,9 +387,9 @@ VarContext* FVSolver::loadEquation(istream& ifsInput, Feature* feature, Variable
 
 	string nextToken;
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -412,7 +412,7 @@ VarContext* FVSolver::loadEquation(istream& ifsInput, Feature* feature, Variable
 		} else if (nextToken == "BOUNDARY_XM") {
 			Expression* boundaryexp = readExpression(ifsInput, var_name);
 			varContext->setExpression(boundaryexp, BOUNDARY_XM_EXP);
-		} else if (nextToken == "BOUNDARY_XP") {		
+		} else if (nextToken == "BOUNDARY_XP") {
 			Expression* boundaryexp = readExpression(ifsInput, var_name);
 			varContext->setExpression(boundaryexp, BOUNDARY_XP_EXP);
 		} else if (nextToken == "BOUNDARY_YM") {
@@ -442,8 +442,8 @@ VarContext* FVSolver::loadEquation(istream& ifsInput, Feature* feature, Variable
 		} else if (nextToken == "OUTFLUX") {
 			Expression* outexp = readExpression(ifsInput, var_name);
 			varContext->setExpression(outexp, OUT_FLUX_EXP);
-		} 
-	}	
+		}
+	}
 	return varContext;
 }
 
@@ -453,9 +453,9 @@ void FVSolver::loadJumpCondition(istream& ifsInput, Feature* feature, string& va
 	string nextToken;
 	Expression* inexp = null, *outexp = null;
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -467,7 +467,7 @@ void FVSolver::loadJumpCondition(istream& ifsInput, Feature* feature, string& va
 			inexp = readExpression(ifsInput, var_name);
 		} else if (nextToken == "OUTFLUX") {
 			outexp = readExpression(ifsInput, var_name);
-		} 
+		}
 	}
 	varContext->setExpression(inexp, IN_FLUX_EXP);
 	varContext->setExpression(outexp, OUT_FLUX_EXP);
@@ -481,9 +481,9 @@ void FVSolver::loadPseudoConstants(istream& ifsInput, FastSystemExpression* fast
 	string* vars = new string[numDep];
 	Expression **expressions = new Expression*[numDep];
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -495,7 +495,7 @@ void FVSolver::loadPseudoConstants(istream& ifsInput, FastSystemExpression* fast
 			vars[count] = nextToken;
 			expressions[count] = readExpression(ifsInput, vars[count]);
 			count ++;
-		} 		 
+		}
 	}
 	fastSystem->setPseudoConstants(vars, expressions);
 	if (count != numDep) {
@@ -510,9 +510,9 @@ void FVSolver::loadFastRates(istream& ifsInput, FastSystemExpression* fastSystem
 	int numIndep = fastSystem->getDimension();
 	Expression **expressions = new Expression*[numIndep];
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -524,8 +524,8 @@ void FVSolver::loadFastRates(istream& ifsInput, FastSystemExpression* fastSystem
 			string varname("fastRate");
 			expressions[count] = readExpression(ifsInput, varname, nextToken);
 			count ++;
-		} 		 
-	}	
+		}
+	}
 	if (count != numIndep) {
 		throw "In the fast system the number of fast rates should be the same as that of independent variables";
 	}
@@ -540,9 +540,9 @@ void FVSolver::loadFastDependencies(istream& ifsInput, FastSystemExpression* fas
 	string* vars = new string[numDep];
 	Expression **expressions = new Expression*[numDep];
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -554,7 +554,7 @@ void FVSolver::loadFastDependencies(istream& ifsInput, FastSystemExpression* fas
 			vars[count] = nextToken;
 			expressions[count] = readExpression(ifsInput, vars[count]);
 			count ++;
-		} 		 
+		}
 	}
 	fastSystem->setFastDependencyExpressions(vars, expressions);
 	delete[] vars;
@@ -570,9 +570,9 @@ void FVSolver::loadJacobians(istream& ifsInput, FastSystemExpression* fastSystem
 	int numIndep = fastSystem->getDimension();
 	Expression **expressions = new Expression*[numIndep * numIndep];
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -584,8 +584,8 @@ void FVSolver::loadJacobians(istream& ifsInput, FastSystemExpression* fastSystem
 			string varname("jacobian");
 			expressions[count] = readExpression(ifsInput, varname, nextToken);
 			count ++;
-		} 		 
-	}	
+		}
+	}
 	if (count != numIndep * numIndep) {
 		throw "In the fast system the number of Jacobian should dim*dim";
 	}
@@ -598,9 +598,9 @@ void FVSolver::loadFastSystem(istream& ifsInput, Feature* feature, FastSystemExp
 	int numIndep = fastSystem->getDimension();
 	int numDep = fastSystem->getNumDependents();
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -633,17 +633,17 @@ void FVSolver::loadFastSystem(istream& ifsInput, Feature* feature, FastSystemExp
 		} else if (nextToken == "JACOBIAN_BEGIN") {
 			getline(ifsInput, nextToken);
 			loadJacobians(ifsInput, fastSystem);
-		} 
-	}	
+		}
+	}
 }
 
 void FVSolver::loadFeature(istream& ifsInput, Feature* feature) {
 	//cout << "loading feature " << feature->getName() << endl;
 	string nextToken;
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -652,23 +652,23 @@ void FVSolver::loadFeature(istream& ifsInput, Feature* feature) {
 		} else if (nextToken == "COMPARTMENT_END") {
 			break;
 		} else if (nextToken == "BOUNDARY_CONDITIONS") {
-			char line[1000];			
+			char line[1000];
 			ifsInput.getline(line, 1000);
 			//ignore, processed in FEATURE, for display purpose only
 		} else if (nextToken == "EQUATION_BEGIN") {
 			char var_name[256];
-			ifsInput >> var_name;			
+			ifsInput >> var_name;
 			Variable* var = simulation->getVariableFromName(var_name);
-			VarContext *varContext = loadEquation(ifsInput, feature, var);		
+			VarContext *varContext = loadEquation(ifsInput, feature, var);
 			if (var->getVarType() == VAR_VOLUME) {
-				feature->addVolumeVarContext((VolumeVarContext*)varContext);	
+				feature->addVolumeVarContext((VolumeVarContext*)varContext);
 			} else {
-				feature->addVolumeRegionVarContext((VolumeRegionVarContext*)varContext);			
+				feature->addVolumeRegionVarContext((VolumeRegionVarContext*)varContext);
 			}
 		} else if (nextToken == "FAST_SYSTEM_BEGIN") {
 			int dimension, num_of_dependents;
 			ifsInput >> dimension >> num_of_dependents;
-			FastSystemExpression* fastSystem = new FastSystemExpression(dimension, num_of_dependents, simulation);	
+			FastSystemExpression* fastSystem = new FastSystemExpression(dimension, num_of_dependents, simulation);
 			loadFastSystem(ifsInput, feature, fastSystem);
 			feature->setFastSystem(fastSystem);
 		}
@@ -682,9 +682,9 @@ void FVSolver::loadMembrane(istream& ifsInput, Feature* infeature, char* var_nam
 	string btstr[6];
 	int btcount = 0;
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -702,13 +702,13 @@ void FVSolver::loadMembrane(istream& ifsInput, Feature* infeature, char* var_nam
 			//}
 		} else if (nextToken == "EQUATION_BEGIN") {
 			string var_name;
-			ifsInput >> var_name;			
+			ifsInput >> var_name;
 			Variable* var = simulation->getVariableFromName(var_name);
-			VarContext *varContext = loadEquation(ifsInput, infeature, var);		
+			VarContext *varContext = loadEquation(ifsInput, infeature, var);
 			if (var->getVarType() == VAR_MEMBRANE) {
-				infeature->addMembraneVarContext((MembraneVarContext*)varContext);	
+				infeature->addMembraneVarContext((MembraneVarContext*)varContext);
 			} else {
-				infeature->addMembraneRegionVarContext((MembraneRegionVarContext*)varContext);			
+				infeature->addMembraneRegionVarContext((MembraneRegionVarContext*)varContext);
 			}
 			/*Solver* solver = NULL;
 			for (int i = 0; i < sim->getNumSolvers(); i ++) {
@@ -726,39 +726,39 @@ void FVSolver::loadMembrane(istream& ifsInput, Feature* infeature, char* var_nam
 	}
 	//if (pdecount > 0) {
 	//	// XM
-	//	if (btstr[0] == "flux" && infeature->getXmBoundaryType() != BOUNDARY_FLUX 
+	//	if (btstr[0] == "flux" && infeature->getXmBoundaryType() != BOUNDARY_FLUX
 	//		|| btstr[0] == "value" && infeature->getXmBoundaryType() != BOUNDARY_VALUE) {
 	//			throw "Membrane XM boundary type must be consistent with the boudary type of inside compartment";
 	//	}
 
 	//	//XP
-	//	if (btstr[1] == "flux" && infeature->getXpBoundaryType() != BOUNDARY_FLUX 
+	//	if (btstr[1] == "flux" && infeature->getXpBoundaryType() != BOUNDARY_FLUX
 	//		|| btstr[1] == "value" && infeature->getXpBoundaryType() != BOUNDARY_VALUE) {
 	//			throw "Membrane XP boundary type must be consistent with the boudary type of inside compartment";
 	//	}
 
 	//	if (btcount > 2) {
 	//		//YM
-	//		if (btstr[2] == "flux" && infeature->getYmBoundaryType() != BOUNDARY_FLUX 
+	//		if (btstr[2] == "flux" && infeature->getYmBoundaryType() != BOUNDARY_FLUX
 	//			|| btstr[2] == "value" && infeature->getYmBoundaryType() != BOUNDARY_VALUE) {
 	//				throw "Membrane YM boundary type must be consistent with the boudary type of inside compartment";
 	//		}
-	//        
+	//
 	//		//YP
-	//		if (btstr[3] == "flux" && infeature->getYpBoundaryType() != BOUNDARY_FLUX 
+	//		if (btstr[3] == "flux" && infeature->getYpBoundaryType() != BOUNDARY_FLUX
 	//			|| btstr[3] == "value" && infeature->getYpBoundaryType() != BOUNDARY_VALUE) {
 	//				throw "Membrane YP boundary type must be consistent with the boudary type of inside compartment";
 	//		}
 
 	//		if (btcount > 4) {
 	//			//ZM
-	//			if (btstr[4] == "flux" && infeature->getZmBoundaryType() != BOUNDARY_FLUX 
+	//			if (btstr[4] == "flux" && infeature->getZmBoundaryType() != BOUNDARY_FLUX
 	//				|| btstr[4] == "value" && infeature->getZmBoundaryType() != BOUNDARY_VALUE) {
 	//					throw "Membrane ZM boundary type must be consistent with the boudary type of inside compartment";
 	//			}
-	//		
+	//
 	//			//ZP
-	//			if (btstr[5] == "flux" && infeature->getZpBoundaryType() != BOUNDARY_FLUX 
+	//			if (btstr[5] == "flux" && infeature->getZpBoundaryType() != BOUNDARY_FLUX
 	//				|| btstr[5] == "value" && infeature->getZpBoundaryType() != BOUNDARY_VALUE) {
 	//					throw "Membrane ZP boundary type must be consistent with the boudary type of inside compartment";
 	//			}
@@ -771,14 +771,15 @@ void FVSolver::loadMembrane(istream& ifsInput, Feature* infeature, char* var_nam
 void FVSolver::loadSimulationParameters(istream& ifsInput) {
 	string basefilename;
 	double end_time, time_step;
-	string check_steady_state = "";
+	bool check_Spatially_Uniform = false;
 	long keep_every;
 	int bStoreEnable=1;
-	string nextToken;	
+	string nextToken;
+	double spatiallyUniformAbsTol = 1e-3;
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -793,8 +794,9 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 			ifsInput >> end_time;
 		} else if (nextToken == "TIME_STEP") {
 			ifsInput >> time_step;
-		} else if (nextToken == "CHECK_STEADY_STATE") {
-			ifsInput >> check_steady_state;
+		} else if (nextToken == "CHECK_SPATIALLY_UNIFORM") {
+			check_Spatially_Uniform = true;
+			ifsInput >> spatiallyUniformAbsTol;
 		} else if (nextToken == "KEEP_EVERY") {
 			ifsInput >> keep_every;
 		} else if (nextToken == "STORE_ENABLE") {
@@ -807,7 +809,7 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 	}
 
 	if (outputPath == 0) {
-		SimTool::getInstance()->setBaseFilename((char*)basefilename.c_str());
+		simTool->setBaseFilename((char*)basefilename.c_str());
 	} else {
 		const char* baseSimName = strrchr(basefilename.c_str(), DIRECTORY_SEPARATOR);
 		if (baseSimName == NULL) {
@@ -817,14 +819,17 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 		}
 		char newBaseName[512];
 		sprintf(newBaseName, "%s%c%s", outputPath, DIRECTORY_SEPARATOR, baseSimName);
-		SimTool::getInstance()->setBaseFilename(newBaseName);
+		simTool->setBaseFilename(newBaseName);
 	}
-
+	
 	simTool->setTimeStep(time_step);
 	simTool->setEndTimeSec(end_time);
 	simTool->setKeepEvery(keep_every);
 	simTool->setStoreEnable(bStoreEnable!=0);
-	simTool->setCheckSteadyState(check_steady_state == "true");
+	if (check_Spatially_Uniform) {
+		simTool->setCheckSpatiallyUniform();
+		simTool->setSpatiallyUniformAbsErrorTolerance(spatiallyUniformAbsTol);
+	}
 	//SimTool::getInstance()->setFileCompress(false);
 }
 
@@ -837,9 +842,9 @@ void FVSolver::loadMesh(istream& ifsInput) {
 	string nextToken;
 	string vcgText = "";
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -883,7 +888,7 @@ void FVSolver::loadMesh(istream& ifsInput) {
 	} else {
 		if (vcgText.size() == 0) {
 			throw "no mesh specified";
-		}		
+		}
 		cout << "Reading mesh from text..." << endl;
 		//cout << vcgText << endl;
 		istringstream iss(vcgText);
@@ -902,9 +907,9 @@ void FVSolver::loadFieldData(istream& ifsInput) {
 	string fdVarType, fdID, fdName, fdVarName, fdFile;
 	double fdTime;
 
-	while (!ifsInput.eof()) {			
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;			
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -947,7 +952,7 @@ void FVSolver::loadParameters(istream& ifsInput) {
 	int nread = 0;
 
 	ifsInput >> numParameters;
-	while (!ifsInput.eof()) {		
+	while (!ifsInput.eof()) {
 		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
@@ -965,7 +970,7 @@ void FVSolver::loadParameters(istream& ifsInput) {
 }
 
 void FVSolver::createSimTool(istream& ifsInput, int taskID)
-{	
+{
 	SimTool::create();
 	simTool = SimTool::getInstance();
 
@@ -973,12 +978,12 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 		SimulationMessaging::create();
 	}
 	string meshfile;
-	
-	string nextToken;	
 
-	while (!ifsInput.eof()) {			
+	string nextToken;
+
+	while (!ifsInput.eof()) {
 		nextToken = "";
-		ifsInput >> nextToken;	
+		ifsInput >> nextToken;
 		if (nextToken.size() == 0) {
 			continue;
 		} else if (nextToken[0] == '#') {
@@ -1008,29 +1013,29 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 		} else if (nextToken == "FIELD_DATA_BEGIN") {
 			loadFieldData(ifsInput);
 		} else if (nextToken == "COMPARTMENT_BEGIN") {
-			string feature_name;				
+			string feature_name;
 			ifsInput >> feature_name;
 			Feature* feature = model->getFeatureFromName(feature_name);
 			if (feature != null) {
 				loadFeature(ifsInput, feature);
 			} else {
 				throw "createSimTool(), Invalid compartment when loading feature!";
-			}				
+			}
 		} else if (nextToken == "MEMBRANE_BEGIN") {
 			char var_name[256];
-			string feature1_name, feature2_name;				
+			string feature1_name, feature2_name;
 			ifsInput >> var_name >> feature1_name >> feature2_name;
 			Feature * infeature = model->getFeatureFromName(feature1_name);
 			Feature* outfeature = model->getFeatureFromName(feature2_name);
 			if (infeature != null && outfeature != null) {
 				if (infeature->getPriority() > outfeature->getPriority()) {
-					loadMembrane(ifsInput, infeature, var_name);		
+					loadMembrane(ifsInput, infeature, var_name);
 				} else {
-					loadMembrane(ifsInput, outfeature, var_name);		
+					loadMembrane(ifsInput, outfeature, var_name);
 				}
 			} else {
 				throw "createSimTool(), Invalid compartment when loading membrane!";
-			}				
+			}
 		} else {
 			stringstream ss;
 			ss << "createSimTool(), encountered unknown token " << nextToken << endl;
@@ -1045,7 +1050,7 @@ FVSolver::FVSolver(istream& fvinput, int taskID, char* outdir, bool bSimZip) {
 	model = 0;
 	mesh = 0;
 	outputPath = outdir;
-	createSimTool(fvinput, taskID);	
+	createSimTool(fvinput, taskID);
 	if (!bSimZip) {
 		SimTool::getInstance()->requestNoZip();
 	}
@@ -1080,11 +1085,11 @@ void FVSolver::step(double* paramValues)
 	simulation->update();
 }
 
-string FVSolver::getVariableName(int index){	
+string FVSolver::getVariableName(int index){
 	return simulation->getVariable(index)->getName();
 }
 
-int FVSolver::getNumVariables(){	
+int FVSolver::getNumVariables(){
 	return simulation->getNumVariables();
 }
 

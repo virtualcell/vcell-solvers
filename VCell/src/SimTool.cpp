@@ -13,7 +13,12 @@
 #include <VCELL/DataSet.h>
 #include <VCELL/SimulationMessaging.h>
 #include <VCELL/Solver.h>
+#include <VCELL/Variable.h>
+#include <VCELL/CartesianMesh.h>
+#include <VCELL/VolumeRegion.h>
+#include <VCELL/MembraneRegion.h>
 
+#include <float.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -32,6 +37,35 @@ int unzip32(char* zipfile, char* file, char* exdir);
 SimTool* SimTool::instance = 0;
 
 static int NUM_TOKENS_PER_LINE = 4;
+
+SimTool::SimTool()
+{
+	bSimZip = true;
+
+	simEndTime = 0.0;
+	bCheckSpatiallyUniform = false;
+	keepEvery = 100;
+	bStoreEnable = true;
+	baseFileName=0;
+	simFileCount=0;
+	zipFileCount = 0;
+	bSimFileCompress = false;
+	baseDirName = NULL;
+	baseSimName = NULL;
+
+	_timer = 0;
+	vcellModel = 0;
+	simulation = 0;
+
+	spatiallyUniformAbsTol = 1e-9;
+}
+
+SimTool::~SimTool()
+{
+	delete baseSimName;
+	delete baseDirName;
+	delete baseFileName;
+}
 
 void SimTool::setModel(VCellModel* model) {
 	if (model == 0) {
@@ -58,33 +92,6 @@ void SimTool::create() {
 	} else {
 		throw "SimTool (singleton) has been created";
 	}
-}
-
-SimTool::SimTool()
-{
-	bSimZip = true;
-
-	simEndTime = 0.0;
-	bCheckSteadyState = false;
-	keepEvery = 100;
-	bStoreEnable = true;
-	baseFileName=0;
-	simFileCount=0;
-	zipFileCount = 0;
-	bSimFileCompress = false;
-	baseDirName = NULL;
-	baseSimName = NULL;
-
-	_timer = 0;
-	vcellModel = 0;
-	simulation = 0;
-}
-
-SimTool::~SimTool()
-{
-	delete baseSimName;
-	delete baseDirName;
-	delete baseFileName;
 }
 
 SimTool* SimTool::getInstance() {
@@ -443,8 +450,7 @@ void SimTool::clearLog()
 	remove(logFileName);
 }
 
-void SimTool::start()
-{
+void SimTool::start() {
 	if (checkStopRequested()) {
 		return;
 	}
@@ -462,9 +468,9 @@ void SimTool::start()
 	//
     // destroy any partial results from unfinished iterations
     //
-    double startTime=simulation->getTime_sec();
-    double percentile=startTime/simEndTime;
-    double increment =0.01;
+    double startTime = simulation->getTime_sec();
+    double percentile = startTime/simEndTime;
+    double increment = 0.01;
 	double lastSentPercentile = percentile;
 	//
     // store initial log if enabled
@@ -504,7 +510,7 @@ void SimTool::start()
     //
     // iterate up to but not including end time
     //
-	if (bCheckSteadyState) {
+	if (bCheckSpatiallyUniform) {
 		increment = 0.001;
 	}
 	double epsilon = 1e-12;
@@ -526,20 +532,20 @@ void SimTool::start()
 			lastSentPercentile = percentile;
 		}
 
-		if (bCheckSteadyState) {
-			bool steady = true;
-			for (int i = 0; i < simulation->getNumSolvers(); i ++) {
-				Solver* solver = simulation->getSolver(i);
-				if (!solver->checkSteadyState()) {
-					steady = false;
+		if (bCheckSpatiallyUniform) {
+			bool uniform = true;
+			for (int i = 0; i < simulation->getNumVariables(); i ++) {
+				if (!checkSpatiallyUniform(simulation->getVariable(i))) {
+					uniform = false;
 					break;
 				}
 			}
-			if (steady) {
-				cout << endl << "!!!Steady State reached at " << simulation->getTime_sec() << endl;
+			if (uniform) {
+				cout << endl << "!!!Spatially Uniform reached at " << simulation->getTime_sec() << endl;
+				 if (simulation->getCurrIteration() % keepEvery != 0){
+					updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
+				}
 				break;
-			} else {
-				//cout << endl << "!!!Steady State not reached at " << simulation->getTime_sec() << endl;
 			}
 		}
 	}
@@ -565,4 +571,49 @@ void SimTool::start()
    }
    printf("SimTool::start(), status for MPI worker %d ending\n",rank);
 #endif
+}
+
+bool SimTool::checkSpatiallyUniform(Variable* var) {
+	double* currSol = var->getCurr();
+	CartesianMesh* mesh = (CartesianMesh*)simulation->getMesh();
+	switch (var->getVarType()) {
+		case VAR_VOLUME:
+			for (int r = 0; r < mesh->getNumVolumeRegions(); r ++) {
+				VolumeRegion* volRegion = mesh->getVolumeRegion(r);
+				int numElements = volRegion->getNumElements();
+				double minSol = DBL_MAX;
+				double maxSol = -DBL_MAX;
+				for(int j = 0; j < numElements; j ++){
+					int volIndex = volRegion->getIndex(j);
+					maxSol = max(maxSol, currSol[volIndex]);
+					minSol = min(minSol, currSol[volIndex]);
+				}
+				if (maxSol - minSol > spatiallyUniformAbsTol) {
+					return false;
+				}
+			}
+			return true;
+		case VAR_MEMBRANE:
+			for (int r = 0; r < mesh->getNumMembraneRegions(); r ++) {
+				MembraneRegion* memRegion = mesh->getMembraneRegion(r);
+				int numElements = memRegion->getNumElements();
+				double minSol = DBL_MAX;
+				double maxSol = -DBL_MAX;
+				for(int j = 0; j < numElements; j ++){
+					int memIndex = memRegion->getIndex(j);
+					maxSol = max(maxSol, currSol[memIndex]);
+					minSol = min(minSol, currSol[memIndex]);
+				}
+				if (maxSol - minSol > spatiallyUniformAbsTol) {
+					return false;
+				}
+			}
+			return true;
+		case VAR_VOLUME_REGION:
+			return true;
+		case VAR_MEMBRANE_REGION:
+			return true;
+		default:
+			return true;
+	}
 }

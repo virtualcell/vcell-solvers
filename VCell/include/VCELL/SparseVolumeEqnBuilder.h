@@ -119,10 +119,6 @@ private:
 	double computeRHS(int index, double deltaTime, double* lambdas, double bInit);
 	void preProcess();
 	bool checkPeriodicCoupledPairsInRegions(int indexm, int indexp);
-
-	double steadyStateSolution;
-	void computeSteadyStateSolution();
-	bool checkSteadyState();
 };    
 
 #endif
