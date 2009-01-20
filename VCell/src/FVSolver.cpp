@@ -40,6 +40,10 @@
 #include <string>
 using namespace std;
 
+FieldData *getPSFFieldData() {
+	throw "Point Spread Function is not supported by this solver yet";
+}
+
 void FVSolver::loadJMSInfo(istream& ifsInput, int taskID) {
 	char *broker = new char[256];
 	char *smqusername = new char[256];

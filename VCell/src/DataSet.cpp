@@ -16,6 +16,10 @@
 #include <VCELL/Element.h>
 #include <VCELL/Region.h>
 #include <VCELL/CartesianMesh.h>
+#include <VCELL/FieldData.h>
+#include <VCELL/MembraneRegion.h>
+
+FieldData* getPSFFieldData();
 
 //----------------------------------------------------------------------------
 //
@@ -276,7 +280,6 @@ void writeDoubles(FILE *fp, double *data, int length)
 #endif
 }
 
-
 void DataSet::write(char *filename, Simulation *sim, bool bCompress)
 {
 	FILE *fp=NULL;
@@ -298,12 +301,15 @@ void DataSet::write(char *filename, Simulation *sim, bool bCompress)
 
 	strcpy(fileHeader.magicString, MAGIC_STRING);
 	strcpy(fileHeader.versionString, VERSION_STRING);
-	int numBlocks = sim->getNumVariables();
-
-	if (numBlocks <= 0){
+	int numVars = sim->getNumVariables();
+	
+	if (numVars <= 0){
 		cout << "DataSet::write() - no variables defined" << endl;
 	}
    
+	FieldData* psfFieldData = getPSFFieldData();
+	int numBlocks = psfFieldData == 0 ? numVars : numVars*2;
+
 	fileHeader.sizeX = ((CartesianMesh *)sim->getMesh())->getNumVolumeX();
 	fileHeader.sizeY = ((CartesianMesh *)sim->getMesh())->getNumVolumeY();
 	fileHeader.sizeZ = ((CartesianMesh *)sim->getMesh())->getNumVolumeZ();
@@ -326,23 +332,41 @@ void DataSet::write(char *filename, Simulation *sim, bool bCompress)
 	//
 	// write data blocks (describing data)
 	//   
-	int32 dataOffset = fileHeader.firstBlockOffset + numBlocks*sizeof(DataBlock);
-	for (int i = 0; i < numBlocks; i ++) {
+	int32 dataOffset = fileHeader.firstBlockOffset + numBlocks * sizeof(DataBlock);
+	for (int i = 0; i < numVars; i ++) {
 		Variable* var = sim->getVariable(i);
 		memset(dataBlock[i].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
 		strcpy(dataBlock[i].varName, var->getName().c_str());
-	       
+		
 		dataBlock[i].varType = var->getVarType();
 		dataBlock[i].size = var->getSize();
 		dataBlock[i].dataOffset = dataOffset;
 		writeDataBlock(fp,dataBlock+i);
 		dataOffset += dataBlock[i].size*sizeof(double);
 	}
+
+	// write data blocks for _Convolved variables
+	if (psfFieldData != 0) {
+		for (int i = 0; i < numVars; i ++) {
+			Variable* var = sim->getVariable(i);			
+			string varz_name = var->getName() + "_Convolved";
+			int blockIndex = numVars + i;
+			memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
+			strcpy(dataBlock[blockIndex].varName, varz_name.c_str());
+	       
+			dataBlock[blockIndex].varType = VAR_VOLUME;
+			dataBlock[blockIndex].size = fileHeader.sizeX * fileHeader.sizeY * fileHeader.sizeZ;
+			dataBlock[blockIndex].dataOffset = dataOffset;
+			writeDataBlock(fp,dataBlock + blockIndex);
+			dataOffset += dataBlock[blockIndex].size*sizeof(double);
+		}
+	}
+	
 	   
 	//
 	// write data
 	//
-	for (int i = 0; i < numBlocks; i ++){
+	for (int i = 0; i < numVars; i ++) {
 		Variable* var = sim->getVariable(i);
 		if (!var){
 			char errmsg[512];
@@ -361,6 +385,105 @@ void DataSet::write(char *filename, Simulation *sim, bool bCompress)
 		}
 		writeDoubles(fp, var->getCurr(), var->getSize());
 	}
+	
+	//
+	// write data for _Convolved variables
+	//
+	if (psfFieldData != 0) {	
+		int varX = fileHeader.sizeX;
+		int varY = fileHeader.sizeY;
+		int varZ = fileHeader.sizeZ;
+
+		int psfX = psfFieldData->getSizeX();
+		int psfY = psfFieldData->getSizeY();
+		int psfZ = psfFieldData->getSizeZ();
+		int psfZOffset = -psfZ/2;
+		int psfYOffset = -psfY/2;
+		int psfXOffset = -psfX/2;
+
+		double* psfData = psfFieldData->getData();
+
+		int varSize = varZ * varY * varX;
+		double* values = new double[varSize];		
+
+		CartesianMesh* mesh = (CartesianMesh *)sim->getMesh(); 
+
+		for (int i = 0; i < numVars; i ++) {
+			Variable* var = sim->getVariable(i);
+			memset(values, 0, varSize * sizeof(double));
+			if (var->getVarType() == VAR_VOLUME || var->getVarType() == VAR_VOLUME_REGION) {
+				for (int z = 0; z < varZ; z ++) {
+					for (int y = 0; y < varY; y ++) {
+						for (int x = 0; x < varX; x ++) {
+							int volIndex = z * varX * varY + y * varX + x;
+							int psfindex = 0;
+							for (int zz = 0; zz < psfZ; zz ++) {						
+								for (int yy = 0; yy < psfY; yy ++) {
+									for (int xx = 0; xx < psfX; xx ++) {
+										int volIndex2X = x + psfXOffset + xx;
+										int volIndex2Y = y + psfYOffset + yy;
+										int volIndex2Z = z + psfZOffset + zz;
+										double psf_val = psfData[psfindex ++];
+
+										if (volIndex2X >= 0 && volIndex2Y >= 0 && volIndex2Z >= 0 && volIndex2X < varX && volIndex2Y < varY && volIndex2Z < varZ) {
+											int volIndex2 = volIndex2Z * varX * varY + volIndex2Y * varX + volIndex2X;											
+											if (var->getVarType() == VAR_VOLUME_REGION) {
+												values[volIndex] += var->getCurr()[mesh->getVolumeElements()[volIndex2].regionIndex] * psf_val;
+											} else {
+												values[volIndex] += var->getCurr()[volIndex2] * psf_val;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			} else if (var->getVarType() == VAR_MEMBRANE || var->getVarType() == VAR_MEMBRANE_REGION) {				
+				for (int m = 0; m < mesh->getNumMembraneElements(); m++) {
+					int insideVolIndex = mesh->getMembraneElements()[m].insideIndexNear;
+					int outsideVolIndex = mesh->getMembraneElements()[m].outsideIndexNear;
+					MeshCoord insideMC = mesh->getMeshCoord(insideVolIndex);
+					MeshCoord outsideMC = mesh->getMeshCoord(outsideVolIndex);
+					int psfindex = 0;
+					for (int zz = 0; zz < psfZ; zz ++) {								
+						for (int yy = 0; yy < psfY; yy ++) {									
+							for (int xx = 0; xx < psfX; xx ++) {
+								double psf_val = psfData[psfindex ++];
+
+								// inside
+								int volIndex2X = insideMC.x + psfXOffset + xx;
+								int volIndex2Y = insideMC.y + psfYOffset + yy;
+								int volIndex2Z = insideMC.z + psfZOffset + zz;
+								if (volIndex2X >= 0 && volIndex2Y >= 0 && volIndex2Z >= 0 && volIndex2X < varX && volIndex2Y < varY && volIndex2Z < varZ) {
+									int volIndex2 = volIndex2Z * varX * varY + volIndex2Y * varX + volIndex2X;
+									if (var->getVarType() == VAR_MEMBRANE_REGION) {
+										values[volIndex2] += var->getCurr()[mesh->getMembraneElements()[m].region->getId()] * psf_val/2;
+									} else {
+										values[volIndex2] += var->getCurr()[m] * psf_val/2;
+									}
+								}
+
+								// outside
+								volIndex2X = outsideMC.x + psfXOffset + xx;
+								volIndex2Y = outsideMC.y + psfYOffset + yy;
+								volIndex2Z = outsideMC.z + psfZOffset + zz;
+								if (volIndex2X >= 0 && volIndex2Y >= 0 && volIndex2Z >= 0 && volIndex2X < varX && volIndex2Y < varY && volIndex2Z < varZ) {
+									int volIndex2 = volIndex2Z * varX * varY + volIndex2Y * varX + volIndex2X;
+									if (var->getVarType() == VAR_MEMBRANE_REGION) {
+										values[volIndex2] += var->getCurr()[mesh->getMembraneElements()[m].region->getId()] * psf_val/2;
+									} else {
+										values[volIndex2] += var->getCurr()[m] * psf_val/2;
+									}
+								}
+							}						
+						}
+					}
+				}
+			}			
+			writeDoubles(fp, values, varSize);
+		}	
+	}
 
 	fclose(fp);
 	if (bCompress){
@@ -371,6 +494,3 @@ void DataSet::write(char *filename, Simulation *sim, bool bCompress)
 
 	delete[] dataBlock;
 }
-
-
-

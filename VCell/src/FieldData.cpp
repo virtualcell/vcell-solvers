@@ -1,5 +1,4 @@
 #include <VCELL/Variable.h>
-#include <VCELL/DataSet.h>
 #include <VCELL/FieldData.h>
 #include <string>
 #include <iostream>
@@ -24,13 +23,27 @@ FieldData::~FieldData() {
 	delete[] data;
 }
 
+int FieldData::getSizeX() {
+	getData();
+	return fileHeader.sizeX;
+}
+
+int FieldData::getSizeY() {
+	getData();
+	return fileHeader.sizeY;
+}
+
+int FieldData::getSizeZ() {
+	getData();
+	return fileHeader.sizeZ;
+}
+
 double* FieldData::getData() {
 	if (data != 0) {
 		return data;
 	}
 
 	FILE *fp=NULL;
-	FileHeader fileHeader;
 	DataBlock *dataBlock;
 
 	if ((fp=fopen(fdFile.c_str(), "rb"))==NULL){

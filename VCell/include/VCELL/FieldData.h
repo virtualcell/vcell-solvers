@@ -5,6 +5,8 @@
 #ifndef FIELDDATA_H
 #define FIELDDATA_H
 
+#include <VCELL/DataSet.h>
+
 class FieldData {
 
 private:
@@ -17,6 +19,8 @@ private:
 	string fdFile;
 	double* data;
 	
+	FileHeader fileHeader;
+
 public:
 	FieldData(int arg_fdIndex, VariableType arg_varType, string arg_fdID, string arg_fdName, string arg_fdVarName, double arg_fdTime, string arg_fdFile);
 	~FieldData();
@@ -27,6 +31,9 @@ public:
 	}
 
 	double* getData();
+	int getSizeX();
+	int getSizeY();
+	int getSizeZ();	
 };
 
 #endif
