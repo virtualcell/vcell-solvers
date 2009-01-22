@@ -41,7 +41,7 @@
 using namespace std;
 
 FieldData *getPSFFieldData() {
-	throw "Point Spread Function is not supported by this solver yet";
+	return ((SimulationExpression*)SimTool::getInstance()->getSimulation())->getPSFFieldData();
 }
 
 void FVSolver::loadJMSInfo(istream& ifsInput, int taskID) {
@@ -921,6 +921,10 @@ void FVSolver::loadFieldData(istream& ifsInput) {
 			continue;
 		} else if (nextToken == "FIELD_DATA_END") {
 			break;
+		} else if (nextToken == "PSF_FIELD_DATA_INDEX") {
+			ifsInput >> fdIndex;
+			simulation->setPSFFieldDataIndex(fdIndex);
+			continue;
 		} else {
 			fdIndex = -1;
 			stringstream ss(nextToken);

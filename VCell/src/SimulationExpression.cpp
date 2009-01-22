@@ -65,6 +65,8 @@ SimulationExpression::SimulationExpression(Mesh *mesh) : Simulation(mesh) {
 	valueProxyX = new ScalarValueProxy();
 	valueProxyY = new ScalarValueProxy();
 	valueProxyZ = new ScalarValueProxy();
+
+	psfFieldDataIndex = -1;
 }
 
 SimulationExpression::~SimulationExpression() 

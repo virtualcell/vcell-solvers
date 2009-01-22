@@ -45,6 +45,17 @@ public:
 
 	void addParameter(string& param);
 	void setParameterValues(double* paramValues);
+	void setPSFFieldDataIndex(int idx) {
+		psfFieldDataIndex = idx;
+	}
+
+	FieldData* getPSFFieldData() {
+		if (psfFieldDataIndex >= 0) {
+			return fieldDataList[psfFieldDataIndex];
+		}
+
+		return 0;
+	}
 
 protected:
 	SimpleSymbolTable* oldSymbolTable;
@@ -60,6 +71,8 @@ protected:
 
 	vector<string> paramList;
 	vector<ScalarValueProxy*> paramValueProxies;
+
+	int psfFieldDataIndex;
 };
 
 #endif
