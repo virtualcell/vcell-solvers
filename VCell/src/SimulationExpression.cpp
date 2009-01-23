@@ -4,8 +4,12 @@
  */
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/SimTypes.h>
+#include <VCELL/SimTool.h>
 #include <VCELL/FieldData.h>
-#include <VCELL/Variable.h>
+#include <VCELL/VolumeVariable.h>
+#include <VCELL/MembraneVariable.h>
+#include <VCELL/VolumeRegionVariable.h>
+#include <VCELL/MembraneRegionVariable.h>
 #include <VCELL/Element.h>
 #include <VCELL/Mesh.h>
 #include <ValueProxy.h>
@@ -59,12 +63,16 @@ SimulationExpression::SimulationExpression(Mesh *mesh) : Simulation(mesh) {
 	indices = new int[NUM_VAR_INDEX];
 	for (int i = 0; i < NUM_VAR_INDEX; i ++) {
 		indices[i] = -1;
-	}	
+	}
 
-	valueProxyTime = new ScalarValueProxy();
-	valueProxyX = new ScalarValueProxy();
-	valueProxyY = new ScalarValueProxy();
-	valueProxyZ = new ScalarValueProxy();
+	valueProxyTime = 0;
+	valueProxyX = 0;
+	valueProxyY = 0;
+	valueProxyZ = 0;
+
+	numMemPde = 0;
+	numVolPde = 0;
+	bHasTimeDependentDiffusionAdvection = false;
 
 	psfFieldDataIndex = -1;
 }
@@ -78,6 +86,40 @@ SimulationExpression::~SimulationExpression()
 	for (int i = 0; i < (int)paramValueProxies.size(); i ++) {
 		delete paramValueProxies[i];
 	}
+	for (int i = 0; i < (int)volVariableRegionMap.size(); i ++) {
+		delete[] volVariableRegionMap[i];
+	}
+	volVariableRegionMap.clear();
+}
+
+void SimulationExpression::addVariable(Variable *var, bool* bSolveRegions)
+{
+	Simulation::addVariable(var);
+	switch (var->getVarType()) {
+	case VAR_VOLUME:
+		volVarList.push_back((VolumeVariable*)var);
+		volVariableRegionMap.push_back(bSolveRegions); // index in here is the same as volVarList;
+		if (var->isPde()) {
+			numVolPde ++;
+		}
+		break;
+	case VAR_MEMBRANE:
+		memVarList.push_back((MembraneVariable*)var);
+		if (var->isPde()) {
+			numMemPde ++;
+		}
+		break;
+	case VAR_VOLUME_REGION:
+		volRegionVarList.push_back((VolumeRegionVariable*)var);
+		break;
+	case VAR_MEMBRANE_REGION:
+		memRegionVarList.push_back((MembraneRegionVariable*)var);
+		break;
+	default:
+		stringstream ss;
+		ss << "Variable type " << var->getVarType() << " is not supported yet";
+		throw ss.str();
+	}	
 }
 
 void SimulationExpression::advanceTimeOn() {
@@ -106,12 +148,18 @@ void SimulationExpression::createSymbolTable() {
 	}
 
 	int numVariables = (int)varList.size();
-	int numVolVar = getNumVolumeVariables();
+	int numVolVar = (int)volVarList.size();
+	bool bSundialsPdeSolver = SimTool::getInstance()->isSundialsPdeSolver();
 
 	// t, x, y, z, VAR, VAR_INSIDE, VAR_OUTSIDE, field data, parameters
 	int numSymbols = 4 + numVolVar * 3 + (numVariables - numVolVar) + (int)fieldDataList.size() + (int)paramList.size();
 	string* variableNames = new string[numSymbols];	
 	ValueProxy** oldValueProxies = new ValueProxy*[numSymbols];
+
+	valueProxyTime = new ScalarValueProxy();
+	valueProxyX = new ScalarValueProxy();
+	valueProxyY = new ScalarValueProxy();
+	valueProxyZ = new ScalarValueProxy();
 
 	variableNames[0] = "t";
 	oldValueProxies[0] = valueProxyTime;
@@ -127,50 +175,51 @@ void SimulationExpression::createSymbolTable() {
 
 	int variableIndex = 4;
 
-	for (int i = 0; i < (int)varList.size(); i ++) {
-		Variable* var = varList[i];
-		if (var->getVarType() == VAR_VOLUME) {
-			oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_VOLUME_INDEX, indices);
-			//currValueProxies[variableIndex] = new ValueProxy(var->getCurr(), VAR_VOLUME_INDEX, indices);
-			variableNames[variableIndex ++] = string(var->getName());
+	// Volume PDE/ODE
+	for (int i = 0; i < (int)volVarList.size(); i ++) {
+		Variable* var = volVarList[i];
+		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_VOLUME_INDEX, indices);
+		variableNames[variableIndex ++] = string(var->getName());
 
-			oldValueProxies[variableIndex] = new ValueProxyInside(var->getOld(), indices, _mesh);
-			//currValueProxies[variableIndex] = new ValueProxyInside(var->getCurr(), indices, _mesh);
-			variableNames[variableIndex ++] = string(var->getName()) + "_INSIDE";
+		oldValueProxies[variableIndex] = new ValueProxyInside(var->getOld(), indices, _mesh);
+		variableNames[variableIndex ++] = string(var->getName()) + "_INSIDE";
 
-			oldValueProxies[variableIndex] = new ValueProxyOutside(var->getOld(), indices, _mesh);
-			//currValueProxies[variableIndex] = new ValueProxyOutside(var->getCurr(), indices, _mesh);
-			variableNames[variableIndex ++] = string(var->getName()) + "_OUTSIDE";	
+		oldValueProxies[variableIndex] = new ValueProxyOutside(var->getOld(), indices, _mesh);
+		variableNames[variableIndex ++] = string(var->getName()) + "_OUTSIDE";	
+	}
 
-		} else if (var->getVarType() == VAR_MEMBRANE) {
-			oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_MEMBRANE_INDEX, indices);
-			//currValueProxies[variableIndex] = new ValueProxy(var->getCurr(), VAR_MEMBRANE_INDEX, indices);
-			variableNames[variableIndex ++] = string(var->getName());
+	// Membrane ODE/PDE
+	for (int i = 0; i < (int)memVarList.size(); i ++) {
+		Variable* var = memVarList[i];
+		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_MEMBRANE_INDEX, indices);
+		variableNames[variableIndex ++] = string(var->getName());
+	}
+		
+	// Volume Region
+	for (int i = 0; i < (int)volRegionVarList.size(); i ++) {
+		Variable* var = volRegionVarList[i];
+		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_VOLUME_REGION_INDEX, indices);
+		variableNames[variableIndex ++] = string(var->getName());
+	} 		
+		
+	// Membrane Region
+	for (int i = 0; i < (int)memRegionVarList.size(); i ++) {
+		Variable* var = memRegionVarList[i];
+		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_MEMBRANE_REGION_INDEX, indices);
+		variableNames[variableIndex ++] = string(var->getName());
+	} 
+		
+		//} else if (var->getVarType() == VAR_CONTOUR) {
+		//	oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_CONTOUR_INDEX, indices);
+		//	variableNames[variableIndex ++] = string(var->getName());
 
-		} else if (var->getVarType() == VAR_CONTOUR) {
-			oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_CONTOUR_INDEX, indices);
-			//currValueProxies[variableIndex] = new ValueProxy(var->getCurr(), VAR_CONTOUR_INDEX, indices);
-			variableNames[variableIndex ++] = string(var->getName());
-
-		} else if (var->getVarType() == VAR_VOLUME_REGION) {
-			oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_VOLUME_REGION_INDEX, indices);
-			//currValueProxies[variableIndex] = new ValueProxy(var->getCurr(), VAR_VOLUME_REGION_INDEX, indices);
-			variableNames[variableIndex ++] = string(var->getName());
-
-		} else if (var->getVarType() == VAR_MEMBRANE_REGION) {			
-			oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_MEMBRANE_REGION_INDEX, indices);
-			//currValueProxies[variableIndex] = new ValueProxy(var->getCurr(), VAR_MEMBRANE_REGION_INDEX, indices);
-			variableNames[variableIndex ++] = string(var->getName());
-
-		} else if (var->getVarType() == VAR_CONTOUR_REGION) {
-			oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_CONTOUR_REGION_INDEX, indices);
-			//currValueProxies[variableIndex] = new ValueProxy(var->getCurr(), VAR_CONTOUR_REGION_INDEX, indices);
-			variableNames[variableIndex ++] = string(var->getName());
-		}
-	}	
+		//} else if (var->getVarType() == VAR_CONTOUR_REGION) {
+		//	oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_CONTOUR_REGION_INDEX, indices);
+		//	variableNames[variableIndex ++] = string(var->getName());
+		//}		
 
 	// add field data
-	for (int i = 0; i < (int)fieldDataList.size(); i ++) {		
+	for (int i = 0; i < (int)fieldDataList.size(); i ++) {
 		if (fieldDataList[i]->getVariableType() == VAR_VOLUME) {
 			oldValueProxies[variableIndex] = new ValueProxy(fieldDataList[i]->getData(), VAR_VOLUME_INDEX, indices);
 		} else if (fieldDataList[i]->getVariableType() == VAR_MEMBRANE) {

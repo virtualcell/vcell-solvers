@@ -38,6 +38,10 @@ public:
 	int getColumns(long i, int32*& columns, double*& values);
 	void clear();
 
+	void scaleOffDiagonals(double gamma);
+	// compute 1 + gamma*(diag-1);
+	void shiftDiagonals(double gamma);
+
 private:
     long N;
 	long numNonZeros;

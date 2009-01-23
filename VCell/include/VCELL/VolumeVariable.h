@@ -10,7 +10,7 @@
 class VolumeVariable : public Variable
 {
 public:
-	VolumeVariable(long sizeX, long sizeY, long sizeZ, string& name, string& units);
+	VolumeVariable(long sizeX, long sizeY, long sizeZ, string& name, string& units, bool diff=true, bool advect=false);
 
 	virtual bool isVolumeVar() { return true; }
 	virtual VariableType	getVarType() {return VAR_VOLUME;}
@@ -20,17 +20,14 @@ public:
 	long getSizeX() { return sizeX;} 
 	long getSizeY() { return sizeY;} 
 	long getSizeZ() { return sizeZ;} 
-	bool getLineX(int y, int z, double *vect, int length); 
-	bool getLineY(int x, int z, double *vect, int length); 
-	bool getLineZ(int x, int y, double *vect, int length); 
-	bool setLineX(int y, int z, double *vect, int length); 
-	bool setLineY(int x, int z, double *vect, int length); 
-	bool setLineZ(int x, int y, double *vect, int length); 
+	bool isAdvecting() { return bAdvecting; }
 
 protected:
 	long    sizeX;
 	long    sizeY;
 	long    sizeZ;
+	
+	bool bAdvecting;
 };
 
 #endif

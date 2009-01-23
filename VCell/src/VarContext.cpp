@@ -126,9 +126,7 @@ double VarContext::getExpressionValue(MembraneElement* element, long expIndex)
 	return expressions[expIndex]->evaluateProxy();	
 }
 
-double VarContext::getExpressionConstantValue(long expIndex)
-{	
-	// for periodic boundary condition
+double VarContext::getExpressionConstantValue(long expIndex) {
 	if (expressions[expIndex] == 0 || constantValues[expIndex] == 0) { // not defined
 		throw "VarContext::getExpressionConstantValue() : expression not defined OR not a constant expression";
 	}
@@ -150,4 +148,15 @@ double VarContext::getExpressionValue(long volIndex, long expIndex) {
 	indices[VAR_VOLUME_INDEX] = volIndex;
 	indices[VAR_VOLUME_REGION_INDEX] = mesh->getVolumeElements()[volIndex].region->getId();
 	return expressions[expIndex]->evaluateProxy();	
+}
+
+
+double VarContext::evalExpression(long expIndex, double* values) {	
+	if (expressions[expIndex] == 0) { // not defined
+		throw "VarContext::evalExpression(), expression not defined";
+	}
+	if (constantValues[expIndex] != NULL) {
+		return constantValues[expIndex][0];
+	}
+	return expressions[expIndex]->evaluateVector(values);	
 }

@@ -1,4 +1,5 @@
 #include <VCELL/SparseMatrixPCG.h>
+#include <VCELL/FVUtils.h>
 
 /*----------------------------------------------------------------------------
 	SparseMatrixPCG contains all the diagonal elements and all the non-zero off diagonal elements
@@ -120,6 +121,7 @@ void SparseMatrixPCG::setValue(long i, long j, double value) {
 	}
 	if (i == j) {
 		sa[i] = value;
+		return;
 	}
 	if (ija[i] >= numNonZeros + 1) {
 		ASSERTION(0);
@@ -170,8 +172,12 @@ void SparseMatrixPCG::setCol(long col, double value) {
 void SparseMatrixPCG::setRow(double diag, int numCols, int* cols, double* values) {
 	sa[currentRow] = diag;
 	if (numCols > 0) {
-		memcpy(ija + currentIndex + 1, cols, numCols * sizeof(int32));
-		memcpy(sa + currentIndex + 1, values, numCols * sizeof(double));
+		if (cols != 0) {
+			memcpy(ija + currentIndex + 1, cols, numCols * sizeof(int32));
+		}
+		if (values != 0) {
+			memcpy(sa + currentIndex + 1, values, numCols * sizeof(double));
+		}
 		currentIndex += numCols;
 		currentCol = cols[numCols - 1];
 	}
@@ -205,4 +211,16 @@ int SparseMatrixPCG::getColumns(long i, int32*& columns, double*& values) {
 	columns = ija + ija[i];
 	values = sa + ija[i];
 	return ija[i+1] - ija[i];
+}
+
+void SparseMatrixPCG::scaleOffDiagonals(double gamma) {
+	int size = ija[N] - ija[0];
+	int incr = 1;
+	dscal(&size, &gamma, sa + ija[0],  &incr);
+}
+
+void SparseMatrixPCG::shiftDiagonals(double gamma){
+	for (int i = 0; i < N; i ++) {
+		sa[i] = 1 + gamma * (sa[i] - 1);
+	}
 }

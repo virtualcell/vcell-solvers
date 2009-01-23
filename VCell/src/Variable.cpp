@@ -9,7 +9,7 @@ using namespace std;
 #include <VCELL/Variable.h>
 #include <VCELL/FVUtils.h>
 
-Variable::Variable(long Asize, string& nameStr, string& Aunits)
+Variable::Variable(long Asize, string& nameStr, string& Aunits, bool pde)
 {
 	size = Asize;
 	ASSERTION(size);
@@ -17,6 +17,7 @@ Variable::Variable(long Asize, string& nameStr, string& Aunits)
 	curr = new double[size];
 	units = Aunits;
 	name = nameStr;
+	bPde = pde;
 	clear();
 }
 

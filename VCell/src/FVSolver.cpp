@@ -249,27 +249,37 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
 			int *solveRegions = NULL;
 
+			bool* vrmap = new bool[numVolumeRegions];
+			for (int i = 0; i < numVolumeRegions; i ++) {
+				vrmap[i] = true;
+			} // by default, solve everywhere
+
 			if (solve_whole_mesh_flag == "false") {
 				string line;
 				getline(ifsInput, line);
 				trimString(line);
 
+				memset(vrmap, 0, numVolumeRegions * sizeof(bool)); // if not solve everywhere;
 				if (line.length() == 0) {
 					bSolveVariable = false;
 				} else {
 					solveRegions = new int[numVolumeRegions];
 					numSolveRegions = loadSolveRegions(mesh, line, solveRegions);
+					for (int r = 0; r < numSolveRegions; r ++) {
+						vrmap[solveRegions[r]] = true;
+					}
 				}
 			}
 
-			VolumeVariable* volumeVar = new VolumeVariable(sizeX, sizeY, sizeZ, variable_name, unit);
-			if (bSolveVariable) {
-				if (advectionflag == "true" ) {
-					bNoConvection = false;
-				}
-				if (time_dependent_diffusion_flag == "true") {
-					bTimeDependent = true;
-				}
+			if (time_dependent_diffusion_flag == "true") {
+				bTimeDependent = true;
+				simulation->setHasTimeDependentDiffusionAdvection();
+			}
+			if (advectionflag == "true" ) {
+				bNoConvection = false;
+			}
+			VolumeVariable* volumeVar = new VolumeVariable(sizeX, sizeY, sizeZ, variable_name, unit, true, !bNoConvection);
+			if (bSolveVariable && !simTool->isSundialsPdeSolver()) {
 				SparseMatrixEqnBuilder* builder = 0;
 				if (bSteady) {
 					builder = new EllipticVolumeEqnBuilder(volumeVar,mesh, numSolveRegions, solveRegions);
@@ -279,7 +289,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				PDESolver* pdeSolver = new SparseLinearSolver(volumeVar,builder,bTimeDependent);
 				simulation->addSolver(pdeSolver);
 			}
-			simulation->addVariable(volumeVar);
+			simulation->addVariable(volumeVar, vrmap);
 		} else if (nextToken == "VOLUME_ODE") {
 			string solve_whole_mesh_flag;
 			ifsInput >> variable_name >> unit >> solve_whole_mesh_flag;
@@ -287,37 +297,48 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
 			int *solveRegions = NULL;
 
+			bool* vrmap = new bool[numVolumeRegions];
+			for (int i = 0; i < numVolumeRegions; i ++) {
+				vrmap[i] = true;
+			} // by default, solve everywhere
+
 			bool bSolveVariable = true;
 			if (solve_whole_mesh_flag == "false") {
 				string line;
 				getline(ifsInput, line);
 				trimString(line);
 
+				memset(vrmap, 0, numVolumeRegions * sizeof(bool)); // if not solve everywhere;
 				if (line.length() == 0) {
 					bSolveVariable = false;
 				} else {
 					solveRegions = new int[numVolumeRegions];
 					numSolveRegions = loadSolveRegions(mesh, line, solveRegions);
+					for (int r = 0; r < numSolveRegions; r ++) {
+						vrmap[solveRegions[r]] = true;
+					}
 				}
 			}
 
-			VolumeVariable* volumeVar = new VolumeVariable(sizeX, sizeY, sizeZ, variable_name, unit);
-			if (bSolveVariable) {
+			VolumeVariable* volumeVar = new VolumeVariable(sizeX, sizeY, sizeZ, variable_name, unit, false);
+			if (bSolveVariable && !simTool->isSundialsPdeSolver()) {
 				ODESolver* odeSolver = new ODESolver(volumeVar,mesh,numSolveRegions,solveRegions);
 				EqnBuilder* builder = new EqnBuilderReactionForward(volumeVar,mesh,odeSolver);
 				odeSolver->setEqnBuilder(builder);
 				simulation->addSolver(odeSolver);
 			}
-			simulation->addVariable(volumeVar);
+			simulation->addVariable(volumeVar, vrmap);
 		} else if (nextToken == "MEMBRANE_ODE") {
 			ifsInput >> variable_name >> unit;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
 			int *solveRegions = NULL;
-			MembraneVariable* membraneVar = new MembraneVariable(mesh->getNumMembraneElements(), variable_name, unit);
-			ODESolver* odeSolver = new ODESolver(membraneVar,mesh,numSolveRegions,solveRegions);
-			EqnBuilder* builder = new MembraneEqnBuilderForward(membraneVar,mesh,odeSolver);
-			odeSolver->setEqnBuilder(builder);
-			simulation->addSolver(odeSolver);
+			MembraneVariable* membraneVar = new MembraneVariable(mesh->getNumMembraneElements(), variable_name, unit, false);
+			if (!simTool->isSundialsPdeSolver()) {
+				ODESolver* odeSolver = new ODESolver(membraneVar,mesh,numSolveRegions,solveRegions);
+				EqnBuilder* builder = new MembraneEqnBuilderForward(membraneVar,mesh,odeSolver);
+				odeSolver->setEqnBuilder(builder);
+				simulation->addSolver(odeSolver);
+			}
 			simulation->addVariable(membraneVar);
 		} else if (nextToken == "MEMBRANE_PDE") {
 			bool bNoConvection = true;    // define symmflg = 0 (general) or 1 (symmetric)
@@ -326,31 +347,38 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			ifsInput >> variable_name >> unit >> time_dependent_diffusion_flag;
 			if (time_dependent_diffusion_flag == "true") {
 				bTimeDependent = true;
+				simulation->setHasTimeDependentDiffusionAdvection();
 			}
-			MembraneVariable* membraneVar = new MembraneVariable(mesh->getNumMembraneElements(), variable_name, unit);
-			SparseMatrixEqnBuilder* smbuilder = new MembraneEqnBuilderDiffusion(membraneVar,mesh);
-			SparseLinearSolver* slSolver = new SparseLinearSolver(membraneVar,smbuilder,bTimeDependent);
-			simulation->addSolver(slSolver);
+			MembraneVariable* membraneVar = new MembraneVariable(mesh->getNumMembraneElements(), variable_name, unit, true);
+			if (!simTool->isSundialsPdeSolver()) {
+				SparseMatrixEqnBuilder* smbuilder = new MembraneEqnBuilderDiffusion(membraneVar,mesh);
+				SparseLinearSolver* slSolver = new SparseLinearSolver(membraneVar,smbuilder,bTimeDependent);
+				simulation->addSolver(slSolver);
+			}
 			simulation->addVariable(membraneVar);
 		} else if (nextToken == "VOLUME_REGION") {
 			ifsInput >> variable_name >> unit;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
 			int *solveRegions = NULL;
 			VolumeRegionVariable* volumeRegionVar = new VolumeRegionVariable(mesh->getNumVolumeRegions(), variable_name, unit);
-			ODESolver* odeSolver = new ODESolver(volumeRegionVar,mesh,numSolveRegions,solveRegions);
-			EqnBuilder* builder = new VolumeRegionEqnBuilder(volumeRegionVar,mesh,odeSolver);
-			odeSolver->setEqnBuilder(builder);
-			simulation->addSolver(odeSolver);
+			if (!simTool->isSundialsPdeSolver()) {
+				ODESolver* odeSolver = new ODESolver(volumeRegionVar,mesh,numSolveRegions,solveRegions);
+				EqnBuilder* builder = new VolumeRegionEqnBuilder(volumeRegionVar,mesh,odeSolver);
+				odeSolver->setEqnBuilder(builder);
+				simulation->addSolver(odeSolver);
+			}
 			simulation->addVariable(volumeRegionVar);
 		} else if (nextToken == "MEMBRANE_REGION") {
 			ifsInput >> variable_name >> unit;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
 			int *solveRegions = NULL;
 			MembraneRegionVariable* memRegionVariable = new MembraneRegionVariable(mesh->getNumMembraneRegions(), variable_name, unit);
-			ODESolver* odeSolver = new ODESolver(memRegionVariable,mesh,numSolveRegions,solveRegions);
-			EqnBuilder* builder = new MembraneRegionEqnBuilder(memRegionVariable,mesh,odeSolver);
-			odeSolver->setEqnBuilder(builder);
-			simulation->addSolver(odeSolver);
+			if (!simTool->isSundialsPdeSolver()) {
+				ODESolver* odeSolver = new ODESolver(memRegionVariable,mesh,numSolveRegions,solveRegions);
+				EqnBuilder* builder = new MembraneRegionEqnBuilder(memRegionVariable,mesh,odeSolver);
+				odeSolver->setEqnBuilder(builder);
+				simulation->addSolver(odeSolver);
+			}
 			simulation->addVariable(memRegionVariable);
 		}
 	}
@@ -773,12 +801,16 @@ void FVSolver::loadMembrane(istream& ifsInput, Feature* infeature, char* var_nam
 }
 
 void FVSolver::loadSimulationParameters(istream& ifsInput) {
-	string basefilename;
+	string basefilename, solver="";
 	double end_time, time_step;
 	bool check_Spatially_Uniform = false;
 	long keep_every;
 	int bStoreEnable=1;
 	string nextToken;
+	double* discontinuityTimes = 0;
+	int numDisTimes = 0;
+	double sundialsRelTol = 1e-7;
+	double sundialsAbsTol = 1e-9;
 	double spatiallyUniformAbsTol = 1e-3;
 
 	while (!ifsInput.eof()) {
@@ -791,6 +823,24 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 			continue;
 		} else if (nextToken == "SIMULATION_PARAM_END") {
 			break;
+		} else if (nextToken == "SOLVER") {
+			ifsInput >> solver;
+			getline(ifsInput, nextToken);
+			trimString(nextToken);
+			if (nextToken.length() > 0) {
+				stringstream ss(nextToken);
+				ss >> sundialsRelTol >> sundialsAbsTol;
+			}
+		} else if (nextToken == "DISCONTINUITY_TIMES") {
+			ifsInput >> numDisTimes;
+			if (numDisTimes == 0) {
+				getline(ifsInput, nextToken);
+			} else {
+				discontinuityTimes = new double[numDisTimes];
+				for (int i = 0; i < numDisTimes; i ++) {
+					ifsInput >> discontinuityTimes[i];
+				}
+			}
 		} else if (nextToken == "BASE_FILE_NAME") {
 			getline(ifsInput, basefilename);
 			trimString(basefilename);
@@ -826,6 +876,14 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 		simTool->setBaseFilename(newBaseName);
 	}
 	
+	if (solver.length() > 0) {
+		simTool->setSolver(solver);
+	}
+	if (numDisTimes > 0) {
+		simTool->setDiscontinuityTimes(numDisTimes, discontinuityTimes);		
+	} 	
+	
+	simTool->setSundialsErrorTolerances(sundialsRelTol, sundialsAbsTol);
 	simTool->setTimeStep(time_step);
 	simTool->setEndTimeSec(end_time);
 	simTool->setKeepEvery(keep_every);

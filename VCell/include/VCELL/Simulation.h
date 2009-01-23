@@ -78,7 +78,6 @@ public:
 	int getNumSolvers() {
 		return (int)solverList.size();
 	}
-	int getNumVolumeVariables();
 	void addVariable(Variable *var);
 	void addSolver(Solver *solver);
 
@@ -93,6 +92,7 @@ protected:
 	Mesh            *_mesh;
 	bool          _advanced;
 	bool          _initEquations;
+
 #ifdef VCELL_MPI
 	int mpiRank;
 	int mpiSize;

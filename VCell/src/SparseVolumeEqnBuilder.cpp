@@ -10,6 +10,7 @@
 using namespace std;
 
 #include <VCELL/SparseVolumeEqnBuilder.h>
+#include <VCELL/VolumeNeighbor.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/Solver.h>
 #include <VCELL/VolumeVariable.h>
@@ -860,4 +861,3 @@ void SparseVolumeEqnBuilder::postProcess() {
 		currSol[pcp->neighborIndex] = currSol[pcp->centerIndex] + pcp->coeff;
 	}
 }
-

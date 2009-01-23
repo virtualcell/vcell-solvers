@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
+				AdditionalIncludeDirectories="..\sundials\src\;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -454,6 +454,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\SundialsPdeScheduler.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\Timer.cpp"
 				>
 			</File>
@@ -725,6 +729,10 @@
 			</File>
 			<File
 				RelativePath=".\include\Vcell\StructuredPDESolver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\VCELL\SundialsPdeScheduler.h"
 				>
 			</File>
 			<File

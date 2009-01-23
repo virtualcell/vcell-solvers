@@ -38,6 +38,9 @@ public:
     virtual double getConvectionVelocity_Y(long index) {return convectionVelocity.y;}
     virtual double getConvectionVelocity_Z(long index) {return convectionVelocity.z;}
     
+	virtual bool hasConstantDiffusion() {
+		return diffusionRate!=0;
+	}
 protected:
     VolumeVarContext(Feature *feature, string& speciesName);
 

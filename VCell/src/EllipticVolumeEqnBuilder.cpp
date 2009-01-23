@@ -10,7 +10,7 @@
 using namespace std;
 
 #include <VCELL/EllipticVolumeEqnBuilder.h>
-#include <VCELL/SparseVolumeEqnBuilder.h>
+#include <VCELL/VolumeNeighbor.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/Solver.h>
 #include <VCELL/VolumeVariable.h>

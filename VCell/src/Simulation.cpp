@@ -17,6 +17,7 @@
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/FVUtils.h>
 #include <VCELL/SerialScheduler.h>
+#include <VCELL/SundialsPdeScheduler.h>
 #ifdef VCELL_MPI     
 #include <VCELL/DomainPDEScheduler.h>
 #include "mpi.h"
@@ -44,6 +45,14 @@ Simulation::Simulation(Mesh *mesh)
 
 Simulation::~Simulation() 
 {
+	for (int i = 0; i < (int)varList.size(); i ++) {
+		delete varList[i];
+	}
+	varList.clear();
+	for (int i = 0; i < (int)solverList.size(); i ++) {
+		delete solverList[i];
+	}
+	solverList.clear();
 	delete _scheduler;
 }
 
@@ -121,17 +130,6 @@ Variable* Simulation::getVariable(int index) {
 	}
 	return varList.at(index);
 }
-
-int Simulation::getNumVolumeVariables() {
-	int numVolVar = 0;
-	for (int i = 0; i < (int)varList.size(); i ++) {
-		if (varList[i]->getVarType() == VAR_VOLUME) {
-			numVolVar ++;
-		}
-	}
-	return numVolVar;
-}
-
 
 Variable *Simulation::getVariableFromName(string& varName)
 {
@@ -258,15 +256,13 @@ void Simulation::initSimulation()
 	if (_scheduler != NULL){
 		return;
 	}
-	int odeCount=0;
-	int pdeCount=0;
-	Solver *solver = NULL;
-	for (int i = 0; i < (int)solverList.size(); i ++) {
-		solver = solverList[i];
-		if (solver->isPDESolver()){
-			pdeCount++;
+	int odeCount = 0, pdeCount = 0;
+	for (int i = 0; i < (int)varList.size(); i ++) {
+		Variable* var = varList[i];
+		if (var->isPde()){
+			pdeCount ++;
 		} else {
-			odeCount++;
+			odeCount ++;
 		}
 	}
 
@@ -292,7 +288,11 @@ void Simulation::initSimulation()
 		}
 #else
 	printf("pdeCount=%d, odeCount=%d\n", pdeCount, odeCount);
-	_scheduler = new SerialScheduler(this);
+	if (SimTool::getInstance()->isSundialsPdeSolver()) {
+		_scheduler = new SundialsPdeScheduler(this, SimTool::getInstance()->getSundialsRelativeTolerance(), SimTool::getInstance()->getSundialsAbsoluteTolerance(),SimTool::getInstance()->getNumDiscontinuityTimes(), SimTool::getInstance()->getDiscontinuityTimes());
+	} else {
+		_scheduler = new SerialScheduler(this);
+	}
 #endif	
 
 	VCellModel *model = SimTool::getInstance()->getModel();

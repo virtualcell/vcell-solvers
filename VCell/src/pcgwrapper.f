@@ -43,7 +43,7 @@ C	1 symmetric, upper triangle- 0 general
 C    sorted index flag: 1 if in ascending order
       IPARM(22) = 0
 C    SET MAXIMUM NUMBER OF ITERATIONS
-      IPARM(5) = 3000
+C      IPARM(5) = 3000
       
       IPARM(34) = 0
 C    absolute residual for stopping test when IPARM(34) = 1
@@ -69,7 +69,7 @@ C    SET EPS2 (stagnation parm)
         RPARM(4) = RPARM(3)*0.001
 C
 c     fill-in parameter (preconditioner quality, usually 0 or 1)
-        IPARM(15) = 1
+C        IPARM(15) = 1
 C        write(6,*) 'fill-in parameter=',IPARM(15)
         if (IPARM(37) .eq. 1) then
            WRITE (6,995)

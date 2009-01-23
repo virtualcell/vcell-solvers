@@ -51,6 +51,11 @@ public:
 
 	void setExpression(Expression* newexp, int expIndex);
 	void bindAll(SymbolTable* symbolTable);
+	virtual bool hasConstantDiffusion() {
+		return (constantValues != 0 && constantValues[DIFF_RATE_EXP] != 0);
+	}
+	double evalExpression(long expIndex, double* values);
+	double getExpressionConstantValue(long expIndex);
 
 protected:
     VarContext(Feature *feature, string& speciesName);
@@ -69,9 +74,9 @@ protected:
 	bool* needsXYZ;
 
 	double getExpressionValue(long volIndex, long expIndex);
-	double getExpressionConstantValue(long expIndex);
 	double getExpressionValue(MembraneElement* element, long expIndex);
 	virtual bool isNullExpressionOK(int expIndex) { return false; }
+	Expression* getExpression(int expIndex)  { return expressions[expIndex]; }	
 
 private:
     friend class Feature;

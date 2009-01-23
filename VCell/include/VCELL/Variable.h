@@ -16,7 +16,7 @@ using namespace std;
 class Variable 
 {
 protected:
-	Variable(long size, string& name, string& units);
+	Variable(long size, string& name, string& units, bool bPde=false);
 
 public:
 	virtual ~Variable();
@@ -48,6 +48,8 @@ public:
 	void     update();
 	void     revert();
 	void     clear();
+
+	bool isPde() { return bPde; }
    
 protected:
 	string name;
@@ -56,6 +58,8 @@ protected:
 	long    size;
 	double *old;
 	double *curr;
+
+	bool bPde;
 };
 
 #endif

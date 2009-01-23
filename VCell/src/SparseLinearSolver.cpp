@@ -146,6 +146,8 @@ int* SparseLinearSolver::PCGSolve(bool bRecomputeIncompleteFactorization)
 	} else {
 		IParm[13] = 1; // reuse all incomplete factorization.
 	}
+	IParm[4] = 3000; // max number of iteration
+	IParm[14] = 1; // fill-in parameter
 
 	// SET ALPHA and OMEGA
 	if (eqnBuilder->isElliptic()) {		

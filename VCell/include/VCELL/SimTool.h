@@ -42,6 +42,8 @@ public:
 	}
 	bool isCheckingSpatiallyUniform() { return bCheckSpatiallyUniform; }
 	void setEndTimeSec(double timeSec) { simEndTime = timeSec; }
+	double getEndTime() { return simEndTime; }
+
 	void setKeepEvery(int ke) { keepEvery = ke; }
 	void setBaseFilename(char *fname);
 	void setStoreEnable(bool enable) {
@@ -60,6 +62,24 @@ public:
 	void        stopTimer(TimerHandle hnd);
 	double      getElapsedTimeSec(TimerHandle hnd);
 	virtual void showSummary(FILE *fp);
+
+	void setSolver(string& s);
+	bool isSundialsPdeSolver();
+
+	void setDiscontinuityTimes(int num, double* times) {
+		numDiscontinuityTimes = num;
+		discontinuityTimes = times;
+	}
+	int getNumDiscontinuityTimes() { return numDiscontinuityTimes; }
+	double* getDiscontinuityTimes() { return discontinuityTimes; }
+	
+	void setSundialsErrorTolerances(double rtol, double atol) {
+		sundialsRelTol = rtol;
+		sundialsAbsTol = atol;
+	}
+
+	double getSundialsRelativeTolerance() { return sundialsRelTol; }
+	double getSundialsAbsoluteTolerance() { return sundialsAbsTol; }
 
 	void setSpatiallyUniformAbsErrorTolerance(double atol) {
 		spatiallyUniformAbsTol = atol;
@@ -91,7 +111,12 @@ private:
 	char* baseSimName;
 	char* baseDirName;
 	int zipFileCount;
+	string solver;
+	double* discontinuityTimes;
+	int numDiscontinuityTimes;
 
+
+	double sundialsRelTol, sundialsAbsTol;
 	double spatiallyUniformAbsTol;
 };
 

@@ -5,7 +5,7 @@
 
 #include <VCELL/MembraneVariable.h>
 
-MembraneVariable::MembraneVariable(long size, string& nameStr, string& Aunits)
-: Variable(size,nameStr,Aunits)
+MembraneVariable::MembraneVariable(long size, string& nameStr, string& Aunits, bool pde)
+: Variable(size,nameStr,Aunits, pde)
 {
 }

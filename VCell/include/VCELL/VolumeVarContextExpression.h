@@ -41,6 +41,10 @@ public:
     double getConvectionVelocity_Y(long index);
     double getConvectionVelocity_Z(long index);
 
+	bool hasConstantDiffusion() {
+		return VarContext::hasConstantDiffusion();
+	}
+
 protected:
 	bool isNullExpressionOK(int expIndex);
 };

@@ -15,6 +15,9 @@ enum VAR_INDEX {VAR_VOLUME_INDEX=0, VAR_MEMBRANE_INDEX, VAR_CONTOUR_INDEX, VAR_V
 #define NUM_VAR_INDEX (VAR_CONTOUR_REGION_INDEX + 1)
 
 class FieldData;
+class MembraneVariable;
+class MembraneRegionVariable;
+class VolumeRegionVariable;
 
 class SimulationExpression : public Simulation
 {
@@ -43,8 +46,40 @@ public:
 		valueProxyZ->setValue(wc.z);
 	}
 
+	bool isVolumeVariableDefinedInRegion(int volVarIndex, int regionIndex) {
+		if (volVariableRegionMap[volVarIndex] == 0) {
+			return true;
+		}
+		return volVariableRegionMap[volVarIndex][regionIndex];
+	}
+
 	void addParameter(string& param);
 	void setParameterValues(double* paramValues);
+
+	// right now bSolveRegion is only applicable for volume variables
+	virtual void addVariable(Variable *var, bool* bSolveRegions=0);
+
+	double* getDiscontinuityTimes() { return discontinuityTimes; }
+	void setDiscontinuityTimes(double* stopTimes) { discontinuityTimes=stopTimes; }
+
+	int getNumVolVariables() { return (int)volVarList.size(); }
+	VolumeVariable* getVolVariable(int i) { return volVarList.at(i); }
+
+	int getNumMemVariables() { return (int)memVarList.size(); }
+	MembraneVariable* getMemVariable(int i) { return memVarList.at(i); }
+
+	int getNumVolRegionVariables() { return (int)volRegionVarList.size(); }
+	VolumeRegionVariable* getVolRegionVariable(int i) { return volRegionVarList.at(i); }
+
+	int getNumMemRegionVariables() { return (int)memRegionVarList.size(); }
+	MembraneRegionVariable* getMemRegionVariable(int i) { return memRegionVarList.at(i); }
+
+	int getNumMemPde() { return numMemPde; }
+	int getNumVolPde() { return numVolPde; }
+
+	void setHasTimeDependentDiffusionAdvection() { bHasTimeDependentDiffusionAdvection = true; }
+	bool hasTimeDependentDiffusionAdvection() { return bHasTimeDependentDiffusionAdvection; }
+
 	void setPSFFieldDataIndex(int idx) {
 		psfFieldDataIndex = idx;
 	}
@@ -71,6 +106,18 @@ protected:
 
 	vector<string> paramList;
 	vector<ScalarValueProxy*> paramValueProxies;
+
+	vector<bool*> volVariableRegionMap;
+	double* discontinuityTimes;
+
+	vector<VolumeVariable*> volVarList;
+	vector<MembraneVariable*> memVarList;
+	vector<VolumeRegionVariable*> volRegionVarList;
+	vector<MembraneRegionVariable*> memRegionVarList;
+
+	int numVolPde;
+	int numMemPde;
+	bool bHasTimeDependentDiffusionAdvection;
 
 	int psfFieldDataIndex;
 };

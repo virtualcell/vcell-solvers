@@ -22,6 +22,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <sstream>
+using namespace std;
+
 #define ZIP_FILE_LIMIT 1E9
 
 #define MESH_FILE_EXT ".mesh"
@@ -30,6 +33,9 @@
 #define PARTICLE_FILE_EXT ".particle"
 #define LOG_FILE_EXT ".log"
 #define ZIP_FILE_EXT ".zip"
+
+#define SUNDIALS_PDE_SOLVER "SUNDIALS_PDE_SOLVER"
+#define FV_SOLVER "FV_SOLVER"
 
 int zip32(int filecnt, char* zipfile, ...);
 int unzip32(char* zipfile, char* file, char* exdir);
@@ -58,6 +64,14 @@ SimTool::SimTool()
 	simulation = 0;
 
 	spatiallyUniformAbsTol = 1e-9;
+
+	numDiscontinuityTimes = 0;
+	discontinuityTimes = 0;
+
+	sundialsRelTol = 1e-7;
+	sundialsAbsTol = 1e-9;
+
+	solver = FV_SOLVER;
 }
 
 SimTool::~SimTool()
@@ -65,6 +79,8 @@ SimTool::~SimTool()
 	delete baseSimName;
 	delete baseDirName;
 	delete baseFileName;
+
+	delete[] discontinuityTimes;
 }
 
 void SimTool::setModel(VCellModel* model) {
@@ -450,6 +466,19 @@ void SimTool::clearLog()
 	remove(logFileName);
 }
 
+bool SimTool::isSundialsPdeSolver() {
+	return solver == SUNDIALS_PDE_SOLVER;
+}
+
+void SimTool::setSolver(string& s) {
+	if (s.length() > 0 && s != FV_SOLVER && s != SUNDIALS_PDE_SOLVER) {
+		stringstream ss;
+		ss << "unknown solver : " << s;
+		throw ss.str();
+	}
+	solver = s;
+}
+
 void SimTool::start() {
 	if (checkStopRequested()) {
 		return;
@@ -505,7 +534,6 @@ void SimTool::start() {
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, startTime));
 		}
 	}
-
 
     //
     // iterate up to but not including end time
