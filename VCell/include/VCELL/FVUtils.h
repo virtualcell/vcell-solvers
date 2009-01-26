@@ -24,7 +24,7 @@ extern "C"
 	#define DSCAL dscal_
 	extern void PCGWRAPPER(...);
 	extern void PCILU(...);
-	void DSCAL(...);
+	extern void DSCAL(...);
 #endif
 }
 

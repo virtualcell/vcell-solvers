@@ -4,7 +4,8 @@
 #
 CC = g++
 LINKER = g++
-CPPFLAGS =-fexceptions -c -DINTEL -DUNIX -DLINUX64 -O2 -g -D__USE_GNU -DUSE_MESSAGING -I../include -I../../zlib -I../../SonicCClient64/Linux_AS4_64/include/CPP -I../../SonicCClient64/Linux_AS4_64/include -I../../ExpressionParser
+CPPFLAGS =-fexceptions -c -DINTEL -DUNIX -DLINUX64 -O2 -g -D__USE_GNU -DUSE_MESSAGING -I../include -I../../zlib -I../../SonicCClient64/Linux_AS4_64/include/CPP \
+	-I../../SonicCClient64/Linux_AS4_64/include -I../../ExpressionParser -I../../sundials/include -I../../sundials/src
 
 TARGET_LIB=	libvcell.a
 TARGET_STANDALONE = FiniteVolume
@@ -19,7 +20,11 @@ VCELL_LIBS =  libvcell.a \
 		../../unzip/libunzip32.a \
 		../../PCGPack/libpcgpack.a \
 		../../blas/libblas.a 
-LIBS = -L../../SonicCClient64/Linux_AS4_64/bin/release/ -lsmq -lpthread -lm -lg2c
+LIBS = ../../sundials/lib/libsundials_ida.a  \
+       ../../sundials/lib/libsundials_cvode.a  \
+	   ../../sundials/lib/libsundials_nvecserial.a \
+	   ../../sundials/lib/libsundials.a \
+	   -L../../SonicCClient64/Linux_AS4_64/bin/release/ -lsmq -lpthread -lm -lg2c
 
 LIBTOOL = ar cru
 
@@ -73,6 +78,7 @@ CPPOBJECTS = 	\
 	SparseMatrixPCG.o           \
 	SparseVolumeEqnBuilder.o            \
 	StructuredPDESolver.o               \
+	SundialsPdeScheduler.o		\
 	Timer.o                     \
 	VarContext.o                        \
 	Variable.o                  \

@@ -216,7 +216,7 @@ int SparseMatrixPCG::getColumns(long i, int32*& columns, double*& values) {
 void SparseMatrixPCG::scaleOffDiagonals(double gamma) {
 	int size = ija[N] - ija[0];
 	int incr = 1;
-	dscal(&size, &gamma, sa + ija[0],  &incr);
+	DSCAL(&size, &gamma, sa + ija[0],  &incr);
 }
 
 void SparseMatrixPCG::shiftDiagonals(double gamma){
