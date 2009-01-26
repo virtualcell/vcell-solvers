@@ -755,10 +755,10 @@ void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, doub
 		return;
 	}
 
-	SparseMatrixPCG* membraneElementCoupling = ((CartesianMesh*)mesh)->getMembraneCoupling();
+	SparseMatrixPCG* membraneElementCoupling = mesh->getMembraneCoupling();
 	for (int mi = 0; mi < mesh->getNumMembraneElements(); mi ++) {			
 		for (int v = 0; v < simulation->getNumMemVariables(); v ++) {
-			int vectorIndex = memVectorOffset + mi * simulation->getNumMemVariables() + v;
+			int vectorIndex = getMembraneElementVectorOffset(mi) + v;
 
 			MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(v);
 			Feature* feature = pMembraneElement[mi].feature;
@@ -830,7 +830,7 @@ void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, doub
 			double Aii = 0;
 			for (long j = 0; j < numMembraneNeighbors; j ++) {
 				int32 neighborIndex = membraneNeighbors[j];
-				int neighborVectorIndex = memVectorOffset + neighborIndex * simulation->getNumMemVariables() + v;
+				int neighborVectorIndex = getMembraneElementVectorOffset(neighborIndex) + v;
 
 				updateMembraneStatePointValues(pMembraneElement[neighborIndex], t, yinput);
 				double Dj = varContext->evalExpression(DIFF_RATE_EXP, statePointValues);
@@ -873,7 +873,7 @@ void SundialsPdeScheduler::applyVolumeRegionReactionOperator(double t, double* y
 		for (int v = 0; v < simulation->getNumVolRegionVariables(); v ++) {
 			VolumeRegionVariable* var = simulation->getVolRegionVariable(v);
 			VolumeRegionVarContext* volRegionVarContext = feature->getVolumeRegionVarContext(var);
-			int vectorIndex = volRegionVectorOffset + r * simulation->getNumVolRegionVariables() + v;
+			int vectorIndex = getVolumeRegionVectorOffset(r) + v;
 
 			updateRegionStatePointValues(r, t, yinput, true);
 			rhs[vectorIndex] = volRegionVarContext->evalExpression(UNIFORM_RATE_EXP, statePointValues);
@@ -914,7 +914,7 @@ void SundialsPdeScheduler::applyMembraneRegionReactionOperator(double t, double*
 		for (int v = 0; v < simulation->getNumMemRegionVariables(); v ++) {
 			MembraneRegionVariable* var = simulation->getMemRegionVariable(v);
 			MembraneRegionVarContext * memRegionvarContext = feature->getMembraneRegionVarContext(var);
-			int vectorIndex = memRegionVectorOffset + r * simulation->getNumMemRegionVariables() + v;
+			int vectorIndex = getMembraneRegionVectorOffset(r) + v;
 
 			if (memRegion->getRegionInside()->isClosed()) {
 				updateRegionStatePointValues(r, t, yinput, false);
@@ -952,15 +952,15 @@ void SundialsPdeScheduler::applyMembraneFluxOperator(double t, double* yinput, d
 
 		// vector index of inside near and outside near
 		int vi2 = getVolumeElementVectorOffset(me.insideIndexNear, insideRegionID); 
-		int vi3 = getVolumeElementVectorOffset(me.outsideIndexNear, insideRegionID);
+		int vi3 = getVolumeElementVectorOffset(me.outsideIndexNear, outsideRegionID);
 
 		updateMembraneStatePointValues(me, t, yinput);
 
 		int activeVarCountInside = -1;
 		int activeVarCountOutside = -1;
 		for (int v = 0; v < simulation->getNumVolVariables(); v ++) {
-			Variable* var = simulation->getVolVariable(v);
-			VolumeVarContext* anotherVarContext = me.feature->getVolumeVarContext((VolumeVariable*)var);			
+			VolumeVariable* var = simulation->getVolVariable(v);
+			VolumeVarContext* anotherVarContext = me.feature->getVolumeVarContext(var);			
 			if (simulation->isVolumeVariableDefinedInRegion(v, insideRegionID)) {
 				activeVarCountInside ++;
 				if (!var->isPde()) {
@@ -1102,7 +1102,7 @@ void SundialsPdeScheduler::preallocateM() {
 				int numMembraneNeighbors = membraneElementCoupling->getColumns(mi, membraneNeighbors, s_over_d);
 				for (long j = 0; j < numMembraneNeighbors; j ++) {
 					int32 neighborIndex = membraneNeighbors[j];
-					int neighborVectorIndex = memVectorOffset + neighborIndex * simulation->getNumMemVariables() + v;
+					int neighborVectorIndex = getMembraneElementVectorOffset(neighborIndex) + v;
 					columns[j] = neighborVectorIndex;
 				}
 				M->setRow(1.0, numMembraneNeighbors, columns, 0);
