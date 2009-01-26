@@ -340,11 +340,14 @@ void SundialsPdeScheduler::initSundialsSolver() {
 #ifdef SUNDIALS_USE_PCNONE
 	cout << endl << "******using Sundials CVode with PREC_NONE, relTol=" << relTol << ", absTol=" << absTol << endl;
 	returnCode = CVSpgmr(sundialsSolverMemory, PREC_NONE, 0);
-#else		
-	cout << endl << "****** using Sundials CVode with PREC_LEFT, relTol=" << relTol << ", absTol=" << absTol << endl;
-	returnCode = CVSpgmr(sundialsSolverMemory, PREC_LEFT, 0);
-	//cout << endl << "******using Sundials CVode with PREC_RIGHT, relTol=" << relTol << ", absTol=" << absTol << endl;
-	//returnCode = CVSpgmr(sundialsSolverMemory, PREC_RIGHT, 0);
+#else	
+	if (simulation->getNumMemPde() == 0 && simulation->getNumVolPde() == 0) {
+		cout << endl << "******ODE only, using Sundials CVode with PREC_NONE, relTol=" << relTol << ", absTol=" << absTol << endl;
+		returnCode = CVSpgmr(sundialsSolverMemory, PREC_NONE, 0);
+	} else {
+		cout << endl << "****** using Sundials CVode with PREC_LEFT, relTol=" << relTol << ", absTol=" << absTol << endl;
+		returnCode = CVSpgmr(sundialsSolverMemory, PREC_LEFT, 0);
+	}
 #endif
 	checkCVodeReturnCode(returnCode);
 
@@ -574,7 +577,7 @@ void SundialsPdeScheduler::applyVolumeDiffusionReactionAdvectionOperator(double 
 	for (int r = 0; r < mesh->getNumVolumeRegions(); r ++) {
 		int activeVarCount = -1;
 		for (int v = 0; v < simulation->getNumVolVariables(); v ++) {
-			VolumeVariable* var = (VolumeVariable*)simulation->getVolVariable(v);
+			VolumeVariable* var = simulation->getVolVariable(v);
 
 			if (!simulation->isVolumeVariableDefinedInRegion(v, r)) {
 				continue;
