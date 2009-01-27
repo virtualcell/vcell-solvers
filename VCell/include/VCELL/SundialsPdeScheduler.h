@@ -189,7 +189,7 @@ private:
 	int getVolumeRegionVectorOffset(int regionID);
 	int getMembraneRegionVectorOffset(int regionID);
 
-	bool bGmresCalled;
+	bool bLUcomputed;
 	double oldGamma;
 };
 

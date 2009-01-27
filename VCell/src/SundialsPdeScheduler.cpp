@@ -60,7 +60,7 @@ SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, double rtol, double 
 	pcg_workspace = 0;
 
 	bPcReinit = true;
-	bGmresCalled = false;
+	bLUcomputed = false;
 }
 
 
@@ -1141,7 +1141,7 @@ int SundialsPdeScheduler::pcSetup(realtype t, N_Vector y, N_Vector fy, booleanty
 		buildM_Volume(t, yinput, gamma);
 		buildM_Membrane(t, yinput, gamma);
 	} else if (jok) { // can reuse Jacobian data
-		bPcReinit = bGmresCalled ? false : true;
+		bPcReinit = false;
 	} else {
 		bPcReinit = true;
 
@@ -1162,7 +1162,7 @@ int SundialsPdeScheduler::pcSolve(realtype t, N_Vector y, N_Vector fy, N_Vector 
 	double *r_data = NV_DATA_S(r);	
 	double *z_data = NV_DATA_S(z);		
 	
-	if (bPcReinit) {
+	if (!bLUcomputed || bPcReinit) {
 		int symmetricflg = M->getSymmetricFlag();  // general or symmetric storage format
 
 		int IParm[75];
@@ -1185,7 +1185,6 @@ int SundialsPdeScheduler::pcSolve(realtype t, N_Vector y, N_Vector fy, N_Vector 
 		memset(z_data, 0, numUnknowns * sizeof(double));
 		PCGWRAPPER(&numUnknowns, &nsp, &symmetricflg, ija, sa, r_data, z_data, &pcgTol, IParm, RParm, pcg_workspace, pcg_workspace, &RHSscale);
 		bPcReinit = false;
-		bGmresCalled = true;
 		if (IParm[50] != 0) {
 			switch (IParm[50]) {
 				case 1:	// maximum iterations reached without satisfying stopping criterion
@@ -1196,6 +1195,11 @@ int SundialsPdeScheduler::pcSolve(realtype t, N_Vector y, N_Vector fy, N_Vector 
 					handlePCGExceptions(IParm[50], IParm[53]);
 					break;
 			}
+		}
+		if (IParm[54] == 1) {
+			bLUcomputed = true;
+		} else {
+			bLUcomputed = false;
 		}
 	} else {
 		int icode = -3;
