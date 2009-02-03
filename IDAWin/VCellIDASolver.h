@@ -61,7 +61,7 @@ private:
 	void checkIDAFlag(int flag);
 
 	void reInit(realtype t);
-	bool fixInitialDiscontinuities();
+	bool fixInitialDiscontinuities(double t);
 	void updateTandVariableValues(realtype t, N_Vector y);
 };
 

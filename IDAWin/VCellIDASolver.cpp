@@ -18,6 +18,80 @@
 //#include <ida/ida_spgmr.h>
 #include <nvector/nvector_serial.h>
 
+/**
+  * calling sequence
+  ********************
+initIDA
+	reInit(start_time)
+		IDACreate
+		IDAMalloc
+		IDASetRdata
+		IDASetMaxStep
+		IDADense
+		IDASetMaxNumSteps
+		IDASetId
+		IDACalcIC
+		IDAGetConsistentIC
+	solveInitialDiscontinuities(start_time)
+		updateTandVariableValues
+		look for 0 in root function
+		if (find root)			
+			repeat fixInitialDiscontinuities(start_time) until no changes in discontinuity values
+				IDARootInit // disable root finding
+				save y
+				IDASetStopTime // small time
+				IDASolve
+				updateTandVariableValues
+				update Discontinuity values
+				update values
+				restore y, yp=0
+				reInit(start_time);
+					IDAReInit
+					IDACalcIC
+					IDAGetConsistentIC
+				IDARootInit // enable root finding
+		end if
+	IDARootInit
+idaSolve
+	while (time) {
+		IDASetStopTime
+		IDASolve
+		if (root return) {
+			IDAGetRootInfo
+			updateDiscontinuities
+				updateTandVariableValues
+				invert Discontinuity values as needed
+				update values
+			reInit(time)
+				IDAReInit
+				IDACalcIC
+				IDAGetConsistentIC
+			solveInitialDiscontinuities(time)
+				updateTandVariableValues
+				look for 0 in root function
+				if (find root)	
+					repeat fixInitialDiscontinuities(time) until no changes in discontinuity values
+						IDARootInit // disable root finding
+						save y
+						IDASetStopTime // small time
+						IDASolve
+						updateTandVariableValues
+						update Discontinuity values
+						update values
+						restore y, yp=0
+						reInit(time);
+							IDAReInit
+							IDACalcIC
+							IDAGetConsistentIC
+						IDARootInit // enable root finding
+				endif
+		} else {
+			checkDiscontinuityConsistency
+		}
+	}
+ ******************	
+**/
+
 void VCellIDASolver::throwIDAErrorMessage(int returnCode) {
 	char *errMsg = NULL;
 	switch (returnCode) {
@@ -369,7 +443,7 @@ void VCellIDASolver::initIDA(double* paramValues) {
 	reInit(STARTING_TIME);
 
 	if (numDiscontinuities > 0) {
-		solveInitialDiscontinuities();
+		solveInitialDiscontinuities(STARTING_TIME);
 		int flag = IDARootInit(solver, 2*numDiscontinuities, RootFn_callback, this);
 		checkIDAFlag(flag);
 	}
@@ -414,37 +488,45 @@ void VCellIDASolver::reInit(double t) {
 	checkIDAFlag(flag);
 }
 
-bool VCellIDASolver::fixInitialDiscontinuities() {
+bool VCellIDASolver::fixInitialDiscontinuities(double t) {
+
+	// disable root finding to fix discontinuities after roots found
+	int flag = IDARootInit(solver, 0, RootFn_callback, this);
+	checkIDAFlag(flag);
+
 	double* oldy = new double[NEQ];
 	memcpy(oldy, NV_DATA_S(y), NEQ * sizeof(realtype));
 
-	double epsilon = 1e-15;
-	double smallstep = STARTING_TIME;;
-	IDASetStopTime(solver, smallstep + epsilon);
-	int returnCode = IDASolve(solver, smallstep + epsilon, &smallstep, y, yp, IDA_ONE_STEP_TSTOP);
+	double epsilon = max(1e-15, ENDING_TIME * 1e-8);
+	double currentTime = t;
+	realtype tout = currentTime + epsilon;
+	IDASetStopTime(solver, tout);
+	int returnCode = IDASolve(solver, tout, &currentTime, y, yp, IDA_ONE_STEP_TSTOP);
 	if (returnCode != IDA_TSTOP_RETURN && returnCode != IDA_SUCCESS) {
 		throwIDAErrorMessage(returnCode);
 	}
 
-	updateTandVariableValues(smallstep, y);
+	updateTandVariableValues(currentTime, y);
 	bool bInitChanged = false;
 	for (int i = 0; i < numDiscontinuities; i ++) {
 		double v = odeDiscontinuities[i]->discontinuityExpression->evaluateVector(values);
 		if (v != discontinuityValues[i]) {
-			cout << "update discontinuities at time " << STARTING_TIME << " : " << odeDiscontinuities[i]->discontinuityExpression->infix() << " " << discontinuityValues[i] << " " << v << endl;
+			cout << "update discontinuities at time " << t << " : " << odeDiscontinuities[i]->discontinuityExpression->infix() << " " << discontinuityValues[i] << " " << v << endl;
 			discontinuityValues[i] = v;			
 			bInitChanged = true;
 		}
+	}
+	if (bInitChanged) {
+		memcpy(values + 1 + NEQ + NPARAM, discontinuityValues, numDiscontinuities * sizeof(double));
 	}
 
 	//revert y and yp
 	memcpy(NV_DATA_S(y), oldy, NEQ * sizeof(realtype));
 	memset(NV_DATA_S(yp), 0, NEQ * sizeof(realtype));
-	reInit(STARTING_TIME);
+	reInit(t);
 
-	if (bInitChanged) {
-		memcpy(values + 1 + NEQ + NPARAM, discontinuityValues, numDiscontinuities * sizeof(double));
-	}
+	flag = IDARootInit(solver, 2*numDiscontinuities, RootFn_callback, this);
+	checkIDAFlag(flag);
 
 	delete[] oldy;
 
@@ -491,7 +573,8 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 					printVariableValues(Time);
 #endif
 					updateDiscontinuities(Time);
-					reInit(Time);
+					reInit(Time); // recalculate y
+					solveInitialDiscontinuities(Time); // recalculate booleans for discontinuities after discontinuity state change
 				} else {
 					checkDiscontinuityConsistency();
 				}
@@ -543,7 +626,8 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 						printVariableValues(Time);
 #endif
 						updateDiscontinuities(Time);
-						reInit(Time);
+						reInit(Time); // recalculate y
+						solveInitialDiscontinuities(Time); // recalculate booleans for discontinuities after discontinuity state change
 					}  else {
 						checkDiscontinuityConsistency();
 					}

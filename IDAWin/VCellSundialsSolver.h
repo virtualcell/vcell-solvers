@@ -98,8 +98,8 @@ protected:
 	void updateDiscontinuities(realtype t);
 	void checkDiscontinuityConsistency();
 
-	void solveInitialDiscontinuities();
-	virtual bool fixInitialDiscontinuities()=0;
+	void solveInitialDiscontinuities(double t);
+	virtual bool fixInitialDiscontinuities(double t)=0;
 
 	void printVariableValues(realtype t);
 	void printDiscontinuityValues();

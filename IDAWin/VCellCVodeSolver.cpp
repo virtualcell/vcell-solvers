@@ -21,6 +21,50 @@
 
 #define ToleranceType CV_SS
 
+/**
+  * calling sequence
+  ****************
+initCVode
+	reInit(start_time)
+		CVodeCreate
+		CVodeMalloc
+		CVodeSetFdata
+		CVDense
+		CVodeSetMaxNumSteps
+	solveInitialDiscontinuities(start_time)
+		updateTandVariableValues
+		look for 0 in root function
+		if (find root)			
+			repeat fixInitialDiscontinuities(start_time) until no changes
+				save y
+				CVodeSetStopTime // small time
+				CVode
+				updateTandVariableValues
+				update Discontinuity values
+				update values
+				restore y
+				reInit(start_time);
+					CVodeReInit
+		end if
+	CVodeRootInit
+cvodeSolve
+	while (time) {
+		CVodeSetStopTime
+		CVode
+		if (root return) {
+			CVodeGetRootInfo
+			updateDiscontinuities
+				updateTandVariableValues
+				invert Discontinuity values as needed
+				update values
+			reInit(time)
+				CVodeReInit			
+		} else {
+			checkDiscontinuityConsistency
+		}
+	}
+ *****************
+**/
 void VCellCVodeSolver::throwCVodeErrorMessage(int returnCode) {
 	switch (returnCode){
 		case CV_SUCCESS: {
@@ -233,7 +277,7 @@ void VCellCVodeSolver::initCVode(double* paramValues) {
 	reInit(STARTING_TIME);
 
 	if (numDiscontinuities > 0) {
-		solveInitialDiscontinuities();
+		solveInitialDiscontinuities(STARTING_TIME);
 		int flag = CVodeRootInit(solver, 2 * numDiscontinuities, RootFn_callback, this);
 		checkCVodeFlag(flag);
 	}
@@ -262,48 +306,38 @@ void VCellCVodeSolver::reInit(double t) {
 	checkCVodeFlag(flag);
 }
 
-bool VCellCVodeSolver::fixInitialDiscontinuities() {
+bool VCellCVodeSolver::fixInitialDiscontinuities(double t) {
 	double* oldy = new double[NEQ];
 	memcpy(oldy, NV_DATA_S(y), NEQ * sizeof(realtype));
 
-#ifdef SUNDIALS_DEBUG
-	cout << "before smallstep" << endl;
-	printVariableValues(STARTING_TIME);
-	printDiscontinuityValues();
-#endif
-
-	double epsilon = 1e-15;
-	double smallstep = STARTING_TIME;	
-	CVodeSetStopTime(solver, smallstep + epsilon);
-	int returnCode = CVode(solver, smallstep + epsilon, y, &smallstep, CV_ONE_STEP_TSTOP);
+	double epsilon = max(1e-15, ENDING_TIME * 1e-10);
+	double currentTime = t;	
+	double tout = currentTime + epsilon;
+	CVodeSetStopTime(solver, tout);
+	int returnCode = CVode(solver, tout, y, &currentTime, CV_ONE_STEP_TSTOP);
 	if (returnCode != CV_TSTOP_RETURN && returnCode != CV_SUCCESS) {
 		throwCVodeErrorMessage(returnCode);
 	}
 
-	updateTandVariableValues(smallstep, y);
-#ifdef SUNDIALS_DEBUG
-	cout << "after smallstep" << endl;
-	printVariableValues(smallstep);	
-#endif
-
+	updateTandVariableValues(currentTime, y);
 	bool bInitChanged = false;
 	for (int i = 0; i < numDiscontinuities; i ++) {
 		// evaluate discontinuities at t+epsilon
 		double v = odeDiscontinuities[i]->discontinuityExpression->evaluateVector(values);
 		if (v != discontinuityValues[i]) {
-			cout << "fixInitialDiscontinuities() : update discontinuities at time " << STARTING_TIME << " : " << odeDiscontinuities[i]->discontinuityExpression->infix() << " " << discontinuityValues[i] << " " << v << endl;
+			cout << "fixInitialDiscontinuities() : update discontinuities at time " << t << " : " << odeDiscontinuities[i]->discontinuityExpression->infix() << " " << discontinuityValues[i] << " " << v << endl;
 			discontinuityValues[i] = v;			
 			bInitChanged = true;
 		}
 	}	
-
-	//revert y
-	memcpy(NV_DATA_S(y), oldy, NEQ * sizeof(realtype));
-	reInit(STARTING_TIME);
-
 	if (bInitChanged) {
 		memcpy(values + 1 + NEQ + NPARAM, discontinuityValues, numDiscontinuities * sizeof(double));
 	}
+
+	//revert y
+	memcpy(NV_DATA_S(y), oldy, NEQ * sizeof(realtype));
+	reInit(t);
+
 	delete[] oldy;
 
 	return bInitChanged;

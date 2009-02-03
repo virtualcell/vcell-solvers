@@ -391,10 +391,11 @@ void VCellSundialsSolver::checkDiscontinuityConsistency() {
 	}
 }
 
-void VCellSundialsSolver::solveInitialDiscontinuities() {
-	cout << "------------------solveInitialDiscontinuities--at-time-" << STARTING_TIME << "--------------------------" << endl;
+void VCellSundialsSolver::solveInitialDiscontinuities(double t) {
+	cout << "------------------solveInitialDiscontinuities--at-time-" << t << "--------------------------" << endl;
 	bool bFoundRoot = false;
 	string roots_at_initial_str = "";
+	updateTandVariableValues(t, y);
 	for (int i = 0; i < numDiscontinuities; i ++) {
 		double v = odeDiscontinuities[i]->rootFindingExpression->evaluateVector(values);
 		if (fabs(v) < AbsoluteTolerance) {
@@ -404,17 +405,18 @@ void VCellSundialsSolver::solveInitialDiscontinuities() {
 	}
 
 	if (bFoundRoot) {
-		cout << "solveInitialDiscontinuities() : roots found at time " << STARTING_TIME << "; " << roots_at_initial_str << endl;
+		cout << "solveInitialDiscontinuities() : roots found at time " << t << "; " << roots_at_initial_str << endl;
 		int count = 0;
 		int maxCount = (int)pow(2.0, numDiscontinuities);
 		while (count < maxCount) {
 			try {
-				if (!fixInitialDiscontinuities()) {
+				if (!fixInitialDiscontinuities(t)) {
 					break;
 				}
 			} catch (const char* err) {
-				string str = string("found discontinuities at time 0 but unable to initialize : ") + err + "\nDiscontinuities at time 0 are : " + roots_at_initial_str;
-				throw str;
+				stringstream str;
+				str << "found discontinuities at time " << t << " but unable to initialize : " << err << "\nDiscontinuities at time 0 are : " << roots_at_initial_str;
+				throw str.str();
 			}
 			count ++;
 		}
@@ -423,7 +425,7 @@ void VCellSundialsSolver::solveInitialDiscontinuities() {
 			throw str;
 		}
 	}
-	cout << "-------------------------------------------------------------------------------------------" << endl;
+	cout << "------------------------------------------------" << endl;
 }
 
 void VCellSundialsSolver::printVariableValues(realtype t) {
