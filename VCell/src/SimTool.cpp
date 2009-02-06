@@ -72,6 +72,10 @@ SimTool::SimTool()
 	sundialsAbsTol = 1e-9;
 
 	solver = FV_SOLVER;
+
+	simStartTime = 0;
+	bSundialsOneStepOutput = false;
+	keepAtMost = 5000;
 }
 
 SimTool::~SimTool()
@@ -224,7 +228,7 @@ void SimTool::loadFinal()
 		NUM_TOKENS_PER_LINE = 4;
 	}
 
-	double parsedTime = -1.0;
+	simStartTime = -1;
 	int tempIteration = -1, tempFileCount = 0, tempZipCount = 0;
 
 	while (!feof(fp)){
@@ -241,9 +245,9 @@ void SimTool::loadFinal()
 			//
 			int numTokens = 0;
 			if (bSimZip) {
-				numTokens = sscanf(logBuffer, "%d %s %s %lg", &tempIteration, dataFileName, zipFileName, &parsedTime);
+				numTokens = sscanf(logBuffer, "%d %s %s %lg", &tempIteration, dataFileName, zipFileName, &simStartTime);
 			} else {
-				numTokens = sscanf(logBuffer, "%d %s %lg", &tempIteration, dataFileName, &parsedTime);
+				numTokens = sscanf(logBuffer, "%d %s %lg", &tempIteration, dataFileName, &simStartTime);
 			}
 			if (numTokens != NUM_TOKENS_PER_LINE){
 				printf("SimTool::load(), error reading log file %s, reading iteration\n", logFileName);
@@ -257,9 +261,13 @@ void SimTool::loadFinal()
 	}
 	fclose(fp);
 
-	if (tempIteration <= 0  || parsedTime <= 0) {
+	if (tempIteration <= 0  || simStartTime <= 0) {
 		clearLog();
 		return;
+	}
+
+	if (isSundialsPdeSolver()) {
+		simulation->setSimStartTime(simStartTime);
 	}
 
 	if (bSimZip) {
@@ -372,7 +380,7 @@ void SimTool::updateLog(double progress, double time, int iteration)
 
 		char zipFileNameWithoutPath[512];
 		sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
-		fprintf(fp,"%4d %s %s %lg\n", iteration, simFileName, zipFileNameWithoutPath, time);
+		fprintf(fp,"%4d %s %s %.15lg\n", iteration, simFileName, zipFileNameWithoutPath, time);
 
 		if (stat(zipFileName, &buf) == 0) { // if exists
 			if (buf.st_size > ZIP_FILE_LIMIT) {
@@ -382,7 +390,7 @@ void SimTool::updateLog(double progress, double time, int iteration)
 	} else {
 		char simFileNameWithoutPath[512];
 		sprintf(simFileNameWithoutPath,"%s%.4d%s",baseSimName, simFileCount, SIM_FILE_EXT);
-		fprintf(fp,"%4d %s %lg\n", iteration, simFileNameWithoutPath, time);
+		fprintf(fp,"%4d %s %.15lg\n", iteration, simFileNameWithoutPath, time);
 	}
 	fclose(fp);
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
@@ -404,6 +412,8 @@ int SimTool::getZipCount(char* zipFileName) {
 
 void SimTool::clearLog()
 {
+	simStartTime = 0;
+
 	FILE *fp;
 	char logFileName[256];
 	char buffer[256];
@@ -497,8 +507,7 @@ void SimTool::start() {
 	//
     // destroy any partial results from unfinished iterations
     //
-    double startTime = simulation->getTime_sec();
-    double percentile = startTime/simEndTime;
+    double percentile = simStartTime/simEndTime;
     double increment = 0.01;
 	double lastSentPercentile = percentile;
 	//
@@ -531,7 +540,7 @@ void SimTool::start() {
 			updateLog(0.0, 0.0, 0);
 		} else {
 			// simulation continues from existing results, send data message
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, startTime));
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simStartTime));
 		}
 	}
 
@@ -542,7 +551,18 @@ void SimTool::start() {
 		increment = 0.001;
 	}
 	double epsilon = 1e-12;
-    while ((simulation->getTime_sec()+simulation->getDT_sec())<=(simEndTime+epsilon)){
+
+	while (true) {
+		if (simulation->getTime_sec() > simEndTime - epsilon) {
+			break;
+		}
+
+		if (isSundialsPdeSolver() && bSundialsOneStepOutput) {
+			if (simulation->getCurrIteration() / keepEvery > keepAtMost){
+				break;
+			}
+		}
+
 		if (checkStopRequested()) {
 			return;
 		}
@@ -550,11 +570,11 @@ void SimTool::start() {
 		simulation->iterate();
 		simulation->update();
         if (bStoreEnable){
-            if (simulation->getCurrIteration() % keepEvery==0){
+			if (simulation->getCurrIteration() % keepEvery == 0 || simulation->getTime_sec() > simEndTime - epsilon){
 				updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
             }
         }
-		percentile = (simulation->getTime_sec() - startTime)/(simEndTime - startTime);
+		percentile = (simulation->getTime_sec() - simStartTime)/(simEndTime - simStartTime);
 		if (percentile - lastSentPercentile >= increment) {
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec()));
 			lastSentPercentile = percentile;

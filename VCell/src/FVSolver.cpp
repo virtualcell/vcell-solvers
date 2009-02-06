@@ -801,17 +801,8 @@ void FVSolver::loadMembrane(istream& ifsInput, Feature* infeature, char* var_nam
 }
 
 void FVSolver::loadSimulationParameters(istream& ifsInput) {
-	string basefilename, solver="";
-	double end_time, time_step;
-	bool check_Spatially_Uniform = false;
-	long keep_every;
-	int bStoreEnable=1;
 	string nextToken;
-	double* discontinuityTimes = 0;
-	int numDisTimes = 0;
-	double sundialsRelTol = 1e-7;
-	double sundialsAbsTol = 1e-9;
-	double spatiallyUniformAbsTol = 1e-3;
+
 
 	while (!ifsInput.eof()) {
 		nextToken = "";
@@ -824,74 +815,90 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 		} else if (nextToken == "SIMULATION_PARAM_END") {
 			break;
 		} else if (nextToken == "SOLVER") {
+			string solver="";
 			ifsInput >> solver;
+			simTool->setSolver(solver);
 			getline(ifsInput, nextToken);
 			trimString(nextToken);
+			double sundialsRelTol = 1e-7;
+			double sundialsAbsTol = 1e-9;
 			if (nextToken.length() > 0) {
 				stringstream ss(nextToken);
 				ss >> sundialsRelTol >> sundialsAbsTol;
 			}
+			simTool->setSundialsErrorTolerances(sundialsRelTol, sundialsAbsTol);
 		} else if (nextToken == "DISCONTINUITY_TIMES") {
+			int numDisTimes = 0;
 			ifsInput >> numDisTimes;
 			if (numDisTimes == 0) {
 				getline(ifsInput, nextToken);
 			} else {
+				double* discontinuityTimes = 0;
 				discontinuityTimes = new double[numDisTimes];
 				for (int i = 0; i < numDisTimes; i ++) {
 					ifsInput >> discontinuityTimes[i];
 				}
+				simTool->setDiscontinuityTimes(numDisTimes, discontinuityTimes);
 			}
 		} else if (nextToken == "BASE_FILE_NAME") {
+			string basefilename;
 			getline(ifsInput, basefilename);
 			trimString(basefilename);
+			if (outputPath == 0) {
+				simTool->setBaseFilename((char*)basefilename.c_str());
+			} else {
+				const char* baseSimName = strrchr(basefilename.c_str(), DIRECTORY_SEPARATOR);
+				if (baseSimName == NULL) {
+					baseSimName = basefilename.c_str();
+				} else {
+					baseSimName += 1;
+				}
+				char newBaseName[512];
+				sprintf(newBaseName, "%s%c%s", outputPath, DIRECTORY_SEPARATOR, baseSimName);
+				simTool->setBaseFilename(newBaseName);
+			}	
 		} else if (nextToken == "ENDING_TIME") {
+			double end_time;
 			ifsInput >> end_time;
+			simTool->setEndTimeSec(end_time);
 		} else if (nextToken == "TIME_STEP") {
+			double time_step;
 			ifsInput >> time_step;
+			simTool->setTimeStep(time_step);
 		} else if (nextToken == "CHECK_SPATIALLY_UNIFORM") {
-			check_Spatially_Uniform = true;
+			double spatiallyUniformAbsTol = 1e-3;
 			ifsInput >> spatiallyUniformAbsTol;
+			simTool->setCheckSpatiallyUniform();
+			simTool->setSpatiallyUniformAbsErrorTolerance(spatiallyUniformAbsTol);
 		} else if (nextToken == "KEEP_EVERY") {
-			ifsInput >> keep_every;
+			getline(ifsInput, nextToken);
+			stringstream ss(nextToken);
+			int keep_every = 1;
+			string one_step, keep_every_str;
+			ss >> one_step >> keep_every_str;
+			if (one_step == "ONE_STEP") {
+				simTool->setSundialsOneStepOutput();
+			} else {
+				keep_every_str = one_step;	
+			}	
+			keep_every = atoi(keep_every_str.c_str());
+			
+			simTool->setKeepEvery(keep_every);
+		} else if (nextToken == "KEEP_AT_MOST") {
+			int keep_at_most;
+			ifsInput >> keep_at_most;
+			simTool->setKeepAtMost(keep_at_most);
 		} else if (nextToken == "STORE_ENABLE") {
+			int bStoreEnable=1;
 			ifsInput >> bStoreEnable;
+			simTool->setStoreEnable(bStoreEnable!=0);
 		} else {
 			stringstream ss;
 			ss << "loadSimulationParameters(), encountered unknown token " << nextToken << endl;
 			throw ss.str();
 		}
 	}
-
-	if (outputPath == 0) {
-		simTool->setBaseFilename((char*)basefilename.c_str());
-	} else {
-		const char* baseSimName = strrchr(basefilename.c_str(), DIRECTORY_SEPARATOR);
-		if (baseSimName == NULL) {
-			baseSimName = basefilename.c_str();
-		} else {
-			baseSimName += 1;
-		}
-		char newBaseName[512];
-		sprintf(newBaseName, "%s%c%s", outputPath, DIRECTORY_SEPARATOR, baseSimName);
-		simTool->setBaseFilename(newBaseName);
-	}
 	
-	if (solver.length() > 0) {
-		simTool->setSolver(solver);
-	}
-	if (numDisTimes > 0) {
-		simTool->setDiscontinuityTimes(numDisTimes, discontinuityTimes);		
-	} 	
-	
-	simTool->setSundialsErrorTolerances(sundialsRelTol, sundialsAbsTol);
-	simTool->setTimeStep(time_step);
-	simTool->setEndTimeSec(end_time);
-	simTool->setKeepEvery(keep_every);
-	simTool->setStoreEnable(bStoreEnable!=0);
-	if (check_Spatially_Uniform) {
-		simTool->setCheckSpatiallyUniform();
-		simTool->setSpatiallyUniformAbsErrorTolerance(spatiallyUniformAbsTol);
-	}
 	//SimTool::getInstance()->setFileCompress(false);
 }
 

@@ -35,9 +35,7 @@ public:
 	void    reset();            // initializes to t=last time step
 	double  getMaxDifference();
 
-	double  getTime_sec() { 
-		return _advanced ? (currIteration + 1) * _dT_sec : currIteration * _dT_sec; 
-	}
+	double  getTime_sec();
 	void    setCurrIteration(int curriter) { 
 		currIteration = curriter; 
 	}
@@ -80,6 +78,7 @@ public:
 	}
 	void addVariable(Variable *var);
 	void addSolver(Solver *solver);
+	void setSimStartTime(double st);
 
 protected:
 	int currIteration;  // first iteration is currIteration=0

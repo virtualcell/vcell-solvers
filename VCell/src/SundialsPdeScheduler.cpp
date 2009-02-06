@@ -45,7 +45,7 @@ using namespace std;
 
 static double interp_coeff[3] = {3.0/2, -1.0/2, 0};
 
-SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, double rtol, double atol, int numDisTimes, double* disTimes) : Scheduler(sim)
+SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, double rtol, double atol, int numDisTimes, double* disTimes, bool bDefaultOuptput) : Scheduler(sim)
 {
 	simulation = (SimulationExpression*)sim;
 	sundialsSolverMemory = 0;
@@ -61,6 +61,9 @@ SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, double rtol, double 
 
 	bPcReinit = true;
 	bLUcomputed = false;
+
+	bSundialsOneStepOutput = bDefaultOuptput;
+	currentTime = 0;
 }
 
 
@@ -265,7 +268,7 @@ void SundialsPdeScheduler::initSundialsSolver() {
 	memset(statePointValues, 0, numSymbols * sizeof(double));
 
 	currDiscontinuityTimeCount = 0;
-	while (numDiscontinuityTimes > 0 && discontinuityTimes[currDiscontinuityTimeCount] < simulation->getTime_sec()) {
+	while (numDiscontinuityTimes > 0 && discontinuityTimes[currDiscontinuityTimeCount] < currentTime) {
 		currDiscontinuityTimeCount ++;
 	}
 
@@ -330,7 +333,11 @@ void SundialsPdeScheduler::initSundialsSolver() {
 		throw "SundialsPDESolver:: Out of memory : sundialsSolverMemory";
 	}
 
-	returnCode = CVodeMalloc(sundialsSolverMemory, RHS_callback, simulation->getTime_sec(), y, ToleranceType, relTol, &absTol);
+	cout << endl << "----------------------------------" << endl;
+	cout << "sundials pde solver is starting from time " << currentTime << endl;
+	cout << "----------------------------------" << endl;
+
+	returnCode = CVodeMalloc(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, relTol, &absTol);
 	checkCVodeReturnCode(returnCode);
 
 	returnCode = CVodeSetFdata(sundialsSolverMemory, this);
@@ -420,51 +427,59 @@ void SundialsPdeScheduler::printCVodeStats()
 }
 
 void SundialsPdeScheduler::solve() {
-	double startTime = simulation->getTime_sec();
-	simulation->advanceTimeOn();
-	double endTime = simulation->getTime_sec();
-	simulation->advanceTimeOff();
-	double currTime = startTime;
+	double endTime = 0;
+	if (bSundialsOneStepOutput) {
+		endTime = SimTool::getInstance()->getEndTime();
+	} else {
+		endTime = currentTime + simulation->getDT_sec();
+	}
 
 	bool bStop = false;
 	double stopTime = endTime;
 	// if next stop time between (currTime, endTime]
-	if (currDiscontinuityTimeCount < numDiscontinuityTimes && currTime < discontinuityTimes[currDiscontinuityTimeCount] && (endTime >  discontinuityTimes[currDiscontinuityTimeCount] || fabs(endTime - discontinuityTimes[currDiscontinuityTimeCount]) < epsilon)) {
+	if (currDiscontinuityTimeCount < numDiscontinuityTimes && currentTime < discontinuityTimes[currDiscontinuityTimeCount] && (endTime >  discontinuityTimes[currDiscontinuityTimeCount] || fabs(endTime - discontinuityTimes[currDiscontinuityTimeCount]) < epsilon)) {
 		stopTime = discontinuityTimes[currDiscontinuityTimeCount];
-		currDiscontinuityTimeCount ++;
 		bStop = true;
 	}
 	
-	while (fabs(currTime - endTime) > epsilon) {
+	while (true) {
+		if (currentTime > endTime - epsilon) {
+			break;
+		}
 		CVodeSetStopTime(sundialsSolverMemory, stopTime);
-		int returnCode = CVode(sundialsSolverMemory, stopTime, y, &currTime, CV_NORMAL_TSTOP);
+		int returnCode = CVode(sundialsSolverMemory, stopTime, y, &currentTime,  bSundialsOneStepOutput ? CV_ONE_STEP_TSTOP : CV_NORMAL_TSTOP);
 		if (returnCode != CV_SUCCESS && returnCode != CV_TSTOP_RETURN) {
 			checkCVodeReturnCode(returnCode);
 		}
-		assert(fabs(currTime-stopTime) < epsilon);
 
-		if (bStop) {
-			cout << endl << "SundialsPdeScheduler::solve() : cvode reinit at time " << currTime 
-				<< ", next stop time is " << endTime << endl;
+		if (bStop && currentTime > stopTime - epsilon) {
+			currDiscontinuityTimeCount ++;
+			if (currentTime <= SimTool::getInstance()->getEndTime() - epsilon) { // if this is the last solve, we don't have to reinit
+				cout << endl << "SundialsPdeScheduler::solve() : cvode reinit at time " << currentTime << endl;
+				returnCode = CVodeReInit(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, relTol, &absTol);
+				checkCVodeReturnCode(returnCode);
+			}
 
-			returnCode = CVodeReInit(sundialsSolverMemory, RHS_callback, currTime, y, ToleranceType, relTol, &absTol);
-			checkCVodeReturnCode(returnCode);		
-		
+			if (bSundialsOneStepOutput) {
+				break;
+			}
+			// find out next stop time
 			bStop = false;
-			stopTime = endTime;
+			stopTime = endTime;			
 			if (currDiscontinuityTimeCount < numDiscontinuityTimes 
-				&& currTime < discontinuityTimes[currDiscontinuityTimeCount] 
+				&& currentTime < discontinuityTimes[currDiscontinuityTimeCount] 
 				&& (endTime >  discontinuityTimes[currDiscontinuityTimeCount] 
 						|| fabs(endTime - discontinuityTimes[currDiscontinuityTimeCount]) < epsilon)) {
-				stopTime = discontinuityTimes[currDiscontinuityTimeCount];
-				currDiscontinuityTimeCount ++;
+				stopTime = discontinuityTimes[currDiscontinuityTimeCount];				
 				bStop = true;
-			}
-		} 
+			}	
+		}
+		if (bSundialsOneStepOutput) {
+			break;
+		}
 	}
 
-	assert(fabs(currTime - endTime) < epsilon);
-	if (fabs(currTime - SimTool::getInstance()->getEndTime()) < epsilon) {
+	if (currentTime > SimTool::getInstance()->getEndTime() - epsilon) {
 		printCVodeStats();
 	}
 	updateSolutions();
@@ -485,11 +500,7 @@ void SundialsPdeScheduler::updateSolutions() {
 					if (var->isPde() && bDirichletBoundary) {
 						int mask = pVolumeElement[volIndex].neighborMask;
 						if (mask & BOUNDARY_TYPE_DIRICHLET) {
-							simulation->advanceTimeOn();
-							double endTime = simulation->getTime_sec();
-							simulation->advanceTimeOff();
-							updateVolumeStatePointValues(volIndex, endTime, y_data);
-
+							updateVolumeStatePointValues(volIndex, currentTime, y_data);
 							Feature* feature = pVolumeElement[volIndex].feature;
 							VolumeVarContext* varContext = feature->getVolumeVarContext(var);	
 							if ((mask & NEIGHBOR_XM_BOUNDARY) && (feature->getXmBoundaryType() == BOUNDARY_VALUE)){					
@@ -521,10 +532,7 @@ void SundialsPdeScheduler::updateSolutions() {
 				int mask = mesh->getMembraneNeighborMask(m);
 				double sol = y_data[count ++];
 				if (var->isPde() && (mask & BOUNDARY_TYPE_DIRICHLET)) {
-					simulation->advanceTimeOn();
-					double endTime = simulation->getTime_sec();
-					simulation->advanceTimeOff();
-					updateMembraneStatePointValues(pMembraneElement[m], endTime, y_data);
+					updateMembraneStatePointValues(pMembraneElement[m], currentTime, y_data);
 
 					Feature* feature = pMembraneElement[m].feature;
 					MembraneVarContext *varContext = feature->getMembraneVarContext(var);

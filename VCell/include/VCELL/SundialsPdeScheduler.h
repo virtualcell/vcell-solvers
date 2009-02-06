@@ -19,10 +19,14 @@ class SimulationExpression;
 class SundialsPdeScheduler : public Scheduler
 {
 public:
-	SundialsPdeScheduler(Simulation *sim, double rtol, double atol, int numDisTimes, double* disTimes);
+	SundialsPdeScheduler(Simulation *sim, double rtol, double atol, int numDisTimes, double* disTimes, bool bDefaultOutput);
 	~SundialsPdeScheduler();
 
 	void iterate();	
+	double getCurrentTime() { return currentTime; }
+	void setSimStartTime(double st) { 
+		currentTime = st; 
+	}
 
 private:
 	SimulationExpression* simulation;
@@ -191,6 +195,8 @@ private:
 
 	bool bLUcomputed;
 	double oldGamma;
+	double currentTime;
+	bool bSundialsOneStepOutput;
 };
 
 #endif

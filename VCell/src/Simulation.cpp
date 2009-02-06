@@ -288,8 +288,9 @@ void Simulation::initSimulation()
 		}
 #else
 	printf("pdeCount=%d, odeCount=%d\n", pdeCount, odeCount);
-	if (SimTool::getInstance()->isSundialsPdeSolver()) {
-		_scheduler = new SundialsPdeScheduler(this, SimTool::getInstance()->getSundialsRelativeTolerance(), SimTool::getInstance()->getSundialsAbsoluteTolerance(),SimTool::getInstance()->getNumDiscontinuityTimes(), SimTool::getInstance()->getDiscontinuityTimes());
+	SimTool* simTool = SimTool::getInstance();
+	if (simTool->isSundialsPdeSolver()) {
+		_scheduler = new SundialsPdeScheduler(this, simTool->getSundialsRelativeTolerance(), simTool->getSundialsAbsoluteTolerance(), simTool->getNumDiscontinuityTimes(), simTool->getDiscontinuityTimes(), simTool->isSundialsOneStepOutput());
 	} else {
 		_scheduler = new SerialScheduler(this);
 	}
@@ -300,4 +301,17 @@ void Simulation::initSimulation()
 	_scheduler->initValues();
 
 	currIteration = 0;
+}
+
+double Simulation::getTime_sec() {
+	if (SimTool::getInstance()->isSundialsPdeSolver()) {
+		return ((SundialsPdeScheduler*)_scheduler)->getCurrentTime();
+	}
+	return _advanced ? (currIteration + 1) * _dT_sec : currIteration * _dT_sec; 
+}
+
+void Simulation::setSimStartTime(double st) {
+	if (SimTool::getInstance()->isSundialsPdeSolver()) {
+		return ((SundialsPdeScheduler*)_scheduler)->setSimStartTime(st);
+	}
 }

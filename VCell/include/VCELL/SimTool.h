@@ -45,6 +45,7 @@ public:
 	double getEndTime() { return simEndTime; }
 
 	void setKeepEvery(int ke) { keepEvery = ke; }
+	void setKeepAtMost(int kam) { keepAtMost = kam; }
 	void setBaseFilename(char *fname);
 	void setStoreEnable(bool enable) {
 		bStoreEnable = enable;
@@ -85,6 +86,10 @@ public:
 		spatiallyUniformAbsTol = atol;
 	}
 
+	double getSimStartTime() { return simStartTime; }
+	void setSundialsOneStepOutput() { bSundialsOneStepOutput = true; }
+	bool isSundialsOneStepOutput() { return bSundialsOneStepOutput; }
+
 private:
 	SimTool();
 
@@ -101,7 +106,7 @@ private:
 	Timer  *_timer;
 
 	bool bSimFileCompress;
-	double simEndTime;
+	double simEndTime, simStartTime;
 	bool bCheckSpatiallyUniform;
 	double simDeltaTime;
 	int keepEvery;
@@ -118,6 +123,9 @@ private:
 
 	double sundialsRelTol, sundialsAbsTol;
 	double spatiallyUniformAbsTol;
+
+	bool bSundialsOneStepOutput;
+	int keepAtMost;
 };
 
 #endif
