@@ -553,7 +553,11 @@ void SimTool::start() {
 	double epsilon = 1e-12;
 
 	while (true) {
-		if (simulation->getTime_sec() > simEndTime - epsilon) {
+		if (!isSundialsPdeSolver() || !bSundialsOneStepOutput) {
+			if (simulation->getTime_sec() + simulation->getDT_sec() > simEndTime + epsilon) {
+				break;
+			}
+		} else if (simulation->getTime_sec() > simEndTime - epsilon) {
 			break;
 		}
 
