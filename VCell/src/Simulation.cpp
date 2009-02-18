@@ -18,15 +18,15 @@
 #include <VCELL/FVUtils.h>
 #include <VCELL/SerialScheduler.h>
 #include <VCELL/SundialsPdeScheduler.h>
-#ifdef VCELL_MPI     
+#ifdef VCELL_MPI
 #include <VCELL/DomainPDEScheduler.h>
 #include "mpi.h"
 #endif
 
-Simulation::Simulation(Mesh *mesh) 
+Simulation::Simulation(Mesh *mesh)
 {
 	ASSERTION(mesh);
-	// 
+	//
 	// initialize size of voxel array to 0
 	//
 	_dT_sec = 0;   // seconds
@@ -36,14 +36,14 @@ Simulation::Simulation(Mesh *mesh)
 	_initEquations = false;
 	_scheduler = NULL;
 	globalParticleList.clear();
-   
+
 #ifdef VCELL_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &mpiRank);
 	MPI_Comm_size(MPI_COMM_WORLD, &mpiSize);
 #endif
 }
 
-Simulation::~Simulation() 
+Simulation::~Simulation()
 {
 	for (int i = 0; i < (int)varList.size(); i ++) {
 		delete varList[i];
@@ -60,16 +60,16 @@ void Simulation::advanceTimeOn() {
 	if (_advanced) {
 		throw "Simulation::advanceTimeOn() : time has already been advanced on";
 	}
-	_advanced=true;	
+	_advanced=true;
 }
 
 void Simulation::advanceTimeOff() {
 	if (!_advanced) {
 		throw "Simulation::advanceTimeOff() : time has already been advanced off";
 	}
-	_advanced=false;	 
+	_advanced=false;
 }
-   
+
 void Simulation::iterate()
 {
 	_scheduler->iterate();
@@ -116,7 +116,7 @@ Solver *Simulation::getSolver(int index)
 	if (index < 0 || index >= (int)solverList.size()) {
 		throw "Simulation: getSolver(index) : index out of bounds";
 	}
-	return solverList.at(index);	
+	return solverList.at(index);
 }
 
 void Simulation::addVariable(Variable *var)
@@ -170,13 +170,13 @@ Solver *Simulation::getSolverFromVariable(Variable *var)
 //}
 
 void Simulation::addParticle(Particle *particle)
-{ 
-	globalParticleList.push_back(particle); 
+{
+	globalParticleList.push_back(particle);
 }
 
 void Simulation::writeData(char *filename, bool bCompress)
 {
-   
+
 	//synchronize();
 
 #ifdef VCELL_MPI
@@ -211,11 +211,11 @@ void Simulation::writeData(char *filename, bool bCompress)
 			throw errmsg;
 		}
 
-		fprintf(fp,"%lg %lg %lg\n", ((CartesianMesh*)_mesh)->getDomainSizeX(), 
-						((CartesianMesh*)_mesh)->getDomainSizeY(), 
-						((CartesianMesh*)_mesh)->getDomainSizeZ()); 
-		fprintf(fp,"%d %d %d\n", ((CartesianMesh*)_mesh)->getNumVolumeX(), 
-					((CartesianMesh*)_mesh)->getNumVolumeY(), 
+		fprintf(fp,"%lg %lg %lg\n", ((CartesianMesh*)_mesh)->getDomainSizeX(),
+						((CartesianMesh*)_mesh)->getDomainSizeY(),
+						((CartesianMesh*)_mesh)->getDomainSizeZ());
+		fprintf(fp,"%d %d %d\n", ((CartesianMesh*)_mesh)->getNumVolumeX(),
+					((CartesianMesh*)_mesh)->getNumVolumeY(),
 					((CartesianMesh*)_mesh)->getNumVolumeZ());
 
 		//
@@ -252,7 +252,7 @@ void Simulation::setScheduler(Scheduler *scheduler)
 // determines scheduler and resets _time_sec and initializes var's
 //-------------------------------------------------------
 void Simulation::initSimulation()
-{   
+{
 	if (_scheduler != NULL){
 		return;
 	}
@@ -266,7 +266,7 @@ void Simulation::initSimulation()
 		}
 	}
 
-#ifdef VCELL_MPI     
+#ifdef VCELL_MPI
 	int numProcesses;
 	int rank;
 	MPI_Comm_size(MPI_COMM_WORLD,&numProcesses);
@@ -294,7 +294,7 @@ void Simulation::initSimulation()
 	} else {
 		_scheduler = new SerialScheduler(this);
 	}
-#endif	
+#endif
 
 	VCellModel *model = SimTool::getInstance()->getModel();
 	model->resolveReferences();
@@ -307,7 +307,7 @@ double Simulation::getTime_sec() {
 	if (SimTool::getInstance()->isSundialsPdeSolver()) {
 		return ((SundialsPdeScheduler*)_scheduler)->getCurrentTime();
 	}
-	return _advanced ? (currIteration + 1) * _dT_sec : currIteration * _dT_sec; 
+	return _advanced ? (currIteration + 1) * _dT_sec : currIteration * _dT_sec;
 }
 
 void Simulation::setSimStartTime(double st) {

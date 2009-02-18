@@ -646,7 +646,7 @@ bool SimTool::checkSpatiallyUniform(Variable* var) {
 					maxSol = max(maxSol, currSol[volIndex]);
 					minSol = min(minSol, currSol[volIndex]);
 				}
-				double den = max(abs(maxSol), abs(minSol));
+				double den = max(fabs(maxSol), fabs(minSol));
 				if (den >= spatiallyUniformAbsTol && (maxSol - minSol)/den > spatiallyUniformRelTol) {
 					return false;
 				}
@@ -663,7 +663,7 @@ bool SimTool::checkSpatiallyUniform(Variable* var) {
 					maxSol = max(maxSol, currSol[memIndex]);
 					minSol = min(minSol, currSol[memIndex]);
 				}
-				double den = max(abs(maxSol), abs(minSol));
+				double den = max(fabs(maxSol), fabs(minSol));
 				if (den >= spatiallyUniformAbsTol && (maxSol - minSol)/den > spatiallyUniformRelTol) {
 					return false;
 				}
