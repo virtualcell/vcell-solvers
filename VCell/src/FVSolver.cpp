@@ -866,10 +866,11 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 			ifsInput >> time_step;
 			simTool->setTimeStep(time_step);
 		} else if (nextToken == "CHECK_SPATIALLY_UNIFORM") {
-			double spatiallyUniformAbsTol = 1e-3;
-			ifsInput >> spatiallyUniformAbsTol;
+			double spatiallyUniformAbsTol = 1e-6;
+			double spatiallyUniformRelTol = 1e-3;
+			ifsInput >> spatiallyUniformAbsTol >> spatiallyUniformRelTol;
 			simTool->setCheckSpatiallyUniform();
-			simTool->setSpatiallyUniformAbsErrorTolerance(spatiallyUniformAbsTol);
+			simTool->setSpatiallyUniformErrorTolerance(spatiallyUniformAbsTol, spatiallyUniformRelTol);
 		} else if (nextToken == "KEEP_EVERY") {
 			getline(ifsInput, nextToken);
 			stringstream ss(nextToken);

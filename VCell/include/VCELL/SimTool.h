@@ -82,8 +82,9 @@ public:
 	double getSundialsRelativeTolerance() { return sundialsRelTol; }
 	double getSundialsAbsoluteTolerance() { return sundialsAbsTol; }
 
-	void setSpatiallyUniformAbsErrorTolerance(double atol) {
+	void setSpatiallyUniformErrorTolerance(double atol, double rtol) {
 		spatiallyUniformAbsTol = atol;
+		spatiallyUniformRelTol = rtol;
 	}
 
 	double getSimStartTime() { return simStartTime; }
@@ -122,7 +123,7 @@ private:
 
 
 	double sundialsRelTol, sundialsAbsTol;
-	double spatiallyUniformAbsTol;
+	double spatiallyUniformAbsTol, spatiallyUniformRelTol;
 
 	bool bSundialsOneStepOutput;
 	int keepAtMost;

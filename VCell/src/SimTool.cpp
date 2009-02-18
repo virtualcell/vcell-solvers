@@ -63,7 +63,8 @@ SimTool::SimTool()
 	vcellModel = 0;
 	simulation = 0;
 
-	spatiallyUniformAbsTol = 1e-9;
+	spatiallyUniformAbsTol = 1e-6;
+	spatiallyUniformRelTol = 1e-3;
 
 	numDiscontinuityTimes = 0;
 	discontinuityTimes = 0;
@@ -573,6 +574,11 @@ void SimTool::start() {
 
 		simulation->iterate();
 		simulation->update();
+
+		if (checkStopRequested()) {
+			return;
+		}
+
         if (bStoreEnable){
 			if (simulation->getCurrIteration() % keepEvery == 0 || simulation->getTime_sec() > simEndTime - epsilon){
 				updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
@@ -640,7 +646,8 @@ bool SimTool::checkSpatiallyUniform(Variable* var) {
 					maxSol = max(maxSol, currSol[volIndex]);
 					minSol = min(minSol, currSol[volIndex]);
 				}
-				if (maxSol - minSol > spatiallyUniformAbsTol) {
+				double den = max(abs(maxSol), abs(minSol));
+				if (den >= spatiallyUniformAbsTol && (maxSol - minSol)/den > spatiallyUniformRelTol) {
 					return false;
 				}
 			}
@@ -656,7 +663,8 @@ bool SimTool::checkSpatiallyUniform(Variable* var) {
 					maxSol = max(maxSol, currSol[memIndex]);
 					minSol = min(minSol, currSol[memIndex]);
 				}
-				if (maxSol - minSol > spatiallyUniformAbsTol) {
+				double den = max(abs(maxSol), abs(minSol));
+				if (den >= spatiallyUniformAbsTol && (maxSol - minSol)/den > spatiallyUniformRelTol) {
 					return false;
 				}
 			}
