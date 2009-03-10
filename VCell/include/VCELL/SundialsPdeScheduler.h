@@ -133,7 +133,6 @@ private:
 	void printCVodeStats();
 
 	long numUnknowns;
-	long numVolUnknowns;
 
 	int* global2Local;
 	int* local2Global;
@@ -183,28 +182,21 @@ private:
 	SparseMatrixPCG* M; //
 	double* pcg_workspace;
 	long nsp; // size of ISP and RSP
-	bool bPcReinit, bPcReinit_reaction;
+	bool bPcReinit;
 
 	void preallocateM();
-	void buildM_Volume(double t, double*yinput, double gamma, bool bReactionOnly=false);
-	void buildM_Membrane(double t, double*yinput, double gamma, bool bReactionOnly=false);
+	void buildM_Volume(double t, double* yinput, double gamma);
+	void buildM_Membrane(double t, double* yinput, double gamma);
 
 	int getVolumeElementVectorOffset(int volIndex, int regionID);
 	int getMembraneElementVectorOffset(int meindex);
 	int getVolumeRegionVectorOffset(int regionID);
 	int getMembraneRegionVectorOffset(int regionID);
 
-	bool bLUcomputed, bLUcomputed_reaction;
+	bool bLUcomputed;
 	double oldGamma;
 	double currentTime;
 	bool bSundialsOneStepOutput;
-
-	double* z_reaction;
-	SparseMatrixPCG* M_reaction; //
-	long nsp_reaction;
-	double* pcg_workspace_reaction;
-	void updateVolumeStatePointValuesWithOldValues(int volIndex, double t);
-	void updateMembraneStatePointValuesWithOldValues(MembraneElement& me, double t);
 };
 
 #endif

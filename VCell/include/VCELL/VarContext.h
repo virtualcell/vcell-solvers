@@ -57,9 +57,6 @@ public:
 	double evalExpression(long expIndex, double* values);
 	double getExpressionConstantValue(long expIndex);
 
-	void addReactionRateDerivative(Expression* rateDeriExp);
-	double evalReactionRateDerivative(int varindex, double* values);
-
 protected:
     VarContext(Feature *feature, string& speciesName);
     
@@ -75,9 +72,6 @@ protected:
 	Expression** expressions;	
 	double** constantValues;
 	bool* needsXYZ;
-
-	vector<Expression*> reactionRateDerivativeExpressions;
-	vector<double*> reactionRateDerivateConstantValues;
 
 	double getExpressionValue(long volIndex, long expIndex);
 	double getExpressionValue(MembraneElement* element, long expIndex);
