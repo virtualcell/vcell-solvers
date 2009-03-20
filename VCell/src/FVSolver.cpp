@@ -289,7 +289,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				PDESolver* pdeSolver = new SparseLinearSolver(volumeVar,builder,bTimeDependent);
 				simulation->addSolver(pdeSolver);
 			}
-			simulation->addVariable(volumeVar, vrmap);
+			simulation->addVolumeVariable(volumeVar, vrmap);
 		} else if (nextToken == "VOLUME_ODE") {
 			string solve_whole_mesh_flag;
 			ifsInput >> variable_name >> unit >> solve_whole_mesh_flag;
@@ -327,7 +327,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				odeSolver->setEqnBuilder(builder);
 				simulation->addSolver(odeSolver);
 			}
-			simulation->addVariable(volumeVar, vrmap);
+			simulation->addVolumeVariable(volumeVar, vrmap);
 		} else if (nextToken == "MEMBRANE_ODE") {
 			ifsInput >> variable_name >> unit;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
@@ -339,7 +339,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				odeSolver->setEqnBuilder(builder);
 				simulation->addSolver(odeSolver);
 			}
-			simulation->addVariable(membraneVar);
+			simulation->addMembraneVariable(membraneVar);
 		} else if (nextToken == "MEMBRANE_PDE") {
 			bool bNoConvection = true;    // define symmflg = 0 (general) or 1 (symmetric)
 			bool bTimeDependent = false;
@@ -355,7 +355,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				SparseLinearSolver* slSolver = new SparseLinearSolver(membraneVar,smbuilder,bTimeDependent);
 				simulation->addSolver(slSolver);
 			}
-			simulation->addVariable(membraneVar);
+			simulation->addMembraneVariable(membraneVar);
 		} else if (nextToken == "VOLUME_REGION") {
 			ifsInput >> variable_name >> unit;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
@@ -367,7 +367,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				odeSolver->setEqnBuilder(builder);
 				simulation->addSolver(odeSolver);
 			}
-			simulation->addVariable(volumeRegionVar);
+			simulation->addVolumeRegionVariable(volumeRegionVar);
 		} else if (nextToken == "MEMBRANE_REGION") {
 			ifsInput >> variable_name >> unit;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
@@ -379,7 +379,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				odeSolver->setEqnBuilder(builder);
 				simulation->addSolver(odeSolver);
 			}
-			simulation->addVariable(memRegionVariable);
+			simulation->addMembraneRegionVariable(memRegionVariable);
 		}
 	}
 }

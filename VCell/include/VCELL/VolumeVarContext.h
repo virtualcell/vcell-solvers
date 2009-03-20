@@ -6,6 +6,7 @@
 #define VOLUMEVARCONTEXT_H
 
 #include <VCELL/VarContext.h>
+#include <VCELL/VolumeVariable.h>
 
 class VolumeVarContext : public VarContext
 {
@@ -40,6 +41,12 @@ public:
     
 	virtual bool hasConstantDiffusion() {
 		return diffusionRate!=0;
+	}
+	virtual bool hasConstantDiffusionAdvection(int dimension) {
+		if (((VolumeVariable*)species)->isAdvecting()) {
+			return false;
+		}
+		return hasConstantDiffusion();
 	}
 protected:
     VolumeVarContext(Feature *feature, string& speciesName);

@@ -57,22 +57,27 @@ public:
 	void setParameterValues(double* paramValues);
 
 	// right now bSolveRegion is only applicable for volume variables
-	virtual void addVariable(Variable *var, bool* bSolveRegions=0);
+	void addVariable(Variable *var, bool* bSolveRegions=0);
+
+	void addVolumeVariable(VolumeVariable *var, bool* bSolveRegions);
+	void addMembraneVariable(MembraneVariable *var);
+	void addVolumeRegionVariable(VolumeRegionVariable *var);
+	void addMembraneRegionVariable(MembraneRegionVariable *var);
 
 	double* getDiscontinuityTimes() { return discontinuityTimes; }
 	void setDiscontinuityTimes(double* stopTimes) { discontinuityTimes=stopTimes; }
 
-	int getNumVolVariables() { return (int)volVarList.size(); }
-	VolumeVariable* getVolVariable(int i) { return volVarList.at(i); }
+	int getNumVolVariables() { return volVarSize; }
+	VolumeVariable* getVolVariable(int i) { return volVarList[i]; }
 
-	int getNumMemVariables() { return (int)memVarList.size(); }
-	MembraneVariable* getMemVariable(int i) { return memVarList.at(i); }
+	int getNumMemVariables() { return memVarSize; }
+	MembraneVariable* getMemVariable(int i) { return memVarList[i]; }
 
-	int getNumVolRegionVariables() { return (int)volRegionVarList.size(); }
-	VolumeRegionVariable* getVolRegionVariable(int i) { return volRegionVarList.at(i); }
+	int getNumVolRegionVariables() { return volRegionVarSize; }
+	VolumeRegionVariable* getVolRegionVariable(int i) { return volRegionVarList[i]; }
 
-	int getNumMemRegionVariables() { return (int)memRegionVarList.size(); }
-	MembraneRegionVariable* getMemRegionVariable(int i) { return memRegionVarList.at(i); }
+	int getNumMemRegionVariables() { return memRegionVarSize; }
+	MembraneRegionVariable* getMemRegionVariable(int i) { return memRegionVarList[i]; }
 
 	int getNumMemPde() { return numMemPde; }
 	int getNumVolPde() { return numVolPde; }
@@ -110,10 +115,14 @@ protected:
 	vector<bool*> volVariableRegionMap;
 	double* discontinuityTimes;
 
-	vector<VolumeVariable*> volVarList;
-	vector<MembraneVariable*> memVarList;
-	vector<VolumeRegionVariable*> volRegionVarList;
-	vector<MembraneRegionVariable*> memRegionVarList;
+	VolumeVariable** volVarList;
+	int volVarSize;
+	MembraneVariable** memVarList;
+	int memVarSize;
+	VolumeRegionVariable** volRegionVarList;
+	int volRegionVarSize;
+	MembraneRegionVariable** memRegionVarList;
+	int memRegionVarSize;
 
 	int numVolPde;
 	int numMemPde;

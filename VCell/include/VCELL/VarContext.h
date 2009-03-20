@@ -51,9 +51,7 @@ public:
 
 	void setExpression(Expression* newexp, int expIndex);
 	void bindAll(SymbolTable* symbolTable);
-	virtual bool hasConstantDiffusion() {
-		return (constantValues != 0 && constantValues[DIFF_RATE_EXP] != 0);
-	}
+
 	double evalExpression(long expIndex, double* values);
 	double getExpressionConstantValue(long expIndex);
 

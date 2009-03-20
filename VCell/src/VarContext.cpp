@@ -135,7 +135,9 @@ double VarContext::getExpressionConstantValue(long expIndex) {
 
 double VarContext::getExpressionValue(long volIndex, long expIndex) {	
 	if (expressions[expIndex] == 0) { // not defined
-		throw "VarContext::getExpressionValue(), expression not defined";
+		stringstream ss;
+		ss << "VarContext::getExpressionValue(), for variable " << speciesName << " expression " << String_Expression_Index[expIndex] << " not defined";
+		throw ss.str();
 	}
 	if (constantValues[expIndex] != NULL) {
 		return constantValues[expIndex][0];
@@ -153,7 +155,9 @@ double VarContext::getExpressionValue(long volIndex, long expIndex) {
 
 double VarContext::evalExpression(long expIndex, double* values) {	
 	if (expressions[expIndex] == 0) { // not defined
-		throw "VarContext::evalExpression(), expression not defined";
+		stringstream ss;
+		ss << "VarContext::evalExpression(), for variable " << speciesName << " expression " << String_Expression_Index[expIndex] << " not defined";
+		throw ss.str();
 	}
 	if (constantValues[expIndex] != NULL) {
 		return constantValues[expIndex][0];

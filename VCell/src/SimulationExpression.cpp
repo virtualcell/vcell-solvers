@@ -75,6 +75,16 @@ SimulationExpression::SimulationExpression(Mesh *mesh) : Simulation(mesh) {
 	bHasTimeDependentDiffusionAdvection = false;
 
 	psfFieldDataIndex = -1;
+
+	volVarSize = 0;
+	memVarSize = 0;
+	volRegionVarSize = 0;
+	memRegionVarSize = 0;
+
+	volVarList = 0;
+	memVarList = 0;
+	volRegionVarList = 0;
+	memRegionVarList = 0;
 }
 
 SimulationExpression::~SimulationExpression() 
@@ -94,32 +104,55 @@ SimulationExpression::~SimulationExpression()
 
 void SimulationExpression::addVariable(Variable *var, bool* bSolveRegions)
 {
-	Simulation::addVariable(var);
 	switch (var->getVarType()) {
 	case VAR_VOLUME:
-		volVarList.push_back((VolumeVariable*)var);
-		volVariableRegionMap.push_back(bSolveRegions); // index in here is the same as volVarList;
-		if (var->isPde()) {
-			numVolPde ++;
-		}
+		addVolumeVariable((VolumeVariable*)var, bSolveRegions);
 		break;
 	case VAR_MEMBRANE:
-		memVarList.push_back((MembraneVariable*)var);
-		if (var->isPde()) {
-			numMemPde ++;
-		}
+		addMembraneVariable((MembraneVariable*)var);
 		break;
 	case VAR_VOLUME_REGION:
-		volRegionVarList.push_back((VolumeRegionVariable*)var);
+		addVolumeRegionVariable((VolumeRegionVariable *)var);
 		break;
 	case VAR_MEMBRANE_REGION:
-		memRegionVarList.push_back((MembraneRegionVariable*)var);
+		addMembraneRegionVariable((MembraneRegionVariable *)var);
 		break;
 	default:
 		stringstream ss;
 		ss << "Variable type " << var->getVarType() << " is not supported yet";
 		throw ss.str();
 	}	
+}
+
+void SimulationExpression::addVolumeVariable(VolumeVariable *var, bool* bSolveRegions)
+{
+	Simulation::addVariable(var);
+	volVariableRegionMap.push_back(bSolveRegions);
+	volVarSize ++;
+	if (var->isPde()) {
+		numVolPde ++;
+	}
+}
+
+void SimulationExpression::addMembraneVariable(MembraneVariable *var)
+{
+	Simulation::addVariable(var);
+	memVarSize ++;
+	if (var->isPde()) {
+		numMemPde ++;
+	}
+}
+
+void SimulationExpression::addVolumeRegionVariable(VolumeRegionVariable *var)
+{
+	Simulation::addVariable(var);
+	volRegionVarSize ++;
+}
+
+void SimulationExpression::addMembraneRegionVariable(MembraneRegionVariable *var)
+{
+	Simulation::addVariable(var);
+	memRegionVarSize ++;
 }
 
 void SimulationExpression::advanceTimeOn() {
@@ -148,11 +181,43 @@ void SimulationExpression::createSymbolTable() {
 	}
 
 	int numVariables = (int)varList.size();
-	int numVolVar = (int)volVarList.size();
+
+	if (volVarSize > 0) {
+		volVarList = new VolumeVariable*[volVarSize];
+	}
+	if (memVarSize > 0) {
+		memVarList = new MembraneVariable*[memVarSize];
+	}
+	if (volRegionVarSize > 0) {
+		volRegionVarList = new VolumeRegionVariable*[volRegionVarSize];
+	}
+	if (memRegionVarSize > 0) {
+		memRegionVarList = new MembraneRegionVariable*[memRegionVarSize];
+	}
+	int volVarCount = 0, memVarCount = 0, volRegionVarCount = 0, memRegionVarCount = 0;
+	for (int i = 0; i < numVariables; i ++) {
+		Variable* var = varList.at(i);
+		switch (var->getVarType()) {
+		case VAR_VOLUME:
+			volVarList[volVarCount ++] = ((VolumeVariable*)var);
+			break;
+		case VAR_MEMBRANE:
+			memVarList[memVarCount ++] = ((MembraneVariable*)var);
+			break;
+		case VAR_VOLUME_REGION:
+			volRegionVarList[volRegionVarCount ++] = (VolumeRegionVariable*)var;
+			break;
+		case VAR_MEMBRANE_REGION:
+			memRegionVarList[memRegionVarCount ++] = (MembraneRegionVariable*)var;
+			break;
+		}
+	}
+
+	
 	bool bSundialsPdeSolver = SimTool::getInstance()->isSundialsPdeSolver();
 
 	// t, x, y, z, VAR, VAR_INSIDE, VAR_OUTSIDE, field data, parameters
-	int numSymbols = 4 + numVolVar * 3 + (numVariables - numVolVar) + (int)fieldDataList.size() + (int)paramList.size();
+	int numSymbols = 4 + volVarSize * 3 + (numVariables - volVarSize) + (int)fieldDataList.size() + (int)paramList.size();
 	string* variableNames = new string[numSymbols];	
 	ValueProxy** oldValueProxies = new ValueProxy*[numSymbols];
 
@@ -176,7 +241,7 @@ void SimulationExpression::createSymbolTable() {
 	int variableIndex = 4;
 
 	// Volume PDE/ODE
-	for (int i = 0; i < (int)volVarList.size(); i ++) {
+	for (int i = 0; i < volVarSize; i ++) {
 		Variable* var = volVarList[i];
 		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_VOLUME_INDEX, indices);
 		variableNames[variableIndex ++] = string(var->getName());
@@ -189,21 +254,21 @@ void SimulationExpression::createSymbolTable() {
 	}
 
 	// Membrane ODE/PDE
-	for (int i = 0; i < (int)memVarList.size(); i ++) {
+	for (int i = 0; i < memVarSize; i ++) {
 		Variable* var = memVarList[i];
 		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_MEMBRANE_INDEX, indices);
 		variableNames[variableIndex ++] = string(var->getName());
 	}
 		
 	// Volume Region
-	for (int i = 0; i < (int)volRegionVarList.size(); i ++) {
+	for (int i = 0; i < volRegionVarSize; i ++) {
 		Variable* var = volRegionVarList[i];
 		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_VOLUME_REGION_INDEX, indices);
 		variableNames[variableIndex ++] = string(var->getName());
 	} 		
 		
 	// Membrane Region
-	for (int i = 0; i < (int)memRegionVarList.size(); i ++) {
+	for (int i = 0; i < memRegionVarSize; i ++) {
 		Variable* var = memRegionVarList[i];
 		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_MEMBRANE_REGION_INDEX, indices);
 		variableNames[variableIndex ++] = string(var->getName());

@@ -42,8 +42,11 @@ using namespace std;
 //#define SUNDIALS_USE_PCNONE
 //#define INCLUDE_ADVECTION_IN_PC
 //#define INCLUDE_BOUNDARY_IN_PC
+//#define COMPARE_WITH_OLD
 
 static double interp_coeff[3] = {3.0/2, -1.0/2, 0};
+static int dirichletExpIndexes[3] = {BOUNDARY_XP_EXP, BOUNDARY_YP_EXP, BOUNDARY_ZP_EXP};
+static int velocityExpIndexes[3] = {VELOCITY_X_EXP, VELOCITY_Y_EXP, VELOCITY_Z_EXP};
 
 SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, double rtol, double atol, int numDisTimes, double* disTimes, bool bDefaultOuptput) : Scheduler(sim)
 {
@@ -64,6 +67,9 @@ SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, double rtol, double 
 
 	bSundialsOneStepOutput = bDefaultOuptput;
 	currentTime = 0;
+
+	statePointValues = 0;
+	neighborStatePointValues = 0;
 }
 
 
@@ -73,15 +79,31 @@ SundialsPdeScheduler::~SundialsPdeScheduler()
 	CVodeFree(&sundialsSolverMemory);
 
 	delete[] statePointValues;
+
+	if (bHasVariableDiffusionAdvection) {
+		for (int n = 0; n < 3; n ++) {
+			delete[] neighborStatePointValues[n];
+		}
+		delete neighborStatePointValues;
+	}
+
 	delete[] global2Local;
-	delete[] local2Global;	
+	delete[] local2Global;
 	delete[] regionSizes;
 	delete[] regionOffsets;
-	delete[] regionVariableSize;
 	delete[] volVectorOffsets;
 
 	delete M;
 	delete[] pcg_workspace;
+
+	if (simulation->getNumVolVariables() > 0) {
+		int numVolRegions = mesh->getNumVolumeRegions();
+		delete[] regionDefinedVolVariableSizes;
+		for (int r = 0; r < numVolRegions; r ++) {
+			delete[] regionDefinedVolVariableIndexes[r];
+		}
+		delete[] regionDefinedVolVariableIndexes;
+	}
 }
 
 void SundialsPdeScheduler::iterate() {
@@ -110,28 +132,28 @@ void SundialsPdeScheduler::setupOrderMaps() {
 
 	VOLUME = mesh->getVolume_cu();
 
-	eLambdas[0] = 1/(Dx * Dx);
-	eLambdas[1] = 1/(Dy * Dy);
-	eLambdas[2] = 1/(Dz * Dz);
-
-	bLambdas[0] = 1/Dx;
-	bLambdas[1] = 1/Dy;
-	bLambdas[2] = 1/Dz;
+	oneOverH[0] = 1/Dx;
+	oneOverH[1] = 1/Dy;
+	oneOverH[2] = 1/Dz;
 
 	pVolumeElement = mesh->getVolumeElements();
 	pMembraneElement = mesh->getMembraneElements();
 
 	int numVolRegions = mesh->getNumVolumeRegions();
 	global2Local = new int[Nxyz];
-	local2Global = new int[Nxyz];	
+	local2Global = new int[Nxyz];
 	regionSizes = new int[numVolRegions];
 	regionOffsets = new int[numVolRegions];
-	regionVariableSize = new int[numVolRegions];	
+	regionDefinedVolVariableSizes = 0;
+	regionDefinedVolVariableIndexes = 0;
+	bRegionHasConstantDiffusionAdvection = 0;
+	bHasAdvection = false;
+	bHasVariableDiffusionAdvection = false;
 
 	int numActivePoints = 0;
 	cout << endl << "numVolRegions=" << numVolRegions << endl;
 	for (int r = 0; r < numVolRegions; r ++) {
-		regionOffsets[r] = numActivePoints;		
+		regionOffsets[r] = numActivePoints;
 		for (int k = 0; k < Nz; k ++) {
 			for (int j = 0; j < Ny; j ++) {
 				for (int i = 0; i < Nx; i ++) {
@@ -151,23 +173,65 @@ void SundialsPdeScheduler::setupOrderMaps() {
 	}
 	cout << "# of active points = " << numActivePoints << endl;
 
+	// if local to global mapping is not always in increasing order
+	// then in the rhs operator, we need a separate loop for reaction and scale volume
+	for (int r = 0; r < numVolRegions; r ++) {
+		int localIndex0 = regionOffsets[r];
+		for (int localIndex = localIndex0 ; localIndex < localIndex0 + regionSizes[r]-1; localIndex ++) {
+			int volIndex = local2Global[localIndex];
+			int volIndexp = local2Global[localIndex+1];
+			if (volIndexp < volIndex) {
+				throw " local to global map not in increasing order";
+			}
+		}
+	}
+
 	volVectorOffsets = new int[numVolRegions];
 	numUnknowns  = 0;
 	if (simulation->getNumVolVariables() > 0) {
+		bRegionHasConstantDiffusionAdvection = new bool[numVolRegions];
+		regionDefinedVolVariableSizes = new int[numVolRegions];
+		regionDefinedVolVariableIndexes = new int*[numVolRegions];
+
 		// Volume PDE/ODE first
 		for (int r = 0; r < numVolRegions; r ++) {
-			regionVariableSize[r] = 0;
 			volVectorOffsets[r] = numUnknowns;
+			regionDefinedVolVariableSizes[r] = 0;
+			regionDefinedVolVariableIndexes[r] = 0;
+			bRegionHasConstantDiffusionAdvection[r] = true;
+
+			int firstPointVolIndex = local2Global[regionOffsets[r]];
+			Feature* feature = pVolumeElement[firstPointVolIndex].feature;
 			for (int v = 0; v < simulation->getNumVolVariables(); v ++) {
 				if (simulation->isVolumeVariableDefinedInRegion(v, r)) {
 					numUnknowns += regionSizes[r];
-					regionVariableSize[r] ++;				
+					regionDefinedVolVariableSizes[r] ++;
+
+					VolumeVariable* var = (VolumeVariable*)simulation->getVolVariable(v);
+ 					VolumeVarContext* varContext = feature->getVolumeVarContext(var);
+					if (var->isPde() && !varContext->hasConstantDiffusionAdvection(dimension)) {
+						bRegionHasConstantDiffusionAdvection[r] = false;
+						bHasVariableDiffusionAdvection = true;
+					}
+					if (var->isAdvecting()) {
+						bHasAdvection = true;
+					}
+				}
+			}
+			if (regionDefinedVolVariableSizes[r] > 0) {
+				cout << (bRegionHasConstantDiffusionAdvection[r] ? "Constant" : "Variable") << " diffusion/advection in region " << mesh->getVolumeRegion(r)->getName() << endl;
+				regionDefinedVolVariableIndexes[r] = new int[regionDefinedVolVariableSizes[r]];
+				int activeVarCount = 0;
+				for (int v = 0; v < simulation->getNumVolVariables(); v ++) {
+					if (simulation->isVolumeVariableDefinedInRegion(v, r)) {
+						regionDefinedVolVariableIndexes[r][activeVarCount ++] = v;
+					}
 				}
 			}
 		}
 	}
 	// Membrane ODE/PDE
-	memVectorOffset = numUnknowns;	
+	memVectorOffset = numUnknowns;
 	numUnknowns += mesh->getNumMembraneElements() * simulation->getNumMemVariables();
 	// Volume Region
 	volRegionVectorOffset = numUnknowns;
@@ -187,7 +251,7 @@ void SundialsPdeScheduler::checkCVodeReturnCode(int returnCode) {
 	switch (returnCode){
 		case CV_SUCCESS: {
 			throw "CV_SUCCESS: CVode succeeded and no roots were found.";
-		}						 
+		}
 		case CV_ROOT_RETURN: {
 			throw "CV_ROOT_RETURN: CVode succeeded, and found one or more roots. If nrtfn > 1, call CVodeGetRootInfo to see which g_i were found to have a root at (*tret).";
 		}
@@ -229,24 +293,43 @@ void SundialsPdeScheduler::checkCVodeReturnCode(int returnCode) {
 		}
 		default:
 			throw CVodeGetReturnFlagName(returnCode);
-	}	
+	}
 }
 
 int SundialsPdeScheduler::RHS_callback(realtype t, N_Vector yinput, N_Vector rhs, void *fdata) {
 	SundialsPdeScheduler* solver = (SundialsPdeScheduler*)fdata;
 	double* y_data = NV_DATA_S(yinput);
-	double* r_data = NV_DATA_S(rhs);	
+	double* r_data = NV_DATA_S(rhs);
 	return solver->CVodeRHS(t, y_data, r_data);
 }
 
 int SundialsPdeScheduler::CVodeRHS(double t, double* yinput, double* rhs) {
+#ifdef COMPARE_WITH_OLD
+	double* r1 = new double[numUnknowns];
+	double* r2 = new double[numUnknowns];
+	memset(r1, 0, numUnknowns * sizeof(double));
+	memset(r2, 0, numUnknowns * sizeof(double));
+	applyVolumeOperatorOld(t, yinput, r1);
+	applyVolumeOperator(t, yinput, r2);
+
+	cout << "--comparing with old code at " << t << endl;
+	for (int i = 0; i < numUnknowns; i ++) {
+		double relerror = r2[i] == 0? fabs(r1[i] - r2[i]) : fabs((r1[i] - r2[i])/r2[i]);
+		if (relerror > 1e-5) {
+			cout << i << ":" << "r1=" << r1[i] << ", r2=" << r2[i] << endl;
+		}
+	}
+	cout << "--compared with old code" << endl;
+	delete[] r1;
+	delete[] r2;
+#endif
 	memset(rhs, 0, numUnknowns * sizeof(double));
-	applyVolumeDiffusionReactionAdvectionOperator(t, yinput, rhs); 
+	applyVolumeOperator(t, yinput, rhs);
 	applyMembraneDiffusionReactionOperator(t, yinput, rhs);
 	applyVolumeRegionReactionOperator(t, yinput, rhs);
 	applyMembraneRegionReactionOperator(t, yinput, rhs);
 	applyMembraneFluxOperator(t, yinput, rhs);
-		
+
 	return 0;
 }
 
@@ -257,15 +340,23 @@ void SundialsPdeScheduler::initSundialsSolver() {
 
 	int numVariables = simulation->getNumVariables();
 	int numVolVar = simulation->getNumVolVariables();
-	int numSymbols = 4 + numVolVar * 3 + (numVariables - numVolVar); // t, x, y, z, (U, U_INSIDE, U_OUTSIDE), (M), (VR), (MR)
+	valueArraySize = 4 + numVolVar * 3 + (numVariables - numVolVar); // t, x, y, z, (U, U_INSIDE, U_OUTSIDE), (M), (VR), (MR)
 
 	volSymbolOffset = 4;
 	memSymbolOffset = volSymbolOffset + numVolVar * 3;
 	volRegionSymbolOffset = memSymbolOffset + simulation->getNumMemVariables();
 	memRegionSymbolOffset = volRegionSymbolOffset + simulation->getNumVolRegionVariables();
 
-	statePointValues = new double[numSymbols];
-	memset(statePointValues, 0, numSymbols * sizeof(double));
+	statePointValues = new double[valueArraySize];
+	memset(statePointValues, 0, valueArraySize * sizeof(double));
+
+	if (bHasVariableDiffusionAdvection) {
+		neighborStatePointValues = new double*[3];
+		for (int n = 0; n < 3; n ++) {
+			neighborStatePointValues[n] = new double[valueArraySize];
+			memset(neighborStatePointValues[n], 0, valueArraySize * sizeof(double));
+		}
+	}
 
 	currDiscontinuityTimeCount = 0;
 	while (numDiscontinuityTimes > 0 && discontinuityTimes[currDiscontinuityTimeCount] < currentTime) {
@@ -281,23 +372,22 @@ void SundialsPdeScheduler::initSundialsSolver() {
 	if (y == 0) {
 		throw "SundialsPDESolver:: Out of Memory : y ";
 	}
-	
+
 	// initialize y with initial conditions
 	int count = 0;
 	double *y_data = NV_DATA_S(y);
 	if (numVolVar > 0) {
 		for (int r = 0; r < mesh->getNumVolumeRegions(); r ++) {
 			for (int ri = 0; ri < regionSizes[r]; ri ++) {
-				for (int v = 0; v < numVolVar; v ++) {
-					if (simulation->isVolumeVariableDefinedInRegion(v, r)) {
-						int volIndex = local2Global[ri + regionOffsets[r]];
-						y_data[count ++] = simulation->getVolVariable(v)->getCurr(volIndex);
-					}
+				int volIndex = local2Global[ri + regionOffsets[r]];
+				for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[r]; activeVarCount ++) {
+					int varIndex = regionDefinedVolVariableIndexes[r][activeVarCount];
+					y_data[count ++] = simulation->getVolVariable(varIndex)->getCurr(volIndex);
 				}
 			}
 		}
 	}
-	if (simulation->getNumMemVariables() > 0) {	
+	if (simulation->getNumMemVariables() > 0) {
 		for (int mi = 0; mi < mesh->getNumMembraneElements(); mi ++) {
 			for (int v = 0; v < simulation->getNumMemVariables(); v ++) {
 				y_data[count ++] = simulation->getMemVariable(v)->getCurr(mi);
@@ -305,7 +395,7 @@ void SundialsPdeScheduler::initSundialsSolver() {
 		}
 	}
 
-	if (simulation->getNumVolRegionVariables() > 0) {	
+	if (simulation->getNumVolRegionVariables() > 0) {
 		for (int r = 0; r < mesh->getNumVolumeRegions(); r ++) {
 			for (int v = 0; v < simulation->getNumVolRegionVariables(); v ++) {
 				y_data[count ++] = simulation->getVolRegionVariable(v)->getCurr(r);
@@ -313,7 +403,7 @@ void SundialsPdeScheduler::initSundialsSolver() {
 		}
 	}
 
-	if (simulation->getNumMemRegionVariables() > 0) {	
+	if (simulation->getNumMemRegionVariables() > 0) {
 		for (int r = 0; r < mesh->getNumMembraneRegions(); r ++) {
 			for (int v = 0; v < simulation->getNumMemRegionVariables(); v ++) {
 				y_data[count ++] = simulation->getMemRegionVariable(v)->getCurr(r);
@@ -325,7 +415,7 @@ void SundialsPdeScheduler::initSundialsSolver() {
 	if (!simulation->hasTimeDependentDiffusionAdvection()) {
 		oldGamma = 1.0;
 		buildM_Volume(0, 0, oldGamma);
-		buildM_Membrane(0, 0, oldGamma);		
+		buildM_Membrane(0, 0, oldGamma);
 	}
 
 	sundialsSolverMemory = CVodeCreate(CV_BDF, CV_NEWTON);
@@ -342,12 +432,12 @@ void SundialsPdeScheduler::initSundialsSolver() {
 
 	returnCode = CVodeSetFdata(sundialsSolverMemory, this);
 	checkCVodeReturnCode(returnCode);
-	
+
 	// set linear solver
 #ifdef SUNDIALS_USE_PCNONE
 	cout << endl << "******using Sundials CVode with PREC_NONE, relTol=" << relTol << ", absTol=" << absTol << endl;
 	returnCode = CVSpgmr(sundialsSolverMemory, PREC_NONE, 0);
-#else	
+#else
 	if (simulation->getNumMemPde() == 0 && simulation->getNumVolPde() == 0) {
 		cout << endl << "******ODE only, using Sundials CVode with PREC_NONE, relTol=" << relTol << ", absTol=" << absTol << endl;
 		returnCode = CVSpgmr(sundialsSolverMemory, PREC_NONE, 0);
@@ -358,10 +448,6 @@ void SundialsPdeScheduler::initSundialsSolver() {
 #endif
 	checkCVodeReturnCode(returnCode);
 
-	// set max time step
-	//returnCode = CVodeSetMaxStep(sundialsSolverMemory, 0.1);
-	//checkCVodeReturnCode(returnCode);
-
 	// set max of number of steps
 	returnCode = CVodeSetMaxNumSteps(sundialsSolverMemory, LONG_MAX);
 	checkCVodeReturnCode(returnCode);
@@ -369,14 +455,6 @@ void SundialsPdeScheduler::initSundialsSolver() {
 	// set preconditioner.
 	returnCode = CVSpilsSetPreconditioner (sundialsSolverMemory, pcSetup_callback, pcSolve_callback, this);
 	checkCVodeReturnCode(returnCode);
-
-	//returnCode = CVSpilsSetDelt(sundialsSolverMemory, 0.005);
-	//checkCVodeReturnCode(returnCode);
-
-	// set root finding
-	//int numDiscontinuities = 2;
-	//returnCode = CVodeRootInit(sundialsSolverMemory, 2 * numDiscontinuities, RootFn_callback, this);
-	//checkCVodeReturnCode(returnCode);	
 }
 
 void SundialsPdeScheduler::printCVodeStats()
@@ -441,7 +519,7 @@ void SundialsPdeScheduler::solve() {
 		stopTime = discontinuityTimes[currDiscontinuityTimeCount];
 		bStop = true;
 	}
-	
+
 	while (true) {
 		if (currentTime > endTime - epsilon) {
 			break;
@@ -465,14 +543,14 @@ void SundialsPdeScheduler::solve() {
 			}
 			// find out next stop time
 			bStop = false;
-			stopTime = endTime;			
-			if (currDiscontinuityTimeCount < numDiscontinuityTimes 
-				&& currentTime < discontinuityTimes[currDiscontinuityTimeCount] 
-				&& (endTime >  discontinuityTimes[currDiscontinuityTimeCount] 
+			stopTime = endTime;
+			if (currDiscontinuityTimeCount < numDiscontinuityTimes
+				&& currentTime < discontinuityTimes[currDiscontinuityTimeCount]
+				&& (endTime >  discontinuityTimes[currDiscontinuityTimeCount]
 						|| fabs(endTime - discontinuityTimes[currDiscontinuityTimeCount]) < epsilon)) {
-				stopTime = discontinuityTimes[currDiscontinuityTimeCount];				
+				stopTime = discontinuityTimes[currDiscontinuityTimeCount];
 				bStop = true;
-			}	
+			}
 		}
 		if (bSundialsOneStepOutput) {
 			break;
@@ -492,47 +570,46 @@ void SundialsPdeScheduler::updateSolutions() {
 	for (int r = 0; r < mesh->getNumVolumeRegions(); r ++) {
 		bool bDirichletBoundary = mesh->getVolumeRegion(r)->isBoundaryDirichlet();
 		for (int ri = 0; ri < regionSizes[r]; ri ++) {
-			for (int v = 0; v < simulation->getNumVolVariables(); v ++) {
-				if (simulation->isVolumeVariableDefinedInRegion(v, r)) {
-					VolumeVariable *var = simulation->getVolVariable(v);
-					int volIndex = local2Global[ri + regionOffsets[r]];					
-					double sol = y_data[count ++];
-					if (var->isPde() && bDirichletBoundary) {
-						int mask = pVolumeElement[volIndex].neighborMask;
-						if (mask & BOUNDARY_TYPE_DIRICHLET) {
-							updateVolumeStatePointValues(volIndex, currentTime, y_data);
-							Feature* feature = pVolumeElement[volIndex].feature;
-							VolumeVarContext* varContext = feature->getVolumeVarContext(var);	
-							if ((mask & NEIGHBOR_XM_BOUNDARY) && (feature->getXmBoundaryType() == BOUNDARY_VALUE)){					
-								sol = varContext->evalExpression(BOUNDARY_XM_EXP, statePointValues);
-							} else if ((mask & NEIGHBOR_XP_BOUNDARY) && (feature->getXpBoundaryType() == BOUNDARY_VALUE)){
-								sol = varContext->evalExpression(BOUNDARY_XP_EXP, statePointValues);
-							} else if ((mask & NEIGHBOR_YM_BOUNDARY) && (feature->getYmBoundaryType() == BOUNDARY_VALUE)){
-								sol = varContext->evalExpression(BOUNDARY_YM_EXP, statePointValues);
-							} else if ((mask & NEIGHBOR_YP_BOUNDARY) && (feature->getYpBoundaryType() == BOUNDARY_VALUE)){
-								sol = varContext->evalExpression(BOUNDARY_YP_EXP, statePointValues);
-							} else if ((mask & NEIGHBOR_ZM_BOUNDARY) && (feature->getZmBoundaryType() == BOUNDARY_VALUE)){
-								sol = varContext->evalExpression(BOUNDARY_ZM_EXP, statePointValues);
-							} else if ((mask & NEIGHBOR_ZP_BOUNDARY) && (feature->getZpBoundaryType() == BOUNDARY_VALUE)){
-								sol = varContext->evalExpression(BOUNDARY_ZP_EXP, statePointValues);
-							}
-						}
+			int volIndex = local2Global[ri + regionOffsets[r]];
+			int mask = pVolumeElement[volIndex].neighborMask;
+
+			for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[r]; activeVarCount ++) {
+				int varIndex = regionDefinedVolVariableIndexes[r][activeVarCount];
+				VolumeVariable *var = simulation->getVolVariable(varIndex);
+
+				double sol = y_data[count ++];
+				if (var->isPde() && bDirichletBoundary && (mask & BOUNDARY_TYPE_DIRICHLET)) {
+					updateVolumeStatePointValues(volIndex, currentTime, y_data, statePointValues);
+					Feature* feature = pVolumeElement[volIndex].feature;
+					VolumeVarContext* varContext = feature->getVolumeVarContext(var);
+					if ((mask & NEIGHBOR_XM_BOUNDARY) && (feature->getXmBoundaryType() == BOUNDARY_VALUE)){
+						sol = varContext->evalExpression(BOUNDARY_XM_EXP, statePointValues);
+					} else if ((mask & NEIGHBOR_XP_BOUNDARY) && (feature->getXpBoundaryType() == BOUNDARY_VALUE)){
+						sol = varContext->evalExpression(BOUNDARY_XP_EXP, statePointValues);
+					} else if ((mask & NEIGHBOR_YM_BOUNDARY) && (feature->getYmBoundaryType() == BOUNDARY_VALUE)){
+						sol = varContext->evalExpression(BOUNDARY_YM_EXP, statePointValues);
+					} else if ((mask & NEIGHBOR_YP_BOUNDARY) && (feature->getYpBoundaryType() == BOUNDARY_VALUE)){
+						sol = varContext->evalExpression(BOUNDARY_YP_EXP, statePointValues);
+					} else if ((mask & NEIGHBOR_ZM_BOUNDARY) && (feature->getZmBoundaryType() == BOUNDARY_VALUE)){
+						sol = varContext->evalExpression(BOUNDARY_ZM_EXP, statePointValues);
+					} else if ((mask & NEIGHBOR_ZP_BOUNDARY) && (feature->getZpBoundaryType() == BOUNDARY_VALUE)){
+						sol = varContext->evalExpression(BOUNDARY_ZP_EXP, statePointValues);
 					}
-					var->getCurr()[volIndex] = sol;
 				}
+				var->getCurr()[volIndex] = sol;
 			}
 		}
-	}	
+	}
 
 	// update membrane
-	if (simulation->getNumMemVariables() > 0) {			
+	if (simulation->getNumMemVariables() > 0) {
 		for (int m = 0; m < mesh->getNumMembraneElements(); m ++) {
 			for (int v = 0; v < simulation->getNumMemVariables(); v ++) {
 				MembraneVariable *var = (MembraneVariable*)simulation->getMemVariable(v);
 				int mask = mesh->getMembraneNeighborMask(m);
 				double sol = y_data[count ++];
 				if (var->isPde() && (mask & BOUNDARY_TYPE_DIRICHLET)) {
-					updateMembraneStatePointValues(pMembraneElement[m], currentTime, y_data);
+					updateMembraneStatePointValues(pMembraneElement[m], currentTime, y_data, statePointValues);
 
 					Feature* feature = pMembraneElement[m].feature;
 					MembraneVarContext *varContext = feature->getMembraneVarContext(var);
@@ -550,7 +627,7 @@ void SundialsPdeScheduler::updateSolutions() {
 						sol = varContext->evalExpression(BOUNDARY_ZP_EXP, statePointValues);
 					}
 				}
-				var->getCurr()[m] = sol;			
+				var->getCurr()[m] = sol;
 			}
 		}
 	}
@@ -575,9 +652,9 @@ void SundialsPdeScheduler::updateSolutions() {
 			}
 		}
 	}
-} 
+}
 
-void SundialsPdeScheduler::applyVolumeDiffusionReactionAdvectionOperator(double t, double* yinput, double* rhs) {
+void SundialsPdeScheduler::applyVolumeOperatorOld(double t, double* yinput, double* rhs) {
 	short advectDirs[6] = {1, 1, 1, -1, -1, -1};
 	int dirichletExpIndexes[6] = {BOUNDARY_ZM_EXP, BOUNDARY_YM_EXP, BOUNDARY_XM_EXP, BOUNDARY_XP_EXP, BOUNDARY_YP_EXP, BOUNDARY_ZP_EXP};
 	int velocityExpIndexes[6] = {VELOCITY_Z_EXP, VELOCITY_Y_EXP, VELOCITY_X_EXP, VELOCITY_X_EXP, VELOCITY_Y_EXP, VELOCITY_Z_EXP};
@@ -609,10 +686,10 @@ void SundialsPdeScheduler::applyVolumeDiffusionReactionAdvectionOperator(double 
 
 				// update values
 				if (!var->isPde() || !(mask & BOUNDARY_TYPE_DIRICHLET)){
-					updateVolumeStatePointValues(volIndex, t, yinput);
+					updateVolumeStatePointValues(volIndex, t, yinput, statePointValues);
 					double reactionRate = varContext->evalExpression(REACT_RATE_EXP, statePointValues);
 					// add reaction
-					rhs[vectorIndex] += reactionRate;				
+					rhs[vectorIndex] += reactionRate;
 				}
 
 				if (!var->isPde()) {
@@ -620,17 +697,17 @@ void SundialsPdeScheduler::applyVolumeDiffusionReactionAdvectionOperator(double 
 					continue;
 				}
 
-				if (mask & BOUNDARY_TYPE_DIRICHLET) {// dirichlet 
+				if (mask & BOUNDARY_TYPE_DIRICHLET) {// dirichlet
 					rhs[vectorIndex] = 0;
 					continue;
-				} 
+				}
 
-				double lambdaX = eLambdas[0];
-				double lambdaY = eLambdas[1];
-				double lambdaZ = eLambdas[2];
-				double lambdaAreaX = bLambdas[0];
-				double lambdaAreaY = bLambdas[1];
-				double lambdaAreaZ = bLambdas[2];
+				double lambdaX = oneOverH[0]*oneOverH[0];
+				double lambdaY = oneOverH[1]*oneOverH[1];
+				double lambdaZ = oneOverH[2]*oneOverH[2];
+				double lambdaAreaX = oneOverH[0];
+				double lambdaAreaY = oneOverH[1];
+				double lambdaAreaZ = oneOverH[2];
 
 				if (mask & NEIGHBOR_BOUNDARY_MASK){   // boundary
 					if (mask & NEIGHBOR_X_BOUNDARY_MASK){
@@ -644,7 +721,7 @@ void SundialsPdeScheduler::applyVolumeDiffusionReactionAdvectionOperator(double 
 					if (mask & NEIGHBOR_Z_BOUNDARY_MASK){
 						lambdaZ *= 2.0;
 						lambdaAreaZ *= 2.0;
-					}				
+					}
 
 					// add neumann condition
 					// boundary flux equals -D*DU/DX at the xm and xp walls, -D*DU/DY at the ym and yp walls
@@ -663,7 +740,7 @@ void SundialsPdeScheduler::applyVolumeDiffusionReactionAdvectionOperator(double 
 							if (mask & NEIGHBOR_YP_BOUNDARY && feature->getYpBoundaryType() == BOUNDARY_FLUX){
 								rhs[vectorIndex] -= varContext->evalExpression(BOUNDARY_YP_EXP, statePointValues) * lambdaAreaY;
 							}
-						
+
 							if (dimension > 2) {
 								if (mask & NEIGHBOR_ZM_BOUNDARY && feature->getZmBoundaryType() == BOUNDARY_FLUX){
 									rhs[vectorIndex] += varContext->evalExpression(BOUNDARY_ZM_EXP, statePointValues) * lambdaAreaZ;
@@ -692,7 +769,7 @@ void SundialsPdeScheduler::applyVolumeDiffusionReactionAdvectionOperator(double 
 						Viz = varContext->evalExpression(VELOCITY_Z_EXP, statePointValues);
 					}
 				}
-				
+
 				// order is ZM, YM, XM, XP, YP, ZP
 				int volumeNeighbors[6] = {
 					(dimension < 3 || mask & NEIGHBOR_ZM_MASK) ? -1 : volIndex - Nxy,
@@ -715,12 +792,12 @@ void SundialsPdeScheduler::applyVolumeDiffusionReactionAdvectionOperator(double 
 						continue;
 					}
 					int neighborVectorIndex = getVolumeElementVectorOffset(neighborIndex, r) + activeVarCount;
-					double lambda = neighborLambdas[n];					
+					double lambda = neighborLambdas[n];
 
 					bool bNeighborStatePointValuesComputed = false;
 					double D = Di;
 					if (!bHasConstantDiffusion) {
-						updateVolumeStatePointValues(neighborIndex, t, yinput);
+						updateVolumeStatePointValues(neighborIndex, t, yinput, statePointValues);
 						bNeighborStatePointValuesComputed = true;
 						double Dj = varContext->evalExpression(DIFF_RATE_EXP, statePointValues);
 						D = (Di + Dj < epsilon) ? (0.0) : (2 * Di * Dj/(Di + Dj));
@@ -729,7 +806,7 @@ void SundialsPdeScheduler::applyVolumeDiffusionReactionAdvectionOperator(double 
 					int neighborMask = pVolumeElement[neighborIndex].neighborMask;
 					if (neighborMask & BOUNDARY_TYPE_DIRICHLET) {
 						if (!bNeighborStatePointValuesComputed) {
-							updateVolumeStatePointValues(neighborIndex, t, yinput);
+							updateVolumeStatePointValues(neighborIndex, t, yinput, statePointValues);
 							bNeighborStatePointValuesComputed = true;
 						}
 						yneighbor = varContext->evalExpression(dirichletExpIndexes[n], statePointValues);
@@ -738,7 +815,7 @@ void SundialsPdeScheduler::applyVolumeDiffusionReactionAdvectionOperator(double 
 					double Aij = 0;
 					if (var->isAdvecting()) {
 						if (!bNeighborStatePointValuesComputed) {
-							updateVolumeStatePointValues(neighborIndex, t, yinput);
+							updateVolumeStatePointValues(neighborIndex, t, yinput, statePointValues);
 							bNeighborStatePointValuesComputed = true;
 						}
 						int advectDir = advectDirs[n];
@@ -761,24 +838,462 @@ void SundialsPdeScheduler::applyVolumeDiffusionReactionAdvectionOperator(double 
 	} // end for r
 }
 
+static void applyAdvectionHybridScheme(double diffTerm, double advectTerm, double& Aii, double& Aij) {
+	//Aij = max(diffTerm + 0.5 advectTerm, max(advectTerm, 0));
+	//Aii = max(diffTerm - 0.5 advectTerm, max(- advectTerm, 0));
+
+	if (diffTerm < 0.5 * fabs(advectTerm)){ // upwind scheme
+		Aij = max(advectTerm, 0);
+		Aii = max(- advectTerm, 0);
+	} else { // central difference scheme
+		Aij = diffTerm + 0.5 * advectTerm;
+		Aii = diffTerm - 0.5 * advectTerm;
+	}
+}
+
+void SundialsPdeScheduler::applyVolumeOperator(double t, double* yinput, double* rhs) {
+	if (simulation->getNumVolVariables() == 0) {
+		return;
+	}	
+	for (int r = 0; r < mesh->getNumVolumeRegions(); r ++) {
+		if (bRegionHasConstantDiffusionAdvection[r]) {
+			regionApplyVolumeOperatorConstant(r, t, yinput, rhs);
+		} else {
+			regionApplyVolumeOperatorVariable(r, t, yinput, rhs);
+		}
+	}
+}
+
+// for dirichlet point, boundary condition has to be used.
+void SundialsPdeScheduler::dirichletPointSetup(int volIndex, Feature* feature, VarContext* varContext, int mask, int* volumeNeighbors, double& ypoint) {
+	volumeNeighbors[0] = -1;
+	volumeNeighbors[1] = -1;
+	volumeNeighbors[2] = -1;
+	if (dimension > 2 && (mask & NEIGHBOR_ZM_MASK))  {
+		if (!(mask & NEIGHBOR_ZP_MASK)) {
+			volumeNeighbors[2] = volIndex + Nxy;
+		}
+		if (feature->getZmBoundaryType() == BOUNDARY_VALUE) {
+			ypoint = varContext->evalExpression(BOUNDARY_ZM_EXP,  statePointValues);
+		}
+	}
+	if (dimension > 1 && (mask & NEIGHBOR_YM_MASK))  {
+		if (!(mask & NEIGHBOR_YP_MASK)) {
+			volumeNeighbors[1] = volIndex + Nx;
+		}
+		if (feature->getYmBoundaryType() == BOUNDARY_VALUE) {
+			ypoint = varContext->evalExpression(BOUNDARY_YM_EXP, statePointValues);
+		}
+	}
+	if (mask & NEIGHBOR_XM_MASK)  {
+		// make sure we take care of mixed bc (e.g. neumann/dirichlet)
+		// then only xp is a neighbor
+		if (!(mask & NEIGHBOR_XP_MASK)) {
+			volumeNeighbors[0] = volIndex + 1;
+		}
+		if (feature->getXmBoundaryType() == BOUNDARY_VALUE) {
+			ypoint = varContext->evalExpression(BOUNDARY_XM_EXP, statePointValues);
+		}
+	}
+}
+
+// boundary flux equals -D*DU/DX at the xm and xp walls, -D*DU/DY at the ym and yp walls
+double SundialsPdeScheduler::computeNeumannCondition(Feature* feature, VarContext* varContext, int mask, double* scaleSs) {
+	double boundaryCondition = 0;
+	if (mask & NEIGHBOR_XM_BOUNDARY && feature->getXmBoundaryType() == BOUNDARY_FLUX){
+		boundaryCondition += varContext->evalExpression(BOUNDARY_XM_EXP, statePointValues) * oneOverH[0] * scaleSs[0];
+	}
+	if (mask & NEIGHBOR_XP_BOUNDARY && feature->getXpBoundaryType() == BOUNDARY_FLUX){
+		boundaryCondition -= varContext->evalExpression(BOUNDARY_XP_EXP, statePointValues) * oneOverH[0] * scaleSs[0];
+	}
+	if (dimension > 1) {
+		if (mask & NEIGHBOR_YM_BOUNDARY && feature->getYmBoundaryType() == BOUNDARY_FLUX){
+			boundaryCondition += varContext->evalExpression(BOUNDARY_YM_EXP, statePointValues) * oneOverH[1] * scaleSs[1];
+		}
+		if (mask & NEIGHBOR_YP_BOUNDARY && feature->getYpBoundaryType() == BOUNDARY_FLUX){
+			boundaryCondition -= varContext->evalExpression(BOUNDARY_YP_EXP, statePointValues) * oneOverH[1] * scaleSs[1];
+		}
+
+		if (dimension > 2) {
+			if (mask & NEIGHBOR_ZM_BOUNDARY && feature->getZmBoundaryType() == BOUNDARY_FLUX){
+				boundaryCondition += varContext->evalExpression(BOUNDARY_ZM_EXP, statePointValues) * oneOverH[2] * scaleSs[2];
+			}
+			if (mask & NEIGHBOR_ZP_BOUNDARY && feature->getZpBoundaryType() == BOUNDARY_FLUX){
+				boundaryCondition -= varContext->evalExpression(BOUNDARY_ZP_EXP, statePointValues) * oneOverH[2] * scaleSs[2];
+			}
+		}
+	}
+	return boundaryCondition;
+}
+
+// scale cross sectional area scale
+void computeScaleS(int mask, double* scaleS) {
+	if (mask & NEIGHBOR_X_BOUNDARY_MASK){
+		scaleS[1] /= 2; // Y
+		scaleS[2] /= 2; // Z
+	}
+	if (mask & NEIGHBOR_Y_BOUNDARY_MASK){
+		scaleS[0] /= 2; // X
+		scaleS[2] /= 2; // Z
+	}
+	if (mask & NEIGHBOR_Z_BOUNDARY_MASK){
+		scaleS[0] /= 2; // X
+		scaleS[1] /= 2; // Y
+	}
+}
+
+// order is XP, YP, ZP
+#define defineVolumeNeighbors(volIndex, mask) int volumeNeighbors[3] = { \
+									(mask & NEIGHBOR_XP_MASK) ? -1 : volIndex + 1, \
+									(dimension < 2 || mask & NEIGHBOR_YP_MASK) ? -1 : volIndex + Nx, \
+									(dimension < 3 || mask & NEIGHBOR_ZP_MASK) ? -1 : volIndex + Nxy \
+								};
+
+
+// now we update volume flux symmetrically because D*(Uj - Ui)*S/d is the same (opposite sign) for point i and j.
+// but what we computed is D*(Uj - Ui)*S/(d * dV) which will be the same for both too, but at the end, we have to
+// scale it with volume scale. So now we only have to process neighbor points whose indexes are bigger.
+// because we have to scale the flux, we have to make sure
+// 1. we process points from small global index to big global index (we checked this)
+// 2. we always add reaction at the end because reaction term doesn't have dV (otherwise we need another loop to process reaction).
+
+void SundialsPdeScheduler::regionApplyVolumeOperatorConstant(int regionID, double t, double* yinput, double* rhs) {
+	if (regionDefinedVolVariableSizes[regionID] == 0) {
+		return;
+	}
+
+	int firstPointVolIndex = local2Global[regionOffsets[regionID]];
+	Feature* feature = pVolumeElement[firstPointVolIndex].feature;
+	double (*advectTerms)[6] = 0;
+	if (bHasAdvection) {
+		advectTerms = new double[regionDefinedVolVariableSizes[regionID]][6];
+		memset(advectTerms, 0, regionDefinedVolVariableSizes[regionID] * 6 * sizeof(double));
+
+		for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[regionID]; activeVarCount ++) {
+			int varIndex = regionDefinedVolVariableIndexes[regionID][activeVarCount];
+			VolumeVariable* var = simulation->getVolVariable(varIndex);
+
+			if (var->isAdvecting()) {
+
+				VolumeVarContext* varContext = feature->getVolumeVarContext(var);
+				double D = varContext->getExpressionConstantValue(DIFF_RATE_EXP);
+
+				double Vi_XYZ[3] = {0, 0, 0};
+				Vi_XYZ[0] = varContext->getExpressionConstantValue(VELOCITY_X_EXP);
+				if (dimension > 1) {
+					Vi_XYZ[1] = varContext->getExpressionConstantValue(VELOCITY_Y_EXP);
+				}
+				if (dimension > 2) {
+					Vi_XYZ[2] = varContext->getExpressionConstantValue(VELOCITY_Z_EXP);
+				}
+				
+				for (int n = 0; n < 3; n ++) {
+					double diffTerm = D * oneOverH[n];
+					double diffAdvectTerm = 0;
+					double V = Vi_XYZ[n];
+					double advectTerm = -V;
+
+					double Aii = 0, Aij = 0;
+					applyAdvectionHybridScheme(diffTerm, advectTerm, Aii, Aij);
+					advectTerms[activeVarCount][n*2] = Aii;
+					advectTerms[activeVarCount][n*2 + 1] = Aij;
+				} // end for n
+			}
+		}
+	}
+
+	// loop through points
+	for (int regionPointIndex = 0; regionPointIndex < regionSizes[regionID]; regionPointIndex ++) {
+		int localIndex = regionPointIndex + regionOffsets[regionID];
+		int volIndex = local2Global[localIndex];
+		int mask = pVolumeElement[volIndex].neighborMask;
+
+		bool bDirichlet = false;
+		double scaleS[3] = {1, 1, 1};
+		if (mask & NEIGHBOR_BOUNDARY_MASK) {
+			if (mask & BOUNDARY_TYPE_DIRICHLET) {// dirichlet
+				bDirichlet = true;
+			}
+
+			computeScaleS(mask, scaleS);
+		}
+
+		// Macro
+		defineVolumeNeighbors(volIndex, mask)
+
+		// update values for this point
+		updateVolumeStatePointValues(volIndex, t, yinput, statePointValues);
+
+		int vectorIndexOffset = getVolumeElementVectorOffset(volIndex, regionID);
+
+		// loop through defined variables
+		for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[regionID]; activeVarCount ++) {
+			// I can also increment this, but
+			int vectorIndex = vectorIndexOffset + activeVarCount;
+
+			int varIndex = regionDefinedVolVariableIndexes[regionID][activeVarCount];
+			VolumeVariable* var = (VolumeVariable*)simulation->getVolVariable(varIndex);
+			VolumeVarContext* varContext = feature->getVolumeVarContext(var);
+
+			double reactionRate = 0;
+			if (bDirichlet && var->isPde()) {// pde dirichlet
+				rhs[vectorIndex] = 0;
+				if (mask & (NEIGHBOR_XP_BOUNDARY || NEIGHBOR_YP_BOUNDARY || NEIGHBOR_ZP_BOUNDARY)) {
+					continue;
+				}
+			} else {
+				reactionRate = varContext->evalExpression(REACT_RATE_EXP, statePointValues);
+				if (!var->isPde()) {
+					rhs[vectorIndex] += reactionRate;
+					continue;
+				}
+			}
+
+			double boundaryCondition = 0;
+			if (!bDirichlet && (mask & NEIGHBOR_BOUNDARY_MASK)) {   // neumann boundary condition				
+				if ((mask & BOUNDARY_TYPE_MASK) == BOUNDARY_TYPE_NEUMANN) {
+					boundaryCondition = computeNeumannCondition(feature, varContext, mask, scaleS);
+				}
+			}
+
+			double D = varContext->getExpressionConstantValue(DIFF_RATE_EXP);
+
+			double ypoint = yinput[vectorIndex];
+			if (bDirichlet) {
+				dirichletPointSetup(volIndex, feature, varContext, mask, volumeNeighbors, ypoint);
+			}
+
+			// add diffusion and convection
+			for (int n = 0; n < 3; n ++) {
+				int neighborIndex = volumeNeighbors[n];
+				if (neighborIndex < 0) {
+					continue;
+				}
+
+				int neighborVectorIndex = getVolumeElementVectorOffset(neighborIndex, regionID) + activeVarCount;
+				double yneighbor = yinput[neighborVectorIndex];
+
+				//use the real value if the neighbor is dirichlet point
+				int neighborMask = pVolumeElement[neighborIndex].neighborMask;
+				bool bNeighborDirichlet = false;
+				if (neighborMask & BOUNDARY_TYPE_DIRICHLET) {
+					bNeighborDirichlet = true;
+					updateVolumeStatePointValues(neighborIndex, t, 0, txyzValues);
+					yneighbor = varContext->evalExpression(dirichletExpIndexes[n], txyzValues);
+				}
+
+				double diffAdvectTerm = 0;
+				if (var->isAdvecting()) {
+					diffAdvectTerm = yneighbor * advectTerms[activeVarCount][n * 2 + 1] - ypoint * advectTerms[activeVarCount][n * 2];
+				} else {
+					diffAdvectTerm = (yneighbor - ypoint) * D * oneOverH[n];
+				}
+				diffAdvectTerm *= scaleS[n] * oneOverH[n];
+				if (!bDirichlet) {
+					rhs[vectorIndex] += diffAdvectTerm;
+				}
+				if (!bNeighborDirichlet) {
+					rhs[neighborVectorIndex] -= diffAdvectTerm;
+				}
+			} // end for n
+			if (bDirichlet) {
+				rhs[vectorIndex] = 0;
+			} else {
+				// add boundary conditon
+				rhs[vectorIndex] += boundaryCondition;				
+				if (mask & NEIGHBOR_BOUNDARY_MASK){
+					// apply volume scale
+					rhs[vectorIndex] *= (mask&VOLUME_MASK);
+				}
+				// add reaction
+				rhs[vectorIndex] += reactionRate;
+			}
+		} // end for v
+	} // end for ri
+	delete[] advectTerms;
+}
+
+void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, double t, double* yinput, double* rhs) {
+	if (regionDefinedVolVariableSizes[regionID] == 0) {
+		return;
+	}
+
+	int firstPointVolIndex = local2Global[regionOffsets[regionID]];
+	Feature* feature = pVolumeElement[firstPointVolIndex].feature;
+
+	// loop through points
+	bool bHasXmNeighbor = false;
+	for (int regionPointIndex = 0; regionPointIndex < regionSizes[regionID]; regionPointIndex ++) {
+		int localIndex = regionPointIndex + regionOffsets[regionID];
+		int volIndex = local2Global[localIndex];
+		int mask = pVolumeElement[volIndex].neighborMask;
+
+		bool bDirichlet = false;
+		double scaleS[3] = {1, 1, 1};
+		if (mask & NEIGHBOR_BOUNDARY_MASK) {
+			if (mask & BOUNDARY_TYPE_DIRICHLET) {// dirichlet
+				bDirichlet = true;
+			}
+
+			computeScaleS(mask, scaleS);
+		}
+
+		// Macro
+		defineVolumeNeighbors(volIndex, mask)
+
+		if (bHasXmNeighbor) {
+			// update values for this point
+			memcpy(statePointValues, neighborStatePointValues[0], valueArraySize * sizeof(double));
+		} else {
+			updateVolumeStatePointValues(volIndex, t, yinput, statePointValues);
+		}
+		bHasXmNeighbor = volumeNeighbors[0] < 0 ? false : true;
+
+		for (int n = 0; n < 3; n ++) {
+			int neighborIndex = volumeNeighbors[n];
+			if (neighborIndex < 0) {
+				continue;
+			}
+			updateVolumeStatePointValues(neighborIndex, t, yinput, neighborStatePointValues[n]);
+		}
+
+		int vectorIndexOffset = getVolumeElementVectorOffset(volIndex, regionID);
+
+		// loop through defined variables
+		for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[regionID]; activeVarCount ++) {
+			// I can also increment this, but
+			int vectorIndex = vectorIndexOffset + activeVarCount;
+
+			int varIndex = regionDefinedVolVariableIndexes[regionID][activeVarCount];
+			VolumeVariable* var = simulation->getVolVariable(varIndex);
+			VolumeVarContext* varContext = feature->getVolumeVarContext(var);
+
+			double reactionRate = 0;
+			if (bDirichlet && var->isPde()) {// pde dirichlet
+				rhs[vectorIndex] = 0;
+				if (mask & (NEIGHBOR_XP_BOUNDARY || NEIGHBOR_YP_BOUNDARY || NEIGHBOR_ZP_BOUNDARY)) {
+					continue;
+				}
+			} else {
+				reactionRate = varContext->evalExpression(REACT_RATE_EXP, statePointValues);
+				if (!var->isPde()) {
+					rhs[vectorIndex] += reactionRate;
+					continue;
+				}
+			}
+
+			double boundaryCondition = 0;
+			if (!bDirichlet && (mask & NEIGHBOR_BOUNDARY_MASK)) {   // neumann boundary condition				
+				if ((mask & BOUNDARY_TYPE_MASK) == BOUNDARY_TYPE_NEUMANN) {
+					boundaryCondition = computeNeumannCondition(feature, varContext, mask, scaleS);
+				}
+			}
+
+			bool bHasConstantDiffusion = false;
+			double Di = 0;
+			if (varContext->hasConstantDiffusion()) {
+				bHasConstantDiffusion = true;
+				Di = varContext->getExpressionConstantValue(DIFF_RATE_EXP);
+			} else {
+				Di = varContext->evalExpression(DIFF_RATE_EXP, statePointValues);
+			}
+
+			double Vi_XYZ[3] = {0, 0, 0};
+			if (var->isAdvecting()) {
+				Vi_XYZ[0] = varContext->evalExpression(VELOCITY_X_EXP, statePointValues);
+				if (dimension > 1) {
+					Vi_XYZ[1] = varContext->evalExpression(VELOCITY_Y_EXP, statePointValues);
+				}
+				if (dimension > 2) {
+					Vi_XYZ[2] = varContext->evalExpression(VELOCITY_Z_EXP, statePointValues);
+				}
+			}			
+
+			double ypoint = yinput[vectorIndex];
+			if (bDirichlet) {
+				dirichletPointSetup(volIndex, feature, varContext, mask, volumeNeighbors, ypoint);
+			}
+
+			// add diffusion and convection
+			for (int n = 0; n < 3; n ++) {
+				int neighborIndex = volumeNeighbors[n];
+				if (neighborIndex < 0) {
+					continue;
+				}
+
+				double D = Di;
+				if (!bHasConstantDiffusion) {
+					double Dj = varContext->evalExpression(DIFF_RATE_EXP, neighborStatePointValues[n]);
+					D = (Di + Dj < epsilon) ? (0.0) : (2 * Di * Dj/(Di + Dj));
+				}
+
+				int neighborVectorIndex = getVolumeElementVectorOffset(neighborIndex, regionID) + activeVarCount;
+				double yneighbor = yinput[neighborVectorIndex];
+
+				//use the real value if the neighbor is dirichlet point
+				int neighborMask = pVolumeElement[neighborIndex].neighborMask;
+				bool bNeighborDirichlet = false;
+				if (neighborMask & BOUNDARY_TYPE_DIRICHLET) {
+					bNeighborDirichlet = true;
+					yneighbor = varContext->evalExpression(dirichletExpIndexes[n], neighborStatePointValues[n]);
+				}
+
+				double diffTerm = D * oneOverH[n];
+				double diffAdvectTerm = 0;
+				if (var->isAdvecting()) {
+					double Vi = Vi_XYZ[n];
+					double Vj = varContext->evalExpression(velocityExpIndexes[n], neighborStatePointValues[n]);
+					double V = 0.5 * (Vi + Vj);
+					double advectTerm = -V;
+
+					double Aii = 0, Aij = 0;
+					applyAdvectionHybridScheme(diffTerm, advectTerm, Aii, Aij);
+					diffAdvectTerm = yneighbor * Aij - ypoint * Aii;
+				} else {
+					diffAdvectTerm = (yneighbor - ypoint) * diffTerm;
+				}
+				diffAdvectTerm *= scaleS[n] * oneOverH[n];
+				if (!bDirichlet) {
+					rhs[vectorIndex] += diffAdvectTerm;
+				}
+				if (!bNeighborDirichlet) {
+					rhs[neighborVectorIndex] -= diffAdvectTerm;
+				}
+			} // end for n
+			if (bDirichlet) {
+				rhs[vectorIndex] = 0;
+			} else {
+				// add boundary conditon
+				rhs[vectorIndex] += boundaryCondition;				
+				if (mask & NEIGHBOR_BOUNDARY_MASK){
+					// apply volume scale
+					rhs[vectorIndex] *= (mask&VOLUME_MASK);
+				}
+				// add reaction
+				rhs[vectorIndex] += reactionRate;
+			}
+		} // end for v
+	} // end for ri
+}
+
 void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, double* yinput, double* rhs) {
 	if (simulation->getNumMemVariables() == 0) {
 		return;
 	}
 
 	SparseMatrixPCG* membraneElementCoupling = mesh->getMembraneCoupling();
-	for (int mi = 0; mi < mesh->getNumMembraneElements(); mi ++) {			
+	for (int mi = 0; mi < mesh->getNumMembraneElements(); mi ++) {
 		for (int v = 0; v < simulation->getNumMemVariables(); v ++) {
 			int vectorIndex = getMembraneElementVectorOffset(mi) + v;
 
 			MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(v);
 			Feature* feature = pMembraneElement[mi].feature;
-			MembraneVarContext *varContext = feature->getMembraneVarContext(var);	
+			MembraneVarContext *varContext = feature->getMembraneVarContext(var);
 			int mask = mesh->getMembraneNeighborMask(mi);
 
 			if (!var->isPde() || !(mask & BOUNDARY_TYPE_DIRICHLET)) {   // boundary and dirichlet
 				// update values
-				updateMembraneStatePointValues(pMembraneElement[mi], t, yinput);
+				updateMembraneStatePointValues(pMembraneElement[mi], t, yinput, statePointValues);
 				double reactionRate = varContext->evalExpression(REACT_RATE_EXP, statePointValues);
 				// add reaction
 				rhs[vectorIndex] += reactionRate;
@@ -793,7 +1308,7 @@ void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, doub
 				rhs[vectorIndex] = 0;
 				continue;
 			}
-			
+
 			double Di = varContext->evalExpression(DIFF_RATE_EXP, statePointValues);
 			double volume = membraneElementCoupling->getValue(mi, mi);
 			if (mask & BOUNDARY_TYPE_NEUMANN) { // boundary and neumann
@@ -830,9 +1345,9 @@ void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, doub
 					}
 					if (mask & NEIGHBOR_ZP_BOUNDARY){
 						rhs[vectorIndex] -= varContext->evalExpression(BOUNDARY_ZP_EXP, statePointValues) * boundaryFluxArea[BL_Zp]/volume;
-					}					
+					}
 				}
-			}		
+			}
 
 			int32* membraneNeighbors;
 			double* s_over_d;
@@ -843,7 +1358,7 @@ void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, doub
 				int32 neighborIndex = membraneNeighbors[j];
 				int neighborVectorIndex = getMembraneElementVectorOffset(neighborIndex) + v;
 
-				updateMembraneStatePointValues(pMembraneElement[neighborIndex], t, yinput);
+				updateMembraneStatePointValues(pMembraneElement[neighborIndex], t, yinput, statePointValues);
 				double Dj = varContext->evalExpression(DIFF_RATE_EXP, statePointValues);
 				double D = (Di + Dj < epsilon)?(0.0):(2 * Di * Dj/(Di + Dj));
 
@@ -870,7 +1385,7 @@ void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, doub
 			}
 			rhs[vectorIndex] -=  yinput[vectorIndex] * Aii;
 		}
-	}	
+	}
 }
 
 void SundialsPdeScheduler::applyVolumeRegionReactionOperator(double t, double* yinput, double* rhs) {
@@ -880,21 +1395,21 @@ void SundialsPdeScheduler::applyVolumeRegionReactionOperator(double t, double* y
 
 	for (int r = 0; r < mesh->getNumVolumeRegions(); r ++) {
 		VolumeRegion* volRegion = mesh->getVolumeRegion(r);
-		Feature* feature = volRegion->getFeature();		
+		Feature* feature = volRegion->getFeature();
 		for (int v = 0; v < simulation->getNumVolRegionVariables(); v ++) {
 			VolumeRegionVariable* var = simulation->getVolRegionVariable(v);
 			VolumeRegionVarContext* volRegionVarContext = feature->getVolumeRegionVarContext(var);
 			int vectorIndex = getVolumeRegionVectorOffset(r) + v;
 
-			updateRegionStatePointValues(r, t, yinput, true);
+			updateRegionStatePointValues(r, t, yinput, true, statePointValues);
 			rhs[vectorIndex] = volRegionVarContext->evalExpression(UNIFORM_RATE_EXP, statePointValues);
 
-			double volume = volRegion->getVolume();			
+			double volume = volRegion->getVolume();
 			int numElements = volRegion->getNumElements();
 			double volumeIntegral = 0.0;
 			for(int j = 0; j < numElements; j ++){
 				int volIndex = volRegion->getIndex(j);
-				updateVolumeStatePointValues(volIndex, t, yinput);
+				updateVolumeStatePointValues(volIndex, t, yinput, statePointValues);
 				volumeIntegral += volRegionVarContext->evalExpression(REACT_RATE_EXP, statePointValues) * mesh->getVolumeOfElement_cu(volIndex);
 			}
 			rhs[vectorIndex] += volumeIntegral/volume;
@@ -905,12 +1420,12 @@ void SundialsPdeScheduler::applyVolumeRegionReactionOperator(double t, double* y
 				MembraneRegion *memRegion = volRegion->getMembraneRegion(k);
 				numElements = memRegion->getNumElements();
 				for(int j = 0; j < numElements; j ++){
-					int memIndex = memRegion->getIndex(j); 
-					updateMembraneStatePointValues(pMembraneElement[memIndex], t, yinput);
+					int memIndex = memRegion->getIndex(j);
+					updateMembraneStatePointValues(pMembraneElement[memIndex], t, yinput, statePointValues);
 					surfaceIntegral += volRegionVarContext->evalExpression(IN_FLUX_EXP, statePointValues) * pMembraneElement[memIndex].area;
 				}
 			}
-			rhs[vectorIndex] += surfaceIntegral/volume; 
+			rhs[vectorIndex] += surfaceIntegral/volume;
 		}
 	}
 }
@@ -928,21 +1443,21 @@ void SundialsPdeScheduler::applyMembraneRegionReactionOperator(double t, double*
 			int vectorIndex = getMembraneRegionVectorOffset(r) + v;
 
 			if (memRegion->getRegionInside()->isClosed()) {
-				updateRegionStatePointValues(r, t, yinput, false);
+				updateRegionStatePointValues(r, t, yinput, false, statePointValues);
 				rhs[vectorIndex] = memRegionvarContext->evalExpression(UNIFORM_RATE_EXP, statePointValues);
 
 				double surface = memRegion->getSurface();
 				long numElements = memRegion->getNumElements();
 				double surfaceIntegral = 0.0;
 				for(int j = 0; j < numElements; j ++) {
-					int memIndex = memRegion->getIndex(j); 
-					updateMembraneStatePointValues(pMembraneElement[memIndex], t, yinput);					
+					int memIndex = memRegion->getIndex(j);
+					updateMembraneStatePointValues(pMembraneElement[memIndex], t, yinput, statePointValues);
 					surfaceIntegral += memRegionvarContext->evalExpression(REACT_RATE_EXP, statePointValues) * pMembraneElement[memIndex].area;
 				}
 				rhs[vectorIndex] += surfaceIntegral/surface;
 			} else {
 				throw "MembraneRegionEqnBuilder::buildEquation(), only implemented for closed surface, please check geometry";
-			}			
+			}
 		}
 	}
 }
@@ -962,34 +1477,34 @@ void SundialsPdeScheduler::applyMembraneFluxOperator(double t, double* yinput, d
 		double outsideVolume = mesh->getVolumeOfElement_cu(me.outsideIndexNear);
 
 		// vector index of inside near and outside near
-		int vi2 = getVolumeElementVectorOffset(me.insideIndexNear, insideRegionID); 
+		int vi2 = getVolumeElementVectorOffset(me.insideIndexNear, insideRegionID);
 		int vi3 = getVolumeElementVectorOffset(me.outsideIndexNear, outsideRegionID);
 
-		updateMembraneStatePointValues(me, t, yinput);
+		updateMembraneStatePointValues(me, t, yinput, statePointValues);
 
-		int activeVarCountInside = -1;
-		int activeVarCountOutside = -1;
-		for (int v = 0; v < simulation->getNumVolVariables(); v ++) {
-			VolumeVariable* var = simulation->getVolVariable(v);
-			VolumeVarContext* anotherVarContext = me.feature->getVolumeVarContext(var);			
-			if (simulation->isVolumeVariableDefinedInRegion(v, insideRegionID)) {
-				activeVarCountInside ++;
-				if (!var->isPde()) {
-					continue;
-				}
-				double inFlux = anotherVarContext->evalExpression(IN_FLUX_EXP, statePointValues);
-				rhs[vi2 + activeVarCountInside] += inFlux * me.area / insideVolume;
-				//validateNumber(var->getName(), me.insideIndexNear, "Membrane Flux", rhs[vi2 + activeVarCountInside]);				
-			} 			
-			if (simulation->isVolumeVariableDefinedInRegion(v, outsideRegionID)) {
-				activeVarCountOutside ++;
-				if (!var->isPde()) {
-					continue;
-				}
-				double outFlux = anotherVarContext->evalExpression(OUT_FLUX_EXP, statePointValues);
-				rhs[vi3 + activeVarCountOutside] += outFlux * me.area / outsideVolume;
-				//validateNumber(var->getName(), me.outsideIndexNear, "Membrane Flux", rhs[vi3 + activeVarCountOutside]);				
+		for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[insideRegionID]; activeVarCount ++) {
+			int varIndex = regionDefinedVolVariableIndexes[insideRegionID][activeVarCount];
+			VolumeVariable* var = simulation->getVolVariable(varIndex);
+			if (!var->isPde()) {
+				continue;
 			}
+
+			VolumeVarContext* anotherVarContext = me.feature->getVolumeVarContext(var);
+			double inFlux = anotherVarContext->evalExpression(IN_FLUX_EXP, statePointValues);
+			rhs[vi2 + activeVarCount] += inFlux * me.area / insideVolume;
+			//validateNumber(var->getName(), me.insideIndexNear, "Membrane Flux", rhs[vi2 + activeVarCountInside]);
+		}
+		for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[outsideRegionID]; activeVarCount ++) {
+			int varIndex = regionDefinedVolVariableIndexes[outsideRegionID][activeVarCount];
+			VolumeVariable* var = simulation->getVolVariable(varIndex);
+			if (!var->isPde()) {
+				continue;
+			}
+
+			VolumeVarContext* anotherVarContext = me.feature->getVolumeVarContext(var);
+			double outFlux = anotherVarContext->evalExpression(OUT_FLUX_EXP, statePointValues);
+			rhs[vi3 + activeVarCount] += outFlux * me.area / outsideVolume;
+			//validateNumber(var->getName(), me.outsideIndexNear, "Membrane Flux", rhs[vi3 + activeVarCountOutside]);
 		}
 	}
 }
@@ -1013,7 +1528,7 @@ void SundialsPdeScheduler::preallocateM() {
 	// initialize a sparse matrix for M
 	int numNonZeros = GENERAL_MAX_NONZERO_PERROW[dimension] * numUnknowns;
 	if (simulation->getNumMemPde() > 0 && dimension == 3) {
-		numNonZeros = GENERAL_MAX_NONZERO_PERROW[dimension] * memVectorOffset 
+		numNonZeros = GENERAL_MAX_NONZERO_PERROW[dimension] * memVectorOffset
 			+ 20 * (volRegionVectorOffset - memVectorOffset) + (numUnknowns - volRegionVectorOffset);
 	}
 	if (dimension == 1) {
@@ -1034,66 +1549,61 @@ void SundialsPdeScheduler::preallocateM() {
 	int colCount;
 	int32 columns[20];
 
-	vector<Variable*> regionVarList;
-	for (int r = 0; r < mesh->getNumVolumeRegions(); r ++) {
-
-		regionVarList.clear();
-		for (int v = 0; v < simulation->getNumVolVariables(); v ++) {
-			VolumeVariable* var = (VolumeVariable*)simulation->getVolVariable(v);
-			if (simulation->isVolumeVariableDefinedInRegion(v, r)) {
-				regionVarList.push_back(var);
+	if (simulation->getNumVolVariables() > 0) {
+		for (int r = 0; r < mesh->getNumVolumeRegions(); r ++) {
+			if (regionDefinedVolVariableSizes[r] == 0) {
+				continue;
 			}
-		}	
-		if (regionVarList.size() == 0) {
-			continue;
-		}
 
-		for (int ri = 0; ri < regionSizes[r]; ri ++) {
-			int localIndex = ri + regionOffsets[r];
-			int volIndex = local2Global[localIndex];
-			int mask = pVolumeElement[volIndex].neighborMask;
+			for (int ri = 0; ri < regionSizes[r]; ri ++) {
+				int localIndex = ri + regionOffsets[r];
+				int volIndex = local2Global[localIndex];
+				int mask = pVolumeElement[volIndex].neighborMask;
 
-			int volumeNeighbors[6] = {
-				(dimension < 3 || mask & NEIGHBOR_ZM_MASK) ? -1 : volIndex - Nxy,
-				(dimension < 2 || mask & NEIGHBOR_YM_MASK) ? -1 : volIndex - Nx,
-				(mask & NEIGHBOR_XM_MASK) ? -1 : volIndex - 1,
-				(mask & NEIGHBOR_XP_MASK) ? -1 : volIndex + 1,
-				(dimension < 2 || mask & NEIGHBOR_YP_MASK) ? -1 : volIndex + Nx,
-				(dimension < 3 || mask & NEIGHBOR_ZP_MASK) ? -1 : volIndex + Nxy
-			};
+				int volumeNeighbors[6] = {
+					(dimension < 3 || mask & NEIGHBOR_ZM_MASK) ? -1 : volIndex - Nxy,
+					(dimension < 2 || mask & NEIGHBOR_YM_MASK) ? -1 : volIndex - Nx,
+					(mask & NEIGHBOR_XM_MASK) ? -1 : volIndex - 1,
+					(mask & NEIGHBOR_XP_MASK) ? -1 : volIndex + 1,
+					(dimension < 2 || mask & NEIGHBOR_YP_MASK) ? -1 : volIndex + Nx,
+					(dimension < 3 || mask & NEIGHBOR_ZP_MASK) ? -1 : volIndex + Nxy
+				};
 
-			for (int vindex = 0; vindex < (int)regionVarList.size(); vindex ++) {
-				VolumeVariable* var = (VolumeVariable*)regionVarList.at(vindex);
+				for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[r]; activeVarCount ++) {
+					int varIndex = regionDefinedVolVariableIndexes[r][activeVarCount];
+					VolumeVariable* var = (VolumeVariable*)simulation->getVolVariable(varIndex);
 
-				M->addNewRow();
+					M->addNewRow();
 
-				if (!var->isPde()) {
-					M->setRow(1.0, 0, 0, 0);
-					//validateNumber(var->getName(), volIndex, "RHS", rhs[vectorIndex]);
-					continue;
-				}	
-
-				if (mask & BOUNDARY_TYPE_DIRICHLET) {// dirichlet
-					M->setRow(1.0, 0, 0, 0);
-					continue;
-				} 		
-				
-				colCount = 0;
-				// add diffusion and convection
-				for (int n = 0; n < 6; n ++) {
-					int neighborIndex = volumeNeighbors[n];
-					if (neighborIndex < 0) {
+					if (!var->isPde()) {
+						M->setRow(1.0, 0, 0, 0);
+						//validateNumber(var->getName(), volIndex, "RHS", rhs[vectorIndex]);
 						continue;
 					}
-					int neighborRi= global2Local[neighborIndex] - regionOffsets[r];
-					int neighborVectorIndex = getVolumeElementVectorOffset(neighborIndex, r) + vindex;
-					columns[colCount] = neighborVectorIndex;
-					colCount ++;					
-				} // end for n
-				M->setRow(1.0, colCount, columns, 0);
-			} // end for vindex
-		} // end for ri
-	} // end for r
+
+					if (mask & BOUNDARY_TYPE_DIRICHLET) {// dirichlet
+						M->setRow(1.0, 0, 0, 0);
+						continue;
+					}
+
+					colCount = 0;
+					// add diffusion and convection
+					for (int n = 0; n < 6; n ++) {
+						int neighborIndex = volumeNeighbors[n];
+						if (neighborIndex < 0) {
+							continue;
+						}
+						int neighborRi= global2Local[neighborIndex] - regionOffsets[r];
+						int neighborVectorIndex = getVolumeElementVectorOffset(neighborIndex, r) + activeVarCount;
+						columns[colCount] = neighborVectorIndex;
+						colCount ++;
+					} // end for n
+					M->setRow(1.0, colCount, columns, 0);
+				} // end for vindex
+			} // end for ri
+		} // end for r
+	}
+
 	// membrane variable
 	if (simulation->getNumMemVariables() > 0) {
 		SparseMatrixPCG* membraneElementCoupling = mesh->getMembraneCoupling();
@@ -1141,9 +1651,9 @@ void SundialsPdeScheduler::preallocateM() {
 	M->close();
 }
 
-int SundialsPdeScheduler::pcSetup(realtype t, N_Vector y, N_Vector fy, booleantype jok, booleantype *jcurPtr, realtype gamma) {	
+int SundialsPdeScheduler::pcSetup(realtype t, N_Vector y, N_Vector fy, booleantype jok, booleantype *jcurPtr, realtype gamma) {
 	if (simulation->hasTimeDependentDiffusionAdvection()) { // has time dependent diffusion
-		bPcReinit = true;		
+		bPcReinit = true;
 
 		double* yinput = NV_DATA_S(y);
 		buildM_Volume(t, yinput, gamma);
@@ -1157,19 +1667,19 @@ int SundialsPdeScheduler::pcSetup(realtype t, N_Vector y, N_Vector fy, booleanty
 		double ratio = gamma/oldGamma;
 		M->scaleOffDiagonals(ratio);
 		M->shiftDiagonals(ratio);
-		oldGamma = gamma;	
+		oldGamma = gamma;
 	}
 	*jcurPtr = bPcReinit;
 
 	return 0;
 }
 
-int SundialsPdeScheduler::pcSolve(realtype t, N_Vector y, N_Vector fy, N_Vector r, N_Vector z, realtype gamma, realtype delta, int lr) {	
+int SundialsPdeScheduler::pcSolve(realtype t, N_Vector y, N_Vector fy, N_Vector r, N_Vector z, realtype gamma, realtype delta, int lr) {
 	double* sa = M->getsa();
 	int32 *ija = M->getFortranIJA();
-	double *r_data = NV_DATA_S(r);	
-	double *z_data = NV_DATA_S(z);		
-	
+	double *r_data = NV_DATA_S(r);
+	double *z_data = NV_DATA_S(z);
+
 	if (!bLUcomputed || bPcReinit) {
 		int symmetricflg = M->getSymmetricFlag();  // general or symmetric storage format
 
@@ -1180,7 +1690,7 @@ int SundialsPdeScheduler::pcSolve(realtype t, N_Vector y, N_Vector fy, N_Vector 
 		memset(RParm, 0, 25 * sizeof(double));
 
 		IParm[4] = 1; // max number of iteration
-		IParm[13] = 0; // don't reuse all incomplete factorization.		
+		IParm[13] = 0; // don't reuse all incomplete factorization.
 		IParm[14] = 0; // fill-in parameter
 
 		RParm[0] = 0.0;
@@ -1222,7 +1732,7 @@ int SundialsPdeScheduler::pcSolve(realtype t, N_Vector y, N_Vector fy, N_Vector 
 void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma) {
 	if (simulation->getNumVolVariables() == 0) {
 		return;
-	}	
+	}
 
 #ifdef INCLUDE_ADVECTION_IN_PC
 	short advectDirs[6] = {1, 1, 1, -1, -1, -1};
@@ -1242,14 +1752,10 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 	double* values;
 
 	for (int r = 0; r < mesh->getNumVolumeRegions(); r ++) {
-		int activeVarCount = -1;
-		for (int v = 0; v < simulation->getNumVolVariables(); v ++) {
-			VolumeVariable* var = (VolumeVariable*)simulation->getVolVariable(v);
+		for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[r]; activeVarCount ++) {
+			int varIndex = regionDefinedVolVariableIndexes[r][activeVarCount];
+			VolumeVariable* var = (VolumeVariable*)simulation->getVolVariable(varIndex);
 
-			if (!simulation->isVolumeVariableDefinedInRegion(v, r)) {
-				continue;
-			}
-			activeVarCount ++;
 			if (!var->isPde()) {
 				continue;
 			}
@@ -1268,21 +1774,21 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 				int mask = pVolumeElement[volIndex].neighborMask;
 				if (mask & BOUNDARY_TYPE_DIRICHLET) {// dirichlet
 					continue;
-				} 
+				}
 
 				int vectorIndex = getVolumeElementVectorOffset(volIndex, r) + activeVarCount;
 				assert(varContext);
 
-				double lambdaX = eLambdas[0];
-				double lambdaY = eLambdas[1];
-				double lambdaZ = eLambdas[2];
-				double lambdaAreaX = bLambdas[0];
-				double lambdaAreaY = bLambdas[1];
-				double lambdaAreaZ = bLambdas[2];
+				double lambdaX = oneOverH[0] * oneOverH[0];
+				double lambdaY = oneOverH[1] * oneOverH[1];
+				double lambdaZ = oneOverH[2] * oneOverH[2];
+				double lambdaAreaX = oneOverH[0];
+				double lambdaAreaY = oneOverH[1];
+				double lambdaAreaZ = oneOverH[2];
 
 				// update values
 				if (!bHasConstantDiffusion) {
-					updateVolumeStatePointValues(volIndex, t, yinput);
+					updateVolumeStatePointValues(volIndex, t, yinput, statePointValues);
 					Di = varContext->evalExpression(DIFF_RATE_EXP, statePointValues);
 				}
 
@@ -1303,7 +1809,7 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 
 #ifdef INCLUDE_BOUNDARY_IN_PC
 					if ((mask & BOUNDARY_TYPE_MASK) == BOUNDARY_TYPE_NEUMANN) {
-						memcpy(epsStatePointValues, statePointValues, numSymbols * sizeof(double));						
+						memcpy(epsStatePointValues, statePointValues, numSymbols * sizeof(double));
 						epsStatePointValues[volSymbolOffset + v * 3] += eps;
 
 						if (mask & NEIGHBOR_XM_BOUNDARY && feature->getXmBoundaryType() == BOUNDARY_FLUX){
@@ -1327,7 +1833,7 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 								double u2 = varContext->evalExpression(BOUNDARY_YP_EXP, statePointValues);
 								Aii += (u1 - u2) * lambdaAreaY / eps;
 							}
-						
+
 							if (dimension > 2) {
 								if (mask & NEIGHBOR_ZM_BOUNDARY && feature->getZmBoundaryType() == BOUNDARY_FLUX){
 									double u1 = varContext->evalExpression(BOUNDARY_ZM_EXP, epsStatePointValues);
@@ -1344,7 +1850,7 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 					}
 #endif
 				}
-				
+
 				int volumeNeighbors[6] = {
 					(dimension < 3 || mask & NEIGHBOR_ZM_MASK) ? -1 : volIndex - Nxy,
 					(dimension < 2 || mask & NEIGHBOR_YM_MASK) ? -1 : volIndex - Nx,
@@ -1352,7 +1858,7 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 					(mask & NEIGHBOR_XP_MASK) ? -1 : volIndex + 1,
 					(dimension < 2 || mask & NEIGHBOR_YP_MASK) ? -1 : volIndex + Nx,
 					(dimension < 3 || mask & NEIGHBOR_ZP_MASK) ? -1 : volIndex + Nxy
-				};	
+				};
 
 #ifdef INCLUDE_ADVECTION_IN_PC
 				double Vix=0, Viy=0, Viz=0;
@@ -1372,9 +1878,9 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 #endif
 
 				double neighborLambdas[6] = {lambdaZ, lambdaY, lambdaX, lambdaX, lambdaY, lambdaZ};
-				double neighborLambdaAreas[6] = {lambdaAreaZ, lambdaAreaY, lambdaAreaX, lambdaAreaX, lambdaAreaY, lambdaAreaZ};				
+				double neighborLambdaAreas[6] = {lambdaAreaZ, lambdaAreaY, lambdaAreaX, lambdaAreaX, lambdaAreaY, lambdaAreaZ};
 
-				int numColumns = M->getColumns(vectorIndex, columns, values);				
+				int numColumns = M->getColumns(vectorIndex, columns, values);
 				colCount = 0;
 				for (int n = 0; n < 6; n ++) {
 					int neighborIndex = volumeNeighbors[n];
@@ -1382,15 +1888,15 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 						continue;
 					}
 					int neighborVectorIndex = getVolumeElementVectorOffset(neighborIndex, r) + activeVarCount;
-					double lambda = neighborLambdas[n];					
+					double lambda = neighborLambdas[n];
 
 					double D = Di;
 					if (!bHasConstantDiffusion) {
-						updateVolumeStatePointValues(neighborIndex, t, yinput);
+						updateVolumeStatePointValues(neighborIndex, t, yinput, statePointValues);
 						double Dj = varContext->evalExpression(DIFF_RATE_EXP, statePointValues);
 						D = (Di + Dj < epsilon) ? (0.0) : (2 * Di * Dj/(Di + Dj));
 					}
-					
+
 					double Aij = 0;
 #ifdef INCLUDE_ADVECTION_IN_PC
 					if (var->isAdvecting()) {
@@ -1439,7 +1945,7 @@ void SundialsPdeScheduler::buildM_Membrane(double t, double* yinput, double gamm
 			int mask = mesh->getMembraneNeighborMask(mi);
 			if ((mask & NEIGHBOR_BOUNDARY_MASK) && (mask & BOUNDARY_TYPE_DIRICHLET)) {   // boundary and dirichlet
 				continue;
-			}					
+			}
 
 			int vectorIndex = getMembraneElementVectorOffset(mi) + v;
 
@@ -1450,7 +1956,7 @@ void SundialsPdeScheduler::buildM_Membrane(double t, double* yinput, double gamm
 			Feature* feature = pMembraneElement[mi].feature;
 			MembraneVarContext *varContext = feature->getMembraneVarContext(var);
 
-			updateMembraneStatePointValues(pMembraneElement[mi], t, yinput);
+			updateMembraneStatePointValues(pMembraneElement[mi], t, yinput, statePointValues);
 			double Di = varContext->evalExpression(DIFF_RATE_EXP, statePointValues);
 
 			int32* membraneNeighbors;
@@ -1463,7 +1969,7 @@ void SundialsPdeScheduler::buildM_Membrane(double t, double* yinput, double gamm
 				int32 neighborIndex = membraneNeighbors[j];
 				int neighborVectorIndex = getMembraneElementVectorOffset(neighborIndex) + v;
 
-				updateMembraneStatePointValues(pMembraneElement[neighborIndex], t, yinput);
+				updateMembraneStatePointValues(pMembraneElement[neighborIndex], t, yinput, statePointValues);
 				double Dj = varContext->evalExpression(DIFF_RATE_EXP, statePointValues);
 				double D = (Di + Dj < epsilon)?(0.0):(2 * Di * Dj/(Di + Dj));
 
@@ -1477,41 +1983,8 @@ void SundialsPdeScheduler::buildM_Membrane(double t, double* yinput, double gamm
 	}
 }
 
-void SundialsPdeScheduler::updateVolumeStatePointValues(int volIndex, double t, double* yinput) {
-	WorldCoord wc = mesh->getVolumeWorldCoord(volIndex);
-	int regionID = pVolumeElement[volIndex].region->getId();
-
-	statePointValues[0] = t;
-	statePointValues[1] = wc.x;
-	statePointValues[2] = wc.y;
-	statePointValues[3] = wc.z;
-
-	if (yinput == 0) {
-		return;
-	}
-
-	int vi = getVolumeElementVectorOffset(volIndex, regionID);
-	int activeVarCount = 0;
-	for (int v = 0; v < simulation->getNumVolVariables(); v ++) {
-		if (simulation->isVolumeVariableDefinedInRegion(v, regionID)) {
-			statePointValues[volSymbolOffset + v * 3] = yinput[vi + activeVarCount];
-			activeVarCount ++;
-		}
-	}
-
-	// fill in volume region variable values
-	int volumeRegionElementVectorOffset = getVolumeRegionVectorOffset(regionID);
-	for (int v = 0; v < simulation->getNumVolRegionVariables(); v ++) {
-		statePointValues[volRegionSymbolOffset + v] = yinput[volumeRegionElementVectorOffset + v];
-	}
-	// if field data is used in expressions other than initial conditions, we
-	// need to fill the double array the values from field data from value proxy
-	// 
-	// we also need to fill parameter values for parameter optimization.
-}
-
 int SundialsPdeScheduler::getVolumeElementVectorOffset(int volIndex, int regionID) {
-	return volVectorOffsets[regionID] + (global2Local[volIndex] - regionOffsets[regionID]) * regionVariableSize[regionID];
+	return volVectorOffsets[regionID] + (global2Local[volIndex] - regionOffsets[regionID]) * regionDefinedVolVariableSizes[regionID];
 }
 
 int SundialsPdeScheduler::getMembraneElementVectorOffset(int meindex) {
@@ -1526,68 +1999,100 @@ int SundialsPdeScheduler::getMembraneRegionVectorOffset(int regionID) {
 	return memRegionVectorOffset + regionID * simulation->getNumMemRegionVariables();
 }
 
-void SundialsPdeScheduler::updateMembraneStatePointValues(MembraneElement& me, double t, double* yinput) {
+void SundialsPdeScheduler::updateVolumeStatePointValues(int volIndex, double t, double* yinput, double* values) {
+	values[0] = t;
 
-	WorldCoord wc = mesh->getMembraneWorldCoord(&me);
+	WorldCoord wc = mesh->getVolumeWorldCoord(volIndex);
 
-	statePointValues[0] = t;
-	statePointValues[1] = wc.x;
-	statePointValues[2] = wc.y;
-	statePointValues[3] = wc.z;
+	values[1] = wc.x;
+	values[2] = wc.y;
+	values[3] = wc.z;
 
 	if (yinput == 0) {
 		return;
 	}
 
-	// fill in INSIDE and OUTSIDE values
-	int insideRegionID = pVolumeElement[me.insideIndexNear].region->getId();
-	int outsideRegionID = pVolumeElement[me.outsideIndexNear].region->getId();	
+	int regionID = pVolumeElement[volIndex].region->getId();
+	if (simulation->getNumVolVariables() > 0) {
+		int vi = getVolumeElementVectorOffset(volIndex, regionID);
+		for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[regionID]; activeVarCount ++) {
+			int varIndex = regionDefinedVolVariableIndexes[regionID][activeVarCount];
+			values[volSymbolOffset + varIndex * 3] = yinput[vi + activeVarCount];
+		}
+	}
 
-	int vi1 = me.insideIndexFar < 0 ? -1 : getVolumeElementVectorOffset(me.insideIndexFar, insideRegionID); 
-	int vi2 = getVolumeElementVectorOffset(me.insideIndexNear, insideRegionID); 
-	int vi3 = getVolumeElementVectorOffset(me.outsideIndexNear, outsideRegionID);
-	int vi4 = me.outsideIndexFar < 0 ? -1 : getVolumeElementVectorOffset(me.outsideIndexFar, outsideRegionID);
+	if (simulation->getNumVolRegionVariables() > 0) {
+		// fill in volume region variable values
+		int volumeRegionElementVectorOffset = getVolumeRegionVectorOffset(regionID);
+		memcpy(values + volRegionSymbolOffset, yinput + volumeRegionElementVectorOffset, simulation->getNumVolRegionVariables() * sizeof(double));
+	}
+	// if field data is used in expressions other than initial conditions, we
+	// need to fill the double array the values from field data from value proxy
+	//
+	// we also need to fill parameter values for parameter optimization.
+}
 
-	int activeVarCountInside = 0;
-	int activeVarCountOutside = 0;
-	for (int v = 0; v < simulation->getNumVolVariables(); v ++) {
-		if (simulation->isVolumeVariableDefinedInRegion(v, insideRegionID)) {
-			int iin = volSymbolOffset + v * 3 + 1;
+void SundialsPdeScheduler::updateMembraneStatePointValues(MembraneElement& me, double t, double* yinput, double* values) {
+
+	WorldCoord wc = mesh->getMembraneWorldCoord(&me);
+
+	values[0] = t;
+	values[1] = wc.x;
+	values[2] = wc.y;
+	values[3] = wc.z;
+
+	if (yinput == 0) {
+		return;
+	}
+
+	if (simulation->getNumVolVariables() > 0) {
+		// fill in INSIDE and OUTSIDE values
+		int insideRegionID = pVolumeElement[me.insideIndexNear].region->getId();
+		int outsideRegionID = pVolumeElement[me.outsideIndexNear].region->getId();
+
+		int vi1 = me.insideIndexFar < 0 ? -1 : getVolumeElementVectorOffset(me.insideIndexFar, insideRegionID);
+		int vi2 = getVolumeElementVectorOffset(me.insideIndexNear, insideRegionID);
+		int vi3 = getVolumeElementVectorOffset(me.outsideIndexNear, outsideRegionID);
+		int vi4 = me.outsideIndexFar < 0 ? -1 : getVolumeElementVectorOffset(me.outsideIndexFar, outsideRegionID);
+
+		for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[insideRegionID]; activeVarCount ++) {
+			int varIndex = regionDefinedVolVariableIndexes[insideRegionID][activeVarCount];
+
+			int iin = volSymbolOffset + varIndex * 3 + 1;
 			if (vi1 < 0) {
-				statePointValues[iin] = yinput[vi2 + activeVarCountInside];
+				values[iin] = yinput[vi2 + activeVarCount];
 			} else {
-				statePointValues[iin] = interp_coeff[0] * yinput[vi2 + activeVarCountInside] + interp_coeff[1] * yinput[vi1 + activeVarCountInside];
+				values[iin] = interp_coeff[0] * yinput[vi2 + activeVarCount] + interp_coeff[1] * yinput[vi1 + activeVarCount];
 			}
-			activeVarCountInside ++;
 		}
 
-		if (simulation->isVolumeVariableDefinedInRegion(v, outsideRegionID)) {
-			int iout = volSymbolOffset + v * 3 + 2;
+		for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[outsideRegionID]; activeVarCount ++) {
+			int varIndex = regionDefinedVolVariableIndexes[outsideRegionID][activeVarCount];
+			int iout = volSymbolOffset + varIndex * 3 + 2;
 			if (vi4 < 0) {
-				statePointValues[iout] = yinput[vi3 + activeVarCountOutside];
+				values[iout] = yinput[vi3 + activeVarCount];
 			} else {
-				statePointValues[iout] = interp_coeff[0] * yinput[vi3 + activeVarCountOutside] + interp_coeff[1] * yinput[vi4 + activeVarCountOutside];
+				values[iout] = interp_coeff[0] * yinput[vi3 + activeVarCount] + interp_coeff[1] * yinput[vi4 + activeVarCount];
 			}
-			activeVarCountOutside ++;
 		}
 	}
 
-	// fill in membrane variable values
-	int membraneElementVectorOffset = getMembraneElementVectorOffset(me.index);
-	for (int v = 0; v < simulation->getNumMemVariables(); v ++) {
-		statePointValues[memSymbolOffset + v] = yinput[membraneElementVectorOffset + v];
+	if (simulation->getNumMemVariables() > 0) {
+		// fill in membrane variable values
+		int membraneElementVectorOffset = getMembraneElementVectorOffset(me.index);
+		memcpy(values + memSymbolOffset, yinput + membraneElementVectorOffset, simulation->getNumMemVariables() * sizeof(double));
 	}
 
-	// fill in membrane region variable values
-	int membraneRegionElementVectorOffset = getMembraneRegionVectorOffset(me.region->getId());
-	for (int v = 0; v < simulation->getNumMemRegionVariables(); v ++) {
-		statePointValues[memRegionSymbolOffset + v] = yinput[membraneRegionElementVectorOffset + v];
+	if (simulation->getNumMemRegionVariables() > 0) {
+		// fill in membrane region variable values
+		int membraneRegionElementVectorOffset = getMembraneRegionVectorOffset(me.region->getId());
+		memcpy(values + memRegionSymbolOffset, yinput + membraneRegionElementVectorOffset, simulation->getNumMemRegionVariables() * sizeof(double));
 	}
 }
 
-void SundialsPdeScheduler::updateRegionStatePointValues(int regionID, double t, double* yinput, bool bVolumeRegion) {
+void SundialsPdeScheduler::updateRegionStatePointValues(int regionID, double t, double* yinput, bool bVolumeRegion, double* values) {
 
-	statePointValues[0] = t;
+	values[0] = t;
 
 	if (yinput == 0) {
 		return;
@@ -1596,14 +2101,10 @@ void SundialsPdeScheduler::updateRegionStatePointValues(int regionID, double t, 
 	if (bVolumeRegion) {
 		// fill in volume region variable values
 		int volumeRegionElementVectorOffset = getVolumeRegionVectorOffset(regionID);
-		for (int v = 0; v < simulation->getNumVolRegionVariables(); v ++) {
-			statePointValues[volRegionSymbolOffset + v] = yinput[volumeRegionElementVectorOffset + v];
-		}
+		memcpy(values + volRegionSymbolOffset, yinput + volumeRegionElementVectorOffset, simulation->getNumVolRegionVariables() * sizeof(double));
 	} else {
 		// fill in membrane region variable values
 		int membraneRegionElementVectorOffset = getMembraneRegionVectorOffset(regionID);
-		for (int v = 0; v < simulation->getNumMemRegionVariables(); v ++) {
-			statePointValues[memRegionSymbolOffset + v] = yinput[membraneRegionElementVectorOffset + v];
-		}
+		memcpy(values + memRegionSymbolOffset, yinput + membraneRegionElementVectorOffset, simulation->getNumMemRegionVariables() * sizeof(double));
 	}
 }

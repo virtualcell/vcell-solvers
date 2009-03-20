@@ -132,3 +132,25 @@ bool VolumeVarContextExpression::isNullExpressionOK(int expIndex) {
 	}
 	return true;
 }
+
+bool VolumeVarContextExpression::hasConstantDiffusion() {
+	if (!species->isPde()) {
+		throw "hasConstantDiffusion() is only for PDE variables";
+	}
+	return (constantValues != 0 && constantValues[DIFF_RATE_EXP] != 0);
+}
+
+bool VolumeVarContextExpression::hasConstantDiffusionAdvection(int dimension) {
+	if (!hasConstantDiffusion()) {
+		return false;
+	}
+	if (!((VolumeVariable*)species)->isAdvecting()) {
+		return true;
+	}
+	return (constantValues[VELOCITY_X_EXP] != 0 
+			&& (dimension < 2 || constantValues[VELOCITY_Y_EXP] != 0) 
+			&& (dimension < 3 || constantValues[VELOCITY_Z_EXP] != 0))
+		|| (constantValues[VELOCITY_X_EXP] == 0 && expressions[VELOCITY_X_EXP] == 0 
+			&& (dimension < 2 || constantValues[VELOCITY_Y_EXP] == 0 && expressions[VELOCITY_Y_EXP] == 0) 
+			&& (dimension < 3 || constantValues[VELOCITY_Z_EXP] == 0 && expressions[VELOCITY_Z_EXP] == 0));
+}

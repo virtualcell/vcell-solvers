@@ -6,6 +6,7 @@
 #define VOLUMEVARCONTEXTEXPRESSION_H
 
 #include <VCELL/VolumeVarContext.h>
+#include <VCELL/VolumeVariable.h>
 
 class VolumeVarContextExpression : public VolumeVarContext
 {
@@ -41,9 +42,8 @@ public:
     double getConvectionVelocity_Y(long index);
     double getConvectionVelocity_Z(long index);
 
-	bool hasConstantDiffusion() {
-		return VarContext::hasConstantDiffusion();
-	}
+	bool hasConstantDiffusion();
+	bool hasConstantDiffusionAdvection(int dimension);
 
 protected:
 	bool isNullExpressionOK(int expIndex);

@@ -15,6 +15,8 @@ class SparseMatrixPCG;
 struct MembraneElement;
 struct VolumeElement;
 class SimulationExpression;
+class VarContext;
+class Feature;
 
 class SundialsPdeScheduler : public Scheduler
 {
@@ -22,10 +24,10 @@ public:
 	SundialsPdeScheduler(Simulation *sim, double rtol, double atol, int numDisTimes, double* disTimes, bool bDefaultOutput);
 	~SundialsPdeScheduler();
 
-	void iterate();	
+	void iterate();
 	double getCurrentTime() { return currentTime; }
-	void setSimStartTime(double st) { 
-		currentTime = st; 
+	void setSimStartTime(double st) {
+		currentTime = st;
 	}
 
 private:
@@ -45,10 +47,10 @@ private:
 												realtype gamma, void *p_data,
 												N_Vector tmp1, N_Vector tmp2,
 												N_Vector tmp3);
-	Purpose 
+	Purpose
 			This function evaluates and/or preprocesses Jacobian-related data needed by the pre-
 			conditioner.
-	Arguments 
+	Arguments
 			The arguments of a CVSpilsPrecSetupFn are as follows:
 			t 		is the current value of the independent variable.
 			y 		is the current value of the dependent variable vector, namely the predicted
@@ -70,12 +72,12 @@ private:
 			tmp2
 			tmp3	are pointers to memory allocated for variables of type N Vector which can be
 					used by CVSpilsPrecSetupFn as temporary storage or work space.
-	Return value 
+	Return value
 			The value to be returned by the preconditioner setup function is flag indicating
 			whether it was successful. This value should be 0 if successful, positive for a recov-
 			erable error (in which case the step will be retried), negative for an unrecoverable error
 			(in which case the integration is halted).
-	Notes 
+	Notes
 			The operations performed by this function might include forming a crude approximate
 			Jacobian, and performing an LU factorization on the resulting approximation to M = I - gammaJ.
 
@@ -101,9 +103,9 @@ private:
 												N_Vector r, N_Vector z,
 												realtype gamma, realtype delta,
 												int lr, void *p data, N_Vector tmp);
-	Purpose 
+	Purpose
 			This function solves the preconditioning system Pz = r.
-	Arguments 
+	Arguments
 			t		is the current value of the independent variable.
 			y		is the current value of the dependent variable vector.
 			fy		is the current value of the vector f(t; y).
@@ -120,7 +122,7 @@ private:
 					function CVSp*SetPreconditioner.
 			tmp		is a pointer to memory allocated for a variable of type N Vector which can be
 					used for work space.
-	Return value 
+	Return value
 			The value to be returned by the preconditioner solve function is a °ag indicating whether
 			it was successful. This value should be 0 if successful, positive for a recoverable error
 			(in which case the step will be retried), negative for an unrecoverable error (in which
@@ -129,16 +131,19 @@ private:
 
 	VolumeElement* pVolumeElement;
 	MembraneElement* pMembraneElement;
-	void checkCVodeReturnCode(int returnCode);	
+	void checkCVodeReturnCode(int returnCode);
 	void printCVodeStats();
 
 	long numUnknowns;
+	int valueArraySize;
 
 	int* global2Local;
 	int* local2Global;
 	int* regionOffsets;
 	int* regionSizes;
-	int* regionVariableSize; // the number of variables defined in each region
+	int* regionDefinedVolVariableSizes; // the number of variables defined in each region
+	int** regionDefinedVolVariableIndexes;
+	bool* bRegionHasConstantDiffusionAdvection;
 
 	int* volVectorOffsets;
 	int memVectorOffset;
@@ -155,11 +160,13 @@ private:
 	double VOLUME;
 	int Nx, Nxy;
 
-	double eLambdas[3];
-	double bLambdas[3];
+	double oneOverH[3];
 
-	void setupOrderMaps();	
-	void applyVolumeDiffusionReactionAdvectionOperator(double t, double* yinput, double* rhs);
+	void setupOrderMaps();
+	void applyVolumeOperatorOld(double t, double* yinput, double* rhs);
+	void applyVolumeOperator(double t, double* yinput, double* rhs);
+	void regionApplyVolumeOperatorConstant(int regionID, double t, double* yinput, double* rhs);
+	void regionApplyVolumeOperatorVariable(int regionID, double t, double* yinput, double* rhs);
 	void applyMembraneDiffusionReactionOperator(double t, double* yinput, double* rhs);
 	void applyMembraneFluxOperator(double t, double* yinput, double* rhs);
 	void applyVolumeRegionReactionOperator(double t, double* yinput, double* rhs);
@@ -167,13 +174,13 @@ private:
 	void initSundialsSolver();
 	void solve();
 
-	double *statePointValues;
-	void updateVolumeStatePointValues(int volIndex, double t, double* yinput);
-	void updateMembraneStatePointValues(MembraneElement& me, double t, double* yinput);
-	void updateRegionStatePointValues(int regionID, double t, double* yinput, bool bVolumeRegion);
-	
+	double *statePointValues, **neighborStatePointValues;
+	void updateVolumeStatePointValues(int volIndex, double t, double* yinput, double* values);
+	void updateMembraneStatePointValues(MembraneElement& me, double t, double* yinput, double* values);
+	void updateRegionStatePointValues(int regionID, double t, double* yinput, bool bVolumeRegion, double* values);
+
 	void updateSolutions();
-	
+
 	double* discontinuityTimes;
 	int numDiscontinuityTimes;
 	int currDiscontinuityTimeCount;
@@ -197,6 +204,12 @@ private:
 	double oldGamma;
 	double currentTime;
 	bool bSundialsOneStepOutput;
+
+	bool bHasVariableDiffusionAdvection, bHasAdvection;
+
+	double txyzValues[4];
+	void dirichletPointSetup(int volIndex, Feature* feature, VarContext* varContext, int mask, int* volumeNeighbors, double& ypoint);
+	double computeNeumannCondition(Feature* feature, VarContext* varContext, int mask, double* scaleSs);
 };
 
 #endif
