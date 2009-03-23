@@ -230,6 +230,8 @@ void SundialsPdeScheduler::setupOrderMaps() {
 			}
 		}
 	}
+	numVolUnknowns = numUnknowns;
+
 	// Membrane ODE/PDE
 	memVectorOffset = numUnknowns;
 	numUnknowns += mesh->getNumMembraneElements() * simulation->getNumMemVariables();
@@ -1122,7 +1124,6 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, doubl
 	Feature* feature = pVolumeElement[firstPointVolIndex].feature;
 
 	// loop through points
-	bool bHasXmNeighbor = false;
 	for (int regionPointIndex = 0; regionPointIndex < regionSizes[regionID]; regionPointIndex ++) {
 		int localIndex = regionPointIndex + regionOffsets[regionID];
 		int volIndex = local2Global[localIndex];
@@ -1141,14 +1142,10 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, doubl
 		// Macro
 		defineVolumeNeighbors(volIndex, mask)
 
-		if (bHasXmNeighbor) {
-			// update values for this point
-			memcpy(statePointValues, neighborStatePointValues[0], valueArraySize * sizeof(double));
-		} else {
-			updateVolumeStatePointValues(volIndex, t, yinput, statePointValues);
-		}
-		bHasXmNeighbor = volumeNeighbors[0] < 0 ? false : true;
-
+		// update values for this point
+		updateVolumeStatePointValues(volIndex, t, yinput, statePointValues);
+		
+		// update values for neighbor points
 		for (int n = 0; n < 3; n ++) {
 			int neighborIndex = volumeNeighbors[n];
 			if (neighborIndex < 0) {
@@ -1528,8 +1525,10 @@ void SundialsPdeScheduler::preallocateM() {
 	// initialize a sparse matrix for M
 	int numNonZeros = GENERAL_MAX_NONZERO_PERROW[dimension] * numUnknowns;
 	if (simulation->getNumMemPde() > 0 && dimension == 3) {
-		numNonZeros = GENERAL_MAX_NONZERO_PERROW[dimension] * memVectorOffset
-			+ 20 * (volRegionVectorOffset - memVectorOffset) + (numUnknowns - volRegionVectorOffset);
+		numNonZeros = GENERAL_MAX_NONZERO_PERROW[dimension] * numVolUnknowns   // volume variables 
+			+ 20 * mesh->getNumMembraneElements() * simulation->getNumMemVariables()  // membrane variable
+			+ mesh->getNumVolumeRegions() * simulation->getNumVolRegionVariables() // vol region variable
+			+ mesh->getNumMembraneRegions() * simulation->getNumMemRegionVariables(); // mem region variable
 	}
 	if (dimension == 1) {
 		nsp = numNonZeros * 20;

@@ -135,6 +135,7 @@ private:
 	void printCVodeStats();
 
 	long numUnknowns;
+	long numVolUnknowns;
 	int valueArraySize;
 
 	int* global2Local;
