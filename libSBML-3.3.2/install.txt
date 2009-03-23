@@ -1,0 +1,47 @@
+INSTRUCTIONS ON HOW TO MAKE LIBSBML WITH EXPAT ON WINDOWS
+
+NOTE: ${LIBSBMLDIR} = libsbml-3.3.2
+
+I. Download and Extract
+1. download the latest libsbml src code for example 3.0.0
+2. download the latest expat src code for example 2.0.1
+3. extract libsbml to any location, for example (d:\LIBSBMLDIR)
+4. extract expat into the directory where libsbml was extracted so that expat-2.0.1 is a subdirectory of LIBSBMLDIR
+
+II. Build EXPAT lib
+
+0. Click expat-2.0.1\expat.dsw and 'Save all' which will convert it to .NET solution and projects (.sln, .proj); exit from .NET
+1. copy numerics\LIBSBMLDIR\expat.vcproj to expat-2.0.1\lib and overwrite the original (we changed output names from libexpat.dll to expat.dll 
+	- since we use expat.dll in our Java code) 
+2. double click expat-2.0.1\expat.sln and MS .NET Visual Studio will open up.
+3. right click project expat; make sure that 'Release' is selected (not 'Debug') and click build.
+4. the output is expat-2.0.1\win32\bin\release\expat.lib && expat-2.0.1\win32\bin\release\expat.dll 
+
+III. Build libsbml.lib
+
+1. copy numerics\LIBSBMLDIR\bin\win32\libsbml_expat.vcproj to LIBSBMLDIR\win32\MSVC8\ and overwrite the original (in the project properties, 
+	we changed the Configuration Properties/C/C++/Code Generation/Runtime Library from /MD -> /MT; we changed output name from 
+	libsbml.dll to sbml.dll; in Configuration Properties/C/C++/Preprocessor we removed USE_BZ2, USE_ZLIB; in the project itself, 
+	we removed all source code (.cpp) related to zlib/zip). 
+2. double click LIBSBMLDIR\win32\MSVC8\libsbml_expat.sln. and MS .NET Visual Studio will open up
+3. right click project libsbml; make sure that 'Release' is selected (not 'Debug') and click build
+4. the output is LIBSBMLDIR\win32\bin\libsbml.dll
+
+IV. Build sbmlj.dll
+
+0. Copy Makefile.win32 from numerics/LIBSBMLDIR (current directory in eclipse under numerics) to LIBSBMLDIR\src\binding\java (in latest libSBML 
+	folder on your machine). 
+1. Open 'Command prompt' and go to LIBSBMLDIR\src\binding\java
+2. Do nmake -f Makefile.win32. The output is sbmlj.dll
+
+V. Get sbmlj.jar
+
+1. Install libSbml (3.3.2 or whichever version you are upgrading to) on your machine, using libSBML-3.3.2-win-expat.exe downloaded from the
+	libSBML website
+
+VI. Deploy
+
+1. Copy the sbmlj.jar from this installation into VCell IDE (your current project using SBML/libSBML)
+2. Collect all the dlls (expat.dll, sbml.dll, sbmlj.dll) and copy to VCell IDE/nativelibs/Win32 folder ('VCell IDE' - your current project 
+	where SBML/libSBML is used).
+ 
