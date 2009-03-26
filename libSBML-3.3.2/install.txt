@@ -1,5 +1,10 @@
-INSTRUCTIONS ON HOW TO MAKE LIBSBML WITH EXPAT ON WINDOWS
+				INSTRUCTIONS ON How to make libsbml with expat on Windows, Mac and Linux
+				==============================================================
+we disabled support for zlib and bzip2 unless we bundle them together too.
 
+
+						WINDOWS
+============================================================
 NOTE: ${LIBSBMLDIR} = libsbml-3.3.2
 
 I. Download and Extract
@@ -44,4 +49,34 @@ VI. Deploy
 1. Copy the sbmlj.jar from this installation into VCell IDE (your current project using SBML/libSBML)
 2. Collect all the dlls (expat.dll, sbml.dll, sbmlj.dll) and copy to VCell IDE/nativelibs/Win32 folder ('VCell IDE' - your current project 
 	where SBML/libSBML is used).
+ 
+			 MAC
+ ===================================================
+ Note: (you can freely change .dylib to .jnilib
+ 
+ I. build expat
+ 1. ./configure --prefix=/Users/fgao/expat-2.0.1
+ 2. make
+ 3. make install, this will give you libexpat.dylib which you change to libexpat.jnilib
+ 
+ II. build libsbml
+ 1. ./configure --with-expat=/Users/fgao/expat-2.0.1 --with-java --with-zlib=no --with-bzip2=no
+ 2. make 
+ 	this will give you both libsbml.dylib which you change to libsbml.jnilib and libsmlj.jnilib 
+ 3. use otool -L libsbmlj.jnilib to see the dependency and use install_name_tool to change the dependency. for example,
+ 	install_name_tool -change /Users/fgao/expat-2.0.1/lib/libexpat.1.dylib @loader_path/libexpat.jnilib libsbml.jnilib
+ 
+			 LINUX
+ ======================================================
+ I. build expat
+ 1. ./configure --prefix=/home/VCELL/fgao/expat-2.0.1
+ 2. make
+ 3. make install
+ 
+ II. build libsbml
+ 1. ./configure --with-expat=/home/VCELL/fgao/expat-2.0.1 --with-java --with-zlib=no --with-bzip2=no
+ 2. make, 
+ 3. relink the final shared object to include -Wl,-rpath -Wl,\$ORIGIN/ after g++.
+ 4. use objdump -p libsbmlj.so to make sure RPATH is $ORIGIN/
+ 
  
