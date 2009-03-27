@@ -17,7 +17,7 @@ CLEAN :
     if not exist "$(OUTDIR)" mkdir "$(OUTDIR)"
 
 CPP_PROJ = /O2 /D "WIN32" /D "_WINDOWS" /D "_USRDLL" /D "LIBSBML_EXPORTS" /D "USE_EXPAT" \
-	/D "LIBLAX_EXPORTS" /D "USE_LAYOUT" /D "_WINDLL" /EHsc /MT /GR /nologo /c /I..\..\..\include\ \
+	/D "LIBLAX_EXPORTS" /D "USE_LAYOUT" /D "_WINDLL" /EHsc /MD /GR /nologo /c /I..\..\..\include\ \
 	/I..\swig /I$(JNIDIR)\Win32\include /I$(JNIDIR)\Win32\include\win32
 
 .cpp.obj :

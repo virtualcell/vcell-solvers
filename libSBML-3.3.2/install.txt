@@ -25,9 +25,8 @@ II. Build EXPAT lib
 III. Build libsbml.lib
 
 1. copy numerics\LIBSBMLDIR\bin\win32\libsbml_expat.vcproj to LIBSBMLDIR\win32\MSVC8\ and overwrite the original (in the project properties, 
-	we changed the Configuration Properties/C/C++/Code Generation/Runtime Library from /MD -> /MT; we changed output name from 
-	libsbml.dll to sbml.dll; in Configuration Properties/C/C++/Preprocessor we removed USE_BZ2, USE_ZLIB; in the project itself, 
-	we removed all source code (.cpp) related to zlib/zip). 
+	we changed the output name from	libsbml.dll to sbml.dll; in Configuration Properties/C/C++/Preprocessor we removed USE_BZ2, USE_ZLIB; 
+	in the project itself,	we removed all source code (.cpp) related to zlib/zip). 
 2. double click LIBSBMLDIR\win32\MSVC8\libsbml_expat.sln. and MS .NET Visual Studio will open up
 3. right click project libsbml; make sure that 'Release' is selected (not 'Debug') and click build
 4. the output is LIBSBMLDIR\win32\bin\libsbml.dll

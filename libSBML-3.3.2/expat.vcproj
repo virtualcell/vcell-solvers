@@ -145,7 +145,7 @@
 				InlineFunctionExpansion="1"
 				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_USRDLL;COMPILED_FROM_DSP"
 				StringPooling="true"
-				RuntimeLibrary="0"
+				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				PrecompiledHeaderFile=".\..\win32\tmp\Release/expat.pch"
 				AssemblerListingLocation=".\..\win32\tmp\Release/"
