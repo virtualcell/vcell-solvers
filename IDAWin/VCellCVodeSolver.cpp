@@ -105,12 +105,17 @@ void VCellCVodeSolver::throwCVodeErrorMessage(int returnCode) {
 		}
 		case CV_REPTD_RHSFUNC_ERR: {
 			stringstream ss;
-			ss << "repeated recoverable right-hand side function errors : " << recoverableErrMsg;
+			ss << "CV_REPTD_RHSFUNC_ERR: repeated recoverable right-hand side function errors : " << recoverableErrMsg;
 			throw ss.str();
 		}
 		case CV_UNREC_RHSFUNC_ERR:{
 			stringstream ss;
-			ss << "the right-hand side failed in a recoverable manner, but no recovery is possible : " <<  recoverableErrMsg;
+			ss << "CV_UNREC_RHSFUNC_ERR: the right-hand side failed in a recoverable manner, but no recovery is possible : " <<  recoverableErrMsg;
+			throw ss.str();
+		}
+		case CV_FIRST_RHSFUNC_ERR: {
+			stringstream ss;
+			ss << "CV_FIRST_RHSFUNC_ERR: The right-hand side routine failed at the first call : " <<  recoverableErrMsg;
 			throw ss.str();
 		}
 		default:

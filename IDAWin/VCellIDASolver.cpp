@@ -142,7 +142,7 @@ void VCellIDASolver::throwIDAErrorMessage(int returnCode) {
 		}
 		case IDA_REP_RES_ERR:{
 			stringstream ss;
-			ss << "IDA_REP_RES_ERR: The user's residual function repeatedly returned a recoverable error flag, but the solver was unable to recover.: " << recoverableErrMsg;
+			ss << "IDA_REP_RES_ERR: The user's residual function repeatedly returned a recoverable error flag, but the solver was unable to recover. " << recoverableErrMsg;
 			throw ss.str();
 		}
 		case IDA_MEM_FAIL:{
@@ -155,7 +155,9 @@ void VCellIDASolver::throwIDAErrorMessage(int returnCode) {
 			throw "IDA_BAD_EWT: Some component of the error weight vector is zero (illegal).";
 		}
 		case IDA_FIRST_RES_FAIL:{
-			throw "IDA_FIRST_RES_FAIL: The user's residual function returned a recoverable error flag on the first call, but IDA was unable to recover.";
+			stringstream ss;
+			ss << "IDA_FIRST_RES_FAIL: The user's residual function returned a recoverable error flag on the first call, but IDA was unable to recover. " << recoverableErrMsg;
+			throw ss.str();
 		}
 		case IDA_LINESEARCH_FAIL:{
 			throw "IDA_LINESEARCH_FAIL: The linesearch algorithm failed to find a solution with a step larger than steptol in weighted RMS norm.";
