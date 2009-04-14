@@ -20,11 +20,14 @@ VCELL_LIBS =  libvcell.a \
 		../../zip/libzip32.a \
 		../../unzip/libunzip32.a \
 		../../PCGPack/libpcgpack.a \
-		../../blas/libblas.a 
+		../../blas/libblas.a \
+		../../IDAWin/libvcellIDA.a
 LIBS = ../../sundials/lib/libsundials_ida.a  \
        ../../sundials/lib/libsundials_cvode.a  \
 	   ../../sundials/lib/libsundials_nvecserial.a \
 	   ../../sundials/lib/libsundials.a \
+	   ../../netcdf-3.6.2/cxx/libnetcdf_cxx.a \
+	   ../../netcdf-3.6.2/libsrc/libnetcdf.a \
 	   -L../../SonicCClient64/Linux_AS4_64/bin/release/ -lsmq -lpthread -lm -lg2c
 
 LIBTOOL = ar cru

@@ -1,7 +1,7 @@
 CC= cl
 
 # Compilation options
-COPTIONS = /c /O2 -I..\win32 -I..\libsrc /DPowerStationFortran
+COPTIONS = /c /O2 -I..\win32 -I..\libsrc /DPowerStationFortran /MT
 
 .SUFFIXES: obj.c
 FORLIB = netcdf_for.lib

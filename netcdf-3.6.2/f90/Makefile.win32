@@ -2,10 +2,7 @@
 #Fortran compiler
 FC= ifort
 # Compilation options
-#FOPTIONS = /Gm /O3 /Qipo /Qprec-div- /QxN /compile_only /thread
-#FOPTIONS = /Qprec-div- /QxN /compile_only /MT /nologo /names:lowercase
-#FOPTIONS = /Qprec-div- /compile_only /MT
-FOPTIONS = /compile_only /check:bounds /iface:mixed_str_len_arg 
+FOPTIONS = /c /MT /check:bounds /iface:mixed_str_len_arg 
 #/names:uppercase
 .SUFFIXES: obj.f90
 #

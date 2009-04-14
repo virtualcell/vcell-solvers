@@ -1,0 +1,25 @@
+CC= cl
+
+# Compilation options
+CPPOPTIONS = /EHsc /c /O2 -I..\win32 -I..\libsrc -I. /DPowerStationFortran /MT
+
+.SUFFIXES: obj.cpp
+SRCLIB = netcdf_cxx.lib
+
+#
+.cpp.obj :
+	$(CC) $(CPPOPTIONS) $<
+
+default all: $(SRCLIB)
+
+OBJS = ncvalues.obj \
+	netcdf.obj \
+
+
+$(SRCLIB) : $(OBJS)
+	lib /out:$@ $(OBJS)
+ 
+#
+clean:
+	del $(SRCLIB)
+	del $(OBJS)
