@@ -23,6 +23,7 @@
 class VCellModel;
 class Mesh;
 class Simulation;
+class DataProcessor;
 
 class SimTool {
 public:
@@ -47,6 +48,12 @@ public:
 	void setKeepEvery(int ke) { keepEvery = ke; }
 	void setKeepAtMost(int kam) { keepAtMost = kam; }
 	void setBaseFilename(char *fname);
+	char* getBaseFileName() {
+		return baseFileName;
+	}
+	char* getBaseDirName() {
+		return baseDirName;
+	}
 	void setStoreEnable(bool enable) {
 		bStoreEnable = enable;
 	}
@@ -91,6 +98,8 @@ public:
 	void setSundialsOneStepOutput() { bSundialsOneStepOutput = true; }
 	bool isSundialsOneStepOutput() { return bSundialsOneStepOutput; }
 
+	void createDataProcessor(string& name, string& text);
+
 private:
 	SimTool();
 
@@ -127,6 +136,8 @@ private:
 
 	bool bSundialsOneStepOutput;
 	int keepAtMost;
+
+	DataProcessor* dataProcessor;
 };
 
 #endif

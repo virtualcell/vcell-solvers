@@ -36,6 +36,7 @@ void readDoubles(FILE *fp, double *data, int length);
 void writeDoubles(FILE *fp, double *data, int length);
 
 class Simulation;
+class Variable;
 
 class DataSet
 {
@@ -44,6 +45,7 @@ public:
 	    
 	void read(char *filename, Simulation *sim);
 	void write(char *filename, Simulation *sim, bool bCompress);
+	void convolve(Simulation* sim, Variable* var, double* values);
   
 };
 

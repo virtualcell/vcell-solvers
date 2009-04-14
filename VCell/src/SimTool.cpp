@@ -17,6 +17,7 @@
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/MembraneRegion.h>
+#include <VCELL/DataProcessorVFrap.h>
 
 #include <float.h>
 #include <sys/types.h>
@@ -77,6 +78,8 @@ SimTool::SimTool()
 	simStartTime = 0;
 	bSundialsOneStepOutput = false;
 	keepAtMost = 5000;
+
+	dataProcessor = 0;
 }
 
 SimTool::~SimTool()
@@ -86,6 +89,8 @@ SimTool::~SimTool()
 	delete baseFileName;
 
 	delete[] discontinuityTimes;
+
+	delete dataProcessor;
 }
 
 void SimTool::setModel(VCellModel* model) {
@@ -195,6 +200,12 @@ void SimTool::setBaseFilename(char *fname) {
 
 void SimTool::loadFinal()
 {
+	if (dataProcessor != 0) {
+		if (!dataProcessor->checkComplete(this)) {
+			clearLog();
+			return;
+		}
+	}
 
 	if (simulation == NULL){
 		printf("SimTool.loadFinal(), sim=NULL just returning\n");
@@ -491,6 +502,17 @@ void SimTool::setSolver(string& s) {
 }
 
 void SimTool::start() {
+	if (dataProcessor != 0) {
+		dataProcessor->onStart(this);
+	}
+
+	if (!bStoreEnable && dataProcessor != 0) {
+		if (dataProcessor->checkComplete(this)) {
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1, simEndTime));
+			return;
+		}		
+	}
+
 	if (checkStopRequested()) {
 		return;
 	}
@@ -514,36 +536,40 @@ void SimTool::start() {
 	//
     // store initial log if enabled
     //
-	if (bStoreEnable) {
-		if (simulation->getCurrIteration()==0) {
-			// simulation starts from scratch
-			ASSERTION(startTime == 0.0);
-			FILE *fp = NULL;
-			char filename[128];
-			sprintf(filename, "%s%s", baseFileName, MESH_FILE_EXT);
-			if ((fp=fopen(filename,"w"))==NULL){
-				char errMsg[256];
-				sprintf(errMsg, "cannot open mesh file %s for writing", filename);
-				throw errMsg;
-			}
-			simulation->getMesh()->write(fp);
-			fclose(fp);
-
-			sprintf(filename, "%s%s", baseFileName, MESHMETRICS_FILE_EXT);
-			if ((fp=fopen(filename,"w"))==NULL){
-				char errMsg[256];
-				sprintf(errMsg, "cannot open mesh metrics file %s for writing", filename);
-				throw errMsg;
-			}
-			simulation->getMesh()->writeMeshMetrics(fp);
-			fclose(fp);
-
-			updateLog(0.0, 0.0, 0);
-		} else {
-			// simulation continues from existing results, send data message
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simStartTime));
+	if (simulation->getCurrIteration()==0) {
+		// simulation starts from scratch
+		ASSERTION(startTime == 0.0);
+		FILE *fp = NULL;
+		char filename[128];
+		sprintf(filename, "%s%s", baseFileName, MESH_FILE_EXT);
+		if ((fp=fopen(filename,"w"))==NULL){
+			char errMsg[256];
+			sprintf(errMsg, "cannot open mesh file %s for writing", filename);
+			throw errMsg;
 		}
+		simulation->getMesh()->write(fp);
+		fclose(fp);
+
+		sprintf(filename, "%s%s", baseFileName, MESHMETRICS_FILE_EXT);
+		if ((fp=fopen(filename,"w"))==NULL){
+			char errMsg[256];
+			sprintf(errMsg, "cannot open mesh metrics file %s for writing", filename);
+			throw errMsg;
+		}
+		simulation->getMesh()->writeMeshMetrics(fp);
+		fclose(fp);
+
+		if (bStoreEnable) {
+			updateLog(0.0, 0.0, 0);
+		}
+		if (dataProcessor != 0) {
+			dataProcessor->onWrite(this);
+		}
+	} else {
+		// simulation continues from existing results, send data message
+		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simStartTime));
 	}
+	
 
     //
     // iterate up to but not including end time
@@ -579,10 +605,13 @@ void SimTool::start() {
 			return;
 		}
 
-        if (bStoreEnable){
-			if (simulation->getCurrIteration() % keepEvery == 0 || simulation->getTime_sec() > simEndTime - epsilon){
+		if (simulation->getCurrIteration() % keepEvery == 0 || simulation->getTime_sec() > simEndTime - epsilon){
+			if (bStoreEnable){
 				updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
             }
+			if (dataProcessor != 0) {
+				dataProcessor->onWrite(this);
+			}
         }
 		percentile = (simulation->getTime_sec() - simStartTime)/(simEndTime - simStartTime);
 		if (percentile - lastSentPercentile >= increment) {
@@ -600,8 +629,13 @@ void SimTool::start() {
 			}
 			if (uniform) {
 				cout << endl << "!!!Spatially Uniform reached at " << simulation->getTime_sec() << endl;
-				 if (simulation->getCurrIteration() % keepEvery != 0){
-					updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
+				if (simulation->getCurrIteration() % keepEvery != 0) {
+					if (bStoreEnable) {
+						updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
+					}
+					if (dataProcessor != 0) {
+						dataProcessor->onWrite(this);
+					}
 				}
 				break;
 			}
@@ -610,8 +644,12 @@ void SimTool::start() {
 
 	if (checkStopRequested()) {
 		return;
-	} else {
-		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));
+	} 
+	
+	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));	
+
+	if (dataProcessor != 0) {
+		dataProcessor->onComplete(this);
 	}
 
 #ifndef VCELL_MPI
@@ -675,5 +713,13 @@ bool SimTool::checkSpatiallyUniform(Variable* var) {
 			return true;
 		default:
 			return true;
+	}
+}
+
+void SimTool::createDataProcessor(string& name, string& text) {
+	if (name == "VFRAP") {
+		dataProcessor = new DataProcessorVFrap(name, text);
+	} else {
+		throw "unknown DataProcessor";
 	}
 }

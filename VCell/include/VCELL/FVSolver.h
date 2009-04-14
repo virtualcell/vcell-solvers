@@ -33,6 +33,7 @@ public:
 	void loadFeature(istream& ifsInput, Feature* feature);
 	void loadMembrane(istream& ifsInput, Feature* infeature, char* var_name);
 	void loadSimulationParameters(istream& ifsInput);
+	void loadDataProcessor(istream& ifsInput);
 	void loadMesh(istream& ifsInput);
 	void loadFieldData(istream& ifsInput);
 	void loadParameters(istream& ifsInput);

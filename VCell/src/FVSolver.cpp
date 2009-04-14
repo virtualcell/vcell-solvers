@@ -800,6 +800,33 @@ void FVSolver::loadMembrane(istream& ifsInput, Feature* infeature, char* var_nam
 	//}
 }
 
+void FVSolver::loadDataProcessor(istream& ifsInput) {
+	string text;
+	string nextToken;
+
+	string dataProcessorName;
+	ifsInput >> dataProcessorName;
+	getline(ifsInput, nextToken);
+
+	while (!ifsInput.eof()) {
+		nextToken = "";
+		ifsInput >> nextToken;
+		if (nextToken.size() == 0) {
+			continue;
+		} else if (nextToken[0] == '#') {
+			getline(ifsInput, nextToken);
+			continue;
+		} else if (nextToken == "DATA_PROCESSOR_END") {
+			break;
+		} else {
+			text += nextToken;
+			getline(ifsInput, nextToken);
+			text += nextToken + "\n";
+		} 
+	}
+	simTool->createDataProcessor(dataProcessorName, text);
+}
+
 void FVSolver::loadSimulationParameters(istream& ifsInput) {
 	string nextToken;
 
@@ -955,6 +982,7 @@ void FVSolver::loadMesh(istream& ifsInput) {
 		}
 		cout << "Reading mesh from vcg file '" << meshfile << "'" << endl;
 		mesh->initialize(ifs);
+		ifs.close();
 	} else {
 		if (vcgText.size() == 0) {
 			throw "no mesh specified";
@@ -1071,6 +1099,8 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "preprocessing started"));
 		} else if (nextToken == "SIMULATION_PARAM_BEGIN") {
 			loadSimulationParameters(ifsInput);
+		} else if (nextToken == "DATA_PROCESSOR_BEGIN") {
+			loadDataProcessor(ifsInput);
 		} else if (nextToken == "MODEL_BEGIN") {
 			loadModel(ifsInput);
 			if (model == null) {

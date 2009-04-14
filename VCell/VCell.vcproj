@@ -104,7 +104,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
+				AdditionalIncludeDirectories="&quot;..\netcdf-3.6.2\libsrc&quot;;&quot;..\netcdf-3.6.2\cxx&quot;;..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;USE_MESSAGING;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="0"
 				WarningLevel="3"
@@ -165,7 +165,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
+				AdditionalIncludeDirectories="&quot;..\netcdf-3.6.2\libsrc&quot;;&quot;..\netcdf-3.6.2\cxx&quot;;..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;USE_MESSAGING;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -496,6 +496,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\DataProcessorVFrap.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\DataSet.cpp"
 				>
 			</File>
@@ -735,6 +739,14 @@
 			</File>
 			<File
 				RelativePath=".\include\Vcell\ContourVariable.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\VCELL\DataProcessor.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\VCELL\DataProcessorVFrap.h"
 				>
 			</File>
 			<File

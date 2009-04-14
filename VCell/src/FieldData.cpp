@@ -87,7 +87,7 @@ double* FieldData::getData() {
 			throw errmsg;
 		}
 		readDoubles(fp, data, dataBlock[i].size);
-		cout << "read data for field '" << fdName << "'." << endl;
+		cout << endl << "read data for field '" << fdName << "'." << endl;
 		break;
 	}
 	delete[] dataBlock;
