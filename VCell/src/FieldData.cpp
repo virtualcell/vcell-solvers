@@ -1,5 +1,7 @@
 #include <VCELL/Variable.h>
 #include <VCELL/FieldData.h>
+
+#include <sstream>
 #include <string>
 #include <iostream>
 using namespace std;
@@ -64,6 +66,8 @@ double* FieldData::getData() {
 		throw errmsg;
 	}
 	   
+	int size = fileHeader.sizeX * fileHeader.sizeY * fileHeader.sizeZ;
+
 	dataBlock = new DataBlock[fileHeader.numBlocks];
 	   
 	if (fseek(fp, fileHeader.firstBlockOffset, SEEK_SET)){
@@ -78,6 +82,12 @@ double* FieldData::getData() {
 	for (int i = 0; i < fileHeader.numBlocks; i ++){
 		if (strcmp(fdVarName.c_str(), dataBlock[i].varName)) {
 			continue;
+		}
+		if (dataBlock[i].size != size && varType == VAR_VOLUME) {
+			stringstream ss;
+			ss << "FieldData " << fdName << ", data block size (" << dataBlock[i].size << ") does not match file header size [" << fileHeader.sizeX 
+				<< "," << fileHeader.sizeY << "," << fileHeader.sizeZ << "].";
+			throw ss.str();
 		}
 		data = new double[dataBlock[i].size];
 	      
