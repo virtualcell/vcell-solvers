@@ -140,10 +140,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Ws2_32.lib pcgwrapper.lib pcgpack_dbl.lib qhull.lib mkl_c.lib zip32.lib unzip32.lib zlib.lib libsmq.lib libsmqj.lib"
+				AdditionalDependencies="Ws2_32.lib pcgwrapper.lib pcgpack_dbl.lib qhull.lib mkl_c.lib zip32.lib unzip32.lib zlib.lib libsmq.lib libsmqj.lib netcdf.lib netcdf_cxx.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib"
 				OutputFile="$(OutDir)/FiniteVolume.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\VCell\src;..\PCGPack;..\SonicCClient\Win32\lib;..\unzip;..\zlib;..\zip;..\qhull;..\IFortran"
+				AdditionalLibraryDirectories="..\Sundials\lib;..\VCell\src;..\PCGPack;..\SonicCClient\Win32\lib;..\unzip;..\zlib;..\zip;..\qhull;&quot;..\netcdf-3.6.2\cxx&quot;;&quot;..\netcdf-3.6.2\libsrc&quot;;..\IFortran"
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="false"
 				SubSystem="1"
@@ -223,10 +223,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Ws2_32.lib pcgwrapper.lib VCell.lib pcgpack_dbl.lib qhulld.lib mkl_c.lib zip32.lib unzip32.lib zlib.lib libsmq.lib libsmqj.lib ExpressionParser.lib"
+				AdditionalDependencies="Ws2_32.lib pcgwrapper.lib pcgpack_dbl.lib qhulld.lib mkl_c.lib zip32.lib unzip32.lib zlib.lib libsmq.lib libsmqj.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib netcdf.lib netcdf_cxx_mtd.lib"
 				OutputFile="$(OutDir)/FiniteVolume.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\VCell\src;..\ExpressionParser\MTD;..\PCGPack;..\VCell\MTD\;..\SonicCClient\Win32\lib;..\unzip;..\zlib;..\zip;..\qhull;..\IFortran"
+				AdditionalLibraryDirectories="..\sundials\lib;..\VCell\src;..\PCGPack;..\SonicCClient\Win32\lib;..\unzip;..\zlib;..\zip;..\qhull;&quot;..\netcdf-3.6.2\cxx&quot;;&quot;..\netcdf-3.6.2\libsrc&quot;;..\IFortran"
 				IgnoreDefaultLibraryNames="libcmt"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/FiniteVolume.pdb"
@@ -309,6 +309,251 @@
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="PdeOptDebug|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;..\VCell\include;..\zlib;..\IDAWin;..\ExpressionParser"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				RuntimeTypeInfo="true"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="4"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="Ws2_32.lib pcgwrapper.lib pcgpack_dbl.lib qhulld.lib mkl_c.lib zip32.lib unzip32.lib zlib.lib libsmq.lib libsmqj.lib"
+				OutputFile="$(OutDir)/FiniteVolume.exe"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\VCell\src;..\ExpressionParserMT\Debug;..\PCGPack;..\SonicCClient\Win32\lib;src;..\unzip;..\zlib;..\zip;..\qhull;..\IFortran"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(OutDir)/FiniteVolume.pdb"
+				SubSystem="1"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="MDD|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			ManagedExtensions="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;..\VCell\include;..\zlib;..\IDAWin;..\ExpressionParser"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000"
+				MinimalRebuild="false"
+				BasicRuntimeChecks="0"
+				RuntimeLibrary="3"
+				RuntimeTypeInfo="true"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="Ws2_32.lib pcgwrapper_md.lib pcgpck2_md.lib qhullmd.lib mkl_c.lib zip32.lib unzip32.lib zlib.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib"
+				OutputFile="$(OutDir)/FiniteVolume.exe"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\sundials\lib;..\VCell\src;..\PCGPack;..\unzip;..\zlib;..\zip;..\qhull;..\IFortran"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(OutDir)/FiniteVolume.pdb"
+				SubSystem="1"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="MD|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			ManagedExtensions="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				AdditionalIncludeDirectories="..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;..\VCell\include;..\zlib;..\IDAWin;..\ExpressionParser"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000"
+				MinimalRebuild="false"
+				BasicRuntimeChecks="0"
+				RuntimeLibrary="2"
+				RuntimeTypeInfo="true"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="Ws2_32.lib pcgwrapper_md.lib pcgpck2_md.lib qhullmd.lib mkl_c.lib zip32_md.lib unzip32.lib zlib_md.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib"
+				OutputFile="$(OutDir)/FiniteVolume.exe"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\sundials\lib;..\VCell\src;..\PCGPack;..\unzip;..\zlib;..\zip;..\qhull;..\IFortran"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(OutDir)/FiniteVolume.pdb"
+				SubSystem="1"
 				TargetMachine="1"
 			/>
 			<Tool
