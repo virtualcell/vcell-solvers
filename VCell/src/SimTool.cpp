@@ -23,6 +23,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#if ( !defined(WIN32) && !defined(WIN64) ) // UNIX
+#include <unistd.h>
+#endif
+
 #include <sstream>
 using namespace std;
 
@@ -345,6 +349,14 @@ void SimTool::loadFinal()
 	}
 }
 
+static void retryWait(int seconds) {
+#if ( defined(WIN32) || defined(WIN64) )
+	Sleep(seconds * 1000);
+#else
+	sleep(seconds);
+#endif
+}
+
 void SimTool::updateLog(double progress, double time, int iteration)
 {
 	FILE *fp;
@@ -364,10 +376,24 @@ void SimTool::updateLog(double progress, double time, int iteration)
 	simulation->writeData(simFileName,bSimFileCompress);
 
 	sprintf(logFileName,"%s%s",baseFileName, LOG_FILE_EXT);
-	if ((fp=fopen(logFileName, "a"))==NULL){
-		char errmsg[512];
-		sprintf(errmsg, "SimTool::updateLog() - error opening log file <%s>", logFileName);
-		throw errmsg;
+
+	int numRetries = 2;
+	
+	for (int retry = 0; retry < numRetries; retry ++) {
+		fp=fopen(logFileName, "a");
+
+		if (fp==NULL){
+			char errmsg[512];
+			sprintf(errmsg, "SimTool::updateLog() - error opening log file <%s>", logFileName);
+			if (retry < numRetries - 1) {
+				cout << errmsg << ", trying again" << endl;
+				retryWait(5);
+			} else {
+				throw errmsg;
+			}
+		} else {
+			break;
+		}
 	}
 
    // write zip file first, then write log file, in case that
@@ -380,7 +406,20 @@ void SimTool::updateLog(double progress, double time, int iteration)
 			retcode = zip32(2, zipFileName, simFileName, particleFileName);
 			remove(particleFileName);
 		} else {
-			retcode = zip32(1, zipFileName, simFileName);
+			bool bSuccess = false;
+			for (int retry = 0; retry < numRetries - 1; retry ++) {
+				try {
+					retcode = zip32(1, zipFileName, simFileName);
+					bSuccess = true;
+					break;
+				} catch (...) {
+					cout << "SimTool::updateLog(), adding .sim to .zip failed, trying again." << endl;
+					retryWait(5); // wait 5 seconds and try it again
+				}
+			}
+			if (!bSuccess) { // last time we don't catch the exception
+				retcode = zip32(1, zipFileName, simFileName);
+			}
 		}
 		remove(simFileName);
 
