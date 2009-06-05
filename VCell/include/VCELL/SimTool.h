@@ -103,6 +103,8 @@ public:
 private:
 	SimTool();
 
+	FILE* lockForReadWrite();
+
 	bool checkSpatiallyUniform(Variable*);	
 	void updateLog(double progress,double time,int iteration);
 	void clearLog();

@@ -37,6 +37,7 @@ SimulationMessaging *SimulationMessaging::m_inst = NULL;
 SimulationMessaging::SimulationMessaging() {
 	bStopRequested = false;
 	workerEvent = NULL;
+	m_taskID = -1;
 	workerEventOutputMode = WORKEREVENT_OUTPUT_MODE_STDOUT;
 }
 
@@ -601,8 +602,8 @@ void SimulationMessaging::start() {
 
 	char messagingThreadEndEventName[256];
 	char newWorkerEventName[256];
-	sprintf(messagingThreadEndEventName, "MessagingThreadEndEvent_%ld_%d", m_simKey, m_jobIndex);
-	sprintf(newWorkerEventName, "NewWorkerEvent_%ld_%d", m_simKey, m_jobIndex);
+	sprintf(messagingThreadEndEventName, "MessagingThreadEndEvent_%ld_%d_%d", m_simKey, m_jobIndex, m_taskID);
+	sprintf(newWorkerEventName, "NewWorkerEvent_%ld_%d_%d", m_simKey, m_jobIndex, m_taskID);
 
 	// Create a manual-reset event object. The master thread sets 
 	// this to nonsignaled when it writes to the shared buffer.

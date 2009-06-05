@@ -38,6 +38,7 @@ using namespace std;
 #define PARTICLE_FILE_EXT ".particle"
 #define LOG_FILE_EXT ".log"
 #define ZIP_FILE_EXT ".zip"
+#define TID_FILE_EXT ".tid"
 
 #define SUNDIALS_PDE_SOLVER "SUNDIALS_PDE_SOLVER"
 #define FV_SOLVER "FV_SOLVER"
@@ -48,6 +49,8 @@ int unzip32(char* zipfile, char* file, char* exdir);
 SimTool* SimTool::instance = 0;
 
 static int NUM_TOKENS_PER_LINE = 4;
+static const int numRetries = 2;
+static const int retryWaitSeconds = 5;
 
 SimTool::SimTool()
 {
@@ -202,6 +205,59 @@ void SimTool::setBaseFilename(char *fname) {
 	}
 }
 
+static void retryWait(int seconds) {
+#if ( defined(WIN32) || defined(WIN64) )
+	Sleep(seconds * 1000);
+#else
+	sleep(seconds);
+#endif
+}
+
+static FILE* openFileWithRetry(char* fileName, char* mode) {
+	FILE *fp = NULL;
+	for (int retry = 0; retry < numRetries; retry ++) {
+		fp = fopen(fileName, mode);
+
+		if (fp != NULL) {
+			break;
+		}
+		if (retry < numRetries - 1) {
+			cout << "SimTool, error opening log file <" << fileName << ">, trying again" << endl;
+			retryWait(retryWaitSeconds);
+		}
+	}
+	return fp;
+}
+
+static bool zipUnzipWithRetry(bool bZip, char* zipFileName, char* simFileName, char* errmsg) {
+	bool bSuccess = true;
+	int retcode = 0;
+	for (int retry = 0; retry < numRetries; retry ++) {
+		try {
+			if (bZip) {
+				retcode = zip32(1, zipFileName, simFileName);						
+			} else {
+				retcode = unzip32(zipFileName, simFileName, NULL);
+			}
+			break;
+		} catch (const char* ziperr) {
+			sprintf(errmsg, "%s", ziperr);
+		} catch (...) {
+			sprintf(errmsg, "SimTool::updateLog(), adding .sim to .zip failed.");						
+		}
+		bSuccess = false;
+		if (retry < numRetries - 1) {
+			retryWait(retryWaitSeconds);
+			cout << "SimTool::updateLog(), adding .sim to .zip failed, trying again" << endl;
+		}
+	}
+	if (bSuccess && retcode != 0) {				
+		sprintf(errmsg, "Writing zip file <%s> failed, return code is %d", zipFileName, retcode);
+		bSuccess = false;
+	}
+	return bSuccess;
+}
+
 void SimTool::loadFinal()
 {
 	if (dataProcessor != 0) {
@@ -220,7 +276,7 @@ void SimTool::loadFinal()
 	// read '.log' file to determine simulation time and iteration
 	//
 
-	FILE *fp=NULL;
+	bool bStartOver = true;
 
 	char logFileName[128];
 	char zipFileName[128];
@@ -228,142 +284,190 @@ void SimTool::loadFinal()
 
 	sprintf(logFileName,"%s%s", baseFileName, LOG_FILE_EXT);
 
-	if ((fp=fopen(logFileName, "r"))==NULL){
-		printf("SimTool::loadFinal(), unable to open log file %s\n",logFileName);
-		clearLog();
-		return;
-	}
+	FILE* tidFP = lockForReadWrite();
+	FILE* logFP = fopen(logFileName, "r");
 
-	struct stat buf;
-	sprintf(zipFileName,"%s00%s", baseFileName, ZIP_FILE_EXT);
-	if (stat(zipFileName, &buf)) {
-		bSimZip = false;
-		NUM_TOKENS_PER_LINE = 3;
-	} else {
-		bSimZip = true;
-		NUM_TOKENS_PER_LINE = 4;
-	}
+	if (logFP != NULL) {
+		bStartOver = false; // log file exists, there is old data
 
-	simStartTime = -1;
-	int tempIteration = -1, tempFileCount = 0, tempZipCount = 0;
-
-	while (!feof(fp)){
-		char logBuffer[201];
-		if (!fgets(logBuffer, 200, fp)){
-			break;
-		}
-		//
-		// look for line with a valid filename (includes basename)
-		//
-		if (strstr(logBuffer, baseSimName)){
-			//
-			// parse iteration number and time
-			//
-			int numTokens = 0;
-			if (bSimZip) {
-				numTokens = sscanf(logBuffer, "%d %s %s %lg", &tempIteration, dataFileName, zipFileName, &simStartTime);
-			} else {
-				numTokens = sscanf(logBuffer, "%d %s %lg", &tempIteration, dataFileName, &simStartTime);
-			}
-			if (numTokens != NUM_TOKENS_PER_LINE){
-				printf("SimTool::load(), error reading log file %s, reading iteration\n", logFileName);
-				printf("error in line %d = '%s'\n",tempFileCount,logBuffer);
-				fclose(fp);
-				clearLog();
-				return;
-			}
-		}
-		tempFileCount++;
-	}
-	fclose(fp);
-
-	if (tempIteration <= 0  || simStartTime <= 0) {
-		clearLog();
-		return;
-	}
-
-	if (isSundialsPdeSolver()) {
-		simulation->setSimStartTime(simStartTime);
-	}
-
-	if (bSimZip) {
-		// check if zip file exists
-		char zipFileAbsoluteName[512];
-		if (strchr(zipFileName, DIRECTORY_SEPARATOR) != 0) {
-			strcpy(zipFileAbsoluteName,zipFileName);
+		struct stat buf;
+		sprintf(zipFileName,"%s00%s", baseFileName, ZIP_FILE_EXT);
+		if (stat(zipFileName, &buf)) {
+			bSimZip = false;
+			NUM_TOKENS_PER_LINE = 3;
 		} else {
-			if (baseDirName == 0) { // current directory
-				strcpy(zipFileAbsoluteName, zipFileName);
-			} else {
-				sprintf(zipFileAbsoluteName,"%s%s",baseDirName, zipFileName);  // Jim Schaff made this change ... look at it.
-			}
+			bSimZip = true;
+			NUM_TOKENS_PER_LINE = 4;
 		}
-		if (stat(zipFileAbsoluteName, &buf)) {
-			printf("SimTool::loadFinal(), unable to open zip file %s\n", zipFileAbsoluteName);
-			clearLog();
-			return;
-		}
-		try {
-			// unzip the file (without directory) into exdir, currently we
-			// unzip the file to the current working directory
-			unzip32(zipFileAbsoluteName, dataFileName, NULL);
-		} catch (...) {
-			clearLog();
-			return; // when exception occurs, clear all the data files and start over without exiting.
-		}
-	} else {
-		// otherwise check if sim file exists
-		if (stat(dataFileName, &buf)) {
-			printf("SimTool::loadFinal(), unable to open zip file %s\n", zipFileName);
-			clearLog();
-			return;
-		}
-	}
-	try {
-		DataSet dataSet;
-		dataSet.read(dataFileName, simulation);
-		simulation->setCurrIteration(tempIteration);
-		simFileCount = tempFileCount;
 
-		if (bSimZip) {
-			remove(dataFileName);
-			zipFileCount = getZipCount(zipFileName);
-			// wrong zip file Name
-			if (zipFileCount < 0) {
-				clearLog();
-				return;
+		simStartTime = -1;
+		int tempIteration = -1, tempFileCount = 0, tempZipCount = 0;
+
+		while (!feof(logFP)){
+			char logBuffer[201];
+			if (!fgets(logBuffer, 200, logFP)){
+				break;
 			}
-			// check if this zip file is already big enough
-			if (stat(zipFileName, &buf) == 0) {
-				if (buf.st_size > ZIP_FILE_LIMIT) {
-					zipFileCount ++;
+			//
+			// look for line with a valid filename (includes basename)
+			//
+			if (strstr(logBuffer, baseSimName)){
+				//
+				// parse iteration number and time
+				//
+				int numTokens = 0;
+				if (bSimZip) {
+					numTokens = sscanf(logBuffer, "%d %s %s %lg", &tempIteration, dataFileName, zipFileName, &simStartTime);
+				} else {
+					numTokens = sscanf(logBuffer, "%d %s %lg", &tempIteration, dataFileName, &simStartTime);
+				}
+				if (numTokens != NUM_TOKENS_PER_LINE){
+					printf("SimTool::load(), error reading log file %s, reading iteration\n", logFileName);
+					printf("error in line %d = '%s'\n",tempFileCount,logBuffer);
+					bStartOver = true;
+					break;
 				}
 			}
+			tempFileCount++;
+		} // while (!feof(logFP))
+
+		// close log file
+		fclose(logFP);
+
+		if (tempIteration <= 0  || simStartTime <= 0) {
+			bStartOver = true;
 		}
-	} catch (const char* msg) {
-		cout << "SimTool::loadFinal() : dataSet.read(" << dataFileName << " failed : " << msg << endl;
-		clearLog();
-	} catch (...) {
-		cout << "SimTool::loadFinal() : dataSet.read(" << dataFileName << " failed : unexpected error" << endl;
+
+		if (!bStartOver) {
+			if (isSundialsPdeSolver()) {
+				simulation->setSimStartTime(simStartTime);
+			}
+
+			if (bSimZip) {
+				// check if zip file exists
+				char zipFileAbsoluteName[512];
+				if (strchr(zipFileName, DIRECTORY_SEPARATOR) != 0) {
+					strcpy(zipFileAbsoluteName,zipFileName);
+				} else {
+					if (baseDirName == 0) { // current directory
+						strcpy(zipFileAbsoluteName, zipFileName);
+					} else {
+						sprintf(zipFileAbsoluteName,"%s%s",baseDirName, zipFileName);  // Jim Schaff made this change ... look at it.
+					}
+				}
+				if (stat(zipFileAbsoluteName, &buf)) {
+					cout << "SimTool::loadFinal(), unable to open zip file <" << zipFileAbsoluteName << ">" << endl;
+					bStartOver = true;
+				} else {
+					// unzip the file (without directory) into exdir, currently we
+					// unzip the file to the current working directory
+					char errmsg[128];
+					zipUnzipWithRetry(false, zipFileAbsoluteName, dataFileName, errmsg);
+				}
+			}			
+			
+			// otherwise check if sim file exists
+			if (stat(dataFileName, &buf)) {
+				cout << "SimTool::loadFinal(), unable to open sim file <" << dataFileName << ">" << endl;	
+				bStartOver = true;
+			} else {
+				try {
+					DataSet dataSet;
+					dataSet.read(dataFileName, simulation);
+					simulation->setCurrIteration(tempIteration);
+					simFileCount = tempFileCount;
+
+					if (bSimZip) {
+						remove(dataFileName);
+						zipFileCount = getZipCount(zipFileName);
+						// wrong zip file Name
+						if (zipFileCount < 0) { // should never happen
+							bStartOver = true;
+						}  else {
+							// check if this zip file is already big enough
+							if (stat(zipFileName, &buf) == 0) {
+								if (buf.st_size > ZIP_FILE_LIMIT) {
+									zipFileCount ++;
+								}
+							}
+						}
+					} 
+					
+				} catch (const char* msg) {
+					cout << "SimTool::loadFinal() : dataSet.read(" << dataFileName << " failed : " << msg << endl;
+					bStartOver = true;
+				} catch (...) {
+					cout << "SimTool::loadFinal() : dataSet.read(" << dataFileName << " failed : unexpected error" << endl;
+					bStartOver = true;
+				}
+			}			
+		}  // if (!bStartOver) 
+	} // if (logFP != NULL)
+
+	// close tid file
+	if (tidFP != 0) {
+		fclose(tidFP);
+	}
+	if (bStartOver) {
 		clearLog();
 	}
 }
 
-static void retryWait(int seconds) {
-#if ( defined(WIN32) || defined(WIN64) )
-	Sleep(seconds * 1000);
-#else
-	sleep(seconds);
-#endif
+FILE* SimTool::lockForReadWrite() {
+	int myTaskID = SimulationMessaging::getInstVar()->getTaskID();
+	if (myTaskID < 0) {
+		return 0;
+	}
+
+	char tidFileName[128];
+	sprintf(tidFileName,"%s%s", baseFileName, TID_FILE_EXT);
+
+	bool bExist = false;
+
+	struct stat buf;
+	if (stat(tidFileName, &buf) == 0) { // if exists
+		bExist = true;
+	}
+	
+	FILE* fp = openFileWithRetry(tidFileName, bExist ? "r+" : "w+");
+
+	if (fp == 0){
+		char errmsg[512];
+		sprintf(errmsg, "SimTool::lockForReadWrite() - error opening .tid file <%s>", tidFileName);
+		throw errmsg;
+	}
+	if (bExist) {
+		int taskIDInFile = 0;
+		int numRead = fscanf(fp, "%d", &taskIDInFile);
+		if (numRead == 1) {
+			if (myTaskID < taskIDInFile) {
+				cout << "there is a new process running the simulation, exit..." << endl;
+				exit(0);
+			}
+			if (myTaskID == taskIDInFile) { // it's me
+				return fp;
+			}
+		}
+		rewind(fp);
+	}
+	fprintf(fp, "%5d", myTaskID);
+	fflush(fp);
+
+	return fp;
 }
+
 
 void SimTool::updateLog(double progress, double time, int iteration)
 {
-	FILE *fp;
+	FILE *logFP;
 	char simFileName[128];
 	char logFileName[128];
 	char zipFileName[128];
 	char particleFileName[128];
+
+	bool bSuccess = true;
+	char errmsg[512];
+	FILE* tidFP = lockForReadWrite();
 
 	// write sim files to local
 	if (bSimZip) {
@@ -376,77 +480,57 @@ void SimTool::updateLog(double progress, double time, int iteration)
 	simulation->writeData(simFileName,bSimFileCompress);
 
 	sprintf(logFileName,"%s%s",baseFileName, LOG_FILE_EXT);
-
-	int numRetries = 2;
 	
-	for (int retry = 0; retry < numRetries; retry ++) {
-		fp=fopen(logFileName, "a");
+	logFP = openFileWithRetry(logFileName, "a");
 
-		if (fp==NULL){
-			char errmsg[512];
-			sprintf(errmsg, "SimTool::updateLog() - error opening log file <%s>", logFileName);
-			if (retry < numRetries - 1) {
-				cout << errmsg << ", trying again" << endl;
-				retryWait(5);
+	if (logFP == 0) {
+		sprintf(errmsg, "SimTool::updateLog() - error opening log file <%s>", logFileName);
+		bSuccess = false;
+	} else {
+	   // write zip file first, then write log file, in case that
+	   // zipping fails
+		if (bSimZip) {
+			sprintf(zipFileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_FILE_EXT);
+			int retcode = 0;
+			struct stat buf;
+			if (stat(particleFileName, &buf) == 0) {	// has particle
+				retcode = zip32(2, zipFileName, simFileName, particleFileName);
+				remove(particleFileName);
 			} else {
-				throw errmsg;
+				bSuccess = zipUnzipWithRetry(true, zipFileName, simFileName, errmsg);
 			}
-		} else {
-			break;
-		}
-	}
+			remove(simFileName);
 
-   // write zip file first, then write log file, in case that
-   // zipping fails
-	if (bSimZip) {
-		sprintf(zipFileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_FILE_EXT);
-		int retcode = 0;
-		struct stat buf;
-		if (stat(particleFileName, &buf) == 0) {	// has particle
-			retcode = zip32(2, zipFileName, simFileName, particleFileName);
-			remove(particleFileName);
-		} else {
-			bool bSuccess = false;
-			for (int retry = 0; retry < numRetries - 1; retry ++) {
-				try {
-					retcode = zip32(1, zipFileName, simFileName);
-					bSuccess = true;
-					break;
-				} catch (...) {
-					cout << "SimTool::updateLog(), adding .sim to .zip failed, trying again." << endl;
-					retryWait(5); // wait 5 seconds and try it again
+			// write the log file
+			if (bSuccess) {
+				char zipFileNameWithoutPath[512];
+				sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
+				fprintf(logFP,"%4d %s %s %.15lg\n", iteration, simFileName, zipFileNameWithoutPath, time);
+
+				if (stat(zipFileName, &buf) == 0) { // if exists
+					if (buf.st_size > ZIP_FILE_LIMIT) {
+						zipFileCount ++;
+					}
 				}
 			}
-			if (!bSuccess) { // last time we don't catch the exception
-				retcode = zip32(1, zipFileName, simFileName);
-			}
+		} else { // old format, no zip
+			char simFileNameWithoutPath[512];
+			sprintf(simFileNameWithoutPath,"%s%.4d%s",baseSimName, simFileCount, SIM_FILE_EXT);
+			fprintf(logFP,"%4d %s %.15lg\n", iteration, simFileNameWithoutPath, time);
 		}
-		remove(simFileName);
-
-		if (retcode != 0) {
-			char msg[256];
-			sprintf(msg, "%s: %d", "Writing zip file failed, return code is ", retcode);
-			throw  msg;
-		}
-
-		char zipFileNameWithoutPath[512];
-		sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
-		fprintf(fp,"%4d %s %s %.15lg\n", iteration, simFileName, zipFileNameWithoutPath, time);
-
-		if (stat(zipFileName, &buf) == 0) { // if exists
-			if (buf.st_size > ZIP_FILE_LIMIT) {
-				zipFileCount ++;
-			}
-		}
-	} else {
-		char simFileNameWithoutPath[512];
-		sprintf(simFileNameWithoutPath,"%s%.4d%s",baseSimName, simFileCount, SIM_FILE_EXT);
-		fprintf(fp,"%4d %s %.15lg\n", iteration, simFileNameWithoutPath, time);
 	}
-	fclose(fp);
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
-
-	simFileCount++;
+	// close log file
+	fclose(logFP);
+	// close tid file
+	if (tidFP != 0) {
+		fclose(tidFP);
+	}
+	if (bSuccess) {
+		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
+		simFileCount++;
+	} else {
+		throw errmsg;
+	}
 }
 
 int SimTool::getZipCount(char* zipFileName) {

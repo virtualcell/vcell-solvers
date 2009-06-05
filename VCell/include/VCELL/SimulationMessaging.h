@@ -106,6 +106,14 @@ public:
 		return bStopRequested;
 	}
 
+	int getTaskID() {
+#ifdef USE_MESSAGING
+		return m_taskID;
+#else
+		return -1;
+#endif
+	}
+
 #ifdef USE_MESSAGING
 	static SimulationMessaging* create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, jint simKey, jint jobIndex, jint taskID, jint ttl=DEFAULT_TTL);
     void onException(JMSExceptionRef anException);
