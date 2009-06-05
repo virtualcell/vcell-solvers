@@ -213,7 +213,7 @@ static void retryWait(int seconds) {
 #endif
 }
 
-static FILE* openFileWithRetry(char* fileName, char* mode) {
+static FILE* openFileWithRetry(const char* fileName, const char* mode) {
 	FILE *fp = NULL;
 	for (int retry = 0; retry < numRetries; retry ++) {
 		fp = fopen(fileName, mode);
