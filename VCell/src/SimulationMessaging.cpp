@@ -37,7 +37,9 @@ SimulationMessaging *SimulationMessaging::m_inst = NULL;
 SimulationMessaging::SimulationMessaging() {
 	bStopRequested = false;
 	workerEvent = NULL;
+#ifdef USE_MESSAGING
 	m_taskID = -1;
+#endif
 	workerEventOutputMode = WORKEREVENT_OUTPUT_MODE_STDOUT;
 }
 

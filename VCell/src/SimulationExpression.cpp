@@ -315,8 +315,15 @@ string* SimulationExpression::getFieldSymbols() {
 }
 
 void SimulationExpression::populateFieldValues(double* darray, int index) {
+	// here we don't know the index is for Volume or Membrane,
+	// so we check array index is in bounds.
 	for (int i = 0; i < (int)fieldDataList.size(); i ++) {
-		darray[i] = fieldDataList[i]->getData()[index];
+		int dataLength = fieldDataList[i]->getDataLength();
+		if (index >= 0 && index < dataLength) {
+			darray[i] = fieldDataList[i]->getData()[index];
+		} else {
+			darray[i] = 0;
+		}
 	}
 }
 

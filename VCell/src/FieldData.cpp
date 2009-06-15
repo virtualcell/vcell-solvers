@@ -19,6 +19,7 @@ FieldData::FieldData(int arg_fdIndex, VariableType arg_varType, string arg_fdID,
 	fdTime = arg_fdTime;
 	fdFile = arg_fdFile;
 	data = 0;
+	dataLength = 0;
 }
 
 FieldData::~FieldData() {
@@ -38,6 +39,11 @@ int FieldData::getSizeY() {
 int FieldData::getSizeZ() {
 	getData();
 	return fileHeader.sizeZ;
+}
+
+int FieldData::getDataLength() {
+	getData();
+	return dataLength;
 }
 
 double* FieldData::getData() {
@@ -66,7 +72,7 @@ double* FieldData::getData() {
 		throw errmsg;
 	}
 	   
-	int size = fileHeader.sizeX * fileHeader.sizeY * fileHeader.sizeZ;
+	dataLength = fileHeader.sizeX * fileHeader.sizeY * fileHeader.sizeZ;
 
 	dataBlock = new DataBlock[fileHeader.numBlocks];
 	   
@@ -83,7 +89,7 @@ double* FieldData::getData() {
 		if (strcmp(fdVarName.c_str(), dataBlock[i].varName)) {
 			continue;
 		}
-		if (dataBlock[i].size != size && varType == VAR_VOLUME) {
+		if (dataBlock[i].size != dataLength && varType == VAR_VOLUME) {
 			stringstream ss;
 			ss << "FieldData " << fdName << ", data block size (" << dataBlock[i].size << ") does not match file header size [" << fileHeader.sizeX 
 				<< "," << fileHeader.sizeY << "," << fileHeader.sizeZ << "].";

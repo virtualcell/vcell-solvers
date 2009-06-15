@@ -20,6 +20,7 @@ private:
 	double* data;
 	
 	FileHeader fileHeader;
+	int dataLength;
 
 public:
 	FieldData(int arg_fdIndex, VariableType arg_varType, string arg_fdID, string arg_fdName, string arg_fdVarName, double arg_fdTime, string arg_fdFile);
@@ -33,7 +34,8 @@ public:
 	double* getData();
 	int getSizeX();
 	int getSizeY();
-	int getSizeZ();	
+	int getSizeZ();
+	int getDataLength();
 };
 
 #endif
