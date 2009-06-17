@@ -86,8 +86,13 @@ public:
 		sundialsAbsTol = atol;
 	}
 
+	void setSundialsMaxStep(double ms) {
+		sundialsMaxStep = ms;
+	}
+
 	double getSundialsRelativeTolerance() { return sundialsRelTol; }
 	double getSundialsAbsoluteTolerance() { return sundialsAbsTol; }
+	double getSundialsMaxStep() { return sundialsMaxStep; }
 
 	void setSpatiallyUniformErrorTolerance(double atol, double rtol) {
 		spatiallyUniformAbsTol = atol;
@@ -133,7 +138,7 @@ private:
 	int numDiscontinuityTimes;
 
 
-	double sundialsRelTol, sundialsAbsTol;
+	double sundialsRelTol, sundialsAbsTol, sundialsMaxStep;
 	double spatiallyUniformAbsTol, spatiallyUniformRelTol;
 
 	bool bSundialsOneStepOutput;

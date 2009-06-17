@@ -290,7 +290,7 @@ void Simulation::initSimulation()
 	printf("pdeCount=%d, odeCount=%d\n", pdeCount, odeCount);
 	SimTool* simTool = SimTool::getInstance();
 	if (simTool->isSundialsPdeSolver()) {
-		_scheduler = new SundialsPdeScheduler(this, simTool->getSundialsRelativeTolerance(), simTool->getSundialsAbsoluteTolerance(), simTool->getNumDiscontinuityTimes(), simTool->getDiscontinuityTimes(), simTool->isSundialsOneStepOutput());
+		_scheduler = new SundialsPdeScheduler(this, simTool->getSundialsRelativeTolerance(), simTool->getSundialsAbsoluteTolerance(), simTool->getSundialsMaxStep(), simTool->getNumDiscontinuityTimes(), simTool->getDiscontinuityTimes(), simTool->isSundialsOneStepOutput());
 	} else {
 		_scheduler = new SerialScheduler(this);
 	}

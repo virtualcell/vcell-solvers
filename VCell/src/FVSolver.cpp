@@ -849,11 +849,13 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 			trimString(nextToken);
 			double sundialsRelTol = 1e-7;
 			double sundialsAbsTol = 1e-9;
+			double maxStep = 0.1;
 			if (nextToken.length() > 0) {
 				stringstream ss(nextToken);
-				ss >> sundialsRelTol >> sundialsAbsTol;
+				ss >> sundialsRelTol >> sundialsAbsTol >> maxStep;
 			}
 			simTool->setSundialsErrorTolerances(sundialsRelTol, sundialsAbsTol);
+			simTool->setSundialsMaxStep(maxStep);
 		} else if (nextToken == "DISCONTINUITY_TIMES") {
 			int numDisTimes = 0;
 			ifsInput >> numDisTimes;

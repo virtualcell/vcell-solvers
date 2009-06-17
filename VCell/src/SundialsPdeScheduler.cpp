@@ -48,13 +48,14 @@ static double interp_coeff[3] = {3.0/2, -1.0/2, 0};
 static int dirichletExpIndexes[3] = {BOUNDARY_XP_EXP, BOUNDARY_YP_EXP, BOUNDARY_ZP_EXP};
 static int velocityExpIndexes[3] = {VELOCITY_X_EXP, VELOCITY_Y_EXP, VELOCITY_Z_EXP};
 
-SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, double rtol, double atol, int numDisTimes, double* disTimes, bool bDefaultOuptput) : Scheduler(sim)
+SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, double rtol, double atol, double ms, int numDisTimes, double* disTimes, bool bDefaultOuptput) : Scheduler(sim)
 {
 	simulation = (SimulationExpression*)sim;
 	sundialsSolverMemory = 0;
 	mesh = (CartesianMesh*)simulation->getMesh();
 	relTol = rtol;
 	absTol = atol;
+	maxStep = ms;
 	currDiscontinuityTimeCount = 0;
 	numDiscontinuityTimes = numDisTimes;
 	discontinuityTimes = disTimes;
@@ -442,13 +443,18 @@ void SundialsPdeScheduler::initSundialsSolver() {
 	returnCode = CVSpgmr(sundialsSolverMemory, PREC_NONE, 0);
 #else
 	if (simulation->getNumMemPde() == 0 && simulation->getNumVolPde() == 0) {
-		cout << endl << "******ODE only, using Sundials CVode with PREC_NONE, relTol=" << relTol << ", absTol=" << absTol << endl;
+		cout << endl << "******ODE only, using Sundials CVode with PREC_NONE";
 		returnCode = CVSpgmr(sundialsSolverMemory, PREC_NONE, 0);
 	} else {
-		cout << endl << "****** using Sundials CVode with PREC_LEFT, relTol=" << relTol << ", absTol=" << absTol << endl;
+		cout << endl << "****** using Sundials CVode with PREC_LEFT";
 		returnCode = CVSpgmr(sundialsSolverMemory, PREC_LEFT, 0);
 	}
 #endif
+	cout << ", relTol=" << relTol << ", absTol=" << absTol << ", maxStep=" <<  maxStep << endl;
+	checkCVodeReturnCode(returnCode);
+
+	// set max absolute step size
+	returnCode = CVodeSetMaxStep(sundialsSolverMemory, maxStep);
 	checkCVodeReturnCode(returnCode);
 
 	// set max of number of steps
@@ -496,6 +502,10 @@ void SundialsPdeScheduler::printCVodeStats()
 	flag = CVSpilsGetNumRhsEvals(sundialsSolverMemory, &nfeLS);
 	checkCVodeReturnCode(flag);
 
+	double hlast;
+	flag = CVodeGetLastStep(sundialsSolverMemory, &hlast);
+	checkCVodeReturnCode(flag);
+
 	printf("\nFinal Statistics.. \n\n");
 	printf("lenrw   = %5ld     leniw   = %5ld\n", lenrw, leniw);
 	printf("lenrwLS = %5ld     leniwLS = %5ld\n", lenrwLS, leniwLS);
@@ -504,7 +514,8 @@ void SundialsPdeScheduler::printCVodeStats()
 	printf("nni     = %5ld     nli     = %5ld\n"  , nni, nli);
 	printf("nsetups = %5ld     netf    = %5ld\n"  , nsetups, netf);
 	printf("npe     = %5ld     nps     = %5ld\n"  , npe, nps);
-	printf("ncfn    = %5ld     ncfl    = %5ld\n\n", ncfn, ncfl);
+	printf("ncfn    = %5ld     ncfl    = %5ld\n", ncfn, ncfl);
+	printf("last step  = %f\n\n", hlast);
 }
 
 void SundialsPdeScheduler::solve() {
