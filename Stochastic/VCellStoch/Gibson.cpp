@@ -449,12 +449,12 @@ int Gibson::core()
 				double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
 				if (duration >= 2)
 				{
-					double percentile = (simtime/ENDING_TIME) * 100.0;
+					double percentile = (simtime/ENDING_TIME);
 #ifdef USE_MESSAGING
 					SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simtime));
 					SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simtime));
 #else
-					printf("[[[progress:%lg%%]]]", percentile);
+					printf("[[[progress:%lg%%]]]", percentile * 100);
 					printf("[[[data:%lg]]]", simtime);
 					fflush(stdout);
 #endif
@@ -574,11 +574,11 @@ void Gibson::march()
 			double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
 			if (duration >= 2)
 			{
-				double percentile =  ((j-SEED)*1.0/NUM_TRIAL) * 100.0;
+				double percentile =  ((j-SEED)*1.0/NUM_TRIAL);
 #ifdef USE_MESSAGING
-				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, j));
+				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, j - SEED));
 #else
-				printf("[[[progress:%lg%%]]]", percentile);
+				printf("[[[progress:%lg%%]]]", percentile * 100);
 				//printf("[[[data:%lg]]]", (j-SEED));
 				fflush(stdout);
 #endif
