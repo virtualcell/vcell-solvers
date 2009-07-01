@@ -144,12 +144,14 @@ void VCellSundialsSolver::writeFileHeader(FILE* outputFile) {
 }
 
 void VCellSundialsSolver::printProgress(double currTime, double& percentile, double increment, FILE* outputFile) {
+	fflush(outputFile);
+
 	if (currTime == STARTING_TIME) { // print 0%
 #ifdef USE_MESSAGING
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, currTime));
-#else 
+#else
 		printf("[[[progress:%lg%%]]]", percentile*100.0);
-		fflush(stdout);		
+		fflush(stdout);
 #endif
 	} else {
 		double oldp = percentile;
@@ -165,11 +167,10 @@ void VCellSundialsSolver::printProgress(double currTime, double& percentile, dou
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, currTime));		
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, currTime));
 #else
-			printf("[[[progress:%lg%%]]]", percentile*100.0); 
-			fflush(stdout); 
+			printf("[[[progress:%lg%%]]]", percentile*100.0);
 			printf("[[[data:%lg]]]", currTime); 
+			fflush(stdout);
 #endif
-			fflush(outputFile);
 		}
 	}
 }
