@@ -6,6 +6,9 @@
 #include "mpi.h"
 #endif
 
+#include <sstream>
+using namespace std;
+
 #include <VCELL/SimTypes.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/Mesh.h>
@@ -27,9 +30,6 @@
 #if ( !defined(WIN32) && !defined(WIN64) ) // UNIX
 #include <unistd.h>
 #endif
-
-#include <sstream>
-using namespace std;
 
 #define ZIP_FILE_LIMIT 1E9
 
