@@ -9,7 +9,7 @@ class Variable;
 class SparseLinearSolver : public PDESolver
 {
 public:
-    SparseLinearSolver(Variable *Var,  SparseMatrixEqnBuilder* eqnbuilder,  bool AbTimeDependent);
+    SparseLinearSolver(Variable *Var,  SparseMatrixEqnBuilder* eqnbuilder, double rtol, bool AbTimeDependent);
     ~SparseLinearSolver(); 
 
 	virtual void solveEqn(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize, bool bFirstTime);
@@ -17,6 +17,7 @@ public:
 private:
 	bool enableRetry;
 	void initPCGWorkspace(long additional=0);
+	double pcgRelErr;
 
 protected:
 	int* PCGSolve(bool bRecomputeIncompleteFactorization);

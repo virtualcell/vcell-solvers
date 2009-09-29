@@ -43,8 +43,12 @@ void validateNumber(string& variableName, int index, char* coeffName, double coe
 #define min(a,b)            (((a) < (b)) ? (a) : (b))
 #endif
 
-#ifndef PCG_TOLERANCE
-#define PCG_TOLERANCE 1.E-8
+#ifndef SUNDIALS_PDE_SOLVER
+#define SUNDIALS_PDE_SOLVER "SUNDIALS_PDE_SOLVER"
+#endif
+
+#ifndef FV_SOLVER
+#define FV_SOLVER "FV_SOLVER"
 #endif
 
 #endif

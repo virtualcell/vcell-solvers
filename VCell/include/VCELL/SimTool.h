@@ -99,6 +99,13 @@ public:
 		spatiallyUniformRelTol = rtol;
 	}
 
+	void setPCGRelativeErrorTolerance(double rtol) {
+		pcgRelTol = rtol;
+	}
+	double getPCGRelativeErrorTolerance() {
+		return pcgRelTol;
+	}
+
 	double getSimStartTime() { return simStartTime; }
 	void setSundialsOneStepOutput() { bSundialsOneStepOutput = true; }
 	bool isSundialsOneStepOutput() { return bSundialsOneStepOutput; }
@@ -140,6 +147,7 @@ private:
 
 	double sundialsRelTol, sundialsAbsTol, sundialsMaxStep;
 	double spatiallyUniformAbsTol, spatiallyUniformRelTol;
+	double pcgRelTol;
 
 	bool bSundialsOneStepOutput;
 	int keepAtMost;

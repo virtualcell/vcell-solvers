@@ -31,6 +31,7 @@
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/FieldData.h>
+#include <VCELL/FVUtils.h>
 
 #include <Exception.h>
 #include <Expression.h>
@@ -286,7 +287,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				} else {
 					builder = new SparseVolumeEqnBuilder(volumeVar,mesh, bNoConvection, numSolveRegions, solveRegions);
 				}
-				PDESolver* pdeSolver = new SparseLinearSolver(volumeVar,builder,bTimeDependent);
+				PDESolver* pdeSolver = new SparseLinearSolver(volumeVar,builder,simTool->getPCGRelativeErrorTolerance(),bTimeDependent);
 				simulation->addSolver(pdeSolver);
 			}
 			simulation->addVolumeVariable(volumeVar, vrmap);
@@ -352,7 +353,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			MembraneVariable* membraneVar = new MembraneVariable(mesh->getNumMembraneElements(), variable_name, unit, true);
 			if (!simTool->isSundialsPdeSolver()) {
 				SparseMatrixEqnBuilder* smbuilder = new MembraneEqnBuilderDiffusion(membraneVar,mesh);
-				SparseLinearSolver* slSolver = new SparseLinearSolver(membraneVar,smbuilder,bTimeDependent);
+				SparseLinearSolver* slSolver = new SparseLinearSolver(membraneVar,smbuilder,simTool->getPCGRelativeErrorTolerance(),bTimeDependent);
 				simulation->addSolver(slSolver);
 			}
 			simulation->addMembraneVariable(membraneVar);
@@ -847,15 +848,24 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 			simTool->setSolver(solver);
 			getline(ifsInput, nextToken);
 			trimString(nextToken);
-			double sundialsRelTol = 1e-7;
-			double sundialsAbsTol = 1e-9;
-			double maxStep = 0.1;
-			if (nextToken.length() > 0) {
-				stringstream ss(nextToken);
-				ss >> sundialsRelTol >> sundialsAbsTol >> maxStep;
+			if (solver == FV_SOLVER) {
+				double pcgRelTol = 1e-8;
+				if (nextToken.length() > 0) {
+					stringstream ss(nextToken);
+					ss >> pcgRelTol;
+				}
+				simTool->setPCGRelativeErrorTolerance(pcgRelTol);
+			} else {
+				double sundialsRelTol = 1e-7;
+				double sundialsAbsTol = 1e-9;
+				double maxStep = 0.1;
+				if (nextToken.length() > 0) {
+					stringstream ss(nextToken);
+					ss >> sundialsRelTol >> sundialsAbsTol >> maxStep;
+				}
+				simTool->setSundialsErrorTolerances(sundialsRelTol, sundialsAbsTol);
+				simTool->setSundialsMaxStep(maxStep);
 			}
-			simTool->setSundialsErrorTolerances(sundialsRelTol, sundialsAbsTol);
-			simTool->setSundialsMaxStep(maxStep);
 		} else if (nextToken == "DISCONTINUITY_TIMES") {
 			int numDisTimes = 0;
 			ifsInput >> numDisTimes;

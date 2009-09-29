@@ -18,6 +18,7 @@
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/MembraneRegion.h>
 #include <VCELL/DataProcessorVFrap.h>
+#include <VCELL/FVUtils.h>
 
 #include <float.h>
 #include <sys/types.h>
@@ -39,9 +40,6 @@ using namespace std;
 #define LOG_FILE_EXT ".log"
 #define ZIP_FILE_EXT ".zip"
 #define TID_FILE_EXT ".tid"
-
-#define SUNDIALS_PDE_SOLVER "SUNDIALS_PDE_SOLVER"
-#define FV_SOLVER "FV_SOLVER"
 
 int zip32(int filecnt, char* zipfile, ...);
 int unzip32(char* zipfile, char* file, char* exdir);
@@ -82,6 +80,7 @@ SimTool::SimTool()
 	sundialsMaxStep = 0.1;
 
 	solver = FV_SOLVER;
+	pcgRelTol = 1e-8;
 
 	simStartTime = 0;
 	bSundialsOneStepOutput = false;

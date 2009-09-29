@@ -34,7 +34,7 @@ using namespace std;
 //------------------------------------------------------------------------
 // class SparseLinearSolver
 //------------------------------------------------------------------------
-SparseLinearSolver::SparseLinearSolver(Variable *Var,  SparseMatrixEqnBuilder * arg_eqnbuilder,  bool  AbTimeDependent)
+SparseLinearSolver::SparseLinearSolver(Variable *Var,  SparseMatrixEqnBuilder * arg_eqnbuilder, double rtol, bool AbTimeDependent)
 : PDESolver(Var, AbTimeDependent)
 {
 	enableRetry = true;
@@ -62,6 +62,8 @@ SparseLinearSolver::SparseLinearSolver(Variable *Var,  SparseMatrixEqnBuilder * 
 			break;
 	}		
 	initPCGWorkspace(0);
+	pcgRelErr = rtol;
+	//cout << endl << "****** solving " + var->getName() + " using PCGPak2, relTol=" << pcgRelErr << endl;
 }
 
 void SparseLinearSolver::initPCGWorkspace(long additional) {
@@ -162,7 +164,7 @@ int* SparseLinearSolver::PCGSolve(bool bRecomputeIncompleteFactorization)
 	// Call fortran wrapper for pcgpack
 	// ---------------------------------
 	// Set tolerance
-	double PCG_Tolerance = PCG_TOLERANCE;
+	double PCG_Tolerance = pcgRelErr;
 
 	SimTool::getInstance()->startTimer(tHndPCG);
 
