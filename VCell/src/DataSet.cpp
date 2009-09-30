@@ -337,6 +337,15 @@ void DataSet::convolve(Simulation* sim, Variable* var, double* values) {
 			int outsideVolIndex = mesh->getMembraneElements()[m].outsideIndexNear;
 			MeshCoord insideMC = mesh->getMeshCoord(insideVolIndex);
 			MeshCoord outsideMC = mesh->getMeshCoord(outsideVolIndex);
+			double fullArea = mesh->getXArea_squm();
+			int diffVolIndex = abs(outsideVolIndex - insideVolIndex);
+			if (diffVolIndex  == meshX) {
+				fullArea = mesh->getYArea_squm();
+			} else if (diffVolIndex == meshXY) {
+				fullArea = mesh->getZArea_squm();
+			}
+
+			double memareaRatio = mesh->getMembraneElements()[m].area/fullArea;
 			int psfindex = 0;
 			for (int zz = 0; zz < psfZ; zz ++) {								
 				for (int yy = 0; yy < psfY; yy ++) {									
@@ -350,9 +359,9 @@ void DataSet::convolve(Simulation* sim, Variable* var, double* values) {
 						if (volIndex2X >= 0 && volIndex2Y >= 0 && volIndex2Z >= 0 && volIndex2X < meshX && volIndex2Y < meshY && volIndex2Z < meshZ) {
 							int volIndex2 = volIndex2Z * meshXY + volIndex2Y * meshX + volIndex2X;
 							if (var->getVarType() == VAR_MEMBRANE_REGION) {
-								values[volIndex2] += var->getCurr()[mesh->getMembraneElements()[m].region->getId()] * psf_val/2;
+								values[volIndex2] += var->getCurr()[mesh->getMembraneElements()[m].region->getId()] * psf_val/2 * memareaRatio;
 							} else {
-								values[volIndex2] += var->getCurr()[m] * psf_val/2;
+								values[volIndex2] += var->getCurr()[m] * psf_val/2 * memareaRatio;
 							}
 						}
 
@@ -363,9 +372,9 @@ void DataSet::convolve(Simulation* sim, Variable* var, double* values) {
 						if (volIndex2X >= 0 && volIndex2Y >= 0 && volIndex2Z >= 0 && volIndex2X < meshX && volIndex2Y < meshY && volIndex2Z < meshZ) {
 							int volIndex2 = volIndex2Z * meshXY + volIndex2Y * meshX + volIndex2X;
 							if (var->getVarType() == VAR_MEMBRANE_REGION) {
-								values[volIndex2] += var->getCurr()[mesh->getMembraneElements()[m].region->getId()] * psf_val/2;
+								values[volIndex2] += var->getCurr()[mesh->getMembraneElements()[m].region->getId()] * psf_val/2 * memareaRatio;
 							} else {
-								values[volIndex2] += var->getCurr()[m] * psf_val/2;
+								values[volIndex2] += var->getCurr()[m] * psf_val/2 * memareaRatio;
 							}
 						}
 					}						
