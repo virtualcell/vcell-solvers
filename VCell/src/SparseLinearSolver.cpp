@@ -72,7 +72,9 @@ void SparseLinearSolver::initPCGWorkspace(long additional) {
 	try {
 		pcg_workspace = new double[nWork];
 	} catch (...) {
-		throw "Out of Memory";
+		char errMsg[128];
+		sprintf(errMsg, "SparseLinearSolver:: Out of Memory : pcg_workspace allocating (%d)", nWork);
+		throw errMsg;
 	}
 	memset(pcg_workspace, 0, nWork * sizeof(double));
 }
@@ -101,16 +103,16 @@ void SparseLinearSolver::solveEqn(double dT_sec,
 		case 15: {
 			if (enableRetry) {
 				enableRetry = false;
-				cout << endl << "!!Note: Insufficient PCG workspace (need additional " << additionalSpace << "), for variable " << var->getName() << ", retry again" << endl;
+				cout << endl << "!!Note: Insufficient PCG workspace (" << nWork << "), need additional (" << additionalSpace << "), for variable " << var->getName() << ", try again" << endl;
 				initPCGWorkspace(additionalSpace);
 				solveEqn(dT_sec, volumeIndexStart, volumeIndexSize, membraneIndexStart, membraneIndexSize, true);
 			} else {
-				handlePCGExceptions(returnCode, additionalSpace); // this throws exception
+				throwPCGExceptions(returnCode, additionalSpace); // this throws exception
 			}
 			break;
 		}
 		default: {
-			handlePCGExceptions(returnCode, additionalSpace);
+			throwPCGExceptions(returnCode, additionalSpace);
 			break;
 		}
 	}

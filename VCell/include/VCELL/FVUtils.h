@@ -30,7 +30,7 @@ extern "C"
 
 extern double double_infinity;
 double computeRHSscale(long length, double* rhs, string& varname);
-void handlePCGExceptions(int errorCode, int additional);
+void throwPCGExceptions(int errorCode, int additional);
 bool isNAN(double number);
 bool isInfinity(double number);
 void validateNumber(string& variableName, int index, char* coeffName, double coeffValue);

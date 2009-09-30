@@ -1712,19 +1712,51 @@ int SundialsPdeScheduler::pcSolve(realtype t, N_Vector y, N_Vector fy, N_Vector 
 
 		// zero guss
 		memset(z_data, 0, numUnknowns * sizeof(double));
-		PCGWRAPPER(&numUnknowns, &nsp, &symmetricflg, ija, sa, r_data, z_data, &pcgTol, IParm, RParm, pcg_workspace, pcg_workspace, &RHSscale);
-		bPcReinit = false;
-		if (IParm[50] != 0) {
-			switch (IParm[50]) {
-				case 1:	// maximum iterations reached without satisfying stopping criterion
-				case 8: // stagnant
-					// ignore these two errors.
-					break;
-				default:
-					handlePCGExceptions(IParm[50], IParm[53]);
-					break;
+		int numRetries = 0; // retry twice
+		while (true) {
+			bool bRetry = false;
+			PCGWRAPPER(&numUnknowns, &nsp, &symmetricflg, ija, sa, r_data, z_data, &pcgTol, IParm, RParm, pcg_workspace, pcg_workspace, &RHSscale);	
+			if (IParm[50] != 0) {
+				switch (IParm[50]) {
+					case 2:
+					case 3:
+					case 4:
+					case 9:
+					case 10:
+					case 15:
+						if (numRetries == 2) {
+							throwPCGExceptions(IParm[50], IParm[53]);
+						} else {
+							try {
+								cout << endl << "!!Note: Insufficient PCG workspace (" << nsp << "), need additional (" << IParm[53] << "), try again" << endl;
+								delete[] pcg_workspace;
+								nsp += IParm[53];
+								pcg_workspace = new double[nsp];
+								memset(pcg_workspace, 0, nsp * sizeof(double));
+								numRetries ++;
+								bRetry = true;
+							} catch (...) {
+								char errMsg[128];
+								sprintf(errMsg, "SundialsPDESolver:: Out of Memory : pcg_workspace allocating (%d)", nsp);
+								throw errMsg;
+							}
+						}
+						break;
+					case 1:	// maximum iterations reached without satisfying stopping criterion
+					case 8: // stagnant
+						// ignore these two errors.
+						break;
+					default:
+						throwPCGExceptions(IParm[50], IParm[53]);
+						break;
+				}
+			}
+			if (!bRetry) {
+				break;
 			}
 		}
+
+		bPcReinit = false;
 		if (IParm[54] == 1) {
 			bLUcomputed = true;
 		} else {

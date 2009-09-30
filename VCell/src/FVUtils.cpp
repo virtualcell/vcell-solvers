@@ -83,7 +83,7 @@ double computeRHSscale(long length, double* rhs, string& varname) {
 	return RHSscale;
 }
 
-void handlePCGExceptions(int errorCode, int additional)
+void throwPCGExceptions(int errorCode, int additional)
 {
 	switch (errorCode){
 		case 1: {
