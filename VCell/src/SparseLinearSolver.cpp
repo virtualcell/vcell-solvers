@@ -73,7 +73,7 @@ void SparseLinearSolver::initPCGWorkspace(long additional) {
 		pcg_workspace = new double[nWork];
 	} catch (...) {
 		char errMsg[128];
-		sprintf(errMsg, "SparseLinearSolver:: Out of Memory : pcg_workspace allocating (%d)", nWork);
+		sprintf(errMsg, "SparseLinearSolver:: Out of Memory : pcg_workspace allocating (%ld)", nWork);
 		throw errMsg;
 	}
 	memset(pcg_workspace, 0, nWork * sizeof(double));
