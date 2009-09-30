@@ -415,12 +415,14 @@ void SundialsPdeScheduler::initSundialsSolver() {
 		}
 	}
 
+#ifndef SUNDIALS_USE_PCNONE
 	preallocateM();
 	if (!simulation->hasTimeDependentDiffusionAdvection()) {
 		oldGamma = 1.0;
 		buildM_Volume(0, 0, oldGamma);
 		buildM_Membrane(0, 0, oldGamma);
 	}
+#endif
 
 	sundialsSolverMemory = CVodeCreate(CV_BDF, CV_NEWTON);
 	if (sundialsSolverMemory == 0) {
@@ -1408,6 +1410,9 @@ void SundialsPdeScheduler::applyVolumeRegionReactionOperator(double t, double* y
 		for (int v = 0; v < simulation->getNumVolRegionVariables(); v ++) {
 			VolumeRegionVariable* var = simulation->getVolRegionVariable(v);
 			VolumeRegionVarContext* volRegionVarContext = feature->getVolumeRegionVarContext(var);
+			if (volRegionVarContext == 0) {
+				continue;
+			}
 			int vectorIndex = getVolumeRegionVectorOffset(r) + v;
 
 			updateRegionStatePointValues(r, t, yinput, true, statePointValues);
@@ -1449,6 +1454,9 @@ void SundialsPdeScheduler::applyMembraneRegionReactionOperator(double t, double*
 		for (int v = 0; v < simulation->getNumMemRegionVariables(); v ++) {
 			MembraneRegionVariable* var = simulation->getMemRegionVariable(v);
 			MembraneRegionVarContext * memRegionvarContext = feature->getMembraneRegionVarContext(var);
+			if (memRegionvarContext == 0) {
+				continue;
+			}
 			int vectorIndex = getMembraneRegionVectorOffset(r) + v;
 
 			if (memRegion->getRegionInside()->isClosed()) {
