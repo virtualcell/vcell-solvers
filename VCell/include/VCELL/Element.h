@@ -62,7 +62,7 @@ struct VolumeElement
     Feature       *feature;
     int            neighborMask;
     VolumeRegion  *region;
-	long           regionIndex;
+	//long           regionIndex;
 	vector<long>  adjacentMembraneIndexes;
 };
 

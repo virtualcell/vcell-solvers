@@ -340,7 +340,7 @@ void CartesianMesh::readGeometryFile(istream& ifs) {
 		vr->addIndex(i);
 		pVolumeElement[i].feature = vr->getFeature();
 		pVolumeElement[i].neighborMask = 0;
-		pVolumeElement[i].regionIndex = (vr->getNumElements())-1; 
+		//pVolumeElement[i].regionIndex = (vr->getNumElements())-1; 
 		pVolumeElement[i].region = vr;
 	}
 		

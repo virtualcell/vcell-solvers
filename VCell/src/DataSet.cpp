@@ -14,7 +14,7 @@
 #include <VCELL/Mesh.h>
 #include <VCELL/DataSet.h>
 #include <VCELL/Element.h>
-#include <VCELL/Region.h>
+#include <VCELL/VolumeRegion.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/FieldData.h>
 #include <VCELL/MembraneRegion.h>
@@ -320,7 +320,7 @@ void DataSet::convolve(Simulation* sim, Variable* var, double* values) {
 										&& volIndex2Z >= 0 && volIndex2X < meshX && volIndex2Y < meshY && volIndex2Z < meshZ) {
 									int volIndex2 = volIndex2Z * meshXY + volIndex2Y * meshX + volIndex2X;	
 									if (var->getVarType() == VAR_VOLUME_REGION) {
-										values[volIndex] += var->getCurr()[mesh->getVolumeElements()[volIndex2].regionIndex] * psf_val;
+										values[volIndex] += var->getCurr()[mesh->getVolumeElements()[volIndex2].region->getId()] * psf_val;
 									} else {
 										values[volIndex] += var->getCurr()[volIndex2] * psf_val;
 									}
