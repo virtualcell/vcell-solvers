@@ -583,36 +583,38 @@ void SundialsPdeScheduler::updateSolutions() {
 	double *y_data = NV_DATA_S(y);
 	int count = 0;
 
-	for (int r = 0; r < mesh->getNumVolumeRegions(); r ++) {
-		bool bDirichletBoundary = mesh->getVolumeRegion(r)->isBoundaryDirichlet();
-		for (int ri = 0; ri < regionSizes[r]; ri ++) {
-			int volIndex = local2Global[ri + regionOffsets[r]];
-			int mask = pVolumeElement[volIndex].neighborMask;
+	if (simulation->getNumVolVariables() > 0) {
+		for (int r = 0; r < mesh->getNumVolumeRegions(); r ++) {
+			bool bDirichletBoundary = mesh->getVolumeRegion(r)->isBoundaryDirichlet();
+			for (int ri = 0; ri < regionSizes[r]; ri ++) {
+				int volIndex = local2Global[ri + regionOffsets[r]];
+				int mask = pVolumeElement[volIndex].neighborMask;
 
-			for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[r]; activeVarCount ++) {
-				int varIndex = regionDefinedVolVariableIndexes[r][activeVarCount];
-				VolumeVariable *var = simulation->getVolVariable(varIndex);
+				for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[r]; activeVarCount ++) {
+					int varIndex = regionDefinedVolVariableIndexes[r][activeVarCount];
+					VolumeVariable *var = simulation->getVolVariable(varIndex);
 
-				double sol = y_data[count ++];
-				if (var->isPde() && bDirichletBoundary && (mask & BOUNDARY_TYPE_DIRICHLET)) {
-					updateVolumeStatePointValues(volIndex, currentTime, y_data, statePointValues);
-					Feature* feature = pVolumeElement[volIndex].feature;
-					VolumeVarContext* varContext = feature->getVolumeVarContext(var);
-					if ((mask & NEIGHBOR_XM_BOUNDARY) && (feature->getXmBoundaryType() == BOUNDARY_VALUE)){
-						sol = varContext->evalExpression(BOUNDARY_XM_EXP, statePointValues);
-					} else if ((mask & NEIGHBOR_XP_BOUNDARY) && (feature->getXpBoundaryType() == BOUNDARY_VALUE)){
-						sol = varContext->evalExpression(BOUNDARY_XP_EXP, statePointValues);
-					} else if ((mask & NEIGHBOR_YM_BOUNDARY) && (feature->getYmBoundaryType() == BOUNDARY_VALUE)){
-						sol = varContext->evalExpression(BOUNDARY_YM_EXP, statePointValues);
-					} else if ((mask & NEIGHBOR_YP_BOUNDARY) && (feature->getYpBoundaryType() == BOUNDARY_VALUE)){
-						sol = varContext->evalExpression(BOUNDARY_YP_EXP, statePointValues);
-					} else if ((mask & NEIGHBOR_ZM_BOUNDARY) && (feature->getZmBoundaryType() == BOUNDARY_VALUE)){
-						sol = varContext->evalExpression(BOUNDARY_ZM_EXP, statePointValues);
-					} else if ((mask & NEIGHBOR_ZP_BOUNDARY) && (feature->getZpBoundaryType() == BOUNDARY_VALUE)){
-						sol = varContext->evalExpression(BOUNDARY_ZP_EXP, statePointValues);
+					double sol = y_data[count ++];
+					if (var->isPde() && bDirichletBoundary && (mask & BOUNDARY_TYPE_DIRICHLET)) {
+						updateVolumeStatePointValues(volIndex, currentTime, y_data, statePointValues);
+						Feature* feature = pVolumeElement[volIndex].feature;
+						VolumeVarContext* varContext = feature->getVolumeVarContext(var);
+						if ((mask & NEIGHBOR_XM_BOUNDARY) && (feature->getXmBoundaryType() == BOUNDARY_VALUE)){
+							sol = varContext->evalExpression(BOUNDARY_XM_EXP, statePointValues);
+						} else if ((mask & NEIGHBOR_XP_BOUNDARY) && (feature->getXpBoundaryType() == BOUNDARY_VALUE)){
+							sol = varContext->evalExpression(BOUNDARY_XP_EXP, statePointValues);
+						} else if ((mask & NEIGHBOR_YM_BOUNDARY) && (feature->getYmBoundaryType() == BOUNDARY_VALUE)){
+							sol = varContext->evalExpression(BOUNDARY_YM_EXP, statePointValues);
+						} else if ((mask & NEIGHBOR_YP_BOUNDARY) && (feature->getYpBoundaryType() == BOUNDARY_VALUE)){
+							sol = varContext->evalExpression(BOUNDARY_YP_EXP, statePointValues);
+						} else if ((mask & NEIGHBOR_ZM_BOUNDARY) && (feature->getZmBoundaryType() == BOUNDARY_VALUE)){
+							sol = varContext->evalExpression(BOUNDARY_ZM_EXP, statePointValues);
+						} else if ((mask & NEIGHBOR_ZP_BOUNDARY) && (feature->getZpBoundaryType() == BOUNDARY_VALUE)){
+							sol = varContext->evalExpression(BOUNDARY_ZP_EXP, statePointValues);
+						}
 					}
+					var->getCurr()[volIndex] = sol;
 				}
-				var->getCurr()[volIndex] = sol;
 			}
 		}
 	}
