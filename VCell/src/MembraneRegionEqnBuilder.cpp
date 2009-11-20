@@ -30,20 +30,22 @@ void MembraneRegionEqnBuilder::buildEquation(double deltaTime, int volumeIndexSt
 		Feature* feature = memRegion->getRegionInside()->getFeature();
 		MembraneRegionVarContext * memRegionvarContext = feature->getMembraneRegionVarContext((MembraneRegionVariable*)var);
 
-		if(memRegion->getRegionInside()->isClosed()) {
-			*pRate = memRegionvarContext->getUniformRate(memRegion);
-			double surface = memRegion->getSurface();
-			ASSERTION(surface>0);
-			long numElements = memRegion->getNumElements();
-			double surfaceIntegral = 0.0;
-			for(long j=0; j<numElements; j++) {
-				long index = memRegion->getIndex(j); 
-				MembraneElement *pElement = mesh->getMembraneElements() + index;
-				surfaceIntegral += memRegionvarContext->getMembraneReactionRate(pElement) * pElement->area;
+		if (memRegionvarContext != 0) {
+			if(memRegion->getRegionInside()->isClosed()) {
+				*pRate = memRegionvarContext->getUniformRate(memRegion);
+				double surface = memRegion->getSurface();
+				ASSERTION(surface>0);
+				long numElements = memRegion->getNumElements();
+				double surfaceIntegral = 0.0;
+				for(long j=0; j<numElements; j++) {
+					long index = memRegion->getIndex(j); 
+					MembraneElement *pElement = mesh->getMembraneElements() + index;
+					surfaceIntegral += memRegionvarContext->getMembraneReactionRate(pElement) * pElement->area;
+				}
+				*pRate += surfaceIntegral/surface;
+			} else {
+				throw "MembraneRegionEqnBuilder::buildEquation(), only implemented for closed surface, please check geometry";
 			}
-			*pRate += surfaceIntegral/surface;
-		} else {
-			throw "MembraneRegionEqnBuilder::buildEquation(), only implemented for closed surface, please check geometry";
 		}
 		pRate++;
 	}
