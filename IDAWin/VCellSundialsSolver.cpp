@@ -288,7 +288,7 @@ void VCellSundialsSolver::readEvents(istream& inputstream) {
 			inputstream >> token;
 			if (token == "EVENT") {
 				inputstream >> events[i]->name;
-			} else if (token == "TRIGGER") {			
+			} else if (token == "TRIGGER") {
 				try {
 					events[i]->triggerExpression = readExpression(inputstream);
 				} catch (VCell::Exception& ex) {
@@ -568,9 +568,9 @@ void VCellSundialsSolver::testEventTriggers(realtype Time) {
 	updateTandVariableValues(Time, y);
 	for (int i = 0; i < numEvents; i ++) {
 		bool oldTriggerValue = events[i]->triggerValue;
-		bool newTriggerValue = events[i]->triggerExpression->evaluateVector(values) == 1.0;
+		bool newTriggerValue = events[i]->triggerExpression->evaluateVector(values) != 0.0;
 		events[i]->triggerValue = newTriggerValue;
-		if (!oldTriggerValue && newTriggerValue) { // triggered			
+		if (!oldTriggerValue && newTriggerValue) { // triggered
 			EventExecution* ee = new EventExecution(events[i]);
 			ee->exeTime = Time;
 			if (events[i]->hasDelay()) {
@@ -591,7 +591,7 @@ void VCellSundialsSolver::testEventTriggers(realtype Time) {
 						break;
 					}
 				}
-			}			
+			}
 		}
 	}
 }
@@ -612,7 +612,7 @@ bool VCellSundialsSolver::executeEvents(realtype Time) {
 			return bExecuted;
 		}
 
-		if (fabs(ee->exeTime - Time) < epsilon) { // execute			
+		if (fabs(ee->exeTime - Time) < epsilon) { // execute
 			updateTandVariableValues(Time, y);
 			double* y_data = NV_DATA_S(y); // assign the values
 			for (int i = 0; i < ee->event0->numEventAssignments; i ++) {
@@ -626,7 +626,7 @@ bool VCellSundialsSolver::executeEvents(realtype Time) {
 			eventExeList.pop_front(); // delete from the list
 			delete ee;
 			bExecuted = true;
-			testEventTriggers(Time); // retest all triggers again.			
+			testEventTriggers(Time); // retest all triggers again.
 		} else if (ee->exeTime < Time) {
 			stringstream ss;
 			ss << "missed Event '" << ee->event0->name << "' with trigger " << ee->event0->triggerExpression->infix() 
