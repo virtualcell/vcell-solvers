@@ -165,7 +165,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\SonicCClient\Win32\include\;..\SonicCClient\Win32\include\CPP;..\VCell\include;..\sundials\src;..\sundials\include;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;USE_MESSAGING"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;USE_MESSAGING;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"

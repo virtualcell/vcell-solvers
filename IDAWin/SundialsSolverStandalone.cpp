@@ -87,12 +87,18 @@ void loadJMSInfo(istream& ifsInput, int taskID) {
 void errExit(int returnCode, string& errorMsg) {	
 #ifdef USE_MESSAGING
 	if (returnCode != 0) {
-		if (!SimulationMessaging::getInstVar()->isStopRequested()) {
+		if (SimulationMessaging::getInstVar() != 0 && !SimulationMessaging::getInstVar()->isStopRequested()) {
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_FAILURE, errorMsg.c_str()));
 		}	
 	}
-	SimulationMessaging::getInstVar()->waitUntilFinished();
-	delete SimulationMessaging::getInstVar();
+	if (SimulationMessaging::getInstVar() != 0) {
+		SimulationMessaging::getInstVar()->waitUntilFinished();
+		delete SimulationMessaging::getInstVar();
+	} else {
+		if (returnCode != 0) {	
+			cerr << errorMsg << endl;
+		}
+	}
 #else
 	if (returnCode != 0) {	
 		cerr << errorMsg << endl;
@@ -214,7 +220,7 @@ int main(int argc, char *argv[]) {
 	} catch (string& ex) {
 		errMsg += ex;
 		returnCode = -1;
-	} catch (StoppedByUserException& ex) {
+	} catch (StoppedByUserException) {
 		returnCode = 0;  // stopped by user;
 	} catch (VCell::Exception& ex) {
 		errMsg += ex.getMessage();

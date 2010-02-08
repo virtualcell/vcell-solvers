@@ -9,7 +9,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
-using namespace std;
+#include <list>
+using std::vector;
+using std::list;
+using std::stringstream;
 
 class Expression;
 class SymbolTable;
@@ -18,6 +21,71 @@ class OdeResultSet;
 #define bytesPerSample 25
 #define MaxFileSizeBytes 1000000000 /* 1 gigabyte */	
 #define BAD_EXPRESSION_MSG " is not terminated by ';'"
+#define MAX_NUM_EVENTS_DISCONTINUITIES_EVAL 50
+
+struct EventAssignment {
+	int varIndex;
+	Expression* assignmentExpression;
+
+	~EventAssignment() {
+		delete assignmentExpression;
+	}
+	void bind(SymbolTable* symbolTable) {
+		assignmentExpression->bindExpression(symbolTable);
+	}
+};
+
+struct Event {
+	string name;
+	Expression* triggerExpression;
+	bool bUseValuesAtTriggerTime;
+	Expression* delayDurationExpression;
+	int numEventAssignments;
+	EventAssignment** eventAssignments;
+	bool triggerValue;	
+
+	Event() {
+		bUseValuesAtTriggerTime = false;
+		triggerExpression = 0;
+		triggerValue = false;
+		delayDurationExpression = 0;
+		eventAssignments = 0;		
+	}
+	~Event() {
+		delete triggerExpression;
+		delete delayDurationExpression;
+		for (int i = 0; i < numEventAssignments; i ++) {
+			delete eventAssignments[i];
+		}
+		delete[] eventAssignments;
+	}
+
+	bool hasDelay() {
+		return delayDurationExpression != 0;
+	}
+
+	void bind(SymbolTable* symbolTable) {
+		triggerExpression->bindExpression(symbolTable);
+		delayDurationExpression->bindExpression(symbolTable);
+		for (int i = 0; i < numEventAssignments; i ++) {
+			eventAssignments[i]->bind(symbolTable);
+		}
+	}
+};
+
+struct EventExecution {
+	realtype exeTime;
+	Event* event0;
+	double* targetValues;
+
+	EventExecution(Event* e) {
+		event0 = e;
+		targetValues = 0;
+	}
+	~EventExecution() {
+		delete targetValues;
+	}
+};
 
 struct OdeDiscontinuity {
 	string discontinuitySymbol;
@@ -43,7 +111,7 @@ public:
 	void setStartingTime(realtype newStartingTime) { STARTING_TIME = newStartingTime; }
 	void setEndingTime(realtype newEndingTime) { ENDING_TIME = newEndingTime; }
 	void setOutputTimes(int count, double* newOutputTimes);
-	virtual SymbolTable* getSymbolTable() = 0;
+	SymbolTable* getSymbolTable() { return defaultSymbolTable;}	
 
 	static void checkStopRequested(double, long);
 
@@ -82,6 +150,7 @@ protected:
 	string* variableNames; // variables
 	string* allSymbols;
 	int numAllSymbols;
+	SymbolTable* defaultSymbolTable;
 
 	N_Vector y;	
 	void writeData(double currTime, FILE* outputFile);
@@ -95,7 +164,7 @@ protected:
 	virtual void initialize();
 
 	void initDiscontinuities();
-	void updateDiscontinuities(realtype t);
+	bool updateDiscontinuities(realtype t, bool bOnRootReturn);
 	void checkDiscontinuityConsistency();
 
 	void solveInitialDiscontinuities(double t);
@@ -107,6 +176,18 @@ protected:
 
 	int RootFn(realtype t, N_Vector y, realtype *gout);
 	virtual string getSolverName()=0;
+
+	Expression* readExpression(istream& inputstream);
+	bool executeEvents(realtype Time);
+	double getNextEventTime();
+
+private:
+	Event** events;
+	int numEvents;
+
+	void readEvents(istream& inputstream);
+	void testEventTriggers(realtype Time);
+	list<EventExecution*> eventExeList;
 };
 
 void trimString(string& str);

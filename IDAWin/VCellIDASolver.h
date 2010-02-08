@@ -8,8 +8,7 @@ public:
 	VCellIDASolver();	
 	~VCellIDASolver();
 
-	void solve(double* paramValues=0, bool bPrintProgress=false, FILE* outputFile=0, void (*checkStopRequested)(double, long)=0);	
-	SymbolTable* getSymbolTable() { return rhsSymbolTable;}	
+	void solve(double* paramValues=0, bool bPrintProgress=false, FILE* outputFile=0, void (*checkStopRequested)(double, long)=0);
 
 protected:
 	void updateTempRowData(double currTime);
@@ -19,7 +18,6 @@ protected:
 
 private:
 	Expression** rhsExpressions;  // can be rate expression in ODE case or RHS expression in DAE case
-	SymbolTable* rhsSymbolTable;
 	double **transformMatrix;
 	double **inverseTransformMatrix;
 	int numDifferential;
@@ -63,6 +61,8 @@ private:
 	void reInit(realtype t);
 	bool fixInitialDiscontinuities(double t);
 	void updateTandVariableValues(realtype t, N_Vector y);
+
+	void onIDAReturn(realtype Time, int returnCode);
 };
 
 #endif

@@ -9,7 +9,6 @@ public:
 	~VCellCVodeSolver();
 
 	void solve(double* paramValues=0, bool bPrintProgress=false, FILE* outputFile=0, void (*checkStopRequested)(double, long)=0);
-	SymbolTable* getSymbolTable() { return rateSymbolTable;}	
 	double RHS(double* allValues, int equationIndex);
 
 protected:
@@ -18,8 +17,7 @@ protected:
 	string getSolverName() { return "CVODE"; }
 
 private:
-	Expression** rateExpressions; 
-	SymbolTable* rateSymbolTable;
+	Expression** rateExpressions;
 	
 	int RHS(realtype t, N_Vector y, N_Vector yp);
 	static int RHS_callback(realtype t, N_Vector y, N_Vector r, void *fdata);
@@ -56,6 +54,8 @@ private:
 	void reInit(realtype t);
 	bool fixInitialDiscontinuities(double t);
 	void updateTandVariableValues(realtype t, N_Vector y);
+
+	void onCVodeReturn(realtype Time, int returnCode);
 
 };
 

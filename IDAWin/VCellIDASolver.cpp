@@ -58,7 +58,7 @@ idaSolve
 		IDASolve
 		if (root return) {
 			IDAGetRootInfo
-			updateDiscontinuities
+			updateDiscontinuities on root return
 				updateTandVariableValues
 				invert Discontinuity values as needed
 				update values
@@ -85,7 +85,20 @@ idaSolve
 							IDAGetConsistentIC
 						IDARootInit // enable root finding
 				endif
+
+			for loop
+				execute events
+				updateDiscontinuities on event triggers
+				reInit(time)
+				solveInitialDiscontinuities(time)
+			end for
 		} else {
+			for loop
+				execute events
+				updateDiscontinuities on event triggers
+				reInit(time)
+				solveInitialDiscontinuities(time)
+			end for
 			checkDiscontinuityConsistency
 		}
 	}
@@ -181,7 +194,6 @@ void VCellIDASolver::checkIDAFlag(int flag) {
 
 VCellIDASolver::VCellIDASolver() : VCellSundialsSolver() {
 	rhsExpressions = 0;
-	rhsSymbolTable = 0;
 
 	numDifferential = 0;
 	numAlgebraic = 0;
@@ -203,7 +215,6 @@ VCellIDASolver::~VCellIDASolver() {
 		delete[] inverseTransformMatrix[i];
 	}
 	delete[] rhsExpressions;
-	delete rhsSymbolTable;	
 	delete[] transformMatrix;
 	delete[] inverseTransformMatrix;	
 }
@@ -299,14 +310,11 @@ void VCellIDASolver::readEquations(istream& inputstream) {
 
 			// INIT
 			inputstream >> token;
-			exp = "";
-			getline(inputstream, exp);
-			trimString(exp);
-			if (*(exp.end() - 1) != ';') {
-				string msg = "Initial condition expression for [" + variableNames[i] + "]" + BAD_EXPRESSION_MSG;
-				throw VCell::Exception(msg);
+			try {
+				initialConditionExpressions[i] = readExpression(inputstream);
+			} catch (VCell::Exception& ex) {
+				throw VCell::Exception(string("Initial condition expression for [") + variableNames[i] + "] " + ex.getMessage());
 			}
-			initialConditionExpressions[i] = new Expression(exp);
 		}
 
 		//TRANSFORM
@@ -358,15 +366,13 @@ void VCellIDASolver::readEquations(istream& inputstream) {
 
 		rhsExpressions = new Expression*[NEQ];
 		for (int i = 0; i < NEQ; i ++) {
-			exp = "";
-			getline(inputstream, exp);
-			trimString(exp);
-			if (*(exp.end() - 1) != ';') {
+			try {
+				rhsExpressions[i] = readExpression(inputstream);
+			} catch (VCell::Exception& ex) {
 				stringstream ss;
-				ss << "RHS[" << i << "]" << BAD_EXPRESSION_MSG;
+				ss << "RHS[" << i << "] " << ex.getMessage();
 				throw VCell::Exception(ss.str());
 			}
-			rhsExpressions[i] = new Expression(exp);
 		}
 	} catch (const char* ex) {
 		throw VCell::Exception(string("VCellIDASolver::readInput() : ") + ex);		
@@ -380,9 +386,8 @@ void VCellIDASolver::readEquations(istream& inputstream) {
 void VCellIDASolver::initialize() {
 	VCellSundialsSolver::initialize();
 
-	rhsSymbolTable = new SimpleSymbolTable(allSymbols, numAllSymbols); // has time, vars, parameters
 	for (int i = 0; i < NEQ; i ++) {
-		rhsExpressions[i]->bindExpression(rhsSymbolTable);
+		rhsExpressions[i]->bindExpression(defaultSymbolTable);
 	}
 
 	yp = N_VNew_Serial(NEQ);
@@ -449,6 +454,7 @@ void VCellIDASolver::initIDA(double* paramValues) {
 		int flag = IDARootInit(solver, 2*numDiscontinuities, RootFn_callback, this);
 		checkIDAFlag(flag);
 	}
+	executeEvents(STARTING_TIME);
 }
 
 void VCellIDASolver::reInit(double t) {
@@ -535,6 +541,42 @@ bool VCellIDASolver::fixInitialDiscontinuities(double t) {
 	return bInitChanged;
 }
 
+void VCellIDASolver::onIDAReturn(realtype Time, int returnCode) {
+	if (returnCode == IDA_ROOT_RETURN) {
+		// flip discontinuities				
+		int flag = IDAGetRootInfo(solver, rootsFound);
+		checkIDAFlag(flag);
+		cout << endl << "idaSolve() : roots found at time " << Time << endl;
+#ifdef SUNDIALS_DEBUG
+		printVariableValues(Time);
+#endif
+		updateDiscontinuities(Time, true);
+		
+		int updateCount = 0;
+		for (updateCount = 0;  updateCount < MAX_NUM_EVENTS_DISCONTINUITIES_EVAL; updateCount ++) {
+			bool bExecuted = executeEvents(Time);
+			if (!bExecuted) {
+				break;
+			}
+			updateDiscontinuities(Time, false);
+			reInit(Time); // recalculate y
+			solveInitialDiscontinuities(Time); // recalculate booleans for discontinuities after discontinuity state change
+		}
+	} else {
+		int updateCount = 0;
+		for (updateCount = 0;  updateCount < MAX_NUM_EVENTS_DISCONTINUITIES_EVAL; updateCount ++) {			
+			bool bExecuted = executeEvents(Time);
+			if (!bExecuted) {
+				break;
+			}
+			updateDiscontinuities(Time, false);
+			reInit(Time); // recalculate y
+			solveInitialDiscontinuities(Time); // recalculate booleans for discontinuities after discontinuity state change
+		}
+		checkDiscontinuityConsistency();
+	}
+}
+
 void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long)) {
 	if (checkStopRequested != 0) {
 		checkStopRequested(STARTING_TIME, 0);
@@ -544,7 +586,7 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 	double percentile=0.00;
 	double increment =0.01;
 	long iterationCount=0;
-	long saveCount=0;
+	long outputCount = 0;
 
 	// write initial conditions
 	writeData(Time, outputFile);
@@ -559,6 +601,8 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 			}
 
 			double tstop = min(ENDING_TIME, Time + 2 * maxTimeStep + (1e-15));
+			tstop = min(tstop, getNextEventTime());
+
 			IDASetStopTime(solver, tstop);
 			int returnCode = IDASolve(solver, ENDING_TIME, &Time, y, yp, IDA_ONE_STEP_TSTOP);
 			iterationCount++;
@@ -566,23 +610,11 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 			// save data if return IDA_TSTOP_RETURN (meaning reached end of time or max time step 
 			// before one normal step) or IDA_SUCCESS (meaning one normal step)
 			if (returnCode == IDA_TSTOP_RETURN || returnCode == IDA_SUCCESS || returnCode == IDA_ROOT_RETURN) {
-				if (returnCode == IDA_ROOT_RETURN) {
-					// flip discontinuities				
-					int flag = IDAGetRootInfo(solver, rootsFound);
-					checkIDAFlag(flag);
-					cout << endl << "idaSolve() : roots found at time " << Time << endl;
-#ifdef SUNDIALS_DEBUG
-					printVariableValues(Time);
-#endif
-					updateDiscontinuities(Time);
-					reInit(Time); // recalculate y
-					solveInitialDiscontinuities(Time); // recalculate booleans for discontinuities after discontinuity state change
-				} else {
-					checkDiscontinuityConsistency();
-				}
-				if (returnCode == IDA_ROOT_RETURN || iterationCount%keepEvery == 0 || Time >= ENDING_TIME){
-					saveCount++;
-					if (((double)saveCount)*(NEQ + 1) * bytesPerSample > (double)MaxFileSizeBytes){ 
+				onIDAReturn(Time, returnCode);
+
+				if (returnCode == IDA_ROOT_RETURN || iterationCount % keepEvery == 0 || Time >= ENDING_TIME){
+					outputCount ++;
+					if (outputCount *(NEQ + 1) * bytesPerSample > MaxFileSizeBytes){ 
 						/* if more than one gigabyte, then fail */ 
 						char msg[100];
 						sprintf(msg, "output exceeded %ld bytes\n", MaxFileSizeBytes);
@@ -599,7 +631,6 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 		} 
 	} else {
 		double sampleTime = 0.0;
-		int outputCount = 0;
 		assert(outputTimes[0] > STARTING_TIME);
 		while (Time < ENDING_TIME && outputCount < (int)outputTimes.size()) {
 			if (checkStopRequested != 0) {
@@ -613,26 +644,16 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 				}
 
 				double tstop = min(sampleTime, Time + 2 * maxTimeStep + (1e-15));
+				tstop = min(tstop, getNextEventTime());
+
 				IDASetStopTime(solver, tstop);
 				int returnCode = IDASolve(solver, sampleTime, &Time, y, yp, IDA_NORMAL_TSTOP);
 				iterationCount++;
 
 				// if return IDA_SUCCESS, this is an intermediate result, continue without saving data.
 				if (returnCode == IDA_TSTOP_RETURN || returnCode == IDA_SUCCESS || returnCode == IDA_ROOT_RETURN) {
-					if (returnCode == IDA_ROOT_RETURN) {
-						// flip discontinuities				
-						int flag = IDAGetRootInfo(solver, rootsFound);
-						checkIDAFlag(flag);
-						cout << endl << "idaSolve() : roots found at time " << Time << endl;
-#ifdef SUNDIALS_DEBUG
-						printVariableValues(Time);
-#endif
-						updateDiscontinuities(Time);
-						reInit(Time); // recalculate y
-						solveInitialDiscontinuities(Time); // recalculate booleans for discontinuities after discontinuity state change
-					}  else {
-						checkDiscontinuityConsistency();
-					}
+					onIDAReturn(Time, returnCode);
+
 					if (Time == sampleTime) {
 						writeData(Time, outputFile);
 						if (bPrintProgress) {

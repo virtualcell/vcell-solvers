@@ -23,7 +23,7 @@
 
 /**
   * calling sequence
-  ****************
+  ********************
 initCVode
 	reInit(start_time)
 		CVodeCreate
@@ -53,13 +53,24 @@ cvodeSolve
 		CVode
 		if (root return) {
 			CVodeGetRootInfo
-			updateDiscontinuities
+			updateDiscontinuities on root return
 				updateTandVariableValues
 				invert Discontinuity values as needed
 				update values
+			for loop
+				executeEvents
+				updateDiscontinuities on event triggers
+			end for
 			reInit(time)
 				CVodeReInit			
 		} else {
+			for loop
+				executeEvents
+				updateDiscontinuities on triggers
+			end for
+			if events executed
+				reInit(time)
+			end if
 			checkDiscontinuityConsistency
 		}
 	}
@@ -131,7 +142,6 @@ void VCellCVodeSolver::checkCVodeFlag(int flag) {
 
 VCellCVodeSolver::VCellCVodeSolver() : VCellSundialsSolver() {
 	rateExpressions = 0;
-	rateSymbolTable = 0;
 }
 
 VCellCVodeSolver::~VCellCVodeSolver() {
@@ -141,7 +151,6 @@ VCellCVodeSolver::~VCellCVodeSolver() {
 		delete rateExpressions[i];
 	}
 	delete[] rateExpressions;
-	delete rateSymbolTable;
 }
 
 /*
@@ -173,25 +182,19 @@ void VCellCVodeSolver::readEquations(istream& inputstream) {
 
 			// INIT
 			inputstream >> name;
-			exp = "";
-			getline(inputstream, exp);
-			trimString(exp);
-			if (*(exp.end() - 1) != ';') {
-				string msg = "Initial condition expression for [" + variableNames[i] + "]" + BAD_EXPRESSION_MSG;
-				throw VCell::Exception(msg);
+			try {			
+				initialConditionExpressions[i] = readExpression(inputstream);
+			} catch (VCell::Exception& ex) {
+				throw VCell::Exception(string("Initial condition expression for [") + variableNames[i] + "] " + ex.getMessage());
 			}
-			initialConditionExpressions[i] = new Expression(exp);
 
 			// RATE
 			inputstream >> name;
-			exp = "";
-			getline(inputstream, exp);
-			trimString(exp);
-			if (*(exp.end() - 1) != ';') {
-				string msg = "Rate expression for [" + variableNames[i] + "]" + BAD_EXPRESSION_MSG;
-				throw VCell::Exception(msg);
+			try {
+				rateExpressions[i] = readExpression(inputstream);
+			} catch (VCell::Exception& ex) {
+				throw VCell::Exception(string("Rate expression for [") + variableNames[i] + "] " + ex.getMessage());
 			}
-			rateExpressions[i] = new Expression(exp);
 		}				
 	} catch (char* ex) {
 		throw VCell::Exception(string("VCellCVodeSolver::readInput() : ") + ex);
@@ -206,9 +209,8 @@ void VCellCVodeSolver::initialize() {
 	VCellSundialsSolver::initialize();
 
 	// rate can be function of variables, parameters and discontinuities.
-	rateSymbolTable = new SimpleSymbolTable(allSymbols, numAllSymbols);
 	for (int i = 0; i < NEQ; i ++) {
-		rateExpressions[i]->bindExpression(rateSymbolTable);
+		rateExpressions[i]->bindExpression(defaultSymbolTable);
 	}
 }
 
@@ -286,6 +288,8 @@ void VCellCVodeSolver::initCVode(double* paramValues) {
 		int flag = CVodeRootInit(solver, 2 * numDiscontinuities, RootFn_callback, this);
 		checkCVodeFlag(flag);
 	}
+
+	executeEvents(STARTING_TIME);
 }
 
 void VCellCVodeSolver::reInit(double t) {
@@ -348,6 +352,42 @@ bool VCellCVodeSolver::fixInitialDiscontinuities(double t) {
 	return bInitChanged;
 }
 
+void VCellCVodeSolver::onCVodeReturn(realtype Time, int returnCode) {
+	if (returnCode == CV_ROOT_RETURN) {
+		// flip discontinuities
+		int flag = CVodeGetRootInfo(solver, rootsFound);
+		checkCVodeFlag(flag);
+		cout << endl << "cvodeSolve() : roots found at time " << Time << endl;
+#ifdef SUNDIALS_DEBUG
+		printVariableValues(Time);
+#endif
+		updateDiscontinuities(Time, true);
+
+		int updateCount = 0;
+		for (updateCount = 0;  updateCount < MAX_NUM_EVENTS_DISCONTINUITIES_EVAL; updateCount ++) {
+			bool bExecuted = executeEvents(Time);
+			if (!bExecuted) {
+				break;
+			}
+			updateDiscontinuities(Time, false);
+		}
+		reInit(Time);
+	} else {
+		int updateCount = 0;
+		for (updateCount = 0;  updateCount < MAX_NUM_EVENTS_DISCONTINUITIES_EVAL; updateCount ++) {			
+			bool bExecuted = executeEvents(Time);
+			if (!bExecuted) {
+				break;
+			}
+			updateDiscontinuities(Time, false);
+		}
+		if (updateCount > 0) {
+			reInit(Time);
+		}
+		checkDiscontinuityConsistency();
+	}
+}
+
 void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*checkStopRequested)(double, long)) {
 	if (checkStopRequested != 0) {
 		checkStopRequested(STARTING_TIME, 0);
@@ -357,7 +397,7 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 	double percentile=0.00;
 	double increment =0.01;
 	long iterationCount=0;
-	long saveCount=0;
+	long outputCount=0;
 
 	// write intial conditions
 	writeData(Time, outputFile);
@@ -372,6 +412,8 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 			}								
 			
 			double tstop = min(ENDING_TIME, Time + 2 * maxTimeStep + (1e-15));
+			tstop = min(tstop, getNextEventTime());
+			
 			CVodeSetStopTime(solver, tstop);
 			int returnCode = CVode(solver, ENDING_TIME, y, &Time, CV_ONE_STEP_TSTOP);
 			iterationCount++;
@@ -379,23 +421,11 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 			// save data if return CV_TSTOP_RETURN (meaning reached end of time or max time step 
 			// before one normal step) or CV_SUCCESS (meaning one normal step)
 			if (returnCode == CV_TSTOP_RETURN || returnCode == CV_SUCCESS || returnCode == CV_ROOT_RETURN) {
-				if (returnCode == CV_ROOT_RETURN) {
-					cout << setprecision(20);
-					// flip discontinuities				
-					int flag = CVodeGetRootInfo(solver, rootsFound);
-					checkCVodeFlag(flag);
-					cout << endl << "cvodeSolve() : roots found at time " << Time << endl;
-#ifdef SUNDIALS_DEBUG
-					printVariableValues(Time);
-#endif
-					updateDiscontinuities(Time);
-					reInit(Time);
-				} else {
-					checkDiscontinuityConsistency();
-				}
+				onCVodeReturn(Time, returnCode);
+
 				if (returnCode == CV_ROOT_RETURN || iterationCount % keepEvery == 0 || Time >= ENDING_TIME){
-					saveCount++;
-					if (((double)saveCount) * (NEQ + 1) * bytesPerSample > (double)MaxFileSizeBytes){ 
+					outputCount++;
+					if (outputCount * (NEQ + 1) * bytesPerSample > MaxFileSizeBytes){ 
 						/* if more than one gigabyte, then fail */ 
 						char msg[100];
 						sprintf(msg, "output exceeded maximum %ld bytes", MaxFileSizeBytes);
@@ -412,7 +442,6 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 		}
 	} else {
 		double sampleTime = 0.0;
-		int outputCount = 0;
 		assert(outputTimes[0] > STARTING_TIME);
 		while (Time < ENDING_TIME && outputCount < (int)outputTimes.size()) {
 			if (checkStopRequested != 0) {
@@ -426,25 +455,16 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 				}
 
 				double tstop = min(sampleTime, Time + 2 * maxTimeStep + (1e-15));
+				tstop = min(tstop, getNextEventTime());
+
 				CVodeSetStopTime(solver, tstop);
 				int returnCode = CVode(solver, sampleTime, y, &Time, CV_NORMAL_TSTOP);
 				iterationCount++;
 
 				// if return CV_SUCCESS, this is an intermediate result, continue without saving data.
 				if (returnCode == CV_TSTOP_RETURN || returnCode == CV_SUCCESS || returnCode == CV_ROOT_RETURN) {
-					if (returnCode == CV_ROOT_RETURN) {
-						// flip discontinuities				
-						int flag = CVodeGetRootInfo(solver, rootsFound);
-						checkCVodeFlag(flag);
-						cout << endl << "cvodeSolve() : roots found at time " << Time << endl;
-#ifdef SUNDIALS_DEBUG
-						printVariableValues(Time);
-#endif
-						updateDiscontinuities(Time);
-						reInit(Time);
-					}  else {
-						checkDiscontinuityConsistency();
-					}
+					onCVodeReturn(Time, returnCode);
+
 					if (Time == sampleTime) {
 						writeData(Time, outputFile);
 						if (bPrintProgress) {
