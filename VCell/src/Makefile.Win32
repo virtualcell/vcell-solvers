@@ -60,8 +60,6 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\DataProcessorVFrap.obj			\
 		$(OBJDIR)\EllipticVolumeEqnBuilder.obj			\
 		$(OBJDIR)\EqnBuilder.obj			\
-#		$(OBJDIR)\EqnBuilderReactionDiffusionConvection.obj		\
-#		$(OBJDIR)\EqnBuilderReactionDiffusion.obj	\
 		$(OBJDIR)\EqnBuilderReactionForward.obj	\
 		$(OBJDIR)\FastSystem.obj			\
 		$(OBJDIR)\FastSystemExpression.obj			\
@@ -69,7 +67,6 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\FieldData.obj		\
 		$(OBJDIR)\FVSolver.obj			\
 		$(OBJDIR)\FVUtils.obj			\
-#		$(OBJDIR)\Histogram.obj			\
 		$(OBJDIR)\MembraneEqnBuilderForward.obj	\
 		$(OBJDIR)\MembraneEqnBuilderDiffusion.obj	\
 		$(OBJDIR)\MembraneRegion.obj	\
@@ -84,7 +81,7 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\ODESolver.obj	\
 		$(OBJDIR)\ParticleContext.obj		\
 		$(OBJDIR)\PDESolver.obj	\
-#		$(OBJDIR)\PdeSolverDiana.obj		\
+		$(OBJDIR)\RandomVariable.obj	\
 		$(OBJDIR)\Region.obj			\
 		$(OBJDIR)\Scheduler.obj			\
 		$(OBJDIR)\SerialScheduler.obj			\
@@ -94,16 +91,12 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\SimulationMessaging.obj	\
 		$(OBJDIR)\Solver.obj			\
 		$(OBJDIR)\SparseLinearSolver.obj		\
-#		$(OBJDIR)\SparseMatrix.obj		\
 		$(OBJDIR)\SparseMatrixEqnBuilder.obj		\
 		$(OBJDIR)\SparseMatrixPCG.obj		\
 		$(OBJDIR)\SparseVolumeEqnBuilder.obj		\
-#		$(OBJDIR)\TIFFImage.obj			\
-#		$(OBJDIR)\SplitScheduler.obj			\
 		$(OBJDIR)\StructuredPDESolver.obj		\
 		$(OBJDIR)\SundialsPdeScheduler.obj		\
 		$(OBJDIR)\Timer.obj			\
-#		$(OBJDIR)\TriDiagMatrix.obj		\
 		$(OBJDIR)\VarContext.obj			\
 		$(OBJDIR)\Variable.obj			\
 		$(OBJDIR)\VCellModel.obj			\
