@@ -1,0 +1,29 @@
+###################################################################
+# Makefile Templates for Simulations on Linux
+#
+# Example:
+#          make -f Makefile.sim.linux SOURCE=simname.cpp BASEDIR=pathtolibraries
+#
+# Date: Dec 14, 2001
+###################################################################
+# Compiler executables
+CC		= g++
+# Standard C++ options
+COPT		= -exceptions -DLINUX -DDEBUG -DSIZE64 -DINTEL -DGCC 
+# Special C++ options
+SCOPT		= -O
+CFLAGS		= ${COPT} ${SCOPT}
+#
+SFOPT		=
+FFLAGS		= ${FOPT} ${SFOPT}
+TARGET		= test
+BASEDIR		= $(HOME)
+SOURCE		= SimID_2296371.cpp
+PCGLIB		= $(BASEDIR)/PCGPack/gdpcglib.a
+VCELLLIB	= $(BASEDIR)/VCellCode/lib/libvcell.a
+SYSLIBS		= -lm -lblas -lz -lg2c
+LINK		= ${VCELLLIB} ${PCGLIB} ${SYSLIBS}
+INCLUDE		= -I../VCellCode/include/
+default all: ${TARGET} 
+${TARGET}: 
+	${CC} $(CFLAGS) -o ${TARGET} ${SOURCE} ${INCLUDE} ${LINK}

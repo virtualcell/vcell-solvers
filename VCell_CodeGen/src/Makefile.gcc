@@ -1,0 +1,49 @@
+#
+# (C) Copyright University of Connecticut Health Center 2001.
+# All rights reserved.
+#
+CPPFLAGS =	-O -I../include/ -DLINUX -DGCC -DDEBUG -DSIZE64 -DINTEL 
+
+#CPPFLAGS =	-O -I../include/ -DVCELL_DEBUG -DWIN32 -GX -O2 -G6  
+
+TARGETS=	libvcell.a
+
+.SUFFIXES:	.cpp .o
+
+.cpp.o:		
+		g++ -c $(CPPFLAGS) -o $@ $<
+
+default all:	$(TARGETS)
+
+CPPOBJECTS = 	./Feature.o			\
+		./VarContext.o			\
+		./Contour.o			\
+		./Simulation.o			\
+		./EqnBuilder.o			\
+		./EqnBuilderReactionDiffusion.o	\
+		./EqnBuilderReactionForward.o	\
+		./VCellModel.o			\
+		./Mesh.o			\
+		./MeshCorrect.o			\
+		./ParticleContext.o		\
+		./SimTool.o			\
+		./Solver.o			\
+		./Variable.o			\
+		./TriDiagMatrix.o		\
+		./CString.o			\
+		./Geometry.o			\
+		./MembraneEqnBuilderForward.o	\
+		./TIFFImage.o			\
+		./DataSet.o			\
+		./Timer.o			\
+		./Scheduler.o			\
+		./DomainPDEScheduler.o		\
+		./Region.o			\
+		./RegionEqnBuilder.o		\
+		./FastSystem.o			\
+		./App.o
+
+
+libvcell.a:	$(CPPOBJECTS)
+		ar rs libvcell.a $(CPPOBJECTS) 
+		cp libvcell.a ../lib
