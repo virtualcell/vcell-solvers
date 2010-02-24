@@ -372,8 +372,7 @@ void SimTool::loadFinal()
 				bStartOver = true;
 			} else {
 				try {
-					DataSet dataSet;
-					dataSet.read(dataFileName, simulation);
+					DataSet::read(dataFileName, simulation);
 					simulation->setCurrIteration(tempIteration);
 					simFileCount = tempFileCount;
 

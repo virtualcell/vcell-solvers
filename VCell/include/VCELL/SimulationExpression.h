@@ -18,6 +18,7 @@ class FieldData;
 class MembraneVariable;
 class MembraneRegionVariable;
 class VolumeRegionVariable;
+class RandomVariable;
 
 class SimulationExpression : public Simulation
 {
@@ -33,10 +34,21 @@ public:
 	void addFieldData(FieldData* fd) {
 		fieldDataList.push_back(fd);
 	}
-
 	int getNumFields() { return (int)fieldDataList.size(); }
 	string* getFieldSymbols();
 	void populateFieldValues(double* darray, int index);
+
+	void addRandomVariable(RandomVariable* rv) {
+		randomVarList.push_back(rv);
+	}
+	RandomVariable* getRandomVariableFromName(char* rvname);
+	int getNumRandomVariables() {
+		return (int)randomVarList.size();
+	}
+	RandomVariable* getRandomVariable(int index) {
+		return randomVarList[index];
+	}
+	void populateRandomValues(double* darray, int index);
 
 	int* getIndices() { return indices; };
 	SimpleSymbolTable* getOldSymbolTable() { return oldSymbolTable; };
@@ -123,6 +135,8 @@ protected:
 	int volRegionVarSize;
 	MembraneRegionVariable** memRegionVarList;
 	int memRegionVarSize;
+
+	vector<RandomVariable*> randomVarList;
 
 	int numVolPde;
 	int numMemPde;

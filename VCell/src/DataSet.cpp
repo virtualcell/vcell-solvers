@@ -10,7 +10,7 @@
 
 #include <VCELL/SimTypes.h>
 #include <VCELL/Variable.h>
-#include <VCELL/Simulation.h>
+#include <VCELL/SimulationExpression.h>
 #include <VCELL/Mesh.h>
 #include <VCELL/DataSet.h>
 #include <VCELL/Element.h>
@@ -18,19 +18,72 @@
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/FieldData.h>
 #include <VCELL/MembraneRegion.h>
+#include <VCELL/RandomVariable.h>
 
 #define CONVOLVE_SUFFIX "_Convolved"
 
 FieldData* getPSFFieldData();
 
-//----------------------------------------------------------------------------
-//
-// class DataSet
-//
-//----------------------------------------------------------------------------
-DataSet::DataSet() 
+void DataSet::readRandomVariables(char *filename, SimulationExpression *sim)
 {
+	FILE *fp=NULL;
+	FileHeader fileHeader;
+	DataBlock *dataBlock;
+
+	if ((fp=fopen(filename, "rb"))==NULL){
+		char errmsg[512];
+		sprintf(errmsg, "DataSet::read() - could not open file '%s'.", filename); 
+		throw errmsg;
+	}
+	readHeader(fp,&fileHeader);
+
+	if (strcmp(fileHeader.magicString, MAGIC_STRING)){
+		throw "DataSet::read() - file is not a VCellDump file";
+	}
+
+	if (fileHeader.numBlocks <= 0){
+		char errmsg[512];
+		sprintf(errmsg, "DataSet::read() - number of blocks ( %d ) less than 1.", fileHeader.numBlocks); 
+		throw errmsg;
+	}
+	   
+	dataBlock = new DataBlock[fileHeader.numBlocks];
+	   
+	if (fseek(fp, fileHeader.firstBlockOffset, SEEK_SET)){
+		char errmsg[512];
+		sprintf(errmsg, "DataSet::read() - could not find first block at offset %d.", fileHeader.firstBlockOffset); 
+		throw errmsg;
+	}
+	for (int i=0;i<fileHeader.numBlocks;i++){
+		readDataBlock(fp,dataBlock+i);
+	}
+
+	for (int i=0;i<fileHeader.numBlocks;i++){
+		RandomVariable *rv = sim->getRandomVariableFromName(dataBlock[i].varName);
+		if (rv==NULL){
+			cout << "DataSet::read() - variable '" << dataBlock[i].varName << "' not found in Simulation" << endl;
+			continue;
+		}
+		if (rv->getSize()!=dataBlock[i].size){
+			char errmsg[512];
+			sprintf(errmsg, "DataSet::read() - size mismatch for var '%s', file=%d, var=%d.", dataBlock[i].varName, dataBlock[i].size, rv->getSize()); 
+			throw errmsg;
+		}
+	      
+		if (fseek(fp, dataBlock[i].dataOffset, SEEK_SET)){
+			char errmsg[512];
+			sprintf(errmsg, "DataSet::read() - could not find data offset ( %d ).", dataBlock[i].dataOffset); 
+			throw errmsg;
+		}
+
+		readDoubles(fp, rv->getRandomNumbers(), rv->getSize());
+		cout << "read data for random variable '" << rv->getName() << "'" << endl;
+	}
+	delete[] dataBlock;
+	   
+	fclose(fp);
 }
+
 
 void DataSet::read(char *filename, Simulation *sim)
 {
@@ -285,6 +338,10 @@ void writeDoubles(FILE *fp, double *data, int length)
 void DataSet::convolve(Simulation* sim, Variable* var, double* values) {
 
 	FieldData* psfFieldData = getPSFFieldData();
+	if (psfFieldData == 0) {
+		throw "psf field data is not defined";
+	}
+
 	CartesianMesh* mesh = (CartesianMesh *)sim->getMesh(); 
 
 	int meshX = mesh->getNumVolumeX();
@@ -386,6 +443,13 @@ void DataSet::convolve(Simulation* sim, Variable* var, double* values) {
 
 void DataSet::write(char *filename, Simulation *sim, bool bCompress)
 {
+	bool bStandalone = false;
+	SimulationExpression* simStandalone = 0;
+	if (typeid(*sim) == typeid(SimulationExpression)) {
+		bStandalone = true;
+		simStandalone = (SimulationExpression*)sim;
+	}
+
 	FILE *fp=NULL;
 	FileHeader fileHeader;
 	DataBlock *dataBlock;
@@ -406,7 +470,6 @@ void DataSet::write(char *filename, Simulation *sim, bool bCompress)
 	strcpy(fileHeader.magicString, MAGIC_STRING);
 	strcpy(fileHeader.versionString, VERSION_STRING);
 	int numVars = sim->getNumVariables();
-	
 	if (numVars <= 0){
 		cout << "DataSet::write() - no variables defined" << endl;
 	}
@@ -414,9 +477,14 @@ void DataSet::write(char *filename, Simulation *sim, bool bCompress)
 	FieldData* psfFieldData = getPSFFieldData();
 	int numBlocks = psfFieldData == 0 ? numVars : numVars*2;
 
+	if (bStandalone) {
+		numBlocks += simStandalone->getNumRandomVariables();
+	}
+
 	fileHeader.sizeX = ((CartesianMesh *)sim->getMesh())->getNumVolumeX();
 	fileHeader.sizeY = ((CartesianMesh *)sim->getMesh())->getNumVolumeY();
 	fileHeader.sizeZ = ((CartesianMesh *)sim->getMesh())->getNumVolumeZ();
+	int volVarSize = fileHeader.sizeX * fileHeader.sizeY * fileHeader.sizeZ;
 	fileHeader.numBlocks = numBlocks;
 	fileHeader.firstBlockOffset = sizeof(FileHeader);
 
@@ -436,17 +504,19 @@ void DataSet::write(char *filename, Simulation *sim, bool bCompress)
 	//
 	// write data blocks (describing data)
 	//   
+	int blockIndex = 0;
 	int32 dataOffset = fileHeader.firstBlockOffset + numBlocks * sizeof(DataBlock);
 	for (int i = 0; i < numVars; i ++) {
 		Variable* var = sim->getVariable(i);
-		memset(dataBlock[i].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-		strcpy(dataBlock[i].varName, var->getName().c_str());
+		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
+		strcpy(dataBlock[blockIndex].varName, var->getName().c_str());
 		
-		dataBlock[i].varType = var->getVarType();
-		dataBlock[i].size = var->getSize();
-		dataBlock[i].dataOffset = dataOffset;
-		writeDataBlock(fp,dataBlock+i);
-		dataOffset += dataBlock[i].size*sizeof(double);
+		dataBlock[blockIndex].varType = var->getVarType();
+		dataBlock[blockIndex].size = var->getSize();
+		dataBlock[blockIndex].dataOffset = dataOffset;
+		writeDataBlock(fp,dataBlock+blockIndex);
+		dataOffset += dataBlock[blockIndex].size*sizeof(double);
+		blockIndex ++;
 	}
 
 	// write data blocks for _Convolved variables
@@ -454,58 +524,108 @@ void DataSet::write(char *filename, Simulation *sim, bool bCompress)
 		for (int i = 0; i < numVars; i ++) {
 			Variable* var = sim->getVariable(i);			
 			string varz_name = var->getName() + CONVOLVE_SUFFIX;
-			int blockIndex = numVars + i;
 			memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
 			strcpy(dataBlock[blockIndex].varName, varz_name.c_str());
 	       
 			dataBlock[blockIndex].varType = VAR_VOLUME;
-			dataBlock[blockIndex].size = fileHeader.sizeX * fileHeader.sizeY * fileHeader.sizeZ;
+			dataBlock[blockIndex].size = volVarSize;
 			dataBlock[blockIndex].dataOffset = dataOffset;
 			writeDataBlock(fp,dataBlock + blockIndex);
 			dataOffset += dataBlock[blockIndex].size*sizeof(double);
+			blockIndex ++;
 		}
 	}
 	
-	   
+	if (bStandalone) {
+		int numRandVars = simStandalone->getNumRandomVariables();
+		for (int i = 0; i < numRandVars; i ++) {
+			RandomVariable* rv = simStandalone->getRandomVariable(i);			
+			memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
+			strcpy(dataBlock[blockIndex].varName, rv->getName().c_str());
+		
+			dataBlock[blockIndex].varType = rv->getVariableType();
+			dataBlock[blockIndex].size = rv->getSize();
+			dataBlock[blockIndex].dataOffset = dataOffset;
+			writeDataBlock(fp,dataBlock + blockIndex);
+			dataOffset += dataBlock[blockIndex].size*sizeof(double);
+			blockIndex ++;
+		}
+	}	   
+
 	//
 	// write data
 	//
+	blockIndex = 0;
 	for (int i = 0; i < numVars; i ++) {
 		Variable* var = sim->getVariable(i);
 		if (!var){
 			char errmsg[512];
-			sprintf(errmsg, "DataSet::write() - variable '%s' not found during write", dataBlock[i].varName);
+			sprintf(errmsg, "DataSet::write() - variable '%s' not found during write", dataBlock[blockIndex].varName);
 			throw errmsg;
 		}
 		ftell_pos = ftell(fp);
-		if (ftell_pos != dataBlock[i].dataOffset){
+		if (ftell_pos != dataBlock[blockIndex].dataOffset){
 			char errmsg[512];
-			sprintf(errmsg, "DataSet::write() - offset for data is incorrect (block %d, var=%s), ftell() says %d, should be %d", i, var->getName().c_str(), ftell_pos, dataBlock[i].dataOffset);
+			sprintf(errmsg, "DataSet::write() - offset for data is incorrect (block %d, var=%s), ftell() says %d, should be %d", blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
 			throw errmsg;
 		}
 
-		if (var->getSize() != dataBlock[i].size) {
+		if (var->getSize() != dataBlock[blockIndex].size) {
 			throw "DataSet::write() : inconsistent number of data blocks for variable";
 		}
 		writeDoubles(fp, var->getCurr(), var->getSize());
+		blockIndex ++;
 	}
 	
 	//
 	// write data for _Convolved variables
 	//
 	if (psfFieldData != 0) {
-		int varX = fileHeader.sizeX;
-		int varY = fileHeader.sizeY;
-		int varZ = fileHeader.sizeZ;
-		int varSize = varZ * varY * varX;
-		double* values = new double[varSize];
+		double* values = new double[volVarSize];
 
 		for (int i = 0; i < numVars; i ++) {
 			Variable* var = sim->getVariable(i);
 			convolve(sim, var, values);
 
-			writeDoubles(fp, values, varSize);
+			ftell_pos = ftell(fp);
+			if (ftell_pos != dataBlock[blockIndex].dataOffset){
+				char errmsg[512];
+				sprintf(errmsg, "DataSet::write() - offset for data is "
+					"incorrect (block %d, var=%s), ftell() says %d, should be %d", 
+					blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
+				throw errmsg;
+			}
+			if (volVarSize != dataBlock[blockIndex].size) {
+				throw "DataSet::write() : inconsistent number of data blocks for variable";
+			}
+
+			writeDoubles(fp, values, volVarSize);
+			blockIndex ++;
 		}	
+	}
+
+	//
+	// write data for random variables
+	//
+	if (bStandalone) {
+		int numRandVars = simStandalone->getNumRandomVariables();
+		for (int i = 0; i < numRandVars; i ++) {
+			RandomVariable* rv = simStandalone->getRandomVariable(i);						
+			ftell_pos = ftell(fp);
+			if (ftell_pos != dataBlock[blockIndex].dataOffset){
+				char errmsg[512];
+				sprintf(errmsg, "DataSet::write() - offset for data is "
+					"incorrect (block %d, var=%s), ftell() says %d, should be %d", 
+					blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
+				throw errmsg;
+			}
+
+			if (rv->getSize() != dataBlock[blockIndex].size) {
+				throw "DataSet::write() : inconsistent number of data blocks for variable";
+			}
+			writeDoubles(fp, rv->getRandomNumbers(), rv->getSize());
+			blockIndex ++;
+		}
 	}
 
 	fclose(fp);

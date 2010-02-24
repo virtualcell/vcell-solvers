@@ -166,7 +166,6 @@ void DataProcessorVFrap::onWrite(SimTool* simTool) {
 			odeResultSet[i]->addRow(values);
 		}
 	}
-	DataSet dataSet;
 
 	CartesianMesh* mesh = (CartesianMesh *)sim->getMesh(); 
 
@@ -189,7 +188,7 @@ void DataProcessorVFrap::onWrite(SimTool* simTool) {
 		memset(values, 0, numImageRegions * sizeof(double));
 		memset(count, 0, numImageRegions * sizeof(int));
 
-		dataSet.convolve(sim, var, convolved_values);
+		DataSet::convolve(sim, var, convolved_values);
 
 		for (int j = 0; j < imgX * imgY; j ++) {
 			int index = (int)sampleImage->getData()[j];
@@ -241,7 +240,6 @@ void DataProcessorVFrap::onComplete(SimTool* simTool) {
 	}
 	data->put(times, numT);
 	
-	DataSet dataSet;
 	for (int i = 0; i <numVar; i ++) {
 		Variable* var = sim->getVariable(i);
 		if (var->getVarType() == VAR_VOLUME) {

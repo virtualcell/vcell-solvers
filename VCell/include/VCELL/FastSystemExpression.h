@@ -31,7 +31,6 @@ public:
     void initVars();
 	void setDependentVariables(string* vars); // must be called before other setters
 	void setIndependentVariables(string* vars); // must be called before other setters
-	SimpleSymbolTable* getIndepPseudoFieldSymbolTable();
 	void updateIndepValues();
 	void updateMatrix();	
 
@@ -39,14 +38,15 @@ private:
 	string* pseudoSymbols;
 	SimulationExpression* simulation;
 	double* pseudoConstants;
-	SimpleSymbolTable* indepPseudoFieldSymbolTable;
-	double* indepPseudoFieldValues;	
+	SimpleSymbolTable* fastSymbolTable; // include independent, pseudo, field data, random variables;
+	double* fastValues;	
 	Expression** pseudoConstantExpressions;
 	Expression** fastRateExpressions;
 	Expression** fastDependencyExpressions;
 	Expression** jacobianExpressions;
 
 	void bindAllExpressions();
+	SimpleSymbolTable* getFastSymbolTable();
 };
 
 #endif

@@ -32,6 +32,7 @@
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/FieldData.h>
 #include <VCELL/FVUtils.h>
+#include <VCELL/RandomVariable.h>
 
 #include <Exception.h>
 #include <Expression.h>
@@ -235,6 +236,16 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			continue;
 		} else if (nextToken == "VARIABLE_END") {
 			break;
+		} else if (nextToken == "VOLUME_RANDOM") {
+			string name;
+			ifsInput >> name;
+			RandomVariable* rv = new RandomVariable(name, VAR_VOLUME, mesh->getNumVolumeElements());
+			simulation->addRandomVariable(rv);
+		} else if (nextToken == "MEMBRANE_RANDOM") {
+			string name;
+			ifsInput >> name;
+			RandomVariable* rv = new RandomVariable(name, VAR_MEMBRANE, mesh->getNumMembraneElements());
+			simulation->addRandomVariable(rv);
 		} else if (nextToken == "VOLUME_PDE" || nextToken == "VOLUME_PDE_STEADY") {
 			bool bSteady = false;
 			if (nextToken == "VOLUME_PDE_STEADY") {

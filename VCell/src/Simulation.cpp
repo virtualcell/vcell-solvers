@@ -75,19 +75,6 @@ void Simulation::iterate()
 	_scheduler->iterate();
 }
 
-double Simulation::getMaxDifference()
-{
-	double maxDiff = 0;
-
-	for (int i = 0; i < (int)varList.size(); i ++) {
-		Variable* var = varList[i];
-		double diff = var->getMaxDifference();
-		maxDiff = max(maxDiff, diff);
-	}
-
-	return maxDiff;
-}
-
 void Simulation::update()
 {
 	for (int i = 0; i < (int)varList.size(); i ++) {
@@ -229,8 +216,7 @@ void Simulation::writeData(char *filename, bool bCompress)
 		fclose(fp);
 	}
 
-	DataSet dataset;
-	dataset.write(filename, this, bCompress);
+	DataSet::write(filename, this, bCompress);
 }
 
 void Simulation::readData(char *filename)
@@ -239,8 +225,7 @@ void Simulation::readData(char *filename)
 	// all processes read data
 	// (in the future, root could read and then distribute)
 	//
-	DataSet dataset;
-	dataset.read(filename, this);
+	DataSet::read(filename, this);
 }
 
 void Simulation::setScheduler(Scheduler *scheduler)

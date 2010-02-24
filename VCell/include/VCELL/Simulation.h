@@ -33,7 +33,6 @@ public:
 	void iterate();          // computes 1 time step
 	virtual void    update();           // copies new to old values 
 	void    reset();            // initializes to t=last time step
-	double  getMaxDifference();
 
 	double  getTime_sec();
 	void    setCurrIteration(int curriter) { 

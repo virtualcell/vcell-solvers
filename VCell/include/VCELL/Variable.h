@@ -44,7 +44,6 @@ public:
 	virtual VariableType	getVarType() {return VAR_UNKNOWN;}
 	string getUnits() { return units; }
 
-	double   getMaxDifference();
 	void     update();
 	void     revert();
 	void     clear();

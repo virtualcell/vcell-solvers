@@ -343,13 +343,14 @@ void SundialsPdeScheduler::initSundialsSolver() {
 
 	int numVariables = simulation->getNumVariables();
 	int numVolVar = simulation->getNumVolVariables();
-	valueArraySize = 4 + numVolVar * 3 + (numVariables - numVolVar) + simulation->getNumFields(); // t, x, y, z, (U, U_INSIDE, U_OUTSIDE), (M), (VR), (MR), (FieldData)
+	valueArraySize = 4 + numVolVar * 3 + (numVariables - numVolVar) + simulation->getNumFields() + simulation->getNumRandomVariables(); // t, x, y, z, (U, U_INSIDE, U_OUTSIDE), (M), (VR), (MR), (FieldData), (RandomVariable)
 
 	volSymbolOffset = 4;
 	memSymbolOffset = volSymbolOffset + numVolVar * 3;
 	volRegionSymbolOffset = memSymbolOffset + simulation->getNumMemVariables();
 	memRegionSymbolOffset = volRegionSymbolOffset + simulation->getNumVolRegionVariables();
 	fieldDataSymbolOffset = memRegionSymbolOffset + simulation->getNumMemRegionVariables();
+	randomVariableSymbolOffset = fieldDataSymbolOffset + simulation->getNumFields();
 
 	statePointValues = new double[valueArraySize];
 	memset(statePointValues, 0, valueArraySize * sizeof(double));
@@ -2066,6 +2067,7 @@ void SundialsPdeScheduler::updateVolumeStatePointValues(int volIndex, double t, 
 	}
 
 	simulation->populateFieldValues(values + fieldDataSymbolOffset, volIndex);
+	simulation->populateRandomValues(values + randomVariableSymbolOffset, volIndex);
 
 	int regionID = pVolumeElement[volIndex].region->getId();
 	if (simulation->getNumVolVariables() > 0) {
@@ -2101,6 +2103,7 @@ void SundialsPdeScheduler::updateMembraneStatePointValues(MembraneElement& me, d
 	}
 
 	simulation->populateFieldValues(values + fieldDataSymbolOffset, me.index);
+	simulation->populateRandomValues(values + randomVariableSymbolOffset, me.index);
 
 	if (simulation->getNumVolVariables() > 0) {
 		// fill in INSIDE and OUTSIDE values

@@ -8,10 +8,10 @@ all:
 	cd unzip && nmake -f Makefile.win32
 	cd zlib && nmake -f Makefile.win32
 	cd zip && nmake -f Makefile.win32
+	cd netcdf-3.6.2 && nmake -f Makefile.win32
 	cd VCell\src && nmake -f Makefile.win32
 #	cd VCell\src && nmake -f Makefile_NoMessaging.win32
 	cd Stochastic\VCellStoch && nmake -f Makefile.win32
-	cd netcdf-3.6.2 && nmake -f Makefile.win32
 	cd Hy3S\src && nmake -f Makefile.win32
 	
 clean:

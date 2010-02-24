@@ -3,12 +3,12 @@ CCOPTS1 = /c /Ox /TP /EHsc /D_CRT_SECURE_NO_DEPRECATE /I..\vcell\include
 
 !ifdef VCELL_DEBUG
 CCOPTS1 = $(CCOPTS1) /MTd
-TARGET = qhulld.lib
-OBJDIR = .\Win32d
+TARGET = qhull_mtd.lib
+OBJDIR = .\mtd
 !else
 CCOPTS1 = $(CCOPTS1) /MT
 TARGET = qhull.lib
-OBJDIR = .\Win32
+OBJDIR = .\obj
 !endif
 
 OBJS = $(OBJDIR)\user.obj $(OBJDIR)\global.obj $(OBJDIR)\stat.obj $(OBJDIR)\io.obj $(OBJDIR)\geom2.obj $(OBJDIR)\poly2.obj \
@@ -48,7 +48,8 @@ $(OBJDIR) :
     if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"
     	
 clean:
-	del $(OBJDIR)\*.obj qhull.lib
+	if exist "$(OBJDIR)" del /Q $(OBJDIR)\*.*
+	del $(TARGET)
 
 $(TARGET): $(OBJDIR) $(OBJS)
 	$(LIBTOOL) $(OBJS) /out:$@

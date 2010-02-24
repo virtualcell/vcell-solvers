@@ -80,21 +80,6 @@ void Variable::setCurr(long index, double value)
 	*(curr + index) = value;
 }
 
-double Variable::getMaxDifference()
-{
-	double maxDiff=0;
-
-	double *pCurr=curr;
-	double *pOld=old;
-	for (long i=0; i<size; i++){
-		maxDiff = max(maxDiff, fabs(*pCurr - *pOld));
-		pCurr++;
-		pOld++;
-	}
-
-	return maxDiff;
-}
-
 void Variable::update()
 {
 	memcpy(old, curr, sizeof(double)*size);

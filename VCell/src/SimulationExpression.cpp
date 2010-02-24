@@ -13,6 +13,10 @@
 #include <VCELL/Element.h>
 #include <VCELL/Mesh.h>
 #include <ValueProxy.h>
+#include <VCELL/RandomVariable.h>
+#include <VCELL/DataSet.h>
+
+#define RANDOM_VARIABLE_FILE_EXTENSION ".rv"
 
 class ValueProxyInside : public ValueProxy
 {
@@ -212,12 +216,11 @@ void SimulationExpression::createSymbolTable() {
 			break;
 		}
 	}
-
 	
 	bool bSundialsPdeSolver = SimTool::getInstance()->isSundialsPdeSolver();
 
 	// t, x, y, z, VAR, VAR_INSIDE, VAR_OUTSIDE, field data, parameters
-	int numSymbols = 4 + volVarSize * 3 + (numVariables - volVarSize) + (int)fieldDataList.size() + (int)paramList.size();
+	int numSymbols = 4 + volVarSize * 3 + (numVariables - volVarSize) + (int)fieldDataList.size() + (int)randomVarList.size() + (int)paramList.size();
 	string* variableNames = new string[numSymbols];	
 	ValueProxy** oldValueProxies = new ValueProxy*[numSymbols];
 
@@ -295,6 +298,29 @@ void SimulationExpression::createSymbolTable() {
 		variableNames[variableIndex ++] = fieldDataList[i]->getID();
 	}
 
+	// add random variable
+	if (randomVarList.size() > 0) {
+		char rvfile[512];
+		sprintf(rvfile, "%s%s", SimTool::getInstance()->getBaseFileName(), RANDOM_VARIABLE_FILE_EXTENSION);
+		DataSet::readRandomVariables(rvfile, this);
+		for (int i = 0; i < (int)randomVarList.size(); i ++) {
+			RandomVariable* rv = randomVarList[i];
+
+			int indexindex = VAR_VOLUME_INDEX;
+			if (rv->getVariableType() == VAR_MEMBRANE) {
+				indexindex = VAR_MEMBRANE_INDEX;
+			}
+			if (rv->getRandomNumbers() == 0) {
+				stringstream ss;
+				ss << "RandomVariable " << rv->getName() << " doesn't have any random numbers" << endl;
+				throw ss.str();
+			}
+			oldValueProxies[variableIndex] = new ValueProxy(rv->getRandomNumbers(), indexindex, indices);
+			variableNames[variableIndex] = rv->getName();
+			variableIndex ++;
+		}
+	}
+
 	// add parameters
 	for (int i = 0; i < (int)paramList.size(); i ++) {
 		oldValueProxies[variableIndex] = paramValueProxies[i];
@@ -327,6 +353,20 @@ void SimulationExpression::populateFieldValues(double* darray, int index) {
 	}
 }
 
+void SimulationExpression::populateRandomValues(double* darray, int index) {
+	// here we don't know the index is for Volume or Membrane,
+	// so we check array index is in bounds.
+	for (int i = 0; i < (int)randomVarList.size(); i ++) {
+		RandomVariable* rv = randomVarList[i];
+		
+		if (index >= 0 && index < rv->getSize()) {
+			darray[i] = rv->getRandomNumbers()[index];
+		} else {
+			darray[i] = 0;
+		}
+	}
+}
+
 void SimulationExpression::initSimulation()
 {   
 	createSymbolTable();
@@ -343,4 +383,15 @@ void SimulationExpression::setParameterValues(double* paramValues) {
 	for (int i = 0; i < (int)paramList.size(); i ++) {
 		paramValueProxies[i]->setValue(paramValues[i]);
 	}
+}
+
+RandomVariable* SimulationExpression::getRandomVariableFromName(char* varName)
+{
+	for (int i = 0; i < (int)randomVarList.size(); i ++) {
+		RandomVariable* var = randomVarList[i];
+		if (string(varName) == var->getName()){
+			return var;
+		}
+	}
+	return NULL;
 }

@@ -151,6 +151,7 @@ private:
 	int volRegionVectorOffset;
 	int memRegionVectorOffset;
 	int fieldDataSymbolOffset;
+	int randomVariableSymbolOffset;
 
 	int volSymbolOffset;
 	int memSymbolOffset;

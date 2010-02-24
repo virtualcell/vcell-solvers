@@ -8,6 +8,7 @@
 #include <VCELL/CartesianMesh.h>
 #include <Expression.h>
 #include <SimpleSymbolTable.h>
+#include <VCELL/RandomVariable.h>
 
 //-----------------------------------------------------------------
 //
@@ -26,9 +27,11 @@ FastSystemExpression::FastSystemExpression(int dimension, int numDepend, Simulat
 	for (int i = 0; i < numDependents; i ++) {
 		pDependentVars[i] = NULL;
 	}
-	indepPseudoFieldSymbolTable = NULL;
-	indepPseudoFieldValues = new double[4 + simulation->getNumFields() + dimension + numDependents];
-	memset(indepPseudoFieldValues, 0, sizeof(double) * (4 + simulation->getNumFields() + dimension + numDependents));
+	// which includes t,x,y,z,field data, random variables, independent variables and pseudo constants
+	fastSymbolTable = NULL;
+	int numFastSymbols = 4 + simulation->getNumFields() + simulation->getNumRandomVariables() + dimension + numDependents;
+	fastValues = new double[numFastSymbols];
+	memset(fastValues, 0, sizeof(double) * numFastSymbols);
 	pseudoConstantExpressions = NULL;
 	fastRateExpressions = NULL;
 	fastDependencyExpressions = NULL;
@@ -41,8 +44,8 @@ FastSystemExpression::FastSystemExpression(int dimension, int numDepend, Simulat
 FastSystemExpression::~FastSystemExpression()
 {
 	delete[] pseudoConstants;
-	delete[] indepPseudoFieldSymbolTable;
-	delete[] indepPseudoFieldValues;
+	delete[] fastSymbolTable;
+	delete[] fastValues;
 	for (int i = 0; i < dimension; i ++) {
 		delete fastRateExpressions[i];
 		for (int j = 0; j < dimension; j ++) {
@@ -97,16 +100,16 @@ void FastSystemExpression::bindAllExpressions() {
 
 	// bind fast rate
 	for (int i = 0; i < dimension; i ++) {		
-		fastRateExpressions[i]->bindExpression(getIndepPseudoFieldSymbolTable());
+		fastRateExpressions[i]->bindExpression(getFastSymbolTable());
 	}
 
 	// bind fast dependency
 	for (int i = 0; i < numDependents; i ++) {		
-		fastDependencyExpressions[i]->bindExpression(getIndepPseudoFieldSymbolTable());
+		fastDependencyExpressions[i]->bindExpression(getFastSymbolTable());
 	}
 	// bind jacobian
 	for (int i = 0; i < dimension * dimension; i ++) {		
-		jacobianExpressions[i]->bindExpression(getIndepPseudoFieldSymbolTable());		
+		jacobianExpressions[i]->bindExpression(getFastSymbolTable());		
 	}
 }
 
@@ -125,12 +128,14 @@ void FastSystemExpression::setJacobianExpressions(Expression** expressions) {
 
 void FastSystemExpression::setCoordinates(double time_sec, WorldCoord& wc) {
 	// t, x, y, x
-	indepPseudoFieldValues[0] = time_sec;
-	indepPseudoFieldValues[1] = wc.x;
-	indepPseudoFieldValues[2] = wc.y;
-	indepPseudoFieldValues[3] = wc.z;
+	fastValues[0] = time_sec;
+	fastValues[1] = wc.x;
+	fastValues[2] = wc.y;
+	fastValues[3] = wc.z;
 	// field data
-	simulation->populateFieldValues(indepPseudoFieldValues + 4, currIndex);
+	simulation->populateFieldValues(fastValues + 4, currIndex);
+	// random variables
+	simulation->populateRandomValues(fastValues + 4 + simulation->getNumFields(), currIndex);
 }
 
 
@@ -157,9 +162,10 @@ void FastSystemExpression::initVars()
 	}
 
 	// set values of pseudo constants by using initial values of independent and dependent variables.
+	int pseudoConstantOffset = 4 + simulation->getNumFields() + simulation->getNumRandomVariables() + dimension;
 	for (int i = 0; i < numDependents; i ++) {
 		pseudoConstants[i] = pseudoConstantExpressions[i]->evaluateVector(values);
-		indepPseudoFieldValues[4 + simulation->getNumFields() + dimension + i] = pseudoConstants[i];
+		fastValues[pseudoConstantOffset + i] = pseudoConstants[i];
 	}
 
 	delete[] values;
@@ -168,7 +174,7 @@ void FastSystemExpression::initVars()
 void FastSystemExpression::updateDependentVars() {	
 	updateIndepValues();
 	for (int i = 0; i < numDependents; i ++) {
-		pDependentVars[i]->setCurr(currIndex, fastDependencyExpressions[i]->evaluateVector(indepPseudoFieldValues));
+		pDependentVars[i]->setCurr(currIndex, fastDependencyExpressions[i]->evaluateVector(fastValues));
 	}	
 }
 
@@ -194,8 +200,8 @@ void FastSystemExpression::setIndependentVariables(string* vars) {
 	}
 }
 
-SimpleSymbolTable* FastSystemExpression::getIndepPseudoFieldSymbolTable() {
-	if (indepPseudoFieldSymbolTable == NULL) {
+SimpleSymbolTable* FastSystemExpression::getFastSymbolTable() {
+	if (fastSymbolTable == NULL) {
 		for (int i = 0; i < dimension; i ++) {
 			if (pVars[i] == NULL) {
 				throw "No independent variables defined";
@@ -206,39 +212,49 @@ SimpleSymbolTable* FastSystemExpression::getIndepPseudoFieldSymbolTable() {
 		}
 
 		int numFields = simulation->getNumFields();
-		string* indepPseudoFieldSymbols = new string[4 + numFields + dimension + numDependents];
+		int numRandomVariables = simulation->getNumRandomVariables();
+		int numSymbols = 4 + numFields + numRandomVariables + dimension + numDependents;
+		string* fastSymbols = new string[numSymbols];
+
+		int symbolCount = 0;
 
 		// t, x, y, x
-		indepPseudoFieldSymbols[0] = "t";
-		indepPseudoFieldSymbols[1] = "x";
-		indepPseudoFieldSymbols[2] = "y";
-		indepPseudoFieldSymbols[3] = "z";
+		fastSymbols[symbolCount ++] = "t";
+		fastSymbols[symbolCount ++] = "x";
+		fastSymbols[symbolCount ++] = "y";
+		fastSymbols[symbolCount ++] = "z";
 
 		// field data
 		string* fieldSymbols = simulation->getFieldSymbols();
 		for (int i = 0; i < numFields; i ++) {
-			indepPseudoFieldSymbols[4 + i] = fieldSymbols[i];
+			fastSymbols[symbolCount ++] = fieldSymbols[i];
 		}
 		delete[] fieldSymbols;
 
-		// dependent variables
+		// random variables
+		for (int i = 0; i < numRandomVariables; i ++) {
+			fastSymbols[symbolCount ++] = simulation->getRandomVariable(i)->getName();
+		}
+
+		// independent variables
 		for (int i = 0; i < dimension; i ++) {		
-			indepPseudoFieldSymbols[4 + numFields + i] = string(pVars[i]->getName());
+			fastSymbols[symbolCount ++] = string(pVars[i]->getName());
 		}
 
 		// pseudo constant symbols
 		for (int i = 0; i < numDependents; i ++) {		
-			indepPseudoFieldSymbols[4 + numFields + dimension + i] = pseudoSymbols[i];
+			fastSymbols[symbolCount ++] = pseudoSymbols[i];
 		}
-		indepPseudoFieldSymbolTable = new SimpleSymbolTable(indepPseudoFieldSymbols, 4 + numFields + dimension + numDependents);	
-		delete[] indepPseudoFieldSymbols;
+		fastSymbolTable = new SimpleSymbolTable(fastSymbols, symbolCount);	
+		delete[] fastSymbols;
 	}
-	return indepPseudoFieldSymbolTable;
+	return fastSymbolTable;
 }
 
 void FastSystemExpression::updateIndepValues() {
+	int indepOffset = 4 + simulation->getNumFields() + simulation->getNumRandomVariables();
 	for (int i = 0; i < dimension; i ++) {		
-		indepPseudoFieldValues[4 + simulation->getNumFields() + i] = getX(i);
+		fastValues[indepOffset + i] = getX(i);
 	}	
 }
 
@@ -253,10 +269,10 @@ void FastSystemExpression::updateMatrix()
 	int i, j;
 	for (i = 0; i < dimension; i ++) {
 		for (j = 0; j < dimension; j ++) {			
-			mvalue = jacobianExpressions[i * dimension + j]->evaluateVector(indepPseudoFieldValues);
+			mvalue = jacobianExpressions[i * dimension + j]->evaluateVector(fastValues);
 			setMatrix(i, j, mvalue);		
 		}
-		mvalue = -fastRateExpressions[i]->evaluateVector(indepPseudoFieldValues);
+		mvalue = -fastRateExpressions[i]->evaluateVector(fastValues);
 		setMatrix(i, j, mvalue);
 	}	 
 }

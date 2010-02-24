@@ -36,16 +36,17 @@ void readDoubles(FILE *fp, double *data, int length);
 void writeDoubles(FILE *fp, double *data, int length);
 
 class Simulation;
+class SimulationExpression;
 class Variable;
 
 class DataSet
 {
 public:
-	DataSet();
-	    
-	void read(char *filename, Simulation *sim);
-	void write(char *filename, Simulation *sim, bool bCompress);
-	void convolve(Simulation* sim, Variable* var, double* values);
+	static void read(char *filename, Simulation *sim);
+	static void write(char *filename, Simulation *sim, bool bCompress);
+	static void convolve(Simulation* sim, Variable* var, double* values);
+
+	static void readRandomVariables(char* filename, SimulationExpression* sim);
   
 };
 
