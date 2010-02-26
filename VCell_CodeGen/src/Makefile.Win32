@@ -17,13 +17,11 @@ LIBS = Ws2_32.lib user32.lib advapi32.lib ..\..\IFortran\mkl_c.lib ..\..\Express
 CPPFLAGS = $(CPPFLAGS)
 TARGET_LIB=	vcellWin32_NoMessaging.lib
 OBJDIR = .\obj_NoMessaging
-TARGET_STANDALONE = FiniteVolume_NoMessaging.exe
 LIBS =  $(LIBS) /link /NODEFAULTLIB:LIBCD /NODEFAULTLIB:LIBC /LIBPATH:..\..\IFortran\
 !else
 CPPFLAGS = $(CPPFLAGS) /DUSE_MESSAGING /I..\..\SonicCClient\Win32\include /I..\..\SonicCClient\Win32\include\CPP
 TARGET_LIB=	vcellWin32.lib
 OBJDIR = .\obj
-TARGET_STANDALONE = FiniteVolume.exe
 LIBS = $(LIBS) ..\..\SonicCClient\win32\lib\libsmq.lib ..\..\SonicCClient\win32\lib\libsmqj.lib /link /NODEFAULTLIB:LIBCD /NODEFAULTLIB:LIBC /LIBPATH:..\..\IFortran\
 !endif
 
@@ -42,12 +40,11 @@ LIBTOOL = lib /nologo
 .cpp{$(OBJDIR)}.obj :		
 	$(CC) $(CPPFLAGS) /Fo$@ $<
 
-default all: $(TARGET_LIB) $(TARGET_FORLIB) $(TARGET_STANDALONE)
+default all: $(TARGET_LIB) $(TARGET_FORLIB)
 
 $(OBJDIR) :
     if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"
 
-STANDALONE_MAIN_OBJ = $(OBJDIR)\FiniteVolume.obj
 FOR_OBJECTS = $(OBJDIR)\pcgwrapper.obj
 CPPOBJECTS = 	\
 		$(OBJDIR)\AlgebraicSystem.obj				\
@@ -114,9 +111,6 @@ $(TARGET_LIB):	$(OBJDIR) $(CPPOBJECTS) $(FOR_OBJECTS)
 		
 $(TARGET_FORLIB): $(OBJDIR) $(FOR_OBJECTS)
 	$(LIBTOOL) /out:$(TARGET_FORLIB) $(FOR_OBJECTS)
-	
-$(TARGET_STANDALONE) : $(TARGET_LIB) $(TARGET_FORLIB) $(STANDALONE_MAIN_OBJ)
-	$(CC) /Fe$@ $(STANDALONE_MAIN_OBJ) $(LIBS)
 	
 clean:
 	if exist "$(OBJDIR)" del /Q $(OBJDIR)\*.*

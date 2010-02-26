@@ -9,7 +9,6 @@ CPPFLAGS =-fexceptions -c -DINTEL -DUNIX -DLINUX64 -O2 -g -D__USE_GNU -DUSE_MESS
 	-I../../netcdf-3.6.2/cxx
 
 TARGET_LIB=	libvcell.a
-TARGET_STANDALONE = FiniteVolume
 
 FC= g77
 FOPTIONS = -c -fexceptions -O2
@@ -100,20 +99,16 @@ CPPOBJECTS = 	\
 
 
 FOROBJECTS = pcgwrapper.o
-STANDALONE_MAIN_OBJ = FiniteVolume.o
 
-default all: $(TARGET_STANDALONE) 
+default all: $(TARGET_LIB) 
 
 $(TARGET_LIB):	$(CPPOBJECTS) $(FOROBJECTS)
 		$(LIBTOOL) $@ $(CPPOBJECTS) $(FOROBJECTS)
 		ranlib $@
 
-$(TARGET_STANDALONE) : $(TARGET_LIB) $(STANDALONE_MAIN_OBJ) $(VCELL_LIBS)
-	$(CC) -o $@ $(STANDALONE_MAIN_OBJ) $(VCELL_LIBS) $(LIBS)
-
 clean:
 	rm *.o
-	rm $(TARGET_LIB) $(TARGET_STANDALONE)
+	rm $(TARGET_LIB)
 
 depend:
 	makedepend -Y -f Makefile64.linux -- $(CPPFLAGS) -- *.c *.cpp
@@ -294,97 +289,6 @@ Feature.o: ../include/VCELL/AlgebraicSystem.h
 FieldData.o: ../include/VCELL/Variable.h ../include/VCELL/SimTypes.h
 FieldData.o: ../include/VCELL/DoubleVector3.h ../include/VCELL/DataSet.h
 FieldData.o: ../include/VCELL/FieldData.h
-FiniteVolume.o: ../include/VCELL/FVSolver.h ../include/VCELL/SimTool.h
-FiniteVolume.o: ../include/VCELL/Simulation.h ../include/VCELL/SimTypes.h
-FiniteVolume.o: ../include/VCELL/DoubleVector3.h ../include/VCELL/Timer.h
-FiniteVolume.o: ../include/VCELL/SimulationMessaging.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/package.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/package_decls.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/package_decls.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/Object.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/java_decls.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/classtypes.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/jtypes.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/objcounters.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/Reference.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/Array.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/String.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/Throwable.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/Exception.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/Boolean.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/Number.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/Byte.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/Double.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/Float.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/Integer.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/Long.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/Short.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/RuntimeException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/ClassCastException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/IndexOutOfBoundsException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/ArrayIndexOutOfBoundsException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/StringIndexOutOfBoundsException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/CloneNotSupportedException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/NullPointerException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/IllegalArgumentException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/NumberFormatException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/jmsconstants.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/Constants.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/lang/package.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/ErrorCodes.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/JMSException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/InvalidDestinationException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/IllegalStateException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/InvalidClientIDException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/InvalidSelectorException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/JMSSecurityException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/MessageEOFException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/MessageFormatException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/MessageNotReadableException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/MessageNotWriteableException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/ResourceAllocationException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/TransactionInProgressException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/TransactionRolledBackException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/BrokerName.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/ConnectionMetaData.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/util/package_decls.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/util/Enumeration.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/util/Dictionary.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/util/Hashtable.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/java/util/NoSuchElementException.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/QueueBrowser.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/ExceptionListener.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/Connection.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/ConnectionStateChangeListener.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/ConnectionFactory.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/ILoginSPI.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/QueueConnection.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/TopicConnection.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/QueueConnectionFactory.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/TopicConnectionFactory.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/MessageProducer.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/QueueSender.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/TopicPublisher.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/MessageListener.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/MessageConsumer.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/QueueReceiver.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/ITopicSubscriber.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/DurableSubscriber.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/TopicSubscriber.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/Destination.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/Queue.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/TemporaryQueue.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/Topic.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/TemporaryTopic.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/Message.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/BytesMessage.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/TextMessage.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/Session.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/StreamMessage.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/QueueSession.h
-FiniteVolume.o: ../../SonicCClient64/Linux_AS4_64/include/CPP/progress/message/jclient/TopicSession.h
-FiniteVolume.o: ../../ExpressionParser/Exception.h
-FiniteVolume.o: ../../ExpressionParser/stdinc.h
 FVSolver.o: ../include/VCELL/FVSolver.h ../include/VCELL/VolumeVariable.h
 FVSolver.o: ../include/VCELL/Variable.h ../include/VCELL/SimTypes.h
 FVSolver.o: ../include/VCELL/DoubleVector3.h
