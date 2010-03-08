@@ -2,16 +2,16 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
+#include <VCELL/Element.h>
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/Feature.h>
 
-VolumeRegion::VolumeRegion(CartesianMesh *mesh) : Region(mesh)
+VolumeRegion::VolumeRegion(int vrindex, string& vrname, Mesh* mesh, Feature* parent) : Region(vrindex, vrname, mesh)
 {
-	feature = NULL;
-	closure = true;
+	feature = parent;
+	bAdjacentToBoundary = false;
 	bBoundaryDirichlet = false;
-	volume = 0;
 }
 
 void VolumeRegion::addMembraneRegion(MembraneRegion *membraneRegion)
@@ -19,52 +19,18 @@ void VolumeRegion::addMembraneRegion(MembraneRegion *membraneRegion)
 	membraneRegionList.push_back(membraneRegion);
 }
 
-void VolumeRegion::recompute()
+double VolumeRegion::getSize()
 {
-	volume = 0;
-	for(long i=0; i < (long)index.size(); i++){
-		volume += mesh->getVolumeOfElement_cu(getIndex(i));
+	if(size == 0){
+		for(long i=0; i < (long)elementIndices.size(); i++){
+			size += mesh->getVolumeOfElement_cu(elementIndices[i]);
+		}
 	}
-	//closure = true;
-	//for(long i=0; i < (long)index.size(); i++){
-	//	if(((mesh->getVolumeElements()+getIndex(i))->neighborMask)
-	//											&(NEIGHBOR_BOUNDARY_MASK)){
-	//		closure = false;
-	//		break;						
-	//	}
-	//}
-	feature = (mesh->getVolumeElements()+getIndex(0))->feature;	
-}
-
-bool VolumeRegion::isClosed()
-{
-	if(wasChanged){
-		recompute();
-		wasChanged = false;
-	}
-	return closure;     
-}
-
-double VolumeRegion::getVolume()
-{
-	if(volume == 0 && wasChanged){
-		recompute();
-		wasChanged = false;
-	}
-	return volume;     
-}
-
-void VolumeRegion::setVolume(double newVolume)
-{
-	volume = newVolume;
+	return size;     
 }
 
 Feature* VolumeRegion::getFeature()
 {
-	if(feature == NULL && wasChanged){
-		recompute();
-		wasChanged = false;
-	}
 	return feature;     
 }
 

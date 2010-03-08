@@ -2,27 +2,19 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#include <VCELL/SimTypes.h>
-#include <VCELL/Variable.h>
-#include <VCELL/Solver.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/Scheduler.h>
 #include <VCELL/Feature.h>
-#include <VCELL/ParticleContext.h>
+#include <VCELL/Membrane.h>
+//#include <VCELL/ParticleContext.h>
 #include <VCELL/VCellModel.h>
 #include <VCELL/FastSystem.h>
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/MembraneRegion.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/CartesianMesh.h>
-#include <string>
-#include <sstream>
-using namespace std;
-//----------------------------------------------------------------------------
-//
-// class Scheduler
-//
-//----------------------------------------------------------------------------
+#include <VCELL/Element.h>
+
 Scheduler::Scheduler(Simulation *Asim)
 {
 	sim = Asim;
@@ -30,7 +22,7 @@ Scheduler::Scheduler(Simulation *Asim)
 	bHasFastSystem = false;
 }
 
-bool Scheduler::initValues()
+void Scheduler::initValues()
 {
 	bFirstTime = true;
 	//
@@ -40,7 +32,7 @@ bool Scheduler::initValues()
 	Mesh *mesh = sim->getMesh();
 	VolumeElement *pVolumeElement = mesh->getVolumeElements();
 	for (int i=0;i<mesh->getNumVolumeElements();i++){
-		Feature* feature = pVolumeElement[i].feature;
+		Feature* feature = pVolumeElement[i].getFeature();
 		if (feature != 0) { 
 			feature->initVolumeValues(i);
 		} else {
@@ -52,9 +44,9 @@ bool Scheduler::initValues()
 
 	MembraneElement *pMembraneElement = mesh->getMembraneElements();
 	for (int i=0;i<mesh->getNumMembraneElements();i++){
-		Feature* feature = pMembraneElement[i].feature;
-		if (feature != 0) { 
-			feature->initMembraneValues(&pMembraneElement[i]);
+		Membrane* membrane = pMembraneElement[i].getMembrane();
+		if (membrane != 0) { 
+			membrane->initMembraneValues(&pMembraneElement[i]);
 		} else {
 			char errmsg[512];
 			sprintf(errmsg, "feature is null for membrane element %d", i);
@@ -77,10 +69,10 @@ bool Scheduler::initValues()
 
 	int numMembraneRegions = ((CartesianMesh*)mesh)->getNumMembraneRegions();
 	for(int j=0; j<numMembraneRegions; j++){
-		MembraneRegion *membrane = ((CartesianMesh*)mesh)->getMembraneRegion(j);
-		Feature* feature = membrane->getRegionInside()->getFeature();
-		if (feature != 0) { 
-			feature->initMembraneRegionValues(j);
+		MembraneRegion *membraneRegion = ((CartesianMesh*)mesh)->getMembraneRegion(j);
+		Membrane* membrane = membraneRegion->getMembrane();
+		if (membrane != 0) { 
+			membrane->initMembraneRegionValues(j);
 		} else {
 			char errmsg[512];
 			sprintf(errmsg, "feature is null for membrane region element %d", j);
@@ -88,16 +80,7 @@ bool Scheduler::initValues()
 		} 
 	}
 
-	VCellModel *model = SimTool::getInstance()->getModel();
-	bHasFastSystem = false;
-	for (int i = 0; i < model->getNumFeatures(); i ++) {
-		Feature* feature = model->getFeatureFromIndex(i);
-		if(feature->getFastSystem() || feature->getMembraneFastSystem()){
-			bHasFastSystem = true;
-			break;
-		}
-	}
-	return true;
+	bHasFastSystem = SimTool::getInstance()->getModel()->hasFastSystem();
 }
 
 void Scheduler::solveFastSystem(int volStart, int volSize, int memStart, int memSize)
@@ -116,7 +99,7 @@ void Scheduler::solveFastSystem(int volStart, int volSize, int memStart, int mem
 	VolumeElement *pVolumeElement = mesh->getVolumeElements();
 	long i;
 	for (i=volStart;i < volStart+volSize;i++){
-		feature = pVolumeElement->feature;
+		feature = pVolumeElement->getFeature();
 		ASSERTION(feature);
 		if (fs = feature->getFastSystem()){
 			fs->setCurrIndex(i);
@@ -133,9 +116,9 @@ void Scheduler::solveFastSystem(int volStart, int volSize, int memStart, int mem
 	//
 	MembraneElement *pMembraneElement = mesh->getMembraneElements();
 	for (i=memStart;i < memStart+memSize;i++){
-		feature = pMembraneElement->feature;
-		ASSERTION(feature);
-		if (fs = feature->getMembraneFastSystem()){
+		Membrane* membrane = pMembraneElement->getMembrane();
+		ASSERTION(membrane);
+		if (fs = membrane->getFastSystem()){
 			fs->setCurrIndex(i);
 			WorldCoord wc = mesh->getMembraneWorldCoord(i);
 			fs->setCoordinates(sim->getTime_sec(), wc);

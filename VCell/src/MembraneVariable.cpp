@@ -4,8 +4,9 @@
  */
 
 #include <VCELL/MembraneVariable.h>
+#include <VCELL/Membrane.h>
 
-MembraneVariable::MembraneVariable(long size, string& nameStr, string& Aunits, bool pde)
-: Variable(size,nameStr,Aunits, pde)
+MembraneVariable::MembraneVariable(long size, string& nameStr, bool pde)
+: Variable(size, nameStr, pde)
 {
 }

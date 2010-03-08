@@ -5,20 +5,12 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include <stdio.h>
 #include <VCELL/SimTypes.h>
-#include <VCELL/Element.h>
-#include <VCELL/Contour.h>
-#include <VCELL/ContourSubdomain.h>
-#include <vector>
-#include <iostream>
-#include <fstream>
+//#include <VCELL/Contour.h>
+//#include <VCELL/ContourSubdomain.h>
 #include <map>
-using namespace std;
-
-#include <VCELL/SparseMatrixPCG.h>
-#include <VCELL/IncidenceMatrix.h>
-#include <VCELL/VoronoiRidge.h>
+using std::pair;
+using std::map;
 
 class Geometry;
 class VolumeRegion;
@@ -26,6 +18,8 @@ class MembraneRegion;
 class VolumeVariable;
 class Particle;
 class SparseMatrixPCG;
+struct MembraneElement;
+struct VolumeElement;
 
 class Mesh
 {
@@ -35,12 +29,10 @@ public:
 	virtual WorldCoord getVolumeWorldCoord(long volumeIndex)=0;
 	virtual WorldCoord getMembraneWorldCoord(long membraneIndex)=0;
 	virtual WorldCoord getMembraneWorldCoord(MembraneElement *element)=0;
-	virtual long getVolumeIndex(WorldCoord coord)=0;
+	//virtual long getVolumeIndex(WorldCoord coord)=0;
 
-	virtual double getInsideOld(VolumeVariable *var, 
-								MembraneElement *element)=0;
-	virtual double getOutsideOld(VolumeVariable *var, 
-									MembraneElement *element)=0;
+	//virtual double getInsideOld(VolumeVariable *var, MembraneElement *element)=0;
+	//virtual double getOutsideOld(VolumeVariable *var, MembraneElement *element)=0;
 
 	virtual void showSummary(FILE *fp) { fprintf(fp, "Mesh::showSummary()...\n"); }
 	virtual void write(FILE *fp) = 0;
@@ -52,15 +44,15 @@ public:
 	long getNumMembraneElements();
 	int getDimension() { return dimension; }
 	   
-	long getNumContourElements(){return (int)contourElements.size();}
-	ContourElement *getContourElement(long index);
+	//long getNumContourElements(){return (int)contourElements.size();}
+	//ContourElement *getContourElement(long index);
 
-	void addElementToVolumeList(long volumeIndex, ContourElement *element);
-	vector<ContourElement*> getContourElementList(long index){return volumeLists[index];}
-	virtual void setVolumeLists()=0;
+	//void addElementToVolumeList(long volumeIndex, ContourElement *element);
+	//vector<ContourElement*> getContourElementList(long index){return volumeLists[index];}
+	//virtual void setVolumeLists()=0;
 
-	int getNumContourSubdomains(){return (int)pContourSubdomains.size();}
-	ContourSubdomain *getContourSubdomain(int i); //returns the ith
+	//int getNumContourSubdomains(){return (int)pContourSubdomains.size();}
+	//ContourSubdomain *getContourSubdomain(int i); //returns the ith
 	SparseMatrixPCG* getMembraneCoupling();
 
 	virtual int getMembraneNeighborMask(long meindex) = 0;
@@ -72,17 +64,17 @@ protected:
 	   
 	virtual ~Mesh();
 	
-	virtual bool sampleContours(); // this should go away just like sampleGeometry()
-	void addContourSubdomain(ContourSubdomain *cs);
+	//virtual bool sampleContours(); // this should go away just like sampleGeometry()
+	//void addContourSubdomain(ContourSubdomain *cs);
 
 	VolumeElement          *pVolumeElement;
 	MembraneElement        *pMembraneElement;
-	vector<ContourElement>  contourElements;
+	//vector<ContourElement>  contourElements;
 	long                    numMembrane;			 
 	long                    numVolume;   
 	int                     dimension;
-	vector<ContourSubdomain*> pContourSubdomains;
-	vector<ContourElement*>     *volumeLists;
+	//vector<ContourSubdomain*> pContourSubdomains;
+	//vector<ContourElement*>     *volumeLists;
 	double                  captureNeighborhood;
 	SparseMatrixPCG* membraneElementCoupling;
 	virtual void computeMembraneCoupling(void) = 0;

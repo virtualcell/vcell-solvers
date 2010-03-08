@@ -6,8 +6,12 @@
 #define ELEMENT_H
 
 #include <VCELL/DoubleVector3.h>
+#include <VCELL/VolumeRegion.h>
+#include <VCELL/MembraneRegion.h>
+#include <VCELL/Feature.h>
+
 #include <vector>
-using namespace std;
+using std::vector;
 
 #define BOUNDARY_TYPE_MASK		   0x70000   // '0111 0000 0000 0000 0000'b
 #define BOUNDARY_TYPE_DIRICHLET    0x10000   // '0001 0000 0000 0000 0000'b
@@ -52,33 +56,44 @@ using namespace std;
 #define NEIGHBOR_ZP_BOUNDARY       0x04000   // '0000 0100 0000 0000 0000'b
 #define NEIGHBOR_ZP_MEMBRANE       0x08000   // '0000 1000 0000 0000 0000'b
 
-
-class Feature;
-class VolumeRegion;
-class MembraneRegion;
+class Membrane;
 
 struct VolumeElement
 {
-    Feature       *feature;
-    int            neighborMask;
+    int neighborMask;
     VolumeRegion  *region;
-	//long           regionIndex;
 	vector<long>  adjacentMembraneIndexes;
+
+	inline Feature* getFeature() {
+		return region->getFeature();
+	}
+	inline unsigned char getFeatureHandle() {
+		return getFeature()->getHandle();
+	}
+	inline unsigned char getFeatureIndex() {
+		return getFeature()->getIndex();
+	}
+	inline int getRegionIndex() {
+		return region->getIndex();
+	}
 };
 
 struct MembraneElement
 {
-    double	    area;
-    Feature	    *feature;
+    double	area;
 	DoubleVector3 unitNormal;
-	DoubleVector3 smoothedCoord;
-    long	    insideIndexNear;
-    long	    insideIndexFar;
-    long	    outsideIndexNear;
-    long	    outsideIndexFar;
-    long	    index;  
-    long	    neighborMEIndex[4];
+	//DoubleVector3 smoothedCoord;
+	long vindexFeatureLo, vindexFeatureHi, vindexFeatureLoFar, vindexFeatureHiFar;
+    long index;  
+    long neighborMEIndex[4];
     MembraneRegion  *region;
+
+	inline Membrane* getMembrane() {
+		return region->getMembrane();
+	}
+	inline int getRegionIndex() {
+		return region->getIndex();
+	}
 };
 
 /*

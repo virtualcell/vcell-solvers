@@ -5,42 +5,29 @@
 #include <VCELL/MembraneRegion.h>
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/CartesianMesh.h>
+#include <VCELL/Element.h>
 
-MembraneRegion::MembraneRegion(CartesianMesh *mesh) : Region(mesh)
+MembraneRegion::MembraneRegion(int mrindex, string& mrname, Mesh *mrmesh, Membrane* parent, VolumeRegion* volReg1, VolumeRegion* volReg2) : Region(mrindex, mrname, mrmesh)
 {
-	regionInside = NULL;
-	regionOutside = NULL;
-	surface = 0;
+	membrane = parent;
+	volRegion1 = volReg1;
+	volRegion2 = volReg2;	
 }
 
-void MembraneRegion::setRegionInside(VolumeRegion *region)
+double MembraneRegion::getSize()
 {
-	regionInside = region;
-}
-
-void MembraneRegion::setRegionOutside(VolumeRegion *region)
-{
-	regionOutside = region;
-}
-
-void MembraneRegion::recomputeSurface()
-{
-	surface = 0;
-	for(long i = 0; i < (long)index.size(); i ++){
-		surface += (mesh->getMembraneElements()+getIndex(i))->area;
+	if(size == 0){
+		for(long i = 0; i < (long)elementIndices.size(); i ++){
+			size += (mesh->getMembraneElements()+getElementIndex(i))->area;
+		}
 	}
+	return size;
 }
 
-double MembraneRegion::getSurface()
-{
-	if(wasChanged){
-		recomputeSurface();
-		wasChanged = false;
-	}
-	return surface;     
+bool MembraneRegion::inBetween(VolumeRegion* vr1, VolumeRegion* vr2) {
+	return (vr1 == volRegion1 && vr2 == volRegion2 || vr2 == volRegion1 && vr1 == volRegion2);
 }
 
-void MembraneRegion::setSurface(double newSurface)
-{
-	surface = newSurface;     
+bool MembraneRegion::isAdjacentToBoundary() {
+	return volRegion1->isAdjacentToBoundary() && volRegion2->isAdjacentToBoundary();
 }

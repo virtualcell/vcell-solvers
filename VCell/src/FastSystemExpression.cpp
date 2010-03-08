@@ -8,13 +8,10 @@
 #include <VCELL/CartesianMesh.h>
 #include <Expression.h>
 #include <SimpleSymbolTable.h>
+#include <VCELL/SimTypes.h>
+#include <VCELL/DoubleVector3.h>
 #include <VCELL/RandomVariable.h>
 
-//-----------------------------------------------------------------
-//
-//  class FastSystem
-//
-//-----------------------------------------------------------------
 FastSystemExpression::FastSystemExpression(int dimension, int numDepend, SimulationExpression* sim) 
 : FastSystem(dimension, numDepend)
 {	

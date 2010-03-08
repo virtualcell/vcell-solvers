@@ -2,13 +2,17 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
+#include <VCELL/FVUtils.h>
+
 #include <stdio.h>
 #include <float.h>
 #include <math.h>
 #include <iostream>
-#include <limits>
 #include <sstream>
-using namespace std;
+using std::stringstream;
+using std::string;
+using std::cout;
+using std::endl;
 
 extern "C"
 {
@@ -20,14 +24,6 @@ extern "C"
 	extern int IDAMAX(...);
 #endif
 }
-
-#ifdef LINUX
-#include <cmath>
-double double_infinity = INFINITY;
-#else
-#include <limits>
-double double_infinity = numeric_limits<double>::infinity();
-#endif
 
 bool isNAN(double number) {
 	if (number != number) {

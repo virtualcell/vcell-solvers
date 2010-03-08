@@ -6,12 +6,12 @@
 #define MEMBRANEVARCONTEXTEXPRESSION_H
 
 #include <VCELL/MembraneVarContext.h>
-class Feature;
+class Membrane;
 
 class MembraneVarContextExpression : public MembraneVarContext
 {
 public:
-	MembraneVarContextExpression(Feature *feature, string& varName);
+	MembraneVarContextExpression(Membrane *membrane, MembraneVariable* var);
 
 	void resolveReferences(Simulation *sim);
 

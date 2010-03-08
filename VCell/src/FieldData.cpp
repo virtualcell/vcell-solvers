@@ -2,9 +2,12 @@
 #include <VCELL/FieldData.h>
 
 #include <sstream>
-#include <string>
 #include <iostream>
-using namespace std;
+#include <string>
+using std::string;
+using std::stringstream;
+using std::cout;
+using std::endl;
 
 void readHeader(FILE *fp, FileHeader *header);
 void readDataBlock(FILE *fp, DataBlock *block);

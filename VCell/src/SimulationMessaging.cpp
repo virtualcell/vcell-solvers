@@ -1,7 +1,9 @@
 #include <VCELL/SimulationMessaging.h>
 #include <utility>
 #include <iostream>
-using namespace std;
+using std::cerr;
+using std::cout;
+using std::endl;
 
 #ifdef USE_MESSAGING
 #if ( !defined(WIN32) && !defined(WIN64) ) // UNIX

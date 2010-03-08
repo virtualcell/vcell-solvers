@@ -12,23 +12,29 @@ class Mesh;
 class CartesianMesh;
 class VolumeRegion;
 class MembraneRegion;
+class Membrane;
+class VolumeRegion;
 
 class MembraneRegion : public Region
 {
 public:
-	MembraneRegion(CartesianMesh *mesh);
-	void setRegionInside(VolumeRegion *region);
-	void setRegionOutside(VolumeRegion *region);
-	VolumeRegion *getRegionInside() { return regionInside; }
-	VolumeRegion *getRegionOutside() { return regionOutside; }
-	double  getSurface();
-	void setSurface(double newSurface);
+	MembraneRegion(int mrindex, string& mrname, Mesh *mrmesh, Membrane* parent, VolumeRegion* volReg1, VolumeRegion* volReg2);
+	Membrane* getMembrane() {
+		return membrane;
+	}
+	bool isAdjacentToBoundary();
+	bool inBetween(VolumeRegion* vr1, VolumeRegion* vr2);
+	VolumeRegion* getVolumeRegion1() {
+		return volRegion1;
+	}
+	VolumeRegion* getVolumeRegion2() {
+		return volRegion2;
+	}
+	double getSize();
 	    
 private:
-	void recomputeSurface();
-	VolumeRegion *regionInside;
-	VolumeRegion *regionOutside;
-	double surface;
+	VolumeRegion *volRegion1, *volRegion2;
+	Membrane* membrane;
 };
 
 #endif

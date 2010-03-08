@@ -143,7 +143,7 @@
 			Name="MTD|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
 			>
@@ -185,11 +185,17 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/VCell.lib"
+				Name="VCLinkerTool"
+				AdditionalDependencies="Ws2_32.lib pcgwrapper.lib pcgpack_dbl.lib qhull_mtd.lib mkl_c.lib zip32.lib unzip32.lib zlib.lib libsmq.lib libsmqj.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib netcdf.lib netcdf_cxx_mtd.lib"
+				AdditionalLibraryDirectories="..\sundials\lib;src;..\PCGPack;..\SonicCClient\Win32\lib;..\unzip;..\zlib;..\zip;..\qhull;&quot;..\netcdf-3.6.2\cxx&quot;;&quot;..\netcdf-3.6.2\libsrc&quot;;..\IFortran"
+				IgnoreDefaultLibraryNames="libcmt"
+				GenerateDebugInformation="true"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -199,6 +205,12 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -476,26 +488,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\Contour.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\ContourRegionVariable.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\ContourSubdomain.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\ContourVarContext.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\ContourVariable.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\src\DataProcessorVFrap.cpp"
 				>
 			</File>
@@ -532,11 +524,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\FiniteVolume.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\FVSolver.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\src\FVUtils.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\JumpCondition.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\Membrane.cpp"
 				>
 			</File>
 			<File
@@ -588,11 +592,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\ParticleContext.cpp"
+				RelativePath=".\src\PDESolver.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\src\PDESolver.cpp"
+				RelativePath=".\src\RandomVariable.cpp"
 				>
 			</File>
 			<File
@@ -648,6 +652,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\Structure.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\StructuredPDESolver.cpp"
 				>
 			</File>
@@ -657,10 +665,6 @@
 			</File>
 			<File
 				RelativePath=".\src\Timer.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\TriDiagMatrix.cpp"
 				>
 			</File>
 			<File
@@ -719,26 +723,6 @@
 			</File>
 			<File
 				RelativePath=".\include\Vcell\CartesianMesh.h"
-				>
-			</File>
-			<File
-				RelativePath=".\include\Vcell\Contour.h"
-				>
-			</File>
-			<File
-				RelativePath=".\include\Vcell\ContourRegionVariable.h"
-				>
-			</File>
-			<File
-				RelativePath=".\include\Vcell\ContourSubdomain.h"
-				>
-			</File>
-			<File
-				RelativePath=".\include\Vcell\ContourVarContext.h"
-				>
-			</File>
-			<File
-				RelativePath=".\include\Vcell\ContourVariable.h"
 				>
 			</File>
 			<File
@@ -814,6 +798,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\VCELL\Membrane.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\Vcell\MembraneEqnBuilderDiffusion.h"
 				>
 			</File>
@@ -862,10 +850,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\Vcell\ParticleContext.h"
-				>
-			</File>
-			<File
 				RelativePath=".\include\Vcell\PDEScheduler.h"
 				>
 			</File>
@@ -875,6 +859,10 @@
 			</File>
 			<File
 				RelativePath=".\include\Vcell\PdeSolverDiana.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\VCELL\RandomVariable.h"
 				>
 			</File>
 			<File
@@ -931,6 +919,10 @@
 			</File>
 			<File
 				RelativePath=".\include\Vcell\SplitScheduler.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\VCELL\Structure.h"
 				>
 			</File>
 			<File
@@ -1005,6 +997,10 @@
 			>
 			<File
 				RelativePath=".\src\Makefile.Win32"
+				>
+			</File>
+			<File
+				RelativePath=".\src\Makefile64.linux"
 				>
 			</File>
 			<File

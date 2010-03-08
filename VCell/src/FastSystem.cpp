@@ -4,6 +4,9 @@
  */
 #include <VCELL/FastSystem.h>
 #include <VCELL/Variable.h>
+#include <iostream>
+using std::cout;
+using std::endl;
 
 FastSystem::FastSystem(int dim, int numDepend) : AlgebraicSystem(dim)
 {

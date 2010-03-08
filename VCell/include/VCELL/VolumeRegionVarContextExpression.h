@@ -15,13 +15,13 @@ public:
 	double getInitialValue(long index);
     double getReactionRate(long volumeIndex);
     double getUniformRate(VolumeRegion *region);
-    void  getFlux(MembraneElement *element, double *inFlux, double *outFlux);
+    double getFlux(MembraneElement *element);
 
-    VolumeRegionVarContextExpression(Feature *feature, string& speciesName);
+    VolumeRegionVarContextExpression(Feature *feature, VolumeRegionVariable* var);
 
 private:
-	double getRegionValue(VolumeRegion *region, long expIndex);	
-	double getIndexValue(long regionIndex, long expIndex);	
+	double evaluateRegionExpression(VolumeRegion *region, long expIndex);	
+	double evaluateRegionExpression(long regionIndex, long expIndex);	
 
 protected:
 	bool isNullExpressionOK(int expIndex);

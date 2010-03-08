@@ -5,17 +5,17 @@
 #ifndef SIMULATION_H
 #define SIMULATION_H
 
-#include <stdio.h>
-#include <VCELL/SimTypes.h>
+#include <string>
 #include <vector>
-using namespace std;
+using std::vector;
+using std::string;
 
-#define PARTICLE_ALL -1
+//#define PARTICLE_ALL -1
 
-class VolumeParticleContext;
-class MembraneParticleContext;
-class ContourParticleContext;
-class Particle;
+//class VolumeParticleContext;
+//class MembraneParticleContext;
+//class ContourParticleContext;
+//class Particle;
 class VolumeVariable;
 class Variable;
 class Mesh;
@@ -65,10 +65,10 @@ public:
 
 	Solver* getSolver(int index);
 
-	void addParticle(Particle *particle); 
-	long  getNumParticles() { 
-		return (int)globalParticleList.size(); 
-	}
+	//void addParticle(Particle *particle); 
+	//long  getNumParticles() { 
+	//	return (int)globalParticleList.size(); 
+	//}
 	int getNumVariables() {
 		return (int)varList.size();
 	}
@@ -86,7 +86,7 @@ protected:
 	Scheduler      *_scheduler;
 	vector<Solver*> solverList;
 	vector<Variable*> varList;
-	vector<Particle*> globalParticleList; 
+	//vector<Particle*> globalParticleList; 
 	Mesh            *_mesh;
 	bool          _advanced;
 	bool          _initEquations;

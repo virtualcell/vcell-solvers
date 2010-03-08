@@ -6,12 +6,14 @@
 #include "mpi.h"
 #endif
 
+#include <iostream>
 #include <sstream>
-using namespace std;
+using std::stringstream;
+using std::cout;
+using std::endl;
 
 #include <VCELL/SimTypes.h>
 #include <VCELL/SimTool.h>
-#include <VCELL/Mesh.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/DataSet.h>
 #include <VCELL/SimulationMessaging.h>
@@ -24,6 +26,7 @@ using namespace std;
 #include <VCELL/FVUtils.h>
 
 #include <float.h>
+#include <math.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -802,7 +805,7 @@ bool SimTool::checkSpatiallyUniform(Variable* var) {
 				double minSol = DBL_MAX;
 				double maxSol = -DBL_MAX;
 				for(int j = 0; j < numElements; j ++){
-					int volIndex = volRegion->getIndex(j);
+					int volIndex = volRegion->getElementIndex(j);
 					maxSol = max(maxSol, currSol[volIndex]);
 					minSol = min(minSol, currSol[volIndex]);
 				}
@@ -819,7 +822,7 @@ bool SimTool::checkSpatiallyUniform(Variable* var) {
 				double minSol = DBL_MAX;
 				double maxSol = -DBL_MAX;
 				for(int j = 0; j < numElements; j ++){
-					int memIndex = memRegion->getIndex(j);
+					int memIndex = memRegion->getElementIndex(j);
 					maxSol = max(maxSol, currSol[memIndex]);
 					minSol = min(minSol, currSol[memIndex]);
 				}
@@ -844,4 +847,9 @@ void SimTool::createDataProcessor(string& name, string& text) {
 	} else {
 		throw "unknown DataProcessor";
 	}
+}
+
+void SimTool::setCheckSpatiallyUniform() {
+	bCheckSpatiallyUniform = true;
+	cout << endl << "----Stop At Spatially Uniform----" << endl;
 }

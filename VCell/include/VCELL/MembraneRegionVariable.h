@@ -10,7 +10,7 @@
 class MembraneRegionVariable : public Variable
 {
 public:
-	MembraneRegionVariable(int size, string& nameStr, string& Aunits);
+	MembraneRegionVariable(int size, string& nameStr);
 
 	virtual bool isMembraneRegionVar() { return true; }
 	virtual VariableType	getVarType() {return VAR_MEMBRANE_REGION;}

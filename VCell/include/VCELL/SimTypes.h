@@ -5,7 +5,7 @@
 #ifndef SIMTYPES_H
 #define SIMTYPES_H
 
-#include <VCELL/DoubleVector3.h>
+struct DoubleVector3;
 
 #if (defined(IRIX) || defined(CXX) || defined(LINUX))
 #define UNIX_TIMER
@@ -65,13 +65,11 @@ typedef struct {
 } IntVector3;
 
 typedef DoubleVector3 WorldCoord;
-typedef unsigned char GeoDataType;
-
 typedef IntVector3    MeshCoord;
 
 typedef long          MeshIndex;
 typedef unsigned char FeatureHandle;
-typedef unsigned char ContourHandle;
+//typedef unsigned char ContourHandle;
 
 typedef enum {
 	MATRIX_GENERAL=0,

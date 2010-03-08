@@ -4,7 +4,7 @@
  */
 #include <VCELL/MembraneRegionVariable.h>
 
-MembraneRegionVariable::MembraneRegionVariable(int size, string& nameStr, string& Aunits)
-: Variable(size,nameStr,Aunits)
+MembraneRegionVariable::MembraneRegionVariable(int size, string& nameStr)
+: Variable(size,nameStr)
 {
 }

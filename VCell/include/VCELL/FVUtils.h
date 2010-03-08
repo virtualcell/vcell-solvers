@@ -5,30 +5,40 @@
 #ifndef FVUTILS_H
 #define FVUTILS_H
 
+#include <VCELL/SimTypes.h>
+
+#include <string>
+using std::string;
+
 extern "C"
 {
-	//SUBROUTINE PCILU(ICODE,N,IJA,A,W,ISP,RSP)
-
 #if ( defined(WIN32) || defined(WIN64) )
 #ifdef WIN32
 	#define PCGWRAPPER pcgwrapper
-	#define PCILU pcilu
-	#define DSCAL dscal
 #endif
 	void PCGWRAPPER(long *, long *, int *, int32 *, double *, double *, double *, double *, int *, double *, double *, double *, double*);	
-	void PCILU(int *, long *, int32 *, double *, double *, double *, double *);
-	void DSCAL(int *, double *, double *, int *); 
 #else
 	#define PCGWRAPPER pcgwrapper_
-	#define PCILU pcilu_
-	#define DSCAL dscal_
 	extern void PCGWRAPPER(...);
-	extern void PCILU(...);
-	extern void DSCAL(...);
 #endif
 }
 
-extern double double_infinity;
+#ifndef DOUBLE_INFINITY
+#define DOUBLE_INFINITY
+
+#include <limits>
+using std::numeric_limits;
+
+#ifdef LINUX
+#include <cmath>
+static double double_infinity = INFINITY;
+#else
+#include <limits>
+static double double_infinity = numeric_limits<double>::infinity();
+#endif
+
+#endif
+
 double computeRHSscale(long length, double* rhs, string& varname);
 void throwPCGExceptions(int errorCode, int additional);
 bool isNAN(double number);

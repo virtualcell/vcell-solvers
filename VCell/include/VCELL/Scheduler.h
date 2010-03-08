@@ -12,7 +12,7 @@ class Scheduler
 public:
 	Scheduler(Simulation *Asim);
 	virtual void iterate()=0;
-	virtual bool initValues();
+	virtual void initValues();
 	void solveFastSystem(int startVolIndex, int VolSize, int startMemIndex, int MemSize);
 	bool hasFastSystem() { return bHasFastSystem; }
 	//void resetFirstTime() { bFirstTime = true; }

@@ -12,22 +12,6 @@ TARGET_LIB=	libvcell.a
 
 FC= g77
 FOPTIONS = -c -fexceptions -O2
-VCELL_LIBS =  libvcell.a \
-		../../ExpressionParser/libExpParser.a \
-		../../qhull/libqhull.a \
-		../../zlib/libz.a \
-		../../zip/libzip32.a \
-		../../unzip/libunzip32.a \
-		../../PCGPack/libpcgpack.a \
-		../../blas/libblas.a \
-		../../IDAWin/libvcellIDA.a
-LIBS = ../../sundials/lib/libsundials_ida.a  \
-       ../../sundials/lib/libsundials_cvode.a  \
-	   ../../sundials/lib/libsundials_nvecserial.a \
-	   ../../sundials/lib/libsundials.a \
-	   ../../netcdf-3.6.2/cxx/libnetcdf_cxx.a \
-	   ../../netcdf-3.6.2/libsrc/libnetcdf.a \
-	   -L../../SonicCClient64/Linux_AS4_64/bin/release/ -lsmq -lpthread -lm -lg2c
 
 LIBTOOL = ar cru
 

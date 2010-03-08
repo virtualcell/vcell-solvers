@@ -6,19 +6,18 @@
 #define VOLUMEVARCONTEXTEXPRESSION_H
 
 #include <VCELL/VolumeVarContext.h>
-#include <VCELL/VolumeVariable.h>
 
 class VolumeVarContextExpression : public VolumeVarContext
 {
 public:	
-	VolumeVarContextExpression(Feature *feature, string& varName);
+	VolumeVarContextExpression(Feature *feature, VolumeVariable* var);
 	
 	void resolveReferences(Simulation *sim);
 
 	double getInitialValue(long index);
 	double getDiffusionRate(long index);
 	double  getReactionRate(long volumeIndex);
-    void    getFlux(MembraneElement *element, double *inFlux, double *outFlux);
+    double  getFlux(MembraneElement *element);
 
     double getXmBoundaryValue(long index);
     double getXpBoundaryValue(long index);

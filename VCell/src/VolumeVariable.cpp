@@ -4,10 +4,11 @@
  */
 #include <VCELL/VolumeVariable.h>
 #include <fstream>
-using namespace std;
+using std::ofstream;
+using std::endl;
 
-VolumeVariable::VolumeVariable(long numX, long numY, long numZ, string& nameStr, string& Aunits, bool pde, bool advect)
-: Variable(numX*numY*numZ,nameStr,Aunits, pde)
+VolumeVariable::VolumeVariable(long numX, long numY, long numZ, string& nameStr, bool pde, bool advect)
+: Variable(numX*numY*numZ, nameStr, pde)
 {
 	sizeX = numX;
 	sizeY = numY;

@@ -6,14 +6,17 @@
 #define VOLUMEVARCONTEXT_H
 
 #include <VCELL/VarContext.h>
-#include <VCELL/VolumeVariable.h>
+//#include <VCELL/VolumeVariable.h>
+#include <VCELL/DoubleVector3.h>
+
+class Feature;
+class VolumeVariable;
 
 class VolumeVarContext : public VarContext
 {
 public:
     virtual double  getReactionRate(long volumeIndex)=0;
-    virtual void    getFlux(MembraneElement *element, 
-                            double *inFlux, double *outFlux)=0;
+    virtual double  getFlux(MembraneElement *element)=0;
 
     virtual double getXmBoundaryValue(long index) { return getInitialValue(index); }
     virtual double getXpBoundaryValue(long index) { return getInitialValue(index); }
@@ -34,25 +37,21 @@ public:
     virtual double getZBoundaryPeriodicConstant() { return 0.0; }	
 
     virtual double getDiffusionRate(long index);
-    double getMobilityConstant();     // this returns mobility * valence
-    virtual double getConvectionVelocity_X(long index) {return convectionVelocity.x;}
-    virtual double getConvectionVelocity_Y(long index) {return convectionVelocity.y;}
-    virtual double getConvectionVelocity_Z(long index) {return convectionVelocity.z;}
+    //double getMobilityConstant();     // this returns mobility * valence
+    virtual double getConvectionVelocity_X(long index);
+    virtual double getConvectionVelocity_Y(long index);
+    virtual double getConvectionVelocity_Z(long index);
     
 	virtual bool hasConstantDiffusion() {
 		return diffusionRate!=0;
 	}
-	virtual bool hasConstantDiffusionAdvection(int dimension) {
-		if (((VolumeVariable*)species)->isAdvecting()) {
-			return false;
-		}
-		return hasConstantDiffusion();
-	}
+	virtual bool hasConstantDiffusionAdvection(int dimension);
+
 protected:
-    VolumeVarContext(Feature *feature, string& speciesName);
+    VolumeVarContext(Feature *feature, VolumeVariable* var);
 
     double         *diffusionRate;
-    double         *mobility;
+    //double         *mobility;
     DoubleVector3   convectionVelocity;
 };
 

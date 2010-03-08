@@ -1,6 +1,19 @@
 #include <VCELL/SparseMatrixPCG.h>
 #include <VCELL/FVUtils.h>
 
+extern "C"
+{
+#if ( defined(WIN32) || defined(WIN64) )
+#ifdef WIN32
+	#define DSCAL dscal
+#endif
+	void DSCAL(int *, double *, double *, int *); 
+#else
+	#define DSCAL dscal_
+	extern void DSCAL(...);
+#endif
+}
+
 /*----------------------------------------------------------------------------
 	SparseMatrixPCG contains all the diagonal elements and all the non-zero off diagonal elements
 	numNonZeros is the number of diagonal elements plus non-zero off diagonal elements

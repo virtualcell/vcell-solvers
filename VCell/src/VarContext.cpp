@@ -2,32 +2,28 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
+#include <sstream>
+using std::stringstream;
+
 #include <VCELL/VarContext.h>
-#include <VCELL/SimTypes.h>
 #include <VCELL/Element.h>
-#include <VCELL/Solver.h>
 #include <VCELL/Variable.h>
-#include <VCELL/Feature.h>
-#include <VCELL/EqnBuilder.h>
 #include <VCELL/SimulationExpression.h>
-#include <VCELL/Region.h>
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/MembraneRegion.h>
 #include <VCELL/CartesianMesh.h>
-
-#include <sstream>
-using namespace std;
+#include <VCELL/Structure.h>
+#include <VCELL/JumpCondition.h>
 #include <Expression.h>
 
-VarContext::VarContext(Feature *Afeature, string& AspeciesName)
+VarContext::VarContext(Structure *s, Variable* var)
 {
-	feature = Afeature;
+	structure = s;
 	ASSERTION(feature);
 
 	bInitialized = false;
 
-	speciesName = AspeciesName;
-	species = NULL;
+	species = var;
 
 	sim = NULL;
 	mesh = NULL;
@@ -49,12 +45,8 @@ void VarContext::resolveReferences(Simulation *Asim)
 		throw "VarContext::resolveReference(), simulation can't be null";
 	}
 
-	species = sim->getVariableFromName(speciesName);
 	mesh = sim->getMesh();
 
-	if (!species) {
-		throw "VarContext::resolveReference(), variable is null";
-	}
 	if (!mesh) {
 		throw "VarContext::resolveReference(), mesh is null";
 	}
@@ -77,20 +69,33 @@ VarContext::~VarContext()
 	delete[] expressions;
 	delete[] constantValues;
 	delete[] needsXYZ;
+
+	for (int i = 0; i < (int)jumpConditionList.size(); i ++) {
+		delete jumpConditionList[i];
+	}
+	jumpConditionList.clear();	
 }
 
 void VarContext::setExpression(Expression* newexp, int expIndex) {
+	if (expressions[expIndex] != 0) {
+		stringstream ss;
+		ss << "Expression " << String_Expression_Index[expIndex] << " for variable " << species->getName() << " in Structure " 
+			<< structure->getName() << " has been set already";
+		throw ss.str();
+	}
 	expressions[expIndex] = newexp;
 }
 
-void VarContext::bindAll(SymbolTable* symbolTable) {	
+void VarContext::bindAll(SimulationExpression* simulation) {
+	SymbolTable* symbolTable = simulation->getSymbolTable();
+
 	for (int i = 0; i < TOTAL_NUM_EXPRESSIONS; i ++) {		
 		if (expressions[i] == 0) {
 			if (isNullExpressionOK(i)) {
 				continue;
 			} else {
 				stringstream ss;
-				ss << "VarContext::bindAll(), expression " << String_Expression_Index[i] << " for variable " << speciesName << " not defined";
+				ss << "VarContext::bindAll(), expression " << String_Expression_Index[i] << " for variable " << species->getName() << " not defined";
 				throw ss.str();
 			}
 		}
@@ -108,9 +113,13 @@ void VarContext::bindAll(SymbolTable* symbolTable) {
 			}
 		}
 	}
+
+	for (int i = 0; i < (int)jumpConditionList.size(); i ++) {
+		jumpConditionList[i]->bindExpression(symbolTable);
+	}
 }
 
-double VarContext::getExpressionValue(MembraneElement* element, long expIndex)
+double VarContext::evaluateExpression(MembraneElement* element, long expIndex)
 {
 	if (expressions[expIndex] == 0) { // not defined
 		throw "VarContext::getExpressionValue(), expression not defined";
@@ -118,25 +127,28 @@ double VarContext::getExpressionValue(MembraneElement* element, long expIndex)
 	if (constantValues[expIndex] != NULL) {
 		return constantValues[expIndex][0];
 	}
-	WorldCoord wc = mesh->getMembraneWorldCoord(element);
-	((SimulationExpression*)sim)->setCurrentCoordinate(wc);
+	//cout << expressions[expIndex]->infix() << endl;
+	if (needsXYZ[expIndex]) {
+		WorldCoord wc = mesh->getMembraneWorldCoord(element);
+		((SimulationExpression*)sim)->setCurrentCoordinate(wc);
+	}
 	int* indices = ((SimulationExpression*)sim)->getIndices();
 	indices[VAR_MEMBRANE_INDEX] = element->index;
-	indices[VAR_MEMBRANE_REGION_INDEX] = element->region->getId();
+	indices[VAR_MEMBRANE_REGION_INDEX] = element->getRegionIndex();
 	return expressions[expIndex]->evaluateProxy();	
 }
 
-double VarContext::getExpressionConstantValue(long expIndex) {
+double VarContext::evaluateConstantExpression(long expIndex) {
 	if (expressions[expIndex] == 0 || constantValues[expIndex] == 0) { // not defined
 		throw "VarContext::getExpressionConstantValue() : expression not defined OR not a constant expression";
 	}
 	return constantValues[expIndex][0];	
 }
 
-double VarContext::getExpressionValue(long volIndex, long expIndex) {	
+double VarContext::evaluateExpression(long volIndex, long expIndex) {	
 	if (expressions[expIndex] == 0) { // not defined
 		stringstream ss;
-		ss << "VarContext::getExpressionValue(), for variable " << speciesName << " expression " << String_Expression_Index[expIndex] << " not defined";
+		ss << "VarContext::getExpressionValue(), for variable " << species->getName() << " expression " << String_Expression_Index[expIndex] << " not defined";
 		throw ss.str();
 	}
 	if (constantValues[expIndex] != NULL) {
@@ -148,19 +160,47 @@ double VarContext::getExpressionValue(long volIndex, long expIndex) {
 	}
 	int* indices = ((SimulationExpression*)sim)->getIndices();
 	indices[VAR_VOLUME_INDEX] = volIndex;
-	indices[VAR_VOLUME_REGION_INDEX] = mesh->getVolumeElements()[volIndex].region->getId();
+	indices[VAR_VOLUME_REGION_INDEX] = mesh->getVolumeElements()[volIndex].getRegionIndex();
 	return expressions[expIndex]->evaluateProxy();	
 }
 
-
-double VarContext::evalExpression(long expIndex, double* values) {	
+double VarContext::evaluateExpression(long expIndex, double* values) {	
 	if (expressions[expIndex] == 0) { // not defined
 		stringstream ss;
-		ss << "VarContext::evalExpression(), for variable " << speciesName << " expression " << String_Expression_Index[expIndex] << " not defined";
+		ss << "VarContext::evalExpression(), for variable " << species->getName() << " expression " << String_Expression_Index[expIndex] << " not defined";
 		throw ss.str();
 	}
 	if (constantValues[expIndex] != NULL) {
 		return constantValues[expIndex][0];
 	}
 	return expressions[expIndex]->evaluateVector(values);	
+}
+
+void VarContext::addJumpCondition(Membrane* membrane, Expression* exp) {
+	JumpCondition* jc = new JumpCondition(membrane, exp);
+	jumpConditionList.push_back(jc);
+}
+
+double VarContext::evaluateJumpCondition(MembraneElement* element)
+{
+	for (int i = 0; i < (int)jumpConditionList.size(); i ++) {
+		if (jumpConditionList[i]->getMembrane() == element->getMembrane()) {
+			return jumpConditionList[i]->evaluateExpression(((SimulationExpression*)sim), element);
+		}
+	}
+	stringstream ss;
+	ss << "Jump Condition for variable " << species->getName() << " in Feature " << structure->getName() << " not found";
+	throw ss.str();
+}
+
+double VarContext::evaluateJumpCondition(MembraneElement* element, double* values)
+{
+	for (int i = 0; i < (int)jumpConditionList.size(); i ++) {
+		if (jumpConditionList[i]->getMembrane() == element->getMembrane()) {
+			return jumpConditionList[i]->evaluateExpression(values);
+		}
+	}
+	stringstream ss;
+	ss << "Jump Condition for variable " << species->getName() << " in Feature " << structure->getName() << " not found";
+	throw ss.str();
 }

@@ -8,34 +8,42 @@
 #include <VCELL/SimTypes.h>
 #include <vector>
 #include <string>
-using namespace std;
+using std::string;
+using std::vector;
 
 class Mesh;
 
 class Region
 {
 public:
-	Region(Mesh *mesh);
+	Region(int rindex, string& rname, Mesh* rmesh);
 	~Region();
 
-	void setName(string& Aname);
-	void setId(int AnId);
+	string getName() {
+		return name; 
+	}
+	int getIndex() { 
+		return index; 
+	}
+	long getNumElements() { 
+		return (int)elementIndices.size(); 
+	} 
+	long getElementIndex(long i) { 
+		return elementIndices[i]; 
+	} 
+	void addElementIndex(long i);
 
-	string getName() { return name; }
-	int     getId() { return id; }
-	long    getNumElements() { return (int)index.size(); } 
-	long    getIndex(long i) { return index[i]; } 
-	void addIndex(long i);
-	void setIndex(long i, long j) {index[i] = j;}
+	virtual double getSize()=0;
+	void setSize(double newSize);
+
+	virtual bool isAdjacentToBoundary()=0;
 
 protected:
-	vector<long> index;
-	bool wasChanged;
-	Mesh *mesh;
-
-private:   
+	vector<long> elementIndices;
+	Mesh* mesh;
 	string name;
-	int id;
+	int index;
+	double size;
 };
 
 #endif

@@ -3,9 +3,10 @@
  * All rights reserved.
  */
 #include <VCELL/MembraneRegionVarContext.h>
+#include <VCELL/Membrane.h>
+#include <VCELL/MembraneRegionVariable.h>
 
-
-MembraneRegionVarContext::MembraneRegionVarContext(Feature *Afeature, string& AspeciesName)
-: VarContext(Afeature, AspeciesName)
+MembraneRegionVarContext::MembraneRegionVarContext(Membrane *membrane, MembraneRegionVariable* var)
+: VarContext(membrane, var)
 {
 }

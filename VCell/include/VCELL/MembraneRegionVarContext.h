@@ -7,6 +7,10 @@
 
 #include <VCELL/VarContext.h>
 
+class Membrane;
+class MembraneRegion;
+class MembraneRegionVariable;
+
 class MembraneRegionVarContext : public VarContext
 {
 public:
@@ -14,7 +18,7 @@ public:
     virtual double  getUniformRate(MembraneRegion *region)=0;
 
 protected:
-    MembraneRegionVarContext(Feature *feature, string& speciesName);
+    MembraneRegionVarContext(Membrane *membrane, MembraneRegionVariable* var);
 };
 
 #endif

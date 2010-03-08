@@ -4,70 +4,72 @@
  */
 #include <VCELL/MembraneVarContextExpression.h>
 #include <VCELL/SimulationExpression.h>
-#include <VCELL/Feature.h>
 #include <VCELL/Element.h>
 #include <VCELL/MembraneRegion.h>
 #include <Expression.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/Solver.h>
+#include <VCELL/Membrane.h>
+#include <VCELL/Mesh.h>
+#include <SimpleSymbolTable.h>
 
-MembraneVarContextExpression::MembraneVarContextExpression(Feature *feature, string& varName)
-: MembraneVarContext(feature, varName)
+MembraneVarContextExpression::MembraneVarContextExpression(Membrane *membrane, MembraneVariable* var)
+: MembraneVarContext(membrane, var)
 {
 }
 
 void MembraneVarContextExpression::resolveReferences(Simulation* sim) {
 	VarContext::resolveReferences(sim);
-	bindAll(((SimulationExpression*)sim)->getOldSymbolTable());
+	bindAll((SimulationExpression*)sim);
 }
 
 double MembraneVarContextExpression::getInitialValue(MembraneElement *element){
-	return getExpressionValue(element, INITIAL_VALUE_EXP);
+	return evaluateExpression(element, INITIAL_VALUE_EXP);
 }
 
 double MembraneVarContextExpression::getMembraneReactionRate(MembraneElement *element){
-	return getExpressionValue(element, REACT_RATE_EXP);
+	return evaluateExpression(element, REACT_RATE_EXP);
 }
 double MembraneVarContextExpression::getMembraneDiffusionRate(MembraneElement *element){
-	return getExpressionValue(element, DIFF_RATE_EXP);
+	return evaluateExpression(element, DIFF_RATE_EXP);
 }
 
 double MembraneVarContextExpression::getXmBoundaryValue(MembraneElement *element){
-	return getExpressionValue(element, BOUNDARY_XM_EXP);
+	return evaluateExpression(element, BOUNDARY_XM_EXP);
 }
 double MembraneVarContextExpression::getXpBoundaryValue(MembraneElement *element){
-	return getExpressionValue(element, BOUNDARY_XP_EXP);
+	return evaluateExpression(element, BOUNDARY_XP_EXP);
 }
 double MembraneVarContextExpression::getYmBoundaryValue(MembraneElement *element){
-	return getExpressionValue(element, BOUNDARY_YM_EXP);
+	return evaluateExpression(element, BOUNDARY_YM_EXP);
 }
 double MembraneVarContextExpression::getYpBoundaryValue(MembraneElement *element){
-	return getExpressionValue(element, BOUNDARY_YP_EXP);
+	return evaluateExpression(element, BOUNDARY_YP_EXP);
 }
 double MembraneVarContextExpression::getZmBoundaryValue(MembraneElement *element){
-	return getExpressionValue(element, BOUNDARY_ZM_EXP);
+	return evaluateExpression(element, BOUNDARY_ZM_EXP);
 }
 double MembraneVarContextExpression::getZpBoundaryValue(MembraneElement *element){
-	return getExpressionValue(element, BOUNDARY_ZP_EXP);
+	return evaluateExpression(element, BOUNDARY_ZP_EXP);
 }
 
 double MembraneVarContextExpression::getXmBoundaryFlux(MembraneElement *element){
-	return getExpressionValue(element, BOUNDARY_XM_EXP);
+	return evaluateExpression(element, BOUNDARY_XM_EXP);
 }
 double MembraneVarContextExpression::getXpBoundaryFlux(MembraneElement *element){
-	return getExpressionValue(element, BOUNDARY_XP_EXP);
+	return evaluateExpression(element, BOUNDARY_XP_EXP);
 }
 double MembraneVarContextExpression::getYmBoundaryFlux(MembraneElement *element){
-	return getExpressionValue(element, BOUNDARY_YM_EXP);
+	return evaluateExpression(element, BOUNDARY_YM_EXP);
 }
 double MembraneVarContextExpression::getYpBoundaryFlux(MembraneElement *element){
-	return getExpressionValue(element, BOUNDARY_YP_EXP);
+	return evaluateExpression(element, BOUNDARY_YP_EXP);
 }
 double MembraneVarContextExpression::getZmBoundaryFlux(MembraneElement *element){
-	return getExpressionValue(element, BOUNDARY_ZM_EXP);
+	return evaluateExpression(element, BOUNDARY_ZM_EXP);
 }
 double MembraneVarContextExpression::getZpBoundaryFlux(MembraneElement *element){
-	return getExpressionValue(element, BOUNDARY_ZP_EXP);
+	return evaluateExpression(element, BOUNDARY_ZP_EXP);
 }
 
 bool MembraneVarContextExpression::isNullExpressionOK(int expIndex) {

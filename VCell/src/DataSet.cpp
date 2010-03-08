@@ -14,11 +14,12 @@
 #include <VCELL/Mesh.h>
 #include <VCELL/DataSet.h>
 #include <VCELL/Element.h>
-#include <VCELL/VolumeRegion.h>
+#include <VCELL/Region.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/FieldData.h>
 #include <VCELL/MembraneRegion.h>
 #include <VCELL/RandomVariable.h>
+using std::endl;
 
 #define CONVOLVE_SUFFIX "_Convolved"
 
@@ -377,7 +378,7 @@ void DataSet::convolve(Simulation* sim, Variable* var, double* values) {
 										&& volIndex2Z >= 0 && volIndex2X < meshX && volIndex2Y < meshY && volIndex2Z < meshZ) {
 									int volIndex2 = volIndex2Z * meshXY + volIndex2Y * meshX + volIndex2X;	
 									if (var->getVarType() == VAR_VOLUME_REGION) {
-										values[volIndex] += var->getCurr()[mesh->getVolumeElements()[volIndex2].region->getId()] * psf_val;
+										values[volIndex] += var->getCurr()[mesh->getVolumeElements()[volIndex2].getRegionIndex()] * psf_val;
 									} else {
 										values[volIndex] += var->getCurr()[volIndex2] * psf_val;
 									}
@@ -390,8 +391,8 @@ void DataSet::convolve(Simulation* sim, Variable* var, double* values) {
 		}
 	} else if (var->getVarType() == VAR_MEMBRANE || var->getVarType() == VAR_MEMBRANE_REGION) {				
 		for (int m = 0; m < mesh->getNumMembraneElements(); m++) {
-			int insideVolIndex = mesh->getMembraneElements()[m].insideIndexNear;
-			int outsideVolIndex = mesh->getMembraneElements()[m].outsideIndexNear;
+			int insideVolIndex = mesh->getMembraneElements()[m].vindexFeatureLo;
+			int outsideVolIndex = mesh->getMembraneElements()[m].vindexFeatureHi;
 			MeshCoord insideMC = mesh->getMeshCoord(insideVolIndex);
 			MeshCoord outsideMC = mesh->getMeshCoord(outsideVolIndex);
 			double fullArea = mesh->getXArea_squm();
@@ -416,7 +417,7 @@ void DataSet::convolve(Simulation* sim, Variable* var, double* values) {
 						if (volIndex2X >= 0 && volIndex2Y >= 0 && volIndex2Z >= 0 && volIndex2X < meshX && volIndex2Y < meshY && volIndex2Z < meshZ) {
 							int volIndex2 = volIndex2Z * meshXY + volIndex2Y * meshX + volIndex2X;
 							if (var->getVarType() == VAR_MEMBRANE_REGION) {
-								values[volIndex2] += var->getCurr()[mesh->getMembraneElements()[m].region->getId()] * psf_val/2 * memareaRatio;
+								values[volIndex2] += var->getCurr()[mesh->getMembraneElements()[m].getRegionIndex()] * psf_val/2 * memareaRatio;
 							} else {
 								values[volIndex2] += var->getCurr()[m] * psf_val/2 * memareaRatio;
 							}
@@ -429,7 +430,7 @@ void DataSet::convolve(Simulation* sim, Variable* var, double* values) {
 						if (volIndex2X >= 0 && volIndex2Y >= 0 && volIndex2Z >= 0 && volIndex2X < meshX && volIndex2Y < meshY && volIndex2Z < meshZ) {
 							int volIndex2 = volIndex2Z * meshXY + volIndex2Y * meshX + volIndex2X;
 							if (var->getVarType() == VAR_MEMBRANE_REGION) {
-								values[volIndex2] += var->getCurr()[mesh->getMembraneElements()[m].region->getId()] * psf_val/2 * memareaRatio;
+								values[volIndex2] += var->getCurr()[mesh->getMembraneElements()[m].getRegionIndex()] * psf_val/2 * memareaRatio;
 							} else {
 								values[volIndex2] += var->getCurr()[m] * psf_val/2 * memareaRatio;
 							}

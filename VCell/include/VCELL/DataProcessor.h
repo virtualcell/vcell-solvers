@@ -5,7 +5,8 @@
 #ifndef DATAPROCESSOR_H
 #define DATAPROCESSOR_H
 
-#include <VCELL/SimTypes.h>
+#include <string>
+using std::string;
 
 class SimTool;
 

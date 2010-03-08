@@ -4,8 +4,6 @@
  */
 #include <VCELL/ODESolver.h>
 #include <VCELL/Variable.h>
-#include <VCELL/Simulation.h>
-#include <VCELL/SimTypes.h>
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/CartesianMesh.h>
 
@@ -27,7 +25,7 @@ ODESolver::ODESolver(Variable *Var, Mesh *Amesh, int numSolveRegions, int *solve
 			long numInRegion = regionToSolve->getNumElements();
 			for(long indexInRegion = 0; indexInRegion < numInRegion; indexInRegion++) {
 				// find gridindex associated with index
-				long gridindex = regionToSolve->getIndex(indexInRegion);
+				long gridindex = regionToSolve->getElementIndex(indexInRegion);
 				Gridmap[index] = gridindex  ;         // maps gridpoint in new order into natural order 
 				index++;
 			}

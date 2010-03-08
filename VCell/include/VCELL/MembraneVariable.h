@@ -10,7 +10,7 @@
 class MembraneVariable : public Variable
 {
 public:
-	MembraneVariable(long size, string& nameStr, string& Aunits, bool pde=false);
+	MembraneVariable(long size, string& nameStr, bool pde=false);
 
 	virtual bool isMembraneVar() { return true; }
 	virtual VariableType	getVarType() {return VAR_MEMBRANE;}

@@ -5,7 +5,7 @@
 #include <VCELL/VolumeRegionEqnBuilder.h>
 #include <VCELL/VolumeRegionVariable.h>
 #include <math.h>
-//#include <VCELL/Simulation.h>
+#include <VCELL/Element.h>
 #include <VCELL/ODESolver.h>
 #include <VCELL/Feature.h>
 #include <VCELL/VolumeRegionVarContext.h>
@@ -27,34 +27,31 @@ void VolumeRegionEqnBuilder::buildEquation(double deltaTime, int volumeIndexStar
 		Feature* feature = volRegion->getFeature();
 		VolumeRegionVarContext* volRegionVarContext = feature->getVolumeRegionVarContext((VolumeRegionVariable*)var);
 
-		if (volRegionVarContext != 0) {
-			*pRate = volRegionVarContext->getUniformRate(volRegion);
+		*pRate = volRegionVarContext->getUniformRate(volRegion);
 
-			double volume = volRegion->getVolume();
-			ASSERTION(volume>0);
-			int numElements = volRegion->getNumElements();
-			double volumeIntegral = 0.0;
+		double volume = volRegion->getSize();
+		ASSERTION(volume>0);
+		int numElements = volRegion->getNumElements();
+		double volumeIntegral = 0.0;
+		for(int j=0; j<numElements; j++){
+			long index = volRegion->getElementIndex(j); 
+			volumeIntegral += volRegionVarContext->getReactionRate(index) * mesh->getVolumeOfElement_cu(index);
+		}
+		*pRate += volumeIntegral/volume;
+
+		int numMembraneRegions = volRegion->getNumMembraneRegions();
+		double surfaceIntegral = 0.0;
+		for(int k=0; k<numMembraneRegions; k++){
+			MembraneRegion *membraneRegion = volRegion->getMembraneRegion(k);
+			numElements = membraneRegion->getNumElements();
 			for(int j=0; j<numElements; j++){
-				long index = volRegion->getIndex(j); 
-				volumeIntegral += volRegionVarContext->getReactionRate(index) * mesh->getVolumeOfElement_cu(index);
+				MembraneElement *pElement = mesh->getMembraneElements() + membraneRegion->getElementIndex(j);
+				double flux = volRegionVarContext->getFlux(pElement); // membrane rate
+				surfaceIntegral += flux * pElement->area;
 			}
-			*pRate += volumeIntegral/volume;
-
-			int numMembraneRegions = volRegion->getNumMembraneRegions();
-			double surfaceIntegral = 0.0;
-			for(int k=0; k<numMembraneRegions; k++){
-				MembraneRegion *membraneRegion = volRegion->getMembraneRegion(k);
-				numElements = membraneRegion->getNumElements();
-				for(int j=0; j<numElements; j++){
-					double inFlux = 0.0;
-					double outFlux = 0.0;
-					MembraneElement *pElement = mesh->getMembraneElements() + membraneRegion->getIndex(j);
-					volRegionVarContext->getFlux(pElement, &inFlux, &outFlux);
-					surfaceIntegral += inFlux * pElement->area;
-				}
-			}
-			*pRate += surfaceIntegral/volume; 
-		}		
+		}
+		*pRate += surfaceIntegral/volume; 
+		
 		pRate++;
 	}
 }

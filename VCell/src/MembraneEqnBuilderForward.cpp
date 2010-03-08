@@ -2,16 +2,15 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#include <stdio.h>
-#include <math.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/ODESolver.h>
 #include <VCELL/MembraneVariable.h>
 #include <VCELL/Mesh.h>
-#include <VCELL/Feature.h>
+#include <VCELL/Membrane.h>
 #include <VCELL/MembraneVarContext.h>
 #include <VCELL/MembraneEqnBuilderForward.h>
 #include <VCELL/SimTool.h>
+#include <VCELL/Element.h>
 
 MembraneEqnBuilderForward::MembraneEqnBuilderForward(MembraneVariable *Avar, Mesh *Amesh, ODESolver *Asolver) : EqnBuilder(Avar,Amesh) {
 	odeSolver = Asolver;
@@ -29,10 +28,10 @@ void MembraneEqnBuilderForward::buildEquation(double deltaTime, int volumeIndexS
 
 	for (long memIndex=membraneIndexStart;memIndex<(membraneIndexStart+membraneIndexSize);memIndex++){
 
-		Feature* feature = pMembraneElement->feature;
+		Membrane* membrane = pMembraneElement->getMembrane();
 		ASSERTION(feature);
 
-		MembraneVarContext* memVarContext = feature->getMembraneVarContext((MembraneVariable*)var);
+		MembraneVarContext* memVarContext = membrane->getMembraneVarContext((MembraneVariable*)var);
 
 		sim->advanceTimeOn();
 		*pRate = memVarContext->getMembraneReactionRate(pMembraneElement);

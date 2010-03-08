@@ -4,43 +4,38 @@
  */
 #include <VCELL/MembraneRegionVarContextExpression.h>
 #include <VCELL/SimulationExpression.h>
-#include <VCELL/Mesh.h>
 #include <VCELL/MembraneRegion.h>
 #include <Expression.h>
+#include <SimpleSymbolTable.h>
 
-MembraneRegionVarContextExpression:: MembraneRegionVarContextExpression(Feature *feature, string& speciesName) 
-: MembraneRegionVarContext(feature, speciesName)
+MembraneRegionVarContextExpression:: MembraneRegionVarContextExpression(Membrane *membrane, MembraneRegionVariable* var) 
+: MembraneRegionVarContext(membrane, var)
 {
 }
 
 double MembraneRegionVarContextExpression::getMembraneReactionRate(MembraneElement* element) {
-	return getExpressionValue(element, REACT_RATE_EXP);
+	return evaluateExpression(element, REACT_RATE_EXP);
 }
 
 void MembraneRegionVarContextExpression::resolveReferences(Simulation* sim) {
 	VarContext::resolveReferences(sim);
-	bindAll(((SimulationExpression*)sim)->getOldSymbolTable());
+	bindAll((SimulationExpression*)sim);
 }
 
 double MembraneRegionVarContextExpression::getInitialValue(long regionIndex) {
-	return getIndexValue(regionIndex, INITIAL_VALUE_EXP);
+	return evaluateRegionExpression(regionIndex, INITIAL_VALUE_EXP);
 }
 
 double MembraneRegionVarContextExpression::getUniformRate(MembraneRegion *region){
-	return getRegionValue(region, UNIFORM_RATE_EXP);
+	return evaluateRegionExpression(region, UNIFORM_RATE_EXP);
 }
 
-void MembraneRegionVarContextExpression::getFlux(MembraneElement *element, double *inFlux, double *outFlux){
-	*inFlux = getExpressionValue(element, IN_FLUX_EXP);
-	*outFlux = getExpressionValue(element, OUT_FLUX_EXP);
-}
-
-double MembraneRegionVarContextExpression::getRegionValue(MembraneRegion *region, long expIndex)
+double MembraneRegionVarContextExpression::evaluateRegionExpression(MembraneRegion *region, long expIndex)
 {
-	return getIndexValue(region->getId(), expIndex);
+	return evaluateRegionExpression(region->getIndex(), expIndex);
 }
 
-double MembraneRegionVarContextExpression::getIndexValue(long regionIndex, long expIndex)
+double MembraneRegionVarContextExpression::evaluateRegionExpression(long regionIndex, long expIndex)
 {
 	int* indices = ((SimulationExpression*)sim)->getIndices();
 	indices[VAR_MEMBRANE_REGION_INDEX] = regionIndex;
@@ -48,7 +43,7 @@ double MembraneRegionVarContextExpression::getIndexValue(long regionIndex, long 
 }
 
 bool MembraneRegionVarContextExpression::isNullExpressionOK(int expIndex) {
-	if (expIndex == INITIAL_VALUE_EXP || expIndex == REACT_RATE_EXP || expIndex == UNIFORM_RATE_EXP || expIndex == IN_FLUX_EXP || expIndex == OUT_FLUX_EXP) {
+	if (expIndex == INITIAL_VALUE_EXP || expIndex == REACT_RATE_EXP || expIndex == UNIFORM_RATE_EXP) {
 		return false;
 	}
 	return true;

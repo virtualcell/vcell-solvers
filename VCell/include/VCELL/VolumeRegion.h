@@ -15,25 +15,31 @@ class MembraneRegion;
 class VolumeRegion : public Region
 {
 public:
-	VolumeRegion(CartesianMesh *mesh);
+	VolumeRegion(int vrindex, string& vrname, Mesh* mesh, Feature* parent);
 	Feature *getFeature();
 	void setFeature(Feature* newFeature);
 	void addMembraneRegion(MembraneRegion *membraneRegion);
 	MembraneRegion *getMembraneRegion(int i) { return membraneRegionList[i]; }
 	int getNumMembraneRegions() { return (int)membraneRegionList.size(); }
-	bool isClosed();
-	double  getVolume();
-	void setVolume(double newVolume);
     
-	void setNotClosed() { closure = false; }
-	void setBoundaryDirichlet() { bBoundaryDirichlet = true; }
-	bool isBoundaryDirichlet() { return bBoundaryDirichlet; }
+	bool isAdjacentToBoundary() {
+		return bAdjacentToBoundary;
+	}
+	void setAdjacentToBoundary() {
+		bAdjacentToBoundary = true;
+	}
+	void setBoundaryDirichlet() { 
+		bBoundaryDirichlet = true; 
+	}
+	bool isBoundaryDirichlet() { 
+		return bBoundaryDirichlet; 
+	}
+	double getSize();
+	
 private:
-	void recompute();
 	Feature *feature;
 	vector<MembraneRegion*> membraneRegionList;
-	bool closure;     //denotes whether the region surface is closed
-	double volume;
+	bool bAdjacentToBoundary; //denotes whether the region touches the wall
 	bool bBoundaryDirichlet;
 };
 

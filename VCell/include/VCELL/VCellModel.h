@@ -7,35 +7,49 @@
 
 #include <VCELL/SimTypes.h>
 #include <vector>
-using namespace std;
+using std::vector;
+using std::string;
 
 class Feature;
-class Contour;
+class Membrane;
+//class Contour;
 class Simulation;
+struct MembraneElement;
 
 class VCellModel
 {
 public:
 	VCellModel();
 	~VCellModel();
-	Contour *getContour(int type);
 
-	int getNumContours();
+	//Contour *getContour(int type);
+	//int getNumContours();
+	//void addContour(Contour *contour);
+
 	int getNumFeatures() {
 		return (int)featureList.size();
 	}
+	Feature* addFeature(string& name, FeatureHandle handle);
 	Feature* getFeatureFromHandle(FeatureHandle handle);
 	Feature* getFeatureFromName(string&  name);
 	Feature* getFeatureFromIndex(int index);
+
+	int getNumMembranes() {
+		return (int)membraneList.size();
+	}
+	Membrane* addMembrane(string& name, string& feature1_name, string& feature2_name);
+	Membrane* getMembraneFromIndex(int index);
+	Membrane* getMembraneFromName(string& mem_name);
+	Membrane* getMembrane(Feature* f1, Feature* f2);
 	   
 	void resolveReferences();
-	   
-	void addFeature(Feature *feature);
-	void addContour(Contour *contour);
+
+	bool hasFastSystem();
    
 private:
 	vector<Feature*> featureList;
-	vector<Contour*> pContours;
+//	vector<Contour*> pContours;
+	vector<Membrane*> membraneList;
 };
 
 #endif

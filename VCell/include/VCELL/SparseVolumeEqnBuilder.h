@@ -8,7 +8,7 @@
 #include <VCELL/VolumeVarContext.h>
 #include <VCELL/SparseMatrixEqnBuilder.h>
 #include <vector>
-using namespace std;
+using std::vector;
 
 class CartesianMesh;
 class VolumeVariable;

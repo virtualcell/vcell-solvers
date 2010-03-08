@@ -6,41 +6,40 @@
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/VolumeRegion.h>
 #include <Expression.h>
+#include <SimpleSymbolTable.h>
 
-VolumeRegionVarContextExpression:: VolumeRegionVarContextExpression(Feature *feature, string& speciesName) 
-: VolumeRegionVarContext(feature, speciesName)
+VolumeRegionVarContextExpression:: VolumeRegionVarContextExpression(Feature *feature, VolumeRegionVariable* var) 
+: VolumeRegionVarContext(feature, var)
 {
 }
 
 void VolumeRegionVarContextExpression::resolveReferences(Simulation* sim) {
 	VarContext::resolveReferences(sim);
-	bindAll(((SimulationExpression*)sim)->getOldSymbolTable());
+	bindAll((SimulationExpression*)sim);
 }
 
 double VolumeRegionVarContextExpression::getInitialValue(long regionIndex) {
-	return getIndexValue(regionIndex, INITIAL_VALUE_EXP);
+	return evaluateRegionExpression(regionIndex, INITIAL_VALUE_EXP);
 }
 
 double VolumeRegionVarContextExpression::getReactionRate(long volumeIndex) {
-	return getExpressionValue(volumeIndex, REACT_RATE_EXP);
+	return evaluateExpression(volumeIndex, REACT_RATE_EXP);
 }
 
 double VolumeRegionVarContextExpression::getUniformRate(VolumeRegion *region){
-	return getRegionValue(region, UNIFORM_RATE_EXP);
+	return evaluateRegionExpression(region, UNIFORM_RATE_EXP);
 }
 
-void VolumeRegionVarContextExpression::getFlux(MembraneElement *element, double *inFlux, double *outFlux){
-	*inFlux = getExpressionValue(element, IN_FLUX_EXP);
-	*outFlux = getExpressionValue(element, OUT_FLUX_EXP);
+double VolumeRegionVarContextExpression::getFlux(MembraneElement *element){
+	return evaluateJumpCondition(element);
 }
 
-
-double VolumeRegionVarContextExpression::getRegionValue(VolumeRegion *region, long expIndex)
+double VolumeRegionVarContextExpression::evaluateRegionExpression(VolumeRegion *region, long expIndex)
 {
-	return getIndexValue(region->getId(), expIndex);
+	return evaluateRegionExpression(region->getIndex(), expIndex);
 }
 
-double VolumeRegionVarContextExpression::getIndexValue(long regionIndex, long expIndex)
+double VolumeRegionVarContextExpression::evaluateRegionExpression(long regionIndex, long expIndex)
 {
 	int* indices = ((SimulationExpression*)sim)->getIndices();
 	indices[VAR_VOLUME_REGION_INDEX] = regionIndex;
@@ -48,7 +47,7 @@ double VolumeRegionVarContextExpression::getIndexValue(long regionIndex, long ex
 }
 
 bool VolumeRegionVarContextExpression::isNullExpressionOK(int expIndex) {
-	if (expIndex == INITIAL_VALUE_EXP || expIndex == REACT_RATE_EXP || expIndex == UNIFORM_RATE_EXP || expIndex == IN_FLUX_EXP || expIndex == OUT_FLUX_EXP) {
+	if (expIndex == INITIAL_VALUE_EXP || expIndex == REACT_RATE_EXP || expIndex == UNIFORM_RATE_EXP || expIndex == FLUX_EXP) {
 		return false;
 	}
 	return true;

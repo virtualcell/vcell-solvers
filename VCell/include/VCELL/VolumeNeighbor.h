@@ -1,6 +1,8 @@
 #ifndef VOLUMENEIGHBOR_H
 #define VOLUMENEIGHBOR_H
 
+#include <VCELL/VolumeVarContext.h>
+
 struct CoupledNeighbors {
 	int centerIndex;
 	int neighborIndex;

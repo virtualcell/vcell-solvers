@@ -3,7 +3,6 @@
  * All rights reserved.
  */
 #include <VCELL/SimulationExpression.h>
-#include <VCELL/SimTypes.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/FieldData.h>
 #include <VCELL/VolumeVariable.h>
@@ -14,54 +13,70 @@
 #include <VCELL/Mesh.h>
 #include <ValueProxy.h>
 #include <VCELL/RandomVariable.h>
-#include <VCELL/DataSet.h>
+#include <VCELL/Feature.h>
+#include <VCELL/VCellModel.h>
+#include <SimpleSymbolTable.h>
+#include <ScalarValueProxy.h>
 
 #define RANDOM_VARIABLE_FILE_EXTENSION ".rv"
 
-class ValueProxyInside : public ValueProxy
+class ValueProxyVolumeExtrapolate : public ValueProxy
 {
 public:
-	ValueProxyInside(double* arg_values, int* arg_indices, Mesh* arg_mesh) 
+	ValueProxyVolumeExtrapolate(double* arg_values, int* arg_indices, Mesh* arg_mesh, Feature* f) 
 		: ValueProxy(arg_values,  -1, arg_indices) {
 			mesh = arg_mesh;
+			feature = f;
 	}
 	
 	double evaluate() {
 		MembraneElement* element = mesh->getMembraneElements() + indices[VAR_MEMBRANE_INDEX];
-		if (element->insideIndexFar<0){
-			return values[element->insideIndexNear];
+		int nearIndex, farIndex;
+		if (mesh->getVolumeElements()[element->vindexFeatureLo].getFeature() == feature) {
+			nearIndex = element->vindexFeatureLo;
+			farIndex = element->vindexFeatureLoFar;
+		} else if (mesh->getVolumeElements()[element->vindexFeatureHi].getFeature() == feature) {
+			nearIndex = element->vindexFeatureHi;
+			farIndex = element->vindexFeatureHiFar;
+		} else {
+			throw "ValueProxyVolumeExtrapolate"; 
+		}
+
+		if (farIndex<0){
+			return values[nearIndex];
 		}else{
-			return 1.5 * values[element->insideIndexNear] -	0.5 * values[element->insideIndexFar];
+			return 1.5 * values[nearIndex] - 0.5 * values[farIndex];
 		}	
 	}
 
 private:
 	Mesh* mesh;
+	Feature* feature;
 };
 
-class ValueProxyOutside : public ValueProxy
-{
-public:
-	ValueProxyOutside(double* arg_values, int* arg_indices, Mesh* arg_mesh) 
-		: ValueProxy(arg_values,  -1, arg_indices) {
-			mesh = arg_mesh;
-	}
-	
-	double evaluate() {
-		MembraneElement* element = mesh->getMembraneElements() + indices[VAR_MEMBRANE_INDEX];
-		if (element->outsideIndexFar<0){
-			return values[element->outsideIndexNear];
-		}else{
-			return 1.5 * values[element->outsideIndexNear] - 0.5 * values[element->outsideIndexFar];
-		}	
-	}
-
-private:
-	Mesh* mesh;
-};
+//class ValueProxyOutside : public ValueProxy
+//{
+//public:
+//	ValueProxyOutside(double* arg_values, int* arg_indices, Mesh* arg_mesh) 
+//		: ValueProxy(arg_values,  -1, arg_indices) {
+//			mesh = arg_mesh;
+//	}
+//	
+//	double evaluate() {
+//		MembraneElement* element = mesh->getMembraneElements() + indices[VAR_MEMBRANE_INDEX];
+//		if (element->outsideIndexFar<0){
+//			return values[element->outsideIndexNear];
+//		}else{
+//			return 1.5 * values[element->outsideIndexNear] - 0.5 * values[element->outsideIndexFar];
+//		}	
+//	}
+//
+//private:
+//	Mesh* mesh;
+//};
 
 SimulationExpression::SimulationExpression(Mesh *mesh) : Simulation(mesh) {
-	oldSymbolTable = NULL;	
+	symbolTable = NULL;	
 	//currSymbolTable = NULL;
 
 	indices = new int[NUM_VAR_INDEX];
@@ -180,7 +195,7 @@ void SimulationExpression::addParameter(string& param) {
 }
 
 void SimulationExpression::createSymbolTable() {	
-	if (oldSymbolTable != NULL) {
+	if (symbolTable != NULL) {
 		return;
 	}
 
@@ -219,8 +234,10 @@ void SimulationExpression::createSymbolTable() {
 	
 	bool bSundialsPdeSolver = SimTool::getInstance()->isSundialsPdeSolver();
 
-	// t, x, y, z, VAR, VAR_INSIDE, VAR_OUTSIDE, field data, parameters
-	int numSymbols = 4 + volVarSize * 3 + (numVariables - volVarSize) + (int)fieldDataList.size() + (int)randomVarList.size() + (int)paramList.size();
+	VCellModel* model = SimTool::getInstance()->getModel();
+
+	// t, x, y, z, VAR, VAR_Feature1_membrane, VAR_Feature2_membrane, ... (for computing membrane flux), field data, parameters
+	int numSymbols = 4 + volVarSize * (model->getNumFeatures() + 1) + (numVariables - volVarSize) + (int)fieldDataList.size() + (int)randomVarList.size() + (int)paramList.size();
 	string* variableNames = new string[numSymbols];	
 	ValueProxy** oldValueProxies = new ValueProxy*[numSymbols];
 
@@ -247,34 +264,39 @@ void SimulationExpression::createSymbolTable() {
 	for (int i = 0; i < volVarSize; i ++) {
 		Variable* var = volVarList[i];
 		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_VOLUME_INDEX, indices);
-		variableNames[variableIndex ++] = string(var->getName());
+		variableNames[variableIndex] = string(var->getName());
+		variableIndex ++;
 
-		oldValueProxies[variableIndex] = new ValueProxyInside(var->getOld(), indices, _mesh);
-		variableNames[variableIndex ++] = string(var->getName()) + "_INSIDE";
-
-		oldValueProxies[variableIndex] = new ValueProxyOutside(var->getOld(), indices, _mesh);
-		variableNames[variableIndex ++] = string(var->getName()) + "_OUTSIDE";	
+		for (int f = 0; f < model->getNumFeatures(); f ++) {
+			Feature* feature = model->getFeatureFromIndex(f);
+			oldValueProxies[variableIndex] = new ValueProxyVolumeExtrapolate(var->getOld(), indices, _mesh, feature);
+			variableNames[variableIndex] = var->getName() + "_" + feature->getName() + "_membrane";
+			variableIndex ++;
+		}
 	}
 
 	// Membrane ODE/PDE
 	for (int i = 0; i < memVarSize; i ++) {
 		Variable* var = memVarList[i];
 		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_MEMBRANE_INDEX, indices);
-		variableNames[variableIndex ++] = string(var->getName());
+		variableNames[variableIndex] = string(var->getName());
+		variableIndex ++;
 	}
 		
 	// Volume Region
 	for (int i = 0; i < volRegionVarSize; i ++) {
 		Variable* var = volRegionVarList[i];
 		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_VOLUME_REGION_INDEX, indices);
-		variableNames[variableIndex ++] = string(var->getName());
+		variableNames[variableIndex] = string(var->getName());
+		variableIndex ++;
 	} 		
 		
 	// Membrane Region
 	for (int i = 0; i < memRegionVarSize; i ++) {
 		Variable* var = memRegionVarList[i];
 		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_MEMBRANE_REGION_INDEX, indices);
-		variableNames[variableIndex ++] = string(var->getName());
+		variableNames[variableIndex] = string(var->getName());
+		variableIndex ++;
 	} 
 		
 		//} else if (var->getVarType() == VAR_CONTOUR) {
@@ -295,7 +317,8 @@ void SimulationExpression::createSymbolTable() {
 		} else {
 			throw "field data is only supported for volume and membrane variables";
 		}
-		variableNames[variableIndex ++] = fieldDataList[i]->getID();
+		variableNames[variableIndex] = fieldDataList[i]->getID();
+		variableIndex ++;
 	}
 
 	// add random variable
@@ -328,7 +351,11 @@ void SimulationExpression::createSymbolTable() {
 		variableIndex ++;
 	}
 
-	oldSymbolTable = new SimpleSymbolTable(variableNames, variableIndex, oldValueProxies);
+	/*for (int i = 0; i < variableIndex; i ++) {		
+		cout << i << " " << variableNames[i] << endl;
+	}*/
+
+	symbolTable = new SimpleSymbolTable(variableNames, variableIndex, oldValueProxies);
 	delete[] variableNames;	
 }   
 
@@ -394,4 +421,10 @@ RandomVariable* SimulationExpression::getRandomVariableFromName(char* varName)
 		}
 	}
 	return NULL;
+}
+
+void SimulationExpression::setCurrentCoordinate(WorldCoord& wc) {
+	valueProxyX->setValue(wc.x);
+	valueProxyY->setValue(wc.y);
+	valueProxyZ->setValue(wc.z);
 }

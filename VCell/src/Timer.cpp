@@ -4,7 +4,10 @@
  */
 #include <iostream>
 #include <iomanip>
-using namespace std;
+using std::cout;
+using std::endl;
+using std::setw;
+using std::setprecision;
 
 #include <VCELL/Timer.h>
 #include <assert.h>

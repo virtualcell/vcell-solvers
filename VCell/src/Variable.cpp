@@ -3,19 +3,18 @@
  * All rights reserved.
  */
 #include <fstream>
-using namespace std;
+using std::ofstream;
+using std::endl;
 
-#include <VCELL/SimTypes.h>
 #include <VCELL/Variable.h>
-#include <VCELL/FVUtils.h>
+#include <math.h>
 
-Variable::Variable(long Asize, string& nameStr, string& Aunits, bool pde)
+Variable::Variable(long Asize, string& nameStr, bool pde)
 {
 	size = Asize;
 	ASSERTION(size);
 	old = new double[size];
 	curr = new double[size];
-	units = Aunits;
 	name = nameStr;
 	bPde = pde;
 	clear();

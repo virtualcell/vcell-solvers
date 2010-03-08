@@ -10,12 +10,8 @@
 #include <VCELL/VolumeVarContext.h>
 #include <VCELL/EqnBuilderReactionForward.h>
 #include <VCELL/SimTool.h>
+#include <VCELL/Element.h>
 
-//----------------------------------------------------------------------------
-//
-// class EqnBuilderReactionForward
-//
-//----------------------------------------------------------------------------
 EqnBuilderReactionForward::EqnBuilderReactionForward(VolumeVariable *Avar, Mesh *Amesh, ODESolver *Asolver)
 : EqnBuilder(Avar,Amesh)
 {
@@ -41,7 +37,7 @@ void EqnBuilderReactionForward::buildEquation(double deltaTime,
 
 		for (long volIndex=volumeIndexStart;volIndex<(volumeIndexStart+volumeIndexSize);volIndex++){
 
-			feature = pVolumeElement->feature;
+			feature = pVolumeElement->getFeature();
 			ASSERTION(feature);
 
 			varContext = feature->getVolumeVarContext((VolumeVariable*)var);
@@ -60,7 +56,7 @@ void EqnBuilderReactionForward::buildEquation(double deltaTime,
 			double *pRate = odeSolver->getRates() + index;
 			VolumeElement *pVolumeElement = mesh->getVolumeElements() + index;
 			ASSERTION(pVolumeElement);
-			varContext = (pVolumeElement->feature)->getVolumeVarContext((VolumeVariable*)var);
+			varContext = (pVolumeElement->getFeature())->getVolumeVarContext((VolumeVariable*)var);
 
 			// sim->advanceTimeOn();
 			*pRate = varContext->getReactionRate(index);

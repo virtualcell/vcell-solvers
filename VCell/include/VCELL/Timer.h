@@ -7,9 +7,6 @@
 
 #define MAX_NUM_TIMER_ID 1000
 
-#include <stdio.h>
-#include <VCELL/SimTypes.h>
-
 #if ( !defined(WIN32) && !defined(WIN64) )
 #include <sys/time.h>
 #else
@@ -17,7 +14,7 @@
 #endif
 
 #include <string>
-using namespace std;
+using std::string;
 
 class TimerID {
 public:

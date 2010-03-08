@@ -11,12 +11,15 @@
 #include <stdio.h>
 #include <VCELL/SimTypes.h>
 #include <string>
-using namespace std;
+using std::string;
+
+#include <fstream>
+using std::ofstream;
 
 class Variable 
 {
 protected:
-	Variable(long size, string& name, string& units, bool bPde=false);
+	Variable(long Asize, string& name, bool bPde=false);
 
 public:
 	virtual ~Variable();
@@ -42,7 +45,6 @@ public:
 
 	string	getName() { return name; }
 	virtual VariableType	getVarType() {return VAR_UNKNOWN;}
-	string getUnits() { return units; }
 
 	void     update();
 	void     revert();
@@ -52,7 +54,6 @@ public:
    
 protected:
 	string name;
-	string units;
 	    
 	long    size;
 	double *old;

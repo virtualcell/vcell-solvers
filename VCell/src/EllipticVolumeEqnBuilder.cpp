@@ -7,14 +7,13 @@
 #endif
 
 #include <sstream>
-using namespace std;
+using std::stringstream;
+using std::endl;
 
 #include <VCELL/EllipticVolumeEqnBuilder.h>
 #include <VCELL/VolumeNeighbor.h>
-#include <VCELL/SimTypes.h>
 #include <VCELL/Solver.h>
 #include <VCELL/VolumeVariable.h>
-#include <VCELL/Mesh.h>
 #include <VCELL/Feature.h>
 #include <VCELL/Element.h>
 #include <VCELL/VolumeVarContext.h>
@@ -23,6 +22,7 @@ using namespace std;
 #include <VCELL/SimTool.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/VolumeRegion.h>
+#include <VCELL/SparseMatrixPCG.h>
 #include <VCELL/VCellModel.h>
 #include <assert.h>
 
@@ -109,7 +109,7 @@ void EllipticVolumeEqnBuilder::init() {
 			int numElements = regionToSolve->getNumElements();
 			RegionFirstRow[i + 1] = RegionFirstRow[i] + numElements;
 			for (int j = 0; j < numElements; j ++){
-				int globalIndex = regionToSolve->getIndex(j);
+				int globalIndex = regionToSolve->getElementIndex(j);
 				int localIndex = RegionFirstRow[i] + j;
 				GlobalToLocalMap[globalIndex] = localIndex;
 			}
@@ -165,7 +165,7 @@ void EllipticVolumeEqnBuilder::computeLHS(int index, double& Aii, int& numCols, 
 	// here all the indices are global indices.
 	string varname = var->getName();
 	VolumeElement* pVolumeElement = mesh->getVolumeElements();
-	Feature* feature = pVolumeElement[index].feature;
+	Feature* feature = pVolumeElement[index].getFeature();
 	VolumeVarContext* varContext = feature->getVolumeVarContext( (VolumeVariable*)var);	
 	assert(varContext);
 	int mask = pVolumeElement[index].neighborMask;
@@ -238,7 +238,7 @@ void EllipticVolumeEqnBuilder::computeLHS(int index, double& Aii, int& numCols, 
 		if ((mask & NEIGHBOR_XM_BOUNDARY) && feature->getXmBoundaryType() == BOUNDARY_PERIODIC) {
 			// make sure XM and XP are in the same feature for each periodic bounary point
 			int xpindex = index + (SIZEX - 1);
-			if (feature != pVolumeElement[xpindex].feature) {
+			if (feature != pVolumeElement[xpindex].getFeature()) {
 				throw "Periodic Boundary Condition (X- and X+): compartments don't match";
 			}
 			int xpmask = pVolumeElement[xpindex].neighborMask;
@@ -255,7 +255,7 @@ void EllipticVolumeEqnBuilder::computeLHS(int index, double& Aii, int& numCols, 
 		} 
 		if (DIM > 1 && (mask & NEIGHBOR_YM_BOUNDARY) && feature->getYmBoundaryType() == BOUNDARY_PERIODIC) {
 			int ypindex = index + (SIZEY - 1) * SIZEX;
-			if (feature != pVolumeElement[ypindex].feature) {
+			if (feature != pVolumeElement[ypindex].getFeature()) {
 				throw "Periodic Boundary Condition (Y- and Y+): compartments don't match";
 			}
 			int ypmask = pVolumeElement[ypindex].neighborMask;
@@ -270,7 +270,7 @@ void EllipticVolumeEqnBuilder::computeLHS(int index, double& Aii, int& numCols, 
 		} 
 		if (DIM > 2 && (mask & NEIGHBOR_ZM_BOUNDARY) && feature->getZmBoundaryType() == BOUNDARY_PERIODIC) {
 			int zpindex = index + (SIZEZ - 1) * SIZEXY;
-			if (feature != pVolumeElement[zpindex].feature) {
+			if (feature != pVolumeElement[zpindex].getFeature()) {
 				throw "Periodic Boundary Condition (Z- and Z+): compartments don't match";
 			}
 			int zpmask = pVolumeElement[zpindex].neighborMask;
@@ -291,7 +291,7 @@ void EllipticVolumeEqnBuilder::computeLHS(int index, double& Aii, int& numCols, 
 		neighborIndex = volumeNeighbors[XP].index;
 		if (neighborIndex >= 0) {
 			neighborMask = pVolumeElement[neighborIndex].neighborMask;
-			neighborFeature = pVolumeElement[neighborIndex].feature;				
+			neighborFeature = pVolumeElement[neighborIndex].getFeature();				
 			if (neighborMask & NEIGHBOR_XP_BOUNDARY && neighborFeature->getXpBoundaryType() == BOUNDARY_PERIODIC) {
 				volumeNeighbors[XP].index = index - (SIZEX - 2);	
 				volumeNeighbors[XP].bPeriodic = true;
@@ -302,7 +302,7 @@ void EllipticVolumeEqnBuilder::computeLHS(int index, double& Aii, int& numCols, 
 		neighborIndex = volumeNeighbors[YP].index;
 		if (DIM > 1 && neighborIndex >= 0) {
 			neighborMask = pVolumeElement[neighborIndex].neighborMask;
-			neighborFeature = pVolumeElement[neighborIndex].feature;				
+			neighborFeature = pVolumeElement[neighborIndex].getFeature();				
 			if (neighborMask & NEIGHBOR_YP_BOUNDARY && neighborFeature->getYpBoundaryType() == BOUNDARY_PERIODIC) {
 				volumeNeighbors[YP].index = index - (SIZEY - 2) * SIZEX;
 				volumeNeighbors[YP].bPeriodic = true;
@@ -313,7 +313,7 @@ void EllipticVolumeEqnBuilder::computeLHS(int index, double& Aii, int& numCols, 
 		neighborIndex = volumeNeighbors[ZP].index;
 		if (DIM > 2 && neighborIndex >= 0) {
 			neighborMask = pVolumeElement[neighborIndex].neighborMask;
-			neighborFeature = pVolumeElement[neighborIndex].feature;				
+			neighborFeature = pVolumeElement[neighborIndex].getFeature();				
 			if (neighborMask & NEIGHBOR_ZP_BOUNDARY && neighborFeature->getZpBoundaryType() == BOUNDARY_PERIODIC) {
 				volumeNeighbors[ZP].index = index - (SIZEZ - 2) * SIZEXY;
 				volumeNeighbors[ZP].bPeriodic = true;
@@ -501,7 +501,7 @@ double EllipticVolumeEqnBuilder::computeRHS(int index) {
 	VolumeElement *pVolumeElement = mesh->getVolumeElements();
 	MembraneElement *pMembraneElement = mesh->getMembraneElements();
 
-	Feature* feature = pVolumeElement[index].feature;
+	Feature* feature = pVolumeElement[index].getFeature();
 	VolumeVarContext* varContext = feature->getVolumeVarContext((VolumeVariable*)var);
 	int mask = pVolumeElement[index].neighborMask;
 
@@ -621,23 +621,12 @@ double EllipticVolumeEqnBuilder::computeRHS(int index) {
 			int numAdjacentME = (int)pVolumeElement[index].adjacentMembraneIndexes.size();
 			for (int i = 0; i < numAdjacentME; i ++) {
 				MembraneElement *me = pMembraneElement + pVolumeElement[index].adjacentMembraneIndexes[i];
-				VolumeVarContext* anotherVarContext = me->feature->getVolumeVarContext((VolumeVariable*)var);
-
-				if (anotherVarContext == 0) {
-					stringstream ss;
-					ss << "Variable '" << var->getName() << "' doesn't exist in inside compartment '" << me->feature->getName() << "', so jump condition can't be computed.";
-					throw ss.str();
-				}
-				double inFlux, outFlux;
+				
 				sim->advanceTimeOn();
-				anotherVarContext->getFlux(me, &inFlux, &outFlux);
+				double flux = varContext->getFlux(me);
 				sim->advanceTimeOff();		
 
-				if (me->insideIndexNear == index) {
-					b += inFlux * me->area;
-				} else if (me->outsideIndexNear == index) {
-					b += outFlux * me->area;
-				}
+				b += flux * me->area;
 			}
 		} // end if (mask & NEIGHBOR_MEMBRANE_MASK)
 	} // end if else (mask & BOUNDARY_TYPE_DIRICHLET)
@@ -728,8 +717,8 @@ void EllipticVolumeEqnBuilder::preProcess() {
 				int indexm = k * SIZEXY + j * SIZEX;
 				int indexp = k * SIZEXY + j * SIZEX + SIZEX - 1;				
 				int mask = pVolumeElement[indexm].neighborMask;
-				VolumeVarContext* varContext = pVolumeElement[indexm].feature->getVolumeVarContext((VolumeVariable*)var);	
-				if (mask & NEIGHBOR_XM_BOUNDARY && pVolumeElement[indexm].feature->getXmBoundaryType() == BOUNDARY_PERIODIC) {
+				VolumeVarContext* varContext = pVolumeElement[indexm].getFeature()->getVolumeVarContext((VolumeVariable*)var);	
+				if (mask & NEIGHBOR_XM_BOUNDARY && pVolumeElement[indexm].getFeature()->getXmBoundaryType() == BOUNDARY_PERIODIC) {
 					if (bSolveWholeMesh || checkPeriodicCoupledPairsInRegions(indexm, indexp)) {
 						periodicCoupledPairs.push_back(new CoupledNeighbors(indexm, indexp, varContext->getXBoundaryPeriodicConstant()));
 					}
@@ -744,8 +733,8 @@ void EllipticVolumeEqnBuilder::preProcess() {
 				int indexm = k * SIZEXY + i;
 				int indexp = k * SIZEXY + (SIZEY - 1) * SIZEX + i;
 				int mask = pVolumeElement[indexm].neighborMask;
-				VolumeVarContext* varContext = pVolumeElement[indexm].feature->getVolumeVarContext((VolumeVariable*)var);	
-				if (mask & NEIGHBOR_YM_BOUNDARY && pVolumeElement[indexm].feature->getYmBoundaryType() == BOUNDARY_PERIODIC) {
+				VolumeVarContext* varContext = pVolumeElement[indexm].getFeature()->getVolumeVarContext((VolumeVariable*)var);	
+				if (mask & NEIGHBOR_YM_BOUNDARY && pVolumeElement[indexm].getFeature()->getYmBoundaryType() == BOUNDARY_PERIODIC) {
 					if (bSolveWholeMesh || checkPeriodicCoupledPairsInRegions(indexm, indexp)) {
 						periodicCoupledPairs.push_back(new CoupledNeighbors(indexm, indexp, varContext->getYBoundaryPeriodicConstant()));
 					}
@@ -761,8 +750,8 @@ void EllipticVolumeEqnBuilder::preProcess() {
 				int indexm = j * SIZEX + i;
 				int indexp = (SIZEZ - 1) * SIZEXY + j * SIZEX + i;
 				int mask = pVolumeElement[indexm].neighborMask;
-				VolumeVarContext* varContext = pVolumeElement[indexm].feature->getVolumeVarContext((VolumeVariable*)var);	
-				if (mask & NEIGHBOR_ZM_BOUNDARY && pVolumeElement[indexm].feature->getZmBoundaryType() == BOUNDARY_PERIODIC) {
+				VolumeVarContext* varContext = pVolumeElement[indexm].getFeature()->getVolumeVarContext((VolumeVariable*)var);	
+				if (mask & NEIGHBOR_ZM_BOUNDARY && pVolumeElement[indexm].getFeature()->getZmBoundaryType() == BOUNDARY_PERIODIC) {
 					if (bSolveWholeMesh || checkPeriodicCoupledPairsInRegions(indexm, indexp)) {
 						periodicCoupledPairs.push_back(new CoupledNeighbors(indexm, indexp, varContext->getZBoundaryPeriodicConstant()));
 					}

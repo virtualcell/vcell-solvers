@@ -2,18 +2,11 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#include <VCELL/SimTypes.h>
-#include <VCELL/Mesh.h>
 #include <VCELL/Variable.h>
 #include <VCELL/Solver.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/SerialScheduler.h>
-#include <VCELL/Feature.h>
-#include <VCELL/ParticleContext.h>
-#include <VCELL/VCellModel.h>
 #include <VCELL/FastSystem.h>
-#include <VCELL/VolumeRegion.h>
-#include <VCELL/MembraneRegion.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/CartesianMesh.h>
 
@@ -44,7 +37,7 @@ void SerialScheduler::iterate()
 		cpc->captureParticles();
 		}
 	}
-	*/
+	
 	for (int i = 0; i < model->getNumFeatures(); i ++) {
 		Feature* feature = model->getFeatureFromIndex(i);
 		VolumeParticleContext *vpc = feature->getVolumeParticleContext();
@@ -70,6 +63,7 @@ void SerialScheduler::iterate()
 			cpc->move();
 		}
 	}
+	*/
 
 	Solver *solver=NULL;
 	int volumeSize = sim->getMesh()->getNumVolumeElements(); 

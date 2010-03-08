@@ -4,10 +4,13 @@
  */
 #include <VCELL/VCellModel.h>
 #include <VCELL/Feature.h>
-#include <VCELL/Contour.h>
+//#include <VCELL/Contour.h>
 #include <VCELL/Element.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/SimTool.h>
+#include <VCELL/Membrane.h>
+
+#include <assert.h>
 
 VCellModel::VCellModel()
 {
@@ -19,26 +22,18 @@ VCellModel::~VCellModel()
 		delete featureList[i];
 	}
 	featureList.clear();
+	for (int i = 0; i < (int)membraneList.size(); i ++) {
+		delete membraneList[i];
+	}
+	membraneList.clear();
  }
                          
-void VCellModel::addFeature(Feature *feature)
+Feature* VCellModel::addFeature(string& name, FeatureHandle handle)
 {
+	unsigned char findex = (unsigned char)featureList.size();
+	Feature* feature = new Feature(name, findex, handle);
 	featureList.push_back(feature);
-}
-                         
-void VCellModel::addContour(Contour *contour)
-{
-	pContours.push_back(contour);
-}
-
-Contour *VCellModel::getContour(int index)
-{
-	return pContours[index];
-}
-
-int VCellModel::getNumContours()
-{
-	return (int)pContours.size(); 
+	return feature;
 }
 
 Feature *VCellModel::getFeatureFromIndex(int index)
@@ -77,5 +72,82 @@ void VCellModel::resolveReferences()
 	for (int i = 0; i < (int)featureList.size(); i ++) {
 		Feature* feature = featureList[i];
 		feature->resolveReferences(sim);		
+	}	
+	for (int i = 0; i < (int)membraneList.size(); i ++) {
+		membraneList[i]->resolveReferences(sim);		
 	}
 }
+
+Membrane* VCellModel::getMembrane(Feature* f1, Feature* f2)
+{
+	for (int i = 0; i < (int)membraneList.size(); i ++) {
+		Membrane* membrane = membraneList[i];
+		if (membrane->inBetween(f1, f2)) {
+			return membrane;
+		}
+	}
+	assert(0);
+	return 0;
+}
+
+Membrane *VCellModel::getMembraneFromIndex(int index)
+{
+	if (index < 0 || index >= (int)membraneList.size()) {
+		throw "VCellModel: getMembrane(index) : index out of bounds";
+	}
+	return membraneList.at(index);
+}
+
+Membrane* VCellModel::getMembraneFromName(string& mem_name)
+{
+	for (int i = 0; i < (int)membraneList.size(); i ++) {
+		Membrane* membrane = membraneList[i];
+		if (membrane->getName() == mem_name) {
+			return membrane;
+		}
+	}
+	assert(0);
+	return 0;
+}
+
+bool VCellModel::hasFastSystem() {
+	for (int i = 0; i < (int)featureList.size(); i ++) {
+		if(featureList[i]->getFastSystem()){
+			return true;
+		}
+	}	
+
+	for (int i = 0; i < (int)membraneList.size(); i ++) {
+		if(membraneList[i]->getFastSystem()){
+			return true;
+		}
+	}
+	return false;
+}
+
+Membrane* VCellModel::addMembrane(string& name, string& feature1_name, string& feature2_name) {
+	Feature* f1 = getFeatureFromName(feature1_name);
+	Feature* f2 = getFeatureFromName(feature2_name);
+
+	assert(f1 != 0 && f2 != 0);
+
+	Membrane* membrane = new Membrane(name, f1, f2);
+	membraneList.push_back(membrane);
+
+	return membrane;
+}
+
+//void VCellModel::addContour(Contour *contour)
+//{
+//	pContours.push_back(contour);
+//}
+//
+//Contour *VCellModel::getContour(int index)
+//{
+//	return pContours[index];
+//}
+//
+//int VCellModel::getNumContours()
+//{
+//	return (int)pContours.size();
+//}

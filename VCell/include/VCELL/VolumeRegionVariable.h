@@ -10,10 +10,10 @@
 class VolumeRegionVariable : public Variable
 {
 public:
-	VolumeRegionVariable(int size, string& nameStr, string& Aunits);
+	VolumeRegionVariable(int size, string& nameStr);
 
-	virtual bool isVolumeRegionVar() { return true; }
-	virtual VariableType	getVarType() {return VAR_VOLUME_REGION;}
+	bool isVolumeRegionVar() { return true; }
+	VariableType	getVarType() {return VAR_VOLUME_REGION;}
 };
 
 #endif

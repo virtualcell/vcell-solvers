@@ -12,10 +12,8 @@
 #include <VCELL/EqnBuilder.h>
 #include <VCELL/DataSet.h>
 #include <VCELL/VCellModel.h>
-#include <VCELL/ParticleContext.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/CartesianMesh.h>
-#include <VCELL/FVUtils.h>
 #include <VCELL/SerialScheduler.h>
 #include <VCELL/SundialsPdeScheduler.h>
 #ifdef VCELL_MPI
@@ -35,7 +33,7 @@ Simulation::Simulation(Mesh *mesh)
 	_advanced = false;
 	_initEquations = false;
 	_scheduler = NULL;
-	globalParticleList.clear();
+	//globalParticleList.clear();
 
 #ifdef VCELL_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &mpiRank);
@@ -156,10 +154,10 @@ Solver *Simulation::getSolverFromVariable(Variable *var)
 //	_scheduler->collectResults(0);
 //}
 
-void Simulation::addParticle(Particle *particle)
-{
-	globalParticleList.push_back(particle);
-}
+//void Simulation::addParticle(Particle *particle)
+//{
+//	globalParticleList.push_back(particle);
+//}
 
 void Simulation::writeData(char *filename, bool bCompress)
 {
@@ -174,47 +172,47 @@ void Simulation::writeData(char *filename, bool bCompress)
 		return true;
 	}
 #endif
-	bool hasParticles = false;
-	VCellModel *model = SimTool::getInstance()->getModel();
-	for (int i = 0; i < model->getNumFeatures(); i ++) {
-		Feature* feature = model->getFeatureFromIndex(i);
-		if (feature->getVolumeParticleContext()!=NULL){
-			hasParticles = true;
-		}
-		if (feature->getMembraneParticleContext()!=NULL){
-			hasParticles = true;
-		}
-		if (feature->getContourParticleContext()!=NULL){
-			hasParticles = true;
-		}
-	}
+	//bool hasParticles = false;
+	//VCellModel *model = SimTool::getInstance()->getModel();
+	//for (int i = 0; i < model->getNumFeatures(); i ++) {
+	//	Feature* feature = model->getFeatureFromIndex(i);
+	//	if (feature->getVolumeParticleContext()!=NULL){
+	//		hasParticles = true;
+	//	}
+	//	if (feature->getMembraneParticleContext()!=NULL){
+	//		hasParticles = true;
+	//	}
+	//	if (feature->getContourParticleContext()!=NULL){
+	//		hasParticles = true;
+	//	}
+	//}
 
-	if (hasParticles){
-		FILE *fp = NULL;
-		string newFname = string(filename) + ".particle";
-		if ((fp = fopen(newFname.c_str(),"w"))==NULL){
-			char errmsg[512];
-			sprintf(errmsg, "Simulation::writeData(), error opening file %s for writing", newFname.c_str());
-			throw errmsg;
-		}
+	//if (hasParticles){
+	//	FILE *fp = NULL;
+	//	string newFname = string(filename) + ".particle";
+	//	if ((fp = fopen(newFname.c_str(),"w"))==NULL){
+	//		char errmsg[512];
+	//		sprintf(errmsg, "Simulation::writeData(), error opening file %s for writing", newFname.c_str());
+	//		throw errmsg;
+	//	}
 
-		fprintf(fp,"%lg %lg %lg\n", ((CartesianMesh*)_mesh)->getDomainSizeX(),
-						((CartesianMesh*)_mesh)->getDomainSizeY(),
-						((CartesianMesh*)_mesh)->getDomainSizeZ());
-		fprintf(fp,"%d %d %d\n", ((CartesianMesh*)_mesh)->getNumVolumeX(),
-					((CartesianMesh*)_mesh)->getNumVolumeY(),
-					((CartesianMesh*)_mesh)->getNumVolumeZ());
+	//	fprintf(fp,"%lg %lg %lg\n", ((CartesianMesh*)_mesh)->getDomainSizeX(),
+	//					((CartesianMesh*)_mesh)->getDomainSizeY(),
+	//					((CartesianMesh*)_mesh)->getDomainSizeZ());
+	//	fprintf(fp,"%d %d %d\n", ((CartesianMesh*)_mesh)->getNumVolumeX(),
+	//				((CartesianMesh*)_mesh)->getNumVolumeY(),
+	//				((CartesianMesh*)_mesh)->getNumVolumeZ());
 
-		//
-		//write particle file (if needed)
-		//
-		vector<Particle*>::iterator particleIterator;
-		for (particleIterator = globalParticleList.begin();particleIterator != globalParticleList.end();particleIterator++){
-			(*particleIterator)->write(fp);
-		}
+	//	//
+	//	//write particle file (if needed)
+	//	//
+	//	vector<Particle*>::iterator particleIterator;
+	//	for (particleIterator = globalParticleList.begin();particleIterator != globalParticleList.end();particleIterator++){
+	//		(*particleIterator)->write(fp);
+	//	}
 
-		fclose(fp);
-	}
+	//	fclose(fp);
+	//}
 
 	DataSet::write(filename, this, bCompress);
 }

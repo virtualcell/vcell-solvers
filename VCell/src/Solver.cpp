@@ -2,16 +2,9 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#include <stdio.h>
-#include <VCELL/TriDiagMatrix.h>
 #include <VCELL/Variable.h>
 #include <VCELL/EqnBuilder.h>
-#include <VCELL/Simulation.h>
-#include <VCELL/SimTypes.h>
-#include <VCELL/Mesh.h>
 #include <VCELL/Solver.h>
-#include <VCELL/Region.h>
-#include <VCELL/CartesianMesh.h>
 
 Solver::Solver(Variable *variable)
 {

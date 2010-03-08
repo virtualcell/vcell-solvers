@@ -7,7 +7,7 @@
 
 #include <VCELL/DataProcessor.h>
 #include <vector>
-using namespace std;
+using std::vector;
 
 class OdeResultSet;
 class FieldData;

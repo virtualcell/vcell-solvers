@@ -4,7 +4,7 @@
  */
 #include <VCELL/VolumeRegionVariable.h>
 
-VolumeRegionVariable::VolumeRegionVariable(int size, string& nameStr, string& Aunits)
-: Variable(size,nameStr,Aunits)
+VolumeRegionVariable::VolumeRegionVariable(int size, string& nameStr)
+: Variable(size, nameStr)
 {
 }

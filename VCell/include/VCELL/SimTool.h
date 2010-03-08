@@ -8,8 +8,6 @@
 #ifndef SIMTOOL_H
 #define SIMTOOL_H
 
-#include <VCELL/Simulation.h>
-#include <VCELL/SimTypes.h>
 #include <VCELL/Timer.h>
 
 #ifndef DIRECTORY_SEPARATOR
@@ -24,6 +22,7 @@ class VCellModel;
 class Mesh;
 class Simulation;
 class DataProcessor;
+class Variable;
 
 class SimTool {
 public:
@@ -37,10 +36,8 @@ public:
 	void setModel(VCellModel* model);
 	void setSimulation(Simulation* sim);
 	void setTimeStep(double period);
-	void setCheckSpatiallyUniform() {
-		bCheckSpatiallyUniform = true;
-		cout << endl << "----Stop At Spatially Uniform----" << endl;
-	}
+	void setCheckSpatiallyUniform();
+
 	bool isCheckingSpatiallyUniform() { return bCheckSpatiallyUniform; }
 	void setEndTimeSec(double timeSec) { simEndTime = timeSec; }
 	double getEndTime() { return simEndTime; }

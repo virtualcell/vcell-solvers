@@ -3,33 +3,26 @@
  * All rights reserved.
  */
 #include <VCELL/Region.h>
-#include <VCELL/Feature.h>
-#include <VCELL/CartesianMesh.h>
 
-Region::Region(Mesh *Amesh)
-{
-	index.erase(index.begin(), index.end()); 
-	id = 0;
-	wasChanged = false;
-	mesh = Amesh;
+Region::Region(int rindex, string& rname, Mesh* rmesh)
+{	
+	index = rindex;
+	name = rname;
+	mesh = rmesh;
+	size = 0;
 }
 
 Region::~Region()
 {      
 }
 
-void Region::setName(string& Aname)
+void Region::addElementIndex(long i)
 {
-	name = Aname; 
+	elementIndices.push_back(i);
+	size = 0;
 }
 
-void Region::setId(int AnId)
+void Region::setSize(double newSize)
 {
-	id = AnId; 
-}
-
-void Region::addIndex(long i)
-{
-	index.push_back(i);
-	wasChanged = true;
+	size = newSize;
 }

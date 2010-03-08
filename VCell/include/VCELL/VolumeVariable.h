@@ -7,10 +7,12 @@
 
 #include <VCELL/Variable.h>
 
+class VolumeRegion;
+
 class VolumeVariable : public Variable
 {
 public:
-	VolumeVariable(long sizeX, long sizeY, long sizeZ, string& name, string& units, bool diff=true, bool advect=false);
+	VolumeVariable(long sizeX, long sizeY, long sizeZ, string& name, bool diff=true, bool advect=false);
 
 	virtual bool isVolumeVar() { return true; }
 	virtual VariableType	getVarType() {return VAR_VOLUME;}

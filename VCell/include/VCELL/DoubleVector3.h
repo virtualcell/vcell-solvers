@@ -7,7 +7,8 @@
 
 #include <math.h>
 #include <iostream>
-using namespace std;
+using std::cout;
+using std::ostream;
 
 struct DoubleVector3 {
 	double x;

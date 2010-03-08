@@ -134,9 +134,9 @@ private:
 	void checkCVodeReturnCode(int returnCode);
 	void printCVodeStats();
 
+	int numSymbolsPerVolVar; // U, U_Feature1_membrane, U_Feature2_membrane, ...
 	long numUnknowns;
 	long numVolUnknowns;
-	int valueArraySize;
 
 	int* global2Local;
 	int* local2Global;

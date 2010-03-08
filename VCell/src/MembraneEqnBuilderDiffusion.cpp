@@ -4,15 +4,14 @@
  */
 
 #include <VCELL/MembraneEqnBuilderDiffusion.h>
-#include <VCELL/SimTypes.h>
-#include <VCELL/Solver.h>
 #include <VCELL/MembraneVariable.h>
-#include <VCELL/Feature.h>
+#include <VCELL/Membrane.h>
 #include <VCELL/Element.h>
 #include <VCELL/MembraneVarContext.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/CartesianMesh.h>
+#include <VCELL/SparseMatrixPCG.h>
 
 MembraneEqnBuilderDiffusion::MembraneEqnBuilderDiffusion(MembraneVariable *Aspecies, Mesh *Amesh)
 : SparseMatrixEqnBuilder(Aspecies, Amesh)
@@ -49,7 +48,7 @@ void MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIndex
 	MembraneElement* membraneElement = pMembraneElement;
 	for (long index = membraneIndexStart; index < membraneIndexStart + membraneIndexSize; index ++, membraneElement ++){		
 		ASSERTION(membraneElement->feature);			
-		MembraneVarContext *varContext = membraneElement->feature->getMembraneVarContext((MembraneVariable*)var);		
+		MembraneVarContext *varContext = membraneElement->getMembrane()->getMembraneVarContext((MembraneVariable*)var);		
 		int mask = mesh->getMembraneNeighborMask(membraneElement);
 		int32* columns;
 		double* values;
@@ -99,9 +98,9 @@ void MembraneEqnBuilderDiffusion::buildEquation(double deltaTime, int volumeInde
 
 	MembraneElement* membraneElement = pMembraneElement;
 	for (long index = membraneIndexStart; index < membraneIndexStart + membraneIndexSize; index ++, membraneElement ++){
-		ASSERTION(membraneElement->feature);		
-		Feature* feature = membraneElement->feature;
-		MembraneVarContext *varContext = feature->getMembraneVarContext((MembraneVariable*)var);	
+		ASSERTION(membraneElement->membrane);
+		Membrane* membrane = membraneElement->getMembrane();
+		MembraneVarContext *varContext = membrane->getMembraneVarContext((MembraneVariable*)var);	
 
 		double volume = membraneElementCoupling->getValue(index, index);
 		double Ap0 = volume/deltaTime;
@@ -109,36 +108,36 @@ void MembraneEqnBuilderDiffusion::buildEquation(double deltaTime, int volumeInde
 		int mask = mesh->getMembraneNeighborMask(membraneElement);
 		if (mask & NEIGHBOR_BOUNDARY_MASK){ // boundary condition
 			if (mask & BOUNDARY_TYPE_DIRICHLET){   // boundary and dirichlet
-				if ((mask & NEIGHBOR_XM_BOUNDARY) && (feature->getXmBoundaryType() == BOUNDARY_VALUE)){
+				if ((mask & NEIGHBOR_XM_BOUNDARY) && (membrane->getXmBoundaryType() == BOUNDARY_VALUE)){
 					sim->advanceTimeOn();
 					B[index] = varContext->getXmBoundaryValue(membraneElement);
 					sim->advanceTimeOff();
 
-				}else if ((mask & NEIGHBOR_XP_BOUNDARY) && (feature->getXpBoundaryType() == BOUNDARY_VALUE)){
+				}else if ((mask & NEIGHBOR_XP_BOUNDARY) && (membrane->getXpBoundaryType() == BOUNDARY_VALUE)){
 
 					sim->advanceTimeOn();
 					B[index] = varContext->getXpBoundaryValue(membraneElement);
 					sim->advanceTimeOff();
 
-				}else if ((mask & NEIGHBOR_YM_BOUNDARY) && (feature->getYmBoundaryType() == BOUNDARY_VALUE)){
+				}else if ((mask & NEIGHBOR_YM_BOUNDARY) && (membrane->getYmBoundaryType() == BOUNDARY_VALUE)){
 
 					sim->advanceTimeOn();
 					B[index] = varContext->getYmBoundaryValue(membraneElement);
 					sim->advanceTimeOff();
 
-				}else if ((mask & NEIGHBOR_YP_BOUNDARY) && (feature->getYpBoundaryType() == BOUNDARY_VALUE)){
+				}else if ((mask & NEIGHBOR_YP_BOUNDARY) && (membrane->getYpBoundaryType() == BOUNDARY_VALUE)){
 
 					sim->advanceTimeOn();
 					B[index] = varContext->getYpBoundaryValue(membraneElement);
 					sim->advanceTimeOff();
 
-				}else if ((mask & NEIGHBOR_ZM_BOUNDARY) && (feature->getZmBoundaryType() == BOUNDARY_VALUE)){
+				}else if ((mask & NEIGHBOR_ZM_BOUNDARY) && (membrane->getZmBoundaryType() == BOUNDARY_VALUE)){
 
 					sim->advanceTimeOn();
 					B[index] = varContext->getZmBoundaryValue(membraneElement);
 					sim->advanceTimeOff();
 
-				}else if ((mask & NEIGHBOR_ZP_BOUNDARY) && (feature->getZpBoundaryType() == BOUNDARY_VALUE)){
+				}else if ((mask & NEIGHBOR_ZP_BOUNDARY) && (membrane->getZpBoundaryType() == BOUNDARY_VALUE)){
 
 					sim->advanceTimeOn();
 					B[index] = varContext->getZpBoundaryValue(membraneElement);

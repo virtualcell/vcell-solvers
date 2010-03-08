@@ -7,6 +7,9 @@
 
 #include <VCELL/VarContext.h>
 
+class Membrane;
+class MembraneVariable;
+
 class MembraneVarContext : public VarContext
 {
 public:
@@ -29,7 +32,7 @@ public:
     virtual double getZpBoundaryFlux(MembraneElement *element) { return 0.0; }
 
 protected:
-    MembraneVarContext(Feature *feature, string& speciesName);
+    MembraneVarContext(Membrane *membrane, MembraneVariable* var);
 };
 
 #endif

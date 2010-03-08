@@ -6,8 +6,7 @@
 #define SIMULATIONEXPRESSION_H
 
 #include <VCELL/Simulation.h>
-#include <SimpleSymbolTable.h>
-#include <ScalarValueProxy.h>
+#include <VCELL/SimTypes.h>
 
 enum VAR_INDEX {VAR_VOLUME_INDEX=0, VAR_MEMBRANE_INDEX, VAR_CONTOUR_INDEX, VAR_VOLUME_REGION_INDEX, VAR_MEMBRANE_REGION_INDEX,
     VAR_CONTOUR_REGION_INDEX};
@@ -19,6 +18,8 @@ class MembraneVariable;
 class MembraneRegionVariable;
 class VolumeRegionVariable;
 class RandomVariable;
+class SymbolTable;
+class ScalarValueProxy;
 
 class SimulationExpression : public Simulation
 {
@@ -51,12 +52,10 @@ public:
 	void populateRandomValues(double* darray, int index);
 
 	int* getIndices() { return indices; };
-	SimpleSymbolTable* getOldSymbolTable() { return oldSymbolTable; };
-	void setCurrentCoordinate(WorldCoord& wc) {
-		valueProxyX->setValue(wc.x);
-		valueProxyY->setValue(wc.y);
-		valueProxyZ->setValue(wc.z);
-	}
+	SymbolTable* getSymbolTable() { 
+		return symbolTable; 
+	};
+	void setCurrentCoordinate(WorldCoord& wc);
 
 	bool isVolumeVariableDefinedInRegion(int volVarIndex, int regionIndex) {
 		if (volVariableRegionMap[volVarIndex] == 0) {
@@ -110,7 +109,7 @@ public:
 	}
 
 protected:
-	SimpleSymbolTable* oldSymbolTable;
+	SymbolTable* symbolTable;
 
 	int* indices;
 	void createSymbolTable();
