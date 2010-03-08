@@ -13,19 +13,20 @@
 // Dec 2002
 // Handles symmetric or general (non-symmetric) storage - Diana Resasco
 
+#include <iostream>
+#include <iomanip>
+using std::cout;
+using std::endl;
+using std::setprecision;
+
 #include <VCELL/SparseMatrixPCG.h>
+#include <VCELL/Simulation.h>
 #include <VCELL/SparseMatrixEqnBuilder.h>
 #include <VCELL/Variable.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/Mesh.h>
 #include <VCELL/SparseLinearSolver.h>
 #include <VCELL/FVUtils.h>
-#include <VCELL/Simulation.h>
-#include <iostream>
-#include <iomanip>
-using std::cout;
-using std::endl;
-using std::setprecision;
 
 //#define SHOW_MATRIX
 //#define SHOW_IPARM

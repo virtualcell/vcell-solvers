@@ -1,3 +1,6 @@
+#include <Exception.h>
+#include <Expression.h>
+
 #include <sys/stat.h>
 #include <VCELL/FVSolver.h>
 #include <VCELL/VolumeVariable.h>
@@ -32,9 +35,6 @@
 #include <VCELL/FieldData.h>
 #include <VCELL/FVUtils.h>
 #include <VCELL/RandomVariable.h>
-
-#include <Exception.h>
-#include <Expression.h>
 
 #include <assert.h>
 #include <fstream>
@@ -494,7 +494,8 @@ VarContext* FVSolver::loadEquation(istream& ifsInput, Structure* structure, Vari
 			break;
 		}
 
-		Expression* exp = readExpression(lineInput, var->getName());
+		string var_name = var->getName();
+		Expression* exp = readExpression(lineInput, var_name);
 		int expIndex = 0;
 		if (nextToken == "INITIAL") {
 			expIndex = INITIAL_VALUE_EXP;
@@ -558,7 +559,8 @@ void FVSolver::loadJumpCondition(istream& ifsInput, Membrane* membrane, string& 
 			lineInput >> featurename;
 			assert(!featurename.empty());
 			Feature* f = model->getFeatureFromName(featurename);
-			Expression* exp = readExpression(lineInput, var->getName());
+			string var_name = var->getName();
+			Expression* exp = readExpression(lineInput, var_name);
 			VarContext *varContext = 0;
 			if (var->getVarType() == VAR_VOLUME) {
 				f->getVolumeVarContext((VolumeVariable*)var)->addJumpCondition(membrane, exp);

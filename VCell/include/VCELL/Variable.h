@@ -8,12 +8,9 @@
 #ifndef VARIABLE_H
 #define VARIABLE_H
 
-#include <stdio.h>
 #include <VCELL/SimTypes.h>
 #include <string>
 using std::string;
-
-#include <fstream>
 using std::ofstream;
 
 class Variable 

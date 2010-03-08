@@ -49,9 +49,11 @@ CPPOBJECTS = 	\
 	FastSystemExpression.o       \
 	Feature.o         \
 	FieldData.o         \
-	FiniteVolume.o         \	
+	FiniteVolume.o         \
 	FVSolver.o        \
 	FVUtils.o         \
+	JumpCondition.o   \
+	Membrane.o		  \
 	MembraneEqnBuilderForward.o \
 	MembraneEqnBuilderDiffusion.o       \
 	MembraneRegion.o    \
@@ -78,6 +80,7 @@ CPPOBJECTS = 	\
 	SparseMatrixEqnBuilder.o            \
 	SparseMatrixPCG.o           \
 	SparseVolumeEqnBuilder.o            \
+	Structure.o		\
 	StructuredPDESolver.o               \
 	SundialsPdeScheduler.o		\
 	Timer.o                     \

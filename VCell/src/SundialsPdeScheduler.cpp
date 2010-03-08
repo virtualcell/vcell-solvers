@@ -2,6 +2,8 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
+#include <Expression.h>
+
 #include <VCELL/SundialsPdeScheduler.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/Solver.h>
@@ -24,7 +26,6 @@
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/MembraneRegion.h>
 #include <VCELL/VCellModel.h>
-#include <Expression.h>
 #include <SimpleSymbolTable.h>
 #include <VCELL/SparseMatrixPCG.h>
 
@@ -35,9 +36,6 @@
 #include <cvode/cvode_spgmr.h>       /* prototype for CVSPGMR */
 #include <sundials/sundials_dense.h> /* definitions DenseMat DENSE_ELEM */
 #include <sundials/sundials_types.h> /* definition of type realtype */
-
-#include <sstream>
-using namespace std;
 
 #define ToleranceType CV_SS
 #define epsilon  1e-12

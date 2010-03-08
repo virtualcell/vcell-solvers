@@ -11,6 +11,7 @@ using std::setprecision;
 
 #include <VCELL/Timer.h>
 #include <assert.h>
+#include <math.h>
 
 #define TimerResolution 1E-6
 #define DoubleToSec(t)       ((long)(floor((double)(t))))

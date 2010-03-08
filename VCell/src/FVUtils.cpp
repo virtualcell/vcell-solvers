@@ -2,17 +2,17 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#include <VCELL/FVUtils.h>
 
-#include <stdio.h>
-#include <float.h>
-#include <math.h>
 #include <iostream>
 #include <sstream>
 using std::stringstream;
 using std::string;
 using std::cout;
 using std::endl;
+
+#include <VCELL/FVUtils.h>
+#include <float.h>
+#include <math.h>
 
 extern "C"
 {

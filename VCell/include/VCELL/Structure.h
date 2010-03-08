@@ -1,5 +1,5 @@
-#ifndef STRUCTURE
-#define STRUCTURE
+#ifndef STRUCTURE_H
+#define STRUCTURE_H
 
 #include <VCELL/SimTypes.h>
 #include <vector>
