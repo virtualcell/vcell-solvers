@@ -551,6 +551,8 @@ void VCellIDASolver::onIDAReturn(realtype Time, int returnCode) {
 		printVariableValues(Time);
 #endif
 		updateDiscontinuities(Time, true);
+		reInit(Time); // recalculate y
+		solveInitialDiscontinuities(Time); // recalculate booleans for discontinuities after discontinuity state change
 		
 		int updateCount = 0;
 		for (updateCount = 0;  updateCount < MAX_NUM_EVENTS_DISCONTINUITIES_EVAL; updateCount ++) {

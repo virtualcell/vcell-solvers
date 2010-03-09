@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="IDAWin"
 	ProjectGUID="{1F2CB7B8-7A6D-4DA0-8CBD-750B540070A2}"
+	RootNamespace="IDAWin"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -165,7 +166,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\SonicCClient\Win32\include\;..\SonicCClient\Win32\include\CPP;..\VCell\include;..\sundials\src;..\sundials\include;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;USE_MESSAGING;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"

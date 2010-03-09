@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <crtdbg.h>
 #else
-#include <vld.h>
+//#include <vld.h>
 #endif
 #endif
 
