@@ -66,7 +66,9 @@ struct Event {
 
 	void bind(SymbolTable* symbolTable) {
 		triggerExpression->bindExpression(symbolTable);
-		delayDurationExpression->bindExpression(symbolTable);
+		if (delayDurationExpression != 0) {
+			delayDurationExpression->bindExpression(symbolTable);
+		}
 		for (int i = 0; i < numEventAssignments; i ++) {
 			eventAssignments[i]->bind(symbolTable);
 		}
