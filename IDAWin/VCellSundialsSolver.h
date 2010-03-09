@@ -192,6 +192,4 @@ private:
 	list<EventExecution*> eventExeList;
 };
 
-void trimString(string& str);
-
 #endif
