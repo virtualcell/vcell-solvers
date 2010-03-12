@@ -1269,6 +1269,76 @@ void FVSolver::loadParameters(istream& ifsInput, int numParameters) {
 	assert(nread == numParameters);
 }
 
+void FVSolver::loadSerialScanParameters(istream& ifsInput, int numSerialScanParameters) {
+	if (simulation == 0) {
+		throw "Simulation has to be initialized before loading serial scan parameters";
+	}
+
+	string nextToken, line;
+	int nread = 0;
+	while (!ifsInput.eof()) {
+		getline(ifsInput, line);
+		istringstream lineInput(line);
+
+		lineInput >> nextToken;
+		if (nextToken.size() == 0 || nextToken[0] == '#') {
+			continue;
+		}
+		if (nextToken == "SERIAL_SCAN_PARAMETER_END") {
+			break;
+		}
+		
+		nread ++;
+		simulation->addSerialScanParameter(nextToken);
+	}
+	assert(nread == numSerialScanParameters);
+}
+
+/*
+# Parameter Scan Values
+PARAMETER_SCAN_BEGIN 2
+1.0 
+2.0 
+PARAMETER_SCAN_END
+*/
+void FVSolver::loadSerialScanParameterValues(istream& ifsInput, int numSerialScanParameterValues) {
+	if (simulation == 0) {
+		throw "Simulation has to be initialized before loading serial scan parameter values";
+	}
+	string nextToken, line;
+
+	int numSerialScanParameters = simulation->getNumSerialScanParameters();
+	double** serialScanParameterValues = new double*[numSerialScanParameterValues];
+
+	for (int i = 0; i < numSerialScanParameterValues; i ++) {
+		serialScanParameterValues[i] = new double[numSerialScanParameters];
+	
+		getline(ifsInput, line);
+		istringstream lineInput(line);
+
+		for (int j = 0; j < numSerialScanParameters; j ++) {
+			lineInput >> serialScanParameterValues[i][j];
+		}
+	}
+
+	while (!ifsInput.eof()) {
+		getline(ifsInput, line);
+		istringstream lineInput(line);
+
+		lineInput >> nextToken;
+
+		if (nextToken.size() == 0 || nextToken[0] == '#') {
+			continue;
+		}
+		if (nextToken == "SERIAL_SCAN_PARAMETER_VALUE_END") {
+			break;
+		}
+		
+		simulation->addParameter(nextToken);
+	}
+	simTool->setSerialParameterScans(numSerialScanParameterValues, serialScanParameterValues);
+}
+
 /*
 # JMS_Paramters
 JMS_PARAM_BEGIN
@@ -1403,6 +1473,14 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 			int numParams = 0;
 			lineInput >> numParams;
 			loadParameters(ifsInput, numParams);
+		} else if (nextToken == "SERIAL_SCAN_PARAMETER_BEGIN") {
+			int numSerialScanParams = 0;
+			lineInput >> numSerialScanParams;
+			loadSerialScanParameters(ifsInput, numSerialScanParams);
+		} else if (nextToken == "SERIAL_SCAN_PARAMETER_VALUE_BEGIN") {
+			int numSerialScanParamValues = 0;
+			lineInput >> numSerialScanParamValues;
+			loadSerialScanParameterValues(ifsInput, numSerialScanParamValues);
 		} else if (nextToken == "FIELD_DATA_BEGIN") {
 			loadFieldData(ifsInput);
 		} else if (nextToken == "COMPARTMENT_BEGIN") {
@@ -1448,10 +1526,7 @@ void FVSolver::solve(bool bLoadFinal, double* paramValues)
 	if (paramValues != 0) {
 		simulation->setParameterValues(paramValues);
 	}
-	simulation->initSimulation();
-	if (bLoadFinal) {
-		simTool->loadFinal();   // initializes to the latest file if it exists
-	}
+	simTool->setLoadFinal(bLoadFinal);
 
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "preprocessing finished"));
 
@@ -1462,7 +1537,6 @@ void FVSolver::init(double* paramValues){
 	// setting initial conditions.
 	simulation->setParameterValues(paramValues);
 	simulation->initSimulation();
-	simulation->reset();
 }
 
 void FVSolver::step(double* paramValues)

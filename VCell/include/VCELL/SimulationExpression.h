@@ -66,6 +66,15 @@ public:
 
 	void addParameter(string& param);
 	void setParameterValues(double* paramValues);
+	int getNumParameters() {
+		return (int)paramList.size();
+	}
+
+	void addSerialScanParameter(string& param);
+	void setSerialScanParameterValues(double* serialScanParamValues);
+	int getNumSerialScanParameters() {
+		return (int)serialScanParamList.size();
+	}
 
 	// right now bSolveRegion is only applicable for volume variables
 	void addVariable(Variable *var, bool* bSolveRegions=0);
@@ -142,6 +151,9 @@ protected:
 	bool bHasTimeDependentDiffusionAdvection;
 
 	int psfFieldDataIndex;
+
+	vector<string> serialScanParamList;
+	vector<ScalarValueProxy*> serialScanParamValueProxies;
 };
 
 #endif

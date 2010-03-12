@@ -61,6 +61,8 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\FiniteVolume.obj		\
 		$(OBJDIR)\FVSolver.obj			\
 		$(OBJDIR)\FVUtils.obj			\
+		$(OBJDIR)\JumpCondition.obj			\
+		$(OBJDIR)\Membrane.obj			\
 		$(OBJDIR)\MembraneEqnBuilderForward.obj	\
 		$(OBJDIR)\MembraneEqnBuilderDiffusion.obj	\
 		$(OBJDIR)\MembraneRegion.obj	\
@@ -87,6 +89,7 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\SparseMatrixEqnBuilder.obj		\
 		$(OBJDIR)\SparseMatrixPCG.obj		\
 		$(OBJDIR)\SparseVolumeEqnBuilder.obj		\
+		$(OBJDIR)\Structure.obj		\
 		$(OBJDIR)\StructuredPDESolver.obj		\
 		$(OBJDIR)\SundialsPdeScheduler.obj		\
 		$(OBJDIR)\Timer.obj			\

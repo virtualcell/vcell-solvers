@@ -94,22 +94,6 @@ void SparseMatrixPCG::show()
 	}
 }
 
-void SparseMatrixPCG::setsa(long index, double value)
-{
-	if (index < 0 ||  index >= numNonZeros+1) {
-		throw "SparseMatrixPCG::setsa(): index out of bound";
-	}
-	sa[index]=value;
-}
-
-void SparseMatrixPCG::setija(long index, long value)
-{
-	if (index < 0 || index >= numNonZeros+1) {
-		throw "SparseMatrixPCG::setija() : index out of bound";
-	}
-	ija[index]=value;
-}
-
 double SparseMatrixPCG::getValue(long i, long j) {
 	if (i < 0 || j < 0 ||  i >= N ||  j >= N) {
 		throw "SparseMatrixPCG::getValue() : index out of bound";

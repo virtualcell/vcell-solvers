@@ -194,6 +194,11 @@ void SimulationExpression::addParameter(string& param) {
 	paramValueProxies.push_back(new ScalarValueProxy());
 }
 
+void SimulationExpression::addSerialScanParameter(string& param) {
+	serialScanParamList.push_back(param);
+	serialScanParamValueProxies.push_back(new ScalarValueProxy());
+}
+
 void SimulationExpression::createSymbolTable() {	
 	if (symbolTable != NULL) {
 		return;
@@ -236,8 +241,8 @@ void SimulationExpression::createSymbolTable() {
 
 	VCellModel* model = SimTool::getInstance()->getModel();
 
-	// t, x, y, z, VAR, VAR_Feature1_membrane, VAR_Feature2_membrane, ... (for computing membrane flux), field data, parameters
-	int numSymbols = 4 + volVarSize * (model->getNumFeatures() + 1) + (numVariables - volVarSize) + (int)fieldDataList.size() + (int)randomVarList.size() + (int)paramList.size();
+	// t, x, y, z, VAR, VAR_Feature1_membrane, VAR_Feature2_membrane, ... (for computing membrane flux), field data, parameters, serial scan parameters
+	int numSymbols = 4 + volVarSize * (model->getNumFeatures() + 1) + (numVariables - volVarSize) + (int)fieldDataList.size() + (int)randomVarList.size() + (int)paramList.size() + (int)serialScanParamList.size();
 	string* variableNames = new string[numSymbols];	
 	ValueProxy** oldValueProxies = new ValueProxy*[numSymbols];
 
@@ -351,6 +356,13 @@ void SimulationExpression::createSymbolTable() {
 		variableIndex ++;
 	}
 
+	// add serial scan parameters
+	for (int i = 0; i < (int)serialScanParamList.size(); i ++) {
+		oldValueProxies[variableIndex] = serialScanParamValueProxies[i];
+		variableNames[variableIndex] = serialScanParamList[i];
+		variableIndex ++;
+	}
+
 	/*for (int i = 0; i < variableIndex; i ++) {		
 		cout << i << " " << variableNames[i] << endl;
 	}*/
@@ -396,7 +408,9 @@ void SimulationExpression::populateRandomValues(double* darray, int index) {
 
 void SimulationExpression::initSimulation()
 {   
-	createSymbolTable();
+	if (symbolTable == 0) {
+		createSymbolTable();
+	}
 	Simulation::initSimulation();
 }
 
@@ -427,4 +441,16 @@ void SimulationExpression::setCurrentCoordinate(WorldCoord& wc) {
 	valueProxyX->setValue(wc.x);
 	valueProxyY->setValue(wc.y);
 	valueProxyZ->setValue(wc.z);
+}
+
+void SimulationExpression::setSerialScanParameterValues(double* serialScanParamValues) {
+	if (serialScanParamValues == 0) {
+		if (serialScanParamList.size() != 0) {
+			throw "SimulationExpression::setSerialScanParameterValues(), empty values for serial scan parameters";
+		}
+		return;
+	}
+	for (int i = 0; i < (int)serialScanParamList.size(); i ++) {
+		serialScanParamValueProxies[i]->setValue(serialScanParamValues[i]);
+	}
 }

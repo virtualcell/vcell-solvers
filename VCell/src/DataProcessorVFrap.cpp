@@ -32,6 +32,7 @@ DataProcessorVFrap::DataProcessorVFrap(string& name, string& input): DataProcess
 	numImageRegions = 0;
 	
 	sampleImage = 0;
+	odeResultSet = 0;
 }
 
 DataProcessorVFrap::~DataProcessorVFrap() {
@@ -48,40 +49,46 @@ bool DataProcessorVFrap::checkComplete(SimTool* simTool) {
 }
 
 void DataProcessorVFrap::onStart(SimTool* simTool) {
-	parseInput(simTool);
-
 	outputFileName = string(simTool->getBaseFileName()) + ".dataProcOutput";
 	Simulation* sim = simTool->getSimulation();
 	int numVar = sim->getNumVariables();
-	odeResultSet = new OdeResultSet*[numVar*2];
-	for (int i = 0; i < numVar; i ++) {
-		Variable* var = sim->getVariable(i);
-		odeResultSet[i] = new OdeResultSet();
-		if (var->getVarType() == VAR_VOLUME) {
-			for (int j = 0; j < numVolumePoints; j ++) {
-				char p[30];
-				sprintf(p, "%d\0", volumePoints[j]);
-				odeResultSet[i]->addColumn(string(p));
-			}
-		} else 	if (var->getVarType() == VAR_MEMBRANE && numMembranePoints > 0) {
-			for (int j = 0; j < numMembranePoints; j ++) {
-				char p[30];
-				sprintf(p, "%d\0", membranePoints[j]);
-				odeResultSet[i]->addColumn(string(p));
-			}
-		}		
-	}
+	if (odeResultSet == 0) {
+		parseInput(simTool);
+		odeResultSet = new OdeResultSet*[numVar*2];
+		for (int i = 0; i < numVar; i ++) {
+			Variable* var = sim->getVariable(i);
+			odeResultSet[i] = new OdeResultSet();
+			if (var->getVarType() == VAR_VOLUME) {
+				for (int j = 0; j < numVolumePoints; j ++) {
+					char p[30];
+					sprintf(p, "%d\0", volumePoints[j]);
+					odeResultSet[i]->addColumn(string(p));
+				}
+			} else 	if (var->getVarType() == VAR_MEMBRANE && numMembranePoints > 0) {
+				for (int j = 0; j < numMembranePoints; j ++) {
+					char p[30];
+					sprintf(p, "%d\0", membranePoints[j]);
+					odeResultSet[i]->addColumn(string(p));
+				}
+			}		
+		}
 
-	// for convolved variables
-	for (int i = 0; i < numVar; i ++) {
-		Variable* var = sim->getVariable(i);
-		odeResultSet[i + numVar] = new OdeResultSet();
-		for (int j = 0; j < numImageRegions; j ++) {
-			char p[30];
-			sprintf(p, "%d\0", j);
-			odeResultSet[i + numVar]->addColumn(string(p));
-		}		 
-	}	
+		// for convolved variables
+		for (int i = 0; i < numVar; i ++) {
+			Variable* var = sim->getVariable(i);
+			odeResultSet[i + numVar] = new OdeResultSet();
+			for (int j = 0; j < numImageRegions; j ++) {
+				char p[30];
+				sprintf(p, "%d\0", j);
+				odeResultSet[i + numVar]->addColumn(string(p));
+			}
+		}	
+	} else {
+		timeArray.clear();
+		for (int i = 0; i < 2 * numVar; i ++) {
+			odeResultSet[i]->clearData();
+		}
+	}
 }
 
 static void trimString(string& str)

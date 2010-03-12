@@ -32,7 +32,6 @@ public:
 	void    setScheduler(Scheduler *scheduler);
 	void iterate();          // computes 1 time step
 	virtual void    update();           // copies new to old values 
-	void    reset();            // initializes to t=last time step
 
 	double  getTime_sec();
 	void    setCurrIteration(int curriter) { 
@@ -90,11 +89,6 @@ protected:
 	Mesh            *_mesh;
 	bool          _advanced;
 	bool          _initEquations;
-
-#ifdef VCELL_MPI
-	int mpiRank;
-	int mpiSize;
-#endif
 };
 
 #endif

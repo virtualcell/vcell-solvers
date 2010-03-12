@@ -45,6 +45,8 @@ private:
 	void loadMesh(istream& ifsInput);
 	void loadFieldData(istream& ifsInput);
 	void loadParameters(istream& ifsInput, int numParams);
+	void loadSerialScanParameters(istream& ifsInput, int numSerialScanParameters);
+	void loadSerialScanParameterValues(istream& ifsInput, int numSerialScanParamValues);	
 
 	void init(double* paramValues=0);
 	void step(double* paramValues=0);

@@ -33,7 +33,7 @@ public:
 private:
 	bool bSymmetricStorage; // no convection, A would be symmetric
 	vector<CoupledNeighbors*> dirichletNeighbors; // Aij, j is dirichlet points, computed in LHS, used it RHS
-	vector<CoupledNeighbors*> periodicNeighbors; // Aij * periodicConstant, j is dirichlet points, computed in LHS, used it RHS
+	vector<CoupledNeighbors*> periodicNeighbors; // Aij * periodicConstant, j is periodic points, computed in LHS, used it RHS
 	vector<CoupledNeighbors*> periodicCoupledPairs; // list of minus and plus pairs of periodic boundary points, used to update the solutions of these points.	
 	bool bPreProcessed;
 

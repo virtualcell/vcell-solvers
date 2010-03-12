@@ -16,10 +16,6 @@
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/SerialScheduler.h>
 #include <VCELL/SundialsPdeScheduler.h>
-#ifdef VCELL_MPI
-#include <VCELL/DomainPDEScheduler.h>
-#include "mpi.h"
-#endif
 
 Simulation::Simulation(Mesh *mesh)
 {
@@ -34,11 +30,6 @@ Simulation::Simulation(Mesh *mesh)
 	_initEquations = false;
 	_scheduler = NULL;
 	//globalParticleList.clear();
-
-#ifdef VCELL_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &mpiRank);
-	MPI_Comm_size(MPI_COMM_WORLD, &mpiSize);
-#endif
 }
 
 Simulation::~Simulation()
@@ -81,14 +72,6 @@ void Simulation::update()
 	}
 	//_scheduler->update();
 	currIteration ++;
-}
-
-void Simulation::reset()
-{
-	currIteration=0;
-	//_scheduler->resetFirstTime();
-	_scheduler->initValues();
-	//_scheduler->reset();
 }
 
 void Simulation::addSolver(Solver *solver)
@@ -161,17 +144,6 @@ Solver *Simulation::getSolverFromVariable(Variable *var)
 
 void Simulation::writeData(char *filename, bool bCompress)
 {
-
-	//synchronize();
-
-#ifdef VCELL_MPI
-	//
-	// only root process actually writes dataset
-	//
-	if (mpiRank!=0){
-		return true;
-	}
-#endif
 	//bool hasParticles = false;
 	//VCellModel *model = SimTool::getInstance()->getModel();
 	//for (int i = 0; i < model->getNumFeatures(); i ++) {
@@ -236,53 +208,31 @@ void Simulation::setScheduler(Scheduler *scheduler)
 //-------------------------------------------------------
 void Simulation::initSimulation()
 {
-	if (_scheduler != NULL){
-		return;
-	}
-	int odeCount = 0, pdeCount = 0;
-	for (int i = 0; i < (int)varList.size(); i ++) {
-		Variable* var = varList[i];
-		if (var->isPde()){
-			pdeCount ++;
+	if (_scheduler == 0) {
+		int odeCount = 0, pdeCount = 0;
+		for (int i = 0; i < (int)varList.size(); i ++) {
+			Variable* var = varList[i];
+			if (var->isPde()){
+				pdeCount ++;
+			} else {
+				odeCount ++;
+			}
+		}
+
+		printf("pdeCount=%d, odeCount=%d\n", pdeCount, odeCount);
+	
+		SimTool* simTool = SimTool::getInstance();
+		if (simTool->isSundialsPdeSolver()) {
+			_scheduler = new SundialsPdeScheduler(this, simTool->getSundialsRelativeTolerance(), simTool->getSundialsAbsoluteTolerance(), simTool->getSundialsMaxStep(), simTool->getNumDiscontinuityTimes(), simTool->getDiscontinuityTimes(), simTool->isSundialsOneStepOutput());
 		} else {
-			odeCount ++;
-		}
-	}
-
-#ifdef VCELL_MPI
-	int numProcesses;
-	int rank;
-	MPI_Comm_size(MPI_COMM_WORLD,&numProcesses);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-
-	if (rank==0) printf("pdeCount=%d, odeCount=%d\n", pdeCount, odeCount);
-	if (numProcesses==1){
-		if (rank==0) printf("using scheduler for serial algorithm\n");
 			_scheduler = new SerialScheduler(this);
-		}else if (pdeCount==0){
-			printf("There are no PDE's, no appropriate parallel scheme is availlable\n");
-			return false;
-		}else if (numProcesses<=pdeCount){
-			if (rank==0) printf("using PDE Scheduler - each process computes 1 (or more) PDEs and all the ODEs\n");
-			_scheduler = new PDEScheduler(this);
-		}else{
-			if (rank==0) printf("using Domain Decomposition Scheduler - one process for each PDE, one process for each sub-domain (all ODEs)\n");
-			_scheduler = new DomainPDEScheduler(this);
 		}
-#else
-	printf("pdeCount=%d, odeCount=%d\n", pdeCount, odeCount);
-	SimTool* simTool = SimTool::getInstance();
-	if (simTool->isSundialsPdeSolver()) {
-		_scheduler = new SundialsPdeScheduler(this, simTool->getSundialsRelativeTolerance(), simTool->getSundialsAbsoluteTolerance(), simTool->getSundialsMaxStep(), simTool->getNumDiscontinuityTimes(), simTool->getDiscontinuityTimes(), simTool->isSundialsOneStepOutput());
-	} else {
-		_scheduler = new SerialScheduler(this);
+
+		VCellModel *model = SimTool::getInstance()->getModel();
+		model->resolveReferences();
 	}
-#endif
 
-	VCellModel *model = SimTool::getInstance()->getModel();
-	model->resolveReferences();
 	_scheduler->initValues();
-
 	currIteration = 0;
 }
 

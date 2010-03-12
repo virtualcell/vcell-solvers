@@ -17,9 +17,6 @@ public:
 	SparseMatrixPCG(SparseMatrixPCG* sm);
 	~SparseMatrixPCG();
 
-	void setsa(long index, double value);
-	void setija(long index, long value);
-
 	long getN() { return N; }
 	long getNumNonZeros() {return numNonZeros;};
 	int  getSymmetricFlag() { return symmflag; }    

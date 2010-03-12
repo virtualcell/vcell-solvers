@@ -34,7 +34,7 @@ public:
 
 	virtual double getXBoundaryPeriodicConstant() { return 0.0; }
     virtual double getYBoundaryPeriodicConstant() { return 0.0; }
-    virtual double getZBoundaryPeriodicConstant() { return 0.0; }	
+    virtual double getZBoundaryPeriodicConstant() { return 0.0; }
 
     virtual double getDiffusionRate(long index);
     //double getMobilityConstant();     // this returns mobility * valence

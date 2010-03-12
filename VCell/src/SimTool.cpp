@@ -2,9 +2,6 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#ifdef VCELL_MPI
-#include "mpi.h"
-#endif
 
 #include <iostream>
 #include <sstream>
@@ -17,6 +14,7 @@ using std::endl;
 #include <VCELL/Simulation.h>
 #include <VCELL/DataSet.h>
 #include <VCELL/SimulationMessaging.h>
+#include <VCELL/SimulationExpression.h>
 #include <VCELL/Solver.h>
 #include <VCELL/Variable.h>
 #include <VCELL/CartesianMesh.h>
@@ -67,6 +65,7 @@ SimTool::SimTool()
 	bSimFileCompress = false;
 	baseDirName = NULL;
 	baseSimName = NULL;
+	bLoadFinal = true;
 
 	_timer = 0;
 	vcellModel = 0;
@@ -90,6 +89,8 @@ SimTool::SimTool()
 	keepAtMost = 5000;
 
 	dataProcessor = 0;
+	numSerialParameterScans = 0;
+	serialScanParameterValues = 0;
 }
 
 SimTool::~SimTool()
@@ -101,6 +102,10 @@ SimTool::~SimTool()
 	delete[] discontinuityTimes;
 
 	delete dataProcessor;
+	for (int i = 0; i < numSerialParameterScans; i ++) {
+		delete[] serialScanParameterValues[i];
+	}
+	delete[] serialScanParameterValues;
 }
 
 void SimTool::setModel(VCellModel* model) {
@@ -627,6 +632,37 @@ void SimTool::setSolver(string& s) {
 }
 
 void SimTool::start() {
+	if (numSerialParameterScans == 0 || SimulationMessaging::getInstVar()->getTaskID() >= 0) { // only do it when not in messaging mode
+		start1();
+	} else {
+		SimulationExpression* sim = (SimulationExpression*)simulation;
+		for (int scan = 0; scan < numSerialParameterScans; scan ++) {
+			if (scan > 0) {
+				string bfn(baseFileName);
+				char oldIndex[10], newIndex[10];
+				sprintf(oldIndex, "_%d_\0", scan - 1);
+				sprintf(newIndex, "_%d_\0", scan);
+				int p = (int)bfn.rfind(oldIndex);
+				bfn.replace(p, strlen(oldIndex), newIndex);
+				setBaseFilename((char*)bfn.c_str());
+			}
+			sim->setSerialScanParameterValues(serialScanParameterValues[scan]);
+			start1();
+		}
+	}
+}
+
+void SimTool::start1() {
+	simulation->initSimulation();
+
+	if (bLoadFinal) {
+		loadFinal();   // initializes to the latest file if it exists
+	} else {
+		zipFileCount = 0;
+		simStartTime = 0;
+		clearLog();
+	}
+
 	if (dataProcessor != 0) {
 		dataProcessor->onStart(this);
 	}
@@ -650,7 +686,9 @@ void SimTool::start() {
 		throw "Invalid base file name for dataset";
 	}
 
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "simulation started"));
+	char message[256];
+	sprintf(message, "simulation [%s] started", baseSimName);
+	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, message));
 
 	//
     // destroy any partial results from unfinished iterations
@@ -664,27 +702,27 @@ void SimTool::start() {
 	if (simulation->getCurrIteration()==0) {
 		// simulation starts from scratch
 		ASSERTION(startTime == 0.0);
-		FILE *fp = NULL;
-		char filename[128];
-		sprintf(filename, "%s%s", baseFileName, MESH_FILE_EXT);
-		if ((fp=fopen(filename,"w"))==NULL){
-			char errMsg[256];
-			sprintf(errMsg, "cannot open mesh file %s for writing", filename);
-			throw errMsg;
-		}
-		simulation->getMesh()->write(fp);
-		fclose(fp);
+		if (bStoreEnable){
+			FILE *fp = NULL;
+			char filename[128];
+			sprintf(filename, "%s%s", baseFileName, MESH_FILE_EXT);
+			if ((fp=fopen(filename,"w"))==NULL){
+				char errMsg[256];
+				sprintf(errMsg, "cannot open mesh file %s for writing", filename);
+				throw errMsg;
+			}
+			simulation->getMesh()->write(fp);
+			fclose(fp);
 
-		sprintf(filename, "%s%s", baseFileName, MESHMETRICS_FILE_EXT);
-		if ((fp=fopen(filename,"w"))==NULL){
-			char errMsg[256];
-			sprintf(errMsg, "cannot open mesh metrics file %s for writing", filename);
-			throw errMsg;
-		}
-		simulation->getMesh()->writeMeshMetrics(fp);
-		fclose(fp);
+			sprintf(filename, "%s%s", baseFileName, MESHMETRICS_FILE_EXT);
+			if ((fp=fopen(filename,"w"))==NULL){
+				char errMsg[256];
+				sprintf(errMsg, "cannot open mesh metrics file %s for writing", filename);
+				throw errMsg;
+			}
+			simulation->getMesh()->writeMeshMetrics(fp);
+			fclose(fp);
 
-		if (bStoreEnable) {
 			updateLog(0.0, 0.0, 0);
 		}
 		if (dataProcessor != 0) {
@@ -771,27 +809,14 @@ void SimTool::start() {
 		return;
 	} 
 	
+	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, 1.0, simulation->getTime_sec()));
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));	
 
 	if (dataProcessor != 0) {
 		dataProcessor->onComplete(this);
 	}
 
-#ifndef VCELL_MPI
 	showSummary(stdout);
-#else
-   int rank;
-   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-   printf("SimTool::start(), synchronizing MPI worker %d ...\n",rank);
-   simulation->synchronize();
-
-   printf("SimTool::start(), status for MPI worker %d starting ...\n",rank);
-   if (rank == 0){
-      showSummary(stdout);
-   }
-   printf("SimTool::start(), status for MPI worker %d ending\n",rank);
-#endif
 }
 
 bool SimTool::checkSpatiallyUniform(Variable* var) {

@@ -108,6 +108,14 @@ public:
 	bool isSundialsOneStepOutput() { return bSundialsOneStepOutput; }
 
 	void createDataProcessor(string& name, string& text);
+	
+	void setSerialParameterScans(int numScans, double** values) {
+		numSerialParameterScans = numScans;
+		serialScanParameterValues = values;
+	}
+	void setLoadFinal(bool b) {
+		bLoadFinal = b;
+	}
 
 private:
 	SimTool();
@@ -118,6 +126,7 @@ private:
 	void updateLog(double progress,double time,int iteration);
 	void clearLog();
 	int	getZipCount(char* zipFileName);
+	void start1();
 
 	static SimTool* instance;
 
@@ -140,6 +149,7 @@ private:
 	string solver;
 	double* discontinuityTimes;
 	int numDiscontinuityTimes;
+	bool bLoadFinal;
 
 
 	double sundialsRelTol, sundialsAbsTol, sundialsMaxStep;
@@ -150,6 +160,8 @@ private:
 	int keepAtMost;
 
 	DataProcessor* dataProcessor;
+	double** serialScanParameterValues;
+	int numSerialParameterScans;
 };
 
 #endif
