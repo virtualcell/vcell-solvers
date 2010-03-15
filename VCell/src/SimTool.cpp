@@ -259,7 +259,7 @@ static bool zipUnzipWithRetry(bool bZip, char* zipFileName, char* simFileName, c
 			cout << "SimTool::updateLog(), adding .sim to .zip failed, trying again" << endl;
 		}
 	}
-	if (bSuccess && retcode != 0) {				
+	if (bSuccess && retcode != 0) {
 		sprintf(errmsg, "Writing zip file <%s> failed, return code is %d", zipFileName, retcode);
 		bSuccess = false;
 	}
@@ -727,11 +727,12 @@ void SimTool::start1() {
 			fclose(fp);
 
 			updateLog(0.0, 0.0, 0);
-		}		
+		} else {
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, 0, 0));
+		}
 		if (dataProcessor != 0) {
 			dataProcessor->onWrite(this);
 		}
-		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, 0, 0));
 	} else {
 		// simulation continues from existing results, send data message
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simStartTime));
