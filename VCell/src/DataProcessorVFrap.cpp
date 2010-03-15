@@ -40,6 +40,11 @@ DataProcessorVFrap::~DataProcessorVFrap() {
 	delete[] volumePoints;
 	delete[] membranePoints;
 	delete[] sampleImage;
+
+	for (int i = 0; i < 2 * SimTool::getInstance()->getSimulation()->getNumVariables(); i ++) {
+		delete odeResultSet[i];
+	}
+	delete[] odeResultSet;
 }
 
 bool DataProcessorVFrap::checkComplete(SimTool* simTool) {
@@ -131,7 +136,7 @@ void DataProcessorVFrap::parseInput(SimTool* simTool) {
 			if (token == "false") {
 				simTool->setStoreEnable(false);
 			}
-			getline(ss, fieldname);
+			getline(ss, token);
 			//loadSampleImage(simTool, vcdataID, varName, time);			
 		} else if (token == "SampleImage") {
 			ss >> numImageRegions >> zSlice;
@@ -266,12 +271,6 @@ void DataProcessorVFrap::onComplete(SimTool* simTool) {
 			data->put(odeResultSet[i + numVar]->getRowData(), numT, numImageRegions);
 		}
 	}
-
-	for (int i = 0; i < 2 * numVar; i ++) {
-		delete odeResultSet[i];
-	}
-	delete[] odeResultSet;
-
 	outputFile.close();	
 
 	cout << endl << "new final post data processor netcdf file is " << outputFileName << endl;
