@@ -67,14 +67,19 @@ extern "C"
 SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, double rtol, double atol, double ms, int numDisTimes, double* disTimes, bool bDefaultOuptput) : Scheduler(sim)
 {
 	simulation = (SimulationExpression*)sim;
-	sundialsSolverMemory = 0;
 	mesh = (CartesianMesh*)simulation->getMesh();
+
+	y = 0;
+	sundialsSolverMemory = 0;
+
 	relTol = rtol;
 	absTol = atol;
 	maxStep = ms;
 	currDiscontinuityTimeCount = 0;
 	numDiscontinuityTimes = numDisTimes;
 	discontinuityTimes = disTimes;
+
+	numUnknowns = 0;
 
 	M = 0;
 	pcg_workspace = 0;
@@ -133,7 +138,7 @@ void SundialsPdeScheduler::iterate() {
 }
 
 void SundialsPdeScheduler::setupOrderMaps() {
-	if (!bFirstTime) {
+	if (numUnknowns > 0) {
 		return;
 	}
 
@@ -365,42 +370,43 @@ void SundialsPdeScheduler::initSundialsSolver() {
 		return;
 	}
 
-	int numVariables = simulation->getNumVariables();
 	int numVolVar = simulation->getNumVolVariables();
+	if (sundialsSolverMemory == 0) {
+		int numVariables = simulation->getNumVariables();
 
-	numSymbolsPerVolVar = SimTool::getInstance()->getModel()->getNumFeatures() + 1;
-	volSymbolOffset = 4;
-	memSymbolOffset = volSymbolOffset + numVolVar * numSymbolsPerVolVar;
-	volRegionSymbolOffset = memSymbolOffset + simulation->getNumMemVariables();
-	memRegionSymbolOffset = volRegionSymbolOffset + simulation->getNumVolRegionVariables();
-	fieldDataSymbolOffset = memRegionSymbolOffset + simulation->getNumMemRegionVariables();
-	randomVariableSymbolOffset = fieldDataSymbolOffset + simulation->getNumFields();
+		numSymbolsPerVolVar = SimTool::getInstance()->getModel()->getNumFeatures() + 1;
+		volSymbolOffset = 4;
+		memSymbolOffset = volSymbolOffset + numVolVar * numSymbolsPerVolVar;
+		volRegionSymbolOffset = memSymbolOffset + simulation->getNumMemVariables();
+		memRegionSymbolOffset = volRegionSymbolOffset + simulation->getNumVolRegionVariables();
+		fieldDataSymbolOffset = memRegionSymbolOffset + simulation->getNumMemRegionVariables();
+		randomVariableSymbolOffset = fieldDataSymbolOffset + simulation->getNumFields();
+		serialScanParameterSymbolOffset = randomVariableSymbolOffset + simulation->getNumRandomVariables();
 
-	int valueArraySize = 4 + numVolVar * numSymbolsPerVolVar + (numVariables - numVolVar) + simulation->getNumFields(); // t, x, y, z, (U, U_Feature1_membrane, U_Feature2_membrane, ...), (M), (VR), (MR), (FieldData)
-	statePointValues = new double[valueArraySize];
-	memset(statePointValues, 0, valueArraySize * sizeof(double));
+		// t, x, y, z, (U, U_Feature1_membrane, U_Feature2_membrane, ...), (M), (VR), (MR), (FieldData), (RandomVariable), (SerialScanParameter)
+		int valueArraySize = 4 + numVolVar * numSymbolsPerVolVar + (numVariables - numVolVar) 
+			+ simulation->getNumFields()
+			+ simulation->getNumRandomVariables() 
+			+ simulation->getNumSerialScanParameters(); 
+		statePointValues = new double[valueArraySize];
+		memset(statePointValues, 0, valueArraySize * sizeof(double));
 
-	if (bHasVariableDiffusionAdvection) {
-		neighborStatePointValues = new double*[3];
-		for (int n = 0; n < 3; n ++) {
-			neighborStatePointValues[n] = new double[valueArraySize];
-			memset(neighborStatePointValues[n], 0, valueArraySize * sizeof(double));
+		if (bHasVariableDiffusionAdvection) {
+			neighborStatePointValues = new double*[3];
+			for (int n = 0; n < 3; n ++) {
+				neighborStatePointValues[n] = new double[valueArraySize];
+				memset(neighborStatePointValues[n], 0, valueArraySize * sizeof(double));
+			}
 		}
-	}
 
-	currDiscontinuityTimeCount = 0;
-	while (numDiscontinuityTimes > 0 && discontinuityTimes[currDiscontinuityTimeCount] < currentTime) {
-		currDiscontinuityTimeCount ++;
-	}
+#ifndef SUNDIALS_USE_PCNONE
+		preallocateM();
+#endif
 
-	int returnCode = 0;
-	if (sundialsSolverMemory != 0) {
-		return;
-	}
-
-	y = N_VNew_Serial(numUnknowns);
-	if (y == 0) {
-		throw "SundialsPDESolver:: Out of Memory : y ";
+		y = N_VNew_Serial(numUnknowns);
+		if (y == 0) {
+			throw "SundialsPDESolver:: Out of Memory : y ";
+		}
 	}
 
 	// initialize y with initial conditions
@@ -441,57 +447,75 @@ void SundialsPdeScheduler::initSundialsSolver() {
 		}
 	}
 
-#ifndef SUNDIALS_USE_PCNONE
-	preallocateM();
-	if (!simulation->hasTimeDependentDiffusionAdvection()) {
-		oldGamma = 1.0;
-		buildM_Volume(0, 0, oldGamma);
-		buildM_Membrane(0, 0, oldGamma);
-	}
-#endif
-
-	sundialsSolverMemory = CVodeCreate(CV_BDF, CV_NEWTON);
+	int returnCode = 0;
 	if (sundialsSolverMemory == 0) {
-		throw "SundialsPDESolver:: Out of memory : sundialsSolverMemory";
-	}
+		sundialsSolverMemory = CVodeCreate(CV_BDF, CV_NEWTON);
+		if (sundialsSolverMemory == 0) {
+			throw "SundialsPDESolver:: Out of memory : sundialsSolverMemory";
+		}
 
-	cout << endl << "----------------------------------" << endl;
-	cout << "sundials pde solver is starting from time " << currentTime << endl;
-	cout << "----------------------------------" << endl;
+		cout << endl << "----------------------------------" << endl;
+		cout << "sundials pde solver is starting from time " << currentTime << endl;
+		cout << "----------------------------------" << endl;
 
-	returnCode = CVodeMalloc(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, relTol, &absTol);
-	checkCVodeReturnCode(returnCode);
+		returnCode = CVodeMalloc(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, relTol, &absTol);
+		checkCVodeReturnCode(returnCode);
 
-	returnCode = CVodeSetFdata(sundialsSolverMemory, this);
-	checkCVodeReturnCode(returnCode);
+		returnCode = CVodeSetFdata(sundialsSolverMemory, this);
+		checkCVodeReturnCode(returnCode);
 
 	// set linear solver
 #ifdef SUNDIALS_USE_PCNONE
-	cout << endl << "******using Sundials CVode with PREC_NONE, relTol=" << relTol << ", absTol=" << absTol << endl;
-	returnCode = CVSpgmr(sundialsSolverMemory, PREC_NONE, 0);
-#else
-	if (simulation->getNumMemPde() == 0 && simulation->getNumVolPde() == 0) {
-		cout << endl << "******ODE only, using Sundials CVode with PREC_NONE";
+		cout << endl << "******using Sundials CVode with PREC_NONE, relTol=" << relTol << ", absTol=" << absTol << endl;
 		returnCode = CVSpgmr(sundialsSolverMemory, PREC_NONE, 0);
+#else
+		if (simulation->getNumMemPde() == 0 && simulation->getNumVolPde() == 0) {
+			cout << endl << "******ODE only, using Sundials CVode with PREC_NONE";
+			returnCode = CVSpgmr(sundialsSolverMemory, PREC_NONE, 0);
+		} else {
+			cout << endl << "****** using Sundials CVode with PREC_LEFT";
+			returnCode = CVSpgmr(sundialsSolverMemory, PREC_LEFT, 0);
+		}
+#endif
+		cout << ", relTol=" << relTol << ", absTol=" << absTol << ", maxStep=" <<  maxStep << endl;
+		checkCVodeReturnCode(returnCode);
+
+		// set max absolute step size
+		returnCode = CVodeSetMaxStep(sundialsSolverMemory, maxStep);
+		checkCVodeReturnCode(returnCode);
+
+		// set max of number of steps
+		returnCode = CVodeSetMaxNumSteps(sundialsSolverMemory, LONG_MAX);
+		checkCVodeReturnCode(returnCode);
+
+		// set preconditioner.
+		returnCode = CVSpilsSetPreconditioner (sundialsSolverMemory, pcSetup_callback, pcSolve_callback, this);
+		checkCVodeReturnCode(returnCode);
 	} else {
-		cout << endl << "****** using Sundials CVode with PREC_LEFT";
-		returnCode = CVSpgmr(sundialsSolverMemory, PREC_LEFT, 0);
+		returnCode = CVodeReInit(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, relTol, &absTol);
+		checkCVodeReturnCode(returnCode);
+	}
+
+	// only populate once serial scan parameter values
+	simulation->populateSerialScanParameterValues(statePointValues + serialScanParameterSymbolOffset);
+	if (bHasVariableDiffusionAdvection) {
+		for (int n = 0; n < 3; n ++) {
+			simulation->populateSerialScanParameterValues(neighborStatePointValues[n] + serialScanParameterSymbolOffset);
+		}			
+	}
+
+#ifndef SUNDIALS_USE_PCNONE	
+	if (!simulation->hasTimeDependentDiffusionAdvection()) {
+		oldGamma = 1.0;
+		buildM_Volume(currentTime, 0, oldGamma);
+		buildM_Membrane(currentTime, 0, oldGamma);
 	}
 #endif
-	cout << ", relTol=" << relTol << ", absTol=" << absTol << ", maxStep=" <<  maxStep << endl;
-	checkCVodeReturnCode(returnCode);
 
-	// set max absolute step size
-	returnCode = CVodeSetMaxStep(sundialsSolverMemory, maxStep);
-	checkCVodeReturnCode(returnCode);
-
-	// set max of number of steps
-	returnCode = CVodeSetMaxNumSteps(sundialsSolverMemory, LONG_MAX);
-	checkCVodeReturnCode(returnCode);
-
-	// set preconditioner.
-	returnCode = CVSpilsSetPreconditioner (sundialsSolverMemory, pcSetup_callback, pcSolve_callback, this);
-	checkCVodeReturnCode(returnCode);
+	currDiscontinuityTimeCount = 0;
+	while (numDiscontinuityTimes > 0 && discontinuityTimes[currDiscontinuityTimeCount] < currentTime) {
+		currDiscontinuityTimeCount ++;
+	}
 }
 
 void SundialsPdeScheduler::printCVodeStats()
@@ -1564,6 +1588,10 @@ int SundialsPdeScheduler::pcSolve_callback(realtype t, N_Vector y, N_Vector fy, 
 
 // M approximates I - gamma*J
 void SundialsPdeScheduler::preallocateM() {
+	if (M != 0) {
+		return;
+	}
+
 	int GENERAL_MAX_NONZERO_PERROW[4] = {0, 3, 5, 7};
 
 	// initialize a sparse matrix for M

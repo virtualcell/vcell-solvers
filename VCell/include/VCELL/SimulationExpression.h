@@ -75,6 +75,7 @@ public:
 	int getNumSerialScanParameters() {
 		return (int)serialScanParamList.size();
 	}
+	void populateSerialScanParameterValues(double* darray);
 
 	// right now bSolveRegion is only applicable for volume variables
 	void addVariable(Variable *var, bool* bSolveRegions=0);

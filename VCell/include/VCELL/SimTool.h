@@ -109,10 +109,7 @@ public:
 
 	void createDataProcessor(string& name, string& text);
 	
-	void setSerialParameterScans(int numScans, double** values) {
-		numSerialParameterScans = numScans;
-		serialScanParameterValues = values;
-	}
+	void setSerialParameterScans(int numScans, double** values);
 	void setLoadFinal(bool b) {
 		bLoadFinal = b;
 	}

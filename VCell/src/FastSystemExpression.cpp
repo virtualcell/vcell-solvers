@@ -16,6 +16,11 @@ FastSystemExpression::FastSystemExpression(int dimension, int numDepend, Simulat
 : FastSystem(dimension, numDepend)
 {	
 	simulation = sim;
+
+	if (simulation->getNumSerialScanParameters() > 0) {
+		throw "Fast System doesn't support serial parameter scans yet";
+	}
+
 	pseudoConstants = new double[numDependents];
 	memset(pseudoConstants, 0, numDependents * sizeof(double));	
 	for (int i = 0; i < dimension; i ++) {

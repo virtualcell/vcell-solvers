@@ -555,6 +555,12 @@ int SimTool::getZipCount(char* zipFileName) {
 void SimTool::clearLog()
 {
 	simStartTime = 0;
+	simFileCount = 0;
+	zipFileCount = 0;
+	
+	if (SimTool::getInstance()->isSundialsPdeSolver()) {
+		simulation->setSimStartTime(0);
+	}
 
 	FILE *fp;
 	char logFileName[256];
@@ -653,13 +659,10 @@ void SimTool::start() {
 }
 
 void SimTool::start1() {
-	simulation->initSimulation();
-
+	simulation->initSimulation();	
 	if (bLoadFinal) {
 		loadFinal();   // initializes to the latest file if it exists
 	} else {
-		zipFileCount = 0;
-		simStartTime = 0;
 		clearLog();
 	}
 
@@ -877,4 +880,10 @@ void SimTool::createDataProcessor(string& name, string& text) {
 void SimTool::setCheckSpatiallyUniform() {
 	bCheckSpatiallyUniform = true;
 	cout << endl << "----Stop At Spatially Uniform----" << endl;
+}
+
+void SimTool::setSerialParameterScans(int numScans, double** values) {
+	numSerialParameterScans = numScans;
+	serialScanParameterValues = values;
+	cout << endl << "----Serial Parameter Scans : " << numSerialParameterScans << endl;
 }

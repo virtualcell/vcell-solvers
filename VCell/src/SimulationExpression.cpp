@@ -241,8 +241,8 @@ void SimulationExpression::createSymbolTable() {
 
 	VCellModel* model = SimTool::getInstance()->getModel();
 
-	// t, x, y, z, VAR, VAR_Feature1_membrane, VAR_Feature2_membrane, ... (for computing membrane flux), field data, parameters, serial scan parameters
-	int numSymbols = 4 + volVarSize * (model->getNumFeatures() + 1) + (numVariables - volVarSize) + (int)fieldDataList.size() + (int)randomVarList.size() + (int)paramList.size() + (int)serialScanParamList.size();
+	// t, x, y, z, VAR, VAR_Feature1_membrane, VAR_Feature2_membrane, ... (for computing membrane flux), field data, serial scan parameters, parameters
+	int numSymbols = 4 + volVarSize * (model->getNumFeatures() + 1) + (numVariables - volVarSize) + (int)fieldDataList.size() + (int)randomVarList.size() + (int)serialScanParamList.size() + (int)paramList.size();
 	string* variableNames = new string[numSymbols];	
 	ValueProxy** oldValueProxies = new ValueProxy*[numSymbols];
 
@@ -349,13 +349,6 @@ void SimulationExpression::createSymbolTable() {
 		}
 	}
 
-	// add parameters
-	for (int i = 0; i < (int)paramList.size(); i ++) {
-		oldValueProxies[variableIndex] = paramValueProxies[i];
-		variableNames[variableIndex] = paramList[i];
-		variableIndex ++;
-	}
-
 	// add serial scan parameters
 	for (int i = 0; i < (int)serialScanParamList.size(); i ++) {
 		oldValueProxies[variableIndex] = serialScanParamValueProxies[i];
@@ -363,9 +356,12 @@ void SimulationExpression::createSymbolTable() {
 		variableIndex ++;
 	}
 
-	/*for (int i = 0; i < variableIndex; i ++) {		
-		cout << i << " " << variableNames[i] << endl;
-	}*/
+	// add parameters
+	for (int i = 0; i < (int)paramList.size(); i ++) {
+		oldValueProxies[variableIndex] = paramValueProxies[i];
+		variableNames[variableIndex] = paramList[i];
+		variableIndex ++;
+	}
 
 	symbolTable = new SimpleSymbolTable(variableNames, variableIndex, oldValueProxies);
 	delete[] variableNames;	
@@ -403,6 +399,16 @@ void SimulationExpression::populateRandomValues(double* darray, int index) {
 		} else {
 			darray[i] = 0;
 		}
+	}
+}
+
+void SimulationExpression::populateSerialScanParameterValues(double* darray) {
+	if (serialScanParamList.size() == 0) {
+		return;
+	}
+
+	for (int i = 0; i < (int)serialScanParamList.size(); i ++) {
+		darray[i] = serialScanParamValueProxies[i]->evaluate();
 	}
 }
 

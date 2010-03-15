@@ -150,13 +150,14 @@ private:
 	int memVectorOffset;
 	int volRegionVectorOffset;
 	int memRegionVectorOffset;
-	int fieldDataSymbolOffset;
-	int randomVariableSymbolOffset;
 
 	int volSymbolOffset;
 	int memSymbolOffset;
 	int volRegionSymbolOffset;
 	int memRegionSymbolOffset;
+	int fieldDataSymbolOffset;
+	int randomVariableSymbolOffset;
+	int serialScanParameterSymbolOffset;
 
 	CartesianMesh* mesh;
 	int dimension;
