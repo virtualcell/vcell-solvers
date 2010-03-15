@@ -727,10 +727,11 @@ void SimTool::start1() {
 			fclose(fp);
 
 			updateLog(0.0, 0.0, 0);
-		}
+		}		
 		if (dataProcessor != 0) {
 			dataProcessor->onWrite(this);
 		}
+		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, 0, 0));
 	} else {
 		// simulation continues from existing results, send data message
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simStartTime));
