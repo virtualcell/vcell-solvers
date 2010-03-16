@@ -14,8 +14,5 @@ MembraneVarContext::MembraneVarContext(Membrane *membrane, MembraneVariable* var
 
 double MembraneVarContext::getInitialValue(MembraneElement *membraneElement)
 {
-	if (initialValue){
-		return *initialValue;
-	}
 	throw "Application Error: neither initialValue nor getInitialValue() specified for MembraneVarContext";
 }

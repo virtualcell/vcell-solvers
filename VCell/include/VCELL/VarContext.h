@@ -10,11 +10,13 @@
 using std::string;
 using std::vector;
 
-enum EXPRESSION_INDEX {INITIAL_VALUE_EXP=0, DIFF_RATE_EXP, REACT_RATE_EXP, BOUNDARY_XM_EXP, BOUNDARY_XP_EXP, 
-	BOUNDARY_YM_EXP, BOUNDARY_YP_EXP, BOUNDARY_ZM_EXP, BOUNDARY_ZP_EXP, VELOCITY_X_EXP, VELOCITY_Y_EXP, VELOCITY_Z_EXP,
+enum EXPRESSION_INDEX {INITIAL_VALUE_EXP=0, DIFF_RATE_EXP, REACT_RATE_EXP, 
+	BOUNDARY_XM_EXP, BOUNDARY_XP_EXP, BOUNDARY_YM_EXP, BOUNDARY_YP_EXP, 
+	BOUNDARY_ZM_EXP, BOUNDARY_ZP_EXP, VELOCITY_X_EXP, VELOCITY_Y_EXP, VELOCITY_Z_EXP,
 	FLUX_EXP, UNIFORM_RATE_EXP};
-static string String_Expression_Index[] = {"INITIAL_VALUE_EXP", "DIFF_RATE_EXP", "REACT_RATE_EXP", "BOUNDARY_XM_EXP", "BOUNDARY_XP_EXP", 
-	"BOUNDARY_YM_EXP", "BOUNDARY_YP_EXP", "BOUNDARY_ZM_EXP", "BOUNDARY_ZP_EXP", "VELOCITY_X_EXP", "VELOCITY_Y_EXP", "VELOCITY_Z_EXP",
+static string String_Expression_Index[] = {"INITIAL_VALUE_EXP", "DIFF_RATE_EXP", "REACT_RATE_EXP", 
+	"BOUNDARY_XM_EXP", "BOUNDARY_XP_EXP", "BOUNDARY_YM_EXP", "BOUNDARY_YP_EXP", 
+	"BOUNDARY_ZM_EXP", "BOUNDARY_ZP_EXP", "VELOCITY_X_EXP", "VELOCITY_Y_EXP", "VELOCITY_Z_EXP",
 	"IN_FLUX_EXP", "OUT_FLUX_EXP", "UNIFORM_RATE_EXP"};
 #define TOTAL_NUM_EXPRESSIONS (UNIFORM_RATE_EXP + 1)
 
@@ -44,14 +46,12 @@ public:
 
 	virtual double getInitialValue(long index);
 	
-	bool isInit() { return bInitialized; }
 	virtual bool hasExact() { return false; }
 	virtual bool hasRemainders() { return false; }
 	
 	Structure  *getStructure() { return structure; }
 
 	void setExpression(Expression* newexp, int expIndex);
-	void bindAll(SimulationExpression* simulation);
 
 	// exclusively for sundials pde
 	double evaluateJumpCondition(MembraneElement*, double* values);
@@ -60,27 +60,29 @@ public:
 
 	void addJumpCondition(Membrane* membrane, Expression* exp);	
 	JumpCondition* getJumpCondition();
+	void reinitConstantValues();
 
 protected:
     VarContext(Structure *s, Variable* var);
-    
+
     Variable *species;
     Structure *structure;
-    bool bInitialized;
-    
-    double *initialValue;
-    Mesh  *mesh;
     Simulation    *sim;
 
-	Expression** expressions;	
-	double** constantValues;
-	bool* needsXYZ;
-
+	void bindAll(SimulationExpression* simulation);
 	double evaluateJumpCondition(MembraneElement*);
 	double evaluateExpression(long volIndex, long expIndex); // for volume
+	double evaluateMembraneRegionExpression(long memRegionIdex, long expIndex); // for membrane region
+	double evaluateVolumeRegionExpression(long volRegionIdex, long expIndex); // for volume regin
 	double evaluateExpression(MembraneElement* element, long expIndex); // for membrane
+
 	virtual bool isNullExpressionOK(int expIndex) { return false; }
-	Expression* getExpression(int expIndex)  { return expressions[expIndex]; }	
+	bool isConstantExpression(long expIndex);
+
+private:
+	Expression** expressions;
+	double** constantValues;
+	bool* needsXYZ;
 
 	vector<JumpCondition*> jumpConditionList;
 };

@@ -27,7 +27,7 @@ public:
 	SimulationExpression(Mesh *mesh);
 	~SimulationExpression();
 
-	void initSimulation();   // initializes to t=0
+	void resolveReferences(); // create symbol table
 	void update();           // copies new to old values 
 	void advanceTimeOn();
 	void advanceTimeOff();
@@ -117,8 +117,9 @@ public:
 
 		return 0;
 	}
+	bool isParameter(string& symbol); // can be serial scan parameter or opt parameter
 
-protected:
+private:
 	SymbolTable* symbolTable;
 
 	int* indices;
@@ -155,6 +156,8 @@ protected:
 
 	vector<string> serialScanParamList;
 	vector<ScalarValueProxy*> serialScanParamValueProxies;
+
+	void reinitConstantValues();
 };
 
 #endif

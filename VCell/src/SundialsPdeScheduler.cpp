@@ -454,10 +454,6 @@ void SundialsPdeScheduler::initSundialsSolver() {
 			throw "SundialsPDESolver:: Out of memory : sundialsSolverMemory";
 		}
 
-		cout << endl << "----------------------------------" << endl;
-		cout << "sundials pde solver is starting from time " << currentTime << endl;
-		cout << "----------------------------------" << endl;
-
 		returnCode = CVodeMalloc(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, relTol, &absTol);
 		checkCVodeReturnCode(returnCode);
 
@@ -495,6 +491,10 @@ void SundialsPdeScheduler::initSundialsSolver() {
 		returnCode = CVodeReInit(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, relTol, &absTol);
 		checkCVodeReturnCode(returnCode);
 	}
+
+	cout << endl << "----------------------------------" << endl;
+	cout << "sundials pde solver is starting from time " << currentTime << endl;
+	cout << "----------------------------------" << endl;
 
 	// only populate once serial scan parameter values
 	simulation->populateSerialScanParameterValues(statePointValues + serialScanParameterSymbolOffset);

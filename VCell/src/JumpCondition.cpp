@@ -4,6 +4,7 @@
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/Element.h>
+#include <VCELL/SimTool.h>
 
 JumpCondition::JumpCondition(Membrane* m, Expression* e)
 {
@@ -37,9 +38,9 @@ void JumpCondition::bindExpression(SymbolTable* symbolTable) {
 double JumpCondition::evaluateExpression(SimulationExpression* simulation, MembraneElement* element) {
 	if (constantValue != 0) {
 		return *constantValue;
-	}
-	CartesianMesh* mesh = (CartesianMesh*)simulation->getMesh();
+	}	
 	if (bNeedsXYZ) {
+		CartesianMesh* mesh = (CartesianMesh*)simulation->getMesh();
 		WorldCoord wc = mesh->getMembraneWorldCoord(element);
 		simulation->setCurrentCoordinate(wc);
 	}
@@ -54,4 +55,39 @@ double JumpCondition::evaluateExpression(double* values) {
 		return *constantValue;
 	}
 	return expression->evaluateVector(values);	
+}
+
+bool JumpCondition::isConstantExpression() {
+	// pure constant
+	if (constantValue != 0) {
+		return true;
+	}
+
+	// not defined
+	if (expression == 0) {
+		stringstream ss;
+		ss << "JumpCondition::isConstantExpression(), expression not defined";
+		throw ss.str();
+	}
+
+	// has parameters only
+	vector<string> symbols;
+	expression->getSymbols(symbols);
+	for (int i = 0; i < (int)symbols.size(); i ++) {
+		if (!((SimulationExpression*)SimTool::getInstance()->getSimulation())->isParameter(symbols[i])) {
+			return false;
+		}
+	}
+	return true;
+}
+
+void JumpCondition::reinitConstantValues() {
+	if (expression == 0 || !isConstantExpression()) {
+		return;
+	}
+	double d = expression->evaluateProxy();
+	if (constantValue == 0) {
+		constantValue = new double[1];
+	}
+	constantValue[0] = d;
 }

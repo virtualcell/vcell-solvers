@@ -14,6 +14,7 @@
 #include <ValueProxy.h>
 #include <VCELL/RandomVariable.h>
 #include <VCELL/Feature.h>
+#include <VCELL/Membrane.h>
 #include <VCELL/VCellModel.h>
 #include <SimpleSymbolTable.h>
 #include <ScalarValueProxy.h>
@@ -244,6 +245,8 @@ void SimulationExpression::createSymbolTable() {
 	// t, x, y, z, VAR, VAR_Feature1_membrane, VAR_Feature2_membrane, ... (for computing membrane flux), field data, serial scan parameters, parameters
 	int numSymbols = 4 + volVarSize * (model->getNumFeatures() + 1) + (numVariables - volVarSize) + (int)fieldDataList.size() + (int)randomVarList.size() + (int)serialScanParamList.size() + (int)paramList.size();
 	string* variableNames = new string[numSymbols];	
+
+	// value proxy must be preserved in all solver cases.
 	ValueProxy** oldValueProxies = new ValueProxy*[numSymbols];
 
 	valueProxyTime = new ScalarValueProxy();
@@ -412,12 +415,11 @@ void SimulationExpression::populateSerialScanParameterValues(double* darray) {
 	}
 }
 
-void SimulationExpression::initSimulation()
-{   
+void SimulationExpression::resolveReferences() {
 	if (symbolTable == 0) {
 		createSymbolTable();
 	}
-	Simulation::initSimulation();
+	Simulation::resolveReferences();
 }
 
 void SimulationExpression::setParameterValues(double* paramValues) {
@@ -430,6 +432,7 @@ void SimulationExpression::setParameterValues(double* paramValues) {
 	for (int i = 0; i < (int)paramList.size(); i ++) {
 		paramValueProxies[i]->setValue(paramValues[i]);
 	}
+	reinitConstantValues();
 }
 
 RandomVariable* SimulationExpression::getRandomVariableFromName(char* varName)
@@ -459,4 +462,34 @@ void SimulationExpression::setSerialScanParameterValues(double* serialScanParamV
 	for (int i = 0; i < (int)serialScanParamList.size(); i ++) {
 		serialScanParamValueProxies[i]->setValue(serialScanParamValues[i]);
 	}
+	reinitConstantValues();
+}
+
+bool SimulationExpression::isParameter(string& symbol) {
+
+	for (int i = 0; i < (int)serialScanParamList.size(); i ++) {
+		if (symbol == serialScanParamList[i]) {
+			return true;
+		}
+	}
+	for (int i = 0; i < (int)paramList.size(); i ++) {
+		if (symbol == paramList[i]) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void SimulationExpression::reinitConstantValues() {
+	VCellModel* model = SimTool::getInstance()->getModel();
+
+	for (int i = 0; i < model->getNumFeatures(); i ++) {
+		Feature* feature = model->getFeatureFromIndex(i);
+		feature->reinitConstantValues();
+	}
+	for (int i = 0; i < model->getNumMembranes(); i ++) {
+		Membrane* membrane = model->getMembraneFromIndex(i);
+		membrane->reinitConstantValues();
+	}
+
 }

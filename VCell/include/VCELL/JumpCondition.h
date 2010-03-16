@@ -23,12 +23,15 @@ public:
 	void bindExpression(SymbolTable*);
 	double evaluateExpression(double* values);
 	double evaluateExpression(SimulationExpression*, MembraneElement*);
+	void reinitConstantValues();
 
 private:
 	Membrane* membrane;
 	Expression *expression;
 	double* constantValue;
 	bool bNeedsXYZ;
+
+	bool isConstantExpression();
 };
 
 #endif

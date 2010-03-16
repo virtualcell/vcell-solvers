@@ -19,7 +19,7 @@ void VolumeRegionVarContextExpression::resolveReferences(Simulation* sim) {
 }
 
 double VolumeRegionVarContextExpression::getInitialValue(long regionIndex) {
-	return evaluateRegionExpression(regionIndex, INITIAL_VALUE_EXP);
+	return evaluateVolumeRegionExpression(regionIndex, INITIAL_VALUE_EXP);
 }
 
 double VolumeRegionVarContextExpression::getReactionRate(long volumeIndex) {
@@ -27,23 +27,11 @@ double VolumeRegionVarContextExpression::getReactionRate(long volumeIndex) {
 }
 
 double VolumeRegionVarContextExpression::getUniformRate(VolumeRegion *region){
-	return evaluateRegionExpression(region, UNIFORM_RATE_EXP);
+	return evaluateVolumeRegionExpression(region->getIndex(), UNIFORM_RATE_EXP);
 }
 
 double VolumeRegionVarContextExpression::getFlux(MembraneElement *element){
 	return evaluateJumpCondition(element);
-}
-
-double VolumeRegionVarContextExpression::evaluateRegionExpression(VolumeRegion *region, long expIndex)
-{
-	return evaluateRegionExpression(region->getIndex(), expIndex);
-}
-
-double VolumeRegionVarContextExpression::evaluateRegionExpression(long regionIndex, long expIndex)
-{
-	int* indices = ((SimulationExpression*)sim)->getIndices();
-	indices[VAR_VOLUME_REGION_INDEX] = regionIndex;
-	return expressions[expIndex]->evaluateProxy();	
 }
 
 bool VolumeRegionVarContextExpression::isNullExpressionOK(int expIndex) {

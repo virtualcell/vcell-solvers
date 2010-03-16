@@ -23,23 +23,11 @@ void MembraneRegionVarContextExpression::resolveReferences(Simulation* sim) {
 }
 
 double MembraneRegionVarContextExpression::getInitialValue(long regionIndex) {
-	return evaluateRegionExpression(regionIndex, INITIAL_VALUE_EXP);
+	return evaluateMembraneRegionExpression(regionIndex, INITIAL_VALUE_EXP);
 }
 
 double MembraneRegionVarContextExpression::getUniformRate(MembraneRegion *region){
-	return evaluateRegionExpression(region, UNIFORM_RATE_EXP);
-}
-
-double MembraneRegionVarContextExpression::evaluateRegionExpression(MembraneRegion *region, long expIndex)
-{
-	return evaluateRegionExpression(region->getIndex(), expIndex);
-}
-
-double MembraneRegionVarContextExpression::evaluateRegionExpression(long regionIndex, long expIndex)
-{
-	int* indices = ((SimulationExpression*)sim)->getIndices();
-	indices[VAR_MEMBRANE_REGION_INDEX] = regionIndex;
-	return expressions[expIndex]->evaluateProxy();	
+	return evaluateMembraneRegionExpression(region->getIndex(), UNIFORM_RATE_EXP);
 }
 
 bool MembraneRegionVarContextExpression::isNullExpressionOK(int expIndex) {

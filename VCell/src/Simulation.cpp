@@ -206,6 +206,11 @@ void Simulation::setScheduler(Scheduler *scheduler)
 //-------------------------------------------------------
 // determines scheduler and resets _time_sec and initializes var's
 //-------------------------------------------------------
+void Simulation::resolveReferences() {
+	VCellModel *model = SimTool::getInstance()->getModel();
+	model->resolveReferences();
+}
+
 void Simulation::initSimulation()
 {
 	if (_scheduler == 0) {
@@ -227,9 +232,6 @@ void Simulation::initSimulation()
 		} else {
 			_scheduler = new SerialScheduler(this);
 		}
-
-		VCellModel *model = SimTool::getInstance()->getModel();
-		model->resolveReferences();
 	}
 
 	_scheduler->initValues();

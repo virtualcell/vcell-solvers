@@ -44,6 +44,8 @@ public:
 	void addVolumeVarContext(VolumeVarContext *vc);	
 	void addVolumeRegionVarContext(VolumeRegionVarContext *vc);	
 	   
+	void reinitConstantValues();
+
 	//VolumeParticleContext     *getVolumeParticleContext(){return vpc;}
 	//MembraneParticleContext   *getMembraneParticleContext(){return mpc;}
 	//ContourParticleContext    *getContourParticleContext(){return cpc;}

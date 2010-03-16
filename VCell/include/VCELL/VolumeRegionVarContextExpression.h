@@ -19,10 +19,6 @@ public:
 
     VolumeRegionVarContextExpression(Feature *feature, VolumeRegionVariable* var);
 
-private:
-	double evaluateRegionExpression(VolumeRegion *region, long expIndex);	
-	double evaluateRegionExpression(long regionIndex, long expIndex);	
-
 protected:
 	bool isNullExpressionOK(int expIndex);
 };

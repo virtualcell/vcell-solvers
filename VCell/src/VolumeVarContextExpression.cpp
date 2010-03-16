@@ -118,14 +118,15 @@ bool VolumeVarContextExpression::isNullExpressionOK(int expIndex) {
 		return false;
 	}
 
-	Solver* solver = SimTool::getInstance()->getSimulation()->getSolverFromVariable(species);
+	Solver* solver = sim->getSolverFromVariable(species);
 	if (solver != null && solver->isPDESolver()) {
 		if (expIndex == DIFF_RATE_EXP) {
 			return false;
 		}
-		if ((mesh->getDimension() >= 1 && (expIndex == BOUNDARY_XM_EXP || expIndex == BOUNDARY_XP_EXP || expIndex == VELOCITY_X_EXP)) 
-			|| (mesh->getDimension() >= 2 && (expIndex == BOUNDARY_YM_EXP || expIndex == BOUNDARY_YP_EXP || expIndex == VELOCITY_Y_EXP))
-			|| (mesh->getDimension() >= 3 && (expIndex == BOUNDARY_ZM_EXP || expIndex == BOUNDARY_ZP_EXP || expIndex == VELOCITY_Z_EXP))) {
+		int geodim = sim->getMesh()->getDimension();
+		if ((geodim >= 1 && (expIndex == BOUNDARY_XM_EXP || expIndex == BOUNDARY_XP_EXP || expIndex == VELOCITY_X_EXP)) 
+			|| (geodim >= 2 && (expIndex == BOUNDARY_YM_EXP || expIndex == BOUNDARY_YP_EXP || expIndex == VELOCITY_Y_EXP))
+			|| (geodim >= 3 && (expIndex == BOUNDARY_ZM_EXP || expIndex == BOUNDARY_ZP_EXP || expIndex == VELOCITY_Z_EXP))) {
 			return false;
 		}
 	}
@@ -136,7 +137,7 @@ bool VolumeVarContextExpression::hasConstantDiffusion() {
 	if (!species->isPde()) {
 		throw "hasConstantDiffusion() is only for PDE variables";
 	}
-	return (constantValues != 0 && constantValues[DIFF_RATE_EXP] != 0);
+	return isConstantExpression(DIFF_RATE_EXP);
 }
 
 bool VolumeVarContextExpression::hasConstantDiffusionAdvection(int dimension) {
@@ -146,10 +147,7 @@ bool VolumeVarContextExpression::hasConstantDiffusionAdvection(int dimension) {
 	if (!((VolumeVariable*)species)->isAdvecting()) {
 		return true;
 	}
-	return (constantValues[VELOCITY_X_EXP] != 0 
-			&& (dimension < 2 || constantValues[VELOCITY_Y_EXP] != 0) 
-			&& (dimension < 3 || constantValues[VELOCITY_Z_EXP] != 0))
-		|| (constantValues[VELOCITY_X_EXP] == 0 && expressions[VELOCITY_X_EXP] == 0 
-			&& (dimension < 2 || constantValues[VELOCITY_Y_EXP] == 0 && expressions[VELOCITY_Y_EXP] == 0) 
-			&& (dimension < 3 || constantValues[VELOCITY_Z_EXP] == 0 && expressions[VELOCITY_Z_EXP] == 0));
+	return isConstantExpression(VELOCITY_X_EXP)
+			&& (dimension < 2 || isConstantExpression(VELOCITY_Y_EXP)) 
+			&& (dimension < 3 || isConstantExpression(VELOCITY_Z_EXP));
 }

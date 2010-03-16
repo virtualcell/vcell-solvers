@@ -17,10 +17,6 @@ public:
     MembraneRegionVarContextExpression(Membrane *membrane, MembraneRegionVariable* var);
 	void resolveReferences(Simulation *sim);
 
-private:
-	double evaluateRegionExpression(MembraneRegion *region, long expIndex);
-	double evaluateRegionExpression(long regionIndex, long expIndex);
-
 protected:
 	bool isNullExpressionOK(int expIndex);
 };

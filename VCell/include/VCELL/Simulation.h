@@ -28,7 +28,8 @@ public:
 	Simulation(Mesh *mesh);
 	~Simulation();
 
-	virtual void initSimulation();   // initializes to t=0
+	virtual void resolveReferences();
+	void initSimulation();   // initializes to t=0
 	void    setScheduler(Scheduler *scheduler);
 	void iterate();          // computes 1 time step
 	virtual void    update();           // copies new to old values 

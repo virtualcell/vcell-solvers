@@ -638,7 +638,8 @@ void SimTool::setSolver(string& s) {
 }
 
 void SimTool::start() {
-	if (numSerialParameterScans == 0 || SimulationMessaging::getInstVar()->getTaskID() >= 0) { // only do it when not in messaging mode
+	simulation->resolveReferences();
+	if (numSerialParameterScans == 0 || SimulationMessaging::getInstVar()->getTaskID() >= 0) { // only do it when not in messaging mode	
 		start1();
 	} else {
 		SimulationExpression* sim = (SimulationExpression*)simulation;
@@ -659,7 +660,7 @@ void SimTool::start() {
 }
 
 void SimTool::start1() {
-	simulation->initSimulation();	
+	simulation->initSimulation();
 	if (bLoadFinal) {
 		loadFinal();   // initializes to the latest file if it exists
 	} else {

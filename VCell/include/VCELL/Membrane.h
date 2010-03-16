@@ -44,6 +44,7 @@ public:
 		return feature2;
 	}
 	bool inBetween(Feature* f1, Feature* f2);
+	void reinitConstantValues();
 
 private:
 	Feature* feature1;

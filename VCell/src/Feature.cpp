@@ -120,3 +120,12 @@ VolumeRegionVarContext* Feature::getVolumeRegionVarContext(VolumeRegionVariable 
 	return 0;
 }
 
+void Feature::reinitConstantValues() {
+	for (int i = 0; i < (int)volumeVarContextList.size(); i ++) {
+		volumeVarContextList[i]->reinitConstantValues();
+	}
+
+	for (int i = 0; i < (int)volumeRegionVarContextList.size(); i ++) {
+		volumeRegionVarContextList[i]->reinitConstantValues();
+	}
+}

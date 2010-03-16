@@ -81,9 +81,10 @@ bool MembraneVarContextExpression::isNullExpressionOK(int expIndex) {
 		if (expIndex == DIFF_RATE_EXP) {
 			return false;
 		}
-		if ((mesh->getDimension() >= 1 && (expIndex == BOUNDARY_XM_EXP || expIndex == BOUNDARY_XP_EXP)) 
-			|| (mesh->getDimension() >= 2 && (expIndex == BOUNDARY_YM_EXP || expIndex == BOUNDARY_YP_EXP))
-			|| (mesh->getDimension() >= 3 && (expIndex == BOUNDARY_ZM_EXP || expIndex == BOUNDARY_ZP_EXP))) {
+		int geodim = sim->getMesh()->getDimension();
+		if ((geodim >= 1 && (expIndex == BOUNDARY_XM_EXP || expIndex == BOUNDARY_XP_EXP)) 
+			|| (geodim >= 2 && (expIndex == BOUNDARY_YM_EXP || expIndex == BOUNDARY_YP_EXP))
+			|| (geodim >= 3 && (expIndex == BOUNDARY_ZM_EXP || expIndex == BOUNDARY_ZP_EXP))) {
 			return false;
 		}
 	}

@@ -104,3 +104,12 @@ void Membrane::resolveReferences(Simulation *sim)
 		fastSystem->resolveReferences(sim);
 	}
 }
+
+void Membrane::reinitConstantValues() {
+	for (int i = 0; i < (int)membraneVarContextList.size(); i ++) {
+		membraneVarContextList[i]->reinitConstantValues();
+	}
+	for (int i = 0; i < (int)membraneRegionVarContextList.size(); i ++) {
+		membraneRegionVarContextList[i]->reinitConstantValues();
+	}
+}

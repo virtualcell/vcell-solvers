@@ -14,6 +14,7 @@ using std::stringstream;
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/Structure.h>
 #include <VCELL/JumpCondition.h>
+#include <VCELL/SimTool.h>
 #include <Expression.h>
 
 VarContext::VarContext(Structure *s, Variable* var)
@@ -21,14 +22,8 @@ VarContext::VarContext(Structure *s, Variable* var)
 	structure = s;
 	ASSERTION(feature);
 
-	bInitialized = false;
-
 	species = var;
-
-	sim = NULL;
-	mesh = NULL;
-	    
-	initialValue = NULL;
+	sim = NULL;	
 
 	expressions = new Expression*[TOTAL_NUM_EXPRESSIONS];
 	constantValues = new double*[TOTAL_NUM_EXPRESSIONS];
@@ -44,19 +39,10 @@ void VarContext::resolveReferences(Simulation *Asim)
 	if (sim == 0) {
 		throw "VarContext::resolveReference(), simulation can't be null";
 	}
-
-	mesh = sim->getMesh();
-
-	if (!mesh) {
-		throw "VarContext::resolveReference(), mesh is null";
-	}
 }
 
 double VarContext::getInitialValue(long index)
 {
-	if (initialValue){
-		return *initialValue;
-	}
 	throw "Application Error: neither initialValue nor getInitialValue() specified for VarContext";
 }
 
@@ -89,7 +75,7 @@ void VarContext::setExpression(Expression* newexp, int expIndex) {
 void VarContext::bindAll(SimulationExpression* simulation) {
 	SymbolTable* symbolTable = simulation->getSymbolTable();
 
-	for (int i = 0; i < TOTAL_NUM_EXPRESSIONS; i ++) {		
+	for (int i = 0; i < TOTAL_NUM_EXPRESSIONS; i ++) {
 		if (expressions[i] == 0) {
 			if (isNullExpressionOK(i)) {
 				continue;
@@ -122,14 +108,14 @@ void VarContext::bindAll(SimulationExpression* simulation) {
 double VarContext::evaluateExpression(MembraneElement* element, long expIndex)
 {
 	if (expressions[expIndex] == 0) { // not defined
-		throw "VarContext::getExpressionValue(), expression not defined";
+		throw "VarContext::evaluateExpression(MembaneElement), expression not defined";
 	}
 	if (constantValues[expIndex] != NULL) {
 		return constantValues[expIndex][0];
 	}
 	//cout << expressions[expIndex]->infix() << endl;
 	if (needsXYZ[expIndex]) {
-		WorldCoord wc = mesh->getMembraneWorldCoord(element);
+		WorldCoord wc = sim->getMesh()->getMembraneWorldCoord(element);
 		((SimulationExpression*)sim)->setCurrentCoordinate(wc);
 	}
 	int* indices = ((SimulationExpression*)sim)->getIndices();
@@ -139,35 +125,39 @@ double VarContext::evaluateExpression(MembraneElement* element, long expIndex)
 }
 
 double VarContext::evaluateConstantExpression(long expIndex) {
-	if (expressions[expIndex] == 0 || constantValues[expIndex] == 0) { // not defined
-		throw "VarContext::getExpressionConstantValue() : expression not defined OR not a constant expression";
+	// pure constant
+	if (constantValues[expIndex] != 0) {
+		return constantValues[expIndex][0];
 	}
-	return constantValues[expIndex][0];	
+
+	stringstream ss;
+	ss << "VarContext::evaluateConstantExpression(), for variable " << species->getName() << " expression " << String_Expression_Index[expIndex] << " not defined OR not a constant expression";
+	throw ss.str();
 }
 
-double VarContext::evaluateExpression(long volIndex, long expIndex) {	
+double VarContext::evaluateExpression(long volIndex, long expIndex) {
 	if (expressions[expIndex] == 0) { // not defined
 		stringstream ss;
-		ss << "VarContext::getExpressionValue(), for variable " << species->getName() << " expression " << String_Expression_Index[expIndex] << " not defined";
+		ss << "VarContext::evaluateExpression(VolIndex), for variable " << species->getName() << " expression " << String_Expression_Index[expIndex] << " not defined";
 		throw ss.str();
 	}
 	if (constantValues[expIndex] != NULL) {
 		return constantValues[expIndex][0];
 	}
 	if (needsXYZ[expIndex]) {
-		WorldCoord wc = ((CartesianMesh*)mesh)->getVolumeWorldCoord(volIndex);
+		WorldCoord wc = ((CartesianMesh*)sim->getMesh())->getVolumeWorldCoord(volIndex);
 		((SimulationExpression*)sim)->setCurrentCoordinate(wc);
 	}
 	int* indices = ((SimulationExpression*)sim)->getIndices();
 	indices[VAR_VOLUME_INDEX] = volIndex;
-	indices[VAR_VOLUME_REGION_INDEX] = mesh->getVolumeElements()[volIndex].getRegionIndex();
+	indices[VAR_VOLUME_REGION_INDEX] = sim->getMesh()->getVolumeElements()[volIndex].getRegionIndex();
 	return expressions[expIndex]->evaluateProxy();	
 }
 
-double VarContext::evaluateExpression(long expIndex, double* values) {	
+double VarContext::evaluateExpression(long expIndex, double* values) {
 	if (expressions[expIndex] == 0) { // not defined
 		stringstream ss;
-		ss << "VarContext::evalExpression(), for variable " << species->getName() << " expression " << String_Expression_Index[expIndex] << " not defined";
+		ss << "VarContext::evaluateExpression(), for variable " << species->getName() << " expression " << String_Expression_Index[expIndex] << " not defined";
 		throw ss.str();
 	}
 	if (constantValues[expIndex] != NULL) {
@@ -203,4 +193,59 @@ double VarContext::evaluateJumpCondition(MembraneElement* element, double* value
 	stringstream ss;
 	ss << "Jump Condition for variable " << species->getName() << " in Feature " << structure->getName() << " not found";
 	throw ss.str();
+}
+
+bool VarContext::isConstantExpression(long expIndex) {
+		// pure constant
+	if (constantValues[expIndex] != 0) {
+		return true;
+	}
+
+	// not defined
+	if (expressions[expIndex] == 0) {
+		stringstream ss;
+		ss << "VarContext::isConstantExpression(), for variable " << species->getName() << " expression " << String_Expression_Index[expIndex] << " not defined";
+		throw ss.str();
+	}
+
+	// has parameters only
+	vector<string> symbols;
+	expressions[expIndex]->getSymbols(symbols);
+	for (int i = 0; i < (int)symbols.size(); i ++) {
+		if (!((SimulationExpression*)SimTool::getInstance()->getSimulation())->isParameter(symbols[i])) {
+			return false;
+		}
+	}
+	return true;
+}
+
+double VarContext::evaluateMembraneRegionExpression(long memRegionIndex, long expIndex)
+{
+	int* indices = ((SimulationExpression*)sim)->getIndices();
+	indices[VAR_MEMBRANE_REGION_INDEX] = memRegionIndex;
+	return expressions[expIndex]->evaluateProxy();	
+}
+
+double VarContext::evaluateVolumeRegionExpression(long volRegionIndex, long expIndex)
+{
+	int* indices = ((SimulationExpression*)sim)->getIndices();
+	indices[VAR_VOLUME_REGION_INDEX] = volRegionIndex;
+	return expressions[expIndex]->evaluateProxy();
+}
+
+void VarContext::reinitConstantValues() {
+	for (int i = 0; i < TOTAL_NUM_EXPRESSIONS; i ++) {
+		if (expressions[i] == 0 || !isConstantExpression(i)) {
+			continue;
+		}
+		double d = expressions[i]->evaluateProxy();
+		if (constantValues[i] == 0) {
+			constantValues[i] = new double[1];
+		}
+		constantValues[i][0] = d;
+	}
+
+	for (int i = 0; i < (int)jumpConditionList.size(); i ++) {
+		jumpConditionList[i]->reinitConstantValues();
+	}
 }
