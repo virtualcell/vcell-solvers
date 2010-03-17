@@ -81,7 +81,7 @@ private:
 
 	//long getVolumeIndex(MeshCoord);
 	void findMembraneNeighbors();
-	long orthoIndex(long insideIndex, long outsideIndex, long indexer, int boundMask);
+	long orthoIndex(long memIndex, long insideIndex, long outsideIndex, long indexer, int boundMask);
 	long getNeighbor(int n,  long index, int neighbor);
 
 	double domainSizeX;

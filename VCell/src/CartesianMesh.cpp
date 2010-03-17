@@ -1442,37 +1442,37 @@ void CartesianMesh::findMembraneNeighbors()
 		{
 			if(idxDiff == 1)
 			{
-				meptr[meloop].neighborMEIndex[0] = orthoIndex(idxlo,idxhi,mex,NEIGHBOR_YP_BOUNDARY);
-				meptr[meloop].neighborMEIndex[1] = orthoIndex(idxlo,idxhi,-mex,NEIGHBOR_YM_BOUNDARY);
+				meptr[meloop].neighborMEIndex[0] = orthoIndex(meloop, idxlo,idxhi,mex,NEIGHBOR_YP_BOUNDARY);
+				meptr[meloop].neighborMEIndex[1] = orthoIndex(meloop, idxlo,idxhi,-mex,NEIGHBOR_YM_BOUNDARY);
 			}
 			else if (idxDiff == mex)
 			{
-				meptr[meloop].neighborMEIndex[0] = orthoIndex(idxlo,idxhi,1,NEIGHBOR_XP_BOUNDARY);
-				meptr[meloop].neighborMEIndex[1] = orthoIndex(idxlo,idxhi,-1,NEIGHBOR_XM_BOUNDARY);
+				meptr[meloop].neighborMEIndex[0] = orthoIndex(meloop, idxlo,idxhi,1,NEIGHBOR_XP_BOUNDARY);
+				meptr[meloop].neighborMEIndex[1] = orthoIndex(meloop, idxlo,idxhi,-1,NEIGHBOR_XM_BOUNDARY);
 			}
 		}
 		else if (getDimension() == 3)
 		{
 			if(idxDiff == 1)
 			{
-				meptr[meloop].neighborMEIndex[0] = orthoIndex(idxlo,idxhi,mex,NEIGHBOR_YP_BOUNDARY);
-				meptr[meloop].neighborMEIndex[1] = orthoIndex(idxlo,idxhi,-mex*mey,NEIGHBOR_ZM_BOUNDARY);
-				meptr[meloop].neighborMEIndex[2] = orthoIndex(idxlo,idxhi,-mex,NEIGHBOR_YM_BOUNDARY);
-				meptr[meloop].neighborMEIndex[3] = orthoIndex(idxlo,idxhi,mex*mey,NEIGHBOR_ZP_BOUNDARY);
+				meptr[meloop].neighborMEIndex[0] = orthoIndex(meloop, idxlo,idxhi,mex,NEIGHBOR_YP_BOUNDARY);
+				meptr[meloop].neighborMEIndex[1] = orthoIndex(meloop, idxlo,idxhi,-mex*mey,NEIGHBOR_ZM_BOUNDARY);
+				meptr[meloop].neighborMEIndex[2] = orthoIndex(meloop, idxlo,idxhi,-mex,NEIGHBOR_YM_BOUNDARY);
+				meptr[meloop].neighborMEIndex[3] = orthoIndex(meloop, idxlo,idxhi,mex*mey,NEIGHBOR_ZP_BOUNDARY);
 			}
 			else if (idxDiff == mex)
 			{
-				meptr[meloop].neighborMEIndex[0] = orthoIndex(idxlo,idxhi,1,NEIGHBOR_XP_BOUNDARY);
-				meptr[meloop].neighborMEIndex[1] = orthoIndex(idxlo,idxhi,-mex*mey,NEIGHBOR_ZM_BOUNDARY);
-				meptr[meloop].neighborMEIndex[2] = orthoIndex(idxlo,idxhi,-1,NEIGHBOR_XM_BOUNDARY);
-				meptr[meloop].neighborMEIndex[3] = orthoIndex(idxlo,idxhi,mex*mey,NEIGHBOR_ZP_BOUNDARY);
+				meptr[meloop].neighborMEIndex[0] = orthoIndex(meloop, idxlo,idxhi,1,NEIGHBOR_XP_BOUNDARY);
+				meptr[meloop].neighborMEIndex[1] = orthoIndex(meloop, idxlo,idxhi,-mex*mey,NEIGHBOR_ZM_BOUNDARY);
+				meptr[meloop].neighborMEIndex[2] = orthoIndex(meloop, idxlo,idxhi,-1,NEIGHBOR_XM_BOUNDARY);
+				meptr[meloop].neighborMEIndex[3] = orthoIndex(meloop, idxlo,idxhi,mex*mey,NEIGHBOR_ZP_BOUNDARY);
 			}
 			else if (idxDiff == (mex*mey))
 			{
-				meptr[meloop].neighborMEIndex[0] = orthoIndex(idxlo,idxhi,mex,NEIGHBOR_YP_BOUNDARY);
-				meptr[meloop].neighborMEIndex[1] = orthoIndex(idxlo,idxhi,-1,NEIGHBOR_XM_BOUNDARY);
-				meptr[meloop].neighborMEIndex[2] = orthoIndex(idxlo,idxhi,-mex,NEIGHBOR_YM_BOUNDARY);
-				meptr[meloop].neighborMEIndex[3] = orthoIndex(idxlo,idxhi,1,NEIGHBOR_XP_BOUNDARY);
+				meptr[meloop].neighborMEIndex[0] = orthoIndex(meloop, idxlo,idxhi,mex,NEIGHBOR_YP_BOUNDARY);
+				meptr[meloop].neighborMEIndex[1] = orthoIndex(meloop, idxlo,idxhi,-1,NEIGHBOR_XM_BOUNDARY);
+				meptr[meloop].neighborMEIndex[2] = orthoIndex(meloop, idxlo,idxhi,-mex,NEIGHBOR_YM_BOUNDARY);
+				meptr[meloop].neighborMEIndex[3] = orthoIndex(meloop, idxlo,idxhi,1,NEIGHBOR_XP_BOUNDARY);
 			}
 		}
 	}
@@ -1510,7 +1510,7 @@ int CartesianMesh::getMembraneNeighborMask(MembraneElement* element) {
 	return tentativemask;
 }
 
-long CartesianMesh::orthoIndex(long idxLo,long idxHi,long indexer,int bmask)
+long CartesianMesh::orthoIndex(long memIndex, long idxLo,long idxHi,long indexer,int bmask)
 {
 	MembraneElement* meptr = getMembraneElements();
 	const int NO_CONNECTING_NEIGHBOR = -1;
@@ -1532,33 +1532,83 @@ long CartesianMesh::orthoIndex(long idxLo,long idxHi,long indexer,int bmask)
 		return NO_CONNECTING_NEIGHBOR;
 	}
 
-	// two membrane elements share the same lo
-	vector<long>& v1 = pVolumeElement[idxLo].adjacentMembraneIndexes;
-	for (vector<long>::iterator iter1 = v1.begin(); iter1 != v1.end(); iter1 ++) {
-		long mesearch = *iter1;
+	//      ......
+	//      |    |
+	//      |    |
+	//      ......
+	//	f2  x f1 |
+	//		x    |
+	// -----------
+	// :    |    :
+	// :    |    :
+	// ----- .....
+	//
+	// in above 2d case, membrane element x has 4 neighbors. But we only want 2, so we consider feature1 
+	// is more important for volume connectivity.
+	// Previously inside feature took priority but we eliminated inside and outside for general topology.
+	// As before We are now left with an arbitrary decision of which membrane neighbor to choose first. 
+	// So for backward compatibility we choose feature1 as if it were "inside".
+	//
+	// so if vindexFeatureLo's feature is feature1 of the membrane, we search vindexFeatureLo first. 
+	// Otherwise vindexFeatureHi first.
+	// 
+	if (meptr[memIndex].getMembrane()->getFeature1() == pVolumeElement[idxLo].getFeature()) {
+		// search for the neighbor membrane element which shares the same idxLo
+		vector<long>& v1 = pVolumeElement[idxLo].adjacentMembraneIndexes;
+		for (vector<long>::iterator iter1 = v1.begin(); iter1 != v1.end(); iter1 ++) {
+			long mesearch = *iter1;
 
-		if (meptr[mesearch].vindexFeatureLo != idxLo) {
-			continue;
+			if (mesearch == memIndex || meptr[mesearch].vindexFeatureLo != idxLo) {
+				continue;
+			}
+
+			if(meptr[mesearch].vindexFeatureHi == (idxLo+indexer)){
+				return mesearch;
+			}
 		}
 
-		if(meptr[mesearch].vindexFeatureHi == (idxLo+indexer)){
-			return mesearch;
+		// search for the neighbor membrane element which shares the same idxHi
+		vector<long>& v2 = pVolumeElement[idxHi].adjacentMembraneIndexes;
+		for (vector<long>::iterator iter2 = v2.begin(); iter2 != v2.end(); iter2 ++) {
+			long mesearch = *iter2;
+
+			if (mesearch == memIndex || meptr[mesearch].vindexFeatureHi != idxHi) {
+				continue;
+			}
+
+			if(meptr[mesearch].vindexFeatureLo == (idxHi+indexer)){
+				return mesearch;
+			}
+		}	
+	} else {
+		// search for the neighbor membrane element which shares the same idxHi
+		vector<long>& v2 = pVolumeElement[idxHi].adjacentMembraneIndexes;
+		for (vector<long>::iterator iter2 = v2.begin(); iter2 != v2.end(); iter2 ++) {
+			long mesearch = *iter2;
+
+			if (mesearch == memIndex || meptr[mesearch].vindexFeatureHi != idxHi) {
+				continue;
+			}
+
+			if(meptr[mesearch].vindexFeatureLo == (idxHi+indexer)){
+				return mesearch;
+			}
+		}	
+
+		// search for the neighbor membrane element which shares the same idxLo
+		vector<long>& v1 = pVolumeElement[idxLo].adjacentMembraneIndexes;
+		for (vector<long>::iterator iter1 = v1.begin(); iter1 != v1.end(); iter1 ++) {
+			long mesearch = *iter1;
+
+			if (mesearch == memIndex || meptr[mesearch].vindexFeatureLo != idxLo) {
+				continue;
+			}
+
+			if(meptr[mesearch].vindexFeatureHi == (idxLo+indexer)){
+				return mesearch;
+			}
 		}
 	}
-
-	// two membrane elements the same hi
-	vector<long>& v2 = pVolumeElement[idxHi].adjacentMembraneIndexes;
-	for (vector<long>::iterator iter2 = v2.begin(); iter2 != v2.end(); iter2 ++) {
-		long mesearch = *iter2;
-
-		if (meptr[mesearch].vindexFeatureHi != idxHi) {
-			continue;
-		}
-
-		if(meptr[mesearch].vindexFeatureLo == (idxHi+indexer)){
-			return mesearch;
-		}
-	}	
 
 	// two membrane elements are connected as a straight line
 	if (pVolumeElement[idxLo+indexer].getFeature() != pVolumeElement[idxHi+indexer].getFeature()) {
@@ -1944,7 +1994,9 @@ void CartesianMesh::computeMembraneCoupling(){
 					}
 				}								
 #endif				
-				assert(numRealNeighbors < MAXNEIGHBOR_3D);
+				if (numRealNeighbors > MAXNEIGHBOR_3D) {
+					throw "mesh is too coarse, try with finer mesh"; 
+				}
 				vrIM->addNewRow();
 				
 				if (numRealNeighbors == 0) {
