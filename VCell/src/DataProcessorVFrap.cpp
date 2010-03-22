@@ -170,12 +170,14 @@ void DataProcessorVFrap::onWrite(SimTool* simTool) {
 				values[j] = var->getCurr(volumePoints[j]);
 			}
 			odeResultSet[i]->addRow(values);
+			delete[] values;
 		} else if (var->getVarType() == VAR_MEMBRANE && numMembranePoints > 0) {
 			double* values = new double[numMembranePoints];
 			for (int j = 0; j < numMembranePoints; j ++) {
 				values[j] = var->getCurr(membranePoints[j]);
 			}
 			odeResultSet[i]->addRow(values);
+			delete[] values;
 		}
 	}
 
@@ -222,8 +224,11 @@ void DataProcessorVFrap::onWrite(SimTool* simTool) {
 				values[j] /= count[j];
 			}
 		}
-		odeResultSet[i + numVar]->addRow(values);		
+		odeResultSet[i + numVar]->addRow(values);
+		delete[] values;
 	}
+	delete[] convolved_values;
+	delete[] count;
 }
 
 void DataProcessorVFrap::onComplete(SimTool* simTool) {
@@ -251,6 +256,7 @@ void DataProcessorVFrap::onComplete(SimTool* simTool) {
 		times[i] = timeArray[i];
 	}
 	data->put(times, numT);
+	delete[] times;
 	
 	for (int i = 0; i <numVar; i ++) {
 		Variable* var = sim->getVariable(i);
