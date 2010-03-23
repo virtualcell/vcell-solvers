@@ -523,8 +523,10 @@ VarContext* FVSolver::loadEquation(istream& ifsInput, Structure* structure, Vari
 			expIndex = VELOCITY_Y_EXP;
 		} else if (nextToken == "VELOCITY_Z") {
 			expIndex = VELOCITY_Z_EXP;
-		} else if (nextToken == "FLUX") {
-			expIndex = FLUX_EXP;
+		} else {
+			stringstream ss;
+			ss << "FVSolver::loadEquation(), unexpected token " << nextToken;
+			throw ss.str();
 		}
 		varContext->setExpression(exp, expIndex);
 	}

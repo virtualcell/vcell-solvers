@@ -371,23 +371,24 @@ void SundialsPdeScheduler::initSundialsSolver() {
 	}
 
 	int numVolVar = simulation->getNumVolVariables();
+	int numMemVar = simulation->getNumMemVariables();
+	int numVolRegionVar = simulation->getNumVolRegionVariables();
+	int numMemRegionVar = simulation->getNumMemRegionVariables();
 	if (sundialsSolverMemory == 0) {
-		int numVariables = simulation->getNumVariables();
-
 		numSymbolsPerVolVar = SimTool::getInstance()->getModel()->getNumFeatures() + 1;
+
+		// t, x, y, z, (U, U_Feature1_membrane, U_Feature2_membrane, ...), (M), 
+		// (VR, VR_Feature1_membrane, ...), (MR), (FieldData), (RandomVariable), (SerialScanParameter)
 		volSymbolOffset = 4;
 		memSymbolOffset = volSymbolOffset + numVolVar * numSymbolsPerVolVar;
-		volRegionSymbolOffset = memSymbolOffset + simulation->getNumMemVariables();
-		memRegionSymbolOffset = volRegionSymbolOffset + simulation->getNumVolRegionVariables();
-		fieldDataSymbolOffset = memRegionSymbolOffset + simulation->getNumMemRegionVariables();
+		volRegionSymbolOffset = memSymbolOffset + numMemVar;
+		memRegionSymbolOffset = volRegionSymbolOffset + numVolRegionVar * numSymbolsPerVolVar;
+		fieldDataSymbolOffset = memRegionSymbolOffset + numMemRegionVar;
 		randomVariableSymbolOffset = fieldDataSymbolOffset + simulation->getNumFields();
 		serialScanParameterSymbolOffset = randomVariableSymbolOffset + simulation->getNumRandomVariables();
 
-		// t, x, y, z, (U, U_Feature1_membrane, U_Feature2_membrane, ...), (M), (VR), (MR), (FieldData), (RandomVariable), (SerialScanParameter)
-		int valueArraySize = 4 + numVolVar * numSymbolsPerVolVar + (numVariables - numVolVar) 
-			+ simulation->getNumFields()
-			+ simulation->getNumRandomVariables() 
-			+ simulation->getNumSerialScanParameters(); 
+		int valueArraySize = serialScanParameterSymbolOffset + simulation->getNumSerialScanParameters();
+
 		statePointValues = new double[valueArraySize];
 		memset(statePointValues, 0, valueArraySize * sizeof(double));
 
@@ -2130,7 +2131,10 @@ void SundialsPdeScheduler::updateVolumeStatePointValues(int volIndex, double t, 
 	if (simulation->getNumVolRegionVariables() > 0) {
 		// fill in volume region variable values
 		int volumeRegionElementVectorOffset = getVolumeRegionVectorOffset(regionID);
-		memcpy(values + volRegionSymbolOffset, yinput + volumeRegionElementVectorOffset, simulation->getNumVolRegionVariables() * sizeof(double));
+		int numVolRegionVariables = simulation->getNumVolRegionVariables();
+		for (int varIndex = 0; varIndex < numVolRegionVariables; varIndex ++) {
+			values[volRegionSymbolOffset + varIndex * numSymbolsPerVolVar] = yinput[volumeRegionElementVectorOffset + varIndex];
+		}
 	}
 	// if field data is used in expressions other than initial conditions, we
 	// need to fill the double array the values from field data from value proxy
@@ -2215,5 +2219,23 @@ void SundialsPdeScheduler::updateRegionStatePointValues(int regionID, double t, 
 		// fill in membrane region variable values
 		int membraneRegionElementVectorOffset = getMembraneRegionVectorOffset(regionID);
 		memcpy(values + memRegionSymbolOffset, yinput + membraneRegionElementVectorOffset, simulation->getNumMemRegionVariables() * sizeof(double));
+
+		MembraneRegion *mr = mesh->getMembraneRegion(regionID);
+
+		int numVolRegionVariables = simulation->getNumVolRegionVariables();
+		VolumeRegion *vr1 = mr->getVolumeRegion1();
+		VolumeRegion *vr2 = mr->getVolumeRegion2();
+		for (int varIndex = 0; varIndex < numVolRegionVariables; varIndex ++) {
+			int offset = volRegionSymbolOffset + varIndex * numSymbolsPerVolVar + 1;
+			{				
+				int volumeRegionElementVectorOffset = getVolumeRegionVectorOffset(vr1->getIndex());
+				values[offset + vr1->getFeature()->getIndex()] = yinput[volumeRegionElementVectorOffset + varIndex];
+			}
+			{
+				
+				int volumeRegionElementVectorOffset = getVolumeRegionVectorOffset(vr2->getIndex());
+				values[offset + vr2->getFeature()->getIndex()] = yinput[volumeRegionElementVectorOffset + varIndex];
+			}
+		}
 	}
 }

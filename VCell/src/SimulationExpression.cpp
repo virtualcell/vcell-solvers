@@ -10,7 +10,7 @@
 #include <VCELL/VolumeRegionVariable.h>
 #include <VCELL/MembraneRegionVariable.h>
 #include <VCELL/Element.h>
-#include <VCELL/Mesh.h>
+#include <VCELL/CartesianMesh.h>
 #include <ValueProxy.h>
 #include <VCELL/RandomVariable.h>
 #include <VCELL/Feature.h>
@@ -55,26 +55,28 @@ private:
 	Feature* feature;
 };
 
-//class ValueProxyOutside : public ValueProxy
-//{
-//public:
-//	ValueProxyOutside(double* arg_values, int* arg_indices, Mesh* arg_mesh) 
-//		: ValueProxy(arg_values,  -1, arg_indices) {
-//			mesh = arg_mesh;
-//	}
-//	
-//	double evaluate() {
-//		MembraneElement* element = mesh->getMembraneElements() + indices[VAR_MEMBRANE_INDEX];
-//		if (element->outsideIndexFar<0){
-//			return values[element->outsideIndexNear];
-//		}else{
-//			return 1.5 * values[element->outsideIndexNear] - 0.5 * values[element->outsideIndexFar];
-//		}	
-//	}
-//
-//private:
-//	Mesh* mesh;
-//};
+class VolumeRegionMembraneValueProxy : public ValueProxy
+{
+public:
+	VolumeRegionMembraneValueProxy(double* arg_values, int* arg_indices, CartesianMesh* arg_mesh, Feature* f) 
+		: ValueProxy(arg_values,  -1, arg_indices) {
+			mesh = arg_mesh;
+			feature = f;
+	}
+	
+	double evaluate() {
+		MembraneRegion* memRegion = mesh->getMembraneRegion(indices[VAR_MEMBRANE_REGION_INDEX]);
+		VolumeRegion* vr = memRegion->getVolumeRegion1();
+		if (memRegion->getVolumeRegion2()->getFeature() == feature) {
+			vr = memRegion->getVolumeRegion2();
+		}
+		return values[vr->getIndex()];
+	}
+
+private:
+	CartesianMesh* mesh;
+	Feature* feature;
+};
 
 SimulationExpression::SimulationExpression(Mesh *mesh) : Simulation(mesh) {
 	symbolTable = NULL;	
@@ -243,7 +245,9 @@ void SimulationExpression::createSymbolTable() {
 	VCellModel* model = SimTool::getInstance()->getModel();
 
 	// t, x, y, z, VAR, VAR_Feature1_membrane, VAR_Feature2_membrane, ... (for computing membrane flux), field data, serial scan parameters, parameters
-	int numSymbols = 4 + volVarSize * (model->getNumFeatures() + 1) + (numVariables - volVarSize) + (int)fieldDataList.size() + (int)randomVarList.size() + (int)serialScanParamList.size() + (int)paramList.size();
+	int numSymbols = 4 + volVarSize * (model->getNumFeatures() + 1) + memVarSize 
+		+ volRegionVarSize * (model->getNumFeatures() + 1) + memRegionVarSize 
+		+ (int)fieldDataList.size() + (int)randomVarList.size() + (int)serialScanParamList.size() + (int)paramList.size();
 	string* variableNames = new string[numSymbols];	
 
 	// value proxy must be preserved in all solver cases.
@@ -297,6 +301,13 @@ void SimulationExpression::createSymbolTable() {
 		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_VOLUME_REGION_INDEX, indices);
 		variableNames[variableIndex] = string(var->getName());
 		variableIndex ++;
+
+		for (int f = 0; f < model->getNumFeatures(); f ++) {
+			Feature* feature = model->getFeatureFromIndex(f);
+			oldValueProxies[variableIndex] = new VolumeRegionMembraneValueProxy(var->getOld(), indices, (CartesianMesh*)_mesh, feature);
+			variableNames[variableIndex] = var->getName() + "_" + feature->getName() + "_membrane";
+			variableIndex ++;
+		}
 	} 		
 		
 	// Membrane Region

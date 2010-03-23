@@ -35,7 +35,7 @@ double VolumeRegionVarContextExpression::getFlux(MembraneElement *element){
 }
 
 bool VolumeRegionVarContextExpression::isNullExpressionOK(int expIndex) {
-	if (expIndex == INITIAL_VALUE_EXP || expIndex == REACT_RATE_EXP || expIndex == UNIFORM_RATE_EXP || expIndex == FLUX_EXP) {
+	if (expIndex == INITIAL_VALUE_EXP || expIndex == REACT_RATE_EXP || expIndex == UNIFORM_RATE_EXP) {
 		return false;
 	}
 	return true;
