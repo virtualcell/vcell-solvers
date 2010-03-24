@@ -12,7 +12,7 @@ using std::stringstream;
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/MembraneRegion.h>
 #include <VCELL/CartesianMesh.h>
-#include <VCELL/Structure.h>
+#include <VCELL/Membrane.h>
 #include <VCELL/JumpCondition.h>
 #include <VCELL/SimTool.h>
 #include <Expression.h>
