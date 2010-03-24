@@ -179,7 +179,8 @@ double VarContext::evaluateJumpCondition(MembraneElement* element)
 		}
 	}
 	stringstream ss;
-	ss << "Jump Condition for variable " << species->getName() << " in Feature " << structure->getName() << " not found";
+	ss << "Jump Condition for variable " << species->getName() << " in Feature " << structure->getName() 
+		<< " not found for Membrane " << element->getMembrane()->getName();
 	throw ss.str();
 }
 
@@ -191,7 +192,8 @@ double VarContext::evaluateJumpCondition(MembraneElement* element, double* value
 		}
 	}
 	stringstream ss;
-	ss << "Jump Condition for variable " << species->getName() << " in Feature " << structure->getName() << " not found";
+	ss << "Jump Condition for variable " << species->getName() << " in Feature " << structure->getName() 
+		<< " not found for Membrane " << element->getMembrane()->getName();
 	throw ss.str();
 }
 
