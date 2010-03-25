@@ -24,11 +24,15 @@ void MembraneRegionEqnBuilder::buildEquation(double deltaTime, int volumeIndexSt
 	ASSERTION(size==var->getSize());
 	double *pRate = odeSolver->getRates();
 
-	for(int i=0; i<size; i++) {
+	for(int i=0; i<size; i++, pRate ++) {
 		*pRate = 0;            
 		MembraneRegion *memRegion = ((CartesianMesh*)mesh)->getMembraneRegion(i);
 		Membrane* membrane = memRegion->getMembrane();
 		MembraneRegionVarContext * memRegionvarContext = membrane->getMembraneRegionVarContext((MembraneRegionVariable*)var);
+
+		if (memRegionvarContext == 0) {
+			continue;
+		}
 
 		*pRate = memRegionvarContext->getUniformRate(memRegion);
 		double surface = memRegion->getSize();
@@ -41,6 +45,5 @@ void MembraneRegionEqnBuilder::buildEquation(double deltaTime, int volumeIndexSt
 			surfaceIntegral += memRegionvarContext->getMembraneReactionRate(pElement) * pElement->area;
 		}
 		*pRate += surfaceIntegral/surface;
-		pRate++;
 	}
 }

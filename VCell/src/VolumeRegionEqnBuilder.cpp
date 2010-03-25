@@ -21,12 +21,15 @@ void VolumeRegionEqnBuilder::buildEquation(double deltaTime, int volumeIndexStar
 	int size = ((CartesianMesh*)mesh)->getNumVolumeRegions();
 	ASSERTION(size==var->getSize());
 	double *pRate = odeSolver->getRates();
-	for(int i=0; i<size; i++){
+	for(int i=0; i<size; i++, pRate ++){
 		*pRate = 0;    // constant Dirichlet (shortening) is implied
 		VolumeRegion* volRegion = ((CartesianMesh*)mesh)->getVolumeRegion(i);
 		Feature* feature = volRegion->getFeature();
 		VolumeRegionVarContext* volRegionVarContext = feature->getVolumeRegionVarContext((VolumeRegionVariable*)var);
 
+		if (volRegionVarContext == 0) {
+			continue;
+		}
 		*pRate = volRegionVarContext->getUniformRate(volRegion);
 
 		double volume = volRegion->getSize();
@@ -51,7 +54,5 @@ void VolumeRegionEqnBuilder::buildEquation(double deltaTime, int volumeIndexStar
 			}
 		}
 		*pRate += surfaceIntegral/volume; 
-		
-		pRate++;
 	}
 }
