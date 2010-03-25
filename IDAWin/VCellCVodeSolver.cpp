@@ -94,7 +94,7 @@ void VCellCVodeSolver::throwCVodeErrorMessage(int returnCode) {
 			throw "CV_ILL_INPUT: one of the inputs to CVode is illegal";
 		}
 		case CV_TOO_MUCH_WORK:{
-			throw "CV_TOO_MUCH_WORK: took mxstep internal steps but could not reach tout";
+			throw "CV_TOO_MUCH_WORK: took mxstep internal steps but could not reach tout.\n\nTry reducing maximum time step.";
 		}
 		case CV_TOO_MUCH_ACC:{
 			throw "CV_TOO_MUCH_ACC: could not satisfy the accuracy demanded by the user for some internal step";

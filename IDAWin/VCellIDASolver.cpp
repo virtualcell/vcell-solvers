@@ -127,7 +127,7 @@ void VCellIDASolver::throwIDAErrorMessage(int returnCode) {
 			throw "IDA_NO_MALLOC: The allocation function IDAMalloc has not been called.";
 		}
 		case IDA_TOO_MUCH_WORK: {
-			throw "IDA_TOO_MUCH_WORK: The solver took mxstep internal steps but could not reach tout. The default value for mxstep is MXSTEP_DEFAULT = 5000";			
+			throw "IDA_TOO_MUCH_WORK: The solver took mxstep internal steps but could not reach tout.\n\nTry reducing maximum time step.";
 		}
 		case IDA_TOO_MUCH_ACC: {
 			throw "IDA_TOO_MUCH_ACC: The solver could not satisfy the accuracy demanded by the user for some internal step.";
