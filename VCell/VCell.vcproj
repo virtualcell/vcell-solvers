@@ -16,9 +16,9 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="Debug|Win32"
-			OutputDirectory="Debug"
-			IntermediateDirectory="Debug"
+			Name="Debug_No_Messaging|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
@@ -41,8 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\sundials\src\;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_WARNINGS"
+				AdditionalIncludeDirectories="&quot;..\netcdf-3.6.2\cxx&quot;;&quot;..\netcdf-3.6.2\libsrc&quot;;..\sundials\src\;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
+				PreprocessorDefinitions="WIN32;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/VCell.lib"
+				OutputFile="$(OutDir)/$(ConfigurationName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -80,9 +80,9 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release"
+			Name="Release_No_Messaging|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
@@ -105,7 +105,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;..\netcdf-3.6.2\libsrc&quot;;&quot;..\netcdf-3.6.2\cxx&quot;;..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;USE_MESSAGING;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
@@ -140,84 +140,7 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="MTD|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\netcdf-3.6.2\libsrc&quot;;&quot;..\netcdf-3.6.2\cxx&quot;;..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;USE_MESSAGING;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_DEPRECATE"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				RuntimeTypeInfo="true"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="4"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="Ws2_32.lib pcgwrapper.lib pcgpack_dbl.lib qhull_mtd.lib mkl_c.lib zip32.lib unzip32.lib zlib.lib libsmq.lib libsmqj.lib sundials.lib sundials_nvecserial.lib sundials_cvode.lib netcdf.lib netcdf_cxx_mtd.lib"
-				AdditionalLibraryDirectories="..\sundials\lib;src;..\PCGPack;..\SonicCClient\Win32\lib;..\unzip;..\zlib;..\zip;..\qhull;&quot;..\netcdf-3.6.2\cxx&quot;;&quot;..\netcdf-3.6.2\libsrc&quot;;..\IFortran"
-				IgnoreDefaultLibraryNames="libcmt"
-				GenerateDebugInformation="true"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="MT|Win32"
+			Name="Debug_Messaging|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
@@ -242,7 +165,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_WIN32_WINNT=0x2000"
+				PreprocessorDefinitions="WIN32;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
@@ -277,7 +200,7 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="PdeOptDebug|Win32"
+			Name="Release_Messaging|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
@@ -301,77 +224,9 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="..\sundials\src\;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_WARNINGS"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="4"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/VCell.lib"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="MDD|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			CharacterSet="2"
-			ManagedExtensions="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="..\sundials\src\;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_WARNINGS"
-				MinimalRebuild="false"
-				BasicRuntimeChecks="0"
-				RuntimeLibrary="3"
+				AdditionalIncludeDirectories="&quot;..\netcdf-3.6.2\libsrc&quot;;&quot;..\netcdf-3.6.2\cxx&quot;;..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
+				PreprocessorDefinitions="WIN32;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_WARNINGS"
+				RuntimeLibrary="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
@@ -387,72 +242,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/VCell.lib"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="MD|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			CharacterSet="2"
-			ManagedExtensions="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				AdditionalIncludeDirectories="..\sundials\src\;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_WARNINGS"
-				MinimalRebuild="false"
-				BasicRuntimeChecks="0"
-				RuntimeLibrary="2"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/VCell.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -521,10 +310,6 @@
 			</File>
 			<File
 				RelativePath=".\src\FieldData.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\FiniteVolume.cpp"
 				>
 			</File>
 			<File

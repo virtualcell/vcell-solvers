@@ -2,10 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="IDAWin"
-	ProjectGUID="{1F2CB7B8-7A6D-4DA0-8CBD-750B540070A2}"
-	RootNamespace="IDAWin"
-	Keyword="Win32Proj"
+	Name="zlib"
+	ProjectGUID="{A5FB3DAE-0E5C-44F9-88B6-D6F021B715C8}"
+	RootNamespace="zlib"
 	>
 	<Platforms>
 		<Platform
@@ -20,7 +19,6 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
 			>
 			<Tool
@@ -41,15 +39,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\VCell\include;..\sundials\src;..\sundials\include;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				RuntimeTypeInfo="true"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
+				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -81,11 +78,11 @@
 		</Configuration>
 		<Configuration
 			Name="Release_No_Messaging|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -104,8 +101,6 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\VCell\include;..\sundials\src;..\sundials\include;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
@@ -141,11 +136,11 @@
 		</Configuration>
 		<Configuration
 			Name="Debug_Messaging|Win32"
-			OutputDirectory="$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			ConfigurationType="1"
 			CharacterSet="2"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -164,73 +159,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="..\VCell\include;..\sundials\src;..\sundials\include;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				RuntimeTypeInfo="true"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="4"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLibrarianTool"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release_Messaging|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\VCell\include;..\sundials\src;..\sundials\include;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="0"
+				RuntimeLibrary="2"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
@@ -245,10 +174,17 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				GenerateDebugInformation="true"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -260,6 +196,83 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release_Messaging|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="2"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				RuntimeLibrary="2"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				GenerateDebugInformation="true"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -269,27 +282,75 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\OdeResultSet.cpp"
+				RelativePath=".\adler32.c"
 				>
 			</File>
 			<File
-				RelativePath=".\StoppedByUserException.cpp"
+				RelativePath=".\compress.c"
 				>
 			</File>
 			<File
-				RelativePath=".\VCellCVodeSolver.cpp"
+				RelativePath=".\crc32.c"
 				>
 			</File>
 			<File
-				RelativePath=".\VCellIDASolver.cpp"
+				RelativePath=".\deflate.c"
 				>
 			</File>
 			<File
-				RelativePath=".\VCellSundialsSolver.cpp"
+				RelativePath=".\example.c"
+				>
+			</File>
+			<File
+				RelativePath=".\gzio.c"
+				>
+			</File>
+			<File
+				RelativePath=".\infblock.c"
+				>
+			</File>
+			<File
+				RelativePath=".\infcodes.c"
+				>
+			</File>
+			<File
+				RelativePath=".\inffast.c"
+				>
+			</File>
+			<File
+				RelativePath=".\inflate.c"
+				>
+			</File>
+			<File
+				RelativePath=".\inftrees.c"
+				>
+			</File>
+			<File
+				RelativePath=".\infutil.c"
+				>
+			</File>
+			<File
+				RelativePath=".\maketree.c"
+				>
+			</File>
+			<File
+				RelativePath=".\minigzip.c"
+				>
+			</File>
+			<File
+				RelativePath=".\trees.c"
+				>
+			</File>
+			<File
+				RelativePath=".\uncompr.c"
+				>
+			</File>
+			<File
+				RelativePath=".\zutil.c"
 				>
 			</File>
 		</Filter>
@@ -299,35 +360,55 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\OdeResultSet.h"
+				RelativePath=".\deflate.h"
 				>
 			</File>
 			<File
-				RelativePath=".\StoppedByUserException.h"
+				RelativePath=".\infblock.h"
 				>
 			</File>
 			<File
-				RelativePath=".\VCellCVodeSolver.h"
+				RelativePath=".\infcodes.h"
 				>
 			</File>
 			<File
-				RelativePath=".\VCellIDASolver.h"
+				RelativePath=".\inffast.h"
 				>
 			</File>
 			<File
-				RelativePath=".\VCellSundialsSolver.h"
+				RelativePath=".\inffixed.h"
+				>
+			</File>
+			<File
+				RelativePath=".\inftrees.h"
+				>
+			</File>
+			<File
+				RelativePath=".\infutil.h"
+				>
+			</File>
+			<File
+				RelativePath=".\trees.h"
+				>
+			</File>
+			<File
+				RelativePath=".\zconf.h"
+				>
+			</File>
+			<File
+				RelativePath=".\zlib.h"
+				>
+			</File>
+			<File
+				RelativePath=".\zutil.h"
 				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
-			<File
-				RelativePath=".\Makefile.Win32"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

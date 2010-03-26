@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="Optimization"
-	ProjectGUID="{857A1BFF-283D-41A6-9F1C-5F307E7A9CDB}"
-	Keyword="Win32Proj"
+	Name="zip"
+	ProjectGUID="{A197CDB3-1A40-4133-BB7B-6D3D2DEFE8EB}"
+	RootNamespace="zip"
 	>
 	<Platforms>
 		<Platform
@@ -15,11 +15,10 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="Debug|Win32"
-			OutputDirectory="Debug"
-			IntermediateDirectory="Debug"
+			Name="Debug_No_Messaging|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
 			>
 			<Tool
@@ -40,14 +39,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\tinyxml;..\sundials\src;..\sundials\include;..\fsqp;..\IDAWin;..\Optimization2;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;MSDOS;USE_ZIPMAIN;STATIC_LIB;NO_ASM;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
+				CompileAs="2"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -78,12 +77,12 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release"
+			Name="Release_No_Messaging|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -102,12 +101,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\tinyxml; ..\sundials\src;..\sundials\include;..\fsqp;..\IDAWin;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;MSDOS;USE_ZIPMAIN;STATIC_LIB;NO_ASM;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
+				CompileAs="2"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -138,75 +137,12 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="MTD|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="..\tinyxml;..\sundials\src;..\sundials\include;..\fsqp;..\IDAWin;..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="4"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLibrarianTool"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="MT|Win32"
-			OutputDirectory="$(ConfigurationName)"
+			Name="Debug_Messaging|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -225,12 +161,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="0"
-				UsePrecompiledHeader="2"
+				PreprocessorDefinitions="WIN32;MSDOS;USE_ZIPMAIN;STATIC_LIB;NO_ASM;_CRT_SECURE_NO_DEPRECATE"
+				RuntimeLibrary="2"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
+				CompileAs="2"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -243,10 +179,80 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/Optimization.exe"
-				LinkIncremental="1"
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release_Messaging|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="2"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				PreprocessorDefinitions="WIN32;MSDOS;USE_ZIPMAIN;STATIC_LIB;NO_ASM;_CRT_SECURE_NO_DEPRECATE"
+				RuntimeLibrary="2"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+				CompileAs="2"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
@@ -282,27 +288,75 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\CFSQPOptSolver.cpp"
+				RelativePath=".\crc32.c"
 				>
 			</File>
 			<File
-				RelativePath=".\OdeMultiShootingOptJob.cpp"
+				RelativePath=".\crctab.c"
 				>
 			</File>
 			<File
-				RelativePath=".\OdeOptJob.cpp"
+				RelativePath=".\crypt.c"
 				>
 			</File>
 			<File
-				RelativePath=".\OptXmlReader.cpp"
+				RelativePath=".\deflate.c"
 				>
 			</File>
 			<File
-				RelativePath=".\OptXmlWriter.cpp"
+				RelativePath=".\fileio.c"
+				>
+			</File>
+			<File
+				RelativePath=".\globals.c"
+				>
+			</File>
+			<File
+				RelativePath=".\win32\nt.c"
+				>
+			</File>
+			<File
+				RelativePath=".\trees.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ttyio.c"
+				>
+			</File>
+			<File
+				RelativePath=".\util.c"
+				>
+			</File>
+			<File
+				RelativePath=".\win32\win32.c"
+				>
+			</File>
+			<File
+				RelativePath=".\win32\win32zip.c"
+				>
+			</File>
+			<File
+				RelativePath=".\zip.c"
+				>
+				<FileConfiguration
+					Name="Release_No_Messaging|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\zipfile.c"
+				>
+			</File>
+			<File
+				RelativePath=".\zipup.c"
 				>
 			</File>
 		</Filter>
@@ -312,39 +366,63 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\CFSQPSolver.h"
+				RelativePath=".\api.h"
 				>
 			</File>
 			<File
-				RelativePath=".\OdeMultiShootingOptJob.h"
+				RelativePath=".\crypt.h"
 				>
 			</File>
 			<File
-				RelativePath=".\OdeOptJob.h"
+				RelativePath=".\ebcdic.h"
 				>
 			</File>
 			<File
-				RelativePath=".\OptSolver.h"
+				RelativePath=".\win32\nt.h"
 				>
 			</File>
 			<File
-				RelativePath=".\OptXmlReader.h"
+				RelativePath=".\win32\osdep.h"
 				>
 			</File>
 			<File
-				RelativePath=".\OptXmlWriter.h"
+				RelativePath=".\revision.h"
+				>
+			</File>
+			<File
+				RelativePath=".\win32\rsxntwin.h"
+				>
+			</File>
+			<File
+				RelativePath=".\tailor.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ttyio.h"
+				>
+			</File>
+			<File
+				RelativePath=".\win32\win32zip.h"
+				>
+			</File>
+			<File
+				RelativePath=".\zip.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ziperr.h"
+				>
+			</File>
+			<File
+				RelativePath=".\win32\zipup.h"
 				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
-			<File
-				RelativePath=".\Makefile.Win32"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

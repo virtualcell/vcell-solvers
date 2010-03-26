@@ -24,6 +24,18 @@ public:
 	void createSimTool(istream& ifsInput, int taskID);
 	void solve(bool bLoadFinal=true, double* paramValues=0);
 
+	void init(double* paramValues=0);
+	void step(double* paramValues=0);
+	
+	double getCurrentTime();
+	void setEndTime(double endTime);
+
+	int getNumVariables();
+	string getVariableName(int index);
+	int getVariableLength(string& varName);
+	double* getValue(string& varName, int arrayID);  // arrayID=0 for "old" and 1 for "current"
+	void setInitialCondition(string& varName, int dataLength, const double* data);
+
 	//void reinit(double *paramValues);
 	//PdeResultSet* getPdeResultSet();
 private:
@@ -46,20 +58,8 @@ private:
 	void loadFieldData(istream& ifsInput);
 	void loadParameters(istream& ifsInput, int numParams);
 	void loadSerialScanParameters(istream& ifsInput, int numSerialScanParameters);
-	void loadSerialScanParameterValues(istream& ifsInput, int numSerialScanParamValues);	
+	void loadSerialScanParameterValues(istream& ifsInput, int numSerialScanParamValues);
 
-	void init(double* paramValues=0);
-	void step(double* paramValues=0);
-
-	double getCurrentTime();
-	void setEndTime(double endTime);
-	
-	int getNumVariables();
-	string getVariableName(int index);
-	int getVariableLength(string& varName);
-	double* getValue(string& varName, int arrayID);  // arrayID=0 for "old" and 1 for "current"
-	void setInitialCondition(string& varName, int dataLength, const double* data);
-	
 	char* outputPath;
 	SimTool* simTool;
 	SimulationExpression *simulation;
