@@ -582,15 +582,16 @@ void VCellSundialsSolver::testEventTriggers(realtype Time) {
 					ee->targetValues[j] = events[i]->eventAssignments[j]->assignmentExpression->evaluateVector(values);
 				}
 			}
-			if (eventExeList.size() == 0) {
-				eventExeList.push_back(ee);
-			} else {
-				for (list<EventExecution*>::iterator iter = eventExeList.begin(); iter != eventExeList.end(); iter ++) {
-					if ((*iter)->exeTime > ee->exeTime) {
-						eventExeList.insert(iter, ee); // sort them by execution time
-						break;
-					}
+			bool bInserted = false;
+			for (list<EventExecution*>::iterator iter = eventExeList.begin(); iter != eventExeList.end(); iter ++) {
+				if ((*iter)->exeTime > ee->exeTime) {
+					eventExeList.insert(iter, ee); // sort them by execution time
+					bInserted = true;
+					break;
 				}
+			}
+			if (!bInserted) {
+				eventExeList.push_back(ee);
 			}
 		}
 	}
@@ -623,6 +624,7 @@ bool VCellSundialsSolver::executeEvents(realtype Time) {
 					y_data[ea->varIndex] = ea->assignmentExpression->evaluateVector(values);
 				}
 			}
+			cout << endl << "Executed event " << ee->event0->name << " at time " << Time << endl;
 			eventExeList.pop_front(); // delete from the list
 			delete ee;
 			bExecuted = true;
