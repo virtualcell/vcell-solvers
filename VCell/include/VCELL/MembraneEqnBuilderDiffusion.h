@@ -27,7 +27,7 @@ public:
 	void postProcess();
 
 private:
-	vector<pair<int, int>> periodicPairs; // map of minus and plus pairs of periodic boundary points.	
+	vector<pair<int, int> > periodicPairs; // map of minus and plus pairs of periodic boundary points.
 
 	void initEquation_Periodic(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize);
 	void buildEquation_Periodic(double deltaTime, int volumeIndexStart, int volumeIndexSize, int membraneIndexStart, int membraneIndexSize);
