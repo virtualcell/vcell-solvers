@@ -430,23 +430,6 @@ void SparseVolumeEqnBuilder::computeLHS(int index, double* lambdas, double& Aii,
 	} // end if else (mask & BOUNDARY_TYPE_DIRICHLET)
 }
 
-void sortColumns(int numCols, int* columnIndices, double* columnValues) {
-	// make sure the indices are in ascending order
-	for (int m = 0; m < numCols - 1; m ++) {
-		for (int n = m + 1; n < numCols; n ++) {
-			if (columnIndices[m] > columnIndices[n]) {
-				// switch
-				int idx = columnIndices[m];
-				double v = columnValues[m];
-				columnIndices[m] = columnIndices[n];
-				columnValues[m] = columnValues[n];
-				columnIndices[n] = idx;
-				columnValues[n] = v;
-			}
-		}
-	}
-}
-
 //------------------------------------------------------------------
 //
 // Left Hand Side
@@ -606,15 +589,18 @@ double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* l
 			|| ((mask & NEIGHBOR_YP_BOUNDARY) && feature->getYpBoundaryType() == BOUNDARY_PERIODIC)
 			|| ((mask & NEIGHBOR_ZP_BOUNDARY) && feature->getZpBoundaryType() == BOUNDARY_PERIODIC)) {
 		b = 0;
-
 	} else { // no Dirichlet conditions (interior or neumann or minus periodic)
 		double volumeScale = 1.0;
 		double lambdaAreaX = lambdas[0];
 		double lambdaAreaY = lambdas[1];
 		double lambdaAreaZ = lambdas[2];
 
-		b += varContext->getReactionRate(index) * deltaTime;
+		double reactionRate = varContext->getReactionRate(index);
+		b += reactionRate * deltaTime;
 
+		bool bPeriodic = false;
+		int plusPeriodicNeighbors[3];
+		
 		if (mask & NEIGHBOR_BOUNDARY_MASK){   // boundary
 			volumeScale /= (mask & VOLUME_MASK);
 
@@ -630,15 +616,41 @@ double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* l
 				lambdaAreaX /= 2.0;
 				lambdaAreaY /= 2.0;
 			}
-			if (mask & NEIGHBOR_XM_BOUNDARY && feature->getXmBoundaryType() == BOUNDARY_PERIODIC) {
+			if ((mask & NEIGHBOR_XM_BOUNDARY) && (feature->getXmBoundaryType() == BOUNDARY_PERIODIC)) {
 				volumeScale *= 2;
+				bPeriodic = true;
+				plusPeriodicNeighbors[0] = index + SIZEX - 1;
+			} else {
+				plusPeriodicNeighbors[0] = -1;
 			}
-			if (mask & NEIGHBOR_YM_BOUNDARY && feature->getYmBoundaryType() == BOUNDARY_PERIODIC) {
+			if ((mask & NEIGHBOR_YM_BOUNDARY) && (feature->getYmBoundaryType() == BOUNDARY_PERIODIC)) {
 				volumeScale *= 2;
+				bPeriodic = true;
+				plusPeriodicNeighbors[1] = index + (SIZEY - 1) * SIZEX;
+			} else {
+				plusPeriodicNeighbors[1] = -1;
 			}
-			if (mask & NEIGHBOR_ZM_BOUNDARY && feature->getZmBoundaryType() == BOUNDARY_PERIODIC) {
+			if ((mask & NEIGHBOR_ZM_BOUNDARY) && (feature->getZmBoundaryType() == BOUNDARY_PERIODIC)) {
 				volumeScale *= 2;
+				bPeriodic = true;
+				plusPeriodicNeighbors[2] = index + (SIZEZ - 1) * SIZEXY;
+			} else {
+				plusPeriodicNeighbors[2] = -1;
 			}
+
+			if (bPeriodic) {
+				for (int k = 0; k < 3; k ++) {
+					if (plusPeriodicNeighbors[k] < 0) {
+						continue;
+					}
+
+					double plusReactinoRate = varContext->getReactionRate(plusPeriodicNeighbors[k]);
+					if (fabs(reactionRate - plusReactinoRate) > 1e-3 * fabs(reactionRate)) {
+						throw "non periodic reaction rate at periodic volume.";
+					}
+				}
+			}
+
 			b *= volumeScale;
 
 			if ((mask & BOUNDARY_TYPE_MASK) == BOUNDARY_TYPE_NEUMANN) { // for corners, it might be both neuman and periodic, but periodic wins.
@@ -678,19 +690,32 @@ double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* l
 			int numAdjacentME = (int)pVolumeElement[index].adjacentMembraneIndexes.size();
 			for (int i = 0; i < numAdjacentME; i ++) {
 				MembraneElement *me = pMembraneElement + pVolumeElement[index].adjacentMembraneIndexes[i];
-				
 				sim->advanceTimeOn();
 				double flux = varContext->getFlux(me);
 				sim->advanceTimeOff();
-
 				b += flux * me->area * deltaTime / VOLUME;
+			}
+			if (bPeriodic) {
+				for (int k = 0; k < 3; k ++) {
+					if (plusPeriodicNeighbors[k] < 0) {
+						continue;
+					}
+					// periodic pairs should be in the same feature, so use the same varContext
+					int numAdjacentME = (int)pVolumeElement[plusPeriodicNeighbors[k]].adjacentMembraneIndexes.size();
+					for (int i = 0; i < numAdjacentME; i ++) {
+						MembraneElement *me = pMembraneElement + pVolumeElement[plusPeriodicNeighbors[k]].adjacentMembraneIndexes[i];
+						sim->advanceTimeOn();
+						double flux = varContext->getFlux(me);
+						sim->advanceTimeOff();
+						b += flux * me->area * deltaTime / VOLUME;
+					}
+				}
 			}
 		} // end if (mask & NEIGHBOR_MEMBRANE_MASK)
 	} // end if else (mask & BOUNDARY_TYPE_DIRICHLET)
 	validateNumber(varname, index, "RHS", b);
 	return b;
 }
-
 
 //------------------------------------------------------------------
 //
@@ -751,6 +776,8 @@ bool SparseVolumeEqnBuilder::checkPeriodicCoupledPairsInRegions(int indexm, int 
 	return false; // both of them are not in the solved regions, so we don't have to add them to the list
 }
 
+#define PERIODIC_GEOMETRY_ERROR_MESSAGE "geometry is not compatible with periodic boundary conditions. Couldn't find corresponding volume element."
+
 void SparseVolumeEqnBuilder::preProcess() {
 	if (bPreProcessed) {
 		return;
@@ -787,6 +814,9 @@ void SparseVolumeEqnBuilder::preProcess() {
 				int mask = pVolumeElement[indexm].neighborMask;
 				VolumeVarContext* varContext = pVolumeElement[indexm].getFeature()->getVolumeVarContext((VolumeVariable*)var);
 				if (mask & NEIGHBOR_XM_BOUNDARY && pVolumeElement[indexm].getFeature()->getXmBoundaryType() == BOUNDARY_PERIODIC) {
+					if (pVolumeElement[indexm].getFeature() != pVolumeElement[indexp].getFeature()) {
+						throw PERIODIC_GEOMETRY_ERROR_MESSAGE;
+					}
 					if (bSolveWholeMesh || checkPeriodicCoupledPairsInRegions(indexm, indexp)) {
 						periodicCoupledPairs.push_back(new CoupledNeighbors(indexm, indexp, varContext->getXBoundaryPeriodicConstant()));
 					}
@@ -803,6 +833,9 @@ void SparseVolumeEqnBuilder::preProcess() {
 				int mask = pVolumeElement[indexm].neighborMask;
 				VolumeVarContext* varContext = pVolumeElement[indexm].getFeature()->getVolumeVarContext((VolumeVariable*)var);
 				if (mask & NEIGHBOR_YM_BOUNDARY && pVolumeElement[indexm].getFeature()->getYmBoundaryType() == BOUNDARY_PERIODIC) {
+					if (pVolumeElement[indexm].getFeature() != pVolumeElement[indexp].getFeature()) {
+						throw PERIODIC_GEOMETRY_ERROR_MESSAGE;
+					}
 					if (bSolveWholeMesh || checkPeriodicCoupledPairsInRegions(indexm, indexp)) {
 						periodicCoupledPairs.push_back(new CoupledNeighbors(indexm, indexp, varContext->getYBoundaryPeriodicConstant()));
 					}
@@ -820,6 +853,9 @@ void SparseVolumeEqnBuilder::preProcess() {
 				int mask = pVolumeElement[indexm].neighborMask;
 				VolumeVarContext* varContext = pVolumeElement[indexm].getFeature()->getVolumeVarContext((VolumeVariable*)var);
 				if (mask & NEIGHBOR_ZM_BOUNDARY && pVolumeElement[indexm].getFeature()->getZmBoundaryType() == BOUNDARY_PERIODIC) {
+					if (pVolumeElement[indexm].getFeature() != pVolumeElement[indexp].getFeature()) {
+						throw PERIODIC_GEOMETRY_ERROR_MESSAGE;
+					}
 					if (bSolveWholeMesh || checkPeriodicCoupledPairsInRegions(indexm, indexp)) {
 						periodicCoupledPairs.push_back(new CoupledNeighbors(indexm, indexp, varContext->getZBoundaryPeriodicConstant()));
 					}

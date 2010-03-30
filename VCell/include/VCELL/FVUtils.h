@@ -44,6 +44,7 @@ void throwPCGExceptions(int errorCode, int additional);
 bool isNAN(double number);
 bool isInfinity(double number);
 void validateNumber(string& variableName, int index, char* coeffName, double coeffValue);
+void sortColumns(int numCols, int* columnIndices, double* columnValues);
 
 #ifndef max
 #define max(a,b)            (((a) > (b)) ? (a) : (b))

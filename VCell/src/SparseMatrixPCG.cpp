@@ -171,12 +171,12 @@ void SparseMatrixPCG::setRow(double diag, int numCols, int* cols, double* values
 	if (numCols > 0) {
 		if (cols != 0) {
 			memcpy(ija + currentIndex + 1, cols, numCols * sizeof(int32));
+			currentCol = cols[numCols - 1];
 		}
 		if (values != 0) {
 			memcpy(sa + currentIndex + 1, values, numCols * sizeof(double));
 		}
 		currentIndex += numCols;
-		currentCol = cols[numCols - 1];
 	}
 }
 

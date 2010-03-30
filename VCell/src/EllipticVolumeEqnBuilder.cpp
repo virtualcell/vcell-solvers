@@ -385,8 +385,6 @@ void EllipticVolumeEqnBuilder::computeLHS(int index, double& Aii, int& numCols, 
 	validateNumber(varname, index, "LHS", Aii);
 }
 
-extern void sortColumns(int numCols, int* columnIndices, double* columnValues);
-
 //------------------------------------------------------------------
 //
 // Left Hand Side

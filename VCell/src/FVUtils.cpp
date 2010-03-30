@@ -3,12 +3,14 @@
  * All rights reserved.
  */
 
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 using std::stringstream;
 using std::string;
 using std::cout;
 using std::endl;
+using std::swap;
 
 #include <VCELL/FVUtils.h>
 #include <float.h>
@@ -146,6 +148,19 @@ void throwPCGExceptions(int errorCode, int additional)
 			char msg[1000];
 			sprintf(msg,"PCG Error %ld: unknown error",(long)errorCode);
 			throw msg;
+		}
+	}
+}
+
+void sortColumns(int numCols, int* columnIndices, double* columnValues) {
+	// make sure the indices are in ascending order
+	for (int m = 0; m < numCols - 1; m ++) {
+		for (int n = m + 1; n < numCols; n ++) {
+			if (columnIndices[m] > columnIndices[n]) {
+				// switch
+				swap(columnIndices[m], columnIndices[n]);
+				swap(columnValues[m], columnValues[n]);
+			}
 		}
 	}
 }

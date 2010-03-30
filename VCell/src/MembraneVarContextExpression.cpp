@@ -82,9 +82,9 @@ bool MembraneVarContextExpression::isNullExpressionOK(int expIndex) {
 			return false;
 		}
 		int geodim = sim->getMesh()->getDimension();
-		if ((geodim >= 1 && (expIndex == BOUNDARY_XM_EXP || expIndex == BOUNDARY_XP_EXP)) 
-			|| (geodim >= 2 && (expIndex == BOUNDARY_YM_EXP || expIndex == BOUNDARY_YP_EXP))
-			|| (geodim >= 3 && (expIndex == BOUNDARY_ZM_EXP || expIndex == BOUNDARY_ZP_EXP))) {
+		if ((geodim >= 1 && structure->getXmBoundaryType() != BOUNDARY_PERIODIC && (expIndex == BOUNDARY_XM_EXP || expIndex == BOUNDARY_XP_EXP)) 
+			|| (geodim >= 2 && structure->getYmBoundaryType() != BOUNDARY_PERIODIC && (expIndex == BOUNDARY_YM_EXP || expIndex == BOUNDARY_YP_EXP))
+			|| (geodim >= 3 && structure->getZmBoundaryType() != BOUNDARY_PERIODIC && (expIndex == BOUNDARY_ZM_EXP || expIndex == BOUNDARY_ZP_EXP))) {
 			return false;
 		}
 	}
