@@ -550,8 +550,8 @@ int VCellSundialsSolver::RootFn(realtype t, N_Vector y, realtype *gout) {
 	for (int i = 0; i < numDiscontinuities; i ++) {
 		double r = odeDiscontinuities[i]->rootFindingExpression->evaluateVector(values);
 		if (r == 0) {
-			gout[2 * i] = DBL_MIN;
-			gout[2 * i + 1] = -DBL_MIN;
+			gout[2 * i] = 1e-200;
+			gout[2 * i + 1] = -1e-200;
 		} else {
 			gout[2 * i] = r;
 			gout[2 * i + 1] = r;
