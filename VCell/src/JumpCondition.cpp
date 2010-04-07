@@ -45,6 +45,8 @@ double JumpCondition::evaluateExpression(SimulationExpression* simulation, Membr
 		simulation->setCurrentCoordinate(wc);
 	}
 	int* indices = simulation->getIndices();
+	indices[VAR_VOLUME_INDEX] = -1;
+	indices[VAR_VOLUME_REGION_INDEX] = -1;
 	indices[VAR_MEMBRANE_INDEX] = element->index;
 	indices[VAR_MEMBRANE_REGION_INDEX] = element->getRegionIndex();
 	return expression->evaluateProxy();	

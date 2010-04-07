@@ -119,6 +119,8 @@ double VarContext::evaluateExpression(MembraneElement* element, long expIndex)
 		((SimulationExpression*)sim)->setCurrentCoordinate(wc);
 	}
 	int* indices = ((SimulationExpression*)sim)->getIndices();
+	indices[VAR_VOLUME_INDEX] = -1;
+	indices[VAR_VOLUME_REGION_INDEX] = -1;	
 	indices[VAR_MEMBRANE_INDEX] = element->index;
 	indices[VAR_MEMBRANE_REGION_INDEX] = element->getRegionIndex();
 	return expressions[expIndex]->evaluateProxy();	
@@ -149,6 +151,8 @@ double VarContext::evaluateExpression(long volIndex, long expIndex) {
 		((SimulationExpression*)sim)->setCurrentCoordinate(wc);
 	}
 	int* indices = ((SimulationExpression*)sim)->getIndices();
+	indices[VAR_MEMBRANE_INDEX] = -1;
+	indices[VAR_MEMBRANE_REGION_INDEX] = -1;
 	indices[VAR_VOLUME_INDEX] = volIndex;
 	indices[VAR_VOLUME_REGION_INDEX] = sim->getMesh()->getVolumeElements()[volIndex].getRegionIndex();
 	return expressions[expIndex]->evaluateProxy();	
@@ -224,6 +228,9 @@ bool VarContext::isConstantExpression(long expIndex) {
 double VarContext::evaluateMembraneRegionExpression(long memRegionIndex, long expIndex)
 {
 	int* indices = ((SimulationExpression*)sim)->getIndices();
+	indices[VAR_VOLUME_INDEX] = -1;
+	indices[VAR_VOLUME_REGION_INDEX] = -1;
+	indices[VAR_MEMBRANE_INDEX] = -1;	
 	indices[VAR_MEMBRANE_REGION_INDEX] = memRegionIndex;
 	return expressions[expIndex]->evaluateProxy();	
 }
@@ -231,6 +238,9 @@ double VarContext::evaluateMembraneRegionExpression(long memRegionIndex, long ex
 double VarContext::evaluateVolumeRegionExpression(long volRegionIndex, long expIndex)
 {
 	int* indices = ((SimulationExpression*)sim)->getIndices();
+	indices[VAR_VOLUME_INDEX] = -1;
+	indices[VAR_MEMBRANE_INDEX] = -1;
+	indices[VAR_MEMBRANE_REGION_INDEX] = -1;	
 	indices[VAR_VOLUME_REGION_INDEX] = volRegionIndex;
 	return expressions[expIndex]->evaluateProxy();
 }

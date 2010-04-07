@@ -207,6 +207,55 @@ void SimulationExpression::createSymbolTable() {
 		return;
 	}
 
+	CartesianMesh *mesh = (CartesianMesh*)_mesh;
+	VCellModel* model = SimTool::getInstance()->getModel();
+
+	// add volume region variables for volume region size in each volume region
+	{
+		int numVolRegions = mesh->getNumVolumeRegions();
+		string name = "vcRegionVolume";
+		VolumeRegionVariable* vrv = new VolumeRegionVariable(numVolRegions, name);
+		addVolumeRegionVariable(vrv);
+		for (int i = 0; i < numVolRegions; i ++) {
+			VolumeRegion* vr = mesh->getVolumeRegion(i);
+			vrv->getCurr()[i] = vr->getSize();
+		}
+		vrv->update();
+	}
+
+	// add membrane region variables for membrane region size in each membrane region
+	{
+		int numMemRegions = mesh->getNumMembraneRegions();
+		string name = "vcRegionArea";
+		MembraneRegionVariable* mrv = new MembraneRegionVariable(numMemRegions, name);
+		addMembraneRegionVariable(mrv);
+		for (int i = 0; i < numMemRegions; i ++) {
+			MembraneRegion* mr = mesh->getMembraneRegion(i);
+			mrv->getCurr()[i] = mr->getSize();
+		}
+		mrv->update();
+	}
+	// for each feature, add a membrane region variables for size of adjecent volume region of that feature
+	{
+		int numMemRegions = mesh->getNumMembraneRegions();
+		int numFeatures = model->getNumFeatures();
+		for (int i = 0; i < numFeatures; i ++) {
+			Feature* feature = model->getFeatureFromIndex(i);
+			string name = "vcRegionVolume_" + feature->getName();
+			MembraneRegionVariable* mrv = new MembraneRegionVariable(numMemRegions, name);
+			addMembraneRegionVariable(mrv);
+			for (int i = 0; i < numMemRegions; i ++) {
+				MembraneRegion* mr = mesh->getMembraneRegion(i);
+				if (mr->getVolumeRegion1()->getFeature() == feature) {
+					mrv->getCurr()[i] = mr->getVolumeRegion1()->getSize();
+				} else {
+					mrv->getCurr()[i] = mr->getVolumeRegion2()->getSize();
+				}
+			}
+			mrv->update();
+		}		
+	}
+
 	int numVariables = (int)varList.size();
 
 	if (volVarSize > 0) {
@@ -242,7 +291,7 @@ void SimulationExpression::createSymbolTable() {
 	
 	bool bSundialsPdeSolver = SimTool::getInstance()->isSundialsPdeSolver();
 
-	VCellModel* model = SimTool::getInstance()->getModel();
+	
 
 	// t, x, y, z, VAR, VAR_Feature1_membrane, VAR_Feature2_membrane, ... (for computing membrane flux), field data, serial scan parameters, parameters
 	int numSymbols = 4 + volVarSize * (model->getNumFeatures() + 1) + memVarSize 
@@ -304,7 +353,7 @@ void SimulationExpression::createSymbolTable() {
 
 		for (int f = 0; f < model->getNumFeatures(); f ++) {
 			Feature* feature = model->getFeatureFromIndex(f);
-			oldValueProxies[variableIndex] = new VolumeRegionMembraneValueProxy(var->getOld(), indices, (CartesianMesh*)_mesh, feature);
+			oldValueProxies[variableIndex] = new VolumeRegionMembraneValueProxy(var->getOld(), indices, mesh, feature);
 			variableNames[variableIndex] = var->getName() + "_" + feature->getName() + "_membrane";
 			variableIndex ++;
 		}
