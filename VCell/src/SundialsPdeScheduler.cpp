@@ -355,7 +355,7 @@ int SundialsPdeScheduler::CVodeRHS(double t, double* yinput, double* rhs) {
 	applyMembraneFluxOperator(t, yinput, rhs);
 
 #ifdef SHOW_RHS
-	cout << endl << "------------RHS------------------" << endl;
+	cout << endl << "-----------RHS----at time " << t << "--------------" << endl;
 	for (int i = 0; i < numUnknowns; i ++) {
 		cout << i << " " << rhs[i] << endl;
 	}
@@ -378,12 +378,13 @@ void SundialsPdeScheduler::initSundialsSolver() {
 		numSymbolsPerVolVar = SimTool::getInstance()->getModel()->getNumFeatures() + 1;
 
 		// t, x, y, z, (U, U_Feature1_membrane, U_Feature2_membrane, ...), (M), 
-		// (VR, VR_Feature1_membrane, ...), (MR), (FieldData), (RandomVariable), (SerialScanParameter)
+		// (VR, VR_Feature1_membrane, ...), (MR), (RegionSize), (FieldData), (RandomVariable), (SerialScanParameter)
 		volSymbolOffset = 4;
 		memSymbolOffset = volSymbolOffset + numVolVar * numSymbolsPerVolVar;
 		volRegionSymbolOffset = memSymbolOffset + numMemVar;
 		memRegionSymbolOffset = volRegionSymbolOffset + numVolRegionVar * numSymbolsPerVolVar;
-		fieldDataSymbolOffset = memRegionSymbolOffset + numMemRegionVar;
+		regionSizeVariableSymbolOffset = memRegionSymbolOffset + numMemRegionVar;
+		fieldDataSymbolOffset = regionSizeVariableSymbolOffset + simulation->getNumRegionSizeVariables();
 		randomVariableSymbolOffset = fieldDataSymbolOffset + simulation->getNumFields();
 		serialScanParameterSymbolOffset = randomVariableSymbolOffset + simulation->getNumRandomVariables();
 
@@ -2116,6 +2117,7 @@ void SundialsPdeScheduler::updateVolumeStatePointValues(int volIndex, double t, 
 		return;
 	}
 
+	simulation->populateRegionSizeVariableValues(values + regionSizeVariableSymbolOffset, true, pVolumeElement[volIndex].getRegionIndex());
 	simulation->populateFieldValues(values + fieldDataSymbolOffset, volIndex);
 	simulation->populateRandomValues(values + randomVariableSymbolOffset, volIndex);
 
@@ -2155,6 +2157,7 @@ void SundialsPdeScheduler::updateMembraneStatePointValues(MembraneElement& me, d
 		return;
 	}
 
+	simulation->populateRegionSizeVariableValues(values + regionSizeVariableSymbolOffset, false, me.getRegionIndex());
 	simulation->populateFieldValues(values + fieldDataSymbolOffset, me.index);
 	simulation->populateRandomValues(values + randomVariableSymbolOffset, me.index);
 
@@ -2210,6 +2213,8 @@ void SundialsPdeScheduler::updateRegionStatePointValues(int regionID, double t, 
 	if (yinput == 0) {
 		return;
 	}
+
+	simulation->populateRegionSizeVariableValues(values + regionSizeVariableSymbolOffset, bVolumeRegion, regionID);
 
 	if (bVolumeRegion) {
 		// fill in volume region variable values

@@ -12,7 +12,6 @@ class MembraneVariable : public Variable
 public:
 	MembraneVariable(long size, string& nameStr, bool pde=false);
 
-	virtual bool isMembraneVar() { return true; }
 	virtual VariableType	getVarType() {return VAR_MEMBRANE;}
 };
 

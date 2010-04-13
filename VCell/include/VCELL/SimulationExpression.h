@@ -18,6 +18,7 @@ class MembraneVariable;
 class MembraneRegionVariable;
 class VolumeRegionVariable;
 class RandomVariable;
+class RegionSizeVariable;
 class SymbolTable;
 class ScalarValueProxy;
 
@@ -31,6 +32,8 @@ public:
 	void update();           // copies new to old values 
 	void advanceTimeOn();
 	void advanceTimeOff();
+
+	void writeData(char *filename, bool bCompress);
 
 	void addFieldData(FieldData* fd) {
 		fieldDataList.push_back(fd);
@@ -119,6 +122,14 @@ public:
 	}
 	bool isParameter(string& symbol); // can be serial scan parameter or opt parameter
 
+	int getNumRegionSizeVariables() {
+		return numRegionSizeVars;
+	}
+	RegionSizeVariable* getRegionSizeVariable(int index) {
+		return regionSizeVarList[index];
+	}
+	void populateRegionSizeVariableValues(double* darray, bool bVolumeRegion, int regionIndex);
+
 private:
 	SymbolTable* symbolTable;
 
@@ -147,6 +158,9 @@ private:
 	int memRegionVarSize;
 
 	vector<RandomVariable*> randomVarList;
+
+	int numRegionSizeVars;
+	RegionSizeVariable** regionSizeVarList;
 
 	int numVolPde;
 	int numMemPde;

@@ -389,6 +389,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\RegionSizeVariable.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\Scheduler.cpp"
 				>
 			</File>
@@ -652,6 +656,10 @@
 			</File>
 			<File
 				RelativePath=".\include\Vcell\Region.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\VCELL\RegionSizeVariable.h"
 				>
 			</File>
 			<File

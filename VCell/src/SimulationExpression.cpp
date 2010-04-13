@@ -13,6 +13,7 @@
 #include <VCELL/CartesianMesh.h>
 #include <ValueProxy.h>
 #include <VCELL/RandomVariable.h>
+#include <VCELL/RegionSizeVariable.h>
 #include <VCELL/Feature.h>
 #include <VCELL/Membrane.h>
 #include <VCELL/VCellModel.h>
@@ -111,6 +112,7 @@ SimulationExpression::SimulationExpression(Mesh *mesh) : Simulation(mesh) {
 
 SimulationExpression::~SimulationExpression() 
 {
+	delete symbolTable;
 	delete valueProxyTime;
 	delete valueProxyX;
 	delete valueProxyY;
@@ -122,6 +124,15 @@ SimulationExpression::~SimulationExpression()
 		delete[] volVariableRegionMap[i];
 	}
 	volVariableRegionMap.clear();
+
+	delete[] volVarList;
+	delete[] memVarList;
+	delete[] volRegionVarList;
+	delete[] memRegionVarList;
+	for (int i = 0; i < numRegionSizeVars; i ++) {
+		delete regionSizeVarList[i];
+	}
+	delete[] regionSizeVarList;
 }
 
 void SimulationExpression::addVariable(Variable *var, bool* bSolveRegions)
@@ -210,50 +221,60 @@ void SimulationExpression::createSymbolTable() {
 	CartesianMesh *mesh = (CartesianMesh*)_mesh;
 	VCellModel* model = SimTool::getInstance()->getModel();
 
-	// add volume region variables for volume region size in each volume region
+	// volume size, membrane size, for each feature
+	numRegionSizeVars = 1 + 1 + model->getNumFeatures();
+	regionSizeVarList = new RegionSizeVariable*[numRegionSizeVars];
+
+	int regionSizeVarCount = 0;
+
+	// add region size variables for volume region size in each volume region
 	{
 		int numVolRegions = mesh->getNumVolumeRegions();
 		string name = "vcRegionVolume";
-		VolumeRegionVariable* vrv = new VolumeRegionVariable(numVolRegions, name);
-		addVolumeRegionVariable(vrv);
+		RegionSizeVariable* rsv = new RegionSizeVariable(name, numVolRegions, true);
+		regionSizeVarList[regionSizeVarCount ++] = rsv;
+
 		for (int i = 0; i < numVolRegions; i ++) {
 			VolumeRegion* vr = mesh->getVolumeRegion(i);
-			vrv->getCurr()[i] = vr->getSize();
+			rsv->getCurr()[i] = vr->getSize();
 		}
-		vrv->update();
+		rsv->update();
 	}
-
-	// add membrane region variables for membrane region size in each membrane region
+	// add region size variables for membrane region size in each membrane region
 	{
 		int numMemRegions = mesh->getNumMembraneRegions();
 		string name = "vcRegionArea";
-		MembraneRegionVariable* mrv = new MembraneRegionVariable(numMemRegions, name);
-		addMembraneRegionVariable(mrv);
+		RegionSizeVariable* rsv = new RegionSizeVariable(name, numMemRegions, false);
+		regionSizeVarList[regionSizeVarCount ++] = rsv;
+
 		for (int i = 0; i < numMemRegions; i ++) {
 			MembraneRegion* mr = mesh->getMembraneRegion(i);
-			mrv->getCurr()[i] = mr->getSize();
+			rsv->getCurr()[i] = mr->getSize();
 		}
-		mrv->update();
+		rsv->update();
 	}
-	// for each feature, add a membrane region variables for size of adjecent volume region of that feature
+	// for each feature, add a region size variables for size of adjecent volume region of that feature
 	{
 		int numMemRegions = mesh->getNumMembraneRegions();
 		int numFeatures = model->getNumFeatures();
 		for (int i = 0; i < numFeatures; i ++) {
 			Feature* feature = model->getFeatureFromIndex(i);
 			string name = "vcRegionVolume_" + feature->getName();
-			MembraneRegionVariable* mrv = new MembraneRegionVariable(numMemRegions, name);
-			addMembraneRegionVariable(mrv);
+			RegionSizeVariable* rsv = new RegionSizeVariable(name, numMemRegions, false);
+			regionSizeVarList[regionSizeVarCount ++] = rsv;
+
 			for (int i = 0; i < numMemRegions; i ++) {
 				MembraneRegion* mr = mesh->getMembraneRegion(i);
 				if (mr->getVolumeRegion1()->getFeature() == feature) {
-					mrv->getCurr()[i] = mr->getVolumeRegion1()->getSize();
+					rsv->getCurr()[i] = mr->getVolumeRegion1()->getSize();
+				} else if (mr->getVolumeRegion2()->getFeature() == feature) {
+					rsv->getCurr()[i] = mr->getVolumeRegion2()->getSize();
 				} else {
-					mrv->getCurr()[i] = mr->getVolumeRegion2()->getSize();
+					rsv->getCurr()[i] = 0;
 				}
 			}
-			mrv->update();
-		}		
+			rsv->update();
+		}
 	}
 
 	int numVariables = (int)varList.size();
@@ -289,13 +310,13 @@ void SimulationExpression::createSymbolTable() {
 		}
 	}
 	
-	bool bSundialsPdeSolver = SimTool::getInstance()->isSundialsPdeSolver();
+	bool bSundialsPdeSolver = SimTool::getInstance()->isSundialsPdeSolver();	
 
-	
-
-	// t, x, y, z, VAR, VAR_Feature1_membrane, VAR_Feature2_membrane, ... (for computing membrane flux), field data, serial scan parameters, parameters
+	// t, x, y, z, VOL, VOL_Feature1_membrane, VOL_Feature2_membrane, ... (for computing membrane flux for volume variables), 
+	// MEM, VOLREG, VOLREG_Feature1_membrane, VOLREG_Feature2_membrane, ... (for computing membrane flux for volume region variables), 
+	// MEMREG, REGIONSIZE, field data, serial scan parameters, parameters
 	int numSymbols = 4 + volVarSize * (model->getNumFeatures() + 1) + memVarSize 
-		+ volRegionVarSize * (model->getNumFeatures() + 1) + memRegionVarSize 
+		+ volRegionVarSize * (model->getNumFeatures() + 1) + memRegionVarSize + numRegionSizeVars
 		+ (int)fieldDataList.size() + (int)randomVarList.size() + (int)serialScanParamList.size() + (int)paramList.size();
 	string* variableNames = new string[numSymbols];	
 
@@ -375,6 +396,14 @@ void SimulationExpression::createSymbolTable() {
 		//	oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_CONTOUR_REGION_INDEX, indices);
 		//	variableNames[variableIndex ++] = string(var->getName());
 		//}		
+
+	// add region size variables
+	for (int i = 0; i < numRegionSizeVars; i ++) {
+		RegionSizeVariable* var = regionSizeVarList[i];
+		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), var->getVarType() == VAR_VOLUME_REGION ? VAR_VOLUME_REGION_INDEX : VAR_MEMBRANE_REGION_INDEX, indices);
+		variableNames[variableIndex] = string(var->getName());
+		variableIndex ++;
+	}
 
 	// add field data
 	for (int i = 0; i < (int)fieldDataList.size(); i ++) {
@@ -552,4 +581,62 @@ void SimulationExpression::reinitConstantValues() {
 		membrane->reinitConstantValues();
 	}
 
+}
+
+void SimulationExpression::populateRegionSizeVariableValues(double *darray, bool bVolumeRegion, int regionIndex) {
+	for (int i = 0; i < numRegionSizeVars; i ++) {
+		RegionSizeVariable* rsv = regionSizeVarList[i];
+		if (rsv->getVarType() == VAR_VOLUME_REGION) {
+			darray[i] = bVolumeRegion ? rsv->getCurr()[regionIndex] : 0;
+		} else {
+			darray[i] = bVolumeRegion ? 0 : rsv->getCurr()[regionIndex];
+		}
+	}
+}
+
+void SimulationExpression::writeData(char *filename, bool bCompress)
+{
+	//bool hasParticles = false;
+	//VCellModel *model = SimTool::getInstance()->getModel();
+	//for (int i = 0; i < model->getNumFeatures(); i ++) {
+	//	Feature* feature = model->getFeatureFromIndex(i);
+	//	if (feature->getVolumeParticleContext()!=NULL){
+	//		hasParticles = true;
+	//	}
+	//	if (feature->getMembraneParticleContext()!=NULL){
+	//		hasParticles = true;
+	//	}
+	//	if (feature->getContourParticleContext()!=NULL){
+	//		hasParticles = true;
+	//	}
+	//}
+
+	//if (hasParticles){
+	//	FILE *fp = NULL;
+	//	string newFname = string(filename) + ".particle";
+	//	if ((fp = fopen(newFname.c_str(),"w"))==NULL){
+	//		char errmsg[512];
+	//		sprintf(errmsg, "Simulation::writeData(), error opening file %s for writing", newFname.c_str());
+	//		throw errmsg;
+	//	}
+
+	//	fprintf(fp,"%lg %lg %lg\n", ((CartesianMesh*)_mesh)->getDomainSizeX(),
+	//					((CartesianMesh*)_mesh)->getDomainSizeY(),
+	//					((CartesianMesh*)_mesh)->getDomainSizeZ());
+	//	fprintf(fp,"%d %d %d\n", ((CartesianMesh*)_mesh)->getNumVolumeX(),
+	//				((CartesianMesh*)_mesh)->getNumVolumeY(),
+	//				((CartesianMesh*)_mesh)->getNumVolumeZ());
+
+	//	//
+	//	//write particle file (if needed)
+	//	//
+	//	vector<Particle*>::iterator particleIterator;
+	//	for (particleIterator = globalParticleList.begin();particleIterator != globalParticleList.end();particleIterator++){
+	//		(*particleIterator)->write(fp);
+	//	}
+
+	//	fclose(fp);
+	//}
+
+	DataSet::write(filename, this, bCompress);
 }

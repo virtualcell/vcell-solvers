@@ -69,6 +69,7 @@ CPPOBJECTS = 	\
 	PDESolver.o \
 	RandomVariable.o \
 	Region.o          \
+	RegionSizeVariable.o          \
 	Scheduler.o       \
 	SerialScheduler.o                   \
 	SimTool.o                   \

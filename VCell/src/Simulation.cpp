@@ -142,53 +142,6 @@ Solver *Simulation::getSolverFromVariable(Variable *var)
 //	globalParticleList.push_back(particle);
 //}
 
-void Simulation::writeData(char *filename, bool bCompress)
-{
-	//bool hasParticles = false;
-	//VCellModel *model = SimTool::getInstance()->getModel();
-	//for (int i = 0; i < model->getNumFeatures(); i ++) {
-	//	Feature* feature = model->getFeatureFromIndex(i);
-	//	if (feature->getVolumeParticleContext()!=NULL){
-	//		hasParticles = true;
-	//	}
-	//	if (feature->getMembraneParticleContext()!=NULL){
-	//		hasParticles = true;
-	//	}
-	//	if (feature->getContourParticleContext()!=NULL){
-	//		hasParticles = true;
-	//	}
-	//}
-
-	//if (hasParticles){
-	//	FILE *fp = NULL;
-	//	string newFname = string(filename) + ".particle";
-	//	if ((fp = fopen(newFname.c_str(),"w"))==NULL){
-	//		char errmsg[512];
-	//		sprintf(errmsg, "Simulation::writeData(), error opening file %s for writing", newFname.c_str());
-	//		throw errmsg;
-	//	}
-
-	//	fprintf(fp,"%lg %lg %lg\n", ((CartesianMesh*)_mesh)->getDomainSizeX(),
-	//					((CartesianMesh*)_mesh)->getDomainSizeY(),
-	//					((CartesianMesh*)_mesh)->getDomainSizeZ());
-	//	fprintf(fp,"%d %d %d\n", ((CartesianMesh*)_mesh)->getNumVolumeX(),
-	//				((CartesianMesh*)_mesh)->getNumVolumeY(),
-	//				((CartesianMesh*)_mesh)->getNumVolumeZ());
-
-	//	//
-	//	//write particle file (if needed)
-	//	//
-	//	vector<Particle*>::iterator particleIterator;
-	//	for (particleIterator = globalParticleList.begin();particleIterator != globalParticleList.end();particleIterator++){
-	//		(*particleIterator)->write(fp);
-	//	}
-
-	//	fclose(fp);
-	//}
-
-	DataSet::write(filename, this, bCompress);
-}
-
 void Simulation::readData(char *filename)
 {
 	//

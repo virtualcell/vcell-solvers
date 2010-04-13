@@ -50,7 +50,7 @@ public:
 	virtual void advanceTimeOn();
 	virtual void advanceTimeOff();
 
-	virtual void writeData(char *filename, bool bCompress);
+	virtual void writeData(char *filename, bool bCompress)=0;
 	virtual void readData(char *filename);
 	//void    synchronize();
 

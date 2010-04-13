@@ -19,6 +19,7 @@
 #include <VCELL/FieldData.h>
 #include <VCELL/MembraneRegion.h>
 #include <VCELL/RandomVariable.h>
+#include <VCELL/RegionSizeVariable.h>
 using std::endl;
 
 #define CONVOLVE_SUFFIX "_Convolved"
@@ -442,15 +443,8 @@ void DataSet::convolve(Simulation* sim, Variable* var, double* values) {
 	}			
 }
 
-void DataSet::write(char *filename, Simulation *sim, bool bCompress)
+void DataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 {
-	bool bStandalone = false;
-	SimulationExpression* simStandalone = 0;
-	if (typeid(*sim) == typeid(SimulationExpression)) {
-		bStandalone = true;
-		simStandalone = (SimulationExpression*)sim;
-	}
-
 	FILE *fp=NULL;
 	FileHeader fileHeader;
 	DataBlock *dataBlock;
@@ -478,9 +472,13 @@ void DataSet::write(char *filename, Simulation *sim, bool bCompress)
 	FieldData* psfFieldData = getPSFFieldData();
 	int numBlocks = psfFieldData == 0 ? numVars : numVars*2;
 
-	if (bStandalone) {
-		numBlocks += simStandalone->getNumRandomVariables();
-	}
+	// region size variable
+	int numRegionSizeVars = sim->getNumRegionSizeVariables();
+	numBlocks += numRegionSizeVars;
+
+	// random variables
+	int numRandVars = sim->getNumRandomVariables();
+	numBlocks += numRandVars;
 
 	fileHeader.sizeX = ((CartesianMesh *)sim->getMesh())->getNumVolumeX();
 	fileHeader.sizeY = ((CartesianMesh *)sim->getMesh())->getNumVolumeY();
@@ -537,21 +535,33 @@ void DataSet::write(char *filename, Simulation *sim, bool bCompress)
 		}
 	}
 	
-	if (bStandalone) {
-		int numRandVars = simStandalone->getNumRandomVariables();
-		for (int i = 0; i < numRandVars; i ++) {
-			RandomVariable* rv = simStandalone->getRandomVariable(i);			
-			memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-			strcpy(dataBlock[blockIndex].varName, rv->getName().c_str());
-		
-			dataBlock[blockIndex].varType = rv->getVariableType();
-			dataBlock[blockIndex].size = rv->getSize();
-			dataBlock[blockIndex].dataOffset = dataOffset;
-			writeDataBlock(fp,dataBlock + blockIndex);
-			dataOffset += dataBlock[blockIndex].size*sizeof(double);
-			blockIndex ++;
-		}
-	}	   
+	// region size variable
+	for (int i = 0; i < numRegionSizeVars; i ++) {
+		RegionSizeVariable* rsv = sim->getRegionSizeVariable(i);			
+		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
+		strcpy(dataBlock[blockIndex].varName, rsv->getName().c_str());
+	
+		dataBlock[blockIndex].varType = rsv->getVarType();
+		dataBlock[blockIndex].size = rsv->getSize();
+		dataBlock[blockIndex].dataOffset = dataOffset;
+		writeDataBlock(fp,dataBlock + blockIndex);
+		dataOffset += dataBlock[blockIndex].size*sizeof(double);
+		blockIndex ++;
+	}
+
+	
+	for (int i = 0; i < numRandVars; i ++) {
+		RandomVariable* rv = sim->getRandomVariable(i);
+		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
+		strcpy(dataBlock[blockIndex].varName, rv->getName().c_str());
+	
+		dataBlock[blockIndex].varType = rv->getVariableType();
+		dataBlock[blockIndex].size = rv->getSize();
+		dataBlock[blockIndex].dataOffset = dataOffset;
+		writeDataBlock(fp,dataBlock + blockIndex);
+		dataOffset += dataBlock[blockIndex].size*sizeof(double);
+		blockIndex ++;
+	}
 
 	//
 	// write data
@@ -606,28 +616,46 @@ void DataSet::write(char *filename, Simulation *sim, bool bCompress)
 	}
 
 	//
-	// write data for random variables
-	//
-	if (bStandalone) {
-		int numRandVars = simStandalone->getNumRandomVariables();
-		for (int i = 0; i < numRandVars; i ++) {
-			RandomVariable* rv = simStandalone->getRandomVariable(i);						
-			ftell_pos = ftell(fp);
-			if (ftell_pos != dataBlock[blockIndex].dataOffset){
-				char errmsg[512];
-				sprintf(errmsg, "DataSet::write() - offset for data is "
-					"incorrect (block %d, var=%s), ftell() says %d, should be %d", 
-					blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
-				throw errmsg;
-			}
-
-			if (rv->getSize() != dataBlock[blockIndex].size) {
-				throw "DataSet::write() : inconsistent number of data blocks for variable";
-			}
-			writeDoubles(fp, rv->getRandomNumbers(), rv->getSize());
-			blockIndex ++;
+	// write data for region size variables
+	//	
+	for (int i = 0; i < numRegionSizeVars; i ++) {
+		RegionSizeVariable* rsv = sim->getRegionSizeVariable(i);
+		ftell_pos = ftell(fp);
+		if (ftell_pos != dataBlock[blockIndex].dataOffset){
+			char errmsg[512];
+			sprintf(errmsg, "DataSet::write() - offset for data is "
+				"incorrect (block %d, var=%s), ftell() says %d, should be %d",
+				blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
+			throw errmsg;
 		}
+
+		if (rsv->getSize() != dataBlock[blockIndex].size) {
+			throw "DataSet::write() : inconsistent number of data blocks for variable";
+		}
+		writeDoubles(fp, rsv->getCurr(), rsv->getSize());
+		blockIndex ++;
 	}
+
+	//
+	// write data for random variables
+	//	
+	for (int i = 0; i < numRandVars; i ++) {
+		RandomVariable* rv = sim->getRandomVariable(i);						
+		ftell_pos = ftell(fp);
+		if (ftell_pos != dataBlock[blockIndex].dataOffset){
+			char errmsg[512];
+			sprintf(errmsg, "DataSet::write() - offset for data is "
+				"incorrect (block %d, var=%s), ftell() says %d, should be %d", 
+				blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
+			throw errmsg;
+		}
+
+		if (rv->getSize() != dataBlock[blockIndex].size) {
+			throw "DataSet::write() : inconsistent number of data blocks for variable";
+		}
+		writeDoubles(fp, rv->getRandomNumbers(), rv->getSize());
+		blockIndex ++;
+	}	
 
 	fclose(fp);
 	if (bCompress){

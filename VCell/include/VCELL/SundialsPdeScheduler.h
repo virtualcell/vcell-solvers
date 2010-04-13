@@ -155,6 +155,7 @@ private:
 	int memSymbolOffset;
 	int volRegionSymbolOffset;
 	int memRegionSymbolOffset;
+	int regionSizeVariableSymbolOffset;
 	int fieldDataSymbolOffset;
 	int randomVariableSymbolOffset;
 	int serialScanParameterSymbolOffset;

@@ -21,12 +21,6 @@ protected:
 public:
 	virtual ~Variable();
 
-	virtual bool isVolumeVar() { return false; }
-	virtual bool isMembraneVar() { return false; }
-	virtual bool isContourVar() { return false; }
-	virtual bool isVolumeRegionVar() { return false; }
-	virtual bool isMembraneRegionVar() { return false; }
-	virtual bool isContourRegionVar() { return false; }
 
 	virtual void show(ofstream&);
 

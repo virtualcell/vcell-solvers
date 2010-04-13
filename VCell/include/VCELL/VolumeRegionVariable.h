@@ -12,7 +12,6 @@ class VolumeRegionVariable : public Variable
 public:
 	VolumeRegionVariable(int size, string& nameStr);
 
-	bool isVolumeRegionVar() { return true; }
 	VariableType	getVarType() {return VAR_VOLUME_REGION;}
 };
 
