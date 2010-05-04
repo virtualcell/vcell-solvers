@@ -3,9 +3,10 @@
  * All rights reserved.
  */
 #include <VCELL/RegionSizeVariable.h>
+#include <VCELL/Structure.h>
 
-RegionSizeVariable::RegionSizeVariable(string& nameStr, int size, bool arg_bVolume)
-: Variable(size, nameStr)
+RegionSizeVariable::RegionSizeVariable(string& nameStr, Structure* structure, int size, bool arg_bVolume)
+: Variable(nameStr, structure, size)
 {
 	bVolume = arg_bVolume;
 }

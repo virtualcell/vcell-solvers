@@ -8,11 +8,12 @@
 #include <VCELL/Variable.h>
 
 class VolumeRegion;
+class Feature;
 
 class VolumeVariable : public Variable
 {
 public:
-	VolumeVariable(long sizeX, long sizeY, long sizeZ, string& name, bool diff=true, bool advect=false);
+	VolumeVariable(string& nameStr, Feature* feature, long sizeX, long sizeY, long sizeZ, bool diff=true, bool advect=false);
 
 	virtual VariableType	getVarType() {return VAR_VOLUME;}
 

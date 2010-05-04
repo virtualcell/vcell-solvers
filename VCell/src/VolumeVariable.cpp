@@ -3,12 +3,13 @@
  * All rights reserved.
  */
 #include <VCELL/VolumeVariable.h>
+#include <VCELL/Feature.h>
 #include <fstream>
 using std::ofstream;
 using std::endl;
 
-VolumeVariable::VolumeVariable(long numX, long numY, long numZ, string& nameStr, bool pde, bool advect)
-: Variable(numX*numY*numZ, nameStr, pde)
+VolumeVariable::VolumeVariable(string& nameStr, Feature* feature, long numX, long numY, long numZ, bool diff, bool advect)
+: Variable(nameStr, feature, numX*numY*numZ, diff)
 {
 	sizeX = numX;
 	sizeY = numY;

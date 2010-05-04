@@ -170,7 +170,7 @@ void Simulation::initSimulation()
 		int odeCount = 0, pdeCount = 0;
 		for (int i = 0; i < (int)varList.size(); i ++) {
 			Variable* var = varList[i];
-			if (var->isPde()){
+			if (var->isDiffusing()){
 				pdeCount ++;
 			} else {
 				odeCount ++;

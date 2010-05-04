@@ -3,8 +3,9 @@
  * All rights reserved.
  */
 #include <VCELL/MembraneRegionVariable.h>
+#include <VCELL/Membrane.h>
 
-MembraneRegionVariable::MembraneRegionVariable(int size, string& nameStr)
-: Variable(size,nameStr)
+MembraneRegionVariable::MembraneRegionVariable(string& nameStr, Membrane* membrane, long size)
+: Variable(nameStr, membrane, size)
 {
 }

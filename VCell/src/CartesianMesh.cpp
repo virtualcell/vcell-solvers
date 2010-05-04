@@ -788,10 +788,10 @@ void CartesianMesh::writeVolumeRegionsMapSubvolume(FILE *fp)
 	int numVolumeRegions = (int)pVolumeRegions.size();
 	fprintf(fp,"\tVolumeRegionsMapSubvolume {\n");
 	fprintf(fp,"\t%d\n",numVolumeRegions);
-	fprintf(fp,"\t//%8s %10s %10s\n","VolRegID","SubvolID","Volume");
+	fprintf(fp,"\t//%8s %10s %10s %10s\n","VolRegID","SubvolID","Volume", "Subdomain");
 	for(int c = 0;c < numVolumeRegions;c+= 1){
 		VolumeRegion *volumeRegion = pVolumeRegions[c];
-		fprintf(fp,"\t%10ld %10ld %10.17lg //%s\n",
+		fprintf(fp,"\t%10ld %10ld %10.17lg %s\n",
 				volumeRegion->getIndex(),
 				volumeRegion->getFeature()->getHandle(),
 				volumeRegion->getSize(),

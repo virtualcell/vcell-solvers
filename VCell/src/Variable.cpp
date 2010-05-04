@@ -7,16 +7,17 @@ using std::ofstream;
 using std::endl;
 
 #include <VCELL/Variable.h>
+#include <VCELL/Structure.h>
 #include <math.h>
 
-Variable::Variable(long Asize, string& nameStr, bool pde)
+Variable::Variable(string& nameStr, Structure* s, long Asize, bool diff)
 {
+	name = nameStr;
+	structure = s;
 	size = Asize;
-	ASSERTION(size);
 	old = new double[size];
 	curr = new double[size];
-	name = nameStr;
-	bPde = pde;
+	bDiffusing = diff;
 	clear();
 }
 
@@ -84,7 +85,11 @@ void Variable::update()
 	memcpy(old, curr, sizeof(double)*size);
 }
 
-void Variable::revert()
-{
-	memcpy(curr, old, sizeof(double)*size);
+
+string Variable::getQualifiedName(){
+	if (structure != 0){
+		return structure->getName() + "::" + name;
+	}else{
+		return name;
+	}
 }

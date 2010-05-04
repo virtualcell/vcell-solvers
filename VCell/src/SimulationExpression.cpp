@@ -162,7 +162,7 @@ void SimulationExpression::addVolumeVariable(VolumeVariable *var, bool* bSolveRe
 	Simulation::addVariable(var);
 	volVariableRegionMap.push_back(bSolveRegions);
 	volVarSize ++;
-	if (var->isPde()) {
+	if (var->isDiffusing()) {
 		numVolPde ++;
 	}
 }
@@ -171,7 +171,7 @@ void SimulationExpression::addMembraneVariable(MembraneVariable *var)
 {
 	Simulation::addVariable(var);
 	memVarSize ++;
-	if (var->isPde()) {
+	if (var->isDiffusing()) {
 		numMemPde ++;
 	}
 }
@@ -231,7 +231,7 @@ void SimulationExpression::createSymbolTable() {
 	{
 		int numVolRegions = mesh->getNumVolumeRegions();
 		string name = "vcRegionVolume";
-		RegionSizeVariable* rsv = new RegionSizeVariable(name, numVolRegions, true);
+		RegionSizeVariable* rsv = new RegionSizeVariable(name, 0, numVolRegions, true);
 		regionSizeVarList[regionSizeVarCount ++] = rsv;
 
 		for (int i = 0; i < numVolRegions; i ++) {
@@ -244,7 +244,7 @@ void SimulationExpression::createSymbolTable() {
 	{
 		int numMemRegions = mesh->getNumMembraneRegions();
 		string name = "vcRegionArea";
-		RegionSizeVariable* rsv = new RegionSizeVariable(name, numMemRegions, false);
+		RegionSizeVariable* rsv = new RegionSizeVariable(name, 0, numMemRegions, false);
 		regionSizeVarList[regionSizeVarCount ++] = rsv;
 
 		for (int i = 0; i < numMemRegions; i ++) {
@@ -260,7 +260,7 @@ void SimulationExpression::createSymbolTable() {
 		for (int i = 0; i < numFeatures; i ++) {
 			Feature* feature = model->getFeatureFromIndex(i);
 			string name = "vcRegionVolume_" + feature->getName();
-			RegionSizeVariable* rsv = new RegionSizeVariable(name, numMemRegions, false);
+			RegionSizeVariable* rsv = new RegionSizeVariable(name, 0, numMemRegions, false);
 			regionSizeVarList[regionSizeVarCount ++] = rsv;
 
 			for (int i = 0; i < numMemRegions; i ++) {

@@ -231,7 +231,7 @@ void SundialsPdeScheduler::setupOrderMaps() {
 
 					VolumeVariable* var = (VolumeVariable*)simulation->getVolVariable(v);
  					VolumeVarContext* varContext = feature->getVolumeVarContext(var);
-					if (var->isPde() && !varContext->hasConstantDiffusionAdvection(dimension)) {
+					if (var->isDiffusing() && !varContext->hasConstantDiffusionAdvection(dimension)) {
 						bRegionHasConstantDiffusionAdvection[r] = false;
 						bHasVariableDiffusionAdvection = true;
 					}
@@ -647,7 +647,7 @@ void SundialsPdeScheduler::updateSolutions() {
 					VolumeVariable *var = simulation->getVolVariable(varIndex);
 
 					double sol = y_data[count ++];
-					if (var->isPde() && bDirichletBoundary && (mask & BOUNDARY_TYPE_DIRICHLET)) {
+					if (var->isDiffusing() && bDirichletBoundary && (mask & BOUNDARY_TYPE_DIRICHLET)) {
 						updateVolumeStatePointValues(volIndex, currentTime, y_data, statePointValues);
 						Feature* feature = pVolumeElement[volIndex].getFeature();
 						VolumeVarContext* varContext = feature->getVolumeVarContext(var);
@@ -678,7 +678,7 @@ void SundialsPdeScheduler::updateSolutions() {
 				MembraneVariable *var = (MembraneVariable*)simulation->getMemVariable(v);
 				int mask = mesh->getMembraneNeighborMask(m);
 				double sol = y_data[count ++];
-				if (var->isPde() && (mask & BOUNDARY_TYPE_DIRICHLET)) {
+				if (var->isDiffusing() && (mask & BOUNDARY_TYPE_DIRICHLET)) {
 					updateMembraneStatePointValues(pMembraneElement[m], currentTime, y_data, statePointValues);
 
 					Membrane* membrane = pMembraneElement[m].getMembrane();
@@ -755,14 +755,14 @@ void SundialsPdeScheduler::applyVolumeOperatorOld(double t, double* yinput, doub
 				int vectorIndex = getVolumeElementVectorOffset(volIndex, r) + activeVarCount;
 
 				// update values
-				if (!var->isPde() || !(mask & BOUNDARY_TYPE_DIRICHLET)){
+				if (!var->isDiffusing() || !(mask & BOUNDARY_TYPE_DIRICHLET)){
 					updateVolumeStatePointValues(volIndex, t, yinput, statePointValues);
 					double reactionRate = varContext->evaluateExpression(REACT_RATE_EXP, statePointValues);
 					// add reaction
 					rhs[vectorIndex] += reactionRate;
 				}
 
-				if (!var->isPde()) {
+				if (!var->isDiffusing()) {
 					//validateNumber(var->getName(), volIndex, "RHS", rhs[vectorIndex]);
 					continue;
 				}
@@ -1106,14 +1106,14 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorConstant(int regionID, doubl
 			VolumeVarContext* varContext = feature->getVolumeVarContext(var);
 
 			double reactionRate = 0;
-			if (bDirichlet && var->isPde()) {// pde dirichlet
+			if (bDirichlet && var->isDiffusing()) {// pde dirichlet
 				rhs[vectorIndex] = 0;
 				if (mask & (NEIGHBOR_XP_BOUNDARY || NEIGHBOR_YP_BOUNDARY || NEIGHBOR_ZP_BOUNDARY)) {
 					continue;
 				}
 			} else {
 				reactionRate = varContext->evaluateExpression(REACT_RATE_EXP, statePointValues);
-				if (!var->isPde()) {
+				if (!var->isDiffusing()) {
 					rhs[vectorIndex] += reactionRate;
 					continue;
 				}
@@ -1234,14 +1234,14 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, doubl
 			VolumeVarContext* varContext = feature->getVolumeVarContext(var);
 
 			double reactionRate = 0;
-			if (bDirichlet && var->isPde()) {// pde dirichlet
+			if (bDirichlet && var->isDiffusing()) {// pde dirichlet
 				rhs[vectorIndex] = 0;
 				if (mask & (NEIGHBOR_XP_BOUNDARY || NEIGHBOR_YP_BOUNDARY || NEIGHBOR_ZP_BOUNDARY)) {
 					continue;
 				}
 			} else {
 				reactionRate = varContext->evaluateExpression(REACT_RATE_EXP, statePointValues);
-				if (!var->isPde()) {
+				if (!var->isDiffusing()) {
 					rhs[vectorIndex] += reactionRate;
 					continue;
 				}
@@ -1356,7 +1356,7 @@ void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, doub
 			MembraneVarContext *varContext = membrane->getMembraneVarContext(var);
 			int mask = mesh->getMembraneNeighborMask(mi);
 
-			if (!var->isPde() || !(mask & BOUNDARY_TYPE_DIRICHLET)) {   // boundary and dirichlet
+			if (!var->isDiffusing() || !(mask & BOUNDARY_TYPE_DIRICHLET)) {   // boundary and dirichlet
 				// update values
 				updateMembraneStatePointValues(pMembraneElement[mi], t, yinput, statePointValues);
 				double reactionRate = varContext->evaluateExpression(REACT_RATE_EXP, statePointValues);
@@ -1364,7 +1364,7 @@ void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, doub
 				rhs[vectorIndex] += reactionRate;
 			}
 
-			if (!var->isPde()) {
+			if (!var->isDiffusing()) {
 				//validateNumber(var->getName(), volIndex, "RHS", rhs[vectorIndex]);
 				continue;
 			}
@@ -1552,7 +1552,7 @@ void SundialsPdeScheduler::applyMembraneFluxOperator(double t, double* yinput, d
 		for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[loRegionID]; activeVarCount ++) {
 			int varIndex = regionDefinedVolVariableIndexes[loRegionID][activeVarCount];
 			VolumeVariable* var = simulation->getVolVariable(varIndex);
-			if (!var->isPde()) {
+			if (!var->isDiffusing()) {
 				continue;
 			}
 
@@ -1564,7 +1564,7 @@ void SundialsPdeScheduler::applyMembraneFluxOperator(double t, double* yinput, d
 		for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[hiRegionID]; activeVarCount ++) {
 			int varIndex = regionDefinedVolVariableIndexes[hiRegionID][activeVarCount];
 			VolumeVariable* var = simulation->getVolVariable(varIndex);
-			if (!var->isPde()) {
+			if (!var->isDiffusing()) {
 				continue;
 			}
 
@@ -1648,7 +1648,7 @@ void SundialsPdeScheduler::preallocateM() {
 
 					M->addNewRow();
 
-					if (!var->isPde()) {
+					if (!var->isDiffusing()) {
 						M->setRow(1.0, 0, 0, 0);
 						//validateNumber(var->getName(), volIndex, "RHS", rhs[vectorIndex]);
 						continue;
@@ -1686,7 +1686,7 @@ void SundialsPdeScheduler::preallocateM() {
 			for (int v = 0; v < simulation->getNumMemVariables(); v ++) {
 				M->addNewRow();
 
-				if (!simulation->getMemVariable(v)->isPde()) {
+				if (!simulation->getMemVariable(v)->isDiffusing()) {
 					M->setRow(1.0, 0, 0, 0);
 					continue;
 				}
@@ -1861,7 +1861,7 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 			int varIndex = regionDefinedVolVariableIndexes[r][activeVarCount];
 			VolumeVariable* var = (VolumeVariable*)simulation->getVolVariable(varIndex);
 
-			if (!var->isPde()) {
+			if (!var->isDiffusing()) {
 				continue;
 			}
 			int firstPointVolIndex = local2Global[regionOffsets[r]];
@@ -2043,7 +2043,7 @@ void SundialsPdeScheduler::buildM_Membrane(double t, double* yinput, double gamm
 	for (int mi = 0; mi < mesh->getNumMembraneElements(); mi ++) {
 		for (int v = 0; v < simulation->getNumMemVariables(); v ++) {
 			MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(v);
-			if (!var->isPde()) {
+			if (!var->isDiffusing()) {
 				continue;
 			}
 

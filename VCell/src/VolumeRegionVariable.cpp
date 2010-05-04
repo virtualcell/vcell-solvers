@@ -3,8 +3,9 @@
  * All rights reserved.
  */
 #include <VCELL/VolumeRegionVariable.h>
+#include <VCELL/Feature.h>
 
-VolumeRegionVariable::VolumeRegionVariable(int size, string& nameStr)
-: Variable(size, nameStr)
+VolumeRegionVariable::VolumeRegionVariable(string& nameStr, Feature* feature, int size)
+: Variable(nameStr, feature, size)
 {
 }

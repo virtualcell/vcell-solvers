@@ -508,7 +508,7 @@ void DataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 	for (int i = 0; i < numVars; i ++) {
 		Variable* var = sim->getVariable(i);
 		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-		strcpy(dataBlock[blockIndex].varName, var->getName().c_str());
+		strcpy(dataBlock[blockIndex].varName, var->getQualifiedName().c_str());
 		
 		dataBlock[blockIndex].varType = var->getVarType();
 		dataBlock[blockIndex].size = var->getSize();
@@ -522,7 +522,7 @@ void DataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 	if (psfFieldData != 0) {
 		for (int i = 0; i < numVars; i ++) {
 			Variable* var = sim->getVariable(i);			
-			string varz_name = var->getName() + CONVOLVE_SUFFIX;
+			string varz_name = var->getQualifiedName() + CONVOLVE_SUFFIX;
 			memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
 			strcpy(dataBlock[blockIndex].varName, varz_name.c_str());
 	       
@@ -539,7 +539,7 @@ void DataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 	for (int i = 0; i < numRegionSizeVars; i ++) {
 		RegionSizeVariable* rsv = sim->getRegionSizeVariable(i);			
 		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-		strcpy(dataBlock[blockIndex].varName, rsv->getName().c_str());
+		strcpy(dataBlock[blockIndex].varName, rsv->getQualifiedName().c_str());
 	
 		dataBlock[blockIndex].varType = rsv->getVarType();
 		dataBlock[blockIndex].size = rsv->getSize();

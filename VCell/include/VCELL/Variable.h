@@ -13,44 +13,48 @@
 using std::string;
 using std::ofstream;
 
+class Structure;
+
 class Variable 
 {
 protected:
-	Variable(long Asize, string& name, bool bPde=false);
+	Variable(string& nameStr, Structure* structure, long Asize, bool diff=false);
 
 public:
 	virtual ~Variable();
-
 
 	virtual void show(ofstream&);
 
 	double *getOld()  { return old; }
 	double *getCurr() { return curr; }
-	long    getSize() { return size; }
+	long getSize() { return size; }
 
-	double  getOld(long index);           // if doesn't exist, return 0.0
-	double  getCurr(long index);          // if doesn't exist, return 0.0
+	double getOld(long index);           // if doesn't exist, return 0.0
+	double getCurr(long index);          // if doesn't exist, return 0.0
 
-	void    setOld(long index, double value);
-	void    setCurr(long index, double value);
+	void setOld(long index, double value);
+	void setCurr(long index, double value);
+	
+	const string& getName() { return name; }
+	string getQualifiedName();
 
-	string	getName() { return name; }
-	virtual VariableType	getVarType() {return VAR_UNKNOWN;}
+	virtual VariableType getVarType() {	return VAR_UNKNOWN; }
 
-	void     update();
-	void     revert();
-	void     clear();
+	void update();
 
-	bool isPde() { return bPde; }
+	bool isDiffusing() { return bDiffusing; }
    
 protected:
+	void clear();
+
 	string name;
+	Structure* structure;
 	    
-	long    size;
+	long size;
 	double *old;
 	double *curr;
 
-	bool bPde;
+	bool bDiffusing;
 };
 
 #endif

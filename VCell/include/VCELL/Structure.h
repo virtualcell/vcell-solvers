@@ -30,7 +30,7 @@ public:
 	virtual void setZmBoundaryType(BoundaryType bt) { boundaryType[4] = bt; }
 	virtual void setZpBoundaryType(BoundaryType bt) { boundaryType[5] = bt; }
 
-	string getName() { return name; }
+	const string& getName() { return name; }
 	int getNumRegions() {
 		return (int)regionList.size();
 	}

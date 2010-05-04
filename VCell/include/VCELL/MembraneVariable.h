@@ -7,12 +7,14 @@
 
 #include <VCELL/Variable.h>
 
+class Membrane;
+
 class MembraneVariable : public Variable
 {
 public:
-	MembraneVariable(long size, string& nameStr, bool pde=false);
+	MembraneVariable(string& nameStr, Membrane* membrane, long size, bool diff=false);
 
-	virtual VariableType	getVarType() {return VAR_MEMBRANE;}
+	VariableType getVarType() { return VAR_MEMBRANE; }
 };
 
 #endif

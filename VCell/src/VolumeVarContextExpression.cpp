@@ -134,7 +134,7 @@ bool VolumeVarContextExpression::isNullExpressionOK(int expIndex) {
 }
 
 bool VolumeVarContextExpression::hasConstantDiffusion() {
-	if (!species->isPde()) {
+	if (!species->isDiffusing()) {
 		throw "hasConstantDiffusion() is only for PDE variables";
 	}
 	return isConstantExpression(DIFF_RATE_EXP);

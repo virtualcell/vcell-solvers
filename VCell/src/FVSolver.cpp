@@ -263,7 +263,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 	long sizeY = mesh->getNumVolumeY();
 	long sizeZ = mesh->getNumVolumeZ();
 	int numVolumeRegions = mesh->getNumVolumeRegions();
-	string variable_name;
+	string variable_name, structure_name;
 
 	while (!ifsInput.eof()) {
 		getline(ifsInput, line);
@@ -297,7 +297,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			bool bNoConvection = true;
 			bool bTimeDependent = false;
 			string advectionflag, time_dependent_diffusion_flag, solve_whole_mesh_flag;
-			lineInput >> variable_name >> time_dependent_diffusion_flag >> advectionflag >> solve_whole_mesh_flag;
+			lineInput >> variable_name >> structure_name >> time_dependent_diffusion_flag >> advectionflag >> solve_whole_mesh_flag;
 
 			assert(solve_whole_mesh_flag == "true" ||  solve_whole_mesh_flag == "false");
 
@@ -330,7 +330,10 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			if (advectionflag == "true" ) {
 				bNoConvection = false;
 			}
-			VolumeVariable* volumeVar = new VolumeVariable(sizeX, sizeY, sizeZ, variable_name, true, !bNoConvection);
+
+			Feature* feature = model->getFeatureFromName(structure_name);
+			assert(feature);
+			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX, sizeY, sizeZ, true, !bNoConvection);
 			if (bSolveVariable && !simTool->isSundialsPdeSolver()) {
 				SparseMatrixEqnBuilder* builder = 0;
 				if (bSteady) {
@@ -344,7 +347,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			simulation->addVolumeVariable(volumeVar, vrmap);
 		} else if (nextToken == "VOLUME_ODE") {
 			string solve_whole_mesh_flag;
-			lineInput >> variable_name >> solve_whole_mesh_flag;
+			lineInput >> variable_name >> structure_name >> solve_whole_mesh_flag;
 
 			assert(solve_whole_mesh_flag == "true" ||  solve_whole_mesh_flag == "false");
 
@@ -370,7 +373,9 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				}
 			}
 
-			VolumeVariable* volumeVar = new VolumeVariable(sizeX, sizeY, sizeZ, variable_name, false);
+			Feature* feature = model->getFeatureFromName(structure_name);
+			assert(feature);
+			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX, sizeY, sizeZ, false);
 			if (bSolveVariable && !simTool->isSundialsPdeSolver()) {
 				ODESolver* odeSolver = new ODESolver(volumeVar,mesh,numSolveRegions,solveRegions);
 				EqnBuilder* builder = new EqnBuilderReactionForward(volumeVar,mesh,odeSolver);
@@ -379,10 +384,13 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			}
 			simulation->addVolumeVariable(volumeVar, vrmap);
 		} else if (nextToken == "MEMBRANE_ODE") {
-			lineInput >> variable_name;
+			lineInput >> variable_name >> structure_name;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
 			int *solveRegions = NULL;
-			MembraneVariable* membraneVar = new MembraneVariable(mesh->getNumMembraneElements(), variable_name, false);
+
+			Membrane* membrane = model->getMembraneFromName(structure_name);
+			assert(membrane);
+			MembraneVariable* membraneVar = new MembraneVariable(variable_name, membrane, mesh->getNumMembraneElements(), false);
 			if (!simTool->isSundialsPdeSolver()) {
 				ODESolver* odeSolver = new ODESolver(membraneVar,mesh,numSolveRegions,solveRegions);
 				EqnBuilder* builder = new MembraneEqnBuilderForward(membraneVar,mesh,odeSolver);
@@ -394,12 +402,15 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			bool bNoConvection = true;    // define symmflg = 0 (general) or 1 (symmetric)
 			bool bTimeDependent = false;
 			string time_dependent_diffusion_flag;
-			lineInput >> variable_name >> time_dependent_diffusion_flag;
+			lineInput >> variable_name >> structure_name >> time_dependent_diffusion_flag;
 			if (time_dependent_diffusion_flag == "true") {
 				bTimeDependent = true;
 				simulation->setHasTimeDependentDiffusionAdvection();
 			}
-			MembraneVariable* membraneVar = new MembraneVariable(mesh->getNumMembraneElements(), variable_name, true);
+
+			Membrane* membrane = model->getMembraneFromName(structure_name);
+			assert(membrane);
+			MembraneVariable* membraneVar = new MembraneVariable(variable_name, membrane, mesh->getNumMembraneElements(), true);
 			if (!simTool->isSundialsPdeSolver()) {
 				SparseMatrixEqnBuilder* smbuilder = new MembraneEqnBuilderDiffusion(membraneVar,mesh);
 				SparseLinearSolver* slSolver = new SparseLinearSolver(membraneVar,smbuilder,simTool->getPCGRelativeErrorTolerance(),bTimeDependent);
@@ -407,10 +418,13 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			}
 			simulation->addMembraneVariable(membraneVar);
 		} else if (nextToken == "VOLUME_REGION") {
-			lineInput >> variable_name;
+			lineInput >> variable_name >> structure_name;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
 			int *solveRegions = NULL;
-			VolumeRegionVariable* volumeRegionVar = new VolumeRegionVariable(mesh->getNumVolumeRegions(), variable_name);
+
+			Feature* feature = model->getFeatureFromName(structure_name);
+			assert(feature);
+			VolumeRegionVariable* volumeRegionVar = new VolumeRegionVariable(variable_name, feature, mesh->getNumVolumeRegions());
 			if (!simTool->isSundialsPdeSolver()) {
 				ODESolver* odeSolver = new ODESolver(volumeRegionVar,mesh,numSolveRegions,solveRegions);
 				EqnBuilder* builder = new VolumeRegionEqnBuilder(volumeRegionVar,mesh,odeSolver);
@@ -422,7 +436,10 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			lineInput >> variable_name;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
 			int *solveRegions = NULL;
-			MembraneRegionVariable* memRegionVariable = new MembraneRegionVariable(mesh->getNumMembraneRegions(), variable_name);
+
+			Membrane* membrane = model->getMembraneFromName(structure_name);
+			assert(membrane);
+			MembraneRegionVariable* memRegionVariable = new MembraneRegionVariable(variable_name, membrane, mesh->getNumMembraneRegions());
 			if (!simTool->isSundialsPdeSolver()) {
 				ODESolver* odeSolver = new ODESolver(memRegionVariable,mesh,numSolveRegions,solveRegions);
 				EqnBuilder* builder = new MembraneRegionEqnBuilder(memRegionVariable,mesh,odeSolver);
