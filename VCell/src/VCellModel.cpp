@@ -11,6 +11,8 @@
 #include <VCELL/Membrane.h>
 
 #include <assert.h>
+#include <sstream>
+using std::stringstream;
 
 VCellModel::VCellModel()
 {
@@ -86,8 +88,10 @@ Membrane* VCellModel::getMembrane(Feature* f1, Feature* f2)
 			return membrane;
 		}
 	}
-	assert(0);
-	return 0;
+	stringstream ss;
+	ss << "With current mesh sampling, unexpected membrane found in between " 
+		<< f1->getName() << " and " << f2->getName() << ", considering using finer mesh";
+	throw ss.str();
 }
 
 Membrane *VCellModel::getMembraneFromIndex(int index)

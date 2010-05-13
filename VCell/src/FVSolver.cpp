@@ -332,7 +332,6 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			}
 
 			Feature* feature = model->getFeatureFromName(structure_name);
-			assert(feature);
 			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX, sizeY, sizeZ, true, !bNoConvection);
 			if (bSolveVariable && !simTool->isSundialsPdeSolver()) {
 				SparseMatrixEqnBuilder* builder = 0;
@@ -374,7 +373,6 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			}
 
 			Feature* feature = model->getFeatureFromName(structure_name);
-			assert(feature);
 			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX, sizeY, sizeZ, false);
 			if (bSolveVariable && !simTool->isSundialsPdeSolver()) {
 				ODESolver* odeSolver = new ODESolver(volumeVar,mesh,numSolveRegions,solveRegions);
@@ -389,7 +387,6 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			int *solveRegions = NULL;
 
 			Membrane* membrane = model->getMembraneFromName(structure_name);
-			assert(membrane);
 			MembraneVariable* membraneVar = new MembraneVariable(variable_name, membrane, mesh->getNumMembraneElements(), false);
 			if (!simTool->isSundialsPdeSolver()) {
 				ODESolver* odeSolver = new ODESolver(membraneVar,mesh,numSolveRegions,solveRegions);
@@ -409,7 +406,6 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			}
 
 			Membrane* membrane = model->getMembraneFromName(structure_name);
-			assert(membrane);
 			MembraneVariable* membraneVar = new MembraneVariable(variable_name, membrane, mesh->getNumMembraneElements(), true);
 			if (!simTool->isSundialsPdeSolver()) {
 				SparseMatrixEqnBuilder* smbuilder = new MembraneEqnBuilderDiffusion(membraneVar,mesh);
@@ -423,7 +419,6 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			int *solveRegions = NULL;
 
 			Feature* feature = model->getFeatureFromName(structure_name);
-			assert(feature);
 			VolumeRegionVariable* volumeRegionVar = new VolumeRegionVariable(variable_name, feature, mesh->getNumVolumeRegions());
 			if (!simTool->isSundialsPdeSolver()) {
 				ODESolver* odeSolver = new ODESolver(volumeRegionVar,mesh,numSolveRegions,solveRegions);
@@ -438,7 +433,6 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			int *solveRegions = NULL;
 
 			Membrane* membrane = model->getMembraneFromName(structure_name);
-			assert(membrane);
 			MembraneRegionVariable* memRegionVariable = new MembraneRegionVariable(variable_name, membrane, mesh->getNumMembraneRegions());
 			if (!simTool->isSundialsPdeSolver()) {
 				ODESolver* odeSolver = new ODESolver(memRegionVariable,mesh,numSolveRegions,solveRegions);
