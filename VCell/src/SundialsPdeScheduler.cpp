@@ -1349,10 +1349,13 @@ void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, doub
 	SparseMatrixPCG* membraneElementCoupling = mesh->getMembraneCoupling();
 	for (int mi = 0; mi < mesh->getNumMembraneElements(); mi ++) {
 		for (int v = 0; v < simulation->getNumMemVariables(); v ++) {
-			int vectorIndex = getMembraneElementVectorOffset(mi) + v;
-
 			MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(v);
 			Membrane* membrane = pMembraneElement[mi].getMembrane();
+			if (var->getStructure() != membrane) {
+				continue;
+			}
+
+			int vectorIndex = getMembraneElementVectorOffset(mi) + v;
 			MembraneVarContext *varContext = membrane->getMembraneVarContext(var);
 			int mask = mesh->getMembraneNeighborMask(mi);
 

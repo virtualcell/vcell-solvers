@@ -29,7 +29,9 @@ void MembraneEqnBuilderForward::buildEquation(double deltaTime, int volumeIndexS
 	for (long memIndex=membraneIndexStart;memIndex<(membraneIndexStart+membraneIndexSize);memIndex++){
 
 		Membrane* membrane = pMembraneElement->getMembrane();
-		ASSERTION(feature);
+		if (var->getStructure() != membrane) {
+			continue;
+		}
 
 		MembraneVarContext* memVarContext = membrane->getMembraneVarContext((MembraneVariable*)var);
 
