@@ -788,10 +788,10 @@ void CartesianMesh::writeVolumeRegionsMapSubvolume(FILE *fp)
 	int numVolumeRegions = (int)pVolumeRegions.size();
 	fprintf(fp,"\tVolumeRegionsMapSubvolume {\n");
 	fprintf(fp,"\t%d\n",numVolumeRegions);
-	fprintf(fp,"\t//%8s %10s %10s %10s\n","VolRegID","SubvolID","Volume", "Subdomain");
+	fprintf(fp,"\t//%8s %10s %10s\n","VolRegID","SubvolID","Volume");
 	for(int c = 0;c < numVolumeRegions;c+= 1){
 		VolumeRegion *volumeRegion = pVolumeRegions[c];
-		fprintf(fp,"\t%10ld %10ld %10.17lg %s\n",
+		fprintf(fp,"\t%10ld %10ld %10.17lg //%s\n",
 				volumeRegion->getIndex(),
 				volumeRegion->getFeature()->getHandle(),
 				volumeRegion->getSize(),
@@ -844,7 +844,7 @@ void CartesianMesh::writeMembraneRegionMapVolumeRegion(FILE *fp)
 	int numMembraneRegions = (int)pMembraneRegions.size();
 	fprintf(fp,"\tMembraneRegionsMapVolumeRegion {\n");
 	fprintf(fp,"\t%d\n",numMembraneRegions);
-	fprintf(fp,"\t//%8s %10s %10s %10s\n","MemRegID","VolRegIn","VolRegOut","Surface");
+	fprintf(fp,"\t//%8s %10s %10s %10s\n","MemRegID","VolReg1","VolReg2","Surface");
 	for(int c = 0;c < numMembraneRegions;c+= 1){
 		MembraneRegion *membraneRegion = pMembraneRegions[c];
 		VolumeRegion *vr1 = membraneRegion->getVolumeRegion1();
@@ -893,7 +893,7 @@ void CartesianMesh::writeMembraneElements_Connectivity_Region(FILE *fp)
 {
 	fprintf(fp,"\tMembraneElements {\n");
 	fprintf(fp,"\t%d\n",(int)getNumMembraneElements());
-	fprintf(fp,"\t//%4s %4s %4s %4s %4s %4s %4s %4s\n","Indx","VIn","VOut","Conn0","Conn1","Conn2","Conn3","MemRegID");
+	fprintf(fp,"\t//%4s %4s %4s %4s %4s %4s %4s %4s\n","Indx","Vol1","Vol2","Conn0","Conn1","Conn2","Conn3","MemRegID");
 	for (int i=0;i<getNumMembraneElements();i++){
 		MembraneElement *memEl = getMembraneElements()+i;
 		fprintf(fp,"\t%6ld %4ld %4ld %5ld %5ld %5ld %5ld %8d\n",

@@ -59,13 +59,18 @@ Feature *VCellModel::getFeatureFromHandle(FeatureHandle handle)
 
 Feature *VCellModel::getFeatureFromName(string& name)
 {
+	if (name == "null") {
+		return 0;
+	}
 	for (int i = 0; i < (int)featureList.size(); i ++) {
 		Feature* feature = featureList[i];
 		if (name == feature->getName()) {
 			return feature;
 		}
 	}
-	return NULL;
+	stringstream ss;
+	ss << "Compartment subdomain '" << name << "' doesn't exist!";
+	throw ss.str();
 }
 
 void VCellModel::resolveReferences()
@@ -90,7 +95,7 @@ Membrane* VCellModel::getMembrane(Feature* f1, Feature* f2)
 	}
 	stringstream ss;
 	ss << "With current mesh sampling, unexpected membrane found in between " 
-		<< f1->getName() << " and " << f2->getName() << ", considering using finer mesh";
+		<< f1->getName() << " and " << f2->getName() << ", considering using finer mesh.";
 	throw ss.str();
 }
 
@@ -104,14 +109,18 @@ Membrane *VCellModel::getMembraneFromIndex(int index)
 
 Membrane* VCellModel::getMembraneFromName(string& mem_name)
 {
+	if (mem_name == "null") {
+		return 0;
+	}
 	for (int i = 0; i < (int)membraneList.size(); i ++) {
 		Membrane* membrane = membraneList[i];
 		if (membrane->getName() == mem_name) {
 			return membrane;
 		}
 	}
-	assert(0);
-	return 0;
+	stringstream ss;
+	ss << "Membrane subdomain '" << mem_name << "' doesn't exist!";
+	throw ss.str();
 }
 
 bool VCellModel::hasFastSystem() {
