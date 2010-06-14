@@ -144,6 +144,7 @@ private:
 	int* regionSizes;
 	int* regionDefinedVolVariableSizes; // the number of variables defined in each region
 	int** regionDefinedVolVariableIndexes;
+	bool* bRegionHasTimeDepdentVariables; // used to see if we have to update neighbor state values 
 	bool* bRegionHasConstantDiffusionAdvection;
 
 	int* volVectorOffsets;
@@ -215,6 +216,9 @@ private:
 	double txyzValues[4];
 	void dirichletPointSetup(int volIndex, Feature* feature, VarContext* varContext, int mask, int* volumeNeighbors, double& ypoint);
 	double computeNeumannCondition(Feature* feature, VarContext* varContext, int mask, double* scaleSs);
+
+	double* diffCoeffs;
+	void precomputeDiffusionCoefficients();
 };
 
 #endif

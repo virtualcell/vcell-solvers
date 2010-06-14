@@ -42,13 +42,13 @@
 
 //#define SHOW_RHS
 //#define SUNDIALS_USE_PCNONE
-//#define INCLUDE_ADVECTION_IN_PC
-//#define INCLUDE_BOUNDARY_IN_PC
 //#define COMPARE_WITH_OLD
 
 static double interp_coeff[3] = {3.0/2, -1.0/2, 0};
 static int dirichletExpIndexes[3] = {BOUNDARY_XP_EXP, BOUNDARY_YP_EXP, BOUNDARY_ZP_EXP};
 static int velocityExpIndexes[3] = {VELOCITY_X_EXP, VELOCITY_Y_EXP, VELOCITY_Z_EXP};
+
+#define PRECOMPUTE_DIFFUSION_COEFFICIENT
 
 extern "C"
 {
@@ -92,6 +92,8 @@ SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, double rtol, double 
 
 	statePointValues = 0;
 	neighborStatePointValues = 0;
+
+	diffCoeffs = 0;
 }
 
 
@@ -125,7 +127,11 @@ SundialsPdeScheduler::~SundialsPdeScheduler()
 			delete[] regionDefinedVolVariableIndexes[r];
 		}
 		delete[] regionDefinedVolVariableIndexes;
+		delete[] bRegionHasTimeDepdentVariables;
+		delete[] bRegionHasConstantDiffusionAdvection;
 	}
+
+	delete[] diffCoeffs;
 }
 
 void SundialsPdeScheduler::iterate() {
@@ -172,6 +178,8 @@ void SundialsPdeScheduler::setupOrderMaps() {
 	bHasAdvection = false;
 	bHasVariableDiffusionAdvection = false;
 
+	bRegionHasTimeDepdentVariables = 0;
+
 	int numActivePoints = 0;
 	cout << endl << "numVolRegions=" << numVolRegions << endl;
 	for (int r = 0; r < numVolRegions; r ++) {
@@ -215,6 +223,10 @@ void SundialsPdeScheduler::setupOrderMaps() {
 		regionDefinedVolVariableSizes = new int[numVolRegions];
 		regionDefinedVolVariableIndexes = new int*[numVolRegions];
 
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+		bRegionHasTimeDepdentVariables = new bool[numVolRegions];
+#endif
+
 		// Volume PDE/ODE first
 		for (int r = 0; r < numVolRegions; r ++) {
 			volVectorOffsets[r] = numUnknowns;
@@ -222,6 +234,9 @@ void SundialsPdeScheduler::setupOrderMaps() {
 			regionDefinedVolVariableIndexes[r] = 0;
 			bRegionHasConstantDiffusionAdvection[r] = true;
 
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+			bRegionHasTimeDepdentVariables[r] = false;
+#endif
 			int firstPointVolIndex = local2Global[regionOffsets[r]];
 			Feature* feature = pVolumeElement[firstPointVolIndex].getFeature();
 			for (int v = 0; v < simulation->getNumVolVariables(); v ++) {
@@ -237,6 +252,9 @@ void SundialsPdeScheduler::setupOrderMaps() {
 					}
 					if (var->isAdvecting()) {
 						bHasAdvection = true;
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+						bRegionHasTimeDepdentVariables[r] = true;
+#endif
 					}
 				}
 			}
@@ -248,6 +266,20 @@ void SundialsPdeScheduler::setupOrderMaps() {
 					if (simulation->isVolumeVariableDefinedInRegion(v, r)) {
 						regionDefinedVolVariableIndexes[r][activeVarCount ++] = v;
 					}
+
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+					if (bRegionHasTimeDepdentVariables[r]) {
+						continue;
+					}
+
+					VolumeVariable* var = (VolumeVariable*)simulation->getVolVariable(v);
+ 					VolumeVarContext* varContext = feature->getVolumeVarContext(var);
+					if (var->isDiffusing()) {
+						if (!varContext->hasConstantDiffusion() &&  !varContext->hasXYZOnlyDiffusion()) {
+							bRegionHasTimeDepdentVariables[r] = true;
+						}
+					}
+#endif
 				}
 			}
 		}
@@ -410,6 +442,13 @@ void SundialsPdeScheduler::initSundialsSolver() {
 			throw "SundialsPDESolver:: Out of Memory : y ";
 		}
 	}
+
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+	// initialize diff coeff
+	if (bHasVariableDiffusionAdvection) {
+		precomputeDiffusionCoefficients();
+	}
+#endif
 
 	// initialize y with initial conditions
 	int count = 0;
@@ -1183,6 +1222,52 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorConstant(int regionID, doubl
 	delete[] advectTerms;
 }
 
+void SundialsPdeScheduler::precomputeDiffusionCoefficients() {
+	if (simulation->getNumVolVariables() == 0) {
+		return;
+	}
+
+	diffCoeffs = NULL;
+	for (int regionIndex = 0; regionIndex < mesh->getNumVolumeRegions(); regionIndex ++) {
+		int firstPointVolIndex = local2Global[regionOffsets[regionIndex]];
+		Feature* feature = pVolumeElement[firstPointVolIndex].getFeature();
+
+		// loop through defined variables
+		for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[regionIndex]; activeVarCount ++) {
+
+			int varIndex = regionDefinedVolVariableIndexes[regionIndex][activeVarCount];
+			VolumeVariable* var = simulation->getVolVariable(varIndex);
+			if (!var->isDiffusing()) {
+				continue;
+			}
+			VolumeVarContext* varContext = feature->getVolumeVarContext(var);
+			if (!varContext->hasXYZOnlyDiffusion()) {
+				continue;
+			}
+
+			if (diffCoeffs == NULL) {
+				cout << "precomputing diffusion constants" << endl;
+				diffCoeffs = new double[numUnknowns];
+				memset(diffCoeffs, 0, numUnknowns * sizeof(double));
+			}
+			
+			// loop through points
+			for (int regionPointIndex = 0; regionPointIndex < regionSizes[regionIndex]; regionPointIndex ++) {
+				int localIndex = regionPointIndex + regionOffsets[regionIndex];
+				int volIndex = local2Global[localIndex];
+
+				// xyz dependent only
+				updateVolumeStatePointValues(volIndex, 0, 0, statePointValues);
+
+				int vectorIndexOffset = getVolumeElementVectorOffset(volIndex, regionIndex);
+				int vectorIndex = vectorIndexOffset + activeVarCount;
+
+				diffCoeffs[vectorIndex] = varContext->evaluateExpression(DIFF_RATE_EXP, statePointValues);
+			} // point
+		} // var
+	} // region
+}
+
 void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, double t, double* yinput, double* rhs) {
 	if (regionDefinedVolVariableSizes[regionID] == 0) {
 		return;
@@ -1213,6 +1298,9 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, doubl
 		// update values for this point
 		updateVolumeStatePointValues(volIndex, t, yinput, statePointValues);
 		
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+		if (bRegionHasTimeDepdentVariables[regionID]) {
+#endif
 		// update values for neighbor points
 		for (int n = 0; n < 3; n ++) {
 			int neighborIndex = volumeNeighbors[n];
@@ -1221,6 +1309,9 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, doubl
 			}
 			updateVolumeStatePointValues(neighborIndex, t, yinput, neighborStatePointValues[n]);
 		}
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+		}
+#endif
 
 		int vectorIndexOffset = getVolumeElementVectorOffset(volIndex, regionID);
 
@@ -1254,13 +1345,19 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, doubl
 				}
 			}
 
-			bool bHasConstantDiffusion = false;
 			double Di = 0;
 			if (varContext->hasConstantDiffusion()) {
-				bHasConstantDiffusion = true;
 				Di = varContext->evaluateConstantExpression(DIFF_RATE_EXP);
 			} else {
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+				if (varContext->hasXYZOnlyDiffusion()) {
+					Di = diffCoeffs[vectorIndex];
+				} else {
+#endif
 				Di = varContext->evaluateExpression(DIFF_RATE_EXP, statePointValues);
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+				}
+#endif
 			}
 
 			double Vi_XYZ[3] = {0, 0, 0};
@@ -1286,13 +1383,22 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, doubl
 					continue;
 				}
 
+				int neighborVectorIndex = getVolumeElementVectorOffset(neighborIndex, regionID) + activeVarCount;
 				double D = Di;
-				if (!bHasConstantDiffusion) {
-					double Dj = varContext->evaluateExpression(DIFF_RATE_EXP, neighborStatePointValues[n]);
+				if (!varContext->hasConstantDiffusion()) {
+					double Dj = 0;
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+					if (varContext->hasXYZOnlyDiffusion()) {
+						Dj = diffCoeffs[neighborVectorIndex];
+					} else {
+#endif
+					Dj = varContext->evaluateExpression(DIFF_RATE_EXP, neighborStatePointValues[n]);
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+					}
+#endif
 					D = (Di + Dj < epsilon) ? (0.0) : (2 * Di * Dj/(Di + Dj));
 				}
 
-				int neighborVectorIndex = getVolumeElementVectorOffset(neighborIndex, regionID) + activeVarCount;
 				double yneighbor = yinput[neighborVectorIndex];
 
 				//use the real value if the neighbor is dirichlet point
@@ -1842,19 +1948,6 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 		return;
 	}
 
-#ifdef INCLUDE_ADVECTION_IN_PC
-	short advectDirs[6] = {1, 1, 1, -1, -1, -1};
-	int velocityExpIndexes[6] = {VELOCITY_Z_EXP, VELOCITY_Y_EXP, VELOCITY_X_EXP, VELOCITY_X_EXP, VELOCITY_Y_EXP, VELOCITY_Z_EXP};
-#endif
-
-#ifdef INCLUDE_BOUNDARY_IN_PC
-	int numVariables = simulation->getNumVariables();
-	int numVolVar = simulation->getNumVolVariables();
-	int numSymbols = 4 + numVolVar * numSymbolsPerVolVar + (numVariables - numVolVar); // t, x, y, z, U, U_Feature1_membrane, U_Feature2_membrane, ..., 
-	double* epsStatePointValues = new double[numSymbols];
-	double eps = 1e-5;
-#endif
-
 	int colCount;
 	int32* columns;
 	double* values;
@@ -1870,10 +1963,8 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 			int firstPointVolIndex = local2Global[regionOffsets[r]];
 			Feature* feature = pVolumeElement[firstPointVolIndex].getFeature();
 			VolumeVarContext* varContext = feature->getVolumeVarContext(var);
-			bool bHasConstantDiffusion = false;
 			double Di = 0;
 			if (varContext->hasConstantDiffusion()) {
-				bHasConstantDiffusion = true;
 				Di = varContext->evaluateConstantExpression(DIFF_RATE_EXP);
 			}
 			for (int ri = 0; ri < regionSizes[r]; ri ++) {
@@ -1895,9 +1986,17 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 				double lambdaAreaZ = oneOverH[2];
 
 				// update values
-				if (!bHasConstantDiffusion) {
+				if (!varContext->hasConstantDiffusion()) {
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+					if (varContext->hasXYZOnlyDiffusion()) {
+						Di = diffCoeffs[vectorIndex];
+					} else {
+#endif
 					updateVolumeStatePointValues(volIndex, t, yinput, statePointValues);
 					Di = varContext->evaluateExpression(DIFF_RATE_EXP, statePointValues);
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+					}
+#endif
 				}
 
 				double Aii = 0;
@@ -1914,49 +2013,6 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 						lambdaZ *= 2.0;
 						lambdaAreaZ *= 2.0;
 					}
-
-#ifdef INCLUDE_BOUNDARY_IN_PC
-					if ((mask & BOUNDARY_TYPE_MASK) == BOUNDARY_TYPE_NEUMANN) {
-						memcpy(epsStatePointValues, statePointValues, numSymbols * sizeof(double));
-						epsStatePointValues[volSymbolOffset + v * 3] += eps;
-
-						if (mask & NEIGHBOR_XM_BOUNDARY && feature->getXmBoundaryType() == BOUNDARY_FLUX){
-							double u1 = varContext->evaluateExpression(BOUNDARY_XM_EXP, epsStatePointValues);
-							double u2 = varContext->evaluateExpression(BOUNDARY_XM_EXP, statePointValues);
-							Aii -= (u1 - u2) * lambdaAreaX / eps;
-						}
-						if (mask & NEIGHBOR_XP_BOUNDARY && feature->getXpBoundaryType() == BOUNDARY_FLUX){
-							double u1 = varContext->evaluateExpression(BOUNDARY_XP_EXP, epsStatePointValues);
-							double u2 = varContext->evaluateExpression(BOUNDARY_XP_EXP, statePointValues);
-							Aii += (u1 - u2) * lambdaAreaX / eps;
-						}
-						if (dimension > 1) {
-							if (mask & NEIGHBOR_YM_BOUNDARY && feature->getYmBoundaryType() == BOUNDARY_FLUX){
-								double u1 = varContext->evaluateExpression(BOUNDARY_YM_EXP, epsStatePointValues);
-								double u2 = varContext->evaluateExpression(BOUNDARY_YM_EXP, statePointValues);
-								Aii -= (u1 - u2) * lambdaAreaY / eps;
-							}
-							if (mask & NEIGHBOR_YP_BOUNDARY && feature->getYpBoundaryType() == BOUNDARY_FLUX){
-								double u1 = varContext->evaluateExpression(BOUNDARY_YP_EXP, epsStatePointValues);
-								double u2 = varContext->evaluateExpression(BOUNDARY_YP_EXP, statePointValues);
-								Aii += (u1 - u2) * lambdaAreaY / eps;
-							}
-
-							if (dimension > 2) {
-								if (mask & NEIGHBOR_ZM_BOUNDARY && feature->getZmBoundaryType() == BOUNDARY_FLUX){
-									double u1 = varContext->evaluateExpression(BOUNDARY_ZM_EXP, epsStatePointValues);
-									double u2 = varContext->evaluateExpression(BOUNDARY_ZM_EXP, statePointValues);
-									Aii -= (u1 - u2) * lambdaAreaZ / eps;
-								}
-								if (mask & NEIGHBOR_ZP_BOUNDARY && feature->getZpBoundaryType() == BOUNDARY_FLUX){
-									double u1 = varContext->evaluateExpression(BOUNDARY_ZP_EXP, epsStatePointValues);
-									double u2 = varContext->evaluateExpression(BOUNDARY_ZP_EXP, statePointValues);
-									Aii += (u1 - u2) * lambdaAreaZ / eps;
-								}
-							}
-						}
-					}
-#endif
 				}
 
 				int volumeNeighbors[6] = {
@@ -1967,23 +2023,6 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 					(dimension < 2 || mask & NEIGHBOR_YP_MASK) ? -1 : volIndex + Nx,
 					(dimension < 3 || mask & NEIGHBOR_ZP_MASK) ? -1 : volIndex + Nxy
 				};
-
-#ifdef INCLUDE_ADVECTION_IN_PC
-				double Vix=0, Viy=0, Viz=0;
-				if (var->isAdvecting()) {
-					if (hasConstantDiffusion) {
-						updateVolumeStatePointValues(volIndex, t, yinput);
-					}
-					Vix = varContext->evaluateExpression(VELOCITY_X_EXP, statePointValues);
-					if (dimension > 1) {
-						Viy = varContext->evaluateExpression(VELOCITY_Y_EXP, statePointValues);
-					}
-					if (dimension > 2) {
-						Viz = varContext->evaluateExpression(VELOCITY_Z_EXP, statePointValues);
-					}
-				}
-				double Vis[6] = {Viz, Viy, Vix, Vix, Viy, Viz};
-#endif
 
 				double neighborLambdas[6] = {lambdaZ, lambdaY, lambdaX, lambdaX, lambdaY, lambdaZ};
 				double neighborLambdaAreas[6] = {lambdaAreaZ, lambdaAreaY, lambdaAreaX, lambdaAreaX, lambdaAreaY, lambdaAreaZ};
@@ -1999,30 +2038,24 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 					double lambda = neighborLambdas[n];
 
 					double D = Di;
-					if (!bHasConstantDiffusion) {
+					if (!varContext->hasConstantDiffusion()) {
+						double Dj = 0;
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+						if (varContext->hasXYZOnlyDiffusion()) {
+							Dj = diffCoeffs[neighborVectorIndex];
+						} else {
+#endif
 						updateVolumeStatePointValues(neighborIndex, t, yinput, statePointValues);
-						double Dj = varContext->evaluateExpression(DIFF_RATE_EXP, statePointValues);
+						Dj = varContext->evaluateExpression(DIFF_RATE_EXP, statePointValues);
+#ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
+						}
+#endif
 						D = (Di + Dj < epsilon) ? (0.0) : (2 * Di * Dj/(Di + Dj));
 					}
 
 					double Aij = 0;
-#ifdef INCLUDE_ADVECTION_IN_PC
-					if (var->isAdvecting()) {
-						updateVolumeStatePointValues(neighborIndex, t, yinput);
-						int advectDir = advectDirs[n];
-						double Vi = Vis[n];
-						double Vj = varContext->evaluateExpression(velocityExpIndexes[n], statePointValues);
-						double V = 0.5 * (Vi + Vj);
-						double lambdaArea = neighborLambdaAreas[n];
-						Aij = max(D * lambda + advectDir * 0.5 * V * lambdaArea, max(advectDir * V * lambdaArea, 0));;
-						Aii += max(D * lambda - advectDir * 0.5 * V * lambdaArea, max(- advectDir * V * lambdaArea, 0));
-					} else {
-#endif
-						Aij = D * lambda;
-						Aii += Aij;
-#ifdef INCLUDE_ADVECTION_IN_PC
-					}
-#endif
+					Aij = D * lambda;
+					Aii += Aij;
 					assert(columns[colCount] == neighborVectorIndex);
 					values[colCount] = -gamma * Aij;
 					colCount ++;
@@ -2032,9 +2065,6 @@ void SundialsPdeScheduler::buildM_Volume(double t, double* yinput, double gamma)
 			} // end for ri
 		} // end for v
 	} // end for r
-#ifdef INCLUDE_BOUNDARY_IN_PC
-	delete[] epsStatePointValues;
-#endif
 }
 
 void SundialsPdeScheduler::buildM_Membrane(double t, double* yinput, double gamma) {

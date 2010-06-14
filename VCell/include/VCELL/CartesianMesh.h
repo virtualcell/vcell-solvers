@@ -120,7 +120,7 @@ private:
 	void computeExactNormals();
 	WorldCoord computeExactNormal(long meIndex);
 
-	void computeNormal(MembraneElement& meptr, DoubleVector3* normal, int neighborCount);
+	void computeNormal(MembraneElement& meptr, DoubleVector3* tangentNormals, int neighborCount);
 	void computeNormalsFromNeighbors(); 
 	void adjustMembraneAreaFromNormal();
 

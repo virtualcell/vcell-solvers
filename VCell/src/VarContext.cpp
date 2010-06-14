@@ -27,10 +27,10 @@ VarContext::VarContext(Structure *s, Variable* var)
 
 	expressions = new Expression*[TOTAL_NUM_EXPRESSIONS];
 	constantValues = new double*[TOTAL_NUM_EXPRESSIONS];
-	needsXYZ = new bool[TOTAL_NUM_EXPRESSIONS];
+	dependencyMask = new unsigned char[TOTAL_NUM_EXPRESSIONS];
 	memset(expressions, 0, TOTAL_NUM_EXPRESSIONS * sizeof(Expression*));
 	memset(constantValues, 0, TOTAL_NUM_EXPRESSIONS * sizeof(double*));
-	memset(needsXYZ, 0, TOTAL_NUM_EXPRESSIONS * sizeof(bool));
+	memset(dependencyMask, DEPENDENCY_MASK_UNDEFINED, TOTAL_NUM_EXPRESSIONS * sizeof(bool));
 }
 
 void VarContext::resolveReferences(Simulation *Asim)
@@ -54,7 +54,7 @@ VarContext::~VarContext()
 	}	
 	delete[] expressions;
 	delete[] constantValues;
-	delete[] needsXYZ;
+	delete[] dependencyMask;
 
 	for (int i = 0; i < (int)jumpConditionList.size(); i ++) {
 		delete jumpConditionList[i];
@@ -90,14 +90,10 @@ void VarContext::bindAll(SimulationExpression* simulation) {
 			double d = expressions[i]->evaluateConstant();
 			constantValues[i] = new double[1];
 			constantValues[i][0] = d;
-		} catch (...) {		
+		} catch (...) {
 			expressions[i]->bindExpression(symbolTable);
-			if (expressions[i]->getSymbolBinding("x") != null ||
-					expressions[i]->getSymbolBinding("y") != null ||
-					expressions[i]->getSymbolBinding("z") != null) {
-				needsXYZ[i] = true;
-			}
 		}
+		computeDependencyMask(i);
 	}
 
 	for (int i = 0; i < (int)jumpConditionList.size(); i ++) {
@@ -114,7 +110,7 @@ double VarContext::evaluateExpression(MembraneElement* element, long expIndex)
 		return constantValues[expIndex][0];
 	}
 	//cout << expressions[expIndex]->infix() << endl;
-	if (needsXYZ[expIndex]) {
+	if (dependencyMask[expIndex] & DEPENDENCY_MASK_XYZ) {
 		WorldCoord wc = sim->getMesh()->getMembraneWorldCoord(element);
 		((SimulationExpression*)sim)->setCurrentCoordinate(wc);
 	}
@@ -146,7 +142,7 @@ double VarContext::evaluateExpression(long volIndex, long expIndex) {
 	if (constantValues[expIndex] != NULL) {
 		return constantValues[expIndex][0];
 	}
-	if (needsXYZ[expIndex]) {
+	if (dependencyMask[expIndex] & DEPENDENCY_MASK_XYZ) {
 		WorldCoord wc = ((CartesianMesh*)sim->getMesh())->getVolumeWorldCoord(volIndex);
 		((SimulationExpression*)sim)->setCurrentCoordinate(wc);
 	}
@@ -202,27 +198,74 @@ double VarContext::evaluateJumpCondition(MembraneElement* element, double* value
 }
 
 bool VarContext::isConstantExpression(long expIndex) {
-		// pure constant
-	if (constantValues[expIndex] != 0) {
+	if (dependencyMask[expIndex] == DEPENDENCY_MASK_CONSTANT) {
 		return true;
 	}
 
 	// not defined
-	if (expressions[expIndex] == 0) {
+	if (expressions[expIndex] == NULL) {
 		stringstream ss;
 		ss << "VarContext::isConstantExpression(), for variable " << species->getName() << " expression " << String_Expression_Index[expIndex] << " not defined";
 		throw ss.str();
 	}
 
-	// has parameters only
+	return false;
+}
+
+bool VarContext::isXYZOnlyExpression(long expIndex) {
+	if (dependencyMask[expIndex] == DEPENDENCY_MASK_XYZ) {
+		return true;
+	}
+
+	// not defined
+	if (expressions[expIndex] == NULL) {
+		stringstream ss;
+		ss << "VarContext::isConstantExpression(), for variable " << species->getName() << " expression " << String_Expression_Index[expIndex] << " not defined";
+		throw ss.str();
+	}
+
+	return false;
+}
+
+void VarContext::computeDependencyMask(int expIndex) {
+	// not defined
+	if (constantValues[expIndex] != NULL) { // constant 0
+		dependencyMask[expIndex] = DEPENDENCY_MASK_CONSTANT;
+		return;
+	}
+	if (expressions[expIndex] == NULL) { // expression is not defined
+		return;
+	}
+
+	bool bHasXYZ = false;
+	bool bHasVariable = false;
+	bool bHasTime = false;
 	vector<string> symbols;
 	expressions[expIndex]->getSymbols(symbols);
+	SimulationExpression* simExp  = (SimulationExpression*)SimTool::getInstance()->getSimulation();
 	for (int i = 0; i < (int)symbols.size(); i ++) {
-		if (!((SimulationExpression*)SimTool::getInstance()->getSimulation())->isParameter(symbols[i])) {
-			return false;
+		if (symbols[i] == "t") {
+			bHasTime = true;
+		} else if (simExp->isVariable(symbols[i])) {
+			bHasVariable = true;
+		} else if (!simExp->isParameter(symbols[i])) {
+			bHasXYZ = true;
+		}
+	}	
+	
+	if (!bHasXYZ && !bHasTime && !bHasVariable) {
+		dependencyMask[expIndex] = DEPENDENCY_MASK_CONSTANT;
+	} else {
+		if (bHasXYZ) {
+			dependencyMask[expIndex] |= DEPENDENCY_MASK_XYZ;
+		}
+		if (bHasTime) {
+			dependencyMask[expIndex] |= DEPENDENCY_MASK_TIME;
+		}
+		if (bHasVariable) {
+			dependencyMask[expIndex] |= DEPENDENCY_MASK_VARIABLE;
 		}
 	}
-	return true;
 }
 
 double VarContext::evaluateMembraneRegionExpression(long memRegionIndex, long expIndex)

@@ -46,6 +46,9 @@ public:
 		return diffusionRate!=0;
 	}
 	virtual bool hasConstantDiffusionAdvection(int dimension);
+	virtual bool hasXYZOnlyDiffusion() {
+		return diffusionRate==0;
+	}
 
 protected:
     VolumeVarContext(Feature *feature, VolumeVariable* var);

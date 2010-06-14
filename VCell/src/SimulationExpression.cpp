@@ -314,7 +314,7 @@ void SimulationExpression::createSymbolTable() {
 
 	// t, x, y, z, VOL, VOL_Feature1_membrane, VOL_Feature2_membrane, ... (for computing membrane flux for volume variables), 
 	// MEM, VOLREG, VOLREG_Feature1_membrane, VOLREG_Feature2_membrane, ... (for computing membrane flux for volume region variables), 
-	// MEMREG, REGIONSIZE, field data, serial scan parameters, parameters
+	// MEMREG, REGIONSIZE, field data, random variables, serial scan parameters, parameters
 	int numSymbols = 4 + volVarSize * (model->getNumFeatures() + 1) + memVarSize 
 		+ volRegionVarSize * (model->getNumFeatures() + 1) + memRegionVarSize + numRegionSizeVars
 		+ (int)fieldDataList.size() + (int)randomVarList.size() + (int)serialScanParamList.size() + (int)paramList.size();
@@ -639,4 +639,17 @@ void SimulationExpression::writeData(char *filename, bool bCompress)
 	//}
 
 	DataSet::write(filename, this, bCompress);
+}
+
+bool SimulationExpression::isVariable(string& symbol) {
+
+	for (int i = 0; i < (int)varList.size(); i ++) {
+		if (symbol == varList[i]->getName()) {
+			return true;
+		}
+	}
+	// parameter, serial scan parameter is like constant
+	// field data, random variables, 
+	// region size variables are only space dependent
+	return false;
 }

@@ -952,17 +952,16 @@ void CartesianMesh::writeMembraneElements_Connectivity_Region(FILE *fp)
 WorldCoord CartesianMesh::getVolumeWorldCoord(long volumeIndex)
 {
 	MeshCoord mc = getMeshCoord(volumeIndex);
-	WorldCoord unit, wc;
 
-	unit.x = (numX>1)?(((double)(mc.x))/(numX-1)):0.5;
-	unit.y = (numY>1)?(((double)(mc.y))/(numY-1)):0.5;
-	unit.z = (numZ>1)?(((double)(mc.z))/(numZ-1)):0.5;
+	//unit.x = (numX>1)?(((double)(mc.x))/(numX-1)):0.5;
+	//double unity = (numY>1)?(((double)(mc.y))/(numY-1)):0.5;
+	//double unitz = (numZ>1)?(((double)(mc.z))/(numZ-1)):0.5;
 
-	wc.x = domainOriginX + domainSizeX*(unit.x);
-	wc.y = domainOriginY + domainSizeY*(unit.y);
-	wc.z = domainOriginZ + domainSizeZ*(unit.z);
+	double wcx = domainOriginX + mc.x * scaleX_um;
+	double wcy = domainOriginY + (numY > 1 ? mc.y * scaleY_um : domainSizeY * 0.5);
+	double wcz = domainOriginZ + (numZ > 1 ? mc.z * scaleZ_um : domainSizeZ * 0.5);
 
-	return wc; 
+	return WorldCoord(wcx, wcy, wcz);
 }
 
 WorldCoord CartesianMesh::getMembraneWorldCoord(long membraneIndex)

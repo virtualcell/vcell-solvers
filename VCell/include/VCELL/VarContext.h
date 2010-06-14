@@ -10,6 +10,13 @@
 using std::string;
 using std::vector;
 
+#define DEPENDENCY_MASK_UNDEFINED	0x00		// '0000 0000'b
+#define DEPENDENCY_MASK_CONSTANT	0x01		// '0000 0001'b
+#define DEPENDENCY_MASK_XYZ			0x02		// '0000 0010'b
+#define DEPENDENCY_MASK_TIME		0x04		// '0000 0100'b
+#define DEPENDENCY_MASK_VARIABLE	0x08		// '0000 1000'b
+#define DEPENDENCY_MASK_TOTAL		0x15		// '0000 1111'b
+
 enum EXPRESSION_INDEX {INITIAL_VALUE_EXP=0, DIFF_RATE_EXP, REACT_RATE_EXP, 
 	BOUNDARY_XM_EXP, BOUNDARY_XP_EXP, BOUNDARY_YM_EXP, BOUNDARY_YP_EXP, 
 	BOUNDARY_ZM_EXP, BOUNDARY_ZP_EXP, VELOCITY_X_EXP, VELOCITY_Y_EXP, VELOCITY_Z_EXP,
@@ -78,13 +85,16 @@ protected:
 
 	virtual bool isNullExpressionOK(int expIndex) { return false; }
 	bool isConstantExpression(long expIndex);
+	bool isXYZOnlyExpression(long expIndex);
 
 private:
 	Expression** expressions;
 	double** constantValues;
-	bool* needsXYZ;
+	//bool* needsXYZ;
 
 	vector<JumpCondition*> jumpConditionList;
+	unsigned char* dependencyMask;
+	void computeDependencyMask(int expIndex);
 };
 
 #endif

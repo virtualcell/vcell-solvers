@@ -121,6 +121,7 @@ public:
 		return 0;
 	}
 	bool isParameter(string& symbol); // can be serial scan parameter or opt parameter
+	bool isVariable(string& symbol);
 
 	int getNumRegionSizeVariables() {
 		return numRegionSizeVars;

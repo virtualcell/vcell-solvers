@@ -43,8 +43,9 @@ public:
 
 	bool hasConstantDiffusion();
 	bool hasConstantDiffusionAdvection(int dimension);
+	bool hasXYZOnlyDiffusion();
 
-protected:
+private:
 	bool isNullExpressionOK(int expIndex);
 };
 

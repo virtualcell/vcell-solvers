@@ -151,3 +151,10 @@ bool VolumeVarContextExpression::hasConstantDiffusionAdvection(int dimension) {
 			&& (dimension < 2 || isConstantExpression(VELOCITY_Y_EXP)) 
 			&& (dimension < 3 || isConstantExpression(VELOCITY_Z_EXP));
 }
+
+bool VolumeVarContextExpression::hasXYZOnlyDiffusion() {
+	if (!species->isDiffusing()) {
+		throw "hasConstantDiffusion() is only for PDE variables";
+	}
+	return isXYZOnlyExpression(DIFF_RATE_EXP);
+}
