@@ -43,6 +43,9 @@ public:
 	void update();
 
 	bool isDiffusing() { return bDiffusing; }
+	Structure* getStructure() {
+		return structure;
+	}
    
 protected:
 	void clear();
