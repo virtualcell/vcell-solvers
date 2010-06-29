@@ -428,7 +428,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			}
 			simulation->addVolumeRegionVariable(volumeRegionVar);
 		} else if (nextToken == "MEMBRANE_REGION") {
-			lineInput >> variable_name;
+			lineInput >> variable_name >> structure_name;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
 			int *solveRegions = NULL;
 
@@ -576,12 +576,18 @@ void FVSolver::loadJumpCondition(istream& ifsInput, Membrane* membrane, string& 
 			Expression* exp = readExpression(lineInput, var_name);
 			VarContext *varContext = 0;
 			if (var->getVarType() == VAR_VOLUME) {
-				f->getVolumeVarContext((VolumeVariable*)var)->addJumpCondition(membrane, exp);
+				varContext = f->getVolumeVarContext((VolumeVariable*)var);
 			} else if (var->getVarType() == VAR_VOLUME_REGION) {
-				f->getVolumeRegionVarContext((VolumeRegionVariable*)var)->addJumpCondition(membrane, exp);
+				varContext = f->getVolumeRegionVarContext((VolumeRegionVariable*)var);
 			} else {
 				throw "Only volume variables and volume region variables have jump conditions";
 			}
+			if (varContext == NULL) {
+				stringstream ss;
+				ss << "variable '" << var->getName() << "' is not defined in " << featurename;
+				throw ss.str();
+			}
+			varContext->addJumpCondition(membrane, exp);
 		} else {
 			throw "Expecting FLUX in JumpCondition.";
 		}
