@@ -29,7 +29,7 @@ void MembraneEqnBuilderForward::buildEquation(double deltaTime, int volumeIndexS
 	for (long memIndex=membraneIndexStart;memIndex<(membraneIndexStart+membraneIndexSize);memIndex++){
 
 		Membrane* membrane = pMembraneElement->getMembrane();
-		if (var->getStructure() != membrane) {
+		if (var->getStructure() != NULL && var->getStructure() != membrane) {
 			continue;
 		}
 

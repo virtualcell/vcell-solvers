@@ -2,8 +2,8 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
+#include <VCELL/Element.h>
 #include <Expression.h>
-
 #include <VCELL/SundialsPdeScheduler.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/Solver.h>
@@ -14,7 +14,6 @@
 #include <VCELL/Mesh.h>
 #include <VCELL/Feature.h>
 #include <VCELL/Membrane.h>
-#include <VCELL/Element.h>
 #include <VCELL/VolumeVarContext.h>
 #include <VCELL/VolumeRegionVarContext.h>
 #include <VCELL/MembraneVarContext.h>
@@ -1457,7 +1456,8 @@ void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, doub
 		for (int v = 0; v < simulation->getNumMemVariables(); v ++) {
 			MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(v);
 			Membrane* membrane = pMembraneElement[mi].getMembrane();
-			if (var->getStructure() != membrane) {
+			// variable is not defined on this membrane
+			if (var->getStructure() != NULL && var->getStructure() != membrane) {
 				continue;
 			}
 

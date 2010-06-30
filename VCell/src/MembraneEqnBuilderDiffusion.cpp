@@ -69,8 +69,9 @@ void MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIndex
 		int numColumns = membraneElementCoupling->getColumns(index, columns, values);
 
 		Membrane* membrane = membraneElement->getMembrane();
-		if (membrane == var->getStructure()) { // now has domain
-			MembraneVarContext *varContext = membrane->getMembraneVarContext((MembraneVariable*)var);		
+		// variable is defined on this membrane or everywhere
+		if (var->getStructure() == NULL || membrane == var->getStructure()) {
+			MembraneVarContext *varContext = membrane->getMembraneVarContext((MembraneVariable*)var);
 			int mask = mesh->getMembraneNeighborMask(membraneElement);
 			if (mask & NEIGHBOR_BOUNDARY_MASK && mask & BOUNDARY_TYPE_DIRICHLET){   // boundary and dirichlet
 				A->setDiag(index, 1.0);
