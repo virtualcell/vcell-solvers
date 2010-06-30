@@ -57,11 +57,8 @@ void MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIndex
 
 	VolumeElement *pVolumeElement = mesh->getVolumeElements();
 	MembraneElement *pMembraneElement = mesh->getMembraneElements();
-
-	ASSERTION(pVolumeElement);	
 	
 	SparseMatrixPCG* membraneElementCoupling = ((CartesianMesh*)mesh)->getMembraneCoupling();
-
 	MembraneElement* membraneElement = pMembraneElement;
 	for (long index = membraneIndexStart; index < membraneIndexStart + membraneIndexSize; index ++, membraneElement ++){		
 		int32* columns;
@@ -69,42 +66,43 @@ void MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIndex
 		int numColumns = membraneElementCoupling->getColumns(index, columns, values);
 
 		Membrane* membrane = membraneElement->getMembrane();
-		// variable is defined on this membrane or everywhere
-		if (var->getStructure() == NULL || membrane == var->getStructure()) {
-			MembraneVarContext *varContext = membrane->getMembraneVarContext((MembraneVariable*)var);
-			int mask = mesh->getMembraneNeighborMask(membraneElement);
-			if (mask & NEIGHBOR_BOUNDARY_MASK && mask & BOUNDARY_TYPE_DIRICHLET){   // boundary and dirichlet
-				A->setDiag(index, 1.0);
-
-				// clear other non zeros
-				for (long j = 0; j < numColumns; j ++) {
-					int32 neighborIndex = columns[j];
-					A->setValue(index, neighborIndex, 0);
-				}
-			} else {			
-				double Di = varContext->getMembraneDiffusionRate(membraneElement);
-				double volume = membraneElementCoupling->getValue(index, index);
-				double Aii = volume/deltaTime;
-
-				for (long j = 0; j < numColumns; j ++) {
-					int32 neighborIndex = columns[j];
-					double Dj = varContext->getMembraneDiffusionRate(pMembraneElement + neighborIndex);
-					double D = (Di + Dj < epsilon)?(0.0):(2 * Di * Dj/(Di + Dj));
-					double Aij = D * values[j];
-					A->setValue(index, neighborIndex, -Aij);
-					Aii += Aij;
-				}
-			
-				A->setDiag(index, Aii);
-			}
-		} else { // not in the domain
+		// variable is not defined on this membrane, set diagnol=1, off diagonal=0
+		if (var->getStructure() != NULL && membrane != var->getStructure()) {
 			A->setDiag(index, 1.0);
 
-			// clear other non zeros
+			// clear off diagonal
 			for (long j = 0; j < numColumns; j ++) {
 				int32 neighborIndex = columns[j];
 				A->setValue(index, neighborIndex, 0);
 			}
+			continue;
+		}
+
+		MembraneVarContext *varContext = membrane->getMembraneVarContext((MembraneVariable*)var);
+		int mask = mesh->getMembraneNeighborMask(membraneElement);
+		if (mask & NEIGHBOR_BOUNDARY_MASK && mask & BOUNDARY_TYPE_DIRICHLET){   // boundary and dirichlet
+			A->setDiag(index, 1.0);
+
+			// clear off diagonal
+			for (long j = 0; j < numColumns; j ++) {
+				int32 neighborIndex = columns[j];
+				A->setValue(index, neighborIndex, 0);
+			}
+		} else {			
+			double Di = varContext->getMembraneDiffusionRate(membraneElement);
+			double volume = membraneElementCoupling->getValue(index, index);
+			double Aii = volume/deltaTime;
+
+			for (long j = 0; j < numColumns; j ++) {
+				int32 neighborIndex = columns[j];
+				double Dj = varContext->getMembraneDiffusionRate(pMembraneElement + neighborIndex);
+				double D = (Di + Dj < epsilon)?(0.0):(2 * Di * Dj/(Di + Dj));
+				double Aij = D * values[j];
+				A->setValue(index, neighborIndex, -Aij);
+				Aii += Aij;
+			}
+		
+			A->setDiag(index, Aii);
 		}
 	} // end index
 }
@@ -132,7 +130,8 @@ void MembraneEqnBuilderDiffusion::buildEquation(double deltaTime, int volumeInde
 	MembraneElement* membraneElement = pMembraneElement;
 	for (long index = membraneIndexStart; index < membraneIndexStart + membraneIndexSize; index ++, membraneElement ++){
 		Membrane* membrane = membraneElement->getMembrane();
-		if (membrane != var->getStructure()) { // now has domain
+		// variable is not defined on this membrane, set rhs=0
+		if (var->getStructure() != NULL && membrane != var->getStructure()) {
 			B[index] = 0;
 			continue;
 		}
