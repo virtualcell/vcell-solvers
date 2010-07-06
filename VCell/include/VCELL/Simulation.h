@@ -30,21 +30,20 @@ public:
 
 	virtual void resolveReferences();
 	void initSimulation();   // initializes to t=0
-	void    setScheduler(Scheduler *scheduler);
 	void iterate();          // computes 1 time step
-	virtual void    update();           // copies new to old values 
+	virtual void update();           // copies new to old values 
 
-	double  getTime_sec();
-	void    setCurrIteration(int curriter) { 
+	double getTime_sec();
+	void setCurrIteration(int curriter) { 
 		currIteration = curriter; 
 	}
 	int getCurrIteration() { 
 		return currIteration; 
 	}
-	double  getDT_sec() { 
+	double getDT_sec() { 
 		return _dT_sec; 
 	}
-	void    setDT_sec(double dT) { 
+	void setDT_sec(double dT) { 
 		_dT_sec = dT; 
 	}
 	virtual void advanceTimeOn();
@@ -59,7 +58,7 @@ public:
 	Variable *getVariableFromName(string& name);
 	Variable *getVariableFromName(char* name);
 	Solver   *getSolverFromVariable(Variable *var);
-	Mesh     *getMesh() { 
+	Mesh *getMesh() { 
 		return _mesh; 
 	}
 
@@ -82,14 +81,14 @@ public:
 protected:
 	int currIteration;  // first iteration is currIteration=0
 
-	double          _dT_sec;                  // seconds
-	Scheduler      *_scheduler;
+	double _dT_sec;                  // seconds
+	Scheduler  *_scheduler;
 	vector<Solver*> solverList;
 	vector<Variable*> varList;
 	//vector<Particle*> globalParticleList; 
-	Mesh            *_mesh;
-	bool          _advanced;
-	bool          _initEquations;
+	Mesh *_mesh;
+	bool _advanced;
+	bool _initEquations;
 };
 
 #endif

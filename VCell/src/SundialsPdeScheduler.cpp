@@ -378,6 +378,10 @@ int SundialsPdeScheduler::CVodeRHS(double t, double* yinput, double* rhs) {
 	delete[] r1;
 	delete[] r2;
 #endif
+	//cout << yinput[14008] << endl;
+	//if (MathUtil::isInfinity(yinput[14008]) || MathUtil::isNaN(yinput[14008])) {
+	//	exit(1);
+	//}
 	memset(rhs, 0, numUnknowns * sizeof(double));
 	applyVolumeOperator(t, yinput, rhs);
 	applyMembraneDiffusionReactionOperator(t, yinput, rhs);
@@ -1453,9 +1457,9 @@ void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, doub
 
 	SparseMatrixPCG* membraneElementCoupling = mesh->getMembraneCoupling();
 	for (int mi = 0; mi < mesh->getNumMembraneElements(); mi ++) {
+		Membrane* membrane = pMembraneElement[mi].getMembrane();
 		for (int v = 0; v < simulation->getNumMemVariables(); v ++) {
 			MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(v);
-			Membrane* membrane = pMembraneElement[mi].getMembrane();
 			// variable is not defined on this membrane
 			if (var->getStructure() != NULL && var->getStructure() != membrane) {
 				continue;
@@ -2074,8 +2078,14 @@ void SundialsPdeScheduler::buildM_Membrane(double t, double* yinput, double gamm
 	SparseMatrixPCG* membraneElementCoupling = ((CartesianMesh*)mesh)->getMembraneCoupling();
 
 	for (int mi = 0; mi < mesh->getNumMembraneElements(); mi ++) {
+		Membrane* membrane = pMembraneElement[mi].getMembrane();
 		for (int v = 0; v < simulation->getNumMemVariables(); v ++) {
 			MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(v);
+			// variable is not defined on this membrane
+			if (var->getStructure() != NULL && var->getStructure() != membrane) {
+				continue;
+			}
+
 			if (!var->isDiffusing()) {
 				continue;
 			}

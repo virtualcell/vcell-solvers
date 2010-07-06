@@ -151,11 +151,6 @@ void Simulation::readData(char *filename)
 	DataSet::read(filename, this);
 }
 
-void Simulation::setScheduler(Scheduler *scheduler)
-{
-   _scheduler = scheduler;
-}
-
 //-------------------------------------------------------
 // determines scheduler and resets _time_sec and initializes var's
 //-------------------------------------------------------
