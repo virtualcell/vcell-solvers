@@ -26,7 +26,7 @@ void MembraneEqnBuilderForward::buildEquation(double deltaTime, int volumeIndexS
 	double *pRate = odeSolver->getRates() + membraneIndexStart;
 	ASSERTION(pMembraneElement);
 
-	for (long memIndex=membraneIndexStart;memIndex<(membraneIndexStart+membraneIndexSize);memIndex++){
+	for (long memIndex=membraneIndexStart;memIndex<(membraneIndexStart+membraneIndexSize);memIndex++, pMembraneElement++, pRate++){
 
 		Membrane* membrane = pMembraneElement->getMembrane();
 		if (var->getStructure() != NULL && var->getStructure() != membrane) {
@@ -38,8 +38,5 @@ void MembraneEqnBuilderForward::buildEquation(double deltaTime, int volumeIndexS
 		sim->advanceTimeOn();
 		*pRate = memVarContext->getMembraneReactionRate(pMembraneElement);
 		sim->advanceTimeOff();
-
-		pMembraneElement++;
-		pRate++;
 	} // end memIndex
 }
