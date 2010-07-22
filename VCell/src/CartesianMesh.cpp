@@ -1152,33 +1152,55 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 	}
 	cout << "CartesianMesh::computeNormalsFromNeighbors(), compute normals from neighbors" << endl;
 
-	int numOfNaturalNeighbors = 0;
-	if (dimension == 2) {
-		numOfNaturalNeighbors = 2;
-	} else if (dimension == 3) {
-		numOfNaturalNeighbors = 4;
+	const int NumNaturalNeighbors_Membrane[] = {0, 0, 2, 4};
+
+	int numOfNaturalNeighbors = NumNaturalNeighbors_Membrane[dimension];
+	
+	int* tangentN = new int[numOfNaturalNeighbors];
+	int* tangentNeighbors = new int[numOfNaturalNeighbors];	
+	DoubleVector3* tangentWc = new DoubleVector3[numOfNaturalNeighbors];
+	DoubleVector3* tangentNormals = new DoubleVector3[numOfNaturalNeighbors];
+
+	static int localN = 3;
+	static double angleTol = PI/8; 
+	//cout << "===============================================" << endl;
+	//cout << "computing normals, angleTol=" << angleTol << endl;
+	//cout << "===============================================" << endl;
+	double cosAngleTol = 0.0;
+	if (angleTol  < PI/2) {
+		cosAngleTol= cos(angleTol);
 	}
 
-	int* tangentN = new int[numOfNaturalNeighbors];
-	int* tangentNeighbors = new int[numOfNaturalNeighbors];
-	DoubleVector3* tangentWc = new DoubleVector3[numOfNaturalNeighbors];
-	DoubleVector3* tangentNormal = new DoubleVector3[numOfNaturalNeighbors];
+	int* localTangentNeighbors = new int[numOfNaturalNeighbors];
+	DoubleVector3* localTangentWc = new DoubleVector3[numOfNaturalNeighbors];
 	
+	bool* bComputeLocal = new bool[numOfNaturalNeighbors];
+
 	for (long index = 0; index < numMembrane; index ++){
 		WorldCoord wc = getMembraneWorldCoord(index);
 		MembraneElement& meptr = pMembraneElement[index];
 		
 		getN(index, tangentN);
-
 		while (true) {
 			int numOfValidTangentNeighbors = 0;
 			for (int i = 0; i < numOfNaturalNeighbors; i ++) {
+				bComputeLocal[i] = false;
+
 				tangentNeighbors[i] = getNeighbor(tangentN[i], index, i);
 				if (tangentNeighbors[i] >= 0 && tangentNeighbors[i] != index) { 
 					numOfValidTangentNeighbors ++;
 	 				tangentWc[i] = wc - getMembraneWorldCoord(tangentNeighbors[i]);
 				} else {
 					tangentNeighbors[i] = -1;
+				}
+				if (cosAngleTol > 0 && tangentN[i] > localN) {
+					bComputeLocal[i] = true;
+					localTangentNeighbors[i] = getNeighbor(localN, index, i);
+					if (localTangentNeighbors[i] >= 0 && localTangentNeighbors[i] != index) {
+	 					localTangentWc[i] = wc - getMembraneWorldCoord(localTangentNeighbors[i]);
+					} else {
+						localTangentNeighbors[i] = -1;
+					}
 				}
 			}
 
@@ -1189,39 +1211,79 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 			}
 		
 			int tangentNormalCount = 0;
-			memset(tangentNormal, 0, numOfNaturalNeighbors * sizeof(DoubleVector3));
+			memset(tangentNormals, 0, numOfNaturalNeighbors * sizeof(DoubleVector3));
 	
 			// compute tangent normals
 			if (dimension == 2) {
-				if(tangentNeighbors[0] >= 0){
-					tangentNormal[0].x = tangentWc[0].y;
-					tangentNormal[0].y = - tangentWc[0].x;
-					double length = tangentNormal[0].length();
-					if (length > 0) {
-						tangentNormal[0].normalize();
-						tangentNormalCount ++;	 
+				for (int i = 0; i < numOfNaturalNeighbors; i ++) {
+					if(tangentNeighbors[i] >= 0){
+						tangentNormals[i].x = tangentWc[i].y;
+						tangentNormals[i].y = - tangentWc[i].x;
+						if (i == 1) {// change the sign
+							tangentNormals[i] = - tangentNormals[i];
+						}
+						double length = tangentNormals[i].length();
+						if (length > 0) {
+							tangentNormals[i].normalize();
+							tangentNormalCount ++;
+						
+							if (bComputeLocal[i] && localTangentNeighbors[i] >= 0) {
+								DoubleVector3 localTangentNormal;
+								localTangentNormal.x = localTangentWc[i].y;
+								localTangentNormal.y = - localTangentWc[i].x;
+								if (i == 1) {
+									localTangentNormal = - localTangentNormal;
+								}
+								double localLength = localTangentNormal.length();
+								if (localLength > 0) {
+									localTangentNormal.normalize();
+
+									double dotp = tangentNormals[i].dotProduct(localTangentNormal); 
+									if (abs(dotp) <= cosAngleTol) {
+										tangentNormals[i] = localTangentNormal;
+									}
+								}
+							}
+						}
 					}
 				}
-				if(tangentNeighbors[1] >= 0){
-					tangentNormal[1].x = -tangentWc[1].y;
-					tangentNormal[1].y = tangentWc[1].x;
-					double length = tangentNormal[1].length();
+				/*if(tangentNeighbors[1] >= 0){
+					tangentNormals[1].x = - tangentWc[1].y;
+					tangentNormals[1].y = tangentWc[1].x;
+					double length = tangentNormals[1].length();
 					if (length > 0) {
-						tangentNormal[1].normalize();
+						tangentNormals[1].normalize();
 						tangentNormalCount ++;	 
 					}	 
-				}
+				}*/
 			} else if (dimension == 3) {
 				for (int i = 0; i < numOfNaturalNeighbors; i ++) {
 					int nextIndex = (i+1) % numOfNaturalNeighbors;
-					if((tangentNeighbors[i] >= 0) && (tangentNeighbors[nextIndex] >= 0)){							
-						tangentNormal[i].x = tangentWc[i].y * tangentWc[nextIndex].z - tangentWc[nextIndex].y * tangentWc[i].z;
-						tangentNormal[i].y = tangentWc[i].z * tangentWc[nextIndex].x - tangentWc[nextIndex].z * tangentWc[i].x;
-						tangentNormal[i].z = tangentWc[i].x * tangentWc[nextIndex].y - tangentWc[nextIndex].x * tangentWc[i].y;
-						double length = tangentNormal[i].length();
+					if((tangentNeighbors[i] >= 0) && (tangentNeighbors[nextIndex] >= 0)){
+						tangentNormals[i] = tangentWc[i].crossProduct(tangentWc[nextIndex]);
+						//tangentNormals[i].x = tangentWc[i].y * tangentWc[nextIndex].z - tangentWc[nextIndex].y * tangentWc[i].z;
+						//tangentNormals[i].y = tangentWc[i].z * tangentWc[nextIndex].x - tangentWc[nextIndex].z * tangentWc[i].x;
+						//tangentNormals[i].z = tangentWc[i].x * tangentWc[nextIndex].y - tangentWc[nextIndex].x * tangentWc[i].y;
+						double length = tangentNormals[i].length();
 						if (length > 0){
-							tangentNormal[i].normalize();
+							tangentNormals[i].normalize();
 							tangentNormalCount ++;
+
+							if (bComputeLocal[i] && localTangentNeighbors[i] >= 0) {
+								DoubleVector3 localTangentNormal = localTangentWc[i].crossProduct(localTangentWc[nextIndex]);
+								//localTangentNormal.x = localTangentWc[i].y * localTangentWc[nextIndex].z - localTangentWc[nextIndex].y * localTangentWc[i].z;
+								//localTangentNormal.y = localTangentWc[i].z * localTangentWc[nextIndex].x - localTangentWc[nextIndex].z * localTangentWc[i].x;
+								//localTangentNormal.z = localTangentWc[i].x * localTangentWc[nextIndex].y - localTangentWc[nextIndex].x * localTangentWc[i].y;
+								double localLength = localTangentNormal.length();
+								if (localLength > 0) {
+									localTangentNormal.normalize();								
+
+									double dotp = tangentNormals[i].dotProduct(localTangentNormal); 
+									if (abs(dotp) <= cosAngleTol) {
+										tangentNormals[i] = localTangentNormal;
+									}
+								}
+							}
 						}
 					}
 				}
@@ -1229,7 +1291,7 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 
 			// average tangent normals
 			if (tangentNormalCount > 0) {
-				computeNormal(meptr, tangentNormal, tangentNormalCount);
+				computeNormal(meptr, tangentNormals, tangentNormalCount);
 				break;
 			} else {
 				int numChanged = 0;
@@ -1249,43 +1311,10 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 	delete[] tangentN;
 	delete[] tangentNeighbors;
 	delete[] tangentWc;
-	delete[] tangentNormal;	
-		//if (tangentNeighborCount == 1) { // there is only one valid neighbor
-		//	assert(validNeighborIndex != -1);
-		//	NormalDirection nd = getFaceNormalDirection(index);
-		//	WorldCoord v1;
-		//	if (nd == NORMAL_DIRECTION_X) {
-		//		v1.x = 1;
-		//	} else if (nd == NORMAL_DIRECTION_Y) {
-		//		v1.y = 1;
-		//	} else if (nd == NORMAL_DIRECTION_Z) {
-		//		v1.z = 1;
-		//	}
-		//	tangentWc[validNeighborIndex].normalize();
-		//	pMembraneElement[index].unitNormal = tangentWc[validNeighborIndex].crossProduct(v1);
-		//	continue;
-		//} else if (tangentNeighborCount == 2 &&  // there are two neighbors, but they are coplanar;
-		//		(tangentNeighbors[0] == -1 && tangentNeighbors[2] == -1 || tangentNeighbors[1] == -1 && tangentNeighbors[3] == -1)) {
-		//	NormalDirection nd = getFaceNormalDirection(index);
-		//	WorldCoord v1;
-		//	if (nd == NORMAL_DIRECTION_X) {
-		//		v1.x = 1;
-		//	} else if (nd == NORMAL_DIRECTION_Y) {
-		//		v1.y = 1;
-		//	} else if (nd == NORMAL_DIRECTION_Z) {
-		//		v1.z = 1;
-		//	}
-		//	// make up a third point to 
-		//	if (tangentNeighbors[0] == -1 && tangentNeighbors[2] == -1) {
-		//		tangentWc[0] = v1;
-		//		tangentWc[1].normalize();
-		//		tangentWc[3].normalize();
-		//	} else {
-		//		tangentWc[1] = v1;
-		//		tangentWc[0].normalize();
-		//		tangentWc[2].normalize();
-		//	}
-		//}		
+	delete[] tangentNormals;
+	delete[] localTangentNeighbors;
+	delete[] localTangentWc;
+	delete[] bComputeLocal;
 }
 
 void CartesianMesh::computeNormal(MembraneElement& meptr, DoubleVector3* normal, int neighborCount) {
@@ -2268,6 +2297,9 @@ int CartesianMesh::computeN(int startingIndex, CurvePlane curvePlane, vector<dou
 	if (numPoints == 1) {
 		return 0;
 	}
+	if (numPoints <= 6) {
+		return 1;
+	}
 	double maxX = 1E-10, maxY = 1E-10;
 	double minX = 1E10, minY = 1E10;
 	for (int i = 0; i < numPoints; i ++) {
@@ -2311,9 +2343,6 @@ int CartesianMesh::computeN(int startingIndex, CurvePlane curvePlane, vector<dou
 	//
 	WorldCoord left(0,0,0), right(0,0,0);
 	if (bClose) {
-		if (numPoints == 4) {
-			return 1;
-		}
 		left.x = curvex[(currentMeIndexInVector - nwave + numPoints) % numPoints] - curvex[currentMeIndexInVector];
 		left.y = curvey[(currentMeIndexInVector - nwave + numPoints) % numPoints] - curvey[currentMeIndexInVector];
 		right.x = curvex[(currentMeIndexInVector + nwave) % numPoints] - curvex[currentMeIndexInVector];
@@ -2379,11 +2408,8 @@ int CartesianMesh::computeN(int startingIndex, CurvePlane curvePlane, vector<dou
 		throw "CartesianMesh::computeN(), Radius of curvature is NAN";
 	}	
 
-	double N = min(floor(coeff * sqrt(R/h)), floor(sqrt((double)numPoints)));
-	if (N >= numPoints || N <= 0) {
-		return nwave;
-	}
-	return (int)N;
+	int N = min((int)floor(coeff * sqrt(R/h)), nwave);
+	return N;
 }
 
 //#define N_EQUALS_2
