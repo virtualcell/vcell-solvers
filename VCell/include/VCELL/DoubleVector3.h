@@ -64,6 +64,10 @@ struct DoubleVector3 {
 		return DoubleVector3(x - wc.x, y - wc.y, z - wc.z);
 	}
 
+	DoubleVector3 operator-() {
+		return DoubleVector3(-x, -y, -z);
+	}
+
 	void operator-=(const DoubleVector3& wc) {
 		x = x - wc.x;
 		y = y - wc.y;
