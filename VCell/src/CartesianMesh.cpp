@@ -1239,7 +1239,7 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 									localTangentNormal.normalize();
 
 									double dotp = tangentNormals[i].dotProduct(localTangentNormal); 
-									if (abs(dotp) <= cosAngleTol) {
+									if (fabs(dotp) <= cosAngleTol) {
 										tangentNormals[i] = localTangentNormal;
 									}
 								}
@@ -1279,7 +1279,7 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 									localTangentNormal.normalize();								
 
 									double dotp = tangentNormals[i].dotProduct(localTangentNormal); 
-									if (abs(dotp) <= cosAngleTol) {
+									if (fabs(dotp) <= cosAngleTol) {
 										tangentNormals[i] = localTangentNormal;
 									}
 								}
