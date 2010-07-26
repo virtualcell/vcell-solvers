@@ -1156,10 +1156,10 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 
 	int numOfNaturalNeighbors = NumNaturalNeighbors_Membrane[dimension];
 	
-	int* tangentN = new int[numOfNaturalNeighbors];
-	int* tangentNeighbors = new int[numOfNaturalNeighbors];	
-	DoubleVector3* tangentWc = new DoubleVector3[numOfNaturalNeighbors];
-	DoubleVector3* tangentNormals = new DoubleVector3[numOfNaturalNeighbors];
+	int tangentN[4];
+	int tangentNeighbors[4];
+	DoubleVector3 tangentWc[4];
+	DoubleVector3 tangentNormals[4];
 
 	static int localN = 3;
 	static double angleTol = PI/8; 
@@ -1171,10 +1171,9 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 		cosAngleTol= cos(angleTol);
 	}
 
-	int* localTangentNeighbors = new int[numOfNaturalNeighbors];
-	DoubleVector3* localTangentWc = new DoubleVector3[numOfNaturalNeighbors];
-	
-	bool* bComputeLocal = new bool[numOfNaturalNeighbors];
+	int localTangentNeighbors[4];
+	DoubleVector3 localTangentWc[4];
+	bool bComputeLocal[4];
 
 	for (long index = 0; index < numMembrane; index ++){
 		WorldCoord wc = getMembraneWorldCoord(index);
@@ -1184,8 +1183,6 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 		while (true) {
 			int numOfValidTangentNeighbors = 0;
 			for (int i = 0; i < numOfNaturalNeighbors; i ++) {
-				bComputeLocal[i] = false;
-
 				tangentNeighbors[i] = getNeighbor(tangentN[i], index, i);
 				if (tangentNeighbors[i] >= 0 && tangentNeighbors[i] != index) { 
 					numOfValidTangentNeighbors ++;
@@ -1193,13 +1190,18 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 				} else {
 					tangentNeighbors[i] = -1;
 				}
-				if (cosAngleTol > 0 && tangentN[i] > localN) {
-					bComputeLocal[i] = true;
-					localTangentNeighbors[i] = getNeighbor(localN, index, i);
-					if (localTangentNeighbors[i] >= 0 && localTangentNeighbors[i] != index) {
-	 					localTangentWc[i] = wc - getMembraneWorldCoord(localTangentNeighbors[i]);
-					} else {
-						localTangentNeighbors[i] = -1;
+				if (cosAngleTol > 0) {
+					bComputeLocal[i] = false;
+					localTangentNeighbors[i] = -1;
+					if (tangentNeighbors[i] >= 0) {
+						if (tangentN[i] <= localN) {
+							localTangentNeighbors[i] = tangentNeighbors[i];
+							localTangentWc[i] = tangentWc[i];
+						} else {
+							bComputeLocal[i] = true;
+							localTangentNeighbors[i] = getNeighbor(localN, index, i);
+							localTangentWc[i] = wc - getMembraneWorldCoord(localTangentNeighbors[i]);
+						}
 					}
 				}
 			}
@@ -1227,7 +1229,7 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 							tangentNormals[i].normalize();
 							tangentNormalCount ++;
 						
-							if (bComputeLocal[i] && localTangentNeighbors[i] >= 0) {
+							if (bComputeLocal[i]) {
 								DoubleVector3 localTangentNormal;
 								localTangentNormal.x = localTangentWc[i].y;
 								localTangentNormal.y = - localTangentWc[i].x;
@@ -1247,33 +1249,18 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 						}
 					}
 				}
-				/*if(tangentNeighbors[1] >= 0){
-					tangentNormals[1].x = - tangentWc[1].y;
-					tangentNormals[1].y = tangentWc[1].x;
-					double length = tangentNormals[1].length();
-					if (length > 0) {
-						tangentNormals[1].normalize();
-						tangentNormalCount ++;	 
-					}	 
-				}*/
 			} else if (dimension == 3) {
 				for (int i = 0; i < numOfNaturalNeighbors; i ++) {
 					int nextIndex = (i+1) % numOfNaturalNeighbors;
 					if((tangentNeighbors[i] >= 0) && (tangentNeighbors[nextIndex] >= 0)){
 						tangentNormals[i] = tangentWc[i].crossProduct(tangentWc[nextIndex]);
-						//tangentNormals[i].x = tangentWc[i].y * tangentWc[nextIndex].z - tangentWc[nextIndex].y * tangentWc[i].z;
-						//tangentNormals[i].y = tangentWc[i].z * tangentWc[nextIndex].x - tangentWc[nextIndex].z * tangentWc[i].x;
-						//tangentNormals[i].z = tangentWc[i].x * tangentWc[nextIndex].y - tangentWc[nextIndex].x * tangentWc[i].y;
 						double length = tangentNormals[i].length();
 						if (length > 0){
 							tangentNormals[i].normalize();
 							tangentNormalCount ++;
 
-							if (bComputeLocal[i] && localTangentNeighbors[i] >= 0) {
+							if (bComputeLocal[i]) {
 								DoubleVector3 localTangentNormal = localTangentWc[i].crossProduct(localTangentWc[nextIndex]);
-								//localTangentNormal.x = localTangentWc[i].y * localTangentWc[nextIndex].z - localTangentWc[nextIndex].y * localTangentWc[i].z;
-								//localTangentNormal.y = localTangentWc[i].z * localTangentWc[nextIndex].x - localTangentWc[nextIndex].z * localTangentWc[i].x;
-								//localTangentNormal.z = localTangentWc[i].x * localTangentWc[nextIndex].y - localTangentWc[nextIndex].x * localTangentWc[i].y;
 								double localLength = localTangentNormal.length();
 								if (localLength > 0) {
 									localTangentNormal.normalize();								
@@ -1307,14 +1294,6 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 			}
 		}		
 	}
-
-	delete[] tangentN;
-	delete[] tangentNeighbors;
-	delete[] tangentWc;
-	delete[] tangentNormals;
-	delete[] localTangentNeighbors;
-	delete[] localTangentWc;
-	delete[] bComputeLocal;
 }
 
 void CartesianMesh::computeNormal(MembraneElement& meptr, DoubleVector3* normal, int neighborCount) {
