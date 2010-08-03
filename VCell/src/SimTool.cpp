@@ -749,19 +749,19 @@ void SimTool::start1() {
 	double epsilon = 1e-12;
 
 	while (true) {
-		if (!isSundialsPdeSolver() || !bSundialsOneStepOutput) {
-			if (simulation->getTime_sec() + simulation->getDT_sec() > simEndTime + epsilon) {
-				break;
-			}
-		} else if (simulation->getTime_sec() > simEndTime - epsilon) {
+		if (fabs(simEndTime - simulation->getTime_sec()) < epsilon) { // reached the end time
 			break;
 		}
-
 		if (isSundialsPdeSolver() && bSundialsOneStepOutput) {
-			if (simulation->getCurrIteration() / keepEvery > keepAtMost){
+			if (simulation->getCurrIteration() / keepEvery > keepAtMost){ // reached keep at most
 				break;
 			}
-		}
+		} 
+		//else {
+		//	if (simulation->getTime_sec() + simulation->getDT_sec() > simEndTime + epsilon) { // reached the end time
+		//		break;
+		//	}
+		//}
 
 		if (checkStopRequested()) {
 			return;

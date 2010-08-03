@@ -4,6 +4,7 @@
  */
 #include <VCELL/Element.h>
 #include <Expression.h>
+//#include <MathUtil.h>
 #include <VCELL/SundialsPdeScheduler.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/Solver.h>
@@ -631,7 +632,7 @@ void SundialsPdeScheduler::solve() {
 	}
 
 	while (true) {
-		if (currentTime > endTime - epsilon) {
+		if (fabs(endTime - currentTime) < epsilon) {
 			break;
 		}
 		CVodeSetStopTime(sundialsSolverMemory, stopTime);
