@@ -774,7 +774,7 @@ void SimTool::start1() {
 			return;
 		}
 
-		if (simulation->getCurrIteration() % keepEvery == 0 || simulation->getTime_sec() > simEndTime - epsilon){
+		if (simulation->getCurrIteration() % keepEvery == 0 || fabs(simEndTime - simulation->getTime_sec()) < epsilon) {
 			if (bStoreEnable){
 				updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
             }
