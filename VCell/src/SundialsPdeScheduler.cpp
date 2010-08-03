@@ -668,7 +668,7 @@ void SundialsPdeScheduler::solve() {
 		}
 	}
 
-	if (currentTime > SimTool::getInstance()->getEndTime() - epsilon) {
+	if (fabs(SimTool::getInstance()->getEndTime() - currentTime) < epsilon) {
 		printCVodeStats();
 	}
 	updateSolutions();
