@@ -8,11 +8,12 @@ all:
 	cd zlib ; make -f Makefile64.linux
 	cd zip ; make -f Makefile64.linux
 	cd VCell_CodeGen/src ; make -f Makefile64.linux
-	cd VCell/src ; make -f Makefile64.linux
 	cd Stochastic/VCellStoch; make -f Makefile64.linux
 	cd sundials/src; make -f Makefile64.linux
 	cd IDAWin; make -f Makefile64.linux
 	cd netcdf-3.6.2; make -f Makefile64.linux
+	cd VCell/src ; make -f Makefile64.linux
+	cd smoldyn-2.15 ; make -f Makefile64.linux
 	cd Hy3S/src; make -f Makefile64.linux
 	
 clean:
@@ -29,6 +30,7 @@ clean:
 	cd sundials/src; make -f Makefile64.linux clean
 	cd IDAWin; make -f Makefile64.linux clean
 	cd netcdf-3.6.2; make -f Makefile64.linux clean
+	cd smoldyn-2.15 ; make -f Makefile64.linux clean
 	cd Hy3S/src; make -f Makefile64.linux clean
 	
 depend:
@@ -44,4 +46,5 @@ depend:
 	cd sundials/src; make -f Makefile64.linux depend
 	cd IDAWin; make -f Makefile64.linux depend
 	cd netcdf-3.6.2; make -f Makefile64.linux depend
+	cd smoldyn-2.15 ; make -f Makefile64.linux depend
 	cd Hy3S/src; make -f Makefile64.linux depend

@@ -11,7 +11,8 @@ all:
 	cd netcdf-3.6.2 && nmake -f Makefile.win32
 	cd VCell_CodeGen\src && nmake -f Makefile.win32
 	cd VCell\src && nmake -f Makefile.win32
-#	cd VCell\src && nmake -f Makefile_NoMessaging.win32
+	cd VCell\src && nmake -f Makefile_NoMessaging.win32
+	cd smoldyn-2.15\windows && make -f Makefile.win32
 	cd Stochastic\VCellStoch && nmake -f Makefile.win32
 	cd Hy3S\src && nmake -f Makefile.win32
 	
@@ -24,9 +25,10 @@ clean:
 	cd unzip && nmake -f Makefile.win32 clean
 	cd VCell_CodeGen\src && nmake -f Makefile.win32 clean
 	cd VCell\src && nmake -f Makefile.win32 clean
-#	cd VCell\src && nmake -f Makefile_NoMessaging.win32 clean
+	cd VCell\src && nmake -f Makefile_NoMessaging.win32 clean
 	cd zip && nmake -f Makefile.win32 clean
 	cd zlib && nmake -f Makefile.win32 clean
+	cd smoldyn-2.15\windows && make -f Makefile.win32 clean
 	cd Stochastic\VCellStoch && nmake -f Makefile.win32 clean
 	cd netcdf-3.6.2 && nmake -f Makefile.win32 clean
 	cd Hy3S\src && nmake -f Makefile.win32 clean
