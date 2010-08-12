@@ -1,0 +1,12 @@
+default all :
+	cd source/lib; make -f Makefile64.linux
+	cd source/Smoldyn; make -f Makefile64.linux
+
+clean:
+	cd source/lib; make -f Makefile64.linux clean
+	cd source/Smoldyn; make -f Makefile64.linux clean
+	
+depend:
+	cd source/lib; make -f Makefile64.linux depend
+	cd source/Smoldyn; make -f Makefile64.linux depend
+	

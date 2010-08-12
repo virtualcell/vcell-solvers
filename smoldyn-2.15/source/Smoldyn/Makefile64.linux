@@ -1,0 +1,50 @@
+CC = gcc
+
+CPPFLAGS = -DHAVE_CONFIG_H -I.. -I. -I../lib -Wall -I../lib  -O2
+LIBS = -L../lib -lsmoldyn -lm -pthread
+
+SMOLDYN = smoldyn
+
+			
+%.o : %.cpp
+	$(CC) $(CPPFLAGS) $<
+
+default all : $(SMOLDYN)
+
+CPPOBJECTS = smolboxes.o \
+			smolcmd.o \
+			smolcomparts.o \
+			smoldyn.o \
+			smolgraphics.o	\
+			smolmolec.o	\
+			smolmoleculizer.o	\
+			smolport.o	\
+			smolreact.o	\
+			smolsim.o	\
+			smolsurface.o	\
+			smolthread.o	\
+			smolwall.o
+			
+$(SMOLDYN) : $(CPPOBJECTS)
+	$(CC) -o $@ $(CPPOBJECTS) $(LIBS)
+
+clean:
+	rm $(SMOLDYN) $(CPPOBJECTS)
+	
+depend:
+	makedepend -Y -f Makefile64.linux -- $(CFLAGS) -- *.c *.cpp
+# DO NOT DELETE
+
+smolboxes.o: smoldyn.h
+smolcmd.o: smoldyn.h
+smolcomparts.o: smoldyn.h
+smoldyn.o: smoldyn.h
+smolgraphics.o: smoldyn.h
+smolmolec.o: smoldyn.h
+smolmoleculizer.o: smoldyn.h
+smolport.o: smoldyn.h
+smolreact.o: smoldyn.h
+smolsim.o: smoldyn.h
+smolsurface.o: smoldyn.h
+smolthread.o: smoldyn.h
+smolwall.o: smoldyn.h

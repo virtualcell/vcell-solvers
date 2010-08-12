@@ -1,0 +1,96 @@
+#************************************************************************
+#          Makefile for Smoldyn on Windows for SSA's computer           *
+#      This is designed for cross-compilation for Windows from Mac      *
+#************************************************************************
+
+# Directory for mingw
+MINGW = /mingw
+
+# My headers and source files
+SSA = ../source/lib
+SMOL = ../source/Smoldyn
+
+# Include
+GL = $(MINGW)/include/GL
+GLUT = $(MINGW)/include/GL
+TIFFI = $(MINGW)/include
+SFMTDIR = $(SSA)/SFMT
+
+# additional libs
+LDFLAGS = $(MINGW)/lib
+OPENGL = $(MINGW)/lib
+GLUT = $(MINGW)/glut
+TIFFL = $(MINGW)/lib
+
+# Compiler name and basic options
+CC = $(MINGW)/bin/gcc
+CFLAGS = -Wall -O2 -I$(SSA) -I$(SMOL) -I../Windows
+LINKFLAGS = -L$(LDFLAGS)
+LIBS = -lm
+
+# OpenGL options; comment out to not use OpenGL
+# Also, comment out the #include <gl.h> and <glut.h> lines in opengl2.h
+#CFLAGS += -I$(GL) -I$(GLUT)
+#LINKFLAGS += -L$(OPENGL) -L$(GLUT)
+#LIBS += -lopengl32 -lglut32 -lglu32
+
+# LibTiff options; comment out to not use LibTiff
+# Also, comment out the #include <tiffio.h> line in opengl2.h
+#CFLAGS += -I$(TIFFI)
+#LINKFLAGS += -L$(TIFFL)
+#LIBS += -ltiff
+
+# Mersenne Twister options; comment out to not use Mersenne Twister
+# Also, comment out the #include "SFMT/SFMT.h" line in random2.h
+#CFLAGS += -I$(SFMTDIR) -DMEXP=19937
+#SFMTOBJECTS = SFMT.o
+# Use following for a big-endian CPU
+#CFLAGS += -DBIG_ENDIAN64
+# Use following for a CPU that supports SSE2
+#CFLAGS += -msse2 -DHAVE_SSE2
+# Use following for a CPU that supports AltiVec
+#CFLAGS += -faltivec -DBIG_ENDIAN64 -DHAVE_ALTIVEC
+
+
+OBJECTS = Geometry.o math2.o opengl2.o parse.o queue.o random2.o Rn.o RnSort.o rxnparam.o SimCommand.o smolboxes.o smolcmd.o smolcomparts.o smoldyn.o smolgraphics.o smolmolec.o smolmoleculizer.o smolport.o smolreact.o smolsim.o smolsurface.o smolthread.o smolwall.o Sphere.o string2.o SurfaceParam.o Zn.o
+
+OBJECTS += $(SFMTOBJECTS)
+
+all : $(OBJECTS)
+	$(CC) -v $(CFLAGS) $(LINKFLAGS) -o smoldyn.exe $(OBJECTS) $(LIBS)
+
+$(OBJECTS) :
+	$(CC) $(CFLAGS) -c $<
+
+Geometry.o : $(SSA)/Geometry.c $(SSA)/Geometry.h $(SSA)/math2.h
+math2.o : $(SSA)/math2.c $(SSA)/math2.h
+opengl2.o : $(SSA)/opengl2.c $(SSA)/opengl2.h $(SSA)/math2.h $(SSA)/random2.h $(SSA)/string2.h
+parse.o : $(SSA)/parse.c $(SSA)/parse.h $(SSA)/string2.h
+queue.o : $(SSA)/queue.c $(SSA)/queue.h
+random2.o : $(SSA)/random2.c $(SSA)/random2.h $(SSA)/math2.h
+Rn.o : $(SSA)/Rn.c $(SSA)/Rn.h $(SSA)/random2.h $(SSA)/math2.h
+RnSort.o : $(SSA)/RnSort.c $(SSA)/RnSort.h $(SSA)/Rn.h
+rxnparam.o : $(SSA)/rxnparam.c $(SSA)/rxnparam.h
+SFMT.o : $(SFMTDIR)/SFMT.c $(SFMTDIR)/SFMT.h
+SimCommand.o : $(SSA)/SimCommand.c $(SSA)/SimCommand.h $(SSA)/Zn.h $(SSA)/queue.h $(SSA)/string2.h
+smolboxes.o : $(SMOL)/smolboxes.c $(SMOL)/smoldyn.h $(SSA)/Geometry.h $(SSA)/math2.h $(SSA)/random2.h $(SSA)/Zn.h
+smolcmd.o : $(SMOL)/smolcmd.c $(SMOL)/smoldyn.h $(SSA)/Geometry.h $(SSA)/opengl2.h $(SSA)/random2.h $(SSA)/Rn.h $(SSA)/RnSort.h $(SSA)/string2.h $(SSA)/Zn.h
+smolcomparts.o : $(SMOL)/smolcomparts.c $(SMOL)/smoldyn.h $(SSA)/random2.h $(SSA)/RnSort.h $(SSA)/string2.h $(SSA)/Zn.h
+smoldyn.o : $(SMOL)/smoldyn.c $(SMOL)/smoldyn.h $(SSA)/string2.h $(SSA)/opengl2.h
+smolgraphics.o : $(SMOL)/smolgraphics.c $(SMOL)/smoldyn.h $(SSA)/Geometry.h $(SSA)/math2.h $(SSA)/opengl2.h $(SSA)/Rn.h
+smolmolec.o : $(SMOL)/smolmolec.c $(SMOL)/smoldyn.h $(SSA)/math2.h $(SSA)/random2.h $(SSA)/Rn.h $(SSA)/RnSort.h
+smolmoleculizer.o : $(SMOL)/smolmoleculizer.c $(SMOL)/smoldyn.h
+smolport.o : $(SMOL)/smolport.c $(SMOL)/smoldyn.h $(SSA)/string2.h $(SSA)/Zn.h
+smolreact.o : $(SMOL)/smolreact.c $(SMOL)/smoldyn.h $(SSA)/math2.h $(SSA)/random2.h $(SSA)/Rn.h $(SSA)/rxnparam.h $(SSA)/Sphere.h $(SSA)/string2.h $(SSA)/Zn.h
+smolsim.o : $(SMOL)/smolsim.c $(SMOL)/smoldyn.h $(SSA)/opengl2.h $(SSA)/random2.h $(SSA)/Rn.h $(SSA)/string2.h $(SSA)/Zn.h
+smolsurface.o : $(SMOL)/smolsurface.c $(SMOL)/smoldyn.h $(SSA)/Geometry.h $(SSA)/math2.h $(SSA)/random2.h $(SSA)/Rn.h $(SSA)/RnSort.h $(SSA)/Sphere.h $(SSA)/string2.h $(SSA)/Zn.h
+smolthread.o : $(SMOL)/smolthread.c $(SMOL)/smoldyn.h
+smolwall.o : $(SMOL)/smolwall.c $(SMOL)/smoldyn.h $(SSA)/random2.h
+Sphere.o : $(SSA)/Sphere.c $(SSA)/Sphere.h
+string2.o : $(SSA)/string2.c $(SSA)/string2.h
+SurfaceParam.o : $(SSA)/SurfaceParam.c $(SSA)/SurfaceParam.h $(SSA)/math2.h $(SSA)/random2.h
+Zn.o : $(SSA)/Zn.c $(SSA)/Zn.h $(SSA)/random2.h $(SSA)/math2.h
+
+.PHONY : clean
+clean :
+	rm -f $(OBJECTS)
