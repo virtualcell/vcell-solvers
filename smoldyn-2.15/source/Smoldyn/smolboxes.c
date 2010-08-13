@@ -680,7 +680,7 @@ int setupboxes(simptr sim) {
 				npanel=0;
 				for(s=0;s<nsrf;s++) {
 					srf=sim->srfss->srflist[s];
-					for(ps=0;ps<PSMAX;ps++)
+					for(ps=(PanelShape)0;ps<PSMAX;ps=(PanelShape)(ps+1))
 						for(p=0;p<srf->npanel[ps];p++) {
 							pnl=srf->panels[ps][p];
 							if(panelinbox(sim,pnl,bptr)) npanel++; }}
@@ -690,7 +690,7 @@ int setupboxes(simptr sim) {
 				if(npanel) {
 					for(s=0;s<nsrf;s++) {
 						srf=sim->srfss->srflist[s];
-						for(ps=0;ps<PSMAX;ps++)
+						for(ps=(PanelShape)0;ps<PSMAX;ps=(PanelShape)(ps+1))
 							for(p=0;p<srf->npanel[ps];p++)
 								if(panelinbox(sim,srf->panels[ps][p],bptr))
 									bptr->panel[bptr->npanel++]=srf->panels[ps][p]; }}}}

@@ -265,11 +265,11 @@ void molsetdifc(simptr sim,int ident,enum MolecState ms,double difc) {
 	else if(ms==MSnone) return;
 	if(ident>=0) ihi=(ilo=ident)+1;
 	else {ilo=1;ihi=sim->mols->nspecies;}
-	if(ms!=MSall) mshi=(mslo=ms)+1;
-	else {mslo=0;mshi=MSMAX;}
+	if(ms!=MSall) mshi=(MolecState)((mslo=ms)+1);
+	else {mslo=(MolecState)0;mshi=(MolecState)MSMAX;}
 
 	for(i=ilo;i<ihi;i++)
-		for(ms=mslo;ms<mshi;ms++)
+		for(ms=mslo;ms<mshi;ms=(MolecState)(ms+1))
 			sim->mols->difc[i][ms]=difc;
 	molsetcondition(sim->mols,SCparams,0);
 	return; }
@@ -293,11 +293,11 @@ int molsetdifm(simptr sim,int ident,enum MolecState ms,double *difm) {
 	if(!difm) return 0;
 	if(ident>=0) ihi=(ilo=ident)+1;
 	else {ilo=1;ihi=sim->mols->nspecies;}
-	if(ms!=MSall) mshi=(mslo=ms)+1;
-	else {mslo=0;mshi=MSMAX;}
+	if(ms!=MSall) mshi=(MolecState)((mslo=ms)+1);
+	else {mslo=(MolecState)0;mshi=(MolecState)MSMAX;}
 
 	for(i=ilo;i<ihi;i++)
-		for(ms=mslo;ms<mshi;ms++) {
+		for(ms=mslo;ms<mshi;ms=(MolecState)(ms+1)) {
 			difmat=sim->mols->difm[i][ms];
 			if(!difmat) {
 				difmat=(double*)calloc(sim->dim*sim->dim,sizeof(double));
@@ -328,11 +328,11 @@ int molsetdrift(simptr sim,int ident,enum MolecState ms,double *drift) {
 	if(!drift) return 0;
 	if(ident>=0) ihi=(ilo=ident)+1;
 	else {ilo=1;ihi=sim->mols->nspecies;}
-	if(ms!=MSall) mshi=(mslo=ms)+1;
-	else {mslo=0;mshi=MSMAX;}
+	if(ms!=MSall) mshi=(MolecState)((mslo=ms)+1);
+	else {mslo=(MolecState)0;mshi=(MolecState)MSMAX;}
 
 	for(i=ilo;i<ihi;i++)
-		for(ms=mslo;ms<mshi;ms++) {
+		for(ms=mslo;ms<mshi;ms=(MolecState)(ms+1)) {
 			driftvect=sim->mols->drift[i][ms];
 			if(!driftvect) {
 				driftvect=(double*)calloc(sim->dim,sizeof(double));
@@ -355,11 +355,11 @@ void molsetdisplaysize(simptr sim,int ident,enum MolecState ms,double dsize) {
 	else if(ms==MSnone) return;
 	if(ident>=0) ihi=(ilo=ident)+1;
 	else {ilo=1;ihi=sim->mols->nspecies;}
-	if(ms!=MSall) mshi=(mslo=ms)+1;
-	else {mslo=0;mshi=MSMAX;}
+	if(ms!=MSall) mshi=(MolecState)((mslo=ms)+1);
+	else {mslo=(MolecState)0;mshi=(MolecState)MSMAX;}
 
 	for(i=ilo;i<ihi;i++)
-		for(ms=mslo;ms<mshi;ms++)
+		for(ms=mslo;ms<mshi;ms=(MolecState)(ms+1))
 			sim->mols->display[i][ms]=dsize;
 	return; }
 
@@ -376,11 +376,11 @@ void molsetcolor(simptr sim,int ident,enum MolecState ms,double *color) {
 	else if(ms==MSnone) return;
 	if(ident>=0) ihi=(ilo=ident)+1;
 	else {ilo=1;ihi=sim->mols->nspecies;}
-	if(ms!=MSall) mshi=(mslo=ms)+1;
-	else {mslo=0;mshi=MSMAX;}
+	if(ms!=MSall) mshi=(MolecState)((mslo=ms)+1);
+	else {mslo=(MolecState)0;mshi=(MolecState)MSMAX;}
 
 	for(i=ilo;i<ihi;i++)
-		for(ms=mslo;ms<mshi;ms++)
+		for(ms=mslo;ms<mshi;ms=(MolecState)(ms+1))
 			for(col=0;col<3;col++)
 				sim->mols->color[i][ms][col]=color[col];
 	return; }
@@ -398,11 +398,11 @@ void molsetlistlookup(simptr sim,int ident,enum MolecState ms,int ll) {
 	else if(ms==MSnone) return;
 	if(ident>=0) ihi=(ilo=ident)+1;
 	else {ilo=1;ihi=sim->mols->nspecies;}
-	if(ms!=MSall) mshi=(mslo=ms)+1;
-	else {mslo=0;mshi=MSMAX;}
+	if(ms!=MSall) mshi=(MolecState)((mslo=ms)+1);
+	else {mslo=(MolecState)0;mshi=(MolecState)MSMAX;}
 
 	for(i=ilo;i<ihi;i++)
-		for(ms=mslo;ms<mshi;ms++) {
+		for(ms=mslo;ms<mshi;ms=(MolecState)(ms+1)) {
 			skip=0;
 			if(ident==-6 && sim->mols->difc[i][ms]==0) skip=1;
 			else if(ident==-7 && sim->mols->difc[i][ms]>0) skip=1;
@@ -416,7 +416,7 @@ void molsetexist(simptr sim,int ident,enum MolecState ms,int exist) {
 	if(ms==MSnone) return;
 	else if(ms==MSbsoln) ms=MSsoln;
 	else if(ms==MSall) {
-		for(ms=0;ms<MSMAX;ms++) sim->mols->exist[ident][ms]=exist;
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) sim->mols->exist[ident][ms]=exist;
 		return; }
 	sim->mols->exist[ident][ms]=exist;
 	return; }
@@ -615,38 +615,38 @@ molssptr molssalloc(int maxspecies) {
 	for(i=0;i<maxspecies;i++) mols->difc[i]=NULL;
 	for(i=0;i<maxspecies;i++) {
 		CHECK(mols->difc[i]=(double*) calloc(MSMAX,sizeof(double)));
-		for(ms=0;ms<MSMAX;ms++) mols->difc[i][ms]=0; }
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) mols->difc[i][ms]=0; }
 
 	CHECK(mols->difstep=(double**) calloc(maxspecies,sizeof(double*)));
 	for(i=0;i<maxspecies;i++) mols->difstep[i]=NULL;
 	for(i=0;i<maxspecies;i++) {
 		CHECK(mols->difstep[i]=(double*) calloc(MSMAX,sizeof(double)));
-		for(ms=0;ms<MSMAX;ms++) mols->difstep[i][ms]=0; }
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) mols->difstep[i][ms]=0; }
 
 	CHECK(mols->difm=(double***) calloc(maxspecies,sizeof(double**)));
 	for(i=0;i<maxspecies;i++) mols->difm[i]=NULL;
 	for(i=0;i<maxspecies;i++) {
 		CHECK(mols->difm[i]=(double**) calloc(MSMAX,sizeof(double*)));
-		for(ms=0;ms<MSMAX;ms++) mols->difm[i][ms]=NULL; }
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) mols->difm[i][ms]=NULL; }
 
 	CHECK(mols->drift=(double***) calloc(maxspecies,sizeof(double**)));
 	for(i=0;i<maxspecies;i++) mols->drift[i]=NULL;
 	for(i=0;i<maxspecies;i++) {
 		CHECK(mols->drift[i]=(double**) calloc(MSMAX,sizeof(double*)));
-		for(ms=0;ms<MSMAX;ms++) mols->drift[i][ms]=NULL; }
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) mols->drift[i][ms]=NULL; }
 
 	CHECK(mols->display=(double**) calloc(maxspecies,sizeof(double*)));
 	for(i=0;i<maxspecies;i++) mols->display[i]=NULL;
 	for(i=0;i<maxspecies;i++) {
 		CHECK(mols->display[i]=(double*) calloc(MSMAX,sizeof(double)));
-		for(ms=0;ms<MSMAX;ms++) mols->display[i][ms]=3; }
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) mols->display[i][ms]=3; }
 
 	CHECK(mols->color=(double ***) calloc(maxspecies,sizeof(double **)));
 	for(i=0;i<maxspecies;i++) mols->color[i]=NULL;
 	for(i=0;i<maxspecies;i++) {
 		CHECK(mols->color[i]=(double**) calloc(MSMAX,sizeof(double*)));
-		for(ms=0;ms<MSMAX;ms++) mols->color[i][ms]=NULL;
-		for(ms=0;ms<MSMAX;ms++) {
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) mols->color[i][ms]=NULL;
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
 			CHECK(mols->color[i][ms]=(double*) calloc(3,sizeof(double)));
 			mols->color[i][ms][0]=mols->color[i][ms][1]=mols->color[i][ms][2]=0; }}
 
@@ -654,13 +654,13 @@ molssptr molssalloc(int maxspecies) {
 	for(i=0;i<maxspecies;i++) mols->exist[i]=NULL;
 	for(i=0;i<maxspecies;i++) {
 		CHECK(mols->exist[i]=(int*) calloc(MSMAX,sizeof(int)));
-		for(ms=0;ms<MSMAX;ms++) mols->exist[i][ms]=0; }
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) mols->exist[i][ms]=0; }
 
 	CHECK(mols->listlookup=(int**) calloc(maxspecies,sizeof(int*)));
 	for(i=0;i<maxspecies;i++) mols->listlookup[i]=NULL;
 	for(i=0;i<maxspecies;i++) {
 		CHECK(mols->listlookup[i]=(int*) calloc(MSMAX,sizeof(int)));
-		for(ms=0;ms<MSMAX;ms++) mols->listlookup[i][ms]=-1; }
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) mols->listlookup[i][ms]=-1; }
 
 	CHECK(mols->expand=(int*) calloc(maxspecies,sizeof(int)));
 	for(i=0;i<maxspecies;i++) mols->expand[i]=0;
@@ -879,7 +879,7 @@ void molssfree(molssptr mols) {
 	if(mols->color) {
 		for(i=0;i<maxspecies;i++)
 			if(mols->color[i]) {
-				for(ms=0;ms<MSMAX;ms++) free(mols->color[i][ms]);
+				for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) free(mols->color[i][ms]);
 				free(mols->color[i]); }
 		free(mols->color); }
 
@@ -890,14 +890,14 @@ void molssfree(molssptr mols) {
 	if(mols->drift) {
 		for(i=0;i<maxspecies;i++)
 			if(mols->drift[i]) {
-				for(ms=0;ms<MSMAX;ms++) free(mols->drift[i][ms]);
+				for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) free(mols->drift[i][ms]);
 				free(mols->drift[i]); }
 		free(mols->drift); }
 
 	if(mols->difm) {
 		for(i=0;i<maxspecies;i++)
 			if(mols->difm[i]) {
-				for(ms=0;ms<MSMAX;ms++) free(mols->difm[i][ms]);
+				for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) free(mols->difm[i][ms]);
 				free(mols->difm[i]); }
 		free(mols->difm); }
 
@@ -951,14 +951,14 @@ void molssoutput(simptr sim) {
 		printf(" Molecule %s:\n",mols->spname[i]);
 		printf("  states:");
 		sum=0;
-		for(ms=0;ms<MSMAX;ms++)
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 			if(mols->exist[i][ms]) {
 				sum++;
 				printf(" %s",molms2string(ms,string)); }
 		if(!sum) printf(" none");
 		printf("\n");
 		same=1;
-		for(ms=0;ms<MSMAX && same;ms++) {
+		for(ms=(MolecState)0;ms<MSMAX && same;ms=(MolecState)(ms+1)) {
 			if(mols->difc[i][ms]!=mols->difc[i][MSsoln]) same=0;
 			if(mols->difm[i][ms] && !mols->difm[i][MSsoln]) same=0;
 			if(!mols->difm[i][ms] && mols->difm[i][MSsoln]) same=0;
@@ -972,7 +972,7 @@ void molssoutput(simptr sim) {
 			if(mols->drift[i][MSsoln]) printf(" (drift)");
 			printf(", list=%s, number=%i\n",mols->listname[mols->listlookup[i][MSsoln]],molcount(sim,i,MSall,NULL,-1)); }
 		else {
-			for(ms=0;ms<MSMAX;ms++)
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 				if(mols->exist[i][ms]) {
 					if(mols->difstep[i][ms]>maxstep) maxstep=mols->difstep[i][ms];
 					printf("  %s: difc=%g, rms step=%g",molms2string(ms,string),mols->difc[i][ms],mols->difstep[i][ms]);
@@ -982,7 +982,7 @@ void molssoutput(simptr sim) {
 
 		if(sim->graphss) {
 			same=1;
-			for(ms=0;ms<MSMAX && same;ms++) {
+			for(ms=(MolecState)0;ms<MSMAX && same;ms=(MolecState)(ms+1)) {
 				if(mols->display[i][ms]!=mols->display[i][MSsoln]) same=0;
 				if(mols->color[i][ms][0]!=mols->color[i][MSsoln][0]) same=0;
 				if(mols->color[i][ms][1]!=mols->color[i][MSsoln][1]) same=0;
@@ -993,7 +993,7 @@ void molssoutput(simptr sim) {
 					printf(" color= %g,%g,%g, size=%g\n",mols->color[i][MSsoln][0],mols->color[i][MSsoln][1],mols->color[i][MSsoln][2],mols->display[i][MSsoln]);
 				else printf(" not displayed to graphics\n"); }
 			else {
-				for(ms=0;ms<MSMAX;ms++)
+				for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 					if(mols->exist[i][ms]) {
 						printf("  %s:",molms2string(ms,string));
 						if(mols->display[i][ms])
@@ -1050,21 +1050,21 @@ void writemols(simptr sim,FILE *fptr) {
 	
 	for(i=1;i<mols->nspecies;i++) {
 		val0=mols->difc[i][0];
-		for(ms=1;ms<MSMAX && mols->difc[i][ms]==val0;ms++);
+		for(ms=(MolecState)1;ms<MSMAX && mols->difc[i][ms]==val0;ms=(MolecState)(ms+1));
 		if(ms==MSMAX) fprintf(fptr,"difc %s(all) %g\n",spname[i],val0);
 		else {
-			for(ms=0;ms<MSMAX;ms++)
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 				if(mols->difc[i][ms]>0)
 					fprintf(fptr,"difc %s(%s) %g\n",spname[i],molms2string(ms,string),mols->difc[i][ms]); }
 		
-		for(ms=0;ms<MSMAX;ms++) {
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
 			if(mols->difm[i][ms]) {
 				fprintf(fptr,"difm %s(%s)",spname[i],molms2string(ms,string));
 				for(d=0;d<dim*dim;d++)
 					fprintf(fptr," %g",mols->difm[i][ms][d]);
 				fprintf(fptr,"\n"); }}
 		
-		for(ms=0;ms<MSMAX;ms++) {
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
 			if(mols->drift[i][ms]) {
 				fprintf(fptr,"drift %s(%s)",spname[i],molms2string(ms,string));
 				for(d=0;d<dim;d++)
@@ -1072,26 +1072,26 @@ void writemols(simptr sim,FILE *fptr) {
 				fprintf(fptr,"\n"); }}
 		
 		ll=mols->listlookup[i][0];
-		for(ms=1;ms<MSMAX && mols->listlookup[i][ms]==ll;ms++);
+		for(ms=(MolecState)1;ms<MSMAX && mols->listlookup[i][ms]==ll;ms=(MolecState)(ms+1));
 		if(ms==MSMAX) fprintf(fptr,"mol_list %s(all) %s\n",spname[i],mols->listname[ll]);
 		else {
-			for(ms=0;ms<MSMAX;ms++)
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 				fprintf(fptr,"mol_list %s(%s) %s\n",spname[i],molms2string(ms,string),mols->listname[mols->listlookup[i][ms]]); }
 		
 		val0=mols->display[i][0];
-		for(ms=1;ms<MSMAX && mols->display[i][ms]==val0;ms++);
+		for(ms=(MolecState)1;ms<MSMAX && mols->display[i][ms]==val0;ms=(MolecState)(ms+1));
 		if(ms==MSMAX) fprintf(fptr,"display_size %s(all) %g\n",spname[i],val0);
 		else {
-			for(ms=0;ms<MSMAX;ms++)
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 				fprintf(fptr,"display_size %s(%s) %g\n",spname[i],molms2string(ms,string),mols->display[i][ms]); }
 		
 		val0=mols->color[i][0][0];
 		val1=mols->color[i][0][1];
 		val2=mols->color[i][0][2];
-		for(ms=1;ms<MSMAX && mols->color[i][ms][0]==val0 && mols->color[i][ms][1]==val1 && mols->color[i][ms][2]==val2;ms++);
+		for(ms=(MolecState)1;ms<MSMAX && mols->color[i][ms][0]==val0 && mols->color[i][ms][1]==val1 && mols->color[i][ms][2]==val2;ms=(MolecState)(ms+1));
 		if(ms==MSMAX) fprintf(fptr,"color %s(all) %g %g %g\n",spname[i],val0,val1,val2);
 		else {
-			for(ms=0;ms<MSMAX;ms++)
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 				fprintf(fptr,"color %s(%s) %g %g %g\n",spname[i],molms2string(ms,string),mols->color[i][ms][0],mols->color[i][ms][1],mols->color[i][ms][2]); }
 		fprintf(fptr,"\n"); }
 	return; }
@@ -1183,7 +1183,7 @@ int checkmolparams(simptr sim,int *warnptr) {
 				warn++; }}
 
 	for(i=1;i<nspecies;i++)														// check for asymmetric diffusion matrices
-		for(ms=0;ms<MSMAX;ms++)
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 			if(mols->difm[i][ms]) {
 				dotMMD(mols->difm[i][ms],mols->difm[i][ms],m2,dim,dim,dim);
 				if(!issymmetricMD(m2,dim)) {
@@ -1192,7 +1192,7 @@ int checkmolparams(simptr sim,int *warnptr) {
 
 	for(i=1;i<nspecies;i++) {													// check for unused molecules
 		sum=0;
-		for(ms=0;ms<MSMAX;ms++) sum+=mols->exist[i][ms];
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) sum+=mols->exist[i][ms];
 		if(!sum) {
 			printf(" WARNING: molecule %s is never used\n",spname[i]);
 			warn++; }}
@@ -1200,7 +1200,7 @@ int checkmolparams(simptr sim,int *warnptr) {
 	if(sim->graphss && sim->graphss->graphics>1) {		// check for molecules that may not display
 		diag=systemdiagonal(sim);
 		for(i=1;i<nspecies;i++)
-			for(ms=0;ms<MSMAX;ms++) {
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
 				if(mols->display[i][ms]>0.1*diag) {
 					printf(" WARNING: very large display size for molecule %s (%s)\n",spname[i],molms2string(ms,string));
 					warn++; }
@@ -1339,7 +1339,7 @@ void molsettimestep(molssptr mols,double dt) {
 
 	if(!mols) return;
 	for(i=0;i<mols->nspecies;i++)
-		for(ms=0;ms<MSMAX;ms++)
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 			mols->difstep[i][ms]=sqrt(2.0*mols->difc[i][ms]*dt);
 	return; }
 
@@ -1359,7 +1359,7 @@ void molcalcparams(molssptr mols,double dt) {
 		molsettimestep(mols,dt);
 		for(ll=0;ll<mols->nlist;ll++) mols->diffuselist[ll]=0;
 		for(i=0;i<mols->nspecies;i++)
-			for(ms=0;ms<MSMAX;ms++) {
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
 				if(mols->difc[i][ms]>0) mols->diffuselist[mols->listlookup[i][ms]]=1; }
 		molsetcondition(mols,SCok,1); }
 	return; }
@@ -1382,7 +1382,7 @@ int setupmols(simptr sim) {
 		if(er) return 1;
 
 		for(i=1;i<mols->nspecies;i++)					// set exist values
-			for(ms=0;ms<MSMAX;ms++)
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 				mols->exist[i][ms]=0;
 		for(m=mols->topd;m<mols->nd;m++) {
 			mptr=mols->dead[m];
@@ -1392,7 +1392,7 @@ int setupmols(simptr sim) {
 				mptr=mols->live[ll][m];
 				mols->exist[mptr->ident][mptr->mstate]=1; }
 		for(i=1;i<mols->nspecies;i++) {
-			for(ms=0;ms<MSMAX;ms++) {
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
 				if(mols->exist[i][ms]==0 && rxnisprod(sim,i,ms,0)) mols->exist[i][ms]=1;
 				if(mols->exist[i][ms]==0 && issurfprod(sim,i,ms)) mols->exist[i][ms]=1; }
 			if(mols->exist[i][MSsoln]==0 && rxnisprod(sim,i,MSbsoln,0)) mols->exist[i][MSsoln]=1;
@@ -1403,7 +1403,7 @@ int setupmols(simptr sim) {
 		if(ll==mols->nlist && mols->maxd>0 && mols->nspecies>1) {
 			ndif=nfix=0;
 			for(i=1;i<mols->nspecies;i++)
-				for(ms=0;ms<MSMAX;ms++) {
+				for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
 					if(mols->difc[i][ms]>0) ndif=1;
 					else nfix=1; }
 			if(ndif) {
@@ -1417,7 +1417,7 @@ int setupmols(simptr sim) {
 
 		ok=1;															// set any list lookup values that weren't done yet
 		for(i=1;i<mols->nspecies && ok;i++)
-			for(ms=0;ms<MSMAX && ok;ms++)
+			for(ms=(MolecState)0;ms<MSMAX && ok;ms=(MolecState)(ms+1))
 				if(mols->listlookup[i][ms]<0)
 					ok=0;
 		if(!ok) {
@@ -1426,7 +1426,7 @@ int setupmols(simptr sim) {
 				ll=addmollist(sim,"unassignedlist",MLTsystem);
 				if(ll<0) return 1; }
 			for(i=1;i<mols->nspecies;i++)
-				for(ms=0;ms<MSMAX;ms++)
+				for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 					if(mols->listlookup[i][ms]<0)
 						molsetlistlookup(sim,i,ms,ll); }
 
@@ -1584,7 +1584,7 @@ int addsurfmol(simptr sim,int nmol,int ident,enum MolecState ms,double *pos,pane
 		pindex=0;																						// fill in area lookup tables
 		area=0;
 		for(s=slo;s<shi;s++)
-			for(ps=pslo;ps<pshi;ps++) {
+			for(ps=(PanelShape)pslo;ps<pshi;ps=(PanelShape)(ps+1)) {
 				srf=sim->srfss->srflist[s];
 				if(!pname || !strcmp(pname,"all")) {plo=0;phi=srf->npanel[ps];}
 				else if((panel=stringfind(srf->pname[ps],srf->npanel[ps],pname))<0) plo=phi=0;

@@ -207,14 +207,14 @@ int mzrallocstreams(mzrssptr mzrss,int maxstreams) {
 		for(strm=0;strm<maxstreams;strm++) newdisplaysize[strm]=NULL;
 		for(strm=0;strm<maxstreams;strm++) {
 			CHECK(newdisplaysize[strm]=(double*) calloc(MSMAX,sizeof(double)));
-			for(ms=0;ms<MSMAX;ms++) newdisplaysize[strm][ms]=1.0; }
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) newdisplaysize[strm][ms]=1.0; }
 
 		CHECK(newcolor=(double***) calloc(maxstreams,sizeof(double**)));		// allocate color
 		for(strm=0;strm<maxstreams;strm++) newcolor[strm]=NULL;
 		for(strm=0;strm<maxstreams;strm++) {
 			CHECK(newcolor[strm]=(double**) calloc(MSMAX,sizeof(double*)));
-			for(ms=0;ms<MSMAX;ms++) newcolor[strm][ms]=NULL;
-			for(ms=0;ms<MSMAX;ms++) {
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) newcolor[strm][ms]=NULL;
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
 				CHECK(newcolor[strm][ms]=(double*) calloc(3,sizeof(double)));
 				for(c=0;c<3;c++) newcolor[strm][ms][c]=0; }}
 
@@ -222,11 +222,11 @@ int mzrallocstreams(mzrssptr mzrss,int maxstreams) {
 		for(strm=0;strm<maxstreams;strm++) newstrmdifc[strm]=NULL;
 		for(strm=0;strm<maxstreams;strm++) {
 			CHECK(newstrmdifc[strm]=(double*) calloc(MSMAX,sizeof(double)));
-			for(ms=0;ms<MSMAX;ms++) newstrmdifc[strm][ms]=-1.0; }
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) newstrmdifc[strm][ms]=-1.0; }
 
 		for(strm=0;strm<mzrss->nstreams && strm<maxstreams;strm++) {				// copy stuff over
 			strcpy(newstreamname[strm],mzrss->streamname[strm]);
-			for(ms=0;ms<MSMAX;ms++) {
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
 				newdisplaysize[strm][ms]=mzrss->displaysize[strm][ms];
 				for(c=0;c<3;c++)
 					newcolor[strm][ms][c]=mzrss->color[strm][ms][c];
@@ -260,7 +260,7 @@ void mzrfreestreams(char **streamname,double **displaysize,double ***color,doubl
 	if(color) {
 		for(strm=0;strm<maxstreams;strm++)
 			if(color[strm]) {
-				for(ms=0;ms<MSMAX;ms++)
+				for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 					free(color[strm][ms]);
 				free(color[strm]); }
 		free(color); }
@@ -441,7 +441,7 @@ mzrssptr mzrssalloc(void) {
 	mzrss->defaultstate=NULL;
 	mzrss->refspecies=0;
 	mzrss->refmass=0;
-	for(ms=0;ms<MSMAX;ms++) mzrss->refdifc[ms]=0;
+	for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) mzrss->refdifc[ms]=0;
 	return mzrss; }
 
 
@@ -581,7 +581,7 @@ void mzrssoutput(simptr sim) {
 		displaysize=mzrss->displaysize[strm];
 		color=mzrss->color[strm];
 		same=1;
-		for(ms=0;ms<MSMAX && same==1;ms++) {
+		for(ms=(MolecState)0;ms<MSMAX && same==1;ms=(MolecState)(ms+1)) {
 			if(displaysize[ms]!=displaysize[MSsoln]) same=0;
 			if(color[ms][0]!=color[MSsoln][0]) same=0;
 			if(color[ms][1]!=color[MSsoln][1]) same=0;
@@ -589,16 +589,16 @@ void mzrssoutput(simptr sim) {
 		if(same)
 			printf("  %s(all): size %g, color (%g,%g,%g)\n",mzrss->streamname[strm],displaysize[MSsoln],color[MSsoln][0],color[MSsoln][1],color[MSsoln][2]);
 		else {
-			for(ms=0;ms<MSMAX;ms++)
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 				printf("  %s(%s): size %g, color (%g,%g,%g)\n",mzrss->streamname[strm],molms2string(ms,string),displaysize[ms],color[MSsoln][0],color[MSsoln][1],color[MSsoln][2]); }
 		strmdifc=mzrss->strmdifc[strm];
 		same=1;
-		for(ms=0;ms<MSMAX && same==1;ms++)
+		for(ms=(MolecState)0;ms<MSMAX && same==1;ms=(MolecState)(ms+1))
 			if(strmdifc[ms]!=strmdifc[MSsoln]) same=0;
 		if(same)
 			printf("  %s(all): difc %g\n",mzrss->streamname[strm],strmdifc[MSsoln]);
 		else {
-			for(ms=0;ms<MSMAX;ms++)
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 				printf("  %s(%s): difc %g\n",mzrss->streamname[strm],molms2string(ms,string),strmdifc[ms]); }}
 
 	printf(" %i species in hash of %i allocated\n",mzrss->nnamehash,mzrss->maxnamehash);
@@ -629,7 +629,7 @@ void mzrssoutput(simptr sim) {
 
 	if(mzrss->refspecies>0) {
 		printf(" diff. coeff. reference: %s has mass %g\n  and diff. coeffs.",sim->mols->spname[mzrss->refspecies],mzrss->refmass);
-		for(ms=0;ms<MSMAX;ms++)
+		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 			printf(" %g",mzrss->refdifc[ms]);
 		printf("\n"); }
 
@@ -709,7 +709,7 @@ int mzrAssignDiffCoeff(simptr sim,char *tagname,double mass,int ident) {
 	strm--;
 #endif
 
-	for(ms=0;ms<MSMAX;ms++) {
+	for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
 		if(got && mzrss->strmdifc[strm][ms]>=0)
 			molsetdifc(sim,ident,ms,mzrss->strmdifc[strm][ms]);									// call to Smoldyn
 		else if(mzrss->refmass>0 && mass>0)
@@ -787,10 +787,10 @@ int mzrSetStreamDisplay(mzrssptr mzrss,char *streamname,enum MolecState ms,doubl
 		strm=mzrss->nstreams++;
 		strncpy(mzrss->streamname[strm],streamname,STRCHAR); }
 
-	if(ms==MSall) {mslo=0;mshi=MSMAX;}
+	if(ms==MSall) {mslo=(MolecState)0;mshi=(MolecState)MSMAX;}
 	else if(ms==MSnone) return 0;
-	else {mslo=ms;mshi=ms+1;}
-	for(ms1=mslo;ms1<mshi;ms1++) {
+	else {mslo=ms;mshi=(MolecState)(ms+1);}
+	for(ms1=mslo;ms1<mshi;ms1=(MolecState)(ms1+1)) {
 		if(displaysize>=0) mzrss->displaysize[strm][ms1]=displaysize;
 		if(color)
 			for(c=0;c<3;c++) mzrss->color[strm][ms1][c]=color[c]; }
@@ -811,10 +811,10 @@ int mzrSetStreamDifc(mzrssptr mzrss,char *streamname,enum MolecState ms,double d
 		strm=mzrss->nstreams++;
 		strncpy(mzrss->streamname[strm],streamname,STRCHAR); }
 
-	if(ms==MSall) {mslo=0;mshi=MSMAX;}
+	if(ms==MSall) {mslo=(MolecState)0;mshi=(MolecState)MSMAX;}
 	else if(ms==MSnone) return 0;
-	else {mslo=ms;mshi=ms+1;}
-	for(ms1=mslo;ms1<mshi;ms1++)
+	else {mslo=ms;mshi=(MolecState)(ms+1);}
+	for(ms1=mslo;ms1<mshi;ms1=(MolecState)(ms1+1))
 		mzrss->strmdifc[strm][ms1]=difc;
 
 return 0; }

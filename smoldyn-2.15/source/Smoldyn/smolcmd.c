@@ -1057,7 +1057,7 @@ enum CMDcode cmdmeansqrdisp(simptr sim,cmdptr cmd,char *line2) {
 				for(d=0;d<dim;d++)
 					((double**)cmd->v2)[ctr][d]=mlist[m]->posoffset[d]+mlist[m]->pos[d];
 				ctr++; }}
-		sortVliv((long int*)cmd->v1,cmd->v2,cmd->i1); }
+		sortVliv((long int*)cmd->v1,(void**)cmd->v2,cmd->i1); }
 
 	ctr=0;														// start of code that is run every invokation
 	sum=0;
@@ -1156,7 +1156,7 @@ enum CMDcode cmdmeansqrdisp2(simptr sim,cmdptr cmd,char *line2) {
 					v2[ctr][1+d]=v2[ctr][dim+1+d]=mlist[m]->posoffset[d]+mlist[m]->pos[d];
 				ctr++; }}
 		cmd->i3=ctr;
-		if(cmd->i3>0) sortVliv(v1,cmd->v2,cmd->i3); }
+		if(cmd->i3>0) sortVliv(v1,(void**)cmd->v2,cmd->i3); }
 
 	v1=(long int*)cmd->v1;						// start of code that is run every invokation
 	v2=(double**)cmd->v2;
@@ -1177,7 +1177,7 @@ enum CMDcode cmdmeansqrdisp2(simptr sim,cmdptr cmd,char *line2) {
 				for(d=0;d<dim;d++)
 					v2[j][1+d]=v2[j][dim+1+d]=mlist[m]->posoffset[d]+mlist[m]->pos[d]; }}}
 	if(startchar!='i')								// resort lists if appropriate
-		if(cmd->i3>0) sortVliv(v1,cmd->v2,cmd->i3);
+		if(cmd->i3>0) sortVliv(v1,(void**)cmd->v2,cmd->i3);
 
 	for(mom=0;mom<=maxmoment;mom++)
 		sum[mom]=0;
@@ -1214,7 +1214,7 @@ enum CMDcode cmdmeansqrdisp2(simptr sim,cmdptr cmd,char *line2) {
 			cmd->i3--; }
 		else
 			v2[j][0]-=1.0; }
-	if(cmd->i3>0) sortVliv(v1,cmd->v2,cmd->i3);
+	if(cmd->i3>0) sortVliv(v1,(void**)cmd->v2,cmd->i3);
 
 	return CMDok; }
 
@@ -2086,6 +2086,9 @@ int molinpanels(simptr sim,int ll,int m,int s,char pshape) {
 
 
 enum CMDcode cmdPrintProgress(simptr sim, cmdptr cmd, char *line2) {
+	if(line2 && !strcmp(line2,"cmdtype")) {
+		return CMDobserve;
+	}
 	double progress = (sim->time - sim->tmin) / (sim->tmax - sim->tmin);
 	fprintf(stdout, "[[[progress:%lg%%]]]",  progress * 100.0);
 	return CMDok;
@@ -2095,6 +2098,8 @@ enum CMDcode cmdPrintProgress(simptr sim, cmdptr cmd, char *line2) {
 
 #define SIM_FILE_EXT "sim"
 #define LOG_FILE_EXT "log"
+#define ZIP_FILE_EXT "zip"
+#define ZIP_FILE_LIMIT 1E9
 
 #define DATABLOCK_STRING_SIZE  124
 #define MAGIC_STRING "VCell Data Dump"
@@ -2154,63 +2159,55 @@ unsigned char *reverseDouble(double adouble)
 	return longDoubleUnion.array;
 }
 
-enum CMDcode writeDoubles(FILE *fp, double *data, int length) {
+void writeDoubles(FILE *fp, double *data, int length)
+{
 #ifndef INTEL
 	if (fwrite(data, sizeof(double), length, fp)!=length){
-		fprintf(stderr, "DataSet::writeDoubles() - error writing data (UNIX)");
-		return CMDabort;
+		throw "writeDoubles() - error writing data (UNIX)";
 	}
 
 #else
-	int i;
-	for (i = 0; i < length; i ++){
+	for (int i=0;i<length;i++){
 		unsigned char *tempPtr = reverseDouble(data[i]);
 		if (fwrite(tempPtr, sizeof(int32), 2, fp)!=2){
-			fprintf(stderr, "DataSet::writeDoubles() - could not write double value (INTEL)");
-			return CMDabort;
+			throw "writeDoubles() - could not write double value (INTEL)";
 		}
 	}
 #endif
-	return CMDok;
 }
 
-enum CMDcode writeDataBlock(FILE *fp, DataBlock *block) {
+void writeDataBlock(FILE *fp, DataBlock *block)
+{
 #ifndef INTEL
 	if (fwrite(block, sizeof(DataBlock), 1, fp)!=1){
-		fprintf(stderr, "DataSet::writeDataBlock() - error writing data block (UNIX)");
-		return CMDabort;
+		throw "writeDataBlock() - error writing data block (UNIX)";
 	}
 #else
 	if (fwrite(block->varName, sizeof(char), DATABLOCK_STRING_SIZE, fp)!=DATABLOCK_STRING_SIZE){
-		fprintf(stderr, "DataSet::writeDataBlock() - could not write block->varName (INTEL)");
-		return CMDabort;
+		throw "writeDataBlock() - could not write block->varName (INTEL)";
 	}
 	uint32 newLongs[3];
 	newLongs[0] = reverseLong(block->varType);
 	newLongs[1] = reverseLong(block->size);
 	newLongs[2] = reverseLong(block->dataOffset);
 	if (fwrite(newLongs, sizeof(int32), 3, fp)!=3){
-		fprintf(stderr, "DataSet::writeHeader() - could not write dataBlock->longs (INTEL)");
-		return CMDabort;
+		throw "writeHeader() - could not write dataBlock->longs (INTEL)";
 	}
 #endif
-	return CMDok;
 }
 
-enum CMDcode writeHeader(FILE *fp, FileHeader *header) {
+void writeHeader(FILE *fp, FileHeader *header)
+{
 #ifndef INTEL
-	if (fwrite(header, sizeof(FileHeader), 1, fp)!=1) {
-		fprintf(stderr, "DataSet::writeHeader() - could not write header (UNIX)");
-		return CMDabort;
+	if (fwrite(header, sizeof(FileHeader), 1, fp)!=1){
+		throw "writeHeader() - could not write header (UNIX)";
 	}
 #else
-	if (fwrite(header->magicString, sizeof(char), 16, fp) != 16) {
-		fprintf(stderr, "DataSet::writeHeader() - could not write header->magicString (INTEL)");
-		return CMDabort;
+	if (fwrite(header->magicString, sizeof(char), 16, fp)!=16){
+		throw "writeHeader() - could not write header->magicString (INTEL)";
 	}
-	if (fwrite(header->versionString, sizeof(char), 8, fp) != 8) {
-		fprintf(stderr, "DataSet::writeHeader() - could not write header->versionString (INTEL)");
-		return CMDabort;
+	if (fwrite(header->versionString, sizeof(char), 8, fp)!=8){
+		throw "writeHeader() - could not write header->versionString (INTEL)";
 	}
 	uint32 newLongs[5];
 	newLongs[0] = reverseLong(header->numBlocks);
@@ -2218,15 +2215,16 @@ enum CMDcode writeHeader(FILE *fp, FileHeader *header) {
 	newLongs[2] = reverseLong(header->sizeX);
 	newLongs[3] = reverseLong(header->sizeY);
 	newLongs[4] = reverseLong(header->sizeZ);
-	if (fwrite(newLongs, sizeof(int32), 5, fp)!=5){
-		fprintf(stderr, "DataSet::writeHeader() - could not write header->longs (INTEL)");
-		return CMDabort;
+	if (fwrite(newLongs, sizeof(int32), 5, fp)!=5) {
+		throw "writeHeader() - could not write header->longs (INTEL)";
 	}
 #endif
-	return CMDok;
 }
 
-enum CMDcode writeSim(simptr sim, cmdptr cmd, char *line2, char* simfilename) {
+int zip32(int filecnt, char* zipfile, ...);
+#include <sys/stat.h>
+
+void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipFileName) {
 	static int firstrun = 1;
 	static int N[3] = {1,1,1};
 	static double extent[3];
@@ -2237,18 +2235,17 @@ enum CMDcode writeSim(simptr sim, cmdptr cmd, char *line2, char* simfilename) {
 	static DataBlock *dataBlock = NULL;
 	static double *sol = NULL;
 
-	enum CMDcode code = CMDok;
 	molssptr mols = sim->mols;
 
 	if (firstrun) {
 		if (line2 == NULL || strlen(line2) == 0) {
-			fprintf(stderr, "writeOutput : no dimension specified.");
-			return CMDabort;
+			throw "writeOutput : no dimension specified.";
 		}
 		int dimension = sscanf(line2, "%d %d %d", &N[0], &N[1], &N[2]);
 		if (dimension == 0) {
-			fprintf(stderr, "writeOutput : no dimension specified. %d %d %d", N[0], N[1], N[2]);
-			return CMDabort;
+			char errMsg[256];
+			sprintf(errMsg, "writeOutput : no dimension specified. %d %d %d", N[0], N[1], N[2]);
+			throw errMsg;
 		}
 		origin[0] = sim->wlist[0]->pos;
 		extent[0] = sim->wlist[1]->pos - origin[0];
@@ -2283,21 +2280,19 @@ enum CMDcode writeSim(simptr sim, cmdptr cmd, char *line2, char* simfilename) {
 	}
 
 	if (dimension == 0) {
-		return CMDabort;
+		throw "dimension == 0";
 	}
-	FILE* simfp = fopen(simfilename, "wb");
+	FILE* simfp = fopen(simFileName, "wb");
 	if (simfp == NULL){
-		return CMDabort;
+		throw "Cannot open .sim file to write";
 	}
 
-	code = writeHeader(simfp, &fileHeader);
-	if (code == CMDabort) {
-		return code;
-	}
+	writeHeader(simfp, &fileHeader);
 	long ftell_pos = ftell(simfp);
 	if (ftell_pos != fileHeader.firstBlockOffset){
-		fprintf(stderr, "DataSet::write() - file offset for first block is incorrect, ftell() says %ld, should be %d", ftell_pos, fileHeader.firstBlockOffset);
-		return CMDabort;
+		char errMsg[256];
+		sprintf(errMsg, "DataSet::write() - file offset for first block is incorrect, ftell() says %ld, should be %d", ftell_pos, fileHeader.firstBlockOffset);
+		throw errMsg;
 	}
 
 	//
@@ -2313,10 +2308,7 @@ enum CMDcode writeSim(simptr sim, cmdptr cmd, char *line2, char* simfilename) {
 		dataBlock[blockIndex].varType = VAR_VOLUME;
 		dataBlock[blockIndex].size = varSize;
 		dataBlock[blockIndex].dataOffset = dataOffset;
-		code = writeDataBlock(simfp, dataBlock + blockIndex);
-		if (code == CMDabort) {
-			return code;
-		}
+		writeDataBlock(simfp, dataBlock + blockIndex);
 		dataOffset += dataBlock[blockIndex].size * sizeof(double);
 		blockIndex ++;
 	}
@@ -2353,28 +2345,79 @@ enum CMDcode writeSim(simptr sim, cmdptr cmd, char *line2, char* simfilename) {
 	for (v = 0; v < numVars; v ++) {
 		ftell_pos = ftell(simfp);
 		if (ftell_pos != dataBlock[blockIndex].dataOffset){
-			fprintf(stderr, "DataSet::write() - offset for data is "
+			char errMsg[256];
+			sprintf(errMsg, "DataSet::write() - offset for data is "
 				"incorrect (block %d, var=%s), ftell() says %ld, should be %d", blockIndex, dataBlock[blockIndex].varName,
 				ftell_pos, dataBlock[blockIndex].dataOffset);
-			return CMDabort;
+			throw errMsg;
 		}
-		code = writeDoubles(simfp, sol + v * varSize, varSize);
-		if (code == CMDabort) {
-			return code;
-		}
+		writeDoubles(simfp, sol + v * varSize, varSize);
 		blockIndex ++;
 	}
 	fclose(simfp);
+
+	int retcode = zip32(1, zipFileName, simFileName);
+	remove(simFileName);
+	if (retcode != 0) {
+		char errMsg[256];
+		sprintf(errMsg, "Writing zip file <%s> failed, return code is %d", zipFileName, retcode);
+		throw errMsg;
+	}
+
 	if (fabs(sim->tmax - sim->time) < 1e-12) {
 		free(dataBlock);
 		free(sol);
 	}
-	return CMDok;
+}
+
+int getZipCount(char* zipFileName) {
+	char* p = strstr(zipFileName, ZIP_FILE_EXT);
+	if (p == NULL) {
+		return -1;
+	}
+
+	char str[3];
+	strncpy(str, p - 2, 2 * sizeof(char));
+	str[2] = 0;
+	return atoi(str);
+}
+
+void clearLog(char* baseFileName) {
+
+	FILE *fp;
+	char logFileName[256];
+
+	sprintf(logFileName,"%s.%s",baseFileName, LOG_FILE_EXT);
+	if ((fp=fopen(logFileName, "r"))==NULL){
+		printf("error opening log file <%s>\n", logFileName);
+		return;
+	}
+
+	char simFileName[128];
+	char zipFileName[128];
+	int iteration, oldCount=-1, count;
+	double time;
+
+	while (!feof(fp)) {
+		fscanf(fp,"%4d %s %s %lg\n", &iteration, simFileName, zipFileName, &time);
+		count = getZipCount(zipFileName);
+		if (oldCount != count && count >= 0) {
+			printf("clearLog(), removing zip file %s\n", zipFileName);
+			remove(zipFileName);
+			oldCount = count;
+		}
+	}
+	fclose(fp);
+
+	printf("clearLog(), removing log file %s\n", logFileName);
+	remove(logFileName);
 }
 
 enum CMDcode cmdWriteOutput(simptr sim, cmdptr cmd, char *line2) {
 	static int simFileCount = 0;
+	static int zipFileCount = 0;
 	static char baseFileName[256];
+	static char baseSimName[256];
 
 	if(line2 && !strcmp(line2,"cmdtype")) {
 		return CMDobserve;
@@ -2387,15 +2430,21 @@ enum CMDcode cmdWriteOutput(simptr sim, cmdptr cmd, char *line2) {
 		strcat(baseFileName, fname);
 		char* p = strrchr(baseFileName, '.');
 		*p = '\0';
+
+		strcpy(baseSimName, fname);
+		p = strrchr(baseSimName, '.');
+		*p = '\0';
+
+		clearLog(baseFileName);
 	}
 
 	// write sim file
-	char simfilename[256];
-	sprintf(simfilename, "%s%.4d.%s", baseFileName, simFileCount, SIM_FILE_EXT);
-	enum CMDcode code = writeSim(sim, cmd, line2, simfilename);
-	if (code == CMDabort) {
-		return code;
-	}
+	char simFileName[256];
+	char zipFileName[256];
+	sprintf(simFileName, "%s%.4d.%s", baseSimName, simFileCount, SIM_FILE_EXT);
+	sprintf(zipFileName, "%s%.2d.%s", baseFileName, zipFileCount, ZIP_FILE_EXT);
+
+	writeSim(sim, cmd, line2, simFileName, zipFileName);
 
 	// write log file
 	char logfilename[256];
@@ -2410,11 +2459,19 @@ enum CMDcode cmdWriteOutput(simptr sim, cmdptr cmd, char *line2) {
 		return CMDabort;
 	}
 	int iteration = (int)(sim->time/sim->dt + 0.5);
-	fprintf(logfp,"%4d %s %.15lg\n", iteration, simfilename, sim->time);
+	fprintf(logfp,"%4d %s %s %.15lg\n", iteration, simFileName, zipFileName, sim->time);
+//	fprintf(logfp,"%4d %s %.15lg\n", iteration, simfilename, sim->time);
 	fclose(logfp);
 
 	// print message
 	fprintf(stdout, "[[[data:%lg]]]",  sim->time);
 	simFileCount ++;
+
+	struct stat buf;
+	if (stat(zipFileName, &buf) == 0) { // if exists
+		if (buf.st_size > ZIP_FILE_LIMIT) {
+			zipFileCount ++;
+		}
+	}
 	return CMDok;
 }

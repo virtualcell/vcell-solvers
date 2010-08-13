@@ -436,13 +436,13 @@ int scmdsetfnames(cmdssptr cmds,char *str) {
 	if(!cmds) return 4;
 	if(++ctr) return 3;
 	cmds->nfile=wordcount(str);
-	cmds->fname=calloc(cmds->nfile,sizeof(char*));
+	cmds->fname=(char**)calloc(cmds->nfile,sizeof(char*));
 	if(!cmds->fname) return 1;
 	for(i=0;i<cmds->nfile;i++) cmds->fname[i]=NULL;
 	for(i=0;i<cmds->nfile;i++) {
 		cmds->fname[i]=EmptyString();
 		if(!cmds->fname[i]) return 1; }
-	cmds->fptr=calloc(cmds->nfile,sizeof(FILE*));
+	cmds->fptr=(FILE**)calloc(cmds->nfile,sizeof(FILE*));
 	if(!cmds->fptr) return 1;
 	for(i=0;i<cmds->nfile;i++) cmds->fptr[i]=NULL;
 	for(i=0;i<cmds->nfile;i++) {

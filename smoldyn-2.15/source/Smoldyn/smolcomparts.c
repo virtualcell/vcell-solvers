@@ -80,7 +80,7 @@ int posincompart(simptr sim,double *pos,compartptr cmpt) {
 		pcross=0;
 		for(s=0;s<cmpt->nsrf&&!pcross;s++) {
 			srf=cmpt->surflist[s];
-			for(ps=0;ps<PSMAX&&!pcross;ps++)
+			for(ps=(PanelShape)0;ps<PSMAX&&!pcross;ps=(PanelShape)(ps+1))
 				for(p=0;p<srf->npanel[ps]&&!pcross;p++)
 					if(lineXpanel(pos,cmpt->points[k],srf->panels[ps][p],sim->dim,crsspt,NULL,NULL,NULL,NULL)) 
 						pcross=1; }

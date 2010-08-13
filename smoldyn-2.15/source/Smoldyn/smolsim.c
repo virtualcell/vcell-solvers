@@ -119,7 +119,7 @@ simptr simalloc(char *fileroot) {
 	sim->clockstt=time(NULL);
 	sim->elapsedtime=0;
 	sim->randseed=randomize(-1);
-	for(et=0;et<ETMAX;et++) sim->eventcount[et]=0;
+	for(et=(EventType)0;et<ETMAX;et=(EventType)(et+1)) sim->eventcount[et]=0;
 	sim->dim=0;
 	sim->accur=10;
 	sim->time=0;

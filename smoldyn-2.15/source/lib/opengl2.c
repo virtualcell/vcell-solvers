@@ -502,13 +502,13 @@ char *gl2SetOptionStr(char *option,char *value) {
 /* gl2SetOptionVoid */
 char *gl2SetOptionVoid(char *option,void *value) {
 	if(!strcmp(option,"FreeFunc")) {
-		if(value) FreeFunc=value;
-		else value=FreeFunc; }
+		if(value) FreeFunc=(void (*)(void*))value;
+		else value=(void*)FreeFunc; }
 	else if(!strcmp(option,"FreePointer")) {
 		if(value) FreePointer=value;
 		else value=FreePointer; }
 	else value=NULL;
-	return value; }
+	return (char*)value; }
 
 
 /* gl2SetKeyPush */

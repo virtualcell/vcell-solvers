@@ -21,7 +21,7 @@ void reset_stack_memory(stack* pStack);
 // alloc_stack.  Returns a new stack whole hog.  
 stack* alloc_stack()
 {
-    stack* new_stack = malloc( sizeof(struct stackstruct) );
+    stack* new_stack = (stack*)malloc( sizeof(struct stackstruct) );
 
     size_t total_size = BASE_STACK_SIZE;
 
@@ -88,7 +88,7 @@ void push_data_onto_stack(stack* pStack, void* data, size_t data_size)
     while( pStack->max_size < pStack->current_size + data_size)
 	double_stack_memory( pStack);
 
-    memcpy(pStack->stack_data + pStack->current_size, data, data_size);
+    memcpy((char*)pStack->stack_data + pStack->current_size, data, data_size);
     pStack->current_size += data_size;
 }
 
@@ -158,10 +158,10 @@ void balance( int** list_to_balance, int* sizes_of_dataset, int number_of_sets ,
 
 threadptr alloc_thread()
 {
-    threadptr thread = malloc(sizeof(struct threadstruct));
+    threadptr thread = (threadptr)malloc(sizeof(struct threadstruct));
     
 #ifdef THREADING
-    thread->thread_id = malloc(sizeof(pthread_t));
+    thread->thread_id = (thread_t)malloc(sizeof(pthread_t));
 #else
     thread->thread_id = NULL;
 #endif
@@ -191,11 +191,11 @@ int calculatestride(int total_number, int number_threads)
 threadssptr alloc_threadss(int numberThreads)
 {
     int thread_ndx;
-    threadssptr new_threads = malloc(sizeof(struct threadingsuperstruct));
+    threadssptr new_threads = (threadssptr)malloc(sizeof(struct threadingsuperstruct));
 
     new_threads->nthreads = numberThreads;
 
-    new_threads->thread = malloc( numberThreads * sizeof(struct threadstruct));
+    new_threads->thread = (threadptr*)malloc( numberThreads * sizeof(struct threadstruct));
 
     for(thread_ndx = 0; thread_ndx != numberThreads; ++thread_ndx)
     {
