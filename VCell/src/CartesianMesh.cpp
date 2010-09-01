@@ -2246,9 +2246,6 @@ int CartesianMesh::computeN(int startingIndex, CurvePlane curvePlane, vector<dou
 	if (numPoints == 1) {
 		return 0;
 	}
-	if (numPoints <= 6) {
-		return 1;
-	}
 	double maxX = 1E-10, maxY = 1E-10;
 	double minX = 1E10, minY = 1E10;
 	for (int i = 0; i < numPoints; i ++) {
@@ -2292,6 +2289,9 @@ int CartesianMesh::computeN(int startingIndex, CurvePlane curvePlane, vector<dou
 	//
 	WorldCoord left(0,0,0), right(0,0,0);
 	if (bClose) {
+		if (numPoints <= 6) {
+			return 1;
+		}
 		left.x = curvex[(currentMeIndexInVector - nwave + numPoints) % numPoints] - curvex[currentMeIndexInVector];
 		left.y = curvey[(currentMeIndexInVector - nwave + numPoints) % numPoints] - curvey[currentMeIndexInVector];
 		right.x = curvex[(currentMeIndexInVector + nwave) % numPoints] - curvex[currentMeIndexInVector];
