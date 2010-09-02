@@ -560,6 +560,10 @@ char* SimulationMessaging::getStatusString(jint status) {
 
 SimulationMessaging* SimulationMessaging::create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, jint simKey, jint jobIndex, jint taskID, jint ttl)
 {
+	if (m_inst != NULL && m_inst->workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
+		delete m_inst;
+		m_inst = NULL;
+	}
 	if (m_inst == NULL){    
         m_inst = new SimulationMessaging(broker, smqusername, passwd, qname, tname, vcusername, simKey, jobIndex, taskID, ttl);
 	}
