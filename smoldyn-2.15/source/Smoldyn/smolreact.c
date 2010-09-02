@@ -2301,7 +2301,7 @@ int unireact_threaded(simptr sim) {//?????????? new function, not documented
 		    theParams.output_stack = sim->threads->thread[thread_ndx]->output_stack;
 
 		    push_data_onto_stack( current_thread_input_stack, &theParams, sizeof(theParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
-		    pthread_create(sim->threads->thread[thread_ndx]->thread_id, NULL, unireact_threaded_calculate_reactions, (void*) current_thread_input_stack->stack_data);
+		    pthread_create((pthread_t*)sim->threads->thread[thread_ndx]->thread_id, NULL, unireact_threaded_calculate_reactions, (void*) current_thread_input_stack->stack_data);
 		}
 		{ // Create the last thread
 		    clearthreaddata( sim->threads->thread[nthreads - 1]);
@@ -2310,7 +2310,7 @@ int unireact_threaded(simptr sim) {//?????????? new function, not documented
 		    theParams.mol_ndx2 = total_num_to_process;
 		    theParams.output_stack = sim->threads->thread[nthreads-1]->output_stack;
 		    push_data_onto_stack( current_thread_input_stack, &theParams, sizeof(theParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
-		    pthread_create(sim->threads->thread[nthreads-1]->thread_id, NULL, unireact_threaded_calculate_reactions, (void*) current_thread_input_stack->stack_data);
+		    pthread_create((pthread_t*)sim->threads->thread[nthreads-1]->thread_id, NULL, unireact_threaded_calculate_reactions, (void*) current_thread_input_stack->stack_data);
 		}
 
 		// Join thread and process data.
@@ -2769,7 +2769,7 @@ int bireact_threaded_interbox(simptr sim)
 		    inputParams.output_stack = sim->threads->thread[thread_ndx]->output_stack;
 
 		    push_data_onto_stack( current_thread_input_stack, &inputParams, sizeof(inputParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
-		    pthread_create(sim->threads->thread[thread_ndx]->thread_id, NULL, check_for_interbox_bireactions_threaded, (void*) current_thread_input_stack->stack_data);
+		    pthread_create((pthread_t*)sim->threads->thread[thread_ndx]->thread_id, NULL, check_for_interbox_bireactions_threaded, (void*) current_thread_input_stack->stack_data);
 
 		}
 		{   // Process the last index seperately, because it will have an odd number of molecules to process....
@@ -2782,7 +2782,7 @@ int bireact_threaded_interbox(simptr sim)
 		    inputParams.output_stack = sim->threads->thread[nthreads - 1]->output_stack;
 
 		    push_data_onto_stack( current_thread_input_stack, &inputParams, sizeof(inputParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
-		    pthread_create(sim->threads->thread[nthreads - 1]->thread_id, NULL, check_for_interbox_bireactions_threaded, (void*) current_thread_input_stack->stack_data);
+		    pthread_create((pthread_t*)sim->threads->thread[nthreads - 1]->thread_id, NULL, check_for_interbox_bireactions_threaded, (void*) current_thread_input_stack->stack_data);
 		}
 
 		// Join all the threads.

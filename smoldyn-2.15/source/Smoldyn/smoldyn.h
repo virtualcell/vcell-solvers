@@ -780,7 +780,7 @@ stack* alloc_stack(); // Creates a new stack
 void free_stack(stack* pStack); // Frees the stack
 void push_data_onto_stack(stack* pStack, void* data, size_t data_size);
 void clear_stack(stack* pStack);
-threadssptr alloc_threadss();
+threadssptr alloc_threadss(int numberThreads);
 int calculatestride(int total_number, int number_threads);
 
 /********************************* Graphics *********************************/

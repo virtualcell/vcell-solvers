@@ -161,7 +161,15 @@ checks the command line arguments, prints a greeting, inputs the configuration
 file name from the user, and then calls setupsim to load the configuration
 file and set up all the structures.  If all goes well, it calls simulate or
 simulategl to run the simulation. */
+
+#include <VCELL/SimulationMessaging.h>
+int taskID = -1;
+
 int main(int argc,char *argv[]) {
+	char errorMsg[2048];
+	int returnCode = 0;
+
+	try {
   simptr sim;
   int i,er,pflag,qflag,wflag,tflag,Vflag,oflag;
   char root[STRCHAR],fname[STRCHAR],flags[STRCHAR],*cptr;
@@ -183,10 +191,12 @@ int main(int argc,char *argv[]) {
 		argv++; }
 	if(argc>1) {
 		if(argv[1][0]=='-') {
-			strncpy(flags,argv[1],STRCHAR-1);
-			flags[STRCHAR-1]='\0';
-			argc--;
-			argv++; }
+			if (strcmp(argv[1], "-tid")) {
+				strncpy(flags,argv[1],STRCHAR-1);
+				flags[STRCHAR-1]='\0';
+				argc--;
+				argv++; }
+		}
 		else {
 			fprintf(stderr,"Command line format: smoldyn [config_file] [-options] [-OpenGL_options]\n");
 			return 0; }}
@@ -210,6 +220,22 @@ int main(int argc,char *argv[]) {
 		return 0; }
 	sim=NULL;
 
+	if (argc > 1) {
+		if (!strcmp(argv[1], "-tid")) {
+			argc --;
+			argv ++;
+
+			sscanf(argv[1], "%d", &taskID);
+			argc --;
+			argv ++;
+		}
+	}
+	printf("----taskID=%d\n", taskID);
+	if (taskID < 0) {
+		// in case no jms in input file
+		SimulationMessaging::create();
+	}
+
 	er=setupsim(root,fname,&sim,flags);
 	if(!oflag && !pflag && !er) er=scmdopenfiles(sim->cmds,wflag);
 	if(pflag || er) {
@@ -218,16 +244,38 @@ int main(int argc,char *argv[]) {
 		fflush(stdout);
 		fflush(stderr);
     if(tflag || !sim->graphss || sim->graphss->graphics==0) {
-    	er=smolsimulate(sim);
-    	endsimulate(sim,er); }
+
+     	er=smolsimulate(sim);
+    	endsimulate(sim,er);
+    	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1.0, sim->time));	}
 		else {
 			gl2glutInit(&argc,argv);
 			smolsimulategl(sim); }}
 	simfree(sim);
+	} catch (const char *exStr){
+		strcpy(errorMsg, exStr);
+		returnCode = 1;
+	} catch (int stop) {
+		// stopped by user
+	}
+
+	if (SimulationMessaging::getInstVar() == NULL) {
+		if (returnCode != 0) {
+			fprintf(stderr, "%s\n", errorMsg);
+		}
+	} else if (!SimulationMessaging::getInstVar()->isStopRequested()) {
+		if (returnCode != 0) {
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_FAILURE, errorMsg));
+		}
+#ifdef USE_MESSAGING
+		SimulationMessaging::getInstVar()->waitUntilFinished();
+#endif
+	}
+	delete SimulationMessaging::getInstVar();
 
 //	cptr=getenv("OS");
 //	if(cptr!=NULL && strstr(cptr,"Windows")) {			// true for a Windows system
 //		printf("Press ENTER to close window\n");
 //		getchar(); }
-  return 0; }
+  return returnCode; }
 

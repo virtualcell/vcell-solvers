@@ -1322,6 +1322,64 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
  failure:
 	return 1; }
 
+#include <VCELL/SimulationMessaging.h>
+extern int taskID;
+int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
+
+	char word[STRCHAR];
+	ParseFilePtr pfp = *pfpptr;
+	int done = 0, pfpcode;
+	bool firstline2 = (line2 != NULL);
+	while(!done) {
+		if (firstline2) {
+			strcpy(word,"name");
+			pfpcode=1;
+			firstline2 = false;
+		} else {
+			pfpcode=Parse_ReadLine(&pfp,word,&line2,erstr);
+		}
+		*pfpptr=pfp;
+		CHECKS(pfpcode!=3,erstr);
+
+		if(pfpcode==0);	// already taken care of
+
+		else if(pfpcode==2) { // end reading
+			done = 1;
+		} else if(pfpcode==3) {	// error
+			CHECKS(0,"SMOLDYN BUG: parsing error");
+		} else if(!strcmp(word,"end_jms")) {  // end_jms
+			CHECKS(!line2,"unexpected text following end_jms");
+			break;
+		} else if(!line2) {															// just word
+			CHECKS(0,"missing jms parameters");
+		} else {
+#ifdef USE_MESSAGING
+			if (taskID >= 0) {
+				printf("-------taskID=%d\n", taskID);
+				char *jmsBroker = new char[64];
+				char *jmsUser = new char[64];
+				char* jmsPwd = new char[64];
+				char* jmsQueue = new char[64];
+				char* jmsTopic = new char[64];
+				char* vcellUser = new char[64];
+				int simKey, jobIndex;
+				sscanf(line2, "%s%s%s%s%s%s%d%d", jmsBroker, jmsUser, jmsPwd, jmsQueue, jmsTopic, vcellUser, &simKey, &jobIndex);
+				SimulationMessaging::create(jmsBroker, jmsUser, jmsPwd, jmsQueue, jmsTopic, vcellUser, simKey, jobIndex, taskID);
+				SimulationMessaging::getInstVar()->start(); // start the thread
+			} else {
+				SimulationMessaging::create();
+			}
+#else
+			SimulationMessaging::create();
+#endif
+		}
+	}
+	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "setting up simulation"));
+	return 0;
+
+failure:		// failure
+	return 1;
+}
 
 /* loadsim loads all simulation parameters from a configuration file, using a
 format described above.  fileroot is sent in as the root of the filename,
@@ -1369,6 +1427,9 @@ int loadsim(simptr sim,char *fileroot,char *filename,char *erstr,char *flags) {
 
 		else if(pfpcode==3) {													// error
 			CHECKS(0,"SMOLDYN BUG: parsing error"); }
+
+		else if(!strcmp(word,"start_jms")) {			// jms settings
+			CHECKS(!loadJMS(sim,&pfp,line2,erstr),erstr); }
 
 		else if(!strcmp(word,"start_reaction")) {			// start_reaction
 			CHECKS(sim->mols,"need to enter max_species before reactions");
@@ -1782,9 +1843,11 @@ the end, it calls endsimulate and returns. */
 int smolsimulate(simptr sim) {
 	int er,qflag;
 
+	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "starting simulation"));
+
 	er=0;
-	qflag=strchr(sim->flags,'q')?1:0;
-	if(!qflag) printf("Starting simulation\n");
+	//qflag=strchr(sim->flags,'q')?1:0;
+	//if(!qflag) printf("Starting simulation\n");
 	sim->clockstt=time(NULL);
 	while((er=simulatetimestep(sim))==0);
 	sim->elapsedtime+=difftime(time(NULL),sim->clockstt);

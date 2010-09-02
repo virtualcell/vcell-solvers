@@ -1919,7 +1919,7 @@ int diffuse_threaded(simptr sim) {//??????????? new function
 		    currentNdx += per_thread_size;
 		    push_data_onto_stack(current_thread_input_stack, &currentNdx, sizeof(currentNdx));
 		    
-		    pthread_create(sim->threads->thread[thread_ndx]->thread_id, NULL, diffuseLiveList_threaded, (void*) current_thread_input_stack->stack_data);
+		    pthread_create((pthread_t*)sim->threads->thread[thread_ndx]->thread_id, NULL, diffuseLiveList_threaded, (void*) current_thread_input_stack->stack_data);
 		}
 		{
 		    thread_ndx = num_threads - 1;
@@ -1932,7 +1932,7 @@ int diffuse_threaded(simptr sim) {//??????????? new function
 		    push_data_onto_stack(current_thread_input_stack, &currentNdx, sizeof(currentNdx));
 		    push_data_onto_stack(current_thread_input_stack, &mols->nl[livelist_ndx], sizeof(int));
 
-		    pthread_create(sim->threads->thread[thread_ndx]->thread_id, NULL, diffuseLiveList_threaded, (void*) current_thread_input_stack->stack_data);
+		    pthread_create((pthread_t*)sim->threads->thread[thread_ndx]->thread_id, NULL, diffuseLiveList_threaded, (void*) current_thread_input_stack->stack_data);
 		}
 
 		int ndx;

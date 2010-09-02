@@ -2085,16 +2085,20 @@ int molinpanels(simptr sim,int ll,int m,int s,char pshape) {
 	return 0; }
 
 
+#include <VCELL/SimulationMessaging.h>
+
 enum CMDcode cmdPrintProgress(simptr sim, cmdptr cmd, char *line2) {
 	if(line2 && !strcmp(line2,"cmdtype")) {
 		return CMDobserve;
 	}
 	double progress = (sim->time - sim->tmin) / (sim->tmax - sim->tmin);
-	fprintf(stdout, "[[[progress:%lg%%]]]",  progress * 100.0);
+	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, progress, sim->time));
+	//fprintf(stdout, "[[[progress:%lg%%]]]",  progress * 100.0);
+	if (SimulationMessaging::getInstVar()->isStopRequested()) {
+		throw -1;
+	}
 	return CMDok;
 }
-
-#define INTEL
 
 #define SIM_FILE_EXT "sim"
 #define LOG_FILE_EXT "log"
@@ -2332,7 +2336,7 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 					}
 				}
 
-				int volIndex = k * (N[1] + N[0]) + j * N[0] + i;
+				int volIndex = k * N[1] * N[0] + j * N[0] + i;
 				sol[varIndex * varSize + volIndex] ++;
 			}
 		}
@@ -2464,7 +2468,7 @@ enum CMDcode cmdWriteOutput(simptr sim, cmdptr cmd, char *line2) {
 	fclose(logfp);
 
 	// print message
-	fprintf(stdout, "[[[data:%lg]]]",  sim->time);
+	//fprintf(stdout, "[[[data:%lg]]]",  sim->time);
 	simFileCount ++;
 
 	struct stat buf;
@@ -2473,5 +2477,8 @@ enum CMDcode cmdWriteOutput(simptr sim, cmdptr cmd, char *line2) {
 			zipFileCount ++;
 		}
 	}
+	double progress = (sim->time - sim->tmin) / (sim->tmax - sim->tmin);
+	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, sim->time));
 	return CMDok;
 }
+

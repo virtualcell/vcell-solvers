@@ -3393,7 +3393,7 @@ int checksurfaces_threaded( simptr sim, int ll, int reborn) { //????????? new fu
 		theParams.output_stack = sim->threads->thread[ thread_ndx ]->output_stack;
 
 		push_data_onto_stack( current_thread_input_stack, &theParams, sizeof(theParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
-		pthread_create(sim->threads->thread[thread_ndx]->thread_id, NULL, check_surfaces_on_subset_mols, (void*) current_thread_input_stack->stack_data); }
+		pthread_create((pthread_t*)sim->threads->thread[thread_ndx]->thread_id, NULL, check_surfaces_on_subset_mols, (void*) current_thread_input_stack->stack_data); }
 	{
 	clearthreaddata( sim->threads->thread[nthreads - 1]);
 	current_thread_input_stack = sim->threads->thread[nthreads-1]->input_stack;
@@ -3402,7 +3402,7 @@ int checksurfaces_threaded( simptr sim, int ll, int reborn) { //????????? new fu
 	theParams.output_stack = sim->threads->thread[nthreads-1]->output_stack;
 
 	push_data_onto_stack( current_thread_input_stack, &theParams, sizeof(theParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
-	pthread_create(sim->threads->thread[thread_ndx]->thread_id, NULL, check_surfaces_on_subset_mols, (void*) current_thread_input_stack->stack_data);
+	pthread_create((pthread_t*)sim->threads->thread[thread_ndx]->thread_id, NULL, check_surfaces_on_subset_mols, (void*) current_thread_input_stack->stack_data);
 	}
 
 	for( thread_ndx = 0; thread_ndx != nthreads; ++thread_ndx) {
