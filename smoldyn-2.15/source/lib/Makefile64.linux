@@ -1,6 +1,6 @@
-CC = gcc
+CC = g++
 
-CPPFLAGS = -c -DHAVE_CONFIG_H -I. -I. -I../ -Wall -I.  -O2
+CPPFLAGS = -c -DHAVE_CONFIG_H -I. -I../ -Wall -I.  -O2
 
 SMOLDYN_LIB = libsmoldyn.a
 

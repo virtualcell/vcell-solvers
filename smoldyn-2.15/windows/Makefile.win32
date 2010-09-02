@@ -24,7 +24,7 @@ TIFFL = $(MINGW)/lib
 
 # Compiler name and basic options
 CC = $(MINGW)/bin/g++
-CFLAGS = -Wall -O2 -I$(SSA) -I$(SMOL) -I../Windows
+CFLAGS = -Wall -O2 -DINTEL -I$(SSA) -I$(SMOL) -I../windows -I../../VCell/include
 LINKFLAGS = -L$(LDFLAGS)
 LIBS = -L../../zip -lzip32
 
@@ -56,12 +56,15 @@ OBJECTS = Geometry.o math2.o opengl2.o parse.o queue.o random2.o Rn.o RnSort.o r
 
 OBJECTS += $(SFMTOBJECTS)
 
-all : $(OBJECTS)
-	$(CC) -v $(CFLAGS) $(LINKFLAGS) -o smoldyn.exe $(OBJECTS) $(LIBS)
+all : $(OBJECTS) SimulationMessaging.o
+	$(CC) -v $(CFLAGS) $(LINKFLAGS) -o smoldyn.exe $(OBJECTS) SimulationMessaging.o $(LIBS)
 
 $(OBJECTS) :
 	$(CC) $(CFLAGS) -c $<
 
+SimulationMessaging.o : ../../VCell/include/VCELL/SimulationMessaging.h ../../VCell/src/SimulationMessaging.cpp
+	$(CC) $(CFLAGS) -c ../../VCell/src/SimulationMessaging.cpp
+	
 Geometry.o : $(SSA)/Geometry.c $(SSA)/Geometry.h $(SSA)/math2.h
 math2.o : $(SSA)/math2.c $(SSA)/math2.h
 opengl2.o : $(SSA)/opengl2.c $(SSA)/opengl2.h $(SSA)/math2.h $(SSA)/random2.h $(SSA)/string2.h

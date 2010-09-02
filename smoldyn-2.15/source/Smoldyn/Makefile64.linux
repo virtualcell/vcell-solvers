@@ -1,12 +1,13 @@
-CC = gcc
+CC = g++
 
-CPPFLAGS = -DHAVE_CONFIG_H -I.. -I. -I../lib -Wall -I../lib  -O2
-LIBS = -L../lib -lsmoldyn -lm -pthread
+CPPFLAGS = -c -O2 -DHAVE_CONFIG_H -DINTEL -DUNIX -DLINUX64 -D__USE_GNU -DUSE_MESSAGING -I. -I.. -I../lib -Wall -I../../../VCell/include  \
+		-I../../../SonicCClient64/Linux_AS4_64/include/CPP -I../../../SonicCClient64/Linux_AS4_64/include 
+LIBS = -L../lib -lsmoldyn -L../../../SonicCClient64/Linux_AS4_64/bin/release/ -L../../../zip -lzip32 -lsmq -lm -pthread
 
 SMOLDYN = smoldyn
 
 			
-%.o : %.cpp
+%.o : %.c
 	$(CC) $(CPPFLAGS) $<
 
 default all : $(SMOLDYN)
@@ -25,14 +26,17 @@ CPPOBJECTS = smolboxes.o \
 			smolthread.o	\
 			smolwall.o
 			
-$(SMOLDYN) : $(CPPOBJECTS)
-	$(CC) -o $@ $(CPPOBJECTS) $(LIBS)
+$(SMOLDYN) : $(CPPOBJECTS) SimulationMessaging.o
+	$(CC) -o $@ $(CPPOBJECTS) SimulationMessaging.o $(LIBS)
 
+SimulationMessaging.o : ../../../VCell/include/VCELL/SimulationMessaging.h ../../../VCell/src/SimulationMessaging.cpp
+	$(CC) $(CPPFLAGS) ../../../VCell/src/SimulationMessaging.cpp
+	
 clean:
-	rm $(SMOLDYN) $(CPPOBJECTS)
+	rm $(SMOLDYN) $(CPPOBJECTS) SimulationMessaging.o
 	
 depend:
-	makedepend -Y -f Makefile64.linux -- $(CFLAGS) -- *.c *.cpp
+	makedepend -Y -f Makefile64.linux -- $(CPPFLAGS) -- *.c ../../../VCell/src/SimulationMessaging.cpp
 # DO NOT DELETE
 
 smolboxes.o: smoldyn.h

@@ -170,6 +170,8 @@ int main(int argc,char *argv[]) {
 	int returnCode = 0;
 
 	try {
+		SimulationMessaging::create();
+
   simptr sim;
   int i,er,pflag,qflag,wflag,tflag,Vflag,oflag;
   char root[STRCHAR],fname[STRCHAR],flags[STRCHAR],*cptr;
@@ -191,6 +193,9 @@ int main(int argc,char *argv[]) {
 		argv++; }
 	if(argc>1) {
 		if(argv[1][0]=='-') {
+			// -tid is always at the end of argument list
+			// and it is used in conjunction with PBS
+			// should not be used when called from command line manually
 			if (strcmp(argv[1], "-tid")) {
 				strncpy(flags,argv[1],STRCHAR-1);
 				flags[STRCHAR-1]='\0';
@@ -230,11 +235,6 @@ int main(int argc,char *argv[]) {
 			argv ++;
 		}
 	}
-	printf("----taskID=%d\n", taskID);
-	if (taskID < 0) {
-		// in case no jms in input file
-		SimulationMessaging::create();
-	}
 
 	er=setupsim(root,fname,&sim,flags);
 	if(!oflag && !pflag && !er) er=scmdopenfiles(sim->cmds,wflag);
@@ -244,8 +244,7 @@ int main(int argc,char *argv[]) {
 		fflush(stdout);
 		fflush(stderr);
     if(tflag || !sim->graphss || sim->graphss->graphics==0) {
-
-     	er=smolsimulate(sim);
+    	er=smolsimulate(sim);
     	endsimulate(sim,er);
     	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1.0, sim->time));	}
 		else {

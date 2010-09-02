@@ -1355,7 +1355,6 @@ int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 		} else {
 #ifdef USE_MESSAGING
 			if (taskID >= 0) {
-				printf("-------taskID=%d\n", taskID);
 				char *jmsBroker = new char[64];
 				char *jmsUser = new char[64];
 				char* jmsPwd = new char[64];
@@ -1366,11 +1365,7 @@ int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 				sscanf(line2, "%s%s%s%s%s%s%d%d", jmsBroker, jmsUser, jmsPwd, jmsQueue, jmsTopic, vcellUser, &simKey, &jobIndex);
 				SimulationMessaging::create(jmsBroker, jmsUser, jmsPwd, jmsQueue, jmsTopic, vcellUser, simKey, jobIndex, taskID);
 				SimulationMessaging::getInstVar()->start(); // start the thread
-			} else {
-				SimulationMessaging::create();
 			}
-#else
-			SimulationMessaging::create();
 #endif
 		}
 	}
