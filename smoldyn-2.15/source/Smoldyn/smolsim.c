@@ -1836,7 +1836,7 @@ void endsimulate(simptr sim,int er) {
 nothing other than running simulatetimestep until the simulation terminates.  At
 the end, it calls endsimulate and returns. */
 int smolsimulate(simptr sim) {
-	int er,qflag;
+	int er/*,qflag*/;
 
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "starting simulation"));
 

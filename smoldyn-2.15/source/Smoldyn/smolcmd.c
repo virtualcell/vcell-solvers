@@ -23,8 +23,8 @@ of the Gnu Lesser General Public License (LGPL). */
 /******************** command declarations ****************/
 /**********************************************************/
 // vcell command
-enum CMDcode cmdPrintProgress(simptr sim,cmdptr cmd,char *line2);
-enum CMDcode cmdWriteOutput(simptr sim,cmdptr cmd,char *line2);
+enum CMDcode cmdVCellPrintProgress(simptr sim,cmdptr cmd,char *line2);
+enum CMDcode cmdVCellWriteOutput(simptr sim,cmdptr cmd,char *line2);
 
 // simulation control
 enum CMDcode cmdstop(simptr sim,cmdptr cmd,char *line2);
@@ -186,8 +186,8 @@ enum CMDcode docommand(void *cmdfnarg,cmdptr cmd,char *line) {
 	else if(!strcmp(word,"includeecoli")) return cmdincludeecoli(sim,cmd,line2);
 
 	// vcell commands
-	else if(!strcmp(word,"printProgress")) return cmdPrintProgress(sim,cmd,line2);
-	else if(!strcmp(word,"writeOutput")) return cmdWriteOutput(sim,cmd,line2);
+	else if(!strcmp(word,"vcellPrintProgress")) return cmdVCellPrintProgress(sim,cmd,line2);
+	else if(!strcmp(word,"vcellWriteOutput")) return cmdVCellWriteOutput(sim,cmd,line2);
 
 	SCMDCHECK(0,"command not recognized");
 	return CMDwarn; }
@@ -2087,7 +2087,7 @@ int molinpanels(simptr sim,int ll,int m,int s,char pshape) {
 
 #include <VCELL/SimulationMessaging.h>
 
-enum CMDcode cmdPrintProgress(simptr sim, cmdptr cmd, char *line2) {
+enum CMDcode cmdVCellPrintProgress(simptr sim, cmdptr cmd, char *line2) {
 	if(line2 && !strcmp(line2,"cmdtype")) {
 		return CMDobserve;
 	}
@@ -2417,7 +2417,7 @@ void clearLog(char* baseFileName) {
 	remove(logFileName);
 }
 
-enum CMDcode cmdWriteOutput(simptr sim, cmdptr cmd, char *line2) {
+enum CMDcode cmdVCellWriteOutput(simptr sim, cmdptr cmd, char *line2) {
 	static int simFileCount = 0;
 	static int zipFileCount = 0;
 	static char baseFileName[256];

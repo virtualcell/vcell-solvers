@@ -18,7 +18,7 @@
 <folderInfo id="cdt.managedbuild.config.gnu.mingw.exe.debug.1073393345." name="/" resourcePath="">
 <toolChain id="cdt.managedbuild.toolchain.gnu.mingw.exe.debug.782126538" name="MinGW GCC" superClass="cdt.managedbuild.toolchain.gnu.mingw.exe.debug">
 <targetPlatform id="cdt.managedbuild.target.gnu.platform.mingw.exe.debug.1546248931" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.mingw.exe.debug"/>
-<builder buildPath="${workspace_loc:/smoldyn-2.15/Debug}" id="cdt.managedbuild.tool.gnu.builder.mingw.base.823362712" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CDT Internal Builder" superClass="cdt.managedbuild.tool.gnu.builder.mingw.base"/>
+<builder buildPath="${workspace_loc:/smoldyn-2.15/Debug}" enableAutoBuild="false" id="cdt.managedbuild.tool.gnu.builder.mingw.base.823362712" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CDT Internal Builder" superClass="cdt.managedbuild.tool.gnu.builder.mingw.base"/>
 <tool id="cdt.managedbuild.tool.gnu.assembler.mingw.exe.debug.401498842" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.mingw.exe.debug">
 <inputType id="cdt.managedbuild.tool.gnu.assembler.input.436674801" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 </tool>
@@ -35,7 +35,7 @@
 <option id="gnu.cpp.compiler.option.preprocessor.def.391616967" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 <listOptionValue builtIn="false" value="INTEL"/>
 </option>
-<option id="gnu.cpp.compiler.option.preprocessor.undef.1750153010" name="Undefined symbols (-U)" superClass="gnu.cpp.compiler.option.preprocessor.undef" valueType="undefDefinedSymbols"/>
+<option id="gnu.cpp.compiler.option.preprocessor.undef.1750153010" name="Undefined symbols (-U)" superClass="gnu.cpp.compiler.option.preprocessor.undef"/>
 <inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1890250751" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 </tool>
 <tool command="g++" id="cdt.managedbuild.tool.gnu.c.compiler.mingw.exe.debug.552362979" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.mingw.exe.debug">
@@ -50,7 +50,7 @@
 <option id="gnu.c.compiler.option.preprocessor.def.symbols.575511275" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 <listOptionValue builtIn="false" value="INTEL"/>
 </option>
-<option id="gnu.c.compiler.option.preprocessor.undef.symbol.609199352" name="Undefined symbols (-U)" superClass="gnu.c.compiler.option.preprocessor.undef.symbol" valueType="undefDefinedSymbols"/>
+<option id="gnu.c.compiler.option.preprocessor.undef.symbol.609199352" name="Undefined symbols (-U)" superClass="gnu.c.compiler.option.preprocessor.undef.symbol"/>
 <inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.233424225" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 </tool>
 <tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.debug.904061857" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.debug"/>
@@ -71,6 +71,14 @@
 </configuration>
 </storageModule>
 <storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings">
+<doc-comment-owner id="org.eclipse.cdt.internal.ui.text.doctools.NullDocCommentOwner">
+<path value=""/>
+</doc-comment-owner>
+</storageModule>
+<storageModule moduleId="org.eclipse.cdt.core.language.mapping">
+<project-mappings/>
+</storageModule>
 <storageModule moduleId="scannerConfiguration">
 <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile"/>
 <profile id="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile">
@@ -485,14 +493,6 @@
 </scannerInfoProvider>
 </profile>
 </scannerConfigBuildInfo>
-</storageModule>
-<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings">
-<doc-comment-owner id="org.eclipse.cdt.internal.ui.text.doctools.NullDocCommentOwner">
-<path value=""/>
-</doc-comment-owner>
-</storageModule>
-<storageModule moduleId="org.eclipse.cdt.core.language.mapping">
-<project-mappings/>
 </storageModule>
 </cconfiguration>
 <cconfiguration id="cdt.managedbuild.config.gnu.mingw.exe.release.1288592743">
@@ -537,6 +537,14 @@
 </configuration>
 </storageModule>
 <storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings">
+<doc-comment-owner id="org.eclipse.cdt.internal.ui.text.doctools.NullDocCommentOwner">
+<path value=""/>
+</doc-comment-owner>
+</storageModule>
+<storageModule moduleId="org.eclipse.cdt.core.language.mapping">
+<project-mappings/>
+</storageModule>
 <storageModule moduleId="scannerConfiguration">
 <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile"/>
 <profile id="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile">
@@ -951,14 +959,6 @@
 </scannerInfoProvider>
 </profile>
 </scannerConfigBuildInfo>
-</storageModule>
-<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings">
-<doc-comment-owner id="org.eclipse.cdt.internal.ui.text.doctools.NullDocCommentOwner">
-<path value=""/>
-</doc-comment-owner>
-</storageModule>
-<storageModule moduleId="org.eclipse.cdt.core.language.mapping">
-<project-mappings/>
 </storageModule>
 </cconfiguration>
 </storageModule>
