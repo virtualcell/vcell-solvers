@@ -2233,7 +2233,7 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 	static int N[3] = {1,1,1};
 	static double extent[3];
 	static double origin[3];
-	static char varNames[3][128];
+	static char **varNames;
 	static FileHeader fileHeader;
 	static int dimension = 3, varSize = 0, numVars = 0, numBlocks = 0;
 	static DataBlock *dataBlock = NULL;
@@ -2262,13 +2262,15 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 			}
 		}
 		int i;
+		numVars = mols->nspecies - 1;
+		varNames = (char**)malloc(numVars * sizeof(char*));
 		for(i = 1; i < mols->nspecies; i++) {
+			varNames[i - 1] = (char*)malloc(128 * sizeof(char));
 			strcpy(varNames[i - 1], mols->spname[i]);
 		}
 		strcpy(fileHeader.magicString, MAGIC_STRING);
 		strcpy(fileHeader.versionString, VERSION_STRING);
 		varSize = N[0] * N[1] * N[2];
-		numVars = mols->nspecies - 1;
 		numBlocks = numVars;
 
 		fileHeader.sizeX = N[0];
@@ -2369,6 +2371,10 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 	}
 
 	if (fabs(sim->tmax - sim->time) < 1e-12) {
+		for (int i = 1; i < mols->nspecies; i++) {
+			free(varNames[i - 1]);
+		}
+		free(varNames);
 		free(dataBlock);
 		free(sol);
 	}
