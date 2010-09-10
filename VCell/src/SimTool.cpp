@@ -749,7 +749,8 @@ void SimTool::start1() {
 	double epsilon = 1e-12;
 
 	while (true) {
-		if (fabs(simEndTime - simulation->getTime_sec()) < epsilon) { // reached the end time
+		if (simulation->getTime_sec() - simEndTime > epsilon // currentTime past endTime
+				|| fabs(simEndTime - simulation->getTime_sec()) < epsilon) { // reached the end time
 			break;
 		}
 		if (isSundialsPdeSolver() && bSundialsOneStepOutput) {

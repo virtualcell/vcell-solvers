@@ -643,7 +643,8 @@ void SundialsPdeScheduler::solve() {
 
 		if (bStop && fabs(stopTime - currentTime) < epsilon) {
 			currDiscontinuityTimeCount ++;
-			if (fabs(SimTool::getInstance()->getEndTime() - currentTime) > epsilon) { // if this is the last solve, we don't have to reinit
+			if (SimTool::getInstance()->getEndTime() - currentTime > epsilon  // currentTime less than endTime
+				|| fabs(SimTool::getInstance()->getEndTime() - currentTime) > epsilon) { // if this is the last solve, we don't have to reinit
 				cout << endl << "SundialsPdeScheduler::solve() : cvode reinit at time " << currentTime << endl;
 				returnCode = CVodeReInit(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, relTol, &absTol);
 				checkCVodeReturnCode(returnCode);
@@ -668,7 +669,8 @@ void SundialsPdeScheduler::solve() {
 		}
 	}
 
-	if (fabs(SimTool::getInstance()->getEndTime() - currentTime) < epsilon) {
+	if (currentTime - SimTool::getInstance()->getEndTime() > epsilon // currentTime greater than endTime
+			|| (SimTool::getInstance()->getEndTime() - currentTime) < epsilon) {
 		printCVodeStats();
 	}
 	updateSolutions();

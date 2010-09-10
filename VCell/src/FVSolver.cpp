@@ -1,7 +1,11 @@
+#include <assert.h>
+#include <sys/stat.h>
+#include <fstream>
+using std::ifstream;
+
+#include <VCELL/Element.h>
 #include <Exception.h>
 #include <Expression.h>
-
-#include <sys/stat.h>
 #include <VCELL/FVSolver.h>
 #include <VCELL/VolumeVariable.h>
 #include <VCELL/VolumeRegionVariable.h>
@@ -14,7 +18,6 @@
 #include <VCELL/ODESolver.h>
 #include <VCELL/EqnBuilderReactionForward.h>
 #include <VCELL/MembraneEqnBuilderForward.h>
-#include <VCELL/Element.h>
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/MembraneRegion.h>
 #include <VCELL/MembraneRegionEqnBuilder.h>
@@ -35,10 +38,6 @@
 #include <VCELL/FieldData.h>
 #include <VCELL/FVUtils.h>
 #include <VCELL/RandomVariable.h>
-
-#include <assert.h>
-#include <fstream>
-using std::ifstream;
 
 FieldData *getPSFFieldData() {
 	return ((SimulationExpression*)SimTool::getInstance()->getSimulation())->getPSFFieldData();

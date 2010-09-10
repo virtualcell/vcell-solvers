@@ -2,6 +2,7 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
+#include <VCELL/DoubleVector3.h>
 #include <VCELL/FastSystemExpression.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/Variable.h>
@@ -9,7 +10,6 @@
 #include <Expression.h>
 #include <SimpleSymbolTable.h>
 #include <VCELL/SimTypes.h>
-#include <VCELL/DoubleVector3.h>
 #include <VCELL/RandomVariable.h>
 
 FastSystemExpression::FastSystemExpression(int dimension, int numDepend, SimulationExpression* sim) 
