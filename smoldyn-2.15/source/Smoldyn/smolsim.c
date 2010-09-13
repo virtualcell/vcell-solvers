@@ -1632,9 +1632,10 @@ int setupsim(char *fileroot,char *filename,simptr *smptr,char *flags) {
 	return 0;
 
  failure:
-	fprintf(stderr,"%s",erstr);
-	fprintf(stderr,"\n");
 	if(!*smptr) simfree(sim);
+//	fprintf(stderr,"%s",erstr);
+//	fprintf(stderr,"\n");
+	throw erstr;
 	return 1; }
 
 
