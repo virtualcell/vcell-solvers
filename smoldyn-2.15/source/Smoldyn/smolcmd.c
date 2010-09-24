@@ -2253,7 +2253,7 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 		}
 		origin[0] = sim->wlist[0]->pos;
 		extent[0] = sim->wlist[1]->pos - origin[0];
-		if (dimension > 0) {
+		if (dimension > 1) {
 			origin[1] = sim->wlist[2]->pos;
 			extent[1] = sim->wlist[3]->pos - origin[1];
 			if (dimension > 2) {
