@@ -2245,7 +2245,7 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 		if (line2 == NULL || strlen(line2) == 0) {
 			throw "writeOutput : no dimension specified.";
 		}
-		int dimension = sscanf(line2, "%d %d %d", &N[0], &N[1], &N[2]);
+		dimension = sscanf(line2, "%d %d %d", &N[0], &N[1], &N[2]);
 		if (dimension == 0) {
 			char errMsg[256];
 			sprintf(errMsg, "writeOutput : no dimension specified. %d %d %d", N[0], N[1], N[2]);
