@@ -2238,6 +2238,8 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 	static int dimension = 3, varSize = 0, numVars = 0, numBlocks = 0;
 	static DataBlock *dataBlock = NULL;
 	static double *sol = NULL;
+	static int volRegionSize = 0;
+	static int solSize = 0;
 
 	molssptr mols = sim->mols;
 
@@ -2245,7 +2247,8 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 		if (line2 == NULL || strlen(line2) == 0) {
 			throw "writeOutput : no dimension specified.";
 		}
-		dimension = sscanf(line2, "%d %d %d", &N[0], &N[1], &N[2]);
+		dimension = sscanf(line2, "%d %d %d %d", &N[0], &N[1], &N[2], &volRegionSize);
+		dimension --;
 		if (dimension == 0) {
 			char errMsg[256];
 			sprintf(errMsg, "writeOutput : no dimension specified. %d %d %d", N[0], N[1], N[2]);
@@ -2253,6 +2256,11 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 		}
 		origin[0] = sim->wlist[0]->pos;
 		extent[0] = sim->wlist[1]->pos - origin[0];
+		if (dimension == 1) {
+			volRegionSize = N[1];
+		} else if (dimension == 2) {
+			volRegionSize = N[2];
+		}
 		if (dimension > 1) {
 			origin[1] = sim->wlist[2]->pos;
 			extent[1] = sim->wlist[3]->pos - origin[1];
@@ -2263,15 +2271,20 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 		}
 		int i;
 		numVars = mols->nspecies - 1;
-		varNames = (char**)malloc(numVars * sizeof(char*));
-		for(i = 1; i < mols->nspecies; i++) {
-			varNames[i - 1] = (char*)malloc(128 * sizeof(char));
-			strcpy(varNames[i - 1], mols->spname[i]);
+		varNames = (char**)malloc(numVars * 2 * sizeof(char*));
+		for(i = 0; i < numVars; i ++) {
+			varNames[i] = (char*)malloc(128 * sizeof(char));
+			strcpy(varNames[i], mols->spname[i + 1]);
+		}
+		for(i = 0; i < numVars; i++) {
+			varNames[i + numVars] = (char*)malloc(128 * sizeof(char));
+			sprintf(varNames[i + numVars], "%s_totalCount\0", varNames[i]);
+
 		}
 		strcpy(fileHeader.magicString, MAGIC_STRING);
 		strcpy(fileHeader.versionString, VERSION_STRING);
 		varSize = N[0] * N[1] * N[2];
-		numBlocks = numVars;
+		numBlocks = numVars * 2;
 
 		fileHeader.sizeX = N[0];
 		fileHeader.sizeY = N[1];
@@ -2280,7 +2293,8 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 		fileHeader.firstBlockOffset = sizeof(FileHeader);
 
 		dataBlock = (DataBlock*)malloc(numBlocks * sizeof(DataBlock));
-		sol = (double*)malloc(numVars * varSize * sizeof(double));
+		solSize = numVars * (varSize + volRegionSize);
+		sol = (double*)malloc(solSize * sizeof(double));
 
 		firstrun = 0;
 	}
@@ -2318,14 +2332,28 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 		dataOffset += dataBlock[blockIndex].size * sizeof(double);
 		blockIndex ++;
 	}
+	for (v = numVars; v < numVars * 2; v ++) {
+		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
+		strcpy(dataBlock[blockIndex].varName, varNames[v]);
 
-	memset(sol, 0, numVars * varSize * sizeof(double));
+		dataBlock[blockIndex].varType = VAR_VOLUME_REGION;
+		dataBlock[blockIndex].size = volRegionSize;
+		dataBlock[blockIndex].dataOffset = dataOffset;
+		writeDataBlock(simfp, dataBlock + blockIndex);
+		dataOffset += dataBlock[blockIndex].size * sizeof(double);
+		blockIndex ++;
+	}
 
+	memset(sol, 0, solSize * sizeof(double));
+
+	// for variables
+	int* totalCounts = new int[numVars];
+	memset(totalCounts, 0, numVars * sizeof(int));
 	int ll, m;
 	moleculeptr mptr;
-	for(ll=0;ll<sim->mols->nlist;ll++) {
-		for(m=0;m<sim->mols->nl[ll];m++) {
-			mptr=sim->mols->live[ll][m];
+	for(ll=0;ll<mols->nlist;ll++) {
+		for(m=0;m<mols->nl[ll];m++) {
+			mptr=mols->live[ll][m];
 			int varIndex = mptr->ident - 1;
 			if (varIndex >= 0 ) {
 				double* coord = mptr->pos;
@@ -2340,9 +2368,20 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 
 				int volIndex = k * N[1] * N[0] + j * N[0] + i;
 				sol[varIndex * varSize + volIndex] ++;
+
+				totalCounts[varIndex] ++;
 			}
 		}
 	}
+
+	int totalCountOffSet = numVars * varSize;
+	// for total count region variable
+	for (v = 0; v < numVars; v ++) {
+		for (int r = 0; r < volRegionSize; r ++) {
+			sol[totalCountOffSet + v * volRegionSize + r] = totalCounts[v];
+		}
+	}
+	delete[] totalCounts;
 
 	//
 	// write data
@@ -2360,6 +2399,18 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 		writeDoubles(simfp, sol + v * varSize, varSize);
 		blockIndex ++;
 	}
+	for (v = 0; v < numVars; v ++) {
+		ftell_pos = ftell(simfp);
+		if (ftell_pos != dataBlock[blockIndex].dataOffset){
+			char errMsg[256];
+			sprintf(errMsg, "DataSet::write() - offset for data is "
+				"incorrect (block %d, var=%s), ftell() says %ld, should be %d", blockIndex, dataBlock[blockIndex].varName,
+				ftell_pos, dataBlock[blockIndex].dataOffset);
+			throw errMsg;
+		}
+		writeDoubles(simfp, sol + totalCountOffSet + v * volRegionSize, volRegionSize);
+		blockIndex ++;
+	}
 	fclose(simfp);
 
 	int retcode = zip32(1, zipFileName, simFileName);
@@ -2371,8 +2422,8 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 	}
 
 	if (fabs(sim->tmax - sim->time) < 1e-12) {
-		for (int i = 1; i < mols->nspecies; i++) {
-			free(varNames[i - 1]);
+		for (int i = 0; i < numVars; i ++) {
+			free(varNames[i]);
 		}
 		free(varNames);
 		free(dataBlock);
