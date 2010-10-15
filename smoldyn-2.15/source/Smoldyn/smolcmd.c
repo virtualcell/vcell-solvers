@@ -2254,13 +2254,13 @@ void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipF
 			sprintf(errMsg, "writeOutput : no dimension specified. %d %d %d", N[0], N[1], N[2]);
 			throw errMsg;
 		}
-		origin[0] = sim->wlist[0]->pos;
-		extent[0] = sim->wlist[1]->pos - origin[0];
 		if (dimension == 1) {
 			volRegionSize = N[1];
 		} else if (dimension == 2) {
 			volRegionSize = N[2];
 		}
+		origin[0] = sim->wlist[0]->pos;
+		extent[0] = sim->wlist[1]->pos - origin[0];
 		if (dimension > 1) {
 			origin[1] = sim->wlist[2]->pos;
 			extent[1] = sim->wlist[3]->pos - origin[1];
