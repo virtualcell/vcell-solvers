@@ -1,11 +1,13 @@
+#include <math.h>
+#include <limits>
+
 #include "ASTFuncNode.h"
 #include "RuntimeException.h"
 #include "ExpressionException.h"
-#include <math.h>
 #include "MathUtil.h"
 #include "FunctionDomainException.h"
 #include "FunctionRangeException.h"
-#include <limits>
+#include "ExpressionParserTreeConstants.h"
 
 const int EXP = 0;
 const int SQRT = 1;
@@ -91,6 +93,10 @@ const string functionNamesVCML[] = {
 
 const int parserNumFunctions = 35;
 
+ASTFuncNode::ASTFuncNode() : SimpleNode(JJTFUNCNODE) {
+	funcType = -1;
+}
+
 ASTFuncNode::ASTFuncNode(int i) : SimpleNode(i) {
 	funcType = -1;
 }
@@ -104,7 +110,7 @@ void ASTFuncNode::setFunctionFromParserToken(string parserToken)
 		string definedToken = functionNamesVCML[i];		
 		if (definedToken == parserToken){
 			funcType = i;
-			name = parserToken;
+			funcName = parserToken;
 			return;
 		}
 	}
@@ -138,7 +144,7 @@ string ASTFuncNode::infixString(int lang, NameScope* nameScope)
 		}
 		default :
 		{
-			buffer += name;
+			buffer += funcName;
 			buffer += "(";
 			for (int i = 0; i < jjtGetNumChildren(); i++) {
 				if (i > 0)
@@ -619,4 +625,36 @@ double ASTFuncNode::evaluate(int evalType, double* values)
 		throw FunctionRangeException(problem);
 	}
 	return result;
+}
+
+Node* ASTFuncNode::copyTree() {
+	ASTFuncNode* node = new ASTFuncNode();
+	node->funcType = funcType;
+	node->funcName = funcName;
+	for (int i=0;i<jjtGetNumChildren();i++){
+		node->jjtAddChild(jjtGetChild(i)->copyTree());
+	}
+	return node;	
+}
+
+bool ASTFuncNode::equals(Node* node) {
+	//
+	// check to see if the types and children are the same
+	//
+	if (!SimpleNode::equals(node)){
+		return false;
+	}
+	
+	//
+	// check this node for same state (function name)
+	//	
+	ASTFuncNode* funcNode = (ASTFuncNode*)node;
+	if (funcNode->funcType != funcType){
+		return false;
+	}
+	if (funcNode->funcName != funcName){
+		return false;
+	}
+
+	return true;
 }

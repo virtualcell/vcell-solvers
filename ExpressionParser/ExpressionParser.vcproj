@@ -353,10 +353,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ExpressionTest.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\FunctionDomainException.cpp"
 				>
 			</File>

@@ -1,10 +1,13 @@
+#include <math.h>
+#include <memory.h>
+#include <stdlib.h>
+
 #include "Exception.h"
 #include "ExpressionTest.h"
 #include "Expression.h"
 #include "SimpleSymbolTable.h"
 #include "RuntimeException.h"
 #include "IOException.h"
-#include <math.h>
 
 ExpressionTest::ExpressionTest(void)
 {

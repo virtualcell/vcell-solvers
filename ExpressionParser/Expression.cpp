@@ -1,26 +1,34 @@
+#include <typeinfo>
+#include <stdlib.h>
+
 #include "Expression.h"
 #include "ExpressionParser.h"
 #include "ASTFloatNode.h"
 #include "ParseException.h"
 #include "ParserException.h"
 
-long Expression::flattenCount = 0;
-long Expression::diffCount = 0;
-long Expression::parseCount = 0;
-long Expression::derivativeCount = 0;
-long Expression::substituteCount = 0;
-long Expression::bindCount = 0;
+//long Expression::flattenCount = 0;
+//long Expression::diffCount = 0;
+//long Expression::parseCount = 0;
+//long Expression::derivativeCount = 0;
+//long Expression::substituteCount = 0;
+//long Expression::bindCount = 0;
 
 Expression::Expression(void)
 {
-	rootNode = 0;
-	pRootNode = null;
+	rootNode = null;
+	stackMachine = null;
+}
+
+Expression::Expression(Expression* expression)
+{
+	this->rootNode = (SimpleNode*)expression->rootNode->copyTree();
 	stackMachine = null;
 }
 
 Expression::~Expression(void)
 {
-	delete pRootNode;
+	delete rootNode;
 	delete stackMachine;
 }
 
@@ -45,7 +53,6 @@ Expression::Expression(string expString)
 		int n = sscanf(expString.c_str(), "%lf", &value); 
 		if (n == 1) {
 			rootNode = new ASTFloatNode(value);
-			pRootNode = rootNode;
 			return;
 		}				
 	} 
@@ -93,12 +100,11 @@ double Expression::evaluateVector(double* values)
 
 void Expression::parseExpression(string exp)
 {
-	parseCount++;
+	//parseCount++;
 	try {
 		istringstream* iss = new istringstream(exp);
 		ExpressionParser* parser = new ExpressionParser(iss);
 		rootNode = parser->Expression();
-		pRootNode = rootNode;
 
 		if (typeid(*rootNode) == typeid(ASTExpression)){
 			if (rootNode->jjtGetNumChildren() == 1){ // we abandon the real root node here, so there is tiny memory leak;
@@ -120,7 +126,7 @@ string Expression::infix(void)
 
 void Expression::bindExpression(SymbolTable* symbolTable)
 {	
-	bindCount++;
+	//bindCount++;
 	rootNode->bind(symbolTable);
 }
 
@@ -165,4 +171,17 @@ SymbolTableEntry* Expression::getSymbolBinding(string symbol){
 
 double Expression::evaluateProxy() {
 	return evaluateVector(0);
+}
+
+void Expression::substituteInPlace(Expression* origExp, Expression* newExp) {
+	SimpleNode* origNode = origExp->rootNode;
+	SimpleNode* newNode = (SimpleNode*)newExp->rootNode->copyTree();
+	//
+	// first check if must replace entire tree, if not then leaves can deal with it
+	//
+	if (origNode->equals(rootNode)){
+		rootNode = newNode;
+	} else {
+		rootNode->substitute(origNode, newNode);
+	}
 }

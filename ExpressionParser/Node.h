@@ -21,17 +21,17 @@ class Node
 public:	
 	virtual ~Node() { }
 	/*
-	virtual string code()=0;          
-	virtual Node copyTree()=0;
+	virtual string code()=0;
 	virtual Node copyTreeBinary()=0;
 	virtual Node differentiate(string independentVariable)=0;
-	virtual boolean equals(Node node)=0;
 	
 	virtual RealInterval evaluateInterval(RealInterval intervals[])=0;
 	virtual  RealInterval getInterval(RealInterval intervals[]) throws ExpressionBindingException;	
-	virtual String infixString(int lang, NameScope nameScope);  	
-	virtual void jjtAddChild(Node n);  
+	virtual String infixString(int lang, NameScope nameScope);
 	*/
+	virtual Node* copyTree()=0;
+	virtual void jjtAddChild(Node* n)=0; 
+
 	virtual bool isBoolean()=0;
 	virtual void bind(SymbolTable* symbolTable)=0;
 	virtual SymbolTableEntry* getBinding(string symbol)=0;
@@ -53,9 +53,10 @@ public:
 	virtual boolean narrow(RealInterval intervals[]) throws ExpressionBindingException;
 	virtual void roundToFloat();
 	virtual  void setInterval(RealInterval interval, RealInterval intervals[]) throws ExpressionBindingException;
-	virtual  void substitute(Node origNode, Node newNode) throws ExpressionException;
 	virtual void substituteBoundSymbols() throws ExpressionException;
 	*/
+	virtual bool equals(Node* node)=0;
+	virtual void substitute(Node* origNode, Node* newNode)=0;
 };
 
 #endif

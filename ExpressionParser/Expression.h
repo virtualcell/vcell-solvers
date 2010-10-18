@@ -8,6 +8,7 @@ class Expression
 public:
 	Expression(void);
 	Expression(string expString);
+	Expression(Expression* expression);
 	~Expression(void);
 	double evaluateConstant(void);
 	// exercise the old way of evaluating constant and vector by traversing abstract syntax tree
@@ -25,16 +26,17 @@ public:
 	double evaluateProxy();
 	
 	void showStackInstructions();
+	void substituteInPlace(Expression* origExp, Expression* newExp);
 
 private:
-	SimpleNode  *rootNode, *pRootNode;
+	SimpleNode  *rootNode;
 
-	static long flattenCount;
-	static long diffCount;
-	static long parseCount;
-	static long derivativeCount;
-	static long substituteCount;
-	static long bindCount;
+	//static long flattenCount;
+	//static long diffCount;
+	//static long parseCount;
+	//static long derivativeCount;
+	//static long substituteCount;
+	//static long bindCount;
 	void parseExpression(string exp);
 	StackMachine* stackMachine;
 	inline StackMachine* getStackMachine();

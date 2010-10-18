@@ -13,6 +13,9 @@ public:
 	string infixString(int lang, NameScope* nameScope);
 	void getStackElements(vector<StackElement>& elements);
 	double evaluate(int evalType, double* values=0); 
+
+	Node* copyTree();
+	bool equals(Node* node);
 };
 
 #endif

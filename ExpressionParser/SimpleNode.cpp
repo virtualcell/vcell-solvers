@@ -1,3 +1,7 @@
+#include <memory.h>
+#include <stdlib.h>
+#include <typeinfo>
+
 #include "SimpleNode.h"
 #include "Expression.h"
 #include "Exception.h"
@@ -159,4 +163,49 @@ string SimpleNode::getNodeSummary(double* values, Node* node){
 		errorMsg += node->infixString(LANGUAGE_DEFAULT, 0);
 	}
 	return errorMsg;
+}
+
+void SimpleNode::jjtAddChild(Node* n) {
+	jjtAddChild(n, jjtGetNumChildren());
+}    
+
+void SimpleNode::substitute(Node* origNode, Node* newNode) {
+
+	for (int i=0;i<jjtGetNumChildren();i++){
+		if (jjtGetChild(i)->equals(origNode)) {
+			children[i] = newNode->copyTree();
+			newNode->jjtSetParent(this);
+		}else{
+			jjtGetChild(i)->substitute(origNode,newNode);
+		}
+	}
+}
+
+bool SimpleNode::equals(Node* node) {
+	//
+	// check to see if this node is the same
+	//
+	if (typeid(*node) != typeid(*this)){
+		return false;
+	}
+	//
+	// check for different number of children
+	//	
+	if (jjtGetNumChildren() != node->jjtGetNumChildren()){
+		return false;
+	}	
+	//
+	// now, check to see if all children are the same
+	//
+	//  (note: I'm assuming the children are in the same order)
+	//
+	for (int i=0;i<jjtGetNumChildren();i++){
+		Node* myChild = jjtGetChild(i);
+		Node* nodeChild = node->jjtGetChild(i);
+		if (!myChild->equals(nodeChild)){
+			return false;
+		}	
+	}		
+	
+	return true;
 }

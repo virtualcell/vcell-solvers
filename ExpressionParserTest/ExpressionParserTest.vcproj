@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\ExpressionParser"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -63,6 +63,8 @@
 				Name="VCLinkerTool"
 				OutputFile="$(OutDir)/ExpressionParserTest.exe"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="&quot;..\tcc-0.9.25&quot;;..\ExpressionParser"
+				IgnoreDefaultLibraryNames="libcmt.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/ExpressionParserTest.pdb"
 				SubSystem="1"
@@ -118,7 +120,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\ExpressionParser"
+				AdditionalIncludeDirectories="..\ExpressionParser;&quot;..\tcc-0.9.25&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				WarningLevel="3"
@@ -138,6 +140,7 @@
 				Name="VCLinkerTool"
 				OutputFile="$(OutDir)/ExpressionParserTest.exe"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -331,7 +334,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\ExpressionParserTest.cpp"
+				RelativePath="..\..\..\..\..\VCell\Testing\ExpressionParser\ExpParserTest0.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\ExpressionParser\ExpressionTest.cpp"
 				>
 			</File>
 		</Filter>

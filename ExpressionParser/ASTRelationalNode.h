@@ -14,9 +14,13 @@ public:
 	double evaluate(int evalType, double* values=0); 
 	bool isBoolean();
 
+	Node* copyTree();
+	bool equals(Node* node);
+
 private:
 	int operation;
 	string opString;
+	ASTRelationalNode();
 };
 
 #endif

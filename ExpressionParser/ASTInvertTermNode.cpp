@@ -2,6 +2,10 @@
 #include "DivideByZeroException.h"
 #include "SymbolTable.h"
 #include "Expression.h"
+#include "ExpressionParserTreeConstants.h"
+
+ASTInvertTermNode::ASTInvertTermNode() : SimpleNode(JJTINVERTTERMNODE) {
+}
 
 ASTInvertTermNode::ASTInvertTermNode(int i) : SimpleNode(i) {
 }
@@ -35,4 +39,12 @@ double ASTInvertTermNode::evaluate(int evalType, double* values) {
 	} else {
 		return (1.0 / childValue);
 	}
+}
+
+Node* ASTInvertTermNode::copyTree() {
+	ASTInvertTermNode* node = new ASTInvertTermNode();
+	for (int i=0;i<jjtGetNumChildren();i++){
+		node->jjtAddChild(jjtGetChild(i)->copyTree());
+	}
+	return node;	
 }

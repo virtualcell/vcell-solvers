@@ -1,5 +1,9 @@
 #include "ASTMinusTermNode.h"
 #include "ExpressionException.h"
+#include "ExpressionParserTreeConstants.h"
+
+ASTMinusTermNode::ASTMinusTermNode() : SimpleNode(JJTMINUSTERMNODE) {
+}
 
 ASTMinusTermNode::ASTMinusTermNode(int i) : SimpleNode(i) {
 }
@@ -22,4 +26,12 @@ void ASTMinusTermNode::getStackElements(vector<StackElement>& elements) {
 
 double ASTMinusTermNode::evaluate(int evalType, double* values) {
 	return (- jjtGetChild(0)->evaluate(evalType, values));
+}
+
+Node* ASTMinusTermNode::copyTree() {
+	ASTMinusTermNode* node = new ASTMinusTermNode();
+	for (int i=0;i<jjtGetNumChildren();i++){
+		node->jjtAddChild(jjtGetChild(i)->copyTree());
+	}
+	return node;	
 }

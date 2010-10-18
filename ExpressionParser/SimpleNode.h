@@ -30,6 +30,10 @@ public:
 	static string getNodeSummary(double* values, Node* node);
 	virtual bool isBoolean();
 
+	void jjtAddChild(Node* n);
+	void substitute(Node* origNode, Node* newNode);
+	virtual bool equals(Node* node);
+
 protected:
 	Node* parent;
 	Node** children;

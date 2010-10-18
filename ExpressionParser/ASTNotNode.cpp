@@ -1,6 +1,10 @@
 #include "ASTNotNode.h"
 #include "DivideByZeroException.h"
 #include "ExpressionException.h"
+#include "ExpressionParserTreeConstants.h"
+
+ASTNotNode::ASTNotNode() : SimpleNode(JJTNOTNODE) {
+}
 
 ASTNotNode::ASTNotNode(int i) : SimpleNode(i) {
 }
@@ -34,4 +38,12 @@ double ASTNotNode::evaluate(int evalType, double* values) {
 	}else{
 		return 0.0;
 	}
+}
+
+Node* ASTNotNode::copyTree() {
+	ASTNotNode* node = new ASTNotNode();
+	for (int i=0;i<jjtGetNumChildren();i++){
+		node->jjtAddChild(jjtGetChild(i)->copyTree());
+	}
+	return node;	
 }

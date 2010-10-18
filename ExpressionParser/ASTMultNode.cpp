@@ -1,6 +1,10 @@
 #include "ASTMultNode.h"
 #include "ASTInvertTermNode.h"
 #include "ExpressionException.h"
+#include "ExpressionParserTreeConstants.h"
+
+ASTMultNode::ASTMultNode() : SimpleNode(JJTMULTNODE) {
+}
 
 ASTMultNode::ASTMultNode(int i) : SimpleNode(i) {
 }
@@ -137,4 +141,12 @@ double ASTMultNode::evaluate(int evalType, double* values) {
 		throw (*childException);
 	}	
 	return product;
+}
+
+Node* ASTMultNode::copyTree() {
+	ASTMultNode* node = new ASTMultNode();
+	for (int i=0;i<jjtGetNumChildren();i++){
+		node->jjtAddChild(jjtGetChild(i)->copyTree());
+	}
+	return node;	
 }

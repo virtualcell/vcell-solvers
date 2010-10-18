@@ -1,5 +1,9 @@
 #include "ASTExpression.h"
 #include "ExpressionException.h"
+#include "ExpressionParserTreeConstants.h"
+
+ASTExpression::ASTExpression() : SimpleNode(JJTEXPRESSION) {
+}
 
 ASTExpression::ASTExpression(int i) : SimpleNode(i) {
 }
@@ -25,4 +29,12 @@ void ASTExpression::getStackElements(vector<StackElement>& elements) {
 
 double ASTExpression::evaluate(int evalType, double* values) {
 	return jjtGetChild(0)->evaluate(evalType, values);
+}
+
+Node* ASTExpression::copyTree() {
+	ASTExpression* node = new ASTExpression();
+	for (int i=0;i<jjtGetNumChildren();i++){
+		node->jjtAddChild(jjtGetChild(i)->copyTree());
+	}
+	return node;	
 }

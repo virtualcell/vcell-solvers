@@ -1,3 +1,6 @@
+#include <memory.h>
+#include <stdlib.h>
+
 #include "SimpleCharStream.h"
 #include "IOException.h"
 #include "RuntimeException.h"

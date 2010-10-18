@@ -1,6 +1,7 @@
 #include "ASTRelationalNode.h"
 #include "RuntimeException.h"
 #include "ExpressionException.h"
+#include "ExpressionParserTreeConstants.h"
 
 const int LT = 1;
 const int GT = 2;
@@ -11,6 +12,11 @@ const int NE = 6;
 const int UNKNOWN = -1;
 
 int StackMachine_RelationalLookupTable[] = {0, TYPE_LT, TYPE_GT, TYPE_LE, TYPE_GE, TYPE_EQ, TYPE_NE};
+
+ASTRelationalNode::ASTRelationalNode() : SimpleNode(JJTRELATIONALNODE) {
+	operation = 0;
+	opString = "????";
+}
 
 ASTRelationalNode::ASTRelationalNode(int i) : SimpleNode(i) {
 	operation = 0;
@@ -120,4 +126,33 @@ double ASTRelationalNode::evaluate(int evalType, double* values)
             }
     }
     throw ExpressionException("unsupported relational operation");
+}
+
+Node* ASTRelationalNode::copyTree() {
+	ASTRelationalNode* node = new ASTRelationalNode();
+	node->operation = this->operation;
+	node->opString = this->opString;
+	for (int i=0;i<jjtGetNumChildren();i++){
+		node->jjtAddChild(jjtGetChild(i)->copyTree());
+	}
+	return node;	
+}
+
+bool ASTRelationalNode::equals(Node* node) {
+	//
+	// check to see if the types and children are the same
+	//
+	if (!SimpleNode::equals(node)){
+		return false;
+	}
+	
+	//
+	// check this node for same state (operation string and integer)
+	//	
+	ASTRelationalNode* relNode = (ASTRelationalNode*)node;
+	if (relNode->opString != opString || relNode->operation != operation){
+		return false;
+	}	
+
+	return true;
 }

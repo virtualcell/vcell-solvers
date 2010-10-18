@@ -1,5 +1,9 @@
 #include "ASTAndNode.h"
 #include "ExpressionException.h"
+#include "ExpressionParserTreeConstants.h"
+
+ASTAndNode::ASTAndNode() : SimpleNode(JJTANDNODE) {
+}
 
 ASTAndNode::ASTAndNode(int i) : SimpleNode(i) {
 }
@@ -54,4 +58,12 @@ double ASTAndNode::evaluate(int evalType, double* values) {
 	}else{
 		return sum;
 	}
+}
+
+Node* ASTAndNode::copyTree() {
+	ASTAndNode* node = new ASTAndNode();
+	for (int i=0;i<jjtGetNumChildren();i++){
+		node->jjtAddChild(jjtGetChild(i)->copyTree());
+	}
+	return node;	
 }

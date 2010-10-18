@@ -1,5 +1,9 @@
 #include "ASTOrNode.h"
 #include "ExpressionException.h"
+#include "ExpressionParserTreeConstants.h"
+
+ASTOrNode::ASTOrNode() : SimpleNode(JJTORNODE) {
+}
 
 ASTOrNode::ASTOrNode(int i) : SimpleNode(i) {
 }
@@ -52,4 +56,12 @@ double ASTOrNode::evaluate(int evalType, double* values) {
 		throw (*savedException);
 	} 
 	return 0.0;
+}
+
+Node* ASTOrNode::copyTree() {
+	ASTOrNode* node = new ASTOrNode();
+	for (int i=0;i<jjtGetNumChildren();i++){
+		node->jjtAddChild(jjtGetChild(i)->copyTree());
+	}
+	return node;	
 }

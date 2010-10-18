@@ -1,3 +1,6 @@
+#include <memory.h>
+#include <stdlib.h>
+
 #include "ASTOrNode.h"
 #include "ASTAndNode.h"
 #include "ASTRelationalNode.h"

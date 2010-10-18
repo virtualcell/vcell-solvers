@@ -24,23 +24,23 @@ typedef long long int64;
 typedef unsigned char boolean;
 #endif
 
-#ifndef max
-#define max(a,b)            (((a) > (b)) ? (a) : (b))
-#endif
-
-#ifndef min
-#define min(a,b)            (((a) < (b)) ? (a) : (b))
-#endif
-
 #ifndef EP_DOUBLE_INFINITY
 #define EP_DOUBLE_INFINITY
-#ifdef LINUX
+#if (defined(LINUX) || defined(CYGWIN))
 #include <cmath>
 static double EP_double_infinity = INFINITY;
 #else
 #include <limits>
 static double EP_double_infinity = numeric_limits<double>::infinity();
 #endif
+#endif
+
+#ifndef max
+#define max(a,b)            (((a) > (b)) ? (a) : (b))
+#endif
+
+#ifndef min
+#define min(a,b)            (((a) < (b)) ? (a) : (b))
 #endif
 
 #endif

@@ -1,3 +1,7 @@
+#include <stdlib.h>
+#include <typeinfo>
+#include <string.h>
+
 #include "Exception.h"
 #include "ParserException.h"
 #include "RuntimeException.h"
@@ -8,7 +12,6 @@
 #include "ParseException.h"
 #include "IOException.h"
 #include "ExpressionBindingException.h"
-#include <stdlib.h>
 
 VCell::Exception::Exception(string titleVal, string msg)
 {
@@ -90,7 +93,36 @@ void VCell::Exception::rethrowException(Exception& ex, string replacementMessage
 	throw ex;
 }
 
-#if ( !defined(WIN32) && !defined(WIN64) )
+#ifdef CYGWIN
+static void reverse(char* s)
+{
+    int i, j;
+    char c;
+
+    for (i = 0, j = strlen(s)-1; i<j; i++, j--) {
+        c = s[i];
+        s[i] = s[j];
+        s[j] = c;
+    }
+}
+
+static void itoa(int n, char* s, int base)
+{
+    int i, sign;
+
+    if ((sign = n) < 0)  /* record sign */
+        n = -n;          /* make n positive */
+    i = 0;
+    do {       /* generate digits in reverse order */
+        s[i++] = n % base + '0';   /* get next digit */
+    } while ((n /= base) > 0);     /* delete it */
+    if (sign < 0)
+        s[i++] = '-';
+    s[i] = '\0';
+    reverse(s);
+}
+
+#elif (!defined(WIN32) && !defined(WIN64) )
 char* itoa( int value, char* result, int base ) {	
 	
 	if (base < 2 || base > 16) { 

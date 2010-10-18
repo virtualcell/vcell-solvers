@@ -18,6 +18,12 @@ public:
 	void getStackElements(vector<StackElement>& elements);
 	double evaluate(int evalType, double* values=0); 
 	void getSymbols(vector<string>& symbols, int language, NameScope* nameScope);
+
+	Node* copyTree();
+	bool equals(Node* node);
+
+private:
+	ASTIdNode(ASTIdNode*);
 };
 
 #endif

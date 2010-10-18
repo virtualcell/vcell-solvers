@@ -3,10 +3,13 @@
 #include "ExpressionBindingException.h"
 #include "RuntimeException.h"
 #include "Expression.h"
+#include "ExpressionParserTreeConstants.h"
 
-ASTIdNode::ASTIdNode(int i) : SimpleNode(i) , symbolTableEntry(NULL)
-{	
-	symbolTableEntry = 0;
+ASTIdNode::ASTIdNode(ASTIdNode* node) : SimpleNode(node->id) , name(node->name), symbolTableEntry(node->symbolTableEntry) {
+}
+
+ASTIdNode::ASTIdNode(int i) : SimpleNode(i), symbolTableEntry(null)
+{
 }
 
 ASTIdNode::~ASTIdNode() {
@@ -111,4 +114,28 @@ void ASTIdNode::getSymbols(vector<string>& symbols, int language, NameScope* nam
 		}
 	}
 	symbols.push_back(infix);
+}
+
+Node* ASTIdNode::copyTree() {
+	ASTIdNode* node = new ASTIdNode(this);
+	return node;	
+}
+
+bool ASTIdNode::equals(Node* node) {
+	//
+	// check to see if the types and children are the same
+	//
+	if (!SimpleNode::equals(node)){
+		return false;
+	}
+	
+	//
+	// check this node for same state (identifier)
+	//	
+	ASTIdNode* idNode = (ASTIdNode*)node;
+	if (idNode->name != name){
+		return false;
+	}
+
+	return true;
 }

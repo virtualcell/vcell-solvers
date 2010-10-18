@@ -13,9 +13,14 @@ public:
 	void getStackElements(vector<StackElement>& elements);
 	double evaluate(int evalType, double* values=0); 
 
+	Node* copyTree();
+	bool equals(Node* node);
+
 private:
 	int funcType;
-	string name;
+	string funcName;
+
+	ASTFuncNode();
 };
 
 #endif

@@ -38,3 +38,27 @@ void ASTFloatNode::getStackElements(vector<StackElement>& elements) {
 double ASTFloatNode::evaluate(int evalType, double* values) {
 	return value;
 }
+
+Node* ASTFloatNode::copyTree(){
+	ASTFloatNode* node = new ASTFloatNode(value);
+	return node;	
+}
+
+bool ASTFloatNode::equals(Node* node) {
+	//
+	// check to see if the types and children are the same
+	//
+	if (!SimpleNode::equals(node)){
+		return false;
+	}
+	
+	//
+	// check this node for same state (value)
+	//	
+	ASTFloatNode* floatNode = (ASTFloatNode*)node;
+	if (floatNode->value != value){
+		return false;
+	}	
+
+	return true;
+}

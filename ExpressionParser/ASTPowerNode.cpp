@@ -1,9 +1,13 @@
+#include <math.h>
+#include <limits>
 #include "ASTPowerNode.h"
 #include "RuntimeException.h"
 #include "DivideByZeroException.h"
 #include "FunctionDomainException.h"
-#include <math.h>
-#include <limits>
+#include "ExpressionParserTreeConstants.h"
+
+ASTPowerNode::ASTPowerNode() : SimpleNode(JJTPOWERNODE) {
+}
 
 ASTPowerNode::ASTPowerNode(int i) : SimpleNode(i) {
 }
@@ -107,4 +111,12 @@ double ASTPowerNode::evaluate(int evalType, double* values) {
 			throw (*exponentException);
 		} 
 	}
+}
+
+Node* ASTPowerNode::copyTree() {
+	ASTPowerNode* node = new ASTPowerNode();
+	for (int i=0;i<jjtGetNumChildren();i++){
+		node->jjtAddChild(jjtGetChild(i)->copyTree());
+	}
+	return node;	
 }

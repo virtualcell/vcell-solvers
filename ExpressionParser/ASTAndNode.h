@@ -12,6 +12,11 @@ public:
 	void getStackElements(vector<StackElement>& elements);
 	double evaluate(int evalType, double* values=0); 
 	bool isBoolean();
+
+	Node* copyTree();
+
+private:
+	ASTAndNode();
 };
 
 #endif
