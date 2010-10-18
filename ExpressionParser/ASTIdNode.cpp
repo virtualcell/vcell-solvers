@@ -3,7 +3,6 @@
 #include "ExpressionBindingException.h"
 #include "RuntimeException.h"
 #include "Expression.h"
-#include "ExpressionParserTreeConstants.h"
 
 ASTIdNode::ASTIdNode(ASTIdNode* node) : SimpleNode(node->id) , name(node->name), symbolTableEntry(node->symbolTableEntry) {
 }
