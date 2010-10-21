@@ -1,7 +1,14 @@
-#ifndef EXPRESSION_H
-#define EXPRESSION_H
+#ifndef VCELL_EXPRESSION_H
+#define VCELL_EXPRESSION_H
 
 #include "SimpleNode.h"
+
+class SymbolTable;
+class SymbolTableEntry;
+class SimpleNode;
+class StackMachine;
+
+namespace VCell {
 
 class Expression
 {
@@ -41,5 +48,5 @@ private:
 	StackMachine* stackMachine;
 	inline StackMachine* getStackMachine();
 };
-
+}
 #endif

@@ -4,12 +4,15 @@
 #include "RuntimeException.h"
 #include "Expression.h"
 
+using namespace VCell;
+
 ASTIdNode::ASTIdNode(ASTIdNode* node) : SimpleNode(node->id) , name(node->name), symbolTableEntry(node->symbolTableEntry) {
 }
 
 ASTIdNode::ASTIdNode(int i) : SimpleNode(i), symbolTableEntry(null)
 {
 }
+
 
 ASTIdNode::~ASTIdNode() {
 }

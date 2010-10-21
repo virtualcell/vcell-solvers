@@ -9,7 +9,7 @@ public:
 	SimpleSymbolTableEntry(string& nameValue, int indexVal, NameScope* namescopeVal, ValueProxy* proxyVal);
 	~SimpleSymbolTableEntry(void);
 	double getConstantValue();
-	Expression* getExpression();
+	VCell::Expression* getExpression();
 	int getIndex();
 	string& getName();    
 	NameScope* getNameScope();

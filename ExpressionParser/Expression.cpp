@@ -14,25 +14,25 @@
 //long Expression::substituteCount = 0;
 //long Expression::bindCount = 0;
 
-Expression::Expression(void)
+VCell::Expression::Expression(void)
 {
 	rootNode = null;
 	stackMachine = null;
 }
 
-Expression::Expression(Expression* expression)
+VCell::Expression::Expression(Expression* expression)
 {
 	this->rootNode = (SimpleNode*)expression->rootNode->copyTree();
 	stackMachine = null;
 }
 
-Expression::~Expression(void)
+VCell::Expression::~Expression(void)
 {
 	delete rootNode;
 	delete stackMachine;
 }
 
-Expression::Expression(string expString)
+VCell::Expression::Expression(string expString)
 {
 	rootNode = 0;
 	stackMachine = null;
@@ -64,23 +64,23 @@ Expression::Expression(string expString)
 	parseExpression(trimstr);
 }
 
-void Expression::showStackInstructions(void)
+void VCell::Expression::showStackInstructions(void)
 {
 	getStackMachine()->showInstructions();
 	cout.flush();
 }
 
-double Expression::evaluateConstant(void)
+double VCell::Expression::evaluateConstant(void)
 {
 	return getStackMachine()->evaluate(null);
 }
 
-double Expression::evaluateConstantTree()
+double VCell::Expression::evaluateConstantTree()
 {
 	return rootNode->evaluate(EVALUATE_CONSTANT);
 }
 
-double Expression::evaluateVectorTree(double* values)
+double VCell::Expression::evaluateVectorTree(double* values)
 {
 	try {
 		return rootNode->evaluate(EVALUATE_VECTOR, values);
@@ -89,7 +89,7 @@ double Expression::evaluateVectorTree(double* values)
 	}
 }
 
-double Expression::evaluateVector(double* values)
+double VCell::Expression::evaluateVector(double* values)
 {
 	try {
 		return getStackMachine()->evaluate(values);
@@ -98,7 +98,7 @@ double Expression::evaluateVector(double* values)
 	}
 }
 
-void Expression::parseExpression(string exp)
+void VCell::Expression::parseExpression(string exp)
 {
 	//parseCount++;
 	try {
@@ -119,18 +119,18 @@ void Expression::parseExpression(string exp)
 	}
 }
 
-string Expression::infix(void)
+string VCell::Expression::infix(void)
 {
 	return rootNode->infixString(LANGUAGE_DEFAULT, 0);
 }
 
-void Expression::bindExpression(SymbolTable* symbolTable)
+void VCell::Expression::bindExpression(SymbolTable* symbolTable)
 {	
 	//bindCount++;
 	rootNode->bind(symbolTable);
 }
 
-string Expression::trim(string str)
+string VCell::Expression::trim(string str)
 {
 	int len = (int)str.length();
 	int st = 0;
@@ -146,7 +146,7 @@ string Expression::trim(string str)
 	return ((st > 0) || (len < (int)str.length())) ?  str.substr(st, len-st) : str;
 }
 
-inline StackMachine* Expression::getStackMachine() {
+inline StackMachine* VCell::Expression::getStackMachine() {
 	if (stackMachine == null) {
 		vector<StackElement> elements_vector;
 		rootNode->getStackElements(elements_vector);
@@ -161,19 +161,19 @@ inline StackMachine* Expression::getStackMachine() {
 	return stackMachine;
 }
 
-void Expression::getSymbols(vector<string>& symbols) {
+void VCell::Expression::getSymbols(vector<string>& symbols) {
 	rootNode->getSymbols(symbols, LANGUAGE_DEFAULT, 0);
 }
 
-SymbolTableEntry* Expression::getSymbolBinding(string symbol){
+SymbolTableEntry* VCell::Expression::getSymbolBinding(string symbol){
 	return rootNode->getBinding(symbol);
 }
 
-double Expression::evaluateProxy() {
+double VCell::Expression::evaluateProxy() {
 	return evaluateVector(0);
 }
 
-void Expression::substituteInPlace(Expression* origExp, Expression* newExp) {
+void VCell::Expression::substituteInPlace(Expression* origExp, Expression* newExp) {
 	SimpleNode* origNode = origExp->rootNode;
 	SimpleNode* newNode = (SimpleNode*)newExp->rootNode->copyTree();
 	//
