@@ -84,6 +84,8 @@ private:
 	long orthoIndex(long memIndex, long insideIndex, long outsideIndex, long indexer, int boundMask);
 	long getNeighbor(int n,  long index, int neighbor);
 
+	void findMembranePointInCurve(int n,  long index, int neighborDir, int& leftOverN, int& returnNeighbor);
+
 	double domainSizeX;
 	double domainSizeY;
 	double domainSizeZ;

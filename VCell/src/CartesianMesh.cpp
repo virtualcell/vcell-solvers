@@ -71,6 +71,8 @@ extern "C"
 #include "zlib.h"
 }
 
+static const int NumNaturalNeighbors_Membrane[] = {0, 0, 2, 4};
+
 CartesianMesh::CartesianMesh(double AcaptureNeighborhood) : Mesh(AcaptureNeighborhood){
 }
 
@@ -1143,6 +1145,70 @@ void CartesianMesh::computeExactNormals() {
 #endif
 }
 
+long CartesianMesh::getNeighbor(int n,  long index, int neighbor)
+{
+	int k, new_neighbor;
+	if(getDimension() == 2){k=2;}
+	if(getDimension() == 3){k=4;}
+	n = n - 1;
+	if(n < 0){
+		return index;
+	}else{
+		MembraneElement *pElement = getMembraneElements()+index;
+		long neighborIndex = pElement->neighborMEIndex[neighbor];
+		if(neighborIndex < 0){
+			return -1;
+		}else{
+			new_neighbor = -1;
+			MembraneElement *pNeighbor = getMembraneElements()+neighborIndex;
+			for(int i=0; i<k; i++){
+				if((pNeighbor->neighborMEIndex[i])==index){
+					new_neighbor = (i+k/2)%k;
+				}
+			}
+			if (new_neighbor < 0){
+				return -1;
+			}
+		}   
+		return getNeighbor(n, neighborIndex, new_neighbor);
+	}
+}
+
+// modified from getNeighbor()
+// starting form membrane point index, find the N-th membrane point 
+// in the direction of a natural neighbor, following the curve.
+// if it reaches N, leftOverN returns 0 and returnNeighbor is the N-th point
+// if the curve ends before reaching N points, leftOverN returns a positive value <= N,
+// and returnNeighbor is the last point which is (N-leftOverN)-th point
+void CartesianMesh::findMembranePointInCurve(int N,  long index, int neighbor_dir, int& leftOverN, int& returnNeighbor)
+{	
+	int numNeighbors = NumNaturalNeighbors_Membrane[dimension];
+	leftOverN = N;
+	N = N - 1;
+	if (N < 0){		
+		returnNeighbor = index;
+		return;
+	}
+
+	long neighborIndex = pMembraneElement[index].neighborMEIndex[neighbor_dir];
+	if (neighborIndex < 0){
+		returnNeighbor = index;
+		return;
+	}
+	
+	int new_neighbor_dir = -1;
+	for (int i = 0; i < numNeighbors; i ++){
+		if (pMembraneElement[neighborIndex].neighborMEIndex[i] == index){
+			new_neighbor_dir = (i + numNeighbors/2) % numNeighbors;
+		}
+	}
+	if (new_neighbor_dir < 0){
+		throw "CartesianMesh::findMembranePointInCurve(), new_neighbor can never be < 0";
+	}
+
+	return findMembranePointInCurve(N, neighborIndex, new_neighbor_dir, leftOverN, returnNeighbor);
+}
+
 void CartesianMesh::computeNormalsFromNeighbors() {
 	//
 	//averaging over neighbors of arbitrary number  
@@ -1152,24 +1218,22 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 	}
 	cout << "CartesianMesh::computeNormalsFromNeighbors(), compute normals from neighbors" << endl;
 
-	const int NumNaturalNeighbors_Membrane[] = {0, 0, 2, 4};
-
 	int numOfNaturalNeighbors = NumNaturalNeighbors_Membrane[dimension];
 	
 	int tangentN[4];
 	int tangentNeighbors[4];
 	DoubleVector3 tangentWc[4];
 	DoubleVector3 tangentNormals[4];
-
-	static int localN = 3;
-	static double angleTol = PI/6;
-	double cosAngleTol = 0.0;
-	if (angleTol  < PI/2) {
-		cosAngleTol= cos(angleTol);
-	}
+	int leftOverN[4];
+	bool bFoundTangent[4];
+	
+	const int localN = 3;
+	const double angleTol = PI/6;
+	const double cosAngleTol = cos(angleTol);
+    const double NFrac=0.5; // percent for wall , >50%
+    const double NRelax = max(fabs(NFrac),0.50);
 
 	int replaceCount = 0;
-
 	for (long index = 0; index < numMembrane; index ++){
 		WorldCoord wc = getMembraneWorldCoord(index);
 		MembraneElement& meptr = pMembraneElement[index];
@@ -1177,34 +1241,84 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 		getN(index, tangentN);
 		while (true) {
 			int numOfValidTangentNeighbors = 0;
+
+			memset(bFoundTangent, 0, 4 * sizeof(bool));
+			// first go through all the valid tangent neighbors
 			for (int i = 0; i < numOfNaturalNeighbors; i ++) {
-				tangentNeighbors[i] = getNeighbor(tangentN[i], index, i);
-				if (tangentNeighbors[i] < 0 || tangentNeighbors[i] == index) {
-					tangentNeighbors[i] = -1;
-				} else {
+				findMembranePointInCurve(tangentN[i], index, i, leftOverN[i], tangentNeighbors[i]);
+
+				// sanity check
+				int oldGetNeighbor = getNeighbor(tangentN[i], index, i);
+				assert((oldGetNeighbor >= 0	&& tangentNeighbors[i] == oldGetNeighbor && leftOverN[i] == 0) 
+						|| (oldGetNeighbor < 0 && leftOverN[i] > 0));
+
+				tangentWc[i] = wc - getMembraneWorldCoord(tangentNeighbors[i]);
+				int newN = tangentN[i] - leftOverN[i];
+				if (newN >= NRelax*tangentN[i] ) {
 					numOfValidTangentNeighbors ++;
-	 				tangentWc[i] = wc - getMembraneWorldCoord(tangentNeighbors[i]);
+					bFoundTangent[i] = true;
 					tangentWc[i].normalize();
 
-					if (cosAngleTol > 0 && tangentN[i] > localN) {
+					if (cosAngleTol > 0 && newN > localN) {
 						int localTangentNeighbor = getNeighbor(localN, index, i);
 						DoubleVector3 localTangentWc = wc - getMembraneWorldCoord(localTangentNeighbor);
 						localTangentWc.normalize();
 						double dotp = tangentWc[i].dotProduct(localTangentWc); 
 						if (fabs(dotp) <= cosAngleTol) {
 							replaceCount ++;
-							//cout << "replacing, index= " << index << ", dotp=" << dotp << endl;
 							tangentWc[i] = localTangentWc;
 						}
 					}
-				}
-			}
+				} // if (leftOverN[i]
+			} // for (int i
 
 			if (numOfValidTangentNeighbors == 0) {  // if there are no neighbors at all, use face normal
 				meptr.unitNormal = getVolumeWorldCoord(meptr.vindexFeatureHi) - getVolumeWorldCoord(meptr.vindexFeatureLo);
 				meptr.unitNormal.normalize();
 				break;
-			}
+			} 
+			
+			if (numOfValidTangentNeighbors < numOfNaturalNeighbors) {
+				// second go through all the invalid neighbors 
+				// which is either point itelself or < 0			
+				for (int i = 0; i < numOfNaturalNeighbors; i ++) {
+					if (bFoundTangent[i]) {
+						continue;
+					}
+
+					if (leftOverN[i] == tangentN[i]) {
+						// point itself, cannot do more
+						tangentNeighbors[i] = -1;
+					} else {
+						// not enough points
+						int opposite_i = (i + numOfNaturalNeighbors/2) % numOfNaturalNeighbors;
+
+						// must have enough in oppoiste direction
+						assert(bFoundTangent[opposite_i]);
+						WorldCoord tempWc = -tangentWc[opposite_i];
+						tempWc.normalize();
+
+						double dotp = tangentWc[i].dotProduct(tempWc);
+                        if (fabs(dotp) > cosAngleTol) {
+							tangentNeighbors[i] = -1;
+							continue;
+						}
+
+						numOfValidTangentNeighbors ++;
+						if (cosAngleTol > 0 && tangentN[i] - leftOverN[i] > localN) {
+							int localTangentNeighbor = getNeighbor(localN, index, i);
+							DoubleVector3 localTangentWc = wc - getMembraneWorldCoord(localTangentNeighbor);
+							localTangentWc.normalize();
+							double dotp = tangentWc[i].dotProduct(localTangentWc); 
+							if (fabs(dotp) <= cosAngleTol) {
+								replaceCount ++;
+								//cout << "replacing, index= " << index << ", dotp=" << dotp << endl;
+								tangentWc[i] = localTangentWc;
+							}
+						} // if (cosAngleTol > 0
+					} // else if (leftOverN[i]
+				} // for (int i
+			} // if (numOfValidTangentNeighbors
 		
 			int tangentNormalCount = 0;
 			memset(tangentNormals, 0, 4 * sizeof(DoubleVector3));
@@ -1605,34 +1719,6 @@ long CartesianMesh::orthoIndex(long memIndex, long idxLo,long idxHi,long indexer
 	return NO_CONNECTING_NEIGHBOR;
 }
 
-long CartesianMesh::getNeighbor(int n,  long index, int neighbor)
-{
-	int k, new_neighbor;
-	if(getDimension() == 2){k=2;}
-	if(getDimension() == 3){k=4;}
-	n = n - 1;
-	if(n < 0){
-		return index;
-	}else{
-		MembraneElement *pElement = getMembraneElements()+index;
-		long neighborIndex = pElement->neighborMEIndex[neighbor];
-		if(neighborIndex < 0){
-			return -1;
-		}else{
-			new_neighbor = -1;
-			MembraneElement *pNeighbor = getMembraneElements()+neighborIndex;
-			for(int i=0; i<k; i++){
-				if((pNeighbor->neighborMEIndex[i])==index){
-					new_neighbor = (i+k/2)%k;
-				}
-			}
-			if (new_neighbor < 0){
-				return -1;
-			}
-		}   
-		return getNeighbor(n, neighborIndex, new_neighbor);
-	}
-}
 
 long* qvoronoi(int dim, int numpoints, double (*points)[2], int focus, vector<VoronoiRidge>& ridges, int artificialOffset);
 
