@@ -5,14 +5,16 @@
 #include <vector>
 using namespace std;
 
-class Expression;
+namespace VCell {
+	class Expression;
+}
 class SymbolTable;
 
 struct Column {
 	string name;
-	Expression* expression;
+	VCell::Expression* expression;
 	
-	Column(string arg_name, Expression* exp) {
+	Column(string arg_name, VCell::Expression* exp) {
 		name = arg_name;
 		expression = exp;
 	}
@@ -45,7 +47,7 @@ public:
 	int getNumFunctionColumns() { return numFunctionColumns; }
 	int getNumDataColumns() { return numDataColumns; }
 
-	Expression* getColumnFunctionExpression(int columnIndex);
+	VCell::Expression* getColumnFunctionExpression(int columnIndex);
 	void clearData();
 
 	void copyInto(OdeResultSet* otherOdeResultSet);

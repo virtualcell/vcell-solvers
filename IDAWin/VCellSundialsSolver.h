@@ -1,11 +1,6 @@
 #ifndef VCELLSUNDIALSSOLVER_H
 #define VCELLSUNDIALSSOLVER_H
 
-#include <Expression.h>
-
-#include <nvector/nvector_serial.h>
-#include <sundials/sundials_types.h>
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -14,7 +9,13 @@ using std::vector;
 using std::list;
 using std::stringstream;
 
-class Expression;
+#include <Expression.h>
+using VCell::Expression;
+
+#include <nvector/nvector_serial.h>
+#include <sundials/sundials_types.h>
+
+
 class SymbolTable;
 class OdeResultSet;
 

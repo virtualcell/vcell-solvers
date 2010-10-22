@@ -7,7 +7,9 @@ using namespace std;
 
 class SimulationExpression;
 class SimpleSymbolTable;
-class Expression;
+namespace VCell {
+	class Expression;
+}
 
 //-----------------------------------------------------------------
 //
@@ -22,10 +24,10 @@ public:
 	virtual void resolveReferences(Simulation *sim);
 	void updateDependentVars();
 
-	void setPseudoConstants(string* symbols, Expression** expressions);
-    void setFastRateExpressions(Expression** expressions);
-	void setFastDependencyExpressions(string* symbols, Expression** expressions);
-	void setJacobianExpressions(Expression** expressions);
+	void setPseudoConstants(string* symbols, VCell::Expression** expressions);
+    void setFastRateExpressions(VCell::Expression** expressions);
+	void setFastDependencyExpressions(string* symbols, VCell::Expression** expressions);
+	void setJacobianExpressions(VCell::Expression** expressions);
 	void setCoordinates(double time_sec, WorldCoord& wc);
 
     void initVars();
@@ -40,10 +42,10 @@ private:
 	double* pseudoConstants;
 	SimpleSymbolTable* fastSymbolTable; // include independent, pseudo, field data, random variables;
 	double* fastValues;	
-	Expression** pseudoConstantExpressions;
-	Expression** fastRateExpressions;
-	Expression** fastDependencyExpressions;
-	Expression** jacobianExpressions;
+	VCell::Expression** pseudoConstantExpressions;
+	VCell::Expression** fastRateExpressions;
+	VCell::Expression** fastDependencyExpressions;
+	VCell::Expression** jacobianExpressions;
 
 	void bindAllExpressions();
 	SimpleSymbolTable* getFastSymbolTable();

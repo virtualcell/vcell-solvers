@@ -7,7 +7,9 @@ using std::istream;
 
 class SimTool;
 class VCellModel;
-class Expression;
+namespace VCell {
+	class Expression;
+}
 class VarContext;
 class CartesianMesh;
 class Variable;
@@ -42,7 +44,7 @@ private:
 	void loadJMSInfo(istream& ifsInput, int taskID);
 	void loadModel(istream& ifsInput);
 	void loadSimulation(istream& ifsInput);
-	Expression* readExpression(istream& ifsInput, string& var_name, string prefix="");
+	VCell::Expression* readExpression(istream& ifsInput, string& var_name, string prefix="");
 	VarContext* loadEquation(istream& ifsInput, Structure* structure, Variable* var);
 	void loadJumpCondition(istream& ifsInput, Membrane*, string& var_name);
 	void loadPseudoConstants(istream& ifsInput, FastSystemExpression* fastSystem);

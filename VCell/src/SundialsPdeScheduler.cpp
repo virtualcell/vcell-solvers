@@ -2,10 +2,9 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#include <VCELL/Element.h>
-#include <Expression.h>
-//#include <MathUtil.h>
 #include <VCELL/SundialsPdeScheduler.h>
+
+#include <VCELL/Element.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/Solver.h>
 #include <VCELL/VolumeVariable.h>

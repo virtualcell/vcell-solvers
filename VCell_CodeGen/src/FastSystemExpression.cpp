@@ -3,11 +3,14 @@
  * All rights reserved.
  */
 #include <VCELL/FastSystemExpression.h>
+
+#include <SimpleSymbolTable.h>
+#include <Expression.h>
+using VCell::Expression;
+
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/Variable.h>
 #include <VCELL/CartesianMesh.h>
-#include <Expression.h>
-#include <SimpleSymbolTable.h>
 #include <VCELL/RandomVariable.h>
 
 //-----------------------------------------------------------------

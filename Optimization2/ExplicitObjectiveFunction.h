@@ -3,13 +3,17 @@
 
 #include "ObjectiveFunction.h"
 
-class Expression;
+namespace VCell {
+	class Expression;
+}
+
 class SymbolTable;
 class ParameterDescription;
 
 class ExplicitObjectiveFunction : public ObjectiveFunction {
 public:
-	ExplicitObjectiveFunction(Expression* objFuncExpression, ParameterDescription* parameterDescription, SymbolTable* symbolTable, void (*checkStopRequested)(double, long));
+	ExplicitObjectiveFunction(VCell::Expression* objFuncExpression, ParameterDescription* parameterDescription, 
+		SymbolTable* symbolTable, void (*checkStopRequested)(double, long));
 
 	~ExplicitObjectiveFunction();
 
@@ -25,7 +29,7 @@ protected:
 	ParameterDescription* parameterDescription;
 
 	int numObjFuncEvals;
-	Expression* objFuncExpression;
+	VCell::Expression* objFuncExpression;
 	double bestObjectiveFunctionValue;
 	double* bestParameterValues;
 	void (*fn_checkStopRequested)(double, long);

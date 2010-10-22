@@ -1,7 +1,9 @@
 #ifndef CONSTRAINT_H
 #define CONSTRAINT_H
 
-class Expression;
+namespace VCell {
+	class Expression;
+}
 class SymbolTable;
 
 enum ConstraintType {EQUALITY_LINEAR=1, EQUALITY_NONLINEAR, INEQUALITY_LINEAR, INEQUALITY_NONLINEAR};
@@ -16,7 +18,7 @@ public:
 	ConstraintType getConstraintType() { return constraintType; }
 
 private:
-	Expression* exp;
+	VCell::Expression* exp;
 	ConstraintType constraintType;
 };
 

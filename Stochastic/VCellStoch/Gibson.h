@@ -2,8 +2,9 @@
 #define GIBSON_H
 
 #include <fstream>
-#include "IndexedTree.h"
+using std::ofstream;
 #include "StochModel.h"
+class IndexedTree;
 
 /* This class defines Gibson method which is also called Next Reaction Method.
  * The Gibson method uses only a single random number per simulation event and 

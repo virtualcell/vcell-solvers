@@ -1,9 +1,10 @@
 #include "Jump.h"
-#include "SymbolTable.h"
-#include "SimpleSymbolTable.h"
-#include "Exception.h"
-using namespace VCell;
-using namespace std;
+
+#include <SimpleSymbolTable.h>
+#include <Exception.h>
+#include <Expression.h>
+using VCell::Exception;
+using VCell::Expression;
 
 //---------------Definition of StochVarContext Class-----------------
 /*

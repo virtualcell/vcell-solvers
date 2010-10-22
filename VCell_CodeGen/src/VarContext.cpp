@@ -3,6 +3,12 @@
  * All rights reserved.
  */
 #include <VCELL/VarContext.h>
+
+#include <sstream>
+using namespace std;
+#include <Expression.h>
+using VCell::Expression;
+
 #include <VCELL/SimTypes.h>
 #include <VCELL/Element.h>
 #include <VCELL/Solver.h>
@@ -14,10 +20,6 @@
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/MembraneRegion.h>
 #include <VCELL/CartesianMesh.h>
-
-#include <sstream>
-using namespace std;
-#include <Expression.h>
 
 VarContext::VarContext(Feature *Afeature, string& AspeciesName)
 {

@@ -1,15 +1,17 @@
 // OptSolverLibrary.cpp : Defines the entry point for the application.
 //
-
 #include "ExplicitObjectiveFunction.h"
-#include "ParameterDescription.h"
-#include "Expression.h"
+
 #include <float.h>
 #include <iostream>
 using namespace std;
 
+#include "ParameterDescription.h"
+#include <Expression.h>
+using VCell::Expression;
 
-ExplicitObjectiveFunction::ExplicitObjectiveFunction(Expression* arg_objFuncExpression, ParameterDescription* arg_parameterDescription, SymbolTable* arg_symbolTable, void (*arg_checkStopRequested)(double, long))
+ExplicitObjectiveFunction::ExplicitObjectiveFunction(Expression* arg_objFuncExpression, ParameterDescription* arg_parameterDescription, 
+													 SymbolTable* arg_symbolTable, void (*arg_checkStopRequested)(double, long))
 {
 	parameterDescription = arg_parameterDescription;
 	int numParameters = parameterDescription->getNumParameters();

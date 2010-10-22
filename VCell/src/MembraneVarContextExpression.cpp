@@ -6,12 +6,10 @@
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/Element.h>
 #include <VCELL/MembraneRegion.h>
-#include <Expression.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/Solver.h>
 #include <VCELL/Membrane.h>
 #include <VCELL/Mesh.h>
-#include <SimpleSymbolTable.h>
 
 MembraneVarContextExpression::MembraneVarContextExpression(Membrane *membrane, MembraneVariable* var)
 : MembraneVarContext(membrane, var)

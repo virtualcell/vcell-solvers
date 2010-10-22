@@ -3,13 +3,11 @@
  * All rights reserved.
  */
 #include <VCELL/VolumeVarContextExpression.h>
-#include <Expression.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/Solver.h>
 #include <VCELL/Mesh.h>
-#include <SimpleSymbolTable.h>
 #include <VCELL/VolumeVariable.h>
 
 VolumeVarContextExpression::VolumeVarContextExpression(Feature *feature, VolumeVariable* var)
@@ -119,7 +117,7 @@ bool VolumeVarContextExpression::isNullExpressionOK(int expIndex) {
 	}
 
 	Solver* solver = sim->getSolverFromVariable(species);
-	if (solver != null && solver->isPDESolver()) {
+	if (solver != NULL && solver->isPDESolver()) {
 		if (expIndex == DIFF_RATE_EXP) {
 			return false;
 		}

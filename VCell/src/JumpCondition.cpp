@@ -1,10 +1,12 @@
-#include <VCELL/Element.h>
 #include <VCELL/JumpCondition.h>
-#include <Expression.h>
+
+#include <VCELL/Element.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/SimTool.h>
+#include <Expression.h>
+using VCell::Expression;
 
 JumpCondition::JumpCondition(Membrane* m, Expression* e)
 {

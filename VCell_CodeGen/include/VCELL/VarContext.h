@@ -18,7 +18,10 @@ static string String_Expression_Index[] = {"INITIAL_VALUE_EXP", "DIFF_RATE_EXP",
 	"BOUNDARY_YM_EXP", "BOUNDARY_YP_EXP", "BOUNDARY_ZM_EXP", "BOUNDARY_ZP_EXP", "VELOCITY_X_EXP", "VELOCITY_Y_EXP", "VELOCITY_Z_EXP",
 	"IN_FLUX_EXP", "OUT_FLUX_EXP", "UNIFORM_RATE_EXP"};
 #define TOTAL_NUM_EXPRESSIONS (UNIFORM_RATE_EXP + 1)
-class Expression;
+
+namespace VCell {
+	class Expression;
+}
 class SymbolTable;
 
 class Variable;
@@ -49,7 +52,7 @@ public:
 	
 	Feature       *getParent() { return feature; }
 
-	void setExpression(Expression* newexp, int expIndex);
+	void setExpression(VCell::Expression* newexp, int expIndex);
 	void bindAll(SymbolTable* symbolTable);
 
 	double evalExpression(long expIndex, double* values);
@@ -67,14 +70,14 @@ protected:
     Mesh          *mesh;
     Simulation    *sim;
 
-	Expression** expressions;	
+	VCell::Expression** expressions;	
 	double** constantValues;
 	bool* needsXYZ;
 
 	double getExpressionValue(long volIndex, long expIndex);
 	double getExpressionValue(MembraneElement* element, long expIndex);
 	virtual bool isNullExpressionOK(int expIndex) { return false; }
-	Expression* getExpression(int expIndex)  { return expressions[expIndex]; }	
+	VCell::Expression* getExpression(int expIndex)  { return expressions[expIndex]; }	
 
 private:
     friend class Feature;

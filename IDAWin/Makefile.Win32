@@ -48,4 +48,4 @@ $(OBJDIR)\SimulationMessaging.obj : ..\VCell\include\VCELL\SimulationMessaging.h
 
 clean:
 	del $(TARGET_LIB) 
-	del $(CPPOBJECTS) $(STDALONE_CPPOBJECTS)
+	del /q $(CPPOBJECTS) $(STDALONE_CPPOBJECTS)

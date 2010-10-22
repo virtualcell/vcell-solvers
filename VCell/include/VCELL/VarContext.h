@@ -27,7 +27,6 @@ static string String_Expression_Index[] = {"INITIAL_VALUE_EXP", "DIFF_RATE_EXP",
 	"UNIFORM_RATE_EXP"};
 #define TOTAL_NUM_EXPRESSIONS (UNIFORM_RATE_EXP + 1)
 
-class Expression;
 class Variable;
 class VolumeVariable;
 class Structure;
@@ -38,6 +37,9 @@ class SimulationExpression;
 class Membrane;
 class JumpCondition;
 struct MembraneElement;
+namespace VCell {
+	class Expression;
+}
 
 class VarContext {
 
@@ -58,14 +60,14 @@ public:
 	
 	Structure  *getStructure() { return structure; }
 
-	void setExpression(Expression* newexp, int expIndex);
+	void setExpression(VCell::Expression* newexp, int expIndex);
 
 	// exclusively for sundials pde
 	double evaluateJumpCondition(MembraneElement*, double* values);
 	double evaluateExpression(long expIndex, double* values);
 	double evaluateConstantExpression(long expIndex);
 
-	void addJumpCondition(Membrane* membrane, Expression* exp);	
+	void addJumpCondition(Membrane* membrane, VCell::Expression* exp);	
 	JumpCondition* getJumpCondition();
 	void reinitConstantValues();
 
@@ -88,7 +90,7 @@ protected:
 	bool isXYZOnlyExpression(long expIndex);
 
 private:
-	Expression** expressions;
+	VCell::Expression** expressions;
 	double** constantValues;
 	//bool* needsXYZ;
 

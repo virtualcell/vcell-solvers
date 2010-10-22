@@ -1,8 +1,13 @@
+#include "OptXmlReader2.h"
+
+#include <float.h>
 #include <iostream>
 #include <sstream>
 using namespace std;
 
-#include "OptXmlReader2.h"
+#include <Expression.h>
+using VCell::Expression;
+
 #include "OptXml.h"
 #include "OptProblemDescription.h"
 #include "ObjectiveFunction.h"
@@ -14,10 +19,8 @@ using namespace std;
 #include "PdeObjectiveFunction.h"
 #include "OdeResultSet.h"
 #include "Constraint.h"
-#include <Expression.h>
-#include <tinyxml.h>
 #include "SpatialReferenceData.h"
-#include <float.h>
+#include <tinyxml.h>
 
 OptXmlReader2::OptXmlReader2(){
 }

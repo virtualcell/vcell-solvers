@@ -6,17 +6,12 @@
 using std::vector;
 
 class Feature;
-struct MembraneElement;
-class MembraneVariable;
-class MembraneVarContext;
-class MembraneRegionVariable;
-class MembraneRegionVarContext;
 class Simulation;
-class FastSystem;
-class JumpCondition;
-class SimulationExpression;
-class Variable;
-class Expression;
+struct MembraneElement;
+class MembraneVarContext;
+class MembraneRegionVarContext;
+class MembraneVariable;
+class MembraneRegionVariable;
 
 class Membrane : public Structure
 {

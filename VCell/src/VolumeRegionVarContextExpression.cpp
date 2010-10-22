@@ -5,8 +5,6 @@
 #include <VCELL/VolumeRegionVarContextExpression.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/VolumeRegion.h>
-#include <Expression.h>
-#include <SimpleSymbolTable.h>
 
 VolumeRegionVarContextExpression:: VolumeRegionVarContextExpression(Feature *feature, VolumeRegionVariable* var) 
 : VolumeRegionVarContext(feature, var)

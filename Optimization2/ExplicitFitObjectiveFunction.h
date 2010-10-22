@@ -7,13 +7,15 @@ using namespace std;
 #include "ObjectiveFunction.h"
 
 class OdeResultSet;
-class Expression;
+namespace VCell {
+	class Expression;
+}
 class SymbolTable;
 class ParameterDescription;
 
 class ExplicitFitObjectiveFunction : public ObjectiveFunction {
 public:
-	ExplicitFitObjectiveFunction(Expression* functionExpression,
+	ExplicitFitObjectiveFunction(VCell::Expression* functionExpression,
 		ParameterDescription* parameterDescription, 
 		OdeResultSet* arg_referenceData,
 		void (*checkStopRequested)(double, long));
@@ -30,7 +32,7 @@ private:
 	double computeL2error(double* paramValues);
 
 	double* unscaled_x;
-	Expression* functionExpression;
+	VCell::Expression* functionExpression;
 	ParameterDescription* parameterDescription;
 	SymbolTable* symbolTable;
 

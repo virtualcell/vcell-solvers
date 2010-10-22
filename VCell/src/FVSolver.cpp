@@ -1,12 +1,14 @@
+#include <VCELL/FVSolver.h>
+
 #include <assert.h>
 #include <sys/stat.h>
 #include <fstream>
 using std::ifstream;
 
-#include <VCELL/Element.h>
-#include <Exception.h>
 #include <Expression.h>
-#include <VCELL/FVSolver.h>
+using VCell::Expression;
+
+#include <VCELL/Element.h>
 #include <VCELL/VolumeVariable.h>
 #include <VCELL/VolumeRegionVariable.h>
 #include <VCELL/MembraneVariable.h>

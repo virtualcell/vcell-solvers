@@ -2,10 +2,14 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
+#include <VCELL/VarContext.h>
+
 #include <sstream>
 using std::stringstream;
 
-#include <VCELL/VarContext.h>
+#include <Expression.h>
+using VCell::Expression;
+
 #include <VCELL/Element.h>
 #include <VCELL/Variable.h>
 #include <VCELL/SimulationExpression.h>
@@ -15,7 +19,6 @@ using std::stringstream;
 #include <VCELL/Membrane.h>
 #include <VCELL/JumpCondition.h>
 #include <VCELL/SimTool.h>
-#include <Expression.h>
 
 VarContext::VarContext(Structure *s, Variable* var)
 {

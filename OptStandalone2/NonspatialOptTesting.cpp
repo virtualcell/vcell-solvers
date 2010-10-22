@@ -1,3 +1,17 @@
+#include "NonspatialOptTesting.h"
+
+#include <math.h>
+#include <float.h>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
+using namespace std;
+
+#include <Expression.h>
+#include <OdeResultSet.h>
+using VCell::Expression;
+
 #include "OptSolver2.h"
 #include "OptProblemDescription.h"
 #include "ObjectiveFunction.h"
@@ -6,20 +20,9 @@
 #include "ExplicitConstraintDescription.h"
 #include "Constraint.h"
 #include "SimpleParameterDescription.h"
-#include "Expression.h"
-#include "OdeResultSet.h"
 #include "OptSolverCFSQP.h"
 #include "OptResultSet.h"
-#include "math.h"
 #include <VCELL/FVSolver.h>
-#include <float.h>
-#include "NonspatialOptTesting.h"
-
-#include <iomanip>
-#include <iostream>
-#include <sstream>
-#include <string>
-using namespace std;
 
 static void trimString(string& str)
 {

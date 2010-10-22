@@ -1,21 +1,26 @@
 //#define DEBUG //enable it when debug is needed.
+#include "Gibson.h"
+
 #ifdef DEBUG
 #include <Windows.h>
 #endif
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <math.h>
+using namespace std;
+
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/timeb.h>
 #include <time.h>
 #include "Jump.h"
-#include "Gibson.h"
 #include "StochVar.h"
+#include "IndexedTree.h"
+
 #ifdef USE_MESSAGING
 #include <VCELL/SimulationMessaging.h>
 #endif
-using namespace std;
 #ifdef LINUX
 #include <cmath>
 const double double_infinity = INFINITY;

@@ -1,4 +1,12 @@
 #include <sys/stat.h>
+#include <assert.h>
+#include <fstream>
+#include <string>
+using namespace std;
+
+#include <Expression.h>
+using VCell::Expression;
+
 #include <VCELL/FVSolver.h>
 #include <VCELL/VolumeVariable.h>
 #include <VCELL/VolumeRegionVariable.h>
@@ -33,14 +41,6 @@
 #include <VCELL/FieldData.h>
 #include <VCELL/FVUtils.h>
 #include <VCELL/RandomVariable.h>
-
-#include <Exception.h>
-#include <Expression.h>
-
-#include <assert.h>
-#include <fstream>
-#include <string>
-using namespace std;
 
 FieldData *getPSFFieldData() {
 	return ((SimulationExpression*)SimTool::getInstance()->getSimulation())->getPSFFieldData();

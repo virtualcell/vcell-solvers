@@ -78,6 +78,7 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\PDESolver.obj	\
 		$(OBJDIR)\RandomVariable.obj	\
 		$(OBJDIR)\Region.obj			\
+		$(OBJDIR)\RegionSizeVariable.obj			\
 		$(OBJDIR)\Scheduler.obj			\
 		$(OBJDIR)\SerialScheduler.obj			\
 		$(OBJDIR)\SimTool.obj			\

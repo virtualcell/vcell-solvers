@@ -1,9 +1,16 @@
 #ifndef JUMP_H
 #define JUMP_H
 
+#include <string>
 #include <vector>
+using std::string;
+using std::vector;
+
 #include "StochVar.h"
-#include "Expression.h"
+
+namespace VCell {
+	class Expression;
+}
 
 #ifndef boolean
 typedef unsigned char boolean;
@@ -77,7 +84,7 @@ class Jump
     private:
        double tau;  // absolute time (from starting time)
 	   double propensity; //the propensity calculated by the probExpression, used to save old value
-       Expression* probExpression;  // probability expression
+	   VCell::Expression* probExpression;  // probability expression
 	   int nodeIndex; //the location in the indexed tree
 	   int nameIndex; //the location in the StochModel.listOfProcessNames
 	   double log_rand;  //product of propensity and putative time

@@ -2,10 +2,12 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
+#include <Expression.h>
+using VCell::Expression;
+
 #include <VCELL/VolumeRegionVarContextExpression.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/VolumeRegion.h>
-#include <Expression.h>
 
 VolumeRegionVarContextExpression:: VolumeRegionVarContextExpression(Feature *feature, string& speciesName) 
 : VolumeRegionVarContext(feature, speciesName)

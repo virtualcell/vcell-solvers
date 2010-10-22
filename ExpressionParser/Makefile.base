@@ -40,7 +40,6 @@ CPPOBJECTS = ASTAddNode.o \
 	ExpressionException.o \
 	ExpressionParser.o \
 	ExpressionParserTokenManager.o \
-	ExpressionTest.o \
 	FunctionDomainException.o \
 	FunctionRangeException.o \
 	IOException.o \

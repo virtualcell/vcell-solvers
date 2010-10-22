@@ -2,7 +2,9 @@
 #define JUMPCONDITION
 
 class Membrane;
-class Expression;
+namespace VCell {
+	class Expression;
+}
 class SymbolTable;
 struct MembraneElement;
 class SimulationExpression;
@@ -10,10 +12,10 @@ class SimulationExpression;
 class JumpCondition
 {
 public:
-	JumpCondition(Membrane*, Expression*);
+	JumpCondition(Membrane*, VCell::Expression*);
 	~JumpCondition(void);
 
-	Expression *getExpression() {
+	VCell::Expression *getExpression() {
 		return expression;
 	}
 	Membrane* getMembrane() {
@@ -27,7 +29,7 @@ public:
 
 private:
 	Membrane* membrane;
-	Expression *expression;
+	VCell::Expression *expression;
 	double* constantValue;
 	bool bNeedsXYZ;
 

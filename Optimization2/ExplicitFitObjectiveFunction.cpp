@@ -1,21 +1,24 @@
 // OptSolverLibrary.cpp : Defines the entry point for the application.
 //
-
 #include "ExplicitFitObjectiveFunction.h"
-#include <VCellIDASolver.h>
-#include <VCellCVodeSolver.h>
-#include "Constraint.h"
-#include "ParameterDescription.h"
-#include "SimpleSymbolTable.h"
-#include <OdeResultSet.h>
-#include "MemoryManager.h"
-#include <StoppedByUserException.h>
-#include "Expression.h"
 
 #include <float.h>
 #include <iostream>
 #include <sstream>
 using namespace std;
+
+#include <SimpleSymbolTable.h>
+#include <StoppedByUserException.h>
+#include <Expression.h>
+using VCell::Expression;
+
+#include <VCellIDASolver.h>
+#include <VCellCVodeSolver.h>
+#include <OdeResultSet.h>
+
+#include "Constraint.h"
+#include "ParameterDescription.h"
+#include "MemoryManager.h"
 
 //#define JNI_DEBUG
 
