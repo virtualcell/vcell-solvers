@@ -3,8 +3,9 @@ all:
 #	cd blas && nmake -f Makefile.win32
 	cd ExpressionParser && nmake -f Makefile.win32
 	cd IDAWin && nmake -f Makefile.win32
+	cd IDAWin && nmake -f Makefile_NoMessaging.win32
 	cd PCGPack && nmake -f Makefile.win32
-	cd qhull && nmake -f Makefile.win32 && nmake -f MakefileDebug.win32
+	cd qhull && nmake -f Makefile.win32
 	cd unzip && nmake -f Makefile.win32
 	cd zlib && nmake -f Makefile.win32
 	cd zip && nmake -f Makefile.win32
@@ -20,8 +21,9 @@ clean:
 #	cd blas && nmake -f Makefile.win32 clean
 	cd ExpressionParser && nmake -f Makefile.win32 clean
 	cd IDAWin && nmake -f Makefile.win32 clean
+	cd IDAWin && nmake -f Makefile_NoMessaging.win32 clean
 	cd PCGPack && nmake -f Makefile.win32 clean
-	cd qhull && nmake -f Makefile.win32 clean && nmake -f MakefileDebug.win32 clean
+	cd qhull && nmake -f Makefile.win32 clean
 	cd unzip && nmake -f Makefile.win32 clean
 	cd VCell_CodeGen\src && nmake -f Makefile.win32 clean
 	cd VCell\src && nmake -f Makefile.win32 clean
