@@ -176,7 +176,8 @@ void Simulation::initSimulation()
 	
 		SimTool* simTool = SimTool::getInstance();
 		if (simTool->isSundialsPdeSolver()) {
-			_scheduler = new SundialsPdeScheduler(this, simTool->getSundialsRelativeTolerance(), simTool->getSundialsAbsoluteTolerance(), simTool->getSundialsMaxStep(), simTool->getNumDiscontinuityTimes(), simTool->getDiscontinuityTimes(), simTool->isSundialsOneStepOutput());
+			_scheduler = new SundialsPdeScheduler(this, simTool->getSundialsSolverOptions(), 
+				simTool->getNumDiscontinuityTimes(), simTool->getDiscontinuityTimes(), simTool->isSundialsOneStepOutput());
 		} else {
 			_scheduler = new SerialScheduler(this);
 		}

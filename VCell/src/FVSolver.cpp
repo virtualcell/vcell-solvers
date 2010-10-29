@@ -40,6 +40,7 @@ using VCell::Expression;
 #include <VCELL/FieldData.h>
 #include <VCELL/FVUtils.h>
 #include <VCELL/RandomVariable.h>
+#include <VCELL/SundialsSolverOptions.h>
 
 FieldData *getPSFFieldData() {
 	return ((SimulationExpression*)SimTool::getInstance()->getSimulation())->getPSFFieldData();
@@ -1052,12 +1053,9 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 				lineInput >> pcgRelTol;
 				simTool->setPCGRelativeErrorTolerance(pcgRelTol);
 			} else {
-				double sundialsRelTol = 1e-7;
-				double sundialsAbsTol = 1e-9;
-				double maxStep = 0.1;
-				lineInput >> sundialsRelTol >> sundialsAbsTol >> maxStep;
-				simTool->setSundialsErrorTolerances(sundialsRelTol, sundialsAbsTol);
-				simTool->setSundialsMaxStep(maxStep);
+				SundialsSolverOptions sso;
+				lineInput >> sso.relTol >> sso.absTol >> sso.maxStep >> sso.maxOrder;
+				simTool->setSundialsSolverOptions(sso);
 			}
 		} else if (nextToken == "DISCONTINUITY_TIMES") {
 			int numDisTimes = 0;

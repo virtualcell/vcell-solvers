@@ -9,6 +9,7 @@
 #define SIMTOOL_H
 
 #include <VCELL/Timer.h>
+#include <VCELL/SundialsSolverOptions.h>
 
 #ifndef DIRECTORY_SEPARATOR
 #if ( defined(WIN32) || defined(WIN64) )
@@ -78,18 +79,11 @@ public:
 	int getNumDiscontinuityTimes() { return numDiscontinuityTimes; }
 	double* getDiscontinuityTimes() { return discontinuityTimes; }
 	
-	void setSundialsErrorTolerances(double rtol, double atol) {
-		sundialsRelTol = rtol;
-		sundialsAbsTol = atol;
+	void setSundialsSolverOptions(SundialsSolverOptions& sso) {
+		sundialsSolverOptions = sso;
 	}
 
-	void setSundialsMaxStep(double ms) {
-		sundialsMaxStep = ms;
-	}
-
-	double getSundialsRelativeTolerance() { return sundialsRelTol; }
-	double getSundialsAbsoluteTolerance() { return sundialsAbsTol; }
-	double getSundialsMaxStep() { return sundialsMaxStep; }
+	const SundialsSolverOptions& getSundialsSolverOptions() { return sundialsSolverOptions; }
 
 	void setSpatiallyUniformErrorTolerance(double atol, double rtol) {
 		spatiallyUniformAbsTol = atol;
@@ -148,8 +142,7 @@ private:
 	int numDiscontinuityTimes;
 	bool bLoadFinal;
 
-
-	double sundialsRelTol, sundialsAbsTol, sundialsMaxStep;
+	SundialsSolverOptions sundialsSolverOptions;
 	double spatiallyUniformAbsTol, spatiallyUniformRelTol;
 	double pcgRelTol;
 

@@ -8,6 +8,7 @@
 #include <VCELL/Scheduler.h>
 #include <nvector/nvector_serial.h>
 #include <sundials/sundials_types.h>
+#include <VCELL/SundialsSolverOptions.h>
 
 class Variable;
 class CartesianMesh;
@@ -21,7 +22,7 @@ class Feature;
 class SundialsPdeScheduler : public Scheduler
 {
 public:
-	SundialsPdeScheduler(Simulation *sim, double rtol, double atol, double ms, int numDisTimes, double* disTimes, bool bDefaultOutput);
+	SundialsPdeScheduler(Simulation *sim, const SundialsSolverOptions& sso, int numDisTimes, double* disTimes, bool bDefaultOutput);
 	~SundialsPdeScheduler();
 
 	void iterate();
@@ -191,7 +192,7 @@ private:
 	int numDiscontinuityTimes;
 	int currDiscontinuityTimeCount;
 
-	double relTol, absTol, maxStep;
+	SundialsSolverOptions sundialsSolverOptions;
 	SparseMatrixPCG* M; //
 	double* pcg_workspace;
 	long nsp; // size of ISP and RSP

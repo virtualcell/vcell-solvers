@@ -63,7 +63,7 @@ extern "C"
 #endif
 }
 
-SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, double rtol, double atol, double ms, int numDisTimes, double* disTimes, bool bDefaultOuptput) : Scheduler(sim)
+SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, const SundialsSolverOptions& sso, int numDisTimes, double* disTimes, bool bDefaultOuptput) : Scheduler(sim)
 {
 	simulation = (SimulationExpression*)sim;
 	mesh = (CartesianMesh*)simulation->getMesh();
@@ -71,9 +71,7 @@ SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, double rtol, double 
 	y = 0;
 	sundialsSolverMemory = 0;
 
-	relTol = rtol;
-	absTol = atol;
-	maxStep = ms;
+	sundialsSolverOptions = sso;
 	currDiscontinuityTimeCount = 0;
 	numDiscontinuityTimes = numDisTimes;
 	discontinuityTimes = disTimes;
@@ -498,7 +496,8 @@ void SundialsPdeScheduler::initSundialsSolver() {
 			throw "SundialsPDESolver:: Out of memory : sundialsSolverMemory";
 		}
 
-		returnCode = CVodeMalloc(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, relTol, &absTol);
+		returnCode = CVodeMalloc(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, 
+			sundialsSolverOptions.relTol, &sundialsSolverOptions.absTol);
 		checkCVodeReturnCode(returnCode);
 
 		returnCode = CVodeSetFdata(sundialsSolverMemory, this);
@@ -517,11 +516,12 @@ void SundialsPdeScheduler::initSundialsSolver() {
 			returnCode = CVSpgmr(sundialsSolverMemory, PREC_LEFT, 0);
 		}
 #endif
-		cout << ", relTol=" << relTol << ", absTol=" << absTol << ", maxStep=" <<  maxStep << endl;
+		cout << ", relTol=" << sundialsSolverOptions.relTol << ", absTol=" << sundialsSolverOptions.absTol 
+			<< ", maxStep=" <<  sundialsSolverOptions.maxStep << ", maxOrder=" << sundialsSolverOptions.maxOrder << endl;
 		checkCVodeReturnCode(returnCode);
 
 		// set max absolute step size
-		returnCode = CVodeSetMaxStep(sundialsSolverMemory, maxStep);
+		returnCode = CVodeSetMaxStep(sundialsSolverMemory, sundialsSolverOptions.maxStep);
 		checkCVodeReturnCode(returnCode);
 
 		// set max of number of steps
@@ -531,8 +531,12 @@ void SundialsPdeScheduler::initSundialsSolver() {
 		// set preconditioner.
 		returnCode = CVSpilsSetPreconditioner (sundialsSolverMemory, pcSetup_callback, pcSolve_callback, this);
 		checkCVodeReturnCode(returnCode);
+
+		returnCode = CVodeSetMaxOrd(sundialsSolverMemory, sundialsSolverOptions.maxOrder);
+		checkCVodeReturnCode(returnCode);
 	} else {
-		returnCode = CVodeReInit(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, relTol, &absTol);
+		returnCode = CVodeReInit(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, 
+			sundialsSolverOptions.relTol, &sundialsSolverOptions.absTol);
 		checkCVodeReturnCode(returnCode);
 	}
 
@@ -645,7 +649,8 @@ void SundialsPdeScheduler::solve() {
 			if (SimTool::getInstance()->getEndTime() - currentTime > epsilon  // currentTime less than endTime
 				|| fabs(SimTool::getInstance()->getEndTime() - currentTime) > epsilon) { // if this is the last solve, we don't have to reinit
 				cout << endl << "SundialsPdeScheduler::solve() : cvode reinit at time " << currentTime << endl;
-				returnCode = CVodeReInit(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, relTol, &absTol);
+				returnCode = CVodeReInit(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, 
+					sundialsSolverOptions.relTol, &sundialsSolverOptions.absTol);
 				checkCVodeReturnCode(returnCode);
 			}
 

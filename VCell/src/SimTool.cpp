@@ -77,10 +77,6 @@ SimTool::SimTool()
 	numDiscontinuityTimes = 0;
 	discontinuityTimes = 0;
 
-	sundialsRelTol = 1e-7;
-	sundialsAbsTol = 1e-9;
-	sundialsMaxStep = 0.1;
-
 	solver = FV_SOLVER;
 	pcgRelTol = 1e-8;
 
