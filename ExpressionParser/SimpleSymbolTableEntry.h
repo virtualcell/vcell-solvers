@@ -1,7 +1,7 @@
 #ifndef	SIMPLESYMBOLTABLEENTRY_H
 #define SIMPLESYMBOLTABLEENTRY_H
 
-#include "SymbolTable.h"
+#include "SymbolTableEntry.h"
 
 class SimpleSymbolTableEntry : public SymbolTableEntry
 {

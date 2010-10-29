@@ -4,6 +4,9 @@
  */
 #include <VCELL/SundialsPdeScheduler.h>
 
+#include <algorithm>
+using std::max;
+
 #include <VCELL/Element.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/Solver.h>
@@ -942,8 +945,8 @@ void SundialsPdeScheduler::applyVolumeOperatorOld(double t, double* yinput, doub
 						double Vj = varContext->evaluateExpression(velocityExpIndexes[n], statePointValues);
 						double V = 0.5 * (Vi + Vj);
 						double lambdaArea = neighborLambdaAreas[n];
-						Aij = max(D * lambda + advectDir * 0.5 * V * lambdaArea, max(advectDir * V * lambdaArea, 0));;
-						Aii += max(D * lambda - advectDir * 0.5 * V * lambdaArea, max(- advectDir * V * lambdaArea, 0));
+						Aij = max<double>(D * lambda + advectDir * 0.5 * V * lambdaArea, max<double>(advectDir * V * lambdaArea, 0));;
+						Aii += max<double>(D * lambda - advectDir * 0.5 * V * lambdaArea, max<double>(- advectDir * V * lambdaArea, 0));
 					} else {
 						Aij = D * lambda;
 						Aii += Aij;
@@ -962,8 +965,8 @@ static void applyAdvectionHybridScheme(double diffTerm, double advectTerm, doubl
 	//Aii = max(diffTerm - 0.5 advectTerm, max(- advectTerm, 0));
 
 	if (diffTerm < 0.5 * fabs(advectTerm)){ // upwind scheme
-		Aij = max(advectTerm, 0);
-		Aii = max(- advectTerm, 0);
+		Aij = max<double>(advectTerm, 0);
+		Aii = max<double>(- advectTerm, 0);
 	} else { // central difference scheme
 		Aij = diffTerm + 0.5 * advectTerm;
 		Aii = diffTerm - 0.5 * advectTerm;

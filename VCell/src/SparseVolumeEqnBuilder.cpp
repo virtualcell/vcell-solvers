@@ -4,7 +4,9 @@
  */
 
 #include <sstream>
+#include <algorithm>
 using std::stringstream;
+using std::max;
 
 #include <VCELL/SparseVolumeEqnBuilder.h>
 #include <VCELL/VolumeNeighbor.h>
@@ -383,8 +385,8 @@ void SparseVolumeEqnBuilder::computeLHS(int index, double* lambdas, double& Aii,
 					validateNumber(varname, index, "Velocity term", Vi);
 					validateNumber(varname, neighborIndex, "Velocity term", Vj);
 					double V = 0.5 * (Vi + Vj);
-					Aij = max(D * lambda + convectionDirection * 0.5 * V * lamdaArea, max(convectionDirection * V * lamdaArea, 0));
-					Aii += max(D * lambda - convectionDirection * 0.5 * V * lamdaArea, max(- convectionDirection * V * lamdaArea, 0));
+					Aij = max<double>(D * lambda + convectionDirection * 0.5 * V * lamdaArea, max<double>(convectionDirection * V * lamdaArea, 0));
+					Aii += max<double>(D * lambda - convectionDirection * 0.5 * V * lamdaArea, max<double>(- convectionDirection * V * lamdaArea, 0));
 				}
 				if (Aij != 0.0) {
 					int neighborMask = pVolumeElement[neighborIndex].neighborMask;

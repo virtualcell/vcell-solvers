@@ -3,6 +3,7 @@
 #include "ExpressionBindingException.h"
 #include "RuntimeException.h"
 #include "Expression.h"
+#include "SymbolTableEntry.h"
 
 using namespace VCell;
 

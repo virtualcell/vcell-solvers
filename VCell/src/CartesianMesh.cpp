@@ -5,10 +5,13 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 using std::stringstream;
 using std::cout;
 using std::endl;
 using std::setprecision;
+using std::max;
+using std::min;
 
 #include <assert.h>
 #include <VCELL/CartesianMesh.h>
@@ -1231,7 +1234,7 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 	const double angleTol = PI/6;
 	const double cosAngleTol = cos(angleTol);
     const double NFrac=0.5; // percent for wall , >50%
-    const double NRelax = max(fabs(NFrac),0.50);
+    const double NRelax = max<double>(fabs(NFrac),0.50);
 
 	int replaceCount = 0;
 	for (long index = 0; index < numMembrane; index ++){
@@ -2093,7 +2096,7 @@ void CartesianMesh::computeMembraneCoupling(){
 						// it usually happens at the corner. Then we set si to be zero, it is ok because when we 
 						// symmtrize, it will get si back.
 						//
-						if (neighborVoronoi.si > 10 * max(scaleX_um, max(scaleY_um, scaleZ_um))) {
+						if (neighborVoronoi.si > 10 * max<double>(scaleX_um, max<double>(scaleY_um, scaleZ_um))) {
 							neighborVoronoi.si = 0;
 						}
 						vrIM->setCol(neighborIndex, neighborVoronoi); // off-diagnal element and its column					
@@ -2367,7 +2370,7 @@ int CartesianMesh::computeN(int startingIndex, CurvePlane curvePlane, vector<dou
 			break;
 	}
 	int coeff = 2;
-	int nwave = (int)min(floor(coeff * sqrt((Nx + Ny)/2)), floor(sqrt((double)numPoints)));
+	int nwave = (int)min<double>(floor(coeff * sqrt((Nx + Ny)/2)), floor(sqrt((double)numPoints)));
 	//
 	// find coordinates of nearby points (left,right that are nwave neighbors away) to estimate curvature 
 	// from the secants in each direction and measuring the angles between the secants.  These secants are
@@ -2425,7 +2428,7 @@ int CartesianMesh::computeN(int startingIndex, CurvePlane curvePlane, vector<dou
 	double r = (left - right).length()/2;
 	left.normalize();
 	right.normalize();
-	double dotp = max(-1.0, min(1.0, left.dotProduct(right)));
+	double dotp = max<double>(-1.0, min(1.0, left.dotProduct(right)));
 	double phi = acos(dotp);
 	if (phi < 0.01) {
 		phi = 0.01;
@@ -2443,7 +2446,7 @@ int CartesianMesh::computeN(int startingIndex, CurvePlane curvePlane, vector<dou
 		throw "CartesianMesh::computeN(), Radius of curvature is NAN";
 	}	
 
-	int N = min((int)floor(coeff * sqrt(R/h)), nwave);
+	int N = min<int>((int)floor(coeff * sqrt(R/h)), nwave);
 	return N;
 }
 

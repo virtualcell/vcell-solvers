@@ -11,6 +11,7 @@
 #include "FunctionDomainException.h"
 #include "FunctionRangeException.h"
 #include "Exception.h"
+#include "ValueProxy.h"
 
 StackMachine::StackMachine(StackElement* arg_elements, int size) {
 	elements = arg_elements;

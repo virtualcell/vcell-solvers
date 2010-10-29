@@ -46,14 +46,6 @@ bool isInfinity(double number);
 void validateNumber(string& variableName, int index, char* coeffName, double coeffValue);
 void sortColumns(int numCols, int* columnIndices, double* columnValues);
 
-#ifndef max
-#define max(a,b)            (((a) > (b)) ? (a) : (b))
-#endif
-
-#ifndef min
-#define min(a,b)            (((a) < (b)) ? (a) : (b))
-#endif
-
 #ifndef SUNDIALS_PDE_SOLVER
 #define SUNDIALS_PDE_SOLVER "SUNDIALS_PDE_SOLVER"
 #endif

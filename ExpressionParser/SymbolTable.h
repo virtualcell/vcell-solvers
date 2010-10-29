@@ -1,7 +1,10 @@
 #ifndef SYMBOLTABLE_H
 #define SYMBOLTABLE_H
 
-#include "SymbolTableEntry.h"
+#include <string>
+using std::string;
+
+class SymbolTableEntry;
 
 class SymbolTable {
 public:

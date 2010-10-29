@@ -6,6 +6,7 @@
 #include "Expression.h"
 #include "Exception.h"
 #include "ExpressionException.h"
+#include "SymbolTableEntry.h"
 
 SimpleNode::SimpleNode(int i) {
 	id = i;
