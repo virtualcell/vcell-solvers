@@ -1,12 +1,16 @@
 #include <memory.h>
 #include <stdlib.h>
 #include <typeinfo>
+#include <iostream>
+using std::cout;
+using std::endl;
 
 #include "SimpleNode.h"
 #include "Expression.h"
 #include "Exception.h"
 #include "ExpressionException.h"
 #include "SymbolTableEntry.h"
+#include "ValueProxy.h"
 
 SimpleNode::SimpleNode(int i) {
 	id = i;
@@ -89,11 +93,11 @@ SymbolTableEntry* SimpleNode::getBinding(string symbol)
 {
 	for (int i=0;i<jjtGetNumChildren();i++){
 		SymbolTableEntry* ste = jjtGetChild(i)->getBinding(symbol);
-		if (ste != null){
+		if (ste != NULL){
 			return ste;
 		}
 	}		
-	return null;
+	return NULL;
 }
 
 void SimpleNode::bind(SymbolTable* symbolTable)
@@ -128,7 +132,7 @@ string SimpleNode::getNodeSummary(double* values, Node* node){
 			double value = 0.0;		
             try {				
 				if (symbolTableEntry != 0) {				
-					if (symbolTableEntry->getExpression() != null) {								
+					if (symbolTableEntry->getExpression() != NULL) {								
 						if (values == 0) {
 							value = symbolTableEntry->getExpression()->evaluateConstant();
 						} else {
@@ -138,8 +142,8 @@ string SimpleNode::getNodeSummary(double* values, Node* node){
 						sprintf(chrs, "\t%s = %lf\n\0", symbolTableEntry->getName().c_str(), value);
 						errorMsg += chrs;
 					} else if (symbolTableEntry->getIndex() > -1) {
-						if (values == 0) {
-							if (symbolTableEntry->getValueProxy()!=null){
+						if (values == NULL) {
+							if (symbolTableEntry->getValueProxy()!=NULL){
 								value = symbolTableEntry->getValueProxy()->evaluate();
 							}else{
 								value = symbolTableEntry->getConstantValue();

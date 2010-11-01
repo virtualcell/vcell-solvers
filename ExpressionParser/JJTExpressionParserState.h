@@ -1,8 +1,10 @@
 #ifndef JJEXPRESSIONPARSERSTATE_H
 #define JJEXPRESSIONPARSERSTATE_H
 
+#include <vector>
+using std::vector;
+
 #include "Node.h"
-#include "stdinc.h"
 
 class JJTExpressionParserState
 {

@@ -14,7 +14,7 @@ public:
 	string& getName();    
 	NameScope* getNameScope();
 	//VCUnitDefinition getUnitDefinition()=0;
-	boolean isConstant();	
+	bool isConstant();	
 	void setIndex(int symbolTableIndex);
 	void setConstantValue(double v);
 	ValueProxy* getValueProxy() { return valueProxy; };

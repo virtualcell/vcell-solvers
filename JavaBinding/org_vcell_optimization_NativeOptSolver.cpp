@@ -12,6 +12,9 @@
 #include "MemoryManager.h"
 #include "tinyxml.h"
 
+#include <iostream>
+using std::cout;
+
 //#define JNI_DEBUG
 
 static JNIEnv* env_JNI = NULL;

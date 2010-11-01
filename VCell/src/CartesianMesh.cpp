@@ -13,6 +13,7 @@ using std::setprecision;
 using std::max;
 using std::min;
 
+#include <MathUtil.h>
 #include <assert.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/Element.h>
@@ -2438,7 +2439,7 @@ int CartesianMesh::computeN(int startingIndex, CurvePlane curvePlane, vector<dou
 	}
 	double R = r / fabs(sin(phi));
 
-	if (double_infinity == -R || double_infinity == R) {
+	if (MathUtil::double_infinity == -R || MathUtil::double_infinity == R) {
 		return nwave;
 	}
 

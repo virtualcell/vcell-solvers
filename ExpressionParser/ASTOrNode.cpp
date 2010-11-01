@@ -1,6 +1,7 @@
 #include "ASTOrNode.h"
 #include "ExpressionException.h"
 #include "ExpressionParserTreeConstants.h"
+#include "StackMachine.h"
 
 ASTOrNode::ASTOrNode() : SimpleNode(JJTORNODE) {
 }
@@ -39,7 +40,7 @@ void ASTOrNode::getStackElements(vector<StackElement>& elements) {
 }
 
 double ASTOrNode::evaluate(int evalType, double* values) {
-	Exception* savedException = null;
+	Exception* savedException = NULL;
 	for (int i = 0; i < jjtGetNumChildren(); i++) {
 		try {
 			if (jjtGetChild(i)->evaluate(evalType, values) != 0) {
@@ -52,7 +53,7 @@ double ASTOrNode::evaluate(int evalType, double* values) {
 			savedException = new ExpressionException(e.getMessage());
 		}
 	}
-	if (savedException != null) {
+	if (savedException != NULL) {
 		throw (*savedException);
 	} 
 	return 0.0;

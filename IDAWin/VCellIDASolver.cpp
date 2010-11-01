@@ -8,6 +8,9 @@
 #include <FunctionDomainException.h>
 #include <FunctionRangeException.h>
 
+#include <sstream>
+using std::stringstream;
+
 #ifdef USE_MESSAGING
 #include <VCELL/SimulationMessaging.h>
 #endif

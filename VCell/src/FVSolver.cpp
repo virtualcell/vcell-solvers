@@ -3,7 +3,11 @@
 #include <assert.h>
 #include <sys/stat.h>
 #include <fstream>
+#include <sstream>
 using std::ifstream;
+using std::istringstream;
+using std::stringstream;
+using std::endl;
 
 #include <Expression.h>
 using VCell::Expression;
@@ -1478,7 +1482,7 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 			loadDataProcessor(ifsInput, dataProcessorName);
 		} else if (nextToken == "MODEL_BEGIN") {
 			loadModel(ifsInput);
-			if (model == null) {
+			if (model == NULL) {
 				throw "Model has 0 features";
 			}
 			simTool->setModel(model);
@@ -1505,7 +1509,7 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 			string feature_name;
 			lineInput >> feature_name;
 			Feature* feature = model->getFeatureFromName(feature_name);
-			if (feature != null) {
+			if (feature != NULL) {
 				loadFeature(ifsInput, feature);
 			} else {
 				throw "createSimTool(), Invalid compartment when loading feature!";

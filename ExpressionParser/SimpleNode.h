@@ -2,7 +2,6 @@
 #define SIMPLENODE_H
 
 #include "Node.h"
-#include "stdinc.h"
 
 class ExpressionParser;
 class NameScope;

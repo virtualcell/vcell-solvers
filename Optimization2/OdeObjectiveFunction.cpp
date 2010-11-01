@@ -13,7 +13,8 @@
 
 #include <float.h>
 #include <iostream>
-using namespace std;
+#include <sstream>
+using std::istringstream;
 
 //#define JNI_DEBUG
 

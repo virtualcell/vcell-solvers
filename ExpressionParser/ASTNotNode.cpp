@@ -2,6 +2,7 @@
 #include "DivideByZeroException.h"
 #include "ExpressionException.h"
 #include "ExpressionParserTreeConstants.h"
+#include "StackMachine.h"
 
 ASTNotNode::ASTNotNode() : SimpleNode(JJTNOTNODE) {
 }

@@ -64,7 +64,7 @@ OptProblemDescription* readOptProblem(istream& instream){
 		throw "unknown token, expected OptDescription";
 	}
 	instream >> token;
-	ParameterDescription* paramDesc = null;
+	ParameterDescription* paramDesc = NULL;
 	if (token == "Parameters"){
 		int numParameters=0;
 		instream >> numParameters;
@@ -89,7 +89,7 @@ OptProblemDescription* readOptProblem(istream& instream){
 	instream >> token;
 	vector<Constraint*> constraints;
 	SymbolTable* symbolTable = paramDesc->getSymbolTable();
-	ConstraintDescription* constraintDesc = null;
+	ConstraintDescription* constraintDesc = NULL;
 	if (token == "Constraints"){
 		int numConstraints=0;
 		instream >> numConstraints;
@@ -120,7 +120,7 @@ OptProblemDescription* readOptProblem(istream& instream){
 		constraintDesc = new ExplicitConstraintDescription(constraints,symbolTable);
 	}
 	instream >> token;
-	ObjectiveFunction* objFunction = null;
+	ObjectiveFunction* objFunction = NULL;
 	if (token == "ObjectiveFunction"){
 		string objFunctionType;
 		instream >> objFunctionType;

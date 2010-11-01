@@ -16,6 +16,9 @@
 #include <VCELL/RandomVariable.h>
 #include <VCELL/DataSet.h>
 
+#include <sstream>
+using std::stringstream;
+
 #define RANDOM_VARIABLE_FILE_EXTENSION ".rv"
 
 class ValueProxyInside : public ValueProxy

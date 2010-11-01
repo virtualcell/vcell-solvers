@@ -8,9 +8,9 @@
 int ExpressionParserTokenManager::jjnextStates[] = {35, 36, 41, 42, 31, 32, 31, 32, 33, 22, 23, 39, 40, 43, 44, };
 
 string* ExpressionParserTokenManager::jjstrLiteralImages[] = {
-	new string(""), null, null, null, null, null, null, null, null, null, null, null, null, 
-	null, null, new string("\136"), new string("\53"), new string("\55"), new string("\52"), new string("\57"), 
-	null, null, null, null, null, null, null, new string("\73"), new string("\50"), new string("\51"), new string("\54"), 
+	new string(""), NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 
+	NULL, NULL, new string("\136"), new string("\53"), new string("\55"), new string("\52"), new string("\57"), 
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, new string("\73"), new string("\50"), new string("\51"), new string("\54"), 
 };
 
 string ExpressionParserTokenManager::lexStateNames[] = {
@@ -537,7 +537,7 @@ Token* ExpressionParserTokenManager::jjFillToken(void)
 	Token* t = Token::newToken(jjmatchedKind);
 	t->kind = jjmatchedKind;
 	string* im = jjstrLiteralImages[jjmatchedKind];
-	t->image = (im == null) ? input_stream->GetImage() : *im;
+	t->image = (im == NULL) ? input_stream->GetImage() : *im;
 	t->beginLine = input_stream->getBeginLine();
 	t->beginColumn = input_stream->getBeginColumn();
 	t->endLine = input_stream->getEndLine();
@@ -590,7 +590,7 @@ Token* ExpressionParserTokenManager::getNextToken(void)
 		int error_line = input_stream->getEndLine();
 		int error_column = input_stream->getEndColumn();
 		string error_after = "";
-		boolean EOFSeen = false;
+		bool EOFSeen = false;
 		try { 
 			input_stream->readChar(); 
 			input_stream->backup(1); 

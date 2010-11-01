@@ -20,7 +20,7 @@ public:
 	string getExactMessage(void);
 
 protected:
-	boolean specialConstructor;  
+	bool specialConstructor;  
 	static string eol;	
 };
 #endif

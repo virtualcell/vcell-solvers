@@ -1,13 +1,13 @@
 #ifndef SYMBOLTABLEENTRY_H
 #define SYMBOLTABLEENTRY_H
 
-#include "stdinc.h"
-#include "ValueProxy.h"
+#include <string>
+using std::string;
 
+class ValueProxy;
 namespace VCell {
 class Expression;
 }
-
 class NameScope;
 
 class SymbolTableEntry {
@@ -18,7 +18,7 @@ public:
 	virtual string& getName()=0;    
 	virtual NameScope* getNameScope()=0;
 	//VCUnitDefinition getUnitDefinition()=0;
-	virtual boolean isConstant()=0;
+	virtual bool isConstant()=0;
 	virtual ValueProxy* getValueProxy()=0;
 };
 

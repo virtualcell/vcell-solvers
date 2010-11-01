@@ -1,5 +1,7 @@
 #include <math.h>
-#include <limits>
+#include <algorithm>
+using std::min;
+using std::max;
 
 #include "ASTFuncNode.h"
 #include "RuntimeException.h"
@@ -8,6 +10,7 @@
 #include "FunctionDomainException.h"
 #include "FunctionRangeException.h"
 #include "ExpressionParserTreeConstants.h"
+#include "StackMachine.h"
 
 const int EXP = 0;
 const int SQRT = 1;
@@ -205,8 +208,8 @@ double ASTFuncNode::evaluate(int evalType, double* values)
 					mantissaException = new ExpressionException(e.getMessage());
 				}
 
-				if (exponentException == null && mantissaException == null) {
-					if (mantissa < 0.0 && (round(exponent) != exponent)) {
+				if (exponentException == NULL && mantissaException == NULL) {
+					if (mantissa < 0.0 && (MathUtil::round(exponent) != exponent)) {
 						char problem[100];
 						sprintf(problem, "pow(u,v) and u=%lf<0 and v=%lf not an integer", mantissa, exponent);
 						string errorMsg = getFunctionDomainError(problem, values, "u", mantissaChild, "v",  exponentChild);
@@ -219,7 +222,7 @@ double ASTFuncNode::evaluate(int evalType, double* values)
 						throw FunctionDomainException(errorMsg);
 					}
 					result = pow(mantissa, exponent);
-					if (EP_double_infinity == -result || EP_double_infinity == result || result != result) {
+					if (MathUtil::double_infinity == -result || MathUtil::double_infinity == result || result != result) {
 						char problem[1000];
 						sprintf(problem, "u^v evaluated to %lf, u=%lf, v=%lf", result, mantissa);
 						string errorMsg = getFunctionDomainError(problem, values, "u", mantissaChild, "v", exponentChild);
@@ -230,9 +233,9 @@ double ASTFuncNode::evaluate(int evalType, double* values)
 				} else if (mantissaException == 0 && mantissa == 1.0) {
 						result = 1.0;
 				} else {
-					if (mantissaException != null) {
+					if (mantissaException != NULL) {
 						throw (*mantissaException);
-					} else if (exponentException != null) {
+					} else if (exponentException != NULL) {
 						throw (*exponentException);
 					}
 				}
@@ -349,7 +352,7 @@ double ASTFuncNode::evaluate(int evalType, double* values)
 					throw RuntimeException("max() expects 2 arguments");
 				double argument0 = child0->evaluate(evalType, values);
 				double argument1 = jjtGetChild(1)->evaluate(evalType, values);
-				result = max(argument0, argument1);
+				result = max<double>(argument0, argument1);
 				break;
 			}
 		case MIN :
@@ -358,7 +361,7 @@ double ASTFuncNode::evaluate(int evalType, double* values)
 					throw RuntimeException("min() expects 2 arguments");
 				double argument0 = child0->evaluate(evalType, values);
 				double argument1 = jjtGetChild(1)->evaluate(evalType, values);
-				result = min(argument0, argument1);
+				result = min<double>(argument0, argument1);
 				break;
 			}
 		case CEIL :
@@ -619,7 +622,7 @@ double ASTFuncNode::evaluate(int evalType, double* values)
 			}
 	}
 	//result is NAN
-	if (EP_double_infinity == -result || EP_double_infinity == result || result != result) {
+	if (MathUtil::double_infinity == -result || MathUtil::double_infinity == result || result != result) {
 		char problem[1000];
 		sprintf(problem, "%s evaluated to infinity or NaN", infixString(LANGUAGE_DEFAULT,0).c_str(), functionNamesVCML[funcType].c_str());
 		throw FunctionRangeException(problem);

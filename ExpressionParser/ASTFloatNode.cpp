@@ -1,6 +1,7 @@
 #include "ASTFloatNode.h"
 #include "RuntimeException.h"
 #include "ExpressionParserTreeConstants.h"
+#include "StackMachine.h"
 
 ASTFloatNode::ASTFloatNode(double doubleValue) : SimpleNode(JJTFLOATNODE) {
 	// is not a number
@@ -19,8 +20,8 @@ ASTFloatNode::~ASTFloatNode() {
 
 string ASTFloatNode::infixString(int lang, NameScope* nameScope)
 {
-	//if (value == null) {
-    //    return string("null");
+	//if (value == NULL) {
+    //    return string("NULL");
     //} else 
 	if (value == 0.0) {
         return string("0.0");

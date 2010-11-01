@@ -13,6 +13,9 @@ using VCell::Expression;
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/RandomVariable.h>
 
+#include <sstream>
+using std::stringstream;
+
 //-----------------------------------------------------------------
 //
 //  class FastSystem

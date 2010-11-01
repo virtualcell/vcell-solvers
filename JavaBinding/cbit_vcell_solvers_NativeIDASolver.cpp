@@ -4,6 +4,9 @@
 #include "Exception.h"
 using namespace VCell;
 
+#include <sstream>
+using std::istringstream;
+
 JNIEnv* jniEnv = NULL;
 jmethodID mid_NativeIDASolver_isStopRequested;
 jobject obj_NativeIDASolver;

@@ -5,7 +5,9 @@
 #include <VCELL/SundialsPdeScheduler.h>
 
 #include <algorithm>
+#include <iostream>
 using std::max;
+using std::endl;
 
 #include <VCELL/Element.h>
 #include <VCELL/SimTypes.h>

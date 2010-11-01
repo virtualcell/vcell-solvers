@@ -103,9 +103,9 @@ void VarContext::bindAll(SymbolTable* symbolTable) {
 			constantValues[i][0] = d;
 		} catch (...) {		
 			expressions[i]->bindExpression(symbolTable);
-			if (expressions[i]->getSymbolBinding("x") != null ||
-					expressions[i]->getSymbolBinding("y") != null ||
-					expressions[i]->getSymbolBinding("z") != null) {
+			if (expressions[i]->getSymbolBinding("x") != NULL ||
+					expressions[i]->getSymbolBinding("y") != NULL ||
+					expressions[i]->getSymbolBinding("z") != NULL) {
 				needsXYZ[i] = true;
 			}
 		}

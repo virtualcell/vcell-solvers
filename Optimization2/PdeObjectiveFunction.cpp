@@ -5,10 +5,11 @@
 #include <Exception.h>
 using namespace VCell;
 
+#include <float.h>
+#include <math.h>
 #include <iostream>
 #include <sstream>
 #include <string>
-using namespace std;
 
 //#define JNI_DEBUG
 

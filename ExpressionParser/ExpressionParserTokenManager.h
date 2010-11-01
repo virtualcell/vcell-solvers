@@ -1,9 +1,17 @@
 #ifndef EXPRESSIONPARSERTOKENMANAGER_H
 #define EXPRESSIONPARSERTOKENMANAGER_H
 
-#include "stdinc.h"
+#include <iostream>
+#include <string>
+using std::string;
+using std::ostream;
+
 #include "Token.h"
 #include "SimpleCharStream.h"
+
+#ifndef int64
+typedef long long int64;
+#endif
 
 class ExpressionParserTokenManager
 {

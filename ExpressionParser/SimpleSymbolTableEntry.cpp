@@ -21,7 +21,7 @@ double SimpleSymbolTableEntry::getConstantValue() {
 }
 
 Expression* SimpleSymbolTableEntry::getExpression() {
-	return null;
+	return NULL;
 }
 
 int SimpleSymbolTableEntry::getIndex() {
@@ -36,7 +36,7 @@ NameScope* SimpleSymbolTableEntry::getNameScope() {
 	return namescope;
 }
 
-boolean SimpleSymbolTableEntry::isConstant() {
+bool SimpleSymbolTableEntry::isConstant() {
 	return bConstant;
 }
 

@@ -1,11 +1,17 @@
 #include <typeinfo>
 #include <stdlib.h>
+#include <iostream>
+#include <sstream>
+using std::cout;
+using std::endl;
+using std::istringstream;
 
 #include "Expression.h"
 #include "ExpressionParser.h"
 #include "ASTFloatNode.h"
 #include "ParseException.h"
 #include "ParserException.h"
+#include "StackMachine.h"
 
 //long Expression::flattenCount = 0;
 //long Expression::diffCount = 0;
@@ -16,14 +22,14 @@
 
 VCell::Expression::Expression(void)
 {
-	rootNode = null;
-	stackMachine = null;
+	rootNode = NULL;
+	stackMachine = NULL;
 }
 
 VCell::Expression::Expression(Expression* expression)
 {
 	this->rootNode = (SimpleNode*)expression->rootNode->copyTree();
-	stackMachine = null;
+	stackMachine = NULL;
 }
 
 VCell::Expression::~Expression(void)
@@ -35,7 +41,7 @@ VCell::Expression::~Expression(void)
 VCell::Expression::Expression(string expString)
 {
 	rootNode = 0;
-	stackMachine = null;
+	stackMachine = NULL;
 
 	if (expString.length() == 0) {
 		throw ParserException("Empty expression");
@@ -72,7 +78,7 @@ void VCell::Expression::showStackInstructions(void)
 
 double VCell::Expression::evaluateConstant(void)
 {
-	return getStackMachine()->evaluate(null);
+	return getStackMachine()->evaluate(NULL);
 }
 
 double VCell::Expression::evaluateConstantTree()
@@ -109,7 +115,7 @@ void VCell::Expression::parseExpression(string exp)
 		if (typeid(*rootNode) == typeid(ASTExpression)){
 			if (rootNode->jjtGetNumChildren() == 1){ // we abandon the real root node here, so there is tiny memory leak;
 				rootNode = (SimpleNode*)rootNode->jjtGetChild(0);
-				rootNode->jjtSetParent(null);
+				rootNode->jjtSetParent(NULL);
 			}
 		}
 		delete iss;
@@ -147,7 +153,7 @@ string VCell::Expression::trim(string str)
 }
 
 inline StackMachine* VCell::Expression::getStackMachine() {
-	if (stackMachine == null) {
+	if (stackMachine == NULL) {
 		vector<StackElement> elements_vector;
 		rootNode->getStackElements(elements_vector);
 		StackElement* elements = new StackElement[elements_vector.size()];

@@ -5,8 +5,8 @@ using VCell::Exception;
 using VCell::Expression;
 
 Constraint::Constraint(ConstraintType arg_constraintType, const char* expstring) {
-	if (exp==null){
-		throw Exception("expression cannot be null");
+	if (exp==NULL){
+		throw Exception("expression cannot be NULL");
 	}
 	constraintType = arg_constraintType;
 	exp = new Expression(expstring);	

@@ -1,9 +1,10 @@
 #ifndef NODE_H
 #define NODE_H
 
-#include "stdinc.h"
-#include "SymbolTable.h"
-#include "StackMachine.h"
+#include <string>
+#include <vector>
+using std::string;
+using std::vector;
 
 #define LANGUAGE_DEFAULT  0
 #define LANGUAGE_C 1
@@ -15,6 +16,9 @@
 #define EVALUATE_PROXY  113
 
 class NameScope;
+class SymbolTableEntry;
+struct StackElement;
+class SymbolTable;
 
 class Node
 {
@@ -50,7 +54,7 @@ public:
 	virtual void getStackElements(vector<StackElement>& elements)=0;
 	virtual double evaluate(int type, double* values=0)=0;	
 	/*
-	virtual boolean narrow(RealInterval intervals[]) throws ExpressionBindingException;
+	virtual bool narrow(RealInterval intervals[]) throws ExpressionBindingException;
 	virtual void roundToFloat();
 	virtual  void setInterval(RealInterval interval, RealInterval intervals[]) throws ExpressionBindingException;
 	virtual void substituteBoundSymbols() throws ExpressionException;

@@ -4,6 +4,9 @@
 #include <Exception.h>
 using namespace VCell;
 
+#include <sstream>
+using std::istringstream;
+
 JNIEnv* jniEnv_cvode = NULL;
 jmethodID mid_NativeCVODESolver_isStopRequested;
 jobject obj_NativeCVODESolver;

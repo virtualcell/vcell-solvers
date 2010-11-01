@@ -3,6 +3,7 @@
 #include "SymbolTable.h"
 #include "Expression.h"
 #include "ExpressionParserTreeConstants.h"
+#include "StackMachine.h"
 
 ASTInvertTermNode::ASTInvertTermNode() : SimpleNode(JJTINVERTTERMNODE) {
 }

@@ -1,6 +1,7 @@
 #include "ASTAndNode.h"
 #include "ExpressionException.h"
 #include "ExpressionParserTreeConstants.h"
+#include "StackMachine.h"
 
 ASTAndNode::ASTAndNode() : SimpleNode(JJTANDNODE) {
 }
@@ -39,7 +40,7 @@ void ASTAndNode::getStackElements(vector<StackElement>& elements) {
 
 double ASTAndNode::evaluate(int evalType, double* values) {
 	double sum = 1;
-	ExpressionException* savedException = null;
+	ExpressionException* savedException = NULL;
 	for (int i = 0; i < jjtGetNumChildren(); i++) {
 		try {
 			if (jjtGetChild(i)->evaluate(evalType, values) == 0) {
@@ -53,7 +54,7 @@ double ASTAndNode::evaluate(int evalType, double* values) {
 		}
 	}
 
-	if (savedException != null){
+	if (savedException != NULL){
 		throw (*savedException);
 	}else{
 		return sum;

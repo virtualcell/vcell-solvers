@@ -2,6 +2,7 @@
 #include "ASTInvertTermNode.h"
 #include "ExpressionException.h"
 #include "ExpressionParserTreeConstants.h"
+#include "StackMachine.h"
 
 ASTMultNode::ASTMultNode() : SimpleNode(JJTMULTNODE) {
 }
@@ -118,7 +119,7 @@ double ASTMultNode::evaluate(int evalType, double* values) {
 			}		
 		}
 	}
-	if (childException != null){
+	if (childException != NULL){
 		throw (*childException);
 	}	
 
@@ -137,7 +138,7 @@ double ASTMultNode::evaluate(int evalType, double* values) {
 	if (product == -0.0){
 		return 0.0;
 	}	
-	if (childException != null){
+	if (childException != NULL){
 		throw (*childException);
 	}	
 	return product;

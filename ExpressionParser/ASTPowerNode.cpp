@@ -1,10 +1,12 @@
 #include <math.h>
-#include <limits>
+
 #include "ASTPowerNode.h"
 #include "RuntimeException.h"
 #include "DivideByZeroException.h"
 #include "FunctionDomainException.h"
 #include "ExpressionParserTreeConstants.h"
+#include "StackMachine.h"
+#include "MathUtil.h"
 
 ASTPowerNode::ASTPowerNode() : SimpleNode(JJTPOWERNODE) {
 }
@@ -56,8 +58,8 @@ double ASTPowerNode::evaluate(int evalType, double* values) {
 	//
 	// see if there are any constant 0.0's, if there are simplify to 0.0
 	//
-	ExpressionException* exponentException = null;
-	ExpressionException* baseException = null;
+	ExpressionException* exponentException = NULL;
+	ExpressionException* baseException = NULL;
 	Node* exponentChild = jjtGetChild(1);
 	Node* baseChild = jjtGetChild(0);
 
@@ -78,21 +80,21 @@ double ASTPowerNode::evaluate(int evalType, double* values) {
 		baseException = new ExpressionException(e.getMessage());
 	}
 
-	if (exponentException == null && baseException == null) {
+	if (exponentException == NULL && baseException == NULL) {
 		if (baseValue == 0.0 && exponentValue < 0.0) {
 			string childString = infixString(LANGUAGE_DEFAULT,0);
 			char problem[1000];
 			sprintf(problem, "u^v and u=0 and v=%lf<0", exponentValue);
 			string errorMsg = getFunctionDomainError(problem, values, "u", baseChild, "v", exponentChild);
 			throw DivideByZeroException(errorMsg);
-		} else if (baseValue < 0.0 && exponentValue != round(exponentValue)) {
+		} else if (baseValue < 0.0 && exponentValue != MathUtil::round(exponentValue)) {
 			char problem[1000];
 			sprintf(problem, "u^v and u=%lf<0 and v=%lf not an integer: undefined", baseValue, exponentValue);
 			string errorMsg = getFunctionDomainError(problem, values, "u", baseChild, "v", exponentChild);
 			throw FunctionDomainException(errorMsg);
 		} else {
 			double result = pow(baseValue, exponentValue);
-			if (EP_double_infinity == -result || EP_double_infinity == result || result != result) {
+			if (MathUtil::double_infinity == -result || MathUtil::double_infinity == result || result != result) {
 				char problem[1000];
 				sprintf(problem, "u^v evaluated to %lf, u=%lf, v=%lf", result, baseValue);
 				string errorMsg = getFunctionDomainError(problem, values, "u", baseChild, "v", exponentChild);
@@ -105,9 +107,9 @@ double ASTPowerNode::evaluate(int evalType, double* values) {
 	} else if (baseException == 0 && baseValue == 1.0) {
 		return 1.0;
 	} else {
-		if (baseException != null) {
+		if (baseException != NULL) {
 			throw (*baseException);
-		} else if (exponentException != null) {
+		} else if (exponentException != NULL) {
 			throw (*exponentException);
 		} 
 	}

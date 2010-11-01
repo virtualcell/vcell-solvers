@@ -1,6 +1,7 @@
 #include "ASTMinusTermNode.h"
 #include "ExpressionException.h"
 #include "ExpressionParserTreeConstants.h"
+#include "StackMachine.h"
 
 ASTMinusTermNode::ASTMinusTermNode() : SimpleNode(JJTMINUSTERMNODE) {
 }

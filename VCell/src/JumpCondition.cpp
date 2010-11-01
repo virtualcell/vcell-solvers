@@ -1,5 +1,8 @@
 #include <VCELL/JumpCondition.h>
 
+#include <sstream>
+using std::stringstream;
+
 #include <VCELL/Element.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/SimulationExpression.h>
@@ -29,9 +32,9 @@ void JumpCondition::bindExpression(SymbolTable* symbolTable) {
 			constantValue[0] = d;
 		} catch (...) {		
 			expression->bindExpression(symbolTable);
-			if (expression->getSymbolBinding("x") != null ||
-				expression->getSymbolBinding("y") != null ||
-				expression->getSymbolBinding("z") != null) {
+			if (expression->getSymbolBinding("x") != NULL ||
+				expression->getSymbolBinding("y") != NULL ||
+				expression->getSymbolBinding("z") != NULL) {
 				bNeedsXYZ = true;
 			}
 		}

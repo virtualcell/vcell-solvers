@@ -14,8 +14,8 @@ public:
 	ScopedSymbolTable getScopedSymbolTable()=0;;
 	string getSymbolName(SymbolTableEntry* symbolTableEntry)=0;;
 	string getUnboundSymbolName(String unboundName)=0;;
-	boolean isAncestor(NameScope nameScope)=0;;
-	boolean isPeer(NameScope nameScope)=0;;
+	bool isAncestor(NameScope nameScope)=0;;
+	bool isPeer(NameScope nameScope)=0;;
 }
 
 #endif

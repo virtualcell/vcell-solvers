@@ -12,6 +12,7 @@ using std::cout;
 using std::endl;
 using std::swap;
 
+#include <MathUtil.h>
 #include <VCELL/FVUtils.h>
 #include <float.h>
 #include <math.h>
@@ -35,7 +36,7 @@ bool isNAN(double number) {
 }
 
 bool isInfinity(double number) {
-	if (number == double_infinity || -number == double_infinity) {
+	if (number == MathUtil::double_infinity || -number == MathUtil::double_infinity) {
 		return true;
 	}
 	return false;

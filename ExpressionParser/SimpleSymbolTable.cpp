@@ -18,15 +18,15 @@ SimpleSymbolTable::~SimpleSymbolTable(void)
 SymbolTableEntry* SimpleSymbolTable::getEntry(string identifier)
 {
 	SymbolTableEntry* ste = getLocalEntry(identifier);
-	if (ste!=null){
+	/*
+	if (ste != NULL){
 		return ste;
 	}
-	/*
-	if (getNameScope() != null){
+	if (getNameScope() != NULL){
 		return getNameScope().getExternalEntry(identifier);
 	}
 	*/
-	return null;
+	return ste;
 }
 
 
@@ -37,5 +37,5 @@ SymbolTableEntry* SimpleSymbolTable::getLocalEntry(string identifier)
 			return steArray[i];
 		}
 	}
-	return null;
+	return NULL;
 }

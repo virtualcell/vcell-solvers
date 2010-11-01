@@ -1,13 +1,15 @@
 #ifndef EXPRESSIONPARSER_H
 #define EXPRESSIONPARSER_H
 
+#include <vector>
+using std::vector;
+
 #include "Token.h"
 #include "ASTExpression.h"
 #include "ExpressionParserTokenManager.h"
 #include "JJTExpressionParserState.h"
 #include "SimpleCharStream.h"
 #include "ParseException.h"
-#include "stdinc.h"
 
 struct JJCalls {
 	int gen;
@@ -34,7 +36,7 @@ public:
 	ASTExpression* Expression(void);
 
 private:
-	boolean lookingAhead;
+	bool lookingAhead;
 	ExpressionParserTokenManager* token_source;
 	Token* token, *jj_nt, *headToken;
 	void LogicalORExpression(void);
@@ -57,13 +59,13 @@ private:
 	int jj_ntk;
 	Token* jj_scanpos, *jj_lastpos;
 	int jj_la;  
-	boolean jj_semLA;
+	bool jj_semLA;
 	int jj_gen;
 	int* jj_la1;
 		
 	JJCalls** jj_2_rtns;
 	int jj_2_rtns_length;
-	boolean jj_rescan;
+	bool jj_rescan;
 	int jj_gc;
 
 	LookaheadSuccess jj_ls;
@@ -82,9 +84,9 @@ private:
 	void jj_add_error_token(int kind, int pos);
 	bool jj_2_2(int xla);
 	bool jj_3_2(void);
-	boolean jj_2_3(int xla);
-	boolean jj_3_3(void);
-	boolean jj_2_4(int xla);
+	bool jj_2_3(int xla);
+	bool jj_3_3(void);
+	bool jj_2_4(int xla);
 	bool jj_3_4(void);
 	bool jj_3R_7(void);
 

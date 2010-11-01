@@ -2,12 +2,20 @@
 #include <memory.h>
 #include <stdlib.h>
 
+#include "MathUtil.h"
 #include "Exception.h"
 #include "ExpressionTest.h"
 #include "Expression.h"
 #include "SimpleSymbolTable.h"
 #include "RuntimeException.h"
 #include "IOException.h"
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+using std::cout;
+using std::endl;
+using std::max;
+using std::ifstream;
 
 ExpressionTest::ExpressionTest(void)
 {
@@ -71,9 +79,9 @@ void ExpressionTest::testParser(int count, char* javaresult, double cvalue, char
 		if (strcmp(javaresult, "NaN") == 0) {
 			javavalue = log(-1.0);
 		} else if (strcmp(javaresult, "Infinity") == 0) {
-			javavalue = EP_double_infinity;
+			javavalue = MathUtil::double_infinity;
 		} else if (strcmp(javaresult, "-Infinity") == 0) {
-			javavalue = -EP_double_infinity;
+			javavalue = -MathUtil::double_infinity;
 		} else {
 			n = sscanf(javaresult, "%lg", &javavalue);
 			if (n != 1) {
@@ -187,7 +195,7 @@ void ExpressionTest::testParser(char* filename)
 				bException = true;
 				exceptionMsg = ex.getMessage();
 			}
-			if ((numeric_limits<double>::infinity() == d || numeric_limits<double>::infinity() == -d) && bInfinity) {
+			if ((MathUtil::double_infinity == d || MathUtil::double_infinity == -d) && bInfinity) {
 				cout << " INFINITY:::::::::::::Before/After: Infinity/" << d;
 			} else if (d != d && bNAN) {
 				cout << " NaN:::::::::::::Before/After: NaN/" << d;

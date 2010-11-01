@@ -1,7 +1,8 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
-#include "stdinc.h"
+#include <string>
+using std::string;
 
 class Token
 {

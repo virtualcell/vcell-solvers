@@ -2,6 +2,8 @@
 #include <assert.h>
 #include <fstream>
 #include <string>
+#include <sstream>
+using std::stringstream;
 using namespace std;
 
 #include <Expression.h>
@@ -495,7 +497,7 @@ void FVSolver::loadJumpCondition(istream& ifsInput, Feature* feature, string& va
 	//cout << "loading jump condition " << var_name << endl;
 	VarContext* varContext = feature->getVolumeVarContext(var_name);
 	string nextToken;
-	Expression* inexp = null, *outexp = null;
+	Expression* inexp = NULL, *outexp = NULL;
 
 	while (!ifsInput.eof()) {
 		nextToken = "";
@@ -1126,7 +1128,7 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 			loadDataProcessor(ifsInput);
 		} else if (nextToken == "MODEL_BEGIN") {
 			loadModel(ifsInput);
-			if (model == null) {
+			if (model == NULL) {
 				throw "Model has 0 features";
 			}
 			simTool->setModel(model);
@@ -1143,7 +1145,7 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 			string feature_name;
 			ifsInput >> feature_name;
 			Feature* feature = model->getFeatureFromName(feature_name);
-			if (feature != null) {
+			if (feature != NULL) {
 				loadFeature(ifsInput, feature);
 			} else {
 				throw "createSimTool(), Invalid compartment when loading feature!";
@@ -1154,7 +1156,7 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 			ifsInput >> var_name >> feature1_name >> feature2_name;
 			Feature * infeature = model->getFeatureFromName(feature1_name);
 			Feature* outfeature = model->getFeatureFromName(feature2_name);
-			if (infeature != null && outfeature != null) {
+			if (infeature != NULL && outfeature != NULL) {
 				if (infeature->getPriority() > outfeature->getPriority()) {
 					loadMembrane(ifsInput, infeature, var_name);
 				} else {

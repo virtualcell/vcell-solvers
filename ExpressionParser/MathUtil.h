@@ -128,5 +128,9 @@ public:
     /*      returns -1 if x < 0 else returns 1   */
     // long version
     static long sign(long x);
+
+	static double round(double x);
+
+	static double double_infinity;
 };
 #endif

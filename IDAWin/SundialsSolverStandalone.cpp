@@ -18,6 +18,10 @@
 
 #include <stdio.h>
 #include <iomanip>
+#include <fstream>
+#include <sstream>
+using std::ifstream;
+using std::stringstream;
 
 #define CVODE_SOLVER "CVODE"
 #define IDA_SOLVER "IDA"

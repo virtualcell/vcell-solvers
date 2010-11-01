@@ -5,10 +5,11 @@
 #include "Exception.h"
 using namespace VCell;
 
+#include <float.h>
+#include <math.h>
 #include <iostream>
 #include <sstream>
 #include <string>
-using namespace std;
 
 VFRAPObjectiveFunction::VFRAPObjectiveFunction(ParameterDescription *arg_parameterDescription,
 	SpatialReferenceData* arg_referenceData,

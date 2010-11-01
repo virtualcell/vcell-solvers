@@ -5,20 +5,20 @@ string ParseException::eol = string("\n");
 ParseException::ParseException() : Exception("ParseException", "")
 {	
 	specialConstructor = false;
-	currentToken = null;
-	expectedTokenSequences = null;
+	currentToken = NULL;
+	expectedTokenSequences = NULL;
 	numETS = 0;
-	etsLengthArray = null;
+	etsLengthArray = NULL;
 	tokenImage = 0;
 }
 
 ParseException::ParseException(string msg) : Exception("ParseException", msg)
 {	
 	specialConstructor = false;
-	currentToken = null;
-	expectedTokenSequences = null;
+	currentToken = NULL;
+	expectedTokenSequences = NULL;
 	numETS = 0;
-	etsLengthArray = null;
+	etsLengthArray = NULL;
 	tokenImage = 0;
 }
 

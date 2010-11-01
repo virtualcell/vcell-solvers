@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <list>
+using std::istream;
 using std::vector;
 using std::list;
 using std::stringstream;

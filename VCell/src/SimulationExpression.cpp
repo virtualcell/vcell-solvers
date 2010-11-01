@@ -20,6 +20,11 @@
 #include <SimpleSymbolTable.h>
 #include <ScalarValueProxy.h>
 
+#include <iostream>
+#include <sstream>
+using std::endl;
+using std::stringstream;
+
 #define RANDOM_VARIABLE_FILE_EXTENSION ".rv"
 
 class ValueProxyVolumeExtrapolate : public ValueProxy

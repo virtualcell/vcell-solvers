@@ -6,6 +6,10 @@
 using VCell::Exception;
 using VCell::Expression;
 
+#include <iostream>
+using std::cerr;
+using std::endl;
+
 //---------------Definition of StochVarContext Class-----------------
 /*
  *Constructor of StochVarContext

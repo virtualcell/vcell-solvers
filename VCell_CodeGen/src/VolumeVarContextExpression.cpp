@@ -120,7 +120,7 @@ bool VolumeVarContextExpression::isNullExpressionOK(int expIndex) {
 	}
 
 	Solver* solver = SimTool::getInstance()->getSimulation()->getSolverFromVariable(species);
-	if (solver != null && solver->isPDESolver()) {
+	if (solver != NULL && solver->isPDESolver()) {
 		if (expIndex == DIFF_RATE_EXP) {
 			return false;
 		}

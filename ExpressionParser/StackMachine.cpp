@@ -12,6 +12,12 @@
 #include "FunctionRangeException.h"
 #include "Exception.h"
 #include "ValueProxy.h"
+#include <iostream>
+#include <algorithm>
+using std::cout;
+using std::endl;
+using std::max;
+using std::min;
 
 StackMachine::StackMachine(StackElement* arg_elements, int size) {
 	elements = arg_elements;
@@ -157,7 +163,7 @@ double StackMachine::evaluate(double* values){
 				break;
 			case TYPE_POW: // 20, pop 2 push 1	
 				arg2 = *(tos--);
-				if (*tos < 0.0 && (round(arg2) != arg2)) {
+				if (*tos < 0.0 && (MathUtil::round(arg2) != arg2)) {
 					char problem[1000];
 					sprintf(problem, "pow(u,v) and u=%lf<0 and v=%lf not an integer", *tos, arg2);					
 					throw FunctionDomainException(string(problem));
@@ -172,7 +178,7 @@ double StackMachine::evaluate(double* values){
 					*tos = 1.0;
 				} else {
 					double result = pow(*tos, arg2);	
-					if (EP_double_infinity == -result || EP_double_infinity == result || result != result) {
+					if (MathUtil::double_infinity == -result || MathUtil::double_infinity == result || result != result) {
 						char problem[1000];
 						sprintf(problem, "u^v evaluated to %lf, u=%lf, v=%lf", result, *tos, arg2);
 						throw FunctionDomainException(string(problem));
@@ -224,11 +230,11 @@ double StackMachine::evaluate(double* values){
 				break; 
 			case TYPE_MAX: // 29, pop 2 push 1	
 				arg2 = *(tos--);
-				*tos = max(*tos, arg2);
+				*tos = max<double>(*tos, arg2);
 				break;
 			case TYPE_MIN: // 30, pop 2 push 1	
 				arg2 = *(tos--);
-				*tos = min(*tos, arg2);
+				*tos = min<double>(*tos, arg2);
 				break;
 			case TYPE_CEIL: // 31, pop 1 push 1	
 				*tos = ceil(*tos);
@@ -370,7 +376,7 @@ double StackMachine::evaluate(double* values){
 				throw Exception("StackMachine: unknown stack element type " + token->type);
 		}
 		if (tos >= workingStack) {
-			if (EP_double_infinity == -*tos || EP_double_infinity == *tos) {
+			if (MathUtil::double_infinity == -*tos || MathUtil::double_infinity == *tos) {
 				throw FunctionRangeException("Evaluated to infinity");
 			} else if (*tos != *tos) {
 				throw FunctionRangeException("Evaluated to NaN");

@@ -1,7 +1,8 @@
 #ifndef EXCEPTION_H
 #define EXCEPTION_H
 
-#include "stdinc.h"
+#include <string>
+using std::string;
 
 namespace VCell {
 	class Exception

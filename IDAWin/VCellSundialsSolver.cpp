@@ -4,6 +4,8 @@
 #include "OdeResultSet.h"
 #include <assert.h>
 #include <math.h>
+#include <sstream>
+using std::stringstream;
 
 #ifdef USE_MESSAGING
 #include <VCELL/SimulationMessaging.h>

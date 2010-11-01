@@ -5,7 +5,7 @@
 #include "IOException.h"
 #include "RuntimeException.h"
 
-boolean SimpleCharStream::staticFlag = false;
+bool SimpleCharStream::staticFlag = false;
 
 SimpleCharStream::SimpleCharStream(istream* dstream, int startline,  int startcolumn, int buffersize)
 {
@@ -51,7 +51,7 @@ SimpleCharStream::~SimpleCharStream(void)
 	delete[] bufcolumn;
 }
 
-void SimpleCharStream::ExpandBuff(boolean wrapAround)
+void SimpleCharStream::ExpandBuff(bool wrapAround)
 {
 	char* newbuffer = new char[bufsize + 2048];
 	memset(newbuffer, 0, (bufsize + 2048) * sizeof(char));

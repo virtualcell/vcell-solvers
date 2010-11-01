@@ -5,6 +5,8 @@
 #ifndef SCALARVALUEPROXY_H
 #define SCALARVALUEPROXY_H
 
+#include "ValueProxy.h"
+
 class ScalarValueProxy : public ValueProxy
 {
 public:

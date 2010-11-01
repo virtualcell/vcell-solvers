@@ -102,7 +102,7 @@ void ExpressionParser::init(void)
 ASTExpression* ExpressionParser::Expression(void)
 {
 	ASTExpression* jjtn000 = new ASTExpression(JJTEXPRESSION);
-	boolean jjtc000 = true;
+	bool jjtc000 = true;
 	jjtree->openNodeScope(jjtn000);
 	try {
 		LogicalORExpression();
@@ -146,7 +146,7 @@ ASTExpression* ExpressionParser::Expression(void)
 void ExpressionParser::LogicalORExpression(void)
 {
 	ASTOrNode* jjtn001 = new ASTOrNode(JJTORNODE);
-	boolean jjtc001 = true;
+	bool jjtc001 = true;
 	jjtree->openNodeScope(jjtn001);
 	try {
 		LogicalANDExpression();
@@ -194,7 +194,7 @@ label_1:
 void ExpressionParser::LogicalANDExpression(void)
 {
 	ASTAndNode* jjtn001 = new ASTAndNode(JJTANDNODE);
-	boolean jjtc001 = true;
+	bool jjtc001 = true;
 	jjtree->openNodeScope(jjtn001);
 	try {
 		RelationalExpression();		
@@ -270,18 +270,18 @@ Token* ExpressionParser::jj_consume_token(int kind)
 
 void ExpressionParser::RelationalExpression(void)
 {
-	Token* t_name = null;
+	Token* t_name = NULL;
 	AdditiveExpression();
 	if (jj_2_1(2147483647)) {
 		t_name = jj_consume_token(RELATIONAL_OPERATOR);
 		AdditiveExpression();
 		ASTRelationalNode* jjtn001 = new ASTRelationalNode(JJTRELATIONALNODE);
-		boolean jjtc001 = true;
+		bool jjtc001 = true;
 		jjtree->openNodeScope(jjtn001);
 		try {
 			jjtree->closeNodeScope(jjtn001,  2);
 			jjtc001 = false;
-			if (jjtn001!=null){
+			if (jjtn001!=NULL){
 				((ASTRelationalNode*)jjtn001)->setOperationFromToken(t_name->image);
 			}
 			if (jjtc001) {
@@ -299,7 +299,7 @@ void ExpressionParser::RelationalExpression(void)
 
 int ExpressionParser::jj_ntk_func(void)
 {
-	if ((jj_nt=token->next) == null)
+	if ((jj_nt=token->next) == NULL)
 		return (jj_ntk = (token->next=token_source->getNextToken())->kind);
 	else
 		return (jj_ntk = jj_nt->kind);
@@ -308,7 +308,7 @@ int ExpressionParser::jj_ntk_func(void)
 void ExpressionParser::AdditiveExpression(void)
 {
 	ASTAddNode* jjtn001 = new ASTAddNode(JJTADDNODE);
-	boolean jjtc001 = true;
+	bool jjtc001 = true;
 	jjtree->openNodeScope(jjtn001);
 	try {
 		MultiplicativeExpression();
@@ -369,7 +369,7 @@ label_3:
 void ExpressionParser::MinusTerm(void)
 {
 	ASTMinusTermNode* jjtn000 = new ASTMinusTermNode(JJTMINUSTERMNODE);
-	boolean jjtc000 = true;
+	bool jjtc000 = true;
 	jjtree->openNodeScope(jjtn000);
 	try {
 		jj_consume_token(SUB);
@@ -406,7 +406,7 @@ void ExpressionParser::MinusTerm(void)
 void ExpressionParser::MultiplicativeExpression(void)
 {
 	ASTMultNode* jjtn001 = new ASTMultNode(JJTMULTNODE);
-	boolean jjtc001 = true;
+	bool jjtc001 = true;
 	jjtree->openNodeScope(jjtn001);
 	try {
 		PowerTerm();
@@ -482,7 +482,7 @@ void ExpressionParser::jj_save(int index, int xla)
 {
 	JJCalls* p = jj_2_rtns[index];
 	while (p->gen > jj_gen) {
-		if (p->next == null) { 
+		if (p->next == NULL) { 
 			p = p->next = new JJCalls(); 
 			break; 
 		}
@@ -504,7 +504,7 @@ bool ExpressionParser::jj_scan_token(int kind)
 {
 	if (jj_scanpos == jj_lastpos) {
 		jj_la--;
-		if (jj_scanpos->next == null) {
+		if (jj_scanpos->next == NULL) {
 			jj_lastpos = jj_scanpos = jj_scanpos->next = token_source->getNextToken();
 		} else {
 			jj_lastpos = jj_scanpos = jj_scanpos->next;
@@ -515,11 +515,11 @@ bool ExpressionParser::jj_scan_token(int kind)
 	if (jj_rescan) {
 		int i = 0; 
 		Token* tok = token;
-		while (tok != null && tok != jj_scanpos) { 
+		while (tok != NULL && tok != jj_scanpos) { 
 			i++; 
 			tok = tok->next; 
 		}
-		if (tok != null) 
+		if (tok != NULL) 
 			jj_add_error_token(kind, i);
 	}
 	if (jj_scanpos->kind != kind)
@@ -540,7 +540,7 @@ void ExpressionParser::jj_add_error_token(int kind, int pos)
 		for (int i = 0; i < jj_endpos; i++) {
 			jj_expentry->push_back(jj_lasttokens[i]);
 		}		
-		boolean exists = false;		
+		bool exists = false;		
 		for (vector< vector<int>* >::iterator iter = jj_expentries.begin(); iter != jj_expentries.end(); iter ++) {
 			vector<int>* oldentry = (vector<int>*)(*iter);
 			if (oldentry->size() == jj_expentry->size()) {
@@ -564,7 +564,7 @@ void ExpressionParser::jj_add_error_token(int kind, int pos)
 void ExpressionParser::DivTerm(void)
 {
 	ASTInvertTermNode* jjtn000 = new ASTInvertTermNode(JJTINVERTTERMNODE);
-	boolean jjtc000 = true;
+	bool jjtc000 = true;
 	jjtree->openNodeScope(jjtn000);
 	try {
 		jj_consume_token(DIV);
@@ -609,7 +609,7 @@ void ExpressionParser::PowerTerm(void)
         }
 		jj_consume_token(POWER);
 		ASTPowerNode* jjtn001 = new ASTPowerNode(JJTPOWERNODE);
-        boolean jjtc001 = true;
+        bool jjtc001 = true;
         jjtree->openNodeScope(jjtn001);
         try {
             UnaryExpression();
@@ -675,7 +675,7 @@ void ExpressionParser::UnaryExpression(void)
 		case SUB : 
 		{
 			ASTMinusTermNode* jjtn001 = new ASTMinusTermNode(JJTMINUSTERMNODE);
-			boolean jjtc001 = true;
+			bool jjtc001 = true;
 			jjtree->openNodeScope(jjtn001);
 			try {
 				jj_consume_token(SUB);
@@ -710,7 +710,7 @@ void ExpressionParser::UnaryExpression(void)
 		}
 		case NOT : {
 			ASTNotNode* jjtn002 = new ASTNotNode(JJTNOTNODE);
-			boolean jjtc002 = true;
+			bool jjtc002 = true;
 			jjtree->openNodeScope(jjtn002);
 			try {
 				jj_consume_token(NOT);
@@ -779,12 +779,12 @@ void ExpressionParser::PrimaryExpression(void)
     }
 }
 
-boolean ExpressionParser::jj_2_3(int xla)
+bool ExpressionParser::jj_2_3(int xla)
 {
     jj_la = xla;
     jj_lastpos = jj_scanpos = token;
 	try {
-		boolean retval = !jj_3_3();
+		bool retval = !jj_3_3();
 		jj_save(2, xla);
 		return retval;
 	} catch (LookaheadSuccess ls) {
@@ -793,7 +793,7 @@ boolean ExpressionParser::jj_2_3(int xla)
 	}
 }
 
-boolean ExpressionParser::jj_3_3(void)
+bool ExpressionParser::jj_3_3(void)
 {
 	if (jj_scan_token(IDENTIFIER))
         return true;
@@ -802,12 +802,12 @@ boolean ExpressionParser::jj_3_3(void)
 	return false;
 }
 
-boolean ExpressionParser::jj_2_4(int xla)
+bool ExpressionParser::jj_2_4(int xla)
 {
     jj_la = xla;
     jj_lastpos = jj_scanpos = token;
 	try {
-		boolean retval = !jj_3_4();
+		bool retval = !jj_3_4();
 		jj_save(3, xla);
 		return retval;
 	} catch (LookaheadSuccess ls) {
@@ -833,7 +833,7 @@ bool ExpressionParser::jj_3R_7(void)
 void ExpressionParser::Function(void)
 {
 	ASTFuncNode* jjtn000 = new ASTFuncNode(JJTFUNCNODE);
-	boolean jjtc000 = true;
+	bool jjtc000 = true;
 	jjtree->openNodeScope(jjtn000);
 	Token* t;
 	try {
@@ -911,7 +911,7 @@ label_6 :
 void ExpressionParser::Float(void)
 {
 	ASTFloatNode* jjtn000 = new ASTFloatNode(JJTFLOATNODE);
-    boolean jjtc000 = true;
+    bool jjtc000 = true;
     jjtree->openNodeScope(jjtn000);
     Token* t;
     try {
@@ -932,9 +932,9 @@ void ExpressionParser::Float(void)
 void ExpressionParser::Name(void)
 {
 	ASTIdNode* jjtn000 = new ASTIdNode(JJTIDNODE);
-    boolean jjtc000 = true;
+    bool jjtc000 = true;
     jjtree->openNodeScope(jjtn000);
-    Token* t_name = null;
+    Token* t_name = NULL;
     try {
 		t_name = jj_consume_token(IDENTIFIER);
         jjtree->closeNodeScope(jjtn000, true);
@@ -953,7 +953,7 @@ void ExpressionParser::Name(void)
 ParseException& ExpressionParser::generateParseException(void)
 {
 	jj_expentries.clear();
-	boolean* la1tokens = new boolean[31];
+	bool* la1tokens = new bool[31];
 	for (int i = 0; i < 31; i++) {
 		la1tokens[i] = false;
 	}
@@ -1024,7 +1024,7 @@ void ExpressionParser::jj_rescan_token(void)
 					}
 				}
 				p = p->next;
-			} while (p != null);
+			} while (p != NULL);
 		} catch(LookaheadSuccess& ls) { }
     }
     jj_rescan = false;

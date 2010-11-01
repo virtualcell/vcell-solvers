@@ -1,7 +1,10 @@
 #ifndef SIMPLECHARSTREAM_H
 #define SIMPLECHARSTREAM_H
 
-#include "stdinc.h"
+#include <iostream>
+#include <string>
+using std::istream;
+using std::string;
 
 class SimpleCharStream
 {
@@ -15,14 +18,14 @@ private:
 	int* bufcolumn;
 	int column;
 	int line;
-	boolean prevCharIsCR;
-	boolean prevCharIsLF;
+	bool prevCharIsCR;
+	bool prevCharIsLF;
 	istream* inputStream;
 	char* buffer;
 	int maxNextCharInd;
 	int inBuf;
 	int tabSize;
-	void ExpandBuff(boolean wrapAround);
+	void ExpandBuff(bool wrapAround);
 	void FillBuff(void);
 	void UpdateLineColumn(char c);
 	void init(istream* dstream, int startline,  int startcolumn, int buffersize);
@@ -33,7 +36,7 @@ public:
 	SimpleCharStream(istream* dstream);
 	~SimpleCharStream(void);
 
-	static boolean staticFlag;
+	static bool staticFlag;
 	int bufpos;
 
 	char BeginToken(void);

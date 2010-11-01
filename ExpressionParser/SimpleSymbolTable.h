@@ -1,6 +1,9 @@
 #ifndef SIMPLESYMBOLTABLE_H
 #define SIMPLESYMBOLTABLE_H
 
+#include <vector>
+using std::vector;
+
 #include "SymbolTable.h"
 #include "SimpleSymbolTableEntry.h"
 

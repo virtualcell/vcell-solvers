@@ -3,14 +3,17 @@
 #include "ExpressionBindingException.h"
 #include "RuntimeException.h"
 #include "Expression.h"
+#include "SymbolTable.h"
 #include "SymbolTableEntry.h"
+#include "StackMachine.h"
+#include "ValueProxy.h"
 
 using namespace VCell;
 
 ASTIdNode::ASTIdNode(ASTIdNode* node) : SimpleNode(node->id) , name(node->name), symbolTableEntry(node->symbolTableEntry) {
 }
 
-ASTIdNode::ASTIdNode(int i) : SimpleNode(i), symbolTableEntry(null)
+ASTIdNode::ASTIdNode(int i) : SimpleNode(i), symbolTableEntry(NULL)
 {
 }
 
@@ -23,11 +26,11 @@ string ASTIdNode::infixString(int lang, NameScope* nameScope)
 	string idName(name);
 	return idName;
 
-    if (nameScope == null) {
+    if (nameScope == NULL) {
         idName = name;
     } else {
 	/*		
-        if (symbolTableEntry != null) {
+        if (symbolTableEntry != NULL) {
             idName = nameScope->getSymbolName(symbolTableEntry);
         } else {
             idName = nameScope->getUnboundSymbolName(name);
@@ -49,14 +52,14 @@ string ASTIdNode::infixString(int lang, NameScope* nameScope)
 }
 
 void ASTIdNode::getStackElements(vector<StackElement>& elements) {
-	if (symbolTableEntry == null){
+	if (symbolTableEntry == NULL){
 		throw ExpressionException("tryin to evaluate unbound identifier '" + infixString(LANGUAGE_DEFAULT, 0)+"'");
 	}	
 	elements.push_back(StackElement(symbolTableEntry->getValueProxy(), symbolTableEntry->getIndex()));
 }
 
 double ASTIdNode::evaluate(int evalType, double* values) {
-	if (symbolTableEntry == null){
+	if (symbolTableEntry == NULL){
 		throw ExpressionException("tryin to evaluate unbound identifier '" + infixString(LANGUAGE_DEFAULT, 0)+"'");
 	}	
 
@@ -67,7 +70,7 @@ double ASTIdNode::evaluate(int evalType, double* values) {
 		throw ExpressionException("Identifier '" + name + "' cannot be evaluated as a constant.");
 	} else {
 		Expression* exp = symbolTableEntry->getExpression();
-		if (exp != null) {
+		if (exp != NULL) {
 			return exp->evaluateVector(values);
 		} else {
 			if (values == 0) {
@@ -90,20 +93,20 @@ SymbolTableEntry* ASTIdNode::getBinding(string symbol)
 	if (name == symbol){
 		return symbolTableEntry;
 	}else{
-		return null;
+		return NULL;
 	}
 }
 
 void ASTIdNode::bind(SymbolTable* symbolTable)
 {
-	if (symbolTable == null){
-		symbolTableEntry = null;
+	if (symbolTable == NULL){
+		symbolTableEntry = NULL;
 		return;
 	}	
 
 	symbolTableEntry = symbolTable->getEntry(name);
 
-	if (symbolTableEntry == null){
+	if (symbolTableEntry == NULL){
 		string id = name;
 		throw ExpressionBindingException("error binding identifier '" + id + "'");
 	}

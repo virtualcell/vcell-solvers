@@ -2,6 +2,7 @@
 #include "RuntimeException.h"
 #include "ExpressionException.h"
 #include "ExpressionParserTreeConstants.h"
+#include "StackMachine.h"
 
 const int LT = 1;
 const int GT = 2;

@@ -23,22 +23,6 @@ extern "C"
 #endif
 }
 
-#ifndef DOUBLE_INFINITY
-#define DOUBLE_INFINITY
-
-#include <limits>
-using std::numeric_limits;
-
-#ifdef LINUX
-#include <cmath>
-static double double_infinity = INFINITY;
-#else
-#include <limits>
-static double double_infinity = numeric_limits<double>::infinity();
-#endif
-
-#endif
-
 double computeRHSscale(long length, double* rhs, string& varname);
 void throwPCGExceptions(int errorCode, int additional);
 bool isNAN(double number);

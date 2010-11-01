@@ -1,6 +1,14 @@
 #include <math.h>
 #include "MathUtil.h"
 
+#if (defined(LINUX) || defined(CYGWIN))
+#include <cmath>
+static double MathUtil::double_infinity = INFINITY;
+#else
+#include <limits>
+double MathUtil::double_infinity = std::numeric_limits<double>::infinity();
+#endif
+
 // Inverse hyperbolic cosine of a double number
 double MathUtil::acosh(double a){
     return log(a+sqrt(a*a-1));
@@ -94,4 +102,8 @@ double MathUtil::factorial(double n){
     for(int i = 1; i <= nn; i ++)
 		f *= i;
     return f;
+}
+
+double MathUtil::round(double a) {
+	return floor(a+0.5);
 }
