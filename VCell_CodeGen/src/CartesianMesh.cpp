@@ -17,6 +17,7 @@ using namespace std;
 #include <VCELL/VCellModel.h>
 #include <VCELL/MembraneVariable.h>
 #include <VCELL/VolumeVariable.h>
+#include <MathUtil.h>
 
 #define MAXNEIGHBOR_2D 3
 #define MAXNEIGHBOR_3D 20
@@ -2358,7 +2359,7 @@ int CartesianMesh::computeN(int startingIndex, CurvePlane curvePlane, vector<dou
 	}
 	double R = r / fabs(sin(phi));
 
-	if (double_infinity == -R || double_infinity == R) {
+	if (MathUtil::double_infinity == -R || MathUtil::double_infinity == R) {
 		return nwave;
 	}
 

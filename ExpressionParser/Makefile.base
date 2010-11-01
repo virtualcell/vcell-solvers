@@ -64,4 +64,4 @@ clean:
 	$(DEL) *.o $(TARGET)
 	
 depend:
-	makedepend -Y -f Makefile.linux -- $(CPPFLAGS) -- *.c *.cpp
+	makedepend -Y -f Makefile.base -- $(CPPFLAGS) -- *.c *.cpp

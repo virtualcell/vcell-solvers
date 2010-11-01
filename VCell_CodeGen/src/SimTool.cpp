@@ -27,6 +27,10 @@ using namespace std;
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <algorithm>
+using std::min;
+using std::max;
+
 #if ( !defined(WIN32) && !defined(WIN64) ) // UNIX
 #include <unistd.h>
 #endif
@@ -803,10 +807,10 @@ bool SimTool::checkSpatiallyUniform(Variable* var) {
 				double maxSol = -DBL_MAX;
 				for(int j = 0; j < numElements; j ++){
 					int volIndex = volRegion->getIndex(j);
-					maxSol = max(maxSol, currSol[volIndex]);
-					minSol = min(minSol, currSol[volIndex]);
+					maxSol = max<double>(maxSol, currSol[volIndex]);
+					minSol = min<double>(minSol, currSol[volIndex]);
 				}
-				double den = max(fabs(maxSol), fabs(minSol));
+				double den = max<double>(fabs(maxSol), fabs(minSol));
 				if (den >= spatiallyUniformAbsTol && (maxSol - minSol)/den > spatiallyUniformRelTol) {
 					return false;
 				}
@@ -820,10 +824,10 @@ bool SimTool::checkSpatiallyUniform(Variable* var) {
 				double maxSol = -DBL_MAX;
 				for(int j = 0; j < numElements; j ++){
 					int memIndex = memRegion->getIndex(j);
-					maxSol = max(maxSol, currSol[memIndex]);
-					minSol = min(minSol, currSol[memIndex]);
+					maxSol = max<double>(maxSol, currSol[memIndex]);
+					minSol = min<double>(minSol, currSol[memIndex]);
 				}
-				double den = max(fabs(maxSol), fabs(minSol));
+				double den = max<double>(fabs(maxSol), fabs(minSol));
 				if (den >= spatiallyUniformAbsTol && (maxSol - minSol)/den > spatiallyUniformRelTol) {
 					return false;
 				}

@@ -44,6 +44,7 @@ CPPOBJECTS = $(OBJDIR)\ASTAddNode.obj \
 	$(OBJDIR)\ExpressionBindingException.obj \
 	$(OBJDIR)\ExpressionException.obj \
 	$(OBJDIR)\ExpressionParser.obj \
+	$(OBJDIR)\ExpressionParserTokenManager.obj \
 	$(OBJDIR)\FunctionDomainException.obj \
 	$(OBJDIR)\FunctionRangeException.obj \
 	$(OBJDIR)\IOException.obj \

@@ -66,19 +66,4 @@ clean:
 	rm $(TARGET)
 	
 depend:
-	makedepend -Y -f Makefile.linux -- $(CPPFLAGS) -- *.c *.cpp
-# DO NOT DELETE
-
-ASTAddNode.o: ASTAddNode.h SimpleNode.h Node.h stdinc.h SymbolTable.h
-ASTAddNode.o: SymbolTableEntry.h ValueProxy.h StackMachine.h
-ASTAddNode.o: ASTMinusTermNode.h ExpressionException.h Exception.h
-ASTAndNode.o: ASTAndNode.h SimpleNode.h Node.h stdinc.h SymbolTable.h
-ASTAndNode.o: SymbolTableEntry.h ValueProxy.h StackMachine.h
-ASTAndNode.o: ExpressionException.h Exception.h
-ASTExpression.o: ASTExpression.h SimpleNode.h Node.h stdinc.h SymbolTable.h
-ASTExpression.o: SymbolTableEntry.h ValueProxy.h StackMachine.h
-ASTExpression.o: ExpressionException.h Exception.h
-ASTFloatNode.o: ASTFloatNode.h SimpleNode.h Node.h stdinc.h SymbolTable.h
-ASTFloatNode.o: SymbolTableEntry.h ValueProxy.h StackMachine.h
-ASTFloatNode.o: RuntimeException.h Exception.h
-ASTFloatNode.o: ExpressionParserTreeConstants.h
+	makedepend -Y -f Makefile64.linux -- $(CPPFLAGS) -- *.c *.cpp

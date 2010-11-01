@@ -28,20 +28,11 @@ extern "C"
 #endif
 }
 
-extern double double_infinity;
 double computeRHSscale(long length, double* rhs, string& varname);
 void throwPCGExceptions(int errorCode, int additional);
 bool isNAN(double number);
 bool isInfinity(double number);
 void validateNumber(string& variableName, int index, char* coeffName, double coeffValue);
-
-#ifndef max
-#define max(a,b)            (((a) > (b)) ? (a) : (b))
-#endif
-
-#ifndef min
-#define min(a,b)            (((a) < (b)) ? (a) : (b))
-#endif
 
 #ifndef SUNDIALS_PDE_SOLVER
 #define SUNDIALS_PDE_SOLVER "SUNDIALS_PDE_SOLVER"

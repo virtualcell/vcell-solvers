@@ -34,7 +34,9 @@
 #include <sundials/sundials_types.h> /* definition of type realtype */
 
 #include <sstream>
+#include <algorithm>
 using namespace std;
+using std::max;
 
 #define ToleranceType CV_SS
 #define epsilon  1e-12
@@ -842,8 +844,8 @@ void SundialsPdeScheduler::applyVolumeOperatorOld(double t, double* yinput, doub
 						double Vj = varContext->evalExpression(velocityExpIndexes[n], statePointValues);
 						double V = 0.5 * (Vi + Vj);
 						double lambdaArea = neighborLambdaAreas[n];
-						Aij = max(D * lambda + advectDir * 0.5 * V * lambdaArea, max(advectDir * V * lambdaArea, 0));;
-						Aii += max(D * lambda - advectDir * 0.5 * V * lambdaArea, max(- advectDir * V * lambdaArea, 0));
+						Aij = max<double>(D * lambda + advectDir * 0.5 * V * lambdaArea, max<double>(advectDir * V * lambdaArea, 0));;
+						Aii += max<double>(D * lambda - advectDir * 0.5 * V * lambdaArea, max<double>(- advectDir * V * lambdaArea, 0));
 					} else {
 						Aij = D * lambda;
 						Aii += Aij;
@@ -862,8 +864,8 @@ static void applyAdvectionHybridScheme(double diffTerm, double advectTerm, doubl
 	//Aii = max(diffTerm - 0.5 advectTerm, max(- advectTerm, 0));
 
 	if (diffTerm < 0.5 * fabs(advectTerm)){ // upwind scheme
-		Aij = max(advectTerm, 0);
-		Aii = max(- advectTerm, 0);
+		Aij = max<double>(advectTerm, 0);
+		Aii = max<double>(- advectTerm, 0);
 	} else { // central difference scheme
 		Aij = diffTerm + 0.5 * advectTerm;
 		Aii = diffTerm - 0.5 * advectTerm;
