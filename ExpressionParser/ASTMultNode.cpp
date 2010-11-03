@@ -4,6 +4,9 @@
 #include "ExpressionParserTreeConstants.h"
 #include "StackMachine.h"
 
+#include <sstream>
+using std::stringstream;
+
 ASTMultNode::ASTMultNode() : SimpleNode(JJTMULTNODE) {
 }
 
@@ -24,22 +27,66 @@ bool ASTMultNode::isBoolean() {
 
 string ASTMultNode::infixString(int lang, NameScope* nameScope)
 {
-	string buffer("(");
-
+	bool* boolChildFlags = new bool[jjtGetNumChildren()];
+	bool bAllBoolean = true;
+	bool bNoBoolean = true;
 	for (int i=0;i<jjtGetNumChildren();i++){
-		ASTInvertTermNode* pointer = dynamic_cast<ASTInvertTermNode*>(jjtGetChild(i));
-		if (pointer){
-			buffer += " / ";
-			buffer += jjtGetChild(i)->infixString(lang,nameScope);
-		}else{
-			if (i>0) 
-				buffer += " * ";
-			buffer += jjtGetChild(i)->infixString(lang,nameScope);
+		boolChildFlags[i] = jjtGetChild(i)->isBoolean();
+		if (boolChildFlags[i]) {
+			boolChildFlags[i] = true;
+			bNoBoolean = false;
+		} else {
+			bAllBoolean = false;
 		}
+
 	}
 
-	buffer += ")";
-	return buffer;
+	stringstream buffer;
+	buffer << "(";
+
+	if (bAllBoolean || bNoBoolean || lang != LANGUAGE_C) { // old way
+		for (int i=0;i<jjtGetNumChildren();i++){
+			ASTInvertTermNode* pointer = dynamic_cast<ASTInvertTermNode*>(jjtGetChild(i));
+			if (pointer){
+				buffer << " / ";
+				buffer << jjtGetChild(i)->infixString(lang,nameScope);
+			}else{
+				if (i>0) 
+					buffer << " * ";
+				buffer << jjtGetChild(i)->infixString(lang,nameScope);
+			}
+		}		
+	} else {		
+		stringstream conditionBuffer;
+		stringstream valueBuffer;
+		for (int i=0;i<jjtGetNumChildren();i++){
+			if (boolChildFlags[i]) {
+				if (conditionBuffer.str().length() > 0) {
+					conditionBuffer << " && ";
+				}
+				conditionBuffer << jjtGetChild(i)->infixString(lang,nameScope);
+			} else {
+				if (valueBuffer.str().length() == 0) {					
+					ASTInvertTermNode* pointer = dynamic_cast<ASTInvertTermNode*>(jjtGetChild(i));
+					if (pointer){
+						valueBuffer << " 1.0 / ";
+					}
+				} else {					
+					ASTInvertTermNode* pointer = dynamic_cast<ASTInvertTermNode*>(jjtGetChild(i));
+					if (pointer){	
+						valueBuffer << " / ";	
+					} else {
+						valueBuffer << " * ";
+					}
+				}
+				valueBuffer << jjtGetChild(i)->infixString(lang,nameScope);
+			}
+		}
+		buffer << "((" << conditionBuffer.str() << ") ? (" << valueBuffer.str() << ") : 0.0)";
+	}
+	buffer << ")";
+	string s = buffer.str();
+	return s;
 }
 
 void ASTMultNode::getStackElements(vector<StackElement>& elements) {
