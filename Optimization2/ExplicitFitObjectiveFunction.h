@@ -41,9 +41,6 @@ private:
 	double* evaluateArray;
 
 	OdeResultSet* referenceData;
-	int numObjFuncEvals;
-	double bestObjectiveFunctionValue;
-	double* bestParameterValues;
 	void (*fn_checkStopRequested)(double, long);
 
 };

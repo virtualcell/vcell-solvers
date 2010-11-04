@@ -21,8 +21,6 @@ ExplicitObjectiveFunction::ExplicitObjectiveFunction(Expression* arg_objFuncExpr
 	objFuncExpression = arg_objFuncExpression;
 	objFuncExpression->bindExpression(arg_symbolTable);
 	fn_checkStopRequested = arg_checkStopRequested;
-	numObjFuncEvals=0;
-	bestObjectiveFunctionValue = DBL_MAX;
 	bestParameterValues = new double[numParameters];
 	memset(bestParameterValues,0,numParameters*sizeof(double));
 }
