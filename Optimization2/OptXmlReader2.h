@@ -27,7 +27,7 @@ public:
 	static OptSolverResultSet* readOptSolverResultSet(const char* xmlFile);
 
 private:
-	static ParameterDescription* parseParameterDescription(TiXmlElement* parmDescNode);
+	static ParameterDescription* parseParameterDescription(TiXmlElement* parmDescNode, bool bComputeProfileDistributions);
 	static OptProblemDescription* parseOptProblemDescription(TiXmlElement* rootNode);
 	static ConstraintDescription* parseConstraintDescription(TiXmlElement* constDescNode, SymbolTable* symbolTable);
 	static ObjectiveFunction* parseObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);

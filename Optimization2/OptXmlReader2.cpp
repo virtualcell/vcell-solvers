@@ -38,15 +38,15 @@ OptProblemDescription* OptXmlReader2::readOptProblemDescription(const char* xmlF
 
 OptProblemDescription* OptXmlReader2::parseOptProblemDescription(TiXmlElement* rootNode){
 	const char* computeProfileDistributionsAttr = rootNode->Attribute(ComputeProfileDistributions_Attr);
-	ParameterDescription* paramDesc = parseParameterDescription(rootNode->FirstChildElement(ParameterDescription_Tag));
+	bool bComputeProfileDistributions = computeProfileDistributionsAttr!=NULL &&!strcmp(computeProfileDistributionsAttr, "true");
+	ParameterDescription* paramDesc = parseParameterDescription(rootNode->FirstChildElement(ParameterDescription_Tag), bComputeProfileDistributions);
 	SymbolTable* symbolTable = paramDesc->getSymbolTable();
 	ConstraintDescription* constraintDesc = parseConstraintDescription(rootNode->FirstChildElement(ConstraintDescription_Tag),symbolTable);
 	ObjectiveFunction* objFunction = parseObjectiveFunction(rootNode->FirstChildElement(ObjectiveFunction_Tag),paramDesc);
-	return new OptProblemDescription(paramDesc,constraintDesc,objFunction, 
-		computeProfileDistributionsAttr!=NULL &&!strcmp(computeProfileDistributionsAttr, "true"));
+	return new OptProblemDescription(paramDesc,constraintDesc,objFunction, bComputeProfileDistributions);
 }
 
-ParameterDescription* OptXmlReader2::parseParameterDescription(TiXmlElement* paramDescNode){
+ParameterDescription* OptXmlReader2::parseParameterDescription(TiXmlElement* paramDescNode, bool bComputeProfileDistributions){
 	vector<string> nameVector;
 	vector<double> lowVector;
 	vector<double> highVector;
@@ -60,31 +60,39 @@ ParameterDescription* OptXmlReader2::parseParameterDescription(TiXmlElement* par
 		double low, high;
 		const char* lowAttr = parameter->Attribute(ParameterLow_Attr);
 		if (!strcmp(lowAttr,"-Infinity")){
-			stringstream ss;
-			ss << "Lower bound for " << paramName << " is -Infinity. Infinity is not allowed.";
-			throw ss.str();
+			if (bComputeProfileDistributions) {
+				stringstream ss;
+				ss << "Lower bound for " << paramName << " is -Infinity. Infinity is not allowed.";
+				throw ss.str();
+			}
 			low = -DBL_MAX;
 		} else {
 			low = atof(lowAttr);
 		}
-		if (low <= 0) {
-			stringstream ss;
-			ss << "Lower bound for " << paramName << " is 0, all lower bounds must be positive.";
-			throw ss.str();
+		if (bComputeProfileDistributions) {
+			if (low <= 0) {
+				stringstream ss;
+				ss << "Lower bound for " << paramName << " is 0, all lower bounds must be positive.";
+				throw ss.str();
+			}
 		}
 		const char* highAttr = parameter->Attribute(ParameterHigh_Attr);
 		if (!strcmp(highAttr,"Infinity")){
-			stringstream ss;
-			ss << "Upper bound for " << paramName << " is Infinity. Infinity is not allowed.";
-			throw ss.str();
+			if (bComputeProfileDistributions) {
+				stringstream ss;
+				ss << "Upper bound for " << paramName << " is Infinity. Infinity is not allowed.";
+				throw ss.str();
+			}
 			high = DBL_MAX;
 		} else {
 			high = atof(highAttr);
 		}
-		if (high <= 0) {
-			stringstream ss;
-			ss << "Upper bound for " << paramName << " is 0, all upper bounds must be positive.";
-			throw ss.str();
+		if (bComputeProfileDistributions) {
+			if (high <= 0) {
+				stringstream ss;
+				ss << "Upper bound for " << paramName << " is 0, all upper bounds must be positive.";
+				throw ss.str();
+			}
 		}
 		if (high <= low) {
 			stringstream ss;
