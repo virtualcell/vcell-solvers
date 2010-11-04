@@ -32,10 +32,6 @@ private:
 	FVSolver* fvSolver;
 	ParameterDescription* parameterDescription;
 	SpatialReferenceData* referenceData;
-
-	int numObjFuncEvals;
-	double bestObjectiveFunctionValue;
-	double* bestParameterValues;
 	double** currentSolution;
 
 	void (*fn_checkStopRequested)(double, long);

@@ -96,6 +96,7 @@ VCellSundialsSolver::VCellSundialsSolver() {
 	y = 0;
 
 	events = 0;
+	numEvents = 0;
 }
 
 VCellSundialsSolver::~VCellSundialsSolver() {

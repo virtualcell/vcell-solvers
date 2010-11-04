@@ -12,13 +12,14 @@ class TiXmlElement;
 //class SymbolTable;
 //class OdeResultSet;
 class OptResultSet;
+struct OptRunResultSet;
 
 class OptXmlWriter2
 {
 public:
-	OptXmlWriter2();
 //	TiXmlElement* getXML(OptProblemDescription* optProblemDescription);
-	TiXmlElement* getXML(OptResultSet* optSolverResultSet);
+	static TiXmlElement* getXML(OptResultSet* optSolverResultSet);
+
 private:
 	//TiXmlElement* getOptProblemDescription(OptProblemDescription* rootNode);
 	//TiXmlElement* getObjectiveFunction(ObjectiveFunction* objNode, ParameterDescription* paramDescription);
@@ -28,7 +29,8 @@ private:
 	//TiXmlElement* getParameterDescription(ParameterDescription* parmDescNode);
 	//TiXmlElement* getConstraintDescription(ConstraintDescription* constDescNode, SymbolTable* symbolTable);
 	//TiXmlElement* getOdeResultSet(OdeResultSet* dataNode);
-	TiXmlElement* getOptResultSet(OptResultSet* optResultSetNode);
+	static TiXmlElement* getOptResultSet(OptResultSet* optResultSetNode);
+	static TiXmlElement* getOptRunResultSet(OptResultSet* optResultSet, OptRunResultSet& optRunResultSet);
 };
 
 #endif

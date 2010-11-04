@@ -6,6 +6,7 @@
 class OptSolverCFSQP;
 class OptResultSet;
 class OptProblemDescription;
+enum OptSolverStatus;
 
 class OptSolverCFSQP : public OptSolver2 {
 public:
@@ -22,9 +23,12 @@ protected:
 	void constr(int nparam, int j, double *x, double *pconstr);
 	void gradob(int nparam, int j, double *x, double *gradfj, void (* dummy)(int,int,double*,double*,void*), void *cd);
 	void gradcn(int nparam, int j, double *x, double *gradgj, void (* dummy)(int,int,double*,double*,void*), void *cd);
+	void computeProfileDistributions(OptResultSet* optResultSet);
+	void computeCFSQPStatus(int inform, OptSolverStatus& status, string& statusMessage);
 
 private:
 	int iprint;
+	double *profileDist_obj_x;
 
 	static void obj_callback(int nparam, int j, double *x, double *fj, void *solverPointer);
 	static void constr_callback(int nparam, int j, double *x, double *gj, void *solverPointer);

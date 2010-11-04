@@ -31,10 +31,6 @@ private:
 	SpatialReferenceData* referenceData;
 	SpatialReferenceData* simDataD1;
 
-	int numObjFuncEvals;
-	double bestObjectiveFunctionValue;
-	double* bestParameterValues;
-
 	void (*fn_checkStopRequested)(double, long);
 };
 

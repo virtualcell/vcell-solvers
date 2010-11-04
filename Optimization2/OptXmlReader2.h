@@ -21,30 +21,29 @@ class SpatialReferenceData;
 class OptXmlReader2
 {
 public:
-	OptXmlReader2();
-	OptProblemDescription* parseOptProblemDescription(const char* xmlText);
-	OptProblemDescription* readOptProblemDescription(const char* xmlFile);
-	OptSolverResultSet* parseOptSolverResultSet(const char* xmlText);
-	OptSolverResultSet* readOptSolverResultSet(const char* xmlFile);
+	static OptProblemDescription* parseOptProblemDescription(const char* xmlText);
+	static OptProblemDescription* readOptProblemDescription(const char* xmlFile);
+	static OptSolverResultSet* parseOptSolverResultSet(const char* xmlText);
+	static OptSolverResultSet* readOptSolverResultSet(const char* xmlFile);
 
 private:
-	ParameterDescription* parseParameterDescription(TiXmlElement* parmDescNode);
-	OptProblemDescription* parseOptProblemDescription(TiXmlElement* rootNode);
-	ConstraintDescription* parseConstraintDescription(TiXmlElement* constDescNode, SymbolTable* symbolTable);
-	ObjectiveFunction* parseObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);
+	static ParameterDescription* parseParameterDescription(TiXmlElement* parmDescNode);
+	static OptProblemDescription* parseOptProblemDescription(TiXmlElement* rootNode);
+	static ConstraintDescription* parseConstraintDescription(TiXmlElement* constDescNode, SymbolTable* symbolTable);
+	static ObjectiveFunction* parseObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);
 
-	ExplicitObjectiveFunction* parseExplicitObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);	
-	ExplicitFitObjectiveFunction* parseExplicitFitObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);	
+	static ExplicitObjectiveFunction* parseExplicitObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);	
+	static ExplicitFitObjectiveFunction* parseExplicitFitObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);	
 
-	OdeObjectiveFunction* parseOdeObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);	
-	OdeResultSet* parseOdeResultSet(TiXmlElement* dataNode);
+	static OdeObjectiveFunction* parseOdeObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);	
+	static OdeResultSet* parseOdeResultSet(TiXmlElement* dataNode);
 
 #ifdef INCLUDE_PDE_OPT
-	SpatialReferenceData* parsePdeResultSet(TiXmlElement* dataNode);
-	PdeObjectiveFunction* parsePdeObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);
+	static SpatialReferenceData* parsePdeResultSet(TiXmlElement* dataNode);
+	static PdeObjectiveFunction* parsePdeObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);
 #endif
 
-	OptSolverResultSet* parseOptSolverResultSet(TiXmlElement* dataNode);
+	static OptSolverResultSet* parseOptSolverResultSet(TiXmlElement* dataNode);
 };
 
 #endif

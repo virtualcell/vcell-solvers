@@ -22,9 +22,6 @@ using VCell::Expression;
 #include "SpatialReferenceData.h"
 #include <tinyxml.h>
 
-OptXmlReader2::OptXmlReader2(){
-}
-
 OptProblemDescription* OptXmlReader2::parseOptProblemDescription(const char* xmlText){
 	TiXmlDocument doc;
 	doc.Parse(xmlText);
@@ -40,11 +37,13 @@ OptProblemDescription* OptXmlReader2::readOptProblemDescription(const char* xmlF
 }
 
 OptProblemDescription* OptXmlReader2::parseOptProblemDescription(TiXmlElement* rootNode){
+	const char* computeProfileDistributionsAttr = rootNode->Attribute(ComputeProfileDistributions_Attr);
 	ParameterDescription* paramDesc = parseParameterDescription(rootNode->FirstChildElement(ParameterDescription_Tag));
 	SymbolTable* symbolTable = paramDesc->getSymbolTable();
 	ConstraintDescription* constraintDesc = parseConstraintDescription(rootNode->FirstChildElement(ConstraintDescription_Tag),symbolTable);
 	ObjectiveFunction* objFunction = parseObjectiveFunction(rootNode->FirstChildElement(ObjectiveFunction_Tag),paramDesc);
-	return new OptProblemDescription(paramDesc,constraintDesc,objFunction);
+	return new OptProblemDescription(paramDesc,constraintDesc,objFunction, 
+		computeProfileDistributionsAttr!=NULL &&!strcmp(computeProfileDistributionsAttr, "true"));
 }
 
 ParameterDescription* OptXmlReader2::parseParameterDescription(TiXmlElement* paramDescNode){
@@ -55,20 +54,44 @@ ParameterDescription* OptXmlReader2::parseParameterDescription(TiXmlElement* par
 	vector<double> scaleVector;
 	TiXmlElement* parameter = paramDescNode->FirstChildElement(Parameter_Tag);
 	while (parameter!=0){
-		nameVector.push_back(string(parameter->Attribute(ParameterName_Attr)));
+		string paramName = parameter->Attribute(ParameterName_Attr);
+		nameVector.push_back(paramName);
 
+		double low, high;
 		const char* lowAttr = parameter->Attribute(ParameterLow_Attr);
-		double low = atof(lowAttr);
 		if (!strcmp(lowAttr,"-Infinity")){
+			stringstream ss;
+			ss << "Lower bound for " << paramName << " is -Infinity. Infinity is not allowed.";
+			throw ss.str();
 			low = -DBL_MAX;
+		} else {
+			low = atof(lowAttr);
+		}
+		if (low <= 0) {
+			stringstream ss;
+			ss << "Lower bound for " << paramName << " is 0, all lower bounds must be positive.";
+			throw ss.str();
+		}
+		const char* highAttr = parameter->Attribute(ParameterHigh_Attr);
+		if (!strcmp(highAttr,"Infinity")){
+			stringstream ss;
+			ss << "Upper bound for " << paramName << " is Infinity. Infinity is not allowed.";
+			throw ss.str();
+			high = DBL_MAX;
+		} else {
+			high = atof(highAttr);
+		}
+		if (high <= 0) {
+			stringstream ss;
+			ss << "Upper bound for " << paramName << " is 0, all upper bounds must be positive.";
+			throw ss.str();
+		}
+		if (high <= low) {
+			stringstream ss;
+			ss << "Upper bound for " << paramName << " is less than its lower bound.";
+			throw ss.str();
 		}
 		lowVector.push_back(low);
-
-		const char* highAttr = parameter->Attribute(ParameterHigh_Attr);
-		double high = atof(highAttr);
-		if (!strcmp(highAttr,"Infinity")){
-			high = DBL_MAX;
-		}
 		highVector.push_back(high);
 
 		initVector.push_back(atof(parameter->Attribute(ParameterInit_Attr)));

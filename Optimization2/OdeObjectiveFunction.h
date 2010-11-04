@@ -39,9 +39,6 @@ private:
 	OdeResultSet* referenceData;
 	OdeResultSet* bestResultSet;
 
-	int numObjFuncEvals;
-	double bestObjectiveFunctionValue;
-	double* bestParameterValues;
 	void (*fn_checkStopRequested)(double, long);
 
 };

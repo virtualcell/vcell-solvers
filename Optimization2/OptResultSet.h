@@ -3,9 +3,10 @@
 
 #include <vector>
 #include <string>
-using namespace std;
+using std::vector;
+using std::string;
 
-typedef enum {
+enum OptSolverStatus {
 	unknown = -1,
 	normalTermination = 0,
 	nonfeasibleLinear = 1,
@@ -19,21 +20,31 @@ typedef enum {
 	failedPenaltyTooLarge = 9,
 	failed = 10,
 	stoppedByUser = 11
-} OptSolverStatus;
+};
+
+struct OptRunResultSet {
+	OptSolverStatus status;
+	vector<double> paramValues;
+	double objectiveFunctionValue;
+	int numObjFuncEvals;
+	string statusMessage;
+};
+
+struct ProfileDistribution {
+	int fixedIndex;
+	string fixedParamName;
+	vector<OptRunResultSet> optRunResultSets;
+};
 
 class OptResultSet {
 public:
 	OptResultSet();
 	~OptResultSet();
 
-	void show();
-
-	OptSolverStatus status;
 	vector<string> paramNames;
-	vector<double> paramValues;
-	double objectiveFunctionValue;
-	int numObjFuncEvals;
-	string statusMessage;
+	void show();
+	OptRunResultSet bestRunResultSet;
+	vector<ProfileDistribution> vectProfileDistribution;
 };
 
 #endif

@@ -28,10 +28,7 @@ protected:
 	double* unscaled_x;
 	ParameterDescription* parameterDescription;
 
-	int numObjFuncEvals;
 	VCell::Expression* objFuncExpression;
-	double bestObjectiveFunctionValue;
-	double* bestParameterValues;
 	void (*fn_checkStopRequested)(double, long);
 };
 

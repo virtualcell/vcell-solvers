@@ -17,8 +17,6 @@ using namespace std;
 #include <Expression.h>
 #include <tinyxml.h>
 
-OptXmlWriter2::OptXmlWriter2(){
-}
 
 //TiXmlElement* OptXmlWriter2::getXML(OptProblemDescription* optProblemDescription){
 //	return getOptProblemDescription(optProblemDescription);
@@ -30,14 +28,45 @@ TiXmlElement* OptXmlWriter2::getXML(OptResultSet* optResultSet){
 
 TiXmlElement* OptXmlWriter2::getOptResultSet(OptResultSet* optResultSet){
 	TiXmlElement* optResultSetElement = new TiXmlElement(OptSolverResultSet_Tag);
+	for (int i=0;i<(int)optResultSet->paramNames.size();i++){
+		TiXmlElement* paramNode = new TiXmlElement(Parameter_Tag);
+		paramNode->SetAttribute(ParameterName_Attr,optResultSet->paramNames[i].c_str());
+		optResultSetElement->LinkEndChild(paramNode);
+	}
+
+	TiXmlElement* bestResultSetElement = getOptRunResultSet(optResultSet, optResultSet->bestRunResultSet);
+	bestResultSetElement->SetValue(bestOptRunResultSet_Tag);
+	optResultSetElement->LinkEndChild(bestResultSetElement);
+
+	if ((int)optResultSet->vectProfileDistribution.size() > 0) {
+		TiXmlElement* profileDistributionListElement = new TiXmlElement(ProfileDistributionList_Tag);
+		for (int i = 0; i < (int)optResultSet->vectProfileDistribution.size(); i ++) {
+			ProfileDistribution& profileDistribution = optResultSet->vectProfileDistribution[i];
+			TiXmlElement* profileDistributionElement = new TiXmlElement(ProfileDistribution_Tag);
+			profileDistributionElement->SetAttribute(ProfileDistribution_FixedParameter_Attr, profileDistribution.fixedParamName.c_str());
+			for (int j = 0; j < (int)profileDistribution.optRunResultSets.size(); j ++) {
+				OptRunResultSet& OptRunResultSet = profileDistribution.optRunResultSets[j];
+				TiXmlElement* optRunResultSetElement = getOptRunResultSet(optResultSet, OptRunResultSet);
+				profileDistributionElement->LinkEndChild(optRunResultSetElement);
+			}
+			profileDistributionListElement->LinkEndChild(profileDistributionElement);
+		}
+		optResultSetElement->LinkEndChild(profileDistributionListElement);
+	}
+
+	return optResultSetElement;
+}
+
+TiXmlElement* OptXmlWriter2::getOptRunResultSet(OptResultSet* optResultSet, OptRunResultSet& optRunResultSet){
+	TiXmlElement* optRunResultSetElement = new TiXmlElement(OptRunResultSet_Tag);
 	stringstream ss1;
-	ss1 << optResultSet->objectiveFunctionValue;
-	optResultSetElement->SetAttribute(OptSolverResultSetBestObjectiveFunction_Attr,ss1.str().c_str());
+	ss1 << optRunResultSet.objectiveFunctionValue;
+	optRunResultSetElement->SetAttribute(OptSolverResultSetBestObjectiveFunction_Attr,ss1.str().c_str());
 	stringstream ss2;
-	ss2 << optResultSet->numObjFuncEvals;
-	optResultSetElement->SetAttribute(OptSolverResultSetNumObjectiveFunctionEvaluations_Attr,ss2.str().c_str());
+	ss2 << optRunResultSet.numObjFuncEvals;
+	optRunResultSetElement->SetAttribute(OptSolverResultSetNumObjectiveFunctionEvaluations_Attr,ss2.str().c_str());
 	string status = "unknown";
-	switch (optResultSet->status){
+	switch (optRunResultSet.status){
 		case unknown: {
 			status = OptSolverResultSetStatus_Attr_Unknown;
 			break;
@@ -87,16 +116,16 @@ TiXmlElement* OptXmlWriter2::getOptResultSet(OptResultSet* optResultSet){
 			break;
 		}
 	}
-	optResultSetElement->SetAttribute(OptSolverResultSetStatus_Attr,status.c_str());
-	for (int i=0;i<(int)optResultSet->paramNames.size();i++){
+	optRunResultSetElement->SetAttribute(OptSolverResultSetStatus_Attr,status.c_str());
+	for (int i=0;i<(int)optRunResultSet.paramValues.size();i++){
 		TiXmlElement* paramNode = new TiXmlElement(Parameter_Tag);
 		paramNode->SetAttribute(ParameterName_Attr,optResultSet->paramNames[i].c_str());
 		stringstream ss3;
-		ss3 << optResultSet->paramValues[i];
+		ss3 << optRunResultSet.paramValues[i];
 		paramNode->SetAttribute(ParameterBestValue_Attr,ss3.str().c_str());
-		optResultSetElement->LinkEndChild(paramNode);
+		optRunResultSetElement->LinkEndChild(paramNode);
 	}
-	return optResultSetElement;
+	return optRunResultSetElement;
 }
 
 //OptProblemDescription* OptXmlWriter2::parseOptProblemDescription(TiXmlElement* rootNode){

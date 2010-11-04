@@ -59,8 +59,6 @@ ExplicitFitObjectiveFunction::ExplicitFitObjectiveFunction(
 	referenceData->getColumnData(0, numParamForOdeResultSetFunctions, 0, independentVarArray);
 	referenceData->getColumnData(1, numParamForOdeResultSetFunctions, 0, dependentVarArray);
 
-	numObjFuncEvals=0;
-	bestObjectiveFunctionValue = DBL_MAX;
 	bestParameterValues = new double[numParameters];
 	memset(bestParameterValues,0,numParameters*sizeof(double));
 

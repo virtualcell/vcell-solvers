@@ -22,9 +22,7 @@ VFRAPObjectiveFunction::VFRAPObjectiveFunction(ParameterDescription *arg_paramet
 	simDataD1 = arg_simulationData;
 
 	unscaled_x = new double[arg_parameterDescription->getNumParameters()];
-	numObjFuncEvals=0;
 	int numParams = arg_parameterDescription->getNumParameters();
-	bestObjectiveFunctionValue = DBL_MAX;
 	bestParameterValues = new double[numParams];
 	memset(bestParameterValues,0,numParams*sizeof(double));
 	fn_checkStopRequested = arg_checkStopRequested;

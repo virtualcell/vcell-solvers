@@ -61,8 +61,7 @@ JNIEXPORT jstring JNICALL Java_org_vcell_optimization_NativeOptSolver_nativeSolv
 		// Input string
 		char* c_optProblemDescriptionXMLString = (char*)jniEnv->GetStringUTFChars(j_OptProblemDescriptionXMLString, 0);
 
-		OptXmlReader2* optXmlReader = new OptXmlReader2();
-		OptProblemDescription* optProblemDescription = optXmlReader->parseOptProblemDescription(c_optProblemDescriptionXMLString);
+		OptProblemDescription* optProblemDescription = OptXmlReader2::parseOptProblemDescription(c_optProblemDescriptionXMLString);
 		jsize numParameters = optProblemDescription->getParameterDescription()->getNumParameters();
 
 #ifdef JNI_DEBUG
@@ -90,14 +89,15 @@ JNIEXPORT jstring JNICALL Java_org_vcell_optimization_NativeOptSolver_nativeSolv
 #endif
 		} catch (StoppedByUserException& ex) {
 			optResultSet = new OptResultSet();
-			optResultSet->status = stoppedByUser;			
-			optResultSet->statusMessage = ex.getMessage();
+			optResultSet->bestRunResultSet.status = stoppedByUser;			
+			optResultSet->bestRunResultSet.statusMessage = ex.getMessage();
 			for (int i=0;i<numParameters;i++){
 				optResultSet->paramNames.push_back(optProblemDescription->getParameterDescription()->getParameterName(i));
-				optResultSet->paramValues.push_back(optProblemDescription->getObjectiveFunction()->getBestParameterValues()[i]);
+				optResultSet->bestRunResultSet.paramValues.push_back(optProblemDescription->getObjectiveFunction()->getBestParameterValues()[i]);
 			}
-			optResultSet->objectiveFunctionValue = optProblemDescription->getObjectiveFunction()->getBestObjectiveFunctionValue();
-			optResultSet->numObjFuncEvals = optProblemDescription->getObjectiveFunction()->getNumObjFuncEvals();
+			optResultSet->bestRunResultSet.objectiveFunctionValue = optProblemDescription->getObjectiveFunction()->getBestObjectiveFunctionValue();
+			optResultSet->bestRunResultSet.numObjFuncEvals = optProblemDescription->getObjectiveFunction()->getNumObjFuncEvals();
+			optResultSet->vectProfileDistribution.clear();
 		}
 #ifdef JNI_DEBUG
 		cout << "in dll 6" << endl;
@@ -119,7 +119,7 @@ JNIEXPORT jstring JNICALL Java_org_vcell_optimization_NativeOptSolver_nativeSolv
 		TiXmlElement* optSolverResultSetXMLNode = optXmlWriter.getXML(optResultSet);
 		TiXmlPrinter printer;
 		optSolverResultSetXMLNode->Accept(&printer);
-		printer.CStr();
+		//printer.CStr();
 		jclass class_String = jniEnv->FindClass("java/lang/String");
 		jstring j_optSolverResultSetXML = jniEnv->NewStringUTF(printer.CStr());
 

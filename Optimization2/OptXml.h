@@ -2,6 +2,7 @@
 #define OPTXML_H
 
 static const char* OptProblemDescription_Tag = "optProblemDescription";
+static const char* ComputeProfileDistributions_Attr = "ComputeProfileDistributions";
 
 static const char* ObjectiveFunction_Tag = "objectiveFunction";
 static const char* ObjectiveFunctionType_Attr = "type";
@@ -45,6 +46,13 @@ static const char* ConstraintType_Attr_NonlinearEquality = "nonlinearEquality";
 static const char* ConstraintType_Attr_NonlinearInequality = "nonlinearInequality";
 
 static const char* OptSolverResultSet_Tag = "optSolverResultSet";
+
+static const char* bestOptRunResultSet_Tag = "bestOptRunResultSet";
+static const char* OptRunResultSet_Tag = "OptRunResultSet";
+static const char* ProfileDistributionList_Tag = "ProfileDistibutionList";
+static const char* ProfileDistribution_Tag = "ProfileDistibution";
+static const char* ProfileDistribution_FixedParameter_Attr = "fixedParameter";
+
 static const char* OptSolverResultSetBestObjectiveFunction_Attr = "bestObjectiveFunction";
 static const char* OptSolverResultSetNumObjectiveFunctionEvaluations_Attr = "numObjectiveFunctionEvaluations";
 static const char* OptSolverResultSetStatus_Attr = "status";

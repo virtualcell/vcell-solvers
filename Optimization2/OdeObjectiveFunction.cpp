@@ -41,8 +41,6 @@ OdeObjectiveFunction::OdeObjectiveFunction(
 
 	referenceData = arg_referenceData;
 	bestResultSet = new OdeResultSet();
-	numObjFuncEvals=0;
-	bestObjectiveFunctionValue = DBL_MAX;
 	bestParameterValues = new double[numParameters];
 	memset(bestParameterValues,0,numParameters*sizeof(double));
 
