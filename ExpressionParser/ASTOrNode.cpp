@@ -18,15 +18,28 @@ bool ASTOrNode::isBoolean() {
 
 string ASTOrNode::infixString(int lang, NameScope* nameScope)
 {
-	string buffer("(");
+	string buffer;
 
-    for (int i = 0; i < jjtGetNumChildren(); i++) {
-        if (i > 0)
-            buffer += " || ";
-        buffer += jjtGetChild(i)->infixString(lang, nameScope);
-    }
+	if(lang == LANGUAGE_VISIT){
+		  for (int i=0;i<jjtGetNumChildren()-1;i++){
+			  buffer.append("or(");
+		  }
+		  buffer.append(jjtGetChild(0)->infixString(lang,nameScope));
+		  for (int i=1;i<jjtGetNumChildren();i++){
+			  buffer.append(",");
+			  buffer.append(jjtGetChild(i)->infixString(lang,nameScope));
+			  buffer.append(")");
+		  }
+	}else{
+	    buffer += "(";
+		for (int i = 0; i < jjtGetNumChildren(); i++) {
+			if (i > 0)
+				buffer += " || ";
+			buffer += jjtGetChild(i)->infixString(lang, nameScope);
+		}
+	    buffer += ")";
+	}
 
-    buffer += ")";
     return buffer;
 }
 

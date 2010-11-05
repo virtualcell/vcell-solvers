@@ -34,6 +34,7 @@ public:
 	
 	void showStackInstructions();
 	void substituteInPlace(Expression* origExp, Expression* newExp);
+	string infix_Visit(void);
 
 private:
 	SimpleNode  *rootNode;

@@ -19,7 +19,12 @@ bool ASTNotNode::isBoolean() {
 
 string ASTNotNode::infixString(int lang, NameScope* nameScope)
 {
-	string buffer("!(");
+	string buffer;
+	if (lang == LANGUAGE_VISIT){
+		buffer.append("not(");
+	}else{
+		buffer.append("!(");
+	}
 	buffer += jjtGetChild(0)->infixString(lang,nameScope);
 	buffer += ")";
 

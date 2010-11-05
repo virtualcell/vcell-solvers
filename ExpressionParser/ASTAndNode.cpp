@@ -18,14 +18,27 @@ bool ASTAndNode::isBoolean() {
 
 string ASTAndNode::infixString(int lang, NameScope* nameScope)
 {
-	string buffer("(");
 
-	for (int i=0;i<jjtGetNumChildren();i++){
-		if (i>0) 
-			buffer += " && ";
-		buffer += jjtGetChild(i)->infixString(lang, nameScope);
+	string buffer;
+	if(lang == LANGUAGE_VISIT){
+	  for (int i=0;i<jjtGetNumChildren()-1;i++){
+		  buffer += "and(";
+	  }
+	  buffer += jjtGetChild(0)->infixString(lang,nameScope);
+	  for (int i=1;i<jjtGetNumChildren();i++){
+		  buffer += ",";
+		  buffer += jjtGetChild(i)->infixString(lang,nameScope);
+		  buffer += ")";
+	  }
+	}else{
+		buffer+= "(";
+		for (int i=0;i<jjtGetNumChildren();i++){
+			if (i>0)
+				buffer += " && ";
+			buffer += jjtGetChild(i)->infixString(lang, nameScope);
+		}
+		buffer += ")";
 	}
-	buffer += ")";
 
 	return buffer;
 }

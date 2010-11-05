@@ -130,6 +130,11 @@ string VCell::Expression::infix(void)
 	return rootNode->infixString(LANGUAGE_DEFAULT, 0);
 }
 
+string VCell::Expression::infix_Visit(void)
+{
+	return rootNode->infixString(LANGUAGE_VISIT, 0);
+}
+
 void VCell::Expression::bindExpression(SymbolTable* symbolTable)
 {	
 	//bindCount++;

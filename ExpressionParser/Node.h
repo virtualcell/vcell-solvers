@@ -10,6 +10,7 @@ using std::vector;
 #define LANGUAGE_C 1
 #define LANGUAGE_MATLAB  2
 #define LANGUAGE_JSCL 3
+#define LANGUAGE_VISIT 5
 
 #define EVALUATE_CONSTANT  111
 #define EVALUATE_VECTOR 112

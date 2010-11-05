@@ -3,6 +3,7 @@
 #include "ExpressionException.h"
 #include "ExpressionParserTreeConstants.h"
 #include "StackMachine.h"
+#include "ParseException.h"
 
 const int LT = 1;
 const int GT = 2;
@@ -54,15 +55,51 @@ void ASTRelationalNode::setOperationFromToken(string op)
 
 string ASTRelationalNode::infixString(int lang, NameScope* nameScope)
 {
-	string buffer("(");
+	string buffer;
+	if(lang == LANGUAGE_VISIT){
+	  if(jjtGetNumChildren() != 2){
+		  throw ParseException("ASTRelationalNode for VISIT expecting 2 children");
+	  }
+	  switch (operation){
+			case GT:{
+				buffer.append("gt(");
+				break;
+			}
+			case LT:{
+				buffer.append("lt(");
+				break;
+			}
+			case GE:{
+				buffer.append("gte(");
+				break;
+			}
+			case LE:{
+				buffer.append("lte(");
+				break;
+			}
+			case EQ:{
+				buffer.append("equal(");
+				break;
+			}
+			case NE:{
+				buffer.append("notequal(");
+				break;
+			}
+			default:{
+				throw ParseException("ASTRelationalNode VISIT unknown relational operator");
+			}
+		}
+		buffer.append(jjtGetChild(0)->infixString(lang,nameScope)+","+jjtGetChild(1)->infixString(lang,nameScope)+")");
 
-	for (int i = 0; i < jjtGetNumChildren(); i++) {
-		if (i > 0)
-			buffer += " " + opString + " ";
-		buffer += jjtGetChild(i)->infixString(lang, nameScope);
-	}
-
-	buffer += ")";
+	  }else{
+	  	buffer += "(";
+		for (int i = 0; i < jjtGetNumChildren(); i++) {
+			if (i > 0)
+				buffer += " " + opString + " ";
+			buffer += jjtGetChild(i)->infixString(lang, nameScope);
+		}
+		buffer += ")";
+	  }
 	return buffer;
 }
 

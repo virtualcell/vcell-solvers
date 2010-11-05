@@ -3,6 +3,8 @@
 #include "ExpressionException.h"
 #include "ExpressionParserTreeConstants.h"
 #include "StackMachine.h"
+#include "Expression.h"
+//#include "ParseException.h"
 
 #include <sstream>
 using std::stringstream;
@@ -44,7 +46,7 @@ string ASTMultNode::infixString(int lang, NameScope* nameScope)
 	stringstream buffer;
 	buffer << "(";
 
-	if (bAllBoolean || bNoBoolean || lang != LANGUAGE_C) { // old way
+	if (bAllBoolean || bNoBoolean || (lang != LANGUAGE_C && lang != LANGUAGE_VISIT)) { // old way
 		for (int i=0;i<jjtGetNumChildren();i++){
 			ASTInvertTermNode* pointer = dynamic_cast<ASTInvertTermNode*>(jjtGetChild(i));
 			if (pointer){
@@ -64,7 +66,7 @@ string ASTMultNode::infixString(int lang, NameScope* nameScope)
 				if (conditionBuffer.str().length() > 0) {
 					conditionBuffer << " && ";
 				}
-				conditionBuffer << jjtGetChild(i)->infixString(lang,nameScope);
+				conditionBuffer << jjtGetChild(i)->infixString((lang == LANGUAGE_VISIT?LANGUAGE_DEFAULT:lang),nameScope);
 			} else {
 				if (valueBuffer.str().length() == 0) {					
 					ASTInvertTermNode* pointer = dynamic_cast<ASTInvertTermNode*>(jjtGetChild(i));
@@ -82,7 +84,17 @@ string ASTMultNode::infixString(int lang, NameScope* nameScope)
 				valueBuffer << jjtGetChild(i)->infixString(lang,nameScope);
 			}
 		}
-		buffer << "((" << conditionBuffer.str() << ") ? (" << valueBuffer.str() << ") : 0.0)";
+		if(lang == LANGUAGE_VISIT){
+			//try{
+				VCell::Expression * exp = new VCell::Expression(conditionBuffer.str());
+				buffer << "if(" << exp->infix_Visit() << " , " << valueBuffer.str() << " , 0.0)";
+				delete exp;
+			//}catch(...){
+			//	throw ParseException("Error pasing Expr");
+			//}
+		}else{
+			buffer << "((" << conditionBuffer.str() << ") ? (" << valueBuffer.str() << ") : 0.0)";
+		}
 	}
 	buffer << ")";
 	string s = buffer.str();
