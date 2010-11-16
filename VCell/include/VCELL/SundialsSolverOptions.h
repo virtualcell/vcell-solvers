@@ -8,13 +8,13 @@
 struct SundialsSolverOptions {
 	double relTol, absTol;
 	double maxStep;
-	int maxOrder;
+	int maxOrderAdvection;
 
 	SundialsSolverOptions() {
 		relTol = 1e-7;
 		absTol = 1e-9;
 		maxStep = 0.1;
-		maxOrder = 5;
+		maxOrderAdvection = 2;
 	}
 };
 #endif

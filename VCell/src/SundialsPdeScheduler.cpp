@@ -522,7 +522,7 @@ void SundialsPdeScheduler::initSundialsSolver() {
 		}
 #endif
 		cout << ", relTol=" << sundialsSolverOptions.relTol << ", absTol=" << sundialsSolverOptions.absTol 
-			<< ", maxStep=" <<  sundialsSolverOptions.maxStep << ", maxOrder=" << sundialsSolverOptions.maxOrder << endl;
+			<< ", maxStep=" <<  sundialsSolverOptions.maxStep;
 		checkCVodeReturnCode(returnCode);
 
 		// set max absolute step size
@@ -537,8 +537,12 @@ void SundialsPdeScheduler::initSundialsSolver() {
 		returnCode = CVSpilsSetPreconditioner (sundialsSolverMemory, pcSetup_callback, pcSolve_callback, this);
 		checkCVodeReturnCode(returnCode);
 
-		returnCode = CVodeSetMaxOrd(sundialsSolverMemory, sundialsSolverOptions.maxOrder);
-		checkCVodeReturnCode(returnCode);
+		if (bHasAdvection) {
+			returnCode = CVodeSetMaxOrd(sundialsSolverMemory, sundialsSolverOptions.maxOrderAdvection);
+			checkCVodeReturnCode(returnCode);
+			cout << ", maxOrderAdvection=" << sundialsSolverOptions.maxOrderAdvection;
+		}
+		cout << endl;
 	} else {
 		returnCode = CVodeReInit(sundialsSolverMemory, RHS_callback, currentTime, y, ToleranceType, 
 			sundialsSolverOptions.relTol, &sundialsSolverOptions.absTol);

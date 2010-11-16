@@ -1058,7 +1058,7 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 				simTool->setPCGRelativeErrorTolerance(pcgRelTol);
 			} else {
 				SundialsSolverOptions sso;
-				lineInput >> sso.relTol >> sso.absTol >> sso.maxStep >> sso.maxOrder;
+				lineInput >> sso.relTol >> sso.absTol >> sso.maxStep >> sso.maxOrderAdvection;
 				simTool->setSundialsSolverOptions(sso);
 			}
 		} else if (nextToken == "DISCONTINUITY_TIMES") {
