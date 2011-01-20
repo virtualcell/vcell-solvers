@@ -11,34 +11,6 @@ using std::stringstream;
 #include <VCELL/SimulationMessaging.h>
 #endif
 
-static char* trim(char* str) {	
-	int leftIndex, rightIndex;
-	int len = (int)strlen(str);
-	for (leftIndex = 0; leftIndex < len; leftIndex ++) { // remove leading spaces
-		char c = str[leftIndex];
-		if (c != ' ' && c != '\n' && c != '\r') {
-			break;
-		}
-	}
-	for (rightIndex = len - 1; rightIndex >= 0; rightIndex --) { // remove trailing spaces and new line and carriage return
-		char c = str[rightIndex];
-		if (c != ' ' && c != '\n' && c != '\r') {
-			break;
-		}
-	}
-
-	len = rightIndex - leftIndex + 2;
-	if (len <= 0) {
-		return 0;
-	}
-
-	char* newstr = new char[len];
-	memset(newstr, 0, len * sizeof(char));
-	strncpy(newstr, str + leftIndex, len - 1);
-
-	return newstr;
-}
-
 static void trimString(string& str)
 {
 	string::size_type pos = str.find_last_not_of(" \r\n");

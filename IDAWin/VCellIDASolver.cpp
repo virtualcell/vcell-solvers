@@ -109,7 +109,6 @@ idaSolve
 **/
 
 void VCellIDASolver::throwIDAErrorMessage(int returnCode) {
-	char *errMsg = NULL;
 	switch (returnCode) {
 		case IDA_SUCCESS: {
 			throw "IDA_SUCCESS: IDASolve succeeded and no roots were found";

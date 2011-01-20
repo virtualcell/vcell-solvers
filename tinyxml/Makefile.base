@@ -1,8 +1,14 @@
 
 CC = g++
-BASE_CPPFLAGS = -c -O2 -fexceptions -D$(PLATFORM)
+BASE_CPPFLAGS0 = -c -O2 -fexceptions -D$(PLATFORM)
 DEL = rm
 LIBTOOL = ar cru
+
+ifeq ($(PLATFORM), MACOSX)
+BASE_CPPFLAGS = $(BASE_CPPFLAGS0) -arch x86_64 -arch ppc -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5
+else 
+BASE_CPPFLAGS = $(BASE_CPPFLAGS0) 
+endif
 
 ifdef NATIVELIB
 CPPFLAGS = -fPIC $(BASE_CPPFLAGS)
@@ -31,4 +37,3 @@ clean:
 	
 depend:
 	makedepend -Y -f Makefile.linux -- $(CPPFLAGS) -- *.c *.cpp
-	

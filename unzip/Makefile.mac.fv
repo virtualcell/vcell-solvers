@@ -48,7 +48,9 @@ LD = $(CC)#	must match, else "unresolved symbol:  ___main" is possible)
 AS = as
 LOC = $(LOCAL_UNZIP)
 AF = $(LOC)
-CF = -O -DUNIX -fexceptions -I. $(LOC)
+CF = -O -DUNIX -fexceptions \
+	-arch x86_64 -arch ppc -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5 \
+	-I. $(LOC)
 LF = -o unzip
 LF2 = -s
 
@@ -373,6 +375,7 @@ clean:
 	  crc_sysv$O unzipstb$O crypt_.c extract_.c globals_.c inflate_.c \
 	  ttyio_.c crc_i386.s msdos_.c process_.c unix_.c unzipsfx.c
 	rm -rf ./$(PKGDIR)
+	rm $(UNZIPLIB)
 
 # Package generation interface (by J.Bush).  Originally tested under Sun
 # Solaris 2.x.  Other SVr4s may be very similar and could possibly use this.

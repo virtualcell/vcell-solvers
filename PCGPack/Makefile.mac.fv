@@ -1,5 +1,5 @@
-FC      = ifort
-FFLAGS     = -O3 -static-intel -static -nofor-main 
+FC      = gfortran
+FFLAGS     = -static -O2 -arch x86_64 -arch ppc -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5
 
 LIBRARY  = libpcgpack.a
 

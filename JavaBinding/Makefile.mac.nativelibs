@@ -1,0 +1,6 @@
+
+PLATFORM = MACOSX
+NATIVELIB=1
+CPU = i386
+
+include Makefile.base

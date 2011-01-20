@@ -3,104 +3,116 @@
 # All rights reserved.
 #
 CC = g++
-LINKER = ifort -nofor-main -i-static
-#LINKER = g++
-CPPFLAGS = -fexceptions -c -DINTEL -DUNIX -DMACOSX -O2 -g -I../include -I../../zlib -I../../SonicCClient/Linux_AS21/include/CPP -I../../SonicCClient/Linux_AS21/include -I../../
-ExpressionParser
+LINKER = g++
+CPPFLAGS = -fexceptions -c -DINTEL -DUNIX -DMACOSX -O2 \
+		-arch x86_64 -arch ppc -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5 \
+		-I../include -I../../zlib \
+		-I../../ExpressionParser -I../../sundials/include -I../../sundials/src \
+		-I../../IDAWin -I../../netcdf-3.6.2/libsrc \
+		-I../../netcdf-3.6.2/cxx
 
-TARGET_LIB =  libvcell.a
+FC= gfortran
+FOPTIONS = -c -fexceptions -static -O2 -arch x86_64 -arch ppc -arch i386 \
+			-isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5
+LDFLAGS = -arch x86_64 -arch ppc -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk \
+	-mmacosx-version-min=10.5 -no_compact_linkedit
+LIBS =  ../../ExpressionParser/libExpParser.a \
+		../../qhull/libqhull.a \
+		../../zlib/libz.a \
+		../../zip/libzip32.a \
+		../../unzip/libunzip32.a \
+		../../PCGPack/libpcgpack.a \
+		../../IDAWin/libvcellIDA.a \
+		../../sundials/lib/libsundials_ida.a  \
+		../../sundials/lib/libsundials_cvode.a  \
+		../../sundials/lib/libsundials_nvecserial.a \
+		../../sundials/lib/libsundials.a \
+		../../netcdf-3.6.2/cxx/libnetcdf_cxx.a \
+		../../netcdf-3.6.2/libsrc/libnetcdf.a \
+		/usr/local/lib/libgfortran.a -lblas -lpthread -lm 
+#-lgfortran
+#		../../blas/libblas.a \
+
 TARGET_STANDALONE = FiniteVolume
-
-FC= ifort
-FOPTIONS = -c -fexceptions -O3 -static -i-static -static-intel -nofor-main
-VCELL_LIBS =  libvcell.a -L../../ExpressionParser -lExpParser \
-               -L../../qhull -lqhull -L../../zlib -lz -L../../zip -lzip32 -L../../unzip -lunzip32 \
-               -L../../blas -lblas -L../../PCGPack -lpcgpack
-LIBS = -lpthread -lm -lstdc++ -lgcc_eh
-#LIBS = -lblas -lpthread -lm -lgcc 
-
-LIBTOOL = ar cru
 
 %.o : %.f
 	$(FC) $(FOPTIONS) $<
 
-%.o : %.cpp             
+%.o : %.cpp		
 	$(CC) $(CPPFLAGS) $<
 
-CPPOBJECTS =    \
-        AlgebraicSystem.o               \
-        CartesianMesh.o            \
-        Contour.o                               \
-        ContourSubdomain.o       \
-        ContourVarContext.o             \
-        ContourVariable.o         \
-        DataSet.o                                \
-        EllipticVolumeEqnBuilder.o    \
-        EqnBuilder.o    \
-        EqnBuilderReactionForward.o \
-        FastSystem.o              \
-        FastSystemExpression.o       \
-        Feature.o         \
-        FieldData.o         \
-        FVSolver.o        \
-        FVUtils.o         \
-        MembraneEqnBuilderForward.o \
-        MembraneEqnBuilderDiffusion.o       \
-        MembraneRegion.o    \
-        MembraneRegionEqnBuilder.o  \
-        MembraneRegionVarContext.o  \
-        MembraneRegionVarContextExpression.o        \
-        MembraneRegionVariable.o    \
-        MembraneVarContext.o                \
-        MembraneVarContextExpression.o      \
-        MembraneVariable.o  \
-        Mesh.o              \
-        ODESolver.o \
-        ParticleContext.o   \
-        PDESolver.o \
-        Region.o          \
-        Scheduler.o       \
-        SerialScheduler.o                   \
-        SimTool.o                   \
-        Simulation.o                        \
-        SimulationExpression.o      \
-        SimulationMessaging.o       \
-        Solver.o                    \
-        SparseLinearSolver.o                \
-        SparseMatrixEqnBuilder.o            \
-        SparseMatrixPCG.o           \
-        SparseVolumeEqnBuilder.o            \
-        StructuredPDESolver.o               \
-        Timer.o                     \
-        VarContext.o                        \
-        Variable.o                  \
-        VCellModel.o                        \
-        VolumeRegion.o                      \
-        VolumeRegionEqnBuilder.o                    \
-        VolumeRegionVarContext.o                    \
-        VolumeRegionVarContextExpression.o      \
-        VolumeRegionVariable.o  \
-        VolumeVarContext.o                  \
-        VolumeVarContextExpression.o    \
-        VolumeVariable.o
+CPPOBJECTS = 	\
+	AlgebraicSystem.o		\
+	CartesianMesh.o		   \
+	DataSet.o  				 \
+	DataProcessorVFrap.o  				 \
+	EllipticVolumeEqnBuilder.o    \
+	EqnBuilder.o    \
+	EqnBuilderReactionForward.o \
+	FastSystem.o              \
+	FastSystemExpression.o       \
+	Feature.o         \
+	FieldData.o         \
+	FiniteVolume.o         \
+	FVSolver.o        \
+	FVUtils.o         \
+	JumpCondition.o   \
+	Membrane.o		  \
+	MembraneEqnBuilderForward.o \
+	MembraneEqnBuilderDiffusion.o       \
+	MembraneRegion.o    \
+	MembraneRegionEqnBuilder.o  \
+	MembraneRegionVarContext.o  \
+	MembraneRegionVarContextExpression.o        \
+	MembraneRegionVariable.o    \
+	MembraneVarContext.o                \
+	MembraneVarContextExpression.o      \
+	MembraneVariable.o  \
+	Mesh.o              \
+	ODESolver.o \
+	PDESolver.o \
+	RandomVariable.o \
+	Region.o          \
+	RegionSizeVariable.o          \
+	Scheduler.o       \
+	SerialScheduler.o                   \
+	SimTool.o                   \
+	Simulation.o                        \
+	SimulationExpression.o      \
+	SimulationMessaging.o       \
+	Solver.o                    \
+	SparseLinearSolver.o                \
+	SparseMatrixEqnBuilder.o            \
+	SparseMatrixPCG.o           \
+	SparseVolumeEqnBuilder.o            \
+	Structure.o		\
+	StructuredPDESolver.o               \
+	SundialsPdeScheduler.o		\
+	Timer.o                     \
+	VarContext.o                        \
+	Variable.o                  \
+	VCellModel.o                        \
+	VolumeRegion.o                      \
+	VolumeRegionEqnBuilder.o                    \
+	VolumeRegionVarContext.o                    \
+	VolumeRegionVarContextExpression.o	\
+	VolumeRegionVariable.o	\
+	VolumeVarContext.o                  \
+	VolumeVarContextExpression.o	\
+	VolumeVariable.o
 
 
 FOROBJECTS = pcgwrapper.o
-STANDALONE_MAIN_OBJ = FiniteVolume.o
 
 default all: $(TARGET_STANDALONE) 
 
-$(TARGET_LIB):  $(CPPOBJECTS) $(FOROBJECTS)
-	$(LIBTOOL) $@ $(CPPOBJECTS) $(FOROBJECTS)
-	ranlib $@
-
-$(TARGET_STANDALONE) : $(TARGET_LIB) $(STANDALONE_MAIN_OBJ) $(VCELL_LIBS)
-	$(LINKER) -o $@ $(STANDALONE_MAIN_OBJ) $(VCELL_LIBS) $(LIBS)
+$(TARGET_STANDALONE) : $(CPPOBJECTS) $(FOROBJECTS)
+	$(LINKER) $(LDFLAGS) -o $@ $(CPPOBJECTS) $(FOROBJECTS) $(LIBS)
 
 clean:
 	rm *.o
-	rm $(TARGET_LIB)
+	rm $(TARGET_STANDALONE)
 
 depend:
-	makedepend -Y -f Makefile.linux -- $(CPPFLAGS) -- *.c *.cpp
-        
+	makedepend -Y -f Makefile64.linux -- $(CPPFLAGS) -- *.c *.cpp
+	

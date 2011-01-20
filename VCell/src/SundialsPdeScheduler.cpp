@@ -510,7 +510,7 @@ void SundialsPdeScheduler::initSundialsSolver() {
 
 	// set linear solver
 #ifdef SUNDIALS_USE_PCNONE
-		cout << endl << "******using Sundials CVode with PREC_NONE, relTol=" << relTol << ", absTol=" << absTol << endl;
+		cout << endl << "******using Sundials CVode with PREC_NONE";
 		returnCode = CVSpgmr(sundialsSolverMemory, PREC_NONE, 0);
 #else
 		if (simulation->getNumMemPde() == 0 && simulation->getNumVolPde() == 0) {

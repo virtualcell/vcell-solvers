@@ -145,7 +145,6 @@ string VCell::Expression::trim(string str)
 {
 	int len = (int)str.length();
 	int st = 0;
-	int off = 0; 
 	const char* val = str.c_str();
 
 	while ((st < len) && (val[st] <= ' ')) {

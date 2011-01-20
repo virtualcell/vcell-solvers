@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "ParseException.h"
 
 string ParseException::eol = string("\n");

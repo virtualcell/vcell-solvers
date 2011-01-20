@@ -1,7 +1,13 @@
 CC = gcc
-BASE_CFLAGS = -c -O2 -fexceptions -D$(PLATFORM) -DUSE_VC_MEMORY_MANAGER  -I../Optimization2
+BASE_CFLAGS0 = -c -O2 -fexceptions -D$(PLATFORM) -DUSE_VC_MEMORY_MANAGER  -I../Optimization2
 LIBTOOL = ar cru
 DEL = rm
+
+ifeq ($(PLATFORM), MACOSX)
+BASE_CFLAGS = $(BASE_CFLAGS0) -arch x86_64 -arch ppc -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5
+else 
+BASE_CFLAGS = $(BASE_CFLAGS0) 
+endif
 
 ifdef NATIVELIB
 CFLAGS = -fPIC $(BASE_CFLAGS)

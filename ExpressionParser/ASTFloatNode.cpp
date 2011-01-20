@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "ASTFloatNode.h"
 #include "RuntimeException.h"
 #include "ExpressionParserTreeConstants.h"

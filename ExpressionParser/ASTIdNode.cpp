@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "ASTIdNode.h"
 #include "ExpressionException.h"
 #include "ExpressionBindingException.h"

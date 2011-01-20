@@ -5,12 +5,7 @@
 
 CC = g++
 CPPFLAGS =	-DLINUX64 -O2 -fexceptions -I.
-ifndef MULTITHREADED
 TARGET= libExpParser.a
-else
-CPPFLAGS =	$(CPPFLAGS) -pthread
-TARGET= libExpParserMT.a
-endif
 
 LIBTOOL = ar -cru
 

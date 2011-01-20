@@ -24,7 +24,7 @@ public:
 	virtual int getNumObjFuncEvals();
 	virtual double getBestObjectiveFunctionValue();
 	virtual double* getBestParameterValues();
-	OdeResultSet* OdeObjectiveFunction::getBestResultSet();
+	OdeResultSet* getBestResultSet();
 	void setCheckStopRequested(void (*checkStopRequested)(double, long));
 
 private:

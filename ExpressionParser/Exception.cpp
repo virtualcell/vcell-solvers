@@ -93,7 +93,6 @@ void VCell::Exception::rethrowException(Exception& ex, string replacementMessage
 	throw ex;
 }
 
-#ifdef CYGWIN
 static void reverse(char* s)
 {
     int i, j;
@@ -106,7 +105,7 @@ static void reverse(char* s)
     }
 }
 
-static void itoa(int n, char* s, int base)
+static void itoa1(int n, char* s, int base)
 {
     int i, sign;
 
@@ -121,32 +120,6 @@ static void itoa(int n, char* s, int base)
     s[i] = '\0';
     reverse(s);
 }
-
-#elif (!defined(WIN32) && !defined(WIN64) )
-char* itoa( int value, char* result, int base ) {	
-	
-	if (base < 2 || base > 16) { 
-		*result = 0; 
-		return result; 
-	}
-	
-	char* out = result;	
-	int quotient = value;	
-	do {	
-		*out = "0123456789abcdef"[ std::abs( quotient % base ) ];	
-		++out;	
-		quotient /= base;	
-	} while ( quotient);	
-	
-	// Only apply negative sign for base 10	
-	if ( value < 0 && base == 10) 
-		*out++ = '-';
-	
-	std::reverse(result, out );	
-	*out = 0;	
-	return result;	
-}
-#endif
 
 string VCell::Exception::add_escapes(string str)
 {
@@ -185,7 +158,7 @@ string VCell::Exception::add_escapes(string str)
                 if ((ch = str[i]) < 0x20 || ch > 0x7e) {
 					char chrs[20];
 					memset(chrs, 0, 20 * sizeof(char));
-					itoa(ch, chrs, 16);
+					itoa1(ch, chrs, 16);
                     string s = string("0000") + chrs;
                     retval += "\\u" + s.substr(s.length() - 4, 4);
                 } else {

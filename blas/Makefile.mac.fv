@@ -1,5 +1,5 @@
-FCC = ifort
-FOPT     = -O2 -static -static-intel
+FCC = gfortran
+FOPT     = -O2 -static -arch x86_64 -arch ppc -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5
 
 FFLAGS   = ${FOPT} ${SFOPT}
 
