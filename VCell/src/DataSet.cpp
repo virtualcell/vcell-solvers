@@ -2,9 +2,6 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#if ( defined(WIN32) || defined(WIN64) )
-#define INTEL
-#endif
 
 #include <stdlib.h>
 
@@ -25,6 +22,41 @@ using std::endl;
 #define CONVOLVE_SUFFIX "_Convolved"
 
 FieldData* getPSFFieldData();
+
+/*
+ * Little-endian operating systems:
+ * Linux on x86, x64, MIPSEL, Alpha and Itanium
+ * Mac OS X on x86, x64
+ * OpenVMS on VAX, Alpha and Itanium
+ * Solaris on x86, x64, PowerPC
+ * Tru64 UNIX on Alpha
+ * Windows on x86, x64 and Itanium
+ * Microsoft Xbox 1
+ *
+ * Big-endian operating systems:
+ * AIX on POWER
+ * AmigaOS on PowerPC and 680x0
+ * HP-UX on Itanium and PA-RISC
+ * Linux on MIPS, SPARC, PA-RISC, POWER, PowerPC, 680x0, ESA/390, and z/Architecture
+ * Mac OS on PowerPC and 680x0
+ * Mac OS X on PowerPC
+ * MVS and DOS/VSE on ESA/390, and z/VSE and z/OS on z/Architecture
+ * Solaris on SPARC
+ * Microsoft Xbox 360, PlayStation 3, Nintendo Wii
+ *
+ */
+Endian DataSet::endian = endian_not_set;
+bool DataSet::isBigEndian() {
+	if (endian == endian_not_set) {
+		union {
+			uint32 i;
+			char c[4];
+		} testint = {0x01020304};
+		endian = (testint.c[0] == 1) ? big_endian : little_endian;
+		cout << "**This is a " << (endian == big_endian ? "big" : "little") << " endian machine.**" << endl;
+	}
+	return endian == big_endian;
+}
 
 void DataSet::readRandomVariables(char *filename, SimulationExpression *sim)
 {
@@ -129,7 +161,7 @@ void DataSet::read(char *filename, Simulation *sim)
 		}
 		if (var->getSize()!=dataBlock[i].size){
 			char errmsg[512];
-			sprintf(errmsg, "DataSet::read() - size mismatch for var '%s', file=%d, var=%d.", dataBlock[i].varName, dataBlock[i].size, var->getSize()); 
+			sprintf(errmsg, "DataSet::read() - size mismatch for var '%s', file=%d, var=%ld.", dataBlock[i].varName, dataBlock[i].size, var->getSize());
 			throw errmsg;
 		}
 	      
@@ -187,9 +219,6 @@ double reverseDouble(unsigned char array[8])
 	return longDoubleUnion.dbl;
 }
 
-//
-// we must read and write in the unix style (endian ... can't remember whether big or small???)
-//
 //struct FileHeader {
 //   char   magicString[16];
 //   char   versionString[8];
@@ -200,141 +229,133 @@ double reverseDouble(unsigned char array[8])
 //   long   sizeZ;
 //};
 //
-void readHeader(FILE *fp, FileHeader *header)
+void DataSet::readHeader(FILE *fp, FileHeader *header)
 {
-#ifndef INTEL
-	if (fread(header, sizeof(FileHeader), 1, fp)!=1){
-		throw "DataSet::readHeader() - could not read header (UNIX)";
+	if (isBigEndian()) {
+		if (fread(header, sizeof(FileHeader), 1, fp)!=1){
+			throw "DataSet::readHeader() - could not read header (big endian)";
+		}
+	} else {
+		if (fread(header->magicString, sizeof(char), 16, fp)!=16){
+			throw "DataSet::readHeader() - could not read header->magicString (little endian)";
+		}
+		if (fread(header->versionString, sizeof(char), 8, fp)!=8){
+			throw "DataSet::readHeader() - could not read header->versionString (little endian)";
+		}
+		uint32 newLongs[5];
+		if (fread(&newLongs, sizeof(int32), 5, fp)!=5){
+			throw "DataSet::readHeader() - could not read header->offsets.. (little endian)";
+		}
+		header->numBlocks = reverseLong(newLongs[0]);
+		header->firstBlockOffset = reverseLong(newLongs[1]);
+		header->sizeX = reverseLong(newLongs[2]);
+		header->sizeY = reverseLong(newLongs[3]);
+		header->sizeZ = reverseLong(newLongs[4]);
 	}
-#else
-	if (fread(header->magicString, sizeof(char), 16, fp)!=16){
-		throw "DataSet::readHeader() - could not read header->magicString (INTEL)";
-	}
-	if (fread(header->versionString, sizeof(char), 8, fp)!=8){
-		throw "DataSet::readHeader() - could not read header->versionString (INTEL)";
-	}
-	uint32 newLongs[5];
-	if (fread(&newLongs, sizeof(int32), 5, fp)!=5){
-		throw "DataSet::readHeader() - could not read header->offsets.. (INTEL)";
-	}
-	header->numBlocks = reverseLong(newLongs[0]);
-	header->firstBlockOffset = reverseLong(newLongs[1]);
-	header->sizeX = reverseLong(newLongs[2]);
-	header->sizeY = reverseLong(newLongs[3]);
-	header->sizeZ = reverseLong(newLongs[4]);
-#endif
 }
 
-void writeHeader(FILE *fp, FileHeader *header)
+void DataSet::writeHeader(FILE *fp, FileHeader *header)
 {
-#ifndef INTEL
-	if (fwrite(header, sizeof(FileHeader), 1, fp)!=1){
-		throw "DataSet::writeHeader() - could not write header (UNIX)";
+	if (isBigEndian()) {
+		if (fwrite(header, sizeof(FileHeader), 1, fp)!=1){
+			throw "DataSet::writeHeader() - could not write header (big endian)";
+		}
+	} else {
+		if (fwrite(header->magicString, sizeof(char), 16, fp)!=16){
+			throw "DataSet::writeHeader() - could not write header->magicString (little endian)";
+		}
+		if (fwrite(header->versionString, sizeof(char), 8, fp)!=8){
+			throw "DataSet::writeHeader() - could not write header->versionString (little endian)";
+		}
+		uint32 newLongs[5];
+		newLongs[0] = reverseLong(header->numBlocks);
+		newLongs[1] = reverseLong(header->firstBlockOffset);
+		newLongs[2] = reverseLong(header->sizeX);
+		newLongs[3] = reverseLong(header->sizeY);
+		newLongs[4] = reverseLong(header->sizeZ);
+		if (fwrite(newLongs, sizeof(int32), 5, fp)!=5){
+			throw "DataSet::writeHeader() - could not write header->longs (little endian)";
+		}
 	}
-#else
-	if (fwrite(header->magicString, sizeof(char), 16, fp)!=16){
-		throw "DataSet::writeHeader() - could not write header->magicString (INTEL)";
-	}
-	if (fwrite(header->versionString, sizeof(char), 8, fp)!=8){
-		throw "DataSet::writeHeader() - could not write header->versionString (INTEL)";
-	}
-	uint32 newLongs[5];
-	newLongs[0] = reverseLong(header->numBlocks);
-	newLongs[1] = reverseLong(header->firstBlockOffset);
-	newLongs[2] = reverseLong(header->sizeX);
-	newLongs[3] = reverseLong(header->sizeY);
-	newLongs[4] = reverseLong(header->sizeZ);
-	if (fwrite(newLongs, sizeof(int32), 5, fp)!=5){
-		throw "DataSet::writeHeader() - could not write header->longs (INTEL)";
-	}
-#endif
 }
 
-//
-// we must read and write in the unix style (endian ... can't remember whether big or small???)
-//
 //struct DataBlock {
 //   char   varName[DATABLOCK_STRING_SIZE];
 //   long   size;
 //   long   dataOffset;
 //};
 //
-void readDataBlock(FILE *fp, DataBlock *block)
+void DataSet::readDataBlock(FILE *fp, DataBlock *block)
 {
-#ifndef INTEL
-	if (fread(block, sizeof(DataBlock), 1, fp)!=1){
-		throw "DataSet::read() - could not read dataBlock (UNIX)";
-	}
-#else
-	if (fread(block->varName, sizeof(char), DATABLOCK_STRING_SIZE, fp)!=DATABLOCK_STRING_SIZE){
-		throw "DataSet::readDataBlock() - could not read block->varName (INTEL)";
-	}
-	uint32 newLongs[3];
-	if (fread(&newLongs, sizeof(int32), 3, fp)!=3){
-		throw "DataSet::read() - could not read dataBlock longs... (INTEL)";
-	}
-	block->varType = reverseLong(newLongs[0]);
-	block->size = reverseLong(newLongs[1]);
-	block->dataOffset = reverseLong(newLongs[2]);
-#endif
-}
-
-void writeDataBlock(FILE *fp, DataBlock *block)
-{
-#ifndef INTEL
-	if (fwrite(block, sizeof(DataBlock), 1, fp)!=1){
-		throw "DataSet::writeDataBlock() - error writing data block (UNIX)";
-	}
-#else
-	if (fwrite(block->varName, sizeof(char), DATABLOCK_STRING_SIZE, fp)!=DATABLOCK_STRING_SIZE){
-		throw "DataSet::writeDataBlock() - could not write block->varName (INTEL)";
-	}
-	uint32 newLongs[3];
-	newLongs[0] = reverseLong(block->varType);
-	newLongs[1] = reverseLong(block->size);
-	newLongs[2] = reverseLong(block->dataOffset);
-	if (fwrite(newLongs, sizeof(int32), 3, fp)!=3){
-		throw "DataSet::writeHeader() - could not write dataBlock->longs (INTEL)";
-	}
-#endif
-}
-
-//
-// we must read and write in the unix style (endian ... can't remember whether big or small???)
-//
-void readDoubles(FILE *fp, double *data, int length)
-{
-#ifndef INTEL
-	if (fread(data, sizeof(double), length, fp)!=length){
-		throw "DataSet::readDoubles() - error reading data (UNIX)";
-	}
-
-#else
-	unsigned char tempArray[8];
-	for (int i=0;i<length;i++){
-		if (fread(tempArray, sizeof(char), 8, fp)!=8){
-			throw "DataSet::readDoubles() - could not read double value (INTEL)";
+	if (isBigEndian()) {
+		if (fread(block, sizeof(DataBlock), 1, fp)!=1){
+			throw "DataSet::read() - could not read dataBlock (big endian)";
 		}
-		data[i] = reverseDouble(tempArray);
+	} else {
+		if (fread(block->varName, sizeof(char), DATABLOCK_STRING_SIZE, fp)!=DATABLOCK_STRING_SIZE){
+			throw "DataSet::readDataBlock() - could not read block->varName (little endian)";
+		}
+		uint32 newLongs[3];
+		if (fread(&newLongs, sizeof(int32), 3, fp)!=3){
+			throw "DataSet::read() - could not read dataBlock longs... (little endian)";
+		}
+		block->varType = reverseLong(newLongs[0]);
+		block->size = reverseLong(newLongs[1]);
+		block->dataOffset = reverseLong(newLongs[2]);
 	}
-#endif
 }
 
-void writeDoubles(FILE *fp, double *data, int length)
+void DataSet::writeDataBlock(FILE *fp, DataBlock *block)
 {
-#ifndef INTEL
-	if (fwrite(data, sizeof(double), length, fp)!=length){
-		throw "DataSet::writeDoubles() - error writing data (UNIX)";
-	}
-
-#else
-	for (int i=0;i<length;i++){
-		unsigned char *tempPtr = reverseDouble(data[i]);
-		if (fwrite(tempPtr, sizeof(int32), 2, fp)!=2){
-			throw "DataSet::writeDoubles() - could not write double value (INTEL)";
+	if (isBigEndian()) {
+		if (fwrite(block, sizeof(DataBlock), 1, fp)!=1){
+			throw "DataSet::writeDataBlock() - error writing data block (big endian)";
+		}
+	} else {
+		if (fwrite(block->varName, sizeof(char), DATABLOCK_STRING_SIZE, fp)!=DATABLOCK_STRING_SIZE){
+			throw "DataSet::writeDataBlock() - could not write block->varName (little endian)";
+		}
+		uint32 newLongs[3];
+		newLongs[0] = reverseLong(block->varType);
+		newLongs[1] = reverseLong(block->size);
+		newLongs[2] = reverseLong(block->dataOffset);
+		if (fwrite(newLongs, sizeof(int32), 3, fp)!=3){
+			throw "DataSet::writeHeader() - could not write dataBlock->longs (little endian)";
 		}
 	}
-#endif
+}
+
+void DataSet::readDoubles(FILE *fp, double *data, int length)
+{
+	if (isBigEndian()) {
+		if (fread(data, sizeof(double), length, fp)!=length){
+			throw "DataSet::readDoubles() - error reading data (big endian)";
+		}
+	} else {
+		unsigned char tempArray[8];
+		for (int i=0;i<length;i++){
+			if (fread(tempArray, sizeof(char), 8, fp)!=8){
+				throw "DataSet::readDoubles() - could not read double value (little endian)";
+			}
+			data[i] = reverseDouble(tempArray);
+		}
+	}
+}
+
+void DataSet::writeDoubles(FILE *fp, double *data, int length)
+{
+	if (isBigEndian()) {
+		if (fwrite(data, sizeof(double), length, fp)!=length){
+			throw "DataSet::writeDoubles() - error writing data (big endian)";
+		}
+	} else {
+		for (int i=0;i<length;i++){
+			unsigned char *tempPtr = reverseDouble(data[i]);
+			if (fwrite(tempPtr, sizeof(int32), 2, fp)!=2){
+				throw "DataSet::writeDoubles() - could not write double value (little endian)";
+			}
+		}
+	}
 }
 
 void DataSet::convolve(Simulation* sim, Variable* var, double* values) {
@@ -494,7 +515,7 @@ void DataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 	long ftell_pos = ftell(fp);
 	if (ftell_pos != fileHeader.firstBlockOffset){
 		char errmsg[512];
-		sprintf(errmsg, "DataSet::write() - file offset for first block is incorrect, ftell() says %d, should be %d", ftell_pos, fileHeader.firstBlockOffset);
+		sprintf(errmsg, "DataSet::write() - file offset for first block is incorrect, ftell() says %ld, should be %d", ftell_pos, fileHeader.firstBlockOffset);
 		throw errmsg;
 	}
    
@@ -577,7 +598,7 @@ void DataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 		ftell_pos = ftell(fp);
 		if (ftell_pos != dataBlock[blockIndex].dataOffset){
 			char errmsg[512];
-			sprintf(errmsg, "DataSet::write() - offset for data is incorrect (block %d, var=%s), ftell() says %d, should be %d", blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
+			sprintf(errmsg, "DataSet::write() - offset for data is incorrect (block %d, var=%s), ftell() says %ld, should be %d", blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
 			throw errmsg;
 		}
 
@@ -602,7 +623,7 @@ void DataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 			if (ftell_pos != dataBlock[blockIndex].dataOffset){
 				char errmsg[512];
 				sprintf(errmsg, "DataSet::write() - offset for data is "
-					"incorrect (block %d, var=%s), ftell() says %d, should be %d", 
+					"incorrect (block %d, var=%s), ftell() says %ld, should be %d",
 					blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
 				throw errmsg;
 			}
@@ -624,7 +645,7 @@ void DataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 		if (ftell_pos != dataBlock[blockIndex].dataOffset){
 			char errmsg[512];
 			sprintf(errmsg, "DataSet::write() - offset for data is "
-				"incorrect (block %d, var=%s), ftell() says %d, should be %d",
+				"incorrect (block %d, var=%s), ftell() says %ld, should be %d",
 				blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
 			throw errmsg;
 		}
@@ -645,7 +666,7 @@ void DataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 		if (ftell_pos != dataBlock[blockIndex].dataOffset){
 			char errmsg[512];
 			sprintf(errmsg, "DataSet::write() - offset for data is "
-				"incorrect (block %d, var=%s), ftell() says %d, should be %d", 
+				"incorrect (block %d, var=%s), ftell() says %ld, should be %d",
 				blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
 			throw errmsg;
 		}

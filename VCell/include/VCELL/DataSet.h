@@ -28,16 +28,15 @@ struct DataBlock {
 	int32   dataOffset;
 };
 
-void readHeader(FILE *fp, FileHeader *header);
-void writeHeader(FILE *fp, FileHeader *header);
-void readDataBlock(FILE *fp, DataBlock *block);
-void writeDataBlock(FILE *fp, DataBlock *block);
-void readDoubles(FILE *fp, double *data, int length);
-void writeDoubles(FILE *fp, double *data, int length);
-
 class Simulation;
 class SimulationExpression;
 class Variable;
+
+typedef enum {
+	endian_not_set = -1,
+	little_endian,
+	big_endian
+} Endian;
 
 class DataSet
 {
@@ -47,6 +46,19 @@ public:
 	static void convolve(Simulation* sim, Variable* var, double* values);
 
 	static void readRandomVariables(char* filename, SimulationExpression* sim);
+
+	static void readHeader(FILE *fp, FileHeader *header);
+	static void readDataBlock(FILE *fp, DataBlock *block);
+	static void readDoubles(FILE *fp, double *data, int length);
+
+private:
+	static bool isBigEndian();
+	static Endian endian;
+
+	static void writeHeader(FILE *fp, FileHeader *header);
+	static void writeDataBlock(FILE *fp, DataBlock *block);
+	static void writeDoubles(FILE *fp, double *data, int length);
+
   
 };
 

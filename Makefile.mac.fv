@@ -7,6 +7,8 @@ all:
 	cd unzip ; make -f Makefile.mac.fv
 	cd zlib ; make -f Makefile.mac.fv
 	cd zip ; make -f Makefile.mac.fv
+	cd sundials/src; make -f Makefile.mac.fv
+	cd IDAWin; make -f Makefile.mac.fv
 	cd netcdf-3.6.2; make -f Makefile.mac.fv
 	cd VCell/src ; make -f Makefile.mac.fv
         
@@ -18,6 +20,8 @@ clean:
 	cd unzip ; make -f Makefile.mac.fv clean
 	cd zip ; make -f Makefile.mac.fv clean
 	cd zlib ; make -f Makefile.mac.fv clean
+	cd sundials/src; make -f Makefile.mac.fv clean
+	cd IDAWin; make -f Makefile.mac.fv clean
 	cd netcdf-3.6.2; make -f Makefile.mac.fv clean
 	cd VCell/src ; make -f Makefile.mac.fv clean
         
@@ -28,5 +32,7 @@ depend:
 	cd unzip ; make -f Makefile.mac.fv depend
 	cd zip ; make -f Makefile.mac.fv depend
 	cd zlib ; make -f Makefile.mac.fv depend
+	cd sundials/src; make -f Makefile.mac.fv depend
+	cd IDAWin; make -f Makefile.mac.fv depend
 	cd netcdf-3.6.2; make -f Makefile.mac.fv depend
 	cd VCell/src ; make -f Makefile.mac.fv depend	

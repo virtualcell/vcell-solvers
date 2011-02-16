@@ -2,10 +2,6 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#if ( defined(WIN32) || defined(WIN64) )
-#define INTEL
-#endif
-
 #include <VCELL/DataProcessorVFrap.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/SimTool.h>

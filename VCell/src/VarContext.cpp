@@ -33,7 +33,7 @@ VarContext::VarContext(Structure *s, Variable* var)
 	dependencyMask = new unsigned char[TOTAL_NUM_EXPRESSIONS];
 	memset(expressions, 0, TOTAL_NUM_EXPRESSIONS * sizeof(Expression*));
 	memset(constantValues, 0, TOTAL_NUM_EXPRESSIONS * sizeof(double*));
-	memset(dependencyMask, DEPENDENCY_MASK_UNDEFINED, TOTAL_NUM_EXPRESSIONS * sizeof(bool));
+	memset(dependencyMask, DEPENDENCY_MASK_UNDEFINED, TOTAL_NUM_EXPRESSIONS * sizeof(unsigned char));
 }
 
 void VarContext::resolveReferences(Simulation *Asim)

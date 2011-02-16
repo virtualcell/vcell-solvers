@@ -1,5 +1,6 @@
 #include <VCELL/Variable.h>
 #include <VCELL/FieldData.h>
+#include <VCELL/DataSet.h>
 
 #include <sstream>
 #include <iostream>
@@ -8,10 +9,6 @@ using std::string;
 using std::stringstream;
 using std::cout;
 using std::endl;
-
-void readHeader(FILE *fp, FileHeader *header);
-void readDataBlock(FILE *fp, DataBlock *block);
-void readDoubles(FILE *fp, double *data, int length);
 
 FieldData::FieldData(int arg_fdIndex, VariableType arg_varType, string arg_fdID, string arg_fdName, string arg_fdVarName, double arg_fdTime, string arg_fdFile) {	
 	fdIndex = arg_fdIndex;
@@ -63,7 +60,7 @@ double* FieldData::getData() {
 		throw errmsg;
 	}
 
-	readHeader(fp,&fileHeader);
+	DataSet::readHeader(fp,&fileHeader);
 
 	if (strcmp(fileHeader.magicString, MAGIC_STRING)){
 		throw "FieldData::getData() - file is not a VCellDump file.";
@@ -85,7 +82,7 @@ double* FieldData::getData() {
 		throw errmsg;
 	}
 	for (int i = 0; i < fileHeader.numBlocks; i ++){
-		readDataBlock(fp,dataBlock+i);
+		DataSet::readDataBlock(fp,dataBlock+i);
 	}
 
 	for (int i = 0; i < fileHeader.numBlocks; i ++){
@@ -105,7 +102,7 @@ double* FieldData::getData() {
 			sprintf(errmsg, "FieldData::getData() - could not find data offset ( %d ).", dataBlock[i].dataOffset); 
 			throw errmsg;
 		}
-		readDoubles(fp, data, dataBlock[i].size);
+		DataSet::readDoubles(fp, data, dataBlock[i].size);
 		cout << endl << "read data for field '" << fdName << "'." << endl;
 		break;
 	}

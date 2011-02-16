@@ -4,7 +4,7 @@
 #
 CC = g++
 LINKER = g++
-CPPFLAGS = -fexceptions -c -DINTEL -DUNIX -DMACOSX -O2 \
+CPPFLAGS = -fexceptions -c -DUNIX -DMACOSX -O2 \
 		-arch x86_64 -arch ppc -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5 \
 		-I../include -I../../zlib \
 		-I../../ExpressionParser -I../../sundials/include -I../../sundials/src \
