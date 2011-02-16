@@ -4,7 +4,7 @@
 #
 CC = g++
 LINKER = g++
-CPPFLAGS =-fexceptions -c -DINTEL -DUNIX -DLINUX64 -O2 -g -D__USE_GNU -DUSE_MESSAGING \
+CPPFLAGS =-fexceptions -c -DUNIX -DLINUX64 -O2 -g -D__USE_GNU -DUSE_MESSAGING \
 		-I../include -I../../zlib -I../../SonicCClient64/Linux_AS4_64/include/CPP \
 		-I../../SonicCClient64/Linux_AS4_64/include \
 		-I../../ExpressionParser -I../../sundials/include -I../../sundials/src \
@@ -15,7 +15,6 @@ FC= g77
 FOPTIONS = -c -fexceptions -O2
 LIBS =  ../../ExpressionParser/libExpParser.a \
 		../../qhull/libqhull.a \
-		../../zlib/libz.a \
 		../../zip/libzip32.a \
 		../../unzip/libunzip32.a \
 		../../PCGPack/libpcgpack.a \
@@ -27,7 +26,7 @@ LIBS =  ../../ExpressionParser/libExpParser.a \
 		../../sundials/lib/libsundials.a \
 		../../netcdf-3.6.2/cxx/libnetcdf_cxx.a \
 		../../netcdf-3.6.2/libsrc/libnetcdf.a \
-		-L../../SonicCClient64/Linux_AS4_64/bin/release/ -lsmq -lpthread -lm -lg2c
+		-L../../SonicCClient64/Linux_AS4_64/bin/release/ -lsmq -lpthread -lz -lm -lg2c
 
 TARGET_STANDALONE = FiniteVolume
 
