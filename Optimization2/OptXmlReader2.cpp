@@ -3,6 +3,7 @@
 #include <float.h>
 #include <iostream>
 #include <sstream>
+#include <string.h>
 using namespace std;
 
 #include <Expression.h>
@@ -17,7 +18,7 @@ using VCell::Expression;
 #include "ExplicitConstraintDescription.h"
 #include "OdeObjectiveFunction.h"
 #include "PdeObjectiveFunction.h"
-#include "OdeResultSet.h"
+#include "OdeResultSetOpt.h"
 #include "Constraint.h"
 #include "SpatialReferenceData.h"
 #include <tinyxml.h>
@@ -178,25 +179,20 @@ ExplicitObjectiveFunction* OptXmlReader2::parseExplicitObjectiveFunction(TiXmlEl
 }
 
 ExplicitFitObjectiveFunction* OptXmlReader2::parseExplicitFitObjectiveFunction(TiXmlElement* objFuncNode, ParameterDescription* paramDesc){
-	TiXmlElement* expressionNode = objFuncNode->FirstChildElement(Expression_Tag);
-	//
 	// get function
-	//
+	TiXmlElement* expressionNode = objFuncNode->FirstChildElement(Expression_Tag);
 	const char* expressionString = expressionNode->GetText();
 	Expression* exp = new Expression(string(expressionString));
 
-	//
+	//get simple reference datanode first, which is the sibling of the expression node.
+	TiXmlElement* simpleRefDataNode = objFuncNode->FirstChildElement(SimpleData_Tag);
 	// get data set as OdeResultSet
-	//
-	TiXmlElement* dataNode = objFuncNode->FirstChildElement(Data_Tag);
-	OdeResultSet* refData = parseOdeResultSet(dataNode);
-	int numColumns = refData->getNumColumns();
-	double* weights = new double[numColumns];
-	for (int i=0;i<numColumns;i++){
-		weights[i] = 1.0;
-	}
-	refData->setColumnWeights(weights);
+	OdeResultSetOpt* refData = parseOdeResultSet(simpleRefDataNode);
 
+	// get weights which is the sibling node of dataRows.
+	TiXmlElement* weightNode = simpleRefDataNode->FirstChildElement(WeightRows_Tag);
+	Weights* weights = parseWeights(weightNode, refData->getNumColumns(), refData->getNumRows());
+	refData->setWeights(weights);
 
 	void (*checkStopRequested)(double, long) = 0;
 	ExplicitFitObjectiveFunction* objFunc = new ExplicitFitObjectiveFunction(exp,paramDesc,refData,checkStopRequested);
@@ -213,15 +209,15 @@ OdeObjectiveFunction* OptXmlReader2::parseOdeObjectiveFunction(TiXmlElement* obj
 		throw "unexpected model type, expected ida or cvode";
 	}
 	const char* solverInput = modelNode->GetText();
-	//
+	
+	//get simple reference datanode first, which is the sibling of the expression node.
+	TiXmlElement* simpleRefDataNode = objFuncNode->FirstChildElement(SimpleData_Tag);
 	// get data set as OdeResultSet
-	//
-	TiXmlElement* dataNode = objFuncNode->FirstChildElement(Data_Tag);
-	OdeResultSet* refData = parseOdeResultSet(dataNode);
-	int numColumns = refData->getNumColumns();
-	double* weights = new double[numColumns];
-	memset(weights,0,numColumns*sizeof(double));
-
+	OdeResultSetOpt* refData = parseOdeResultSet(simpleRefDataNode);
+	// get weights
+	TiXmlElement* weightNode = objFuncNode->NextSiblingElement(WeightRows_Tag);
+	Weights* weights = parseWeights(weightNode, refData->getNumColumns(), refData->getNumRows());
+	refData->setWeights(weights);
 	//
 	// parse modelMappings into expression strings
 	//
@@ -231,17 +227,17 @@ OdeObjectiveFunction* OptXmlReader2::parseOdeObjectiveFunction(TiXmlElement* obj
 		modelMappingExpressions.push_back(string(modelMappingNode->GetText()));
 		const char* dataColumnName = modelMappingNode->Attribute(ModelMappingDataColumn_Attr);
 		int refColumnIndex = refData->findColumn(string(dataColumnName));
-		weights[refColumnIndex] = atof(modelMappingNode->Attribute(ModelMappingWeight_Attr));
+		//weights[refColumnIndex] = atof(modelMappingNode->Attribute(ModelMappingWeight_Attr));
 		modelMappingNode = modelMappingNode->NextSiblingElement(ModelMapping_Tag);
 	}
-	refData->setColumnWeights(weights);
+	//refData->setColumnWeights(weights);
 
 	OdeObjectiveFunction* odeObjectiveFunction = new OdeObjectiveFunction(paramDesc,refData,modelMappingExpressions,solverInput, 0);
 	return odeObjectiveFunction;
 }
 
-OdeResultSet* OptXmlReader2::parseOdeResultSet(TiXmlElement* dataNode){
-	OdeResultSet* refData = new OdeResultSet();
+OdeResultSetOpt* OptXmlReader2::parseOdeResultSet(TiXmlElement* dataNode){
+	OdeResultSetOpt* refData = new OdeResultSetOpt();
 	string varName;
 	string varType;
 	int varDim;
@@ -270,8 +266,8 @@ OdeResultSet* OptXmlReader2::parseOdeResultSet(TiXmlElement* dataNode){
 		bFirst = false;
 		variableNode = variableNode->NextSiblingElement(Variable_Tag);
 	}
-	
-	TiXmlElement* rowNode = dataNode->FirstChildElement(Row_Tag);
+	TiXmlElement* dataRowNode = dataNode->FirstChildElement(DataRows_Tag);
+	TiXmlElement* rowNode = dataRowNode->FirstChildElement(Row_Tag);
 	double* rowData = new double[refData->getNumColumns()];
 	while (rowNode!=0){
 		const char* dataText = rowNode->GetText();
@@ -284,6 +280,63 @@ OdeResultSet* OptXmlReader2::parseOdeResultSet(TiXmlElement* dataNode){
 	}
 	delete[] rowData;
 	return refData;
+}
+
+Weights* OptXmlReader2::parseWeights(TiXmlElement* argWeightNode, int numDataColumns, int numDataRows)
+{
+	string weightType = argWeightNode->Attribute(WeightType_Attr);
+	if(weightType.compare(WeightType_Attr_TimeWeights)==0)//one column, multiple rows
+	{
+		double* tWeights = new double[numDataRows];
+		int weightIdx = 0;
+		TiXmlElement* rowNode = argWeightNode->FirstChildElement(Row_Tag);
+		while (rowNode!=0){
+			const char* dataText = rowNode->GetText();
+			stringstream ss(dataText);		
+			ss >> tWeights[weightIdx];
+			weightIdx++;
+			rowNode = rowNode->NextSiblingElement(Row_Tag);
+		}
+		TimeWeights* timeWeights = new TimeWeights(tWeights, numDataRows);
+		return timeWeights;
+	}
+	//multiple columns, one row, weight data doesn't include column for "t", 
+	else if (weightType.compare(WeightType_Attr_VariableWeights)==0) 
+	{
+		int numWeightColumns = numDataColumns - 1;
+		double* vWeights = new double[numWeightColumns];
+		TiXmlElement* rowNode = argWeightNode->FirstChildElement(Row_Tag);
+		while (rowNode!=0){
+			const char* dataText = rowNode->GetText();
+			stringstream ss(dataText);		
+			for (int i = 0; i < numWeightColumns; i ++){
+				ss >> vWeights[i];
+			}
+			rowNode = rowNode->NextSiblingElement(Row_Tag);
+		}
+		VariableWeights* variableWeights = new VariableWeights(vWeights, numWeightColumns);
+		return variableWeights;
+	}
+	//element weights, multiple columns(no "t") and multiple rows
+	//but save in a one dimension double array, saved by the order of each row
+	else 
+	{
+		int numWeightColumns = numDataColumns - 1;
+		double* eWeights = new double[numDataRows*numWeightColumns];
+		int rowCounter = 0;
+		TiXmlElement* rowNode = argWeightNode->FirstChildElement(Row_Tag);
+		while (rowNode!=0){
+			const char* dataText = rowNode->GetText();
+			stringstream ss(dataText);		
+			for (int i = 0; i < numWeightColumns; i ++){
+				ss >> eWeights[rowCounter*numWeightColumns + i];
+			}
+			rowCounter ++;
+			rowNode = rowNode->NextSiblingElement(Row_Tag);
+		}
+		ElementWeights* elementWeights = new ElementWeights(eWeights, numDataRows, numWeightColumns);
+		return elementWeights;
+	}
 }
 
 #ifdef INCLUDE_PDE_OPT

@@ -7,7 +7,7 @@
 #include "Constraint.h"
 #include "ParameterDescription.h"
 #include "SimpleSymbolTable.h"
-#include <OdeResultSet.h>
+#include "OdeResultSetOpt.h"
 #include "MemoryManager.h"
 #include <StoppedByUserException.h>
 
@@ -20,7 +20,7 @@ using std::istringstream;
 
 OdeObjectiveFunction::OdeObjectiveFunction(
 	ParameterDescription* arg_parameterDescription,
-	OdeResultSet* arg_referenceData, 
+	OdeResultSetOpt* arg_referenceData, 
 	vector<string>& modelMappingExpressions, 
 	const char* arg_inputChars,
 	void (*checkStopRequested)(double, long))
@@ -40,11 +40,13 @@ OdeObjectiveFunction::OdeObjectiveFunction(
 	sundialsSolver->readInput(inputStream);
 
 	referenceData = arg_referenceData;
-	bestResultSet = new OdeResultSet();
+	bestResultSet = new OdeResultSetOpt();
 	bestParameterValues = new double[numParameters];
 	memset(bestParameterValues,0,numParameters*sizeof(double));
 
-	testResultSet = sundialsSolver->getResultSet();
+	OdeResultSet* testResultSetTemp = sundialsSolver->getResultSet();
+	OdeResultSetOpt* testResultSet = new OdeResultSetOpt(testResultSetTemp);
+
 	for (int i = 1; i < referenceData->getNumColumns(); i ++) { // suppose t is the first column
 		string columnName = referenceData->getColumnName(i);
 		int index = testResultSet->findColumn(columnName);
@@ -62,7 +64,7 @@ OdeObjectiveFunction::~OdeObjectiveFunction(){
 	delete sundialsSolver;
 }
 
-OdeResultSet* OdeObjectiveFunction::getBestResultSet() {
+OdeResultSetOpt* OdeObjectiveFunction::getBestResultSet() {
 	if (bestResultSet->getNumRows() == 0) {
 		return testResultSet;
 	}
@@ -121,13 +123,33 @@ double OdeObjectiveFunction::computeL2error(double* paramValues) {
 	
 	double* refData = new double[refNumRows];
 	double* testData = new double[testNumRows];
-
+	
+	bool bVarWeight = false;
+	bool bTimeWeight = false;
+	bool bEleWeight = false;
+	// get weights base on type
+	if(referenceData->getWeights()->getWeightType() == TIMEWEIGHT)
+	{
+		bTimeWeight = true;
+	}
+	else if(referenceData->getWeights()->getWeightType() == VARIABLEWEIGHT)
+	{
+		bVarWeight = true;
+	}
+	else //elementWeight
+	{
+		bEleWeight = true;
+	};
+	double weight = 1;
 	for (int i = 0; i < refNumColumns; i++){
 		string aColumn = referenceData->getColumnName(i);
 		if (aColumn == "t") {
 			continue;
 		}
-		double weight = referenceData->getColumnWeight(i);
+		if(bVarWeight)
+		{
+			weight = ((VariableWeights*)referenceData->getWeights())->getWeightByVarIdx(i-1);//weight at column 0(for "t") is not stored
+		}
 		int refIndex = i;
 		referenceData->getColumnData(refIndex, numParameters, paramValues, refData);
 		
@@ -151,6 +173,16 @@ double OdeObjectiveFunction::computeL2error(double* paramValues) {
 			while ((k < testNumRows - 2) && (refTimes[j] >= testTimes[k + 1])) {
 				k ++;
 			}
+			if(bTimeWeight)
+			{
+				weight = ((TimeWeights*)referenceData->getWeights())->getWeightByTimeIdx(j);
+			}
+			else if(bEleWeight)//element weight doesn't have weights for "t", elementweights has one col less than data
+			{
+				int idx = j*(refNumColumns-1)+(i-1);
+				weight = ((ElementWeights*)referenceData->getWeights())->getWeight(idx);
+			}
+
 			/*
 			 * apply first order linear basis for reference data interpolation.
 			*/

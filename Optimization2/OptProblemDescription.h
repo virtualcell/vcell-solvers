@@ -17,7 +17,6 @@ public:
 	ConstraintDescription *getConstraintDescription() { return constraintDescription; }
 	ObjectiveFunction *getObjectiveFunction() { return objectiveFunction; }
 	bool getComputeProfileDistributions() { return bComputeProfileDistributions; }
-
 private:
 	ParameterDescription *parameterDescription;
 	ConstraintDescription *constraintDescription;

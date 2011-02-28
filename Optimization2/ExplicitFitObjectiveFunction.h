@@ -6,7 +6,7 @@ using namespace std;
 
 #include "ObjectiveFunction.h"
 
-class OdeResultSet;
+class OdeResultSetOpt;
 namespace VCell {
 	class Expression;
 }
@@ -17,7 +17,7 @@ class ExplicitFitObjectiveFunction : public ObjectiveFunction {
 public:
 	ExplicitFitObjectiveFunction(VCell::Expression* functionExpression,
 		ParameterDescription* parameterDescription, 
-		OdeResultSet* arg_referenceData,
+		OdeResultSetOpt* arg_referenceData,
 		void (*checkStopRequested)(double, long));
 
 	~ExplicitFitObjectiveFunction();
@@ -40,7 +40,7 @@ private:
 	double* dependentVarArray;
 	double* evaluateArray;
 
-	OdeResultSet* referenceData;
+	OdeResultSetOpt* referenceData;
 	void (*fn_checkStopRequested)(double, long);
 
 };

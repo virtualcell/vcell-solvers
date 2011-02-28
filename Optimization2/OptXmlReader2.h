@@ -10,8 +10,9 @@ class ExplicitFitObjectiveFunction;
 class OdeObjectiveFunction;
 class TiXmlElement;
 class SymbolTable;
-class OdeResultSet;
+class OdeResultSetOpt;
 class OptSolverResultSet;
+class Weights;
 
 #ifdef INCLUDE_PDE_OPT
 class PdeObjectiveFunction;
@@ -36,7 +37,8 @@ private:
 	static ExplicitFitObjectiveFunction* parseExplicitFitObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);	
 
 	static OdeObjectiveFunction* parseOdeObjectiveFunction(TiXmlElement* objNode, ParameterDescription* paramDescription);	
-	static OdeResultSet* parseOdeResultSet(TiXmlElement* dataNode);
+	static OdeResultSetOpt* parseOdeResultSet(TiXmlElement* dataNode);
+	static Weights* parseWeights(TiXmlElement* argWeightNode, int numDataColumns, int numDataRows);
 
 #ifdef INCLUDE_PDE_OPT
 	static SpatialReferenceData* parsePdeResultSet(TiXmlElement* dataNode);

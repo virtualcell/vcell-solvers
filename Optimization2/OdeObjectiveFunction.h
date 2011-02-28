@@ -5,15 +5,19 @@
 using namespace std;
 
 #include "ObjectiveFunction.h"
+#include "Weights.h"
+#include "VariableWeights.h"
+#include "TimeWeights.h"
+#include "ElementWeights.h"
 
-class OdeResultSet;
+class OdeResultSetOpt;
 class VCellSundialsSolver;
 class ParameterDescription;
 
 class OdeObjectiveFunction : public ObjectiveFunction {
 public:
 	OdeObjectiveFunction(ParameterDescription* parameterDescription, 
-		OdeResultSet* arg_referenceData, 
+		OdeResultSetOpt* arg_referenceData, 
 		vector<string>& refColumnMappingExpressions, 
 		const char* arg_inputChars,
 		void (*checkStopRequested)(double, long));
@@ -24,7 +28,7 @@ public:
 	virtual int getNumObjFuncEvals();
 	virtual double getBestObjectiveFunctionValue();
 	virtual double* getBestParameterValues();
-	OdeResultSet* getBestResultSet();
+	OdeResultSetOpt* getBestResultSet();
 	void setCheckStopRequested(void (*checkStopRequested)(double, long));
 
 private:
@@ -35,9 +39,9 @@ private:
 	double* unscaled_x;
 	ParameterDescription* parameterDescription;
 
-	OdeResultSet* testResultSet;
-	OdeResultSet* referenceData;
-	OdeResultSet* bestResultSet;
+	OdeResultSetOpt* testResultSet;
+	OdeResultSetOpt* referenceData;
+	OdeResultSetOpt* bestResultSet;
 
 	void (*fn_checkStopRequested)(double, long);
 

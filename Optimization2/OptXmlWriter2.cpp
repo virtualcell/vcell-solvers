@@ -12,7 +12,6 @@ using namespace std;
 #include "ConstraintDescription.h"
 #include "OdeObjectiveFunction.h"
 #include "PdeObjectiveFunction.h"
-#include "OdeResultSet.h"
 #include "Constraint.h"
 #include <Expression.h>
 #include <tinyxml.h>

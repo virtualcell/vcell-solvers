@@ -1,35 +1,31 @@
-#ifndef ODERESULTSET_H
-#define ODERESULTSET_H
+#ifndef ODERESULTSETOPT_H
+#define ODERESULTSETOPT_H
 
 #include <string>
 #include <vector>
+#include "OdeResultSet.h"
+#include "Weights.h"
+#include "TimeWeights.h"
+#include "VariableWeights.h"
+#include "ElementWeights.h"
 using namespace std;
 
 namespace VCell {
 	class Expression;
 }
 class SymbolTable;
+class OdeResultSet;
 
-struct Column {
-	string name;
-	VCell::Expression* expression;
-	
-	Column(string arg_name, VCell::Expression* exp) {
-		name = arg_name;
-		expression = exp;
-	}
-};
-
-class OdeResultSet
+class OdeResultSetOpt
 {
 public:
-	OdeResultSet();
-	~OdeResultSet();
+	OdeResultSetOpt();
+	OdeResultSetOpt(OdeResultSet*);
+	~OdeResultSetOpt();
 	void addColumn(const string& aColumn);
 	void addFunctionColumn(const string& aColumn, const string& columnExpression);
 	void addRow(double* aRow);
-	void setColumnWeights(double* weights);
-	
+		
 	void bindFunctionExpression(SymbolTable* symbolTable);
 
 	double* getRowData(int index);
@@ -38,7 +34,8 @@ public:
 	}
 
 	int findColumn(const string& aColumn);
-	double getColumnWeight(int index);
+	Weights* getWeights(){ return weights; }
+	void setWeights(Weights* argWeights){ weights = argWeights;}
 	string& getColumnName(int index);	
 	void getColumnData(int index, int numParams, double* paramValues, double* colData);
 
@@ -46,20 +43,19 @@ public:
 	int getNumRows();
 	int getNumFunctionColumns() { return numFunctionColumns; }
 	int getNumDataColumns() { return numDataColumns; }
-	vector<Column> getColumns(){ return columns;}
 
 	VCell::Expression* getColumnFunctionExpression(int columnIndex);
 	void clearData();
 
-	void copyInto(OdeResultSet* otherOdeResultSet);
+	void copyInto(OdeResultSetOpt* otherOdeResultSet);
 	void addEmptyRows(int numRowsToAdd);
 
 private:
 	// 0 : t
 	// 1 ~ N : variable names;
 	vector<Column> columns;
-	double* columnWeights;
 	double* rowData;
+	Weights* weights;
 	int numRowsAllocated;
 	int numRowsUsed;
 	int numFunctionColumns;

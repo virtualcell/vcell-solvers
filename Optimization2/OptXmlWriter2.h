@@ -10,7 +10,7 @@
 //class PdeObjectiveFunction;
 class TiXmlElement;
 //class SymbolTable;
-//class OdeResultSet;
+//class OdeResultSetOpt;
 class OptResultSet;
 struct OptRunResultSet;
 
@@ -28,7 +28,7 @@ private:
 	//TiXmlElement* getPdeObjectiveFunction(PdeObjectiveFunction* objNode, ParameterDescription* paramDescription);
 	//TiXmlElement* getParameterDescription(ParameterDescription* parmDescNode);
 	//TiXmlElement* getConstraintDescription(ConstraintDescription* constDescNode, SymbolTable* symbolTable);
-	//TiXmlElement* getOdeResultSet(OdeResultSet* dataNode);
+	//TiXmlElement* getOdeResultSet(OdeResultSetOpt* dataNode);
 	static TiXmlElement* getOptResultSet(OptResultSet* optResultSetNode);
 	static TiXmlElement* getOptRunResultSet(OptResultSet* optResultSet, OptRunResultSet& optRunResultSet);
 };

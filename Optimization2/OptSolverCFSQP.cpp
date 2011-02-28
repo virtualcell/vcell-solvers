@@ -15,7 +15,6 @@ extern "C" {
 #include "OptSolverCFSQP.h"
 #include "Constraint.h"
 #include "SimpleSymbolTable.h"
-#include "OdeResultSet.h"
 #include "MemoryManager.h"
 #include "StoppedByUserException.h"
 
