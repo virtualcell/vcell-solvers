@@ -734,7 +734,7 @@ void writereactions(simptr sim,FILE *fptr) {
 	fprintf(fptr,"\n");
 	return; }
 
-
+void printfException(const char* format, ...);
 /* checkrxnparams.  Checks some parameters of reactions to make sure that they
 are reasonable.  Prints warning messages to the display.  Returns the total
 number of errors and, if warnptr is not NULL, the number of warnings in warnptr.
@@ -764,8 +764,8 @@ int checkrxnparams(simptr sim,int *warnptr) {
 	for(order=0;order<=2;order++) {										// maxspecies
 		rxnss=sim->rxnss[order];
 		if(rxnss) {
-			if(!sim->mols) {error++;printf(" SMOLDYN BUG: Reactions are declared, but not molecules\n");}
-			else if(sim->mols->maxspecies!=sim->rxnss[order]->maxspecies) {error++;printf(" SMOLDYN BUG: number of molecule species differ between mols and rxnss\n");} }}
+			if(!sim->mols) {error++;printfException(" SMOLDYN BUG: Reactions are declared, but not molecules\n");}
+			else if(sim->mols->maxspecies!=sim->rxnss[order]->maxspecies) {error++;printfException(" SMOLDYN BUG: number of molecule species differ between mols and rxnss\n");} }}
 
 	for(order=1;order<=2;order++) {									// reversible parameters
 		rxnss=sim->rxnss[order];
@@ -839,7 +839,7 @@ int checkrxnparams(simptr sim,int *warnptr) {
 					if(rxn->permit[order==1?MSsoln:MSsoln*MSMAX1+MSsoln]) {
 						for(prd=0;prd<rxn->nprod;prd++)
 							if(rxn->prdstate[prd]!=MSsoln) {
-								printf(" ERROR: a product of reaction %s is surface-bound, but no reactant is\n",rxn->rname);
+								printfException(" ERROR: a product of reaction %s is surface-bound, but no reactant is\n",rxn->rname);
 								error++; }}}}}
 
 	for(order=0;order<=2;order++) {									// reaction compartment
@@ -849,7 +849,7 @@ int checkrxnparams(simptr sim,int *warnptr) {
 				rxn=rxnss->rxn[r];
 				if(rxn->cmpt) {
 					if(order==0 && rxn->cmpt->volume<=0) {
-						printf(" ERROR: reaction %s cannot work in compartment %s because the compartment has no volume\n",rxn->rname,rxn->cmpt->cname);
+						printfException(" ERROR: reaction %s cannot work in compartment %s because the compartment has no volume\n",rxn->rname,rxn->cmpt->cname);
 						error++; }}}}
 
 	for(order=0;order<=2;order++) {									// reaction surface
@@ -859,7 +859,7 @@ int checkrxnparams(simptr sim,int *warnptr) {
 				rxn=rxnss->rxn[r];
 				if(rxn->srf) {
 					if(order==0 && surfacearea(rxn->srf,sim->dim,NULL)<=0) {
-						printf(" ERROR: reaction %s cannot work on surface %s because the surface has no area\n",rxn->rname,rxn->srf->sname);
+						printfException(" ERROR: reaction %s cannot work on surface %s because the surface has no area\n",rxn->rname,rxn->srf->sname);
 						error++; }}}}
 
 	rxnss=sim->rxnss[0];														// order 0 reactions
@@ -907,12 +907,12 @@ int checkrxnparams(simptr sim,int *warnptr) {
 				rxn->bindrad2=0;
 				warn++; }
 			else if(sqrt(rxn->bindrad2)>minboxsize) {
-				if(rxn->rparamt==RPconfspread) printf(" ERROR: confspread radius for order 2 reaction %s is larger than box dimensions\n",rxn->rname);
-				else if(rxn->rparamt==RPbounce) printf(" ERROR: bounce radius for order 2 reaction %s is larger than box dimensions\n",rxn->rname);
-				else printf(" ERROR: binding radius for order 2 reaction %s is larger than box dimensions\n",rxn->rname);
+				if(rxn->rparamt==RPconfspread) printfException(" ERROR: confspread radius for order 2 reaction %s is larger than box dimensions\n",rxn->rname);
+				else if(rxn->rparamt==RPbounce) printfException(" ERROR: bounce radius for order 2 reaction %s is larger than box dimensions\n",rxn->rname);
+				else printfException(" ERROR: binding radius for order 2 reaction %s is larger than box dimensions\n",rxn->rname);
 				error++; }
 			if(rxn->prob<0 || rxn->prob>1) {
-				printf(" ERROR: reaction %s probability is not between 0 and 1\n",rxn->rname);
+				printfException(" ERROR: reaction %s probability is not between 0 and 1\n",rxn->rname);
 				error++; }
 			else if(rxn->prob<1 && rxn->rparamt!=RPconfspread && rxn->rparamt!=RPbounce) {
 				printf(" WARNING: reaction %s probability is not accounted for in rate calculation\n",rxn->rname);

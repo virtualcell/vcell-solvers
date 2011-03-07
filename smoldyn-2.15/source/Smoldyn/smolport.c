@@ -146,7 +146,7 @@ void writeports(simptr sim,FILE *fptr) {
 		fprintf(fptr,"end_port\n\n"); }
 	return; }
 
-
+void printfException(const char* format, ...);
 /* checkportparams.  This checks a few port parameters. */
 int checkportparams(simptr sim,int *warnptr) {
 	int error,warn,prt,er,i;
@@ -168,15 +168,15 @@ int checkportparams(simptr sim,int *warnptr) {
 		port=portss->portlist[prt];					// check for porting surface
 		if(!port->srf) {warn++;printf(" WARNING: there is no porting surface assigned to port %s\n",port->portname);}
 		if(!(port->face==PFfront||port->face==PFback))
-			{error++;printf(" ERROR: no surface face has been assigned to port %s\n",port->portname);}
+			{error++;printfException(" ERROR: no surface face has been assigned to port %s\n",port->portname);}
 
-		if(port->srf->port[port->face]!=port) {error++;printf(" ERROR: port %s is not registered by surface %s\n",port->portname,port->srf->sname);}
+		if(port->srf->port[port->face]!=port) {error++;printfException(" ERROR: port %s is not registered by surface %s\n",port->portname,port->srf->sname);}
 
 		er=1;																// make sure surface action is set to port
 		for(i=0;i<sim->mols->nspecies&&er;i++)
 			if(port->srf->action[i][port->face==PFfront?MSsoln:MSbsoln]==SAport) er=0;
 		if(er) {warn++;printf(" WARNING: port %s is nonfunctional because no molecule actions at the surface %s are set to port\n",port->portname,port->srf->sname);}
-		if(!port->llport) {error++;printf(" BUG: port %s has no molecule buffer\n",port->portname);} }
+		if(!port->llport) {error++;printfException(" BUG: port %s has no molecule buffer\n",port->portname);} }
 
 	if(warnptr) *warnptr=warn;
 	return error; }

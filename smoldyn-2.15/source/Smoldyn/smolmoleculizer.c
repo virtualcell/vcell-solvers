@@ -466,7 +466,7 @@ void mzrssfree(mzrssptr mzrss) {
 /*************************** data structure output ****************************/
 /******************************************************************************/
 
-
+void printfException(const char* format, ...);
 /* mzrCheckParams. */
 int mzrCheckParams(simptr sim,int *warnptr) {
 	int warn,error,er,numnames,strm;
@@ -481,19 +481,19 @@ int mzrCheckParams(simptr sim,int *warnptr) {
 		return 0; }
 
 	if(mzrss->condition!=SCok) {warn++;printf("WARNING: moleculizer not fully set up\n");}
-	if(!mzrss->sim) {error++;printf("BUG: moleculizer sim element undefined\n");}
+	if(!mzrss->sim) {error++;printfException("BUG: moleculizer sim element undefined\n");}
 	if(!mzrss->mzr) {warn++;printf("WARNING: moleculizer rules not fully loaded\n");}
-	if(mzrss->nstreams>mzrss->maxstreams) {error++;printf("BUG: moleculizer has more streams defined than allocated\n");}
+	if(mzrss->nstreams>mzrss->maxstreams) {error++;printfException("BUG: moleculizer has more streams defined than allocated\n");}
 	if(mzrss->maxNetworkSpecies>=0) {warn++;printf("WARNING: moleculizer network expansion is limited to %i species\n",mzrss->maxNetworkSpecies);}
-	if(mzrss->nnamehash>mzrss->maxnamehash) {error++;printf("BUG: moleculizer has more hash names defined than allocated\n");}
-	if(!sim->mols) {error++;printf("BUG: moleculizer defined but not Smoldyn molecules\n");}
+	if(mzrss->nnamehash>mzrss->maxnamehash) {error++;printfException("BUG: moleculizer has more hash names defined than allocated\n");}
+	if(!sim->mols) {error++;printfException("BUG: moleculizer defined but not Smoldyn molecules\n");}
 	else {
 		if(mzrss->maxspecies>0 && mzrss->maxspecies!=sim->mols->maxspecies) {
-			error++;printf("BUG: moleculizer maxspecies does not match mols version\n");} }
+			error++;printfException("BUG: moleculizer maxspecies does not match mols version\n");} }
 
 	if(mzrss->mzr) {
 		er=mzrGetSpeciesStreams(mzrss,&streamnames,&numnames);
-		if(er) {error++;printf("ERROR: failed to allocate memory while looking up species streams\n");}
+		if(er) {error++;printfException("ERROR: failed to allocate memory while looking up species streams\n");}
 		else {
 			for(strm=0;strm<mzrss->nstreams;strm++)
 				if(stringfind(streamnames,numnames,mzrss->streamname[strm])<0) {

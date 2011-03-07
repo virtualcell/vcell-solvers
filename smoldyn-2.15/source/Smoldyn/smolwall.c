@@ -185,7 +185,7 @@ void writewalls(simptr sim,FILE *fptr) {
 	fprintf(fptr,"\n");
 	return; }
 
-
+void printfException(const char* format, ...);
 /* checkwallparams.  Checks some parameters of simulation walls to make sure
 that they are reasonable.  Prints warning messages to the display.  Returns the
 total number of errors and, if warnptr is not NULL, the number of warnings in
@@ -203,11 +203,11 @@ int checkwallparams(simptr sim,int *warnptr) {
 	syslen=0;
 	for(d=0;d<dim;d++) syslen+=(highwall[d]-lowwall[d])*(highwall[d]-lowwall[d]);
 	syslen=sqrt(syslen);
-	if(syslen<=0) {error++;printf(" ERROR: Total system size is zero\n");}
+	if(syslen<=0) {error++;printfException(" ERROR: Total system size is zero\n");}
 
 	for(d=0;d<dim;d++)
 		if(lowwall[d]>=highwall[d]) {
-			printf(" ERROR: low_wall positions need to be smaller than high_wall positions");
+			printfException(" ERROR: low_wall positions need to be smaller than high_wall positions");
 			error++; }
 
 	if(!sim->srfss) {

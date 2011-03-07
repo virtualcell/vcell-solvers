@@ -226,6 +226,16 @@ void writesim(simptr sim,FILE *fptr) {
 	fprintf(fptr,"\n");
 	return; }
 
+#include <stdarg.h>
+void printfException(const char* format, ...) {
+	char message[4000];
+	va_list arguments;
+	va_start(arguments, format);
+	vsprintf(message, format, arguments);
+	va_end(arguments);
+	printf("%s", message);
+	throw message;
+}
 
 /* checksimparams checks that the simulation parameters, including parameters of
 sub-structures, have reasonable values.  If values seem to be too small or too

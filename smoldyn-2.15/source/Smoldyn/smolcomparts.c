@@ -293,7 +293,7 @@ void writecomparts(simptr sim,FILE *fptr) {
 		fprintf(fptr,"end_compartment\n\n"); }
 	return; }
 
-
+void printfException(const char* format, ...);
 /* checkcompartparams.  This checks a few compartment parameters. */
 int checkcompartparams(simptr sim,int *warnptr) {
 	int error,warn,c;
@@ -315,7 +315,7 @@ int checkcompartparams(simptr sim,int *warnptr) {
 		cmpt=cmptss->cmptlist[c];
 		if(cmpt->volume<=0) {warn++;printf(" WARNING: compartment %s has 0 volume\n",cmpt->cname);}
 		if(cmpt->nbox==0) {warn++;printf(" WARNING: compartment %s overlaps no virtual boxes\n",cmpt->cname);}
-		if(cmpt->nbox>0&&cmpt->cumboxvol[cmpt->nbox-1]!=cmpt->volume) {error++;printf(" ERROR: compartment %s box volumes do not add to compartment volume\n",cmpt->cname);} }
+		if(cmpt->nbox>0&&cmpt->cumboxvol[cmpt->nbox-1]!=cmpt->volume) {error++;printfException(" ERROR: compartment %s box volumes do not add to compartment volume\n",cmpt->cname);} }
 	if(warnptr) *warnptr=warn;
 	return error; }
 

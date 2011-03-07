@@ -1123,7 +1123,7 @@ void writemolecules(simptr sim,FILE *fptr) {
 
 	return; }
 
-
+void printfException(const char* format, ...);
 /* checkmolparams.  Checks some parameters in a molecule superstructure and
 substructures to make sure that they are legitimate and reasonable.  Prints
 error and warning messages to the display.  Returns the total number of errors
@@ -1154,26 +1154,26 @@ int checkmolparams(simptr sim,int *warnptr) {
 	for(ll=0;ll<mols->nlist;ll++) {				// check molecule list sorting
 		for(m=0;m<mols->nl[ll];m++) {
 			mptr=mols->live[ll][m];
-			if(!mptr) {error++;printf(" SMOLDYN BUG: NULL molecule in live list %i at %i\n",ll,m);}
+			if(!mptr) {error++;printfException(" SMOLDYN BUG: NULL molecule in live list %i at %i\n",ll,m);}
 			else if(mptr->list!=ll) {warn++;printf(" WARNING: mis-sorted molecule in live list %i at %i\n",ll,m);}
 			else if(!mptr->ident) {warn++;printf(" WARNING: empty molecule in live list %i at %i\n",ll,m);} }
 		for(;m<mols->maxl[ll];m++) {
 			mptr=mols->live[ll][m];
-			if(mptr) {error++;printf(" SMOLDYN BUG: misplaced molecule in live list %i at %i\n",ll,m);} }}
+			if(mptr) {error++;printfException(" SMOLDYN BUG: misplaced molecule in live list %i at %i\n",ll,m);} }}
 
 	for(m=0;m<mols->topd;m++) {
 		mptr=mols->dead[m];
-		if(!mptr) {error++;printf(" SMOLDYN BUG: NULL molecule in dead list at %i\n",m);}
-		else if(mptr->list!=-1) {error++;printf(" SMOLDYN BUG: mis-sorted molecule in dead list at %i (species %i, serno %li)\n",m,mptr->ident,mptr->serno);}
-		else if(mptr->ident) {error++;printf(" SMOLDYN BUG: live molecule in dead list at %i\n",m);} }
+		if(!mptr) {error++;printfException(" SMOLDYN BUG: NULL molecule in dead list at %i\n",m);}
+		else if(mptr->list!=-1) {error++;printfException(" SMOLDYN BUG: mis-sorted molecule in dead list at %i (species %i, serno %li)\n",m,mptr->ident,mptr->serno);}
+		else if(mptr->ident) {error++;printfException(" SMOLDYN BUG: live molecule in dead list at %i\n",m);} }
 	for(;m<mols->nd;m++) {
 		mptr=mols->dead[m];
-		if(!mptr) {error++;printf(" SMOLDYN BUG: NULL molecule in resurrected list at %i\n",m);}
-		else if(mptr->list==-1) {error++;printf(" SMOLDYN BUG: mis-sorted molecule in resurrected list at %i\n",m);}
-		else if(!mptr->ident) {error++;printf(" BUG: dead molecule in resurrected list at %i\n",m);} }
+		if(!mptr) {error++;printfException(" SMOLDYN BUG: NULL molecule in resurrected list at %i\n",m);}
+		else if(mptr->list==-1) {error++;printfException(" SMOLDYN BUG: mis-sorted molecule in resurrected list at %i\n",m);}
+		else if(!mptr->ident) {error++;printfException(" BUG: dead molecule in resurrected list at %i\n",m);} }
 	for(;m<mols->maxd;m++) {
 		mptr=mols->dead[m];
-		if(mptr) {error++;printf(" SMOLDYN BUG: misplaced molecule in dead list at %i\n",m);} }
+		if(mptr) {error++;printfException(" SMOLDYN BUG: misplaced molecule in dead list at %i\n",m);} }
 
 	for(ll=0;ll<mols->nlist;ll++)
 		for(m=0;m<mols->nl[ll];m++)	{									// check for molecules outside system
