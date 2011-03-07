@@ -12,7 +12,7 @@ using std::endl;
 #include <VCELL/SimTypes.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/Simulation.h>
-#include <VCELL/DataSet.h>
+#include <VCELL/FVDataSet.h>
 #include <VCELL/SimulationMessaging.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/Solver.h>
@@ -380,7 +380,7 @@ void SimTool::loadFinal()
 				bStartOver = true;
 			} else {
 				try {
-					DataSet::read(dataFileName, simulation);
+					FVDataSet::read(dataFileName, simulation);
 					simulation->setCurrIteration(tempIteration);
 					simFileCount = tempFileCount;
 

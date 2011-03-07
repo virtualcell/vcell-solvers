@@ -9,6 +9,7 @@
 #include <VCELL/FieldData.h>
 #include <VCELL/VolumeVariable.h>
 #include <VCELL/CartesianMesh.h>
+#include <VCELL/FVDataSet.h>
 #include <OdeResultSet.h>
 #include <netcdfcpp.h>
 
@@ -198,7 +199,7 @@ void DataProcessorVFrap::onWrite(SimTool* simTool) {
 		memset(values, 0, numImageRegions * sizeof(double));
 		memset(count, 0, numImageRegions * sizeof(int));
 
-		DataSet::convolve(sim, var, convolved_values);
+		FVDataSet::convolve(sim, var, convolved_values);
 
 		for (int j = 0; j < imgX * imgY; j ++) {
 			int index = (int)sampleImage->getData()[j];

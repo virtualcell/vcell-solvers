@@ -59,6 +59,7 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\Feature.obj			\
 		$(OBJDIR)\FieldData.obj		\
 		$(OBJDIR)\FiniteVolume.obj		\
+		$(OBJDIR)\FVDataSet.obj			\
 		$(OBJDIR)\FVSolver.obj			\
 		$(OBJDIR)\FVUtils.obj			\
 		$(OBJDIR)\JumpCondition.obj			\

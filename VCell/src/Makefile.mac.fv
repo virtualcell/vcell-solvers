@@ -54,6 +54,7 @@ CPPOBJECTS = 	\
 	Feature.o         \
 	FieldData.o         \
 	FiniteVolume.o         \
+	FVDataSet.o        \
 	FVSolver.o        \
 	FVUtils.o         \
 	JumpCondition.o   \

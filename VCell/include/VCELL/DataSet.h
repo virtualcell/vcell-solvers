@@ -6,6 +6,7 @@
 #define DATASET_H
 
 #include <VCELL/SimTypes.h>
+#include <stdio.h>
 
 #define DATABLOCK_STRING_SIZE  124
 #define MAGIC_STRING "VCell Data Dump"
@@ -28,10 +29,6 @@ struct DataBlock {
 	int32   dataOffset;
 };
 
-class Simulation;
-class SimulationExpression;
-class Variable;
-
 typedef enum {
 	endian_not_set = -1,
 	little_endian,
@@ -41,25 +38,17 @@ typedef enum {
 class DataSet
 {
 public:
-	static void read(char *filename, Simulation *sim);
-	static void write(char *filename, SimulationExpression *sim, bool bCompress);
-	static void convolve(Simulation* sim, Variable* var, double* values);
-
-	static void readRandomVariables(char* filename, SimulationExpression* sim);
-
 	static void readHeader(FILE *fp, FileHeader *header);
 	static void readDataBlock(FILE *fp, DataBlock *block);
 	static void readDoubles(FILE *fp, double *data, int length);
 
-private:
 	static bool isBigEndian();
-	static Endian endian;
-
 	static void writeHeader(FILE *fp, FileHeader *header);
 	static void writeDataBlock(FILE *fp, DataBlock *block);
 	static void writeDoubles(FILE *fp, double *data, int length);
 
-  
+private:
+	static Endian endian;
 };
 
 #endif

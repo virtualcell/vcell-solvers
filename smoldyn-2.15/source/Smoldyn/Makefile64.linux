@@ -26,11 +26,14 @@ CPPOBJECTS = smolboxes.o \
 			smolthread.o	\
 			smolwall.o
 			
-$(SMOLDYN) : $(CPPOBJECTS) SimulationMessaging.o
-	$(CC) -o $@ $(CPPOBJECTS) SimulationMessaging.o $(LIBS)
+$(SMOLDYN) : $(CPPOBJECTS) SimulationMessaging.o DataSet.o
+	$(CC) -o $@ $(CPPOBJECTS) SimulationMessaging.o DataSet.o $(LIBS)
 
 SimulationMessaging.o : ../../../VCell/include/VCELL/SimulationMessaging.h ../../../VCell/src/SimulationMessaging.cpp
 	$(CC) $(CPPFLAGS) ../../../VCell/src/SimulationMessaging.cpp
+	
+DataSet.o : ../../../VCell/include/VCELL/DataSet.h ../../../VCell/src/DataSet.cpp
+	$(CC) $(CPPFLAGS) ../../../VCell/src/DataSet.cpp
 	
 clean:
 	rm $(SMOLDYN) $(CPPOBJECTS) SimulationMessaging.o

@@ -43,6 +43,7 @@ CPPOBJECTS = 	\
 	FastSystemExpression.o       \
 	Feature.o         \
 	FieldData.o         \
+	FVDataSet.o        \
 	FVSolver.o        \
 	FVUtils.o         \
 	MembraneEqnBuilderForward.o \

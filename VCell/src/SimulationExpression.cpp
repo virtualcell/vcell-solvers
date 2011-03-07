@@ -19,6 +19,7 @@
 #include <VCELL/VCellModel.h>
 #include <SimpleSymbolTable.h>
 #include <ScalarValueProxy.h>
+#include <VCELL/FVDataSet.h>
 
 #include <iostream>
 #include <sstream>
@@ -427,7 +428,7 @@ void SimulationExpression::createSymbolTable() {
 	if (randomVarList.size() > 0) {
 		char rvfile[512];
 		sprintf(rvfile, "%s%s", SimTool::getInstance()->getBaseFileName(), RANDOM_VARIABLE_FILE_EXTENSION);
-		DataSet::readRandomVariables(rvfile, this);
+		FVDataSet::readRandomVariables(rvfile, this);
 		for (int i = 0; i < (int)randomVarList.size(); i ++) {
 			RandomVariable* rv = randomVarList[i];
 
@@ -643,7 +644,7 @@ void SimulationExpression::writeData(char *filename, bool bCompress)
 	//	fclose(fp);
 	//}
 
-	DataSet::write(filename, this, bCompress);
+	FVDataSet::write(filename, this, bCompress);
 }
 
 bool SimulationExpression::isVariable(string& symbol) {

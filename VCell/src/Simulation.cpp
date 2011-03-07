@@ -10,7 +10,7 @@
 #include <VCELL/Solver.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/EqnBuilder.h>
-#include <VCELL/DataSet.h>
+#include <VCELL/FVDataSet.h>
 #include <VCELL/VCellModel.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/CartesianMesh.h>
@@ -148,7 +148,7 @@ void Simulation::readData(char *filename)
 	// all processes read data
 	// (in the future, root could read and then distribute)
 	//
-	DataSet::read(filename, this);
+	FVDataSet::read(filename, this);
 }
 
 //-------------------------------------------------------
