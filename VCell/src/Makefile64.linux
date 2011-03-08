@@ -40,6 +40,7 @@ CPPOBJECTS = 	\
 	AlgebraicSystem.o		\
 	CartesianMesh.o		   \
 	DataSet.o  				 \
+	DataProcessorRoiTimeSeries.o  				 \
 	DataProcessorVFrap.o  				 \
 	EllipticVolumeEqnBuilder.o    \
 	EqnBuilder.o    \

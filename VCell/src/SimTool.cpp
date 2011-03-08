@@ -21,6 +21,7 @@ using std::endl;
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/MembraneRegion.h>
 #include <VCELL/DataProcessorVFrap.h>
+#include <VCELL/DataProcessorRoiTimeSeries.h>
 #include <VCELL/FVUtils.h>
 
 #include <float.h>
@@ -876,6 +877,8 @@ bool SimTool::checkSpatiallyUniform(Variable* var) {
 void SimTool::createDataProcessor(string& name, string& text) {
 	if (name == "VFRAP") {
 		dataProcessor = new DataProcessorVFrap(name, text);
+	} else if (name == "RoiTimeSeries") {
+		dataProcessor = new DataProcessorRoiTimeSeries(name, text);
 	} else {
 		throw "unknown DataProcessor";
 	}

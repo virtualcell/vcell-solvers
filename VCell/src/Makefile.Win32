@@ -50,6 +50,7 @@ CPPOBJECTS = 	\
 		$(OBJDIR)\AlgebraicSystem.obj				\
 		$(OBJDIR)\CartesianMesh.obj			\
 		$(OBJDIR)\DataSet.obj			\
+		$(OBJDIR)\DataProcessorRoiTimeSeries.obj			\
 		$(OBJDIR)\DataProcessorVFrap.obj			\
 		$(OBJDIR)\EllipticVolumeEqnBuilder.obj			\
 		$(OBJDIR)\EqnBuilder.obj			\
