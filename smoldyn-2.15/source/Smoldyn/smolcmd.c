@@ -1956,7 +1956,7 @@ enum CMDcode cmdexcludesphere(simptr sim,cmdptr cmd,char *line2) {
 	itct=sscanf(line2,"%lg",&rad);
 	SCMDCHECK(itct==1,"failure reading radius");
 
-	dist=rad*sqrt(dim);
+	dist=rad*sqrt((double)dim);
 	for(d=0;d<dim;d++) {
 		poslo[d]=poscent[d]-dist;
 		poshi[d]=poscent[d]+dist; }

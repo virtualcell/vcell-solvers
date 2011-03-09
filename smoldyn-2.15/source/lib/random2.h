@@ -154,7 +154,7 @@ inline static double radrandsphCCD(double r) {
 	return r*pow(randCCD(),1.0/3.0); }
 
 inline static double radrandsphCCF(float r) {
-	return r*pow(randCCF(),1.0/3.0); }
+	return r*pow((double)randCCF(),1.0/3.0); }
 
 inline static double thetarandCCD(void) {
 	return acos(1.0-2.0*randCCD()); }

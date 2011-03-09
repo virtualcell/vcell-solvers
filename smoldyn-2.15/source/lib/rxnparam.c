@@ -479,8 +479,8 @@ used above in numrxnrate.  All input is requested from the user using the
 standard input and all output is sent to standard output.
 Runtime is about 1 minute with mode i, 200 pts, eps=1e-4 */
 void rdfmaketable() {
-	double slo=exp(-3),shi=exp(3),sinc=exp(0.2);		// step size low, high, increment
-	const double blor=exp(0),bhir=exp(3),bincr=exp(0.2);	// b value low, high, increment for b>a
+	double slo=exp(-3.0),shi=exp(3.0),sinc=exp(0.2);		// step size low, high, increment
+	const double blor=exp(0.0),bhir=exp(3.0),bincr=exp(0.2);	// b value low, high, increment for b>a
 	const double blob=0,bhib=1.0,bincb=0.1;					// b value low, high, increment for b<a
 	double *r,*rdfa,*rdfd,dr,s,b,flux,eps;
 	int i,n,done;
