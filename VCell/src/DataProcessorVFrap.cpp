@@ -36,7 +36,7 @@ DataProcessorVFrap::~DataProcessorVFrap() {
 	//delete outputFile;
 	delete[] volumePoints;
 	delete[] membranePoints;
-	delete[] sampleImage;
+	delete sampleImage;
 
 	for (int i = 0; i < 2 * SimTool::getInstance()->getSimulation()->getNumVariables(); i ++) {
 		delete odeResultSet[i];
@@ -45,13 +45,13 @@ DataProcessorVFrap::~DataProcessorVFrap() {
 }
 
 bool DataProcessorVFrap::checkComplete(SimTool* simTool) {
-	outputFileName = string(simTool->getBaseFileName()) + ".dataProcOutput";
+	outputFileName = string(simTool->getBaseFileName()) + DATAPROCOUTPUT_EXT;
 	struct stat buf;
 	return !stat(outputFileName.c_str(), &buf);
 }
 
 void DataProcessorVFrap::onStart(SimTool* simTool) {
-	outputFileName = string(simTool->getBaseFileName()) + ".dataProcOutput";
+	outputFileName = string(simTool->getBaseFileName()) + DATAPROCOUTPUT_EXT;
 	Simulation* sim = simTool->getSimulation();
 	int numVar = sim->getNumVariables();
 	if (odeResultSet == 0) {

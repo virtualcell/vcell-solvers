@@ -1,13 +1,19 @@
 CC = g++
 
 CPPFLAGS = -c -O2 -DHAVE_CONFIG_H -DINTEL -DUNIX -DLINUX64 -D__USE_GNU -DUSE_MESSAGING -I. -I.. -I../lib -Wall -I../../../VCell/include  \
+		../../../IDAWin ../../../netcdf-3.6.2/libsrc ../../../netcdf-3.6.2/cxx \
 		-I../../../SonicCClient64/Linux_AS4_64/include/CPP -I../../../SonicCClient64/Linux_AS4_64/include 
-LIBS = -L../lib -lsmoldyn -L../../../SonicCClient64/Linux_AS4_64/bin/release/ -L../../../zip -lzip32 -lsmq -lm -pthread
+LIBS = -L../lib -lsmoldyn -L../../../SonicCClient64/Linux_AS4_64/bin/release/ -L../../../zip -lzip32 \
+		-L../../../IDAWin -lvcellIDA -L../../../netcdf-3.6.2/libsrc -lnetcdf -L../../../netcdf-3.6.2/cxx -lnetcdf_cxx \
+		-lsmq -lm -pthread
 
 SMOLDYN = smoldyn
 
 			
 %.o : %.c
+	$(CC) $(CPPFLAGS) $<
+
+%.o : %.cpp
 	$(CC) $(CPPFLAGS) $<
 
 default all : $(SMOLDYN)
@@ -24,10 +30,13 @@ CPPOBJECTS = smolboxes.o \
 			smolsim.o	\
 			smolsurface.o	\
 			smolthread.o	\
-			smolwall.o
+			smolwall.o	\
+			DataProcessorRoiTimeSeriesSmoldyn.o \
+			VCellSmoldynOutput.o
 			
-$(SMOLDYN) : $(CPPOBJECTS) SimulationMessaging.o DataSet.o
-	$(CC) -o $@ $(CPPOBJECTS) SimulationMessaging.o DataSet.o $(LIBS)
+			
+$(SMOLDYN) : $(CPPOBJECTS) SimulationMessaging.o DataSet.o FieldData.o
+	$(CC) -o $@ $(CPPOBJECTS) SimulationMessaging.o DataSet.o FieldData.o $(LIBS)
 
 SimulationMessaging.o : ../../../VCell/include/VCELL/SimulationMessaging.h ../../../VCell/src/SimulationMessaging.cpp
 	$(CC) $(CPPFLAGS) ../../../VCell/src/SimulationMessaging.cpp
@@ -35,8 +44,11 @@ SimulationMessaging.o : ../../../VCell/include/VCELL/SimulationMessaging.h ../..
 DataSet.o : ../../../VCell/include/VCELL/DataSet.h ../../../VCell/src/DataSet.cpp
 	$(CC) $(CPPFLAGS) ../../../VCell/src/DataSet.cpp
 	
+FieldData.o : ../../../VCell/include/VCELL/FieldData.h ../../../VCell/src/FieldData.cpp
+	$(CC) $(CPPFLAGS) ../../../VCell/src/FieldData.cpp
+	
 clean:
-	rm $(SMOLDYN) $(CPPOBJECTS) SimulationMessaging.o
+	rm $(SMOLDYN) $(CPPOBJECTS) SimulationMessaging.o DataSet.o FieldData.o
 	
 depend:
 	makedepend -Y -f Makefile64.linux -- $(CPPFLAGS) -- *.c ../../../VCell/src/SimulationMessaging.cpp

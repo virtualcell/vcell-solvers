@@ -8,6 +8,8 @@
 #include <string>
 using std::string;
 
+#define DATAPROCOUTPUT_EXT ".dataProcOutput"
+
 class SimTool;
 
 class DataProcessor

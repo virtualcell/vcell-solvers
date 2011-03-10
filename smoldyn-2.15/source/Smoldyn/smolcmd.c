@@ -25,6 +25,7 @@ of the Gnu Lesser General Public License (LGPL). */
 // vcell command
 enum CMDcode cmdVCellPrintProgress(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdVCellWriteOutput(simptr sim,cmdptr cmd,char *line2);
+enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2);
 
 // simulation control
 enum CMDcode cmdstop(simptr sim,cmdptr cmd,char *line2);
@@ -188,6 +189,7 @@ enum CMDcode docommand(void *cmdfnarg,cmdptr cmd,char *line) {
 	// vcell commands
 	else if(!strcmp(word,"vcellPrintProgress")) return cmdVCellPrintProgress(sim,cmd,line2);
 	else if(!strcmp(word,"vcellWriteOutput")) return cmdVCellWriteOutput(sim,cmd,line2);
+	else if(!strcmp(word,"vcellDataProcess")) return cmdVCellDataProcess(sim,cmd,line2);
 
 	SCMDCHECK(0,"command not recognized");
 	return CMDwarn; }
@@ -2086,7 +2088,9 @@ int molinpanels(simptr sim,int ll,int m,int s,char pshape) {
 
 
 #include <VCELL/SimulationMessaging.h>
+#include "VCellSmoldynOutput.h"
 
+static VCellSmoldynOutput* vcellSmoldynOutput = 0;
 enum CMDcode cmdVCellPrintProgress(simptr sim, cmdptr cmd, char *line2) {
 	if(line2 && !strcmp(line2,"cmdtype")) {
 		return CMDobserve;
@@ -2100,327 +2104,44 @@ enum CMDcode cmdVCellPrintProgress(simptr sim, cmdptr cmd, char *line2) {
 	return CMDok;
 }
 
-#include <VCELL/DataSet.h>
-
-#define SIM_FILE_EXT "sim"
-#define LOG_FILE_EXT "log"
-#define ZIP_FILE_EXT "zip"
-#define ZIP_FILE_LIMIT 1E9
-
-typedef int int32;
-typedef unsigned int uint32;
-
-int zip32(int filecnt, char* zipfile, ...);
-#include <sys/stat.h>
-
-void writeSim(simptr sim, cmdptr cmd, char *line2, char* simFileName, char* zipFileName) {
-	static int firstrun = 1;
-	static int N[3] = {1,1,1};
-	static double extent[3];
-	static double origin[3];
-	static char **varNames;
-	static FileHeader fileHeader;
-	static int dimension = 3, varSize = 0, numVars = 0, numBlocks = 0;
-	static DataBlock *dataBlock = NULL;
-	static double *sol = NULL;
-	static int volRegionSize = 0;
-	static int solSize = 0;
-
-	molssptr mols = sim->mols;
-
-	if (firstrun) {
-		if (line2 == NULL || strlen(line2) == 0) {
-			throw "writeOutput : no dimension specified.";
-		}
-		dimension = sscanf(line2, "%d %d %d %d", &N[0], &N[1], &N[2], &volRegionSize);
-		dimension --;
-		if (dimension == 0) {
-			char errMsg[256];
-			sprintf(errMsg, "writeOutput : no dimension specified. %d %d %d", N[0], N[1], N[2]);
-			throw errMsg;
-		}
-		if (dimension == 1) {
-			volRegionSize = N[1];
-		} else if (dimension == 2) {
-			volRegionSize = N[2];
-		}
-		origin[0] = sim->wlist[0]->pos;
-		extent[0] = sim->wlist[1]->pos - origin[0];
-		if (dimension > 1) {
-			origin[1] = sim->wlist[2]->pos;
-			extent[1] = sim->wlist[3]->pos - origin[1];
-			if (dimension > 2) {
-				origin[2] = sim->wlist[4]->pos;
-				extent[2] = sim->wlist[5]->pos - origin[2];
-			}
-		}
-		int i;
-		numVars = mols->nspecies - 1;
-		varNames = (char**)malloc(numVars * 2 * sizeof(char*));
-		for(i = 0; i < numVars; i ++) {
-			varNames[i] = (char*)malloc(128 * sizeof(char));
-			strcpy(varNames[i], mols->spname[i + 1]);
-		}
-		for(i = 0; i < numVars; i++) {
-			varNames[i + numVars] = (char*)malloc(128 * sizeof(char));
-			sprintf(varNames[i + numVars], "%s_totalCount\0", varNames[i]);
-
-		}
-		strcpy(fileHeader.magicString, MAGIC_STRING);
-		strcpy(fileHeader.versionString, VERSION_STRING);
-		varSize = N[0] * N[1] * N[2];
-		numBlocks = numVars * 2;
-
-		fileHeader.sizeX = N[0];
-		fileHeader.sizeY = N[1];
-		fileHeader.sizeZ = N[2];
-		fileHeader.numBlocks = numBlocks;
-		fileHeader.firstBlockOffset = sizeof(FileHeader);
-
-		dataBlock = (DataBlock*)malloc(numBlocks * sizeof(DataBlock));
-		solSize = numVars * (varSize + volRegionSize);
-		sol = (double*)malloc(solSize * sizeof(double));
-
-		firstrun = 0;
-	}
-
-	if (dimension == 0) {
-		throw "dimension == 0";
-	}
-	FILE* simfp = fopen(simFileName, "wb");
-	if (simfp == NULL){
-		throw "Cannot open .sim file to write";
-	}
-
-	DataSet::writeHeader(simfp, &fileHeader);
-	long ftell_pos = ftell(simfp);
-	if (ftell_pos != fileHeader.firstBlockOffset){
-		char errMsg[256];
-		sprintf(errMsg, "DataSet::write() - file offset for first block is incorrect, ftell() says %ld, should be %d", ftell_pos, fileHeader.firstBlockOffset);
-		throw errMsg;
-	}
-
-	//
-	// write data blocks (describing data)
-	//
-	int blockIndex = 0;
-	int dataOffset = fileHeader.firstBlockOffset + numBlocks * sizeof(DataBlock);
-	int v;
-	for (v = 0; v < numVars; v ++) {
-		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-		strcpy(dataBlock[blockIndex].varName, varNames[v]);
-
-		dataBlock[blockIndex].varType = VAR_VOLUME;
-		dataBlock[blockIndex].size = varSize;
-		dataBlock[blockIndex].dataOffset = dataOffset;
-		DataSet::writeDataBlock(simfp, dataBlock + blockIndex);
-		dataOffset += dataBlock[blockIndex].size * sizeof(double);
-		blockIndex ++;
-	}
-	for (v = numVars; v < numVars * 2; v ++) {
-		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-		strcpy(dataBlock[blockIndex].varName, varNames[v]);
-
-		dataBlock[blockIndex].varType = VAR_VOLUME_REGION;
-		dataBlock[blockIndex].size = volRegionSize;
-		dataBlock[blockIndex].dataOffset = dataOffset;
-		DataSet::writeDataBlock(simfp, dataBlock + blockIndex);
-		dataOffset += dataBlock[blockIndex].size * sizeof(double);
-		blockIndex ++;
-	}
-
-	memset(sol, 0, solSize * sizeof(double));
-
-	// for variables
-	int* totalCounts = new int[numVars];
-	memset(totalCounts, 0, numVars * sizeof(int));
-	int ll, m;
-	moleculeptr mptr;
-	for(ll=0;ll<mols->nlist;ll++) {
-		for(m=0;m<mols->nl[ll];m++) {
-			mptr=mols->live[ll][m];
-			int varIndex = mptr->ident - 1;
-			if (varIndex >= 0 ) {
-				double* coord = mptr->pos;
-				int i = 0, j = 0, k = 0;
-				i = (int)((coord[0] - origin[0]) * (N[0] - 1)/extent[0] + 0.5);
-				if (dimension > 1) {
-					j = (int)((coord[1] - origin[1]) * (N[1] - 1)/extent[1] + 0.5);
-					if (dimension > 2) {
-						k = (int)((coord[2] - origin[2]) * (N[2] - 1)/extent[2] + 0.5);
-					}
-				}
-
-				int volIndex = k * N[1] * N[0] + j * N[0] + i;
-				sol[varIndex * varSize + volIndex] ++;
-
-				totalCounts[varIndex] ++;
-			}
-		}
-	}
-
-	int totalCountOffSet = numVars * varSize;
-	// for total count region variable
-	for (v = 0; v < numVars; v ++) {
-		for (int r = 0; r < volRegionSize; r ++) {
-			sol[totalCountOffSet + v * volRegionSize + r] = totalCounts[v];
-		}
-	}
-	delete[] totalCounts;
-
-	//
-	// write data
-	//
-	blockIndex = 0;
-	for (v = 0; v < numVars; v ++) {
-		ftell_pos = ftell(simfp);
-		if (ftell_pos != dataBlock[blockIndex].dataOffset){
-			char errMsg[256];
-			sprintf(errMsg, "DataSet::write() - offset for data is "
-				"incorrect (block %d, var=%s), ftell() says %ld, should be %d", blockIndex, dataBlock[blockIndex].varName,
-				ftell_pos, dataBlock[blockIndex].dataOffset);
-			throw errMsg;
-		}
-		DataSet::writeDoubles(simfp, sol + v * varSize, varSize);
-		blockIndex ++;
-	}
-	for (v = 0; v < numVars; v ++) {
-		ftell_pos = ftell(simfp);
-		if (ftell_pos != dataBlock[blockIndex].dataOffset){
-			char errMsg[256];
-			sprintf(errMsg, "DataSet::write() - offset for data is "
-				"incorrect (block %d, var=%s), ftell() says %ld, should be %d", blockIndex, dataBlock[blockIndex].varName,
-				ftell_pos, dataBlock[blockIndex].dataOffset);
-			throw errMsg;
-		}
-		DataSet::writeDoubles(simfp, sol + totalCountOffSet + v * volRegionSize, volRegionSize);
-		blockIndex ++;
-	}
-	fclose(simfp);
-
-	int retcode = zip32(1, zipFileName, simFileName);
-	remove(simFileName);
-	if (retcode != 0) {
-		char errMsg[256];
-		sprintf(errMsg, "Writing zip file <%s> failed, return code is %d", zipFileName, retcode);
-		throw errMsg;
-	}
-
-	if (fabs(sim->tmax - sim->time) < 1e-12) {
-		for (int i = 0; i < numVars; i ++) {
-			free(varNames[i]);
-		}
-		free(varNames);
-		free(dataBlock);
-		free(sol);
-	}
-}
-
-int getZipCount(char* zipFileName) {
-	char* p = strstr(zipFileName, ZIP_FILE_EXT);
-	if (p == NULL) {
-		return -1;
-	}
-
-	char str[3];
-	strncpy(str, p - 2, 2 * sizeof(char));
-	str[2] = 0;
-	return atoi(str);
-}
-
-void clearLog(char* baseFileName) {
-
-	FILE *fp;
-	char logFileName[256];
-
-	sprintf(logFileName,"%s.%s",baseFileName, LOG_FILE_EXT);
-	if ((fp=fopen(logFileName, "r"))==NULL){
-		printf("error opening log file <%s>\n", logFileName);
-		return;
-	}
-
-	char simFileName[128];
-	char zipFileName[128];
-	int iteration, oldCount=-1, count;
-	double time;
-
-	while (!feof(fp)) {
-		fscanf(fp,"%4d %s %s %lg\n", &iteration, simFileName, zipFileName, &time);
-		count = getZipCount(zipFileName);
-		if (oldCount != count && count >= 0) {
-			printf("clearLog(), removing zip file %s\n", zipFileName);
-			remove(zipFileName);
-			oldCount = count;
-		}
-	}
-	fclose(fp);
-
-	printf("clearLog(), removing log file %s\n", logFileName);
-	remove(logFileName);
-}
-
 enum CMDcode cmdVCellWriteOutput(simptr sim, cmdptr cmd, char *line2) {
-	static int simFileCount = 0;
-	static int zipFileCount = 0;
-	static char baseFileName[256];
-	static char baseSimName[256];
-
+	static bool firstTime = true;
 	if(line2 && !strcmp(line2,"cmdtype")) {
 		return CMDobserve;
 	}
-
-	if (simFileCount == 0) {
-		char* rootdir = sim->cmds->root;
-		char* fname = sim->cmds->fname[0];
-		strcpy(baseFileName, rootdir);
-		strcat(baseFileName, fname);
-		char* p = strrchr(baseFileName, '.');
-		*p = '\0';
-
-		strcpy(baseSimName, fname);
-		p = strrchr(baseSimName, '.');
-		*p = '\0';
-
-		clearLog(baseFileName);
+	if (vcellSmoldynOutput == 0) {
+		vcellSmoldynOutput = new VCellSmoldynOutput(sim);
 	}
-
-	// write sim file
-	char simFileName[256];
-	char zipFileName[256];
-	sprintf(simFileName, "%s%.4d.%s", baseSimName, simFileCount, SIM_FILE_EXT);
-	sprintf(zipFileName, "%s%.2d.%s", baseFileName, zipFileCount, ZIP_FILE_EXT);
-
-	writeSim(sim, cmd, line2, simFileName, zipFileName);
-
-	// write log file
-	char logfilename[256];
-	sprintf(logfilename, "%s.%s", baseFileName, LOG_FILE_EXT);
-	FILE* logfp = NULL;
-	if (simFileCount == 0) {
-		logfp = fopen(logfilename, "w");
-	} else {
-		logfp = fopen(logfilename, "a");
+	if (firstTime) {
+		vcellSmoldynOutput->parseInput(line2);
+		firstTime = false;
 	}
-	if (logfp == NULL) {
-		return CMDabort;
-	}
-	int iteration = (int)(sim->time/sim->dt + 0.5);
-	fprintf(logfp,"%4d %s %s %.15lg\n", iteration, simFileName, zipFileName, sim->time);
-//	fprintf(logfp,"%4d %s %.15lg\n", iteration, simfilename, sim->time);
-	fclose(logfp);
+	vcellSmoldynOutput->write();
 
-	// print message
-	//fprintf(stdout, "[[[data:%lg]]]",  sim->time);
-	simFileCount ++;
-
-	struct stat buf;
-	if (stat(zipFileName, &buf) == 0) { // if exists
-		if (buf.st_size > ZIP_FILE_LIMIT) {
-			zipFileCount ++;
-		}
-	}
-	double progress = (sim->time - sim->tmin) / (sim->tmax - sim->tmin);
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, sim->time));
 	return CMDok;
 }
 
+#include <iostream>
+#include <sstream>
+using std::stringstream;
+using std::endl;
+enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2) {
+	static stringstream dataProcessInput;
+	static string dataProcName;
+	if(line2 && !strcmp(line2,"cmdtype")) {
+		return CMDobserve;
+	}	
+	string token;
+	stringstream ss(line2);
+	ss >> token;
+	if (token == "begin") {
+		ss >> dataProcName;
+	} else if (token == "end") {
+		if (vcellSmoldynOutput == 0) {
+			vcellSmoldynOutput = new VCellSmoldynOutput(sim);
+		}
+		vcellSmoldynOutput->parseDataProcessingInput(dataProcName, dataProcessInput.str());
+	} else {
+		dataProcessInput << line2 << endl;
+	}
+}

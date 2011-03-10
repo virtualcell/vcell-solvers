@@ -19,8 +19,6 @@
 #include <sstream>
 using namespace std;
 
-#define CONVOLVE_SUFFIX "_Convolved"
-
 DataProcessorRoiTimeSeries::DataProcessorRoiTimeSeries(string& name, string& input): DataProcessor(name, input) {
 	numImageRegions = 0;
 	
@@ -29,8 +27,7 @@ DataProcessorRoiTimeSeries::DataProcessorRoiTimeSeries(string& name, string& inp
 }
 
 DataProcessorRoiTimeSeries::~DataProcessorRoiTimeSeries() {
-	//delete outputFile;
-	delete[] sampleImage;
+	delete sampleImage;
 
 	for (int i = 0; i < SimTool::getInstance()->getSimulation()->getNumVariables(); i ++) {
 		delete odeResultSet[i];
@@ -39,13 +36,13 @@ DataProcessorRoiTimeSeries::~DataProcessorRoiTimeSeries() {
 }
 
 bool DataProcessorRoiTimeSeries::checkComplete(SimTool* simTool) {
-	outputFileName = string(simTool->getBaseFileName()) + ".dataProcOutput";
+	outputFileName = string(simTool->getBaseFileName()) + DATAPROCOUTPUT_EXT;
 	struct stat buf;
 	return !stat(outputFileName.c_str(), &buf);
 }
 
 void DataProcessorRoiTimeSeries::onStart(SimTool* simTool) {
-	outputFileName = string(simTool->getBaseFileName()) + ".dataProcOutput";
+	outputFileName = string(simTool->getBaseFileName()) + DATAPROCOUTPUT_EXT;
 	Simulation* sim = simTool->getSimulation();
 	int numVar = sim->getNumVariables();
 	if (odeResultSet == 0) {
@@ -72,7 +69,6 @@ void DataProcessorRoiTimeSeries::onStart(SimTool* simTool) {
 		odeResultSet = new OdeResultSet*[numVar];
 		// for convolved variables
 		for (int i = 0; i < numVar; i ++) {
-			Variable* var = sim->getVariable(i);
 			odeResultSet[i] = new OdeResultSet();
 			for (int j = 0; j < numImageRegions; j ++) {
 				char p[30];
