@@ -179,11 +179,17 @@ ExplicitObjectiveFunction* OptXmlReader2::parseExplicitObjectiveFunction(TiXmlEl
 }
 
 ExplicitFitObjectiveFunction* OptXmlReader2::parseExplicitFitObjectiveFunction(TiXmlElement* objFuncNode, ParameterDescription* paramDesc){
-	// get function
-	TiXmlElement* expressionNode = objFuncNode->FirstChildElement(Expression_Tag);
-	const char* expressionString = expressionNode->GetText();
-	Expression* exp = new Expression(string(expressionString));
-
+	// get function list and funcDataColumnIdx(the fit data column idx in reference data for a spcific expression)
+	TiXmlElement* expressionListNode = objFuncNode->FirstChildElement(ExpressionList_Tag);
+	vector<int> expDataColIndices;
+	vector<VCell::Expression*> expressionList;
+	parseFunctionExpressions(expressionListNode, expressionList, expDataColIndices);
+	int numberOfIndices = expDataColIndices.size();
+	int* colIndices = new int[numberOfIndices];
+	for(int i=0; i<numberOfIndices; i++)
+	{
+		colIndices[i] = expDataColIndices.at(i);
+	}
 	//get simple reference datanode first, which is the sibling of the expression node.
 	TiXmlElement* simpleRefDataNode = objFuncNode->FirstChildElement(SimpleData_Tag);
 	// get data set as OdeResultSet
@@ -195,7 +201,7 @@ ExplicitFitObjectiveFunction* OptXmlReader2::parseExplicitFitObjectiveFunction(T
 	refData->setWeights(weights);
 
 	void (*checkStopRequested)(double, long) = 0;
-	ExplicitFitObjectiveFunction* objFunc = new ExplicitFitObjectiveFunction(exp,paramDesc,refData,checkStopRequested);
+	ExplicitFitObjectiveFunction* objFunc = new ExplicitFitObjectiveFunction(expressionList, colIndices, paramDesc, refData,checkStopRequested);
 	return objFunc;
 }
 
@@ -234,6 +240,24 @@ OdeObjectiveFunction* OptXmlReader2::parseOdeObjectiveFunction(TiXmlElement* obj
 
 	OdeObjectiveFunction* odeObjectiveFunction = new OdeObjectiveFunction(paramDesc,refData,modelMappingExpressions,solverInput, 0);
 	return odeObjectiveFunction;
+}
+
+void OptXmlReader2::parseFunctionExpressions(TiXmlElement* expressionListNode, vector<VCell::Expression*>& expressionList, vector<int>& expDataColIndices)
+{	
+	//loop through each expression
+	TiXmlElement* expressionNode = expressionListNode->FirstChildElement(Expression_Tag);
+	while (expressionNode!=0)
+	{
+		const char* expressionString = expressionNode->GetText();
+		Expression* exp = new Expression(string(expressionString));//get expression
+		expressionList.push_back(exp);
+		//get corresponding fit data index in referencedata for the above expression
+		int expDataColIdx = atoi(expressionNode->Attribute(ExpDataColIndex_Attr));
+		expDataColIndices.push_back(expDataColIdx);
+
+		//go to the next element
+		expressionNode = expressionNode->NextSiblingElement(Expression_Tag);
+	}
 }
 
 OdeResultSetOpt* OptXmlReader2::parseOdeResultSet(TiXmlElement* dataNode){

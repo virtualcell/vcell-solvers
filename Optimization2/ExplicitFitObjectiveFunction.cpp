@@ -19,11 +19,13 @@ using VCell::Expression;
 #include "Constraint.h"
 #include "ParameterDescription.h"
 #include "MemoryManager.h"
+#include "Weights.h"
 
 //#define JNI_DEBUG
 
 ExplicitFitObjectiveFunction::ExplicitFitObjectiveFunction(
-	Expression* arg_functionExpression,
+	vector<Expression*>& arg_functionExpressions,
+	int* arg_funcDataColIdx,
 	ParameterDescription* arg_parameterDescription,
 	OdeResultSetOpt* arg_referenceData,
 	void (*checkStopRequested)(double, long))
@@ -34,7 +36,7 @@ ExplicitFitObjectiveFunction::ExplicitFitObjectiveFunction(
 	unscaled_x = new double[numParameters];
 	memset(unscaled_x, 0, numParameters * sizeof(double));
 
-	functionExpression = arg_functionExpression;
+	funcDataColIdx = arg_funcDataColIdx;
 	int symbolCount = numParameters+1;
 	string* symbols = new string[symbolCount];
 	symbols[0] = arg_referenceData->getColumnName(0); // name of independent variable (e.g. "t")
@@ -42,14 +44,18 @@ ExplicitFitObjectiveFunction::ExplicitFitObjectiveFunction(
 		symbols[i+1] = parameterDescription->getParameterName(i);
 	}
 	SimpleSymbolTable* symbolTable = new SimpleSymbolTable(symbols,symbolCount);
-	functionExpression->bindExpression(symbolTable);
+	for(int i=0; i<arg_functionExpressions.size(); i++)
+	{
+		functionExpressions.push_back(arg_functionExpressions.at(i));
+		functionExpressions[i]->bindExpression(symbolTable);
+	}
 	evaluateArray = new double[numParameters+1]; // +1 is for independent variable
 
 	referenceData = arg_referenceData;
-	// check that there are only two columns in data;
-	if (arg_referenceData->getNumColumns() != 2){
+	// check that there are more than two columns in data,(the first column is assumed to be "t");
+	if (arg_referenceData->getNumColumns() < 2){
 		stringstream ss;
-		ss << "reference data has " << arg_referenceData->getNumColumns() << " columns, expected 2";
+		ss << "reference data has " << arg_referenceData->getNumColumns() << " columns, expected >= 2";
 		throw ss.str();
 	}
 	independentVarArray = new double[referenceData->getNumRows()];
@@ -66,6 +72,12 @@ ExplicitFitObjectiveFunction::ExplicitFitObjectiveFunction(
 }
 
 ExplicitFitObjectiveFunction::~ExplicitFitObjectiveFunction(){
+	for(int i=0; i<functionExpressions.size(); i++)
+	{
+		delete functionExpressions.at(i);
+	}
+	functionExpressions.clear();
+	delete[] funcDataColIdx;
 	delete[] bestParameterValues;
 	delete[] unscaled_x;
 	delete[] independentVarArray;
@@ -106,20 +118,61 @@ double ExplicitFitObjectiveFunction::computeL2error(double* paramValues) {
 	double L2Error = 0.0;
 	int numParameters = parameterDescription->getNumParameters();
 	int refNumRows = referenceData->getNumRows();
-	if(referenceData->getWeights()->getWeightType() != TIMEWEIGHT)
-	{
-		throw "Time Weights should be used for computeL2error of ExplicitFitObjectiveFunction";
-	}
-	
-	double * timeWeights = referenceData->getWeights()->getWeightData();
+	int refNumCols = referenceData->getNumColumns();
+
 	memcpy(evaluateArray+1,paramValues,sizeof(double) * numParameters);
-	for (int j = 0; j < refNumRows; j ++) {
-		evaluateArray[0] = independentVarArray[j];
-		double value = functionExpression->evaluateVector(evaluateArray);
-		double diff = value - dependentVarArray[j];
-		L2Error += timeWeights[j]*diff * diff;
+	Weights* weights = referenceData->getWeights();
+	bool bVarWeight = false;
+	bool bTimeWeight = false;
+	bool bEleWeight = false;
+	// get weight type
+	if(weights->getWeightType() == ELEMENTWEIGHT)
+	{
+		bEleWeight = true;
 	}
-	
+	else if(weights->getWeightType() == VARIABLEWEIGHT)
+	{
+		bVarWeight = true;
+	}
+	else //timeWeight
+	{
+		bTimeWeight = true;
+	}
+	//weight data
+	double* weightData = weights->getWeightData();
+	double weight = 1; 
+	//get weighted squared error (NOTE: weight data is one col less than ref data, time col(in ref data col index 0) is not weighted)
+	for(int i=0; i<functionExpressions.size(); i++)//go through each function 
+	{
+		//get a function in the list
+		Expression* tempExp = functionExpressions.at(i);
+		int funcDataColumnIdx = funcDataColIdx[i];
+		if(bVarWeight)//if it's variable weights
+		{
+			weight = weightData[funcDataColumnIdx-1];
+		}
+		// assuming no parameters in function for OdeResultSet functions
+		int numParamForOdeResultSetFunctions = 0;
+		//get the fit data from referenceData corresponding to the expression
+		referenceData->getColumnData(funcDataColumnIdx, numParamForOdeResultSetFunctions, 0, dependentVarArray);
+		for (int j = 0; j < refNumRows; j ++) //go through each time point
+		{
+			if(bEleWeight)
+			{
+				weight =weightData[j*(refNumCols - 1) + (funcDataColumnIdx-1)];
+			}
+			else if(bTimeWeight)
+			{
+				weight = weightData[j];
+			}
+			
+			evaluateArray[0] = independentVarArray[j];
+			double value = tempExp->evaluateVector(evaluateArray);//function value
+			double diff = value - dependentVarArray[j];
+			L2Error += weight * diff * diff;
+		}
+
+	}
 	return L2Error;
 }
 

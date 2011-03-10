@@ -1,5 +1,4 @@
 #include "OdeResultSetOpt.h"
-#include "OdeResultSet.h"
 #include "Expression.h"
 #include "SymbolTable.h"
 #include "Exception.h"
