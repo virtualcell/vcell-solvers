@@ -1,10 +1,10 @@
 CC = g++
 
 CPPFLAGS = -c -O2 -DHAVE_CONFIG_H -DINTEL -DUNIX -DLINUX64 -D__USE_GNU -DUSE_MESSAGING -I. -I.. -I../lib -Wall -I../../../VCell/include  \
-		../../../IDAWin ../../../netcdf-3.6.2/libsrc ../../../netcdf-3.6.2/cxx \
+		-I../../../IDAWin -I../../../netcdf-3.6.2/libsrc -I../../../netcdf-3.6.2/cxx \
 		-I../../../SonicCClient64/Linux_AS4_64/include/CPP -I../../../SonicCClient64/Linux_AS4_64/include 
 LIBS = -L../lib -lsmoldyn -L../../../SonicCClient64/Linux_AS4_64/bin/release/ -L../../../zip -lzip32 \
-		-L../../../IDAWin -lvcellIDA -L../../../netcdf-3.6.2/libsrc -lnetcdf -L../../../netcdf-3.6.2/cxx -lnetcdf_cxx \
+		-L../../../IDAWin -lvcellIDA -L../../../ExpressionParser -lExpParser -L../../../netcdf-3.6.2/cxx -lnetcdf_cxx -L../../../netcdf-3.6.2/libsrc -lnetcdf \
 		-lsmq -lm -pthread
 
 SMOLDYN = smoldyn

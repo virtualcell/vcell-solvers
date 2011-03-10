@@ -2140,7 +2140,8 @@ enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2) {
 		if (vcellSmoldynOutput == 0) {
 			vcellSmoldynOutput = new VCellSmoldynOutput(sim);
 		}
-		vcellSmoldynOutput->parseDataProcessingInput(dataProcName, dataProcessInput.str());
+		string input = dataProcessInput.str();
+		vcellSmoldynOutput->parseDataProcessingInput(dataProcName, input);
 	} else {
 		dataProcessInput << line2 << endl;
 	}
