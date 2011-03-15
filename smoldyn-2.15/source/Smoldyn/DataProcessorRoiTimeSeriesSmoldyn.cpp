@@ -5,7 +5,7 @@
 #include "DataProcessorRoiTimeSeriesSmoldyn.h"
 #include <OdeResultSet.h>
 #include <VCELL/FieldData.h>
-#include <VCellSmoldynOutput.h>
+#include "VCellSmoldynOutput.h"
 #include <netcdfcpp.h>
 
 #include <sys/types.h>

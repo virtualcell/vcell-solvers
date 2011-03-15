@@ -1,0 +1,57 @@
+CC = g++
+
+CPPFLAGS = -c -DHAVE_CONFIG_H -DMACOSX -I../ -Wall -I.  -O2 \
+	-arch x86_64 -arch ppc -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5
+
+SMOLDYN_LIB = libsmoldyn.a
+
+			
+%.o : %.c
+	$(CC) $(CPPFLAGS) $<
+
+default all : $(SMOLDYN_LIB)
+
+CPPOBJECTS = Geometry.o \
+			math2.o \
+			opengl2.o \
+			parse.o \
+			queue.o	\
+			random2.o	\
+			Rn.o	\
+			RnSort.o	\
+			rxnparam.o	\
+			SimCommand.o	\
+			Sphere.o	\
+			string2.o	\
+			SurfaceParam.o	\
+			Zn.o	\
+			SFMT.o
+			
+$(SMOLDYN_LIB) : $(CPPOBJECTS)
+	ar cru $@ $(CPPOBJECTS)
+	ranlib $@
+
+SFMT.o : SFMT/SFMT.c
+	$(CC) $(CPPFLAGS) $<
+
+clean:
+	rm $(SMOLDYN_LIB) $(CPPOBJECTS)
+	
+depend:
+	makedepend -Y -f Makefile.mac -- $(CPPFLAGS) -- *.c *.cpp
+# DO NOT DELETE
+
+Geometry.o: Geometry.h math2.h
+math2.o: math2.h
+opengl2.o: opengl2.h math2.h random2.h SFMT/SFMT.h string2.h
+parse.o: parse.h string2.h
+queue.o: queue.h
+random2.o: random2.h SFMT/SFMT.h math2.h
+Rn.o: Rn.h random2.h SFMT/SFMT.h math2.h
+RnSort.o: Rn.h RnSort.h
+rxnparam.o: rxnparam.h
+SimCommand.o: SimCommand.h queue.h string2.h Zn.h
+Sphere.o: Sphere.h
+string2.o: string2.h
+SurfaceParam.o: SurfaceParam.h math2.h random2.h SFMT/SFMT.h
+Zn.o: Zn.h math2.h random2.h SFMT/SFMT.h

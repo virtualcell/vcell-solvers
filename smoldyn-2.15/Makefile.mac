@@ -1,0 +1,12 @@
+default all :
+	cd source/lib; make -f Makefile.mac
+	cd source/Smoldyn; make -f Makefile.mac
+
+clean:
+	cd source/lib; make -f Makefile.mac clean
+	cd source/Smoldyn; make -f Makefile.mac clean
+	
+depend:
+	cd source/lib; make -f Makefile.mac depend
+	cd source/Smoldyn; make -f Makefile.mac depend
+	
