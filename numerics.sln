@@ -376,8 +376,8 @@ Global
 		{99A08741-F229-4D69-A63B-FC5F4E6B52CB}.Release|Win32.Build.0 = Release_No_Messaging|Win32
 		{B114C57D-1D71-491F-B698-C231B30D2F02}.Debug_Messaging|Win32.ActiveCfg = Debug|Win32
 		{B114C57D-1D71-491F-B698-C231B30D2F02}.Debug_Messaging|Win32.Build.0 = Debug|Win32
-		{B114C57D-1D71-491F-B698-C231B30D2F02}.Debug_No_Messaging|Win32.ActiveCfg = Debug|Win32
-		{B114C57D-1D71-491F-B698-C231B30D2F02}.Debug_No_Messaging|Win32.Build.0 = Debug|Win32
+		{B114C57D-1D71-491F-B698-C231B30D2F02}.Debug_No_Messaging|Win32.ActiveCfg = Debug_No_Messaging|Win32
+		{B114C57D-1D71-491F-B698-C231B30D2F02}.Debug_No_Messaging|Win32.Build.0 = Debug_No_Messaging|Win32
 		{B114C57D-1D71-491F-B698-C231B30D2F02}.Debug|Win32.ActiveCfg = Debug|Win32
 		{B114C57D-1D71-491F-B698-C231B30D2F02}.Debug|Win32.Build.0 = Debug|Win32
 		{B114C57D-1D71-491F-B698-C231B30D2F02}.MPI_Debug_No_Messaging|Win32.ActiveCfg = Debug|Win32

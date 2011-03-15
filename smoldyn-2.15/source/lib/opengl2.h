@@ -16,7 +16,12 @@ names may be required for OpenGL header files, such as <GL/gl.h> */
 #if defined(OPENGL)
 
 	#if defined(HAVE_GL_GL_H)
+#ifdef WIN32
+#include <windows.h>
+#endif
 		#include <GL/gl.h>
+	#elif defined(HAVE_GL_GLU_H)
+		#include <GL/glu.h>
 	#elif defined(HAVE_OPENGL_GL_H)
 		#include <OpenGl/gl.h>
 	#endif

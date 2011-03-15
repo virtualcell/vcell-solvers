@@ -16,13 +16,13 @@ Smoldyn from Mac to Windows. */
 /* #undef HAVE_GLUT_GLUT_H */
 
 /* Define to 1 if you have the <GL/glut.h> header file. */
-//#define HAVE_GL_GLUT_H 1
+#define HAVE_GL_GLUT_H 1
 
 /* Define to 1 if you have the <GL/glu.h> header file. */
-//#define HAVE_GL_GLU_H 1
+#define HAVE_GL_GLU_H 1
 
 /* Define to 1 if you have the <GL/gl.h> header file. */
-//#define HAVE_GL_GL_H 1
+#define HAVE_GL_GL_H 1
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
@@ -76,7 +76,7 @@ Smoldyn from Mac to Windows. */
 /* #undef NO_MINUS_C_MINUS_O */
 
 /* Whether to compile Smoldyn with OpenGL support */
-//#define OPENGL 1
+#define OPENGL 1
 
 /* Name of package */
 #define PACKAGE "smoldyn"
@@ -110,7 +110,7 @@ Smoldyn from Mac to Windows. */
 #define USE_LIBMOLECULIZER 0
 
 /* Whether to compile Smoldyn with OpenGL support */
-//#define USE_OPENGL 1
+#define USE_OPENGL 1
 
 /* Whether to compile Smoldyn with threading support */
 #define USE_THREADING 0

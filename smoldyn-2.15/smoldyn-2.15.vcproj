@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;../netcdf-3.6.2/cxx&quot;;&quot;../netcdf-3.6.2/libsrc&quot;;../IDAWin;../VCell/include;source/Smoldyn;source/lib;./windows"
+				AdditionalIncludeDirectories="&quot;../glut-3.7.6&quot;;&quot;../netcdf-3.6.2/cxx&quot;;&quot;../netcdf-3.6.2/libsrc&quot;;../IDAWin;../VCell/include;source/Smoldyn;source/lib;./windows"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -62,7 +62,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="glut32.lib"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="&quot;../glut-3.7.6&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -194,7 +196,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;../netcdf-3.6.2/libsrc&quot;;&quot;../netcdf-3.6.2/cxx&quot;;../IDAWin;../VCell/include;source/Smoldyn;source/lib;./windows"
+				AdditionalIncludeDirectories="&quot;../glut-3.7.6&quot;;&quot;../netcdf-3.6.2/libsrc&quot;;&quot;../netcdf-3.6.2/cxx&quot;;../IDAWin;../VCell/include;source/Smoldyn;source/lib;./windows"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
@@ -214,7 +216,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="glut32.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;..\glut-3.7.6&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -271,7 +275,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../VCell/include;source/Smoldyn;source/lib;./windows"
+				AdditionalIncludeDirectories="&quot;../glut-3.7.6&quot;;&quot;../netcdf-3.6.2/libsrc&quot;;&quot;../netcdf-3.6.2/cxx&quot;;../IDAWin;../VCell/include;source/Smoldyn;source/lib;./windows"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -293,7 +297,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="glut32.lib"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="&quot;../glut-3.7.6&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"

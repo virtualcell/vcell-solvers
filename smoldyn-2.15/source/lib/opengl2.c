@@ -119,7 +119,7 @@ void KeyPush(unsigned char key,int x,int y) {
 		glGetIntegerv(GL_VIEWPORT,viewport);
 		w=viewport[2];
 		h=viewport[3];
-		sprintf(str,"%s%%0%ii.tif",TiffName,(int)log10(TiffNumMax)+1);
+		sprintf(str,"%s%%0%ii.tif",TiffName,(int)log10((double)TiffNumMax)+1);
 		sprintf(name,str,TiffNumber);
 		WriteTIFF(name,"OpenGL picture",0,0,w,h,-1);
 		TiffNumber++; }
@@ -374,7 +374,15 @@ void gl2Initialize(float xlo,float xhi,float ylo,float yhi,float zlo,float zhi) 
 
 	if(Dimension<3) glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);
 	else glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB|GLUT_DEPTH);
-	glutCreateWindow("OpenGL");
+
+	// position opengl window
+	int w = 400, h = 400;
+	int xmaxpix=glutGet(GLUT_SCREEN_WIDTH);
+	int ymaxpix=glutGet(GLUT_SCREEN_HEIGHT);
+	glutInitWindowSize(w, h);
+	glutInitWindowPosition((xmaxpix- w)/2, (ymaxpix-h)/2);
+
+	glutCreateWindow("Particle View");
 	glutReshapeFunc(ChangeSize);
 	glutKeyboardFunc(KeyPush);
 	glutSpecialFunc(SpecialKeyPush);

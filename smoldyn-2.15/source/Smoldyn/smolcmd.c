@@ -2145,4 +2145,5 @@ enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2) {
 	} else {
 		dataProcessInput << line2 << endl;
 	}
+	return CMDok;
 }
