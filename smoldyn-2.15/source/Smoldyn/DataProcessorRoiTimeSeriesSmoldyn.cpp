@@ -72,8 +72,6 @@ static void trimString(string& str)
 }
 
 void DataProcessorRoiTimeSeriesSmoldyn::parseInput(string& input) {
-	molssptr mols = vcellSmoldynOutput->smoldynSim->mols;
-
 	stringstream ss(input);
 	string token;
 	string fieldname;
