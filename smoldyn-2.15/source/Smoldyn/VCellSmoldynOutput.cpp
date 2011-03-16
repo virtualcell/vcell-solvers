@@ -189,7 +189,7 @@ void VCellSmoldynOutput::write() {
 			smoldynDataProcessor->onStart();
 		}
 		smoldynDataProcessor->onWrite();
-		if (fabs(smoldynSim->tmax - smoldynSim->time) < 1e-12) {
+		if (fabs(smoldynSim->time + smoldynSim->dt - smoldynSim->tmax) > 1e-12) {
 			char fileName[256];
 			sprintf(fileName, "%s.%s", baseFileName, DATAPROCOUTPUT_EXT);
 			smoldynDataProcessor->onComplete(fileName);
