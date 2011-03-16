@@ -28,7 +28,7 @@ DataProcessorRoiTimeSeriesSmoldyn::DataProcessorRoiTimeSeriesSmoldyn(VCellSmoldy
 DataProcessorRoiTimeSeriesSmoldyn::~DataProcessorRoiTimeSeriesSmoldyn() {
 	delete sampleImage;
 
-	for (int i = 0; i < vcellSmoldynOutput->numVars; i ++) {
+	for (int i = 0; i < vcellSmoldynOutput->numVars*2; i ++) {
 		delete odeResultSet[i];
 	}
 	delete[] odeResultSet;
@@ -36,18 +36,21 @@ DataProcessorRoiTimeSeriesSmoldyn::~DataProcessorRoiTimeSeriesSmoldyn() {
 
 void DataProcessorRoiTimeSeriesSmoldyn::onStart() {
 	if (odeResultSet == 0) {
-		odeResultSet = new OdeResultSet*[vcellSmoldynOutput->numVars];
+		odeResultSet = new OdeResultSet*[vcellSmoldynOutput->numVars*2];
 		for (int i = 0; i < vcellSmoldynOutput->numVars; i ++) {
 			odeResultSet[i] = new OdeResultSet();
+			odeResultSet[vcellSmoldynOutput->numVars + i] = new OdeResultSet();
 			for (int j = 0; j < numImageRegions; j ++) {
 				char p[30];
-				sprintf(p, "%d\0", j);
+				sprintf(p, "avg%d\0", j);
 				odeResultSet[i]->addColumn(string(p));
+				sprintf(p, "tc%d\0", j);
+				odeResultSet[vcellSmoldynOutput->numVars + i]->addColumn(string(p));
 			}
 		}	
 	} else {
 		timeArray.clear();
-		for (int i = 0; i < vcellSmoldynOutput->numVars; i ++) {
+		for (int i = 0; i < vcellSmoldynOutput->numVars*2; i ++) {
 			odeResultSet[i]->clearData();
 		}
 	}
@@ -108,26 +111,33 @@ void DataProcessorRoiTimeSeriesSmoldyn::onWrite() {
 	int imgZ = sampleImage->getSizeZ();
 
 	int* count = new int[numImageRegions];
+	memset(count, 0, numImageRegions * sizeof(int));
+	for (int j = 0; j < imgX * imgY * imgZ; j ++) {
+		int index = (int)sampleImage->getData()[j];
+		if ((double)index != sampleImage->getData()[j]) {
+			stringstream ss;
+			ss << "DataProcessorRoiTimeSeriesSmoldyn::onWrite(), index (" << sampleImage->getData()[j] << ") is not an integer. ";
+			throw ss.str();
+		}
+		if (index >= numImageRegions || index < 0) {
+			stringstream ss;
+			ss << "DataProcessorRoiTimeSeriesSmoldyn::onWrite(), index (" << index << ") is out of range. should be [" << 0 << "," << numImageRegions << ").";
+			throw ss.str();
+		}
+		count[index] ++;
+	}
+
 	double* values = new double[numImageRegions];
+	double* totalCount = new double[numImageRegions];
 
 	for (int i = 0; i < vcellSmoldynOutput->numVars; i ++) {
 		memset(values, 0, numImageRegions * sizeof(double));
-		memset(count, 0, numImageRegions * sizeof(int));
+		memset(totalCount, 0, numImageRegions * sizeof(double));
 
 		for (int j = 0; j < imgX * imgY * imgZ; j ++) {
 			int index = (int)sampleImage->getData()[j];
-			if ((double)index != sampleImage->getData()[j]) {
-				stringstream ss;
-				ss << "DataProcessorRoiTimeSeriesSmoldyn::onWrite(), index (" << sampleImage->getData()[j] << ") is not an integer. ";
-				throw ss.str();
-			}
-			if (index >= numImageRegions || index < 0) {
-				stringstream ss;
-				ss << "DataProcessorRoiTimeSeriesSmoldyn::onWrite(), index (" << index << ") is out of range. should be [" << 0 << "," << numImageRegions << ").";
-				throw ss.str();
-			}
 			values[index] += vcellSmoldynOutput->outputData[i * vcellSmoldynOutput->varSize + j];
-			count[index] ++;
+			totalCount[index] = values[index];
 		}
 		for (int j = 0; j < numImageRegions; j ++) {
 			if (count[j] != 0) {			
@@ -135,6 +145,7 @@ void DataProcessorRoiTimeSeriesSmoldyn::onWrite() {
 			}
 		}
 		odeResultSet[i]->addRow(values);
+		odeResultSet[vcellSmoldynOutput->numVars + i]->addRow(totalCount);
 	}
 	delete[] values;
 	delete[] count;
@@ -157,8 +168,16 @@ void DataProcessorRoiTimeSeriesSmoldyn::onComplete(char* outputFileName) {
 	delete[] times;
 	
 	for (int i = 0; i < vcellSmoldynOutput->numVars; i ++) {
-		NcVar *data = outputFile.add_var(vcellSmoldynOutput->varNames[i], ncDouble, tDim, rDim);
+		char name[256];
+		sprintf(name, "%s_average_molecule", vcellSmoldynOutput->varNames[i]);
+		NcVar *data = outputFile.add_var(name, ncDouble, tDim, rDim);
 		data->put(odeResultSet[i]->getRowData(), numT, numImageRegions);
+	}
+	for (int i = 0; i < vcellSmoldynOutput->numVars; i ++) {
+		char name[256];
+		sprintf(name, "%s_total_molecule", vcellSmoldynOutput->varNames[i]);
+		NcVar *data = outputFile.add_var(name, ncDouble, tDim, rDim);
+		data->put(odeResultSet[vcellSmoldynOutput->numVars + i]->getRowData(), numT, numImageRegions);
 	}
 	outputFile.close();	
 

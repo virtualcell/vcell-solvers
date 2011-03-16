@@ -138,6 +138,16 @@ void DataProcessorRoiTimeSeries::onWrite(SimTool* simTool) {
 	memset(regionVolume, 0, numImageRegions * sizeof(double));
 	for (int j = 0; j < imgX * imgY * imgZ; j ++) {
 		int index = (int)sampleImage->getData()[j];
+		if ((double)index != sampleImage->getData()[j]) {
+			stringstream ss;
+			ss << "DataProcessorRoiTimeSeries::onWrite(), index (" << sampleImage->getData()[j] << ") is not an integer. ";
+			throw ss.str();
+		}
+		if (index >= numImageRegions || index < 0) {
+			stringstream ss;
+			ss << "DataProcessorRoiTimeSeries::onWrite(), index (" << index << ") is out of range. should be [" << 0 << "," << numImageRegions << ").";
+			throw ss.str();
+		}
 		double volume = mesh->getVolumeOfElement_cu(j);
 		regionVolume[index] += volume;
 	}
@@ -153,17 +163,6 @@ void DataProcessorRoiTimeSeries::onWrite(SimTool* simTool) {
 		if (var->getVarType() == VAR_VOLUME) {
 			for (int j = 0; j < imgX * imgY * imgZ; j ++) {
 				int index = (int)sampleImage->getData()[j];
-				if ((double)index != sampleImage->getData()[j]) {
-					stringstream ss;
-					ss << "DataProcessorRoiTimeSeries::onWrite(), index (" << sampleImage->getData()[j] << ") is not an integer. ";
-					throw ss.str();
-				}
-				if (index >= numImageRegions || index < 0) {
-					stringstream ss;
-					ss << "DataProcessorRoiTimeSeries::onWrite(), index (" << index << ") is out of range. should be [" << 0 << "," << numImageRegions << ").";
-					throw ss.str();
-				}
-
 				double volume = mesh->getVolumeOfElement_cu(j);
 				values[index] += var->getCurr()[j] * volume;
 	
