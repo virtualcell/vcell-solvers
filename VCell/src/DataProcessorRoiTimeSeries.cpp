@@ -10,6 +10,7 @@
 #include <VCELL/VolumeVariable.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/FVDataSet.h>
+#include <VCELL/Element.h>
 #include <OdeResultSet.h>
 #include <netcdfcpp.h>
 
@@ -29,7 +30,7 @@ DataProcessorRoiTimeSeries::DataProcessorRoiTimeSeries(string& name, string& inp
 DataProcessorRoiTimeSeries::~DataProcessorRoiTimeSeries() {
 	delete sampleImage;
 
-	for (int i = 0; i < SimTool::getInstance()->getSimulation()->getNumVariables(); i ++) {
+	for (int i = 0; i < SimTool::getInstance()->getSimulation()->getNumVariables()*2; i ++) {
 		delete odeResultSet[i];
 	}
 	delete[] odeResultSet;
@@ -46,39 +47,25 @@ void DataProcessorRoiTimeSeries::onStart(SimTool* simTool) {
 	Simulation* sim = simTool->getSimulation();
 	int numVar = sim->getNumVariables();
 	if (odeResultSet == 0) {
-		parseInput(simTool);		
-		//odeResultSet = new OdeResultSet*[numVar*2];
-		//for (int i = 0; i < numVar; i ++) {
-		//	Variable* var = sim->getVariable(i);
-		//	odeResultSet[i] = new OdeResultSet();
-		//	if (var->getVarType() == VAR_VOLUME) {
-		//		for (int j = 0; j < numVolumePoints; j ++) {
-		//			char p[30];
-		//			sprintf(p, "%d\0", volumePoints[j]);
-		//			odeResultSet[i]->addColumn(string(p));
-		//		}
-		//	} else 	if (var->getVarType() == VAR_MEMBRANE && numMembranePoints > 0) {
-		//		for (int j = 0; j < numMembranePoints; j ++) {
-		//			char p[30];
-		//			sprintf(p, "%d\0", membranePoints[j]);
-		//			odeResultSet[i]->addColumn(string(p));
-		//		}
-		//	}		
-		//}
+		parseInput(simTool);
 
-		odeResultSet = new OdeResultSet*[numVar];
+		odeResultSet = new OdeResultSet*[numVar*2];
 		// for convolved variables
 		for (int i = 0; i < numVar; i ++) {
+			// average and total count
 			odeResultSet[i] = new OdeResultSet();
+			odeResultSet[numVar + i] = new OdeResultSet();
 			for (int j = 0; j < numImageRegions; j ++) {
 				char p[30];
-				sprintf(p, "%d\0", j);
+				sprintf(p, "avg%d\0", j);
 				odeResultSet[i]->addColumn(string(p));
+				sprintf(p, "tc%d\0", j);
+				odeResultSet[numVar + i]->addColumn(string(p));
 			}
 		}	
 	} else {
 		timeArray.clear();
-		for (int i = 0; i < numVar; i ++) {
+		for (int i = 0; i < numVar*2; i ++) {
 			odeResultSet[i]->clearData();
 		}
 	}
@@ -137,26 +124,6 @@ void DataProcessorRoiTimeSeries::onWrite(SimTool* simTool) {
 
 	timeArray.push_back(sim->getTime_sec());
 
-	// write variables
-	//for (int i = 0; i < numVar; i ++) {
-	//	Variable* var = sim->getVariable(i);
-	//	if (var->getVarType() == VAR_VOLUME) {
-	//		double* values = new double[numVolumePoints];
-	//		for (int j = 0; j < numVolumePoints; j ++) {
-	//			values[j] = var->getCurr(volumePoints[j]);
-	//		}
-	//		odeResultSet[i]->addRow(values);
-	//		delete[] values;
-	//	} else if (var->getVarType() == VAR_MEMBRANE && numMembranePoints > 0) {
-	//		double* values = new double[numMembranePoints];
-	//		for (int j = 0; j < numMembranePoints; j ++) {
-	//			values[j] = var->getCurr(membranePoints[j]);
-	//		}
-	//		odeResultSet[i]->addRow(values);
-	//		delete[] values;
-	//	}
-	//}
-
 	CartesianMesh* mesh = (CartesianMesh *)sim->getMesh(); 
 
 	int meshX = mesh->getNumVolumeX();
@@ -168,28 +135,57 @@ void DataProcessorRoiTimeSeries::onWrite(SimTool* simTool) {
 	int imgZ = meshZ;
 
 	double* regionVolume = new double[numImageRegions];
+	memset(regionVolume, 0, numImageRegions * sizeof(double));
+	for (int j = 0; j < imgX * imgY * imgZ; j ++) {
+		int index = (int)sampleImage->getData()[j];
+		double volume = mesh->getVolumeOfElement_cu(j);
+		regionVolume[index] += volume;
+	}
 
+	MembraneElement* membraneElements = mesh->getMembraneElements();
 	for (int i = 0; i < numVar; i ++) {
 		Variable* var = sim->getVariable(i);
 		double* values = new double[numImageRegions];			
+		double* totalMolecules = new double[numImageRegions];			
 		memset(values, 0, numImageRegions * sizeof(double));
-		memset(regionVolume, 0, numImageRegions * sizeof(double));
+		memset(totalMolecules, 0, numImageRegions * sizeof(double));
 
-		for (int j = 0; j < imgX * imgY * imgZ; j ++) {
-			int index = (int)sampleImage->getData()[j];
-			if ((double)index != sampleImage->getData()[j]) {
-				stringstream ss;
-				ss << "DataProcessorRoiTimeSeries::onWrite(), index (" << sampleImage->getData()[j] << ") is not an integer. ";
-				throw ss.str();
+		if (var->getVarType() == VAR_VOLUME) {
+			for (int j = 0; j < imgX * imgY * imgZ; j ++) {
+				int index = (int)sampleImage->getData()[j];
+				if ((double)index != sampleImage->getData()[j]) {
+					stringstream ss;
+					ss << "DataProcessorRoiTimeSeries::onWrite(), index (" << sampleImage->getData()[j] << ") is not an integer. ";
+					throw ss.str();
+				}
+				if (index >= numImageRegions || index < 0) {
+					stringstream ss;
+					ss << "DataProcessorRoiTimeSeries::onWrite(), index (" << index << ") is out of range. should be [" << 0 << "," << numImageRegions << ").";
+					throw ss.str();
+				}
+
+				double volume = mesh->getVolumeOfElement_cu(j);
+				values[index] += var->getCurr()[j] * volume;
+	
+				totalMolecules[index] += values[index] * 602.0;
 			}
-			if (index >= numImageRegions || index < 0) {
-				stringstream ss;
-				ss << "DataProcessorRoiTimeSeries::onWrite(), index (" << index << ") is out of range. should be [" << 0 << "," << numImageRegions << ").";
-				throw ss.str();
+		} else if (var->getVarType() == VAR_MEMBRANE) {
+			for (int j = 0; j < mesh->getNumMembraneElements(); j ++) {
+				{
+					int volIndex1 = membraneElements[j].vindexFeatureLo;
+					int index1 = (int)sampleImage->getData()[volIndex1];
+					double volume = mesh->getVolumeOfElement_cu(volIndex1);
+					values[index1] += var->getCurr()[j] * volume/2;
+					totalMolecules[index1] += values[index1];
+				}
+				{
+					int volIndex2 = membraneElements[j].vindexFeatureHi;
+					int index2 = (int)sampleImage->getData()[volIndex2];
+					double volume = mesh->getVolumeOfElement_cu(volIndex2);
+					values[index2] += var->getCurr()[j] * volume/2;
+					totalMolecules[index2] += values[index2];
+				}
 			}
-			double volume = mesh->getVolumeOfElement_cu(j);
-			values[index] += var->getCurr()[j] * volume;
-			regionVolume[index] += volume;			
 		}
 		for (int j = 0; j < numImageRegions; j ++) {
 			if (regionVolume[j] != 0) {			
@@ -197,6 +193,7 @@ void DataProcessorRoiTimeSeries::onWrite(SimTool* simTool) {
 			}
 		}
 		odeResultSet[i]->addRow(values);
+		odeResultSet[numVar + i]->addRow(totalMolecules);
 		delete[] values;
 	}
 	delete[] regionVolume;
@@ -232,8 +229,15 @@ void DataProcessorRoiTimeSeries::onComplete(SimTool* simTool) {
 	for (int i = 0; i < numVar; i ++) {
 		Variable* var = sim->getVariable(i);
 		if (var->getVarType() == VAR_VOLUME || var->getVarType() == VAR_MEMBRANE) {
-			NcVar *data = outputFile.add_var(var->getName().c_str(), ncDouble, tDim, rDim);
+			NcVar *data = outputFile.add_var((var->getName() + "_average_uM").c_str(), ncDouble, tDim, rDim);
 			data->put(odeResultSet[i]->getRowData(), numT, numImageRegions);
+		}
+	}
+	for (int i = 0; i < numVar; i ++) {
+		Variable* var = sim->getVariable(i);
+		if (var->getVarType() == VAR_VOLUME || var->getVarType() == VAR_MEMBRANE) {
+			NcVar *data = outputFile.add_var((var->getName() + "_total_molecule").c_str(), ncDouble, tDim, rDim);
+			data->put(odeResultSet[numVar + i]->getRowData(), numT, numImageRegions);
 		}
 	}
 	outputFile.close();	
