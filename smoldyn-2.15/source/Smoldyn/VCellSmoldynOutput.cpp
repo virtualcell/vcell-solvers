@@ -20,6 +20,8 @@ int zip32(int filecnt, char* zipfile, ...);
 #include <sys/stat.h>
 #include <math.h>
 
+#include <fstream>
+#include <iostream>
 #include <sstream>
 using namespace std;
 
@@ -202,12 +204,11 @@ void VCellSmoldynOutput::write() {
 
 void VCellSmoldynOutput::clearLog() {
 
-	FILE *fp;
 	char logFileName[256];
-
 	sprintf(logFileName,"%s.%s",baseFileName, LOG_FILE_EXT);
-	if ((fp=fopen(logFileName, "r"))==NULL){
-		printf("error opening log file <%s>\n", logFileName);
+	ifstream logfs(logFileName);
+	if (!logfs.is_open()){
+		cout << "error opening log file <" << logFileName << ">" << endl;
 		return;
 	}
 
@@ -216,18 +217,18 @@ void VCellSmoldynOutput::clearLog() {
 	int iteration, oldCount=-1, count;
 	double time;
 
-	while (!feof(fp)) {
-		fscanf(fp,"%4d %s %s %lg\n", &iteration, simFileName, zipFileName, &time);
+	while (!logfs.eof()) {
+		logfs >> iteration >> simFileName >> zipFileName >> time;
 		count = getZipCount(zipFileName);
 		if (oldCount != count && count >= 0) {
-			printf("clearLog(), removing zip file %s\n", zipFileName);
+			cout << endl << "clearLog(), removing zip file " << zipFileName << endl;
 			remove(zipFileName);
 			oldCount = count;
 		}
 	}
-	fclose(fp);
+	logfs.close();
 
-	printf("clearLog(), removing log file %s\n", logFileName);
+	cout << "clearLog(), removing log file " << logFileName << endl;
 	remove(logFileName);
 
 	char dataProcOutput[128];
