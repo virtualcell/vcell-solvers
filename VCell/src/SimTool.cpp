@@ -595,9 +595,9 @@ void SimTool::clearLog()
 	while (true) {
 		int numTokens  = 0;
 		if (bSimZip) {
-			numTokens =  fscanf(fp,"%4d %s %s %lg\n", &iteration, simFileName, zipFileName, &time);
+			numTokens =  fscanf(fp,"%d %s %s %lg\n", &iteration, simFileName, zipFileName, &time);
 		} else {
-			numTokens =  fscanf(fp,"%4d %s %lg\n", &iteration, simFileName, &time);
+			numTokens =  fscanf(fp,"%d %s %lg\n", &iteration, simFileName, &time);
 		}
 		if (numTokens != NUM_TOKENS_PER_LINE){
 			break;
