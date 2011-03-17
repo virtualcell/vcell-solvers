@@ -164,9 +164,9 @@ void DataProcessorRoiTimeSeries::onWrite(SimTool* simTool) {
 			for (int j = 0; j < imgX * imgY * imgZ; j ++) {
 				int index = (int)sampleImage->getData()[j];
 				double volume = mesh->getVolumeOfElement_cu(j);
-				values[index] += var->getCurr()[j] * volume;
-	
-				totalMolecules[index] += values[index] * 602.0;
+				double mols = var->getCurr()[j] * volume;
+				values[index] += mols;	
+				totalMolecules[index] += mols * 602.0;
 			}
 		} else if (var->getVarType() == VAR_MEMBRANE) {
 			for (int j = 0; j < mesh->getNumMembraneElements(); j ++) {
@@ -174,15 +174,17 @@ void DataProcessorRoiTimeSeries::onWrite(SimTool* simTool) {
 					int volIndex1 = membraneElements[j].vindexFeatureLo;
 					int index1 = (int)sampleImage->getData()[volIndex1];
 					double volume = mesh->getVolumeOfElement_cu(volIndex1);
-					values[index1] += var->getCurr()[j] * volume/2;
-					totalMolecules[index1] += values[index1];
+					double mols = var->getCurr()[j] * volume/2;
+					values[index1] += mols;
+					totalMolecules[index1] += mols;
 				}
 				{
 					int volIndex2 = membraneElements[j].vindexFeatureHi;
 					int index2 = (int)sampleImage->getData()[volIndex2];
 					double volume = mesh->getVolumeOfElement_cu(volIndex2);
-					values[index2] += var->getCurr()[j] * volume/2;
-					totalMolecules[index2] += values[index2];
+					double mols = var->getCurr()[j] * volume/2;
+					values[index2] += mols;
+					totalMolecules[index2] += mols;
 				}
 			}
 		}

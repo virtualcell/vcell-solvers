@@ -134,8 +134,9 @@ void DataProcessorRoiTimeSeriesSmoldyn::onWrite() {
 
 		for (int j = 0; j < imgX * imgY * imgZ; j ++) {
 			int index = (int)sampleImage->getData()[j];
-			values[index] += vcellSmoldynOutput->outputData[i * vcellSmoldynOutput->varSize + j];
-			totalCount[index] = values[index];
+			int mols = vcellSmoldynOutput->outputData[i * vcellSmoldynOutput->varSize + j];
+			values[index] += mols;
+			totalCount[index] += mols;
 		}
 		for (int j = 0; j < numImageRegions; j ++) {
 			if (count[j] != 0) {			
