@@ -26,6 +26,7 @@ of the Gnu Lesser General Public License (LGPL). */
 enum CMDcode cmdVCellPrintProgress(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdVCellWriteOutput(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2);
+enum CMDcode cmdVCellReact1KillMolecules(simptr sim,cmdptr cmd,char *line2);
 
 // simulation control
 enum CMDcode cmdstop(simptr sim,cmdptr cmd,char *line2);
@@ -190,6 +191,7 @@ enum CMDcode docommand(void *cmdfnarg,cmdptr cmd,char *line) {
 	else if(!strcmp(word,"vcellPrintProgress")) return cmdVCellPrintProgress(sim,cmd,line2);
 	else if(!strcmp(word,"vcellWriteOutput")) return cmdVCellWriteOutput(sim,cmd,line2);
 	else if(!strcmp(word,"vcellDataProcess")) return cmdVCellDataProcess(sim,cmd,line2);
+	else if(!strcmp(word,"vcellReact1KillMolecules")) return cmdVCellReact1KillMolecules(sim,cmd,line2);
 
 	SCMDCHECK(0,"command not recognized");
 	return CMDwarn; }
@@ -2147,3 +2149,34 @@ enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2) {
 	}
 	return CMDok;
 }
+
+enum CMDcode cmdVCellReact1KillMolecules(simptr sim,cmdptr cmd, char *line2) {
+	int itct,i,ll,m,r,nmol,lllo,llhi;
+	static char rnm[STRCHAR];
+	moleculeptr *mlist,mptr;
+	enum MolecState ms;
+
+	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
+	i=readmolname(sim,line2,&ms);
+	SCMDCHECK(!(i<=0 && i>-5),"cannot read molecule and/or state name");
+	line2=strnword(line2,2);
+	SCMDCHECK(line2,"reaction name is missing");
+	itct=sscanf(line2,"%s",rnm);
+	SCMDCHECK(itct==1,"cannot read reaction name");
+	SCMDCHECK(sim->rxnss[1],"no first order reactions defined");
+	r=stringfind(sim->rxnss[1]->rname,sim->rxnss[1]->totrxn,rnm);
+	SCMDCHECK(r>=0,"reaction not recognized");
+
+	if(i<0) {lllo=0;llhi=sim->mols->nlist;}
+	else llhi=1+(lllo=sim->mols->listlookup[i][ms]);
+	for(ll=lllo;ll<llhi;ll++) {
+		mlist=sim->mols->live[ll];
+		nmol=sim->mols->nl[ll];
+		for(m=0;m<nmol;m++) {
+			mptr=mlist[m];
+			if (!posincompart(sim, mptr->pos, sim->rxnss[1]->rxn[r]->cmpt)) {
+				continue;
+			}
+			if((i<0 && ms==MSall) || (i<0 && mptr->mstate==ms) || (mptr->ident==i && ms==MSall) || (mptr->ident==i && mptr->mstate==ms))
+				if(doreact(sim,sim->rxnss[1]->rxn[r],mptr,NULL,ll,m,-1,-1,NULL,NULL)) return CMDwarn; }}
+	return CMDok; }
