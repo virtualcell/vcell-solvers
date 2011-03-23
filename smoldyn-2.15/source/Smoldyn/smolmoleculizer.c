@@ -1,8 +1,8 @@
-/* Steven Andrews.
+/* Steven Andrews, started 10/22/2001.
  This is a library of functions for the Smoldyn program.  See documentation
- called Smoldyn_doc1.doc and Smoldyn_doc2.doc.
- Copyright 2003-2007 by Steven Andrews.  This work is distributed under the terms
- of the Gnu Lesser General Public License (LGPL). */
+ called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
+ Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
+ of the Gnu General Public License (GPL). */
 
 #include <stdio.h>
 #include <string.h>
@@ -442,6 +442,7 @@ mzrssptr mzrssalloc(void) {
 	mzrss->refspecies=0;
 	mzrss->refmass=0;
 	for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) mzrss->refdifc[ms]=0;
+	mzrss->expandall=0;
 	return mzrss; }
 
 
@@ -466,7 +467,6 @@ void mzrssfree(mzrssptr mzrss) {
 /*************************** data structure output ****************************/
 /******************************************************************************/
 
-void printfException(const char* format, ...);
 /* mzrCheckParams. */
 int mzrCheckParams(simptr sim,int *warnptr) {
 	int warn,error,er,numnames,strm;
@@ -484,7 +484,8 @@ int mzrCheckParams(simptr sim,int *warnptr) {
 	if(!mzrss->sim) {error++;printfException("BUG: moleculizer sim element undefined\n");}
 	if(!mzrss->mzr) {warn++;printf("WARNING: moleculizer rules not fully loaded\n");}
 	if(mzrss->nstreams>mzrss->maxstreams) {error++;printfException("BUG: moleculizer has more streams defined than allocated\n");}
-	if(mzrss->maxNetworkSpecies>=0) {warn++;printf("WARNING: moleculizer network expansion is limited to %i species\n",mzrss->maxNetworkSpecies);}
+	if(mzrss->maxNetworkSpecies>=0 && !mzrss->expandall) {warn++;printf("WARNING: moleculizer network expansion is limited to %i species\n",mzrss->maxNetworkSpecies);}
+	if(mzrss->maxNetworkSpecies>=0 && mzrss->expandall) {warn++;printf("WARNING: the rule-based network will expand fully, ignoring the species limitation that was set");}
 	if(mzrss->nnamehash>mzrss->maxnamehash) {error++;printfException("BUG: moleculizer has more hash names defined than allocated\n");}
 	if(!sim->mols) {error++;printfException("BUG: moleculizer defined but not Smoldyn molecules\n");}
 	else {
@@ -632,6 +633,13 @@ void mzrssoutput(simptr sim) {
 		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 			printf(" %g",mzrss->refdifc[ms]);
 		printf("\n"); }
+
+	if(mzrss->expandall)
+		printf(" network fully expanded at initialization");
+	else if(mzrss->maxNetworkSpecies>=0)
+		printf(" expansion on-the-fly and limited to %i species",mzrss->maxNetworkSpecies);
+	else
+		printf(" expansion on-the-fly and unlimited");
 
 	printf("\n");
 	return; }
@@ -894,7 +902,7 @@ int mzrMakeNameHash(simptr sim) {
 /* mzrssreadrules */
 int mzrssreadrules(simptr sim,ParseFilePtr *pfpptr,char *erstr) {
 	ParseFilePtr pfp;
-	char word[STRCHAR],*line2,*chptr;
+	char word[STRCHAR],errstring[STRCHAR],*line2,*chptr;
 	int done,pfpcode,totallength;
 	mzrssptr mzrss;
 
@@ -914,9 +922,9 @@ int mzrssreadrules(simptr sim,ParseFilePtr *pfpptr,char *erstr) {
 	while(!done) {
 		if(pfp->lctr==0 && !strchr(sim->flags,'q'))
 			printf(" Reading file: '%s'\n",pfp->fname);
-		pfpcode=Parse_ReadLine(&pfp,word,&line2,erstr);
+		pfpcode=Parse_ReadLine(&pfp,word,&line2,errstring);
 		*pfpptr=pfp;
-		CHECKS(pfpcode!=3,erstr);
+		CHECKS(pfpcode!=3,errstring);
 
 		if(pfpcode==0);																// already taken care of
 		else if(pfpcode==2) {													// end reading
@@ -956,16 +964,26 @@ int mzrssload(simptr sim,char *erstr) {
 	mzrss->mzr=NULL;
 	CHECKS(mzrss->mzr=createNewMoleculizerObject(),"out of memory in createNewMoleculizerObject");
 
-	er=loadCommonRulesString(mzrss->mzr,mzrss->rules);
-	CHECKS(er!=1,"unknown error reading network generation rules");
-	CHECKS(er!=2,"document unparsable error reading network generation rules");
-	CHECKS(er!=3,"rules already loaded error reading network generation rules");
-	CHECKS(er!=4,"file not found error reading network generation rules");
-//	er=getErrorState(mzrss->mzr);	// ?? BUG: This function returns 1 even if there isn't an error
+
+        // BEGIN DEBUG CODE
+        FILE* out_file = fopen("./libmzr.tmp", "w");
+        fprintf(out_file, mzrss->rules);
+        fclose(out_file);
+        // END_DEBUGCODE
+
+           
+
+	loadCommonRulesString(mzrss->mzr,mzrss->rules);
+	er=getErrorState(mzrss->mzr);	// ?? BUG: This function returns 1 even if there isn't an error
 	if(er) {
 		errorstring=getErrorMessage(mzrss->mzr);
 		if(errorstring) {CHECKS(0,errorstring);}
 		else CHECKS(0,"unknown libmoleculizer error"); }
+
+	CHECKS(er!=1,"unknown error reading network generation rules");
+	CHECKS(er!=2,"document unparsable error reading network generation rules");
+	CHECKS(er!=3,"rules already loaded error reading network generation rules");
+	CHECKS(er!=4,"file not found error reading network generation rules");
 
 	return 0;
 failure:
@@ -984,8 +1002,10 @@ void mzrSetValue(mzrssptr mzrss,char *item,int i1) {
 	if(!mzrss) return;
 	if(!strcmp(item,"maxNetworkSpecies"))
 		mzrss->maxNetworkSpecies=i1;
-	if(!strcmp(item,"refspecies"))
+	else if(!strcmp(item,"refspecies"))
 		mzrss->refspecies=i1;
+	else if(!strcmp(item,"expandall"))
+		mzrss->expandall=i1;
 	return; }
 
 
@@ -997,18 +1017,19 @@ int mzrsetupmoleculizer(simptr sim,char *erstr) {
 	reaction** new_reactions_array;
 	int number_species,number_reactions,er,inm,i;
 	enum MolecState ms;
+	char errstring[STRCHAR];
 
 	if(!sim->mzrss) return 0;
 	mzrss=sim->mzrss;
 
 	if(mzrss->condition==SCinit) {
-		CHECKS(!mzrssload(sim,erstr),erstr);
+		CHECKS(!mzrssload(sim,errstring),errstring);
 		er=mzrMakeNameHash(sim);
 		CHECKS(er!=1,"out of memory in mzrMakeNameHash");
 		CHECKS(!(er>1),"BUG: in mzrMakeNameHash");
 		if(er<0) {
-			sprintf(erstr,"ERROR: species %s has multiple names",mzrss->smolname[-1-er]);
-			CHECKS(0,erstr); }
+			sprintf(errstring,"ERROR: species %s has multiple names",mzrss->smolname[-1-er]);
+			CHECKS(0,errstring); }
 		if(mzrss->refspecies>0) {
 			for(ms=0;ms<MSMAX;ms++)
 				mzrss->refdifc[ms]=sim->mols->difc[mzrss->refspecies][ms]; }
@@ -1024,6 +1045,8 @@ int mzrsetupmoleculizer(simptr sim,char *erstr) {
 		mzrsetcondition(mzrss,SCparams,1); }
 
 	if(mzrss->condition==SCparams) {
+		if(mzrss->expandall) mzrExpandNetwork(sim);
+
 		new_species_array=NULL;
 		new_reactions_array=NULL;
 		number_species=0;
@@ -1140,6 +1163,30 @@ int mzrExpandSpecies(simptr sim,int ident) {
 }
 
 
+/* mzrExpandNetwork */
+int mzrExpandNetwork(simptr sim) {
+#ifdef LIBMOLECULIZER
+	mzrssptr mzrss;
+	int er,size1,size2;
+	
+	mzrss=sim->mzrss;
+	
+	size1=getNumberOfSpecies(mzrss->mzr)*getNumberOfReactions(mzrss->mzr);
+	er=expandNetwork(mzrss->mzr);
+	if(er) return 1;
+	molsetexpansionflag(sim,-1,0);																					// call to Smoldyn
+	size2=getNumberOfSpecies(mzrss->mzr)*getNumberOfReactions(mzrss->mzr);
+	
+	if(size1!=size2) {						// If the network grew because of expansion. 
+		mzrsetcondition(sim->mzrss,SCparams,0); }
+	
+	return 0;
+#else
+	return 2;
+#endif
+}
+
+
 /* mzrExpandUnexpandedSpecies. */
 int mzrExpandUnexpandedSpecies(simptr sim) {
 	int i;
@@ -1156,7 +1203,7 @@ int mzrExpandUnexpandedSpecies(simptr sim) {
 /* mzrAddRxn */
 int mzrAddRxn(simptr sim,char *name,int order,int *reactants,int *products,int nprod,double rate) {
 	mzrssptr mzrss;
-	enum MolecState rctstate[1],prdstate[MAXPRODUCT],ms;
+	enum MolecState rctstate[MAXORDER],prdstate[MAXPRODUCT],ms;
 	rxnptr rxn;
 	int rallsoln,pallsoln,i;
 	char smolrxn[STRCHAR],errorstring[STRCHAR];

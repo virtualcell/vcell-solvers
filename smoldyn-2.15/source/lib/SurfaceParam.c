@@ -32,6 +32,7 @@ double interpolate2D(double *xdata,double *ydata,double *zdata,int nx,int ny,dou
 	double gammalnD(double x);
 	double gammpD(double a,double x);
 	double erfccD(double x);
+	double experfcD(double x);
 	double erfnD(double x);
 	int iseven(int x);
 	void linefitD(double *x,double *y,int n,double *m,double *b);
@@ -72,7 +73,7 @@ double surfaceprob(double k1,double k2,double dt,double difc,double *p2ptr,enum 
 		kapfp=k1*dt/step;
 		kapbp=k2*dt/step;
 		c1=kapfp+kapbp;
-		c2=1.0/(c1*c1)*(2*c1-SQRTPI/SQRT2+SQRTPI/SQRT2*exp(2*c1*c1)*erfccD(SQRT2*c1));
+		c2=1.0/(c1*c1)*(2*c1-SQRTPI/SQRT2+SQRTPI/SQRT2*experfcD(SQRT2*c1));
 		p1=kapfp*c2;
 		p2=kapbp*c2; }
 
@@ -843,6 +844,17 @@ void xdfmaketable(void) {
 		if(b) *b=(sxx*sy-sx*sxy)/denom;
 		if(m) *m=(n*sxy-sx*sy)/denom;
 		return; }
+
+double experfcD(double x) {
+	double ans,xxinv;
+	
+	if(fabs(x)<20) ans=exp(x*x)*erfccD(x);
+	else {
+		xxinv=1.0/(x*x);
+		ans=1.0+xxinv*(-1.0/2.0+xxinv*(3.0/4.0+xxinv*(-15.0/8.0+xxinv*(105.0/16.0+xxinv*(-945.0/32.0)))));
+		ans/=x*SQRTPI;
+		if(x<0) ans+=2.0*exp(x*x); }
+	return ans; }
 
 #endif
 

@@ -217,6 +217,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="glut32.lib"
+				OutputFile="$(OutDir)\smoldyn.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\glut-3.7.6&quot;"
 				GenerateDebugInformation="true"

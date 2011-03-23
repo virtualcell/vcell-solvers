@@ -1,8 +1,8 @@
-/* Steven Andrews, started 10/22/01.
+/* Steven Andrews, started 10/22/2001.
 This is a library of functions for the Smoldyn program.  See documentation
-called Smoldyn_doc1.doc and Smoldyn_doc2.doc.
-Copyright 2003-2007 by Steven Andrews.  This work is distributed under the terms
-of the Gnu Lesser General Public License (LGPL). */
+ called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
+ Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
+ of the Gnu General Public License (GPL). */
 
 #include <stdio.h>
 #include <math.h>
@@ -51,9 +51,7 @@ void portfree(portptr port) {
 	return; }
 
 
-/* portssalloc.  Allocates a port superstructure as well as maxport ports.
-Space is allocated and initialized for port names.  Returns the port
-superstructure or NULL if unable to allocate memory. */
+/* portssalloc */
 portssptr portssalloc(int maxport) {
 	portssptr portss;
 	int prt;
@@ -85,7 +83,7 @@ portssptr portssalloc(int maxport) {
  	return NULL; }
 
 
-/* portssfree.  Frees a port superstructure, including all ports. */
+/* portssfree */
 void portssfree(portssptr portss) {
 	int prt;
 
@@ -146,7 +144,7 @@ void writeports(simptr sim,FILE *fptr) {
 		fprintf(fptr,"end_port\n\n"); }
 	return; }
 
-void printfException(const char* format, ...);
+
 /* checkportparams.  This checks a few port parameters. */
 int checkportparams(simptr sim,int *warnptr) {
 	int error,warn,prt,er,i;
@@ -173,8 +171,8 @@ int checkportparams(simptr sim,int *warnptr) {
 		if(port->srf->port[port->face]!=port) {error++;printfException(" ERROR: port %s is not registered by surface %s\n",port->portname,port->srf->sname);}
 
 		er=1;																// make sure surface action is set to port
-		for(i=0;i<sim->mols->nspecies&&er;i++)
-			if(port->srf->action[i][port->face==PFfront?MSsoln:MSbsoln]==SAport) er=0;
+		for(i=0;i<sim->mols->nspecies && er;i++)
+			if(port->srf->action[i][MSsoln][port->face]==SAport) er=0;
 		if(er) {warn++;printf(" WARNING: port %s is nonfunctional because no molecule actions at the surface %s are set to port\n",port->portname,port->srf->sname);}
 		if(!port->llport) {error++;printfException(" BUG: port %s has no molecule buffer\n",port->portname);} }
 
@@ -187,9 +185,7 @@ int checkportparams(simptr sim,int *warnptr) {
 /******************************************************************************/
 
 
-/* portsetcondition.  Sets the port superstructure condition to cond, if
-appropriate.  Set upgrade to 1 if this is an upgrade, to 0 if this is a
-downgrade, or to 2 to set the condition independent of its current value. */
+/* portsetcondition */
 void portsetcondition(portssptr portss,enum StructCond cond,int upgrade) {
 	if(!portss) return;
 	if(upgrade==0 && portss->condition>cond) portss->condition=cond;
@@ -201,13 +197,7 @@ void portsetcondition(portssptr portss,enum StructCond cond,int upgrade) {
 	return; }
 
 
-/* addport.  Adds, or updates, a port to the port superstructure.  If portname
-is not the name of an existing port, a new port is defined, the nport element of
-the superstructure is incremented, and this name is copied over for the new
-port.  Alternatively, if portname has already been defined, it is used to
-reference an existing port.    Either way, the port surface is set to srf if srf
-is not NULL, the port face is set to face if face is not PFnone, and the address
-of the port is returned. */
+/* addport */
 portptr addport(portssptr portss,char *portname,surfaceptr srf,enum PanelFace face) {
 	int prt;
 	portptr port;
@@ -230,12 +220,7 @@ portptr addport(portssptr portss,char *portname,surfaceptr srf,enum PanelFace fa
 	return port; }
 
 
-/* portreadstring.  Reads and processes one line of text from the configuration
-file, or some other source, for the port indexed portindex.  If the port index
-is not known, then set portindex to -1.  The first word of the line should be
-sent in as word and the rest sent in as line2.  If this function is successful,
-it returns the port index and it does not change the contents of erstr; if not,
-it returns -1 and it writes an error message to erstr. */
+/* portreadstring */
 int portreadstring(simptr sim,int portindex,char *word,char *line2,char *erstr) {
 	char nm[STRCHAR];
 	portptr port;
@@ -280,13 +265,10 @@ int portreadstring(simptr sim,int portindex,char *word,char *line2,char *erstr) 
 	return -1; }
 
 
-/* loadport.  Loads a port, or information for an already existing port, from an
-already opened configuration file.  This is used to fill in basic port details.
-However, it does not assign a molecule buffer to the port.  Returns 0 for
-success and 1 for an error; error messages are returned in erstr. */
+/* loadport */
 int loadport(simptr sim,ParseFilePtr *pfpptr,char* line2,char *erstr) {
 	ParseFilePtr pfp;
-	char word[STRCHAR];
+	char word[STRCHAR],errstring[STRCHAR];
 	int done,pfpcode,firstline2,prt;
 
 	pfp=*pfpptr;
@@ -303,9 +285,9 @@ int loadport(simptr sim,ParseFilePtr *pfpptr,char* line2,char *erstr) {
 			pfpcode=1;
 			firstline2=0; }
 		else
-			pfpcode=Parse_ReadLine(&pfp,word,&line2,erstr);
+			pfpcode=Parse_ReadLine(&pfp,word,&line2,errstring);
 		*pfpptr=pfp;
-		CHECKS(pfpcode!=3,erstr);
+		CHECKS(pfpcode!=3,errstring);
 
 		if(pfpcode==0);																// already taken care of
 		else if(pfpcode==2) {													// end reading
@@ -318,8 +300,8 @@ int loadport(simptr sim,ParseFilePtr *pfpptr,char* line2,char *erstr) {
 		else if(!line2) {															// just word
 			CHECKS(0,"unknown word or missing parameter"); }
 		else {
-			prt=portreadstring(sim,prt,word,line2,erstr);
-			CHECKS(prt>=0,erstr); }}
+			prt=portreadstring(sim,prt,word,line2,errstring);
+			CHECKS(prt>=0,errstring); }}
 
 	CHECKS(0,"end of file encountered before end_port statement");	// end of file
 

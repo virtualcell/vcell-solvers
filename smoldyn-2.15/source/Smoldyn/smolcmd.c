@@ -1,8 +1,8 @@
-/* Steven Andrews, 1/16/03.
-Library of run-time interpretor commands for Smoldyn program.
-See documentation called Smoldyn1_doc.doc and Smoldyn2_doc.doc.
-Copyright 2003-2007 by Steven Andrews.  This work is distributed under the terms
-of the Gnu Lesser General Public License (LGPL). */
+/* Steven Andrews, started 10/22/2001.
+ This is a library of functions for the Smoldyn program.  See documentation
+ called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
+ Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
+ of the Gnu General Public License (GPL). */
 
 #include <stdio.h>
 #include <math.h>
@@ -45,6 +45,7 @@ enum CMDcode cmdincrementfile(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdifno(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdifless(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdifmore(simptr sim,cmdptr cmd,char *line2);
+enum CMDcode cmdifincmpt(simptr sim,cmdptr cmd,char *line2);
 
 // system observation
 enum CMDcode cmdecho(simptr sim,cmdptr cmd,char *line2);
@@ -77,6 +78,7 @@ enum CMDcode cmdmovesurfacemol(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdkillmol(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdkillmolprob(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdkillmolinsphere(simptr sim,cmdptr cmd,char *line2);
+enum CMDcode cmdkillmolincmpt(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdkillmoloutsidesystem(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdfixmolcount(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdfixmolcountonsurf(simptr sim,cmdptr cmd,char *line2);
@@ -88,7 +90,7 @@ enum CMDcode cmdreplacecmptmol(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdmodulatemol(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdreact1(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdsetrateint(simptr sim,cmdptr cmd,char *line2);
-enum CMDcode cmdsetsurfcoeff(simptr sim,cmdptr cmd,char *line2);
+//enum CMDcode cmdsetsurfcoeff(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdsettimestep(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdporttransport(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdexcludebox(simptr sim,cmdptr cmd,char *line2);
@@ -137,6 +139,7 @@ enum CMDcode docommand(void *cmdfnarg,cmdptr cmd,char *line) {
 	else if(!strcmp(word,"ifno")) return cmdifno(sim,cmd,line2);
 	else if(!strcmp(word,"ifless")) return cmdifless(sim,cmd,line2);
 	else if(!strcmp(word,"ifmore")) return cmdifmore(sim,cmd,line2);
+	else if(!strcmp(word,"ifincmpt")) return cmdifincmpt(sim,cmd,line2);
 
 	// system observation
 	else if(!strcmp(word,"echo")) return cmdecho(sim,cmd,line2);
@@ -169,6 +172,7 @@ enum CMDcode docommand(void *cmdfnarg,cmdptr cmd,char *line) {
 	else if(!strcmp(word,"killmol")) return cmdkillmol(sim,cmd,line2);
 	else if(!strcmp(word,"killmolprob")) return cmdkillmolprob(sim,cmd,line2);
 	else if(!strcmp(word,"killmolinsphere")) return cmdkillmolinsphere(sim,cmd,line2);
+	else if(!strcmp(word,"killmolincmpt")) return cmdkillmolincmpt(sim,cmd,line2);
 	else if(!strcmp(word,"killmoloutsidesystem")) return cmdkillmoloutsidesystem(sim,cmd,line2);
 	else if(!strcmp(word,"fixmolcount")) return cmdfixmolcount(sim,cmd,line2);
 	else if(!strcmp(word,"fixmolcountonsurf")) return cmdfixmolcountonsurf(sim,cmd,line2);
@@ -180,7 +184,7 @@ enum CMDcode docommand(void *cmdfnarg,cmdptr cmd,char *line) {
 	else if(!strcmp(word,"modulatemol")) return cmdmodulatemol(sim,cmd,line2);
 	else if(!strcmp(word,"react1")) return cmdreact1(sim,cmd,line2);
 	else if(!strcmp(word,"setrateint")) return cmdsetrateint(sim,cmd,line2);
-	else if(!strcmp(word,"setsurfcoeff")) return cmdsetsurfcoeff(sim,cmd,line2);
+//	else if(!strcmp(word,"setsurfcoeff")) return cmdsetsurfcoeff(sim,cmd,line2);
 	else if(!strcmp(word,"settimestep")) return cmdsettimestep(sim,cmd,line2);
 	else if(!strcmp(word,"porttransport")) return cmdporttransport(sim,cmd,line2);
 	else if(!strcmp(word,"excludebox")) return cmdexcludebox(sim,cmd,line2);
@@ -341,6 +345,52 @@ enum CMDcode cmdifmore(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(itct==1,"cannot read value argument");
 	count=molcount(sim,i,ms,NULL,min+1);
 	if(count>min) return docommand(sim,cmd,strnword(line2,2));
+	return CMDok; }
+
+
+enum CMDcode cmdifincmpt(simptr sim,cmdptr cmd,char *line2) {
+	int itct,i,count,min,c,ll,m;
+	enum MolecState ms;
+	char cname[STRCHAR];
+	compartssptr cmptss;
+	compartptr cmpt;
+	char ch;
+	moleculeptr mptr;
+	
+	if(line2 && !strcmp(line2,"cmdtype")) return conditionalcmdtype(sim,cmd,2);
+
+	cmptss=sim->cmptss;
+	SCMDCHECK(cmptss,"no compartments defined");
+	SCMDCHECK(sim->mols,"molecules are undefined");
+	SCMDCHECK(line2,"missing argument");
+	i=readmolname(sim,line2,&ms);
+	SCMDCHECK(!(i<=0 && i>-5),"cannot read molecule and/or state name");
+	SCMDCHECK(line2=strnword(line2,2),"missing value argument");
+	itct=sscanf(line2,"%c %i %s",&ch,&min,cname);
+	SCMDCHECK(itct==3,"cannot read symbol, value, and/or compartment arguments");
+	SCMDCHECK(ch=='<' || ch=='=' || ch=='>',"comparison symbol has to be <, =, or >");
+	c=stringfind(cmptss->cnames,cmptss->ncmpt,cname);
+	SCMDCHECK(c>=0,"compartment name not recognized");
+	cmpt=cmptss->cmptlist[c];
+	line2=strnword(line2,4);
+
+	count=0;
+	if(i>0 && ms!=MSall) {
+		ll=sim->mols->listlookup[i][ms];
+		for(m=0;m<sim->mols->nl[ll];m++) {
+			mptr=sim->mols->live[ll][m];
+			if(mptr->ident==i && mptr->mstate==ms && posincompart(sim,mptr->pos,cmpt)) count++; }}
+	else {
+		for(ll=0;ll<sim->mols->nlist;ll++)
+			if(sim->mols->listtype[ll]==MLTsystem)
+				for(m=0;m<sim->mols->nl[ll];m++) {
+					mptr=sim->mols->live[ll][m];
+					if(i==-5 || mptr->ident==i)
+						if(ms==MSall || mptr->mstate==ms)
+							if(posincompart(sim,mptr->pos,cmpt)) count++; }}
+
+	if((ch=='<' && count<min) || (ch=='=' && count==min) || (ch=='>' && count>min))
+		return docommand(sim,cmd,line2);
 	return CMDok; }
 
 
@@ -1257,7 +1307,7 @@ enum CMDcode cmddiagnostics(simptr sim,cmdptr cmd,char *line2) {
 
 enum CMDcode cmdset(simptr sim,cmdptr cmd,char *line2) {
 	int er,itct;
-	char word[STRCHAR],erstr[STRCHAR];
+	char word[STRCHAR],errstring[STRCHAR];
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
 	SCMDCHECK(line2,"missing argument");
@@ -1265,8 +1315,8 @@ enum CMDcode cmdset(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(itct==1,"missing statement");
 	line2=strnword(line2,2);
 	SCMDCHECK(line2,"missing statement text");
-	er=simreadstring(sim,word,line2,erstr);
-	SCMDCHECK(!er,erstr);
+	er=simreadstring(sim,word,line2,errstring);
+	SCMDCHECK(!er,errstring);
 	return CMDok; }
 
 
@@ -1450,8 +1500,50 @@ enum CMDcode cmdkillmolinsphere(simptr sim,cmdptr cmd,char *line2) {
 		nmol=sim->mols->nl[ll];
 		for(m=0;m<nmol;m++) {
 			mptr=mlist[m];
-			if((i<0 && ms==MSall) || (i<0 && mptr->mstate==ms) || (mptr->ident==i && ms==MSall) || (mptr->ident==i && mptr->mstate==ms))
+			if((i<0 || mptr->ident==i) && (ms==MSall || mptr->mstate==ms))
 				if(molinpanels(sim,ll,m,s,'s')) molkill(sim,mptr,ll,m); }}
+	return CMDok; }
+
+
+enum CMDcode cmdkillmolincmpt(simptr sim,cmdptr cmd,char *line2) {
+	int itct,i,ll,m,c;
+	static char cname[STRCHAR];
+	moleculeptr mptr;
+	enum MolecState ms;
+	compartssptr cmptss;
+	compartptr cmpt;
+
+	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
+
+	cmptss=sim->cmptss;
+	SCMDCHECK(cmptss,"no compartments defined");
+	SCMDCHECK(sim->mols,"molecules are undefined");
+	SCMDCHECK(line2,"missing argument");
+	i=readmolname(sim,line2,&ms);
+	SCMDCHECK(!(i<=0 && i>-5),"cannot read molecule and/or state name");
+	SCMDCHECK(line2=strnword(line2,2),"missing value argument");
+	itct=sscanf(line2,"%s",cname);
+	SCMDCHECK(itct==1,"cannot read compartment name");
+	c=stringfind(cmptss->cnames,cmptss->ncmpt,cname);
+	SCMDCHECK(c>=0,"compartment name not recognized");
+	cmpt=cmptss->cmptlist[c];
+
+	if(i>0 && ms!=MSall) {
+		ll=sim->mols->listlookup[i][ms];
+		for(m=0;m<sim->mols->nl[ll];m++) {
+			mptr=sim->mols->live[ll][m];
+			if(mptr->ident==i && mptr->mstate==ms && posincompart(sim,mptr->pos,cmpt))
+				molkill(sim,mptr,ll,m); }}
+	else {
+		for(ll=0;ll<sim->mols->nlist;ll++)
+			if(sim->mols->listtype[ll]==MLTsystem)
+				for(m=0;m<sim->mols->nl[ll];m++) {
+					mptr=sim->mols->live[ll][m];
+					if(i==-5 || mptr->ident==i)
+						if(ms==MSall || mptr->mstate==ms)
+							if(posincompart(sim,mptr->pos,cmpt))
+								molkill(sim,mptr,ll,m); }}
+
 	return CMDok; }
 
 
@@ -1840,6 +1932,7 @@ enum CMDcode cmdsetrateint(simptr sim,cmdptr cmd,char *line2) {
 	return CMDok; }
 
 
+/*
 enum CMDcode cmdsetsurfcoeff(simptr sim,cmdptr cmd,char *line2) {
 	int itct,s;
 	double rate;
@@ -1869,8 +1962,9 @@ enum CMDcode cmdsetsurfcoeff(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(ms2!=MSnone,"molecule state may not be 'none'");
 	SCMDCHECK(rate>=0,"rate may not be negative");
 	srf->srfrate[i][ms1][ms2]=rate;
-	surfsettimestep(sim);
+	surfupdateparams(sim);
 return CMDok; }
+*/
 
 
 enum CMDcode cmdsettimestep(simptr sim,cmdptr cmd,char *line2) {

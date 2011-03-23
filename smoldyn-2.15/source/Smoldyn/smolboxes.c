@@ -1,8 +1,8 @@
-/* Steven Andrews, started 10/22/01.
+/* Steven Andrews, started 10/22/2001.
 This is a library of functions for the Smoldyn program.  See documentation
-called Smoldyn_doc1.doc and Smoldyn_doc2.doc.
-Copyright 2003-2007 by Steven Andrews.  This work is distributed under the terms
-of the Gnu Lesser General Public License (LGPL). */
+ called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
+ Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
+ of the Gnu General Public License (GPL). */
 
 #include <float.h>
 #include <stdio.h>
@@ -767,11 +767,11 @@ boxptr line2nextbox(simptr sim,double *pt1,double *pt2,boxptr bptr) {
 	for(d=0;d<dim;d++) {
 		z1[d]=bptr->indx[d];
 		if(pt2[d]!=pt1[d]) {
-			boxside=(pt2[d]>pt1[d])?1:0;
+			boxside=(pt2[d]>pt1[d])?1:0;		// 1 for high side, 0 for low side
 			sum=bptr->indx[d]+boxside;
 			if(sum>0&&sum<side[d]) {
-				edge=min[d]+(double)sum*size[d];
-				crs=(edge-pt1[d])/(pt2[d]-pt1[d]);
+				edge=min[d]+(double)sum*size[d];		// absolute location of potential edge crossing
+				crs=(edge-pt1[d])/(pt2[d]-pt1[d]);	// relative position of potential edge crossing on line
 				if(crs<crsmin) {
 					crsmin=crs;
 					d2=d;
@@ -794,8 +794,7 @@ boxptr line2nextbox(simptr sim,double *pt1,double *pt2,boxptr bptr) {
 		adrs=indx2addZV(z1,sim->boxs->side,dim);
 		return sim->boxs->blist[adrs]; }
 
-	if(crsmin==1.01)
-		printf("SMOLDYN BUG: line2nextbox\n");
+	if(crsmin==1.01) return NULL;
 	z1[d2]+=boxside2?1:-1;
 	adrs=indx2addZV(z1,sim->boxs->side,dim);
 	return sim->boxs->blist[adrs]; }

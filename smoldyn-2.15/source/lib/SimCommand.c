@@ -15,6 +15,7 @@ void scmdcatfname(cmdssptr cmds,int fid,char *str);
 
 /* ***** internal routine ***** */
 
+/* scmdcatfname */
 void scmdcatfname(cmdssptr cmds,int fid,char *str) {
 	char *dot;
 	int min;
@@ -33,7 +34,7 @@ void scmdcatfname(cmdssptr cmds,int fid,char *str) {
 
 /* ***** external routines ***** */
 
-
+/* scmdcode2string */
 char *scmdcode2string(enum CMDcode code,char *string) {
 	if(code==CMDok) strcpy(string,"ok");
 	else if(code==CMDpause) strcpy(string,"pause");
@@ -47,6 +48,7 @@ char *scmdcode2string(enum CMDcode code,char *string) {
 	return string; }
 
 
+/* scmdalloc */
 cmdptr scmdalloc(void) {
 	cmdptr cmd;
 
@@ -67,6 +69,7 @@ cmdptr scmdalloc(void) {
 	return cmd; }
 
 
+/* scmdfree */
 void scmdfree(cmdptr cmd) {
 	if(!cmd) return;
 	if(cmd->freefn) (*cmd->freefn)(cmd);
@@ -76,6 +79,7 @@ void scmdfree(cmdptr cmd) {
 	return; }
 
 
+/* scmdssalloc */
 cmdssptr scmdssalloc(enum CMDcode (*cmdfn)(void*,cmdptr,char*),void *cmdfnarg,char *root) {
 	cmdssptr cmds;
 
@@ -86,20 +90,23 @@ cmdssptr scmdssalloc(enum CMDcode (*cmdfn)(void*,cmdptr,char*),void *cmdfnarg,ch
 	cmds->cmdfn=cmdfn;
 	cmds->cmdfnarg=cmdfnarg;
 	cmds->iter=0;
+	cmds->maxfile=0;
 	cmds->nfile=0;
 	if(root) strncpy(cmds->root,root,STRCHAR);
 	else cmds->root[0]='\0';
 	cmds->froot[0]='\0';
-	cmds->fsuffix=NULL;
 	cmds->fname=NULL;
+	cmds->fsuffix=NULL;
+	cmds->fappend=NULL;
 	cmds->fptr=NULL;
 	return cmds; }
 
 
+/* scmdssfree */
 void scmdssfree(cmdssptr cmds) {
 	cmdptr cmd;
 	void *voidptr;
-	int i;
+	int fid;
 
 	if(!cmds) return;
 	if(cmds->cmd) {
@@ -112,16 +119,22 @@ void scmdssfree(cmdssptr cmds) {
 			cmd=(cmdptr)voidptr;
 			scmdfree(cmd); }
 		q_free(cmds->cmdi,0,0); }
-	for(i=0;i<cmds->nfile;i++) {
-		if(cmds->fptr&&cmds->fptr[i]) fclose(cmds->fptr[i]);
-		if(cmds->fname&&cmds->fname[i]) free(cmds->fname[i]); }
-	if(cmds->fsuffix) freeZV(cmds->fsuffix);
-	if(cmds->fptr) free(cmds->fptr);
-	if(cmds->fname) free(cmds->fname);
+
+	for(fid=0;fid<cmds->nfile;fid++)
+		if(cmds->fptr && cmds->fptr[fid]) fclose(cmds->fptr[fid]);
+	free(cmds->fptr);
+
+	for(fid=0;fid<cmds->maxfile;fid++)
+		if(cmds->fname) free(cmds->fname[fid]);
+	free(cmds->fname);
+
+	free(cmds->fsuffix);
+	free(cmds->fappend);
 	free(cmds);
 	return; }
 
 
+/* scmdqalloc */
 int scmdqalloc(cmdssptr cmds,int n) {
 	if(!cmds) return 2;
 	if(n<=0) return 0;
@@ -131,6 +144,7 @@ int scmdqalloc(cmdssptr cmds,int n) {
 	return 0; }
 
 
+/* scmdqalloci */
 int scmdqalloci(cmdssptr cmds,int n) {
 	if(!cmds) return 2;
 	if(n<=0) return 0;
@@ -140,6 +154,7 @@ int scmdqalloci(cmdssptr cmds,int n) {
 	return 0; }
 
 
+/* scmdstr2cmd */
 int scmdstr2cmd(cmdssptr cmds,char *line2,double tmin,double tmax,double dt) {
 	int itct;
 	char ch;
@@ -220,6 +235,7 @@ int scmdstr2cmd(cmdssptr cmds,char *line2,double tmin,double tmax,double dt) {
 	return 0; }
  
 
+/* scmdpop */
 void scmdpop(cmdssptr cmds,double t) {
 	cmdptr cmd;
 	void *voidptr;
@@ -232,6 +248,7 @@ void scmdpop(cmdssptr cmds,double t) {
 	return; }
 
 
+/* scmdexecute */
 enum CMDcode scmdexecute(cmdssptr cmds,double time,double simdt,Q_LONGLONG iter,int donow) {
 	enum CMDcode code1,code2;
 	cmdptr cmd;
@@ -278,6 +295,7 @@ enum CMDcode scmdexecute(cmdssptr cmds,double time,double simdt,Q_LONGLONG iter,
 	return code2; }
 
 
+/* scmdcmdtype */
 enum CMDcode scmdcmdtype(cmdssptr cmds,cmdptr cmd) {
 	char string[STRCHAR];
 
@@ -286,6 +304,7 @@ enum CMDcode scmdcmdtype(cmdssptr cmds,cmdptr cmd) {
 	return (*cmds->cmdfn)(cmds->cmdfnarg,cmd,string); }
 
 
+/* scmdnextcmdtime */
 int scmdnextcmdtime(cmdssptr cmds,double time,Q_LONGLONG iter,enum CMDcode type,int equalok,double *timeptr,Q_LONGLONG *iterptr) {
 	double tbest,t,dt;
 	int i,ans,done;
@@ -334,8 +353,9 @@ int scmdnextcmdtime(cmdssptr cmds,double time,Q_LONGLONG iter,enum CMDcode type,
 	return ans; }
 
 
+/* scmdoutput */
 void scmdoutput(cmdssptr cmds) {
-	int i;
+	int fid,i;
 	queue cmdq;
 	cmdptr cmd;
 	void* voidptr;
@@ -353,9 +373,13 @@ void scmdoutput(cmdssptr cmds) {
 		printf(" Output file paths and names:\n"); }
 	else
 		printf(" No output files\n");
-	for(i=0;i<cmds->nfile;i++) {
-		scmdcatfname(cmds,i,string);
-		printf("  %s (file %s): %s\n",cmds->fname[i],cmds->fptr[i]?"open":"closed",string); }
+	for(fid=0;fid<cmds->nfile;fid++) {
+		if(!strcmp(cmds->fname[fid],"stdout") || !strcmp(cmds->fname[fid],"stderr"))
+			printf("  %s (file open): %s\n",cmds->fname[fid],cmds->fname[fid]);
+		else {
+			scmdcatfname(cmds,fid,string);
+			printf("  %s (file %s): %s\n",cmds->fname[fid],cmds->fptr[fid]?"open":"closed",string); }}
+
 	cmdq=cmds->cmd;
 	if(cmdq) {
 		printf(" Time queue:\n");
@@ -383,8 +407,9 @@ void scmdoutput(cmdssptr cmds) {
 	return; }
 
 
+/* scmdwritecommands */
 void scmdwritecommands(cmdssptr cmds,FILE *fptr,char *filename) {
-	int i;
+	int i,fid;
 	cmdptr cmd;
 	void *voidptr;
 	char string2[STRCHAR];
@@ -395,13 +420,13 @@ void scmdwritecommands(cmdssptr cmds,FILE *fptr,char *filename) {
 	if(!(cmds->nfile==1 && !strcmp(cmds->fname[0],filename))) {
 		if(cmds->nfile) {
 			fprintf(fptr,"output_files");
-			for(i=0;i<cmds->nfile;i++)
-				if(!filename||strcmp(cmds->fname[i],filename))
-					fprintf(fptr," %s",cmds->fname[i]);
+			for(fid=0;fid<cmds->nfile;fid++)
+				if(!filename || strcmp(cmds->fname[fid],filename))
+					fprintf(fptr," %s",cmds->fname[fid]);
 			fprintf(fptr,"\n"); }
-		for(i=0;i<cmds->nfile;i++)
-			if(cmds->fsuffix[i])
-				fprintf(fptr,"output_file_number %s %i\n",cmds->fname[i],cmds->fsuffix[i]); }
+		for(fid=0;fid<cmds->nfile;fid++)
+			if(cmds->fsuffix[fid])
+				fprintf(fptr,"output_file_number %s %i\n",cmds->fname[fid],cmds->fsuffix[fid]); }
 
 	i=-1;
 	if(cmds->cmdi)
@@ -421,6 +446,7 @@ void scmdwritecommands(cmdssptr cmds,FILE *fptr,char *filename) {
 
 /************** file functions **************/	
 	
+/* scmdsetfroot */
 int scmdsetfroot(cmdssptr cmds,char *root) {
 	static int ctr=-1;
 
@@ -429,31 +455,71 @@ int scmdsetfroot(cmdssptr cmds,char *root) {
 	return ++ctr; }
 
 
-int scmdsetfnames(cmdssptr cmds,char *str) {
-	static int ctr=-1;
-	int i,itct;
+/* scmdsetfnames */
+int scmdsetfnames(cmdssptr cmds,char *str,int append) {
+	int fid,itct,n,newmaxfile,*newfsuffix,*newfappend;
+	char **newfname;
+	FILE **newfptr;
 
 	if(!cmds) return 4;
-	if(++ctr) return 3;
-	cmds->nfile=wordcount(str);
-	cmds->fname=(char**)calloc(cmds->nfile,sizeof(char*));
-	if(!cmds->fname) return 1;
-	for(i=0;i<cmds->nfile;i++) cmds->fname[i]=NULL;
-	for(i=0;i<cmds->nfile;i++) {
-		cmds->fname[i]=EmptyString();
-		if(!cmds->fname[i]) return 1; }
-	cmds->fptr=(FILE**)calloc(cmds->nfile,sizeof(FILE*));
-	if(!cmds->fptr) return 1;
-	for(i=0;i<cmds->nfile;i++) cmds->fptr[i]=NULL;
-	for(i=0;i<cmds->nfile;i++) {
-		itct=sscanf(strnword(str,i+1),"%s",cmds->fname[i]);
-		if(itct!=1) return 2; }
-	cmds->fsuffix=allocZV(cmds->nfile);
-	if(!cmds->fsuffix) return 1;
-	setstdZV(cmds->fsuffix,cmds->nfile,0);
+	n=wordcount(str);
+
+	if(cmds->nfile+n>cmds->maxfile) {
+		newmaxfile=cmds->maxfile+n;
+
+		newfname=(char**)calloc(newmaxfile,sizeof(char*));
+		if(!newfname) return 1;
+		for(fid=0;fid<cmds->maxfile;fid++)
+			newfname[fid]=cmds->fname[fid];
+		for(;fid<newmaxfile;fid++)
+			newfname[fid]=NULL;
+		for(fid=cmds->maxfile;fid<newmaxfile;fid++) {
+			newfname[fid]=EmptyString();
+			if(!newfname[fid]) return 1; }
+
+		newfsuffix=(int*)calloc(newmaxfile,sizeof(int));
+		if(!newfsuffix) return 1;
+		for(fid=0;fid<cmds->maxfile;fid++)
+			newfsuffix[fid]=cmds->fsuffix[fid];
+		for(;fid<newmaxfile;fid++)
+			newfsuffix[fid]=0;
+		
+		newfappend=(int*)calloc(newmaxfile,sizeof(int));
+		if(!newfappend) return 1;
+		for(fid=0;fid<cmds->maxfile;fid++)
+			newfappend[fid]=cmds->fappend[fid];
+		for(;fid<newmaxfile;fid++)
+			newfappend[fid]=0;
+
+		newfptr=(FILE**)calloc(newmaxfile,sizeof(FILE*));
+		if(!newfptr) return 1;
+		for(fid=0;fid<cmds->maxfile;fid++)
+			newfptr[fid]=cmds->fptr[fid];
+		for(;fid<newmaxfile;fid++)
+			newfptr[fid]=NULL;
+		
+		cmds->maxfile=newmaxfile;
+		free(cmds->fname);
+		cmds->fname=newfname;
+		free(cmds->fsuffix);
+		cmds->fsuffix=newfsuffix;
+		free(cmds->fappend);
+		cmds->fappend=newfappend;
+		free(cmds->fptr);
+		cmds->fptr=newfptr; }
+
+	while(str) {
+		fid=cmds->nfile;
+		itct=sscanf(str,"%s",cmds->fname[fid]);
+		if(itct!=1) return 2;
+		cmds->fappend[fid]=append;
+		cmds->nfile++;
+		str=strnword(str,2); }
+
 	return 0; }
 
 
+/* scmdsetfsuffix */
 int scmdsetfsuffix(cmdssptr cmds,char *fname,int i) {
 	int fid;
 
@@ -464,35 +530,41 @@ int scmdsetfsuffix(cmdssptr cmds,char *fname,int i) {
 	return 0; }
 
 
+/* scmdopenfiles */
 int scmdopenfiles(cmdssptr cmds,int overwrite) {
-	int i;
+	int fid;
 	char str1[STRCHAR],str2[STRCHAR];
 	FILE *fptr;
-	const char *sout="stdout",*serr="stderr";
-
-	overwrite = 1;
 
 	if(!cmds) return 0;
-	for(i=0;i<cmds->nfile;i++) cmds->fptr[i]=NULL;
-	for(i=0;i<cmds->nfile;i++) {
-		if(!strcmp(cmds->fname[i],sout)) cmds->fptr[i]=stdout;
-		else if(!strcmp(cmds->fname[i],serr)) cmds->fptr[i]=stderr;
+	for(fid=0;fid<cmds->nfile;fid++) {
+		if(cmds->fptr[fid] && !strcmp(cmds->fname[fid],"stdout") && !strcmp(cmds->fname[fid],"stderr"))
+			fclose(cmds->fptr[fid]);
+		cmds->fptr[fid]=NULL; }
+
+	overwrite = 1;
+	
+	for(fid=0;fid<cmds->nfile;fid++) {
+		if(!strcmp(cmds->fname[fid],"stdout")) cmds->fptr[fid]=stdout;
+		else if(!strcmp(cmds->fname[fid],"stderr")) cmds->fptr[fid]=stderr;
 		else {
-			scmdcatfname(cmds,i,str1);
-			if(!overwrite) {
+			scmdcatfname(cmds,fid,str1);
+			if(!cmds->fappend[fid] && !overwrite) {
 				fptr=fopen(str1,"r");
 				if(fptr) {
 					fclose(fptr);
-					fprintf(stderr,"Overwrite existing output file '%s' (y/n)? ",cmds->fname[i]);
+					fprintf(stderr,"Overwrite existing output file '%s' (y/n)? ",cmds->fname[fid]);
 					scanf("%s",str2);
 					if(!(str2[0]=='y'||str2[0]=='Y')) return 1; }}
-			cmds->fptr[i]=fopen(str1,"w"); }
-		if(!cmds->fptr[i]) {
-			fprintf(stderr,"Failed to open file '%s' for writing\n",cmds->fname[i]);
+			if(cmds->fappend[fid]) cmds->fptr[fid]=fopen(str1,"a");
+			else cmds->fptr[fid]=fopen(str1,"w"); }
+		if(!cmds->fptr[fid]) {
+			fprintf(stderr,"Failed to open file '%s' for writing\n",cmds->fname[fid]);
 			return 1; }}
 	return 0; }
 
 
+/* scmdoverwrite */
 FILE *scmdoverwrite(cmdssptr cmds,char *line2) {
 	int itct,fid;
 	static char fname[STRCHAR],str1[STRCHAR];
@@ -502,12 +574,14 @@ FILE *scmdoverwrite(cmdssptr cmds,char *line2) {
 	if(itct!=1) return NULL;
 	fid=stringfind(cmds->fname,cmds->nfile,fname);
 	if(fid<0) return NULL;
+	if(strcmp(cmds->fname[fid],"stdout") || strcmp(cmds->fname[fid],"stderr")) {
 	fclose(cmds->fptr[fid]);
 	scmdcatfname(cmds,fid,str1);
-	cmds->fptr[fid]=fopen(str1,"w");
+		cmds->fptr[fid]=fopen(str1,"w"); }
 	return cmds->fptr[fid]; }
 
 
+/* scmdincfile */
 FILE *scmdincfile(cmdssptr cmds,char *line2) {
 	int itct,fid;
 	static char fname[STRCHAR],str1[STRCHAR];
@@ -517,13 +591,18 @@ FILE *scmdincfile(cmdssptr cmds,char *line2) {
 	if(itct!=1) return NULL;
 	fid=stringfind(cmds->fname,cmds->nfile,fname);
 	if(fid<0) return NULL;
+	if(strcmp(cmds->fname[fid],"stdout") || strcmp(cmds->fname[fid],"stderr")) {
 	fclose(cmds->fptr[fid]);
 	cmds->fsuffix[fid]++;
 	scmdcatfname(cmds,fid,str1);
-	cmds->fptr[fid]=fopen(str1,"w");
+		if(cmds->fappend[fid])
+			cmds->fptr[fid]=fopen(str1,"a");
+		else
+			cmds->fptr[fid]=fopen(str1,"w"); }
 	return cmds->fptr[fid]; }
 
 
+/* scmdgetfptr */
 FILE *scmdgetfptr(cmdssptr cmds,char *line2) {
 	int itct,fid;
 	static char fname[STRCHAR];

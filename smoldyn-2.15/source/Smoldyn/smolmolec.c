@@ -1,8 +1,8 @@
-/* Steven Andrews, started 10/22/01.
+/* Steven Andrews, started 10/22/2001.
 This is a library of functions for the Smoldyn program.  See documentation
-called Smoldyn_doc1.doc and Smoldyn_doc2.doc.
-Copyright 2003-2007 by Steven Andrews.  This work is distributed under the terms
-of the Gnu Lesser General Public License (LGPL). */
+ called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
+ Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
+ of the Gnu General Public License (GPL). */
 
 #include <stdio.h>
 #include <limits.h>
@@ -164,7 +164,7 @@ char *molpos2string(simptr sim,moleculeptr mptr,char *string) {
 		if(bptr!=pos2box(sim,mptr->pos)) tryagain=1;		// check for same box
 		for(p=0;p<bptr->npanel && tryagain==0;p++) {		// check for no panels crossed
 			pnl=bptr->panel[p];
-			if(mptr->pnl!=pnl && lineXpanel(mptr->pos,newpos,pnl,dim,crosspt,NULL,NULL,NULL,NULL)) tryagain=1; }
+			if(mptr->pnl!=pnl && lineXpanel(mptr->pos,newpos,pnl,dim,crosspt,NULL,NULL,NULL,NULL,NULL)) tryagain=1; }
 		if(!tryagain) done=1;
 
 		if(!done) {
@@ -207,7 +207,7 @@ void molchangeident(simptr sim,moleculeptr mptr,int ll,int m,int i,enum MolecSta
 
 	mptr->ident=i;
 	mptr->mstate=ms;
-	if(ms==MSsoln) mptr->pnl=NULL;
+	if(ms==MSsoln || ms==MSbsoln) mptr->pnl=NULL;
 	else mptr->pnl=pnl;
 
 	if(ms==MSsoln && !pnl);												// soln -> soln
@@ -410,8 +410,7 @@ void molsetlistlookup(simptr sim,int ident,enum MolecState ms,int ll) {
 	return; }
 
 
-/* molsetexist.  Sets the exist element of the molecule superstructure for
-identity ident and state ms to exist; ÒallÓ inputs are not permitted. */
+/* molsetexist */
 void molsetexist(simptr sim,int ident,enum MolecState ms,int exist) {
 	if(ms==MSnone) return;
 	else if(ms==MSbsoln) ms=MSsoln;
@@ -558,11 +557,7 @@ void molfree(moleculeptr mptr) {
 	return; }
 
 
-/* molssalloc allocates and initiallizes a molecule superstructure.  max empty
-molecules are created in the dead list, while the live list element is set to NULL.
-max must be at least 1.  The molecule boxes are left as NULLs, and need to be set.
-Book keeping elements for the lists are set to their initial values.  The Gaussian
-table is left empty; it is filled in in setupmols. */
+/* molssalloc */
 molssptr molssalloc(int maxspecies) {
 	molssptr mols;
 	int i;
@@ -672,13 +667,7 @@ molssptr molssalloc(int maxspecies) {
 	return NULL; }
 
 
-/* mollistalloc.  Allocates maxlist new live lists of list type mlt for the
-already existing molecule superstructure mols.  This works whether there were
-already were live lists or not.  Returns the index of the first live list that
-was just added for success or a negative code for failure: -1 for out of memory,
--2 for a negative maxlist input value, or -3 for a NULL mols input.  The maxlist
-element of the superstructure is updated.  The nlist element of the
-superstructure is unchanged. */
+/* mollistalloc */
 int mollistalloc(molssptr mols,int maxlist,enum MolListType mlt) {
 	int *maxl,*nl,*topl,*sortl,*diffuselist,ll,m;
 	moleculeptr **live,mptr;
@@ -837,8 +826,7 @@ int molexpandlist(molssptr mols,int dim,int ll,int nspaces,int nmolecs) {
 	return 0; }
 
 
-/* molssfree frees both a superstructure of molecules and all the molecules in
-all its lists. */
+/* molssfree */
 void molssfree(molssptr mols) {
 	int m,ll,i,maxspecies;
 	enum MolecState ms;
@@ -921,9 +909,7 @@ void molssfree(molssptr mols) {
 /*************************** data structure output ****************************/
 /******************************************************************************/
 
-/* molssoutput prints all the parameters in a molecule superstructure including:
-molecule diffusion constants, rms step lengths, colors, and display sizes; and
-dead list and live list sizes and indicies. */
+/* molssoutput */
 void molssoutput(simptr sim) {
 	int nspecies,i,ll,same,sum;
 	molssptr mols;
@@ -1023,7 +1009,7 @@ void molssoutput(simptr sim) {
 	return; }
 
 
-/* writemols.  Writes information about the molecule superstructure. */
+/* writemols */
 void writemols(simptr sim,FILE *fptr) {
 	int i,d,ll,dim;
 	char **spname,string[STRCHAR];
@@ -1123,11 +1109,7 @@ void writemolecules(simptr sim,FILE *fptr) {
 
 	return; }
 
-void printfException(const char* format, ...);
-/* checkmolparams.  Checks some parameters in a molecule superstructure and
-substructures to make sure that they are legitimate and reasonable.  Prints
-error and warning messages to the display.  Returns the total number of errors
-and, if warnptr is not NULL, the number of warnings in warnptr. */
+/* checkmolparams */
 int checkmolparams(simptr sim,int *warnptr) {
 	int dim,i,nspecies,m,ll,warn,error,sum;
 	molssptr mols;
@@ -1217,9 +1199,7 @@ int checkmolparams(simptr sim,int *warnptr) {
 /******************************************************************************/
 
 
-/* molsetcondition.  Sets the molecule superstructure condition to cond, if
-appropriate.  Set upgrade to 1 if this is an upgrade, to 0 if this is a
-downgrade, or to 2 to set the condition independent of its current value. */
+/* molsetcondition */
 void molsetcondition(molssptr mols,enum StructCond cond,int upgrade) {
 	if(!mols) return;
 	if(upgrade==0 && mols->condition>cond) mols->condition=cond;
@@ -1232,10 +1212,7 @@ void molsetcondition(molssptr mols,enum StructCond cond,int upgrade) {
 
 
 
-/* addmollist.  Adds a molecule list named nm and of type mlt to the molecule
-superstructure, allocating it if needed.  Returns the index of the list for
-success, -1 if memory could not be allocated, -2 if the list name has already
-been used, or -3 for illegal inputs (mols or nm was NULL). */
+/* addmollist */
 int addmollist(simptr sim,char *nm,enum MolListType mlt) {
 	int ll,er;
 	molssptr mols;
@@ -1276,12 +1253,7 @@ int molsetmaxspecies(simptr sim,int max) {
 	return 0; }
 
 
-/* molsetmaxmol.  Sets the total number of molecules that the simulation can
-work with, and allocates them, to max molecules.  This works during initial
-setup, or later on.  Returns 0 for success, 1 for out of memory, 2 for
-simulation dimensionality not set up yet, 3 for no molecule superstructure set
-up yet, 4 for a negative max value, or 5 if the requested max value is less
-than the current number of allocated molecules. */
+/* molsetmaxmol */
 int molsetmaxmol(simptr sim,int max) {
 	int er;
 
@@ -1296,11 +1268,7 @@ int molsetmaxmol(simptr sim,int max) {
 	return 0; }
 
 
-/* moladdspecies.  Adds species named nm to the list of species that is in the
-molecule superstructure.  Returns a positive value corresponding to the index of a
-successfully added species for success, -2 if sim->mols is NULL, -3 if
-more species are being added than were allocated, -4 if we are trying to add empty twice, 
-or -5 if the species already exists. */
+/* moladdspecies */
 int moladdspecies(simptr sim,char *nm) {
 	molssptr mols;
 	int found;
@@ -1320,14 +1288,16 @@ int moladdspecies(simptr sim,char *nm) {
 	return mols->nspecies-1; }
 
 
-/* molsetexpansionflag.  Sets the expansion flag for species i to flag.  A value of zero
-means that the molecule should not be expanded, non-zero means that moleculizer 
-should expand it. Returns 0 for sucess, 2 for a non-existant molecule superstructure,
-or 3 if i is out of bounds.  */
+/* molsetexpansionflag */
 int molsetexpansionflag(simptr sim,int i,int flag) {
+	int i2;
+
 	if(!sim->mols) return 2;
-	if(sim->mols->maxspecies<=i) return 3;
-	sim->mols->expand[i]=flag;
+	if(i==-1) {
+		for(i2=1;i2<sim->mols->nspecies;i2++)
+			sim->mols->expand[i2]=flag; }
+	else if(i<0 || i>=sim->mols->nspecies) return 3;
+	else sim->mols->expand[i]=flag;
 	return 0; }
 
 
@@ -1344,12 +1314,7 @@ void molsettimestep(molssptr mols,double dt) {
 	return; }
 
 
-/* molcalcparams.  Calculates the difstep parameter of the molecule
-superstructure and also sets the diffuselist set of flags in the molecule
-superstructure.  This function should be called during initial setup (this is
-called from setupmols), if any diffusion coefficient changes (performed with
-molsetdifc), or if any diffusion matrix changes (performed with molsetdifm,
-which also updates the diffusion coefficient). */
+/* molcalcparams */
 void molcalcparams(molssptr mols,double dt) {
 	int i,ll;
 	enum MolecState ms;
@@ -1365,9 +1330,7 @@ void molcalcparams(molssptr mols,double dt) {
 	return; }
 
 
-/* setupmols.  This sets up the molecule superstructure.  It is meant to be
-called only at program startup.  It sets up the Gaussian table, live lists,
-live list lookup numbers, and diffusion step lengths. */
+/* setupmols */
 int setupmols(simptr sim) {
 	int i,ll,m,ndif,nfix,ok,er;
 	enum MolecState ms;
@@ -1468,12 +1431,7 @@ void molkill(simptr sim,moleculeptr mptr,int ll,int m) {
 	return; }
 
 
-/* getnextmol.  Returns a pointer to the next molecule on the dead list so
-that its data can be filled in and it can be added to the system.  The molecule
-serial number is assigned.  This updates the topd element of the molecule
-superstructure.  Returns NULL if there are no more available molecules.  The
-intention is that this function should be called anytime that molecules are to
-be added to the system. */
+/* getnextmol */
 moleculeptr getnextmol(molssptr mols) {
 	moleculeptr mptr;
 
@@ -1731,7 +1689,7 @@ If there is a diffusion matrix, it is used for anisotropic diffusion;
 otherwise isotropic diffusion is done, using the difstep parameter.  The posx
 element is updated to the prior position and pos is updated to the new
 position.  Surface-bound molecules are diffused as well. */
-int diffuse_unitary(simptr sim) {
+int diffuse(simptr sim) {
 	molssptr mols;
 	int ll,m,d,nmol,dim,i,ngtablem1;
 	enum MolecState ms;
@@ -1771,7 +1729,9 @@ int diffuse_unitary(simptr sim) {
 					dotMVD(difm[i][ms],v1,v2,dim,dim);
 					for(d=0;d<dim;d++) mptr->pos[d]+=v2[d]; }
 				if(drift[i][ms]) {
-					for(d=0;d<dim;d++) mptr->pos[d]+=drift[i][ms][d]*dt; }}}
+					for(d=0;d<dim;d++) mptr->pos[d]+=drift[i][ms][d]*dt; }
+				if(mptr->mstate!=MSsoln)
+					movemol2closepanel(sim,mptr,dim,epsilon,neighdist); }}
 
 	return 0; }
 
@@ -1787,6 +1747,9 @@ typedef struct ll_threading_struct {
 
 /* Diffuse live list. */
 void* diffuseLiveList_threaded(void* ndx_as_void) {	//??????? new function
+#ifndef THREADING
+	return NULL;
+#else
     diffuse_struct data_struct = (diffuse_struct ) ndx_as_void;
     int livelist_ndx = data_struct->ll_ndx;
     simptr sim = data_struct->sim;
@@ -1862,19 +1825,12 @@ void* diffuseLiveList_threaded(void* ndx_as_void) {	//??????? new function
         }
     }
     return NULL;
+#endif
 }
 
 
 
-
-
-/* diffuse_THREADED.  diffuse does the diffusion for all molecules over one time step.
-Walls and surfaces are ignored and molecules are not reassigned to the boxes.
-If there is a diffusion matrix, it is used for anisotropic diffusion;
-otherwise isotropic diffusion is done, using the difstep parameter.  The posx
-element is updated to the prior position and pos is updated to the new
-position.  Surface-bound molecules are diffused as well. Returns error codes: 
-0 on success, 1 on unknown failure. */
+/* diffuse_threaded */
 int diffuse_threaded(simptr sim) {//??????????? new function
 #ifndef THREADING
     return 2;
@@ -1897,20 +1853,17 @@ int diffuse_threaded(simptr sim) {//??????????? new function
 	epsilon=(sim->srfss)?sim->srfss->epsilon:0;
 	neighdist=(sim->srfss)?sim->srfss->neighdist:0;
 
-        int num_threads = getnumberofthreads(sim);
+	int num_threads = sim->threads->nthreads;
         int current_thread_ndx = 0;
 
-	for(livelist_ndx = 0; livelist_ndx != mols->nlist; ++livelist_ndx)
-        {
-            if( mols->diffuselist[livelist_ndx] ) 
-            {
+	for(livelist_ndx = 0; livelist_ndx != mols->nlist; ++livelist_ndx) {
+		if( mols->diffuselist[livelist_ndx] ) {
 		
 		int per_thread_size = mols->nl[livelist_ndx] / num_threads;
 		int currentNdx = 0;
 
 		int thread_ndx;
-		for( thread_ndx = 0; thread_ndx != num_threads - 1; ++thread_ndx)
-		{
+			for( thread_ndx = 0; thread_ndx != num_threads - 1; ++thread_ndx) {
 		    clearthreaddata( sim->threads->thread[thread_ndx]);
 		    current_thread_input_stack = sim->threads->thread[thread_ndx]->input_stack;
 		    push_data_onto_stack(current_thread_input_stack, &sim, sizeof(sim));
@@ -1932,19 +1885,12 @@ int diffuse_threaded(simptr sim) {//??????????? new function
 		    push_data_onto_stack(current_thread_input_stack, &currentNdx, sizeof(currentNdx));
 		    push_data_onto_stack(current_thread_input_stack, &mols->nl[livelist_ndx], sizeof(int));
 
-		    pthread_create((pthread_t*)sim->threads->thread[thread_ndx]->thread_id, NULL, diffuseLiveList_threaded, (void*) current_thread_input_stack->stack_data);
-		}
+		    pthread_create((pthread_t*)sim->threads->thread[thread_ndx]->thread_id, NULL, diffuseLiveList_threaded, (void*) current_thread_input_stack->stack_data); }
 
 		int ndx;
-		for( ndx = 0; ndx != current_thread_ndx; ++ndx)
-		{
-		    pthread_join( *((pthread_t*) sim->threads->thread[thread_ndx]->thread_id), NULL);
-		}
 
-            }
-	    
-
-        }
+			for( ndx = 0; ndx != current_thread_ndx; ++ndx) {
+		    pthread_join( *((pthread_t*) sim->threads->thread[thread_ndx]->thread_id), NULL); }}}
 
 	return 0; 
 #endif

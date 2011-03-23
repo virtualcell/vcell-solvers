@@ -345,7 +345,7 @@ int WriteTIFF(char *filename,char *description,int x,int y,int width,int height,
 /* gl2Initialize */
 #ifdef __gl_h_
 
-void gl2Initialize(float xlo,float xhi,float ylo,float yhi,float zlo,float zhi) {
+void gl2Initialize(char *wname,float xlo,float xhi,float ylo,float yhi,float zlo,float zhi) {
 	if(ylo==yhi && zlo==zhi) Dimension=1;
 	else if(zlo==zhi) Dimension=2;
 	else Dimension=3;
@@ -374,15 +374,15 @@ void gl2Initialize(float xlo,float xhi,float ylo,float yhi,float zlo,float zhi) 
 
 	if(Dimension<3) glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);
 	else glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB|GLUT_DEPTH);
-
+	
 	// position opengl window
 	int w = 400, h = 400;
 	int xmaxpix=glutGet(GLUT_SCREEN_WIDTH);
 	int ymaxpix=glutGet(GLUT_SCREEN_HEIGHT);
 	glutInitWindowSize(w, h);
-	glutInitWindowPosition((xmaxpix- w)/2, (ymaxpix-h)/2);
-
-	glutCreateWindow("Particle View");
+	glutInitWindowPosition((xmaxpix- w)/2, (ymaxpix-h)/2);	
+	
+	glutCreateWindow(wname?wname:"OpenGL");
 	glutReshapeFunc(ChangeSize);
 	glutKeyboardFunc(KeyPush);
 	glutSpecialFunc(SpecialKeyPush);
@@ -397,7 +397,7 @@ void gl2Initialize(float xlo,float xhi,float ylo,float yhi,float zlo,float zhi) 
 
 #else
 
-void gl2Initialize(float xlo,float xhi,float ylo,float yhi,float zlo,float zhi) {
+void gl2Initialize(char *wname,float xlo,float xhi,float ylo,float yhi,float zlo,float zhi) {
 	return; }
 
 #endif

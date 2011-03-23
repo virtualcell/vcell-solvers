@@ -1,8 +1,8 @@
-/* Steven Andrews, started 10/22/01.
+/* Steven Andrews, started 10/22/2001.
 This is a library of functions for the Smoldyn program.  See documentation
-called Smoldyn_doc1.doc and Smoldyn_doc2.doc.
-Copyright 2003-2007 by Steven Andrews.  This work is distributed under the terms
-of the Gnu Lesser General Public License (LGPL). */
+ called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
+ Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
+ of the Gnu General Public License (GPL). */
 
 #include <float.h>
 #include <math.h>
@@ -53,6 +53,70 @@ char *graphicslp2string(enum LightParam lp,char *string) {
 	else if(lp==LPauto) strcpy(string,"auto");
 	else strcpy(string,"none");
 	return string; }
+
+
+/******************************************************************************/
+/****************************** low level utilities ***************************/
+/******************************************************************************/
+
+/* graphicsreadcolor */
+int graphicsreadcolor(char **stringptr,double *rgba) {
+	char *string,name[STRCHAR];
+	double r,g,b,a;
+	int itct,er;
+
+	if(!stringptr) return 1;
+	string=*stringptr;
+	if(!string) return 1;
+	itct=sscanf(string,"%s",name);
+	if(itct!=1) return 1;
+
+	er=0;
+	r=g=b=0;
+	a=1;
+	if((name[0]>='0' && name[0]<='9') || name[0]=='.') {	// numbers
+		itct=sscanf(string,"%lg %lg %lg",&r,&g,&b);
+		if(itct!=3) er=2;
+		else {
+			if(r<0 || r>1 || g<0 ||g>1 || b<0 || b>1) er=3;
+			string=strnword(string,4); }}
+	else {																								// word
+		if(!strcmp(name,"maroon"))			{r=0.5;g=0;b=0;}
+		else if(!strcmp(name,"red"))		{r=1;g=0;b=0;}
+		else if(!strcmp(name,"orange")) {r=1;g=0.65;b=0;}
+		else if(!strcmp(name,"yellow")) {r=1;g=1;b=0;}
+		else if(!strcmp(name,"olive"))	{r=0.5;g=0.5;b=0;}
+		else if(!strcmp(name,"green"))	{r=0;g=0.5;b=0;}
+		else if(!strcmp(name,"purple")) {r=0.5;g=0;b=0.5;}
+		else if(!strcmp(name,"magenta"))	{r=1;g=0;b=1;}
+		else if(!strcmp(name,"fuchsia"))	{r=1;g=0;b=1;}
+		else if(!strcmp(name,"lime"))		{r=0;g=1;b=0;}
+		else if(!strcmp(name,"teal"))		{r=0;g=0.5;b=0.5;}
+		else if(!strcmp(name,"aqua"))		{r=0;g=1;b=1;}
+		else if(!strcmp(name,"cyan"))		{r=0;g=1;b=1;}
+		else if(!strcmp(name,"blue"))		{r=0;g=0;b=1;}
+		else if(!strcmp(name,"navy"))		{r=0;g=0;b=0.5;}
+		else if(!strcmp(name,"black"))	{r=0;g=0;b=0;}
+		else if(!strcmp(name,"gray"))		{r=0.5;g=0.5;b=0.5;}
+		else if(!strcmp(name,"grey"))		{r=0.5;g=0.5;b=0.5;}
+		else if(!strcmp(name,"silver")) {r=0.75;g=0.75;b=0.75;}
+		else if(!strcmp(name,"white"))	{r=1;g=1;b=1;}
+		else er=4;
+		string=strnword(string,2); }
+
+	if(string) {
+		itct=sscanf(string,"%lg",&a);
+		if(itct!=1) er=5;
+		if(a<0 || a>1) er=6;
+		string=strnword(string,2); }
+
+	if(rgba) {
+		rgba[0]=r;
+		rgba[1]=g;
+		rgba[2]=b;
+		rgba[3]=a; }
+	*stringptr=string;
+	return er; }
 
 
 /******************************************************************************/

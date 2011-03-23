@@ -1,8 +1,8 @@
-/* Steven Andrews, started 10/22/01.
+/* Steven Andrews, started 10/22/2001.
 This is a library of functions for the Smoldyn program.  See documentation
-called Smoldyn_doc1.doc and Smoldyn_doc2.doc.
-Copyright 2003-2007 by Steven Andrews.  This work is distributed under the terms
-of the Gnu Lesser General Public License (LGPL). */
+ called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
+ Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
+ of the Gnu General Public License (GPL). */
 
 #include <stdio.h>
 #include <math.h>
@@ -82,7 +82,7 @@ int posincompart(simptr sim,double *pos,compartptr cmpt) {
 			srf=cmpt->surflist[s];
 			for(ps=(PanelShape)0;ps<PSMAX&&!pcross;ps=(PanelShape)(ps+1))
 				for(p=0;p<srf->npanel[ps]&&!pcross;p++)
-					if(lineXpanel(pos,cmpt->points[k],srf->panels[ps][p],sim->dim,crsspt,NULL,NULL,NULL,NULL)) 
+					if(lineXpanel(pos,cmpt->points[k],srf->panels[ps][p],sim->dim,crsspt,NULL,NULL,NULL,NULL,NULL)) 
 						pcross=1; }
 		if(pcross==0) incmpt=1; }
 
@@ -177,9 +177,7 @@ void compartfree(compartptr cmpt) {
 	return; }
 
 
-/* compartssalloc.  Allocates a compartment superstructure as well as maxcmpt
-compartments.  Space is allocated and initialized for compartment names.
-Returns the compartment superstructure or NULL if unable to allocate memory. */
+/* compartssalloc */
 compartssptr compartssalloc(int maxcmpt) {
 	compartssptr cmptss;
 	int c;
@@ -212,8 +210,7 @@ compartssptr compartssalloc(int maxcmpt) {
  	return NULL; }
 
 
-/* compartssfree.  Frees a compartment superstructure, including all
-compartments and everything within them. */
+/* compartssfree */
 void compartssfree(compartssptr cmptss) {
 	int c;
 
@@ -293,7 +290,7 @@ void writecomparts(simptr sim,FILE *fptr) {
 		fprintf(fptr,"end_compartment\n\n"); }
 	return; }
 
-void printfException(const char* format, ...);
+
 /* checkcompartparams.  This checks a few compartment parameters. */
 int checkcompartparams(simptr sim,int *warnptr) {
 	int error,warn,c;
@@ -325,9 +322,7 @@ int checkcompartparams(simptr sim,int *warnptr) {
 /******************************************************************************/
 
 
-/* compartsetcondition.  Sets the compartment superstructure condition to cond,
-if appropriate.  Set upgrade to 1 if this is an upgrade, to 0 if this is a
-downgrade, or to 2 to set the condition independent of its current value. */
+/* compartsetcondition */
 void compartsetcondition(compartssptr cmptss,enum StructCond cond,int upgrade) {
 	if(!cmptss) return;
 	if(upgrade==0 && cmptss->condition>cond) cmptss->condition=cond;
@@ -515,13 +510,7 @@ int compartupdatebox(simptr sim,compartptr cmpt,boxptr bptr,double volfrac) {
  	return -1; }
 
 
-/* cmptreadstring.  Reads and processes one line of text from the configuration
-file, or some other source, for the compartment indexed cmptindex.  If the
-compartment index is not known, then set cmptindex to -1.  The first word of the
-line should be sent in as word and the rest sent in as line2.  If this function
-is successful, it returns the compartment index and it does not change the
-contents of erstr; if not, it returns -1 and it writes an error message to
-erstr. */
+/* cmptreadstring */
 int cmptreadstring(simptr sim,int cmptindex,char *word,char *line2,char *erstr) {
 	char nm[STRCHAR],nm1[STRCHAR];
 	int s,er,cl,dim,itct;
@@ -589,14 +578,10 @@ int cmptreadstring(simptr sim,int cmptindex,char *word,char *line2,char *erstr) 
 	return -1; }
 
 
-/* loadcompart.  Loads a compartment, or information for an already existing
-compartment, from an already opened configuration file.  This is used to fill in
-basic compartment details.  However, it does not address any of the box
-information.  Returns 0 for success and 1 for an error; error messages are
-returned in erstr. */
+/* loadcompart */
 int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 	ParseFilePtr pfp;
-	char word[STRCHAR];
+	char word[STRCHAR],errstring[STRCHAR];
 	int done,pfpcode,firstline2,c;
 
 	pfp=*pfpptr;
@@ -613,9 +598,9 @@ int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 			pfpcode=1;
 			firstline2=0; }
 		else
-			pfpcode=Parse_ReadLine(&pfp,word,&line2,erstr);
+			pfpcode=Parse_ReadLine(&pfp,word,&line2,errstring);
 		*pfpptr=pfp;
-		CHECKS(pfpcode!=3,erstr);
+		CHECKS(pfpcode!=3,errstring);
 
 		if(pfpcode==0);																// already taken care of
 		else if(pfpcode==2) {													// end reading
@@ -628,8 +613,8 @@ int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 		else if(!line2) {															// just word
 			CHECKS(0,"unknown word or missing parameter"); }
 		else {
-			c=cmptreadstring(sim,c,word,line2,erstr);
-			CHECKS(c>=0,erstr); }}
+			c=cmptreadstring(sim,c,word,line2,errstring);
+			CHECKS(c>=0,errstring); }}
 
 	CHECKS(0,"end of file encountered before end_compartment statement");	// end of file
 

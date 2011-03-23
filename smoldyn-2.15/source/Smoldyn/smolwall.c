@@ -1,8 +1,8 @@
-/* Steven Andrews, started 10/22/01.
+/* Steven Andrews, started 10/22/2001.
 This is a library of functions for the Smoldyn program.  See documentation
-called Smoldyn_doc1.doc and Smoldyn_doc2.doc.
-Copyright 2003-2007 by Steven Andrews.  This work is distributed under the terms
-of the Gnu Lesser General Public License (LGPL). */
+ called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
+ Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
+ of the Gnu General Public License (GPL). */
 
 #include <stdio.h>
 #include <math.h>
@@ -185,7 +185,6 @@ void writewalls(simptr sim,FILE *fptr) {
 	fprintf(fptr,"\n");
 	return; }
 
-void printfException(const char* format, ...);
 /* checkwallparams.  Checks some parameters of simulation walls to make sure
 that they are reasonable.  Prints warning messages to the display.  Returns the
 total number of errors and, if warnptr is not NULL, the number of warnings in
@@ -316,7 +315,7 @@ int checkwalls_threaded(simptr sim,int ll,int reborn,boxptr bptr) {//????? chang
 
 
 //?????????? below is a new function, above is unchanged (I think these must be identical)
-/* checkwalls_unitary does the reflection, wrap-around, or absorption of molecules at
+/* checkwalls does the reflection, wrap-around, or absorption of molecules at
 walls by checking the current position, relative to the wall positions (as well
 as a past position for absorbing walls).  Only molecules in live list ll are
 checked.  If reborn is 1, only the newly added molecules are checked; if it's 0,
@@ -324,7 +323,7 @@ the full list is checked.  It does not reassign the molecules to boxes or sort
 the live and dead ones.  It does not matter if molecules are assigned to the
 proper boxes or not.  If bptr is NULL, all diffusing molecules are checked,
 otherwise only those in box bptr are checked. */
-int checkwalls_unitary(simptr sim,int ll,int reborn,boxptr bptr) {
+int checkwalls(simptr sim,int ll,int reborn,boxptr bptr) {
 	int nmol,w,d,m;
 	moleculeptr *mlist;
 	double pos2,diff,difi,step,**difstep;

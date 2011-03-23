@@ -41,7 +41,7 @@ names may be required for OpenGL header files, such as <GL/gl.h> */
 
 #endif
 
-void gl2Initialize(float xlo,float xhi,float ylo,float yhi,float zlo,float zhi);
+void gl2Initialize(char *wname,float xlo,float xhi,float ylo,float yhi,float zlo,float zhi);
 void gl2glutInit(int *argc,char **argv);
 int gl2State(int state);
 float gl2GetNumber(char *variable);

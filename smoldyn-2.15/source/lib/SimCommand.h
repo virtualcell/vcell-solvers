@@ -14,33 +14,37 @@ of the Gnu Lesser General Public License (LGPL). */
 enum CMDcode {CMDok,CMDwarn,CMDpause,CMDstop,CMDabort,CMDnone,CMDcontrol,CMDobserve,CMDmanipulate,CMDctrlORobs,CMDall};
 
 typedef struct cmdstruct {
-	double on;
-	double off;
-	double dt;
-	double xt;
-	Q_LONGLONG oni;
-	Q_LONGLONG offi;
-	Q_LONGLONG dti;
-	Q_LONGLONG invoke;
-	char *str;
-	char *erstr;
-	int i1,i2,i3;
-	double f1,f2,f3;
-	void *v1,*v2,*v3;
-	void (*freefn)(struct cmdstruct*); } *cmdptr;
+	double on;						// first command run time
+	double off;						// last command run time
+	double dt;						// time interval between commands
+	double xt;						// multiplicative time interval
+	Q_LONGLONG oni;				// first command run iteration
+	Q_LONGLONG offi;			// last command run iteration
+	Q_LONGLONG dti;				// iterations between commands
+	Q_LONGLONG invoke;		// number of times command has run
+	char *str;						// command string
+	char *erstr;					// storage space for error string
+	int i1,i2,i3;					// integers for generic use
+	double f1,f2,f3;			// doubles for generic use
+	void *v1,*v2,*v3;			// pointers for generic use
+	void (*freefn)(struct cmdstruct*);	// free command memory
+	} *cmdptr;
 
 typedef struct cmdsuperstruct {
-	queue cmd;
-	queue cmdi;
-	enum CMDcode (*cmdfn)(void*,cmdptr,char*);
-	void *cmdfnarg;
-	int iter;
-	int nfile;
-	char root[STRCHAR];
-	char froot[STRCHAR];
-	int *fsuffix;
-	char **fname;
-	FILE **fptr; } *cmdssptr;
+	queue cmd;						// queue of normal run-time commands
+	queue cmdi;						// queue of integer time commands
+	enum CMDcode (*cmdfn)(void*,cmdptr,char*);	// function that runs commands
+	void *cmdfnarg;				// function argument (e.g. sim)
+	int iter;							// number of times integer commands have run
+	int maxfile;					// number of files allocated
+	int nfile;						// number of output files
+	char root[STRCHAR];		// file path
+	char froot[STRCHAR];	// more file path, used after root
+	char **fname;					// file name [fid]
+	int *fsuffix;					// file suffix [fid]
+	int *fappend;					// 0 for overwrite, 1 for append [fid]
+	FILE **fptr;					// file pointers [fid]
+	} *cmdssptr;
 
 // non-file functions
 char *scmdcode2string(enum CMDcode code,char *string);
@@ -60,7 +64,7 @@ void scmdwritecommands(cmdssptr cmds,FILE *fptr,char *filename);
 
 // file functions
 int scmdsetfroot(cmdssptr cmds,char *root);
-int scmdsetfnames(cmdssptr cmds,char *str);
+int scmdsetfnames(cmdssptr cmds,char *str,int append);
 int scmdsetfsuffix(cmdssptr cmds,char *fname,int i);
 int scmdopenfiles(cmdssptr cmds,int overwrite);
 FILE *scmdoverwrite(cmdssptr cmds,char *line2);

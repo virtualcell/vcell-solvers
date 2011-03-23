@@ -8,16 +8,16 @@
 #define HAVE_DLFCN_H 1
 
 /* Define to 1 if you have the <GLUT/glut.h> header file. */
-/* #undef HAVE_GLUT_GLUT_H */
+#define HAVE_GLUT_GLUT_H 1
 
 /* Define to 1 if you have the <GL/glut.h> header file. */
 /* #undef HAVE_GL_GLUT_H */
 
 /* Define to 1 if you have the <GL/glu.h> header file. */
-#define HAVE_GL_GLU_H 1
+/* #undef HAVE_GL_GLU_H */
 
 /* Define to 1 if you have the <GL/gl.h> header file. */
-#define HAVE_GL_GL_H 1
+/* #undef HAVE_GL_GL_H */
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
@@ -26,16 +26,16 @@
 /* #undef HAVE_LIBGLUT */
 
 /* Define to 1 if you have the `tiff' library (-ltiff). */
-#define HAVE_LIBTIFF 1
+/* #undef HAVE_LIBTIFF */
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
 
 /* Define to 1 if you have the <OpenGL/glu.h> header file. */
-/* #undef HAVE_OPENGL_GLU_H */
+#define HAVE_OPENGL_GLU_H 1
 
 /* Define to 1 if you have the <OpenGL/gl.h> header file. */
-/* #undef HAVE_OPENGL_GL_H */
+#define HAVE_OPENGL_GL_H 1
 
 /* Define if you have POSIX threads libraries and header files. */
 /* #undef HAVE_PTHREAD */

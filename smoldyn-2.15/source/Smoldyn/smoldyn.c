@@ -1,7 +1,8 @@
-/* Steven Andrews, started 10/22/01.
-See documentation called Smoldyn1_doc.doc and Smoldyn2_doc.doc.
-Copyright 2003-2007 by Steven Andrews.  This work is distributed under the terms
-of the Gnu Lesser General Public License (LGPL). */
+/* Steven Andrews, started 10/22/2001.
+ This is the entry point for the Smoldyn program.  See documentation
+ called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
+ Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
+ of the Gnu General Public License (GPL). */
 
 #include <math.h>
 #include <stdio.h>
@@ -90,7 +91,7 @@ function returns as the program quits. */
 #ifdef __gl_h_
 
 void smolsimulategl(simptr sim) {
-	int dim,qflag,lt;
+	int dim,qflag,lt,er;
 	wallptr *wlist;
 	graphicsssptr graphss;
 	GLenum gllightnum;
@@ -103,10 +104,12 @@ void smolsimulategl(simptr sim) {
 	if(!qflag) printf("Starting simulation\n");
 	dim=sim->dim;
 	wlist=sim->wlist;
-	if(dim==1) gl2Initialize((float)wlist[0]->pos,(float)wlist[1]->pos,0,0,0,0);
-	else if(dim==2) gl2Initialize((float)wlist[0]->pos,(float)wlist[1]->pos,(float)wlist[2]->pos,(float)wlist[3]->pos,0,0);
+	//char* wname=sim->filename;
+	char* wname="Particle View";
+	if(dim==1) gl2Initialize(wname,(float)wlist[0]->pos,(float)wlist[1]->pos,0,0,0,0);
+	else if(dim==2) gl2Initialize(wname,(float)wlist[0]->pos,(float)wlist[1]->pos,(float)wlist[2]->pos,(float)wlist[3]->pos,0,0);
 	else {
-		gl2Initialize((float)wlist[0]->pos,(float)wlist[1]->pos,(float)wlist[2]->pos,(float)wlist[3]->pos,(float)wlist[4]->pos,(float)wlist[5]->pos);
+		gl2Initialize(wname,(float)wlist[0]->pos,(float)wlist[1]->pos,(float)wlist[2]->pos,(float)wlist[3]->pos,(float)wlist[4]->pos,(float)wlist[5]->pos);
 		if(sim->srfss) {
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);}}
@@ -138,6 +141,8 @@ void smolsimulategl(simptr sim) {
 	glutTimerFunc(0,TimerFunction,0);
 	sim->clockstt=time(NULL);
 	Sim=sim;
+	er=simdocommands(sim);
+	if(er) endsimulate(sim,er);
 	glutMainLoop();
 	return; }
 
@@ -191,6 +196,11 @@ int main(int argc,char *argv[]) {
 		root[STRCHAR-1]='\0';
 		argc--;
 		argv++; }
+	er=Parse_CmdLineArg(&argc,argv,NULL);
+	if(er) {
+		if(er==1) throw("Out of memory");
+		else fprintf(stderr,"Follow command line '--define' options with key=replacement\n");
+		return 0; }
 	if(argc>1) {
 		if(argv[1][0]=='-') {
 			// -tid is always at the end of argument list

@@ -345,8 +345,8 @@ void Geo_NearestLineSegPt(double *pt1,double *pt2,double *point,double*ans,int d
 
 
 void Geo_NearestTriPt(double *pt1,double *pt2,double *pt3,double *norm,double *point,double *ans) {
-	double dx1,dy1,dz1,dx2,dy2,dz2,crss[3],dot,dot12,dot23,dot31;
-	int d;
+	double dx1,dy1,dz1,dx2,dy2,dz2,crss[3],dot,cross12,cross23,cross31,len2;
+	int d,corner;
 
 	dx1=pt2[0]-pt1[0];
 	dy1=pt2[1]-pt1[1];
@@ -357,7 +357,7 @@ void Geo_NearestTriPt(double *pt1,double *pt2,double *pt3,double *norm,double *p
 	crss[0]=dy1*dz2-dz1*dy2;
 	crss[1]=-dx1*dz2+dz1*dx2;
 	crss[2]=dx1*dy2-dy1*dx2;
-	dot12=crss[0]*norm[0]+crss[1]*norm[1]+crss[2]*norm[2];
+	cross12=crss[0]*norm[0]+crss[1]*norm[1]+crss[2]*norm[2];
 
 	dx1=pt3[0]-pt2[0];
 	dy1=pt3[1]-pt2[1];
@@ -368,7 +368,7 @@ void Geo_NearestTriPt(double *pt1,double *pt2,double *pt3,double *norm,double *p
 	crss[0]=dy1*dz2-dz1*dy2;
 	crss[1]=-dx1*dz2+dz1*dx2;
 	crss[2]=dx1*dy2-dy1*dx2;
-	dot23=crss[0]*norm[0]+crss[1]*norm[1]+crss[2]*norm[2];
+	cross23=crss[0]*norm[0]+crss[1]*norm[1]+crss[2]*norm[2];
 
 	dx1=pt1[0]-pt3[0];
 	dy1=pt1[1]-pt3[1];
@@ -379,62 +379,83 @@ void Geo_NearestTriPt(double *pt1,double *pt2,double *pt3,double *norm,double *p
 	crss[0]=dy1*dz2-dz1*dy2;
 	crss[1]=-dx1*dz2+dz1*dx2;
 	crss[2]=dx1*dy2-dy1*dx2;
-	dot31=crss[0]*norm[0]+crss[1]*norm[1]+crss[2]*norm[2];
+	cross31=crss[0]*norm[0]+crss[1]*norm[1]+crss[2]*norm[2];
 
-	if(dot12>=0 && dot23>=0 && dot31>=0)
+	corner=0;
+	if(cross12>=0 && cross23>=0 && cross31>=0)
 		for(d=0;d<3;d++) ans[d]=point[d];
-	else if(dot12<0 && dot23<0) {
-		dot=(point[0]-pt2[0])*norm[0]+(point[1]-pt2[1])*norm[1]+(point[2]-pt2[2])*norm[2];
-		for(d=0;d<3;d++) ans[d]=pt2[d]+dot*norm[d]; }
-	else if(dot23<0 && dot31<0) {
-		dot=(point[0]-pt3[0])*norm[0]+(point[1]-pt3[1])*norm[1]+(point[2]-pt3[2])*norm[2];
-		for(d=0;d<3;d++) ans[d]=pt3[d]+dot*norm[d]; }
-	else if(dot31<0 && dot12<0) {
-		dot=(point[0]-pt1[0])*norm[0]+(point[1]-pt1[1])*norm[1]+(point[2]-pt1[2])*norm[2];
-		for(d=0;d<3;d++) ans[d]=pt1[d]+dot*norm[d]; }
-	else if(dot12<0) {
-		dx1=norm[0];
-		dy1=norm[1];
-		dz1=norm[2];
+	else if(cross12<0) {
 		dx2=pt2[0]-pt1[0];
 		dy2=pt2[1]-pt1[1];
 		dz2=pt2[2]-pt1[2];
-		crss[0]=dy1*dz2-dz1*dy2;
-		crss[1]=-dx1*dz2+dz1*dx2;
-		crss[2]=dx1*dy2-dy1*dx2;
-		dot12/=dx2*dx2+dy2*dy2+dz2*dz2;
-		for(d=0;d<3;d++) ans[d]=point[d]-dot12*crss[d]; }
-	else if(dot23<0) {
-		dx1=norm[0];
-		dy1=norm[1];
-		dz1=norm[2];
+		len2=dx2*dx2+dy2*dy2+dz2*dz2;
+		dot=dx2*(point[0]-pt1[0])+dy2*(point[1]-pt1[1])+dz2*(point[2]-pt1[2]);
+		dot/=len2;
+		if(dot<=0) corner=1;
+		else if(dot>=1) corner=2;
+		else {
+			dx1=norm[0];
+			dy1=norm[1];
+			dz1=norm[2];
+			crss[0]=dy1*dz2-dz1*dy2;
+			crss[1]=-dx1*dz2+dz1*dx2;
+			crss[2]=dx1*dy2-dy1*dx2;
+			cross12/=len2;
+			for(d=0;d<3;d++) ans[d]=point[d]-cross12*crss[d]; }}
+	else if(cross23<0) {
 		dx2=pt3[0]-pt2[0];
 		dy2=pt3[1]-pt2[1];
 		dz2=pt3[2]-pt2[2];
-		crss[0]=dy1*dz2-dz1*dy2;
-		crss[1]=-dx1*dz2+dz1*dx2;
-		crss[2]=dx1*dy2-dy1*dx2;
-		dot23/=dx2*dx2+dy2*dy2+dz2*dz2;
-		for(d=0;d<3;d++) ans[d]=point[d]-dot23*crss[d]; }
-	else if(dot31<0) {
-		dx1=norm[0];
-		dy1=norm[1];
-		dz1=norm[2];
+		len2=dx2*dx2+dy2*dy2+dz2*dz2;
+		dot=dx2*(point[0]-pt2[0])+dy2*(point[1]-pt2[1])+dz2*(point[2]-pt2[2]);
+		dot/=len2;
+		if(dot<=0) corner=2;
+		else if(dot>=1) corner=3;
+		else {
+			dx1=norm[0];
+			dy1=norm[1];
+			dz1=norm[2];
+			crss[0]=dy1*dz2-dz1*dy2;
+			crss[1]=-dx1*dz2+dz1*dx2;
+			crss[2]=dx1*dy2-dy1*dx2;
+			cross23/=dx2*dx2+dy2*dy2+dz2*dz2;
+			for(d=0;d<3;d++) ans[d]=point[d]-cross23*crss[d]; }}
+	else if(cross31<0) {
 		dx2=pt1[0]-pt3[0];
 		dy2=pt1[1]-pt3[1];
 		dz2=pt1[2]-pt3[2];
-		crss[0]=dy1*dz2-dz1*dy2;
-		crss[1]=-dx1*dz2+dz1*dx2;
-		crss[2]=dx1*dy2-dy1*dx2;
-		dot31/=dx2*dx2+dy2*dy2+dz2*dz2;
-		for(d=0;d<3;d++) ans[d]=point[d]-dot31*crss[d]; }
+		len2=dx2*dx2+dy2*dy2+dz2*dz2;
+		dot=dx2*(point[0]-pt3[0])+dy2*(point[1]-pt3[1])+dz2*(point[2]-pt3[2]);
+		dot/=len2;
+		if(dot<=0) corner=3;
+		else if(dot>=1) corner=1;
+		else {
+			dx1=norm[0];
+			dy1=norm[1];
+			dz1=norm[2];
+			crss[0]=dy1*dz2-dz1*dy2;
+			crss[1]=-dx1*dz2+dz1*dx2;
+			crss[2]=dx1*dy2-dy1*dx2;
+			cross31/=dx2*dx2+dy2*dy2+dz2*dz2;
+			for(d=0;d<3;d++) ans[d]=point[d]-cross31*crss[d]; }}
+
+	if(!corner);
+	else if(corner==1) {
+		dot=(point[0]-pt1[0])*norm[0]+(point[1]-pt1[1])*norm[1]+(point[2]-pt1[2])*norm[2];
+		for(d=0;d<3;d++) ans[d]=pt1[d]+dot*norm[d]; }
+	else if(corner==2) {
+		dot=(point[0]-pt2[0])*norm[0]+(point[1]-pt2[1])*norm[1]+(point[2]-pt2[2])*norm[2];
+		for(d=0;d<3;d++) ans[d]=pt2[d]+dot*norm[d]; }
+	else if(corner==3) {
+		dot=(point[0]-pt3[0])*norm[0]+(point[1]-pt3[1])*norm[1]+(point[2]-pt3[2])*norm[2];
+		for(d=0;d<3;d++) ans[d]=pt3[d]+dot*norm[d]; }
 
 	return; }
 
 
 void Geo_NearestTrianglePt(double *pt1,double *pt2,double *pt3,double *norm,double *point,double *ans) {
-	double dx1,dy1,dz1,dx2,dy2,dz2,crss[3],dot,dot12,dot23,dot31;
-	int d;
+	double dx1,dy1,dz1,dx2,dy2,dz2,crss[3],dot,cross12,cross23,cross31,len2;
+	int d,corner;
 
 	dx1=pt2[0]-pt1[0];
 	dy1=pt2[1]-pt1[1];
@@ -445,7 +466,7 @@ void Geo_NearestTrianglePt(double *pt1,double *pt2,double *pt3,double *norm,doub
 	crss[0]=dy1*dz2-dz1*dy2;
 	crss[1]=-dx1*dz2+dz1*dx2;
 	crss[2]=dx1*dy2-dy1*dx2;
-	dot12=crss[0]*norm[0]+crss[1]*norm[1]+crss[2]*norm[2];
+	cross12=crss[0]*norm[0]+crss[1]*norm[1]+crss[2]*norm[2];
 
 	dx1=pt3[0]-pt2[0];
 	dy1=pt3[1]-pt2[1];
@@ -456,7 +477,7 @@ void Geo_NearestTrianglePt(double *pt1,double *pt2,double *pt3,double *norm,doub
 	crss[0]=dy1*dz2-dz1*dy2;
 	crss[1]=-dx1*dz2+dz1*dx2;
 	crss[2]=dx1*dy2-dy1*dx2;
-	dot23=crss[0]*norm[0]+crss[1]*norm[1]+crss[2]*norm[2];
+	cross23=crss[0]*norm[0]+crss[1]*norm[1]+crss[2]*norm[2];
 
 	dx1=pt1[0]-pt3[0];
 	dy1=pt1[1]-pt3[1];
@@ -467,44 +488,59 @@ void Geo_NearestTrianglePt(double *pt1,double *pt2,double *pt3,double *norm,doub
 	crss[0]=dy1*dz2-dz1*dy2;
 	crss[1]=-dx1*dz2+dz1*dx2;
 	crss[2]=dx1*dy2-dy1*dx2;
-	dot31=crss[0]*norm[0]+crss[1]*norm[1]+crss[2]*norm[2];
+	cross31=crss[0]*norm[0]+crss[1]*norm[1]+crss[2]*norm[2];
 
-	if(dot12>=0 && dot23>=0 && dot31>=0) {
+	corner=0;
+	if(cross12>=0 && cross23>=0 && cross31>=0) {
 		dot=(point[0]-pt1[0])*norm[0]+(point[1]-pt1[1])*norm[1]+(point[2]-pt1[2])*norm[2];
 		for(d=0;d<3;d++) ans[d]=point[d]-dot*norm[d]; }
-	else if(dot12<0 && dot23<0) {
-		for(d=0;d<3;d++) ans[d]=pt2[d]; }
-	else if(dot23<0 && dot31<0) {
-		for(d=0;d<3;d++) ans[d]=pt3[d]; }
-	else if(dot31<0 && dot12<0) {
-		for(d=0;d<3;d++) ans[d]=pt1[d]; }
-	else if(dot12<0) {
+	else if(cross12<0) {
 		dx2=pt2[0]-pt1[0];
 		dy2=pt2[1]-pt1[1];
 		dz2=pt2[2]-pt1[2];
+		len2=dx2*dx2+dy2*dy2+dz2*dz2;
 		dot=(point[0]-pt1[0])*dx2+(point[1]-pt1[1])*dy2+(point[2]-pt1[2])*dz2;
-		dot/=sqrt(dx2*dx2+dy2*dy2+dz2*dz2);
-		ans[0]=pt1[0]+dot*dx2;
-		ans[1]=pt1[1]+dot*dy2;
-		ans[2]=pt1[2]+dot*dz2; }
-	else if(dot23<0) {
+		dot/=len2;
+		if(dot<=0) corner=1;
+		else if(dot>=1) corner=2;
+		else {
+			ans[0]=pt1[0]+dot*dx2;
+			ans[1]=pt1[1]+dot*dy2;
+			ans[2]=pt1[2]+dot*dz2; }}
+	else if(cross23<0) {
 		dx2=pt3[0]-pt2[0];
 		dy2=pt3[1]-pt2[1];
 		dz2=pt3[2]-pt2[2];
+		len2=dx2*dx2+dy2*dy2+dz2*dz2;
 		dot=(point[0]-pt2[0])*dx2+(point[1]-pt2[1])*dy2+(point[2]-pt2[2])*dz2;
-		dot/=sqrt(dx2*dx2+dy2*dy2+dz2*dz2);
-		ans[0]=pt2[0]+dot*dx2;
-		ans[1]=pt2[1]+dot*dy2;
-		ans[2]=pt2[2]+dot*dz2; }
-	else if(dot31<0) {
+		dot/=len2;
+		if(dot<=0) corner=2;
+		else if(dot>=1) corner=3;
+		else {
+			ans[0]=pt2[0]+dot*dx2;
+			ans[1]=pt2[1]+dot*dy2;
+			ans[2]=pt2[2]+dot*dz2; }}
+	else if(cross31<0) {
 		dx2=pt1[0]-pt3[0];
 		dy2=pt1[1]-pt3[1];
 		dz2=pt1[2]-pt3[2];
+		len2=dx2*dx2+dy2*dy2+dz2*dz2;
 		dot=(point[0]-pt3[0])*dx2+(point[1]-pt3[1])*dy2+(point[2]-pt3[2])*dz2;
-		dot/=sqrt(dx2*dx2+dy2*dy2+dz2*dz2);
-		ans[0]=pt3[0]+dot*dx2;
-		ans[1]=pt3[1]+dot*dy2;
-		ans[2]=pt3[2]+dot*dz2; }
+		dot/=len2;
+		if(dot<=0) corner=3;
+		else if(dot>=1) corner=1;
+		else {
+			ans[0]=pt3[0]+dot*dx2;
+			ans[1]=pt3[1]+dot*dy2;
+			ans[2]=pt3[2]+dot*dz2; }}
+
+	if(!corner);
+	else if(corner==1)
+		for(d=0;d<3;d++) ans[d]=pt1[d];
+	else if(corner==2)
+		for(d=0;d<3;d++) ans[d]=pt2[d];
+	else if(corner==3)
+		for(d=0;d<3;d++) ans[d]=pt3[d];
 
 	return; }
 

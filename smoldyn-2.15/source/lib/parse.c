@@ -12,6 +12,7 @@ of the Gnu Lesser General Public License (LGPL). */
 #define CHECK(A) if(!(A)) goto failure; else (void)0
 #define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0';goto failure;} else (void)0
 
+
 /* Parse_AllocFilePtr. */
 ParseFilePtr Parse_AllocFilePtr(char *fileroot,char *filename) {
 	ParseFilePtr pfp;
@@ -80,7 +81,7 @@ int Parse_ExpandDefine(ParseFilePtr pfp,int maxdef) {
 	char **newdefkey,**newdefrep;
 	int *newdefgbl,d;
 
-	if(!pfp||maxdef<1) return 2;
+	if(!pfp || maxdef<1) return 2;
 
 	newdefkey=NULL;
 	newdefrep=NULL;
@@ -92,7 +93,7 @@ int Parse_ExpandDefine(ParseFilePtr pfp,int maxdef) {
 	CHECK(newdefgbl=(int*) calloc(maxdef,sizeof(int)));
 	for(d=0;d<maxdef;d++) newdefgbl[d]=0;
 
-	for(d=0;d<pfp->ndef&&d<maxdef;d++) {
+	for(d=0;d<pfp->ndef && d<maxdef;d++) {
 		newdefkey[d]=pfp->defkey[d];
 		newdefrep[d]=pfp->defreplace[d];
 		newdefgbl[d]=pfp->defgbl[d]; }
@@ -121,14 +122,14 @@ int Parse_ExpandDefine(ParseFilePtr pfp,int maxdef) {
 
 /* Parse_AddDefine. */
 int Parse_AddDefine(ParseFilePtr pfp,char *key,char *replace,int global) {
-	int d,d2,ans,len;
+	int d,d2,len;
 
 	d=stringfind(pfp->defkey,pfp->ndef,key);
-	if(d>=0) ans=2;
-	else {
-		if(pfp->ndef==pfp->maxdef)
-			if(Parse_ExpandDefine(pfp,1+2*pfp->ndef)) return 1;
-		pfp->ndef++; }
+	if(d>=0) return 2;
+
+	if(pfp->ndef==pfp->maxdef)
+		if(Parse_ExpandDefine(pfp,1+2*pfp->ndef)) return 1;
+	pfp->ndef++;
 
 	len=strlen(key);
 	for(d=0;d<pfp->ndef-1;d++) {				// find location
@@ -168,42 +169,122 @@ int Parse_RemoveDefine(ParseFilePtr pfp,char *key) {
 	return 0; }
 
 
+/* Parse_DisplayDefine */
+void Parse_DisplayDefine(ParseFilePtr pfp) {
+	int d;
+
+	printf("Definitions in %s file:\n",pfp->fname);
+	for(d=0;d<pfp->ndef;d++)
+		printf("%s\t%s\n",pfp->defkey[d],pfp->defreplace[d]);
+	return; }
+
+
 /* Parse_DoDefine. */
 int Parse_DoDefine(ParseFilePtr pfp) {
-	int d,more,count,val,ans;
-	const int maxcount=100;
+	int d,val,ans,offset;
+	char *line2;
 
-	if(!strncmp(pfp->line,"define",6)) return 0;
-	if(!strncmp(pfp->line,"undefine",8)) return 0;
-	if(!strncmp(pfp->line,"ifdefine",8)) return 0;
-	if(!strncmp(pfp->line,"ifundefine",10)) return 0;
+	line2=strnword(pfp->line,1);
+	offset=line2-pfp->line;
+	if(!line2) return 0;
+	if(!strncmp(line2,"define",6)) return 0;
+	if(!strncmp(line2,"undefine",8)) return 0;
+	if(!strncmp(line2,"ifdefine",8)) return 0;
+	if(!strncmp(line2,"ifundefine",10)) return 0;
 
-	count=0;
-	more=1;
 	ans=0;
-	while(more&&count<maxcount) {
-		count++;
-		more=0;
-		for(d=0;d<pfp->ndef;d++) {
-			val=strstrreplace(pfp->line,pfp->defkey[d],pfp->defreplace[d],STRCHAR);
-			if(val<0) ans=2;
-			if(val!=0) more=1; }}
+	for(d=0;d<pfp->ndef;d++) {
+		val=strstrreplace(line2,pfp->defkey[d],pfp->defreplace[d],STRCHAR-offset);
+		if(val<0) ans=2; }
 
-	if(count==maxcount) return 1;
 	return ans; }
+
+
+/* Parse_CmdLineArg */
+int Parse_CmdLineArg(int *argcptr,char **argv,ParseFilePtr pfp) {
+	static int ndefine=0,maxdefine=0;
+	static char **keylist=NULL,**replist=NULL;
+
+	int argc,argc2,i,j,newmax,er;
+	char **newkeylist,**newreplist,*eqchar,*str1,*str2;
+
+	if(pfp) {																	// write any current data to pfp
+		for(i=0;i<ndefine;i++) {
+			er=Parse_AddDefine(pfp,keylist[i],replist[i],1);
+			if(er==1) return 1; }
+
+		for(i=0;i<maxdefine;i++) {
+			free(keylist[i]);
+			free(replist[i]); }
+		free(keylist);
+		free(replist);
+		keylist=NULL;
+		replist=NULL;
+		ndefine=0;
+		maxdefine=0; }
+	
+	if(argcptr && *argcptr>0 && argv) {				// there are arguments for reading
+		argc=*argcptr;
+		argc2=argc/2;
+		if(!pfp && maxdefine-ndefine<argc2) {		// allocate space
+			newmax=ndefine+argc2;
+			
+			CHECK(newkeylist=(char **) calloc(newmax,sizeof(char*)));
+			for(i=0;i<newmax;i++) newkeylist[i]=NULL;
+			for(i=0;i<maxdefine;i++) newkeylist[i]=keylist[i];
+			for(;i<newmax;i++) CHECK(newkeylist[i]=EmptyString());
+
+			CHECK(newreplist=(char **) calloc(newmax,sizeof(char *)));
+			for(i=0;i<newmax;i++) newreplist[i]=NULL;
+			for(i=0;i<maxdefine;i++) newreplist[i]=replist[i];
+			for(;i<newmax;i++) CHECK(newreplist[i]=EmptyString());
+			
+			maxdefine=newmax;
+			free(keylist);
+			keylist=newkeylist;
+			free(replist);
+			replist=newreplist; }
+
+		for(i=0;i<argc;i++)
+			if(!strcmp(argv[i],"--define")) {
+				if(argc-i<2 || !strchr(argv[i+1],'=')) return 2;
+				eqchar=strchr(argv[i+1],'=');
+				eqchar[0]='\0';
+				eqchar++;
+				if(!pfp) {
+					strncpy(keylist[ndefine],argv[i+1],STRCHAR);
+					strncpy(replist[ndefine],eqchar,STRCHAR);
+					ndefine++; }
+				else {
+					er=Parse_AddDefine(pfp,argv[i+1],eqchar,1);
+					CHECK(er!=1); }
+				str1=argv[i];
+				str2=argv[i+1];
+				for(j=i;j<argc-2;j++) argv[j]=argv[j+2];
+				argv[j]=str1;
+				argv[j+1]=str2;
+				argc-=2;
+				i--; }
+		*argcptr=argc; }
+	
+	return 0;
+	
+failure:
+	return 1; }
 
 
 /* Parse_Start. */
 ParseFilePtr Parse_Start(char *fileroot,char *filename,char *erstr) {
 	ParseFilePtr pfp;
+	char string[STRCHAR];
 
 	pfp=Parse_AllocFilePtr(fileroot,filename);
 	CHECKS(pfp,"Unable to allocate memory for reading configuration file");
 	pfp->fptr=fopen(pfp->fname,"r");
 	if(!pfp->fptr) {
-		sprintf(erstr,"File '%s' not found\n",pfp->fname);
+		sprintf(string,"File '%s' not found\n",pfp->fname);
 		Parse_FreeFilePtr(pfp);
-		CHECKS(0,erstr); }
+		CHECKS(0,string); }
 	return pfp;
 
  failure:
@@ -219,7 +300,7 @@ int Parse_ReadLine(ParseFilePtr *pfpptr,char *word,char **line2ptr,char *erstr) 
 	int d;
 	char str1[STRCHAR];
 
-	CHECKS(pfpptr&&word&&line2ptr&&erstr,"PROGRAM BUG: Parse_ReadLine");
+	CHECKS(pfpptr && word && line2ptr && erstr,"PROGRAM BUG: Parse_ReadLine");
 	pfp=*pfpptr;
 	if(!pfp) return 2;
 
@@ -239,14 +320,13 @@ int Parse_ReadLine(ParseFilePtr *pfpptr,char *word,char **line2ptr,char *erstr) 
 			skip=1;
 			if(!strncmp(line,"*/",2))
 			pfp->incomment=0; }
-		if(!skip&&pfp->inifdef) {
+		if(!skip && pfp->inifdef) {
 			skip=1;
 			if(!strncmp(line,"ifdefine",8)) pfp->inifdef++;
 			else if(!strncmp(line,"endif",5)) pfp->inifdef--;
-			else if(pfp->inifdef==1&&!strncmp(line,"else",4)) pfp->inifdef=0; }
+			else if(pfp->inifdef==1 && !strncmp(line,"else",4)) pfp->inifdef=0; }
 		if(!skip) {
 			er=Parse_DoDefine(pfp);
-			CHECKS(er!=1,"probable recursion in macro substitution");
 			CHECKS(er!=2,"overflow in line due to macro substitution");
 			itct=sscanf(line,"%s",word);
 			line2=strnword(line,2);
@@ -255,7 +335,7 @@ int Parse_ReadLine(ParseFilePtr *pfpptr,char *word,char **line2ptr,char *erstr) 
 
 	if(skip);
 
-	else if(!linetest||(itct>0&&!strcmp(word,"end_file"))) {// end_file
+	else if(!linetest || (itct>0 && !strcmp(word,"end_file"))) {// end_file
 		pfp1=pfp->prevfile;
 		fclose(pfp->fptr);
 		Parse_FreeFilePtr(pfp);
@@ -290,18 +370,19 @@ int Parse_ReadLine(ParseFilePtr *pfpptr,char *word,char **line2ptr,char *erstr) 
 		itct=sscanf(line2,"%s",str1);
 		CHECKS(itct==1,"unable to read define key");
 		line2=strnword(line2,2);
-		if(line2) {
-			CHECKS(!strstr(line2,str1),"recursive define statement"); }
-		CHECKS(!Parse_AddDefine(pfp,str1,line2,0),"Out of memory adding new define"); }
+		strcutwhite(line2,2);
+		er=Parse_AddDefine(pfp,str1,line2,0);
+		if(er==2) printf("Warning: 'define %s %s' is ignored because it is a re-definition\n",str1,line2);
+		CHECKS(er!=1,"Out of memory adding new define"); }
 
 	else if(!strcmp(word,"define_global")) {			// define_global
 		CHECKS(line2,"missing define_global text");
 		itct=sscanf(line2,"%s",str1);
 		CHECKS(itct==1,"unable to read define_global key");
 		line2=strnword(line2,2);
-		if(line2) {
-			CHECKS(!strstr(line2,str1),"recursive define statement"); }
-		CHECKS(!Parse_AddDefine(pfp,str1,line2,1),"Out of memory adding new define"); }
+		er=Parse_AddDefine(pfp,str1,line2,1);
+		if(er==2) printf("Warning: 'define %s %s' is ignored because it is a re-definition\n",str1,line2);
+		CHECKS(er!=1,"Out of memory adding new define"); }
 
 	else if(!strcmp(word,"undefine")) {						// undefine
 		CHECKS(line2,"missing undefine key");
@@ -323,7 +404,10 @@ int Parse_ReadLine(ParseFilePtr *pfpptr,char *word,char **line2ptr,char *erstr) 
 		CHECKS(itct==1,"unable to read undefine key");
 		if(stringfind(pfp->defkey,pfp->ndef,str1)!=-1)
 			pfp->inifdef=1; }
-
+	
+	else if(!strcmp(word,"display_define")) {			// display_define
+		Parse_DisplayDefine(pfp); }
+		
 	else if(!strcmp(word,"else")) {								// else
 		pfp->inifdef=1; }
 
