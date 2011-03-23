@@ -2,7 +2,7 @@ CC = g++
 
 CPPFLAGS = -c -O2 -DHAVE_CONFIG_H -DINTEL -DUNIX -DMACOSX \
 		-arch x86_64 -arch ppc -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5 \
-		-I../mac -I../lib -Wall -I../../../VCell/include  \
+		-I../../mac -I../lib -Wall -I../../../VCell/include  \
 		-I../../../IDAWin -I../../../netcdf-3.6.2/libsrc -I../../../netcdf-3.6.2/cxx  
 LDFLAGS = -arch x86_64 -arch ppc -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk \
 	-mmacosx-version-min=10.5 -no_compact_linkedit		

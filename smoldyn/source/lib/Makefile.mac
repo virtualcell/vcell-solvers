@@ -1,6 +1,6 @@
 CC = g++
 
-CPPFLAGS = -c -DHAVE_CONFIG_H -DMACOSX -I../mac -Wall -I.  -O2 \
+CPPFLAGS = -c -DHAVE_CONFIG_H -DMACOSX -I../../mac -Wall -I.  -O2 \
 	-arch x86_64 -arch ppc -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5
 
 SMOLDYN_LIB = libsmoldyn.a
