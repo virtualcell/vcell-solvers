@@ -74,7 +74,7 @@
 /* #undef NO_MINUS_C_MINUS_O */
 
 /* Whether to compile Smoldyn with OpenGL support */
-#define OPENGL 1
+//#define OPENGL 1
 
 /* Name of package */
 #define PACKAGE "smoldyn"
