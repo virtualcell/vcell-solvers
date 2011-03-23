@@ -236,12 +236,37 @@ void VCellSmoldynOutput::clearLog() {
 	remove(dataProcOutput);
 }
 
+bool VCellSmoldynOutput::isInSameCompartment(double *pos1, double* pos2) {
+
+	for(int cl=0;cl<smoldynSim->cmptss->ncmpt;cl++) {
+		int in1=posincompart(smoldynSim,pos1,smoldynSim->cmptss->cmptlist[cl]);
+		int in2=posincompart(smoldynSim,pos2,smoldynSim->cmptss->cmptlist[cl]);
+		if (in1 == 1 && in2 == 1) {
+			return true;
+		}
+		if (in1 == 1 || in2 == 1) {
+			return false;
+		}
+	}
+	return false;
+}
+
+static double distance2(double* pos1, double* pos2) {
+	return (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) 
+		+ (pos1[1] - pos2[1]) * (pos1[1] - pos2[1])
+		+ (pos1[2] - pos2[2]) * (pos1[2] - pos2[2]);
+}
+
 void VCellSmoldynOutput::computeOutputData() {
 	molssptr mols = smoldynSim->mols;
 
 	memset(outputData, 0, outputDataSize * sizeof(double));
 	memset(totalCounts, 0, numVars * sizeof(int));
 
+	double dx = extent[0]/(Nx-1);
+	double dy = (dimension > 1) ? extent[1]/(Ny-1) : 0;
+	double dz = (dimension > 2) ? extent[2]/(Nz-1) : 0;
+	double center[3];
 	for(int ll=0;ll<mols->nlist;ll++) {
 		for(int m=0;m<mols->nl[ll];m++) {
 			moleculeptr mptr=mols->live[ll][m];
@@ -249,17 +274,91 @@ void VCellSmoldynOutput::computeOutputData() {
 			if (varIndex >= 0 ) {
 				double* coord = mptr->pos;
 				int i = 0, j = 0, k = 0;
-				i = (int)((coord[0] - origin[0]) * (Nx - 1)/extent[0] + 0.5);
-				if (dimension > 1) {
-					j = (int)((coord[1] - origin[1]) * (Ny - 1)/extent[1] + 0.5);
+				i = (int)((coord[0] - origin[0])/dx + 0.5);
+				center[0] = i * dx;
+				if (dimension > 1) {				
+					j = (int)((coord[1] - origin[1])/dy + 0.5);
+					center[1] = j * dy;
 					if (dimension > 2) {
-						k = (int)((coord[2] - origin[2]) * (Nz - 1)/extent[2] + 0.5);
+						k = (int)((coord[2] - origin[2])/dz + 0.5);
+						center[2] = k * dy;
 					}
 				}
 
 				int volIndex = k * Nx * Ny + j * Nx + i;
-				outputData[varIndex * varSize + volIndex] ++;
+				// not in the same compartment, try to find the nearest neighbor
+				// in the same compartment, if not found, keep it in the wrong 
+				// compartment
+				if (!isInSameCompartment(coord, center)) {
+					bool bFound = false;
+					double distance = 1e9;
+					if (i > 0) {
+						double center0[3] = {center[0]-dx, center[1], center[2]};
+						if (isInSameCompartment(coord, center0)) {
+							double dl = distance2(center0, coord);
+							if (distance > dl) {
+								distance = dl;
+								volIndex = k * Nx * Ny + j * Nx + (i-1);
+							}
+						}
+					}
+					if (i < Nx - 1) {
+						double center0[3] = {center[0]+dx, center[1], center[2]};
+						if (isInSameCompartment(coord, center0)) {
+							double dl = distance2(center0, coord);
+							if (distance > dl) {
+								distance = dl;
+								volIndex = k * Nx * Ny + j * Nx + (i+1);
+							}
+						}
+					}
+					if (dimension > 1) {
+						if (j > 0) {
+							double center0[3] = {center[0], center[1]-dy, center[2]};
+							if (isInSameCompartment(coord, center0)) {
+								double dl = distance2(center0, coord);
+								if (distance > dl) {
+									distance = dl;
+									volIndex = k * Nx * Ny + (j-1) * Nx + i;
+								}
+							}
+						}
+						if (j < Ny - 1) {
+							double center0[3] = {center[0], center[1]+dy, center[2]};
+							if (isInSameCompartment(coord, center0)) {
+								double dl = distance2(center0, coord);
+								if (distance > dl) {
+									distance = dl;
+									volIndex = k * Nx * Ny + (j+1) * Nx + i;
+								}
+							}
+						}
+						if (dimension > 2) {
+							if (k > 0) {
+								double center0[3] = {center[0], center[1], center[2]-dz};
+								if (isInSameCompartment(coord, center0)) {
+									double dl = distance2(center0, coord);
+									if (distance > dl) {
+										distance = dl;
+										volIndex = (k-1) * Nx * Ny + j * Nx + i;
+									}
+								}
+							}
+							if (k < Nz - 1) {
+								double center0[3] = {center[0], center[1], center[2]+dz};
+								if (isInSameCompartment(coord, center0)) {
+									double dl = distance2(center0, coord);
+									if (distance > dl) {
+										distance = dl;
+										volIndex = (k+1) * Nx * Ny + j * Nx + i;
+									}
+								}
+							}
+						}
+					}
 
+				}
+				outputData[varIndex * varSize + volIndex] ++;
 				totalCounts[varIndex] ++;
 			}
 		}

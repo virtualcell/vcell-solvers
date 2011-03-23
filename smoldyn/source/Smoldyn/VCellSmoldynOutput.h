@@ -48,9 +48,10 @@ private:
 	int outputDataSize;
 
 	DataProcessorRoiTimeSeriesSmoldyn* smoldynDataProcessor;
-	
+	bool isInSameCompartment(double *pos1, double* pos2);
 
 	friend class DataProcessorRoiTimeSeriesSmoldyn;
+	
 };
 
 #endif

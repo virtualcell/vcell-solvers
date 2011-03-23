@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="smoldyn-2.15"
+	Name="smoldyn"
 	ProjectGUID="{B114C57D-1D71-491F-B698-C231B30D2F02}"
 	RootNamespace="smoldyn215"
 	Keyword="Win32Proj"
@@ -217,7 +217,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="glut32.lib"
-				OutputFile="$(OutDir)\smoldyn.exe"
+				OutputFile="$(OutDir)\$(ProjectName).exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\glut-3.7.6&quot;"
 				GenerateDebugInformation="true"
