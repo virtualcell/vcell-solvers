@@ -9,7 +9,9 @@
 #include <VCELL/DataSet.h>
 
 #include <string>
+#include <vector>
 using std::string;
+using std::vector;
 
 class DataProcessorRoiTimeSeriesSmoldyn;
 
@@ -35,17 +37,20 @@ private:
 	char baseFileName[256];
 	char baseSimName[256];
 	int Nx, Ny, Nz;
-	int dimension, volRegionSize;	
+	int numVolumeElements;
+	int numMembraneElements;
+	int dimension;	
 
 	double extent[3];
 	double origin[3];
-	char **varNames;
+	VariableType* varTypes;
+	vector<char*> volVarNames;
+	vector<char*> memVarNames;
 	FileHeader fileHeader;
-	int varSize, numVars, numBlocks;
 	DataBlock *dataBlock;
-	double *outputData;
-	int* totalCounts;
-	int outputDataSize;
+	double *volVarOutputData;
+	double *memVarOutputData;
+	int* molIdentVarIndexMap;
 
 	DataProcessorRoiTimeSeriesSmoldyn* smoldynDataProcessor;
 	bool isInSameCompartment(double *pos1, double* pos2);

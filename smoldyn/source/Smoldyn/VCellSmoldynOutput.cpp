@@ -19,6 +19,7 @@ typedef unsigned int uint32;
 int zip32(int filecnt, char* zipfile, ...);
 #include <sys/stat.h>
 #include <math.h>
+#include <string.h>
 
 #include <fstream>
 #include <iostream>
@@ -43,24 +44,29 @@ VCellSmoldynOutput::VCellSmoldynOutput(simptr sim){
 	simFileCount = 0;
 	zipFileCount = 0;
 	Nx = Ny = Nz = 1;
+	numVolumeElements = 0;
+	numMembraneElements = 0;
 	dimension = 0;
-	volRegionSize = 0;
 	smoldynDataProcessor = 0;
 
-	varSize = numVars = numBlocks = 0;
 	dataBlock = 0;
-	outputData = 0;
-	totalCounts = 0;
-	outputDataSize = 0;
+	varTypes = 0;
+	volVarOutputData = 0;
+	memVarOutputData = 0;
+	molIdentVarIndexMap = 0;
 }
 
 VCellSmoldynOutput::~VCellSmoldynOutput() {
-	for (int i = 0; i < numVars*2; i ++) {
-		delete[] varNames[i];
+	for (unsigned int i = 0; i < volVarNames.size(); i ++) {
+		delete[] volVarNames[i];
 	}
-	delete[] varNames;
-	delete[] outputData;
-	delete[] totalCounts;
+	for (unsigned int i = 0; i < memVarNames.size(); i ++) {
+		delete[] memVarNames[i];
+	}
+	delete[] volVarOutputData;
+	delete[] memVarOutputData;
+	delete[] varTypes;
+	delete[] molIdentVarIndexMap;
 	delete[] dataBlock;
 
 	delete smoldynDataProcessor;
@@ -95,20 +101,14 @@ void VCellSmoldynOutput::parseInput(char* input) {
 	if (input == NULL || strlen(input) == 0) {
 		throw "writeOutput : no dimension specified.";
 	}
-	dimension = sscanf(input, "%d %d %d %d", &Nx, &Ny, &Nz, &volRegionSize);
+	dimension = sscanf(input, "%d %d %d %d %d", &numMembraneElements, &Nx, &Ny, &Nz);
 	dimension --;
 	if (dimension == 0) {
 		char errMsg[256];
 		sprintf(errMsg, "writeOutput : no dimension specified. %d %d %d", Nx, Ny, Nz);
 		throw errMsg;
 	}
-	if (dimension == 1) {
-		volRegionSize = Ny;
-		Ny = 1;
-	} else if (dimension == 2) {
-		volRegionSize = Nz;
-		Nz = 1;
-	}
+	numVolumeElements = Nx * Ny * Nz;
 
 	origin[0] = smoldynSim->wlist[0]->pos;
 	extent[0] = smoldynSim->wlist[1]->pos - origin[0];
@@ -122,31 +122,64 @@ void VCellSmoldynOutput::parseInput(char* input) {
 	}
 
 	molssptr mols = smoldynSim->mols;
-	numVars = mols->nspecies - 1;
-	varNames = new char*[numVars * 2];
+	int numVars = mols->nspecies - 1;
+	int volCount = 0;
+	int memCount = 0;
+	molIdentVarIndexMap = new int[numVars];
+	varTypes = new VariableType[numVars];
 	for (int i = 0; i < numVars; i ++) {
-		varNames[i] = new char[128];
-		strcpy(varNames[i], mols->spname[i + 1]);
-	}
-	for (int i = 0; i < numVars; i++) {
-		varNames[i + numVars] = new char[128];
-		sprintf(varNames[i + numVars], "%s_totalCount\0", varNames[i]);
+		char* varName = new char[128];	
+		int molIdent = i + 1;
+		strcpy(varName, mols->spname[molIdent]);		
+		if(!mols->exist[molIdent][MSsoln]) { // membrane variable
+			varTypes[i] = VAR_MEMBRANE;
+			memVarNames.push_back(varName);
+			molIdentVarIndexMap[i] = memCount;
+			memCount ++;
+		} else {
+			varTypes[i] = VAR_VOLUME;
+			volVarNames.push_back(varName);
+			molIdentVarIndexMap[i] = volCount;
+			volCount ++;
+		}		
 	}
 	strcpy(fileHeader.magicString, MAGIC_STRING);
 	strcpy(fileHeader.versionString, VERSION_STRING);
-	varSize = Nx * Ny * Nz;
-	numBlocks = numVars * 2;
 
 	fileHeader.sizeX = Nx;
 	fileHeader.sizeY = Ny;
 	fileHeader.sizeZ = Nz;
-	fileHeader.numBlocks = numBlocks;
+	fileHeader.numBlocks = numVars;
 	fileHeader.firstBlockOffset = sizeof(FileHeader);
 
-	dataBlock = new DataBlock[numBlocks];
-	outputDataSize = numVars * (varSize + volRegionSize);
-	outputData = new double[outputDataSize];
-	totalCounts = new int[numVars];
+	dataBlock = new DataBlock[numVars];
+	//
+	// compute data blocks (describing data)
+	//
+	int dataOffset = fileHeader.firstBlockOffset + numVars * sizeof(DataBlock);
+	int blockIndex = 0;
+	for (unsigned int v = 0; v < volVarNames.size(); v ++) {
+		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
+		strcpy(dataBlock[blockIndex].varName, volVarNames[v]);
+
+		dataBlock[blockIndex].varType = VAR_VOLUME;
+		dataBlock[blockIndex].size = numVolumeElements;
+		dataBlock[blockIndex].dataOffset = dataOffset;
+		dataOffset += dataBlock[blockIndex].size * sizeof(double);
+		blockIndex ++;
+	}
+	for (unsigned int v = 0; v < memVarNames.size(); v ++) {
+		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
+		strcpy(dataBlock[blockIndex].varName, memVarNames[v]);
+
+		dataBlock[blockIndex].varType = VAR_MEMBRANE;
+		dataBlock[blockIndex].size = numMembraneElements;
+		dataBlock[blockIndex].dataOffset = dataOffset;
+		dataOffset += dataBlock[blockIndex].size * sizeof(double);
+		blockIndex ++;
+	}
+	volVarOutputData = new double[volVarNames.size() * numVolumeElements];
+	memVarOutputData = new double[memVarNames.size() * numMembraneElements];
 }
 
 void VCellSmoldynOutput::write() {	
@@ -270,8 +303,8 @@ double VCellSmoldynOutput::distance2(double* pos1, double* pos2) {
 void VCellSmoldynOutput::computeOutputData() {
 	molssptr mols = smoldynSim->mols;
 
-	memset(outputData, 0, outputDataSize * sizeof(double));
-	memset(totalCounts, 0, numVars * sizeof(int));
+	memset(volVarOutputData, 0, numVolumeElements * volVarNames.size() * sizeof(double));
+	memset(memVarOutputData, 0, numMembraneElements * memVarNames.size() * sizeof(double));
 
 	double dx = extent[0]/(Nx-1);
 	double dy = (dimension > 1) ? extent[1]/(Ny-1) : 0;
@@ -280,8 +313,18 @@ void VCellSmoldynOutput::computeOutputData() {
 	for(int ll=0;ll<mols->nlist;ll++) {
 		for(int m=0;m<mols->nl[ll];m++) {
 			moleculeptr mptr=mols->live[ll][m];
-			int varIndex = mptr->ident - 1;
-			if (varIndex >= 0 ) {
+			int molIdent = mptr->ident - 1;
+			if (molIdent < 0 ) {
+				continue;
+			}
+			int varIndex = molIdentVarIndexMap[molIdent];
+			if (varTypes[molIdent] == VAR_MEMBRANE) {
+				char* panelName = mptr->pnl->pname;
+				int memIndex = 0;
+				char* p = strrchr(panelName, '_');
+				sscanf(p+1, "%d", &memIndex);
+				memVarOutputData[varIndex * numMembraneElements + memIndex] ++;
+			} else {
 				double* coord = mptr->pos;
 				int i = 0, j = 0, k = 0;
 				i = (int)((coord[0] - origin[0])/dx + 0.5);
@@ -368,19 +411,10 @@ void VCellSmoldynOutput::computeOutputData() {
 					}
 
 				}
-				outputData[varIndex * varSize + volIndex] ++;
-				totalCounts[varIndex] ++;
+				volVarOutputData[varIndex * numVolumeElements + volIndex] ++;
 			}
 		}
 	}
-
-	int totalCountOffSet = numVars * varSize;
-	// for total count region variable
-	for (int v = 0; v < numVars; v ++) {
-		for (int r = 0; r < volRegionSize; r ++) {
-			outputData[totalCountOffSet + v * volRegionSize + r] = totalCounts[v];
-		}
-	}	
 }
 
 void VCellSmoldynOutput::writeSim(char* simFileName, char* zipFileName) {
@@ -401,38 +435,22 @@ void VCellSmoldynOutput::writeSim(char* simFileName, char* zipFileName) {
 	//
 	// write data blocks (describing data)
 	//
-	int blockIndex = 0;
-	int dataOffset = fileHeader.firstBlockOffset + numBlocks * sizeof(DataBlock);
-	int v;
-	for (v = 0; v < numVars; v ++) {
-		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-		strcpy(dataBlock[blockIndex].varName, varNames[v]);
-
-		dataBlock[blockIndex].varType = VAR_VOLUME;
-		dataBlock[blockIndex].size = varSize;
-		dataBlock[blockIndex].dataOffset = dataOffset;
+	int blockIndex = 0;	
+	for (unsigned int v = 0; v < volVarNames.size(); v ++) {
 		DataSet::writeDataBlock(simfp, dataBlock + blockIndex);
-		dataOffset += dataBlock[blockIndex].size * sizeof(double);
 		blockIndex ++;
 	}
-	for (v = numVars; v < numVars * 2; v ++) {
-		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-		strcpy(dataBlock[blockIndex].varName, varNames[v]);
-
-		dataBlock[blockIndex].varType = VAR_VOLUME_REGION;
-		dataBlock[blockIndex].size = volRegionSize;
-		dataBlock[blockIndex].dataOffset = dataOffset;
+	for (unsigned int v = 0; v < memVarNames.size(); v ++) {
 		DataSet::writeDataBlock(simfp, dataBlock + blockIndex);
-		dataOffset += dataBlock[blockIndex].size * sizeof(double);
 		blockIndex ++;
 	}
 
 	//
 	// write data
 	//
-	int totalCountOffSet = numVars * varSize;
-	blockIndex = 0;
-	for (v = 0; v < numVars; v ++) {
+	blockIndex = 0;	
+	int dataOffset = fileHeader.firstBlockOffset + (volVarNames.size() + memVarNames.size()) * sizeof(DataBlock);
+	for (unsigned int v = 0; v < volVarNames.size(); v ++) {
 		ftell_pos = ftell(simfp);
 		if (ftell_pos != dataBlock[blockIndex].dataOffset){
 			char errMsg[256];
@@ -441,10 +459,10 @@ void VCellSmoldynOutput::writeSim(char* simFileName, char* zipFileName) {
 				ftell_pos, dataBlock[blockIndex].dataOffset);
 			throw errMsg;
 		}
-		DataSet::writeDoubles(simfp, outputData + v * varSize, varSize);
+		DataSet::writeDoubles(simfp, volVarOutputData + v * numVolumeElements, numVolumeElements);
 		blockIndex ++;
 	}
-	for (v = 0; v < numVars; v ++) {
+	for (unsigned int v = 0; v < memVarNames.size(); v ++) {
 		ftell_pos = ftell(simfp);
 		if (ftell_pos != dataBlock[blockIndex].dataOffset){
 			char errMsg[256];
@@ -453,7 +471,7 @@ void VCellSmoldynOutput::writeSim(char* simFileName, char* zipFileName) {
 				ftell_pos, dataBlock[blockIndex].dataOffset);
 			throw errMsg;
 		}
-		DataSet::writeDoubles(simfp, outputData + totalCountOffSet + v * volRegionSize, volRegionSize);
+		DataSet::writeDoubles(simfp, memVarOutputData + v * numMembraneElements, numMembraneElements);
 		blockIndex ++;
 	}
 	fclose(simfp);
