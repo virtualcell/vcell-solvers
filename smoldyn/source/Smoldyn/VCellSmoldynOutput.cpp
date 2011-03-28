@@ -248,13 +248,23 @@ bool VCellSmoldynOutput::isInSameCompartment(double *pos1, double* pos2) {
 			return false;
 		}
 	}
+	throw "shouldn't happend";
 	return false;
 }
 
-static double distance2(double* pos1, double* pos2) {
-	return (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) 
-		+ (pos1[1] - pos2[1]) * (pos1[1] - pos2[1])
-		+ (pos1[2] - pos2[2]) * (pos1[2] - pos2[2]);
+double VCellSmoldynOutput::distance2(double* pos1, double* pos2) {
+	if (dimension == 1) {
+		return (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]);
+	}
+	if (dimension == 2) {
+		return (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) 
+			+ (pos1[1] - pos2[1]) * (pos1[1] - pos2[1]);
+	}
+	if (dimension == 3) {
+		return (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) 
+			+ (pos1[1] - pos2[1]) * (pos1[1] - pos2[1])
+			+ (pos1[2] - pos2[2]) * (pos1[2] - pos2[2]);
+	}
 }
 
 void VCellSmoldynOutput::computeOutputData() {
