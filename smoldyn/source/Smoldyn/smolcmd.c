@@ -2200,7 +2200,12 @@ enum CMDcode cmdVCellPrintProgress(simptr sim, cmdptr cmd, char *line2) {
 	return CMDok;
 }
 
+#include <iostream>
+#include <sstream>
+using std::stringstream;
+using std::endl;
 enum CMDcode cmdVCellWriteOutput(simptr sim, cmdptr cmd, char *line2) {
+	static stringstream vcellOutputInput;
 	static bool firstTime = true;
 	if(line2 && !strcmp(line2,"cmdtype")) {
 		return CMDobserve;
@@ -2208,38 +2213,50 @@ enum CMDcode cmdVCellWriteOutput(simptr sim, cmdptr cmd, char *line2) {
 	if (vcellSmoldynOutput == 0) {
 		vcellSmoldynOutput = new VCellSmoldynOutput(sim);
 	}
-	if (firstTime) {
-		vcellSmoldynOutput->parseInput(line2);
-		firstTime = false;
-	}
-	vcellSmoldynOutput->write();
+
+	string token;
+	stringstream ss(line2);
+	ss >> token;
+	if (token == "begin") {
+	} else if (token == "end") {
+		if (firstTime) {
+			string input = vcellOutputInput.str();
+			vcellSmoldynOutput->parseInput(input);
+			firstTime = false;
+		}
+		vcellSmoldynOutput->write();
+	} else {
+		if (firstTime) {
+			vcellOutputInput << line2 << endl;
+		}
+	}	
 
 	return CMDok;
 }
 
-#include <iostream>
-#include <sstream>
-using std::stringstream;
-using std::endl;
 enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2) {
+	static bool dataProcessFirstTime = true;
 	static stringstream dataProcessInput;
 	static string dataProcName;
 	if(line2 && !strcmp(line2,"cmdtype")) {
 		return CMDobserve;
 	}	
-	string token;
-	stringstream ss(line2);
-	ss >> token;
-	if (token == "begin") {
-		ss >> dataProcName;
-	} else if (token == "end") {
-		if (vcellSmoldynOutput == 0) {
-			vcellSmoldynOutput = new VCellSmoldynOutput(sim);
+	if (dataProcessFirstTime) {
+		string token;
+		stringstream ss(line2);
+		ss >> token;
+		if (token == "begin") {
+			ss >> dataProcName;
+		} else if (token == "end") {
+			if (vcellSmoldynOutput == 0) {
+				vcellSmoldynOutput = new VCellSmoldynOutput(sim);
+			}
+			string input = dataProcessInput.str();
+			vcellSmoldynOutput->parseDataProcessingInput(dataProcName, input);
+			dataProcessFirstTime = false;
+		} else {
+			dataProcessInput << line2 << endl;
 		}
-		string input = dataProcessInput.str();
-		vcellSmoldynOutput->parseDataProcessingInput(dataProcName, input);
-	} else {
-		dataProcessInput << line2 << endl;
 	}
 	return CMDok;
 }

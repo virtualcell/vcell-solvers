@@ -38,6 +38,7 @@ private:
 
 	bool bStoreEnabled;
 	FieldData* sampleImage;
+	double* regionVolumes;
 	int numImageRegions;
 
 	void loadSampleImage(string& vcdataID, string& varName, double time);

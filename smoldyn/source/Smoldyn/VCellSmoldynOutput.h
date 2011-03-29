@@ -14,6 +14,20 @@ using std::string;
 using std::vector;
 
 class DataProcessorRoiTimeSeriesSmoldyn;
+struct Variable {
+	string name, domain;
+	VariableType type;
+	compartptr cmpt;
+	surfaceptr srf;
+
+	Variable() {
+		cmpt = 0;
+		srf = 0;
+	}
+	string getFullyQualifiedName() {
+		return domain + "::" + name;
+	}
+};
 
 class VCellSmoldynOutput
 {
@@ -22,7 +36,7 @@ public:
 	~VCellSmoldynOutput();
 
 	void write();
-	void parseInput(char* input);	
+	void parseInput(string& input);	
 	void parseDataProcessingInput(string& name, string& input);
 
 private:
@@ -43,14 +57,14 @@ private:
 
 	double extent[3];
 	double origin[3];
-	VariableType* varTypes;
-	vector<char*> volVarNames;
-	vector<char*> memVarNames;
+	vector<Variable*> volVariables;
+	vector<Variable*> memVariables;
 	FileHeader fileHeader;
 	DataBlock *dataBlock;
 	double *volVarOutputData;
 	double *memVarOutputData;
 	int* molIdentVarIndexMap;
+	Variable** variables;
 
 	DataProcessorRoiTimeSeriesSmoldyn* smoldynDataProcessor;
 	bool isInSameCompartment(double *pos1, double* pos2);

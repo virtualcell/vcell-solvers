@@ -50,26 +50,24 @@ VCellSmoldynOutput::VCellSmoldynOutput(simptr sim){
 	smoldynDataProcessor = 0;
 
 	dataBlock = 0;
-	varTypes = 0;
 	volVarOutputData = 0;
 	memVarOutputData = 0;
 	molIdentVarIndexMap = 0;
+
+	variables = 0;
 }
 
 VCellSmoldynOutput::~VCellSmoldynOutput() {
-	for (unsigned int i = 0; i < volVarNames.size(); i ++) {
-		delete[] volVarNames[i];
-	}
-	for (unsigned int i = 0; i < memVarNames.size(); i ++) {
-		delete[] memVarNames[i];
-	}
 	delete[] volVarOutputData;
 	delete[] memVarOutputData;
-	delete[] varTypes;
 	delete[] molIdentVarIndexMap;
 	delete[] dataBlock;
 
 	delete smoldynDataProcessor;
+	for (int i = 0; i < smoldynSim->mols->nspecies - 1; i ++) {
+		delete variables[i];
+	}
+	delete[] variables;
 }
 
 void VCellSmoldynOutput::parseDataProcessingInput(string& name, string& input) {
@@ -80,7 +78,14 @@ void VCellSmoldynOutput::parseDataProcessingInput(string& name, string& input) {
 	}
 }
 
-void VCellSmoldynOutput::parseInput(char* input) {
+#define VCellSmoldynKeyword_dimension "dimension"
+#define VCellSmoldynKeyword_sampleSize "sampleSize"
+#define VCellSmoldynKeyword_numMembraneElements "numMembraneElements"
+#define VCellSmoldynKeyword_variable "variable"
+#define VCellSmoldynKeyword_membrane "membrane"
+#define VCellSmoldynKeyword_volume "volume"
+
+void VCellSmoldynOutput::parseInput(string& input) {
 	if (dimension > 0) {
 		return;
 	}
@@ -98,17 +103,82 @@ void VCellSmoldynOutput::parseInput(char* input) {
 
 	clearLog();
 
-	if (input == NULL || strlen(input) == 0) {
+	if (input.size() == 0) {
 		throw "writeOutput : no dimension specified.";
 	}
-	dimension = sscanf(input, "%d %d %d %d %d", &numMembraneElements, &Nx, &Ny, &Nz);
-	dimension --;
-	if (dimension == 0) {
-		char errMsg[256];
-		sprintf(errMsg, "writeOutput : no dimension specified. %d %d %d", Nx, Ny, Nz);
-		throw errMsg;
+	molssptr mols = smoldynSim->mols;
+	int numVars = mols->nspecies - 1;
+	variables = new Variable*[numVars];
+
+	stringstream inputSS(input);
+	string line, token;
+	int varCount = 0;
+	while (!inputSS.eof()) {
+		getline(inputSS, line);
+		
+		stringstream liness(line);
+		token = "";
+		liness >> token;
+		if (token == "") {
+			continue;
+		}
+		if (token == VCellSmoldynKeyword_dimension) {
+			liness >> dimension;
+		} else if (token == VCellSmoldynKeyword_sampleSize) {
+			liness >> Nx;
+			Ny = Nz = 1;
+			if (dimension > 1) {
+				liness >> Ny;
+				if (dimension > 2) {
+					liness >> Nz;
+				}
+			}
+			numVolumeElements = Nx * Ny * Nz;
+		} else if (token == VCellSmoldynKeyword_numMembraneElements) {
+			liness >> numMembraneElements;
+		} else if (token == VCellSmoldynKeyword_variable) {
+			string type;
+			variables[varCount] = new Variable;
+			liness >> variables[varCount]->name >> type >> variables[varCount]->domain;
+			if (type == VCellSmoldynKeyword_membrane) {
+				variables[varCount]->type = VAR_MEMBRANE;
+			} else if (type == VCellSmoldynKeyword_volume) {
+				variables[varCount]->type = VAR_VOLUME;
+			}
+			if (strcmp(mols->spname[varCount + 1], variables[varCount]->name.c_str())) {
+				throw "VCellSmoldynOutput::parseInput(), variables not in the same order";
+			}
+			const char* vardomain = variables[varCount]->domain.c_str();
+			if (variables[varCount]->type == VAR_VOLUME) {
+				compartssptr cmptss = smoldynSim->cmptss;
+				for(int c=0; c<cmptss->ncmpt; c++) {
+					if (!strcmp(cmptss->cnames[c], vardomain)) {
+						variables[varCount]->cmpt = cmptss->cmptlist[c];
+						break;
+					}
+				}
+				if (variables[varCount]->cmpt == 0) {
+					stringstream ss;
+					ss << "found no compartment for variable '" << variables[varCount]->name << "'";
+					throw ss.str();
+				}
+			} else if (variables[varCount]->type == VAR_MEMBRANE) {
+				surfacessptr srfss = smoldynSim->srfss;
+				for(int s=0; s<srfss->nsrf; s++) {
+					if (!strcmp(srfss->snames[s], vardomain)) {
+						variables[varCount]->srf = srfss->srflist[s];
+						break;
+					}
+				}
+				if (variables[varCount]->srf == 0) {
+					stringstream ss;
+					ss << "found no surface for variable '" << variables[varCount]->name << "'";
+					throw ss.str();
+				}
+			}
+			varCount ++;
+		}
 	}
-	numVolumeElements = Nx * Ny * Nz;
 
 	origin[0] = smoldynSim->wlist[0]->pos;
 	extent[0] = smoldynSim->wlist[1]->pos - origin[0];
@@ -121,24 +191,19 @@ void VCellSmoldynOutput::parseInput(char* input) {
 		}
 	}
 
-	molssptr mols = smoldynSim->mols;
-	int numVars = mols->nspecies - 1;
 	int volCount = 0;
 	int memCount = 0;
 	molIdentVarIndexMap = new int[numVars];
-	varTypes = new VariableType[numVars];
 	for (int i = 0; i < numVars; i ++) {
 		char* varName = new char[128];	
 		int molIdent = i + 1;
 		strcpy(varName, mols->spname[molIdent]);		
-		if(!mols->exist[molIdent][MSsoln]) { // membrane variable
-			varTypes[i] = VAR_MEMBRANE;
-			memVarNames.push_back(varName);
+		if(variables[i]->type == VAR_MEMBRANE) { // membrane variable
+			memVariables.push_back(variables[i]);
 			molIdentVarIndexMap[i] = memCount;
 			memCount ++;
 		} else {
-			varTypes[i] = VAR_VOLUME;
-			volVarNames.push_back(varName);
+			volVariables.push_back(variables[i]);
 			molIdentVarIndexMap[i] = volCount;
 			volCount ++;
 		}		
@@ -158,9 +223,9 @@ void VCellSmoldynOutput::parseInput(char* input) {
 	//
 	int dataOffset = fileHeader.firstBlockOffset + numVars * sizeof(DataBlock);
 	int blockIndex = 0;
-	for (unsigned int v = 0; v < volVarNames.size(); v ++) {
+	for (unsigned int v = 0; v < volVariables.size(); v ++) {
 		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-		strcpy(dataBlock[blockIndex].varName, volVarNames[v]);
+		strcpy(dataBlock[blockIndex].varName, volVariables[v]->getFullyQualifiedName().c_str());
 
 		dataBlock[blockIndex].varType = VAR_VOLUME;
 		dataBlock[blockIndex].size = numVolumeElements;
@@ -168,9 +233,9 @@ void VCellSmoldynOutput::parseInput(char* input) {
 		dataOffset += dataBlock[blockIndex].size * sizeof(double);
 		blockIndex ++;
 	}
-	for (unsigned int v = 0; v < memVarNames.size(); v ++) {
+	for (unsigned int v = 0; v < memVariables.size(); v ++) {
 		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-		strcpy(dataBlock[blockIndex].varName, memVarNames[v]);
+		strcpy(dataBlock[blockIndex].varName, memVariables[v]->getFullyQualifiedName().c_str());
 
 		dataBlock[blockIndex].varType = VAR_MEMBRANE;
 		dataBlock[blockIndex].size = numMembraneElements;
@@ -178,8 +243,8 @@ void VCellSmoldynOutput::parseInput(char* input) {
 		dataOffset += dataBlock[blockIndex].size * sizeof(double);
 		blockIndex ++;
 	}
-	volVarOutputData = new double[volVarNames.size() * numVolumeElements];
-	memVarOutputData = new double[memVarNames.size() * numMembraneElements];
+	volVarOutputData = new double[volVariables.size() * numVolumeElements];
+	memVarOutputData = new double[memVariables.size() * numMembraneElements];
 }
 
 void VCellSmoldynOutput::write() {	
@@ -224,7 +289,7 @@ void VCellSmoldynOutput::write() {
 			smoldynDataProcessor->onStart();
 		}
 		smoldynDataProcessor->onWrite();
-		if (fabs(smoldynSim->time + smoldynSim->dt - smoldynSim->tmax) > 1e-12) {
+		if (smoldynSim->time + smoldynSim->dt - smoldynSim->tmax > 1e-12) {
 			char fileName[256];
 			sprintf(fileName, "%s.%s", baseFileName, DATAPROCOUTPUT_EXT);
 			smoldynDataProcessor->onComplete(fileName);
@@ -303,8 +368,8 @@ double VCellSmoldynOutput::distance2(double* pos1, double* pos2) {
 void VCellSmoldynOutput::computeOutputData() {
 	molssptr mols = smoldynSim->mols;
 
-	memset(volVarOutputData, 0, numVolumeElements * volVarNames.size() * sizeof(double));
-	memset(memVarOutputData, 0, numMembraneElements * memVarNames.size() * sizeof(double));
+	memset(volVarOutputData, 0, numVolumeElements * volVariables.size() * sizeof(double));
+	memset(memVarOutputData, 0, numMembraneElements * memVariables.size() * sizeof(double));
 
 	double dx = extent[0]/(Nx-1);
 	double dy = (dimension > 1) ? extent[1]/(Ny-1) : 0;
@@ -318,7 +383,7 @@ void VCellSmoldynOutput::computeOutputData() {
 				continue;
 			}
 			int varIndex = molIdentVarIndexMap[molIdent];
-			if (varTypes[molIdent] == VAR_MEMBRANE) {
+			if (variables[molIdent]->type == VAR_MEMBRANE) {
 				char* panelName = mptr->pnl->pname;
 				int memIndex = 0;
 				char* p = strrchr(panelName, '_');
@@ -436,11 +501,11 @@ void VCellSmoldynOutput::writeSim(char* simFileName, char* zipFileName) {
 	// write data blocks (describing data)
 	//
 	int blockIndex = 0;	
-	for (unsigned int v = 0; v < volVarNames.size(); v ++) {
+	for (unsigned int v = 0; v < volVariables.size(); v ++) {
 		DataSet::writeDataBlock(simfp, dataBlock + blockIndex);
 		blockIndex ++;
 	}
-	for (unsigned int v = 0; v < memVarNames.size(); v ++) {
+	for (unsigned int v = 0; v < memVariables.size(); v ++) {
 		DataSet::writeDataBlock(simfp, dataBlock + blockIndex);
 		blockIndex ++;
 	}
@@ -449,8 +514,8 @@ void VCellSmoldynOutput::writeSim(char* simFileName, char* zipFileName) {
 	// write data
 	//
 	blockIndex = 0;	
-	int dataOffset = fileHeader.firstBlockOffset + (volVarNames.size() + memVarNames.size()) * sizeof(DataBlock);
-	for (unsigned int v = 0; v < volVarNames.size(); v ++) {
+	int dataOffset = fileHeader.firstBlockOffset + (volVariables.size() + memVariables.size()) * sizeof(DataBlock);
+	for (unsigned int v = 0; v < volVariables.size(); v ++) {
 		ftell_pos = ftell(simfp);
 		if (ftell_pos != dataBlock[blockIndex].dataOffset){
 			char errMsg[256];
@@ -462,7 +527,7 @@ void VCellSmoldynOutput::writeSim(char* simFileName, char* zipFileName) {
 		DataSet::writeDoubles(simfp, volVarOutputData + v * numVolumeElements, numVolumeElements);
 		blockIndex ++;
 	}
-	for (unsigned int v = 0; v < memVarNames.size(); v ++) {
+	for (unsigned int v = 0; v < memVariables.size(); v ++) {
 		ftell_pos = ftell(simfp);
 		if (ftell_pos != dataBlock[blockIndex].dataOffset){
 			char errMsg[256];
