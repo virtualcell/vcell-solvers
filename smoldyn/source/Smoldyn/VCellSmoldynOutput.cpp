@@ -346,7 +346,10 @@ bool VCellSmoldynOutput::isInSameCompartment(double *pos1, double* pos2) {
 			return false;
 		}
 	}
-	throw "shouldn't happend";
+	//stringstream ss;
+	//ss << "Point (" << pos1[0] << "," << pos1[1] << "," << pos1[2] << ") and " << 
+	//	"Point (" << pos2[0] << "," << pos2[1] << "," << pos2[2] << ") are not in any compartment. This should not happen.";
+	//throw ss.str();
 	return false;
 }
 
