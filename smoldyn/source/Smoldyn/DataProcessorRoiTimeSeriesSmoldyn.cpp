@@ -184,10 +184,13 @@ void DataProcessorRoiTimeSeriesSmoldyn::onWrite() {
 		memset(values, 0, numColumns * sizeof(double));
 
 		for (int j = 0; j < vcellSmoldynOutput->numVolumeElements; j ++) {
-			int index = (int)sampleImage->getData()[j];
 			int mols = vcellSmoldynOutput->volVarOutputData[i * vcellSmoldynOutput->numVolumeElements + j];
 			values[0] += mols;
-			values[index] += mols;
+
+			if (sampleImage != 0) {
+				int index = (int)sampleImage->getData()[j];
+				values[index + 1] += mols;
+			}
 		}
 		// total count
 		odeResultSet[i]->addRow(values);
@@ -195,8 +198,8 @@ void DataProcessorRoiTimeSeriesSmoldyn::onWrite() {
 		// average
 		values[0] /= vcellSmoldynOutput->volVariables[i]->cmpt->volume * 602.0;
 		for (int j = 0; j < numImageRegions; j ++) {
-			if (regionVolumes[j + 1] != 0) {			
-				values[j + 1] /= regionVolumes[j + 1] * 602.0;
+			if (regionVolumes[j] != 0) {			
+				values[j + 1] /= regionVolumes[j] * 602.0;
 			}
 		}		
 		odeResultSet[numVolVars + i]->addRow(values);
