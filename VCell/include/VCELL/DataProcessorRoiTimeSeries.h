@@ -33,6 +33,7 @@ private:
 
 	FieldData* sampleImage;
 	int numImageRegions;
+	double* imageRegionVolumes;
 
 	void loadSampleImage(SimTool* simTool, string& vcdataID, string& varName, double time);
 };
