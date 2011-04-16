@@ -4,6 +4,8 @@ BASE_CPPFLAGS0 = -c -O2 -fexceptions -D$(PLATFORM) -I../ExpressionParser -I../su
 
 ifeq ($(PLATFORM), MACOSX)
 BASE_CPPFLAGS = $(BASE_CPPFLAGS0) -arch x86_64 -arch ppc -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5
+LDFLAGS = -arch x86_64 -arch ppc -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk \
+		-mmacosx-version-min=10.5 -no_compact_linkedit
 else 
 BASE_CPPFLAGS = $(BASE_CPPFLAGS0) 
 endif
@@ -43,7 +45,7 @@ $(VCELLIDALIB): $(CPPOBJECTS)
 	$(LIBTOOL) $@ $(CPPOBJECTS)		
 				
 $(STDALONE_TARGET): $(VCELLIDALIB) $(STDALONE_CPPOBJECTS)
-	$(CC) -o $@ $(STDALONE_CPPOBJECTS) $(VCELLIDALIB) $(LIBS)	
+	$(CC) $(LDFLAGS) -o $@ $(STDALONE_CPPOBJECTS) $(VCELLIDALIB) $(LIBS)	
 
 SimulationMessaging.o : ../VCell/include/VCELL/SimulationMessaging.h ../VCell/src/SimulationMessaging.cpp
 	$(CC) -c $(CPPFLAGS) ../VCell/src/SimulationMessaging.cpp
