@@ -271,7 +271,9 @@ void VCellSmoldynOutput::write() {
 			throw "can't open logfile for write";
 		}
 		int iteration = (int)(smoldynSim->time/smoldynSim->dt + 0.5);
-		fprintf(logfp,"%4d %s %s %.15lg\n", iteration, simFileName, zipFileName, smoldynSim->time);
+		char zipFileNameWithoutPath[512];
+		sprintf(zipFileNameWithoutPath,"%s%.2d.%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
+		fprintf(logfp,"%4d %s %s %.15lg\n", iteration, simFileName, zipFileNameWithoutPath, smoldynSim->time);
 		fclose(logfp);
 
 		// print message

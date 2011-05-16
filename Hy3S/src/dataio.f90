@@ -398,6 +398,7 @@ Case (1)
    !Call check(NF90_def_dim(fileunit,'StringLen',StringLen,StringLenID))
    !Call check(NF90_inquire_dimension(fileunit,TrialsID,len = Trials))
 
+!DEC$ If (Defined(USE_MESSAGING))
    Call check(NF90_inq_varid(fileunit,'JMS_BROKER',jmsid(1)))
    Call check(NF90_get_var(fileunit,jmsid(1),jmsUrl))
 
@@ -421,6 +422,7 @@ Case (1)
 
    Call check(NF90_inq_varid(fileunit,'JOB_INDEX',jmsid(8)))
    Call check(NF90_get_var(fileunit,jmsid(8),jobIndex))
+!DEC$ Endif
 
    !Time-related variables
    Call check(NF90_inq_varid(fileunit,'TStart',datapointer(1)))

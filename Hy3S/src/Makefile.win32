@@ -8,8 +8,8 @@ DEFMILSTEIN = -DMILSTEIN
 DEFADAPTIVE = -DADAPTIVE
 
 CC = cl
-CFLAGS = /nologo /TP /c /O2 /GR /DWIN32 /EHsc /D_CRT_SECURE_NO_DEPRECATE /DUSE_MESSAGING /MT /D_WIN32_WINNT=0x2000 \
-		/I..\..\SonicCClient\Win32\include /I..\..\SonicCClient\Win32\include\CPP -I..\..\VCell\include
+CFLAGS = /nologo /TP /c /O2 /GR /DWIN32 /EHsc /D_CRT_SECURE_NO_DEPRECATE /MT /D_WIN32_WINNT=0x2000 \
+		 -I..\..\VCell\include
 
 LIBS = ..\..\netcdf-3.6.2\fortran\netcdf_for.lib ..\..\netcdf-3.6.2\libsrc\netcdf.lib ..\..\netcdf-3.6.2\f90\netcdf_f90.lib \
 		
@@ -19,6 +19,7 @@ TARGET1 = Hybrid_EM_NoMessaging.exe
 TARGET2 = Hybrid_MIL_NoMessaging.exe 
 TARGET3 = Hybrid_MIL_Adaptive_NoMessaging.exe
 !else
+CFLAGS = $(CFLAGS) /DUSE_MESSAGING /I..\..\SonicCClient\Win32\include /I..\..\SonicCClient\Win32\include\CPP
 FOPTIONS = $(FOPTIONS) /DUSE_MESSAGING
 COBJECTS = msgwrapper.obj SimulationMessaging.obj
 LIBS = $(LIBS) Ws2_32.lib ..\..\SonicCClient\win32\lib\libsmq.lib ..\..\SonicCClient\win32\lib\libsmqj.lib
