@@ -215,9 +215,6 @@ SimpleSymbolTable* FastSystemExpression::getFastSymbolTable() {
 				throw "No independent variables defined";
 			}
 		}
-		if (pseudoSymbols == NULL) {
-			throw "No pseudo constants defined";
-		}
 
 		int numFields = simulation->getNumFields();
 		int numRandomVariables = simulation->getNumRandomVariables();
@@ -250,8 +247,10 @@ SimpleSymbolTable* FastSystemExpression::getFastSymbolTable() {
 		}
 
 		// pseudo constant symbols
-		for (int i = 0; i < numDependents; i ++) {		
-			fastSymbols[symbolCount ++] = pseudoSymbols[i];
+		if (pseudoSymbols != NULL) {
+			for (int i = 0; i < numDependents; i ++) {
+				fastSymbols[symbolCount ++] = pseudoSymbols[i];
+			}
 		}
 		fastSymbolTable = new SimpleSymbolTable(fastSymbols, symbolCount);	
 		delete[] fastSymbols;
