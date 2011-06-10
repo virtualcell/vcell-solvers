@@ -72,7 +72,7 @@ $(TARGET2): $(SOURCE) $(COBJECTS)
 
 $(TARGET3): $(SOURCE) $(COBJECTS)
 	del $(FOBJECTS) *.mod
-	$(FC) $(FOPTIONS) $(DEFADAPTIVE) $(SOURCE)
+	$(FC) $(FOPTIONS) $(DEFADAPTIVE) $(DEFMILSTEIN) $(SOURCE)
 	$(FC) $(FOBJECTS) $(COBJECTS) $(LIBS) $(LINKOPTIONS) /out:$@
 	
 msgwrapper.obj : msgwrapper.c

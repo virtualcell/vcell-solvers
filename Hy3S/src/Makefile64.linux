@@ -62,7 +62,7 @@ Hybrid_MIL: $(SOURCE) $(COBJECTS)
 
 Hybrid_MIL_Adaptive: $(SOURCE) $(COBJECTS)
 	rm -f *.mod $(FOBJECTS)
-	$(FC) $(FLAGS) $(DEFADAPTIVE) $(SOURCE)
+	$(FC) $(FLAGS) $(DEFADAPTIVE) $(DEFMILSTEIN) $(SOURCE)
 	$(FC) -o $@ $(FOBJECTS) $(COBJECTS) $(LIBS) 
 	
 msgwrapper.o : msgwrapper.c
