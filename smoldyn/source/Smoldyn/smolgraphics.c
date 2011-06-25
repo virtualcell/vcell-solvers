@@ -1,5 +1,5 @@
 /* Steven Andrews, started 10/22/2001.
-This is a library of functions for the Smoldyn program.  See documentation
+ This is a library of functions for the Smoldyn program.  See documentation
  called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
  Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
  of the Gnu General Public License (GPL). */
@@ -27,7 +27,7 @@ This is a library of functions for the Smoldyn program.  See documentation
 /******************************* enumerated types *****************************/
 /******************************************************************************/
 
-/* graphicsstring2lp. */
+/* graphicsstring2lp */
 enum LightParam graphicsstring2lp(char *string) {
 	enum LightParam ans;
 	
@@ -42,7 +42,7 @@ enum LightParam graphicsstring2lp(char *string) {
 	return ans; }
 
 
-/* graphicslp2string. */
+/* graphicslp2string */
 char *graphicslp2string(enum LightParam lp,char *string) {
 	if(lp==LPambient) strcpy(string,"ambient");
 	else if(lp==LPdiffuse) strcpy(string,"diffuse");
@@ -123,7 +123,7 @@ int graphicsreadcolor(char **stringptr,double *rgba) {
 /******************************* memory management ****************************/
 /******************************************************************************/
 
-/* graphssalloc. */
+/* graphssalloc */
 graphicsssptr graphssalloc(void) {
 	graphicsssptr graphss;
 	int lt;
@@ -152,7 +152,16 @@ graphicsssptr graphssalloc(void) {
 	graphss->backcolor[1]=1;
 	graphss->backcolor[2]=1;
 	graphss->backcolor[3]=1;
+	
+	graphss->textcolor[0]=0;		// black text
+	graphss->textcolor[1]=0;
+	graphss->textcolor[2]=0;
+	graphss->textcolor[3]=0;
 
+	graphss->maxtextitems=0;
+	graphss->ntextitems=0;
+	graphss->textitems=NULL;
+	
 	graphicssetlight(graphss,-1,LPauto,NULL);
 	for(lt=0;lt<MAXLIGHTS;lt++) graphicssetlight(graphss,lt,LPauto,NULL);
 
@@ -163,9 +172,10 @@ failure:
 	return NULL; }
 
 
-/* graphssfree. */
+/* graphssfree */
 void graphssfree(graphicsssptr graphss) {
 	if(!graphss) return;
+	free(graphss->textitems);
 	free(graphss);
 	return; }
 
@@ -175,7 +185,7 @@ void graphssfree(graphicsssptr graphss) {
 /******************************************************************************/
 
 
-/* graphssoutput. */
+/* graphssoutput */
 void graphssoutput(simptr sim) {
 	graphicsssptr graphss;
 	char *str,string[STRCHAR];
@@ -201,6 +211,13 @@ void graphssoutput(simptr sim) {
 	if(graphss->gridpts) printf(" grid color: %g,%g,%g,%g\n",graphss->gridcolor[0],graphss->gridcolor[1],graphss->gridcolor[2],graphss->gridcolor[3]);
 	printf(" background color: %g,%g,%g,%g\n",graphss->backcolor[0],graphss->backcolor[1],graphss->backcolor[2],graphss->backcolor[3]);
 
+	if(graphss->ntextitems) {
+		printf(" text color: %g,%g,%g,%g\n",graphss->textcolor[0],graphss->textcolor[1],graphss->textcolor[2],graphss->textcolor[3]);
+		printf(" text items:");
+		for(i1=0;i1<graphss->ntextitems;i1++)
+			printf(" %s",graphss->textitems[i1]);
+		printf("\n"); }
+
 	if(graphss->graphics>=3)
 		printf(" ambient light (%s): %g %g %g %g\n",graphicslp2string(graphss->roomstate,string),graphss->ambiroom[0],graphss->ambiroom[1],graphss->ambiroom[2],graphss->ambiroom[3]);
 	for(lt=0;lt<MAXLIGHTS;lt++)
@@ -222,11 +239,11 @@ void graphssoutput(simptr sim) {
 	return; }
 
 
-/* writegraphss. */
+/* writegraphss */
 void writegraphss(simptr sim,FILE *fptr) {
 	graphicsssptr graphss;
 	char string[STRCHAR];
-	int lt;
+	int lt,item;
 
 	graphss=sim->graphss;
 	if(!graphss) return;
@@ -249,7 +266,11 @@ void writegraphss(simptr sim,FILE *fptr) {
 	fprintf(fptr,"grid_thickness %g\n",graphss->gridpts);
 	fprintf(fptr,"grid_color %g %g %g %g\n",graphss->gridcolor[0],graphss->gridcolor[1],graphss->gridcolor[2],graphss->gridcolor[3]);
 	fprintf(fptr,"background_color %g %g %g %g\n",graphss->backcolor[0],graphss->backcolor[1],graphss->backcolor[2],graphss->backcolor[3]);
+	fprintf(fptr,"text_color %g %g %g %g\n",graphss->textcolor[0],graphss->textcolor[1],graphss->textcolor[2],graphss->textcolor[3]);
 
+	for(item=0;item<graphss->ntextitems;item++)
+		fprintf(fptr,"text_display %s\n",graphss->textitems[item]);
+	
 	if(graphss->roomstate!=LPauto) {
 		fprintf(fptr,"light global ambient %g %g %g %g\n",graphss->ambiroom[0],graphss->ambiroom[1],graphss->ambiroom[2],graphss->ambiroom[3]);
 		fprintf(fptr,"light global %s\n",graphicslp2string(graphss->roomstate,string)); }
@@ -265,7 +286,7 @@ void writegraphss(simptr sim,FILE *fptr) {
 	return; }
 
 
-/* checkgraphicsparams. */
+/* checkgraphicsparams */
 int checkgraphicsparams(simptr sim,int *warnptr) {
 	int error,warn;
 
@@ -279,7 +300,39 @@ int checkgraphicsparams(simptr sim,int *warnptr) {
 /******************************************************************************/
 
 
-/* graphicssetlight. */
+/* graphicssettextitem */
+int graphicssettextitem(simptr sim,char *itemname) {
+	graphicsssptr graphss;
+	int i,newmaxtextitems,item;
+	char **newtextitems;
+	enum MolecState ms;
+
+	graphss=sim->graphss;
+	if(graphss->ntextitems==graphss->maxtextitems) {
+		newmaxtextitems=2*graphss->maxtextitems+1;
+		newtextitems=(char **) calloc(newmaxtextitems,sizeof(char *));
+		if(!newtextitems) return 1;
+		for(item=0;item<graphss->maxtextitems;item++)
+			newtextitems[item]=graphss->textitems[item];
+		for(;item<newmaxtextitems;item++) {
+			newtextitems[item]=EmptyString();
+			if(!newtextitems[item]) return 1; }
+
+		free(graphss->textitems);
+		graphss->maxtextitems=newmaxtextitems;
+		graphss->textitems=newtextitems; }
+
+	if(!strcmp(itemname,"time"));		// supported items
+	else if(sim->mols && ((i=readmolname(sim,itemname,&ms))>0 || i==-5) && ms!=MSbsoln);
+	else return 2;									// unrecognized item name
+
+	for(item=0;item<graphss->ntextitems;item++)
+		if(!strcmp(itemname,graphss->textitems[item])) return 3;
+	strncpy(graphss->textitems[graphss->ntextitems++],itemname,STRCHAR);
+	return 0; }
+
+
+/* graphicssetlight */
 void graphicssetlight(graphicsssptr graphss,int lt,enum LightParam ltparam,double *value) {
 	int i;
 
@@ -339,10 +392,9 @@ void graphicssetlight(graphicsssptr graphss,int lt,enum LightParam ltparam,doubl
 /******************************************************************************/
 
 
-/* RenderSurfaces.  Draws all surfaces in the simulation using OpenGL graphics. */
-#ifdef __gl_h_
-
+/* RenderSurfaces */
 void RenderSurfaces(simptr sim) {
+#ifdef __gl_h_
 	surfacessptr srfss;
 	surfaceptr srf;
 	int s,p,graphics,c;
@@ -626,22 +678,14 @@ void RenderSurfaces(simptr sim) {
 
 				if(glIsEnabled(GL_LINE_STIPPLE))
 					glDisable(GL_LINE_STIPPLE); }}}
-
-	return; }
-
-#else
-
-void RenderSurfaces(simptr sim) {
-	return; }
-
 #endif
+	return; }
 
 
 
 /* RenderMolecs */
-#ifdef __gl_h_
-
 void RenderMolecs(simptr sim) {
+#ifdef __gl_h_
 	molssptr mols;
 	moleculeptr mptr;
 	int ll,m,i,dim;
@@ -694,24 +738,40 @@ void RenderMolecs(simptr sim) {
 	
 	else
 		;
-
-	return; }
-
-#else
-
-void RenderMolecs(simptr sim) {
-	return; }
-
 #endif
+	return; }
 
 
 
-/* RenderScene is the call-back function for OpenGL that displays the graphics.
-This function simply draws a box for the simulation volume, as well as points
-for each molecule. */
+/* RenderText */
+void RenderText(simptr sim) {
 #ifdef __gl_h_
+	graphicsssptr graphss;
+	int item,i;
+	char *itemname,string[STRCHAR],string2[STRCHAR];
+	enum MolecState ms;
 
+	graphss=sim->graphss;
+	string2[0]='\0';
+	for(item=0;item<graphss->ntextitems;item++) {
+		itemname=graphss->textitems[item];
+		if(!strcmp(itemname,"time"))
+			 sprintf(string,"time: %g",sim->time);
+		else if(((i=readmolname(sim,itemname,&ms))>0 || i==-5) && ms!=MSbsoln)
+			sprintf(string,"%s: %i",itemname,molcount(sim,i,ms,NULL,-1));
+
+		strncat(string2,string,STRCHAR-strlen(string2)-1);
+		if(item+1<graphss->ntextitems)
+			strncat(string2,", ",STRCHAR-3); }
+	gl2DrawTextD(5,95,graphss->textcolor,GLUT_BITMAP_HELVETICA_12,string2,-1);
+#endif
+	return; }
+
+
+
+/* RenderScene */
 void RenderSim(simptr sim) {
+#ifdef __gl_h_
 	graphicsssptr graphss;
 	double pt1[DIMMAX],pt2[DIMMAX];
 	int dim;
@@ -755,15 +815,12 @@ void RenderSim(simptr sim) {
 
 	if(sim->srfss) RenderSurfaces(sim);
 
+	if(graphss->ntextitems) RenderText(sim);
+	
 	glutSwapBuffers();
-	return; }
-
-#else
-
-void RenderSim(simptr sim) {
-	return; }
-
 #endif
+	return; }
+
 
 
 

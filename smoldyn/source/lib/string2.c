@@ -23,8 +23,8 @@ int okname(char *name)	{
 	int ok;
 
 	ok=1;
-	ok=ok&&isalpha(*name);
-	for(name++;*name&&ok;name++) ok=ok&&(isalnum(*name)||*name=='_');
+	ok=ok && isalpha(*name);
+	for(name++;*name && ok;name++) ok=ok && (isalnum(*name) || *name=='_');
 	return ok; }
 
 
@@ -32,7 +32,7 @@ char *strrpbrk(char *cs,char *ct) {
 	char *s2;
 	int i,n;
 
-	if(!cs||!ct) return NULL;
+	if(!cs || !ct) return NULL;
 	n=strlen(ct);
 	for(s2=cs+strlen(cs)-1;s2>=cs;s2--)
 		for(i=0;i<n;i++)
@@ -77,7 +77,7 @@ char *StrChrQuote(char *cs,char c) {
 	qt=0;
 	for(;*cs;cs++)	{
 		if(*cs=='"')	qt=!qt;
-		else if(*cs==c&&!qt) return cs;	}
+		else if(*cs==c && !qt) return cs;	}
 	return NULL; }
 
 
@@ -87,10 +87,10 @@ int StrChrPQuote(char *cs,char c) {
 	pn=qt=0;
 	for(i=0;i<strlen(cs);i++)
 		if(cs[i]=='"') qt=!qt;
-		else if(cs[i]==c&&!qt&&!pn) return i;
-		else if(cs[i]=='('&&!qt) pn++;
-		else if(cs[i]==')'&&!qt&&pn) pn--;
-		else if(cs[i]==')'&&!qt) return -2;
+		else if(cs[i]==c && !qt && !pn) return i;
+		else if(cs[i]=='(' && !qt) pn++;
+		else if(cs[i]==')' && !qt && pn) pn--;
+		else if(cs[i]==')' && !qt) return -2;
 	if(pn) return -2;
 	if(qt) return -3;
 	return -1; }
@@ -102,10 +102,10 @@ int StrrChrPQuote(char *cs,char c) {
 	pn=qt=0;
 	for(i=strlen(cs)-1;i>=0;i--)
 		if(cs[i]=='"') qt=!qt;
-		else if(cs[i]==c&&!qt&&!pn) return i;
-		else if(cs[i]==')'&&!qt) pn++;
-		else if(cs[i]=='('&&!qt&&pn) pn--;
-		else if(cs[i]=='('&&!qt) return -2;
+		else if(cs[i]==c && !qt && !pn) return i;
+		else if(cs[i]==')' && !qt) pn++;
+		else if(cs[i]=='(' && !qt && pn) pn--;
+		else if(cs[i]=='(' && !qt) return -2;
 	if(pn) return -2;
 	if(qt) return -3;
 	return -1; }
@@ -117,7 +117,7 @@ int strreadni(char *s,int n,int *a,char **endp) {
 
 	s2=s;
 	ok=1;
-	for(i=0;i<n&&ok;i++) {
+	for(i=0;i<n && ok;i++) {
 		a[i]=(int) strtol(s,&s2,10);
 		if(s2==s) ok=0;
 		s=s2; }
@@ -131,7 +131,7 @@ int strreadnf(char *s,int n,float *a,char **endp) {
 
 	s2=s;
 	ok=1;
-	for(i=0;i<n&&ok;i++) {
+	for(i=0;i<n && ok;i++) {
 		a[i]=(float) strtod(s,&s2);
 		if(s2==s) ok=0;
 		s=s2; }
@@ -145,7 +145,7 @@ int strreadnd(char *s,int n,double *a,char **endp) {
 
 	s2=s;
 	ok=1;
-	for(i=0;i<n&&ok;i++) {
+	for(i=0;i<n && ok;i++) {
 		a[i]=strtod(s,&s2);
 		if(s2==s) ok=0;
 		s=s2; }
@@ -159,9 +159,9 @@ int strreadns(char *s,int n,char **a,char **endp) {
 
 	s2=s;
 	j=1;
-	for(i=0;i<n&&*s2;i++) {
+	for(i=0;i<n && *s2;i++) {
 		while(isspace(*s2)) s2++;
-		for(j=0;!isspace(*s2)&&*s2;j++) a[i][j]=*(s2++);
+		for(j=0;!isspace(*s2) && *s2;j++) a[i][j]=*(s2++);
 		if(j) a[i][j]='\0'; }
 	if(endp) *endp=s2;
 	return j?i:i-1; }
@@ -173,8 +173,8 @@ char *strnword(char *s,int n) {
 	if(!s) return NULL;
 	s2=s;
 	if(!isspace(*s)) n--;
-	for(;n>0&&*s2;n--) {
-		while(!isspace(*s2)&&*s2) s2++;
+	for(;n>0 && *s2;n--) {
+		while(!isspace(*s2) && *s2) s2++;
 		while(isspace(*s2)) s2++; }
 	return *s2?s2:NULL; }
 
@@ -184,21 +184,21 @@ char *strnword1(char *s,int n) {
 
 	if(!s) return NULL;
 	s2=s;
-	for(n--;n>0&&*s2;n--) {
-		while(*s2&&*s2!=' '&&*s2!='\t') s2++;
+	for(n--;n>0 && *s2;n--) {
+		while(*s2 && *s2!=' ' && *s2!='\t') s2++;
 		if(*s2) s2++; }
-	if(*s2==' '||*s2=='\t'||!*s2) return NULL;
+	if(*s2==' ' || *s2=='\t' || !*s2) return NULL;
 	else return s2;}
 
 
-int wordcount(char *s) {
+int wordcount(const char *s) {
 	int n,sp;
-	char *s2;
+	const char *s2;
 
 	n=0;
 	sp=1;
 	for(s2=s;*s2;s2++) {
-		if(sp&&!isspace(*s2)) n++;
+		if(sp && !isspace(*s2)) n++;
 		sp=isspace(*s2); }
 	return n; }
 
@@ -212,10 +212,10 @@ int symbolcount(char *s,char c) {
 	return n; }
 
 
-int stringfind(char **slist,int n,char *s) {
+int stringfind(char **slist,int n,const char *s) {
 	int i;
 
-	for(i=0;i<n&&strcmp(slist[i],s);i++);
+	for(i=0;i<n && strcmp(slist[i],s);i++);
 	return i<n?i:-1; }
 
 
@@ -245,7 +245,7 @@ int strstrreplace(char *str,char *strfrom,char *strto,int max) {
 	while((s1=strstr(s2,strfrom))) {
 		i=s1-str;
 		if(diff<0) {
-			for(j=i+lenfrom;str[j-1]&&j<max;j++)
+			for(j=i+lenfrom;str[j-1] && j<max;j++)
 				str[j+diff]=str[j]; }
 		else if(diff>0) {
 			for(j=strlen(str);j>=i+lenfrom;j--)
@@ -302,10 +302,10 @@ void strcutwhite(char *str,int end) {
 	int i,j;
 
 	if(end&2) {	// end of string
-		for(i=strlen(str)-1;i>=0&&isspace(str[i]);i--);
+		for(i=strlen(str)-1;i>=0 && isspace(str[i]);i--);
 		str[i+1]='\0'; }
 	if(end&1) {	// start of string
-		for(i=0;str[i]!='\0'&&isspace(str[i]);i++);
+		for(i=0;str[i]!='\0' && isspace(str[i]);i++);
 		j=0;
 		for(;str[i]!='\0';i++) str[j++]=str[i];
 		str[j]='\0'; }

@@ -1,5 +1,5 @@
 /* Steven Andrews, started 10/22/2001.
-This is a library of functions for the Smoldyn program.  See documentation
+ This is a library of functions for the Smoldyn program.  See documentation
  called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
  Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
  of the Gnu General Public License (GPL). */
@@ -26,10 +26,8 @@ This is a library of functions for the Smoldyn program.  See documentation
 /******************************************************************************/
 
 
-/* cmptstring2cl.  Converts compartment logic symbol string to an enumerated
-compartment logic type.  Input strings can be: ÒequalÓ, ÒequalnotÓ, ÒandÓ, ÒorÓ,
-ÒxorÓ, ÒandnotÓ, or ÒornotÓ.  Anything else results in CLnone. */
-enum CmptLogic cmptstring2cl(char *string) {
+/* compartstring2cl */
+enum CmptLogic compartstring2cl(char *string) {
 	enum CmptLogic ans;
 
 	if(!strcmp(string,"equal")) ans=CLequal;
@@ -43,12 +41,8 @@ enum CmptLogic cmptstring2cl(char *string) {
 	return ans; }
 
 
-/* cmptcl2string.  Converts enumerated compartment logic type to a string, in
-string, which must be pre-allocated.  Output strings are ÒequalÓ, ÒequalnotÓ,
-ÒandÓ, ÒorÓ, ÒxorÓ, ÒandnotÓ, ÒornotÓ or ÒnoneÓ.  string is returned to allow
-for function nesting.
-*/
-char *cmptcl2string(enum CmptLogic cls,char *string) {
+/* compartcl2string */
+char *compartcl2string(enum CmptLogic cls,char *string) {
 	if(cls==CLequal) strcpy(string,"equal");
 	else if(cls==CLequalnot) strcpy(string,"equalnot");
 	else if(cls==CLand) strcpy(string,"and");
@@ -64,10 +58,7 @@ char *cmptcl2string(enum CmptLogic cls,char *string) {
 /****************************** low level utilities ***************************/
 /******************************************************************************/
 
-/* posincompart.  Tests if position pos is in compartment cmpt, returning 1 if
-so and 0 if not.  This includes composed compartment logic tests.  It does not
-use the compartment box list.  This function is quite efficient for surfaces
-with few panels, but inefficient if surfaces have lots of panels. */
+/* posincompart */
 int posincompart(simptr sim,double *pos,compartptr cmpt) {
 	int s,p,k,incmpt,pcross,cl,incmptl;
 	enum PanelShape ps;
@@ -100,9 +91,7 @@ int posincompart(simptr sim,double *pos,compartptr cmpt) {
 	return incmpt; }
 
 
-/* compartrandpos.  Returns a random position, in pos, within compartment cmpt.
- Returns 0 and a valid position, unless a point cannot be found, in which case
- this returns 1. */
+/* compartrandpos */
 int compartrandpos(simptr sim,double *pos,compartptr cmpt) {
 	static int ptmax=10000;
 	int d,dim,i,done,k,bc;
@@ -134,9 +123,7 @@ int compartrandpos(simptr sim,double *pos,compartptr cmpt) {
 /******************************* memory management ****************************/
 /******************************************************************************/
 
-/* compartalloc.  Allocates memory for a compartment.  All arrays are set to
-NULL, and not allocated.  Returns the compartment or NULL if unable to allocate
-memory. */
+/* compartalloc */
 compartptr compartalloc(void) {
 	compartptr cmpt;
 
@@ -159,7 +146,7 @@ compartptr compartalloc(void) {
 	return cmpt; }
 
 
-/* compartfree. Frees a compartment, including all of its arrays. */
+/* compartfree */
 void compartfree(compartptr cmpt) {
 	int k;
 
@@ -178,30 +165,50 @@ void compartfree(compartptr cmpt) {
 
 
 /* compartssalloc */
-compartssptr compartssalloc(int maxcmpt) {
-	compartssptr cmptss;
-	int c;
+compartssptr compartssalloc(compartssptr cmptss,int maxcmpt) {
+	int c,newcmptss;
+	char **newnames;
+	compartptr *newcmptlist;
 
-	cmptss=(compartssptr)malloc(sizeof(struct compartsuperstruct));
-	if(!cmptss) return NULL;
-	cmptss->condition=SCinit;
-	cmptss->sim=NULL;
+	if(maxcmpt<1) return NULL;
+
+	newcmptss=0;
+	newnames=NULL;
+	newcmptlist=NULL;
+
+	if(!cmptss) {																			// new allocation
+		cmptss=(compartssptr) malloc(sizeof(struct compartsuperstruct));
+		if(!cmptss) return NULL;
+		newcmptss=1;
+		cmptss->condition=SCinit;
+		cmptss->sim=NULL;
+		cmptss->maxcmpt=0;
+		cmptss->ncmpt=0;
+		cmptss->cnames=NULL;
+		cmptss->cmptlist=NULL; }
+	else {																						// minor check
+		if(maxcmpt<cmptss->maxcmpt) return NULL; }
+
+	if(maxcmpt>cmptss->maxcmpt) {											// allocate new compartment names and compartments
+		CHECK(newnames=(char**) calloc(maxcmpt,sizeof(char*)));
+		for(c=0;c<maxcmpt;c++) newnames[c]=NULL;
+		for(c=0;c<cmptss->maxcmpt;c++) newnames[c]=cmptss->cnames[c];
+		for(;c<maxcmpt;c++)
+			CHECK(newnames[c]=EmptyString());
+
+		CHECK(newcmptlist=(compartptr*) calloc(maxcmpt,sizeof(compartptr)));	// compartment list
+		for(c=0;c<maxcmpt;c++) newcmptlist[c]=NULL;
+		for(c=0;c<cmptss->maxcmpt;c++) newcmptlist[c]=cmptss->cmptlist[c];
+		for(;c<maxcmpt;c++) {
+			CHECK(newcmptlist[c]=compartalloc());
+			newcmptlist[c]->cmptss=cmptss;
+			newcmptlist[c]->cname=newnames[c]; }}
+
 	cmptss->maxcmpt=maxcmpt;
-	cmptss->ncmpt=0;
-	cmptss->cnames=NULL;
-	cmptss->cmptlist=NULL;
-
-	CHECK(cmptss->cnames=(char**)calloc(maxcmpt,sizeof(char*)));
-	for(c=0;c<maxcmpt;c++) cmptss->cnames[c]=NULL;
-	for(c=0;c<maxcmpt;c++) {
-		CHECK(cmptss->cnames[c]=EmptyString()); }
-
-	CHECK(cmptss->cmptlist=(compartptr*)calloc(maxcmpt,sizeof(compartptr)));
-	for(c=0;c<maxcmpt;c++) cmptss->cmptlist[c]=NULL;
-	for(c=0;c<maxcmpt;c++) {
-		CHECK(cmptss->cmptlist[c]=compartalloc());
-		cmptss->cmptlist[c]->cmptss=cmptss;
-		cmptss->cmptlist[c]->cname=cmptss->cnames[c]; }
+	free(cmptss->cnames);
+	cmptss->cnames=newnames;
+	free(cmptss->cmptlist);
+	cmptss->cmptlist=newcmptlist;
 
 	return cmptss;
 
@@ -229,8 +236,7 @@ void compartssfree(compartssptr cmptss) {
 /***************************** data structure output **************************/
 /******************************************************************************/
 
-/* compartoutput.  Displays all important information about all compartments to
-stdout. */
+/* compartoutput */
 void compartoutput(simptr sim) {
 	compartssptr cmptss;
 	compartptr cmpt;
@@ -256,15 +262,14 @@ void compartoutput(simptr sim) {
 			printf("%g)\n",cmpt->points[k][d]); }
 		printf("  %i logically combined compartments\n",cmpt->ncmptl);
 		for(cl=0;cl<cmpt->ncmptl;cl++)
-			printf("   %s %s\n",cmptcl2string(cmpt->clsym[cl],string),cmpt->cmptl[cl]->cname);
+			printf("   %s %s\n",compartcl2string(cmpt->clsym[cl],string),cmpt->cmptl[cl]->cname);
 		printf("  volume: %g\n",cmpt->volume);
 		printf("  %i virtual boxes listed\n",cmpt->nbox); }
 	printf("\n");
 	return; }
 
 
-/* writecomparts.  Prints information about all compartments to file fptr using
-a format that allows the compartments to read as a configuration file. */
+/* writecomparts */
 void writecomparts(simptr sim,FILE *fptr) {
 	compartssptr cmptss;
 	compartptr cmpt;
@@ -286,12 +291,12 @@ void writecomparts(simptr sim,FILE *fptr) {
 				fprintf(fptr," %g",cmpt->points[k][d]);
 			fprintf(fptr,"\n"); }
 		for(cl=0;cl<cmpt->ncmptl;cl++)
-			fprintf(fptr,"compartment %s %s\n",cmptcl2string(cmpt->clsym[cl],string),cmpt->cmptl[cl]->cname);
+			fprintf(fptr,"compartment %s %s\n",compartcl2string(cmpt->clsym[cl],string),cmpt->cmptl[cl]->cname);
 		fprintf(fptr,"end_compartment\n\n"); }
 	return; }
 
 
-/* checkcompartparams.  This checks a few compartment parameters. */
+/* checkcompartparams */
 int checkcompartparams(simptr sim,int *warnptr) {
 	int error,warn,c;
 	compartssptr cmptss;
@@ -334,10 +339,49 @@ void compartsetcondition(compartssptr cmptss,enum StructCond cond,int upgrade) {
 	return; }
 
 
-/* compartaddsurf.  Adds surface srf to the compartment cmpt.  This increments
-nsrf and appends the surface to srflist.  Returns 0 for success, 1 if memory
-could not be allocated, and 2 if the surface was already in the list (in which
-case it is not added again). */
+/* compartenablecomparts */
+int compartenablecomparts(simptr sim,int maxcmpt) {
+	compartssptr cmptss;
+
+	if(sim->cmptss)									// check for redundant function call
+		if(maxcmpt==-1 || sim->cmptss->maxcmpt==maxcmpt)
+			return 0;
+	cmptss=compartssalloc(sim->cmptss,maxcmpt<0?5:maxcmpt);
+	if(!cmptss) return 1;
+	sim->cmptss=cmptss;
+	cmptss->sim=sim;
+	compartsetcondition(sim->cmptss,SClists,0);
+	return 0; }
+
+
+/* compartaddcompart */
+compartptr compartaddcompart(simptr sim,const char *cmptname) {
+	int er,c;
+	compartssptr cmptss;
+	compartptr cmpt;
+
+	if(!sim->cmptss) {
+		er=compartenablecomparts(sim,-1);
+		if(er) return NULL; }
+	cmptss=sim->cmptss;
+
+	c=stringfind(cmptss->cnames,cmptss->ncmpt,cmptname);
+	if(c<0) {
+		if(cmptss->ncmpt==cmptss->maxcmpt) {
+			er=compartenablecomparts(sim,cmptss->ncmpt*2+1);
+			if(er) return NULL; }
+		c=cmptss->ncmpt++;
+		strncpy(cmptss->cnames[c],cmptname,STRCHAR-1);
+		cmptss->cnames[c][STRCHAR-1]='\0';
+		cmpt=cmptss->cmptlist[c];
+		compartsetcondition(cmptss,SClists,0); }
+	else
+		cmpt=cmptss->cmptlist[c];
+
+	return cmpt; }
+
+
+/* compartaddsurf */
 int compartaddsurf(compartptr cmpt,surfaceptr srf) {
 	int s;
 	surfaceptr *newsurflist;
@@ -351,15 +395,13 @@ int compartaddsurf(compartptr cmpt,surfaceptr srf) {
 	cmpt->nsrf++;
 	free(cmpt->surflist);
 	cmpt->surflist=newsurflist;
-	compartsetcondition(cmpt->cmptss,SCparams,0);
 	cmpt->nbox=0;
 	cmpt->volume=0;
+	compartsetcondition(cmpt->cmptss,SCparams,0);
 	return 0; }
 
 
-/* compartaddpoint.  Adds point point to the compartment cmpt, in a dim
-dimensional system.  This increments npts and appends the point to points.
-Returns 0 for success and 1 if memory could not be allocated. */
+/* compartaddpoint */
 int compartaddpoint(compartptr cmpt,int dim,double *point) {
 	int d,k;
 	double **newpoints;
@@ -382,10 +424,7 @@ int compartaddpoint(compartptr cmpt,int dim,double *point) {
 	return 1; }
 
 
-/* compartaddcmptl.  Add logically composed compartment cmptl, which is composed
-with symbol sym, to the compartment cmpt.  This increments ncmptl and appends
-the new logic compartment to cmptl.  Returns 0 for success, 1 if memory could
-not be allocated, or 2 if cmpt and cmptl are the same, which is not allowed. */
+/* compartaddcmptl */
 int compartaddcmptl(compartptr cmpt,compartptr cmptl,enum CmptLogic sym) {
 	int cl;
 	compartptr *newcmptl;
@@ -412,20 +451,7 @@ int compartaddcmptl(compartptr cmpt,compartptr cmptl,enum CmptLogic sym) {
 	return 0; }
 
 
-/* compartupdatebox.  Updates the listing of box bptr in compartment cmpt,
-according to the rule that boxes should be listed if any portion of them is
-within the compartment and should not be listed if no portion is within the
-compartment.  This also updates the cumboxvol and volume structure elements as
-needed.  If the fraction of the box within the compartment is known, including
-0, enter it in volfrac.  If it is unknown and should be calculated, enter -1 in
-volfrac.  If the fraction is unknown and should be unchanged if the box was
-already in the compartment and calculated if the box wasnÕt in the compartment,
-then enter -2 in volfrac.  This returns 0 for no change, 1 for box successfully
-added, 2 for box successfully removed, 3 for box was already in listed but
-volume was updated, or -1 for failure to allocate memory.  If the volume of the
-box within the compartment needs to be calcuated, this calculates it with a
-hard-coded value of 100 random trial points.  Memory is allocated as needed.
-*/
+/* compartupdatebox */
 int compartupdatebox(simptr sim,compartptr cmpt,boxptr bptr,double volfrac) {
 	int ptsmax=100;	// number of random points for volume determination
 	int bc,max,ptsin,i,bc2;
@@ -510,35 +536,27 @@ int compartupdatebox(simptr sim,compartptr cmpt,boxptr bptr,double volfrac) {
  	return -1; }
 
 
-/* cmptreadstring */
-int cmptreadstring(simptr sim,int cmptindex,char *word,char *line2,char *erstr) {
+/* compartreadstring */
+compartptr compartreadstring(simptr sim,compartptr cmpt,char *word,char *line2,char *erstr) {
 	char nm[STRCHAR],nm1[STRCHAR];
 	int s,er,cl,dim,itct;
 	double v1[DIMMAX];
-	compartptr cmpt;
 	enum CmptLogic sym;
+	compartssptr cmptss;
 
 	dim=sim->dim;
-	if(cmptindex>=0) cmpt=sim->cmptss->cmptlist[cmptindex];
-	else cmpt=NULL;
+	cmptss=sim->cmptss;
 
 	if(!strcmp(word,"name")) {								// name, got[0]
 		itct=sscanf(line2,"%s",nm);
 		CHECKS(itct==1,"error reading compartment name");
-		cmptindex=stringfind(sim->cmptss->cnames,sim->cmptss->ncmpt,nm);
-		if(cmptindex<0) {
-			CHECKS(sim->cmptss->ncmpt<sim->cmptss->maxcmpt,"more compartments are being defined than were allocated");
-			cmptindex=sim->cmptss->ncmpt++;
-			strncpy(sim->cmptss->cnames[cmptindex],nm,STRCHAR-1);
-			sim->cmptss->cnames[cmptindex][STRCHAR-1]='\0';
-			cmpt=sim->cmptss->cmptlist[cmptindex];
-			compartsetcondition(sim->cmptss,SCparams,0); }
-		else
-			cmpt=sim->cmptss->cmptlist[cmptindex];
+		cmpt=compartaddcompart(sim,nm);
+		CHECKS(cmpt,"failed to add compartment");
 		CHECKS(!strnword(line2,2),"unexpected text following name"); }
 
 	else if(!strcmp(word,"surface")) {						// surface
 		CHECKS(cmpt,"name has to be entered before surface");
+		CHECKS(sim->srfss,"surfaces need to be entered before compartment surfaces");
 		itct=sscanf(line2,"%s",nm);
 		CHECKS(itct==1,"error reading surface name");
 		s=stringfind(sim->srfss->snames,sim->srfss->nsrf,nm);
@@ -560,7 +578,7 @@ int cmptreadstring(simptr sim,int cmptindex,char *word,char *line2,char *erstr) 
 		CHECKS(cmpt,"name has to be entered before compartment");
 		itct=sscanf(line2,"%s %s",nm1,nm);
 		CHECKS(itct==2,"compartment format: symbol name");
-		sym=cmptstring2cl(nm1);
+		sym=compartstring2cl(nm1);
 		CHECKS(sym!=CLnone,"unrecognized logic symbol");
 		cl=stringfind(sim->cmptss->cnames,sim->cmptss->ncmpt,nm);
 		CHECKS(cl>=0,"cmpartment name not recognized");
@@ -572,22 +590,22 @@ int cmptreadstring(simptr sim,int cmptindex,char *word,char *line2,char *erstr) 
 	else {																				// unknown word
 		CHECKS(0,"syntax error within compartment block: statement not recognized"); }
 
-	return cmptindex;
+	return cmpt;
 
  failure:
-	return -1; }
+	return NULL; }
 
 
 /* loadcompart */
 int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 	ParseFilePtr pfp;
 	char word[STRCHAR],errstring[STRCHAR];
-	int done,pfpcode,firstline2,c;
+	int done,pfpcode,firstline2;
+	compartptr cmpt;
 
 	pfp=*pfpptr;
-	CHECKS(sim->cmptss,"PROGRAM BUG: compartment superstructure not allocated in loadcompart");
 	done=0;
-	c=0;
+	cmpt=NULL;
 	firstline2=line2?1:0;
 
 	while(!done) {
@@ -613,8 +631,8 @@ int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 		else if(!line2) {															// just word
 			CHECKS(0,"unknown word or missing parameter"); }
 		else {
-			c=cmptreadstring(sim,c,word,line2,errstring);
-			CHECKS(c>=0,errstring); }}
+			cmpt=compartreadstring(sim,cmpt,word,line2,errstring);
+			CHECKS(cmpt!=NULL,errstring); }}
 
 	CHECKS(0,"end of file encountered before end_compartment statement");	// end of file
 
@@ -622,9 +640,8 @@ int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 	return 1; }
 
 
-/* setupcomparts.  Sets up the boxes and volumes portions of all compartments.
-Returns 0 for success and 1 for inability to allocate sufficient memory. */
-int setupcomparts(simptr sim) {
+/* compartsupdateparams */
+int compartsupdateparams(simptr sim) {
 	boxssptr boxs;
 	boxptr bptr;
 	compartssptr cmptss;
@@ -635,44 +652,60 @@ int setupcomparts(simptr sim) {
 	enum CmptLogic clsym;
 
 	cmptss=sim->cmptss;
-	if(!cmptss) return 0;
-	if(cmptss->condition<=SCparams) {
-		boxs=sim->boxs;
-		if(!boxs || !boxs->nbox) return 2;
+	boxs=sim->boxs;
+	if(!boxs || !boxs->nbox) return 2;
 
-		for(c=0;c<cmptss->ncmpt;c++) {
-			cmpt=cmptss->cmptlist[c];
-			if(cmpt->volume==0) {
-				cmpt->nbox=0;
+	for(c=0;c<cmptss->ncmpt;c++) {
+		cmpt=cmptss->cmptlist[c];
+		cmpt->nbox=0;
 
+		for(b=0;b<boxs->nbox;b++) {											// find boxes that are in the compartment
+			bptr=boxs->blist[b];
+			inbox=0;
+			for(p=0;p<bptr->npanel && !inbox;p++) {
+				srf=bptr->panel[p]->srf;
+				for(s=0;s<cmpt->nsrf && !inbox;s++)
+					if(cmpt->surflist[s]==srf) inbox=1; }			// a compartment surface is in the box
+			if(!inbox && cmpt->ncmptl==0) {
+				boxrandpos(sim,pos,bptr);
+				if(posincompart(sim,pos,cmpt)) inbox=2; }		// compartment contains whole box
+			if(inbox) {
+				er=compartupdatebox(sim,cmpt,bptr,inbox==2?1:-1);
+				if(er==-1) return 1; }}
+
+		for(cl=0;cl<cmpt->ncmptl;cl++) {								// still finding boxes that are in compartment
+			clsym=cmpt->clsym[cl];
+			if(clsym==CLequal || clsym==CLor || clsym==CLxor)
+				for(b=0;b<cmpt->cmptl[cl]->nbox;b++) {
+					bptr=cmpt->cmptl[cl]->boxlist[b];
+					er=compartupdatebox(sim,cmpt,bptr,-2);
+					if(er==-1) return 1; }
+			else if(clsym==CLequalnot || CLornot)
 				for(b=0;b<boxs->nbox;b++) {
 					bptr=boxs->blist[b];
-					inbox=0;
-					for(p=0;p<bptr->npanel && !inbox;p++) {
-						srf=bptr->panel[p]->srf;
-						for(s=0;s<cmpt->nsrf && !inbox;s++)
-							if(cmpt->surflist[s]==srf) inbox=1; }			// a compartment surface is in the box
-					if(!inbox && cmpt->ncmptl==0) {
-						boxrandpos(sim,pos,bptr);
-						if(posincompart(sim,pos,cmpt)) inbox=2; }		// compartment contains whole box
-					if(inbox) {
-						er=compartupdatebox(sim,cmpt,bptr,inbox==2?1:-1);
-						if(er==-1) return 1; }}
-
-				for(cl=0;cl<cmpt->ncmptl;cl++) {
-					clsym=cmpt->clsym[cl];
-					if(clsym==CLequal || clsym==CLor || clsym==CLxor)
-						for(b=0;b<cmpt->cmptl[cl]->nbox;b++) {
-							bptr=cmpt->cmptl[cl]->boxlist[b];
-							er=compartupdatebox(sim,cmpt,bptr,-2);
-							if(er==-1) return 1; }
-					else if(clsym==CLequalnot || CLornot)
-						for(b=0;b<boxs->nbox;b++) {
-							bptr=boxs->blist[b];
-							er=compartupdatebox(sim,cmpt,bptr,-2); }}}}
-		compartsetcondition(cmptss,SCok,1); }
+					er=compartupdatebox(sim,cmpt,bptr,-2); }}}
 
 	return 0; }
 
 
+/* compartsupdatelists */
+int compartsupdatelists(simptr sim) {
+	return 0; }
 
+
+/* compartsupdate */
+int compartsupdate(simptr sim) {
+	int er;
+	compartssptr cmptss;
+
+	cmptss=sim->cmptss;
+	if(cmptss) {
+		if(cmptss->condition<=SClists) {
+			er=compartsupdatelists(sim);
+			if(er) return er;
+			compartsetcondition(cmptss,SCparams,1); }
+		if(cmptss->condition==SCparams) {
+			er=compartsupdateparams(sim);
+			if(er) return er;
+			compartsetcondition(cmptss,SCok,1); }}
+	return 0; }

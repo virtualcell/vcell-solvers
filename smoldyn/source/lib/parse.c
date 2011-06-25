@@ -14,7 +14,7 @@ of the Gnu Lesser General Public License (LGPL). */
 
 
 /* Parse_AllocFilePtr. */
-ParseFilePtr Parse_AllocFilePtr(char *fileroot,char *filename) {
+ParseFilePtr Parse_AllocFilePtr(const char *fileroot,const char *filename) {
 	ParseFilePtr pfp;
 	char str[STRCHAR];
 
@@ -274,7 +274,7 @@ failure:
 
 
 /* Parse_Start. */
-ParseFilePtr Parse_Start(char *fileroot,char *filename,char *erstr) {
+ParseFilePtr Parse_Start(const char *fileroot,const char *filename,char *erstr) {
 	ParseFilePtr pfp;
 	char string[STRCHAR];
 
@@ -293,8 +293,8 @@ ParseFilePtr Parse_Start(char *fileroot,char *filename,char *erstr) {
 
 /* Parse_ReadLine. */
 int Parse_ReadLine(ParseFilePtr *pfpptr,char *word,char **line2ptr,char *erstr) {
-	int itct,ans,er,skip;
-	char *linetest,*line,*line2;
+	int itct,ans,er,skip,toolong;
+	char *linetest,*line,*line2,ch;
 	ParseFilePtr pfp,pfp1;
 
 	int d;
@@ -311,21 +311,28 @@ int Parse_ReadLine(ParseFilePtr *pfpptr,char *word,char **line2ptr,char *erstr) 
 	if(linetest) {																// pre-process line
 		pfp->lctr++;
 		strcpy(pfp->linecopy,line);
-		if(strchr(line,'\r')) {
+		toolong=(strchr(line,'\n')==NULL);
+		if(strchr(line,'\r')) {											// check for Mac format
 			strcpy(strchr(line,'\r'),"\n");
 			strcpy(pfp->linecopy,line);
 			CHECKS(0,"Macintosh format file; needs to be changed to Unix format"); }
-		if(strchr(line,'#')) *strchr(line,'#')='\0';// single-line comment
+		if(strchr(line,'#')) {											// single-line comment
+			*strchr(line,'#')='\0';
+			if(toolong) {
+				while((ch=fgetc(pfp->fptr))!=EOF && ch!='\n' && ch!='\r');
+				toolong=0; }}
 		if(pfp->incomment) {
 			skip=1;
+			toolong=0;
 			if(!strncmp(line,"*/",2))
-			pfp->incomment=0; }
+				pfp->incomment=0; }
 		if(!skip && pfp->inifdef) {
 			skip=1;
 			if(!strncmp(line,"ifdefine",8)) pfp->inifdef++;
 			else if(!strncmp(line,"endif",5)) pfp->inifdef--;
 			else if(pfp->inifdef==1 && !strncmp(line,"else",4)) pfp->inifdef=0; }
 		if(!skip) {
+			CHECKS(!toolong,"Line exceeds maximum allowable length of 256 characters");
 			er=Parse_DoDefine(pfp);
 			CHECKS(er!=2,"overflow in line due to macro substitution");
 			itct=sscanf(line,"%s",word);
@@ -370,7 +377,8 @@ int Parse_ReadLine(ParseFilePtr *pfpptr,char *word,char **line2ptr,char *erstr) 
 		itct=sscanf(line2,"%s",str1);
 		CHECKS(itct==1,"unable to read define key");
 		line2=strnword(line2,2);
-		strcutwhite(line2,2);
+		if(line2)
+			strcutwhite(line2,2);
 		er=Parse_AddDefine(pfp,str1,line2,0);
 		if(er==2) printf("Warning: 'define %s %s' is ignored because it is a re-definition\n",str1,line2);
 		CHECKS(er!=1,"Out of memory adding new define"); }

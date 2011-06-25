@@ -33,6 +33,7 @@ enum CMDcode cmdstop(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdpause(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdbeep(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdkeypress(simptr sim,cmdptr cmd,char *line2);
+enum CMDcode cmdsetflag(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdsetrandseed(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdsetgraphics(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdsetgraphic_iter(simptr sim,cmdptr cmd,char *line2);
@@ -42,6 +43,8 @@ enum CMDcode cmdoverwrite(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdincrementfile(simptr sim,cmdptr cmd,char *line2);
 
 // conditional
+enum CMDcode cmdifflag(simptr sim,cmdptr cmd,char *line2);
+enum CMDcode cmdifprob(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdifno(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdifless(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdifmore(simptr sim,cmdptr cmd,char *line2);
@@ -63,6 +66,7 @@ enum CMDcode cmdspeciesstreamcount(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdlistmols(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdlistmols2(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdlistmols3(simptr sim,cmdptr cmd,char *line2);
+enum CMDcode cmdlistmolscmpt(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdmolpos(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdmolmoments(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdsavesim(simptr sim,cmdptr cmd,char *line2);
@@ -90,6 +94,8 @@ enum CMDcode cmdreplacecmptmol(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdmodulatemol(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdreact1(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdsetrateint(simptr sim,cmdptr cmd,char *line2);
+enum CMDcode cmdshufflemollist(simptr sim,cmdptr cmd,char *line2);
+enum CMDcode cmdshufflereactions(simptr sim,cmdptr cmd,char *line2);
 //enum CMDcode cmdsetsurfcoeff(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdsettimestep(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdporttransport(simptr sim,cmdptr cmd,char *line2);
@@ -127,6 +133,7 @@ enum CMDcode docommand(void *cmdfnarg,cmdptr cmd,char *line) {
 	else if(!strcmp(word,"pause")) return cmdpause(sim,cmd,line2);
 	else if(!strcmp(word,"beep")) return cmdbeep(sim,cmd,line2);
 	else if(!strcmp(word,"keypress")) return cmdkeypress(sim,cmd,line2);
+	else if(!strcmp(word,"setflag")) return cmdsetflag(sim,cmd,line2);
 	else if(!strcmp(word,"setrandseed")) return cmdsetrandseed(sim,cmd,line2);
 	else if(!strcmp(word,"setgraphics")) return cmdsetgraphics(sim,cmd,line2);
 	else if(!strcmp(word,"setgraphic_iter")) return cmdsetgraphic_iter(sim,cmd,line2);
@@ -136,6 +143,8 @@ enum CMDcode docommand(void *cmdfnarg,cmdptr cmd,char *line) {
 	else if(!strcmp(word,"incrementfile")) return cmdincrementfile(sim,cmd,line2);
 
 	// conditional
+	else if(!strcmp(word,"ifflag")) return cmdifflag(sim,cmd,line2);
+	else if(!strcmp(word,"ifprob")) return cmdifprob(sim,cmd,line2);
 	else if(!strcmp(word,"ifno")) return cmdifno(sim,cmd,line2);
 	else if(!strcmp(word,"ifless")) return cmdifless(sim,cmd,line2);
 	else if(!strcmp(word,"ifmore")) return cmdifmore(sim,cmd,line2);
@@ -157,6 +166,7 @@ enum CMDcode docommand(void *cmdfnarg,cmdptr cmd,char *line) {
 	else if(!strcmp(word,"listmols")) return cmdlistmols(sim,cmd,line2);
 	else if(!strcmp(word,"listmols2")) return cmdlistmols2(sim,cmd,line2);
 	else if(!strcmp(word,"listmols3")) return cmdlistmols3(sim,cmd,line2);
+	else if(!strcmp(word,"listmolscmpt")) return cmdlistmolscmpt(sim,cmd,line2);
 	else if(!strcmp(word,"molpos")) return cmdmolpos(sim,cmd,line2);
 	else if(!strcmp(word,"molmoments")) return cmdmolmoments(sim,cmd,line2);
 	else if(!strcmp(word,"savesim")) return cmdsavesim(sim,cmd,line2);
@@ -184,6 +194,8 @@ enum CMDcode docommand(void *cmdfnarg,cmdptr cmd,char *line) {
 	else if(!strcmp(word,"modulatemol")) return cmdmodulatemol(sim,cmd,line2);
 	else if(!strcmp(word,"react1")) return cmdreact1(sim,cmd,line2);
 	else if(!strcmp(word,"setrateint")) return cmdsetrateint(sim,cmd,line2);
+	else if(!strcmp(word,"shufflemollist")) return cmdshufflemollist(sim,cmd,line2);
+	else if(!strcmp(word,"shufflereactions")) return cmdshufflereactions(sim,cmd,line2);
 //	else if(!strcmp(word,"setsurfcoeff")) return cmdsetsurfcoeff(sim,cmd,line2);
 	else if(!strcmp(word,"settimestep")) return cmdsettimestep(sim,cmd,line2);
 	else if(!strcmp(word,"porttransport")) return cmdporttransport(sim,cmd,line2);
@@ -231,12 +243,24 @@ enum CMDcode cmdbeep(simptr sim,cmdptr cmd,char *line2) {
 enum CMDcode cmdkeypress(simptr sim,cmdptr cmd,char *line2) {
 	char c;
 	int itct;
-
+	
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDcontrol;
 	SCMDCHECK(line2,"missing argument");
 	itct=sscanf(line2,"%c",&c);
 	SCMDCHECK(itct==1,"cannot read character");
 	gl2SetKeyPush((unsigned char) c);
+	return CMDok; }
+
+
+enum CMDcode cmdsetflag(simptr sim,cmdptr cmd,char *line2) {
+	double f1;
+	int itct;
+
+	if(line2 && !strcmp(line2,"cmdtype")) return CMDcontrol;
+	SCMDCHECK(line2,"missing argument");
+	itct=sscanf(line2,"%lf",&f1);
+	SCMDCHECK(itct==1,"cannot read flag value");
+	scmdsetflag(sim->cmds,f1);
 	return CMDok; }
 
 
@@ -306,6 +330,36 @@ enum CMDcode cmdincrementfile(simptr sim,cmdptr cmd,char *line2) {
 /**********************************************************/
 
 
+enum CMDcode cmdifflag(simptr sim,cmdptr cmd,char *line2) {
+	int itct;
+	char ch;
+	double f1,flag;
+	
+	if(line2 && !strcmp(line2,"cmdtype")) return conditionalcmdtype(sim,cmd,2);
+	SCMDCHECK(line2,"missing arguments");
+	itct=sscanf(line2,"%c %lf",&ch,&f1);
+	SCMDCHECK(itct==2,"cannot read comparison symbol or flag value");
+	SCMDCHECK(ch=='<' || ch=='=' || ch=='>',"comparison symbol has to be <, =, or >");
+	flag=scmdreadflag(sim->cmds);
+	if((ch=='<' && flag<f1) || (ch=='=' && flag==f1) || (ch=='>' && flag>f1))
+		return docommand(sim,cmd,strnword(line2,3));
+	return CMDok; }
+
+
+enum CMDcode cmdifprob(simptr sim,cmdptr cmd,char *line2) {
+	int itct;
+	double f1;
+
+	if(line2 && !strcmp(line2,"cmdtype")) return conditionalcmdtype(sim,cmd,1);
+	SCMDCHECK(line2,"missing arguments");
+	itct=sscanf(line2,"%lf",&f1);
+	SCMDCHECK(itct==1,"cannot read probability value");
+	SCMDCHECK(f1>=0 && f1<=1,"probability value needs to be between 0 and 1");
+	if(randCOD()<f1)
+		return docommand(sim,cmd,strnword(line2,2));
+	return CMDok; }
+
+
 enum CMDcode cmdifno(simptr sim,cmdptr cmd,char *line2) {
 	int i,count;
 	enum MolecState ms;
@@ -356,8 +410,8 @@ enum CMDcode cmdifincmpt(simptr sim,cmdptr cmd,char *line2) {
 	compartptr cmpt;
 	char ch;
 	moleculeptr mptr;
-	
-	if(line2 && !strcmp(line2,"cmdtype")) return conditionalcmdtype(sim,cmd,2);
+
+	if(line2 && !strcmp(line2,"cmdtype")) return conditionalcmdtype(sim,cmd,4);
 
 	cmptss=sim->cmptss;
 	SCMDCHECK(cmptss,"no compartments defined");
@@ -379,7 +433,8 @@ enum CMDcode cmdifincmpt(simptr sim,cmdptr cmd,char *line2) {
 		ll=sim->mols->listlookup[i][ms];
 		for(m=0;m<sim->mols->nl[ll];m++) {
 			mptr=sim->mols->live[ll][m];
-			if(mptr->ident==i && mptr->mstate==ms && posincompart(sim,mptr->pos,cmpt)) count++; }}
+			if(mptr->ident==i && mptr->mstate==ms && posincompart(sim,mptr->pos,cmpt))
+				count++; }}
 	else {
 		for(ll=0;ll<sim->mols->nlist;ll++)
 			if(sim->mols->listtype[ll]==MLTsystem)
@@ -387,7 +442,8 @@ enum CMDcode cmdifincmpt(simptr sim,cmdptr cmd,char *line2) {
 					mptr=sim->mols->live[ll][m];
 					if(i==-5 || mptr->ident==i)
 						if(ms==MSall || mptr->mstate==ms)
-							if(posincompart(sim,mptr->pos,cmpt)) count++; }}
+							if(posincompart(sim,mptr->pos,cmpt))
+								count++; }}
 
 	if((ch=='<' && count<min) || (ch=='=' && count==min) || (ch=='>' && count>min))
 		return docommand(sim,cmd,line2);
@@ -924,10 +980,50 @@ enum CMDcode cmdlistmols3(simptr sim,cmdptr cmd,char *line2) {
 	moleculeptr *mlist,mptr;
 	FILE *fptr;
 	enum MolecState ms;
+	
+	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
+	i=readmolname(sim,line2,&ms);
+	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name")
+	line2=strnword(line2,2);
+	fptr=scmdgetfptr(sim->cmds,line2);
+	SCMDCHECK(fptr,"file name not recognized");
+	invk=cmd?cmd->invoke:0;
+	dim=sim->dim;
+	
+	if(i<0 || ms==MSall) {lllo=0;llhi=sim->mols->nlist;}
+	else llhi=1+(lllo=sim->mols->listlookup[i][ms]);
+	for(ll=lllo;ll<llhi;ll++) {
+		mlist=sim->mols->live[ll];
+		nmol=sim->mols->nl[ll];
+		for(m=0;m<nmol;m++) {
+			mptr=mlist[m];
+			if((mptr->ident>0 && i<0 && (ms==MSall || mptr->mstate==ms)) || (mptr->ident==i && (ms==MSall || mptr->mstate==ms))) {
+				fprintf(fptr,"%i %i %i ",invk,mptr->ident,mptr->mstate);
+				fprintVD(fptr,mptr->pos,sim->dim); }}}
+	return CMDok; }
+
+
+enum CMDcode cmdlistmolscmpt(simptr sim,cmdptr cmd,char *line2) {
+	int i,c,m,ll,dim,invk,lllo,llhi,nmol,itct;
+	moleculeptr *mlist,mptr;
+	FILE *fptr;
+	enum MolecState ms;
+	char cname[STRCHAR];
+	compartssptr cmptss;
+	compartptr cmpt;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
 	i=readmolname(sim,line2,&ms);
 	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name")
+	line2=strnword(line2,2);
+	SCMDCHECK(line2,"missing compartment name");
+	itct=sscanf(line2,"%s",cname);
+	SCMDCHECK(itct==1,"cannot read compartment name");
+	cmptss=sim->cmptss;
+	SCMDCHECK(cmptss,"no compartments defined");
+	c=stringfind(cmptss->cnames,cmptss->ncmpt,cname);
+	SCMDCHECK(c>=0,"compartment name not recognized");
+	cmpt=cmptss->cmptlist[c];
 	line2=strnword(line2,2);
 	fptr=scmdgetfptr(sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
@@ -942,8 +1038,9 @@ enum CMDcode cmdlistmols3(simptr sim,cmdptr cmd,char *line2) {
 		for(m=0;m<nmol;m++) {
 			mptr=mlist[m];
 			if((mptr->ident>0 && i<0 && (ms==MSall || mptr->mstate==ms)) || (mptr->ident==i && (ms==MSall || mptr->mstate==ms))) {
-				fprintf(fptr,"%i %i %i ",invk,mptr->ident,mptr->mstate);
-				fprintVD(fptr,mptr->pos,sim->dim); }}}
+				if(posincompart(sim,mptr->pos,cmpt)) {
+					fprintf(fptr,"%i %i %i ",invk,mptr->ident,mptr->mstate);
+					fprintVD(fptr,mptr->pos,sim->dim); }}}}
 	return CMDok; }
 
 
@@ -1493,6 +1590,7 @@ enum CMDcode cmdkillmolinsphere(simptr sim,cmdptr cmd,char *line2) {
 	else {
 		s=stringfind(sim->srfss->snames,sim->srfss->nsrf,nm);
 		SCMDCHECK(s>=0,"surface not recognized"); }
+
 	if(i<0 || ms==MSall) {lllo=0;llhi=sim->mols->nlist;}
 	else llhi=1+(lllo=sim->mols->listlookup[i][ms]);
 	for(ll=lllo;ll<llhi;ll++) {
@@ -1927,9 +2025,65 @@ enum CMDcode cmdsetrateint(simptr sim,cmdptr cmd,char *line2) {
 			if(r>=0) order=2;
 			else SCMDCHECK(0,"reaction name not recognized"); }}
 	SCMDCHECK(rateint>=0,"internal rate cannot be negative");
-	if(order<2) sim->rxnss[order]->rxn[r]->prob=rateint;
-	else sim->rxnss[order]->rxn[r]->bindrad2=rateint*rateint;
+	if(order<2) RxnSetValue(sim,"prob",sim->rxnss[order]->rxn[r],rateint);
+	else RxnSetValue(sim,"bindrad",sim->rxnss[order]->rxn[r],rateint);
 	return CMDok; }
+
+
+enum CMDcode cmdshufflemollist(simptr sim,cmdptr cmd,char *line2) {
+	int itct,ll,lllo,llhi;
+	char nm[STRCHAR];
+
+	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
+	SCMDCHECK(line2,"missing argument");
+	itct=sscanf(line2,"%s",nm);
+	SCMDCHECK(itct==1,"read failure");
+	SCMDCHECK(sim->mols && sim->mols->nlist>0,"no molecule lists");
+	if(!strcmp(nm,"all")) ll=-1;
+	else {
+		ll=stringfind(sim->mols->listname,sim->mols->nlist,nm);
+		SCMDCHECK(ll>=0,"list name not recognized"); }
+	lllo=(ll==-1)?0:ll;
+	llhi=(ll==-1)?sim->mols->nlist:ll+1;
+	for(ll=lllo;ll<llhi;ll++)
+		randshuffletableV((void**) sim->mols->live[ll],sim->mols->nl[ll]);
+	return CMDok; }
+
+
+enum CMDcode cmdshufflereactions(simptr sim,cmdptr cmd,char *line2) {
+	int itct,i,j,i1,i2,i1lo,i1hi,i2lo,i2hi,isym;
+	char nm1[STRCHAR],nm2[STRCHAR];
+	enum MolecState ms1,ms2;
+	rxnssptr rxnss;
+
+	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
+	SCMDCHECK(line2,"missing argument");
+	itct=sscanf(line2,"%s %s",nm1,nm2);
+	SCMDCHECK(itct==2,"missing argument");
+	i1=readmolname(sim,nm1,&ms1);
+	SCMDCHECK(i1>=0 || i1==-5,"first species name not recognized");
+	i2=readmolname(sim,nm2,&ms2);
+	SCMDCHECK(i2>=0 || i2==-5,"second species name not recognized");
+	rxnss=sim->rxnss[2];
+	if(!rxnss) return CMDok;
+
+	i1lo=(i1<0)?0:i1;
+	i1hi=(i1<0)?rxnss->maxspecies:i1+1;
+	i2lo=(i2<0)?0:i2;
+	i2hi=(i2<0)?rxnss->maxspecies:i2+1;
+
+	for(i1=i1lo;i1<i1hi;i1++)
+		for(i2=i2lo;i2<i2hi;i2++) {
+			i=i1*rxnss->maxspecies+i2;
+			if(rxnss->nrxn[i]) {
+				randshuffletableI(rxnss->table[i],rxnss->nrxn[i]);
+				isym=i2*rxnss->maxspecies+i1;
+				for(j=0;j<rxnss->nrxn[i];j++)
+					rxnss->table[isym][j]=rxnss->table[i][j]; }}
+
+	return CMDok; }
+
+	
 
 
 /*

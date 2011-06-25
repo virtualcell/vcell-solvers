@@ -27,7 +27,7 @@ void scmdcatfname(cmdssptr cmds,int fid,char *str) {
 		min=STRCHAR-strlen(str)<dot-cmds->fname[fid]?STRCHAR-strlen(str):dot-cmds->fname[fid];
 		strncat(str,cmds->fname[fid],min); }
 	else strncat(str,cmds->fname[fid],STRCHAR);
-	if(cmds->fsuffix[fid]&&STRCHAR-strlen(str)>4) sprintf(str+strlen(str),"_%03i",cmds->fsuffix[fid]);
+	if(cmds->fsuffix[fid] && STRCHAR-strlen(str)>4) sprintf(str+strlen(str),"_%03i",cmds->fsuffix[fid]);
 	if(dot) strncat(str,dot,STRCHAR-strlen(str));
 	return; }
 
@@ -80,7 +80,7 @@ void scmdfree(cmdptr cmd) {
 
 
 /* scmdssalloc */
-cmdssptr scmdssalloc(enum CMDcode (*cmdfn)(void*,cmdptr,char*),void *cmdfnarg,char *root) {
+cmdssptr scmdssalloc(enum CMDcode (*cmdfn)(void*,cmdptr,char*),void *cmdfnarg,const char *root) {
 	cmdssptr cmds;
 
 	cmds=(cmdssptr) malloc(sizeof(struct cmdsuperstruct));
@@ -99,6 +99,7 @@ cmdssptr scmdssalloc(enum CMDcode (*cmdfn)(void*,cmdptr,char*),void *cmdfnarg,ch
 	cmds->fsuffix=NULL;
 	cmds->fappend=NULL;
 	cmds->fptr=NULL;
+	cmds->flag=0;
 	return cmds; }
 
 
@@ -109,11 +110,13 @@ void scmdssfree(cmdssptr cmds) {
 	int fid;
 
 	if(!cmds) return;
+
 	if(cmds->cmd) {
 		while(q_pop(cmds->cmd,NULL,NULL,NULL,NULL,&voidptr)>=0) {
 			cmd=(cmdptr)voidptr;
 			scmdfree(cmd); }
 		q_free(cmds->cmd,0,0); }
+
 	if(cmds->cmdi) {
 		while(q_pop(cmds->cmdi,NULL,NULL,NULL,NULL,&voidptr)>=0) {
 			cmd=(cmdptr)voidptr;
@@ -195,9 +198,10 @@ int scmdstr2cmd(cmdssptr cmds,char *line2,double tmin,double tmax,double dt) {
 			if(scmdqalloc(cmds,10)==1) {scmdfree(cmd);return 7;}
 		if(q_insert(NULL,0,cmd->on,0,(void*)cmd,cmds->cmd)==1)
 			if(q_expand(cmds->cmd,q_length(cmds->cmd))) {scmdfree(cmd);return 7; }}
+
 	else if(strchr("BA&jIENen",ch)) {
 		cmd->oni=0;
-		if(dt==0||tmin>=tmax) cmd->offi=Q_LLONG_MAX;
+		if(dt==0 || tmin>=tmax) cmd->offi=Q_LLONG_MAX;
 		else cmd->offi=(Q_LONGLONG)((tmax-tmin)/dt+0.5);
 		cmd->dti=1;
 		if(ch=='B') cmd->oni=cmd->offi=-1;
@@ -207,7 +211,7 @@ int scmdstr2cmd(cmdssptr cmds,char *line2,double tmin,double tmax,double dt) {
 			if(itct!=1) return 3;
 			cmd->offi=cmd->oni;
 			if(!(line2=strnword(line2,2))) return 4; }
-		else if(ch=='j'||ch=='I') {
+		else if(ch=='j' || ch=='I') {
 			itct=sscanf(line2,Q_LLI,&cmd->oni);
 			if(itct!=1) return 3;
 			if(!(line2=strnword(line2,2))) return 4;
@@ -218,8 +222,8 @@ int scmdstr2cmd(cmdssptr cmds,char *line2,double tmin,double tmax,double dt) {
 			if(itct!=1) return 3;
 			if(cmd->dti<=0) return 5;
 			if(!(line2=strnword(line2,2))) return 4; }
-		else if(ch=='e'||ch=='E');
-		else if(ch=='n'||ch=='N') {
+		else if(ch=='e' || ch=='E');
+		else if(ch=='n' || ch=='N') {
 			itct=sscanf(line2,Q_LLI,&cmd->dti);
 			if(itct!=1) return 3;
 			if(cmd->dti<1) return 5;
@@ -228,6 +232,7 @@ int scmdstr2cmd(cmdssptr cmds,char *line2,double tmin,double tmax,double dt) {
 			if(scmdqalloci(cmds,10)==1) {scmdfree(cmd);return 7;}
 		if(q_insert(NULL,0,0,cmd->oni,(void*)cmd,cmds->cmdi)==1)
 			if(q_expand(cmds->cmdi,q_length(cmds->cmdi))) {scmdfree(cmd);return 7; }}
+
 	else return 6;
 	strncpy(cmd->str,line2,STRCHAR);
 	if(cmd->str[strlen(cmd->str)-1]=='\n')
@@ -240,8 +245,8 @@ void scmdpop(cmdssptr cmds,double t) {
 	cmdptr cmd;
 	void *voidptr;
 
-	if(!cmds||!cmds->cmd) return;
-	while(q_length(cmds->cmd)>0&&q_frontkeyD(cmds->cmd)<=t) {
+	if(!cmds || !cmds->cmd) return;
+	while(q_length(cmds->cmd)>0 && q_frontkeyD(cmds->cmd)<=t) {
 		q_pop(cmds->cmd,NULL,NULL,NULL,NULL,&voidptr);
 		cmd=(cmdptr)voidptr;
 		scmdfree(cmd); }
@@ -261,7 +266,7 @@ enum CMDcode scmdexecute(cmdssptr cmds,double time,double simdt,Q_LONGLONG iter,
 	else cmds->iter=iter;
 
 	if(cmds->cmdi)			// integer execution times
-		while((q_length(cmds->cmdi)>0)&&(q_frontkeyL(cmds->cmdi)<=iter||donow)) {
+		while((q_length(cmds->cmdi)>0) && (q_frontkeyL(cmds->cmdi)<=iter || donow)) {
 			q_pop(cmds->cmdi,NULL,NULL,NULL,NULL,&voidptr);
 			cmd=(cmdptr)voidptr;
 			cmd->invoke++;
@@ -269,14 +274,15 @@ enum CMDcode scmdexecute(cmdssptr cmds,double time,double simdt,Q_LONGLONG iter,
 			if(code1==CMDwarn) {
 				if(strlen(cmd->erstr)) fprintf(stderr,"command '%s' error: %s\n",cmd->str,cmd->erstr);
 				else fprintf(stderr,"error with command: '%s'\n",cmd->str); }
-			if(cmd->oni+cmd->dti<=cmd->offi&&!donow&&(code1==CMDok||code1==CMDpause)) {
+			if(cmd->oni+cmd->dti<=cmd->offi && !donow && (code1==CMDok || code1==CMDpause)) {
 				cmd->oni+=cmd->dti;
 				q_insert(NULL,0,0,cmd->oni,(void*)cmd,cmds->cmdi); }
 			else scmdfree(cmd);
 			if(code1==CMDabort) return code1;
 			if(code1>code2) code2=code1; }
+
 	if(cmds->cmd)				// float execution times
-		while((q_length(cmds->cmd)>0)&&(q_frontkeyD(cmds->cmd)<=time||donow)) {
+		while((q_length(cmds->cmd)>0) && (q_frontkeyD(cmds->cmd)<=time || donow)) {
 			q_pop(cmds->cmd,NULL,NULL,NULL,NULL,&voidptr);
 			cmd=(cmdptr)voidptr;
 			cmd->invoke++;
@@ -285,13 +291,14 @@ enum CMDcode scmdexecute(cmdssptr cmds,double time,double simdt,Q_LONGLONG iter,
 				if(strlen(cmd->erstr)) fprintf(stderr,"command '%s' error: %s\n",cmd->str,cmd->erstr);
 				else fprintf(stderr,"error with command: '%s'\n",cmd->str); }
 			dt=(cmd->dt>=simdt)?cmd->dt:simdt;
-			if(cmd->on+dt<=cmd->off&&!donow&&(code1==CMDok||code1==CMDpause)) {
+			if(cmd->on+dt<=cmd->off && !donow && (code1==CMDok || code1==CMDpause)) {
 				cmd->on+=dt;
 				if(cmd->xt>1) cmd->dt*=cmd->xt;
 				q_insert(NULL,0,cmd->on,0,(void*)cmd,cmds->cmd); }
 			else scmdfree(cmd);
 			if(code1==CMDabort) return code1;
 			if(code1>code2) code2=code1; }
+
 	return code2; }
 
 
@@ -321,33 +328,35 @@ int scmdnextcmdtime(cmdssptr cmds,double time,Q_LONGLONG iter,enum CMDcode type,
 	if(cmds->cmdi) {
 		i=-1;
 		done=0;
-		while(!done&&(i=q_next(i,NULL,NULL,NULL,NULL,&voidptr,cmds->cmdi))>=0) {
+		while(!done && (i=q_next(i,NULL,NULL,NULL,NULL,&voidptr,cmds->cmdi))>=0) {
 			cmd=(cmdptr)voidptr;
-			if(type==CMDall||(cmdtype=scmdcmdtype(cmds,cmd))==type||(type==CMDctrlORobs&&(cmdtype==CMDcontrol||cmdtype==CMDobserve))) {
+			if(type==CMDall || (cmdtype=scmdcmdtype(cmds,cmd))==type || (type==CMDctrlORobs && (cmdtype==CMDcontrol || cmdtype==CMDobserve))) {
 				it=cmd->oni;
 				dti=cmd->dti;
-				if((equalok&&it>=iter)||(!equalok&&it>iter)) done=1;
-				while(((equalok&&it<iter)||(!equalok&&it<=iter))&&it<=cmd->offi) it+=dti;
+				if((equalok && it>=iter) || (!equalok && it>iter)) done=1;
+				while(((equalok && it<iter) || (!equalok && it<=iter)) && it<=cmd->offi) it+=dti;
 				if(it<=cmd->offi)
-					if(itbest<iter||it<itbest) {
+					if(itbest<iter || it<itbest) {
 						ans|=1;
 						itbest=it; }}}}
+
 	if(cmds->cmd) {
 		i=-1;
 		done=0;
-		while(!done&&(i=q_next(i,NULL,NULL,NULL,NULL,&voidptr,cmds->cmd))>=0) {
+		while(!done && (i=q_next(i,NULL,NULL,NULL,NULL,&voidptr,cmds->cmd))>=0) {
 			cmd=(cmdptr)voidptr;
-			if(type==CMDall||(cmdtype=scmdcmdtype(cmds,cmd))==type||(type==CMDctrlORobs&&(cmdtype==CMDcontrol||cmdtype==CMDobserve))) {
+			if(type==CMDall || (cmdtype=scmdcmdtype(cmds,cmd))==type || (type==CMDctrlORobs && (cmdtype==CMDcontrol || cmdtype==CMDobserve))) {
 				t=cmd->on;
 				dt=cmd->dt;
-				if((equalok&&t>=time)||(!equalok&&t>time)) done=1;
-				while(((equalok&&t<time)||(!equalok&&t<=time))&&t<=cmd->off) {
+				if((equalok && t>=time) || (!equalok && t>time)) done=1;
+				while(((equalok && t<time) || (!equalok && t<=time)) && t<=cmd->off) {
 					t+=dt;
 					if(cmd->xt>1) dt*=cmd->xt; }
 				if(t<=cmd->off)
-					if(tbest<time||t<tbest) {
+					if(tbest<time || t<tbest) {
 						ans|=2;
 						tbest=t; }}}}
+
 	if(timeptr) *timeptr=tbest;
 	if(iterptr) *iterptr=itbest;
 	return ans; }
@@ -443,16 +452,24 @@ void scmdwritecommands(cmdssptr cmds,FILE *fptr,char *filename) {
 	return; }
 
 
+/* scmdsetflag */
+void scmdsetflag(cmdssptr cmds,double flag) {
+	cmds->flag=flag;
+	return; }
+
+
+/* scmdreadflag */
+double scmdreadflag(cmdssptr cmds) {
+	return cmds->flag; }
+
 
 /************** file functions **************/	
 	
 /* scmdsetfroot */
-int scmdsetfroot(cmdssptr cmds,char *root) {
-	static int ctr=-1;
-
-	if(!cmds) return -1;
+int scmdsetfroot(cmdssptr cmds,const char *root) {
+	if(!cmds || !root) return 1;
 	strncpy(cmds->froot,root,STRCHAR);
-	return ++ctr; }
+	return 0; }
 
 
 /* scmdsetfnames */
@@ -520,10 +537,10 @@ int scmdsetfnames(cmdssptr cmds,char *str,int append) {
 
 
 /* scmdsetfsuffix */
-int scmdsetfsuffix(cmdssptr cmds,char *fname,int i) {
+int scmdsetfsuffix(cmdssptr cmds,const char *fname,int i) {
 	int fid;
 
-	if(!cmds||!cmds->nfile) return 1;
+	if(!cmds || !cmds->nfile) return 1;
 	fid=stringfind(cmds->fname,cmds->nfile,fname);
 	if(fid<0) return 1;
 	cmds->fsuffix[fid]=i;
@@ -542,8 +559,6 @@ int scmdopenfiles(cmdssptr cmds,int overwrite) {
 			fclose(cmds->fptr[fid]);
 		cmds->fptr[fid]=NULL; }
 
-	overwrite = 1;
-	
 	for(fid=0;fid<cmds->nfile;fid++) {
 		if(!strcmp(cmds->fname[fid],"stdout")) cmds->fptr[fid]=stdout;
 		else if(!strcmp(cmds->fname[fid],"stderr")) cmds->fptr[fid]=stderr;
@@ -555,12 +570,13 @@ int scmdopenfiles(cmdssptr cmds,int overwrite) {
 					fclose(fptr);
 					fprintf(stderr,"Overwrite existing output file '%s' (y/n)? ",cmds->fname[fid]);
 					scanf("%s",str2);
-					if(!(str2[0]=='y'||str2[0]=='Y')) return 1; }}
+					if(!(str2[0]=='y' || str2[0]=='Y')) return 1; }}
 			if(cmds->fappend[fid]) cmds->fptr[fid]=fopen(str1,"a");
 			else cmds->fptr[fid]=fopen(str1,"w"); }
 		if(!cmds->fptr[fid]) {
 			fprintf(stderr,"Failed to open file '%s' for writing\n",cmds->fname[fid]);
 			return 1; }}
+
 	return 0; }
 
 
@@ -575,8 +591,8 @@ FILE *scmdoverwrite(cmdssptr cmds,char *line2) {
 	fid=stringfind(cmds->fname,cmds->nfile,fname);
 	if(fid<0) return NULL;
 	if(strcmp(cmds->fname[fid],"stdout") || strcmp(cmds->fname[fid],"stderr")) {
-	fclose(cmds->fptr[fid]);
-	scmdcatfname(cmds,fid,str1);
+		fclose(cmds->fptr[fid]);
+		scmdcatfname(cmds,fid,str1);
 		cmds->fptr[fid]=fopen(str1,"w"); }
 	return cmds->fptr[fid]; }
 
@@ -592,9 +608,9 @@ FILE *scmdincfile(cmdssptr cmds,char *line2) {
 	fid=stringfind(cmds->fname,cmds->nfile,fname);
 	if(fid<0) return NULL;
 	if(strcmp(cmds->fname[fid],"stdout") || strcmp(cmds->fname[fid],"stderr")) {
-	fclose(cmds->fptr[fid]);
-	cmds->fsuffix[fid]++;
-	scmdcatfname(cmds,fid,str1);
+		fclose(cmds->fptr[fid]);
+		cmds->fsuffix[fid]++;
+		scmdcatfname(cmds,fid,str1);
 		if(cmds->fappend[fid])
 			cmds->fptr[fid]=fopen(str1,"a");
 		else

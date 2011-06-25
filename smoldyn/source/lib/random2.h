@@ -179,6 +179,8 @@ void randtableD(double *a,int n,int eq);
 void randtableF(float *a,int n,int eq);
 void randshuffletableD(double *a,int n);
 void randshuffletableF(float *a,int n);
+void randshuffletableI(int *a,int n);
+void randshuffletableV(void **a,int n);
 void showdist(int n,float low,float high,int bin);
 
 #endif

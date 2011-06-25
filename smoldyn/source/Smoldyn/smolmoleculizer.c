@@ -467,6 +467,7 @@ void mzrssfree(mzrssptr mzrss) {
 /*************************** data structure output ****************************/
 /******************************************************************************/
 
+
 /* mzrCheckParams. */
 int mzrCheckParams(simptr sim,int *warnptr) {
 	int warn,error,er,numnames,strm;
@@ -689,7 +690,7 @@ int mzrAssignDrawingParameters(simptr sim,char *tagname,int ident) {
 	got=0;
 	for(strm=0;strm<mzrss->nstreams && !got;strm++)
 		if(checkSpeciesTagIsInSpeciesStream(mzrss->mzr,tagname,mzrss->streamname[strm])) {
-			for(ms=0;ms<MSMAX;ms++) {
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
 				molsetcolor(sim,ident,ms,mzrss->color[strm][ms]);									// call to Smoldyn
 				molsetdisplaysize(sim,ident,ms,mzrss->displaysize[strm][ms]); }		// call to Smoldyn
 			got=1; }
@@ -984,6 +985,7 @@ int mzrssload(simptr sim,char *erstr) {
 	CHECKS(er!=2,"document unparsable error reading network generation rules");
 	CHECKS(er!=3,"rules already loaded error reading network generation rules");
 	CHECKS(er!=4,"file not found error reading network generation rules");
+	
 
 	return 0;
 failure:
@@ -1031,7 +1033,7 @@ int mzrsetupmoleculizer(simptr sim,char *erstr) {
 			sprintf(errstring,"ERROR: species %s has multiple names",mzrss->smolname[-1-er]);
 			CHECKS(0,errstring); }
 		if(mzrss->refspecies>0) {
-			for(ms=0;ms<MSMAX;ms++)
+			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 				mzrss->refdifc[ms]=sim->mols->difc[mzrss->refspecies][ms]; }
 		mzrsetcondition(mzrss,SClists,1); }
 
@@ -1142,20 +1144,20 @@ int mzrExpandSpecies(simptr sim,int ident) {
 	mzrssptr mzrss;
 	int er,size1,size2;
 	char tagged_name[STRCHAR];
-
+	
 	mzrss=sim->mzrss;
 	er=convertSomeNameToTaggedName(mzrss->mzr,sim->mols->spname[ident],tagged_name,STRCHAR);
 	if(er) return 1;
-
+	
 	size1=getNumberOfSpecies(mzrss->mzr)*getNumberOfReactions(mzrss->mzr);
 	if(mzrss->maxNetworkSpecies<0 || mzrss->maxNetworkSpecies>getNumberOfSpecies(mzrss->mzr))
 		expandSpeciesByTag(mzrss->mzr,tagged_name);
 	molsetexpansionflag(sim,ident,0);																					// call to Smoldyn
 	size2=getNumberOfSpecies(mzrss->mzr)*getNumberOfReactions(mzrss->mzr);
-
+	
 	if(size1!=size2) {						// If the network grew because of expansion. 
 		mzrsetcondition(sim->mzrss,SCparams,0); }
-
+	
 	return 0;
 #else
 	return 2;

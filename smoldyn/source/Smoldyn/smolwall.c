@@ -1,5 +1,5 @@
 /* Steven Andrews, started 10/22/2001.
-This is a library of functions for the Smoldyn program.  See documentation
+ This is a library of functions for the Smoldyn program.  See documentation
  called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
  Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
  of the Gnu General Public License (GPL). */
@@ -22,8 +22,7 @@ This is a library of functions for the Smoldyn program.  See documentation
 /****************************** low level utilities ***************************/
 /******************************************************************************/
 
-/* systemrandpos.  Returns a random point within the system volume, chosen with
-a uniform distribution. */
+/* systemrandpos */
 void systemrandpos(simptr sim,double *pos) {
 	int d;
 
@@ -31,7 +30,7 @@ void systemrandpos(simptr sim,double *pos) {
 	return; }
 
 
-/* systemvolume.  Returns the total volume of the system. */
+/* systemvolume */
 double systemvolume(simptr sim) {
 	int d;
 	double vol;
@@ -41,9 +40,7 @@ double systemvolume(simptr sim) {
 	return vol; }
 
 
-/* systemcorners.  Returns the low and high corners of the system volume in
-poslo and poshi, respectively.  Both results are optional; enter NULL if a
-point is unwanted. */
+/* systemcorners */
 void systemcorners(simptr sim,double *poslo,double *poshi) {
 	int d;
 
@@ -53,7 +50,7 @@ void systemcorners(simptr sim,double *poslo,double *poshi) {
 	return; }
 
 
-/* systemdiagonal. */
+/* systemdiagonal */
 double systemdiagonal(simptr sim) {
 	int d;
 	double diagonal;
@@ -64,8 +61,7 @@ double systemdiagonal(simptr sim) {
 	return sqrt(diagonal); }
 
 
-/* posinsystem.  Returns 1 if pos is within the system boundaries (equal to the
-edges counts as inside) and 0 if it is outside. */
+/* posinsystem */
 int posinsystem(simptr sim,double *pos) {
 	int d;
 
@@ -79,8 +75,7 @@ int posinsystem(simptr sim,double *pos) {
 /******************************* memory management ****************************/
 /******************************************************************************/
 
-/* wallalloc allocates and initializes a new wall.  The pointer to the opposite
-wall needs to be set. */
+/* wallalloc */
 wallptr wallalloc(void) {
 	wallptr wptr;
 
@@ -94,16 +89,14 @@ wallptr wallalloc(void) {
 	return wptr; }
 
 
-/* wallfree frees a wall. */
+/* wallfree */
 void wallfree(wallptr wptr) {
 	if(!wptr) return;
 	free(wptr);
 	return; }
 
 
-/* wallsalloc allocates an array of pointers to 2*dim walls, allocates each of
-the walls, and sets them to default conditions (reflecting walls at 0 and 1 on
-each coordinate) with correct pointers in each opp member. */
+/* wallsalloc */
 wallptr *wallsalloc(int dim) {
 	int w,d;
 	wallptr *wlist;
@@ -126,7 +119,7 @@ wallptr *wallsalloc(int dim) {
 	return wlist; }
 
 
-/* wallsfree frees an array of 2*dim walls, including the walls. */
+/* wallsfree */
 void wallsfree(wallptr *wlist,int dim) {
 	if(!wlist||dim<1) return;
 	for(dim--;dim>=0;dim--) {
@@ -140,8 +133,7 @@ void wallsfree(wallptr *wlist,int dim) {
 /***************************** data structure output **************************/
 /******************************************************************************/
 
-/* walloutput prints the wall structure information, including wall dimensions,
-positions, and types, as well as the total simulation volume. */
+/* walloutput */
 void walloutput(simptr sim) {
 	int w,d,dim;
 	wallptr *wlist,wptr;
@@ -153,14 +145,17 @@ void walloutput(simptr sim) {
 	if(!wlist) {
 		printf(" No walls defined for simulation\n\n");
 		return; }
+
 	for(w=0;w<2*dim;w++) {
 		wptr=wlist[w];
 		printf(" wall %i: dimension %i, at %g, type %c\n",w,wptr->wdim,wptr->pos,wptr->type);
 		if(wlist[w+1-2*(w%2)]!=wptr->opp) printf(" ERROR: opposing wall is incorrect\n"); }
+
 	vol=systemvolume(sim);
 	if(dim==1) printf(" length: %g\n",vol);
 	else if(dim==2) printf(" area: %g\n",vol);
 	else printf(" volume: %g\n",vol);
+
 	systemcorners(sim,poslo,poshi);
 	printf(" system corners: (%g",poslo[0]);
 	for(d=1;d<dim;d++) printf(",%g",poslo[d]);
@@ -168,12 +163,11 @@ void walloutput(simptr sim) {
 	for(d=1;d<dim;d++) printf(",%g",poshi[d]);
 	printf(")\n");
 	printf("\n");
+
 	return; }
 
 
-/* writewalls.  Writes all information about the walls to the file fptr using a
-format that can be read by Smoldyn.  This allows a simulation state to be saved.
-*/
+/* writewalls */
 void writewalls(simptr sim,FILE *fptr) {
 	int d,dim;
 
@@ -185,10 +179,8 @@ void writewalls(simptr sim,FILE *fptr) {
 	fprintf(fptr,"\n");
 	return; }
 
-/* checkwallparams.  Checks some parameters of simulation walls to make sure
-that they are reasonable.  Prints warning messages to the display.  Returns the
-total number of errors and, if warnptr is not NULL, the number of warnings in
-warnptr. */
+
+/* checkwallparams */
 int checkwallparams(simptr sim,int *warnptr) {
 	int d,dim,warn,error;
 	wallptr *wlist;
@@ -224,13 +216,7 @@ int checkwallparams(simptr sim,int *warnptr) {
 /******************************************************************************/
 
 
-/* walladd.  Adds a wall to the system.  If no walls have been added yet, this
-allocates the necessary memory.  d is the dimension that the wall bounds,
-highside is 0 if the wall is on the low side of the system and 1 if it is on the
-high side of the system, pos is the location of the wall in the d dimension, and
-type describes the boundary condition (if there arenÕt any surfaces).  Returns 0
-for success, 1 for unable to allocate memory, or 2 if the simulation structure
-dim element hasnÕt been set up yet. */
+/* walladd */
 int walladd(simptr sim,int d,int highside,double pos,char type) {
 	if(!sim->wlist) {
 		if(!sim->dim) return 2;
@@ -239,7 +225,16 @@ int walladd(simptr sim,int d,int highside,double pos,char type) {
 	d=2*d+highside;
 	sim->wlist[d]->pos=pos;
 	sim->wlist[d]->type=type;
-	if(sim->boxs && sim->boxs->condition>SClists) sim->boxs->condition=SClists;
+	boxsetcondition(sim->boxs,SClists,0);
+	return 0; }
+
+
+/* wallsettype */
+int wallsettype(simptr sim,int d,int highside,char type) {
+	if(!sim->wlist) return 1;
+	d=2*d+highside;
+	sim->wlist[d]->type=type;
+	boxsetcondition(sim->boxs,SClists,0);
 	return 0; }
 
 
@@ -248,15 +243,8 @@ int walladd(simptr sim,int d,int highside,double pos,char type) {
 /******************************************************************************/
 
 
-/* checkwalls_threaded does the reflection, wrap-around, or absorption of molecules at
-walls by checking the current position, relative to the wall positions (as well
-as a past position for absorbing walls).  Only molecules in live list ll are
-checked.  If reborn is 1, only the newly added molecules are checked; if it's 0,
-the full list is checked.  It does not reassign the molecules to boxes or sort
-the live and dead ones.  It does not matter if molecules are assigned to the
-proper boxes or not.  If bptr is NULL, all diffusing molecules are checked,
-otherwise only those in box bptr are checked. */
-int checkwalls_threaded(simptr sim,int ll,int reborn,boxptr bptr) {//????? changed name and added error code
+/* checkwalls */
+int checkwalls(simptr sim,int ll,int reborn,boxptr bptr) {
 	int nmol,w,d,m;
 	moleculeptr *mlist;
 	double pos2,diff,difi,step,**difstep;
@@ -314,16 +302,12 @@ int checkwalls_threaded(simptr sim,int ll,int reborn,boxptr bptr) {//????? chang
 	return 0; }
 
 
-//?????????? below is a new function, above is unchanged (I think these must be identical)
-/* checkwalls does the reflection, wrap-around, or absorption of molecules at
-walls by checking the current position, relative to the wall positions (as well
-as a past position for absorbing walls).  Only molecules in live list ll are
-checked.  If reborn is 1, only the newly added molecules are checked; if it's 0,
-the full list is checked.  It does not reassign the molecules to boxes or sort
-the live and dead ones.  It does not matter if molecules are assigned to the
-proper boxes or not.  If bptr is NULL, all diffusing molecules are checked,
-otherwise only those in box bptr are checked. */
-int checkwalls(simptr sim,int ll,int reborn,boxptr bptr) {
+
+/* Start of threading code, which is undocumented.  I don't see any changes
+between following code and prior code */
+
+/* checkwalls_threaded */
+int checkwalls_threaded(simptr sim,int ll,int reborn,boxptr bptr) {// changed name and added error code
 	int nmol,w,d,m;
 	moleculeptr *mlist;
 	double pos2,diff,difi,step,**difstep;

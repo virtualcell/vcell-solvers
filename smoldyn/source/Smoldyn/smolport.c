@@ -1,5 +1,5 @@
 /* Steven Andrews, started 10/22/2001.
-This is a library of functions for the Smoldyn program.  See documentation
+ This is a library of functions for the Smoldyn program.  See documentation
  called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
  Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
  of the Gnu General Public License (GPL). */
@@ -30,8 +30,7 @@ This is a library of functions for the Smoldyn program.  See documentation
 /******************************* memory management ****************************/
 /******************************************************************************/
 
-/* portalloc.  Allocates memory for a port.  Pointers are set to NULL and llport
-is set to -1.  Returns the port or NULL if unable to allocate memory. */
+/* portalloc */
 portptr portalloc(void) {
 	portptr port;
 
@@ -52,29 +51,50 @@ void portfree(portptr port) {
 
 
 /* portssalloc */
-portssptr portssalloc(int maxport) {
-	portssptr portss;
-	int prt;
+portssptr portssalloc(portssptr portss,int maxport) {
+	int p,newportss;
+	char **newnames;
+	portptr *newportlist;
 
-	portss=(portssptr)malloc(sizeof(struct portsuperstruct));
-	if(!portss) return NULL;
-	portss->condition=SCinit;
-	portss->sim=NULL;
+	if(maxport<1) return NULL;
+
+	newportss=0;
+	newnames=NULL;
+	newportlist=NULL;
+
+	if(!portss) {																			// new allocation
+		portss=(portssptr) malloc(sizeof(struct portsuperstruct));
+		if(!portss) return NULL;
+		newportss=1;
+		portss->condition=SCinit;
+		portss->sim=NULL;
+		portss->maxport=0;
+		portss->nport=0;
+		portss->portnames=NULL;
+		portss->portlist=NULL; }
+	else {																						// minor check
+		if(maxport<portss->maxport) return NULL; }
+
+	if(maxport>portss->maxport) {											// allocate new port names and ports
+		CHECK(newnames=(char**) calloc(maxport,sizeof(char*)));
+		for(p=0;p<maxport;p++) newnames[p]=NULL;
+		for(p=0;p<portss->maxport;p++) newnames[p]=portss->portnames[p];
+		for(;p<maxport;p++)
+			CHECK(newnames[p]=EmptyString());
+
+		CHECK(newportlist=(portptr*) calloc(maxport,sizeof(portptr)));	// port list
+		for(p=0;p<maxport;p++) newportlist[p]=NULL;
+		for(p=0;p<portss->maxport;p++) newportlist[p]=portss->portlist[p];
+		for(;p<maxport;p++) {
+			CHECK(newportlist[p]=portalloc());
+			newportlist[p]->portss=portss;
+			newportlist[p]->portname=newnames[p]; }}
+
 	portss->maxport=maxport;
-	portss->nport=0;
-	portss->portnames=NULL;
-	portss->portlist=NULL;
-
-	CHECK(portss->portnames=(char**)calloc(maxport,sizeof(char*)));
-	for(prt=0;prt<maxport;prt++) portss->portnames[prt]=NULL;
-	for(prt=0;prt<maxport;prt++) {
-		CHECK(portss->portnames[prt]=EmptyString()); }
-
-	CHECK(portss->portlist=(portptr*)calloc(maxport,sizeof(portptr)));
-	for(prt=0;prt<maxport;prt++) portss->portlist[prt]=NULL;
-	for(prt=0;prt<maxport;prt++) {
-		CHECK(portss->portlist[prt]=portalloc());
-		portss->portlist[prt]->portname=portss->portnames[prt]; }
+	free(portss->portnames);
+	portss->portnames=newnames;
+	free(portss->portlist);
+	portss->portlist=newportlist;
 
 	return portss;
 
@@ -88,10 +108,10 @@ void portssfree(portssptr portss) {
 	int prt;
 
 	if(!portss) return;
-	if(portss->maxport&&portss->portlist)
+	if(portss->maxport && portss->portlist)
 		for(prt=0;prt<portss->maxport;prt++) portfree(portss->portlist[prt]);
 	free(portss->portlist);
-	if(portss->maxport&&portss->portnames)
+	if(portss->maxport && portss->portnames)
 		for(prt=0;prt<portss->maxport;prt++) free(portss->portnames[prt]);
 	free(portss->portnames);
 	free(portss);
@@ -102,7 +122,7 @@ void portssfree(portssptr portss) {
 /***************************** data structure output **************************/
 /******************************************************************************/
 
-/* portoutput.  Displays all important information about all ports to stdout. */
+/* portoutput */
 void portoutput(simptr sim) {
 	portssptr portss;
 	portptr port;
@@ -139,8 +159,8 @@ void writeports(simptr sim,FILE *fptr) {
 	for(prt=0;prt<portss->nport;prt++) {
 		port=portss->portlist[prt];
 		fprintf(fptr,"start_port %s\n",port->portname);
-		fprintf(fptr,"surface %s\n",port->srf->sname);
-		fprintf(fptr,"face %s\n",surfface2string(port->face,string));
+		if(port->srf) fprintf(fptr,"surface %s\n",port->srf->sname);
+		if(port->srf) fprintf(fptr,"face %s\n",surfface2string(port->face,string));
 		fprintf(fptr,"end_port\n\n"); }
 	return; }
 
@@ -165,16 +185,18 @@ int checkportparams(simptr sim,int *warnptr) {
 	for(prt=0;prt<portss->nport;prt++) {
 		port=portss->portlist[prt];					// check for porting surface
 		if(!port->srf) {warn++;printf(" WARNING: there is no porting surface assigned to port %s\n",port->portname);}
-		if(!(port->face==PFfront||port->face==PFback))
+		if(!(port->face==PFfront || port->face==PFback))
 			{error++;printfException(" ERROR: no surface face has been assigned to port %s\n",port->portname);}
 
-		if(port->srf->port[port->face]!=port) {error++;printfException(" ERROR: port %s is not registered by surface %s\n",port->portname,port->srf->sname);}
+		if(port->srf && (!port->srf->port || port->srf->port[port->face]!=port))
+			{error++;printfException(" ERROR: port %s is not registered by surface %s\n",port->portname,port->srf->sname);}
 
-		er=1;																// make sure surface action is set to port
-		for(i=0;i<sim->mols->nspecies && er;i++)
-			if(port->srf->action[i][MSsoln][port->face]==SAport) er=0;
-		if(er) {warn++;printf(" WARNING: port %s is nonfunctional because no molecule actions at the surface %s are set to port\n",port->portname,port->srf->sname);}
-		if(!port->llport) {error++;printfException(" BUG: port %s has no molecule buffer\n",port->portname);} }
+		if(sim->mols && port->srf && port->srf->action) {
+			er=1;																// make sure surface action is set to port
+			for(i=0;i<sim->mols->nspecies && er;i++)
+				if(port->srf->action[i][MSsoln][port->face]==SAport) er=0;
+			if(er) {warn++;printf(" WARNING: port %s is nonfunctional because no molecule actions at the surface %s are set to port\n",port->portname,port->srf->sname);}
+			if(!port->llport) {error++;printfException(" BUG: port %s has no molecule buffer\n",port->portname);} }}
 
 	if(warnptr) *warnptr=warn;
 	return error; }
@@ -197,88 +219,111 @@ void portsetcondition(portssptr portss,enum StructCond cond,int upgrade) {
 	return; }
 
 
-/* addport */
-portptr addport(portssptr portss,char *portname,surfaceptr srf,enum PanelFace face) {
-	int prt;
+/* portenableports */
+int portenableports(simptr sim,int maxport) {
+	portssptr portss;
+
+	if(sim->portss)									// check for redundant function call
+		if(maxport==-1 || sim->portss->maxport==maxport)
+			return 0;
+	portss=portssalloc(sim->portss,maxport<0?5:maxport);
+	if(!portss) return 1;
+	sim->portss=portss;
+	portss->sim=sim;
+	portsetcondition(sim->portss,SClists,0);
+	return 0; }
+
+
+/* portaddport */
+portptr portaddport(simptr sim,const char *portname,surfaceptr srf,enum PanelFace face) {
+	int er,p;
+	portssptr portss;
 	portptr port;
 
-	if(!portss) return NULL;
-	prt=stringfind(portss->portnames,portss->nport,portname);
-	if(prt<0) {
-		if(portss->nport>=portss->maxport) return NULL;
-		prt=portss->nport++;
-		strncpy(portss->portnames[prt],portname,STRCHAR-1);
-		portss->portnames[prt][STRCHAR-1]='\0';
-		port=portss->portlist[prt]; }
+	if(!sim->portss) {
+	 er=portenableports(sim,-1);
+	 if(er) return NULL; }
+	portss=sim->portss;
+
+	p=stringfind(portss->portnames,portss->nport,portname);
+	if(p<0) {
+		if(portss->nport==portss->maxport) {
+			er=portenableports(sim,portss->nport*2+1);
+			if(er) return NULL; }
+		p=portss->nport++;
+		strncpy(portss->portnames[p],portname,STRCHAR-1);
+		portss->portnames[p][STRCHAR-1]='\0';
+		port=portss->portlist[p]; }
 	else
-		port=portss->portlist[prt];
+		port=portss->portlist[p];
+
 	if(srf) port->srf=srf;
 	if(face!=PFnone) port->face=face;
-	if(port->srf&&port->face!=PFnone)
+	if(port->srf && port->face!=PFnone)
 		port->srf->port[port->face]=port;
 	portsetcondition(portss,SClists,0);
 	return port; }
 
 
 /* portreadstring */
-int portreadstring(simptr sim,int portindex,char *word,char *line2,char *erstr) {
+portptr portreadstring(simptr sim,portptr port,char *word,char *line2,char *erstr) {
 	char nm[STRCHAR];
-	portptr port;
+	portssptr portss;
 	int itct,s;
 	enum PanelFace face;
 
-	if(portindex>=0) port=sim->portss->portlist[portindex];
-	else port=NULL;
+	portss=sim->portss;
 
-	if(!strcmp(word,"name")) {								// name, got[0]
+	if(!strcmp(word,"name")) {								// name
 		itct=sscanf(line2,"%s",nm);
 		CHECKS(itct==1,"error reading port name");
-		CHECKS(port=addport(sim->portss,nm,NULL,PFnone),"more ports are being defined than were allocated");
-		portindex=stringfind(sim->portss->portnames,sim->portss->nport,nm);
-		CHECKS(portindex>=0,"SMOLDYN BUG: portreadstring");
+		port=portaddport(sim,nm,NULL,PFnone);
+		CHECKS(port,"failed to add port");
 		CHECKS(!strnword(line2,2),"unexpected text following name"); }
 
-	else if(!strcmp(word,"surface")) {						// surface, got[1]
+	else if(!strcmp(word,"surface")) {						// surface
 		CHECKS(port,"port name has to be entered before surface");
 		itct=sscanf(line2,"%s",nm);
 		CHECKS(itct==1,"error reading surface name");
 		s=stringfind(sim->srfss->snames,sim->srfss->nsrf,nm);
 		CHECKS(s>=0,"surface name not recognized");
-		CHECKS(port==addport(sim->portss,port->portname,sim->srfss->srflist[s],PFnone),"SMOLDYN BUG: new port was created when adding surface");
+		port=portaddport(sim,port->portname,sim->srfss->srflist[s],PFnone);
+		CHECKS(port,"SMOLDYN BUG adding surface to port");
 		CHECKS(!strnword(line2,2),"unexpected text following surface"); }
 
-	else if(!strcmp(word,"face")) {								// face, got[2]
-		CHECKS(port,"name has to be entered before face");
+	else if(!strcmp(word,"face")) {								// face
+		CHECKS(port,"port name has to be entered before face");
 		itct=sscanf(line2,"%s",nm);
 		CHECKS(itct==1,"error reading face name");
 		face=surfstring2face(nm);
-		CHECKS(face==PFfront||face==PFback,"face needs to be either front or back");
-		CHECKS(port==addport(sim->portss,port->portname,NULL,face),"SMOLDYN BUG: new port was created when adding face");
+		CHECKS(face==PFfront || face==PFback,"face needs to be either front or back");
+		port=portaddport(sim,port->portname,NULL,face);
+		CHECKS(port,"SMOLDYN BUG adding face to port");
 		CHECKS(!strnword(line2,2),"unexpected text following face"); }
 
 	else {																				// unknown word
 		CHECKS(0,"syntax error within port block: statement not recognized"); }
 
-	return portindex;
+	return port;
 
  failure:
-	return -1; }
+	return NULL; }
 
 
 /* loadport */
 int loadport(simptr sim,ParseFilePtr *pfpptr,char* line2,char *erstr) {
 	ParseFilePtr pfp;
 	char word[STRCHAR],errstring[STRCHAR];
-	int done,pfpcode,firstline2,prt;
+	int done,pfpcode,firstline2;
+	portptr port;
 
 	pfp=*pfpptr;
-	CHECKS(sim->portss,"PROGRAM BUG: port superstructure not allocated in loadport");
 	done=0;
-	prt=-1;
+	port=NULL;
 	firstline2=line2?1:0;
 
 	while(!done) {
-		if(pfp->lctr==0&&!strchr(sim->flags,'q'))
+		if(pfp->lctr==0 && !strchr(sim->flags,'q'))
 			printf(" Reading file: '%s'\n",pfp->fname);
 		if(firstline2) {
 			strcpy(word,"name");
@@ -300,8 +345,8 @@ int loadport(simptr sim,ParseFilePtr *pfpptr,char* line2,char *erstr) {
 		else if(!line2) {															// just word
 			CHECKS(0,"unknown word or missing parameter"); }
 		else {
-			prt=portreadstring(sim,prt,word,line2,errstring);
-			CHECKS(prt>=0,errstring); }}
+			port=portreadstring(sim,port,word,line2,errstring);
+			CHECKS(port!=NULL,errstring); }}
 
 	CHECKS(0,"end of file encountered before end_port statement");	// end of file
 
@@ -309,28 +354,46 @@ int loadport(simptr sim,ParseFilePtr *pfpptr,char* line2,char *erstr) {
 	return 1; }
 
 
-/* setupports.  Sets up the molecule buffers for all ports.  Returns 0 for
-success, 1 for inability to allocate sufficient memory, or 2 for molecules not
-set up sufficiently. */
-int setupports(simptr sim) {
+/* portsupdateparams */
+int portsupdateparams(simptr sim) {
+	return 0; }
+
+
+/* portsupdatelists */
+int portsupdatelists(simptr sim) {
 	portssptr portss;
 	portptr port;
 	int prt,ll;
 
 	portss=sim->portss;
-	if(!portss) return 0;
-	if(portss->condition==SCok) return 0;
-
-	if(sim->mols && sim->mols->condition<=SClists) return 2;
+	if(sim->mols && sim->mols->condition<SCparams) return 2;
 
 	if(sim->mols) {
 		for(prt=0;prt<portss->nport;prt++) {
-			port=portss->portlist[prt];									// port molecule list
+			port=portss->portlist[prt];									// create port molecule list if none
 			if(port->llport<0) {
 				ll=addmollist(sim,port->portname,MLTport);
 				if(ll<0) return 1;
-				port->llport=ll; }}
-	portsetcondition(portss,SCok,1); }
+				port->llport=ll; }}}
+
+	return 0; }
+
+
+/* portsupdate */
+int portsupdate(simptr sim) {
+	int er;
+	portssptr portss;
+	
+	portss=sim->portss;
+	if(portss) {
+		if(portss->condition<=SClists) {
+			er=portsupdatelists(sim);
+			if(er) return er;
+			portsetcondition(portss,SCparams,1); }
+		if(portss->condition==SCparams) {
+			er=portsupdateparams(sim);
+			if(er) return er;
+			portsetcondition(portss,SCok,1); }}
 	return 0; }
 
 
@@ -339,34 +402,25 @@ int setupports(simptr sim) {
 /******************************************************************************/
 
 
-/* portgetmols.  Returns the number of molecules of type ident and state ms that
-are in the export buffer of port port.  This also kills those molecules, so that
-they will be returned to the dead list at the next sorting.  If ident is -1,
-this returns the total number of molecules on the export list, which are not
-killed.  The intention is that molecules that are gotten from the export list
-with this function are then added to MOOSE or another simulator. */
-int portgetmols(simptr sim,portptr port,int ident,enum MolecState ms) {
+/* portgetmols */
+int portgetmols(simptr sim,portptr port,int ident,enum MolecState ms,int remove) {
 	int ll,nmol,count,m;
 	moleculeptr *mlist;
 
 	ll=port->llport;
 	mlist=sim->mols->live[ll];
 	nmol=sim->mols->nl[ll];
-	if(ident<0) return nmol;
+	if(ident<0 && ms==MSall && !remove) return nmol;
 	count=0;
 	for(m=0;m<nmol;m++) {
-		if(mlist[m]->ident==ident&&(ms==MSall||mlist[m]->mstate==ms)) {
+		if((ident==-1 || mlist[m]->ident==ident) && (ms==MSall || mlist[m]->mstate==ms)) {
 			count++;
-			molkill(sim,mlist[m],ll,m); }}
+			if(remove) molkill(sim,mlist[m],ll,m); }}
 	sim->eventcount[ETexport]+=count;
 	return count; }
 
 
-/* portputmols.  Adds nmol molecules of type ident and state MSsoln to the
-simulation system at the porting surface of port port.  Molecules are placed
-randomly on the surface.  This returns 0 for success, 1 for insufficient
-available molecules, 2 for no porting surface defined, 3 for no porting surface
-face defined, and 4 for inability to allocated temporary memory. */
+/* portputmols */
 int portputmols(simptr sim,portptr port,int nmol,int ident) {
 	moleculeptr mptr;
 	int dim,m,d;
@@ -392,17 +446,14 @@ int portputmols(simptr sim,portptr port,int nmol,int ident) {
 	return 0; }
 
 
-/* porttransport.  Transports molecules from port1 of simulation structure sim1
-to port2 of simulation structure sim2.  sim1 and sim2 may be the same and port1
-and port2 may be the same.  This is designed for testing ports or for coupled
-Smoldyn simulations that communicate with ports. */
+/* porttransport */
 int porttransport(simptr sim1,portptr port1,simptr sim2,portptr port2) {
 	int i,nmol,er;
 
-	if(!portgetmols(sim1,port1,-1,MSnone)) return 0;
+	if(!portgetmols(sim1,port1,-1,MSall,0)) return 0;
 	er=0;
-	for(i=1;i<sim1->mols->nspecies&&!er;i++) {
-		nmol=portgetmols(sim1,port1,i,MSall);
+	for(i=1;i<sim1->mols->nspecies && !er;i++) {
+		nmol=portgetmols(sim1,port1,i,MSall,1);
 		er=portputmols(sim2,port2,nmol,i); }
 	return er; }
 

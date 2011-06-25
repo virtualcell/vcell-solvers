@@ -26,6 +26,10 @@ double Geo_TriArea2(double *pt1,double *pt2,double *pt3);
 double Geo_TriArea3(double *pt1,double *pt2,double *pt3,double *norm);
 double Geo_QuadArea(double *pt1,double *pt2,double *pt3,double *pt4,int dim);
 
+// Inside point
+double Geo_InsidePoints2(double *pt1,double *pt2,double margin,double *ans1,double *ans2,int dim);
+void Geo_InsidePoints3(double *pt1,double *pt2,double *pt3,double margin,double *ans1,double *ans2,double *ans3);
+
 // Point in
 int Geo_PtInTriangle(double *pt1,double *pt2,double *pt3,double *norm,double *test);
 int Geo_PtInSlab(double *pt1,double *pt2,double *test,int dim);

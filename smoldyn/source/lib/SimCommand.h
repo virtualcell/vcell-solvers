@@ -44,13 +44,14 @@ typedef struct cmdsuperstruct {
 	int *fsuffix;					// file suffix [fid]
 	int *fappend;					// 0 for overwrite, 1 for append [fid]
 	FILE **fptr;					// file pointers [fid]
+	double flag;					// global command structure flag
 	} *cmdssptr;
 
 // non-file functions
 char *scmdcode2string(enum CMDcode code,char *string);
 cmdptr scmdalloc(void);
 void scmdfree(cmdptr cmd);
-cmdssptr scmdssalloc(enum CMDcode (*cmdfn)(void*,cmdptr,char*),void *cmdfnarg,char *root);
+cmdssptr scmdssalloc(enum CMDcode (*cmdfn)(void*,cmdptr,char*),void *cmdfnarg,const char *root);
 void scmdssfree(cmdssptr cmds);
 int scmdqalloc(cmdssptr cmds,int n);
 int scmdqalloci(cmdssptr cmds,int n);
@@ -61,11 +62,13 @@ enum CMDcode scmdcmdtype(cmdssptr cmds,cmdptr cmd);
 int scmdnextcmdtime(cmdssptr cmds,double time,Q_LONGLONG iter,enum CMDcode type,int equalok,double *timeptr,Q_LONGLONG *iterptr);
 void scmdoutput(cmdssptr cmds);
 void scmdwritecommands(cmdssptr cmds,FILE *fptr,char *filename);
+void scmdsetflag(cmdssptr cmds,double flag);
+double scmdreadflag(cmdssptr cmds);
 
 // file functions
-int scmdsetfroot(cmdssptr cmds,char *root);
+int scmdsetfroot(cmdssptr cmds,const char *root);
 int scmdsetfnames(cmdssptr cmds,char *str,int append);
-int scmdsetfsuffix(cmdssptr cmds,char *fname,int i);
+int scmdsetfsuffix(cmdssptr cmds,const char *fname,int i);
 int scmdopenfiles(cmdssptr cmds,int overwrite);
 FILE *scmdoverwrite(cmdssptr cmds,char *line2);
 FILE *scmdincfile(cmdssptr cmds,char *line2);

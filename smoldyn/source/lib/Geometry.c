@@ -242,6 +242,54 @@ double Geo_QuadArea(double *pt1,double *pt2,double *pt3,double *pt4,int dim) {
 	return area; }
 
 
+/********* Inside point ... ***********/
+
+double Geo_InsidePoints2(double *pt1,double *pt2,double margin,double *ans1,double *ans2,int dim) {
+	int d;
+	double len,delta[3];
+
+	len=0;
+	for(d=0;d<dim;d++) {
+		delta[d]=pt2[d]-pt1[d];
+		len+=delta[d]*delta[d]; }
+	len=sqrt(len);
+	for(d=0;d<dim;d++) {
+		delta[d]=delta[d]/len*margin;
+		ans1[d]=pt1[d]+delta[d];
+		ans2[d]=pt2[d]-delta[d]; }
+	return len; }
+
+
+void Geo_InsidePoints3(double *pt1,double *pt2,double *pt3,double margin,double *ans1,double *ans2,double *ans3) {
+	double l122,l232,l312,l12,l23,l31,s,factor;
+
+	l122=(pt2[0]-pt1[0])*(pt2[0]-pt1[0])+(pt2[1]-pt1[1])*(pt2[1]-pt1[1])+(pt2[2]-pt1[2])*(pt2[2]-pt1[2]);
+	l232=(pt3[0]-pt2[0])*(pt3[0]-pt2[0])+(pt3[1]-pt2[1])*(pt3[1]-pt2[1])+(pt3[2]-pt2[2])*(pt3[2]-pt2[2]);
+	l312=(pt1[0]-pt3[0])*(pt1[0]-pt3[0])+(pt1[1]-pt3[1])*(pt1[1]-pt3[1])+(pt1[2]-pt3[2])*(pt1[2]-pt3[2]);
+	l12=sqrt(l122);
+	l23=sqrt(l232);
+	l31=sqrt(l312);
+	s=(l12+l23+l31)/2;
+
+	factor=margin*sqrt(l12*l31/(s*(s-l23)*(2*l122+2*l312-l232)));
+	ans1[0]=pt1[0]+factor*((pt2[0]-pt1[0])/l12-(pt1[0]-pt3[0])/l31);
+	ans1[1]=pt1[1]+factor*((pt2[1]-pt1[1])/l12-(pt1[1]-pt3[1])/l31);
+	ans1[2]=pt1[2]+factor*((pt2[2]-pt1[2])/l12-(pt1[2]-pt3[2])/l31);
+
+	factor=margin*sqrt(l23*l12/(s*(s-l31)*(2*l232+2*l122-l312)));
+	ans2[0]=pt2[0]+factor*((pt3[0]-pt2[0])/l23-(pt2[0]-pt1[0])/l12);
+	ans2[1]=pt2[1]+factor*((pt3[1]-pt2[1])/l23-(pt2[1]-pt1[1])/l12);
+	ans2[2]=pt2[2]+factor*((pt3[2]-pt2[2])/l23-(pt2[2]-pt1[2])/l12);
+
+	factor=margin*sqrt(l31*l23/(s*(s-l12)*(2*l312+2*l232-l122)));
+	ans3[0]=pt3[0]+factor*((pt1[0]-pt3[0])/l31-(pt3[0]-pt2[0])/l23);
+	ans3[1]=pt3[1]+factor*((pt1[1]-pt3[1])/l31-(pt3[1]-pt2[1])/l23);
+	ans3[2]=pt3[2]+factor*((pt1[2]-pt3[2])/l31-(pt3[2]-pt2[2])/l23);
+
+	return; }
+
+
+
 /********* Point In ... ***********/
 
 int Geo_PtInTriangle(double *pt1,double *pt2,double *pt3,double *norm,double *test) {
@@ -311,7 +359,7 @@ int Geo_PtInSphere(double *test,double *cent,double rad,int dim) {
 void Geo_NearestSlabPt(double *pt1,double *pt2,double *point,double *ans,int dim) {
 	double x,thick;
 	int d;
-
+	
 	x=thick=0;
 	for(d=0;d<dim;d++) {
 		x+=(point[d]-pt1[d])*(pt2[d]-pt1[d]);

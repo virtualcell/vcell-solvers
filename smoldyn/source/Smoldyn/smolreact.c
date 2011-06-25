@@ -1,5 +1,5 @@
 /* Steven Andrews, started 10/22/2001.
-This is a library of functions for the Smoldyn program.  See documentation
+ This is a library of functions for the Smoldyn program.  See documentation
  called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
  Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
  of the Gnu General Public License (GPL). */
@@ -90,9 +90,7 @@ typedef struct PARAMSET_unireact_threaded_calculate_reactions
 /******************************************************************************/
 
 
-/* rxnstring2rp.  Converts string to enumerated RevParam type.  This reads
-either single letter inputs or full word inputs.  Unrecognized inputs are
-returned as RPnone. */
+/* rxnstring2rp */
 enum RevParam rxnstring2rp(char *string) {
 	enum RevParam ans;
 
@@ -123,9 +121,7 @@ enum RevParam rxnstring2rp(char *string) {
 	return ans; }
 
 
-/* rxnrp2string.  Converts RevParam enumerated type variable rp to a word in
-string that can be displayed.  Unrecognized inputs, as well as RPnone, get
-returned as "none". */
+/* rxnrp2string */
 char *rxnrp2string(enum RevParam rp,char *string) {
 	if(rp==RPirrev) strcpy(string,"irrev");
 	else if(rp==RPconfspread) strcpy(string,"confspread");
@@ -180,8 +176,7 @@ void rxnunpackident(int order,int maxspecies,int ipack,int *ident) {
 	return; }
 
 
-/* rxnpackstate.  Packs of list of order molecule states that are listed in
-mstate into a single value, which is returned. */
+/* rxnpackstate */
 enum MolecState rxnpackstate(int order,enum MolecState *mstate) {
 	if(order==0) return (MolecState)0;
 	if(order==1) return mstate[0];
@@ -189,8 +184,7 @@ enum MolecState rxnpackstate(int order,enum MolecState *mstate) {
 	return (MolecState)0; }
 
 
-/* rxnunpackstate.  Unpacks a packed molecule state that is input in mspack
-to order individual states in mstate. */
+/* rxnunpackstate */
 void rxnunpackstate(int order,enum MolecState mspack,enum MolecState *mstate) {
 	if(order==0);
 	else if(order==1) mstate[0]=mspack;
@@ -198,8 +192,7 @@ void rxnunpackstate(int order,enum MolecState mspack,enum MolecState *mstate) {
 	return; }
 
 
-/* rxnallstates.  Returns 1 if the listed reaction is permitted for all reactant
-states and 0 if not. */
+/* rxnallstates */
 int rxnallstates(rxnptr rxn) {
 	enum MolecState ms;
 	int nms2o;
@@ -211,14 +204,7 @@ int rxnallstates(rxnptr rxn) {
 	return 0; }
 
 
-/* rxnreactantstate.  Looks through the reaction permit element to see if the
-reaction is permitted for any state or state combination.  If not, it returns 0;
-if so, it returns 1.  Also, if the reaction is permitted and if mstate is not
-NULL, the ÒsimplestÓ permitted state is returned in mstate.  Preference is given
-to MSsoln and MSbsoln, with other states investigated afterwards.  If convertb2f
-is set to 1, any returned states of MSbsoln are converted to MSsoln before the
-function returns.  This function always returns a singe states in mstate (or
-MSnone if the reaction is not permitted at all), and never MSall or MSsome. */
+/* rxnreactantstate */
 int rxnreactantstate(rxnptr rxn,enum MolecState *mstate,int convertb2f) {
 	int order,permit;
 	enum MolecState ms,ms1,ms2;
@@ -285,20 +271,7 @@ int rxnreactantstate(rxnptr rxn,enum MolecState *mstate,int convertb2f) {
 	return permit; }
 
 
-/* findreverserxn.  Inputs the reaction defined by order order and reaction
-number r and looks to see if there is a reverse reaction.  The molecule states
-for the input reactants are not considered.  If there is a direct reverse
-reaction, meaning the products of the input reaction (including states), are
-themselves able to react to form the reactants of the input reaction (perhaps
-with different states), then the function returns 1 and the order and reaction
-number of the reverse reaction are pointed to by optr and rptr.  If there is no
-direct reverse reaction, but the products of the input reaction are still able
-to react, the function returns 2 and optr and rptr point to the first listed
-continuation reaction.  The function returns 0 if the products do not react with
-each other, if there are no reactants, or if there are no products.  -1 is
-returned for illegal inputs.  Either or both of optr and rptr are allowed to be
-sent in as NULL values if the respective pieces of output information are not of
-interest. */
+/* findreverserxn */
 int findreverserxn(simptr sim,int order,int r,int *optr,int *rptr) {
 	rxnssptr rxnss,rxnssr;
 	rxnptr rxn,rxnr;
@@ -339,11 +312,7 @@ int findreverserxn(simptr sim,int order,int r,int *optr,int *rptr) {
 	return rev; }
 
 
-/* rxnisprod.  Determines if a molecule with identity i and state ms is the
-product of any reaction, of any order, returning 1 if so and 0 if not.  If code
-is 0, there are no additional conditions.  If code is 1, the molecule also has
-to be displaced from the reaction position (i.e. either confspread or the
-unbinding radius is non-zero) in order to qualify. */
+/* rxnisprod */
 int rxnisprod(simptr sim,int i,enum MolecState ms,int code) {
 	int order,r,prd;
 	rxnssptr rxnss;
@@ -367,10 +336,7 @@ int rxnisprod(simptr sim,int i,enum MolecState ms,int code) {
 /******************************************************************************/
 
 
-/* rxnalloc.  Allocates and initializes a reaction structure of order order.
-The reaction has order reactants, a permit element that is allocated, no
-products, and most parameters are set to -1 to indicate that they have not been
-set up yet. */
+/* rxnalloc */
 rxnptr rxnalloc(int order) {
 	rxnptr rxn;
 	int rct,nms2o;
@@ -411,7 +377,7 @@ rxnptr rxnalloc(int order) {
 	return NULL; }
 
 
-/* rxnfree.  Frees a reaction structure. */
+/* rxnfree */
 void rxnfree(rxnptr rxn) {
 	int prd;
 
@@ -506,14 +472,14 @@ void rxnoutput(simptr sim,int order) {
 		return; }
 	rxnss=sim->rxnss[order];
 	if(rxnss->condition!=SCok)
-		printf(" structure condition: %s",simsc2string(rxnss->condition,string));
+		printf(" structure condition: %s\n",simsc2string(rxnss->condition,string));
 	dim=sim->dim;
 
 	printf(" %i reactions defined, of %i allocated\n",rxnss->totrxn,rxnss->maxrxn);
 
 	if(order>0) {
 		printf(" Reactive molecule lists:");
-		if(!rxnss->rxnmollist)
+		if(!rxnss->rxnmollist || !sim->mols->nlist)
 			printf(" not set up yet");
 		else {
 			maxlist=sim->mols->maxlist;
@@ -653,9 +619,7 @@ void rxnoutput(simptr sim,int order) {
 	return; }
 
 
-/* writereactions.  Writes all information about all reactions to the file fptr
-using a format that can be read by Smoldyn.  This allows a simulation state to
-be saved. */
+/* writereactions */
 void writereactions(simptr sim,FILE *fptr) {
 	int order,r,prd,d,rct;
 	rxnptr rxn;
@@ -723,10 +687,7 @@ void writereactions(simptr sim,FILE *fptr) {
 	return; }
 
 
-/* checkrxnparams.  Checks some parameters of reactions to make sure that they
-are reasonable.  Prints warning messages to the display.  Returns the total
-number of errors and, if warnptr is not NULL, the number of warnings in warnptr.
-*/
+/* checkrxnparams */
 int checkrxnparams(simptr sim,int *warnptr) {
 	int d,dim,warn,error,i1,i2,j,nspecies,r,i,ct,j1,j2,order,prd;
 	molssptr mols;
@@ -854,6 +815,11 @@ int checkrxnparams(simptr sim,int *warnptr) {
 	if(rxnss)
 		for(r=0;r<rxnss->totrxn;r++) {
 			rxn=rxnss->rxn[r];
+			if(!rxn->srf) {
+				for(prd=0;prd<rxn->nprod;prd++)
+					if(rxn->prdstate[prd]!=MSsoln) {
+						printf(" ERROR: order 0 reaction %s has surface-bound products but no surface listed\n",rxn->rname);
+						error++; }}
 			if(rxn->prob<0) {
 				printf(" WARNING: reaction rate not set for reaction order 0, name %s\n",rxn->rname);
 				rxn->prob=0;
@@ -990,7 +956,7 @@ int rxnsetrate(simptr sim,int order,int r,char *erstr) {
 				else sum2+=rxn2->prob; }
 			rxn->prob=rxn->prob/(1.0-sum2); }		// probability, accounting for prior reactions
 
-		rev=findreverserxn(sim,1,r,&o2,&r2);
+		rev=findreverserxn(sim,1,r,&o2,&r2);	// set own reversible parameter if needed
 		if(rev>0 && o2==2) {
 			if(rxn->rparamt==RPnone) {
 				rxn->rparamt=RPpgemmaxw;
@@ -1012,7 +978,13 @@ int rxnsetrate(simptr sim,int order,int r,char *erstr) {
 		if((ms1==MSsoln && ms2!=MSsoln) || (ms1!=MSsoln && ms2==MSsoln)) rate3*=2;	// one surface, one solution
 		dsum=MolCalcDifcSum(sim,i1,ms1,i2,ms2);
 		rev=findreverserxn(sim,2,r,&o2,&r2);
-		if(rev==1) {
+
+		if(rev>0 && o2==2) {						// set own reversible parameter if needed
+			if(rxn->rparamt==RPnone) {
+				rxn->rparamt=RPpgemmaxw;
+				rxn->rparam=0.2; }}
+
+		if(rev==1) {										// set incoming reversible parameter if needed, and then use it
 			if(sim->rxnss[o2]->rxn[r2]->rparamt==RPnone) {
 				sim->rxnss[o2]->rxn[r2]->rparamt=RPpgemmaxw;
 				sim->rxnss[o2]->rxn[r2]->rparam=0.2; }
@@ -1062,7 +1034,7 @@ int rxnsetrates(simptr sim,int order,char *erstr) {
 int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 	rxnssptr rxnss;
 	rxnptr rxn,rxnr;
-	int er,nprod,orderr,rr,rev;
+	int er,dim,nprod,orderr,rr,rev,d;
 	double rpar,dc1,dc2,dsum,bindradr;
 	enum RevParam rparamt;
 	enum MolecState ms1,ms2;
@@ -1073,6 +1045,7 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 	rpar=rxn->rparam;
 	rparamt=rxn->rparamt;
 	er=0;
+	dim=sim->dim;
 
 	if(nprod==0) {
 		if(!(rparamt==RPnone || rparamt==RPirrev)) {
@@ -1080,7 +1053,11 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 
 	else if(nprod==1) {
 		if(!(rparamt==RPnone || rparamt==RPirrev || rparamt==RPbounce || rparamt==RPconfspread || rparamt==RPoffset || rparamt==RPfixed)) {
-			sprintf(erstr,"Illegal product parameter because reaction only has one product");er=2; }}
+			sprintf(erstr,"Illegal product parameter because reaction only has one product");er=2; }
+		else if(rparamt==RPoffset || rparamt==RPfixed);
+		else {
+			rxn->unbindrad=0;
+			for(d=0;d<dim;d++) rxn->prdpos[0][d]=0; }}
 
 	else if(nprod==2) {
 		ms1=rxn->prdstate[0];
@@ -1104,15 +1081,20 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 				rxn->unbindrad=rpar;
 				rxn->prdpos[0][0]=0;
 				rxn->prdpos[1][0]=rpar; }}
+
 		else {
 			rxnr=sim->rxnss[orderr]->rxn[rr];
 			if(rxnr->bindrad2>=0) bindradr=sqrt(rxnr->bindrad2);
 			else bindradr=-1;
 
-			if(dsum<=0) {
+			if(rparamt==RPnone) {
+				sprintf(erstr,"Undefined product placement for reversible reaction");er=5; }
+			else if(rparamt==RPoffset || rparamt==RPfixed || rparamt==RPconfspread);
+			else if(rparamt==RPirrev) {
+				rxn->unbindrad=0;
+				for(d=0;d<dim;d++) rxn->prdpos[0][d]=rxn->prdpos[1][d]=0; }
+			else if(dsum<=0) {						// all below options require dsum > 0
 				sprintf(erstr,"Cannot set unbinding distance because sum of product diffusion constants is 0");er=4; }
-			else if(rparamt==RPnone) {
-				sprintf(erstr,"Undefined product parameter for reversible reaction");er=5; }
 			else if(rparamt==RPunbindrad) {
 				rxn->unbindrad=rpar;
 				rxn->prdpos[0][0]=rpar*dc1/dsum;
@@ -1121,7 +1103,7 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 				rxn->unbindrad=rpar;
 				rxn->prdpos[0][0]=rpar*dc1/dsum;
 				rxn->prdpos[1][0]=-rpar*dc2/dsum; }
-			else if(rxnr->bindrad2<0) {
+			else if(rxnr->bindrad2<0) {			// all below options require bindrad2 > 0
 				sprintf(erstr,"Binding radius of reaction products is undefined");er=6; }
 			else if(rparamt==RPratio || rparamt==RPratio2) {
 				rxn->unbindrad=rpar*bindradr;
@@ -1146,7 +1128,9 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 				else if(rpar>0) {
 					rxn->unbindrad=rpar;
 					rxn->prdpos[0][0]=rpar*dc1/dsum;
-					rxn->prdpos[1][0]=-rpar*dc2/dsum; }}}}
+					rxn->prdpos[1][0]=-rpar*dc2/dsum; }}
+			else {
+				sprintf(erstr,"BUG in rxnsetproduct");er=10; }}}
 
 	return er; }
 
@@ -1166,20 +1150,7 @@ int rxnsetproducts(simptr sim,int order,char *erstr) {
 	return -1; }
 
 
-/* rxncalcrate.  Calculates the macroscopic rate constant using the microscopic
-parameters that are stored in the reaction data structure.  All going well,
-these results should exactly match those that were requested initially, although
-this routine is useful as a check, and for situations where the microscopic
-values were input rather than the mass action rate constants.  For bimolecular
-reactions that are reversible, the routine calculates rates with accounting for
-reversibility if the reversible parameter type of the reverse reaction is
-RPpgem, RPpgemmax, RPratio, RPoffset, or RPnone, and not otherwise.  A value of
--1 is returned if input parameters are illegal and a value of 0 is returned if
-the microscopic values for the indicated reaction are undefined (<0).  If the
-input reaction has a reverse reaction or a continuation reaction, and pgemptr is
-not input as NULL, then *pgemptr is set to the probability of geminate
-recombination of the products; if there is no reverse or continuation reaction,
-its value is set to -1. */
+/* rxncalcrate */
 double rxncalcrate(simptr sim,int order,int r,double *pgemptr) {
 	rxnssptr rxnss;
 	double ans,vol;
@@ -1258,15 +1229,7 @@ double rxncalcrate(simptr sim,int order,int r,double *pgemptr) {
 
 
 
-/* rxncalctau.  Calculates characteristic times for all reactions of order order
-and stores them in the rxn->tau structure elements.  These are ignored for 0th
-order reactions, are 1/k for first order reactions, are are [A][B]/[k([A]+[B])]
-for second order reactions.  The actual calculated rate constant is used, not
-the requested ones.  For second order, the current average concentrations are
-used, which does not capture effects from spatial localization or concentration
-changes.  For bimolecular reactions, if multiple reactant pairs map to the same
-reaction, only the latter ones found are recorded.  Also, all molecule states
-are counted, which ignores the permit reaction structure element. */
+/* rxncalctau */
 void rxncalctau(simptr sim,int order) {
 	rxnssptr rxnss;
 	rxnptr rxn;
@@ -1293,49 +1256,6 @@ void rxncalctau(simptr sim,int order) {
 			else rxn->tau=(conc1+conc2)/(rate*conc1*conc2); }}
 
 	return; }
-
-
-/* rxnsettimestep.  Sets reaction structure parameters for the simulation time
-step.  Return values are 0 for success, 1 for an error with setting either rates
-or products (and output to stderr with an error message), or 2 if the reaction
-structure was not sufficiently set up beforehand. */
-int rxnsettimestep(simptr sim) {
-	int er,order,wflag;
-	char errorstr[STRCHAR];
-
-	er=0;
-	for(order=0;order<MAXORDER && er<=0;order++) {
-		if(sim->rxnss[order] && sim->rxnss[order]->condition<SCparams) er=1;
-		else if(!sim->rxnss[order] || sim->rxnss[order]->condition==SCok) er--; }
-	if(er==-(MAXORDER+1)) return 0;
-	if(er==1) return 2;
-	er=0;
-
-	wflag=strchr(sim->flags,'w')?1:0;
-	for(order=0;order<MAXORDER;order++)
-		if(sim->rxnss[order] && sim->rxnss[order]->condition<=SCparams) {
-			er=rxnsetrates(sim,order,errorstr);							// set rates
-			if(er>=0) {
-				fprintf(stderr,"Error setting rate for reaction order %i, reaction %s\n",order,sim->rxnss[order]->rname[er]);
-				fprintf(stderr,"%s\n",errorstr);
-				return 1; }}
-
-	for(order=0;order<MAXORDER;order++)
-		if(sim->rxnss[order] && sim->rxnss[order]->condition<=SCparams) {
-			errorstr[0]='\0';
-			er=rxnsetproducts(sim,order,errorstr);						// set products
-			if(er>=0) {
-				fprintf(stderr,"Error setting products for reaction order %i, reaction %s\n",order,sim->rxnss[order]->rname[er]);
-				fprintf(stderr,"%s\n",errorstr);
-				return 1; }
-			if(!wflag && strlen(errorstr)) fprintf(stderr,"%s\n",errorstr); }
-
-	for(order=0;order<MAXORDER;order++)									// calculate tau values
-		if(sim->rxnss[order] && sim->rxnss[order]->condition<=SCparams)
-			rxncalctau(sim,order);
-
-	rxnsetcondition(sim,-1,SCok,1);
-	return 0; }
 
 
 /******************************************************************************/
@@ -1368,66 +1288,7 @@ void rxnsetcondition(simptr sim,int order,enum StructCond cond,int upgrade) {
 	return; }
 
 
-/* rxnsetmollist */
-int rxnsetmollist(simptr sim,int order) {
-	rxnssptr rxnss;
-	int maxlist,ll,nl2o,r,i1,i2,ll1,ll2;
-	rxnptr rxn;
-	enum MolecState ms1,ms2;
-
-	rxnss=sim->rxnss[order];
-	if(!rxnss) return 0;
-	if(rxnss->condition>SClists) return 0;
-	if(order==0) {
-		rxnsetcondition(sim,order,SCparams,1);
-		return 0; }
-	if(order>2) return 2;
-	if(!sim->mols || sim->mols->condition<=SClists) return 3;
-
-	maxlist=rxnss->maxlist;
-	if(maxlist!=sim->mols->maxlist) {
-		free(rxnss->rxnmollist);
-		rxnss->rxnmollist=NULL;
-		maxlist=sim->mols->maxlist;
-		if(maxlist>0) {
-			nl2o=intpower(maxlist,order);
-			rxnss->rxnmollist=(int*) calloc(nl2o,sizeof(int));
-			if(!rxnss->rxnmollist) return 1; }
-		rxnss->maxlist=maxlist; }
-
-	if(maxlist>0) {
-		nl2o=intpower(maxlist,order);
-		for(ll=0;ll<nl2o;ll++) rxnss->rxnmollist[ll]=0;
-
-		for(r=0;r<rxnss->totrxn;r++) {
-			rxn=rxnss->rxn[r];
-			i1=rxn->rctident[0];
-			if(order==1) {
-				for(ms1=(MolecState)0;ms1<MSMAX1;ms1=(MolecState)(ms1+1))
-					if(rxn->permit[ms1] && (rxn->prob>0 || rxn->rate>0)) {
-						ll1=sim->mols->listlookup[i1][ms1];
-						rxnss->rxnmollist[ll1]=1; }}
-			else if(order==2) {
-				i2=rxn->rctident[1];
-				for(ms1=(MolecState)0;ms1<MSMAX1;ms1=(MolecState)(ms1+1))
-					for(ms2=(MolecState)0;ms2<MSMAX1;ms2=(MolecState)(ms2+1))
-						if(rxn->permit[ms1*MSMAX1+ms2] && rxn->prob!=0 && (rxn->rate>0 || rxn->bindrad2>0)) {
-							ll1=sim->mols->listlookup[i1][ms1==MSbsoln?MSsoln:ms1];
-							ll2=sim->mols->listlookup[i2][ms2==MSbsoln?MSsoln:ms2];
-							rxnss->rxnmollist[ll1*maxlist+ll2]=1;
-							rxnss->rxnmollist[ll2*maxlist+ll1]=1; }}}}
-
-	rxnsetcondition(sim,order,SCparams,1);
-	return 0; }
-
-
-/* RxnSetValue.  Sets certain options of the reaction structure for reaction
-rxn to value.  Returns 0 for success, 1 for missing input item, 2 for unknown
-option, 3 for a value that was set previously, or 4 for an illegal value (e.g.
-a negative rate).  In most cases, the value is set as requested, despite the
-error message.  If option is "rate", the rate element is set; if option is
-"confspreadrad", the reaction is made confspread and the squared binding radius is
-set. */
+/* RxnSetValue */
 int RxnSetValue(simptr sim,char *option,rxnptr rxn,double value) {
 	int er;
 
@@ -1455,15 +1316,7 @@ int RxnSetValue(simptr sim,char *option,rxnptr rxn,double value) {
 	return er; }
 
 
-/* RxnSetRevparam.  Sets the reversible parameter type and the appropriate
-reversible parameters for reaction rxn.  The parameter type, rxn->paramt, is set
-to rparamt.  If rparamt requires a single value, which is stored in rxn->rparam, it
-is sent in with rparam.  Otherwise, for fixed and offset parameter types, send
-in the product number that is being altered with prd, the vector with pos, and
-the system dimensionality with dim.  This returns 0 for success, 1 as a warning
-that the reversible parameter type has been set before (except for offset and
-fixed types, where many different products need to be set), or 2 for parameters
-that are out of bounds. */
+/* RxnSetRevparam */
 int RxnSetRevparam(simptr sim,rxnptr rxn,enum RevParam rparamt,double rparam,int prd,double *pos,int dim) {
 	int d,er;
 
@@ -1483,12 +1336,7 @@ int RxnSetRevparam(simptr sim,rxnptr rxn,enum RevParam rparamt,double rparam,int
 	return er; }
 
 
-/* RxnSetPermit.  Sets the permit element of reaction rxn, which has order
-order, for the states that are included in rctstate to value value.  value
-should be 0 to set permissions to forbidden or 1 to set permissions to
-permitted.  Each item of rctstate may be an individual state or may be MSall.
-Other values are not allowed (and are not caught here).  This does not affect
-other permit elements. */
+/* RxnSetPermit */
 void RxnSetPermit(simptr sim,rxnptr rxn,int order,enum MolecState *rctstate,int value) {
 	enum MolecState ms,nms2o,mslist[MSMAX1];
 	int set,ord;
@@ -1515,15 +1363,8 @@ void RxnSetPermit(simptr sim,rxnptr rxn,int order,enum MolecState *rctstate,int 
 	return; }
 
 
-/* RxnAddReaction.  Adds a reaction to the simulation, including all necessary
-memory allocation.  rname is the name of the reaction, order is the order of the
-reaction, and nprod is the number of products.  rctident and rctstate are
-vectors of size order that contain the reactant identities and states,
-respectively.  Likewise, prdident and prdstate are vectors of size nprod that
-contain the product identities and states.  This returns the just added reaction
-for success and NULL for inability to allocate memory.  This allocates reaction
-superstuctures and reaction structures, and will enlarge any array, as needed. */
-rxnptr RxnAddReaction(simptr sim,char *rname,int order,int *rctident,enum MolecState *rctstate,int nprod,int *prdident,enum MolecState *prdstate,compartptr cmpt,surfaceptr srf) {
+/* RxnAddReaction */
+rxnptr RxnAddReaction(simptr sim,const char *rname,int order,int *rctident,enum MolecState *rctstate,int nprod,int *prdident,enum MolecState *prdstate,compartptr cmpt,surfaceptr srf) {
 	char **newrname;
 	rxnptr *newrxn;
 	int *newtable,identlist[MAXORDER];
@@ -1614,6 +1455,7 @@ rxnptr RxnAddReaction(simptr sim,char *rname,int order,int *rctident,enum MolecS
 
 	rxn->cmpt=cmpt;																						// add reaction compartment
 	rxn->srf=srf;																							// add reaction surface
+	rxnsetcondition(sim,-1,SClists,0);
 	surfsetcondition(sim->srfss,SClists,0);
 	return rxn;
 
@@ -1656,14 +1498,7 @@ failure:
 	return NULL; }
 
 
-
-/* loadrxn.  Loads a reaction structure from an already opened disk file
-described with pfpptr.  If successful, it returns 0 and the reaction is added to
-sim.  Otherwise it returns 1 and error information in pfpptr.  If a reaction
-structure of the same order has already been set up, this function can use it
-and add more reactions to it.  It can also allocate and set up a new structure,
-if needed.  This need for this function has been largely superceded by
-functionality in loadsim, but this is kept for backward compatibility. */
+/* loadrxn */
 int loadrxn(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 	ParseFilePtr pfp;
 	rxnssptr rxnss;
@@ -1963,59 +1798,114 @@ int loadrxn(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 	return 1; }
 
 
-/* setuprxns.  Sets up reactions from data that have already been entered.  This
-sets the reaction rates, sets the reaction product placements, sets the reaction
-tau values, and sets the molecule list flags.  Returns 0 for success, 1 for
-failure to allocate memory, 2 for a Smoldyn bug, 3 for molecules not being set
-up sufficiently, 4 for an error with setting either rates or products (in this
-case, an error message is displayed to stderr), or 5 if the reaction structure
-was not sufficiently set up.  This may be run at at start-up or afterwards. */
-int setuprxns(simptr sim) {
-	int er,order;
+/* rxnsupdateparams */
+int rxnsupdateparams(simptr sim) {
+	int er,order,wflag;
+	char errorstr[STRCHAR];
+	
+	wflag=strchr(sim->flags,'w')?1:0;
+	for(order=0;order<MAXORDER;order++)
+		if(sim->rxnss[order] && sim->rxnss[order]->condition<=SCparams) {
+			er=rxnsetrates(sim,order,errorstr);							// set rates
+			if(er>=0) {
+				fprintf(stderr,"Error setting rate for reaction order %i, reaction %s\n",order,sim->rxnss[order]->rname[er]);
+				fprintf(stderr,"%s\n",errorstr);
+				return 3; }}
+	
+	for(order=0;order<MAXORDER;order++)
+		if(sim->rxnss[order] && sim->rxnss[order]->condition<=SCparams) {
+			errorstr[0]='\0';
+			er=rxnsetproducts(sim,order,errorstr);						// set products
+			if(er>=0) {
+				fprintf(stderr,"Error setting products for reaction order %i, reaction %s\n",order,sim->rxnss[order]->rname[er]);
+				fprintf(stderr,"%s\n",errorstr);
+				return 3; }
+			if(!wflag && strlen(errorstr)) fprintf(stderr,"%s\n",errorstr); }
+	
+	for(order=0;order<MAXORDER;order++)									// calculate tau values
+		if(sim->rxnss[order] && sim->rxnss[order]->condition<=SCparams)
+			rxncalctau(sim,order);
+	
+	return 0; }
 
-	for(order=0;order<MAXORDER;order++) {								// set reaction molecule lists
-		er=rxnsetmollist(sim,order);
-		if(er) return er; }
 
-	er=rxnsettimestep(sim);
-	if(er) return er+3;
+/* rxnsupdatelists */
+int rxnsupdatelists(simptr sim,int order) {
+	rxnssptr rxnss;
+	int maxlist,ll,nl2o,r,i1,i2,ll1,ll2;
+	rxnptr rxn;
+	enum MolecState ms1,ms2;
+
+	rxnss=sim->rxnss[order];
+
+	if(order==0) return 0;
+
+	if(!sim->mols || sim->mols->condition<SCparams) return 2;
+
+	maxlist=rxnss->maxlist;								// set reaction molecule lists
+	if(maxlist!=sim->mols->maxlist) {
+		free(rxnss->rxnmollist);
+		rxnss->rxnmollist=NULL;
+		maxlist=sim->mols->maxlist;
+		if(maxlist>0) {
+			nl2o=intpower(maxlist,order);
+			rxnss->rxnmollist=(int*) calloc(nl2o,sizeof(int));
+			if(!rxnss->rxnmollist) return 1; }
+		rxnss->maxlist=maxlist; }
+	
+	if(maxlist>0) {
+		nl2o=intpower(maxlist,order);
+		for(ll=0;ll<nl2o;ll++) rxnss->rxnmollist[ll]=0;
+		
+		for(r=0;r<rxnss->totrxn;r++) {
+			rxn=rxnss->rxn[r];
+			i1=rxn->rctident[0];
+			if(order==1) {
+				for(ms1=(MolecState)0;ms1<MSMAX1;ms1=(MolecState)(ms1+1))
+					if(rxn->permit[ms1] && (rxn->prob>0 || rxn->rate>0)) {
+						ll1=sim->mols->listlookup[i1][ms1];
+						rxnss->rxnmollist[ll1]=1; }}
+			else if(order==2) {
+				i2=rxn->rctident[1];
+				for(ms1=(MolecState)0;ms1<MSMAX1;ms1=(MolecState)(ms1+1))
+					for(ms2=(MolecState)0;ms2<MSMAX1;ms2=(MolecState)(ms2+1))
+						if(rxn->permit[ms1*MSMAX1+ms2] && rxn->prob!=0 && (rxn->rate>0 || rxn->bindrad2>0)) {
+							ll1=sim->mols->listlookup[i1][ms1==MSbsoln?MSsoln:ms1];
+							ll2=sim->mols->listlookup[i2][ms2==MSbsoln?MSsoln:ms2];
+							rxnss->rxnmollist[ll1*maxlist+ll2]=1;
+							rxnss->rxnmollist[ll2*maxlist+ll1]=1; }}}}
+	
+	return 0; }
+
+
+/* rxnsupdate */
+int rxnsupdate(simptr sim) {
+	int er,order,doparams;
+
+	for(order=0;order<MAXORDER;order++) {
+		if(sim->rxnss[order] && sim->rxnss[order]->condition<=SClists) {
+			er=rxnsupdatelists(sim,order);
+			if(er) return er;
+			rxnsetcondition(sim,order,SCparams,1); }}
+
+	doparams=0;
+	for(order=0;order<MAXORDER;order++)
+		if(sim->rxnss[order] && sim->rxnss[order]->condition<SCok) doparams=1;
+	if(doparams) {
+		er=rxnsupdateparams(sim);
+		if(er) return er;
+		rxnsetcondition(sim,-1,SCok,1); }
 
 	return 0; }
+
+
 
 /******************************************************************************/
 /************************** core simulation functions *************************/
 /******************************************************************************/
 
 
-/* doreact.  Executes a reaction that has already been determined to have
-happened.  rxn is the reaction and mptr1 and mptr2 are the reactants, where
-mptr2 is ignored for unimolecular reactions, and both are ignored for zeroth
-order reactions.  ll1 is the live list of mptr1, m1 is its index in the master
-list, ll2 is the live list of mptr2, and m2 is its index in the master list; if
-these donÕt apply (i.e. for 0th or 1st order reactions, set them to -1 and if
-either m1 or m2 is unknown, again set the value to -1.  If there are multiple
-molecules, they need to be in the same order as they are listed in the reaction
-structure (which is only important for confspread reactions and for a completely
-consistent panel destination for reactions between two surface-bound molecules).
-Reactants are killed, but left in the live lists.  Any products are created on
-the dead list, for transfer to the live list by the molsort routine.  Molecules
-that are created are put at the reaction position, which is the average position
-of the reactants weighted by the inverse of their diffusion constants, plus an
-offset from the product definition.  The cluster of products is typically
-rotated to a random orientation.  If the displacement was set to all 0Õs
-(recommended for non-reacting products), the routine is fairly fast, putting
-all products at the reaction position.  If the rparamt character is RPfixed, the
-orientation is fixed and there is no rotation.  Otherwise, a non-zero
-displacement results in the choosing of random angles and vector rotations.  If
-the system has more than three dimensions, only the first three are randomly
-oriented, while higher dimensions just add the displacement to the reaction
-position.  The function returns 0 for successful operation and 1 if more
-molecules are required than were initially allocated.  This function lists the
-correct box in the box element for each product molecule, but does not add the
-product molecules to the molecule list of the box.  The bptr input is only
-looked at for 0th order reactions; for these, NULL means that products should be
-placed uniformly throughout the system whereas a non-NULL value means that
-products should be placed uniformly throughout the listed box. */
+/* doreact */
 int doreact(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int ll1,int m1,int ll2,int m2,double *pos,panelptr pnl) {
 	int order,prd,d,nprod,dim;
 	int calc;
@@ -2051,15 +1941,21 @@ int doreact(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int ll1,in
 		if(dc1==0 && dc2==0) x=0.5;
 		else x=dc2/(dc1+dc2);
 		for(d=0;d<dim;d++) rxnpos[d]=x*mptr1->pos[d]+(1.0-x)*mptr2->pos[d];
-		pnl=mptr1->pnl;
-		if(!pnl && !mptr2->pnl);
-		else if(!pnl && mptr2->pnl) pnl=mptr2->pnl;
-		else if(pnl && mptr2->pnl)
-			if(ptinpanel(rxnpos,mptr2->pnl,dim)) pnl=mptr2->pnl;
+		if(mptr1->pnl || mptr2->pnl) {
+			if(mptr1->pnl && ptinpanel(rxnpos,mptr1->pnl,dim)) pnl=mptr1->pnl;
+			else if(mptr2->pnl && ptinpanel(rxnpos,mptr2->pnl,dim)) pnl=mptr2->pnl;
+			else if(mptr1->pnl) {
+				pnl=mptr1->pnl;
+				for(d=0;d<dim;d++) rxnpos[d]=mptr1->pos[d]; }
+			else {
+				pnl=mptr2->pnl;
+				for(d=0;d<dim;d++) rxnpos[d]=mptr2->pos[d]; }}
+		else pnl=NULL;
 		rxnbptr=mptr1->box; }
 
 	else {																				// order > 2
 		return 0; }
+
 
 // place products
 	nprod=rxn->nprod;
@@ -2125,14 +2021,13 @@ int doreact(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int ll1,in
 					dotMVD(m3,rxn->prdpos[prd],v1,3,3); }
 				else {
 					if(!calc) {DirCosMD(m3,thetarandCCD(),unirandCOD(0,2*PI),unirandCOD(0,2*PI));calc=1;}
-					dotMVD(m3,rxn->prdpos[prd],v1,3,3);
-					for(d=3;d<dim;d++) v1[d]=rxn->prdpos[prd][d]; }
+					dotMVD(m3,rxn->prdpos[prd],v1,3,3); }
 				for(d=0;d<dim;d++)
 					mptr->pos[d]=mptr->posx[d]+v1[d]; }
 			else {
 				for(d=0;d<dim;d++)
 					mptr->pos[d]=mptr->posx[d]; }}
-
+		
 		mptr->list=sim->mols->listlookup[mptr->ident][mptr->mstate];
 		if(sim->mols->expand[mptr->ident]){							//???????? new code
 			mzrExpandSpecies(sim,mptr->ident); }}					//??????? new code
@@ -2143,9 +2038,7 @@ int doreact(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int ll1,in
 	return 0; }
 
 
-/* zeroreact.  Figures out how many molecules to create for each zeroth order
-reaction and then tells doreact to create them.  It returns 0 for success or 1
-if not enough molecules were allocated initially. */
+/* zeroreact */
 int zeroreact(simptr sim) {
 	int i,r,nmol;
 	rxnptr rxn;
@@ -2168,9 +2061,7 @@ int zeroreact(simptr sim) {
 	return 0; }
 
 
-/* unireact.  Identifies and performs all unimolecular reactions.  Reactions
-that should occur are sent to doreact to process them.  The function returns 0
-for success or 1 if not enough molecules were allocated initially. */
+/* unireact */
 int unireact(simptr sim) {
 	rxnssptr rxnss;
 	rxnptr rxn,*rxnlist;
@@ -2203,11 +2094,7 @@ int unireact(simptr sim) {
 
 
 
-/* morebireact.  Given a probable reaction from bireact, this orders the
-reactants, checks for reaction permission, moves a reactant in case of periodic
-boundaries, increments the appropriate event counter, and calls doreact to
-perform the reaction.  The return value is 0 for success (which may include no
-reaction) and 1 for failure. */
+/* morebireact */
 int morebireact(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int ll1,int m1,int ll2,enum EventType et) {
 	moleculeptr mptrA,mptrB;
 	int d,swap;
@@ -2246,14 +2133,7 @@ int morebireact(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int ll
 	return 0; }
 
 
-/* bireact.  Identifies likely bimolecular reactions, sending ones that probably
-occur to morebireact for permission testing and reacting.  neigh tells the
-routine whether to consider only reactions between neighboring boxes (neigh=1)
-or only reactions within a box (neigh=0).  The former are relatively slow and so
-can be ignored for qualitative simulations by choosing a lower simulation
-accuracy value.  In cases where walls are periodic, it is possible to have
-reactions over the system walls.  The function returns 0 for success or 1 if not
-enough molecules were allocated initially. */
+/* bireact */
 int bireact(simptr sim,int neigh) {
 	int dim,maxspecies,ll1,ll2,i,j,d,*nl,nmol2,b2,m1,m2,bmax,wpcode,nlist,maxlist;
 	int *nrxn,**table;
@@ -2362,159 +2242,159 @@ int unireact_threaded(simptr sim) {
   return 2;
 #else
 	rxnssptr rxnss;
-//	rxnptr rxn,*rxnlist;
+	//	rxnptr rxn,*rxnlist;
 	rxnptr *rxnlist;
-//	moleculeptr *mlist,mptr;
+	//	moleculeptr *mlist,mptr;
 	int *nrxn,**table;
-//	int i,j,m,nmol,ll;
+	//	int i,j,m,nmol,ll;
 	int ll;
-//	enum MolecState ms;
+	//	enum MolecState ms;
 	int nthreads = sim->threads->nthreads;
 	stack* current_thread_input_stack;
-
+	
 	PARAMS_unireact_threaded_calculate_reactions theParams;
 	theParams.sim = sim;
-
+	
 	rxnss=sim->rxnss[1];
 	if(!rxnss) return 0;
 	nrxn=rxnss->nrxn;
 	table=rxnss->table;
 	rxnlist=rxnss->rxn;
-
+	
 	for(ll=0;ll<sim->mols->nlist;ll++)
-	    if(rxnss->rxnmollist[ll]) 
-	    {
-		theParams.ll = ll;
-
-		int current_ndx = 0;
-		int total_num_to_process = sim->mols->nl[ll];
-		int stride = calculatestride(total_num_to_process, nthreads);
-
-		// 
-		// Create nthreads 
-		//
-		// Create threads 0... number_threads - 2.
-		int thread_ndx;
-		for(thread_ndx = 0; thread_ndx != nthreads - 1; ++thread_ndx)
+		if(rxnss->rxnmollist[ll]) 
 		{
+			theParams.ll = ll;
+			
+			int current_ndx = 0;
+			int total_num_to_process = sim->mols->nl[ll];
+			int stride = calculatestride(total_num_to_process, nthreads);
+			
+			// 
+			// Create nthreads 
+			//
+			// Create threads 0... number_threads - 2.
+			int thread_ndx;
+			for(thread_ndx = 0; thread_ndx != nthreads - 1; ++thread_ndx)
+			{
 		    current_thread_input_stack = sim->threads->thread[thread_ndx]->input_stack;
-
+				
 		    clearthreaddata( sim->threads->thread[thread_ndx]);
-
+				
 		    theParams.mol_ndx1 = current_ndx;
 		    theParams.mol_ndx2 = current_ndx += stride;
 		    theParams.output_stack = sim->threads->thread[thread_ndx]->output_stack;
-
+				
 		    push_data_onto_stack( current_thread_input_stack, &theParams, sizeof(theParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
-		    pthread_create((pthread_t*)sim->threads->thread[thread_ndx]->thread_id, NULL, unireact_threaded_calculate_reactions, (void*) current_thread_input_stack->stack_data);
-		}
-		{ // Create the last thread
+		    pthread_create(sim->threads->thread[thread_ndx]->thread_id, NULL, unireact_threaded_calculate_reactions, (void*) current_thread_input_stack->stack_data);
+			}
+			{ // Create the last thread
 		    clearthreaddata( sim->threads->thread[nthreads - 1]);
 		    current_thread_input_stack = sim->threads->thread[nthreads-1]->input_stack;
 		    theParams.mol_ndx1 = current_ndx;
 		    theParams.mol_ndx2 = total_num_to_process;
 		    theParams.output_stack = sim->threads->thread[nthreads-1]->output_stack;
 		    push_data_onto_stack( current_thread_input_stack, &theParams, sizeof(theParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
-		    pthread_create((pthread_t*)sim->threads->thread[nthreads-1]->thread_id, NULL, unireact_threaded_calculate_reactions, (void*) current_thread_input_stack->stack_data);
-		}
-
-		// Join thread and process data.
-		for(thread_ndx = 0; thread_ndx != nthreads; ++thread_ndx)
-		{
+		    pthread_create(sim->threads->thread[nthreads-1]->thread_id, NULL, unireact_threaded_calculate_reactions, (void*) current_thread_input_stack->stack_data);
+			}
+			
+			// Join thread and process data.
+			for(thread_ndx = 0; thread_ndx != nthreads; ++thread_ndx)
+			{
 		    pthread_join( *((pthread_t*) sim->threads->thread[thread_ndx]->thread_id), NULL);
-
+				
 		    void* current_thread_data = sim->threads->thread[ thread_ndx ]->output_stack->stack_data;
 		    int number_to_process = *( (int*) current_thread_data);
-
+				
 		    PARAMS_doreact* doreact_param_array = (PARAMS_doreact*) ((int*) current_thread_data + 1);
 		    
 		    int proposed_rxn_ndx;
 		    for(proposed_rxn_ndx = 0; proposed_rxn_ndx != number_to_process; ++proposed_rxn_ndx)
 		    {
-			simptr sim = doreact_param_array[proposed_rxn_ndx].sim;
-			rxnptr rxn = doreact_param_array[proposed_rxn_ndx].rxn;
-			moleculeptr mptr1 = doreact_param_array[proposed_rxn_ndx].mptr1;
-			moleculeptr mptr2 = doreact_param_array[proposed_rxn_ndx].mptr2;
-			int ll1 = doreact_param_array[proposed_rxn_ndx].ll1;
-			int m1 = doreact_param_array[proposed_rxn_ndx].m1;
-			int ll2 = doreact_param_array[proposed_rxn_ndx].ll2;
-			int m2 = doreact_param_array[proposed_rxn_ndx].m2;
-			double *pos = doreact_param_array[proposed_rxn_ndx].pos;
-			panelptr pnl = doreact_param_array[proposed_rxn_ndx].pnl;
-
-
-			if(mptr1 && mptr1->ident)
-			{
-			    if( doreact(sim, rxn, mptr1, mptr2, ll1, m1, ll2, m2, pos, pnl) ) return 1;
-			    sim->eventcount[ETrxn1]++;
-			}}}}
-
+					simptr sim = doreact_param_array[proposed_rxn_ndx].sim;
+					rxnptr rxn = doreact_param_array[proposed_rxn_ndx].rxn;
+					moleculeptr mptr1 = doreact_param_array[proposed_rxn_ndx].mptr1;
+					moleculeptr mptr2 = doreact_param_array[proposed_rxn_ndx].mptr2;
+					int ll1 = doreact_param_array[proposed_rxn_ndx].ll1;
+					int m1 = doreact_param_array[proposed_rxn_ndx].m1;
+					int ll2 = doreact_param_array[proposed_rxn_ndx].ll2;
+					int m2 = doreact_param_array[proposed_rxn_ndx].m2;
+					double *pos = doreact_param_array[proposed_rxn_ndx].pos;
+					panelptr pnl = doreact_param_array[proposed_rxn_ndx].pnl;
+					
+					
+					if(mptr1 && mptr1->ident)
+					{
+						if( doreact(sim, rxn, mptr1, mptr2, ll1, m1, ll2, m2, pos, pnl) ) return 1;
+						sim->eventcount[ETrxn1]++;
+					}}}}
+	
 	return 0; 
 #endif
 }
 
 void* unireact_threaded_calculate_reactions(void* data) {
 #ifndef THREADING
-    return NULL;
+	return NULL;
 #else
-    PARAMS_unireact_threaded_calculate_reactions* pParams = (PARAMS_unireact_threaded_calculate_reactions*) data;
-
-    simptr sim = pParams->sim;
-    int ll = pParams->ll;
-    int mol_ndx1 = pParams->mol_ndx1;
-    int mol_ndx2 = pParams->mol_ndx2;
-    stack* output_stack = pParams->output_stack;
-
-    rxnssptr rxnss;
-    rxnptr rxn,*rxnlist;
-    moleculeptr *mlist,mptr;
-    int *nrxn,**table;
-    int i,j,m,nmol;
-    enum MolecState ms;
-
-    rxnss=sim->rxnss[1];
-    if(!rxnss) return 0;
-    nrxn=rxnss->nrxn;
-    table=rxnss->table;
-    rxnlist=rxnss->rxn;
-    mlist=sim->mols->live[ll];
-    nmol=sim->mols->nl[ll];
-
-    PARAMS_doreact outputParams;
-    outputParams.sim = sim;
-    outputParams.mptr2 = NULL;
-    outputParams.ll2 = -1;
-    outputParams.m2 = -1;
-    outputParams.pos = NULL;
-    outputParams.pnl = NULL;
-
-
-    int num_found = 0;
-    push_data_onto_stack(output_stack, &num_found, sizeof(num_found));
-
-    for( m = mol_ndx1; m != mol_ndx2; ++m)
-    {
-	mptr=mlist[m];
-	i=mptr->ident;
-	ms=mptr->mstate;
-
-	for(j=0;j<nrxn[i];j++) 
+	PARAMS_unireact_threaded_calculate_reactions* pParams = (PARAMS_unireact_threaded_calculate_reactions*) data;
+	
+	simptr sim = pParams->sim;
+	int ll = pParams->ll;
+	int mol_ndx1 = pParams->mol_ndx1;
+	int mol_ndx2 = pParams->mol_ndx2;
+	stack* output_stack = pParams->output_stack;
+	
+	rxnssptr rxnss;
+	rxnptr rxn,*rxnlist;
+	moleculeptr *mlist,mptr;
+	int *nrxn,**table;
+	int i,j,m,nmol;
+	enum MolecState ms;
+	
+	rxnss=sim->rxnss[1];
+	if(!rxnss) return 0;
+	nrxn=rxnss->nrxn;
+	table=rxnss->table;
+	rxnlist=rxnss->rxn;
+	mlist=sim->mols->live[ll];
+	nmol=sim->mols->nl[ll];
+	
+	PARAMS_doreact outputParams;
+	outputParams.sim = sim;
+	outputParams.mptr2 = NULL;
+	outputParams.ll2 = -1;
+	outputParams.m2 = -1;
+	outputParams.pos = NULL;
+	outputParams.pnl = NULL;
+	
+	
+	int num_found = 0;
+	push_data_onto_stack(output_stack, &num_found, sizeof(num_found));
+	
+	for( m = mol_ndx1; m != mol_ndx2; ++m)
 	{
+		mptr=mlist[m];
+		i=mptr->ident;
+		ms=mptr->mstate;
+		
+		for(j=0;j<nrxn[i];j++) 
+		{
 	    rxn=rxnlist[table[i][j]];
 	    if((!rxn->cmpt && !rxn->srf) || (rxn->cmpt && posincompart(sim,mptr->pos,rxn->cmpt)) || (rxn->srf && mptr->pnl && mptr->pnl->srf==rxn->srf))
-		if(coinrandD(rxn->prob) && rxn->permit[ms] && mptr->ident!=0) 
-		{
-		    outputParams.rxn = rxn;
-		    outputParams.mptr1 = mptr;
-		    outputParams.ll1 = ll;
-		    outputParams.m1 = m;
-
-		    push_data_onto_stack( output_stack, &outputParams, sizeof(outputParams));
-		    *((int*) output_stack->stack_data) += 1;
+				if(coinrandD(rxn->prob) && rxn->permit[ms] && mptr->ident!=0) 
+				{
+					outputParams.rxn = rxn;
+					outputParams.mptr1 = mptr;
+					outputParams.ll1 = ll;
+					outputParams.m1 = m;
+					
+					push_data_onto_stack( output_stack, &outputParams, sizeof(outputParams));
+					*((int*) output_stack->stack_data) += 1;
+				}
 		}
 	}
-    }
-    return NULL;
+	return NULL;
 #endif
 }
 
@@ -2522,258 +2402,258 @@ void* unireact_threaded_calculate_reactions(void* data) {
 /* bireact_threaded */
 int bireact_threaded(simptr sim,int neigh) {
 #ifndef THREADING
-    return 2;
+	return 2;
 #else
-
-    if (!neigh) 
-	 bireact_threaded_intrabox(sim);
-    else bireact_threaded_interbox(sim);
-    return 0; 
-
+	
+	if (!neigh) 
+		bireact_threaded_intrabox(sim);
+	else bireact_threaded_interbox(sim);
+	return 0; 
+	
 #endif
 }
 
 int bireact_threaded_intrabox(simptr sim)
 {
 #ifndef THREADING
-    return 2;
+	return 2;
 #else
-//	int dim,maxspecies,ll1,ll2,i,j,d,*nl,nmol2,b2,m1,m2,bmax,wpcode,nlist,maxlist,nthreads;
+	//	int dim,maxspecies,ll1,ll2,i,j,d,*nl,nmol2,b2,m1,m2,bmax,wpcode,nlist,maxlist,nthreads;
 	int dim,maxspecies,ll1,ll2,*nl,nlist,maxlist,nthreads;
 	int *nrxn,**table;
-//	double dist2,pos2;
+	//	double dist2,pos2;
 	rxnssptr rxnss;
-//	rxnptr rxn,*rxnlist;
+	//	rxnptr rxn,*rxnlist;
 	rxnptr *rxnlist;
-//	boxptr bptr;
-//	moleculeptr **live,*mlist2,mptr1,mptr2;
+	//	boxptr bptr;
+	//	moleculeptr **live,*mlist2,mptr1,mptr2;
 	moleculeptr **live;
-
-    rxnss=sim->rxnss[2];
-    if(!rxnss) return 0;
-    dim=sim->dim;
-    live=sim->mols->live;
-    maxspecies=rxnss->maxspecies;
-    maxlist=rxnss->maxlist;
-    nlist=sim->mols->nlist;
-    nrxn=rxnss->nrxn;
-    table=rxnss->table;
-    rxnlist=rxnss->rxn;
-    nl=sim->mols->nl;
+	
+	rxnss=sim->rxnss[2];
+	if(!rxnss) return 0;
+	dim=sim->dim;
+	live=sim->mols->live;
+	maxspecies=rxnss->maxspecies;
+	maxlist=rxnss->maxlist;
+	nlist=sim->mols->nlist;
+	nrxn=rxnss->nrxn;
+	table=rxnss->table;
+	rxnlist=rxnss->rxn;
+	nl=sim->mols->nl;
 	nthreads = sim->threads->nthreads;
-    stack* current_thread_input_stack;
-
-    for(ll1=0; ll1 < nlist; ll1++) {
-	for(ll2=ll1; ll2 < nlist; ll2++) {
+	stack* current_thread_input_stack;
+	
+	for(ll1=0; ll1 < nlist; ll1++) {
+		for(ll2=ll1; ll2 < nlist; ll2++) {
 	    if(rxnss->rxnmollist[ll1 * maxlist + ll2])
 	    {
-		int total_num_to_process = nl[ll1];
-		int per_thread_to_process = (total_num_to_process + (nthreads - (total_num_to_process % nthreads))) / nthreads;  // This equals ceil( total_num_to_process / nthreads).
-
-		int initial_ndx = 0;
-		PARAMS_check_for_intrabox inputParams;
-		inputParams.sim = sim;
-		inputParams.ll_ndx_1 = ll1;
-		inputParams.ll_ndx_2 = ll2;
-
-		// Create all the threads. Note that the creation of the final thread is it's own thing, becuase
-		// it will likely have an odd number of molecules to process.
-
-		int thread_ndx;
-		for(thread_ndx = 0; thread_ndx != nthreads - 1; ++thread_ndx)
-		{
-		    // Clear this thread's dedicated input and output stacks...
-		    clearthreaddata( sim->threads->thread[thread_ndx]);
-		    current_thread_input_stack = sim->threads->thread[thread_ndx]->input_stack;
-
-		    inputParams.first_ndx = initial_ndx;
-		    inputParams.second_ndx = initial_ndx += per_thread_to_process;
-		    inputParams.output_stack = sim->threads->thread[thread_ndx]->output_stack;
-
-		    push_data_onto_stack( current_thread_input_stack, &inputParams, sizeof(inputParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
-
-		    pthread_create( (pthread_t*) sim->threads->thread[thread_ndx]->thread_id, NULL, check_for_intrabox_bireactions_threaded, (void*) current_thread_input_stack->stack_data);
-
-		}
-		{   // Process the last index seperately, because it will likely have an odd number of molecules to process....
-		    
-		    clearthreaddata( sim->threads->thread[ nthreads - 1] );
-		    current_thread_input_stack = sim->threads->thread[ nthreads - 1]->input_stack;
-
-		    inputParams.first_ndx = initial_ndx;
-		    inputParams.second_ndx = total_num_to_process;
-		    inputParams.output_stack = sim->threads->thread[nthreads - 1]->output_stack;
-
-		    push_data_onto_stack( current_thread_input_stack, &inputParams, sizeof(inputParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
-
-		    pthread_create((pthread_t*) sim->threads->thread[nthreads - 1]->thread_id, NULL, check_for_intrabox_bireactions_threaded, (void*) current_thread_input_stack->stack_data);
-		}
-
-
-		// Join all the threads.
-		for( thread_ndx = 0; thread_ndx != nthreads; ++thread_ndx)
-		    pthread_join( *((pthread_t*) sim->threads->thread[thread_ndx]->thread_id), NULL);
-
-
-		int number_to_process, paramNdx;;
-		PARAMS_morebireact* morebireact_param_array;
-
-		// Permaybehaps this for loop can be combined with the previous one, with perhaps slight savings of time.  However, to prevent errors, for now I am leaving them seperate.
-		for( thread_ndx = 0; thread_ndx != nthreads; ++thread_ndx)
-		{
-		    void* current_thread_data = sim->threads->thread[ thread_ndx ]->output_stack->stack_data;
-
-		    number_to_process = *( (int*) current_thread_data);
-		    morebireact_param_array = (PARAMS_morebireact*) ((int*) current_thread_data + 1);
-
-		    for(paramNdx = 0; paramNdx != number_to_process; ++paramNdx)
-		    {
-			rxnptr rxn = morebireact_param_array[paramNdx].rxn_to_execute;
-			moleculeptr mptr1 = morebireact_param_array[paramNdx].mol_ptr_1;
-			moleculeptr mptr2 = morebireact_param_array[paramNdx].mol_ptr_2;
-			int ll1 = morebireact_param_array[paramNdx].ll_ndx_1;
-			int m1 = morebireact_param_array[paramNdx].mol_ndx_1;
-			int ll2 = morebireact_param_array[paramNdx].ll_ndx_2;
-
-			if( mptr1->ident && mptr2->ident) // Make sure they are both legit...
-			{
-			    if(morebireact(sim,rxn,mptr1,mptr2,ll1,m1,ll2,ETrxn2intra)) return 1;
-
-			}
-		    }
-
-		}
+				int total_num_to_process = nl[ll1];
+				int per_thread_to_process = (total_num_to_process + (nthreads - (total_num_to_process % nthreads))) / nthreads;  // This equals ceil( total_num_to_process / nthreads).
+				
+				int initial_ndx = 0;
+				PARAMS_check_for_intrabox inputParams;
+				inputParams.sim = sim;
+				inputParams.ll_ndx_1 = ll1;
+				inputParams.ll_ndx_2 = ll2;
+				
+				// Create all the threads. Note that the creation of the final thread is it's own thing, becuase
+				// it will likely have an odd number of molecules to process.
+				
+				int thread_ndx;
+				for(thread_ndx = 0; thread_ndx != nthreads - 1; ++thread_ndx)
+				{
+					// Clear this thread's dedicated input and output stacks...
+					clearthreaddata( sim->threads->thread[thread_ndx]);
+					current_thread_input_stack = sim->threads->thread[thread_ndx]->input_stack;
+					
+					inputParams.first_ndx = initial_ndx;
+					inputParams.second_ndx = initial_ndx += per_thread_to_process;
+					inputParams.output_stack = sim->threads->thread[thread_ndx]->output_stack;
+					
+					push_data_onto_stack( current_thread_input_stack, &inputParams, sizeof(inputParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
+					
+					pthread_create( (pthread_t*) sim->threads->thread[thread_ndx]->thread_id, NULL, check_for_intrabox_bireactions_threaded, (void*) current_thread_input_stack->stack_data);
+					
+				}
+				{   // Process the last index seperately, because it will likely have an odd number of molecules to process....
+					
+					clearthreaddata( sim->threads->thread[ nthreads - 1] );
+					current_thread_input_stack = sim->threads->thread[ nthreads - 1]->input_stack;
+					
+					inputParams.first_ndx = initial_ndx;
+					inputParams.second_ndx = total_num_to_process;
+					inputParams.output_stack = sim->threads->thread[nthreads - 1]->output_stack;
+					
+					push_data_onto_stack( current_thread_input_stack, &inputParams, sizeof(inputParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
+					
+					pthread_create((pthread_t*) sim->threads->thread[nthreads - 1]->thread_id, NULL, check_for_intrabox_bireactions_threaded, (void*) current_thread_input_stack->stack_data);
+				}
+				
+				
+				// Join all the threads.
+				for( thread_ndx = 0; thread_ndx != nthreads; ++thread_ndx)
+					pthread_join( *((pthread_t*) sim->threads->thread[thread_ndx]->thread_id), NULL);
+				
+				
+				int number_to_process, paramNdx;;
+				PARAMS_morebireact* morebireact_param_array;
+				
+				// Permaybehaps this for loop can be combined with the previous one, with perhaps slight savings of time.  However, to prevent errors, for now I am leaving them seperate.
+				for( thread_ndx = 0; thread_ndx != nthreads; ++thread_ndx)
+				{
+					void* current_thread_data = sim->threads->thread[ thread_ndx ]->output_stack->stack_data;
+					
+					number_to_process = *( (int*) current_thread_data);
+					morebireact_param_array = (PARAMS_morebireact*) ((int*) current_thread_data + 1);
+					
+					for(paramNdx = 0; paramNdx != number_to_process; ++paramNdx)
+					{
+						rxnptr rxn = morebireact_param_array[paramNdx].rxn_to_execute;
+						moleculeptr mptr1 = morebireact_param_array[paramNdx].mol_ptr_1;
+						moleculeptr mptr2 = morebireact_param_array[paramNdx].mol_ptr_2;
+						int ll1 = morebireact_param_array[paramNdx].ll_ndx_1;
+						int m1 = morebireact_param_array[paramNdx].mol_ndx_1;
+						int ll2 = morebireact_param_array[paramNdx].ll_ndx_2;
+						
+						if( mptr1->ident && mptr2->ident) // Make sure they are both legit...
+						{
+							if(morebireact(sim,rxn,mptr1,mptr2,ll1,m1,ll2,ETrxn2intra)) return 1;
+							
+						}
+					}
+					
+				}
 	    }
+		}
 	}
-    }
-
-    return 0;
+	
+	return 0;
 #endif
 }
 
 int bireact_threaded_interbox(simptr sim)
 {
 #ifndef THREADING
-    return 2;
+	return 2;
 #else
-//	int dim,maxspecies,ll1,ll2,i,j,d,*nl,nmol2,b2,m1,m2,bmax,wpcode,nlist,maxlist, nthreads;
+	//	int dim,maxspecies,ll1,ll2,i,j,d,*nl,nmol2,b2,m1,m2,bmax,wpcode,nlist,maxlist, nthreads;
 	int dim,maxspecies,ll1,ll2,*nl,nlist,maxlist, nthreads;
 	int *nrxn,**table;
-//	double dist2,pos2;
+	//	double dist2,pos2;
 	rxnssptr rxnss;
-//	rxnptr rxn,*rxnlist;
+	//	rxnptr rxn,*rxnlist;
 	rxnptr *rxnlist;
-//	boxptr bptr;
-//	moleculeptr **live,*mlist2,mptr1,mptr2;
+	//	boxptr bptr;
+	//	moleculeptr **live,*mlist2,mptr1,mptr2;
 	moleculeptr **live;
-
-    rxnss=sim->rxnss[2];
-    if(!rxnss) return 0;
-    dim=sim->dim;
-    live=sim->mols->live;
-    maxspecies=rxnss->maxspecies;
-    maxlist=rxnss->maxlist;
-    nlist=sim->mols->nlist;
-    nrxn=rxnss->nrxn;
-    table=rxnss->table;
-    rxnlist=rxnss->rxn;
-    nl=sim->mols->nl;
+	
+	rxnss=sim->rxnss[2];
+	if(!rxnss) return 0;
+	dim=sim->dim;
+	live=sim->mols->live;
+	maxspecies=rxnss->maxspecies;
+	maxlist=rxnss->maxlist;
+	nlist=sim->mols->nlist;
+	nrxn=rxnss->nrxn;
+	table=rxnss->table;
+	rxnlist=rxnss->rxn;
+	nl=sim->mols->nl;
 	nthreads=sim->threads->nthreads;
-
-    // BEGIN COMPUTATION
-
-    for(ll1=0;ll1<nlist;ll1++) {
-	for(ll2=ll1;ll2<nlist;ll2++) {
+	
+	// BEGIN COMPUTATION
+	
+	for(ll1=0;ll1<nlist;ll1++) {
+		for(ll2=ll1;ll2<nlist;ll2++) {
 	    
 	    if(rxnss->rxnmollist[ll1*maxlist+ll2])
 	    {
-		int total_num_to_process = nl[ll1];
-		int per_thread_to_process = (total_num_to_process + (nthreads - (total_num_to_process % nthreads))) / nthreads;  // This equals ceil( total_num_to_process / nthreads).
-
-		stack* current_thread_input_stack;
-
-		int initial_ndx = 0;
-
-		PARAMS_check_for_intrabox inputParams;
-		inputParams.sim = sim;
-		inputParams.ll_ndx_1 = ll1;
-		inputParams.ll_ndx_2 = ll2;
-		
-		// 
-		// Create the threads.
-		// 
-		// 
-		int thread_ndx;
-		for(thread_ndx = 0; thread_ndx != nthreads - 1; ++thread_ndx)
-		{
-		    // Clear this thread's dedicated input and output stacks...
-		    clearthreaddata( sim->threads->thread[thread_ndx]);
-		    current_thread_input_stack = sim->threads->thread[thread_ndx]->input_stack;
-
-
-		    inputParams.first_ndx = initial_ndx;
-		    inputParams.second_ndx = initial_ndx += per_thread_to_process;
-		    inputParams.output_stack = sim->threads->thread[thread_ndx]->output_stack;
-
-		    push_data_onto_stack( current_thread_input_stack, &inputParams, sizeof(inputParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
-		    pthread_create((pthread_t*)sim->threads->thread[thread_ndx]->thread_id, NULL, check_for_interbox_bireactions_threaded, (void*) current_thread_input_stack->stack_data);
-
-		}
-		{   // Process the last index seperately, because it will have an odd number of molecules to process....
-		    
-		    clearthreaddata( sim->threads->thread[nthreads - 1] );
-		    current_thread_input_stack = sim->threads->thread[nthreads - 1]->input_stack;
-
-		    inputParams.first_ndx = initial_ndx;
-		    inputParams.second_ndx = total_num_to_process;
-		    inputParams.output_stack = sim->threads->thread[nthreads - 1]->output_stack;
-
-		    push_data_onto_stack( current_thread_input_stack, &inputParams, sizeof(inputParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
-		    pthread_create((pthread_t*)sim->threads->thread[nthreads - 1]->thread_id, NULL, check_for_interbox_bireactions_threaded, (void*) current_thread_input_stack->stack_data);
-		}
-
-		// Join all the threads.
-		for( thread_ndx = 0; thread_ndx != nthreads; ++thread_ndx)
-		    pthread_join( *((pthread_t*)sim->threads->thread[thread_ndx]->thread_id), NULL);
-
-
-		// Permaybehaps this for loop can be combined with the previous one, with perhaps slight savings of time.  However, to prevent errors, for now I am leaving them seperate.
-		for( thread_ndx = 0; thread_ndx != nthreads; ++thread_ndx)
-		{
-		    // The first value in the stack is an int that says how many 
-		    // rxn, mptr1, mptr2, ll1, m1, ll2's there are...
-
-		    void* current_thread_data = sim->threads->thread[ thread_ndx ]->output_stack->stack_data;
-		    int number_to_process = *( (int*) current_thread_data);
-
-		    PARAMS_morebireact* morebireact_param_array = (PARAMS_morebireact*) ((int*) current_thread_data + 1);
-
-		    int paramNdx;
-		    for(paramNdx = 0; paramNdx != number_to_process; ++paramNdx)
-		    {
-			    
-			rxnptr rxn = morebireact_param_array[paramNdx].rxn_to_execute;
-			moleculeptr mptr1 = morebireact_param_array[paramNdx].mol_ptr_1;
-			moleculeptr mptr2 = morebireact_param_array[paramNdx].mol_ptr_2;
-			int ll1 = morebireact_param_array[paramNdx].ll_ndx_1;
-			int m1 = morebireact_param_array[paramNdx].mol_ndx_1;
-			int ll2 = morebireact_param_array[paramNdx].ll_ndx_2;
-			enum EventType et = morebireact_param_array[paramNdx].et;
-
-			// It is probably enough to just check for one of these...
- 			if( mptr1->ident && mptr2->ident) 
-			{
-			    // VDEBUG_printf("X morebireact: (%p, %p, %p, %d, %d, %d)\n", rxn, mptr1, mptr2, ll1, m1, ll2);
-                            // printf("X morebireact: (%p, %p, %p, %d, %d, %d)\n", rxn, mptr1, mptr2, ll1, m1, ll2);
-			    if(morebireact(sim,rxn,mptr1,mptr2,ll1,m1,ll2,et)) return 1;
-			}
-		    }
-		}
+				int total_num_to_process = nl[ll1];
+				int per_thread_to_process = (total_num_to_process + (nthreads - (total_num_to_process % nthreads))) / nthreads;  // This equals ceil( total_num_to_process / nthreads).
+				
+				stack* current_thread_input_stack;
+				
+				int initial_ndx = 0;
+				
+				PARAMS_check_for_intrabox inputParams;
+				inputParams.sim = sim;
+				inputParams.ll_ndx_1 = ll1;
+				inputParams.ll_ndx_2 = ll2;
+				
+				// 
+				// Create the threads.
+				// 
+				// 
+				int thread_ndx;
+				for(thread_ndx = 0; thread_ndx != nthreads - 1; ++thread_ndx)
+				{
+					// Clear this thread's dedicated input and output stacks...
+					clearthreaddata( sim->threads->thread[thread_ndx]);
+					current_thread_input_stack = sim->threads->thread[thread_ndx]->input_stack;
+					
+					
+					inputParams.first_ndx = initial_ndx;
+					inputParams.second_ndx = initial_ndx += per_thread_to_process;
+					inputParams.output_stack = sim->threads->thread[thread_ndx]->output_stack;
+					
+					push_data_onto_stack( current_thread_input_stack, &inputParams, sizeof(inputParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
+					pthread_create(sim->threads->thread[thread_ndx]->thread_id, NULL, check_for_interbox_bireactions_threaded, (void*) current_thread_input_stack->stack_data);
+					
+				}
+				{   // Process the last index seperately, because it will have an odd number of molecules to process....
+					
+					clearthreaddata( sim->threads->thread[nthreads - 1] );
+					current_thread_input_stack = sim->threads->thread[nthreads - 1]->input_stack;
+					
+					inputParams.first_ndx = initial_ndx;
+					inputParams.second_ndx = total_num_to_process;
+					inputParams.output_stack = sim->threads->thread[nthreads - 1]->output_stack;
+					
+					push_data_onto_stack( current_thread_input_stack, &inputParams, sizeof(inputParams)); // this copies over the inputParams data, so the fact that it is used to seed multiple threads is no problem.
+					pthread_create(sim->threads->thread[nthreads - 1]->thread_id, NULL, check_for_interbox_bireactions_threaded, (void*) current_thread_input_stack->stack_data);
+				}
+				
+				// Join all the threads.
+				for( thread_ndx = 0; thread_ndx != nthreads; ++thread_ndx)
+					pthread_join( *((pthread_t*)sim->threads->thread[thread_ndx]->thread_id), NULL);
+				
+				
+				// Permaybehaps this for loop can be combined with the previous one, with perhaps slight savings of time.  However, to prevent errors, for now I am leaving them seperate.
+				for( thread_ndx = 0; thread_ndx != nthreads; ++thread_ndx)
+				{
+					// The first value in the stack is an int that says how many 
+					// rxn, mptr1, mptr2, ll1, m1, ll2's there are...
+					
+					void* current_thread_data = sim->threads->thread[ thread_ndx ]->output_stack->stack_data;
+					int number_to_process = *( (int*) current_thread_data);
+					
+					PARAMS_morebireact* morebireact_param_array = (PARAMS_morebireact*) ((int*) current_thread_data + 1);
+					
+					int paramNdx;
+					for(paramNdx = 0; paramNdx != number_to_process; ++paramNdx)
+					{
+						
+						rxnptr rxn = morebireact_param_array[paramNdx].rxn_to_execute;
+						moleculeptr mptr1 = morebireact_param_array[paramNdx].mol_ptr_1;
+						moleculeptr mptr2 = morebireact_param_array[paramNdx].mol_ptr_2;
+						int ll1 = morebireact_param_array[paramNdx].ll_ndx_1;
+						int m1 = morebireact_param_array[paramNdx].mol_ndx_1;
+						int ll2 = morebireact_param_array[paramNdx].ll_ndx_2;
+						enum EventType et = morebireact_param_array[paramNdx].et;
+						
+						// It is probably enough to just check for one of these...
+						if( mptr1->ident && mptr2->ident) 
+						{
+							// VDEBUG_printf("X morebireact: (%p, %p, %p, %d, %d, %d)\n", rxn, mptr1, mptr2, ll1, m1, ll2);
+							// printf("X morebireact: (%p, %p, %p, %d, %d, %d)\n", rxn, mptr1, mptr2, ll1, m1, ll2);
+							if(morebireact(sim,rxn,mptr1,mptr2,ll1,m1,ll2,et)) return 1;
+						}
+					}
+				}
 	    }
+		}
 	}
-    }
-
-    return 0;
+	
+	return 0;
 #endif
 }
 
@@ -2781,136 +2661,136 @@ int bireact_threaded_interbox(simptr sim)
 void* check_for_interbox_bireactions_threaded(void* data)
 {
 #ifndef THREADING
-    return NULL;
+	return NULL;
 #else
-    PARAMS_check_for_intrabox* interbox_input_params = (PARAMS_check_for_intrabox*) data;
-
-    simptr sim = interbox_input_params->sim;
-    int live_list_ndx_1 = interbox_input_params->ll_ndx_1;
-    int live_list_ndx_2 = interbox_input_params->ll_ndx_2;
-    int first_ndx = interbox_input_params->first_ndx;
-    int second_ndx = interbox_input_params->second_ndx;;
-    stack* output_stack = interbox_input_params->output_stack;
-
-    int num_found = 0;
-    push_data_onto_stack(output_stack, &num_found, sizeof(num_found));
-
-    PARAMS_morebireact morebireact_params;
-
-    ////// The inner loop....
-
-    int dim,maxspecies,ll1,ll2,i,j,d,*nl,nmol2,b2,m1,m2,bmax,wpcode,nlist,maxlist;
-    int *nrxn,**table;
-    double dist2,pos2;
-    rxnssptr rxnss;
-    rxnptr rxn,*rxnlist;
-    boxptr bptr;
-    moleculeptr **live,*mlist2,mptr1,mptr2;
-
-    ll1 = live_list_ndx_1;
-    ll2 = live_list_ndx_2;
+	PARAMS_check_for_intrabox* interbox_input_params = (PARAMS_check_for_intrabox*) data;
 	
-    rxnss=sim->rxnss[2];
-    dim=sim->dim;
-    live=sim->mols->live;
-    maxspecies=rxnss->maxspecies;
-    maxlist=rxnss->maxlist;
-    nlist=sim->mols->nlist;
-    nrxn=rxnss->nrxn;
-    table=rxnss->table;
-    rxnlist=rxnss->rxn;
-    nl=sim->mols->nl;
-
-    for(m1=first_ndx;m1!=second_ndx;m1++) 
-    {
-	mptr1=live[ll1][m1];
-	bptr=mptr1->box;
-	bmax=(ll1!=ll2)?bptr->nneigh:bptr->midneigh;
-	for(b2=0;b2<bmax;b2++) 
+	simptr sim = interbox_input_params->sim;
+	int live_list_ndx_1 = interbox_input_params->ll_ndx_1;
+	int live_list_ndx_2 = interbox_input_params->ll_ndx_2;
+	int first_ndx = interbox_input_params->first_ndx;
+	int second_ndx = interbox_input_params->second_ndx;;
+	stack* output_stack = interbox_input_params->output_stack;
+	
+	int num_found = 0;
+	push_data_onto_stack(output_stack, &num_found, sizeof(num_found));
+	
+	PARAMS_morebireact morebireact_params;
+	
+	////// The inner loop....
+	
+	int dim,maxspecies,ll1,ll2,i,j,d,*nl,nmol2,b2,m1,m2,bmax,wpcode,nlist,maxlist;
+	int *nrxn,**table;
+	double dist2,pos2;
+	rxnssptr rxnss;
+	rxnptr rxn,*rxnlist;
+	boxptr bptr;
+	moleculeptr **live,*mlist2,mptr1,mptr2;
+	
+	ll1 = live_list_ndx_1;
+	ll2 = live_list_ndx_2;
+	
+	rxnss=sim->rxnss[2];
+	dim=sim->dim;
+	live=sim->mols->live;
+	maxspecies=rxnss->maxspecies;
+	maxlist=rxnss->maxlist;
+	nlist=sim->mols->nlist;
+	nrxn=rxnss->nrxn;
+	table=rxnss->table;
+	rxnlist=rxnss->rxn;
+	nl=sim->mols->nl;
+	
+	for(m1=first_ndx;m1!=second_ndx;m1++) 
 	{
+		mptr1=live[ll1][m1];
+		bptr=mptr1->box;
+		bmax=(ll1!=ll2)?bptr->nneigh:bptr->midneigh;
+		for(b2=0;b2<bmax;b2++) 
+		{
 	    mlist2=bptr->neigh[b2]->mol[ll2];
 	    nmol2=bptr->neigh[b2]->nmol[ll2];
-
+			
 	    if(bptr->wpneigh && bptr->wpneigh[b2]) // neighbor box with wrapping
 	    {	
-		wpcode=bptr->wpneigh[b2];
-		for(m2=0;m2<nmol2;m2++) 
-		{
-		    mptr2=mlist2[m2];
-		    i=mptr1->ident*maxspecies+mptr2->ident;
-		    for(j=0;j<nrxn[i];j++) 
-		    {
-			rxn=rxnlist[table[i][j]];
-			dist2=0;
-			for(d=0;d<dim;d++) 
-			{
-			    if((wpcode>>2*d&3)==0)
-			    {
-				dist2+=(mptr1->pos[d]-mptr2->pos[d])*(mptr1->pos[d]-mptr2->pos[d]);
-			    }
-			    else if((wpcode>>2*d&3)==1) 
-			    {
-				pos2=sim->wlist[2*d+1]->pos-sim->wlist[2*d]->pos;
-				dist2+=(mptr1->pos[d]-mptr2->pos[d]+pos2)*(mptr1->pos[d]-mptr2->pos[d]+pos2); 
-			    }
-			    else 
-			    {
-				pos2=sim->wlist[2*d+1]->pos-sim->wlist[2*d]->pos;
-				dist2+=(mptr1->pos[d]-mptr2->pos[d]-pos2)*(mptr1->pos[d]-mptr2->pos[d]-pos2); 
-			    }
-			}
-			if(dist2<=rxn->bindrad2 && (rxn->prob==1 || randCOD()<rxn->prob) && mptr1->ident!=0 && mptr2->ident!=0) 
-			{
-			    morebireact_params.rxn_to_execute = rxn;
-			    morebireact_params.mol_ptr_1 = mptr1;
-			    morebireact_params.mol_ptr_2 = mptr2;
-			    morebireact_params.ll_ndx_1 = ll1;
-			    morebireact_params.mol_ndx_1 = m1;
-			    morebireact_params.ll_ndx_2 = ll2;
-			    morebireact_params.et = ETrxn2wrap;
-
-			    push_data_onto_stack( output_stack, &morebireact_params, sizeof(morebireact_params));
-			    *((int*) output_stack->stack_data) += 1;
-
-
-			}
-		    }
-		}
+				wpcode=bptr->wpneigh[b2];
+				for(m2=0;m2<nmol2;m2++) 
+				{
+					mptr2=mlist2[m2];
+					i=mptr1->ident*maxspecies+mptr2->ident;
+					for(j=0;j<nrxn[i];j++) 
+					{
+						rxn=rxnlist[table[i][j]];
+						dist2=0;
+						for(d=0;d<dim;d++) 
+						{
+							if((wpcode>>2*d&3)==0)
+							{
+								dist2+=(mptr1->pos[d]-mptr2->pos[d])*(mptr1->pos[d]-mptr2->pos[d]);
+							}
+							else if((wpcode>>2*d&3)==1) 
+							{
+								pos2=sim->wlist[2*d+1]->pos-sim->wlist[2*d]->pos;
+								dist2+=(mptr1->pos[d]-mptr2->pos[d]+pos2)*(mptr1->pos[d]-mptr2->pos[d]+pos2); 
+							}
+							else 
+							{
+								pos2=sim->wlist[2*d+1]->pos-sim->wlist[2*d]->pos;
+								dist2+=(mptr1->pos[d]-mptr2->pos[d]-pos2)*(mptr1->pos[d]-mptr2->pos[d]-pos2); 
+							}
+						}
+						if(dist2<=rxn->bindrad2 && (rxn->prob==1 || randCOD()<rxn->prob) && mptr1->ident!=0 && mptr2->ident!=0) 
+						{
+							morebireact_params.rxn_to_execute = rxn;
+							morebireact_params.mol_ptr_1 = mptr1;
+							morebireact_params.mol_ptr_2 = mptr2;
+							morebireact_params.ll_ndx_1 = ll1;
+							morebireact_params.mol_ndx_1 = m1;
+							morebireact_params.ll_ndx_2 = ll2;
+							morebireact_params.et = ETrxn2wrap;
+							
+							push_data_onto_stack( output_stack, &morebireact_params, sizeof(morebireact_params));
+							*((int*) output_stack->stack_data) += 1;
+							
+							
+						}
+					}
+				}
 	    }
-
+			
 	    else													// neighbor box, no wrapping
-		for(m2=0;m2<nmol2;m2++) 
-		{
-		    mptr2=mlist2[m2];
-		    i=mptr1->ident*maxspecies+mptr2->ident;
-		    for(j=0;j<nrxn[i];j++) 
-		    {
-			rxn=rxnlist[table[i][j]];
-			dist2=0;
-			for(d=0;d<dim;d++)
-			{
-			    dist2+=(mptr1->pos[d]-mptr2->pos[d])*(mptr1->pos[d]-mptr2->pos[d]);
-			}
-					
-			if(dist2<=rxn->bindrad2 && (rxn->prob==1 || randCOD()<rxn->prob) &&  (mptr1->mstate!=MSsoln || mptr2->mstate!=MSsoln || !rxnXsurface(sim,mptr1,mptr2)) && mptr1->ident!=0 && mptr2->ident!=0) 
-			{
-			    morebireact_params.rxn_to_execute = rxn;
-			    morebireact_params.mol_ptr_1 = mptr1;
-			    morebireact_params.mol_ptr_2 = mptr2;
-			    morebireact_params.ll_ndx_1 = ll1;
-			    morebireact_params.mol_ndx_1 = m1;
-			    morebireact_params.ll_ndx_2 = ll2;
-			    morebireact_params.et = ETrxn2inter;
-
-			    push_data_onto_stack( output_stack, &morebireact_params, sizeof(morebireact_params));
-			    *((int*) output_stack->stack_data) += 1;
-			}
-		    }
+				for(m2=0;m2<nmol2;m2++) 
+				{
+					mptr2=mlist2[m2];
+					i=mptr1->ident*maxspecies+mptr2->ident;
+					for(j=0;j<nrxn[i];j++) 
+					{
+						rxn=rxnlist[table[i][j]];
+						dist2=0;
+						for(d=0;d<dim;d++)
+						{
+							dist2+=(mptr1->pos[d]-mptr2->pos[d])*(mptr1->pos[d]-mptr2->pos[d]);
+						}
+						
+						if(dist2<=rxn->bindrad2 && (rxn->prob==1 || randCOD()<rxn->prob) &&  (mptr1->mstate!=MSsoln || mptr2->mstate!=MSsoln || !rxnXsurface(sim,mptr1,mptr2)) && mptr1->ident!=0 && mptr2->ident!=0) 
+						{
+							morebireact_params.rxn_to_execute = rxn;
+							morebireact_params.mol_ptr_1 = mptr1;
+							morebireact_params.mol_ptr_2 = mptr2;
+							morebireact_params.ll_ndx_1 = ll1;
+							morebireact_params.mol_ndx_1 = m1;
+							morebireact_params.ll_ndx_2 = ll2;
+							morebireact_params.et = ETrxn2inter;
+							
+							push_data_onto_stack( output_stack, &morebireact_params, sizeof(morebireact_params));
+							*((int*) output_stack->stack_data) += 1;
+						}
+					}
+				}
 		}
 	}
-    }
-
-    return NULL;
+	
+	return NULL;
 #endif
 }
 
@@ -2919,99 +2799,99 @@ void* check_for_interbox_bireactions_threaded(void* data)
 void* check_for_intrabox_bireactions_threaded(void* data)
 {
 #ifndef THREADING
-    return NULL;
+	return NULL;
 #else
-    int new_num = 0;
-
-
-    // Get the input params for this function and setup the ouput_stack properly.
-    PARAMS_check_for_intrabox* intrabox_input_params = (PARAMS_check_for_intrabox*) data;
-
-    simptr sim = intrabox_input_params->sim;
-    int live_list_ndx_1 = intrabox_input_params->ll_ndx_1;
-    int live_list_ndx_2 = intrabox_input_params->ll_ndx_2;
-    int first_ndx = intrabox_input_params->first_ndx;
-    int second_ndx = intrabox_input_params->second_ndx;;
-    stack* output_stack = intrabox_input_params->output_stack;
-
-    //VDEBUG_printf("In thread.  Reading params ( sim = %p, ll_ndx_1 = %d, first_ndx = %d, second_ndx = %d, ll_ndx_2 = %d, output_stack = %p)\n", intrabox_input_params->sim, intrabox_input_params->ll_ndx_1, intrabox_input_params->first_ndx, intrabox_input_params->second_ndx, intrabox_input_params->ll_ndx_2, intrabox_input_params->output_stack);
-
-    push_data_onto_stack(output_stack, &new_num, sizeof(new_num));
-
-    //VDEBUG_printf("Writing proposal data to %p\n", output_stack->stack_data + output_stack->current_size);
-    //VDEBUG_printf("Initially num_elements_found = %d\n", *(int*) output_stack->stack_data);
-
-    PARAMS_morebireact morebireact_params;
-
-    //////////////////////////////////////////////////
-
-//	int dim,maxspecies,ll1,ll2,i,j,d,*nl,nmol2,b2,m1,m2,bmax,wpcode,nlist,maxlist;
+	int new_num = 0;
+	
+	
+	// Get the input params for this function and setup the ouput_stack properly.
+	PARAMS_check_for_intrabox* intrabox_input_params = (PARAMS_check_for_intrabox*) data;
+	
+	simptr sim = intrabox_input_params->sim;
+	int live_list_ndx_1 = intrabox_input_params->ll_ndx_1;
+	int live_list_ndx_2 = intrabox_input_params->ll_ndx_2;
+	int first_ndx = intrabox_input_params->first_ndx;
+	int second_ndx = intrabox_input_params->second_ndx;;
+	stack* output_stack = intrabox_input_params->output_stack;
+	
+	//VDEBUG_printf("In thread.  Reading params ( sim = %p, ll_ndx_1 = %d, first_ndx = %d, second_ndx = %d, ll_ndx_2 = %d, output_stack = %p)\n", intrabox_input_params->sim, intrabox_input_params->ll_ndx_1, intrabox_input_params->first_ndx, intrabox_input_params->second_ndx, intrabox_input_params->ll_ndx_2, intrabox_input_params->output_stack);
+	
+	push_data_onto_stack(output_stack, &new_num, sizeof(new_num));
+	
+	//VDEBUG_printf("Writing proposal data to %p\n", output_stack->stack_data + output_stack->current_size);
+	//VDEBUG_printf("Initially num_elements_found = %d\n", *(int*) output_stack->stack_data);
+	
+	PARAMS_morebireact morebireact_params;
+	
+	//////////////////////////////////////////////////
+	
+	//	int dim,maxspecies,ll1,ll2,i,j,d,*nl,nmol2,b2,m1,m2,bmax,wpcode,nlist,maxlist;
 	int dim,maxspecies,i,j,d,*nl,nmol2,m2,nlist,maxlist;
 	int *nrxn,**table;
-//	double dist2,pos2;
+	//	double dist2,pos2;
 	double dist2;
 	rxnssptr rxnss;
 	rxnptr rxn,*rxnlist;
 	boxptr bptr;
 	moleculeptr **live,*mlist2,mptr1,mptr2;
-
-    rxnss=sim->rxnss[2];
-    dim=sim->dim;
-    live=sim->mols->live;
-    maxspecies=rxnss->maxspecies;
-    maxlist=rxnss->maxlist;
-    nlist=sim->mols->nlist;
-    nrxn=rxnss->nrxn;
-    table=rxnss->table;
-    rxnlist=rxnss->rxn;
-    nl=sim->mols->nl;
-    
-    int mol_ndx;
-    for(mol_ndx = first_ndx; mol_ndx != second_ndx; ++mol_ndx)
-    {
-	mptr1 = live[live_list_ndx_1][mol_ndx];
-	bptr = mptr1->box;
-	mlist2=bptr->mol[live_list_ndx_2];
-	nmol2=bptr->nmol[live_list_ndx_2];
-	for(m2=0;m2<nmol2 && mlist2[m2]!=mptr1;m2++) 
+	
+	rxnss=sim->rxnss[2];
+	dim=sim->dim;
+	live=sim->mols->live;
+	maxspecies=rxnss->maxspecies;
+	maxlist=rxnss->maxlist;
+	nlist=sim->mols->nlist;
+	nrxn=rxnss->nrxn;
+	table=rxnss->table;
+	rxnlist=rxnss->rxn;
+	nl=sim->mols->nl;
+	
+	int mol_ndx;
+	for(mol_ndx = first_ndx; mol_ndx != second_ndx; ++mol_ndx)
 	{
+		mptr1 = live[live_list_ndx_1][mol_ndx];
+		bptr = mptr1->box;
+		mlist2=bptr->mol[live_list_ndx_2];
+		nmol2=bptr->nmol[live_list_ndx_2];
+		for(m2=0;m2<nmol2 && mlist2[m2]!=mptr1;m2++) 
+		{
 	    mptr2=mlist2[m2];
 	    i=mptr1->ident*maxspecies+mptr2->ident;
 	    for(j=0;j<nrxn[i];j++) 
 	    {
-		rxn=rxnlist[table[i][j]];
-		dist2=0;
-		for(d=0;d<dim;d++)
-		{
-		    dist2 += (mptr1->pos[d]-mptr2->pos[d])*(mptr1->pos[d]-mptr2->pos[d]);
-		}
-
-		if(dist2 <= rxn->bindrad2 && randCOD() < rxn->prob && 
-		   (mptr1->mstate != MSsoln || mptr2->mstate!=MSsoln || !rxnXsurface(sim,mptr1,mptr2) ) && 
-		   mptr1->ident != 0 && 
-		   mptr2->ident != 0) 
-		{
-
-		    // Create a new set of input paramaters for more bireact and push them onto our output stack.
-		    morebireact_params.rxn_to_execute = rxn;
-		    morebireact_params.mol_ptr_1 = mptr1;
-		    morebireact_params.mol_ptr_2 = mptr2;
-		    morebireact_params.ll_ndx_1 = live_list_ndx_1;
-		    morebireact_params.mol_ndx_1 = mol_ndx;
-		    morebireact_params.ll_ndx_2 = live_list_ndx_2;
-
-		    // VDEBUG_printf("P morebireact: (%p, %p, %p, %d, %d, %d)\n", rxn, mptr1, mptr2, live_list_ndx_1, m1, live_list_ndx_2);
-
-		    push_data_onto_stack( output_stack, &morebireact_params, sizeof(morebireact_params));
-		    *(int*) output_stack->stack_data += 1;
-		    new_num += 1;
-		}
+				rxn=rxnlist[table[i][j]];
+				dist2=0;
+				for(d=0;d<dim;d++)
+				{
+					dist2 += (mptr1->pos[d]-mptr2->pos[d])*(mptr1->pos[d]-mptr2->pos[d]);
+				}
+				
+				if(dist2 <= rxn->bindrad2 && randCOD() < rxn->prob && 
+					 (mptr1->mstate != MSsoln || mptr2->mstate!=MSsoln || !rxnXsurface(sim,mptr1,mptr2) ) && 
+					 mptr1->ident != 0 && 
+					 mptr2->ident != 0) 
+				{
+					
+					// Create a new set of input paramaters for more bireact and push them onto our output stack.
+					morebireact_params.rxn_to_execute = rxn;
+					morebireact_params.mol_ptr_1 = mptr1;
+					morebireact_params.mol_ptr_2 = mptr2;
+					morebireact_params.ll_ndx_1 = live_list_ndx_1;
+					morebireact_params.mol_ndx_1 = mol_ndx;
+					morebireact_params.ll_ndx_2 = live_list_ndx_2;
+					
+					// VDEBUG_printf("P morebireact: (%p, %p, %p, %d, %d, %d)\n", rxn, mptr1, mptr2, live_list_ndx_1, m1, live_list_ndx_2);
+					
+					push_data_onto_stack( output_stack, &morebireact_params, sizeof(morebireact_params));
+					*(int*) output_stack->stack_data += 1;
+					new_num += 1;
+				}
 	    }
+		}
+		
 	}
-
-    }
-
-    return NULL;
+	
+	return NULL;
 #endif
 }
 //???????????????? end of new code

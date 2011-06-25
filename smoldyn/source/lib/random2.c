@@ -340,8 +340,8 @@ void randshuffletableD(double *a,int n) {
 	int i,j;
 	double x;
 
-	for(i=0;i<n;i++) {
-		j=intrand(n);
+	for(i=n-1;i>0;i--) {
+		j=intrand(i+1);
 		x=a[i];
 		a[i]=a[j];
 		a[j]=x; }
@@ -352,8 +352,32 @@ void randshuffletableF(float *a,int n) {
 	int i,j;
 	float x;
 
-	for(i=0;i<n;i++) {
-		j=intrand(n);
+	for(i=n-1;i>0;i--) {
+		j=intrand(i+1);
+		x=a[i];
+		a[i]=a[j];
+		a[j]=x; }
+	return; }
+
+
+void randshuffletableI(int *a,int n) {
+	int i,j;
+	int x;
+
+	for(i=n-1;i>0;i--) {
+		j=intrand(i+1);
+		x=a[i];
+		a[i]=a[j];
+		a[j]=x; }
+	return; }
+
+
+void randshuffletableV(void **a,int n) {
+	int i,j;
+	void *x;
+
+	for(i=n-1;i>0;i--) {
+		j=intrand(i+1);
 		x=a[i];
 		a[i]=a[j];
 		a[j]=x; }

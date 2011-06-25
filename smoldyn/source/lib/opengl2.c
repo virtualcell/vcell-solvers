@@ -46,9 +46,8 @@ void *FreePointer=NULL;
 
 
 /* ChangeSize */
-#ifdef __gl_h_
-
 void ChangeSize(int w,int h) {
+#ifdef __gl_h_
 	GLfloat clipheight,clipwidth;
 	GLfloat nearold,m[16];
 
@@ -87,21 +86,14 @@ void ChangeSize(int w,int h) {
 		glLoadIdentity();
 		glTranslatef(0,0,nearold-Near);
 		glMultMatrixf(m); }
-	return; }
-
-#else
-
-void ChangeSize(int w,int h) {
-	return; }
-
 #endif
+	return; }
 
 
 
 /* KeyPush */
-#ifdef __gl_h_
-
 void KeyPush(unsigned char key,int x,int y) {
+#ifdef __gl_h_
 	GLint viewport[4],w,h;
 	char name[STRCHAR],str[STRCHAR];
 	GLfloat clipheight,clipwidth;
@@ -188,20 +180,14 @@ void KeyPush(unsigned char key,int x,int y) {
 			glLoadIdentity();
 			gluPerspective(FieldOfView,Aspect,Near,ClipSize+Near);
 			glMatrixMode(GL_MODELVIEW); }}
-	return; }
-
-#else
-
-void KeyPush(unsigned char key,int x,int y) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* SpecialKeyPush2 */
-#ifdef __gl_h_
-
 void SpecialKeyPush2(unsigned char key,int x,int y) {
+#ifdef __gl_h_
 	GLfloat m[16];
 	GLint viewport[4],w,h;
 	GLfloat clipheight,clipwidth;
@@ -254,20 +240,14 @@ void SpecialKeyPush2(unsigned char key,int x,int y) {
 			else if(key=='L') Xtrans-=ClipSize/100;
 			glTranslatef(Xtrans,Ytrans,+(Near+ClipSize/2.0)); }
 		glMultMatrixf(m); }
-	return; }
-
-#else
-
-void SpecialKeyPush2(unsigned char key,int x,int y) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* SpecialKeyPush */
-#ifdef __gl_h_
-
 void SpecialKeyPush(int key,int x,int y) {
+#ifdef __gl_h_
 	int modify;
 
 	modify=glutGetModifiers();
@@ -281,23 +261,17 @@ void SpecialKeyPush(int key,int x,int y) {
 		else if(key==GLUT_KEY_UP) SpecialKeyPush2('U',x,y);
 		else if(key==GLUT_KEY_RIGHT) SpecialKeyPush2('R',x,y);
 		else if(key==GLUT_KEY_LEFT) SpecialKeyPush2('L',x,y); }
-	return; }
-
-#else
-
-void SpecialKeyPush(int key,int x,int y) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* The following code was modified from a program called writetiff.c that was
 written and copyrighted by Mark Kilgard, 1997.  This function requires the use
 of the libtiff library that was written by Sam Leffler and can be downloaded
 from www.libtiff.org. */
-#if defined _TIFFIO_ && defined __gl_h_
-
 int WriteTIFF(char *filename,char *description,int x,int y,int width,int height,int compression) {
+#if defined _TIFFIO_ && defined __gl_h_
   TIFF *file;
   GLubyte *image,*p;
   int i;
@@ -327,14 +301,11 @@ int WriteTIFF(char *filename,char *description,int x,int y,int width,int height,
     p+=width*sizeof(GLubyte)*3; }
   TIFFClose(file);
   free(image);
-  return 0; }
-
+  return 0;
 #else
-
-int WriteTIFF(char *filename,char *description,int x,int y,int width,int height,int compression) {
-	return 2; }
-
+	return 2;
 #endif
+}
 
 
 
@@ -343,9 +314,8 @@ int WriteTIFF(char *filename,char *description,int x,int y,int width,int height,
 /* **************************************************** */
 
 /* gl2Initialize */
-#ifdef __gl_h_
-
 void gl2Initialize(char *wname,float xlo,float xhi,float ylo,float yhi,float zlo,float zhi) {
+#ifdef __gl_h_
 	if(ylo==yhi && zlo==zhi) Dimension=1;
 	else if(zlo==zhi) Dimension=2;
 	else Dimension=3;
@@ -393,29 +363,18 @@ void gl2Initialize(char *wname,float xlo,float xhi,float ylo,float yhi,float zlo
 	glTranslatef(-ClipMidx,-ClipMidy,-ClipMidz);
 	if(Dimension==3) {
 		glEnable(GL_DEPTH_TEST); }
-	return; }
-
-#else
-
-void gl2Initialize(char *wname,float xlo,float xhi,float ylo,float yhi,float zlo,float zhi) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2glutInit */
+void gl2glutInit(int *argc,char **argv) {
 #ifdef __gl_h_
-
-void gl2glutInit(int *argc,char **argv) {
 	glutInit(argc,argv);
-	return; }
-
-#else
-
-void gl2glutInit(int *argc,char **argv) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2State */
@@ -527,9 +486,8 @@ void gl2SetKeyPush(unsigned char key) {
 
 
 /* gl2SetColor */
-#ifdef __gl_h_
-
 void gl2SetColor(char c) {
+#ifdef __gl_h_
 	if(c=='A' || c=='a') glColor3ub(0x70,0xdb,0x93);							/* aqua			*/
 	else if(c=='B' || c=='b' || c=='6')	glColor3ub(0x00,0x00,0xff);	/* blue			*/
 	else if(c=='C' || c=='c')	glColor3ub(0x00,0xff,0xff);					/* cyan			*/
@@ -560,14 +518,9 @@ void gl2SetColor(char c) {
 	else if(c=='-')	glColor3ub(0xc0,0xc0,0xc0);									/* silver		*/
 	else if(c=='+')	glColor3ub(0xff,0xd7,0x20);									/* gold		*/
 	else glColor3ub(0x00,0x00,0x00);														/* black		*/
-	return; }
-
-#else
-
-void gl2SetColor(char c) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2FindRotate */
@@ -613,9 +566,8 @@ double gl2FindRotateD(double *vect1,double *vect2,double *axis) {
 
 
 /* gl2DrawBox */
-#ifdef __gl_h_
-
 void gl2DrawBox(float *pt1,float *pt2,int dim) {
+#ifdef __gl_h_
 	if(dim==1) {
 		glBegin(GL_LINES);
 			glVertex3f(pt1[0],pt1[1],pt1[2]);
@@ -646,20 +598,14 @@ void gl2DrawBox(float *pt1,float *pt2,int dim) {
 			glVertex3f(pt1[0],pt2[1],pt2[2]);glVertex3f(pt2[0],pt2[1],pt2[2]);
 			glVertex3f(pt1[0],pt2[1],pt1[2]);glVertex3f(pt2[0],pt2[1],pt1[2]);
 		glEnd(); }
-	return; }
-
-#else
-
-void gl2DrawBox(float *pt1,float *pt2,int dim) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2DrawBoxD */
-#ifdef __gl_h_
-
 void gl2DrawBoxD(double *pt1,double *pt2,int dim) {
+#ifdef __gl_h_
 	if(dim==1) {
 		glBegin(GL_LINES);
 			glVertex3d(pt1[0],pt1[1],pt1[2]);
@@ -690,20 +636,14 @@ void gl2DrawBoxD(double *pt1,double *pt2,int dim) {
 			glVertex3d(pt1[0],pt2[1],pt2[2]);glVertex3d(pt2[0],pt2[1],pt2[2]);
 			glVertex3d(pt1[0],pt2[1],pt1[2]);glVertex3d(pt2[0],pt2[1],pt1[2]);
 		glEnd(); }
-	return; }
-
-#else
-
-void gl2DrawBoxD(double *pt1,double *pt2,int dim) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2DrawGrid */
-#ifdef __gl_h_
-
 void gl2DrawGrid(float *pt1,float *pt2,int *n,int dim) {
+#ifdef __gl_h_
 	float delta1,delta2;
 	int i,j;
 
@@ -745,20 +685,14 @@ void gl2DrawGrid(float *pt1,float *pt2,int *n,int dim) {
 				glVertex3f(pt1[0]+i*delta1,pt1[1]+j*delta2,pt1[2]);
 				glVertex3f(pt1[0]+i*delta1,pt1[1]+j*delta2,pt2[2]); }
 		glEnd(); }
-	return; }
-
-#else
-
-void gl2DrawGrid(float *pt1,float *pt2,int *n,int dim) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2DrawGridD */
-#ifdef __gl_h_
-
 void gl2DrawGridD(double *pt1,double *pt2,int *n,int dim) {
+#ifdef __gl_h_
 	double delta1,delta2;
 	int i,j;
 
@@ -800,20 +734,14 @@ void gl2DrawGridD(double *pt1,double *pt2,int *n,int dim) {
 				glVertex3d(pt1[0]+i*delta1,pt1[1]+j*delta2,pt1[2]);
 				glVertex3d(pt1[0]+i*delta1,pt1[1]+j*delta2,pt2[2]); }
 		glEnd(); }
-	return; }
-
-#else
-
-void gl2DrawGridD(double *pt1,double *pt2,int *n,int dim) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2DrawCircle */
-#ifdef __gl_h_
-
 void gl2DrawCircle(float *cent,float radius,int slices,char style,int dim) {
+#ifdef __gl_h_
 	int i;
 	float theta,dtheta;
 
@@ -845,20 +773,14 @@ void gl2DrawCircle(float *cent,float radius,int slices,char style,int dim) {
 		else glVertex3f(cent[0]+radius*cos(theta),cent[1]+radius*sin(theta),cent[2]); }
 	glEnd();
 
-	return; }
-
-#else
-
-void gl2DrawCircle(float *cent,float radius,int slices,char style,int dim) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2DrawCircleD */
-#ifdef __gl_h_
-
 void gl2DrawCircleD(double *cent,double radius,int slices,char style,int dim) {
+#ifdef __gl_h_
 	int i;
 	double theta,dtheta;
 
@@ -889,20 +811,14 @@ void gl2DrawCircleD(double *cent,double radius,int slices,char style,int dim) {
 		if(dim==2) glVertex2d(cent[0]+radius*cos(theta),cent[1]+radius*sin(theta));
 		else glVertex3d(cent[0]+radius*cos(theta),cent[1]+radius*sin(theta),cent[2]); }
 	glEnd();
-	return; }
-
-#else
-
-void gl2DrawCircleD(double *cent,double radius,int slices,char style,int dim) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2DrawArc */
-#ifdef __gl_h_
-
 void gl2DrawArc(float *cent,float radius,float theta1,float theta2,int slices,char style,int dim) {
+#ifdef __gl_h_
 	int i,imax;
 	float theta,dtheta;
 
@@ -926,20 +842,14 @@ void gl2DrawArc(float *cent,float radius,float theta1,float theta2,int slices,ch
 			theta=theta1+i*dtheta;
 			glVertex3f(cent[0]+radius*cos(theta),cent[1]+radius*sin(theta),cent[2]); }
 	glEnd();
-	return; }
-
-#else
-
-void gl2DrawArc(float *cent,float radius,float theta1,float theta2,int slices,char style,int dim) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2DrawArcD */
-#ifdef __gl_h_
-
 void gl2DrawArcD(double *cent,double radius,double theta1,double theta2,int slices,char style,int dim) {
+#ifdef __gl_h_
 	int i,imax;
 	double theta,dtheta;
 
@@ -963,20 +873,14 @@ void gl2DrawArcD(double *cent,double radius,double theta1,double theta2,int slic
 			theta=theta1+i*dtheta;
 			glVertex3d(cent[0]+radius*cos(theta),cent[1]+radius*sin(theta),cent[2]); }
 	glEnd();
-	return; }
-
-#else
-
-void gl2DrawArcD(double *cent,double radius,double theta1,double theta2,int slices,char style,int dim) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2DrawHemisphere */
-#ifdef __gl_h_
-
 void gl2DrawHemisphere(float radius,int slices,int stacks,int frontin,int normals) {
+#ifdef __gl_h_
 	int ilong,ilat,ilong1,ilong2,dilong;
 	float dtheta,dphi,r1,r2,z1,z2,cosphi,sinphi,normfact;
 
@@ -1037,20 +941,14 @@ void gl2DrawHemisphere(float radius,int slices,int stacks,int frontin,int normal
 			glVertex3f(r1*cosphi,r1*sinphi,z1); }}
 	glEnd();
 
-	return; }
-
-#else
-
-void gl2DrawHemisphere(float radius,int slices,int stacks,int frontin,int normals) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2DrawCylinder */
-#ifdef __gl_h_
-
 void gl2DrawCylinder(float baseRadius,float topRadius,float height,int slices,int stacks,int frontin,int normals) {
+#ifdef __gl_h_
 	int ilen,irad,irad1,irad2,dirad;
 	float dtheta,dlen,z1,z2,r1,r2,costheta,sintheta,normxy,normz;
 
@@ -1089,40 +987,28 @@ void gl2DrawCylinder(float baseRadius,float topRadius,float height,int slices,in
 				glVertex3f(r1*costheta,r1*sintheta,z1);
 				glVertex3f(r2*costheta,r2*sintheta,z2); }
 		glEnd(); }
-	return; }
-
-#else
-
-void gl2DrawCylinder(float baseRadius,float topRadius,float height,int slices,int stacks,int frontin,int normals) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2DrawSphere */
-#ifdef __gl_h_
-
 void gl2DrawSphere(float radius,int slices,int stacks,int frontin,int normals) {
+#ifdef __gl_h_
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	gl2DrawHemisphere(radius,slices,stacks/2,frontin,normals);
 	glRotatef(180,1,0,0);
 	gl2DrawHemisphere(radius,slices,stacks/2,frontin,normals);
 	glPopMatrix();
-	return; }
-
-#else
-
-void gl2DrawSphere(float radius,int slices,int stacks,int frontin,int normals) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2DrawEcoli */
-#ifdef __gl_h_
-
 void gl2DrawEcoli(float radius,float length,int slices,int stacks,int frontin,int normals) {
+#ifdef __gl_h_
 	int endstacks;
 
 	endstacks=(int)(radius*PI/2.0/length*stacks);
@@ -1137,21 +1023,44 @@ void gl2DrawEcoli(float radius,float length,int slices,int stacks,int frontin,in
 	glRotatef(180,1,0,0);
 	gl2DrawHemisphere(radius,slices,endstacks,frontin,normals);
 	glPopMatrix();
-	return; }
-
-#else
-
-void gl2DrawEcoli(float radius,float length,int slices,int stacks,int frontin,int normals) {
-	return; }
-
 #endif
+	return; }
+
+
+
+/* gl2DrawTextD */
+void gl2DrawTextD(double x,double y,double *color,void *font,char *string,int align) {
+#ifdef __gl_h_
+	int i,width,length;
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	gluOrtho2D(0,100,0,100);		// defines clipping region as 100 x 100
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+	glColor3dv((GLdouble*)color);
+	glRasterPos2i(x,y);
+	length=strlen(string);
+	if(align>=0) {
+		width=glutBitmapLength(font,(const unsigned char*)string);
+		glBitmap(0,0,0,0,align?-width:-width/2,0,NULL); }
+	for(i=0;i<length;i++)
+		glutBitmapCharacter(font,string[i]);
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+#endif
+	return; }
+
 
 
 /* gl2PlotData */
 // style is 3 characters per data set: style,width,color
-#ifdef __gl_h_
-
 void gl2PlotData(float *xdata,float *ydata,int nx,int nycol,char *style) {
+#ifdef __gl_h_
 	int i,j;
 
 	for(j=0;j<nycol;j++) {
@@ -1183,20 +1092,14 @@ void gl2PlotData(float *xdata,float *ydata,int nx,int nycol,char *style) {
 				glVertex3f(2*xdata[i]-xdata[i-1],ydata[i*nycol+j],0);
 				glVertex3f(2*xdata[i]-xdata[i-1],0,0); }
 			glEnd(); }}
-	return; }
-
-#else
-
-void gl2PlotData(float *xdata,float *ydata,int nx,int nycol,char *style) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2PlotPts */
-#ifdef __gl_h_
-
 void gl2PlotPts(float **data,int *ser,int nser,int npts,float **color,float *size,char style) {
+#ifdef __gl_h_
 	int i,j;
 
 	if(style==' ');
@@ -1229,20 +1132,14 @@ void gl2PlotPts(float **data,int *ser,int nser,int npts,float **color,float *siz
 						glTranslatef(data[i][0],data[i][1],data[i][2]);
 						glutSolidSphere(size[j],15,15);
 						glPopMatrix(); }}}}
-	return; }
-
-#else
-
-void gl2PlotPts(float **data,int *ser,int nser,int npts,float **color,float *size,char style) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2PlotPtsD */
-#ifdef __gl_h_
-
 void gl2PlotPtsD(double **data,int *ser,int nser,int npts,double **color,double *size,char style) {
+#ifdef __gl_h_
 	int i,j;
 
 	if(style==' ');
@@ -1275,20 +1172,14 @@ void gl2PlotPtsD(double **data,int *ser,int nser,int npts,double **color,double 
 						glTranslated(data[i][0],data[i][1],data[i][2]);
 						glutSolidSphere(size[j],15,15);
 						glPopMatrix(); }}}}
-	return; }
-
-#else
-
-void gl2PlotPtsD(double **data,int *ser,int nser,int npts,double **color,double *size,char style) {
-	return; }
-
 #endif
+	return; }
+
 
 
 /* gl2PlotSurf */
-#ifdef __gl_h_
-
 void gl2PlotSurf(float *xdata,float *ydata,float **zdata,int nx,int ny,int nz,char *style) {
+#ifdef __gl_h_
 	int ix,iy,iz,ic;
 	float dxlo,dxhi,dylo,dyhi;
 	float col1[64][4],col2[4];
@@ -1320,14 +1211,9 @@ void gl2PlotSurf(float *xdata,float *ydata,float **zdata,int nx,int ny,int nz,ch
 				glColor4fv(col2);
 				glRectf(xdata[ix]-dxlo,ydata[iy]-dylo,xdata[ix]+dxhi,ydata[iy]+dyhi); }}}
 
-	return; }
-
-#else
-
-void gl2PlotSurf(float *xdata,float *ydata,float **zdata,int nx,int ny,int nz,char *style) {
-	return; }
-
 #endif
+	return; }
+
 
 
 

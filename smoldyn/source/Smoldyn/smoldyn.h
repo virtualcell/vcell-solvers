@@ -57,6 +57,7 @@ typedef struct molsuperstruct {
 	double ***color;						// RGB color vector [i][ms]
 	int **exist;								// flag for if molecule could exist [i][ms]
 	moleculeptr *dead;					// list of dead molecules [m]
+	int maxdlimit;							// maximum allowed size of dead list
 	int maxd;										// size of dead molecule list
 	int nd;											// total number of molecules in dead list
 	int topd;										// index for dead list; above are resurrected
@@ -197,6 +198,7 @@ typedef struct surfacesuperstruct {
 	int maxsrf;									// maximum number of surfaces
 	int nsrf;										// number of surfaces
 	double epsilon;							// max deviation of surface-point from surface
+	double margin;							// panel margin away from edge
 	double neighdist;						// neighbor distance value
 	char **snames;							// surface names [s]
 	surfaceptr *srflist;				// list of surfaces [s]
@@ -264,13 +266,14 @@ typedef struct compartsuperstruct {
 	struct simstruct *sim;			// simulation structure
 	int maxcmpt;								// maximum number of compartments
 	int ncmpt;									// actual number of compartments
-	char **cnames;							// compartment names
-	compartptr *cmptlist;				// list of compartments
+	char **cnames;							// compartment names [c]
+	compartptr *cmptlist;				// list of compartments [c]
 	} *compartssptr;
 
 /*********************************** Ports **********************************/
 
 typedef struct portstruct {
+	struct portsuperstruct *portss;	// port superstructure
 	char *portname;							// port name (reference, not owned)
 	surfaceptr srf;							// porting surface (ref.)
 	enum PanelFace face;				// active face of porting surface
@@ -355,6 +358,10 @@ typedef struct graphicssuperstruct {
 	double framecolor[4];				// frame color [c]
 	double gridcolor[4];				// grid color [c]
 	double backcolor[4];				// background color [c]
+	double textcolor[4];				// text color [c]
+	int maxtextitems;						// allocated size of item list
+	int ntextitems;							// actual size of item list
+	char **textitems;						// items to display with text [item]
 	enum LightParam roomstate;	// on, off, or auto (on)
 	GLfloat ambiroom[4];				// global ambient light [c]
 	enum LightParam lightstate[MAXLIGHTS];	// on, off, or auto (off) [lt]
@@ -427,7 +434,7 @@ char *molmlt2string(enum MolListType mlt,char *string);
 int readmolname(simptr sim,char *str,enum MolecState *msptr);
 char *molpos2string(simptr sim,moleculeptr mptr,char *string);
 void molchangeident(simptr sim,moleculeptr mptr,int ll,int m,int i,enum MolecState ms,panelptr pnl);
-int molssetgausstable(molssptr mols,int size);
+int molssetgausstable(simptr sim,int size);
 void molsetdifc(simptr sim,int ident,enum MolecState ms,double difc);
 int molsetdifm(simptr sim,int ident,enum MolecState ms,double *difm);
 int molsetdrift(simptr sim,int ident,enum MolecState ms,double *drift);
@@ -441,7 +448,7 @@ double MolCalcDifcSum(simptr sim,int i1,enum MolecState ms1,int i2,enum MolecSta
 // memory management
 moleculeptr molalloc(int dim);
 void molfree(moleculeptr mptr);
-molssptr molssalloc(int maxspecies);
+molssptr molssalloc(molssptr mols,int maxspecies);
 int mollistalloc(molssptr mols,int maxlist,enum MolListType mlt);
 int molexpandlist(molssptr mols,int dim,int ll,int nspaces,int nmolecs);
 void molssfree(molssptr mols);
@@ -453,15 +460,16 @@ void writemolecules(simptr sim,FILE *fptr);
 int checkmolparams(simptr sim,int *warnptr);
 
 // structure setup
+int molenablemols(simptr sim,int maxspecies);
 void molsetcondition(molssptr mols,enum StructCond cond,int upgrade);
-int addmollist(simptr sim,char *nm,enum MolListType mlt);
+int addmollist(simptr sim,const char *nm,enum MolListType mlt);
 int molsetmaxspecies(simptr sim,int max);
 int molsetmaxmol(simptr sim,int max);
-int moladdspecies(simptr sim,char *nm);
+int moladdspecies(simptr sim,const char *nm);
 int molsetexpansionflag(simptr sim,int i,int flag);
-void molsettimestep(molssptr mols,double dt);
-void molcalcparams(molssptr mols,double dt);
-int setupmols(simptr sim);
+int molsupdateparams(molssptr mols,double dt);
+int molsupdatelists(simptr sim);
+int molsupdate(simptr sim);
 
 // adding and removing molecules
 void molkill(simptr sim,moleculeptr mptr,int ll,int m);
@@ -501,6 +509,7 @@ int checkwallparams(simptr sim,int *warnptr);
 
 // structure setup
 int walladd(simptr sim,int d,int highside,double pos,char type);
+int wallsettype(simptr sim,int d,int highside,char type);
 
 // core simulation functions
 int checkwalls_threaded(simptr sim,int ll,int reborn,boxptr bptr);//?? change
@@ -541,18 +550,18 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr);
 int rxnsetproducts(simptr sim,int order,char *erstr);
 double rxncalcrate(simptr sim,int order,int r,double *pgemptr);
 void rxncalctau(simptr sim,int order);
-int rxnsettimestep(simptr sim);
 
 // structure set up
 void rxnsetcondition(simptr sim,int order,enum StructCond cond,int upgrade);
-int rxnsetmollist(simptr sim,int order);
 int RxnSetValue(simptr sim,char *option,rxnptr rxn,double value);
 int RxnSetRevparam(simptr sim,rxnptr rxn,enum RevParam rparamt,double rparam,int prd,double *pos,int dim);
 void RxnSetPermit(simptr sim,rxnptr rxn,int order,enum MolecState *rctstate,int value);
-rxnptr RxnAddReaction(simptr sim,char *rname,int order,int *rctident,enum MolecState *rctstate,int nprod,int *prdident,enum MolecState *prdstate,compartptr cmpt,surfaceptr srf);
+rxnptr RxnAddReaction(simptr sim,const char *rname,int order,int *rctident,enum MolecState *rctstate,int nprod,int *prdident,enum MolecState *prdstate,compartptr cmpt,surfaceptr srf);
 rxnptr RxnAddReactionCheck(simptr sim,char *rname,int order,int *rctident,enum MolecState *rctstate,int nprod,int *prdident,enum MolecState *prdstate,compartptr cmpt,surfaceptr srf,char *erstr);
 int loadrxn(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr);
-int setuprxns(simptr sim);
+int rxnsupdateparams(simptr sim);
+int rxnsupdatelists(simptr sim,int order);
+int rxnsupdate(simptr sim);
 
 // core simulation functions
 int doreact(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int ll1,int m1,int ll2,int m2,double *pos,panelptr pnl);
@@ -613,9 +622,10 @@ int checksurfaceparams(simptr sim,int *warnptr);
 
 // structure set up
 int surfenablesurfaces(simptr sim,int maxsurf);
-surfaceptr surfaddsurface(simptr sim,char *surfname);
+surfaceptr surfaddsurface(simptr sim,const char *surfname);
 void surfsetcondition(surfacessptr surfss,enum StructCond cond,int upgrade);
 int surfsetepsilon(simptr sim,double epsilon);
+int surfsetmargin(simptr sim,double margin);
 int surfsetneighdist(simptr sim,double neighdist);
 int surfsetcolor(surfaceptr srf,enum PanelFace face,double *rgba);
 int surfsetedgepts(surfaceptr srf,double value);
@@ -625,7 +635,7 @@ int surfsetshiny(surfaceptr srf,enum PanelFace face,double shiny);
 int surfsetaction(surfaceptr srf,int i,enum MolecState ms,enum PanelFace face,enum SrfAction act);
 int surfsetrate(surfaceptr srf,int ident,enum MolecState ms,enum MolecState ms1,enum MolecState ms2,int newident,double value,int which);
 int surfsetmaxpanel(surfaceptr srf,int dim,enum PanelShape ps,int maxpanel);
-int surfaddpanel(surfaceptr srf,int dim,enum PanelShape ps,char *string,double *params,char *name);
+int surfaddpanel(surfaceptr srf,int dim,enum PanelShape ps,const char *string,double *params,const char *name);
 int surfsetemitterabsorption(simptr sim);
 int surfsetjumppanel(surfaceptr srf,panelptr pnl1,enum PanelFace face1,int bidirect,panelptr pnl2,enum PanelFace face2);
 double srfcalcrate(simptr sim,surfaceptr srf,int i,enum MolecState ms1,enum PanelFace face,enum MolecState ms2);
@@ -636,6 +646,7 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 int loadsurface(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr);
 int surfupdateparams(simptr sim);
 int surfupdatelists(simptr sim);
+int surfupdate(simptr sim);
 
 // core simulation functions
 enum PanelFace panelside(double* pt,panelptr pnl,int dim,double *distptr);
@@ -645,9 +656,9 @@ int ptinpanel(double *pt,panelptr pnl,int dim);
 enum SrfAction surfaction(surfaceptr srf,enum PanelFace face,int ident,enum MolecState ms,int *i2ptr,enum MolecState *ms2ptr);
 int rxnXsurface(simptr sim,moleculeptr mptr1,moleculeptr mptr2);
 void fixpt2panel(double *pt,panelptr pnl,int dim,enum PanelFace face,double epsilon);
-void movept2panel(double *pt,panelptr pnl,int dim);
+void movept2panel(double *pt,panelptr pnl,int dim,double margin);
 double closestpanelpt(panelptr pnl,int dim,double *testpt,double *pnlpt);
-void movemol2closepanel(simptr sim,moleculeptr mptr,int dim,double epsilon,double neighdist);
+void movemol2closepanel(simptr sim,moleculeptr mptr,int dim,double epsilon,double neighdist,double margin);
 void surfacereflect(moleculeptr mptr,panelptr pnl,double *crsspt,int dim,enum PanelFace face);
 int surfacejump(moleculeptr mptr,panelptr pnl,double *crsspt,enum PanelFace face,int dim);
 int dosurfinteract(simptr sim,moleculeptr mptr,int ll,int m,panelptr pnl,enum PanelFace face,double *crsspt);
@@ -684,7 +695,9 @@ int checkboxparams(simptr sim,int *warnptr);
 // structure set up
 void boxsetcondition(boxssptr boxs,enum StructCond cond,int upgrade);
 int boxsetsize(simptr sim,char *info,double val);
-int setupboxes(simptr sim);
+int boxesupdateparams(simptr sim);
+int boxesupdatelists(simptr sim);
+int boxesupdate(simptr sim);
 
 // core simulation functions
 boxptr line2nextbox(simptr sim,double *pt1,double *pt2,boxptr bptr);
@@ -693,8 +706,8 @@ int reassignmolecs(simptr sim,int diffusing,int reborn);
 /******************************* Compartments *******************************/
 
 // enumerated types
-enum CmptLogic cmptstring2cl(char *string);
-char *cmptcl2string(enum CmptLogic cls,char *string);
+enum CmptLogic compartstring2cl(char *string);
+char *compartcl2string(enum CmptLogic cls,char *string);
 
 // low level utilities
 int posincompart(simptr sim,double *pos,compartptr cmpt);
@@ -703,7 +716,7 @@ int compartrandpos(simptr sim,double *pos,compartptr cmpt);
 // memory management
 compartptr compartalloc(void);
 void compartfree(compartptr cmpt);
-compartssptr compartssalloc(int maxcmpt);
+compartssptr compartssalloc(compartssptr cmptss,int maxcmpt);
 void compartssfree(compartssptr cmptss);
 
 // data structure output
@@ -713,20 +726,24 @@ int checkcompartparams(simptr sim,int *warnptr);
 
 // structure set up
 void compartsetcondition(compartssptr cmptss,enum StructCond cond,int upgrade);
+int compartenablecomparts(simptr sim,int maxcmpt);
+compartptr compartaddcompart(simptr sim,const char *cmptname);
 int compartaddsurf(compartptr cmpt,surfaceptr srf);
 int compartaddpoint(compartptr cmpt,int dim,double *point);
 int compartaddcmptl(compartptr cmpt,compartptr cmptl,enum CmptLogic sym);
 int compartupdatebox(simptr sim,compartptr cmpt,boxptr bptr,double volfrac);
-int cmptreadstring(simptr sim,int cmptindex,char *word,char *line2,char *erstr);
+compartptr compartreadstring(simptr sim,compartptr cmpt,char *word,char *line2,char *erstr);
 int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr);
-int setupcomparts(simptr sim);
+int compartsupdateparams(simptr sim);
+int compartsupdatelists(simptr sim);
+int compartsupdate(simptr sim);
 
 /*********************************** Ports **********************************/
 
 // memory management
 portptr portalloc(void);
 void portfree(portptr port);
-portssptr portssalloc(int maxport);
+portssptr portssalloc(portssptr portss,int maxport);
 void portssfree(portssptr portss);
 
 // data structure output
@@ -736,13 +753,16 @@ int checkportparams(simptr sim,int *warnptr);
 
 // structure set up
 void portsetcondition(portssptr portss,enum StructCond cond,int upgrade);
-portptr addport(portssptr portss,char *portname,surfaceptr srf,enum PanelFace face);
-int portreadstring(simptr sim,int portindex,char *word,char *line2,char *erstr);
+int portenableports(simptr sim,int maxport);
+portptr portaddport(simptr sim,const char *portname,surfaceptr srf,enum PanelFace face);
+portptr portreadstring(simptr sim,portptr port,char *word,char *line2,char *erstr);
 int loadport(simptr sim,ParseFilePtr *pfpptr,char* line2,char *erstr);
-int setupports(simptr sim);
+int portsupdateparams(simptr sim);
+int portsupdatelists(simptr sim);
+int portsupdate(simptr sim);
 
 // core simulation functions
-int portgetmols(simptr sim,portptr port,int ident,enum MolecState ms);
+int portgetmols(simptr sim,portptr port,int ident,enum MolecState ms,int remove);
 int portputmols(simptr sim,portptr port,int nmol,int ident);
 int porttransport(simptr sim1,portptr port1,simptr sim2,portptr port2);
 
@@ -808,7 +828,7 @@ stack* alloc_stack(); // Creates a new stack
 void free_stack(stack* pStack); // Frees the stack
 void push_data_onto_stack(stack* pStack, void* data, size_t data_size);
 void clear_stack(stack* pStack);
-threadssptr alloc_threadss(int numberOfThreads);
+threadssptr alloc_threadss(int number);
 int calculatestride(int total_number, int number_threads);
 
 /********************************* Graphics *********************************/
@@ -830,11 +850,13 @@ void writegraphss(simptr sim,FILE *fptr);
 int checkgraphicsparams(simptr sim,int *warnptr);
 
 // structure setup
+int graphicssettextitem(simptr sim,char *itemname);
 void graphicssetlight(graphicsssptr graphss,int lt,enum LightParam ltparam,double *value);
 
 // core simulation functions
 void RenderSurfaces(simptr sim);
 void RenderMolecs(simptr sim);
+void RenderText(simptr sim);
 void RenderSim(simptr sim);
 
 /********************************* Commands *********************************/
@@ -853,11 +875,12 @@ char *simsc2string(enum StructCond sc,char *string);
 void Simsetrandseed(simptr sim,long int randseed);
 
 // memory management
-simptr simalloc(char *root);
+simptr simalloc(const char *root);
 void simfree(simptr sim);
 
 // data structure output
 void simoutput(simptr sim);
+void simsystemoutput(simptr sim);
 void writesim(simptr sim,FILE *fptr);
 void checksimparams(simptr sim);
 
@@ -866,10 +889,10 @@ int simsetpthreads(simptr sim,int number);
 void simsetcondition(simptr sim,enum StructCond cond,int upgrade);
 int simsetdim(simptr sim,int dim);
 int simsettime(simptr sim,double time,int code);
-int simreadstring(simptr sim,char *word,char *line2,char *erstr);
-int loadsim(simptr sim,char *fileroot,char *filename,char *erstr,char *flags);
+int simreadstring(simptr sim,const char *word,char *line2,char *erstr);
+int loadsim(simptr sim,const char *fileroot,const char *filename,char *erstr,const char *flags);
 int simupdate(simptr sim,char *erstr);
-int setupsim(char *root,char *filename,simptr *smptr,char *flags);
+int setupsim(const char *root,const char *filename,simptr *smptr,const char *flags);
 
 // core simulation functions
 int simdocommands(simptr sim);

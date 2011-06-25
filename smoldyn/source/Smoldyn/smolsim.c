@@ -1,5 +1,5 @@
 /* Steven Andrews, started 10/22/2001.
-This is a library of functions for the Smoldyn program.  See documentation
+ This is a library of functions for the Smoldyn program.  See documentation
  called Smoldyn_doc1.pdf and Smoldyn_doc2.pdf.
  Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
  of the Gnu General Public License (GPL). */
@@ -30,9 +30,7 @@ This is a library of functions for the Smoldyn program.  See documentation
 /******************************************************************************/
 
 
-/* simstring2ss.  Returns the enumerated simulation structure type that
-corresponds to the string input.  Returns SSnone if input is ÒnoneÓ or if it is
-not recognized. */
+/* simstring2ss */
 enum SmolStruct simstring2ss(char *string) {
 	enum SmolStruct ans;
 
@@ -51,9 +49,7 @@ enum SmolStruct simstring2ss(char *string) {
 	return ans; }
 
 
-/* simss2string.  Returns the string that corresponds to the enumerated
-simulation structure input in string, which needs to be pre-allocated.  The
-address of the string is returned to allow for function nesting. */
+/* simss2string */
 char *simss2string(enum SmolStruct ss,char *string) {
 	if(ss==SSmolec) strcpy(string,"molecule");
 	else if(ss==SSwall) strcpy(string,"wall");
@@ -70,14 +66,12 @@ char *simss2string(enum SmolStruct ss,char *string) {
 	return string; }
 
 
-/* simsc2string.  Returns the string that corresponds to the enumerated
-structure condition input in string, which needs to be pre-allocated.  The
-address of the string is returned to allow for function nesting. */
+/* simsc2string */
 char *simsc2string(enum StructCond sc,char *string) {
 	if(sc==SCinit) strcpy(string,"not initialized");
 	else if(sc==SClists) strcpy(string,"lists need updating");
 	else if(sc==SCparams) strcpy(string,"parameters need updating");
-	else if(sc==SCok) strcpy(string,"ok");
+	else if(sc==SCok) strcpy(string,"fully updated");
 	else strcpy(string,"none");
 	return string; }
 
@@ -86,8 +80,7 @@ char *simsc2string(enum StructCond sc,char *string) {
 /****************************** low level utilities ***************************/
 /******************************************************************************/
 
-/* Simsetrandseed.  This sets the random number seed to randseed in the
-simulation structure and for the random number generator. */
+/* Simsetrandseed */
 void Simsetrandseed(simptr sim,long int randseed) {
 	if(!sim) return;
 	sim->randseed=randomize(randseed);
@@ -99,7 +92,7 @@ void Simsetrandseed(simptr sim,long int randseed) {
 /******************************************************************************/
 
 /* simalloc */
-simptr simalloc(char *fileroot) {
+simptr simalloc(const char *fileroot) {
   simptr sim;
   int order;
 	enum EventType et;
@@ -144,9 +137,7 @@ simptr simalloc(char *fileroot) {
 	return NULL; }
 
 
-
-/* simfree frees a simulation strucutre, including every part of everything in
-it. */
+/* simfree */
 void simfree(simptr sim) {
 	int dim,order;
 
@@ -175,22 +166,25 @@ void simfree(simptr sim) {
 /***************************** data structure output **************************/
 /******************************************************************************/
 
-/* simoutput prints out the overall simulation parameters, including simulation
-time information, graphics information, the number of dimensions, what the
-molecule types are, the output files, and the accuracy. */
+/* simoutput */
 void simoutput(simptr sim) {
+	int vflag;
+
+	vflag=strchr(sim->flags,'v')?1:0;
+	
 	printf("SIMULATION PARAMETERS\n");
 	if(!sim) {
 		printf(" No simulation parameters\n\n");
 		return; }
-	printf(" file: %s%s\n",sim->filepath,sim->filename);
+	if(sim->filename[0]!='\0')
+		printf(" file: %s%s\n",sim->filepath,sim->filename);
 	printf(" starting clock time: %s",ctime(&sim->clockstt));
 	printf(" %i dimensions\n",sim->dim);
-	printf(" Accuracy level: %g\n",sim->accur);
+	if(sim->accur<10 || vflag) printf(" Accuracy level: %g\n",sim->accur);
 	printf(" Random number seed: %li\n",sim->randseed);
-	
+
 	if(sim->threads) printf(" Using threading with %d threads\n",sim->threads->nthreads);
-	else printf(" Running in single-threaded mode\n");
+	else if(vflag) printf(" Running in single-threaded mode\n");
 	
 	printf(" Time from %g to %g step %g\n",sim->tmin,sim->tmax,sim->dt);
 	if(sim->time!=sim->tmin) printf(" Current time: %g\n",sim->time);
@@ -198,9 +192,26 @@ void simoutput(simptr sim) {
 	return; }
 
 
-/* writesim.  Writes all information about the simulation structure, but not its
-substructures, to the file fptr using a format that can be read by Smoldyn.
-This allows a simulation state to be saved. */
+/* simsystemoutput */
+void simsystemoutput(simptr sim) {
+	int order;
+
+	simoutput(sim);
+	graphssoutput(sim);
+	walloutput(sim);
+	molssoutput(sim);
+	surfaceoutput(sim);
+	scmdoutput(sim->cmds);
+	boxssoutput(sim);
+	for(order=0;order<MAXORDER;order++)
+		rxnoutput(sim,order);
+	compartoutput(sim);
+	portoutput(sim);
+	mzrssoutput(sim);
+	return; }
+
+
+/* writesim */
 void writesim(simptr sim,FILE *fptr) {
 	fprintf(fptr,"# General simulation parameters\n");
 	fprintf(fptr,"# Configuration file: %s%s\n",sim->filepath,sim->filename);
@@ -228,10 +239,7 @@ void printfException(const char* format, ...) {
 	throw message;
 }
 
-/* checksimparams checks that the simulation parameters, including parameters of
-sub-structures, have reasonable values.  If values seem to be too small or too
-large, a warning is displayed to the standard output, although this does not
-affect continuation of the program. */
+/* checksimparams */
 void checksimparams(simptr sim) {
 	int warn,error,warndiff;
 	char string[STRCHAR];
@@ -268,7 +276,7 @@ void checksimparams(simptr sim) {
 
 
 
-/* simsetpthreads.  Returns number of threads, or 0 for unthreaded. */
+/* simsetpthreads */
 int simsetpthreads(simptr sim,int number) {
 #ifndef THREADING
 	number=0;
@@ -305,9 +313,7 @@ int simsetpthreads(simptr sim,int number) {
 	return number; }
 
 
-/* simsetcondition.  Sets the simulation structure condition to cond, if
-appropriate.  Set upgrade to 1 if this is an upgrade, to 0 if this is a
-downgrade, or to 2 to set the condition independent of its current value. */
+/* simsetcondition */
 void simsetcondition(simptr sim,enum StructCond cond,int upgrade) {
 	if(!sim) return;
 	if(upgrade==0 && sim->condition>cond) sim->condition=cond;
@@ -316,9 +322,7 @@ void simsetcondition(simptr sim,enum StructCond cond,int upgrade) {
 	return; }
 
 
-/* simsetdim.  Sets the simulation dimensionality.  Returns 0 for success, 2 if
-it had already been set (itÕs only allowed to be set once), or 3 if the
-requested dimensionality is not between 1 and 3. */
+/* simsetdim */
 int simsetdim(simptr sim,int dim) {
 	if(sim->dim!=0) return 2;
 	if(dim<1 || dim>DIMMAX) return 3;
@@ -326,10 +330,7 @@ int simsetdim(simptr sim,int dim) {
 	return 0; }
 
 
-/* simsettime.  Sets the appropriate simulation time parameter to time.  Enter
-code as 0 to set the current time, 1 to set the starting time, 2 to set the
-stopping time, or 3 to set the time step.  Returns 0 for success, 1 if an
-illegal code was entered, or 2 if a negative or zero time step was entered. */
+/* simsettime */
 int simsettime(simptr sim,double time,int code) {
 	int er;
 
@@ -349,7 +350,7 @@ int simsettime(simptr sim,double time,int code) {
 
 
 /* simreadstring */
-int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
+int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 	char nm[STRCHAR],nm1[STRCHAR],shapenm[STRCHAR],ch,rname[STRCHAR],errstring[STRCHAR];
 	int er,dim,i,nmol,d,i1,s,c,ll,order,more,rctident[MAXORDER],nprod,prdident[MAXPRODUCT],r,ord,prd,itct,prt,lt;
 	double flt1,flt2,v1[DIMMAX*DIMMAX],v2[4],poslo[DIMMAX],poshi[DIMMAX];
@@ -360,6 +361,7 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 	rxnptr rxn;
 	compartptr cmpt;
 	surfaceptr srf;
+	portptr port;
 	graphicsssptr graphss;
 	long int li1;
 
@@ -450,24 +452,16 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 	else if(!strcmp(word,"max_species") || !strcmp(word,"max_names")) {		// max_species, max_names
 		itct=sscanf(line2,"%i",&i1);
 		CHECKS(itct==1,"max_species needs to be an integer");
-		er=molsetmaxspecies(sim,i1);
+		er=molenablemols(sim,i1);
 		CHECKS(er!=1,"out of memory");
-		CHECKS(er!=2,"max_species can only be entered once, and not after species");
-		CHECKS(er!=3,"max_species needs to be at least 0");
+		CHECKS(er!=2,"cannot decrease the number of allocated species");
 		CHECKS(!strnword(line2,2),"unexpected text following max_species"); }
 
 	else if(!strcmp(word,"species") || !strcmp(word,"names") || !strcmp(word,"name")) {// species, names, name
-		if(!sim->mols) {
-			i1=wordcount(line2);
-			er=molsetmaxspecies(sim,i1);
-			CHECKS(er!=1,"out of memory");
-			CHECKS(er==0,"SMOLDYN BUG: species"); }
 		while(line2) {
 			itct=sscanf(line2,"%s",nm);
 			CHECKS(itct==1,"failed to read species name");
 			er=moladdspecies(sim,nm);
-			CHECKS(er!=-2,"SMOLDYN BUG: add species");
-			CHECKS(er!=-3,"more species are entered than were allocated with max_species");
 			CHECKS(er!=-4,"'empty' is not a permitted species name");
 			CHECKS(er!=-5,"this species has already been declared");
 			line2=strnword(line2,2); }}
@@ -477,9 +471,7 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 		CHECKS(itct==1,"max_mol needs to be an integer");
 		er=molsetmaxmol(sim,i1);
 		CHECKS(er!=1,"out of memory");
-		CHECKS(er!=2,"need to enter dim before max_mol");
-		CHECKS(er!=3,"need to enter max_species before max_mol");
-		CHECKS(er!=4,"max_mol needs to be >0");
+		CHECKS(er!=5,"more molecule already exist than are requested with max_mol");
 		CHECKS(!strnword(line2,2),"unexpected text following max_mol"); }
 
 	else if(!strcmp(word,"difc")) {								// difc
@@ -490,6 +482,7 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 		CHECKS(i!=-2,"mismatched or improper parentheses around molecule state");
 		CHECKS(i!=-3,"cannot read molecule state value");
 		CHECKS(i!=-4,"molecule name not recognized");
+		CHECKS(ms<MSMAX || ms==MSall,"invalid state");
 		CHECKS(line2=strnword(line2,2),"missing data for difc");
 		itct=sscanf(line2,"%lg",&flt1);
 		CHECKS(itct==1,"diffusion coefficient value cannot be read");
@@ -505,6 +498,7 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 		CHECKS(i!=-2,"mismatched or improper parentheses around molecule state");
 		CHECKS(i!=-3,"cannot read molecule state value");
 		CHECKS(i!=-4,"molecule name not recognized");
+		CHECKS(ms<MSMAX || ms==MSall,"invalid state");
 		CHECKS(line2=strnword(line2,2),"missing matrix in difm");
 		itct=strreadnd(line2,dim*dim,v1,NULL);
 		CHECKS(itct==dim*dim,"incomplete matrix in difm");
@@ -519,6 +513,7 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 		CHECKS(i!=-2,"mismatched or improper parentheses around molecule state");
 		CHECKS(i!=-3,"cannot read molecule state value");
 		CHECKS(i!=-4,"molecule name not recognized");
+		CHECKS(ms<MSMAX || ms==MSall,"invalid state");
 		CHECKS(line2=strnword(line2,2),"missing vector in drift");
 		itct=strreadnd(line2,dim,v1,NULL);
 		CHECKS(itct==dim,"incomplete vector in drift");
@@ -527,7 +522,6 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 
 	else if(!strcmp(word,"mol")) {								// mol
 		CHECKS(sim->mols,"need to enter species before mol");
-		CHECKS(sim->mols->maxd>0,"need to enter max_mol before mol");
 		itct=sscanf(line2,"%i %s",&nmol,nm);
 		CHECKS(itct==2,"mol format: number name position_vector");
 		CHECKS(nmol>=0,"number of molecules added needs to be >=0");
@@ -551,12 +545,12 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 					itct=sscanf(line2,"%lg",&flt1);
 					CHECKS(itct==1,"cannot read position value for mol");
 					poslo[d]=poshi[d]=flt1; }}}
-		CHECKS(addmol(sim,nmol,i,poslo,poshi,0)==0,"more molecules assigned than allocated");
+		er=addmol(sim,nmol,i,poslo,poshi,0);
+		CHECKS(!er,"more molecules assigned than permitted with max_mol");
 		CHECKS(!strnword(line2,2),"unexpected text following mol"); }
 
 	else if(!strcmp(word,"surface_mol")) {				// surface_mol
 		CHECKS(sim->mols,"need to enter species before surface_mol");
-		CHECKS(sim->mols->maxd>0,"need to enter max_mol before surface_mol");
 		CHECKS(sim->srfss,"surfaces need to be defined before surface_mol statement");
 		CHECKS(sim->srfss->nsrf>0,"at least one surface needs to be defined before surface_mol");
 		itct=sscanf(line2,"%i",&nmol);
@@ -587,18 +581,17 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 			er=addsurfmol(sim,nmol,i,ms,v1,NULL,s,ps,nm1);
 			CHECKS(er!=1,"in surface_mol, unable to allocate temporary storage space");
 			CHECKS(er!=2,"in surface_mol, panel name not recognized");
-			CHECKS(er!=3,"not enough available molecules");
+			CHECKS(er!=3,"not enough molecules permitted by max_mol");
 			line2=strnword(line2,dim+1); }
 		else {
 			er=addsurfmol(sim,nmol,i,ms,NULL,NULL,s,ps,nm1);
 			CHECKS(er!=1,"in surface_mol, unable to allocate temporary storage space");
 			CHECKS(er!=2,"in surface_mol, no panels match the given description");
-			CHECKS(er!=3,"not enough available molecules"); }
+			CHECKS(er!=3,"not enough molecules permitted by max_mol"); }
 		CHECKS(!line2,"unexpected text following surface_mol"); }
 
 	else if(!strcmp(word,"compartment_mol")) {		// compartment_mol
 		CHECKS(sim->mols,"need to enter species before compartment_mol");
-		CHECKS(sim->mols->maxd>0,"need to enter max_mol before compartment_mol");
 		CHECKS(sim->cmptss,"compartments need to be defined before compartment_mol statement");
 		CHECKS(sim->cmptss->ncmpt>0,"at least one compartment needs to be defined before compartment_mol");
 		itct=sscanf(line2,"%i",&nmol);
@@ -619,11 +612,10 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 		CHECKS(c>=0,"compartment name is not recognized");
 		er=addcompartmol(sim,nmol,i,sim->cmptss->cmptlist[c]);
 		CHECKS(er!=2,"compartment volume is zero or nearly zero");
-		CHECKS(er!=3,"not enough allocated molecules");
+		CHECKS(er!=3,"not enough molecules permitted by max_mol");
 		CHECKS(!strnword(line2,2),"unexpected text following compartment_mol"); }
 
 	else if(!strcmp(word,"molecule_lists")) {			// molecule_lists
-		CHECKS(sim->mols,"need to enter max_species before molecule_lists");
 		while(line2) {
 			itct=sscanf(line2,"%s",nm);
 			CHECKS(itct==1,"unable to read molecule list name");
@@ -635,13 +627,13 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 		CHECKS(!line2,"unexpected text following molecule_lists"); }
 
 	else if(!strcmp(word,"mol_list")) {						// mol_list
-		CHECKS(sim->mols,"need to enter species before mol_list");
-		CHECKS(sim->mols->nlist>0,"need to enter molecule_lists before mol_list");
+		CHECKS(sim->mols && sim->mols->nlist>0,"need to enter molecule_lists before mol_list");
 		i=readmolname(sim,line2,&ms);
 		CHECKS(i!=0,"empty molecules not permitted");
 		CHECKS(i!=-1,"mol_list format: name[(state)] list_name");
 		CHECKS(i!=-2,"mismatched or improper parentheses around molecule state");
 		CHECKS(i!=-3,"cannot read molecule state value");
+		CHECKS(ms<MSMAX || ms==MSall,"invalid state");
 		if(i==-4) {
 			ms=MSall;
 			itct=sscanf(line2,"%s",nm);
@@ -749,6 +741,31 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 		graphss->backcolor[2]=v2[2];
 		graphss->backcolor[3]=v2[3];
 		CHECKS(!line2,"unexpected text following background_color"); }
+	
+	else if(!strcmp(word,"text_color")) {		// text_color
+		CHECKS(sim->graphss,"graphics needs to be entered before text_color");
+		graphss=sim->graphss;
+		er=graphicsreadcolor(&line2,v2);
+		CHECKS(er!=3,"color values need to be between 0 and 1");
+		CHECKS(er!=4,"color name not recognized");
+		CHECKS(er!=6,"alpha values need to be between 0 and 1");
+		CHECKS(er==0,"format is either 3 numbers or color name, and then optional alpha value");
+		graphss->textcolor[0]=v2[0];
+		graphss->textcolor[1]=v2[1];
+		graphss->textcolor[2]=v2[2];
+		graphss->textcolor[3]=v2[3];
+		CHECKS(!line2,"unexpected text following textground_color"); }
+
+	else if(!strcmp(word,"text_display")) {				// text_display
+		CHECKS(sim->graphss,"graphics needs to be entered before text_display");
+		while(line2) {
+			itct=sscanf(line2,"%s",nm);
+			CHECKS(itct==1,"error reading text_display item");
+			er=graphicssettextitem(sim,nm);
+			CHECKS(er!=1,"out of memory");
+			CHECKS(er!=2,"unrecognized text display item (check that species have been defined)");
+			line2=strnword(line2,2); }
+		CHECKS(!line2,"unexpected text following text_display"); }
 
 	else if(!strcmp(word,"light")) {							// light
 		CHECKS(sim->graphss,"graphics needs to be entered before light");
@@ -791,6 +808,7 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 		CHECKS(i!=-2,"mismatched or improper parentheses around molecule state");
 		CHECKS(i!=-3,"cannot read molecule state value");
 		CHECKS(i!=-4,"molecule name not recognized");
+		CHECKS(ms<MSMAX || ms==MSall,"invalid state");
 		CHECKS(line2=strnword(line2,2),"missing data for display_size");
 		itct=sscanf(line2,"%lg",&flt1);
 		CHECKS(itct==1,"display_size format: name [state] size");
@@ -806,6 +824,7 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 		CHECKS(i!=-2,"mismatched or improper parentheses around molecule state");
 		CHECKS(i!=-3,"cannot read molecule state value");
 		CHECKS(i!=-4,"molecule name not recognized");
+		CHECKS(ms<MSMAX || ms==MSall,"invalid state");
 		line2=strnword(line2,2);
 		er=graphicsreadcolor(&line2,v2);
 		CHECKS(er!=3,"color values need to be between 0 and 1");
@@ -857,7 +876,7 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 		CHECKS(er!=1,"out of memory in output_files");
 		CHECKS(er!=2,"error reading file name");
 		CHECKS(er!=4,"BUG: variable cmds became NULL"); }
-
+	
 	else if(!strcmp(word,"append_files")) {				// append_files
 		er=scmdsetfnames(sim->cmds,line2,1);
 		CHECKS(er!=1,"out of memory");
@@ -924,62 +943,52 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 	// compartments
 
 	else if(!strcmp(word,"max_compartment")) {		// max_compartment
-		CHECKS(!sim->cmptss,"max_compartment can only be entered once");
 		itct=sscanf(line2,"%i",&i1);
 		CHECKS(itct==1,"max_compartment needs to be a number");
 		CHECKS(i1>=0,"max_compartment must be at least 0");
-		if(i1) {
-			sim->cmptss=compartssalloc(i1);
-			CHECKS(sim->cmptss,"memory allocation failure");
-			sim->cmptss->sim=sim;
-			compartsetcondition(sim->cmptss,SCinit,0); }
+		CHECKS(!compartenablecomparts(sim,i1),"failed to enable compartments");
 		CHECKS(!strnword(line2,2),"unexpected text following max_compartment"); }
 
 	else if(!strcmp(word,"new_compartment")) {		// new_compartment
-		CHECKS(sim->cmptss,"max_compartment has to be entered before new_compartment");
-		er=cmptreadstring(sim,-1,"name",line2,errstring);
-		CHECKS(er>=0,errstring); }
+		cmpt=compartreadstring(sim,NULL,"name",line2,errstring);
+		CHECKS(cmpt!=NULL,errstring); }
 
 	else if(!strcmp(word,"compartment")) {				// compartment
-		CHECKS(sim->cmptss,"max_compartment has to be entered before compartment");
+		CHECKS(sim->cmptss,"individual compartments need to be defined before using compartment");
 		itct=sscanf(line2,"%s %s",nm,nm1);
-		CHECKS(itct==2,"compartment format: compart_name compart_name compart_text");
+		CHECKS(itct==2,"compartment format: compart_name statement_name statement_text");
 		line2=strnword(line2,3);
-		CHECKS(line2,"compartment format: compart_name compart_name compart_text");
+		CHECKS(line2,"compartment format: compart_name statement_name statement_text");
 		c=stringfind(sim->cmptss->cnames,sim->cmptss->ncmpt,nm);
 		CHECKS(c>=0,"compartment is unrecognized");
-		er=cmptreadstring(sim,c,nm1,line2,errstring);
-		CHECKS(er>=0,errstring); }
+		cmpt=sim->cmptss->cmptlist[c];
+		cmpt=compartreadstring(sim,cmpt,nm1,line2,errstring);
+		CHECKS(cmpt!=NULL,errstring); }
 
 	// ports
 
 	else if(!strcmp(word,"max_port")) {						// max_port
-		CHECKS(!sim->portss,"max_port can only be entered once");
 		itct=sscanf(line2,"%i",&i1);
 		CHECKS(itct==1,"max_port needs to be a number");
 		CHECKS(i1>=0,"max_port must be at least 0");
-		if(i1) {
-			sim->portss=portssalloc(i1);
-			CHECKS(sim->portss,"memory allocation failure");
-			sim->portss->sim=sim;
-			portsetcondition(sim->portss,SCinit,0); }
+		CHECKS(portenableports(sim,i1),"failed to enable ports");
 		CHECKS(!strnword(line2,2),"unexpected text following max_port"); }
 
 	else if(!strcmp(word,"new_port")) {					// new_port
-		CHECKS(sim->portss,"max_port has to be entered before new_port");
-		er=portreadstring(sim,-1,"name",line2,errstring);
-		CHECKS(er>=0,errstring); }
+		port=portreadstring(sim,NULL,"name",line2,errstring);
+		CHECKS(port!=NULL,errstring); }
 
 	else if(!strcmp(word,"port")) {							// port
-		CHECKS(sim->portss,"max_port has to be entered before port");
+		CHECKS(sim->portss,"individual ports need to be defined before using port");
 		itct=sscanf(line2,"%s %s",nm,nm1);
-		CHECKS(itct==2,"port format: port_name port_name port_text");
+		CHECKS(itct==2,"port format: port_name statement_name statement_text");
 		line2=strnword(line2,3);
-		CHECKS(line2,"port format: port_name port_name port_text");
+		CHECKS(line2,"port format: port_name statement_name statement_text");
 		prt=stringfind(sim->portss->portnames,sim->portss->nport,nm);
 		CHECKS(prt>=0,"port is unrecognized");
-		er=portreadstring(sim,prt,nm1,line2,errstring);
-		CHECKS(er>=0,errstring); }
+		port=sim->portss->portlist[prt];
+		port=portreadstring(sim,port,nm1,line2,errstring);
+		CHECKS(port!=NULL,errstring); }
 
 	// moleculizer
 
@@ -1000,7 +1009,7 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 		CHECKS(i1>0,"max_network_species needs to be >0");
 		mzrSetValue(sim->mzrss,"maxNetworkSpecies",i1);
 		CHECKS(!strnword(line2,2),"unexpected text following max_network_species"); }
-
+	
 	else if(!strcmp(word,"expand_network")) {						// expand_network
 		CHECKS(sim->mzrss,"need to enter start_rules before expand_network");
 		itct=sscanf(line2,"%i",&i1);
@@ -1020,6 +1029,7 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 		CHECKS(i!=-3,"cannot read molecule state value");
 		CHECKS(i!=-4,"molecule name not recognized");
 		CHECKS(i!=-5,"all is not a permitted state");
+		CHECKS(ms<MSMAX || ms==MSall,"invalid state");
 		CHECKS(mzrSetDefaultState(sim,i,ms),"out of memory setting default state");
 		CHECKS(!strnword(line2,2),"unexpected text following default_state"); }
 
@@ -1115,6 +1125,7 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 				CHECKS(i!=-3,"cannot read reactant state");
 				CHECKS(i!=-4,"reactant name not recognized");
 				CHECKS(i!=-5,"'all' is not allowed as a reactant name");
+				CHECKS(ms<MSMAX1 || ms==MSall,"invalid state");
 				rctident[order]=i;
 				rctstate[order]=ms;
 				order++; }
@@ -1134,7 +1145,8 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 				CHECKS(i!=-3,"cannot read product state");
 				CHECKS(i!=-4,"product name not recognized");
 				CHECKS(i!=-5,"'all' is not allowed as a product name");
-				CHECKS(ms!=MSall,"'all' is not allowed as a product state");
+				CHECKS(ms<MSMAX1,"invalid product state");
+				CHECKS(!(order==0 && srf==NULL && ms!=MSsoln),"use reaction_surface for order 0 reactions with surface-bound products");
 				prdident[nprod]=i;
 				prdstate[nprod]=ms;
 				nprod++; }
@@ -1299,7 +1311,7 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 	else if(!strcmp(word,"gauss_table_size")) {		// gauss_table_size
 		itct=sscanf(line2,"%i",&i1);
 		CHECKS(itct==1,"gauss_table_size needs to be an integer");
-		er=molssetgausstable(sim->mols,i1);
+		er=molssetgausstable(sim,i1);
 		CHECKS(er!=1,"out of memory");
 		CHECKS(er!=2,"need to enter max_species before gauss_table_size");
 		CHECKS(er!=3,"gauss_table_size needs to be an integer power of two");
@@ -1313,7 +1325,16 @@ int simreadstring(simptr sim,char *word,char *line2,char *erstr) {
 		CHECKS(er!=2,"out of memory");
 		CHECKS(er!=3,"epsilon value needs to be at least 0");
 		CHECKS(!strnword(line2,2),"unexpected text following epsilon"); }
-
+	
+	else if(!strcmp(word,"margin")) {						// margin
+		CHECKS(dim>0,"need to enter dim before margin");
+		itct=sscanf(line2,"%lg",&flt1);
+		CHECKS(itct==1,"margin format: value");
+		er=surfsetmargin(sim,flt1);
+		CHECKS(er!=2,"out of memory");
+		CHECKS(er!=3,"margin value needs to be at least 0");
+		CHECKS(!strnword(line2,2),"unexpected text following margin"); }
+	
 	else if(!strcmp(word,"neighbor_dist")) {			// neighbor_dist
 		CHECKS(dim>0,"need to enter dim before neighbor_dist");
 		itct=sscanf(line2,"%lg",&flt1);
@@ -1395,7 +1416,7 @@ failure:		// failure
 }
 
 /* loadsim */
-int loadsim(simptr sim,char *fileroot,char *filename,char *erstr,char *flags) {
+int loadsim(simptr sim,const char *fileroot,const char *filename,char *erstr,const char *flags) {
 	int done,pfpcode,er;
 	char word[STRCHAR],*line2,errstring[STRCHAR];
 	ParseFilePtr pfp;
@@ -1428,7 +1449,7 @@ int loadsim(simptr sim,char *fileroot,char *filename,char *erstr,char *flags) {
 			CHECKS(!loadJMS(sim,&pfp,line2,errstring),errstring); }
 
 		else if(!strcmp(word,"start_reaction")) {			// start_reaction
-			CHECKS(sim->mols,"need to enter max_species before reactions");
+			CHECKS(sim->mols,"need to enter species before reactions");
 			CHECKS(!loadrxn(sim,&pfp,line2,errstring),errstring); }
 
 		else if(!strcmp(word,"start_surface")) {			// start_surface
@@ -1436,16 +1457,15 @@ int loadsim(simptr sim,char *fileroot,char *filename,char *erstr,char *flags) {
 			CHECKS(!loadsurface(sim,&pfp,line2,errstring),errstring); }
 
 		else if(!strcmp(word,"start_compartment")) {	// start_compartment
-			CHECKS(sim->cmptss,"need to enter max_compartment before start_compartment");
+			CHECKS(sim->dim>0,"need to enter dim before start_compartment");
 			CHECKS(!loadcompart(sim,&pfp,line2,errstring),errstring); }
 
 		else if(!strcmp(word,"start_port")) {					// start_port
-			CHECKS(sim->portss,"need to enter max_port before start_port");
 			CHECKS(!loadport(sim,&pfp,line2,errstring),errstring); }
 
 		else if(!strcmp(word,"start_rules")) {				// start_rules
 			CHECKS(!mzrssreadrules(sim,&pfp,errstring),errstring); }
-		    
+
 		else if(!line2) {															// just word
 			CHECKS(0,"unknown word or missing parameter"); }
 
@@ -1478,33 +1498,32 @@ int simupdate(simptr sim,char *erstr) {
 	qflag=strchr(sim->flags,'q')?1:0;
 
 	if(sim->condition==SCinit && !qflag && sim->mols) printf(" setting up molecules\n");
-	er=setupmols(sim);
+	er=molsupdate(sim);
 	CHECKS(er!=1,"out of memory setting up molecules");
 
 	if(sim->condition==SCinit && !qflag) printf(" setting up virtual boxes\n");
-	er=setupboxes(sim);
+	er=boxesupdate(sim);
 	CHECKS(er!=1,"out of memory setting up spatial partitions");
-	CHECKS(er!=2,"simulation boundaries are undefined");
+	CHECKS(er!=3,"simulation dimensions or boundaries are undefined");
 
 	er=molsort(sim);
 	CHECKS(er!=1,"out of memory during molecule sorting\n");
 
 	if(sim->condition==SCinit && !qflag && sim->cmptss) printf(" setting up compartments\n");
-	er=setupcomparts(sim);
+	er=compartsupdate(sim);
 	CHECKS(er!=1,"out of memory setting up compartments");
 
 	if(sim->condition==SCinit && !qflag && (sim->rxnss[0] || sim->rxnss[1] || sim->rxnss[2])) printf(" setting up reactions\n");
-	er=setuprxns(sim);
+	er=rxnsupdate(sim);
 	CHECKS(er!=1,"out of memory setting up reactions");
-	CHECKS(er!=2,"SMOLDYN BUG: setuprxns");
-	CHECKS(er!=4,"failed to set up reactions");
+	CHECKS(er!=3,"failed to set up reactions");
 
 	if(sim->condition==SCinit && !qflag && sim->srfss) printf(" setting up surfaces\n");
-	er=surfupdatelists(sim);
+	er=surfupdate(sim);
 	CHECKS(er!=1,"out of memory setting up surfaces");
 
 	if(sim->condition==SCinit && !qflag && sim->portss) printf(" setting up ports\n");
-	er=setupports(sim);
+	er=portsupdate(sim);
 	CHECKS(er!=1,"out of memory setting up ports");
 
 	if(sim->condition==SCinit && !qflag && sim->mzrss) printf(" setting up moleculizer\n");
@@ -1530,21 +1549,8 @@ int simupdate(simptr sim,char *erstr) {
 
 
 
-/* setupsim sets up and loads values for all the structures as well as global
-variables.  This routine calls the other initialization routines, so they do not
-have to be called from elsewhere.  It also displays the status to stdout and
-calls output routines for each structure, allowing verification of the
-initiallization.  Normally, send in fileroot and filename with strings for the path and
-name of the input file and send in smptr (pointer to a simulation structure)
-pointing to a NULL.  flags is a string of command-line flags.  This returns 0
-for correct operation and 1 for an error.  If it succeeds, smptr is returned
-pointing to a fully set up simulation structure.  Otherwise, smptr is set to
-NULL and an error messages is displayed on stderr.  In the alternate use, send
-in fileroot and name as NULL and send in smptr pointing to a partially set up
-simulation structure; it should be set up to the same extent that it is after it
-is returned from loadsim.  With this alternate input, this function will finish
-setting up the simulation structure. */
-int setupsim(char *fileroot,char *filename,simptr *smptr,char *flags) {
+/* setupsim */
+int setupsim(const char *fileroot,const char *filename,simptr *smptr,const char *flags) {
 	simptr sim;
 	int er,order,qflag,wflag,vflag;
 	char errstring[STRCHAR],erstr[STRCHAR];
@@ -1561,6 +1567,7 @@ int setupsim(char *fileroot,char *filename,simptr *smptr,char *flags) {
 		sim=simalloc(fileroot);
 		CHECKS(sim,"out of memory");
 		er=loadsim(sim,fileroot,filename,errstring,flags);
+
 		if(er) {
 			fprintf(stderr,"\nError reading file in line %i\n",er-10);
 			simfree(sim);
@@ -1595,10 +1602,9 @@ int setupsim(char *fileroot,char *filename,simptr *smptr,char *flags) {
 	return 0;
 
  failure:
-//	fprintf(stderr,"%s",erstr);
-//	fprintf(stderr,"\n");
+	fprintf(stderr,"%s",erstr);
+	fprintf(stderr,"\n");
 	if(!*smptr) simfree(sim);
-	throw erstr;
 	return 1; }
 
 
@@ -1621,22 +1627,16 @@ int simdocommands(simptr sim) {
 	er=molsort(sim);														// sort live and dead
 	if(er) return 6;
 	if(ccode==CMDstop || ccode==CMDabort) return 7;
-return 0; }
+	return 0; }
 
 
-/* simulatetimestep runs the simulation over one time step.  If an error is
-encountered at any step, or a command tells the simulation to stop, or the
-simulation time becomes greater than or equal to the requested maximum time, the
-function returns an error code to indicate that the simulation should stop;
-otherwise it returns 0 to indicate that the simulation should continue.  Error
-codes are 1 for simulation completed normally, 2 for error with assignmolecs, 3
-for error with zeroreact, 4 for error with unireact, 5 for error with bireact, 6
-for error with molsort, or 7 for terminate instruction from docommand (e.g. stop
-command).  Errors 2 and 6 arise from insufficient memory when boxes were being
-exanded and errors 3, 4, and 5 arise from too few molecules being allocated
-initially. */
+/* simulatetimestep */
 int simulatetimestep(simptr sim) {
 	int er,ll;
+	char errstring[STRCHAR];
+
+	er=simupdate(sim,errstring);										// update any data structure changes
+	if(er) return 10;
 
 	er=(*sim->diffusefn)(sim);											// diffuse
 	if(er) return 9;
@@ -1646,9 +1646,10 @@ int simulatetimestep(simptr sim) {
 			if(sim->srfss->srfmollist[ll] & SMLdiffuse) {
 		    (*sim->surfacecollisionsfn)(sim,ll,0); }}}
 	else {
-		for(ll=0;ll<sim->mols->nlist;ll++)
-			if(sim->mols->diffuselist[ll])
-				(*sim->checkwallsfn)(sim,ll,0,NULL); }
+		if(sim->mols)
+			for(ll=0;ll<sim->mols->nlist;ll++)
+				if(sim->mols->diffuselist[ll])
+					(*sim->checkwallsfn)(sim,ll,0,NULL); }
 
 	if(sim->srfss) {																// surface-bound molecule actions
 		for(ll=0;ll<sim->srfss->nmollist;ll++)
@@ -1670,7 +1671,7 @@ int simulatetimestep(simptr sim) {
 	er=(*sim->bimolreactfn)(sim,1);
 	if(er) return 5;
 
-	er=molsort(sim);														// sort live and dead
+	er=molsort(sim);																// sort live and dead
 	if(er) return 6;
 
 	if(sim->srfss) {
@@ -1678,8 +1679,9 @@ int simulatetimestep(simptr sim) {
 			if(sim->srfss->srfmollist[ll] & SMLreact)
 				(*sim->surfacecollisionsfn)(sim,ll,1); }	// surfaces again, reborn molecs. only
 	else {
-		for(ll=0;ll<sim->mols->nlist;ll++)
-		    (*sim->checkwallsfn)(sim,ll,1,NULL); }
+		if(sim->mols)
+			for(ll=0;ll<sim->mols->nlist;ll++)
+					(*sim->checkwallsfn)(sim,ll,1,NULL); }
 
 	er=(*sim->assignmols2boxesfn)(sim,0,1);					// assign again (all, reborn)
 	if(er) return 2;
@@ -1693,14 +1695,7 @@ int simulatetimestep(simptr sim) {
 	return 0; }
 
 
-/* endsimulate takes care of things that should happen when the simulation is
-complete.  This includes executing any commands that are supposed to happen
-after the simulation, displaying numbers of simulation events that occurred, and
-calculating the execution time.  er is a code to tell why the simulation is
-ending, which has the same values as those returned by simulatetimestep.  If
-graphics are used, this routine just returns to where it was called from (which
-is TimerFunction); otherwise, it frees the simulation structure and then returns
-(to smolsimulate and then main). */
+/* endsimulate */
 void endsimulate(simptr sim,int er) {
 	int qflag,tflag,*eventcount;
 
@@ -1744,21 +1739,17 @@ void endsimulate(simptr sim,int er) {
 	return; }
 
 
-/* smolsimulate runs the simulation without graphics.  It does essentially
-nothing other than running simulatetimestep until the simulation terminates.  At
-the end, it calls endsimulate and returns. */
+/* smolsimulate */
 int smolsimulate(simptr sim) {
-	int er/*,qflag*/;
-
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "starting simulation"));
+	int er,qflag;
 
 	er=0;
-	//qflag=strchr(sim->flags,'q')?1:0;
-	//if(!qflag) printf("Starting simulation\n");
+	qflag=strchr(sim->flags,'q')?1:0;
+	if(!qflag) printf("Starting simulation\n");
 	sim->clockstt=time(NULL);
 	er=simdocommands(sim);
 	if(!er)
-	while((er=simulatetimestep(sim))==0);
+		while((er=simulatetimestep(sim))==0);
 	sim->elapsedtime+=difftime(time(NULL),sim->clockstt);
 	return er; }
 
