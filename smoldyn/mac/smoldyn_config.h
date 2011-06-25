@@ -86,13 +86,13 @@
 #define PACKAGE_NAME "smoldyn"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "smoldyn 2.22"
+#define PACKAGE_STRING "smoldyn 2.23"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "smoldyn"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "2.22"
+#define PACKAGE_VERSION "2.23"
 
 /* Define to necessary symbol if this constant uses a non-standard name on
    your system. */
@@ -114,7 +114,7 @@
 #define USE_THREADING 0
 
 /* Version number of package */
-#define VERSION "2.22"
+#define VERSION "2.23"
 
 /* Define to 1 if the X Window System is missing or not being used. */
 /* #undef X_DISPLAY_MISSING */
