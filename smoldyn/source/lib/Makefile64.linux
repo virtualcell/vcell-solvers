@@ -23,14 +23,10 @@ CPPOBJECTS = Geometry.o \
 			Sphere.o	\
 			string2.o	\
 			SurfaceParam.o	\
-			Zn.o	\
-			SFMT.o
+			Zn.o
 			
 $(SMOLDYN_LIB) : $(CPPOBJECTS)
 	ar cru $@ $(CPPOBJECTS)
-
-SFMT.o : SFMT/SFMT.c
-	$(CC) $(CPPFLAGS) $<
 
 clean:
 	rm $(SMOLDYN) $(CPPOBJECTS)
@@ -41,15 +37,15 @@ depend:
 
 Geometry.o: Geometry.h math2.h
 math2.o: math2.h
-opengl2.o: opengl2.h math2.h random2.h SFMT/SFMT.h string2.h
+opengl2.o: opengl2.h math2.h random2.h string2.h
 parse.o: parse.h string2.h
 queue.o: queue.h
-random2.o: random2.h SFMT/SFMT.h math2.h
-Rn.o: Rn.h random2.h SFMT/SFMT.h math2.h
+random2.o: random2.h math2.h
+Rn.o: Rn.h random2.h math2.h
 RnSort.o: Rn.h RnSort.h
 rxnparam.o: rxnparam.h
 SimCommand.o: SimCommand.h queue.h string2.h Zn.h
 Sphere.o: Sphere.h
 string2.o: string2.h
-SurfaceParam.o: SurfaceParam.h math2.h random2.h SFMT/SFMT.h
-Zn.o: Zn.h math2.h random2.h SFMT/SFMT.h
+SurfaceParam.o: SurfaceParam.h math2.h random2.h
+Zn.o: Zn.h math2.h random2.h
