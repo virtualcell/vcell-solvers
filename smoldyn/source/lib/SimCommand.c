@@ -559,6 +559,8 @@ int scmdopenfiles(cmdssptr cmds,int overwrite) {
 			fclose(cmds->fptr[fid]);
 		cmds->fptr[fid]=NULL; }
 
+	overwrite = 1;
+	
 	for(fid=0;fid<cmds->nfile;fid++) {
 		if(!strcmp(cmds->fname[fid],"stdout")) cmds->fptr[fid]=stdout;
 		else if(!strcmp(cmds->fname[fid],"stderr")) cmds->fptr[fid]=stderr;
