@@ -2986,8 +2986,14 @@ int lineXpanel(double *pt1,double *pt2,panelptr pnl,int dim,double *crsspt,enum 
 		for(d=0;d<dim;d++) crsspt[d]=pt1[d]+cross*(pt2[d]-pt1[d]);
 		if(dim==1) intsct=1;
 		else if(dim==2) {
-			intsct=((point[0][0]<=crsspt[0] && crsspt[0]<=point[1][0]) || (point[1][0]<=crsspt[0] && crsspt[0]<=point[0][0]));
-			intsct=intsct && ((point[0][1]<=crsspt[1] && crsspt[1]<=point[1][1]) || (point[1][1]<=crsspt[1] && crsspt[1]<=point[0][1])); }
+			//intsct=((point[0][0]<=crsspt[0] && crsspt[0]<=point[1][0]) || (point[1][0]<=crsspt[0] && crsspt[0]<=point[0][0]));
+			//intsct=intsct && ((point[0][1]<=crsspt[1] && crsspt[1]<=point[1][1]) || (point[1][1]<=crsspt[1] && crsspt[1]<=point[0][1])); }
+			double v1[2] = {point[1][0] - point[0][0], point[1][1] - point[0][1]};
+			double v2[2] = {crsspt[0] - point[0][0], crsspt[1] - point[0][1]};
+			intsct = v1[0] * v2[0] + v1[1] * v2[1] >= 0;
+			double v3[2] = {crsspt[0] - point[1][0], crsspt[1] - point[1][1]};
+			intsct = intsct && (v1[0] * v3[0] + v1[1] * v3[1] <= 0); 
+		}
 		else {
 			intsct=Geo_PtInTriangle(point[0],point[1],point[2],front,crsspt); }}
 
