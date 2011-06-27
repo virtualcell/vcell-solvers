@@ -99,7 +99,7 @@ void smolsimulategl(simptr sim) {
 	graphss=sim->graphss;
 	qflag=strchr(sim->flags,'q')?1:0;
 	gl2SetOptionInt("Fix2DAspect",1);
-	gl2SetOptionVoid("FreeFunc",&simfree);
+	gl2SetOptionVoid("FreeFunc",(void*)&simfree);
 	gl2SetOptionVoid("FreePointer",(void*)sim);
 	if(!qflag) printf("Starting simulation\n");
 	dim=sim->dim;
