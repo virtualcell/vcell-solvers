@@ -20,11 +20,11 @@ using std::vector;
 enum EXPRESSION_INDEX {INITIAL_VALUE_EXP=0, DIFF_RATE_EXP, REACT_RATE_EXP, 
 	BOUNDARY_XM_EXP, BOUNDARY_XP_EXP, BOUNDARY_YM_EXP, BOUNDARY_YP_EXP, 
 	BOUNDARY_ZM_EXP, BOUNDARY_ZP_EXP, VELOCITY_X_EXP, VELOCITY_Y_EXP, VELOCITY_Z_EXP,
-	UNIFORM_RATE_EXP};
+	GRADIENT_X_EXP, GRADIENT_Y_EXP, GRADIENT_Z_EXP, UNIFORM_RATE_EXP};
 static string String_Expression_Index[] = {"INITIAL_VALUE_EXP", "DIFF_RATE_EXP", "REACT_RATE_EXP", 
 	"BOUNDARY_XM_EXP", "BOUNDARY_XP_EXP", "BOUNDARY_YM_EXP", "BOUNDARY_YP_EXP", 
 	"BOUNDARY_ZM_EXP", "BOUNDARY_ZP_EXP", "VELOCITY_X_EXP", "VELOCITY_Y_EXP", "VELOCITY_Z_EXP",
-	"UNIFORM_RATE_EXP"};
+	"GRADIENT_X_EXP", "GRADIENT_Y_EXP", "GRADIENT_Z_EXP", "UNIFORM_RATE_EXP"};
 #define TOTAL_NUM_EXPRESSIONS (UNIFORM_RATE_EXP + 1)
 
 class Variable;
@@ -88,6 +88,9 @@ protected:
 	virtual bool isNullExpressionOK(int expIndex) { return false; }
 	bool isConstantExpression(long expIndex);
 	bool isXYZOnlyExpression(long expIndex);
+	bool isNullExpression(int expIndex) {
+		return expressions[expIndex] == NULL;
+	}
 
 private:
 	VCell::Expression** expressions;

@@ -138,8 +138,8 @@ bool VolumeVarContextExpression::hasConstantDiffusion() {
 	return isConstantExpression(DIFF_RATE_EXP);
 }
 
-bool VolumeVarContextExpression::hasConstantDiffusionAdvection(int dimension) {
-	if (!hasConstantDiffusion()) {
+bool VolumeVarContextExpression::hasConstantCoefficients(int dimension) {
+	if (!hasConstantDiffusion() || ((VolumeVariable*)species)->hasGradient()) {
 		return false;
 	}
 	if (!((VolumeVariable*)species)->isAdvecting()) {
@@ -155,4 +155,14 @@ bool VolumeVarContextExpression::hasXYZOnlyDiffusion() {
 		throw "hasConstantDiffusion() is only for PDE variables";
 	}
 	return isXYZOnlyExpression(DIFF_RATE_EXP);
+}
+
+bool VolumeVarContextExpression::hasGradient(int dir) {
+	int expIndex = GRADIENT_X_EXP;
+	if (dir == 1) {
+		expIndex = GRADIENT_Y_EXP;
+	} else if (dir == 2) {
+		expIndex = GRADIENT_Z_EXP;
+	}
+	return !isNullExpression(expIndex);
 }

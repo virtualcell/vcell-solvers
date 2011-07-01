@@ -8,13 +8,14 @@
 using std::ofstream;
 using std::endl;
 
-VolumeVariable::VolumeVariable(string& nameStr, Feature* feature, long numX, long numY, long numZ, bool diff, bool advect)
+VolumeVariable::VolumeVariable(string& nameStr, Feature* feature, long numX, long numY, long numZ, bool diff, bool advect, bool grad)
 : Variable(nameStr, feature, numX*numY*numZ, diff)
 {
 	sizeX = numX;
 	sizeY = numY;
 	sizeZ = numZ;
 	bAdvecting = advect;
+	bHasGradient = grad;
 }
 
 void VolumeVariable::show(ofstream& fp)

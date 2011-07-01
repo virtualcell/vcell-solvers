@@ -19,7 +19,7 @@ using std::endl;
 #include <VCELL/Mesh.h>
 #include <VCELL/Feature.h>
 #include <VCELL/Membrane.h>
-#include <VCELL/VolumeVarContext.h>
+#include <VCELL/VolumeVarContextExpression.h>
 #include <VCELL/VolumeRegionVarContext.h>
 #include <VCELL/MembraneVarContext.h>
 #include <VCELL/MembraneRegionVarContext.h>
@@ -51,6 +51,9 @@ using std::endl;
 static double interp_coeff[3] = {3.0/2, -1.0/2, 0};
 static int dirichletExpIndexes[3] = {BOUNDARY_XP_EXP, BOUNDARY_YP_EXP, BOUNDARY_ZP_EXP};
 static int velocityExpIndexes[3] = {VELOCITY_X_EXP, VELOCITY_Y_EXP, VELOCITY_Z_EXP};
+static int gradExpIndexes[3] = {GRADIENT_X_EXP, GRADIENT_Y_EXP, GRADIENT_Z_EXP};
+static int minusMasks[3] = {NEIGHBOR_XM_MASK, NEIGHBOR_YM_MASK, NEIGHBOR_ZM_MASK};
+static int plusMasks[3] = {NEIGHBOR_XP_MASK, NEIGHBOR_YP_MASK, NEIGHBOR_ZP_MASK};
 
 #define PRECOMPUTE_DIFFUSION_COEFFICIENT
 
@@ -59,12 +62,17 @@ extern "C"
 	//SUBROUTINE PCILU(ICODE,N,IJA,A,W,ISP,RSP)
 #if ( defined(WIN32) || defined(WIN64) )
 #ifdef WIN32
-	#define PCILU pcilu
+#define PCILU pcilu
+#define DAXPY daxpy
 #endif
 	void PCILU(int *, long *, int32 *, double *, double *, double *, double *);
+	void DAXPY(long*, double*, double*, int*, double*, int*);
 #else
 	#define PCILU pcilu_
 	extern void PCILU(...);
+
+	#define DAXPY daxpy_
+	extern void DAXPY(...);
 #endif
 }
 
@@ -96,6 +104,7 @@ SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, const SundialsSolver
 	neighborStatePointValues = 0;
 
 	diffCoeffs = 0;
+	rhsGradients = 0;
 }
 
 
@@ -130,10 +139,11 @@ SundialsPdeScheduler::~SundialsPdeScheduler()
 		}
 		delete[] regionDefinedVolVariableIndexes;
 		delete[] bRegionHasTimeDepdentVariables;
-		delete[] bRegionHasConstantDiffusionAdvection;
+		delete[] bRegionHasConstantCoefficients;
 	}
 
 	delete[] diffCoeffs;
+	delete[] rhsGradients;
 }
 
 void SundialsPdeScheduler::iterate() {
@@ -176,11 +186,13 @@ void SundialsPdeScheduler::setupOrderMaps() {
 	regionOffsets = new int[numVolRegions];
 	regionDefinedVolVariableSizes = 0;
 	regionDefinedVolVariableIndexes = 0;
-	bRegionHasConstantDiffusionAdvection = 0;
+	bRegionHasConstantCoefficients = 0;
 	bHasAdvection = false;
 	bHasVariableDiffusionAdvection = false;
 
 	bRegionHasTimeDepdentVariables = 0;
+
+	bHasGradient = false;
 
 	int numActivePoints = 0;
 	cout << endl << "numVolRegions=" << numVolRegions << endl;
@@ -221,7 +233,7 @@ void SundialsPdeScheduler::setupOrderMaps() {
 	volVectorOffsets = new int[numVolRegions];
 	numUnknowns  = 0;
 	if (simulation->getNumVolVariables() > 0) {
-		bRegionHasConstantDiffusionAdvection = new bool[numVolRegions];
+		bRegionHasConstantCoefficients = new bool[numVolRegions];
 		regionDefinedVolVariableSizes = new int[numVolRegions];
 		regionDefinedVolVariableIndexes = new int*[numVolRegions];
 
@@ -234,7 +246,7 @@ void SundialsPdeScheduler::setupOrderMaps() {
 			volVectorOffsets[r] = numUnknowns;
 			regionDefinedVolVariableSizes[r] = 0;
 			regionDefinedVolVariableIndexes[r] = 0;
-			bRegionHasConstantDiffusionAdvection[r] = true;
+			bRegionHasConstantCoefficients[r] = true;
 
 #ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
 			bRegionHasTimeDepdentVariables[r] = false;
@@ -248,8 +260,8 @@ void SundialsPdeScheduler::setupOrderMaps() {
 
 					VolumeVariable* var = (VolumeVariable*)simulation->getVolVariable(v);
  					VolumeVarContext* varContext = feature->getVolumeVarContext(var);
-					if (var->isDiffusing() && !varContext->hasConstantDiffusionAdvection(dimension)) {
-						bRegionHasConstantDiffusionAdvection[r] = false;
+					if (var->isDiffusing() && !varContext->hasConstantCoefficients(dimension)) {
+						bRegionHasConstantCoefficients[r] = false;
 						bHasVariableDiffusionAdvection = true;
 					}
 					if (var->isAdvecting()) {
@@ -258,10 +270,13 @@ void SundialsPdeScheduler::setupOrderMaps() {
 						bRegionHasTimeDepdentVariables[r] = true;
 #endif
 					}
+					if (var->hasGradient()) {
+						bHasGradient = true;
+					}
 				}
 			}
 			if (regionDefinedVolVariableSizes[r] > 0) {
-				cout << (bRegionHasConstantDiffusionAdvection[r] ? "Constant" : "Variable") << " diffusion/advection in region " << mesh->getVolumeRegion(r)->getName() << endl;
+				cout << (bRegionHasConstantCoefficients[r] ? "Constant" : "Variable") << " diffusion/advection in region " << mesh->getVolumeRegion(r)->getName() << endl;
 				regionDefinedVolVariableIndexes[r] = new int[regionDefinedVolVariableSizes[r]];
 				int activeVarCount = 0;
 				for (int v = 0; v < simulation->getNumVolVariables(); v ++) {
@@ -277,7 +292,7 @@ void SundialsPdeScheduler::setupOrderMaps() {
 					VolumeVariable* var = (VolumeVariable*)simulation->getVolVariable(v);
  					VolumeVarContext* varContext = feature->getVolumeVarContext(var);
 					if (var->isDiffusing()) {
-						if (!varContext->hasConstantDiffusion() &&  !varContext->hasXYZOnlyDiffusion()) {
+						if (!varContext->hasConstantDiffusion() &&  !varContext->hasXYZOnlyDiffusion() || var->hasGradient()) {
 							bRegionHasTimeDepdentVariables[r] = true;
 						}
 					}
@@ -299,6 +314,9 @@ void SundialsPdeScheduler::setupOrderMaps() {
 	numUnknowns += mesh->getNumMembraneRegions() * simulation->getNumMemRegionVariables();
 
 	cout << "numUnknowns = " << numUnknowns << endl;
+	if (bHasGradient) {
+		rhsGradients = new double[numUnknowns];
+	}
 }
 
 void SundialsPdeScheduler::checkCVodeReturnCode(int returnCode) {
@@ -386,6 +404,9 @@ int SundialsPdeScheduler::CVodeRHS(double t, double* yinput, double* rhs) {
 	//	exit(1);
 	//}
 	memset(rhs, 0, numUnknowns * sizeof(double));
+	if (bHasGradient) {
+		memset(rhsGradients, 0, numUnknowns * sizeof(double));
+	}
 	applyVolumeOperator(t, yinput, rhs);
 	applyMembraneDiffusionReactionOperator(t, yinput, rhs);
 	applyVolumeRegionReactionOperator(t, yinput, rhs);
@@ -984,7 +1005,7 @@ void SundialsPdeScheduler::applyVolumeOperator(double t, double* yinput, double*
 		return;
 	}	
 	for (int r = 0; r < mesh->getNumVolumeRegions(); r ++) {
-		if (bRegionHasConstantDiffusionAdvection[r]) {
+		if (bRegionHasConstantCoefficients[r]) {
 			regionApplyVolumeOperatorConstant(r, t, yinput, rhs);
 		} else {
 			regionApplyVolumeOperatorVariable(r, t, yinput, rhs);
@@ -1396,13 +1417,46 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, doubl
 			}
 
 			// add diffusion and convection
-			for (int n = 0; n < 3; n ++) {
+			for (int n = 0; n < dimension; n ++) {
 				int neighborIndex = volumeNeighbors[n];
-				if (neighborIndex < 0) {
-					continue;
+				int neighborVectorIndex = getVolumeElementVectorOffset(neighborIndex, regionID) + activeVarCount;
+				int neighborMask = pVolumeElement[neighborIndex].neighborMask;
+				bool bNeighborDirichlet = (neighborMask & BOUNDARY_TYPE_DIRICHLET);
+
+				if (varContext->hasGradient(n)) {					
+					double gradi = varContext->evaluateExpression(gradExpIndexes[n], statePointValues);
+
+					if (mask & minusMasks[n]) { // no minus neighbor
+						double grad_near = varContext->evaluateExpression(gradExpIndexes[n], neighborStatePointValues[n]);
+						if (!bDirichlet) {
+							rhsGradients[vectorIndex] += (-gradi + grad_near) * oneOverH[n];
+						}
+						if (!bNeighborDirichlet) {
+							rhsGradients[neighborVectorIndex] -= gradi * oneOverH[n] / 2;
+						}
+					} else if (neighborIndex < 0) { // no plus neighbor
+						if (!bDirichlet) {
+							rhsGradients[vectorIndex] += gradi * oneOverH[n];
+						}
+					} else {
+						double gradj = varContext->evaluateExpression(gradExpIndexes[n], neighborStatePointValues[n]);
+						if (!bDirichlet) {
+							rhsGradients[vectorIndex] += gradj * oneOverH[n] / 2;
+						}
+						if (!bNeighborDirichlet) {
+							if (neighborMask & plusMasks[n]) {
+								rhsGradients[neighborVectorIndex] -= gradi * oneOverH[n]; //low order
+							} else {
+								rhsGradients[neighborVectorIndex] -= gradi * oneOverH[n] / 2;
+							}
+						}
+					}
 				}
 
-				int neighborVectorIndex = getVolumeElementVectorOffset(neighborIndex, regionID) + activeVarCount;
+				if (neighborIndex < 0) {
+					continue;
+				} 
+
 				double D = Di;
 				if (!varContext->hasConstantDiffusion()) {
 					double Dj = 0;
@@ -1421,10 +1475,7 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, doubl
 				double yneighbor = yinput[neighborVectorIndex];
 
 				//use the real value if the neighbor is dirichlet point
-				int neighborMask = pVolumeElement[neighborIndex].neighborMask;
-				bool bNeighborDirichlet = false;
-				if (neighborMask & BOUNDARY_TYPE_DIRICHLET) {
-					bNeighborDirichlet = true;
+				if (bNeighborDirichlet) {
 					yneighbor = varContext->evaluateExpression(dirichletExpIndexes[n], neighborStatePointValues[n]);
 				}
 
@@ -1464,6 +1515,22 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, doubl
 			}
 		} // end for v
 	} // end for ri
+
+	if (bHasGradient) {
+		double a = 1.0;
+		int increment = 1;
+		DAXPY(&numUnknowns, &a, rhsGradients, &increment, rhs, &increment);
+		//for (int i = 0; i < numUnknowns; i ++) {
+		//	int xi = 11 + ((i % 20)/2);
+
+		//	double PI = 3.141592653589793;
+		//	double gradExact = PI * exp(-PI*PI*t) * cos(PI*(-1+xi/oneOverH[0]));
+		//	if (i%2==1) {
+		//		cout << "grad[" << i << "," << xi << "]=" << rhsGradients[i] << " " << gradExact << " " << gradExact - rhsGradients[i] << endl;
+		//	}
+		//	rhs[i] += rhsGradients[i];
+		//}
+	}
 }
 
 void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, double* yinput, double* rhs) {

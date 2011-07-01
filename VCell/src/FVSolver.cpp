@@ -303,7 +303,8 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			bool bNoConvection = true;
 			bool bTimeDependent = false;
 			string advectionflag, time_dependent_diffusion_flag, solve_whole_mesh_flag;
-			lineInput >> variable_name >> structure_name >> time_dependent_diffusion_flag >> advectionflag >> solve_whole_mesh_flag;
+			string gradient_flag;
+			lineInput >> variable_name >> structure_name >> time_dependent_diffusion_flag >> advectionflag >> gradient_flag >> solve_whole_mesh_flag;
 
 			assert(solve_whole_mesh_flag == "true" ||  solve_whole_mesh_flag == "false");
 
@@ -337,8 +338,9 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				bNoConvection = false;
 			}
 
+			bool bGradient = gradient_flag == "true";
 			Feature* feature = model->getFeatureFromName(structure_name);
-			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX, sizeY, sizeZ, true, !bNoConvection);
+			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX, sizeY, sizeZ, true, !bNoConvection, bGradient);
 			if (bSolveVariable && !simTool->isSundialsPdeSolver()) {
 				SparseMatrixEqnBuilder* builder = 0;
 				if (bSteady) {
@@ -540,6 +542,12 @@ VarContext* FVSolver::loadEquation(istream& ifsInput, Structure* structure, Vari
 			expIndex = VELOCITY_Y_EXP;
 		} else if (nextToken == "VELOCITY_Z") {
 			expIndex = VELOCITY_Z_EXP;
+		} else if (nextToken == "GRADIENT_X") {
+			expIndex = GRADIENT_X_EXP;
+		} else if (nextToken == "GRADIENT_Y") {
+			expIndex = GRADIENT_Y_EXP;
+		} else if (nextToken == "GRADIENT_Z") {
+			expIndex = GRADIENT_Z_EXP;
 		} else {
 			stringstream ss;
 			ss << "FVSolver::loadEquation(), unexpected token " << nextToken;

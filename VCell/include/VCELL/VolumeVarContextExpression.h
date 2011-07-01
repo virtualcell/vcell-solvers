@@ -42,8 +42,10 @@ public:
     double getConvectionVelocity_Z(long index);
 
 	bool hasConstantDiffusion();
-	bool hasConstantDiffusionAdvection(int dimension);
+	bool hasConstantCoefficients(int dimension);
 	bool hasXYZOnlyDiffusion();
+
+	bool hasGradient(int dir);
 
 private:
 	bool isNullExpressionOK(int expIndex);

@@ -45,9 +45,12 @@ public:
 	virtual bool hasConstantDiffusion() {
 		return diffusionRate!=0;
 	}
-	virtual bool hasConstantDiffusionAdvection(int dimension);
+	virtual bool hasConstantCoefficients(int dimension);
 	virtual bool hasXYZOnlyDiffusion() {
 		return diffusionRate==0;
+	}
+	virtual bool hasGradient(int dir) {
+		return false;
 	}
 
 protected:

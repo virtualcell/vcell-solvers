@@ -146,7 +146,7 @@ private:
 	int* regionDefinedVolVariableSizes; // the number of variables defined in each region
 	int** regionDefinedVolVariableIndexes;
 	bool* bRegionHasTimeDepdentVariables; // used to see if we have to update neighbor state values 
-	bool* bRegionHasConstantDiffusionAdvection;
+	bool* bRegionHasConstantCoefficients; // call variable operator if false.
 
 	int* volVectorOffsets;
 	int memVectorOffset;
@@ -220,6 +220,9 @@ private:
 
 	double* diffCoeffs;
 	void precomputeDiffusionCoefficients();
+
+	double* rhsGradients;
+	bool bHasGradient;
 };
 
 #endif

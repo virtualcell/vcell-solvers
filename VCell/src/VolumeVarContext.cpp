@@ -46,7 +46,7 @@ double VolumeVarContext::getConvectionVelocity_Z(long index) {
 	return convectionVelocity.z;
 }
 
-bool VolumeVarContext::hasConstantDiffusionAdvection(int dimension) {
+bool VolumeVarContext::hasConstantCoefficients(int dimension) {
 	if (((VolumeVariable*)species)->isAdvecting()) {
 		return false;
 	}
