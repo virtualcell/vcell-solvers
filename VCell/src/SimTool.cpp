@@ -478,7 +478,7 @@ void SimTool::updateLog(double progress, double time, int iteration)
 	FILE* tidFP = lockForReadWrite();
 
 	struct stat buf;
-	static char* tempDir = "/tmp";
+	static char* tempDir = "/tmp/";
 	static bool bUseTempDir = false;
 	static bool bFirstTimeUpdateLog = true;
 

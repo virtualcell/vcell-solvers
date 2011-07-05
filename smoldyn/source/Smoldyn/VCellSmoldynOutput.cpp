@@ -255,7 +255,7 @@ void VCellSmoldynOutput::write() {
 		char zipFileName[256];
 
 		struct stat buf;
-		static char* tempDir = "/tmp";
+		static char* tempDir = "/tmp/";
 		static bool bUseTempDir = false;
 		static bool bFirstTimeWrite = true;
 
