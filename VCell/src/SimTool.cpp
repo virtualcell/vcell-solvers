@@ -477,9 +477,25 @@ void SimTool::updateLog(double progress, double time, int iteration)
 	char errmsg[512];
 	FILE* tidFP = lockForReadWrite();
 
+	struct stat buf;
+	static char* tempDir = "/tmp";
+	static bool bUseTempDir = false;
+	static bool bFirstTimeUpdateLog = true;
+
+	if (bFirstTimeUpdateLog) {
+		if (stat(tempDir, &buf) == 0) {
+			// use local temp directory for .sim files
+			// to avoid network traffic
+			if (buf.st_mode & S_IFDIR) {
+				bUseTempDir = true;
+			}
+		}
+		bFirstTimeUpdateLog = false;
+	}
+
 	// write sim files to local
-	if (bSimZip) {
-		sprintf(simFileName,"%s%.4d%s",baseSimName, simFileCount, SIM_FILE_EXT);
+	if (bSimZip && bUseTempDir) {
+		sprintf(simFileName,"%s%s%.4d%s", tempDir, baseSimName, simFileCount, SIM_FILE_EXT);
 	} else {
 		sprintf(simFileName,"%s%.4d%s",baseFileName, simFileCount, SIM_FILE_EXT);
 	}
@@ -500,7 +516,6 @@ void SimTool::updateLog(double progress, double time, int iteration)
 		if (bSimZip) {
 			sprintf(zipFileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_FILE_EXT);
 			int retcode = 0;
-			struct stat buf;
 			if (stat(particleFileName, &buf) == 0) {	// has particle
 				retcode = zip32(2, zipFileName, simFileName, particleFileName);
 				remove(particleFileName);
@@ -513,7 +528,9 @@ void SimTool::updateLog(double progress, double time, int iteration)
 			if (bSuccess) {
 				char zipFileNameWithoutPath[512];
 				sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
-				fprintf(logFP,"%4d %s %s %.15lg\n", iteration, simFileName, zipFileNameWithoutPath, time);
+				char simFileNameWithoutPath[512];
+				sprintf(simFileName,"%s%.4d%s", baseSimName, simFileCount, SIM_FILE_EXT);
+				fprintf(logFP,"%4d %s %s %.15lg\n", iteration, simFileNameWithoutPath, zipFileNameWithoutPath, time);
 
 				if (stat(zipFileName, &buf) == 0) { // if exists
 					if (buf.st_size > ZIP_FILE_LIMIT) {

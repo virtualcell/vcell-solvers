@@ -253,7 +253,27 @@ void VCellSmoldynOutput::write() {
 		// write sim file
 		char simFileName[256];
 		char zipFileName[256];
-		sprintf(simFileName, "%s%.4d.%s", baseSimName, simFileCount, SIM_FILE_EXT);
+
+		struct stat buf;
+		static char* tempDir = "/tmp";
+		static bool bUseTempDir = false;
+		static bool bFirstTimeWrite = true;
+
+		if (bFirstTimeWrite) {
+			if (stat(tempDir, &buf) == 0) {
+				// use local temp directory for .sim files
+				// to avoid network traffic
+				if (buf.st_mode & S_IFDIR) {
+					bUseTempDir = true;
+				}
+			}
+			bFirstTimeWrite = false;
+		}
+		if (bUseTempDir) {
+			sprintf(simFileName, "%s%s%.4d.%s", tempDir, baseSimName, simFileCount, SIM_FILE_EXT);
+		} else {
+			sprintf(simFileName, "%s%.4d.%s", baseFileName, simFileCount, SIM_FILE_EXT);
+		}
 		sprintf(zipFileName, "%s%.2d.%s", baseFileName, zipFileCount, ZIP_FILE_EXT);
 
 		writeSim(simFileName, zipFileName);	
@@ -273,13 +293,14 @@ void VCellSmoldynOutput::write() {
 		int iteration = (int)(smoldynSim->time/smoldynSim->dt + 0.5);
 		char zipFileNameWithoutPath[512];
 		sprintf(zipFileNameWithoutPath,"%s%.2d.%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
-		fprintf(logfp,"%4d %s %s %.15lg\n", iteration, simFileName, zipFileNameWithoutPath, smoldynSim->time);
+		char simFileNameWithoutPath[512];
+		sprintf(simFileNameWithoutPath,"%s%.4d%s", baseSimName, simFileCount, SIM_FILE_EXT);
+		fprintf(logfp,"%4d %s %s %.15lg\n", iteration, simFileNameWithoutPath, zipFileNameWithoutPath, smoldynSim->time);
 		fclose(logfp);
 
 		// print message
 		simFileCount ++;
 
-		struct stat buf;
 		if (stat(zipFileName, &buf) == 0) { // if exists
 			if (buf.st_size > ZIP_FILE_LIMIT) {
 				zipFileCount ++;
