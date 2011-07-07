@@ -529,7 +529,7 @@ void SimTool::updateLog(double progress, double time, int iteration)
 				char zipFileNameWithoutPath[512];
 				sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
 				char simFileNameWithoutPath[512];
-				sprintf(simFileName,"%s%.4d%s", baseSimName, simFileCount, SIM_FILE_EXT);
+				sprintf(simFileNameWithoutPath,"%s%.4d%s", baseSimName, simFileCount, SIM_FILE_EXT);
 				fprintf(logFP,"%4d %s %s %.15lg\n", iteration, simFileNameWithoutPath, zipFileNameWithoutPath, time);
 
 				if (stat(zipFileName, &buf) == 0) { // if exists
