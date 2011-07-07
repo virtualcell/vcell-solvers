@@ -7,7 +7,7 @@
 #include <VCELL/VolumeVariable.h>
 #include <VCELL/Mesh.h>
 #include <VCELL/Feature.h>
-#include <VCELL/VolumeVarContext.h>
+#include <VCELL/VolumeVarContextExpression.h>
 #include <VCELL/EqnBuilderReactionForward.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/Element.h>
@@ -23,7 +23,7 @@ void EqnBuilderReactionForward::buildEquation(double deltaTime,
 			    int membraneIndexStart, int membraneIndexSize)
 {
 	Feature *feature;
-	VolumeVarContext *varContext;
+	VolumeVarContextExpression *varContext;
 
 	Simulation *sim = SimTool::getInstance()->getSimulation();
 	long arraySize = odeSolver->getArraySize();

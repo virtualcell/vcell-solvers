@@ -5,9 +5,13 @@
 #ifndef VOLUMEREGIONVARCONTEXTEXPRESSION_H
 #define VOLUMEREGIONVARCONTEXTEXPRESSION_H
 
-#include <VCELL/VolumeRegionVarContext.h>
+#include <VCELL/VarContext.h>
+class Feature;
+class VolumeRegion;
+class VolumeRegionVariable;
+struct MembraneElement;
 
-class VolumeRegionVarContextExpression : public VolumeRegionVarContext
+class VolumeRegionVarContextExpression : public VarContext
 {
 public:
 	void resolveReferences(Simulation *sim);

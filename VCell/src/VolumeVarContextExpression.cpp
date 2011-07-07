@@ -9,9 +9,10 @@
 #include <VCELL/Solver.h>
 #include <VCELL/Mesh.h>
 #include <VCELL/VolumeVariable.h>
+#include <VCELL/Feature.h>
 
 VolumeVarContextExpression::VolumeVarContextExpression(Feature *feature, VolumeVariable* var)
-: VolumeVarContext(feature, var)
+: VarContext(feature, var)
 {
 }
 

@@ -5,9 +5,12 @@
 #ifndef VOLUMEVARCONTEXTEXPRESSION_H
 #define VOLUMEVARCONTEXTEXPRESSION_H
 
-#include <VCELL/VolumeVarContext.h>
+#include <VCELL/VarContext.h>
 
-class VolumeVarContextExpression : public VolumeVarContext
+class Feature;
+class VolumeVariable;
+
+class VolumeVarContextExpression : public VarContext
 {
 public:	
 	VolumeVarContextExpression(Feature *feature, VolumeVariable* var);

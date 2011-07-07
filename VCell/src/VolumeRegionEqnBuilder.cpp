@@ -8,7 +8,7 @@
 #include <VCELL/Element.h>
 #include <VCELL/ODESolver.h>
 #include <VCELL/Feature.h>
-#include <VCELL/VolumeRegionVarContext.h>
+#include <VCELL/VolumeRegionVarContextExpression.h>
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/MembraneRegion.h>
 #include <VCELL/CartesianMesh.h>
@@ -25,7 +25,7 @@ void VolumeRegionEqnBuilder::buildEquation(double deltaTime, int volumeIndexStar
 		*pRate = 0;    // constant Dirichlet (shortening) is implied
 		VolumeRegion* volRegion = ((CartesianMesh*)mesh)->getVolumeRegion(i);
 		Feature* feature = volRegion->getFeature();
-		VolumeRegionVarContext* volRegionVarContext = feature->getVolumeRegionVarContext((VolumeRegionVariable*)var);
+		VolumeRegionVarContextExpression* volRegionVarContext = feature->getVolumeRegionVarContext((VolumeRegionVariable*)var);
 
 		if (volRegionVarContext == 0) {
 			continue;

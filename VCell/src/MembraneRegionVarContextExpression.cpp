@@ -5,9 +5,11 @@
 #include <VCELL/MembraneRegionVarContextExpression.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/MembraneRegion.h>
+#include <VCELL/Membrane.h>
+#include <VCELL/MembraneRegionVariable.h>
 
 MembraneRegionVarContextExpression:: MembraneRegionVarContextExpression(Membrane *membrane, MembraneRegionVariable* var) 
-: MembraneRegionVarContext(membrane, var)
+: VarContext(membrane, var)
 {
 }
 

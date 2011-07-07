@@ -892,9 +892,9 @@ void FVSolver::loadFeature(istream& ifsInput, Feature* feature) {
 			Variable* var = simulation->getVariableFromName(var_name);
 			VarContext *varContext = loadEquation(ifsInput, feature, var);
 			if (var->getVarType() == VAR_VOLUME) {
-				feature->addVolumeVarContext((VolumeVarContext*)varContext);
+				feature->addVolumeVarContext((VolumeVarContextExpression*)varContext);
 			} else {
-				feature->addVolumeRegionVarContext((VolumeRegionVarContext*)varContext);
+				feature->addVolumeRegionVarContext((VolumeRegionVarContextExpression*)varContext);
 			}
 		} else if (nextToken == "FAST_SYSTEM_BEGIN") {
 			int dimension, num_of_dependents;
@@ -967,9 +967,9 @@ void FVSolver::loadMembrane(istream& ifsInput, Membrane* membrane) {
 			Variable* var = simulation->getVariableFromName(var_name);
 			VarContext *varContext = loadEquation(ifsInput, membrane, var);
 			if (var->getVarType() == VAR_MEMBRANE) {
-				membrane->addMembraneVarContext((MembraneVarContext*)varContext);
+				membrane->addMembraneVarContext((MembraneVarContextExpression*)varContext);
 			} else {
-				membrane->addMembraneRegionVarContext((MembraneRegionVarContext*)varContext);
+				membrane->addMembraneRegionVarContext((MembraneRegionVarContextExpression*)varContext);
 			}
 		}  else if (nextToken == "FAST_SYSTEM_BEGIN") {
 			int dimension, num_of_dependents;

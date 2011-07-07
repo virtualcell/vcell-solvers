@@ -1,7 +1,7 @@
 #ifndef VOLUMENEIGHBOR_H
 #define VOLUMENEIGHBOR_H
 
-#include <VCELL/VolumeVarContext.h>
+#include <VCELL/VolumeVarContextExpression.h>
 
 struct CoupledNeighbors {
 	int centerIndex;
@@ -32,7 +32,7 @@ struct VolumeNeighbor {
 		Vj = 0;
 	}
 
-	void setConvectionCoefficients(int myindex, int mymask, XYZNeighbor whichNeighbor, VolumeVarContext* varContext) {
+	void setConvectionCoefficients(int myindex, int mymask, XYZNeighbor whichNeighbor, VolumeVarContextExpression* varContext) {
 		if (index < 0) {
 			return;
 		}

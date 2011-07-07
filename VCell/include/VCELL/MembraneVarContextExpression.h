@@ -5,10 +5,12 @@
 #ifndef MEMBRANEVARCONTEXTEXPRESSION_H
 #define MEMBRANEVARCONTEXTEXPRESSION_H
 
-#include <VCELL/MembraneVarContext.h>
+#include <VCELL/VarContext.h>
 class Membrane;
+class MembraneVariable;
+struct MembraneElement;
 
-class MembraneVarContextExpression : public MembraneVarContext
+class MembraneVarContextExpression : public VarContext
 {
 public:
 	MembraneVarContextExpression(Membrane *membrane, MembraneVariable* var);

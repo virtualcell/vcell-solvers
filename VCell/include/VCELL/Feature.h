@@ -9,12 +9,10 @@
 #include <vector>
 using std::vector;
 
-class VolumeVarContext;
-class VolumeRegionVarContext;
+class VolumeVarContextExpression;
+class VolumeRegionVarContextExpression;
 //class VolumeParticleContext;
 //class ContourParticleContext;
-class MembraneVarContext;
-class MembraneRegionVarContext;
 class FastSystem;
 class Feature;
 class Simulation;
@@ -38,11 +36,11 @@ public:
 		return index;
 	}
 
-	VolumeVarContext *getVolumeVarContext(VolumeVariable *var);
-	VolumeRegionVarContext *getVolumeRegionVarContext(VolumeRegionVariable *var);
+	VolumeVarContextExpression *getVolumeVarContext(VolumeVariable *var);
+	VolumeRegionVarContextExpression *getVolumeRegionVarContext(VolumeRegionVariable *var);
 	   
-	void addVolumeVarContext(VolumeVarContext *vc);	
-	void addVolumeRegionVarContext(VolumeRegionVarContext *vc);	
+	void addVolumeVarContext(VolumeVarContextExpression *vc);	
+	void addVolumeRegionVarContext(VolumeRegionVarContextExpression *vc);	
 	   
 	void reinitConstantValues();
 
@@ -59,8 +57,8 @@ protected:
 	//MembraneParticleContext   *mpc;
 	//ContourParticleContext    *cpc;
 	
-	vector<VolumeVarContext*> volumeVarContextList;
-	vector<VolumeRegionVarContext*> volumeRegionVarContextList;
+	vector<VolumeVarContextExpression*> volumeVarContextList;
+	vector<VolumeRegionVarContextExpression*> volumeRegionVarContextList;
 	   
 	FeatureHandle handle;
 	unsigned char index;

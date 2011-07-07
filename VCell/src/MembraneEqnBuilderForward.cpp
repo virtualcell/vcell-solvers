@@ -7,7 +7,7 @@
 #include <VCELL/MembraneVariable.h>
 #include <VCELL/Mesh.h>
 #include <VCELL/Membrane.h>
-#include <VCELL/MembraneVarContext.h>
+#include <VCELL/MembraneVarContextExpression.h>
 #include <VCELL/MembraneEqnBuilderForward.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/Element.h>
@@ -33,7 +33,7 @@ void MembraneEqnBuilderForward::buildEquation(double deltaTime, int volumeIndexS
 			continue;
 		}
 
-		MembraneVarContext* memVarContext = membrane->getMembraneVarContext((MembraneVariable*)var);
+		MembraneVarContextExpression* memVarContext = membrane->getMembraneVarContext((MembraneVariable*)var);
 
 		sim->advanceTimeOn();
 		*pRate = memVarContext->getMembraneReactionRate(pMembraneElement);

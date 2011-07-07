@@ -9,10 +9,11 @@
 #include <VCELL/SimTool.h>
 #include <VCELL/Solver.h>
 #include <VCELL/Membrane.h>
+#include <VCELL/MembraneVariable.h>
 #include <VCELL/Mesh.h>
 
 MembraneVarContextExpression::MembraneVarContextExpression(Membrane *membrane, MembraneVariable* var)
-: MembraneVarContext(membrane, var)
+: VarContext(membrane, var)
 {
 }
 

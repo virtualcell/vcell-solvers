@@ -6,7 +6,7 @@
 #include <VCELL/ODESolver.h>
 #include <VCELL/MembraneRegionVariable.h>
 #include <VCELL/Membrane.h>
-#include <VCELL/MembraneRegionVarContext.h>
+#include <VCELL/MembraneRegionVarContextExpression.h>
 #include <VCELL/MembraneRegion.h>
 #include <VCELL/MembraneRegionEqnBuilder.h>
 #include <VCELL/CartesianMesh.h>
@@ -28,7 +28,7 @@ void MembraneRegionEqnBuilder::buildEquation(double deltaTime, int volumeIndexSt
 		*pRate = 0;            
 		MembraneRegion *memRegion = ((CartesianMesh*)mesh)->getMembraneRegion(i);
 		Membrane* membrane = memRegion->getMembrane();
-		MembraneRegionVarContext * memRegionvarContext = membrane->getMembraneRegionVarContext((MembraneRegionVariable*)var);
+		MembraneRegionVarContextExpression * memRegionvarContext = membrane->getMembraneRegionVarContext((MembraneRegionVariable*)var);
 
 		if (memRegionvarContext == 0) {
 			continue;

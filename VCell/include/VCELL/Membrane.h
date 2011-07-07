@@ -8,8 +8,8 @@ using std::vector;
 class Feature;
 class Simulation;
 struct MembraneElement;
-class MembraneVarContext;
-class MembraneRegionVarContext;
+class MembraneVarContextExpression;
+class MembraneRegionVarContextExpression;
 class MembraneVariable;
 class MembraneRegionVariable;
 
@@ -23,12 +23,12 @@ public:
 	virtual void initMembraneValues(MembraneElement *membraneElement);
 	virtual void initMembraneRegionValues(int membraneRegionIndex);
 
-	MembraneVarContext *getMembraneVarContext(string& membraneVarName);
-	MembraneVarContext *getMembraneVarContext(MembraneVariable *var);
-	void addMembraneVarContext(MembraneVarContext *vc);
+	MembraneVarContextExpression *getMembraneVarContext(string& membraneVarName);
+	MembraneVarContextExpression *getMembraneVarContext(MembraneVariable *var);
+	void addMembraneVarContext(MembraneVarContextExpression *vc);
 
-	MembraneRegionVarContext *getMembraneRegionVarContext(MembraneRegionVariable *var);	
-	void addMembraneRegionVarContext(MembraneRegionVarContext *vc);
+	MembraneRegionVarContextExpression *getMembraneRegionVarContext(MembraneRegionVariable *var);	
+	void addMembraneRegionVarContext(MembraneRegionVarContextExpression *vc);
 
 	void resolveReferences(Simulation *sim);
 
@@ -45,8 +45,8 @@ private:
 	Feature* feature1;
 	Feature* feature2;
 
-	vector<MembraneVarContext*> membraneVarContextList;
-	vector<MembraneRegionVarContext*> membraneRegionVarContextList;
+	vector<MembraneVarContextExpression*> membraneVarContextList;
+	vector<MembraneRegionVarContextExpression*> membraneRegionVarContextList;
 };
 
 #endif

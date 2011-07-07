@@ -6,8 +6,8 @@
 #include <VCELL/VolumeRegionVariable.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/Feature.h>
-#include <VCELL/VolumeVarContext.h>
-#include <VCELL/VolumeRegionVarContext.h>
+#include <VCELL/VolumeVarContextExpression.h>
+#include <VCELL/VolumeRegionVarContextExpression.h>
 //#include <VCELL/ParticleContext.h>
 #include <VCELL/FastSystem.h>
 
@@ -40,12 +40,12 @@ Feature::~Feature()
 void Feature::resolveReferences(Simulation *sim)
 {	
 	for (int i = 0; i < (int)volumeVarContextList.size(); i ++) {
-		VolumeVarContext* volumeVarContext = volumeVarContextList[i];
+		VolumeVarContextExpression* volumeVarContext = volumeVarContextList[i];
 		volumeVarContext->resolveReferences(sim);
 	}
 	
 	for (int i = 0; i < (int)volumeRegionVarContextList.size(); i ++) {
-		VolumeRegionVarContext *volumeRegionVarContext = volumeRegionVarContextList[i];
+		VolumeRegionVarContextExpression *volumeRegionVarContext = volumeRegionVarContextList[i];
 		volumeRegionVarContext->resolveReferences(sim);
 	}    
 
@@ -66,7 +66,7 @@ void Feature::resolveReferences(Simulation *sim)
 void Feature::initVolumeValues(long volumeIndex)
 {
 	for (int i = 0; i < (int)volumeVarContextList.size(); i ++) {
-		VolumeVarContext *volumeVarContext = volumeVarContextList[i];
+		VolumeVarContextExpression *volumeVarContext = volumeVarContextList[i];
 		double value = volumeVarContext->getInitialValue(volumeIndex);
 		VolumeVariable* var = (VolumeVariable *)volumeVarContext->getVar();
 		var->setOld(volumeIndex, value);
@@ -77,7 +77,7 @@ void Feature::initVolumeValues(long volumeIndex)
 void Feature::initVolumeRegionValues(int volumeRegionIndex)
 {
 	for (int i = 0; i < (int)volumeRegionVarContextList.size(); i ++) {
-		VolumeRegionVarContext *volumeRegionVarContext = volumeRegionVarContextList[i];
+		VolumeRegionVarContextExpression *volumeRegionVarContext = volumeRegionVarContextList[i];
 		double value = volumeRegionVarContext->getInitialValue(volumeRegionIndex);
 		VolumeRegionVariable* var = (VolumeRegionVariable*)volumeRegionVarContext->getVar();
 		var->setOld(volumeRegionIndex, value);
@@ -85,12 +85,12 @@ void Feature::initVolumeRegionValues(int volumeRegionIndex)
 	}
 }
 
-void Feature::addVolumeVarContext(VolumeVarContext *vvc)
+void Feature::addVolumeVarContext(VolumeVarContextExpression *vvc)
 {
 	volumeVarContextList.push_back(vvc);
 }
 
-void Feature::addVolumeRegionVarContext(VolumeRegionVarContext *vrvc)
+void Feature::addVolumeRegionVarContext(VolumeRegionVarContextExpression *vrvc)
 {
 	volumeRegionVarContextList.push_back(vrvc);
 }
@@ -100,7 +100,7 @@ FeatureHandle Feature::getHandle()
 	return handle;
 }
 
-VolumeVarContext* Feature::getVolumeVarContext(VolumeVariable *volVar)
+VolumeVarContextExpression* Feature::getVolumeVarContext(VolumeVariable *volVar)
 {
 	for (int i = 0; i < (int)volumeVarContextList.size(); i ++) {
 		if (volumeVarContextList[i]->getVar() == volVar) {
@@ -110,7 +110,7 @@ VolumeVarContext* Feature::getVolumeVarContext(VolumeVariable *volVar)
 	return 0;
 }
 
-VolumeRegionVarContext* Feature::getVolumeRegionVarContext(VolumeRegionVariable *volRegionVar)
+VolumeRegionVarContextExpression* Feature::getVolumeRegionVarContext(VolumeRegionVariable *volRegionVar)
 {
 	for (int i = 0; i < (int)volumeRegionVarContextList.size(); i ++) {
 		if (volumeRegionVarContextList[i]->getVar() == volRegionVar) {

@@ -5,9 +5,14 @@
 #ifndef MEMBRANEREGIONVARCONTEXTEXPRESSION_H
 #define MEMBRANEREGIONVARCONTEXTEXPRESSION_H
 
-#include <VCELL/MembraneRegionVarContext.h>
+#include <VCELL/VarContext.h>
 
-class MembraneRegionVarContextExpression : public MembraneRegionVarContext
+class Membrane;
+class MembraneRegionVariable;
+class MembraneRegion;
+struct MembraneElement;
+
+class MembraneRegionVarContextExpression : public VarContext
 {
 public:
 	double  getInitialValue(long index);

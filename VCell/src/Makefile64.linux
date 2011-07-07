@@ -59,10 +59,8 @@ CPPOBJECTS = 	\
 	MembraneEqnBuilderDiffusion.o       \
 	MembraneRegion.o    \
 	MembraneRegionEqnBuilder.o  \
-	MembraneRegionVarContext.o  \
 	MembraneRegionVarContextExpression.o        \
 	MembraneRegionVariable.o    \
-	MembraneVarContext.o                \
 	MembraneVarContextExpression.o      \
 	MembraneVariable.o  \
 	Mesh.o              \
@@ -91,10 +89,8 @@ CPPOBJECTS = 	\
 	VCellModel.o                        \
 	VolumeRegion.o                      \
 	VolumeRegionEqnBuilder.o                    \
-	VolumeRegionVarContext.o                    \
 	VolumeRegionVarContextExpression.o	\
 	VolumeRegionVariable.o	\
-	VolumeVarContext.o                  \
 	VolumeVarContextExpression.o	\
 	VolumeVariable.o
 

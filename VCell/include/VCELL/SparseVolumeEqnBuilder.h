@@ -5,7 +5,7 @@
 #ifndef SPARSEVOLUMEEQNBUILDER_H
 #define SPARSEVOLUMEEQNBUILDER_H
 
-#include <VCELL/VolumeVarContext.h>
+#include <VCELL/VolumeVarContextExpression.h>
 #include <VCELL/SparseMatrixEqnBuilder.h>
 #include <vector>
 using std::vector;

@@ -13,7 +13,7 @@ using std::max;
 #include <VCELL/VolumeVariable.h>
 #include <VCELL/Feature.h>
 #include <VCELL/Element.h>
-#include <VCELL/VolumeVarContext.h>
+#include <VCELL/VolumeVarContextExpression.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/FVUtils.h>
 #include <VCELL/SimTool.h>
@@ -187,7 +187,7 @@ void SparseVolumeEqnBuilder::computeLHS(int index, double* lambdas, double& Aii,
 	string varname = var->getName();
 	VolumeElement* pVolumeElement = mesh->getVolumeElements();
 	Feature* feature = pVolumeElement[index].getFeature();
-	VolumeVarContext* varContext = feature->getVolumeVarContext( (VolumeVariable*)var);
+	VolumeVarContextExpression* varContext = feature->getVolumeVarContext( (VolumeVariable*)var);
 	assert(varContext);
 	int mask = pVolumeElement[index].neighborMask;
 	numCols = 0;
@@ -549,7 +549,7 @@ double SparseVolumeEqnBuilder::computeRHS(int index, double deltaTime, double* l
 	MembraneElement *pMembraneElement = mesh->getMembraneElements();
 
 	Feature* feature = pVolumeElement[index].getFeature();
-	VolumeVarContext* varContext = feature->getVolumeVarContext((VolumeVariable*)var);
+	VolumeVarContextExpression* varContext = feature->getVolumeVarContext((VolumeVariable*)var);
 	int mask = pVolumeElement[index].neighborMask;
 
 	if (mask & BOUNDARY_TYPE_DIRICHLET){
@@ -814,7 +814,7 @@ void SparseVolumeEqnBuilder::preProcess() {
 				int indexm = k * SIZEXY + j * SIZEX;
 				int indexp = k * SIZEXY + j * SIZEX + SIZEX - 1;
 				int mask = pVolumeElement[indexm].neighborMask;
-				VolumeVarContext* varContext = pVolumeElement[indexm].getFeature()->getVolumeVarContext((VolumeVariable*)var);
+				VolumeVarContextExpression* varContext = pVolumeElement[indexm].getFeature()->getVolumeVarContext((VolumeVariable*)var);
 				if (mask & NEIGHBOR_XM_BOUNDARY && pVolumeElement[indexm].getFeature()->getXmBoundaryType() == BOUNDARY_PERIODIC) {
 					if (pVolumeElement[indexm].getFeature() != pVolumeElement[indexp].getFeature()) {
 						throw PERIODIC_GEOMETRY_ERROR_MESSAGE;
@@ -833,7 +833,7 @@ void SparseVolumeEqnBuilder::preProcess() {
 				int indexm = k * SIZEXY + i;
 				int indexp = k * SIZEXY + (SIZEY - 1) * SIZEX + i;
 				int mask = pVolumeElement[indexm].neighborMask;
-				VolumeVarContext* varContext = pVolumeElement[indexm].getFeature()->getVolumeVarContext((VolumeVariable*)var);
+				VolumeVarContextExpression* varContext = pVolumeElement[indexm].getFeature()->getVolumeVarContext((VolumeVariable*)var);
 				if (mask & NEIGHBOR_YM_BOUNDARY && pVolumeElement[indexm].getFeature()->getYmBoundaryType() == BOUNDARY_PERIODIC) {
 					if (pVolumeElement[indexm].getFeature() != pVolumeElement[indexp].getFeature()) {
 						throw PERIODIC_GEOMETRY_ERROR_MESSAGE;
@@ -853,7 +853,7 @@ void SparseVolumeEqnBuilder::preProcess() {
 				int indexm = j * SIZEX + i;
 				int indexp = (SIZEZ - 1) * SIZEXY + j * SIZEX + i;
 				int mask = pVolumeElement[indexm].neighborMask;
-				VolumeVarContext* varContext = pVolumeElement[indexm].getFeature()->getVolumeVarContext((VolumeVariable*)var);
+				VolumeVarContextExpression* varContext = pVolumeElement[indexm].getFeature()->getVolumeVarContext((VolumeVariable*)var);
 				if (mask & NEIGHBOR_ZM_BOUNDARY && pVolumeElement[indexm].getFeature()->getZmBoundaryType() == BOUNDARY_PERIODIC) {
 					if (pVolumeElement[indexm].getFeature() != pVolumeElement[indexp].getFeature()) {
 						throw PERIODIC_GEOMETRY_ERROR_MESSAGE;

@@ -8,7 +8,7 @@
 #include <VCELL/MembraneVariable.h>
 #include <VCELL/Membrane.h>
 #include <VCELL/Element.h>
-#include <VCELL/MembraneVarContext.h>
+#include <VCELL/MembraneVarContextExpression.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/FVUtils.h>
@@ -78,7 +78,7 @@ void MembraneEqnBuilderDiffusion::initEquation(double deltaTime, int volumeIndex
 			continue;
 		}
 
-		MembraneVarContext *varContext = membrane->getMembraneVarContext((MembraneVariable*)var);
+		MembraneVarContextExpression *varContext = membrane->getMembraneVarContext((MembraneVariable*)var);
 		int mask = mesh->getMembraneNeighborMask(membraneElement);
 		if (mask & NEIGHBOR_BOUNDARY_MASK && mask & BOUNDARY_TYPE_DIRICHLET){   // boundary and dirichlet
 			A->setDiag(index, 1.0);
@@ -136,7 +136,7 @@ void MembraneEqnBuilderDiffusion::buildEquation(double deltaTime, int volumeInde
 			continue;
 		}
 
-		MembraneVarContext *varContext = membrane->getMembraneVarContext((MembraneVariable*)var);
+		MembraneVarContextExpression *varContext = membrane->getMembraneVarContext((MembraneVariable*)var);
 		double volume = membraneElementCoupling->getValue(index, index);
 		double Ap0 = volume/deltaTime;
 
@@ -253,7 +253,7 @@ double MembraneEqnBuilderDiffusion::computeDiffusionConstant(int meIndex, int ne
 
 	MembraneElement *pMembraneElement = mesh->getMembraneElements();
 	Membrane* membrane = pMembraneElement[meIndex].getMembrane();
-	MembraneVarContext *varContext = membrane->getMembraneVarContext((MembraneVariable*)var);
+	MembraneVarContextExpression *varContext = membrane->getMembraneVarContext((MembraneVariable*)var);
 	double Di = varContext->getMembraneDiffusionRate(pMembraneElement + meIndex);
 	double Dj = varContext->getMembraneDiffusionRate(pMembraneElement + neighborIndex);
 	return (Di + Dj < epsilon)?(0.0):(2 * Di * Dj/(Di + Dj));
@@ -386,7 +386,7 @@ void MembraneEqnBuilderDiffusion::buildEquation_Periodic(double deltaTime, int v
 	for (long index = membraneIndexStart; index < membraneIndexStart + membraneIndexSize; index ++, membraneElement ++){
 		ASSERTION(membraneElement->membrane);
 		Membrane* membrane = membraneElement->getMembrane();
-		MembraneVarContext *varContext = membrane->getMembraneVarContext((MembraneVariable*)var);	
+		MembraneVarContextExpression *varContext = membrane->getMembraneVarContext((MembraneVariable*)var);	
 
 		double volume = membraneElementCoupling->getValue(index, index);
 		int mask = mesh->getMembraneNeighborMask(membraneElement);
@@ -505,7 +505,7 @@ void MembraneEqnBuilderDiffusion::buildEquation_Periodic(double deltaTime, int v
 		int plusPeriodicIndex = periodicPairs[i].second;
 		double volume = pMembraneElement[meIndex].area + pMembraneElement[plusPeriodicIndex].area;
 
-		MembraneVarContext *varContext = pMembraneElement[meIndex].getMembrane()->getMembraneVarContext((MembraneVariable*)var);
+		MembraneVarContextExpression *varContext = pMembraneElement[meIndex].getMembrane()->getMembraneVarContext((MembraneVariable*)var);
 
 		double reactionRate = varContext->getMembraneReactionRate(pMembraneElement + meIndex);
 		double plusReactinoRate = varContext->getMembraneReactionRate(pMembraneElement + plusPeriodicIndex);

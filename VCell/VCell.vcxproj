@@ -166,10 +166,8 @@
     <ClCompile Include="src\MembraneEqnBuilderForward.cpp" />
     <ClCompile Include="src\MembraneRegion.cpp" />
     <ClCompile Include="src\MembraneRegionEqnBuilder.cpp" />
-    <ClCompile Include="src\MembraneRegionVarContext.cpp" />
     <ClCompile Include="src\MembraneRegionVarContextExpression.cpp" />
     <ClCompile Include="src\MembraneRegionVariable.cpp" />
-    <ClCompile Include="src\MembraneVarContext.cpp" />
     <ClCompile Include="src\MembraneVarContextExpression.cpp" />
     <ClCompile Include="src\MembraneVariable.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
@@ -199,10 +197,8 @@
     <ClCompile Include="src\VCellModel.cpp" />
     <ClCompile Include="src\VolumeRegion.cpp" />
     <ClCompile Include="src\VolumeRegionEqnBuilder.cpp" />
-    <ClCompile Include="src\VolumeRegionVarContext.cpp" />
     <ClCompile Include="src\VolumeRegionVarContextExpression.cpp" />
     <ClCompile Include="src\VolumeRegionVariable.cpp" />
-    <ClCompile Include="src\VolumeVarContext.cpp" />
     <ClCompile Include="src\VolumeVarContextExpression.cpp" />
     <ClCompile Include="src\VolumeVariable.cpp" />
   </ItemGroup>
@@ -269,7 +265,6 @@
     <ClInclude Include="include\Vcell\VolumeRegionEqnBuilder.h" />
     <ClInclude Include="include\Vcell\VolumeRegionVarContextExpression.h" />
     <ClInclude Include="include\Vcell\VolumeRegionVariable.h" />
-    <ClInclude Include="include\VCELL\VolumeVarContext.h" />
     <ClInclude Include="include\Vcell\VolumeVarContextExpression.h" />
     <ClInclude Include="include\Vcell\VolumeVariable.h" />
     <ClInclude Include="include\Vcell\VoronoiRidge.h" />

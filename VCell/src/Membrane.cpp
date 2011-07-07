@@ -3,8 +3,8 @@
 #include <VCELL/MembraneRegionVariable.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/Feature.h>
-#include <VCELL/MembraneVarContext.h>
-#include <VCELL/MembraneRegionVarContext.h>
+#include <VCELL/MembraneVarContextExpression.h>
+#include <VCELL/MembraneRegionVarContextExpression.h>
 #include <VCELL/FastSystem.h>
 #include <VCELL/Element.h>
 #include <VCELL/JumpCondition.h>
@@ -35,7 +35,7 @@ Membrane::~Membrane(void)
 void Membrane::initMembraneValues(MembraneElement *membraneElement)
 {
 	for (int i = 0; i < (int)membraneVarContextList.size(); i ++) {
-		MembraneVarContext *membraneVarContext = membraneVarContextList[i];
+		MembraneVarContextExpression *membraneVarContext = membraneVarContextList[i];
 		double value = membraneVarContext->getInitialValue(membraneElement);
 		MembraneVariable* var = (MembraneVariable *)membraneVarContext->getVar();
 		var->setOld(membraneElement->index, value);
@@ -46,7 +46,7 @@ void Membrane::initMembraneValues(MembraneElement *membraneElement)
 void Membrane::initMembraneRegionValues(int membraneRegionIndex)
 {
 	for (int i = 0; i < (int)membraneRegionVarContextList.size(); i ++) {
-		MembraneRegionVarContext *membraneRegionVarContext = membraneRegionVarContextList[i];
+		MembraneRegionVarContextExpression *membraneRegionVarContext = membraneRegionVarContextList[i];
 		double value = membraneRegionVarContext->getInitialValue(membraneRegionIndex);
 		MembraneRegionVariable* var = (MembraneRegionVariable *)membraneRegionVarContext->getVar();
 		var->setOld(membraneRegionIndex, value);
@@ -54,17 +54,17 @@ void Membrane::initMembraneRegionValues(int membraneRegionIndex)
 	}
 }
 
-void Membrane::addMembraneVarContext(MembraneVarContext *mvc)
+void Membrane::addMembraneVarContext(MembraneVarContextExpression *mvc)
 {
 	membraneVarContextList.push_back(mvc);
 }
 
-void Membrane::addMembraneRegionVarContext(MembraneRegionVarContext *mrvc)
+void Membrane::addMembraneRegionVarContext(MembraneRegionVarContextExpression *mrvc)
 {
 	membraneRegionVarContextList.push_back(mrvc);
 }
 
-MembraneVarContext* Membrane::getMembraneVarContext(MembraneVariable *memVar)
+MembraneVarContextExpression* Membrane::getMembraneVarContext(MembraneVariable *memVar)
 {
 	for (int i = 0; i < (int)membraneVarContextList.size(); i ++) {
 		if (membraneVarContextList[i]->getVar() == memVar) {
@@ -74,7 +74,7 @@ MembraneVarContext* Membrane::getMembraneVarContext(MembraneVariable *memVar)
 	return 0;
 }
 
-MembraneRegionVarContext* Membrane::getMembraneRegionVarContext(MembraneRegionVariable *memRegionVar)
+MembraneRegionVarContextExpression* Membrane::getMembraneRegionVarContext(MembraneRegionVariable *memRegionVar)
 {
 	for (int i = 0; i < (int)membraneRegionVarContextList.size(); i ++) {
 		if (membraneRegionVarContextList[i]->getVar() == memRegionVar) {
@@ -91,12 +91,12 @@ bool Membrane::inBetween(Feature* f1, Feature* f2) {
 void Membrane::resolveReferences(Simulation *sim)
 {
 	for (int i = 0; i < (int)membraneVarContextList.size(); i ++) {
-		MembraneVarContext *membraneVarContext = membraneVarContextList[i];
+		MembraneVarContextExpression *membraneVarContext = membraneVarContextList[i];
 		membraneVarContext->resolveReferences(sim);
 	}
 	
 	for (int i = 0; i < (int)membraneRegionVarContextList.size(); i ++) {
-		MembraneRegionVarContext* membraneRegionVarContext = membraneRegionVarContextList[i];
+		MembraneRegionVarContextExpression* membraneRegionVarContext = membraneRegionVarContextList[i];
 		membraneRegionVarContext->resolveReferences(sim);
 	}    
 
