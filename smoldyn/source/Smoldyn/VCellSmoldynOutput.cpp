@@ -294,7 +294,7 @@ void VCellSmoldynOutput::write() {
 		char zipFileNameWithoutPath[512];
 		sprintf(zipFileNameWithoutPath,"%s%.2d.%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
 		char simFileNameWithoutPath[512];
-		sprintf(simFileNameWithoutPath,"%s%.4d%s", baseSimName, simFileCount, SIM_FILE_EXT);
+		sprintf(simFileNameWithoutPath,"%s%.4d.%s", baseSimName, simFileCount, SIM_FILE_EXT);
 		fprintf(logfp,"%4d %s %s %.15lg\n", iteration, simFileNameWithoutPath, zipFileNameWithoutPath, smoldynSim->time);
 		fclose(logfp);
 
