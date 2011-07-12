@@ -143,13 +143,13 @@ void walloutput(simptr sim) {
 	wlist=sim->wlist;
 	printf("WALL PARAMETERS\n");
 	if(!wlist) {
-		printf(" No walls defined for simulation\n\n");
+		printf(" No walls defined for simulation\n\n");	
 		return; }
 
 	for(w=0;w<2*dim;w++) {
 		wptr=wlist[w];
 		printf(" wall %i: dimension %i, at %g, type %c\n",w,wptr->wdim,wptr->pos,wptr->type);
-		if(wlist[w+1-2*(w%2)]!=wptr->opp) printf(" ERROR: opposing wall is incorrect\n"); }
+		if(wlist[w+1-2*(w%2)]!=wptr->opp) printfException(" ERROR: opposing wall is incorrect\n"); }
 
 	vol=systemvolume(sim);
 	if(dim==1) printf(" length: %g\n",vol);
@@ -259,7 +259,7 @@ int checkwalls(simptr sim,int ll,int reborn,boxptr bptr) {
 		mlist=sim->mols->live[ll]; }
 	if(!reborn) m=0;
 	else if(reborn&&!bptr) m=sim->mols->topl[ll];
-	else {m=0;printf("SMOLDYN ERROR: in checkwalls, both bptr and reborn are defined");}
+	else {m=0;printfException("SMOLDYN ERROR: in checkwalls, both bptr and reborn are defined");}
 
 	for(w=0;w<2*sim->dim;w++) {
 		wptr=sim->wlist[w];
@@ -322,7 +322,7 @@ int checkwalls_threaded(simptr sim,int ll,int reborn,boxptr bptr) {// changed na
 		mlist=sim->mols->live[ll]; }
 	if(!reborn) m=0;
 	else if(reborn&&!bptr) m=sim->mols->topl[ll];
-	else {m=0;printf("SMOLDYN ERROR: in checkwalls, both bptr and reborn are defined");}
+	else {m=0;printfException("SMOLDYN ERROR: in checkwalls, both bptr and reborn are defined");}
 
 	for(w=0;w<2*sim->dim;w++) {
 		wptr=sim->wlist[w];

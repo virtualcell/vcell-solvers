@@ -468,7 +468,7 @@ void rxnoutput(simptr sim,int order) {
 
 	printf("ORDER %i REACTION PARAMETERS\n",order);
 	if(!sim || !sim->mols || !sim->rxnss[order]) {
-		printf(" No reactions of order %i\n\n",order);
+		printf(" No reactions of order %i\n\n",order);		
 		return; }
 	rxnss=sim->rxnss[order];
 	if(rxnss->condition!=SCok)
@@ -818,7 +818,7 @@ int checkrxnparams(simptr sim,int *warnptr) {
 			if(!rxn->srf) {
 				for(prd=0;prd<rxn->nprod;prd++)
 					if(rxn->prdstate[prd]!=MSsoln) {
-						printf(" ERROR: order 0 reaction %s has surface-bound products but no surface listed\n",rxn->rname);
+						printfException(" ERROR: order 0 reaction %s has surface-bound products but no surface listed\n",rxn->rname);
 						error++; }}
 			if(rxn->prob<0) {
 				printf(" WARNING: reaction rate not set for reaction order 0, name %s\n",rxn->rname);
@@ -919,7 +919,7 @@ int rxnsetrate(simptr sim,int order,int r,char *erstr) {
 
 	if(rxn->rparamt==RPconfspread) {								// confspread
 		if(rxn->rate<0) return 1;
-		if(rxn->nprod!=order) {sprintf(erstr,"confspread reaction has a different number of reactants and products");return 3;}
+		if(rxn->nprod!=order) {sprintf(erstr,"confspread reaction has a different number of reactants and products");return 3;} 
 		if(rxn->rate>=0) rxn->prob=1.0-exp(-sim->dt*rxn->rate); }
 
 	else if(order==0) {															// order 0
@@ -945,7 +945,7 @@ int rxnsetrate(simptr sim,int order,int r,char *erstr) {
 			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
 				if(rxn->permit[ms] && sum2==0) sum2=sum[ms];
 				else if(rxn->permit[ms] && sum2!=sum[ms]) {
-					sprintf(erstr,"cannot assign reaction probability because different values are needed for different states");
+					sprintf(erstr,"cannot assign reaction probability because different values are needed for different states"); 
 					return 2; }}
 			if(sum2>0)
 				rxn->prob=rxn->rate/sum2*(1.0-exp(-sim->dt*sum2));	// desired probability
@@ -997,7 +997,7 @@ int rxnsetrate(simptr sim,int order,int r,char *erstr) {
 		if(rxn->prob<0) rxn->prob=1;
 		if(!permit) rxn->bindrad2=0;
 		else if(rate3<=0) rxn->bindrad2=0;
-		else if(dsum<=0) {sprintf(erstr,"Both diffusion coefficients are 0");return 4;}
+		else if(dsum<=0) {sprintf(erstr,"Both diffusion coefficients are 0");return 4;}    
 		else if(rparamt==RPunbindrad) rxn->bindrad2=bindingradius(rate3,sim->dt,dsum,rparam,0);
 		else if(rparamt==RPbounce) rxn->bindrad2=bindingradius(rate3,sim->dt,dsum,rparam,0);
 		else if(rparamt==RPratio) rxn->bindrad2=bindingradius(rate3,sim->dt,dsum,rparam,1);
@@ -1019,7 +1019,7 @@ int rxnsetrates(simptr sim,int order,char *erstr) {
 	int r,er;
 
 	if(!sim || !erstr || order<0 || order>MAXORDER) {
-			sprintf(erstr,"illegal inputs to rxnsetrates function");return 0;}
+			sprintf(erstr,"illegal inputs to rxnsetrates function");return 0;}            
 	rxnss=sim->rxnss[order];
 	if(!rxnss) return -1;
 
@@ -1049,11 +1049,11 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 
 	if(nprod==0) {
 		if(!(rparamt==RPnone || rparamt==RPirrev)) {
-			sprintf(erstr,"Illegal product parameter because reaction has no products");er=1; }}
+			sprintf(erstr,"Illegal product parameter because reaction has no products");er=1; }}		
 
 	else if(nprod==1) {
 		if(!(rparamt==RPnone || rparamt==RPirrev || rparamt==RPbounce || rparamt==RPconfspread || rparamt==RPoffset || rparamt==RPfixed)) {
-			sprintf(erstr,"Illegal product parameter because reaction only has one product");er=2; }
+			sprintf(erstr,"Illegal product parameter because reaction only has one product");er=2; }		
 		else if(rparamt==RPoffset || rparamt==RPfixed);
 		else {
 			rxn->unbindrad=0;
@@ -1071,7 +1071,7 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 
 		if(rev==0) {
 			if(rparamt==RPpgem || rparamt==RPpgemmax || rparamt==RPpgemmaxw || rparamt==RPratio || rparamt==RPpgem2 || rparamt==RPpgemmax2 || rparamt==RPratio2) {
-				sprintf(erstr,"Illegal product parameter because products don't react");er=3; }
+				sprintf(erstr,"Illegal product parameter because products don't react");er=3; }		
 			else if(rparamt==RPunbindrad) {
 				if(dsum==0) dsum=(dc1=1.0)+(dc2=1.0);
 				rxn->unbindrad=rpar;
@@ -1088,13 +1088,13 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 			else bindradr=-1;
 
 			if(rparamt==RPnone) {
-				sprintf(erstr,"Undefined product placement for reversible reaction");er=5; }
+				sprintf(erstr,"Undefined product placement for reversible reaction");er=5; }		
 			else if(rparamt==RPoffset || rparamt==RPfixed || rparamt==RPconfspread);
 			else if(rparamt==RPirrev) {
 				rxn->unbindrad=0;
 				for(d=0;d<dim;d++) rxn->prdpos[0][d]=rxn->prdpos[1][d]=0; }
 			else if(dsum<=0) {						// all below options require dsum > 0
-				sprintf(erstr,"Cannot set unbinding distance because sum of product diffusion constants is 0");er=4; }
+				sprintf(erstr,"Cannot set unbinding distance because sum of product diffusion constants is 0");er=4; }		
 			else if(rparamt==RPunbindrad) {
 				rxn->unbindrad=rpar;
 				rxn->prdpos[0][0]=rpar*dc1/dsum;
@@ -1104,7 +1104,7 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 				rxn->prdpos[0][0]=rpar*dc1/dsum;
 				rxn->prdpos[1][0]=-rpar*dc2/dsum; }
 			else if(rxnr->bindrad2<0) {			// all below options require bindrad2 > 0
-				sprintf(erstr,"Binding radius of reaction products is undefined");er=6; }
+				sprintf(erstr,"Binding radius of reaction products is undefined");er=6; }		
 			else if(rparamt==RPratio || rparamt==RPratio2) {
 				rxn->unbindrad=rpar*bindradr;
 				rxn->prdpos[0][0]=rpar*bindradr*dc1/dsum;
@@ -1112,9 +1112,9 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 			else if(rparamt==RPpgem || rparamt==RPpgem2) {
 				rpar=unbindingradius(rpar,sim->dt,dsum,bindradr);
 				if(rpar==-2) {
-					sprintf(erstr,"Cannot create an unbinding radius due to illegal input values");er=7; }
+					sprintf(erstr,"Cannot create an unbinding radius due to illegal input values");er=7; }		
 				else if(rpar<0) {
-					sprintf(erstr,"Maximum possible geminate binding probability is %g",-rpar);er=8; }
+					sprintf(erstr,"Maximum possible geminate binding probability is %g",-rpar);er=8; }		
 				else {
 					rxn->unbindrad=rpar;
 					rxn->prdpos[0][0]=rpar*dc1/dsum;
@@ -1122,7 +1122,7 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 			else if(rparamt==RPpgemmax || rparamt==RPpgemmaxw || rparamt==RPpgemmax2) {
 				rpar=unbindingradius(rpar,sim->dt,dsum,bindradr);
 				if(rpar==-2) {
-					sprintf(erstr,"Illegal input values");er=9; }
+					sprintf(erstr,"Illegal input values");er=9; }		
 				else if(rpar<=0) {
 					rxn->unbindrad=0; }
 				else if(rpar>0) {
@@ -1130,7 +1130,7 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 					rxn->prdpos[0][0]=rpar*dc1/dsum;
 					rxn->prdpos[1][0]=-rpar*dc2/dsum; }}
 			else {
-				sprintf(erstr,"BUG in rxnsetproduct");er=10; }}}
+				sprintf(erstr,"BUG in rxnsetproduct");er=10; }}}		
 
 	return er; }
 
@@ -1141,7 +1141,7 @@ int rxnsetproducts(simptr sim,int order,char *erstr) {
 	int r,er;
 
 	if(!sim || order<0 || order>MAXORDER || !erstr) {
-		sprintf(erstr,"illegal inputs to setproducts function");return 0;}
+		sprintf(erstr,"illegal inputs to setproducts function");return 0;}		
 	rxnss=sim->rxnss[order];
 	if(!rxnss) return -1;
 	for(r=0;r<rxnss->totrxn;r++) {
@@ -1424,7 +1424,7 @@ rxnptr RxnAddReaction(simptr sim,const char *rname,int order,int *rctident,enum 
 			done=0;
 			while(!done) {
 				k=Zn_permute(rctident,identlist,order,k);
-				if(k==-1) {fprintf(stderr,"SMOLDYN BUG: Zn_permute.\n");exit(0);}
+				if(k==-1) {printfException("SMOLDYN BUG: Zn_permute.\n");exit(0);}
 				if(k==0) done=1;
 				i=rxnpackident(order,maxspecies,identlist);
 				CHECK(newtable=(int*)calloc(rxnss->nrxn[i]+1,sizeof(int)));
@@ -1808,8 +1808,7 @@ int rxnsupdateparams(simptr sim) {
 		if(sim->rxnss[order] && sim->rxnss[order]->condition<=SCparams) {
 			er=rxnsetrates(sim,order,errorstr);							// set rates
 			if(er>=0) {
-				fprintf(stderr,"Error setting rate for reaction order %i, reaction %s\n",order,sim->rxnss[order]->rname[er]);
-				fprintf(stderr,"%s\n",errorstr);
+				printfException("Error setting rate for reaction order %i, reaction %s\n%s\n",order,sim->rxnss[order]->rname[er],errorstr);
 				return 3; }}
 	
 	for(order=0;order<MAXORDER;order++)
@@ -1817,10 +1816,9 @@ int rxnsupdateparams(simptr sim) {
 			errorstr[0]='\0';
 			er=rxnsetproducts(sim,order,errorstr);						// set products
 			if(er>=0) {
-				fprintf(stderr,"Error setting products for reaction order %i, reaction %s\n",order,sim->rxnss[order]->rname[er]);
-				fprintf(stderr,"%s\n",errorstr);
+				printfException("Error setting products for reaction order %i, reaction %s\n%s\n",order,sim->rxnss[order]->rname[er],errorstr);	
 				return 3; }
-			if(!wflag && strlen(errorstr)) fprintf(stderr,"%s\n",errorstr); }
+			if(!wflag && strlen(errorstr)) printfException("%s\n",errorstr); }
 	
 	for(order=0;order<MAXORDER;order++)									// calculate tau values
 		if(sim->rxnss[order] && sim->rxnss[order]->condition<=SCparams)

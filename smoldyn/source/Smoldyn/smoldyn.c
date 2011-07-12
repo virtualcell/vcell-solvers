@@ -270,7 +270,7 @@ int main(int argc,char *argv[]) {
 
 	if (SimulationMessaging::getInstVar() == NULL) {
 		if (returnCode != 0) {
-			fprintf(stderr, "%s\n", errorMsg);
+			printfException("%s\n", errorMsg);
 		}
 	} else if (!SimulationMessaging::getInstVar()->isStopRequested()) {
 		if (returnCode != 0) {

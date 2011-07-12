@@ -1622,14 +1622,14 @@ int molsort(simptr sim) {
 					if(mptr->box) boxremovemol(mptr,ll);
 					if(nl[ll2]==maxl[ll2])
 						if(molexpandlist(mols,sim->dim,ll2,-1,0)) {
-							printf("out of memory in molsort\n");return 1;}
+							printfException("out of memory in molsort\n");return 1;}
 					live[ll2][nl[ll2]++]=mptr;
 					mlist[m]=NULL;
 					if(listtype[ll2]==MLTsystem) {
 						if(bptr) mptr->box=bptr;
 						else mptr->box=pos2box(sim,mptr->pos);
 						if(boxaddmol(mptr,ll2)) {
-							printf("out of memory in molsort\n");return 1;} }}
+							printfException("out of memory in molsort\n");return 1;} }}
 
 				mlist[m]=mlist[--topl[ll]];				// compact original live list
 				mlist[topl[ll]]=mlist[--nl[ll]];
@@ -1641,12 +1641,12 @@ int molsort(simptr sim) {
 		ll2=mptr->list;
 		if(nl[ll2]==maxl[ll2])
 			if(molexpandlist(mols,sim->dim,ll2,-1,0)) {
-				printf("out of memory in molsort\n");return 1;}
+				printfException("out of memory in molsort\n");return 1;}
 		live[ll2][nl[ll2]++]=mptr;
 		dead[m]=NULL;
 		if(listtype[ll2]==MLTsystem) {
 			if(boxaddmol(mptr,ll2)) {
-				printf("out of memory in molsort\n");return 1;} }}
+				printfException("out of memory in molsort\n");return 1;} }}
 	mols->nd=mols->topd;
 
 	for(ll=0;ll<nlist;ll++)								// reset sortl indicies

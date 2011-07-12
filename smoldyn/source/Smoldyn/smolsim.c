@@ -261,7 +261,7 @@ void checksimparams(simptr sim) {
 		warn++;
 		printf(" WARNING: simulation structure %s\n",simsc2string(sim->condition,string)); }
 
-	if(error>0) printf(" %i total errors\n",error);
+	if(error>0) printf(" %i total errors\n",error);		
 	else printf(" No errors\n");
 	if(warn>0) printf(" %i total warnings\n",warn);
 	else printf(" No warnings\n");
@@ -1569,7 +1569,7 @@ int setupsim(const char *fileroot,const char *filename,simptr *smptr,const char 
 		er=loadsim(sim,fileroot,filename,errstring,flags);
 
 		if(er) {
-			fprintf(stderr,"\nError reading file in line %i\n",er-10);
+			printfException("\nError reading file in line %i\n",er-10);
 			simfree(sim);
 			sim=NULL;
 			CHECKS(0,errstring); }
@@ -1602,8 +1602,7 @@ int setupsim(const char *fileroot,const char *filename,simptr *smptr,const char 
 	return 0;
 
  failure:
-	fprintf(stderr,"%s",erstr);
-	fprintf(stderr,"\n");
+	printfException("%s\n",erstr);
 	if(!*smptr) simfree(sim);
 	return 1; }
 
@@ -1622,7 +1621,7 @@ int simdocommands(simptr sim) {
 	ccode=scmdexecute(sim->cmds,sim->time,sim->dt,-1,0);
 	er=simupdate(sim,erstr);
 	if(er) {
-		fprintf(stderr,"%s",erstr);
+		printfException("%s",erstr);
 		return 8; }
 	er=molsort(sim);														// sort live and dead
 	if(er) return 6;

@@ -16,6 +16,7 @@ History: Started 3/02, converted to a separate file 5/31/03.
 #include <stdlib.h>
 #include <math.h>
 #include "rxnparam.h"
+#include "smoldyn.h"
 
 #define PI 3.14159265358979323846
 #define SQRT2PI 2.50662827462
@@ -497,11 +498,11 @@ void rdfmaketable() {
 	printf("Enter the number of radial points in the rdf (e.g. 200): ");
 	scanf("%i",&n);
 	if(n<10) {
-		printf("Value is too low.  Function stopped.\n");return; }
+		printfException("Value is too low.  Function stopped.\n");return; }
 	printf("Enter level of precision (e.g. 1e-4): ");
 	scanf("%lf",&eps);
 	if(eps<=0) {
-		printf("Impossible precision.  Function stopped.\n");return; }
+		printfException("Impossible precision.  Function stopped.\n");return; }
 	printf("Enter u for increasing step lengths, d for decreasing: ");
 	scanf("%s",dirs);
 	dir=dirs[0];
@@ -513,7 +514,7 @@ void rdfmaketable() {
 	rdfa=(double*)calloc(n,sizeof(double));
 	rdfd=(double*)calloc(n,sizeof(double));
 	if(!r||!rdfa||!rdfd) {
-		printf("Out of memory.  Function stopped.\n");return; }
+		printfException("Out of memory.  Function stopped.\n");return; }
 
 	if(mode=='i'||mode=='I') b=-1;
 	else if(mode=='r'||mode=='R') b=blor;

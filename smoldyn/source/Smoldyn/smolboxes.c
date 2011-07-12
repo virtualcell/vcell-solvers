@@ -340,7 +340,7 @@ void boxoutput(boxssptr boxs,int blo,int bhi,int dim) {
 
 	printf("INDIVIDUAL BOX PARAMETERS\n");
 	if(!boxs) {
-		printf(" No box superstructure defined\n\n");
+		printf(" No box superstructure defined\n\n");		
 		return; }
 	if(bhi<0 || bhi>boxs->nbox) bhi=boxs->nbox;
 	for(b=blo;b<bhi;b++) {
@@ -388,7 +388,7 @@ void boxssoutput(simptr sim) {
 
 	printf("VIRTUAL BOX PARAMETERS\n");
 	if(!sim || !sim->boxs) {
-		printf(" No box superstructure defined\n\n");
+		printf(" No box superstructure defined\n\n");		
 		return; }
 	dim=sim->dim;
 	boxs=sim->boxs;

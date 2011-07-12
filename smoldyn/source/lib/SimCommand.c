@@ -9,6 +9,7 @@ of the Gnu Lesser General Public License (LGPL). */
 #include <limits.h>
 #include "SimCommand.h"
 #include "Zn.h"
+#include "smoldyn.h"
 
 void scmdcatfname(cmdssptr cmds,int fid,char *str);
 
@@ -272,8 +273,8 @@ enum CMDcode scmdexecute(cmdssptr cmds,double time,double simdt,Q_LONGLONG iter,
 			cmd->invoke++;
 			code1=(*cmds->cmdfn)(cmds->cmdfnarg,cmd,cmd->str);
 			if(code1==CMDwarn) {
-				if(strlen(cmd->erstr)) fprintf(stderr,"command '%s' error: %s\n",cmd->str,cmd->erstr);
-				else fprintf(stderr,"error with command: '%s'\n",cmd->str); }
+				if(strlen(cmd->erstr)) printfException("command '%s' error: %s\n",cmd->str,cmd->erstr);
+				else printfException("error with command: '%s'\n",cmd->str); }
 			if(cmd->oni+cmd->dti<=cmd->offi && !donow && (code1==CMDok || code1==CMDpause)) {
 				cmd->oni+=cmd->dti;
 				q_insert(NULL,0,0,cmd->oni,(void*)cmd,cmds->cmdi); }
@@ -288,8 +289,8 @@ enum CMDcode scmdexecute(cmdssptr cmds,double time,double simdt,Q_LONGLONG iter,
 			cmd->invoke++;
 			code1=(*cmds->cmdfn)(cmds->cmdfnarg,cmd,cmd->str);
 			if(code1==CMDwarn) {
-				if(strlen(cmd->erstr)) fprintf(stderr,"command '%s' error: %s\n",cmd->str,cmd->erstr);
-				else fprintf(stderr,"error with command: '%s'\n",cmd->str); }
+				if(strlen(cmd->erstr)) printfException("command '%s' error: %s\n",cmd->str,cmd->erstr);
+				else printfException("error with command: '%s'\n",cmd->str); }
 			dt=(cmd->dt>=simdt)?cmd->dt:simdt;
 			if(cmd->on+dt<=cmd->off && !donow && (code1==CMDok || code1==CMDpause)) {
 				cmd->on+=dt;
@@ -372,9 +373,9 @@ void scmdoutput(cmdssptr cmds) {
 
 	printf("RUNTIME COMMAND INTERPRETER\n");
 	if(!cmds) {
-		printf(" No command superstructure defined\n\n");
+		printf(" No command superstructure defined\n\n");		
 		return; }
-	if(!cmds->cmdfn) printf(" ERROR: Command executer undefined");
+	if(!cmds->cmdfn) printf(" ERROR: Command executer undefined");		
 	if(!cmds->cmdfnarg) printf(" WARNING: No argument for command executer");
 	if(cmds->iter) printf(" Commands iteration counter: %i\n",cmds->iter);
 	if(cmds->nfile) {
@@ -576,7 +577,7 @@ int scmdopenfiles(cmdssptr cmds,int overwrite) {
 			if(cmds->fappend[fid]) cmds->fptr[fid]=fopen(str1,"a");
 			else cmds->fptr[fid]=fopen(str1,"w"); }
 		if(!cmds->fptr[fid]) {
-			fprintf(stderr,"Failed to open file '%s' for writing\n",cmds->fname[fid]);
+			printfException("Failed to open file '%s' for writing\n",cmds->fname[fid]);
 			return 1; }}
 
 	return 0; }

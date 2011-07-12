@@ -227,7 +227,7 @@ enum CMDcode cmdpause(simptr sim,cmdptr cmd,char *line2) {
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDcontrol;
 	if(!sim->graphss || sim->graphss->graphics==0) {
-		fprintf(stderr,"Simulation paused at time %g.  Press enter to continue.",sim->time);
+		fprintf(stderr,"Simulation paused at time %g.  Press enter to continue.",sim->time);		
 		scanf("%c",&c);
 		return CMDok; }
 	gl2State(1);

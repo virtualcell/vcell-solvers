@@ -1257,7 +1257,7 @@ void surfaceoutput(simptr sim) {
 				pnl=srf->panels[PScyl][p];
 				point=pnl->point;
 				front=pnl->front;
-				if(dim==1) printf("   error, cylinders are not implemented in 1-D");
+				if(dim==1) printfException("   error, cylinders are not implemented in 1-D");
 				else if(dim==2) printf("   %s: (%g,%g) to (%g,%g), R=%g, facing: %s, length: %g",pname[p],point[0][0],point[0][1],point[1][0],point[1][1],point[2][0],front[2]==1?"out":"in",2.0*Geo_LineLength(point[0],point[1],2));
 				else printf("   %s: (%g,%g,%g) to (%g,%g,%g), R=%g, facing: %s, draw: %g %g, area: %g",pname[p],point[0][0],point[0][1],point[0][2],point[1][0],point[1][1],point[1][2],point[2][0],front[2]==1?"out":"in",point[2][1],point[2][2],2.0*PI*point[2][0]*Geo_LineLength(point[0],point[1],3));
 				if(jumpfrnt && pnl->jumpp[PFfront]) printf("; front jump: %s, %s",pnl->jumpp[PFfront]->pname,surfface2string(pnl->jumpf[PFfront],string));
@@ -1313,7 +1313,7 @@ void surfaceoutput(simptr sim) {
 				pnl=srf->panels[PSdisk][p];
 				point=pnl->point;
 				front=pnl->front;
-				if(dim==1) printf("   error, disks are not implemented in 1-D");
+				if(dim==1) printfException("   error, disks are not implemented in 1-D");
 				else if(dim==2) printf("   %s: (%g,%g), R=%g, facing: (%g,%g), length: %g",pname[p],point[0][0],point[0][1],point[1][0],front[0],front[1],2.0*point[1][0]);
 				else printf("   %s: (%g,%g,%g), R=%g, facing: (%g,%g,%g), draw: %g, area: %g",pname[p],point[0][0],point[0][1],point[0][2],point[1][0],front[0],front[1],front[2],point[1][1],PI*point[1][0]*point[1][0]);
 				if(jumpfrnt && pnl->jumpp[PFfront]) printf("; front jump: %s, %s",pnl->jumpp[PFfront]->pname,surfface2string(pnl->jumpf[PFfront],string));
@@ -1501,54 +1501,54 @@ int checksurfaceparams(simptr sim,int *warnptr) {
 		printf(" WARNING: surface structure %s\n",simsc2string(srfss->condition,string)); }
 
 	if(sim->mols)																			// maxspecies
-		if(sim->mols->maxspecies!=sim->srfss->maxspecies) {error++;printf(" SMOLDYN BUG: number of molecule species differ between mols and srfss\n");}
+		if(sim->mols->maxspecies!=sim->srfss->maxspecies) {error++;printfException(" SMOLDYN BUG: number of molecule species differ between mols and srfss\n");}
 
 	if(sim->mols)																			// nmollist
-		if(srfss->nmollist!=sim->mols->nlist) {error++;printf(" SMOLDYN BUG: mismatch between number of molecule lists in surface and in molecule structures");}
+		if(srfss->nmollist!=sim->mols->nlist) {error++;printfException(" SMOLDYN BUG: mismatch between number of molecule lists in surface and in molecule structures");}
 
 																										// possible superstructure warnings, errors
 	if(srfss->nsrf==0) {warn++;printf(" WARNING: Surface superstructure is defined, but no surfaces are defined\n");}
-	if(srfss->nsrf>srfss->maxsrf) {error++;printf(" SMOLDYN BUG: More surfaces are defined than allocated\n");}
+	if(srfss->nsrf>srfss->maxsrf) {error++;printfException(" SMOLDYN BUG: More surfaces are defined than allocated\n");}
 	if(srfss->epsilon>0.01*syslen) {warn++;printf(" WARNING: surface epsilon value is large compared to system size\n");}
 	if(srfss->margin>0.01*syslen) {warn++;printf(" WARNING: surface margin value is large compared to system size\n");}
 	if(srfss->neighdist>0.01*syslen) {warn++;printf(" WARNING: surface neighbor distance value is large compared to system size\n");}
 
 	for(s=0;s<srfss->nsrf;s++) {											// surface missing and incorrect elements, not panels
-		if(strlen(srfss->snames[s])==0) {error++;printf(" ERROR: surface %i is unnamed\n",s);}
-		if(!srfss->srflist[s]) {error++;printf(" SMOLDYN BUG: pointer to surface %i is NULL",s);}
+		if(strlen(srfss->snames[s])==0) {error++;printfException(" ERROR: surface %i is unnamed\n",s);}
+		if(!srfss->srflist[s]) {error++;printfException(" SMOLDYN BUG: pointer to surface %i is NULL",s);}
 		srf=srfss->srflist[s];
-		if(srf->sname!=srfss->snames[s]) {error++;printf(" SMOLDYN BUG: surface %i name pointer does not match surface superstructure pointer\n",s);}
+		if(srf->sname!=srfss->snames[s]) {error++;printfException(" SMOLDYN BUG: surface %i name pointer does not match surface superstructure pointer\n",s);}
 		for(c=0;c<4;c++) {
-			if(srf->fcolor[c]<0 || srf->fcolor[c]>1) {error++;printf(" SMOLDYN BUG: surface %i front color %i value is out of bounds\n",s,c);}
-			if(srf->bcolor[c]<0 || srf->bcolor[c]>1) {error++;printf(" SMOLDYN BUG: surface %i front color %i value is out of bounds\n",s,c);} }
-		if(srf->edgepts<0) {error++;printf(" SMOLDYN BUG: surface %i drawing thickness is negative\n",s);}
-		if(srf->fdrawmode<DMno || srf->fdrawmode>DMvef) {error++;printf(" SMOLDYN BUG: surface %i front drawing mode is out of bounds\n",s);}
-		if(srf->bdrawmode<DMno || srf->bdrawmode>DMvef) {error++;printf(" SMOLDYN BUG: surface %i back drawing mode is out of bounds\n",s);}
-		if(srf->fshiny<0 || srf->fshiny>128) {error++;printf(" SMOLDYN BUG: surface %i front shininess is out of bounds\n",s);}
-		if(srf->bshiny<0 || srf->bshiny>128) {error++;printf(" SMOLDYN BUG: surface %i back shininess is out of bounds\n",s);} }
+			if(srf->fcolor[c]<0 || srf->fcolor[c]>1) {error++;printfException(" SMOLDYN BUG: surface %i front color %i value is out of bounds\n",s,c);}
+			if(srf->bcolor[c]<0 || srf->bcolor[c]>1) {error++;printfException(" SMOLDYN BUG: surface %i front color %i value is out of bounds\n",s,c);} }
+		if(srf->edgepts<0) {error++;printfException(" SMOLDYN BUG: surface %i drawing thickness is negative\n",s);}
+		if(srf->fdrawmode<DMno || srf->fdrawmode>DMvef) {error++;printfException(" SMOLDYN BUG: surface %i front drawing mode is out of bounds\n",s);}
+		if(srf->bdrawmode<DMno || srf->bdrawmode>DMvef) {error++;printfException(" SMOLDYN BUG: surface %i back drawing mode is out of bounds\n",s);}
+		if(srf->fshiny<0 || srf->fshiny>128) {error++;printfException(" SMOLDYN BUG: surface %i front shininess is out of bounds\n",s);}
+		if(srf->bshiny<0 || srf->bshiny>128) {error++;printfException(" SMOLDYN BUG: surface %i back shininess is out of bounds\n",s);} }
 
 	for(s=0;s<srfss->nsrf;s++) {											// surface missing and incorrect elements, about panels
 		srf=srfss->srflist[s];
 		for(ps=(PanelShape)0;ps<PSMAX;ps=(PanelShape)(ps+1)) {
-			if(srf->npanel[ps]>srf->maxpanel[ps]) {error++;printf(" SMOLDYN BUG: surface %i has more panels of shape %i defined than allocated\n",s,ps);}
+			if(srf->npanel[ps]>srf->maxpanel[ps]) {error++;printfException(" SMOLDYN BUG: surface %i has more panels of shape %i defined than allocated\n",s,ps);}
 			if(srf->npanel[ps]>0) {
-				if(!srf->pname || !srf->pname[ps]) {error++;printf(" SMOLDYN BUG: surface %i has no name strings allocated for shape %i\n",s,ps);}
-				if(!srf->panels || !srf->panels[ps]) {error++;printf(" SMOLDYN BUG: surface %i has panels listed but not allocated for shape %i\n",s,ps);} }
+				if(!srf->pname || !srf->pname[ps]) {error++;printfException(" SMOLDYN BUG: surface %i has no name strings allocated for shape %i\n",s,ps);}
+				if(!srf->panels || !srf->panels[ps]) {error++;printfException(" SMOLDYN BUG: surface %i has panels listed but not allocated for shape %i\n",s,ps);} }
 			for(p=0;p<srf->npanel[ps];p++) {
-				if(strlen(srf->pname[ps][p])==0) {error++;printf(" ERROR: surface %i, panel shape %i, panel %i is unnamed\n",s,ps,p);}
-				if(!srf->panels[ps][p]) {error++;printf(" SMOLDYN BUG: surface %i, panel shape %i, panel %i pointer is NULL\n",s,ps,p);} }}}
+				if(strlen(srf->pname[ps][p])==0) {error++;printfException(" ERROR: surface %i, panel shape %i, panel %i is unnamed\n",s,ps,p);}
+				if(!srf->panels[ps][p]) {error++;printfException(" SMOLDYN BUG: surface %i, panel shape %i, panel %i pointer is NULL\n",s,ps,p);} }}}
 
 	for(s=0;s<srfss->nsrf;s++) {											// panel missing and incorrect elements
 		srf=srfss->srflist[s];
 		for(ps=(PanelShape)0;ps<PSMAX;ps=(PanelShape)(ps+1))
 			for(p=0;p<srf->npanel[ps];p++) {
 				pnl=srf->panels[ps][p];
-				if(pnl->pname!=srf->pname[ps][p]) {error++;printf(" SMOLDYN BUG: surface %i, panel shape %i, panel %i name pointer does not match surface pointer\n",s,ps,p);}
-				if(pnl->ps!=ps) {error++;printf(" SMOLDYN BUG: surface %i, shape %i, panel %i listing of shape does not match actual shape\n",s,ps,p);}
-				if(pnl->srf!=srf) {error++;printf(" SMOLDYN BUG: surface %i, shape %i, panel %i listing of surface does not match actual surface\n",s,ps,p);}
-				if(pnl->npts!=panelpoints(ps,dim)) {error++;printf(" SMOLDYN BUG: surface %i, shape %i, panel %i number of points (npts) is incorrect\n",s,ps,p);}
+				if(pnl->pname!=srf->pname[ps][p]) {error++;printfException(" SMOLDYN BUG: surface %i, panel shape %i, panel %i name pointer does not match surface pointer\n",s,ps,p);}
+				if(pnl->ps!=ps) {error++;printfException(" SMOLDYN BUG: surface %i, shape %i, panel %i listing of shape does not match actual shape\n",s,ps,p);}
+				if(pnl->srf!=srf) {error++;printfException(" SMOLDYN BUG: surface %i, shape %i, panel %i listing of surface does not match actual surface\n",s,ps,p);}
+				if(pnl->npts!=panelpoints(ps,dim)) {error++;printfException(" SMOLDYN BUG: surface %i, shape %i, panel %i number of points (npts) is incorrect\n",s,ps,p);}
 				for(pt=0;pt<pnl->npts;pt++)
-					if(!pnl->point || !pnl->point[pt]) {error++;printf(" SMOLDYN BUG: surface %i, shape %i, panel %i points element is not fully allocated\n",s,ps,p);} }}
+					if(!pnl->point || !pnl->point[pt]) {error++;printfException(" SMOLDYN BUG: surface %i, shape %i, panel %i points element is not fully allocated\n",s,ps,p);} }}
 
 	for(s=0;s<srfss->nsrf;s++) {											// panel points and front
 		srf=srfss->srflist[s];
@@ -1561,12 +1561,12 @@ int checksurfaceparams(simptr sim,int *warnptr) {
 					if(dim==1) {
 						if(point[0][0]<lowwall[0]) {warn++;printf(" WARNING: surface %s, panel %s is entirely outside the system volume\n",srf->sname,pnl->pname);}
 						if(point[0][0]>highwall[0]) {warn++;printf(" WARNING: surface %s, panel %s is entirely outside the system volume\n",srf->sname,pnl->pname);}
-						if(!(front[0]==-1 || front[0]==1)) {error++;printf(" SMOLDYN BUG: surface %s, panel %s front vector is set incorrectly\n",srf->sname,pnl->pname);}
-						if(front[1]!=0) {error++;printf(" SMOLDYN BUG: surface %s, panel %s front vector is set incorrectly\n",srf->sname,pnl->pname);} }
+						if(!(front[0]==-1 || front[0]==1)) {error++;printfException(" SMOLDYN BUG: surface %s, panel %s front vector is set incorrectly\n",srf->sname,pnl->pname);}
+						if(front[1]!=0) {error++;printfException(" SMOLDYN BUG: surface %s, panel %s front vector is set incorrectly\n",srf->sname,pnl->pname);} }
 					else if(dim==2) {
 						Geo_LineNormal(point[0],point[1],norm);
 						if(!Geo_LineXaabb2(point[0],point[1],norm,lowwall,highwall)) {warn++;printf(" WARNING: surface %s, panel %s is entirely outside the system volume\n",srf->sname,pnl->pname);}
-						if(!(front[0]==-1 || front[0]==1)) {error++;printf(" SMOLDYN BUG: surface %s, panel %s front vector is set incorrectly\n",srf->sname,pnl->pname);} }}}}
+						if(!(front[0]==-1 || front[0]==1)) {error++;printfException(" SMOLDYN BUG: surface %s, panel %s front vector is set incorrectly\n",srf->sname,pnl->pname);} }}}}
 				//?? need to check points and front for other shapes and dimensions
 
 	for(s=0;s<srfss->nsrf;s++) {											// jump surfaces and panels
@@ -1582,21 +1582,21 @@ int checksurfaceparams(simptr sim,int *warnptr) {
 						pnl=srf->panels[ps][p];
 						if(!pnl->jumpp[PFfront]) {warn++;printf(" WARNING: front of surface %s has jump action but panel %s has no jump destination\n",srf->sname,pnl->pname);}
 						else if(pnl->jumpp[PFfront]==pnl) {warn++;printf(" WARNING: surface %s, panel %s front is a jump type panel that is its own destination\n",srf->sname,pnl->pname);}
-						if(pnl->jumpp[PFfront] && !(pnl->jumpf[PFfront]==PFfront || pnl->jumpf[PFfront]==PFback)) {error++;printf(" SMOLDYN BUG: surface %s, panel %s jumps to an undefined panel face\n",srf->sname,pnl->pname);} }
+						if(pnl->jumpp[PFfront] && !(pnl->jumpf[PFfront]==PFfront || pnl->jumpf[PFfront]==PFback)) {error++;printfException(" SMOLDYN BUG: surface %s, panel %s jumps to an undefined panel face\n",srf->sname,pnl->pname);} }
 			if(bjump)
 				for(ps=(PanelShape)0;ps<PSMAX;ps=(PanelShape)(ps+1))
 					for(p=0;p<srf->npanel[ps];p++) {
 						pnl=srf->panels[ps][p];
 						if(!pnl->jumpp[PFback]) {warn++;printf(" WARNING: back of surface %s has jump action but panel %s has no jump destination\n",srf->sname,pnl->pname);}
 						else if(pnl->jumpp[PFback]==pnl) {warn++;printf(" WARNING: surface %s, panel %s back is a jump type panel that is its own destination\n",srf->sname,pnl->pname);}
-						if(pnl->jumpp[PFback] && !(pnl->jumpf[PFback]==PFfront || pnl->jumpf[PFback]==PFback)) {error++;printf(" SMOLDYN BUG: surface %s, panel %s jumps to an undefined panel face\n",srf->sname,pnl->pname);} }}}
+						if(pnl->jumpp[PFback] && !(pnl->jumpf[PFback]==PFfront || pnl->jumpf[PFback]==PFback)) {error++;printfException(" SMOLDYN BUG: surface %s, panel %s jumps to an undefined panel face\n",srf->sname,pnl->pname);} }}}
 
 	for(s=0;s<srfss->nsrf;s++) {											// make sure panel panel neighbors are stored correctly
 		srf=srfss->srflist[s];
 		for(ps=(PanelShape)0;ps<PSMAX;ps=(PanelShape)(ps+1))
 			for(p=0;p<srf->npanel[ps];p++) {
 				pnl=srf->panels[ps][p];
-				if(pnl->nneigh>0 && !pnl->neigh) {error++;printf(" SMOLDYN BUG: surface %s, panel %s has %i neighbors, but none listed\n",srf->sname,pnl->pname,pnl->nneigh);} }}
+				if(pnl->nneigh>0 && !pnl->neigh) {error++;printfException(" SMOLDYN BUG: surface %s, panel %s has %i neighbors, but none listed\n",srf->sname,pnl->pname,pnl->nneigh);} }}
 
 	for(s=0;s<srfss->nsrf;s++) {											// make sure porting actions are linked to ports
 		srf=srfss->srflist[s];
@@ -1607,11 +1607,11 @@ int checksurfaceparams(simptr sim,int *warnptr) {
 				if(srf->action[i][MSsoln][PFback]==SAport) bport=1; }
 			if(fport && !srf->port[PFfront]) {
 				error++;
-				printf(" ERROR: surface %s front face has porting action, but is not linked to a port\n",srf->sname);
+				printfException(" ERROR: surface %s front face has porting action, but is not linked to a port\n",srf->sname);
 				for(i=0;i<nspecies;i++) if(srf->action[i][MSsoln][PFfront]==SAport) srf->action[i][MSsoln][PFfront]=SAreflect; }
 			if(bport && !srf->port[PFback]) {
 				error++;
-				printf(" ERROR: surface %s back face has porting action, but is not linked to a port\n",srf->sname);
+				printfException(" ERROR: surface %s back face has porting action, but is not linked to a port\n",srf->sname);
 				for(i=0;i<nspecies;i++) if(srf->action[i][MSsoln][PFback]==SAport) srf->action[i][MSsoln][PFback]=SAreflect; }}}
 
 	if(sim->mols)																			// check that requested surface rates can be achieved
@@ -1624,13 +1624,13 @@ int checksurfaceparams(simptr sim,int *warnptr) {
 							if(srf->action[i][ms][face]==SAmult) {
 								actdetails=srf->actdetails[i][ms][face];
 								if(!actdetails) {
-									printf(" SMOLDYN BUG: action is SAmult but action details not allocated");error++;}
+									printfException(" SMOLDYN BUG: action is SAmult but action details not allocated");error++;}
 								else {
 									for(ms2=(MolecState)0;ms2<MSMAX1;ms2=(MolecState)(ms2+1)) {
 										prob=actdetails->srfprob[ms2];
 										if(prob<0 || prob>1) {
 											error++;
-											printf(" SMOLDYN BUG: surface interaction probability is <0 or >1\n"); }
+											printfException(" SMOLDYN BUG: surface interaction probability is <0 or >1\n"); }
 										else {
 											if(actdetails->srfdatasrc[ms2]==1)
 												if(fabs((actdetails->srfrate[ms2]-srfcalcrate(sim,srf,i,ms,face,ms2))/actdetails->srfrate[ms2])>0.01) {

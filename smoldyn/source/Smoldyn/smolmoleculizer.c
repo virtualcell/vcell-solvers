@@ -1230,7 +1230,7 @@ int mzrAddRxn(simptr sim,char *name,int order,int *reactants,int *products,int n
 	if(i<0) return 1;
 	rxn=RxnAddReactionCheck(sim,smolrxn,order,reactants,rctstate,nprod,products,prdstate,NULL,NULL,errorstring);		// call to Smoldyn
 	if(!rxn) {
-		fprintf(stderr,"%s\n",errorstring);
+		printfException("%s\n",errorstring);
 		return 1; }
 	RxnSetValue(sim,"rate",rxn,rate);
 
