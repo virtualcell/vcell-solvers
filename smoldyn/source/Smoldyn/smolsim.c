@@ -1569,7 +1569,7 @@ int setupsim(const char *fileroot,const char *filename,simptr *smptr,const char 
 		er=loadsim(sim,fileroot,filename,errstring,flags);
 
 		if(er) {
-			printfException("\nError reading file in line %i\n",er-10);
+			printfException("\nError reading file in line %i : %s\n",er-10, errstring);
 			simfree(sim);
 			sim=NULL;
 			CHECKS(0,errstring); }
