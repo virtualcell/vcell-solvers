@@ -44,8 +44,6 @@
 
 #include <avtGenericDatabase.h>
 
-#include "Tokenizer.h"
-
 #include <InvalidDBTypeException.h>
 #include <DebugStream.h>
 
@@ -97,6 +95,28 @@ const string REGIONVOLUME = REGIONPREFIX+"Volume";
 const string REGIONAREA = REGIONPREFIX+"Area";
 
 
+
+void Tokenize(const string& str,vector<string>& tokens,const string& delimiters)
+{
+	//http://www.oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
+
+	//clear tokens
+	tokens.clear();
+    // Skip delimiters at beginning.
+    string::size_type lastPos = str.find_first_not_of(delimiters, 0);
+    // Find first "non-delimiter".
+    string::size_type pos     = str.find_first_of(delimiters, lastPos);
+
+    while (string::npos != pos || string::npos != lastPos)
+    {
+        // Found a token, add it to the vector.
+        tokens.push_back(str.substr(lastPos, pos - lastPos));
+        // Skip delimiters.  Note the "not_of"
+        lastPos = str.find_first_not_of(delimiters, pos);
+        // Find next "non-delimiter"
+        pos = str.find_first_of(delimiters, lastPos);
+    }
+}
 
 
 // ****************************************************************************
@@ -373,7 +393,8 @@ void avtVCellMTMDFileFormat::readSubDomains(){
 		if(line[0] == '#'){
 			continue;
 		}
-		CTokenizer<CIsFromString>::Tokenize(oResult, line, CIsFromString(","));
+		string comma = ",";
+		Tokenize(line,oResult,comma);
 		for(int i=0;i<oResult.size();i++){
 			trimString(oResult[i]);
 		}
@@ -1679,7 +1700,9 @@ void readDataBlock(FILE *fp, DataBlock *block)
 	if (fread(fullVarName, sizeof(char), DATABLOCK_STRING_SIZE, fp)!=DATABLOCK_STRING_SIZE){
 		throw "DataSet::readDataBlock() - could not read block->varName (INTEL)";
 	}
-	CTokenizer<CIsFromString>::Tokenize(oResult, fullVarName, CIsFromString("::"));
+	string colon = ":";
+	string fullVarNameStr = fullVarName;
+	Tokenize(fullVarNameStr,oResult,colon);
 	if(oResult.size() == 1){
 		block->domainName = "";
 		fill(&(block->varName[0]),&(block->varName[DATABLOCK_STRING_SIZE]),0);
@@ -2339,9 +2362,6 @@ void avtVCellMTMDFileFormat::convertRegionToTempVar(string & vcellFuncStr,string
 void avtVCellMTMDFileFormat::readFunctions(avtDatabaseMetaData *md){
 
 	 vector<string> oResult;
-  //   CTokenizer<CIsFromString>::Tokenize(oResult, path, CIsFromString(":"));
-  //   for(int i=0; i<oResult.size(); i++)   cout << oResult[i] << endl;
-
 
 	struct stat buf;
 	char functionsFileName[128];
@@ -2368,7 +2388,8 @@ void avtVCellMTMDFileFormat::readFunctions(avtDatabaseMetaData *md){
 			// parse iteration number and time
 			//
 			trimString(line);
-			CTokenizer<CIsFromString>::Tokenize(oResult, line, CIsFromString(";"));
+			string semicolon = ";";
+			Tokenize(line,oResult,semicolon);
 			//oResult[0] = functionName
 			//oResult[1] = function expression
 			//oResult[2] = "" unkown
@@ -2385,7 +2406,8 @@ void avtVCellMTMDFileFormat::readFunctions(avtDatabaseMetaData *md){
 	//	fill(&(block->varName[0]),&(block->varName[DATABLOCK_STRING_SIZE]),0);
 	//	memcpy(block->varName,oResult[1].c_str(),oResult[1].size());
 	//}
-			CTokenizer<CIsFromString>::Tokenize(fNameResult, oResult[0], CIsFromString("::"));
+			string colon = ":";
+			Tokenize(oResult[0],fNameResult,colon);
 			if(fNameResult.size() == 2){
 				funcMapDomain.insert(pair<string,string>(fNameResult[1],fNameResult[0]));
 			}
