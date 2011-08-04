@@ -1,6 +1,6 @@
 Steps for delivering plugin code to VisIt repository:
 
 1) remove all makefiles and this file
-2) copy code for ExpressionParser, unzip and zip libraries from their independent folders into their respective folders in VCellMTMD.
+2) copy code (vcell/trunk/numerics/) for ExpressionParser, unzip and zip libraries from their independent folders into their respective folders in VCellMTMD.
 3) Export VCellMTMD folder
 4) zip or tar.gz the resulting VCellMTMD folder and send to VisIt developers for committing. 
