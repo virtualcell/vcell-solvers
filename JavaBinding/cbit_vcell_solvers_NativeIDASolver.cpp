@@ -7,11 +7,11 @@ using namespace VCell;
 #include <sstream>
 using std::istringstream;
 
-JNIEnv* jniEnv = NULL;
-jmethodID mid_NativeIDASolver_isStopRequested;
-jobject obj_NativeIDASolver;
+static JNIEnv* jniEnv = NULL;
+static jmethodID mid_NativeIDASolver_isStopRequested;
+static jobject obj_NativeIDASolver;
 
-void checkStopRequested_IDA(double Time, long iterationCount) {
+static void checkStopRequested_IDA(double Time, long iterationCount) {
 	jboolean bStopRequested = jniEnv->CallBooleanMethod(obj_NativeIDASolver, mid_NativeIDASolver_isStopRequested);
 	if (bStopRequested) {
 		char msg[200];

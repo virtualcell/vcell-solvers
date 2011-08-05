@@ -7,11 +7,11 @@ using namespace VCell;
 #include <sstream>
 using std::istringstream;
 
-JNIEnv* jniEnv_cvode = NULL;
-jmethodID mid_NativeCVODESolver_isStopRequested;
-jobject obj_NativeCVODESolver;
+static JNIEnv* jniEnv_cvode = NULL;
+static jmethodID mid_NativeCVODESolver_isStopRequested;
+static jobject obj_NativeCVODESolver;
 
-void checkStopRequested_CVODE(double Time, long iterationCount) {
+static void checkStopRequested_CVODE(double Time, long iterationCount) {
 	jboolean bStopRequested = jniEnv_cvode->CallBooleanMethod(obj_NativeCVODESolver, mid_NativeCVODESolver_isStopRequested);
 	if (bStopRequested) {
 		char msg[200];

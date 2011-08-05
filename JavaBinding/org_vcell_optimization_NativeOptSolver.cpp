@@ -30,7 +30,7 @@ class JavaOptSolver2Listener : public OptSolver2Listener {
 	}
 };
 
-void checkStopRequested_NativeOptSolver2(double Time, long iterationCount) {
+static void checkStopRequested_NativeOptSolver2(double Time, long iterationCount) {
 	jboolean bStopRequested = env_JNI->CallBooleanMethod(obj_OptSolverCallbacks, mid_OptSolverCallbacks_getStopRequested);
 	if (bStopRequested) {
 		char msg[200];
