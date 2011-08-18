@@ -1,0 +1,149 @@
+<ui version="4.0" >
+<comment> Begin CVS Header </comment>
+<comment>   $Source: /fs/turing/cvs/copasi_dev/copasi/UI/CQFittingWidget.ui,v $ </comment>
+<comment>   $Revision: 1.10 $ </comment>
+<comment>   $Name: Build-33 $ </comment>
+<comment>   $Author: aekamal $ </comment>
+<comment>   $Date: 2009/07/27 16:50:00 $ </comment>
+<comment> End CVS Header </comment>
+
+<comment> Copyright (C) 2008 by Pedro Mendes, Virginia Tech Intellectual </comment>
+<comment> Properties, Inc., EML Research, gGmbH, University of Heidelberg, </comment>
+<comment> and The University of Manchester. </comment>
+<comment> All rights reserved. </comment>
+
+ <comment> All rights reserved. </comment>
+ <class>CQFittingWidget</class>
+ <widget class="TaskWidget" name="CQFittingWidget" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>541</width>
+    <height>456</height>
+   </rect>
+  </property>
+  <property name="caption" stdset="0" >
+   <string>Fitting</string>
+  </property>
+  <layout class="QVBoxLayout" name="vboxLayout" >
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout" >
+     <item>
+      <spacer name="mpSpacer" >
+       <property name="orientation" >
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeType" >
+        <enum>QSizePolicy::Expanding</enum>
+       </property>
+       <property name="sizeHint" stdset="0" >
+        <size>
+         <width>13</width>
+         <height>17</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="mpBtnExperiment" >
+       <property name="text" >
+        <string>Experimental Data</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="mpBtnCrossValidation" >
+       <property name="text" >
+        <string>Cross Validation Data</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QTabWidget" name="mpTabWidget" >
+     <widget class="QWidget" name="mpParametersPage" >
+      <attribute name="title" >
+       <string>Parameters (0)</string>
+      </attribute>
+     </widget>
+     <widget class="QWidget" name="mpConstraintsPage" >
+      <attribute name="title" >
+       <string>Constraints (0)</string>
+      </attribute>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <layoutdefault spacing="6" margin="11" />
+ <customwidgets>
+  <customwidget>
+   <class>TaskWidget</class>
+   <extends>QWidget</extends>
+   <header>TaskWidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <tabstops>
+  <tabstop>mpBtnExperiment</tabstop>
+  <tabstop>mpBtnCrossValidation</tabstop>
+  <tabstop>mpTabWidget</tabstop>
+ </tabstops>
+ <includes>
+  <include location="local" >TaskWidget.h</include>
+  <include location="local" >TaskWidget.h</include>
+ </includes>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>mpBtnExperiment</sender>
+   <signal>clicked()</signal>
+   <receiver>CQFittingWidget</receiver>
+   <slot>slotExperimentData()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>mpTabWidget</sender>
+   <signal>currentChanged(QWidget*)</signal>
+   <receiver>CQFittingWidget</receiver>
+   <slot>slotPageChange(QWidget*)</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>mpBtnCrossValidation</sender>
+   <signal>clicked()</signal>
+   <receiver>CQFittingWidget</receiver>
+   <slot>slotCrossValidationData()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
