@@ -238,6 +238,8 @@ void CopasiOptDriver::run(string& optXML, string& resultSetXML)
 
 	resultSetXML = string(printer.CStr());
 
+finish:
+	CCopasiRootContainer::destroy();
 	cout << resultSetXML << endl;
 }
 
