@@ -1,0 +1,456 @@
+// The bison parser together with CEvaluationFlexLexer builds
+// the evaluation tree.
+
+%{
+#define YYSTYPE CEvaluationNode *
+
+#ifdef yylval
+# undef yylval
+#endif
+#define yylval  mpNode
+
+#ifdef yyerror
+# undef yyerror
+#endif
+#define yyerror(__str) \
+  if (yychar != YYERRCODE) correctErrorPosition(); \
+  CCopasiMessage(CCopasiMessage::ERROR, MCFunction + 1, mPosition)
+
+#include "copasi.h"
+#include "CEvaluationNode.h"
+#include "CEvaluationLexer.h"
+
+#undef yyparse
+#define yyparse CEvaluationParserBase::yyparse
+
+void setBooleanRequired(CEvaluationNode * pNode, const bool & booleanRequired)
+{
+  if (CEvaluationNode::type(pNode->getType()) == CEvaluationNode::CALL)
+    {
+      static_cast<CEvaluationNodeCall *>(pNode)->setBooleanRequired(booleanRequired);
+    }
+}
+
+%}
+
+/* yacc Declarations */
+%token TOKEN_NUMBER
+%token TOKEN_VARIABLE
+
+%token TOKEN_CALL
+%token TOKEN_FUNCTION
+%token TOKEN_FUNCTION_2
+%token TOKEN_SIGN
+
+%token TOKEN_OPERATOR_POWER
+%token TOKEN_OPERATOR_MULTIPLY
+%token TOKEN_OPERATOR_MODULUS
+%token TOKEN_OPERATOR_PLUS
+
+%token TOKEN_LOGICAL_CHOICE
+%token TOKEN_LOGICAL_VALUE
+%token TOKEN_LOGICAL_NOT
+%token TOKEN_LOGICAL_OR
+%token TOKEN_LOGICAL_XOR
+%token TOKEN_LOGICAL_AND
+%token TOKEN_LOGICAL_EQ
+%token TOKEN_LOGICAL_NE
+%token TOKEN_LOGICAL_GT
+%token TOKEN_LOGICAL_GE
+%token TOKEN_LOGICAL_LT
+%token TOKEN_LOGICAL_LE
+
+%token TOKEN_STRUCTURE_OPEN
+%token TOKEN_STRUCTURE_VECTOR_OPEN
+%token TOKEN_STRUCTURE_COMMA
+%token TOKEN_STRUCTURE_CLOSE
+%token TOKEN_STRUCTURE_VECTOR_CLOSE
+
+// Precedence
+%left TOKEN_LOGICAL_OR
+%left TOKEN_LOGICAL_XOR
+%left TOKEN_LOGICAL_AND
+%right TOKEN_LOGICAL_NOT
+%left TOKEN_LOGICAL_EQ
+%left TOKEN_LOGICAL_NE
+%left TOKEN_LOGICAL_GT
+%left TOKEN_LOGICAL_GE
+%left TOKEN_LOGICAL_LT
+%left TOKEN_LOGICAL_LE
+%left TOKEN_OPERATOR_PLUS
+%left TOKEN_OPERATOR_MODULUS
+%left TOKEN_OPERATOR_MULTIPLY
+%right TOKEN_OPERATOR_POWER
+%right TOKEN_CALL // Will never occur
+%right TOKEN_FUNCTION // Will never occur
+%right TOKEN_FUNCTION_2 // Will never occur
+%right TOKEN_SIGN // Will never occur
+%right TOKEN_LOGICAL_CHOICE // Will never occur
+
+/* Grammar follows */
+%%
+result:   exp
+          {
+            mBoolean = false;
+            mpRootNode = $$; 
+          }
+        | bool
+          {
+            mBoolean = true;
+            mpRootNode = $$; 
+          }
+          
+exp:      TOKEN_NUMBER
+          {
+            mpRootNode = $1;
+          }
+        | TOKEN_VARIABLE
+          {
+            mpRootNode = $1;
+          }
+        | exp TOKEN_OPERATOR_PLUS exp 
+          {
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | exp TOKEN_OPERATOR_MODULUS exp 
+          {
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | exp TOKEN_OPERATOR_MULTIPLY exp
+          {
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | exp TOKEN_OPERATOR_POWER exp
+          {
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | TOKEN_STRUCTURE_OPEN exp TOKEN_STRUCTURE_CLOSE
+          {
+            $$ = $2;
+            mpRootNode = $$; 
+          }
+        | TOKEN_FUNCTION TOKEN_STRUCTURE_OPEN exp TOKEN_STRUCTURE_CLOSE
+          {
+            $$ = $1;
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | TOKEN_FUNCTION_2 TOKEN_STRUCTURE_OPEN exp TOKEN_STRUCTURE_COMMA exp TOKEN_STRUCTURE_CLOSE
+          {
+            $$ = $1;
+            $$->addChild($3);
+            $$->addChild($5);
+            mpRootNode = $$; 
+          }
+        | TOKEN_SIGN exp
+          {
+            $$ = $1;
+            $$->addChild($2);
+            mpRootNode = $$; 
+          }
+        | TOKEN_LOGICAL_CHOICE TOKEN_STRUCTURE_OPEN bool TOKEN_STRUCTURE_COMMA exp TOKEN_STRUCTURE_COMMA exp TOKEN_STRUCTURE_CLOSE
+          {
+            $$ = $1;
+            $$->addChild($3); 
+            $$->addChild($5); 
+            $$->addChild($7); 
+            mpRootNode = $$; 
+          }
+        | call
+          {
+            $$ = $1;
+            mpRootNode = $$; 
+          }
+
+bool:     TOKEN_LOGICAL_VALUE
+          {
+            mpRootNode = $1;
+          }
+        | TOKEN_LOGICAL_CHOICE TOKEN_STRUCTURE_OPEN bool TOKEN_STRUCTURE_COMMA bool TOKEN_STRUCTURE_COMMA bool TOKEN_STRUCTURE_CLOSE
+          {
+            $$ = $1;
+            $$->addChild($3); 
+            $$->addChild($5); 
+            $$->addChild($7); 
+            mpRootNode = $$; 
+          }
+        | exp TOKEN_LOGICAL_EQ exp
+          {
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | call TOKEN_LOGICAL_EQ bool
+          {
+            setBooleanRequired($1, true);
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | bool TOKEN_LOGICAL_EQ call
+          {
+            setBooleanRequired($3, true);
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | bool TOKEN_LOGICAL_EQ bool
+          {
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | exp TOKEN_LOGICAL_NE exp
+          {
+            $$ = $2;
+            $$->addChild($1);
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | call TOKEN_LOGICAL_NE bool
+          {
+            setBooleanRequired($1, true);
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | bool TOKEN_LOGICAL_NE call
+          {
+            setBooleanRequired($3, true);
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | bool TOKEN_LOGICAL_NE bool
+          {
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | exp TOKEN_LOGICAL_GT exp
+          {
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | exp TOKEN_LOGICAL_GE exp
+          {
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | exp TOKEN_LOGICAL_LT exp
+          {
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | exp TOKEN_LOGICAL_LE exp
+          {
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | bool TOKEN_LOGICAL_OR bool
+          {
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | call TOKEN_LOGICAL_OR bool
+          {
+            setBooleanRequired($1, true);
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | bool TOKEN_LOGICAL_OR call
+          {
+            setBooleanRequired($3, true);
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | call TOKEN_LOGICAL_OR call
+          {
+            setBooleanRequired($1, true);
+            setBooleanRequired($3, true);
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | bool TOKEN_LOGICAL_XOR bool
+          {
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | call TOKEN_LOGICAL_XOR bool
+          {
+            setBooleanRequired($1, true);
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | bool TOKEN_LOGICAL_XOR call
+          {
+            setBooleanRequired($3, true);
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | call TOKEN_LOGICAL_XOR call
+          {
+            setBooleanRequired($1, true);
+            setBooleanRequired($3, true);
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | bool TOKEN_LOGICAL_AND bool
+          {
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | call TOKEN_LOGICAL_AND bool
+          {
+            setBooleanRequired($1, true);
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | bool TOKEN_LOGICAL_AND call
+          {
+            setBooleanRequired($3, true);
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | call TOKEN_LOGICAL_AND call
+          {
+            setBooleanRequired($1, true);
+            setBooleanRequired($3, true);
+            $$ = $2;
+            $$->addChild($1); 
+            $$->addChild($3);
+            mpRootNode = $$; 
+          }
+        | TOKEN_STRUCTURE_OPEN bool TOKEN_STRUCTURE_CLOSE
+          {
+            $$ = $2;
+            mpRootNode = $$; 
+          }
+        | TOKEN_LOGICAL_NOT bool
+          {
+            $$ = $1;
+            $$->addChild($2);
+            mpRootNode = $$; 
+          }
+        | TOKEN_LOGICAL_NOT call
+          {
+            setBooleanRequired($2, true);
+            $$ = $1;
+            $$->addChild($2);
+            mpRootNode = $$; 
+          }
+
+vector:   TOKEN_STRUCTURE_VECTOR_OPEN TOKEN_STRUCTURE_VECTOR_CLOSE
+          {
+            $$ = new CEvaluationNodeVector();
+            mpNodeList->push_back($$);
+          }
+        | vstart TOKEN_STRUCTURE_VECTOR_CLOSE
+          {
+            $$ = $1;
+          }
+
+
+vstart:   TOKEN_STRUCTURE_VECTOR_OPEN exp
+          {
+            $$ = new CEvaluationNodeVector();
+            mpNodeList->push_back($$);
+            $$->addChild($2);
+          }
+        | TOKEN_STRUCTURE_VECTOR_OPEN vector
+          {
+            $$ = new CEvaluationNodeVector();
+            mpNodeList->push_back($$);
+            $$->addChild($2);
+          }
+        | vstart TOKEN_STRUCTURE_COMMA exp
+          {
+            $$->addChild($3);
+          }
+        | vstart TOKEN_STRUCTURE_COMMA vector
+          {
+            $$->addChild($3);
+          }
+
+call:     TOKEN_CALL TOKEN_STRUCTURE_CLOSE
+          {
+            $$ = $1;
+          }
+        | cstart exp TOKEN_STRUCTURE_CLOSE
+          {
+            $$ = $1;
+            $$->addChild($2); 
+          }
+        | cstart vector TOKEN_STRUCTURE_CLOSE
+          {
+            $$ = $1;
+            $$->addChild($2); 
+          }
+
+cstart:   TOKEN_CALL 
+          {
+            $$ = $1;
+          }
+        | cstart exp TOKEN_STRUCTURE_COMMA
+          {
+            $$ = $1;
+            $$->addChild($2); 
+          }
+        | cstart vector TOKEN_STRUCTURE_COMMA
+          {
+            $$ = $1;
+            $$->addChild($2); 
+          }
+;
+
+%%
+
