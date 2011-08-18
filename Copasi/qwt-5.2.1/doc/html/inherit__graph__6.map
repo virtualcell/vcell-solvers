@@ -1,0 +1,6 @@
+<map id="G" name="G">
+<area shape="rect" href="$class_qwt_data.html" title="QwtData defines an interface to any type of curve data." alt="" coords="5,56,77,83"/>
+<area shape="rect" href="$class_qwt_array_data.html" title="Data class containing two QwtArray&lt;double&gt; objects." alt="" coords="139,5,240,32"/>
+<area shape="rect" href="$class_qwt_c_pointer_data.html" title="Data class containing two pointers to memory blocks of doubles." alt="" coords="129,56,249,83"/>
+<area shape="rect" href="$class_qwt_polygon_f_data.html" title="Data class containing a single QwtArray&lt;QwtDoublePoint&gt; object." alt="" coords="127,107,252,133"/>
+</map>

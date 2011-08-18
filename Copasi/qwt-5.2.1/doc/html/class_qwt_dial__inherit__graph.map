@@ -1,0 +1,6 @@
+<map id="G" name="G">
+<area shape="rect" href="$class_qwt_analog_clock.html" title="An analog clock." alt="" coords="5,229,123,256"/>
+<area shape="rect" href="$class_qwt_compass.html" title="A Compass Widget." alt="" coords="147,229,245,256"/>
+<area shape="rect" href="$class_qwt_abstract_slider.html" title="An abstract base class for slider widgets." alt="" coords="67,80,192,107"/>
+<area shape="rect" href="$class_qwt_double_range.html" title="A class which controls a value within an interval." alt="" coords="69,5,189,32"/>
+</map>

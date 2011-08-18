@@ -1,0 +1,6 @@
+<map id="G" name="G">
+<area shape="rect" href="$class_qwt_event_pattern.html" title="A collection of event patterns." alt="" coords="5,5,125,32"/>
+<area shape="rect" href="$class_qwt_picker.html" title="QwtPicker provides selections on a widget." alt="" coords="175,5,255,32"/>
+<area shape="rect" href="$class_qwt_plot_picker.html" title="QwtPlotPicker provides selections on a plot canvas." alt="" coords="304,5,408,32"/>
+<area shape="rect" href="$class_qwt_plot_zoomer.html" title="QwtPlotZoomer provides stacked zooming for a plot widget." alt="" coords="456,5,568,32"/>
+</map>

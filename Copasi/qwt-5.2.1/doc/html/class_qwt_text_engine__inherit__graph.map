@@ -1,0 +1,5 @@
+<map id="G" name="G">
+<area shape="rect" href="$class_qwt_math_m_l_text_engine.html" title="Text Engine for the MathML renderer of the Qt solutions package." alt="" coords="5,80,160,107"/>
+<area shape="rect" href="$class_qwt_plain_text_engine.html" title="A text engine for plain texts." alt="" coords="184,80,320,107"/>
+<area shape="rect" href="$class_qwt_rich_text_engine.html" title="A text engine for Qt rich texts." alt="" coords="344,80,480,107"/>
+</map>
