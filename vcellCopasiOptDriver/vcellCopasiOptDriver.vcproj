@@ -190,7 +190,7 @@
 				>
 			</File>
 			<File
-				RelativePath="C:\Developer\eclipse\workspace\numerics\Optimization2\OptResultSet.cpp"
+				RelativePath="..\Optimization2\OptResultSet.cpp"
 				>
 			</File>
 			<File
@@ -198,7 +198,7 @@
 				>
 			</File>
 			<File
-				RelativePath="C:\Developer\eclipse\workspace\numerics\Optimization2\OptXmlWriter2.cpp"
+				RelativePath="..\Optimization2\OptXmlWriter2.cpp"
 				>
 			</File>
 			<File
@@ -216,7 +216,7 @@
 				>
 			</File>
 			<File
-				RelativePath="C:\Developer\eclipse\workspace\numerics\Optimization2\OptResultSet.h"
+				RelativePath="..\Optimization2\OptResultSet.h"
 				>
 			</File>
 			<File
@@ -224,7 +224,7 @@
 				>
 			</File>
 			<File
-				RelativePath="C:\Developer\eclipse\workspace\numerics\Optimization2\OptXmlWriter2.h"
+				RelativePath="..\Optimization2\OptXmlWriter2.h"
 				>
 			</File>
 			<File
