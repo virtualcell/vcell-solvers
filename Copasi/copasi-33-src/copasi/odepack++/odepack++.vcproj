@@ -122,7 +122,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="-Zm200 -w34100 -w34189"
 				Optimization="4"
-				AdditionalIncludeDirectories="&quot;..\..\..\CLAPACK\include&quot;,&quot;..\..\..\expat-2.0.1\Source\lib&quot;,&quot;..\..\..\expat-2.0.1\include&quot;,&quot;..\..\..\libsbml-4.3.1\include&quot;,&quot;..\..\..\raptor-1.4.19\include&quot;,&quot;..&quot;,&quot;..\..&quot;,c:\Qt\4.7.3\mkspecs\default"
+				AdditionalIncludeDirectories="&quot;..\..\..\expat-2.0.1\include&quot;;&quot;..\..\..\libsbml-4.3.1\include&quot;;&quot;..\..\..\raptor-1.4.19\include&quot;;..;..\..;..\..\..\CLAPACK\include;c:\Qt\4.7.3\mkspecs\default"
 				PreprocessorDefinitions="WIN32,QT_LARGEFILE_SUPPORT,WIN32,WITH_CSPMETHOD,COPASI_DEBUG,COPASI_EXTUNIT,XML_STATIC,LIBSBML_STATIC,LIBLAX_STATIC,RAPTOR_STATIC,SBW_STATIC,USE_CLAPACK"
 				GeneratePreprocessedFile="0"
 				ExceptionHandling="1"
