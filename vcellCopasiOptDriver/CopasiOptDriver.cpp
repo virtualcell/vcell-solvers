@@ -119,7 +119,7 @@ void CopasiOptDriver::run(string& optXML, string& resultSetXML)
 	string methodTypeName = optInfo.methodName;
 	CCopasiMethod::SubType type = nameToTypeEnum(methodTypeName, CCopasiMethod::SubTypeName, CCopasiMethod::unset);
 	vector<OptMethodParameter>& methodParameters = optInfo.methodParameters;
-	//fitMethod->clear
+	fitTask->setMethodType(type);
 	for(int i=0; i < methodParameters.size(); i++)
 	{
 		fitMethod->removeParameter(methodParameters[i].name);
@@ -131,7 +131,6 @@ void CopasiOptDriver::run(string& optXML, string& resultSetXML)
 			fitMethod->addParameter(methodParameters[i].name, CCopasiParameter::DOUBLE, (C_FLOAT64) methodParameters[i].value);
 		}
 	}
-	fitTask->setMethodType(type);
     // the object must be an instance of COptMethod or a subclass thereof
     CFitProblem* fitProblem=(CFitProblem*)fitTask->getProblem();
   
