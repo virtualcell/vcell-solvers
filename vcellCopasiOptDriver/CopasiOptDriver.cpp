@@ -115,11 +115,11 @@ void CopasiOptDriver::run(string& optXML, string& resultSetXML)
 	CFitTask* fitTask = (CFitTask *)((*dataModel->getTaskList())["Parameter Estimation"]);
     // the method in a fit task is an instance of COptMethod or a subclass of it.
 	// set fitMethod from optXML
-    COptMethod* fitMethod=(COptMethod*)fitTask->getMethod();
-	string methodTypeName = optInfo.methodName;
+    string methodTypeName = optInfo.methodName;
 	CCopasiMethod::SubType type = nameToTypeEnum(methodTypeName, CCopasiMethod::SubTypeName, CCopasiMethod::unset);
 	vector<OptMethodParameter>& methodParameters = optInfo.methodParameters;
 	fitTask->setMethodType(type);
+	COptMethod* fitMethod=(COptMethod*)fitTask->getMethod();
 	for(int i=0; i < methodParameters.size(); i++)
 	{
 		fitMethod->removeParameter(methodParameters[i].name);

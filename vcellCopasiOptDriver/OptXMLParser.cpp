@@ -123,6 +123,7 @@ void OptXMLParser::onEndElement(void *data, const char *el)
 	OptXMLParser* optXMLParser = (OptXMLParser*)data;
 	optXMLParser->currentElement = "";
 }
+
 void OptXMLParser::onCharacterData(void *data, const XML_Char *s, int len)
 {
 	OptXMLParser* optXMLParser = (OptXMLParser*)data;
@@ -135,9 +136,8 @@ void OptXMLParser::onCharacterData(void *data, const XML_Char *s, int len)
 	{
 		optXMLParser->optInfo.experimentalDataFile = string(s,0,len);
 	}
-	
-	cout<<""<<endl;
 }
+
 void OptXMLParser::parse(istream& inputstream)
 {
 	XML_Parser parser = XML_ParserCreate(NULL);
