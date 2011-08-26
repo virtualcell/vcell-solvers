@@ -24,7 +24,7 @@ using namespace std;
 #include <OptXmlWriter2.h>
 #include <tinyxml.h>
 #include "CopasiOptDriver.h"
-
+#include "VCellCallback.h"
 
 static const string DataType_int = "int";
 static const string DataType_float = "float";
@@ -97,7 +97,7 @@ CCopasiMethod::SubType CopasiOptDriver::nameToTypeEnum(const string& nameStr, co
     return enumDefault;
 }
 
-void CopasiOptDriver::run(string& optXML, string& resultSetXML)
+void CopasiOptDriver::run(string& optXML, string& resultSetXML, OptSolverCallbacks* optSolverCallbacks)
 {
 	OptXMLParser optParser;
 	stringstream ss(optXML);
@@ -203,6 +203,9 @@ void CopasiOptDriver::run(string& optXML, string& resultSetXML)
     
 	//to escape Copasi warnings
 	CCopasiMessage::clearDeque();
+	VCellCallback* vcpb = new VCellCallback(optSolverCallbacks);
+	fitTask->setCallBack(vcpb);
+
 	assert(CCopasiRootContainer::getDatamodelList()->size() > 0);
 	if (!fitTask->initialize(CCopasiTask::NO_OUTPUT, (*CCopasiRootContainer::getDatamodelList())[0], NULL))
 	{
@@ -211,9 +214,9 @@ void CopasiOptDriver::run(string& optXML, string& resultSetXML)
 
 	//dataModel->saveModel("d:\\aaa.cps", NULL, true, false);
 
-    // running the task for this example will probably take some time
-    result=fitTask->process(true);
-  
+    // running the task 
+	fitTask->process(true);
+
 	//get results
 	OptResultSet optResultSet;
 	optResultSet.bestRunResultSet.objectiveFunctionValue = fitProblem->getSolutionValue();

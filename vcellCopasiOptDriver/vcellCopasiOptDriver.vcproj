@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\Copasi\copasi-33-src\copasi\&quot;;&quot;..\Copasi\copasi-33-src&quot;;..\tinyxml;..\Optimization2;..\JNI\Win32\include;..\JNI\Win32\include\win32;..\Copasi\CLAPACK\include;&quot;..\Copasi\expat-2.0.1\include&quot;;c:\Qt\4.7.3\mkspecs\default"
+				AdditionalIncludeDirectories="&quot;..\Copasi\copasi-33-src\copasi\&quot;;&quot;..\Copasi\copasi-33-src&quot;;..\tinyxml;..\Optimization2;..\JNI\Win32\include;..\JNI\Win32\include\win32;..\Copasi\CLAPACK\include;&quot;..\Copasi\expat-2.0.1\include&quot;;c:\Qt\4.7.3\mkspecs\default;c:\Qt\4.7.3\include\;c:\Qt\4.7.3\include\QtCore"
 				PreprocessorDefinitions="WIN32;QT_LARGEFILE_SUPPORT;WITH_CSPMETHOD;COPASI_DEBUG;COPASI_EXTUNIT;XML_STATIC;LIBSBML_STATIC;LIBLAX_STATIC;RAPTOR_STATIC;SBW_STATIC;USE_CLAPACK;DLLDIR_EX"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="0"
@@ -64,7 +64,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				IgnoreImportLibrary="true"
-				AdditionalDependencies="lapackd.lib blasd.lib libf2cd.lib libexpatd.lib libsbmld.lib raptord.lib delayimp.lib iconv_a.lib libxml2_a.lib libxmlsec_a.lib libxslt_a.lib zlib.lib qwtd.lib qwtplot3dd.lib"
+				AdditionalDependencies="lapackd.lib blasd.lib libf2cd.lib libexpatd.lib libsbmld.lib raptord.lib delayimp.lib iconv_a.lib libxml2_a.lib libxmlsec_a.lib libxslt_a.lib zlib.lib qwtd.lib qwtplot3dd.lib c:\Qt\4.7.3\lib\QtCored4.lib"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="..\Copasi\CLAPACK\lib;&quot;..\Copasi\zlib-1.2.5\lib&quot;;..\Copasi\qwtplot3d\lib;&quot;..\Copasi\qwt-5.2.1\lib&quot;;&quot;..\Copasi\expat-2.0.1\lib&quot;;&quot;..\Copasi\libsbml-4.3.1\lib&quot;;&quot;..\Copasi\libxmlsec-1.2.13.win32\lib&quot;;&quot;..\Copasi\libxslt-1.1.26.win32\lib&quot;;&quot;..\Copasi\libxml2-2.7.7.win32\lib&quot;;&quot;..\Copasi\iconv-1.9.2.win32\lib&quot;;&quot;..\Copasi\raptor-1.4.19\lib&quot;"
 				IgnoreDefaultLibraryNames="libcmt.lib,libcmtd.lib,msvcrt.lib,msvcprt.lib,libcpmtd.lib"
@@ -142,6 +142,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="lapack.lib blas.lib libf2c.lib libexpat.lib libsbml.lib raptor.lib delayimp.lib iconv_a.lib libxml2_a.lib libxmlsec_a.lib libxslt_a.lib zlib.lib qwt.lib qwtplot3d.lib"
+				OutputFile="C:\Developer\eclipse\workspace\VCell\nativelibs\Win32\$(ProjectName).dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\Copasi\CLAPACK\lib;&quot;..\Copasi\zlib-1.2.5\lib&quot;;..\Copasi\qwtplot3d\lib;&quot;..\Copasi\qwt-5.2.1\lib&quot;;&quot;..\Copasi\expat-2.0.1\lib&quot;;&quot;..\Copasi\libsbml-4.3.1\lib&quot;;&quot;..\Copasi\libxmlsec-1.2.13.win32\lib&quot;;&quot;..\Copasi\libxslt-1.1.26.win32\lib&quot;;&quot;..\Copasi\libxml2-2.7.7.win32\lib&quot;;&quot;..\Copasi\iconv-1.9.2.win32\lib&quot;;&quot;..\Copasi\raptor-1.4.19\lib&quot;"
 				GenerateDebugInformation="true"
@@ -205,6 +206,10 @@
 				RelativePath=".\org_vcell_optimization_CopasiOptimizationSolver.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\VCellCallback.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -229,6 +234,10 @@
 			</File>
 			<File
 				RelativePath=".\org_vcell_optimization_CopasiOptimizationSolver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\VCellCallback.h"
 				>
 			</File>
 		</Filter>

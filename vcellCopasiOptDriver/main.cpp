@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
 	string s(buffer);
 	string resultSetXML;
 	CopasiOptDriver copasiOptDriver;
-	copasiOptDriver.run(s, resultSetXML);
+	copasiOptDriver.run(s, resultSetXML, 0);
 
 	cout << "the end of program";
 	      //return new COPASIOptResults(objFuncValue, numEvaluation, paramNames, paramVals);
