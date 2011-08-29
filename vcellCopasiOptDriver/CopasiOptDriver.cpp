@@ -113,9 +113,9 @@ void CopasiOptDriver::run(string& optXML, string& resultSetXML, OptSolverCallbac
 	
 	//create parameter estimation task
 	CFitTask* fitTask = (CFitTask *)((*dataModel->getTaskList())["Parameter Estimation"]);
-    // the method in a fit task is an instance of COptMethod or a subclass of it.
+	// the method in a fit task is an instance of COptMethod or a subclass of it.
 	// set fitMethod from optXML
-    string methodTypeName = optInfo.methodName;
+	string methodTypeName = optInfo.methodName;
 	CCopasiMethod::SubType type = nameToTypeEnum(methodTypeName, CCopasiMethod::SubTypeName, CCopasiMethod::unset);
 	vector<OptMethodParameter>& methodParameters = optInfo.methodParameters;
 	fitTask->setMethodType(type);
@@ -131,75 +131,75 @@ void CopasiOptDriver::run(string& optXML, string& resultSetXML, OptSolverCallbac
 			fitMethod->addParameter(methodParameters[i].name, CCopasiParameter::DOUBLE, (C_FLOAT64) methodParameters[i].value);
 		}
 	}
-    // the object must be an instance of COptMethod or a subclass thereof
-    CFitProblem* fitProblem=(CFitProblem*)fitTask->getProblem();
+	// the object must be an instance of COptMethod or a subclass thereof
+	CFitProblem* fitProblem=(CFitProblem*)fitTask->getProblem();
   
 	//Set up experimental data
-    CExperimentSet* experimentSet=(CExperimentSet*)fitProblem->getParameter("Experiment Set");
-    // first experiment (we only have one here)
-    CExperiment* experiment=new CExperiment(dataModel);
-    // tell COPASI where to find the data
-    experiment->setFileName(optInfo.experimentalDataFile);
-    // the data start in row 1 and goes to row 236
-    experiment->setFirstRow(1);
+	CExperimentSet* experimentSet=(CExperimentSet*)fitProblem->getParameter("Experiment Set");
+	// first experiment (we only have one here)
+	CExperiment* experiment=new CExperiment(dataModel);
+	// tell COPASI where to find the data
+	experiment->setFileName(optInfo.experimentalDataFile);
+	// the data start in row 1 and goes to row 236
+	experiment->setFirstRow(1);
 	experiment->setLastRow(optInfo.expDataLastRow);
-    experiment->setHeaderRow(1);
-    experiment->setExperimentType(CCopasiTask.timeCourse); //time course, which will take first column as Time.
+	experiment->setHeaderRow(1);
+	experiment->setExperimentType(CCopasiTask.timeCourse); //time course, which will take first column as Time.
 	//set up var to exp data map, length is total vars + "t"
 	vector<string>& vars = optInfo.dependentVarNames;
 	experiment->setNumColumns(1 + vars.size());
-    CExperimentObjectMap& objectMap=experiment->getObjectMap();
-    bool result = objectMap.setNumCols(1 + vars.size());
+	CExperimentObjectMap& objectMap=experiment->getObjectMap();
+	bool result = objectMap.setNumCols(1 + vars.size());
 
 	//time mapping
 	result = objectMap.setRole(0,CExperiment.time);
-    CModel* model=dataModel->getModel();
+	CModel* model=dataModel->getModel();
 	CCopasiObjectName objectName("Reference=Time");
-    const CCopasiObject* timeReference=model->getObject(objectName);
-    objectMap.setObjectCN(0,timeReference->getCN());
+	const CCopasiObject* timeReference=model->getObject(objectName);
+	objectMap.setObjectCN(0,timeReference->getCN());
 	
-    // now we tell COPASI which column contain the concentrations of
-    // metabolites and belong to dependent variables
+	// now we tell COPASI which column contain the concentrations of
+	// metabolites and belong to dependent variables
 	CKeyFactory* keyFactory=CCopasiRootContainer::getKeyFactory();
-    int count = 1; //starts from 1 to skip first Time column
+	int count = 1; //starts from 1 to skip first Time column
 	for(int i=0; i<vars.size(); i++)
-    {
+	{
 		string& modelVar =  vars[i];
-    	CModelValue* copasiVar = getModelValue(model, modelVar);
-    	if(copasiVar != NULL)
-    	{
-        	//cout << "metabolite's name:" << copasiVar->getObjectName() << endl;
+		CModelValue* copasiVar = getModelValue(model, modelVar);
+		if(copasiVar != NULL)
+		{
+    		//cout << "metabolite's name:" << copasiVar->getObjectName() << endl;
 			objectMap.setRole(count,CExperiment.dependent); 
 			CCopasiObjectName objName("Reference=Concentration");
-        	const CCopasiObject* particleReference = copasiVar->getObject(objName);
-	        objectMap.setObjectCN(count,copasiVar->getCN());
-	        count ++;
-    	}
-    }
+    		const CCopasiObject* particleReference = copasiVar->getObject(objName);
+			objectMap.setObjectCN(count,copasiVar->getCN());
+			count ++;
+		}
+	}
 	        
 	experimentSet->addParameter(experiment);
 	
-    // now we have to define the fit items from opt XML
-    CCopasiParameterGroup* optimizationItemGroup=(CCopasiParameterGroup*)fitProblem->getParameter("OptimizationItemList");
+	// now we have to define the fit items from opt XML
+	CCopasiParameterGroup* optimizationItemGroup=(CCopasiParameterGroup*)fitProblem->getParameter("OptimizationItemList");
 	vector<OptParameter>& optParameters = optInfo.optParameters;
 	for(int i=0; i<optParameters.size(); i++)
-    {
+	{
 		string& parameterName = optParameters[i].name;
-    	// define a CFitItem in copasi
+		// define a CFitItem in copasi
 		CModelValue* copasiVar = getModelValue(model, parameterName);
     	
-    	CCopasiObjectName cObjName("Reference=InitialValue");
+		CCopasiObjectName cObjName("Reference=InitialValue");
 		const CCopasiObject* parameterReference = copasiVar->getObject(cObjName);
-        CFitItem* fitItem = new CFitItem(dataModel);
-        fitItem->setObjectCN(parameterReference->getCN());
+		CFitItem* fitItem = new CFitItem(dataModel);
+		fitItem->setObjectCN(parameterReference->getCN());
 		fitItem->setStartValue(optParameters[i].iniVal); 
 		CCopasiObjectName cObjName1(optParameters[i].lowerbound);
 		CCopasiObjectName cObjName2(optParameters[i].upperbound);
-        fitItem->setLowerBound(cObjName1);
+		fitItem->setLowerBound(cObjName1);
 		fitItem->setUpperBound(cObjName2);
-        // add the fit item to the parameter group
-        optimizationItemGroup->addParameter(fitItem);
-    }
+		// add the fit item to the parameter group
+		optimizationItemGroup->addParameter(fitItem);
+	}
     
 	//to escape Copasi warnings
 	CCopasiMessage::clearDeque();
@@ -214,7 +214,7 @@ void CopasiOptDriver::run(string& optXML, string& resultSetXML, OptSolverCallbac
 
 	//dataModel->saveModel("d:\\aaa.cps", NULL, true, false);
 
-    // running the task 
+	// running the task 
 	fitTask->process(true);
 
 	//get results

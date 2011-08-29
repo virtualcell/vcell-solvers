@@ -122,7 +122,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;..\Copasi\copasi-33-src\copasi\&quot;;&quot;..\Copasi\copasi-33-src&quot;;..\tinyxml;..\Optimization2;..\JNI\Win32\include;..\JNI\Win32\include\win32;..\Copasi\CLAPACK\include;&quot;..\Copasi\expat-2.0.1\include&quot;;c:\Qt\4.7.3\mkspecs\default"
+				AdditionalIncludeDirectories="&quot;..\Copasi\copasi-33-src\copasi\compareExpressions&quot;;&quot;..\Copasi\copasi-33-src\copasi\utilities&quot;;&quot;..\Copasi\copasi-33-src\copasi\&quot;;&quot;..\Copasi\copasi-33-src&quot;;..\tinyxml;..\Optimization2;..\JNI\Win32\include;..\JNI\Win32\include\win32;..\Copasi\CLAPACK\include;&quot;..\Copasi\expat-2.0.1\include&quot;;&quot;..\Copasi\copasi-33-src\copasi\commandline&quot;;c:\Qt\4.7.3\mkspecs\default"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;QT_LARGEFILE_SUPPORT;WITH_CSPMETHOD;COPASI_DEBUG;COPASI_EXTUNIT;XML_STATIC;LIBSBML_STATIC;LIBLAX_STATIC;RAPTOR_STATIC;SBW_STATIC;USE_CLAPACK"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
