@@ -48,7 +48,7 @@
 				AdditionalIncludeDirectories="&quot;..\..\..\CLAPACK\include&quot;,&quot;..\..\..\expat-2.0.1\Source\lib&quot;,&quot;..\..\..\expat-2.0.1\include&quot;,&quot;..\..\..\libsbml-4.3.1\include&quot;,&quot;..\..\..\raptor-1.4.19\include&quot;,&quot;c:\Qt\4.7.3\include\QtCore&quot;,&quot;c:\Qt\4.7.3\include\QtGui&quot;,&quot;c:\Qt\4.7.3\include\Qt3Support&quot;,&quot;c:\Qt\4.7.3\include\QtWebKit&quot;,&quot;c:\Qt\4.7.3\include&quot;,&quot;..&quot;,&quot;..\..&quot;,&quot;..\..\..\qwt-5.2.1\include&quot;,&quot;..\..\..\qwtplot3d\include&quot;,&quot;c:\Qt\4.7.3\include\ActiveQt&quot;,&quot;release&quot;,&quot;.&quot;,c:\Qt\4.7.3\mkspecs\default"
 				PreprocessorDefinitions="QT_NO_DEBUG,NDEBUG,WIN32,QT_LARGEFILE_SUPPORT,WIN32,WITH_CSPMETHOD,XML_STATIC,LIBSBML_STATIC,LIBLAX_STATIC,RAPTOR_STATIC,SBW_STATIC,USE_CLAPACK,QT_THREAD_SUPPORT,QT_DLL,QT_NO_DEBUG,QT_WEBKIT_LIB,QT_QT3SUPPORT_LIB,QT3_SUPPORT,QT_GUI_LIB,QT_CORE_LIB,QT_HAVE_MMX,QT_HAVE_3DNOW,QT_HAVE_SSE,QT_HAVE_MMXEXT,QT_HAVE_SSE2,NDEBUG"
 				GeneratePreprocessedFile="0"
-				ExceptionHandling="1"
+				ExceptionHandling="2"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				TreatWChar_tAsBuiltInType="false"
@@ -125,7 +125,7 @@
 				AdditionalIncludeDirectories="&quot;..\..\..\CLAPACK\include&quot;,&quot;..\..\..\expat-2.0.1\Source\lib&quot;,&quot;..\..\..\expat-2.0.1\include&quot;,&quot;..\..\..\libsbml-4.3.1\include&quot;,&quot;..\..\..\raptor-1.4.19\include&quot;,&quot;c:\Qt\4.7.3\include\QtCore&quot;,&quot;c:\Qt\4.7.3\include\QtGui&quot;,&quot;c:\Qt\4.7.3\include\Qt3Support&quot;,&quot;c:\Qt\4.7.3\include\QtWebKit&quot;,&quot;c:\Qt\4.7.3\include&quot;,&quot;..&quot;,&quot;..\..&quot;,&quot;..\..\..\qwt-5.2.1\include&quot;,&quot;..\..\..\qwtplot3d\include&quot;,&quot;c:\Qt\4.7.3\include\ActiveQt&quot;,&quot;debug&quot;,&quot;.&quot;,c:\Qt\4.7.3\mkspecs\default"
 				PreprocessorDefinitions="WIN32,QT_LARGEFILE_SUPPORT,WIN32,WITH_CSPMETHOD,COPASI_DEBUG,COPASI_EXTUNIT,XML_STATIC,LIBSBML_STATIC,LIBLAX_STATIC,RAPTOR_STATIC,SBW_STATIC,USE_CLAPACK,QT_THREAD_SUPPORT,QT_DLL,QT_WEBKIT_LIB,QT_QT3SUPPORT_LIB,QT3_SUPPORT,QT_GUI_LIB,QT_CORE_LIB,QT_HAVE_MMX,QT_HAVE_3DNOW,QT_HAVE_SSE,QT_HAVE_MMXEXT,QT_HAVE_SSE2"
 				GeneratePreprocessedFile="0"
-				ExceptionHandling="1"
+				ExceptionHandling="2"
 				RuntimeLibrary="3"
 				BufferSecurityCheck="false"
 				TreatWChar_tAsBuiltInType="false"
@@ -221,10 +221,10 @@
 			UniqueIdentifier="{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}"
 			>
 			<File
-				RelativePath="release\moc_wizard.cpp"
+				RelativePath="debug\moc_wizard.cpp"
 				>
 				<FileConfiguration
-					Name="Debug|Win32"
+					Name="Release|Win32"
 					ExcludedFromBuild="true"
 					>
 					<Tool
@@ -233,10 +233,10 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="debug\moc_wizard.cpp"
+				RelativePath="release\moc_wizard.cpp"
 				>
 				<FileConfiguration
-					Name="Release|Win32"
+					Name="Debug|Win32"
 					ExcludedFromBuild="true"
 					>
 					<Tool
