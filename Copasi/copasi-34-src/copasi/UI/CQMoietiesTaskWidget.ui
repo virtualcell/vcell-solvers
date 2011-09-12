@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui version="4.0">
+<comment> Begin CVS Header </comment>
+<comment>   $Source: /fs/turing/cvs/copasi_dev/copasi/UI/CQMoietiesTaskWidget.ui,v $ </comment>
+<comment>   $Revision: 1.4 $ </comment>
+<comment>   $Name: Build-33 $ </comment>
+<comment>   $Author: shoops $ </comment>
+<comment>   $Date: 2010/06/09 16:04:29 $ </comment>
+<comment> End CVS Header </comment>
+
+<comment> Copyright (C) 2010 by Pedro Mendes, Virginia Tech Intellectual </comment>
+<comment> Properties, Inc., University of Heidelberg, and The University </comment>
+<comment> of Manchester. </comment>
+<comment> All rights reserved. </comment>
+
+ <comment> All rights reserved. </comment>
+ <class>CQMoietiesTaskWidget</class>
+ <widget class="TaskWidget" name="CQMoietiesTaskWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>260</width>
+    <height>23</height>
+   </rect>
+  </property>
+  <property name="caption" stdset="0">
+   <string>Mass Conservation</string>
+  </property>
+  <layout class="QVBoxLayout">
+   <item>
+    <spacer name="mpSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Expanding</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <pixmapfunction>qPixmapFromMimeSource</pixmapfunction>
+ <customwidgets>
+  <customwidget>
+   <class>TaskWidget</class>
+   <extends>QWidget</extends>
+   <header>TaskWidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <includes>
+  <include location="local">TaskWidget.h</include>
+ </includes>
+ <resources/>
+ <connections/>
+</ui>

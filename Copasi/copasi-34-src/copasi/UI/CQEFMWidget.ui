@@ -1,0 +1,52 @@
+<ui version="4.0" >
+<comment> Begin CVS Header </comment>
+<comment>   $Source: /fs/turing/cvs/copasi_dev/copasi/UI/CQEFMWidget.ui,v $ </comment>
+<comment>   $Revision: 1.4 $ </comment>
+<comment>   $Name: Build-33 $ </comment>
+<comment>   $Author: ssahle $ </comment>
+<comment>   $Date: 2009/10/01 08:58:51 $ </comment>
+<comment> End CVS Header </comment>
+
+<comment> Copyright (C) 2008 by Pedro Mendes, Virginia Tech Intellectual </comment>
+<comment> Properties, Inc., EML Research, gGmbH, University of Heidelberg, </comment>
+<comment> and The University of Manchester. </comment>
+<comment> All rights reserved. </comment>
+
+ <comment> All rights reserved. </comment>
+ <class>CQEFMWidget</class>
+ <widget class="TaskWidget" name="CQEFMWidget" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>363</width>
+    <height>25</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout" >
+   <item>
+    <widget class="Line" name="line1" >
+     <property name="orientation" >
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>TaskWidget</class>
+   <extends>QWidget</extends>
+   <header>TaskWidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+ <slots>
+  <slot>taskJacobianToggled()</slot>
+ </slots>
+</ui>
