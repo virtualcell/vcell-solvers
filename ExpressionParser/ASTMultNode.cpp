@@ -98,6 +98,7 @@ string ASTMultNode::infixString(int lang, NameScope* nameScope)
 	}
 	buffer << ")";
 	string s = buffer.str();
+	delete [] boolChildFlags;
 	return s;
 }
 
