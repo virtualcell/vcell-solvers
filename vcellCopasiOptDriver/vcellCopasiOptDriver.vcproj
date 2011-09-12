@@ -12,6 +12,9 @@
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
@@ -41,9 +44,10 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\Copasi\copasi-33-src\copasi\&quot;;&quot;..\Copasi\copasi-33-src&quot;;..\tinyxml;..\Optimization2;..\JNI\Win32\include;..\JNI\Win32\include\win32;..\Copasi\CLAPACK\include;&quot;..\Copasi\expat-2.0.1\include&quot;;c:\Qt\4.7.3\mkspecs\default;c:\Qt\4.7.3\include\;c:\Qt\4.7.3\include\QtCore"
+				AdditionalIncludeDirectories="&quot;..\Copasi\copasi-34-src\copasi\commandline&quot;;&quot;..\Copasi\copasi-34-src\copasi\compareExpressions&quot;;&quot;..\Copasi\copasi-34-src\copasi\utilities&quot;;&quot;..\Copasi\copasi-34-src\copasi\&quot;;&quot;..\Copasi\copasi-34-src&quot;;..\tinyxml;..\Optimization2;..\JNI\Win32\include;..\JNI\Win32\include\win32;..\Copasi\CLAPACK\include;&quot;..\Copasi\expat-2.0.1\include&quot;;c:\Qt\4.7.3\mkspecs\default"
 				PreprocessorDefinitions="WIN32;QT_LARGEFILE_SUPPORT;WITH_CSPMETHOD;COPASI_DEBUG;COPASI_EXTUNIT;XML_STATIC;LIBSBML_STATIC;LIBLAX_STATIC;RAPTOR_STATIC;SBW_STATIC;USE_CLAPACK;DLLDIR_EX"
 				MinimalRebuild="false"
+				ExceptionHandling="2"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="3"
 				BufferSecurityCheck="false"
@@ -64,7 +68,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				IgnoreImportLibrary="true"
-				AdditionalDependencies="lapackd.lib blasd.lib libf2cd.lib libexpatd.lib libsbmld.lib raptord.lib delayimp.lib iconv_a.lib libxml2_a.lib libxmlsec_a.lib libxslt_a.lib zlib.lib qwtd.lib qwtplot3dd.lib c:\Qt\4.7.3\lib\QtCored4.lib"
+				AdditionalDependencies="lapackd.lib blasd.lib libf2cd.lib libexpatd.lib libsbmld.lib raptord.lib delayimp.lib"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="..\Copasi\CLAPACK\lib;&quot;..\Copasi\zlib-1.2.5\lib&quot;;..\Copasi\qwtplot3d\lib;&quot;..\Copasi\qwt-5.2.1\lib&quot;;&quot;..\Copasi\expat-2.0.1\lib&quot;;&quot;..\Copasi\libsbml-4.3.1\lib&quot;;&quot;..\Copasi\libxmlsec-1.2.13.win32\lib&quot;;&quot;..\Copasi\libxslt-1.1.26.win32\lib&quot;;&quot;..\Copasi\libxml2-2.7.7.win32\lib&quot;;&quot;..\Copasi\iconv-1.9.2.win32\lib&quot;;&quot;..\Copasi\raptor-1.4.19\lib&quot;"
 				IgnoreDefaultLibraryNames="libcmt.lib,libcmtd.lib,msvcrt.lib,msvcprt.lib,libcpmtd.lib"
@@ -122,8 +126,9 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;..\Copasi\copasi-33-src\copasi\compareExpressions&quot;;&quot;..\Copasi\copasi-33-src\copasi\utilities&quot;;&quot;..\Copasi\copasi-33-src\copasi\&quot;;&quot;..\Copasi\copasi-33-src&quot;;..\tinyxml;..\Optimization2;..\JNI\Win32\include;..\JNI\Win32\include\win32;..\Copasi\CLAPACK\include;&quot;..\Copasi\expat-2.0.1\include&quot;;&quot;..\Copasi\copasi-33-src\copasi\commandline&quot;;c:\Qt\4.7.3\mkspecs\default"
+				AdditionalIncludeDirectories="&quot;..\Copasi\copasi-34-src\copasi\commandline&quot;;&quot;..\Copasi\copasi-34-src\copasi\compareExpressions&quot;;&quot;..\Copasi\copasi-34-src\copasi\utilities&quot;;&quot;..\Copasi\copasi-34-src\copasi\&quot;;&quot;..\Copasi\copasi-34-src&quot;;..\tinyxml;..\Optimization2;..\JNI\Win32\include;..\JNI\Win32\include\win32;..\Copasi\CLAPACK\include;&quot;..\Copasi\expat-2.0.1\include&quot;;c:\Qt\4.7.3\mkspecs\default"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;QT_LARGEFILE_SUPPORT;WITH_CSPMETHOD;COPASI_DEBUG;COPASI_EXTUNIT;XML_STATIC;LIBSBML_STATIC;LIBLAX_STATIC;RAPTOR_STATIC;SBW_STATIC;USE_CLAPACK"
+				ExceptionHandling="2"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -141,8 +146,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="lapack.lib blas.lib libf2c.lib libexpat.lib libsbml.lib raptor.lib delayimp.lib iconv_a.lib libxml2_a.lib libxmlsec_a.lib libxslt_a.lib zlib.lib qwt.lib qwtplot3d.lib"
-				OutputFile="C:\Developer\eclipse\workspace\VCell\nativelibs\Win32\$(ProjectName).dll"
+				AdditionalDependencies="lapack.lib blas.lib libf2c.lib libexpat.lib libsbml.lib raptor.lib delayimp.lib"
+				OutputFile="..\..\VCell\nativelibs\Win32\$(ProjectName).dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\Copasi\CLAPACK\lib;&quot;..\Copasi\zlib-1.2.5\lib&quot;;..\Copasi\qwtplot3d\lib;&quot;..\Copasi\qwt-5.2.1\lib&quot;;&quot;..\Copasi\expat-2.0.1\lib&quot;;&quot;..\Copasi\libsbml-4.3.1\lib&quot;;&quot;..\Copasi\libxmlsec-1.2.13.win32\lib&quot;;&quot;..\Copasi\libxslt-1.1.26.win32\lib&quot;;&quot;..\Copasi\libxml2-2.7.7.win32\lib&quot;;&quot;..\Copasi\iconv-1.9.2.win32\lib&quot;;&quot;..\Copasi\raptor-1.4.19\lib&quot;"
 				GenerateDebugInformation="true"
@@ -150,6 +155,168 @@
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;..\Copasi\copasi-34-src\copasi\commandline&quot;;&quot;..\Copasi\copasi-34-src\copasi\compareExpressions&quot;;&quot;..\Copasi\copasi-34-src\copasi\utilities&quot;;&quot;..\Copasi\copasi-34-src\copasi\&quot;;&quot;..\Copasi\copasi-34-src&quot;;..\tinyxml;..\Optimization2;..\JNI\Win32\include;..\JNI\Win32\include\win32;..\Copasi\CLAPACK\include;&quot;..\Copasi\expat-2.0.1\include&quot;;c:\Qt\4.7.3\mkspecs\default"
+				PreprocessorDefinitions="WIN32;QT_LARGEFILE_SUPPORT;WITH_CSPMETHOD;COPASI_DEBUG;COPASI_EXTUNIT;XML_STATIC;LIBSBML_STATIC;LIBLAX_STATIC;RAPTOR_STATIC;SBW_STATIC;USE_CLAPACK;DLLDIR_EX"
+				MinimalRebuild="false"
+				ExceptionHandling="2"
+				BasicRuntimeChecks="0"
+				RuntimeLibrary="3"
+				BufferSecurityCheck="false"
+				TreatWChar_tAsBuiltInType="false"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				IgnoreImportLibrary="true"
+				AdditionalDependencies="lapackd_x64.lib blasd_x64.lib libf2cd_x64.lib libexpatd_x64.lib libsbmld_x64.lib raptord_x64.lib delayimp.lib"
+				OutputFile="$(OutDir)\$(ProjectName)_x64.exe"
+				LinkIncremental="0"
+				AdditionalLibraryDirectories="..\Copasi\CLAPACK\lib;&quot;..\Copasi\zlib-1.2.5\lib&quot;;..\Copasi\qwtplot3d\lib;&quot;..\Copasi\qwt-5.2.1\lib&quot;;&quot;..\Copasi\expat-2.0.1\lib&quot;;&quot;..\Copasi\libsbml-4.3.1\lib&quot;;&quot;..\Copasi\libxmlsec-1.2.13.win32\lib&quot;;&quot;..\Copasi\libxslt-1.1.26.win32\lib&quot;;&quot;..\Copasi\libxml2-2.7.7.win32\lib&quot;;&quot;..\Copasi\iconv-1.9.2.win32\lib&quot;;&quot;..\Copasi\raptor-1.4.19\lib&quot;"
+				IgnoreDefaultLibraryNames="libcmt.lib,libcmtd.lib,msvcrt.lib,msvcprt.lib,libcpmtd.lib"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile=""
+				SubSystem="1"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="1"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="&quot;..\Copasi\copasi-34-src\copasi\commandline&quot;;&quot;..\Copasi\copasi-34-src\copasi\compareExpressions&quot;;&quot;..\Copasi\copasi-34-src\copasi\utilities&quot;;&quot;..\Copasi\copasi-34-src\copasi\&quot;;&quot;..\Copasi\copasi-34-src&quot;;..\tinyxml;..\Optimization2;..\JNI\Win32\include;..\JNI\Win32\include\win32;..\Copasi\CLAPACK\include;&quot;..\Copasi\expat-2.0.1\include&quot;;c:\Qt\4.7.3\mkspecs\default"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;QT_LARGEFILE_SUPPORT;WITH_CSPMETHOD;COPASI_DEBUG;COPASI_EXTUNIT;XML_STATIC;LIBSBML_STATIC;LIBLAX_STATIC;RAPTOR_STATIC;SBW_STATIC;USE_CLAPACK"
+				ExceptionHandling="2"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="lapack_x64.lib blas_x64.lib libf2c_x64.lib libexpat_x64.lib libsbml_x64.lib raptor_x64.lib delayimp.lib"
+				OutputFile="..\..\VCell\nativelibs\Win64\$(ProjectName)_x64.dll"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\Copasi\CLAPACK\lib;&quot;..\Copasi\zlib-1.2.5\lib&quot;;..\Copasi\qwtplot3d\lib;&quot;..\Copasi\qwt-5.2.1\lib&quot;;&quot;..\Copasi\expat-2.0.1\lib&quot;;&quot;..\Copasi\libsbml-4.3.1\lib&quot;;&quot;..\Copasi\libxmlsec-1.2.13.win32\lib&quot;;&quot;..\Copasi\libxslt-1.1.26.win32\lib&quot;;&quot;..\Copasi\libxml2-2.7.7.win32\lib&quot;;&quot;..\Copasi\iconv-1.9.2.win32\lib&quot;;&quot;..\Copasi\raptor-1.4.19\lib&quot;"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
