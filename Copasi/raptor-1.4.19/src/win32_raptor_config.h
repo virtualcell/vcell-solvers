@@ -38,7 +38,7 @@ extern "C" {
 
 #define HAVE_STDLIB_H 1
 
-#if 0
+#if 1
 /* For using expat on win32 */
 #define RAPTOR_XML_EXPAT 1
 #define HAVE_EXPAT_H 1
@@ -118,7 +118,7 @@ extern "C" {
 #define RAPTOR_V2_AVAILABLE 1
 
 #define RAPTOR_PARSER_GUESS 1
-#define RAPTOR_PARSER_GRDDL 1
+//#define RAPTOR_PARSER_GRDDL 1
 #define RAPTOR_PARSER_N3 1
 #define RAPTOR_PARSER_TURTLE 1
 #define RAPTOR_PARSER_NTRIPLES 1
@@ -134,7 +134,7 @@ extern "C" {
 
 
 #include <windows.h>
-
+#include <errno.h>
 #include <io.h>
 #include <memory.h>
 

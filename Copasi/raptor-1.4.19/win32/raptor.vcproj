@@ -11,6 +11,9 @@
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
@@ -49,7 +52,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\libxslt-1.1.26.win32\include&quot;;&quot;..\..\iconv-1.9.2.win32\include&quot;;&quot;..\..\libxml2-2.7.7.win32\include&quot;;..\src;&quot;..\..\..\curl-7.13.2\include&quot;;..\librdfa;&quot;..\..\expat-2.0.1\include&quot;"
+				AdditionalIncludeDirectories="..\src;&quot;..\..\..\curl-7.13.2\include&quot;;..\librdfa;&quot;..\..\expat-2.0.1\include&quot;"
 				PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_USRDLL;WIN32_EXPORTS;RAPTOR_DEBUG;RAPTOR_V2_AVAILABLE;LIBRDFA_IN_RAPTOR"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -95,9 +98,244 @@
 			/>
 		</Configuration>
 		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="3"
+				TypeLibraryName=".\Debug/raptor.tlb"
+				HeaderFileName=""
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;..\..\libxslt-1.1.26.win32\include&quot;;&quot;..\..\iconv-1.9.2.win32\include&quot;;&quot;..\..\libxml2-2.7.7.win32\include&quot;;..\src;&quot;..\..\..\curl-7.13.2\include&quot;;..\librdfa;&quot;..\..\expat-2.0.1\include&quot;"
+				PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_USRDLL;WIN32_EXPORTS;RAPTOR_DEBUG;RAPTOR_V2_AVAILABLE;LIBRDFA_IN_RAPTOR"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				PrecompiledHeaderFile=".\Debug/raptor.pch"
+				AssemblerListingLocation=".\Debug/"
+				ObjectFile=".\Debug/"
+				ProgramDataBaseFileName=".\Debug/"
+				BrowseInformation="1"
+				WarningLevel="4"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\$(ProjectName)d_x64.lib"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
 			Name="Release|Win32"
 			OutputDirectory=".\Release"
 			IntermediateDirectory=".\Release"
+			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName=".\Release/raptor.tlb"
+				HeaderFileName=""
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="1"
+				AdditionalIncludeDirectories="..\src;&quot;..\..\..\curl-7.13.2\include&quot;;..\librdfa;&quot;..\..\expat-2.0.1\include&quot;"
+				PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_USRDLL;WIN32_EXPORTS;RAPTOR_V2_AVAILABLE;LIBRDFA_IN_RAPTOR"
+				StringPooling="true"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				PrecompiledHeaderFile=".\Release/raptor.pch"
+				AssemblerListingLocation=".\Release/"
+				ObjectFile=".\Release/"
+				ProgramDataBaseFileName=".\Release/"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="3"
+				TypeLibraryName=".\Release/raptor.tlb"
+				HeaderFileName=""
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="1"
+				AdditionalIncludeDirectories="&quot;..\..\libxslt-1.1.26.win32\include&quot;;&quot;..\..\iconv-1.9.2.win32\include&quot;;&quot;..\..\libxml2-2.7.7.win32\include&quot;;..\src;&quot;..\..\..\curl-7.13.2\include&quot;;..\librdfa;&quot;..\..\expat-2.0.1\include&quot;"
+				PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_USRDLL;WIN32_EXPORTS;RAPTOR_V2_AVAILABLE;LIBRDFA_IN_RAPTOR"
+				StringPooling="true"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				PrecompiledHeaderFile=".\Release/raptor.pch"
+				AssemblerListingLocation=".\Release/"
+				ObjectFile=".\Release/"
+				ProgramDataBaseFileName=".\Release/"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="x64 Release|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -172,11 +410,88 @@
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
+		<Configuration
+			Name="x64 Release|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="3"
+				TypeLibraryName=".\Release/raptor.tlb"
+				HeaderFileName=""
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="1"
+				AdditionalIncludeDirectories="..\src;&quot;..\..\..\curl-7.13.2\include&quot;;..\librdfa;&quot;..\..\expat-2.0.1\include&quot;"
+				PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_USRDLL;WIN32_EXPORTS;RAPTOR_V2_AVAILABLE;LIBRDFA_IN_RAPTOR"
+				StringPooling="true"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				PrecompiledHeaderFile=".\Release/raptor.pch"
+				AssemblerListingLocation=".\Release/"
+				ObjectFile=".\Release/"
+				ProgramDataBaseFileName=".\Release/"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
 	</Configurations>
 	<References>
 		<ProjectReference
 			ReferencedProjectIdentifier="{59ED01CF-49C8-42C5-846F-AAF0A5F3B437}"
-			RelativePathToProject="..\..\..\curl-7.13.2\lib\curllib.vcproj"
 		/>
 	</References>
 	<Files>
@@ -217,7 +532,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -256,7 +614,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -283,7 +684,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -310,6 +754,19 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
 					>
 					<Tool
@@ -319,10 +776,36 @@
 						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
 					/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\raptor_grddl.c"
-				>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\raptor_guess.c"
@@ -344,7 +827,49 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -371,7 +896,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -406,7 +974,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -433,7 +1044,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -464,7 +1118,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -491,7 +1188,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -518,7 +1258,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -545,7 +1328,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -572,7 +1398,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -599,7 +1468,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -626,7 +1538,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -653,7 +1608,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -684,7 +1682,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -711,7 +1752,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -738,7 +1822,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -797,7 +1924,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -828,7 +1998,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -859,7 +2072,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -886,7 +2142,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -913,7 +2212,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -926,110 +2268,18 @@
 			<File
 				RelativePath="..\src\raptor_www.c"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
-						BasicRuntimeChecks="3"
-						BrowseInformation="1"
-						CompileAs="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\raptor_www_curl.c"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
-						BasicRuntimeChecks="3"
-						BrowseInformation="1"
-						CompileAs="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\raptor_www_libfetch.c"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
-						BasicRuntimeChecks="3"
-						BrowseInformation="1"
-						CompileAs="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\raptor_www_libxml.c"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
-						BasicRuntimeChecks="3"
-						BrowseInformation="1"
-						CompileAs="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\raptor_xml.c"
@@ -1048,7 +2298,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1075,7 +2368,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1118,7 +2454,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1157,7 +2536,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1184,7 +2606,50 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="RAPTOR_INTERNAL;WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;WIN32_EXPORTS;$(NoInherit)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="x64 Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
