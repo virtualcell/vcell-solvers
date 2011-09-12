@@ -1,0 +1,309 @@
+<!--
+    This file demostrates how to specify options to clo++
+-->
+<!-- Begin CVS Header -->
+<!--   $Source: /fs/turing/cvs/copasi_dev/copasi/commandline/COptionParser.xml,v $ -->
+<!--   $Revision: 1.17 $ -->
+<!--   $Name: Build-33 $ -->
+<!--   $Author: shoops $ -->
+<!--   $Date: 2010/05/11 16:46:02 $ -->
+<!-- End CVS Header -->
+
+<!-- Copyright (C) 2010 by Pedro Mendes, Virginia Tech Intellectual -->
+<!-- Properties, Inc., University of Heidelberg, and The University -->
+<!-- of Manchester. -->
+<!-- All rights reserved. -->
+
+<!-- Copyright (C) 2008 by Pedro Mendes, Virginia Tech Intellectual -->
+<!-- Properties, Inc., EML Research, gGmbH, University of Heidelberg, -->
+<!-- and The University of Manchester. -->
+<!-- All rights reserved. -->
+
+<cloxx>
+ <program>
+   <comment>Program comment</comment>
+   <description>Program description</description>
+ </program>
+ <config>
+   <autohelp/>
+   <variable name="cxx_namespace" value="copasi"></variable>
+   <variable name="cxx_header_file" value="COptionParser.h"></variable>
+   <variable name="cxx_header_def" value="COPASI_COptionParser"></variable>
+   <variable name="cxx_class" value="COptionParser"></variable>
+   <variable name="cxx_source_file" value="COptionParser.cpp"></variable>
+ </config>
+ <options>
+   <option id="ConfigDir"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="commandline"
+           argname="dir"
+           hidden="no">
+    <name>configdir</name>
+    <comment>
+     The configuration directory for copasi. The default is .copasi in the
+     home directory.
+    </comment>
+   </option>
+   <option id="ConfigFile"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="commandline"
+           argname="file"
+           hidden="no">
+    <name>configfile</name>
+    <comment>
+     The configuration file for copasi. The default is copasi in the
+     ConfigDir.
+    </comment>
+   </option>
+   <option id="CopasiDir"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="commandline"
+           argname="dir"
+           hidden="no">
+    <name>copasidir</name>
+    <name>c</name>
+    <comment> 
+     The COPASI installation directory.
+    </comment>
+   </option>
+   <option id="Home"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="commandline"
+           argname="dir"
+           hidden="no">
+    <name>home</name>
+    <comment>
+     Your home directory.
+    </comment>
+   </option>
+   <option id="Tmp"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="both"
+           argname="dir"
+           hidden="no">
+    <name>tmp</name>
+    <name>t</name>
+    <comment>
+     The temp directory used for autosave.
+    </comment>
+   </option>
+   <option id="Verbose"
+           type="flag"
+           mandatory="no"
+           strict="yes"
+           location="both"
+           default="false"
+           hidden="no">
+    <name>verbose</name>
+    <comment>
+     Enable output of messages during runtime to std::error.
+    </comment>
+   </option>
+   <option id="NoLogo"
+           type="flag"
+           mandatory="no"
+           strict="yes"
+           location="both"
+           default="false"
+           hidden="no">
+     <name>nologo</name>
+     <comment>
+       Surpresses the startup message.
+     </comment>
+   </option>
+   <option id="License"
+           type="flag"
+           mandatory="no"
+           strict="yes"
+           location="commandline"
+           default="false"
+           hidden="no">
+    <name>license</name>
+    <comment>
+     Display the license.
+    </comment>
+   </option>
+<!--
+   <option id="SystemFunctionDB"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="both"
+           default="FunctionDB.gps"
+           hidden="no">
+    <name>systemFunctionDB</name>
+    <comment>A write protected database of kinetic functions.</comment>
+   </option>
+   <option id="UserFunctionDB"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="both"
+           default="~/FunctionDB.cps"
+           hidden="no">
+    <name>tmp</name>
+    <name>t</name>
+    <comment>
+     The user extensible database of kinetic functions.
+    </comment>
+   </option>
+   <option id="CopasiFile"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="both"
+           hidden="no">
+    <name>copasiFile</name>
+    <name>f</name>
+    <comment>
+     The file which specifies the model and tasks.
+    </comment>
+   </option>
+-->
+   <option id="Validate"
+           type="flag"
+           mandatory="no"
+           strict="yes"
+           location="both"
+           default="false"
+           hidden="no">
+     <name>validate</name>
+     <comment>
+      Only validate the given input file (COPASI, Gepasi, or SBML) without performing any calculations.
+     </comment>
+   </option>
+   <option id="Save"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="both"
+           argname="file"
+           hidden="no">
+    <name>save</name>
+    <name>s</name>
+    <comment>
+      The file the model is saved to after work. 
+    </comment>
+   </option>
+   <option id="ImportSBML"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="commandline"
+           argname="file"
+           hidden="no">
+    <name>importSBML</name>
+    <name>i</name>
+    <comment>A SBML file to import.</comment>
+   </option>
+   <option id="ExportSBML"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="commandline"
+           argname="file"
+           hidden="no">
+    <name>exportSBML</name>
+    <name>e</name>
+    <comment>The SBML file to export.</comment>
+   </option>
+   <option id="SBMLSchema"
+           type="enum"
+           mandatory="no"
+           strict="yes"
+           location="commandline"
+           hidden="no"
+           argname="schema"
+           default="L2V3">
+     <enum id="L1V2" name="L1V2" />
+     <enum id="L2V1" name="L2V1" />
+     <enum id="L2V2" name="L2V2" />
+     <enum id="L2V3" name="L2V3" />
+     <enum id="L2V4" name="L2V4" />
+     <name>SBMLSchema</name>
+     <comment>The Schema of the SBML file to export.</comment>
+   </option>
+   <option id="ExportBerkeleyMadonna"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="commandline"
+           argname="file"
+           hidden="no">
+    <name>exportBerkeleyMadonna</name>
+    <comment>The Berkeley Madonna file to export.</comment>
+   </option>
+   <option id="ExportC"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="commandline"
+           argname="file"
+           hidden="no">
+    <name>exportC</name>
+    <comment>The C code file to export.</comment>
+   </option>
+   <option id="ExportXPPAUT"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="commandline"
+           argname="file"
+           hidden="no">
+    <name>exportXPPAUT</name>
+    <comment>The XPPAUT file to export.</comment>
+   </option>
+<!--
+   <option id="Default"
+           type="string"
+           mandatory="no"
+           location="both"
+           modifier="map"
+           hidden="yes">
+    <name>default</name>
+    <name>d</name>
+    <comment>Default settings.</comment>
+   </option>
+-->
+   <option id="RegistrationCode"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="commandline"
+           argname="code"
+           hidden="yes">
+    <name>rCode</name>
+    <comment>The License Registration Code.</comment>
+   </option>
+   <option id="RegisteredEmail"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="commandline"
+           argname="email"
+           hidden="yes">
+    <name>rEmail</name>
+    <comment>The Registered Email.</comment>
+   </option>
+   <option id="RegisteredUser"
+           type="string"
+           mandatory="no"
+           strict="yes"
+           location="commandline"
+           argname="name"
+           hidden="yes">
+    <name>rUser</name>
+    <comment>The Registered User.</comment>
+   </option>
+ </options>
+</cloxx>
