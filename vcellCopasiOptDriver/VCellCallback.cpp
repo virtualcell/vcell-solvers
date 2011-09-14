@@ -21,7 +21,7 @@ VCellCallback::~VCellCallback()
 {
 }
 
-bool VCellCallback::progressItem(const unsigned C_INT32 & handle)
+bool VCellCallback::progressItem(const size_t & handle)
 {
 	static bool bFirstCall = true;
 	if (!isValidHandle(handle) || mProcessReportItemList[handle] == NULL) 
@@ -68,7 +68,7 @@ bool VCellCallback::progressItem(const unsigned C_INT32 & handle)
 	return true;
 }
 
-bool VCellCallback::finishItem(const unsigned C_INT32 & handle)
+bool VCellCallback::finishItem(const size_t & handle)
 {
   if (!isValidHandle(handle) || mProcessReportItemList[handle] == NULL) return false;
   CProcessReportItem* reportItem = mProcessReportItemList[handle]; 
@@ -92,7 +92,7 @@ void VCellCallback::setEvaluation() {
 		numEvals, objVal, currVal, endValue_Double);
 }
 
-void VCellCallback::updateInfo(const unsigned C_INT32 & handle){
+void VCellCallback::updateInfo(const size_t & handle){
 	CProcessReportItem* reportItem = mProcessReportItemList[handle];
 	if (reportItem == 0) {
 		return;

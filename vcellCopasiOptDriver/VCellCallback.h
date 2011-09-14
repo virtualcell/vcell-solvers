@@ -29,7 +29,7 @@ public:
    * @param const unsigned C_INT32 & handle
    * @param bool continue
    */
-  virtual bool progressItem(const unsigned C_INT32 & handle);
+  virtual bool progressItem(const size_t & handle);
 
 
   /**
@@ -39,7 +39,7 @@ public:
    * @param const unsigned C_INT32 & handle
    * @param bool continue
    */
-  virtual bool finishItem(const unsigned C_INT32 & handle);
+  virtual bool finishItem(const size_t & handle);
 
 private:
 	OptSolverCallbacks* optSolverCallbacks;
@@ -51,7 +51,7 @@ private:
 	double itemHandle;
 
 	void setEvaluation();
-	void updateInfo(const unsigned C_INT32 & handle);
+	void updateInfo(const size_t & handle);
 };
 
 #endif
