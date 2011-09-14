@@ -1,0 +1,463 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug_Messaging|Win32">
+      <Configuration>Debug_Messaging</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug_Messaging|x64">
+      <Configuration>Debug_Messaging</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug_No_Messaging|Win32">
+      <Configuration>Debug_No_Messaging</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug_No_Messaging|x64">
+      <Configuration>Debug_No_Messaging</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MPI_Debug_No_Messaging|Win32">
+      <Configuration>MPI_Debug_No_Messaging</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MPI_Debug_No_Messaging|x64">
+      <Configuration>MPI_Debug_No_Messaging</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_JavaBinding|Win32">
+      <Configuration>Release_JavaBinding</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_JavaBinding|x64">
+      <Configuration>Release_JavaBinding</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_Messaging|Win32">
+      <Configuration>Release_Messaging</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_Messaging|x64">
+      <Configuration>Release_Messaging</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_No_Messaging|Win32">
+      <Configuration>Release_No_Messaging</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_No_Messaging|x64">
+      <Configuration>Release_No_Messaging</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{2F8B62EB-A9B2-4E08-B352-2EDC605C162B}</ProjectGuid>
+    <RootNamespace>VCell_CodeGen</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MPI_Debug_No_Messaging|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MPI_Debug_No_Messaging|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Messaging|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Messaging|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Messaging|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Messaging|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_No_Messaging|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_JavaBinding|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_No_Messaging|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_JavaBinding|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='MPI_Debug_No_Messaging|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='MPI_Debug_No_Messaging|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_Messaging|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_Messaging|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Messaging|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Messaging|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_No_Messaging|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_JavaBinding|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_No_Messaging|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_JavaBinding|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|Win32'">$(Platform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|x64'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|Win32'">$(Platform)\$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|x64'">$(Platform)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_No_Messaging|Win32'">$(Platform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_JavaBinding|Win32'">$(Platform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_No_Messaging|x64'">$(Platform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_JavaBinding|x64'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release_No_Messaging|Win32'">$(Platform)\$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release_JavaBinding|Win32'">$(Platform)\$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release_No_Messaging|x64'">$(Platform)\$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release_JavaBinding|x64'">$(Platform)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug_Messaging|Win32'">$(Platform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug_Messaging|x64'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug_Messaging|Win32'">$(Platform)\$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug_Messaging|x64'">$(Platform)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_Messaging|Win32'">$(Platform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_Messaging|x64'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release_Messaging|Win32'">$(Platform)\$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release_Messaging|x64'">$(Platform)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MPI_Debug_No_Messaging|Win32'">$(Platform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MPI_Debug_No_Messaging|x64'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MPI_Debug_No_Messaging|Win32'">$(Platform)\$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MPI_Debug_No_Messaging|x64'">$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\netcdf-3.6.2\cxx;..\netcdf-3.6.2\libsrc;..\sundials\src\;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\netcdf-3.6.2\cxx;..\netcdf-3.6.2\libsrc;..\sundials\src\;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_No_Messaging|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\netcdf-3.6.2\libsrc;..\netcdf-3.6.2\cxx;..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_JavaBinding|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\netcdf-3.6.2\libsrc;..\netcdf-3.6.2\cxx;..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_No_Messaging|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\netcdf-3.6.2\libsrc;..\netcdf-3.6.2\cxx;..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_JavaBinding|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\netcdf-3.6.2\libsrc;..\netcdf-3.6.2\cxx;..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Messaging|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\netcdf-3.6.2\libsrc;..\netcdf-3.6.2\cxx;..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Messaging|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\netcdf-3.6.2\libsrc;..\netcdf-3.6.2\cxx;..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_Messaging|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\netcdf-3.6.2\libsrc;..\netcdf-3.6.2\cxx;..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_Messaging|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\netcdf-3.6.2\libsrc;..\netcdf-3.6.2\cxx;..\idawin;..\sundials\src;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MPI_Debug_No_Messaging|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\netcdf-3.6.2\cxx;..\netcdf-3.6.2\libsrc;..\sundials\src\;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MPI_Debug_No_Messaging|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\netcdf-3.6.2\cxx;..\netcdf-3.6.2\libsrc;..\sundials\src\;..\sundials\include;..\SonicCClient\Win32\include\CPP;..\SonicCClient\Win32\include;include;..\zlib;..\IDAWin;..\ExpressionParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x2000;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\AlgebraicSystem.cpp" />
+    <ClCompile Include="src\CartesianMesh.cpp" />
+    <ClCompile Include="src\Contour.cpp" />
+    <ClCompile Include="src\ContourRegionVariable.cpp" />
+    <ClCompile Include="src\ContourSubdomain.cpp" />
+    <ClCompile Include="src\ContourVarContext.cpp" />
+    <ClCompile Include="src\ContourVariable.cpp" />
+    <ClCompile Include="src\DataProcessorVFrap.cpp" />
+    <ClCompile Include="src\DataSet.cpp" />
+    <ClCompile Include="src\EllipticVolumeEqnBuilder.cpp" />
+    <ClCompile Include="src\EqnBuilder.cpp" />
+    <ClCompile Include="src\EqnBuilderReactionForward.cpp" />
+    <ClCompile Include="src\FastSystem.cpp" />
+    <ClCompile Include="src\FastSystemExpression.cpp" />
+    <ClCompile Include="src\Feature.cpp" />
+    <ClCompile Include="src\FieldData.cpp" />
+    <ClCompile Include="src\FVSolver.cpp" />
+    <ClCompile Include="src\FVUtils.cpp" />
+    <ClCompile Include="src\MembraneEqnBuilderDiffusion.cpp" />
+    <ClCompile Include="src\MembraneEqnBuilderForward.cpp" />
+    <ClCompile Include="src\MembraneRegion.cpp" />
+    <ClCompile Include="src\MembraneRegionEqnBuilder.cpp" />
+    <ClCompile Include="src\MembraneRegionVarContext.cpp" />
+    <ClCompile Include="src\MembraneRegionVarContextExpression.cpp" />
+    <ClCompile Include="src\MembraneRegionVariable.cpp" />
+    <ClCompile Include="src\MembraneVarContext.cpp" />
+    <ClCompile Include="src\MembraneVarContextExpression.cpp" />
+    <ClCompile Include="src\MembraneVariable.cpp" />
+    <ClCompile Include="src\Mesh.cpp" />
+    <ClCompile Include="src\ODESolver.cpp" />
+    <ClCompile Include="src\ParticleContext.cpp" />
+    <ClCompile Include="src\PDESolver.cpp" />
+    <ClCompile Include="src\RandomVariable.cpp" />
+    <ClCompile Include="src\Region.cpp" />
+    <ClCompile Include="src\Scheduler.cpp" />
+    <ClCompile Include="src\SerialScheduler.cpp" />
+    <ClCompile Include="src\SimTool.cpp" />
+    <ClCompile Include="src\Simulation.cpp" />
+    <ClCompile Include="src\SimulationExpression.cpp" />
+    <ClCompile Include="src\SimulationMessaging.cpp" />
+    <ClCompile Include="src\Solver.cpp" />
+    <ClCompile Include="src\SparseLinearSolver.cpp" />
+    <ClCompile Include="src\SparseMatrixEqnBuilder.cpp" />
+    <ClCompile Include="src\SparseMatrixPCG.cpp" />
+    <ClCompile Include="src\SparseVolumeEqnBuilder.cpp" />
+    <ClCompile Include="src\SplitScheduler.cpp" />
+    <ClCompile Include="src\StructuredPDESolver.cpp" />
+    <ClCompile Include="src\SundialsPdeScheduler.cpp" />
+    <ClCompile Include="src\Timer.cpp" />
+    <ClCompile Include="src\VarContext.cpp" />
+    <ClCompile Include="src\Variable.cpp" />
+    <ClCompile Include="src\VCellModel.cpp" />
+    <ClCompile Include="src\VolumeRegion.cpp" />
+    <ClCompile Include="src\VolumeRegionEqnBuilder.cpp" />
+    <ClCompile Include="src\VolumeRegionVarContext.cpp" />
+    <ClCompile Include="src\VolumeRegionVarContextExpression.cpp" />
+    <ClCompile Include="src\VolumeRegionVariable.cpp" />
+    <ClCompile Include="src\VolumeVarContext.cpp" />
+    <ClCompile Include="src\VolumeVarContextExpression.cpp" />
+    <ClCompile Include="src\VolumeVariable.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\VCELL\AlgebraicSystem.h" />
+    <ClInclude Include="include\VCELL\CartesianMesh.h" />
+    <ClInclude Include="include\VCELL\Contour.h" />
+    <ClInclude Include="include\VCELL\ContourRegionVariable.h" />
+    <ClInclude Include="include\VCELL\ContourSubdomain.h" />
+    <ClInclude Include="include\VCELL\ContourVarContext.h" />
+    <ClInclude Include="include\VCELL\ContourVariable.h" />
+    <ClInclude Include="include\VCELL\DataProcessor.h" />
+    <ClInclude Include="include\VCELL\DataProcessorVFrap.h" />
+    <ClInclude Include="include\VCELL\DataSet.h" />
+    <ClInclude Include="include\VCELL\DoubleVector3.h" />
+    <ClInclude Include="include\VCELL\Element.h" />
+    <ClInclude Include="include\VCELL\EllipticVolumeEqnBuilder.h" />
+    <ClInclude Include="include\VCELL\EqnBuilder.h" />
+    <ClInclude Include="include\VCELL\EqnBuilderReactionForward.h" />
+    <ClInclude Include="include\VCELL\FastSystem.h" />
+    <ClInclude Include="include\VCELL\FastSystemExpression.h" />
+    <ClInclude Include="include\VCELL\Feature.h" />
+    <ClInclude Include="include\VCELL\FieldData.h" />
+    <ClInclude Include="include\VCELL\FVSolver.h" />
+    <ClInclude Include="include\VCELL\FVUtils.h" />
+    <ClInclude Include="include\VCELL\IncidenceMatrix.h" />
+    <ClInclude Include="include\VCELL\MembraneEqnBuilderDiffusion.h" />
+    <ClInclude Include="include\VCELL\MembraneEqnBuilderForward.h" />
+    <ClInclude Include="include\VCELL\MembraneRegion.h" />
+    <ClInclude Include="include\VCELL\MembraneRegionEqnBuilder.h" />
+    <ClInclude Include="include\VCELL\MembraneRegionVarContext.h" />
+    <ClInclude Include="include\VCELL\MembraneRegionVarContextExpression.h" />
+    <ClInclude Include="include\VCELL\MembraneRegionVariable.h" />
+    <ClInclude Include="include\VCELL\MembraneVarContext.h" />
+    <ClInclude Include="include\VCELL\MembraneVarContextExpression.h" />
+    <ClInclude Include="include\VCELL\MembraneVariable.h" />
+    <ClInclude Include="include\VCELL\Mesh.h" />
+    <ClInclude Include="include\VCELL\ODESolver.h" />
+    <ClInclude Include="include\VCELL\ParticleContext.h" />
+    <ClInclude Include="include\VCELL\PDESolver.h" />
+    <ClInclude Include="include\VCELL\RandomVariable.h" />
+    <ClInclude Include="include\VCELL\Region.h" />
+    <ClInclude Include="include\VCELL\Scheduler.h" />
+    <ClInclude Include="include\VCELL\SerialScheduler.h" />
+    <ClInclude Include="include\VCELL\SimTool.h" />
+    <ClInclude Include="include\VCELL\SimTypes.h" />
+    <ClInclude Include="include\VCELL\Simulation.h" />
+    <ClInclude Include="include\VCELL\SimulationExpression.h" />
+    <ClInclude Include="include\VCELL\SimulationMessaging.h" />
+    <ClInclude Include="include\VCELL\Solver.h" />
+    <ClInclude Include="include\VCELL\SparseLinearSolver.h" />
+    <ClInclude Include="include\VCELL\SparseMatrixEqnBuilder.h" />
+    <ClInclude Include="include\VCELL\SparseMatrixPCG.h" />
+    <ClInclude Include="include\VCELL\SparseVolumeEqnBuilder.h" />
+    <ClInclude Include="include\VCELL\SplitScheduler.h" />
+    <ClInclude Include="include\VCELL\StructuredPDESolver.h" />
+    <ClInclude Include="include\VCELL\SundialsPdeScheduler.h" />
+    <ClInclude Include="include\VCELL\Timer.h" />
+    <ClInclude Include="include\VCELL\VarContext.h" />
+    <ClInclude Include="include\VCELL\Variable.h" />
+    <ClInclude Include="include\VCELL\VCellModel.h" />
+    <ClInclude Include="include\VCELL\VolumeNeighbor.h" />
+    <ClInclude Include="include\VCELL\VolumeRegion.h" />
+    <ClInclude Include="include\VCELL\VolumeRegionEqnBuilder.h" />
+    <ClInclude Include="include\VCELL\VolumeRegionVarContext.h" />
+    <ClInclude Include="include\VCELL\VolumeRegionVarContextExpression.h" />
+    <ClInclude Include="include\VCELL\VolumeRegionVariable.h" />
+    <ClInclude Include="include\VCELL\VolumeVarContext.h" />
+    <ClInclude Include="include\VCELL\VolumeVarContextExpression.h" />
+    <ClInclude Include="include\VCELL\VolumeVariable.h" />
+    <ClInclude Include="include\VCELL\VoronoiRidge.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\Makefile.Win32" />
+    <None Include="src\Makefile64.linux" />
+    <None Include="ReadMe.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
