@@ -27,6 +27,7 @@ struct OptInfo
 {
 	std::string mathModelSBMLFile;
 	std::string experimentalDataFile;
+	int numOptimizationRuns;
 	int expDataLastRow;
 	std::string independentVarName;
 	std::vector< std::string > dependentVarNames;

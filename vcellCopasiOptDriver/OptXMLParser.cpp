@@ -5,8 +5,11 @@
 
 static const string OptProblemDescription_Tag = "optProblemDescription";
 	
-static const string CopasiOptimizationMethod = "CopasiOptimizationMethod";
-static const string CopasiOptimizationParameter = "CopasiOptimizationParameter";
+static const string CopasiOptimizationMethod_Tag = "CopasiOptimizationMethod";
+static const string CopasiOptimizationParameter_Tag = "CopasiOptimizationParameter";
+
+static const string VCellOptions_Tag = "VCellOptions";
+static const string NumOptimizationRuns_Tag = "NumberOfOptimizationRuns";
 
 static const string ParameterDescription_Tag = "parameterDescription";
 static const string Parameter_Tag = "parameter";
@@ -78,7 +81,7 @@ void OptXMLParser::onStartElement(void *data, const char *el, const char **attr)
 		}
 		optXMLParser->optInfo.optParameters.push_back(optParam);
 	}
-	else if(!strcmp(el, CopasiOptimizationParameter.c_str()))
+	else if(!strcmp(el, CopasiOptimizationParameter_Tag.c_str()))
 	{
 		OptMethodParameter methodParam;
 		for (int i = 0; attr[i]; i += 2) 
@@ -95,7 +98,7 @@ void OptXMLParser::onStartElement(void *data, const char *el, const char **attr)
 		}
 		optXMLParser->optInfo.methodParameters.push_back(methodParam);
 	}
-	else if(!strcmp(el, CopasiOptimizationMethod.c_str()))
+	else if(!strcmp(el, CopasiOptimizationMethod_Tag.c_str()))
 	{
 		for (int i = 0; attr[i]; i += 2) 
 		{			
@@ -123,18 +126,22 @@ void OptXMLParser::onEndElement(void *data, const char *el)
 	OptXMLParser* optXMLParser = (OptXMLParser*)data;
 	optXMLParser->currentElement = "";
 }
-
+//to read contents of a xmlTag
 void OptXMLParser::onCharacterData(void *data, const XML_Char *s, int len)
 {
 	OptXMLParser* optXMLParser = (OptXMLParser*)data;
 	if (optXMLParser->currentElement == MathModelSbmlFile_Tag)
 	{
-	
 		optXMLParser->optInfo.mathModelSBMLFile = string(s,0,len);
 	}
 	else if (optXMLParser->currentElement == ExperimentalDataFile_Tag)
 	{
 		optXMLParser->optInfo.experimentalDataFile = string(s,0,len);
+	}
+	else if(optXMLParser->currentElement == NumOptimizationRuns_Tag)
+	{
+		stringstream numRuns(string(s,0,len));
+		numRuns >> optXMLParser->optInfo.numOptimizationRuns;	
 	}
 }
 

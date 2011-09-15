@@ -168,10 +168,10 @@ void CopasiOptDriver::run(string& optXML, string& resultSetXML, OptSolverCallbac
 		CModelValue* copasiVar = getModelValue(model, modelVar);
 		if(copasiVar != NULL)
 		{
-    		//cout << "metabolite's name:" << copasiVar->getObjectName() << endl;
+			//cout << "metabolite's name:" << copasiVar->getObjectName() << endl;
 			objectMap.setRole(count,CExperiment.dependent); 
 			CCopasiObjectName objName("Reference=Concentration");
-    		const CCopasiObject* particleReference = copasiVar->getObject(objName);
+			const CCopasiObject* particleReference = copasiVar->getObject(objName);
 			objectMap.setObjectCN(count,copasiVar->getCN());
 			count ++;
 		}
@@ -203,36 +203,51 @@ void CopasiOptDriver::run(string& optXML, string& resultSetXML, OptSolverCallbac
     
 	//to escape Copasi warnings
 	CCopasiMessage::clearDeque();
-	VCellCallback* vcpb = new VCellCallback(optSolverCallbacks);
-	fitTask->setCallBack(vcpb);
+	VCellCallback* vcCallback = new VCellCallback(optSolverCallbacks);
+	fitTask->setCallBack(vcCallback);
 
 	assert(CCopasiRootContainer::getDatamodelList()->size() > 0);
-	if (!fitTask->initialize(CCopasiTask::NO_OUTPUT, (*CCopasiRootContainer::getDatamodelList())[0], NULL))
-	{
-		cout << CCopasiMessage::peekLastMessage().getAllMessageText() << endl;
-	}
+	
 
 	//dataModel->saveModel("d:\\aaa.cps", NULL, true, false);
 
-	// running the task 
-	fitTask->process(true);
-
-	//get results
+	//get Number of runs, if number of runs greater than 1, we'll need to get the solution with least error
+	double leastError = 1e8;
+	int numRuns = optInfo.numOptimizationRuns;
+	
 	OptResultSet optResultSet;
-	optResultSet.bestRunResultSet.objectiveFunctionValue = fitProblem->getSolutionValue();
-	optResultSet.bestRunResultSet.numObjFuncEvals = (int)fitProblem->getFunctionEvaluations();
-	int optItemSize = (int)fitProblem->getOptItemSize();
-
-	optResultSet.paramNames.resize(optItemSize);
-	optResultSet.bestRunResultSet.paramValues.resize(optItemSize);
-	for(int i=0 ; i<optItemSize; i++)
+	for(int i=0; i<numRuns; i++)
 	{
-		COptItem* optItem = fitProblem->getOptItemList()[i];
-		optResultSet.paramNames[i] = optItem->getObject()->getCN().getRemainder().getRemainder().getElementName(0);
-		optResultSet.bestRunResultSet.paramValues[i] = fitProblem->getSolutionVariables()[i];
-		//cout << "value for " << optResultSet.paramNames[i] << ": " << optResultSet.bestRunResultSet.paramValues[i] << endl;
-	}
+		//set run number
+		vcCallback->setRunNumber(i);
+		//initialize
+		if (!fitTask->initialize(CCopasiTask::NO_OUTPUT, (*CCopasiRootContainer::getDatamodelList())[0], NULL))
+		{
+			cout << CCopasiMessage::peekLastMessage().getAllMessageText() << endl;
+		}
+		// running the task 
+		fitTask->process(true);
 
+		//get results
+		double currentFuncValue = fitProblem->getSolutionValue();
+		if((currentFuncValue < leastError) || (i == 0))
+		{
+			optResultSet.bestRunResultSet.objectiveFunctionValue = currentFuncValue;
+			optResultSet.bestRunResultSet.numObjFuncEvals = (int)fitProblem->getFunctionEvaluations();;
+			int optItemSize = (int)fitProblem->getOptItemSize();
+
+			optResultSet.paramNames.resize(optItemSize);
+			optResultSet.bestRunResultSet.paramValues.resize(optItemSize);
+			for(int i=0 ; i<optItemSize; i++)
+			{
+				COptItem* optItem = fitProblem->getOptItemList()[i];
+				optResultSet.paramNames[i] = optItem->getObject()->getCN().getRemainder().getRemainder().getElementName(0);
+				optResultSet.bestRunResultSet.paramValues[i] = fitProblem->getSolutionVariables()[i];
+				//cout << "value for " << optResultSet.paramNames[i] << ": " << optResultSet.bestRunResultSet.paramValues[i] << endl;
+			}
+			leastError = currentFuncValue;
+		}
+	}
 	//save results to XML
 	TiXmlElement* optSolverResultSetXMLNode = OptXmlWriter2::getXML(&optResultSet);
 	TiXmlPrinter printer;

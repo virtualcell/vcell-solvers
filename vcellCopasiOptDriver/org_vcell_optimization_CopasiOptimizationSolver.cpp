@@ -22,7 +22,7 @@ JNIEXPORT jstring JNICALL Java_org_vcell_optimization_CopasiOptimizationSolver_s
 		optSolverCallbacks->object_optSolverCallbacks = object_optSolverCallbacks;
 		jclass class_OptSolverCallbacks = jniEnv->GetObjectClass(object_optSolverCallbacks);
 		optSolverCallbacks->mid_OptSolverCallbacks_getStopRequested = jniEnv->GetMethodID(class_OptSolverCallbacks, "getStopRequested", "()Z");
-		optSolverCallbacks->mid_OptSolverCallbacks_setEvaluation = jniEnv->GetMethodID(class_OptSolverCallbacks, "setEvaluation", "(IDDLjava/lang/Double;)V");
+		optSolverCallbacks->mid_OptSolverCallbacks_setEvaluation = jniEnv->GetMethodID(class_OptSolverCallbacks, "setEvaluation", "(IDDLjava/lang/Double;I)V");
 
 		CopasiOptDriver::run(optXml, resultSetXml, optSolverCallbacks);
 		jniEnv->ReleaseStringUTFChars(j_optProblemXml, c_optProblemXml);

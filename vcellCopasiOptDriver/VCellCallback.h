@@ -41,15 +41,18 @@ public:
    */
   virtual bool finishItem(const size_t & handle);
 
+  void setRunNumber(int runNumber){runNo = runNumber;}
+
 private:
 	OptSolverCallbacks* optSolverCallbacks;
 	clock_t oldTime; // to control the output of data, output data every 2 seconds.
+
 	int numEvals;
 	double objVal;
 	double currVal;
 	double endVal;
 	double itemHandle;
-
+	int runNo;
 	void setEvaluation();
 	void updateInfo(const size_t & handle);
 };

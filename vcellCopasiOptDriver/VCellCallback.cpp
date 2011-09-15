@@ -89,7 +89,7 @@ void VCellCallback::setEvaluation() {
 	jmethodID mid_Double_constructor = optSolverCallbacks->jniEnv->GetMethodID(class_Double, "<init>", "(D)V");
 	optSolverCallbacks->jniEnv->CallVoidMethod(endValue_Double, mid_Double_constructor, endVal); 
 	optSolverCallbacks->jniEnv->CallVoidMethod(optSolverCallbacks->object_optSolverCallbacks, optSolverCallbacks->mid_OptSolverCallbacks_setEvaluation, 
-		numEvals, objVal, currVal, endValue_Double);
+		numEvals, objVal, currVal, endValue_Double, runNo);
 }
 
 void VCellCallback::updateInfo(const size_t & handle){
