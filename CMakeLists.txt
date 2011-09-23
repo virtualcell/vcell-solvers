@@ -1,9 +1,25 @@
 cmake_minimum_required(VERSION 2.8)
 project(numerics)
 
+#include (CMakeTestCCompiler)
+#include (CheckCSourceCompiles)
+#include (CheckCXXSourceCompiles)
+#include (CheckStructHasMember)
+#include (CheckLibraryExists)
+#include (CheckFunctionExists)
+#include (CheckCCompilerFlag)
+#include (CheckCSourceRuns)
+#include (CheckSymbolExists)
+#include (CheckTypeSize)
+
 set(LINUX FALSE)
 if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
 	set(LINUX TRUE)
+endif()
+
+set (ARCH_64bit FALSE)
+if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+set (ARCH_64bit TRUE)
 endif()
 
 if (NOT MSVC AND NOT APPLE AND NOT LINUX)
@@ -102,7 +118,7 @@ if (TARGET_SOLVERS_SERVER_SIDE OR TARGET_SOLVERS_CLIENT_SIDE)
 			message(FATAL_ERROR "TARGET_SOLVERS_SERVER_SIDE is not supported on MAC OS X")
 		endif(APPLE)
 		
-		add_definitions(-D USE_MESSAGING)
+		add_definitions(-DUSE_MESSAGING)
 		include_directories(${CMAKE_CURRENT_SOURCE_DIR}/VCell/include)	
 		if (LINUX)
 			set(SONICMQ_LIBS smq)			
@@ -180,9 +196,9 @@ endif(TARGET_JAVA_BINDING)
 #######################################
 add_subdirectory(ExpressionParser)
 add_subdirectory(IDAWin)
-#add_subdirectory(netcdf-3.6.2)
-#add_subdirectory(unzip)
-#add_subdirectory(zip)
+add_subdirectory(netcdf-3.6.2)
+add_subdirectory(unzip)
+add_subdirectory(zip)
 ######################################
 #
 # By default Linux and Mac have zlib 
@@ -190,16 +206,16 @@ add_subdirectory(IDAWin)
 #
 #######################################
 if (MSVC)
-	#add_subdirectory(zlib)
+	add_subdirectory(zlib)
 endif(MSVC)
 
 if (TARGET_SOLVERS_SERVER_SIDE OR TARGET_SOLVERS_CLIENT_SIDE)
 #	add_subdirectory(PCGPack) 
-#	add_subdirectory(qhull) 
-#	add_subdirectory(smoldyn) 
-#	add_subdirectory(Stochastic) 
+	add_subdirectory(qhull) 
+	add_subdirectory(smoldyn) 
+	add_subdirectory(Stochastic) 
 	add_subdirectory(sundials) 
-#	add_subdirectory(VCell) 
+	add_subdirectory(VCell) 
 #	add_subdirectory(Hy3S)
 endif() 
 

@@ -1,5 +1,5 @@
-PROJECT(ExpressionParser)    
+project(ExpressionParser)    
     
-FILE (GLOB SRC_FILES *.cpp)    
+file (GLOB SRC_FILES *.cpp)    
     
-ADD_LIBRARY(ExpressionParser STATIC ${SRC_FILES})    
+add_library(ExpressionParser STATIC ${SRC_FILES})    
