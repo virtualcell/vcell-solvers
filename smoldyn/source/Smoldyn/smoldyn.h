@@ -386,6 +386,19 @@ typedef int (*unimolreactfnptr)(struct simstruct *);
 typedef int (*bimolreactfnptr)(struct simstruct *,int);
 typedef int (*checkwallsfnptr)(struct simstruct *,int,int,boxptr);
 
+struct CompartmentPixelPair {
+	char name[128];
+	unsigned char pixel;
+};
+
+typedef struct VolumeSamples {
+	int numX, numY, numZ;
+	double sizeX, sizeY, sizeZ;
+	double originX, originY, originZ;
+	unsigned short* volsamples;
+	CompartmentPixelPair* compartmentPixelPairPtr;
+}* VolumeSamplesPtr;
+
 typedef struct simstruct {
 	enum StructCond condition;	// structure condition
 	char *filepath;							// configuration file path
@@ -420,6 +433,8 @@ typedef struct simstruct {
 	unimolreactfnptr unimolreactfn;							// function for first order reactions
 	bimolreactfnptr bimolreactfn;								// function for second order reactions
 	checkwallsfnptr checkwallsfn;								// function for molecule collisions with walls
+
+	VolumeSamplesPtr volumeSamplesPtr;
 	} *simptr;
 
 /********************************* Molecules *******************************/
