@@ -49,8 +49,8 @@ isEmpty(SRC_TARGET) {
 !contains(BUILD_OS, WIN32) {
   macx:debug {
   } else {
-    QMAKE_AR     = tar -czf
-    QMAKE_RANLIB = 
+    QMAKE_AR     = ar crv
+    QMAKE_RANLIB = ranlib
   }
 }
 
