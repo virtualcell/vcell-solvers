@@ -1,5 +1,10 @@
-PROJECT(tinyxml)    
+cmake_minimum_required(VERSION 2.8)
+
+project(tinyxml)    
     
-FILE (GLOB SRC_FILES *.cpp)    
+file (GLOB SRC_FILES *.cpp)   
+if (APPLE)
+	set(CMAKE_OSX_ARCHITECTURES "i386;ppc;x86_64")
+endif()
     
-ADD_LIBRARY(tinyxml STATIC ${SRC_FILES})    
+add_library(tinyxml STATIC ${SRC_FILES})    
