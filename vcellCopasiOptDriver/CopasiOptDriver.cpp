@@ -144,7 +144,7 @@ void CopasiOptDriver::run(string& optXML, string& resultSetXML, OptSolverCallbac
 	experiment->setFirstRow(1);
 	experiment->setLastRow(optInfo.expDataLastRow);
 	experiment->setHeaderRow(1);
-	experiment->setExperimentType(CCopasiTask.timeCourse); //time course, which will take first column as Time.
+	experiment->setExperimentType(CCopasiTask::timeCourse); //time course, which will take first column as Time.
 	//set up var to exp data map, length is total vars + "t"
 	vector<string>& vars = optInfo.dependentVarNames;
 	experiment->setNumColumns(1 + vars.size());
@@ -152,7 +152,7 @@ void CopasiOptDriver::run(string& optXML, string& resultSetXML, OptSolverCallbac
 	bool result = objectMap.setNumCols(1 + vars.size());
 
 	//time mapping
-	result = objectMap.setRole(0,CExperiment.time);
+	result = objectMap.setRole(0,CExperiment::time);
 	CModel* model=dataModel->getModel();
 	CCopasiObjectName objectName("Reference=Time");
 	const CCopasiObject* timeReference=model->getObject(objectName);
@@ -169,7 +169,7 @@ void CopasiOptDriver::run(string& optXML, string& resultSetXML, OptSolverCallbac
 		if(copasiVar != NULL)
 		{
 			//cout << "metabolite's name:" << copasiVar->getObjectName() << endl;
-			objectMap.setRole(count,CExperiment.dependent); 
+			objectMap.setRole(count,CExperiment::dependent);
 			CCopasiObjectName objName("Reference=Concentration");
 			const CCopasiObject* particleReference = copasiVar->getObject(objName);
 			objectMap.setObjectCN(count,copasiVar->getCN());
