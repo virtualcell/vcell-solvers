@@ -1,0 +1,10 @@
+/eboyce-local/workspace/numerics/cmake-build/ExpressionParser/CMakeFiles/ExpressionParser.dir
+/eboyce-local/workspace/numerics/cmake-build/IDAWin/CMakeFiles/IDAWin.dir
+/eboyce-local/workspace/numerics/cmake-build/JavaBinding/CMakeFiles/NativeSolvers.dir
+/eboyce-local/workspace/numerics/cmake-build/fsqp/CMakeFiles/fsqp.dir
+/eboyce-local/workspace/numerics/cmake-build/sundials/src/sundials/CMakeFiles/sundials.dir
+/eboyce-local/workspace/numerics/cmake-build/sundials/src/cvode/CMakeFiles/sundials_cvode.dir
+/eboyce-local/workspace/numerics/cmake-build/sundials/src/ida/CMakeFiles/sundials_ida.dir
+/eboyce-local/workspace/numerics/cmake-build/sundials/src/nvec_ser/CMakeFiles/sundials_nvecserial.dir
+/eboyce-local/workspace/numerics/cmake-build/tinyxml/CMakeFiles/tinyxml.dir
+/eboyce-local/workspace/numerics/cmake-build/Optimization2/CMakeFiles/vcellOpt.dir

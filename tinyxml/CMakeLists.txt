@@ -7,4 +7,4 @@ if (APPLE)
 	set(CMAKE_OSX_ARCHITECTURES "i386;ppc;x86_64")
 endif()
     
-add_library(tinyxml STATIC ${SRC_FILES})    
+add_library(tinyxml STATIC ${SRC_FILES})

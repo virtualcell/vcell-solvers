@@ -1,7 +1,6 @@
 #include "VFRAPObjectiveFunction.h"
 #include "SpatialReferenceData.h"
 #include "ParameterDescription.h"
-#include <VCELL/FVSolver.h>
 #include "Exception.h"
 using namespace VCell;
 
@@ -116,7 +115,7 @@ std::cout << "]" << std::endl;
 		*functionValue = sqrt(sumSquaredError/sampleCount);
 
 	} catch (Exception ex) {
-		std::cout << "caught exception while in pdeObjectiveFunction: " << ex.getMessage() << std::endl;
+		std::cout << "caught exception while in VFRAPObjectiveFunction: " << ex.getMessage() << std::endl;
 		*functionValue = 1000000;
 	}
 	if (bestObjectiveFunctionValue > *functionValue) {

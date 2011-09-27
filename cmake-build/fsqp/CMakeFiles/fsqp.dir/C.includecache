@@ -1,0 +1,38 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/eboyce-local/workspace/numerics/fsqp/cfsqp.c
+stdio.h
+-
+math.h
+-
+stdlib.h
+-
+malloc.h
+-
+MemoryUtils.h
+/eboyce-local/workspace/numerics/fsqp/MemoryUtils.h
+
+/eboyce-local/workspace/numerics/fsqp/cfsqpusr.h
+stdio.h
+-
+math.h
+-
+stdlib.h
+-
+malloc.h
+-
+
+/eboyce-local/workspace/numerics/fsqp/globals.c
+cfsqpusr.h
+/eboyce-local/workspace/numerics/fsqp/cfsqpusr.h
+
+/eboyce-local/workspace/numerics/fsqp/qld.c
+math.h
+-
+

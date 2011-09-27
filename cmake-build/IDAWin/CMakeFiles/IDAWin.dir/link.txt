@@ -1,0 +1,2 @@
+/usr/bin/ar cr libIDAWin.a  CMakeFiles/IDAWin.dir/OdeResultSet.cpp.o CMakeFiles/IDAWin.dir/StoppedByUserException.cpp.o CMakeFiles/IDAWin.dir/VCellCVodeSolver.cpp.o CMakeFiles/IDAWin.dir/VCellIDASolver.cpp.o CMakeFiles/IDAWin.dir/VCellSundialsSolver.cpp.o
+/usr/bin/ranlib libIDAWin.a

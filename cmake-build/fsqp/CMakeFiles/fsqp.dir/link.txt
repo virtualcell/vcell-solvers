@@ -1,0 +1,2 @@
+/usr/bin/ar cr libfsqp.a  CMakeFiles/fsqp.dir/cfsqp.c.o CMakeFiles/fsqp.dir/qld.c.o CMakeFiles/fsqp.dir/globals.c.o
+/usr/bin/ranlib libfsqp.a

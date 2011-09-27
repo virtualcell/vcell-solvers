@@ -18,7 +18,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
 endif()
 
 set (ARCH_64bit FALSE)
-if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 set (ARCH_64bit TRUE)
 endif()
 
@@ -95,10 +95,12 @@ elseif (LINUX)
 	
 	if (LINUX_32bit_BINARIES) 
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
+		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32")
 	endif()
 	
 	if (LINUX_64bit_BINARIES) 
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64")
+		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64")
 	endif()
 endif()
 
@@ -168,6 +170,7 @@ if (TARGET_JAVA_BINDING)
 #
 #######################################	
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 	elseif (MSVC)
 ######################################
 #
@@ -196,9 +199,6 @@ endif(TARGET_JAVA_BINDING)
 #######################################
 add_subdirectory(ExpressionParser)
 add_subdirectory(IDAWin)
-add_subdirectory(netcdf-3.6.2)
-add_subdirectory(unzip)
-add_subdirectory(zip)
 ######################################
 #
 # By default Linux and Mac have zlib 
@@ -209,12 +209,15 @@ if (MSVC)
 	add_subdirectory(zlib)
 endif(MSVC)
 
+add_subdirectory(sundials) 
 if (TARGET_SOLVERS_SERVER_SIDE OR TARGET_SOLVERS_CLIENT_SIDE)
+	add_subdirectory(netcdf-3.6.2)
+	add_subdirectory(unzip)
+	add_subdirectory(zip)
 #	add_subdirectory(PCGPack) 
 	add_subdirectory(qhull) 
 	add_subdirectory(smoldyn) 
 	add_subdirectory(Stochastic) 
-	add_subdirectory(sundials) 
 	add_subdirectory(VCell) 
 #	add_subdirectory(Hy3S)
 endif() 
@@ -223,4 +226,5 @@ if (TARGET_JAVA_BINDING)
 	add_subdirectory(fsqp)
 	add_subdirectory(tinyxml)
 	add_subdirectory(JavaBinding)
+	add_subdirectory(Optimization2)
 endif(TARGET_JAVA_BINDING)

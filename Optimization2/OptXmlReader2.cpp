@@ -17,7 +17,9 @@ using VCell::Expression;
 #include "SimpleParameterDescription.h"
 #include "ExplicitConstraintDescription.h"
 #include "OdeObjectiveFunction.h"
+#ifdef INCLUDE_PDE_OPT
 #include "PdeObjectiveFunction.h"
+#endif
 #include "OdeResultSetOpt.h"
 #include "Constraint.h"
 #include "SpatialReferenceData.h"
