@@ -71,6 +71,10 @@ set(SRC_FILES
 	src/VolumeVariable.cpp
 )
 
+if (UNIX)
+	list(APPEND SRC_FILES src/pcgwrapper.f)
+endif()
+
 set (EXE_SRC_FILES
 	src/FiniteVolume.cpp
 )
@@ -89,11 +93,15 @@ endif()
 add_library(vcell STATIC ${SRC_FILES})
 
 if (TARGET_SOLVERS_SERVER_SIDE OR TARGET_SOLVERS_CLIENT_SIDE)
-	set(DEP_LIBS vcell ExpressionParser IDAWin netcdf qhull sundials sundials_nvecserial sundials_cvode sundials_ida ${SONICMQ_LIBS} zip unzip)
+	set(DEP_LIBS vcell ExpressionParser IDAWin netcdf qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS} zip unzip)
 	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/../PCGPack)
 	if (MSVC)
 		list(APPEND DEP_LIBS zlib pcgwrapper pcgpack_dbl mkl_c)
 		link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../IFortran)
+	elseif (LINUX) 
+		list(APPEND DEP_LIBS PCGPack blas z)
+	elseif (APPLE) 
+		list(APPEND DEP_LIBS PCGPack)
 	endif()
 	if (TARGET_SOLVERS_SERVER_SIDE)
 		list(APPEND EXE_SRC_FILES ../VCell/src/SimulationMessaging.cpp)

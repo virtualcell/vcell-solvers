@@ -14,7 +14,7 @@ set (EXE_SRC_FILES
 
 include_directories(../ExpressionParser ../sundials/include ../sundials/src)
 
-set(DEP_LIBS IDAWin ExpressionParser sundials sundials_nvecserial sundials_cvode sundials_ida ${SONICMQ_LIBS})
+set(DEP_LIBS IDAWin ExpressionParser sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS})
 add_library(IDAWin STATIC ${SRC_FILES})
 if (TARGET_SOLVERS_SERVER_SIDE OR TARGET_SOLVERS_CLIENT_SIDE)
 	if (TARGET_SOLVERS_SERVER_SIDE)
