@@ -28,7 +28,11 @@
 
 #include "CLBase.h"
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class GraphicalObject;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 
 /**
  * This is the base class for the layout objects in copasi.

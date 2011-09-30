@@ -17,6 +17,9 @@ End CVS Header */
 
 #include <string>
 #include <iostream>
+
+#include <copasi.h>
+
 #include "sbml/util/List.h"
 
 #include "ConverterASTNode.h"

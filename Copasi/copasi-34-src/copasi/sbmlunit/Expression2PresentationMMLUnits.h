@@ -26,8 +26,13 @@
 
 class CUnitInterfaceSBML;
 class CUnitInformation;
+
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class UnitDefinition;
 class Unit;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 
 class Expression2PresentationMMLUnits : public Expression2PresentationMML
 {

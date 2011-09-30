@@ -46,16 +46,20 @@ class CFunctionDB;
 class CMetab;
 class CModelValue;
 class CReaction;
-class Event;
 class CModelEntity;
+class SBMLIncompatibility;
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
+class Event;
 class KineticLaw;
 class Model;
 class Parameter;
 class Rule;
 class SBase;
 class SBMLDocument;
-class SBMLIncompatibility;
 class XMLNode;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 
 class CSBMLExporter
 {

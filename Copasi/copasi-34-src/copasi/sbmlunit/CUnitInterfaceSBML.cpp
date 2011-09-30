@@ -19,10 +19,10 @@
 // Copyright (C) 2008 - 2009 by Sven Sahle and University of Heidelberg
 // All rights reserved.
 
+#include <copasi/copasi.h>
 #include "CUnitInterfaceSBML.h"
 #include <sbml/Model.h>
 
-#include <copasi/copasi.h>
 
 CUnitInterfaceSBML::CUnitInterfaceSBML(Model * model, bool unitsFromModel) :
     mpModel(model),

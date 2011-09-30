@@ -25,7 +25,11 @@
 #include <string>
 #include <sbml/UnitDefinition.h>
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class UnitDefinition;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 
 /**
  * The current implementation of the units is just a wrapper for the

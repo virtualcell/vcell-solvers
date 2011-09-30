@@ -18,7 +18,11 @@
 #ifndef COPASI_CEvaluationNodeWhiteSpace
 #define COPASI_CEvaluationNodeWhiteSpace
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class ASTNode;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 class CCopasiDataModel;
 
 /**

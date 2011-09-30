@@ -120,6 +120,8 @@
 #endif
 
 #ifdef Darwin
+#include <sbml/common/extern.h>
+LIBSBML_CPP_NAMESPACE_USE
 # ifndef isnan
 #  define isnan(__x) ((__x == __x) != true)
 # endif

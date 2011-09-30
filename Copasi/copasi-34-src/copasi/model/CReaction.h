@@ -45,8 +45,13 @@
 #include "copasi/function/CCallParameters.h"
 #include "copasi/function/CFunctionParameters.h"
 
-class CReadConfig;
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class SBase;
+LIBSBML_CPP_NAMESPACE_END
+#endif
+
+class CReadConfig;
 class CFunctionDB;
 
 class CReaction : public CCopasiContainer, public CAnnotation

@@ -28,14 +28,19 @@
 #include "utilities/COutputHandler.h"
 #include "utilities/CCopasiTask.h"
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
+class SBMLDocument;
+class SBase;
+LIBSBML_CPP_NAMESPACE_END
+#endif
+
 class CModel;
 class CReportDefinitionVector;
 class COutputDefinitionVector;
 class CFunctionDB;
 class CFunction;
 class SCopasiXMLGUI;
-class SBMLDocument;
-class SBase;
 class CProcessReport;
 class CConfigurationFile;
 class SBMLIncompatibility;

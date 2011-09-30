@@ -29,8 +29,12 @@
 #include "CLGraphicalObject.h"
 #include "CLGlyphs.h"
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class SpeciesReferenceGlyph;
 class ReactionGlyph;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 
 /**
  * Graphical representation of a CChemEqElement. This correspondents to

@@ -25,11 +25,14 @@
 
 #include <copasi.h>
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class SBase;
-
 class BoundingBox;
 class Dimensions;
 class Point;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 
 /**
  * This class does nothing at all at the moment.

@@ -30,7 +30,11 @@
 #include <copasi/layout/CLGlobalRenderInformation.h>
 #endif /* USE_CRENDER_EXTENSION */
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class ListOf;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 
 /**
  * this class stores a list of layouts. It should also keep the maps

@@ -28,9 +28,13 @@
 
 #include "CLGraphicalObject.h"
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class SpeciesGlyph;
 class CompartmentGlyph;
 class TextGlyph;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 
 /**
  * Graphical representation of a metabolite

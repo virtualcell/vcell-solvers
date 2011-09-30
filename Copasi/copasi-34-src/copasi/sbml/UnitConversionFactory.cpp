@@ -15,7 +15,12 @@
 // Properties, Inc. and EML Research, gGmbH.
 // All rights reserved.
 
+#include <copasi.h>
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class UnitDefinition;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 
 #include "UnitConversionFactory.hpp"
 #include "sbml/UnitKind.h"

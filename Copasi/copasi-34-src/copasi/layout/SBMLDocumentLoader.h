@@ -43,10 +43,14 @@ class CLRenderInformationBase;
 class CLTransformation2D;
 #endif // USE_CRENDER_EXTENSION
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class Layout;
 class ListOf;
 class SBase;
 class TextGlyph;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 
 #ifdef USE_CRENDER_EXTENSION
 class Transformation2D;

@@ -25,7 +25,11 @@
 
 #include "mathematics.h"
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class ASTNode;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 class CCopasiDataModel;
 
 /**

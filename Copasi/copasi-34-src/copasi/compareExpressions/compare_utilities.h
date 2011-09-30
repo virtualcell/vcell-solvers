@@ -26,9 +26,14 @@
 #include <string>
 #include <map>
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class ASTNode;
-class CNormalFraction;
 class ListOfFunctionDefinitions;
+LIBSBML_CPP_NAMESPACE_END
+#endif
+
+class CNormalFraction;
 class CNormalBase;
 class ConverterASTNode;
 class CEvaluationNode;

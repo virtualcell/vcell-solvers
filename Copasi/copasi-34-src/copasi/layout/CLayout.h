@@ -35,7 +35,11 @@
 #include <copasi/layout/CLLocalRenderInformation.h>
 #endif /* USE_CRENDER_EXTENSION */
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class Layout;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 
 /**
  * This class describes a reaction network layout. Its structure

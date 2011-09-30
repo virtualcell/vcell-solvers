@@ -23,9 +23,14 @@
 #define EXPRESSION2PRESENTATIONMML_H
 
 #include <iostream>
+
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class ASTNode;
 class Model;
 class Reaction;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 
 class Expression2PresentationMML
 {

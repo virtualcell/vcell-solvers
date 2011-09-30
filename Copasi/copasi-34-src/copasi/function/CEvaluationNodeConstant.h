@@ -23,7 +23,11 @@
 #ifndef COPASI_CEvaluationNodeConstant
 #define COPASI_CEvaluationNodeConstant
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class ASTNode;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 class CCopasiDataModel;
 
 /**

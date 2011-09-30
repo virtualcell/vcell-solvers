@@ -35,20 +35,25 @@
 
 #include "sbml/UnitDefinition.h"
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class SBMLDocument;
-class CCompartment;
-class CMetab;
-class CReaction;
 class Reaction;
 class Species;
 class Model;
 class Compartment;
-class ConverterASTNode;
 class Parameter;
 class FunctionDefinition;
 class SBase;
-class CProcessReport;
 class Rule;
+LIBSBML_CPP_NAMESPACE_END
+#endif
+
+class CCompartment;
+class CMetab;
+class CReaction;
+class ConverterASTNode;
+class CProcessReport;
 class CListOfLayouts;
 
 class SBMLImporter

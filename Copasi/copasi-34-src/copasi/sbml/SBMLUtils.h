@@ -21,7 +21,11 @@
 #include <string>
 #include "copasi/copasi.h"
 
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class SBase;
+LIBSBML_CPP_NAMESPACE_END
+#endif
 
 class SBMLUtils
 {

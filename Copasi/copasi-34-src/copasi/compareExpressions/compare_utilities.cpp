@@ -29,7 +29,6 @@
 
 #include <sstream>
 
-#include "compare_utilities.h"
 
 #include "sbml/math/ASTNode.h"
 #include "sbml/Model.h"
@@ -57,6 +56,7 @@
 #include "copasi/function/CEvaluationNodeObject.h"
 #include "copasi/sbml/ConverterASTNode.h"
 #include "sbml/FunctionDefinition.h"
+#include "compare_utilities.h"
 
 /**
  * Creates an expanded expression from the given expression.

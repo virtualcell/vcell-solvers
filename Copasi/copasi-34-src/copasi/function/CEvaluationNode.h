@@ -30,8 +30,13 @@
 #include "utilities/CCopasiNode.h"
 #include "CFunctionAnalyzer.h"
 
-class CEvaluationTree;
+#ifdef Darwin
+LIBSBML_CPP_NAMESPACE_BEGIN
 class ASTNode;
+LIBSBML_CPP_NAMESPACE_END
+#endif
+
+class CEvaluationTree;
 class ConverterASTNode;
 class CCopasiDataModel;
 
