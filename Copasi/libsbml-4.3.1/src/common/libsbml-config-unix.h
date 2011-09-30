@@ -59,10 +59,10 @@
 
 
 /* Define to 1 if you have the <expat.h> header file. */
-/* #undef HAVE_EXPAT_H */
+#define HAVE_EXPAT_H 1
 
 /* Define to 1 to use the Expat XML library */
-/* #undef USE_EXPAT */
+#define USE_EXPAT 1
 
 
 /* Define to 1 if you have the <errno.h> header file. */
@@ -88,7 +88,7 @@
 /* #undef TRACE_MEMORY */
 
 /* Define to 1 to build the SBML layout extension. */
-/* #undef USE_LAYOUT */
+#define USE_LAYOUT 1
 
 
 /* Define to 1 if your processor stores words with the most significant byte

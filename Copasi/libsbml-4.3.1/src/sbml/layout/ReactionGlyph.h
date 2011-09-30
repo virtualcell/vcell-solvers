@@ -63,9 +63,9 @@
 #include "GraphicalObject.h"
 #include "SpeciesReferenceGlyph.h"
 
-class SpeciesReferenceGlyph;
-
 LIBSBML_CPP_NAMESPACE_BEGIN
+
+class SpeciesReferenceGlyph;
 
 class LIBSBML_EXTERN ListOfSpeciesReferenceGlyphs : public ListOf
 {
