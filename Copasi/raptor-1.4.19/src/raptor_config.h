@@ -50,22 +50,22 @@
 #define HAVE_ISASCII 1
 
 /* Define to 1 if you have the <libxml/hash.h> header file. */
-#define HAVE_LIBXML_HASH_H 1
+/* #undef HAVE_LIBXML_HASH_H */
 
 /* Define to 1 if you have the <libxml/HTMLparser.h> header file. */
-#define HAVE_LIBXML_HTMLPARSER_H 1
+/* #undef HAVE_LIBXML_HTMLPARSER_H */
 
 /* Define to 1 if you have the <libxml/nanohttp.h> header file. */
-#define HAVE_LIBXML_NANOHTTP_H 1
+/* #undef HAVE_LIBXML_NANOHTTP_H */
 
 /* Define to 1 if you have the <libxml/parser.h> header file. */
-#define HAVE_LIBXML_PARSER_H 1
+/* #undef HAVE_LIBXML_PARSER_H */
 
 /* Define to 1 if you have the <libxml/SAX2.h> header file. */
-#define HAVE_LIBXML_SAX2_H 1
+/* #undef HAVE_LIBXML_SAX2_H */
 
 /* Define to 1 if you have the <libxslt/xslt.h> header file. */
-#define HAVE_LIBXSLT_XSLT_H 1
+/* #undef HAVE_LIBXSLT_XSLT_H */
 
 /* Define to 1 if you have the <limits.h> header file. */
 #define HAVE_LIMITS_H 1
@@ -134,13 +134,13 @@
 #define HAVE_VSNPRINTF 1
 
 /* Define to 1 if you have the `xmlCtxtUseOptions' function. */
-#define HAVE_XMLCTXTUSEOPTIONS 1
+/* #undef HAVE_XMLCTXTUSEOPTIONS */
 
 /* Define to 1 if you have the <xmlparse.h> header file. */
 /* #undef HAVE_XMLPARSE_H */
 
 /* Define to 1 if you have the `xmlSAX2InternalSubset' function. */
-#define HAVE_XMLSAX2INTERNALSUBSET 1
+/* #undef HAVE_XMLSAX2INTERNALSUBSET */
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
@@ -171,22 +171,22 @@
 #define PACKAGE_VERSION "1.4.19"
 
 /* does libxml struct xmlEntity have a field etype */
-#define RAPTOR_LIBXML_ENTITY_ETYPE 1
+/* #undef RAPTOR_LIBXML_ENTITY_ETYPE */
 
 /* does libxml struct xmlEntity have a field name_length */
 /* #undef RAPTOR_LIBXML_ENTITY_NAME_LENGTH */
 
 /* does libxml have HTML_PARSE_NONET */
-#define RAPTOR_LIBXML_HTML_PARSE_NONET 1
+/* #undef RAPTOR_LIBXML_HTML_PARSE_NONET */
 
 /* does libxml xmlSAXHandler have externalSubset field */
-#define RAPTOR_LIBXML_XMLSAXHANDLER_EXTERNALSUBSET 1
+/* #undef RAPTOR_LIBXML_XMLSAXHANDLER_EXTERNALSUBSET */
 
 /* does libxml xmlSAXHandler have initialized field */
-#define RAPTOR_LIBXML_XMLSAXHANDLER_INITIALIZED 1
+/* #undef RAPTOR_LIBXML_XMLSAXHANDLER_INITIALIZED */
 
 /* does libxml have XML_PARSE_NONET */
-#define RAPTOR_LIBXML_XML_PARSE_NONET 1
+/* #undef RAPTOR_LIBXML_XML_PARSE_NONET */
 
 /* Provide a Unicode NFC check */
 #define RAPTOR_NFC_CHECK 1
@@ -282,7 +282,7 @@
 #define SIZEOF_UNSIGNED_INT 4
 
 /* The size of `unsigned long', as computed by sizeof. */
-#define SIZEOF_UNSIGNED_LONG 8
+#define SIZEOF_UNSIGNED_LONG 4
 
 /* The size of `unsigned short', as computed by sizeof. */
 #define SIZEOF_UNSIGNED_SHORT 2
