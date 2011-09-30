@@ -41,11 +41,11 @@ list (APPEND SRC_FILES
 
 set(JNIDIR ${CMAKE_CURRENT_SOURCE_DIR}/../JNI/)
 set(COPASIDIR ${CMAKE_CURRENT_SOURCE_DIR}/../Copasi/copasi-34-src)
-include_directories(${COPASIDIR} 
+include_directories(${COPASIDIR}
 	${COPASIDIR}/copasi 
 	${COPASIDIR}/copasi/commandline 
 	${COPASIDIR}/copasi/compareExpressions 
-	${COPASIDIR}/copasi/utilities 
+	${COPASIDIR}/copasi/utilities
 	${CMAKE_CURRENT_SOURCE_DIR}/../Optimization2
 	${CMAKE_CURRENT_SOURCE_DIR}/../tinyxml
 )
@@ -54,9 +54,9 @@ if (MSVC)
 	add_definitions(-DLinux -DUSE_CLAPACK)
 	include_directories(${JNIDIR}/Win32/include ${JNIDIR}/Win32/include/win32)
 elseif (APPLE)
-	set(CMAKE_OSX_ARCHITECTURES "i386;ppc;x86_64")
+	set(CMAKE_OSX_ARCHITECTURES "i386;x86_64")
 	add_definitions(-DDarwin)
-	include_directories(${JNIDIR}/MacOSX/i386)
+	include_directories(${JNIDIR}/MacOSX/i386 ${COPASIDIR}/../libsbml-4.3.1/include )
 	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../Copasi/thirdparty_libs/mac ${COPASIDIR}/copasi/libs/mac)
 elseif (LINUX)
 	include_directories(${JNIDIR}/Linux/include ${JNIDIR}/Linux/include/linux)
@@ -99,20 +99,21 @@ set (DEP_LIBS
 	commandline
 	sbml
 	raptor
-	expat
-	lapack
-	f2c
-	blas
 )
-if (MSVC)
-elseif (APPLE)
+
+if (APPLE)
 	list(APPEND DEP_LIBS 
 		lapack
 		blas
-		xml2
-		xslt
-		curl
+		${CMAKE_CURRENT_SOURCE_DIR}/../Copasi/thirdparty_libs/mac/libexpat.a
 		/System/Library/Frameworks/Carbon.framework
+	)
+elseif (MSVC OR LINUX)
+	list(APPEND DEP_LIBS 
+		lapack
+		f2c
+		blas
+		expat
 	)
 endif()
 target_link_libraries(vcellCopasiOptDriver ${DEP_LIBS})
