@@ -45,10 +45,12 @@ class CLTransformation2D;
 
 #ifdef Darwin
 LIBSBML_CPP_NAMESPACE_BEGIN
+#endif
 class Layout;
 class ListOf;
 class SBase;
 class TextGlyph;
+#ifdef Darwin
 LIBSBML_CPP_NAMESPACE_END
 #endif
 

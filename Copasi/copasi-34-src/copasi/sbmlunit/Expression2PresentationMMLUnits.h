@@ -29,8 +29,10 @@ class CUnitInformation;
 
 #ifdef Darwin
 LIBSBML_CPP_NAMESPACE_BEGIN
+#endif
 class UnitDefinition;
 class Unit;
+#ifdef Darwin
 LIBSBML_CPP_NAMESPACE_END
 #endif
 

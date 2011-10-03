@@ -27,10 +27,12 @@
 
 #ifdef Darwin
 LIBSBML_CPP_NAMESPACE_BEGIN
+#endif
 class SBase;
 class BoundingBox;
 class Dimensions;
 class Point;
+#ifdef Darwin
 LIBSBML_CPP_NAMESPACE_END
 #endif
 

@@ -50,6 +50,7 @@ class CModelEntity;
 class SBMLIncompatibility;
 #ifdef Darwin
 LIBSBML_CPP_NAMESPACE_BEGIN
+#endif
 class Event;
 class KineticLaw;
 class Model;
@@ -58,6 +59,7 @@ class Rule;
 class SBase;
 class SBMLDocument;
 class XMLNode;
+#ifdef Darwin
 LIBSBML_CPP_NAMESPACE_END
 #endif
 

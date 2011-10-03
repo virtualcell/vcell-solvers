@@ -30,7 +30,9 @@
 
 #ifdef Darwin
 LIBSBML_CPP_NAMESPACE_BEGIN
+#endif
 class GraphicalObject;
+#ifdef Darwin
 LIBSBML_CPP_NAMESPACE_END
 #endif
 

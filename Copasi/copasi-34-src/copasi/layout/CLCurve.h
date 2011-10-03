@@ -32,10 +32,12 @@
 class CCopasiObject;
 #ifdef Darwin
 LIBSBML_CPP_NAMESPACE_BEGIN
+#endif
 class LineSegment;
 class Curve;
 class CubicBezier;
 class LineSegment;
+#ifdef Darwin
 LIBSBML_CPP_NAMESPACE_END
 #endif
 

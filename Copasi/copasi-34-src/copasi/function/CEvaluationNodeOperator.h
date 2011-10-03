@@ -27,7 +27,9 @@
 
 #ifdef Darwin
 LIBSBML_CPP_NAMESPACE_BEGIN
+#endif
 class ASTNode;
+#ifdef Darwin
 LIBSBML_CPP_NAMESPACE_END
 #endif
 class CCopasiDataModel;

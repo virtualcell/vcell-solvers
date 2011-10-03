@@ -18,7 +18,9 @@
 #include <copasi.h>
 #ifdef Darwin
 LIBSBML_CPP_NAMESPACE_BEGIN
+#endif
 class UnitDefinition;
+#ifdef Darwin
 LIBSBML_CPP_NAMESPACE_END
 #endif
 

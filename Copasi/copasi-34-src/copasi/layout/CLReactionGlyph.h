@@ -31,8 +31,10 @@
 
 #ifdef Darwin
 LIBSBML_CPP_NAMESPACE_BEGIN
+#endif
 class SpeciesReferenceGlyph;
 class ReactionGlyph;
+#ifdef Darwin
 LIBSBML_CPP_NAMESPACE_END
 #endif
 

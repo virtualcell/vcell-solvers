@@ -30,8 +30,10 @@
 
 #ifdef Darwin
 LIBSBML_CPP_NAMESPACE_BEGIN
+#endif
 class SBMLDocument;
 class SBase;
+#ifdef Darwin
 LIBSBML_CPP_NAMESPACE_END
 #endif
 

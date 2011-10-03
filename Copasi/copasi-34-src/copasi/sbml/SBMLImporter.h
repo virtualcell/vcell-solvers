@@ -37,6 +37,7 @@
 
 #ifdef Darwin
 LIBSBML_CPP_NAMESPACE_BEGIN
+#endif
 class SBMLDocument;
 class Reaction;
 class Species;
@@ -46,6 +47,7 @@ class Parameter;
 class FunctionDefinition;
 class SBase;
 class Rule;
+#ifdef Darwin
 LIBSBML_CPP_NAMESPACE_END
 #endif
 

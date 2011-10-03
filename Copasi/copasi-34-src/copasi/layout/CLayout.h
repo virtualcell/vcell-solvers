@@ -37,7 +37,9 @@
 
 #ifdef Darwin
 LIBSBML_CPP_NAMESPACE_BEGIN
+#endif
 class Layout;
+#ifdef Darwin
 LIBSBML_CPP_NAMESPACE_END
 #endif
 

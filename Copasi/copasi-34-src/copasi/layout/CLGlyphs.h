@@ -30,9 +30,11 @@
 
 #ifdef Darwin
 LIBSBML_CPP_NAMESPACE_BEGIN
+#endif
 class SpeciesGlyph;
 class CompartmentGlyph;
 class TextGlyph;
+#ifdef Darwin
 LIBSBML_CPP_NAMESPACE_END
 #endif
 

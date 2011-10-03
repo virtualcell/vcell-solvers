@@ -29,8 +29,10 @@
 
 #ifdef Darwin
 LIBSBML_CPP_NAMESPACE_BEGIN
+#endif
 class Model;
 class ASTNode;
+#ifdef Darwin
 LIBSBML_CPP_NAMESPACE_END
 #endif
 
