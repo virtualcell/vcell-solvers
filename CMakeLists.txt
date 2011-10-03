@@ -96,11 +96,13 @@ elseif (LINUX)
 	if (LINUX_32bit_BINARIES) 
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
 		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32")
+		set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -m32")
 	endif()
 	
 	if (LINUX_64bit_BINARIES) 
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64")
 		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64")
+		set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -m64")
 	endif()
 endif()
 
