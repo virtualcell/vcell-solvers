@@ -1,5 +1,10 @@
 project(IDAWin)
 
+include (FindGLUT)
+if (NOT GLUT_FOUND)
+	message(FATAL_ERROR, "smoldyn needs glut to build")
+endif()
+
 set(SRC_FILES 
 	source/lib/Geometry.c
 	source/lib/math2.c

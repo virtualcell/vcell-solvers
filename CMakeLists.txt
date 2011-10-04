@@ -11,6 +11,7 @@ project(numerics)
 #include (CheckCSourceRuns)
 #include (CheckSymbolExists)
 #include (CheckTypeSize)
+include (FindZLIB)
 
 set(LINUX FALSE)
 if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
@@ -104,6 +105,23 @@ elseif (LINUX)
 		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64")
 		set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -m64")
 	endif()
+	
+
+	######################################
+	#
+	# try to find ifort compiler
+	#
+	#######################################
+	set(IFORT_EXECUTABLE NOTFOUND)
+	if (LINUX_32bit_BINARIES)
+		find_program(IFORT_EXECUTABLE ifort /opt/intel/fc/10.1.015/bin/)
+	elseif (LINUX_64bit_BINARIES)
+		find_program(IFORT_EXECUTABLE ifort /opt/intel/fce1/10.1.015/bin/)
+	endif()
+	if (IFORT_EXECUTABLE MATCHES IFORT_EXECUTABLE-NOTFOUND)
+		message(FATAL_ERROR "intel fortran compiler (ifort) is required")
+	endif()
+	
 endif()
 
 ######################################
@@ -201,33 +219,27 @@ endif(TARGET_JAVA_BINDING)
 #######################################
 add_subdirectory(ExpressionParser)
 add_subdirectory(IDAWin)
-######################################
-#
-# By default Linux and Mac have zlib 
-# installed in the system
-#
-#######################################
-if (MSVC)
-	add_subdirectory(zlib)
-endif(MSVC)
-
-add_subdirectory(sundials) 
+add_subdirectory(sundials)
+ 
 if (TARGET_SOLVERS_SERVER_SIDE OR TARGET_SOLVERS_CLIENT_SIDE)
 	enable_language(Fortran)
 	if (LINUX)
 		add_subdirectory(blas)
 	endif()
+	add_subdirectory(Hy3S)
 	add_subdirectory(netcdf-3.6.2)
-	add_subdirectory(unzip)
-	add_subdirectory(zip)
-	if (LINUX)	
+	if (NOT MSVC)
 		add_subdirectory(PCGPack)
 	endif() 
-	add_subdirectory(qhull) 
-	add_subdirectory(Stochastic) 
-	add_subdirectory(VCell) 
+	add_subdirectory(qhull)
 	add_subdirectory(smoldyn) 
-#	add_subdirectory(Hy3S)
+	add_subdirectory(Stochastic)
+	add_subdirectory(unzip)
+	add_subdirectory(VCell) 
+	add_subdirectory(zip)
+	if (NOT ZLIB_FOUND)
+		add_subdirectory(zlib)
+	endif()
 endif() 
 
 if (TARGET_JAVA_BINDING)

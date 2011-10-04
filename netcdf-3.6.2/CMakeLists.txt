@@ -26,3 +26,6 @@ else()
 include_directories(linux)
 endif()
 add_library(netcdf STATIC ${SRC_FILES})
+
+add_subdirectory(fortran)
+add_subdirectory(f90)

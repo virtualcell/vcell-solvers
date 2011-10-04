@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(vcellCopasiOptDriver)
 
+include (FindJNI)
+
 set(LINUX FALSE)
 if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
 	set(LINUX TRUE)
@@ -39,27 +41,25 @@ list (APPEND SRC_FILES
 	../Optimization2/OptXmlWriter2.cpp
 )
 
-set(JNIDIR ${CMAKE_CURRENT_SOURCE_DIR}/../JNI/)
 set(COPASIDIR ${CMAKE_CURRENT_SOURCE_DIR}/../Copasi/copasi-34-src)
 include_directories(${COPASIDIR}
 	${COPASIDIR}/copasi 
 	${COPASIDIR}/copasi/commandline 
 	${COPASIDIR}/copasi/compareExpressions 
 	${COPASIDIR}/copasi/utilities
+	${COPASIDIR}/../libsbml-4.3.1/include
 	${CMAKE_CURRENT_SOURCE_DIR}/../Optimization2
 	${CMAKE_CURRENT_SOURCE_DIR}/../tinyxml
+	${JAVA_INCLUDE_PATH}
+	${JAVA_AWT_INCLUDE_PATH}
 )
 add_definitions(-DWITH_CSPMETHOD -DXML_STATIC -DLIBSBML_STATIC -DRAPTOR_STATIC)
-if (MSVC)
-	include_directories(${JNIDIR}/Win32/include ${JNIDIR}/Win32/include/win32)
-elseif (APPLE)
+if (APPLE)
 	set(CMAKE_OSX_ARCHITECTURES "i386;x86_64")
 	add_definitions(-DDarwin)
-	include_directories(${JNIDIR}/MacOSX/i386 ${COPASIDIR}/../libsbml-4.3.1/include )
 	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../Copasi/thirdparty_libs/mac ${COPASIDIR}/copasi/libs/mac)
 elseif (LINUX)
 	add_definitions(-DLinux -DUSE_CLAPACK)
-	include_directories(${JNIDIR}/Linux/include ${JNIDIR}/Linux/include/linux)
 	if (LINUX_64bit_BINARIES)
 		link_directories(${COPASIDIR}/copasi/libs/linux/m64 ${CMAKE_CURRENT_SOURCE_DIR}/../Copasi/thirdparty_libs/linux/m64)
 	elseif (LINUX_32bit_BINARIES)
