@@ -40,7 +40,6 @@ bool VCellCallback::progressItem(const size_t & handle)
 				break;
 			}		
 		}
-		bFirstCall = false;
 	}
 
 	CProcessReportItem* reportItem = mProcessReportItemList[handle]; 
@@ -52,11 +51,12 @@ bool VCellCallback::progressItem(const size_t & handle)
 		double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
 					
 		updateInfo(handle);
-		if(duration >= progress_interval_in_s )
+		if(bFirstCall || duration >= progress_interval_in_s )
 		{
 			setEvaluation();
 			oldTime = currentTime;
 		}
+		bFirstCall = false;
 		itemHandle = handle;
 		
 #ifndef DEBUG

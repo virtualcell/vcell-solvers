@@ -33,6 +33,7 @@ static const string ExperimentalDataFile_Attr_LastRow = "LastRow";
 OptXMLParser::OptXMLParser()
 {
 	currentElement="";
+	optInfo.numOptimizationRuns = 1;
 }
 
 void OptXMLParser::onStartElement(void *data, const char *el, const char **attr)

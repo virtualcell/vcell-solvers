@@ -13,7 +13,7 @@ using namespace std;
 int main(int argc, char *argv[])
 {
 	try{
-		string fileName = "D:\\COPASI\\copasiOptxml.txt"; 
+		string fileName = "D:\\COPASI\\copasiOptXml.txt"; 
 		FILE* fp = fopen(fileName.c_str(), "r");
 		char buffer[8192];
 		int len = fread(buffer, 1, 8192, fp);
