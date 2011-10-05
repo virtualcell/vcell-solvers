@@ -117,3 +117,7 @@ elseif (MSVC OR LINUX)
 	)
 endif()
 target_link_libraries(vcellCopasiOptDriver ${DEP_LIBS})
+
+set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
+install(TARGETS vcellCopasiOptDriver
+		RUNTIME DESTINATION bin)

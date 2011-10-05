@@ -32,3 +32,6 @@ set (DEP_LIBS
 	ExpressionParser
 )
 target_link_libraries(NativeSolvers ${DEP_LIBS})
+install(TARGETS NativeSolvers
+        RUNTIME DESTINATION bin)	
+

@@ -1,5 +1,8 @@
 project(PCGPack Fortran)    
+   
+if (MSVC)
+    set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /names:lowercase")
+endif()
     
-file (GLOB SRC_FILES *.f)    
-    
+file (GLOB SRC_FILES *.f)   
 add_library(PCGPack STATIC ${SRC_FILES})

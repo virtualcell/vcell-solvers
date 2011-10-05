@@ -6,5 +6,6 @@ set(SRC_FILES
 )
 
 set (CMAKE_Fortran_COMPILER ${IFORT_EXECUTABLE})
+set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /iface:mixed_str_len_arg /check:bounds")
 add_library(netcdf_f90 STATIC ${SRC_FILES})
 

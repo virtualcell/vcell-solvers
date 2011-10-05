@@ -52,15 +52,15 @@ endif()
 #  3. java binding
 #
 ##############################################
-option(TARGET_SOLVERS_SERVER_SIDE "Server Side Solvers (With Messaging)" ON)
-option(TARGET_SOLVERS_CLIENT_SIDE "Client Side Solvers (Without Messaging)" OFF)
+option(TARGET_SOLVERS_WITH_MESSAGING "Server Side Solvers (With Messaging)" OFF)
+option(TARGET_SOLVERS_NO_MESSAGING "Client Side Solvers (Without Messaging)" ON)
 option(TARGET_JAVA_BINDING "Java Binding" OFF)
 
 set (TARGET_COUNT 0)
-if (TARGET_SOLVERS_SERVER_SIDE)
+if (TARGET_SOLVERS_WITH_MESSAGING)
 	math(EXPR TARGET_COUNT "${TARGET_COUNT} + 1")
 endif()
-if (TARGET_SOLVERS_CLIENT_SIDE)
+if (TARGET_SOLVERS_NO_MESSAGING)
 	math(EXPR TARGET_COUNT "${TARGET_COUNT} + 1")
 endif()
 if (TARGET_JAVA_BINDING)
@@ -68,7 +68,7 @@ if (TARGET_JAVA_BINDING)
 endif()
 
 if (TARGET_COUNT GREATER 1 OR TARGET_COUNT EQUAL 0)
-	message(FATAL_ERROR "It is required to select one target, either TARGET_SOLVERS_SERVER_SIDE, or TARGET_SOLVERS_CLIENT_SIDE or TARGET_JAVA_BINDING")
+	message(FATAL_ERROR "It is required to select one target, either TARGET_SOLVERS_WITH_MESSAGING, or TARGET_SOLVERS_NO_MESSAGING or TARGET_JAVA_BINDING")
 endif()
 
 #############################################
@@ -104,26 +104,37 @@ elseif (LINUX)
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64")
 		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64")
 		set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -m64")
-	endif()
-	
-
-	######################################
-	#
-	# try to find ifort compiler
-	#
-	#######################################
-	set(IFORT_EXECUTABLE NOTFOUND)
-	if (LINUX_32bit_BINARIES)
-		find_program(IFORT_EXECUTABLE ifort /opt/intel/fc/10.1.015/bin/)
-	elseif (LINUX_64bit_BINARIES)
-		find_program(IFORT_EXECUTABLE ifort /opt/intel/fce1/10.1.015/bin/)
-	endif()
-	if (IFORT_EXECUTABLE MATCHES IFORT_EXECUTABLE-NOTFOUND)
-		message(FATAL_ERROR "intel fortran compiler (ifort) is required")
-	endif()
-	
+	endif()	
 endif()
 
+######################################
+#
+# try to find ifort compiler
+#
+#######################################
+set(IFORT_EXECUTABLE NOTFOUND)
+
+######################################
+#
+# on Windows you are supposed to 
+# open Intel Fortran Compiler Command Prompt
+# so it is not necessary to find ifort
+#
+#######################################
+if (MSVC)
+	set(IFORT_EXECUTABLE ifort)
+endif()
+
+if (LINUX_32bit_BINARIES)
+	find_program(IFORT_EXECUTABLE ifort /opt/intel/fc/10.1.015/bin/)
+elseif (LINUX_64bit_BINARIES)
+	find_program(IFORT_EXECUTABLE ifort /opt/intel/fce1/10.1.015/bin/)
+endif()
+
+if (IFORT_EXECUTABLE MATCHES IFORT_EXECUTABLE-NOTFOUND)
+	message(FATAL_ERROR "intel fortran compiler (ifort) is required")
+endif()
+	
 ######################################
 #
 # set proper compiler options
@@ -133,11 +144,11 @@ if (MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
 endif()
  
-if (TARGET_SOLVERS_SERVER_SIDE OR TARGET_SOLVERS_CLIENT_SIDE)
+if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 
-	if (TARGET_SOLVERS_SERVER_SIDE)
+	if (TARGET_SOLVERS_WITH_MESSAGING)
 		if (APPLE)
-			message(FATAL_ERROR "TARGET_SOLVERS_SERVER_SIDE is not supported on MAC OS X")
+			message(FATAL_ERROR "TARGET_SOLVERS_WITH_MESSAGING is not supported on MAC OS X")
 		endif(APPLE)
 		
 		add_definitions(-DUSE_MESSAGING)
@@ -160,14 +171,15 @@ if (TARGET_SOLVERS_SERVER_SIDE OR TARGET_SOLVERS_CLIENT_SIDE)
 			include_directories(${SONICMQ_DIR}/include ${SONICMQ_DIR}/include/CPP)
 			link_directories(${SONICMQ_DIR}/lib)
 		endif()		
-	endif(TARGET_SOLVERS_SERVER_SIDE)
+	endif()
 	
-######################################
-#
-# use /MT instead of /MD on Windows
-#
-#######################################	
+	######################################
+	#
+	# use /MT instead of /MD on Windows
+	#
+	#######################################	
 	if (MSVC)
+		set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /MT")
 		foreach(flag_var
 			CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
 			CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
@@ -184,19 +196,20 @@ endif()
 
 if (TARGET_JAVA_BINDING)
 	if (UNIX)
-######################################
-#
-# use -fPIC on UNIX
-#
-#######################################	
+		######################################
+		#
+		# use -fPIC on UNIX
+		#
+		#######################################	
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 	elseif (MSVC)
-######################################
-#
-# use /MD instead of /MT on Windows
-#
-#######################################		
+		######################################
+		#
+		# use /MD instead of /MT on Windows
+		#
+		#######################################	
+		set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /MD")
         foreach(flag_var
         		CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
                 CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
@@ -221,16 +234,14 @@ add_subdirectory(ExpressionParser)
 add_subdirectory(IDAWin)
 add_subdirectory(sundials)
  
-if (TARGET_SOLVERS_SERVER_SIDE OR TARGET_SOLVERS_CLIENT_SIDE)
+if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	enable_language(Fortran)
-	if (LINUX)
+	if (MSVC OR LINUX)
 		add_subdirectory(blas)
 	endif()
 	add_subdirectory(Hy3S)
 	add_subdirectory(netcdf-3.6.2)
-	if (NOT MSVC)
-		add_subdirectory(PCGPack)
-	endif() 
+	add_subdirectory(PCGPack) 
 	add_subdirectory(qhull)
 	add_subdirectory(smoldyn) 
 	add_subdirectory(Stochastic)
@@ -248,3 +259,5 @@ if (TARGET_JAVA_BINDING)
 	add_subdirectory(JavaBinding)
 	add_subdirectory(Optimization2)
 endif(TARGET_JAVA_BINDING)
+
+set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")

@@ -69,47 +69,47 @@ set(SRC_FILES
 	src/VolumeRegionVariable.cpp
 	src/VolumeVarContextExpression.cpp
 	src/VolumeVariable.cpp
+	src/pcgwrapper.f
 )
-
-if (UNIX)
-	list(APPEND SRC_FILES src/pcgwrapper.f)
-endif()
 
 set (EXE_SRC_FILES
 	src/FiniteVolume.cpp
 )
 
 include_directories(include ../ExpressionParser ${CMAKE_CURRENT_SOURCE_DIR}/../IDAWin ../netcdf-3.6.2/libsrc ../netcdf-3.6.2/cxx ../sundials/include ../sundials/src)
-if (MSVC)
+if (NOT ZLIB_FOUND)
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../zlib)
+endif()
+if (MSVC)
+    set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /names:lowercase")
 elseif(UNIX)
 	add_definitions(-DUNIX)
 	if (APPLE) 
 		add_definitions(-DMACOSX)
-	elseif (LINUX AND ARCH_64bit)
-	 	add_definitions(-DLINUX64)
-	 endif()
+	else()
+		if (LINUX_32bit_BINARIES)
+	 		add_definitions(-DLINUX)
+		elseif (LINUX_64bit_BINARIES)
+			add_definitions(-DLINUX64)
+		endif()	
+	endif()
 endif()	
 add_library(vcell STATIC ${SRC_FILES})
 
-if (TARGET_SOLVERS_SERVER_SIDE OR TARGET_SOLVERS_CLIENT_SIDE)
-	set(DEP_LIBS vcell ExpressionParser IDAWin netcdf qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS} zip unzip)
-	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/../PCGPack)
+if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
+	set(DEP_LIBS vcell ExpressionParser IDAWin netcdf netcdf_cxx PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS} zip unzip)
 	if (MSVC)
-		list(APPEND DEP_LIBS zlib pcgwrapper pcgpack_dbl mkl_c)
-		link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../IFortran)
+		list(APPEND DEP_LIBS zlib blas)
 	elseif (LINUX) 
-		list(APPEND DEP_LIBS PCGPack blas z gfortran)
-	elseif (APPLE) 
-		list(APPEND DEP_LIBS PCGPack)
+		list(APPEND DEP_LIBS blas z gfortran)
 	endif()
-	if (TARGET_SOLVERS_SERVER_SIDE)
+	if (TARGET_SOLVERS_WITH_MESSAGING)
 		list(APPEND EXE_SRC_FILES ../VCell/src/SimulationMessaging.cpp)
 	endif()
 	add_executable(FiniteVolume ${EXE_SRC_FILES})	
 	target_link_libraries(FiniteVolume ${DEP_LIBS})
 	add_dependencies(FiniteVolume vcell ExpressionParser IDAWin netcdf qhull sundials sundials_nvecserial sundials_cvode sundials_ida zip unzip)
-	if (MSVC)
-		SET_TARGET_PROPERTIES(FiniteVolume PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB:libcmt.lib")
-	endif()
+	install(TARGETS FiniteVolume
+            RUNTIME DESTINATION bin)
+	
 endif()

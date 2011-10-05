@@ -13,23 +13,27 @@ set (F90_SRC_FILES
 		src/mainprogram-HyJCMSS.f90
 )
 set_source_files_properties( ${F90_SRC_FILES} PROPERTIES LANGUAGE Fortran)
-include_directories(${CMAKE_BINARY_DIR}/netcdf-3.6.2/f90 ../VCell/include)
+include_directories(${CMAKE_BINARY_DIR}/netcdf-3.6.2/f90)
 
-if (TARGET_SOLVERS_SERVER_SIDE)
+if (TARGET_SOLVERS_WITH_MESSAGING)
 	set (C_SRC_FILES
 		src/msgwrapper.c 
 		../VCell/src/SimulationMessaging.cpp
 	)
+	include_directories(../VCell/include)
 	set_source_files_properties(${C_SRC_FILES} PROPERTIES LANGUAGE CXX)
-	add_definitions(-DUNIX)
-	if (LINUX_32bit_BINARIES)
-	 	add_definitions(-DLINUX)
-	elseif (LINUX_64bit_BINARIES)
-		add_definitions(-DLINUX64)
+	if (UNIX)
+		add_definitions(-DUNIX)
+		if (LINUX_32bit_BINARIES)
+	 		add_definitions(-DLINUX)
+		elseif (LINUX_64bit_BINARIES)
+			add_definitions(-DLINUX64)
+		endif()
 	endif()	
 endif()
 
 set (CMAKE_Fortran_COMPILER ${IFORT_EXECUTABLE})
+set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /iface:mixed_str_len_arg /check:bounds")
 set(DEP_LIBS netcdf_f90 netcdf_for netcdf ${SONICMQ_LIBS})
 
 add_executable(Hybrid_EM ${F90_SRC_FILES} ${C_SRC_FILES})
@@ -45,3 +49,6 @@ add_executable(Hybrid_MIL_Adaptive ${F90_SRC_FILES} ${C_SRC_FILES})
 target_link_libraries(Hybrid_MIL_Adaptive ${DEP_LIBS})
 set_target_properties(Hybrid_MIL_Adaptive PROPERTIES LINKER_LANGUAGE Fortran)
 set_property(TARGET Hybrid_MIL_Adaptive PROPERTY COMPILE_DEFINITIONS MILSTEIN ADAPTIVE)
+
+install(TARGETS Hybrid_EM Hybrid_MIL Hybrid_MIL_Adaptive
+        RUNTIME DESTINATION bin)
