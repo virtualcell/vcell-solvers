@@ -68,10 +68,13 @@ set(SRC_FILES
 	src/VolumeRegionVarContextExpression.cpp
 	src/VolumeRegionVariable.cpp
 	src/VolumeVarContextExpression.cpp
-	src/VolumeVariable.cpp
-	src/pcgwrapper.f
+	src/VolumeVariable.cpp	
 )
 
+set (PCGWRAPPER_SRC_FILES
+	src/pcgwrapper.f
+)
+ 
 set (EXE_SRC_FILES
 	src/FiniteVolume.cpp
 )
@@ -95,9 +98,10 @@ elseif(UNIX)
 	endif()
 endif()	
 add_library(vcell STATIC ${SRC_FILES})
+add_library(pcgwrapper STATIC ${PCGWRAPPER_SRC_FILES})
 
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
-	set(DEP_LIBS vcell ExpressionParser IDAWin netcdf netcdf_cxx PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS} zip unzip)
+	set(DEP_LIBS vcell pcgwrapper ExpressionParser IDAWin netcdf netcdf_cxx PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS} zip unzip)
 	if (MSVC)
 		list(APPEND DEP_LIBS zlib blas)
 	elseif (LINUX) 
@@ -108,7 +112,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	endif()
 	add_executable(FiniteVolume ${EXE_SRC_FILES})	
 	target_link_libraries(FiniteVolume ${DEP_LIBS})
-	add_dependencies(FiniteVolume vcell ExpressionParser IDAWin netcdf qhull sundials sundials_nvecserial sundials_cvode sundials_ida zip unzip)
+	add_dependencies(FiniteVolume vcell pcgwrapper ExpressionParser IDAWin netcdf qhull sundials sundials_nvecserial sundials_cvode sundials_ida zip unzip)
 	install(TARGETS FiniteVolume
             RUNTIME DESTINATION bin)
 	

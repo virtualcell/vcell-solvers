@@ -119,6 +119,7 @@ endif()
 # try to find ifort compiler
 #
 #######################################
+enable_language(Fortran)
 set(IFORT_EXECUTABLE NOTFOUND)
 
 ######################################
@@ -186,16 +187,31 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	#
 	#######################################	
 	if (MSVC)
-		set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /MT")
 		foreach(flag_var
-			CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-			CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
-			CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-			CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+				CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+				CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
+				CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+				CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
+				CMAKE_Fortran_FLAGS_DEBUG CMAKE_Fortran_FLAGS_RELEASE
+				CMAKE_Fortran_FLAGS_MINSIZEREL CMAKE_Fortran_FLAGS_RELWITHDEBINFO
+			)
 	
 			if(${flag_var} MATCHES "/MD")
 				string(REGEX REPLACE "/MD" "/MT" temp_var "${${flag_var}}")
 				set(${flag_var} ${temp_var} CACHE STRING "Flags used by the compiler" FORCE)
+            elseif(NOT ${flag_var} MATCHES "/MT")
+            	######################################
+				#
+				# no /MT or /MTd at all, append it
+				#
+				#######################################
+				set(temp_var "${${flag_var}}")
+            	if (flag_var MATCHES "DEBUG")
+            		set(temp_var "${temp_var} /MTd")
+            	else()
+            		set(temp_var "${temp_var} /MT")
+            	endif()
+            	set(${flag_var} ${temp_var} CACHE STRING "Flags used by the compiler" FORCE)            	
 			endif()			
 		endforeach(flag_var)	
 	endif (MSVC)
@@ -216,17 +232,32 @@ if (TARGET_JAVA_BINDING)
 		# use /MD instead of /MT on Windows
 		#
 		#######################################	
-		set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /MD")
         foreach(flag_var
-        		CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+        		CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
                 CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
-                CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+                CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
+        		CMAKE_Fortran_FLAGS_DEBUG CMAKE_Fortran_FLAGS_RELEASE
+				CMAKE_Fortran_FLAGS_MINSIZEREL CMAKE_Fortran_FLAGS_RELWITHDEBINFO
+			)
         
-                if(${flag_var} MATCHES "/MT")
-                    string(REGEX REPLACE "/MT" "/MD" temp_var "${${flag_var}}")
-                    set(${flag_var} ${temp_var} CACHE STRING "Flags used by the compiler" FORCE)
-                endif()
+            if(${flag_var} MATCHES "/MT")
+                string(REGEX REPLACE "/MT" "/MD" temp_var "${${flag_var}}")
+                set(${flag_var} ${temp_var} CACHE STRING "Flags used by the compiler" FORCE)
+			elseif(NOT ${flag_var} MATCHES "/MD")
+            	######################################
+				#
+				# no /MD or /MDd at all, append it
+				#
+				#######################################
+				set(temp_var "${${flag_var}}")
+            	if (flag_var MATCHES "DEBUG")
+            		set(temp_var "${temp_var} /MDd")
+            	else()
+            		set(temp_var "${temp_var} /MD")
+            	endif()
+            	set(${flag_var} ${temp_var} CACHE STRING "Flags used by the compiler" FORCE)
+			endif()
 		endforeach(flag_var)
 	endif(UNIX)
 endif(TARGET_JAVA_BINDING)
@@ -242,7 +273,6 @@ add_subdirectory(IDAWin)
 add_subdirectory(sundials)
  
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
-	enable_language(Fortran)
 	if (MSVC OR LINUX)
 		add_subdirectory(blas)
 	endif()
