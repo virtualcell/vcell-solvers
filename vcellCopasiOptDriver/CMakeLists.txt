@@ -1,4 +1,11 @@
 cmake_minimum_required(VERSION 2.8)
+
+if(DEFINED CMAKE_BUILD_TYPE)
+   SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
+else()
+   SET(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
+endif()
+
 project(vcellCopasiOptDriver)
 
 include (FindJNI)
@@ -48,13 +55,17 @@ include_directories(${COPASIDIR}
 	${COPASIDIR}/copasi/compareExpressions 
 	${COPASIDIR}/copasi/utilities
 	${COPASIDIR}/../libsbml-4.3.1/include
+	${COPASIDIR}/../expat-2.0.1/include
 	${CMAKE_CURRENT_SOURCE_DIR}/../Optimization2
 	${CMAKE_CURRENT_SOURCE_DIR}/../tinyxml
 	${JAVA_INCLUDE_PATH}
+	${JAVA_INCLUDE_PATH2}
 	${JAVA_AWT_INCLUDE_PATH}
 )
 add_definitions(-DWITH_CSPMETHOD -DXML_STATIC -DLIBSBML_STATIC -DRAPTOR_STATIC)
-if (APPLE)
+if (MSVC)
+	add_definitions(-DUSE_CLAPACK)
+elseif (APPLE)
 	set(CMAKE_OSX_ARCHITECTURES "i386;x86_64")
 	add_definitions(-DDarwin)
 	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../Copasi/thirdparty_libs/mac ${COPASIDIR}/copasi/libs/mac)
