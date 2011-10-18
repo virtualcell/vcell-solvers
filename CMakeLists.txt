@@ -136,7 +136,7 @@ endif()
 if (LINUX_32bit_BINARIES)
 	find_program(IFORT_EXECUTABLE ifort /opt/intel/fc/10.1.015/bin/)
 elseif (LINUX_64bit_BINARIES)
-	find_program(IFORT_EXECUTABLE ifort /opt/intel/fce1/10.1.015/bin/)
+	find_program(IFORT_EXECUTABLE ifort /opt/intel/fce/10.1.015/bin/)
 endif()
 
 if (IFORT_EXECUTABLE MATCHES IFORT_EXECUTABLE-NOTFOUND)
@@ -151,7 +151,7 @@ endif()
 if (MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
 endif()
- 
+
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 
 	if (TARGET_SOLVERS_WITH_MESSAGING)

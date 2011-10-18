@@ -53,7 +53,7 @@ include_directories(source)
 endif()
 
 set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
-set(DEP_LIBS IDAWin ExpressionParser netcdf  netcdf_cxx zip ${SONICMQ_LIBS})
+set(DEP_LIBS IDAWin ExpressionParser netcdf_cxx netcdf zip ${SONICMQ_LIBS})
 
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	if (MSVC)

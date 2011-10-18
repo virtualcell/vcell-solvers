@@ -33,7 +33,9 @@ if (TARGET_SOLVERS_WITH_MESSAGING)
 endif()
 
 set (CMAKE_Fortran_COMPILER ${IFORT_EXECUTABLE})
-set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /iface:mixed_str_len_arg /check:bounds")
+if (MSVC)
+	set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /iface:mixed_str_len_arg /check:bounds")
+endif()
 set(DEP_LIBS netcdf_f90 netcdf_for netcdf ${SONICMQ_LIBS})
 
 add_executable(Hybrid_EM ${F90_SRC_FILES} ${C_SRC_FILES})
