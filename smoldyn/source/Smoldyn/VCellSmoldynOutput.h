@@ -67,7 +67,7 @@ private:
 	Variable** variables;
 
 	DataProcessorRoiTimeSeriesSmoldyn* smoldynDataProcessor;
-	bool isInSameCompartment(double *pos1, double* pos2);
+	//bool isInSameCompartment(double *pos1, double* pos2);
 	double distance2(double* pos1, double* pos2);
 
 	friend class DataProcessorRoiTimeSeriesSmoldyn;

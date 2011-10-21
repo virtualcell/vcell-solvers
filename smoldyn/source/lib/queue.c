@@ -6,8 +6,9 @@ of the Gnu Lesser General Public License (LGPL). */
 
 #include <stdlib.h>
 #include "queue.h"
+#include "smoldyn.h"
 
-#define CHECK(A) if(!(A)) goto failure; else (void)0
+#define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;} else (void)0
 
 queue q_alloc(int n,enum Q_types type,int (*keycmp)(void *,void *)) {
 	queue q;

@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "smoldyn", "smoldyn.vcxproj", "{B114C57D-1D71-491F-B698-C231B30D2F02}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug_No_Messaging|Win32 = Debug_No_Messaging|Win32
+		Debug|Win32 = Debug|Win32
+		Release_Messaging|Win32 = Release_Messaging|Win32
+		Release_No_Messaging|Win32 = Release_No_Messaging|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B114C57D-1D71-491F-B698-C231B30D2F02}.Debug_No_Messaging|Win32.ActiveCfg = Debug_No_Messaging|Win32
+		{B114C57D-1D71-491F-B698-C231B30D2F02}.Debug_No_Messaging|Win32.Build.0 = Debug_No_Messaging|Win32
+		{B114C57D-1D71-491F-B698-C231B30D2F02}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B114C57D-1D71-491F-B698-C231B30D2F02}.Debug|Win32.Build.0 = Debug|Win32
+		{B114C57D-1D71-491F-B698-C231B30D2F02}.Release_Messaging|Win32.ActiveCfg = Release_Messaging|Win32
+		{B114C57D-1D71-491F-B698-C231B30D2F02}.Release_Messaging|Win32.Build.0 = Release_Messaging|Win32
+		{B114C57D-1D71-491F-B698-C231B30D2F02}.Release_No_Messaging|Win32.ActiveCfg = Release_No_Messaging|Win32
+		{B114C57D-1D71-491F-B698-C231B30D2F02}.Release_No_Messaging|Win32.Build.0 = Release_No_Messaging|Win32
+		{B114C57D-1D71-491F-B698-C231B30D2F02}.Release|Win32.ActiveCfg = Release|Win32
+		{B114C57D-1D71-491F-B698-C231B30D2F02}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -24,8 +24,8 @@
 #include <pthread.h>
 #endif
 
-#define CHECK(A) if(!(A)) goto failure; else (void)0
-#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0';goto failure;} else (void)0
+#define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;} else (void)0
+#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0'; printfException("%s", B); goto failure;} else (void)0
 
 
 /******************************************************************************/
@@ -2607,24 +2607,70 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 		CHECKS(srf,"need to enter surface name before neighbors");
 		itct=sscanf(line2,"%s",nm);
 		CHECKS(itct==1,"format for neighbors: panel neigh1 neigh2 ...");
-		p=ps=(PanelShape)0;
-		while(ps<PSMAX && (p=stringfind(srf->pname[ps],srf->npanel[ps],nm))==-1) ps=(PanelShape)(ps+1);
+		p = -1;
+		ps = (PanelShape)0;
+		if(strstr(nm, "tri_") == nm)//find nm starts with "tri_"
+		{
+			ps=PStri;
+			int memIndex;
+			int globalIndex;
+			sscanf(nm, "tri_%d_%d_%d", &p, &globalIndex, &memIndex);
+
+			/*int oldp = -1;
+			PanelShape oldps = (PanelShape)0;
+			while(oldps<PSMAX && (oldp=stringfind(srf->pname[oldps],srf->npanel[oldps],nm))==-1) oldps=(PanelShape)(oldps+1);
+			if (oldp != p || oldps != ps) {
+				throw "oldp != p || oldps != ps";
+			}*/
+		}
+		if(p == -1)
+		{
+			while(ps<PSMAX && (p=stringfind(srf->pname[ps],srf->npanel[ps],nm))==-1) ps=(PanelShape)(ps+1);
+		}
 		CHECKS(p>=0,"first panel name listed in neighbors is not recognized");
 		pnl=srf->panels[ps][p];
 		for(i1=0;i1<maxpnllist && (line2=strnword(line2,2));i1++) {
 			itct=sscanf(line2,"%s",nm);
 			CHECKS(itct==1,"format for neighbors: panel neigh1 neigh2 ...");
-			if(strchr(nm,':')) {
-				chptr=strchr(nm,':')+1;
-				*(chptr-1)='\0';
-				s2=stringfind(srfss->snames,srfss->nsrf,nm);
-				CHECKS(s2>=0,"surface name is not recognized");
-				srf2=srfss->srflist[s2]; }
-			else {
-				chptr=nm;
-				srf2=srf; }
-			p=ps=(PanelShape)0;
-			while(ps<PSMAX && (p=stringfind(srf2->pname[ps],srf2->npanel[ps],chptr))==-1) ps=(PanelShape)(ps+1);
+			p = -1;
+			ps = (PanelShape)0;
+			if(strstr(nm, "tri_") == nm)//find nm starts with "tri_"
+			{
+				ps=PStri;
+				srf2=srf;
+				int memIndex;
+				int globalIndex;
+				sscanf(nm, "tri_%d_%d_%d", &p, &globalIndex, &memIndex);
+
+				/*if(strchr(nm,':')) {
+					chptr=strchr(nm,':')+1;
+					*(chptr-1)='\0';
+					s2=stringfind(srfss->snames,srfss->nsrf,nm);
+					CHECKS(s2>=0,"surface name is not recognized");
+					srf2=srfss->srflist[s2]; }
+				else {
+					chptr=nm;
+					srf2=srf; }
+				int oldp=oldps=(PanelShape)0;
+				while(oldps<PSMAX && (oldp=stringfind(srf2->pname[oldps],srf2->npanel[oldps],chptr))==-1) oldps=(PanelShape)(oldps+1);
+				if (oldp != p || oldps != ps) {
+					throw "oldp != p || oldps != ps";
+				}*/
+			}
+			if(p == -1)
+			{
+				if(strchr(nm,':')) {
+					chptr=strchr(nm,':')+1;
+					*(chptr-1)='\0';
+					s2=stringfind(srfss->snames,srfss->nsrf,nm);
+					CHECKS(s2>=0,"surface name is not recognized");
+					srf2=srfss->srflist[s2]; }
+				else {
+					chptr=nm;
+					srf2=srf; }
+				p=ps=(PanelShape)0;
+				while(ps<PSMAX && (p=stringfind(srf2->pname[ps],srf2->npanel[ps],chptr))==-1) ps=(PanelShape)(ps+1);
+			}
 			CHECKS(p>=0,"a neighbor panel name is not recognized");
 			pnllist[i1]=srf2->panels[ps][p]; }
 		CHECKS(i1<maxpnllist,"too many neighbor panels listed in one line");

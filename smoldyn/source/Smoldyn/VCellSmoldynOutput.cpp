@@ -357,24 +357,24 @@ void VCellSmoldynOutput::clearLog() {
 	remove(dataProcOutput);
 }
 
-bool VCellSmoldynOutput::isInSameCompartment(double *pos1, double* pos2) {
-
-	for(int cl=0;cl<smoldynSim->cmptss->ncmpt;cl++) {
-		int in1=posincompart(smoldynSim,pos1,smoldynSim->cmptss->cmptlist[cl]);
-		int in2=posincompart(smoldynSim,pos2,smoldynSim->cmptss->cmptlist[cl]);
-		if (in1 == 1 && in2 == 1) {
-			return true;
-		}
-		if (in1 == 1 || in2 == 1) {
-			return false;
-		}
-	}
-	//stringstream ss;
-	//ss << "Point (" << pos1[0] << "," << pos1[1] << "," << pos1[2] << ") and " << 
-	//	"Point (" << pos2[0] << "," << pos2[1] << "," << pos2[2] << ") are not in any compartment. This should not happen.";
-	//throw ss.str();
-	return false;
-}
+//bool VCellSmoldynOutput::isInSameCompartment(double *pos1, double* pos2) {
+//
+//	for(int cl=0;cl<smoldynSim->cmptss->ncmpt;cl++) {
+//		int in1=posincompart(smoldynSim,pos1,smoldynSim->cmptss->cmptlist[cl]);
+//		int in2=posincompart(smoldynSim,pos2,smoldynSim->cmptss->cmptlist[cl]);
+//		if (in1 == 1 && in2 == 1) {
+//			return true;
+//		}
+//		if (in1 == 1 || in2 == 1) {
+//			return false;
+//		}
+//	}
+//	//stringstream ss;
+//	//ss << "Point (" << pos1[0] << "," << pos1[1] << "," << pos1[2] << ") and " << 
+//	//	"Point (" << pos2[0] << "," << pos2[1] << "," << pos2[2] << ") are not in any compartment. This should not happen.";
+//	//throw ss.str();
+//	return false;
+//}
 
 double VCellSmoldynOutput::distance2(double* pos1, double* pos2) {
 	if (dimension == 1) {
@@ -433,7 +433,7 @@ void VCellSmoldynOutput::computeOutputData() {
 				// not in the same compartment, try to find the nearest neighbor
 				// in the same compartment, if not found, keep it in the wrong 
 				// compartment
-				if (!isInSameCompartment(coord, center)) {
+				/*if (!isInSameCompartment(coord, center)) {
 					bool bFound = false;
 					double distance = 1e9;
 					if (i > 0) {
@@ -501,7 +501,7 @@ void VCellSmoldynOutput::computeOutputData() {
 						}
 					}
 
-				}
+				}*/
 				volVarOutputData[varIndex * numVolumeElements + volIndex] ++;
 			}
 		}

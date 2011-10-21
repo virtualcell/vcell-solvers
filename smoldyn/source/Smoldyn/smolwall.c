@@ -9,8 +9,8 @@
 #include "random2.h"
 #include "smoldyn.h"
 
-#define CHECK(A) if(!(A)) goto failure
-#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0';goto failure;} else (void)0
+#define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;}
+#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0'; printfException("%s", B); goto failure;} else (void)0
 
 
 /******************************************************************************/

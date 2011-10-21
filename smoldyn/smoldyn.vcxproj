@@ -178,7 +178,7 @@
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release_JavaBinding|Win32'">false</LinkIncremental>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release_No_Messaging|x64'">false</LinkIncremental>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release_JavaBinding|x64'">false</LinkIncremental>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|Win32'">$(Platform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|Win32'">..\..\..\..\..\smoldyn-2.23</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|x64'">$(Platform)\$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|Win32'">$(Platform)\$(Configuration)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|x64'">$(Platform)\$(Configuration)\</IntDir>
@@ -371,7 +371,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_No_Messaging|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../glut-3.7.6;../netcdf-3.6.2/libsrc;../netcdf-3.6.2/cxx;../IDAWin;../VCell/include;source/Smoldyn;source/lib;./windows;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../zlib/zlib.h;../glut-3.7.6;../netcdf-3.6.2/libsrc;../netcdf-3.6.2/cxx;../IDAWin;../VCell/include;source/Smoldyn;source/lib;./windows;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>

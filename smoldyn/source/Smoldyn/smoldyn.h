@@ -386,17 +386,18 @@ typedef int (*unimolreactfnptr)(struct simstruct *);
 typedef int (*bimolreactfnptr)(struct simstruct *,int);
 typedef int (*checkwallsfnptr)(struct simstruct *,int,int,boxptr);
 
-struct CompartmentPixelPair {
+struct CompartmentIdentifierPair {
 	char name[128];
 	unsigned char pixel;
 };
 
 typedef struct VolumeSamples {
-	int numX, numY, numZ;
-	double sizeX, sizeY, sizeZ;
+	int num[3];
+	double size[3];
 	double originX, originY, originZ;
-	unsigned short* volsamples;
-	CompartmentPixelPair* compartmentPixelPairPtr;
+	unsigned char* volsamples;
+	int nCmptIDPair; // number of compartment and ID pairs
+	CompartmentIdentifierPair* compartmentIDPairPtr;//IDs are used to separate compartments from one antoher
 }* VolumeSamplesPtr;
 
 typedef struct simstruct {
@@ -746,9 +747,12 @@ compartptr compartaddcompart(simptr sim,const char *cmptname);
 int compartaddsurf(compartptr cmpt,surfaceptr srf);
 int compartaddpoint(compartptr cmpt,int dim,double *point);
 int compartaddcmptl(compartptr cmpt,compartptr cmptl,enum CmptLogic sym);
+int compartupdatebox_volumeSample(simptr sim,compartptr cmpt,boxptr bptr,double volfrac);
 int compartupdatebox(simptr sim,compartptr cmpt,boxptr bptr,double volfrac);
 compartptr compartreadstring(simptr sim,compartptr cmpt,char *word,char *line2,char *erstr);
 int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr);
+int compartsupdateparams_volumeSample(simptr sim);
+int compartsupdateparams_smoldyn(simptr sim);
 int compartsupdateparams(simptr sim);
 int compartsupdatelists(simptr sim);
 int compartsupdate(simptr sim);

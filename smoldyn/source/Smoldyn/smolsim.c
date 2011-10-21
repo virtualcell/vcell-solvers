@@ -15,18 +15,17 @@
 #include "Rn.h"
 #include "smoldyn.h"
 #include "Zn.h"
-
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <iostream>
 extern "C"
 {
 #include "zlib.h"
 }
 
-#define CHECK(A) if(!(A)) goto failure; else (void)0
-#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0';goto failure;} else (void)0
-
+#define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;} else (void)0
+#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0'; printfException("%s", B); goto failure;} else (void)0
 
 /******************************************************************************/
 /***************************** Simulation structure ***************************/
@@ -1423,11 +1422,12 @@ failure:		// failure
 	return 1;
 }
 
-unsigned char fromHex(const char& src) {
+unsigned char fromHex(const char* src) {
 	char chs[5];
 	chs[0] = '0';
 	chs[1] = 'x';
-	chs[2] = src;
+	chs[2] = src[0];
+	chs[3] = src[1];
 	chs[4] = 0;
 	int v;
 	sscanf(chs, "%x", &v);
@@ -1438,15 +1438,20 @@ int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2,char *e
 	if (line2 == 0) {
 		return 0;
 	}
+	using namespace std;
+	char fileName[128];
+	strcpy(fileName, line2);
+
+	char word[STRCHAR];
+	ParseFilePtr pfp = *pfpptr;
+	int pfpcode=Parse_ReadLine(&pfp,word,&line2,erstr);
+	*pfpptr=pfp;
 
 	VolumeSamplesPtr volumeSamplesPtr = new VolumeSamples;
 	sim->volumeSamplesPtr = volumeSamplesPtr;
-	volumeSamplesPtr->numX = volumeSamplesPtr->numY = volumeSamplesPtr->numZ = 1;
+	volumeSamplesPtr->num[0] = volumeSamplesPtr->num[1] = volumeSamplesPtr->num[2] = 1;
 
-	using namespace std;
-	char* fileName = line2;
 	ifstream ifs(fileName);
-
 	string line, nextToken;
 	while (!ifs.eof()) {		
 		getline(ifs, line);
@@ -1458,60 +1463,62 @@ int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2,char *e
 			continue;
 		}
 		if (nextToken == "Size") {
-			lineInput >> volumeSamplesPtr->sizeX >> volumeSamplesPtr->sizeY >> volumeSamplesPtr->sizeZ;
+			lineInput >> volumeSamplesPtr->size[0] >> volumeSamplesPtr->size[1] >> volumeSamplesPtr->size[2];
 		} else if (nextToken == "Origin") {
-			lineInput >> volumeSamplesPtr->originX >> volumeSamplesPtr->originZ >> volumeSamplesPtr->originZ;
+			lineInput >> volumeSamplesPtr->originX >> volumeSamplesPtr->originY >> volumeSamplesPtr->originZ;
 		} else if (nextToken == "CompartmentHighResPixelMap") {
 			int count;
+			int pixel;
 			lineInput >> count;
-			volumeSamplesPtr->compartmentPixelPairPtr = new CompartmentPixelPair[count];
+			volumeSamplesPtr->compartmentIDPairPtr = new CompartmentIdentifierPair[count];
 			for (int i = 0; i < count; i ++) {
 				getline(ifs, line);
 				istringstream lineInput1(line);
-				lineInput1 >> volumeSamplesPtr->compartmentPixelPairPtr[i].name >> volumeSamplesPtr->compartmentPixelPairPtr[i].pixel;
+				lineInput1 >> volumeSamplesPtr->compartmentIDPairPtr[i].name >> pixel;
+				volumeSamplesPtr->compartmentIDPairPtr[i].pixel = pixel;
 			}
+			volumeSamplesPtr->nCmptIDPair = count;
 		} else if (nextToken == "VolumeSamples") {
-			lineInput >> volumeSamplesPtr->numX >> volumeSamplesPtr->numY >> volumeSamplesPtr->numZ;
+			lineInput >> volumeSamplesPtr->num[0] >> volumeSamplesPtr->num[1] >> volumeSamplesPtr->num[2];
 			break;
 		}
 	}
 
-	long numVolume = volumeSamplesPtr->numX * volumeSamplesPtr->numY * volumeSamplesPtr->numZ;
-
-	//volumeSamples compressed, changed from byte to short
-	int twiceNumVolume = 2 * numVolume;
-	unsigned char* bytes_from_compressed = new unsigned char[twiceNumVolume + 1000];
-	memset(bytes_from_compressed, 0, (twiceNumVolume + 1000) * sizeof(unsigned char));
+	long numVolume = volumeSamplesPtr->num[0] * volumeSamplesPtr->num[1] * volumeSamplesPtr->num[2];
 
 	getline(ifs, line);
 	int compressed_len = line.size();
 	if (compressed_len <= 1) {
 		throw "CartesianMesh::readGeometryFile() : invalid compressed volume";
 	}
+
 	const char* compressed_hex = line.c_str();
-	for (int i = 0; i < compressed_len; i ++) {
-		bytes_from_compressed[i] = fromHex(compressed_hex[i]);
+	//volumeSamples compressed, changed from byte to short
+	unsigned char* bytes_from_compressed = new unsigned char[compressed_len+1];
+	memset(bytes_from_compressed, 0, (compressed_len+1) * sizeof(unsigned char));
+	for (int i = 0, j = 0; i < compressed_len; i += 2, j ++) {
+		bytes_from_compressed[j] = fromHex(compressed_hex + i);
 	}
 
-	unsigned char* inflated_bytes = new unsigned char[twiceNumVolume + 1];
-	memset(inflated_bytes, 0, (twiceNumVolume + 1) * sizeof(unsigned char));
+	volumeSamplesPtr->volsamples = new unsigned char[numVolume];
+	memset(volumeSamplesPtr->volsamples, 0, numVolume * sizeof(unsigned char));
 
-	unsigned long inflated_len = twiceNumVolume;
-	int retVal = uncompress(inflated_bytes, &inflated_len, bytes_from_compressed, compressed_len/2);
-
-	volumeSamplesPtr->volsamples = new unsigned short[numVolume];
-	if (inflated_len == numVolume) {
-		for (unsigned long i = 0; i < inflated_len; i ++) {		
-			volumeSamplesPtr->volsamples[i] = inflated_bytes[i];
-		}
-	} else if (inflated_len == twiceNumVolume) {
-		// convert two bytes to short
-		for (unsigned long i = 0, j = 0; i < inflated_len; i += 2, j ++) {
-			volumeSamplesPtr->volsamples[j] = inflated_bytes[i] | (inflated_bytes[i + 1] << 8);
-		}
+	unsigned long inflated_len = numVolume;
+	int retVal = uncompress(volumeSamplesPtr->volsamples, &inflated_len, bytes_from_compressed, compressed_len);
+	
+	if (inflated_len = numVolume) {
+		/*for (unsigned long i = 0; i < inflated_len; i ++) {		
+			if (volumeSamplesPtr->volsamples[i] == 6) {
+				cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
+			}
+			else if (volumeSamplesPtr->volsamples[i] == 16) {
+				cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
+			}
+		}*/
 	} else {
-		throw "CartesianMesh : unexpected number of volume samples";
+		throw "loadHighResVolumeSamples : unexpected number of volume samples";
 	}
+	return 0;
 
 failure:		// failure
 	return 1;
@@ -1532,6 +1539,7 @@ int loadsim(simptr sim,const char *fileroot,const char *filename,char *erstr,con
 	CHECKS(pfp,errstring);
 	er=Parse_CmdLineArg(NULL,NULL,pfp);
 	CHECKS(!er,"out of memory");
+	sim->volumeSamplesPtr = NULL;//initialize the volumesample to null
 
 	while(!done) {
 		if(pfp->lctr==0 && !strchr(flags,'q'))
@@ -1550,7 +1558,7 @@ int loadsim(simptr sim,const char *fileroot,const char *filename,char *erstr,con
 		else if(!strcmp(word,"start_jms")) {			// jms settings
 			CHECKS(!loadJMS(sim,&pfp,line2,errstring),errstring); }
 
-		else if(!strcmp(word,"highResVolumeSamples")) {			// jms settings
+		else if(!strcmp(word,"highResVolumeSamplesFile")) {			//highResVolumeSamplesFile
 			CHECKS(!loadHighResVolumeSamples(sim,&pfp,line2,errstring),errstring); }
 
 		else if(!strcmp(word,"start_reaction")) {			// start_reaction
