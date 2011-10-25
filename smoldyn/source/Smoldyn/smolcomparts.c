@@ -4,6 +4,10 @@
  Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
  of the Gnu General Public License (GPL). */
 
+#include <algorithm>
+using std::max;
+using std::min;
+
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -927,7 +931,7 @@ int compartsupdateparams_volumeSample(simptr sim) {
 			{
 				sampleLow[2] = volumeSample->origin[2]+ k*sampleDz;
 				sampleHigh[2] = volumeSample->origin[2]+ (k+1)*sampleDz;
-				double intersectZ = min(boxHigh[2],sampleHigh[2]) - max(boxLow[2], sampleLow[2]);
+				double intersectZ = std::min<double>(boxHigh[2],sampleHigh[2]) - std::max<double>(boxLow[2], sampleLow[2]);
 				if(intersectZ<=0)
 				{
 					continue;
