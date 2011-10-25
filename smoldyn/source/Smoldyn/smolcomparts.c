@@ -76,67 +76,55 @@ unsigned char getCompartmentID(char* cmptName, VolumeSamplesPtr vSamplesPtr)
 
 /* posincompart */
 int posincompart(simptr sim,double *pos,compartptr cmpt) {
-	int s,p,i,j,k,incmpt,pcross,cl,incmptl;
+	int s,p,k,incmpt,pcross,cl,incmptl;
 	enum PanelShape ps;
 	surfaceptr srf;
 	double crsspt[DIMMAX];
 	enum CmptLogic sym;
 	int dim;
 
-	unsigned char cmptID, cmptIDFoundInSample;
 	VolumeSamples* volumeSamplePtr;
-	double sampleDx, sampleDy, sampleDz;
-	int sampleIdxX, sampleIdxY, sampleIdxZ, posInSample;
-
+	const int numNeighbors =3;
+	int sampleIdxNeighbors[DIMMAX][numNeighbors];
 
 	incmpt = 0;
-	sampleIdxX = 0;
-	sampleIdxY = 0;
-	sampleIdxZ = 0;
+	int sameResultCount = 0;
 	//for smoldyn simulations with volumeSample
 	if(sim->volumeSamplesPtr != NULL)
 	{
 		volumeSamplePtr = sim->volumeSamplesPtr;
 		dim = sim->dim;
-		cmptID = getCompartmentID(cmpt->cname, sim->volumeSamplesPtr);
+		unsigned char cmptID = getCompartmentID(cmpt->cname, sim->volumeSamplesPtr);
 		
-		int sameResultCount = 0;
-		int posx[3] = {pos[0]-1, pos[0], pos[0]+1};
-		int posy[3] = {pos[1]-1, pos[1], pos[1]+1};
-		int posz[3] = {pos[2]-1, pos[2], pos[2]+1};
+		for (int idim = 0; idim < dim; idim ++) {
+			double h = volumeSamplePtr->size[idim]/volumeSamplePtr->num[idim];
+			int idx = floor((pos[idim] - volumeSamplePtr->origin[idim])/h);
+			sampleIdxNeighbors[idim][0] = max(0,(idx-1));
+			sampleIdxNeighbors[idim][1] = idx;
+			sampleIdxNeighbors[idim][2] = min((volumeSamplePtr->num[idim]-1),(idx+1));
+		}
 
-		for(i=0; i<3; i++)
-		{
-			for(j=0; j<3; j++)
-			{
-				for(k=0; k<3; k++)
-				{
-					sampleDx = volumeSamplePtr->size[0]/volumeSamplePtr->num[0];
-					sampleIdxX = floor(posx[i]/sampleDx);
-					if(dim > 1) {
-						sampleDy = volumeSamplePtr->size[1]/volumeSamplePtr->num[1];
-						sampleIdxY = floor(posy[j]/sampleDy);
-					}
-					if(dim > 2){
-						sampleDz = volumeSamplePtr->size[2]/volumeSamplePtr->num[2];
-						sampleIdxZ = floor(posz[k]/sampleDz);
-					}
-		
-					posInSample = sampleIdxX + sampleIdxY*volumeSamplePtr->num[0] + sampleIdxZ*volumeSamplePtr->num[0]*volumeSamplePtr->num[1];
-					cmptIDFoundInSample = volumeSamplePtr->volsamples[posInSample];
+		//int numNeighbors =3;
+		for (int kk = 0; kk < (dim < 3 ?  1 : numNeighbors); kk ++) {
+			for (int jj = 0; jj < (dim < 2 ?  1 : numNeighbors); jj ++) {
+				for (int ii = 0; ii < numNeighbors; ii ++) {
+					int i = sampleIdxNeighbors[0][ii];
+					int j = dim < 2 ?  0 : sampleIdxNeighbors[1][jj];
+					int k = dim < 3 ?  0 : sampleIdxNeighbors[2][kk];
+					int posInSample = i + j*volumeSamplePtr->num[0] + k*volumeSamplePtr->num[0]*volumeSamplePtr->num[1];
+					unsigned char cmptIDFoundInSample = volumeSamplePtr->volsamples[posInSample];
 					if(cmptID == cmptIDFoundInSample){
 						sameResultCount ++;
 					}
 				}
 			}
 		}
-		if(sameResultCount == 27)
-		{
+		if (sameResultCount == (int)pow((double)numNeighbors, dim)) {
 			incmpt = 1;
 		}
 		
 	}
-	if(incmpt ==0 || sim->volumeSamplesPtr == NULL) //for original smoldyn simulations(without volumeSample)
+	if((incmpt == 0 && sameResultCount > 0) || sim->volumeSamplesPtr == NULL) //for original smoldyn simulations(without volumeSample)
 	{
 		for(k=0;k<cmpt->npts&&incmpt==0;k++) {
 			pcross=0;
@@ -937,8 +925,8 @@ int compartsupdateparams_volumeSample(simptr sim) {
 
 			for(k = 0; k < volumeSample->num[2]; k++)
 			{
-				sampleLow[2] = volumeSample->originZ+ k*sampleDz;
-				sampleHigh[2] = volumeSample->originZ+ (k+1)*sampleDz;
+				sampleLow[2] = volumeSample->origin[2]+ k*sampleDz;
+				sampleHigh[2] = volumeSample->origin[2]+ (k+1)*sampleDz;
 				double intersectZ = min(boxHigh[2],sampleHigh[2]) - max(boxLow[2], sampleLow[2]);
 				if(intersectZ<=0)
 				{
@@ -946,8 +934,8 @@ int compartsupdateparams_volumeSample(simptr sim) {
 				}
 				for(j = 0; j < volumeSample->num[1]; j++)
 				{
-					sampleLow[1] = volumeSample->originY+ j*sampleDy;
-					sampleHigh[1] = volumeSample->originY+ (j+1)*sampleDy;
+					sampleLow[1] = volumeSample->origin[1]+ j*sampleDy;
+					sampleHigh[1] = volumeSample->origin[1]+ (j+1)*sampleDy;
 					double intersectY = min(boxHigh[1],sampleHigh[1]) - max(boxLow[1], sampleLow[1]);
 					if(intersectY<=0)
 					{
@@ -955,8 +943,8 @@ int compartsupdateparams_volumeSample(simptr sim) {
 					}
 					for(i = 0; i < volumeSample->num[0]; i++)
 					{
-						sampleLow[0] = volumeSample->originX+ i*sampleDx;
-						sampleHigh[0] = volumeSample->originX+ (i+1)*sampleDx;
+						sampleLow[0] = volumeSample->origin[0]+ i*sampleDx;
+						sampleHigh[0] = volumeSample->origin[0]+ (i+1)*sampleDx;
 						double intersectX = min(boxHigh[0],sampleHigh[0]) - max(boxLow[0], sampleLow[0]);
 						if(intersectX<=0)
 						{

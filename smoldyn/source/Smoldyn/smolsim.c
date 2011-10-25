@@ -1465,7 +1465,7 @@ int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2,char *e
 		if (nextToken == "Size") {
 			lineInput >> volumeSamplesPtr->size[0] >> volumeSamplesPtr->size[1] >> volumeSamplesPtr->size[2];
 		} else if (nextToken == "Origin") {
-			lineInput >> volumeSamplesPtr->originX >> volumeSamplesPtr->originY >> volumeSamplesPtr->originZ;
+			lineInput >> volumeSamplesPtr->origin[0] >> volumeSamplesPtr->origin[1] >> volumeSamplesPtr->origin[2];
 		} else if (nextToken == "CompartmentHighResPixelMap") {
 			int count;
 			int pixel;

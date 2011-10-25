@@ -394,7 +394,7 @@ struct CompartmentIdentifierPair {
 typedef struct VolumeSamples {
 	int num[3];
 	double size[3];
-	double originX, originY, originZ;
+	double origin[3];
 	unsigned char* volsamples;
 	int nCmptIDPair; // number of compartment and ID pairs
 	CompartmentIdentifierPair* compartmentIDPairPtr;//IDs are used to separate compartments from one antoher
