@@ -855,24 +855,24 @@ int compartsupdateparams_smoldyn(simptr sim) {
 					er=compartupdatebox(sim,cmpt,bptr,-2); }
 		}
 
-		using namespace std;
-		//write to a file the box volume for each compartment
-		stringstream ss;
-		ss << "d:\\smoldynCmpt" << cmpt->cname << ".txt";
-		ofstream filestr;
-		filestr.open (ss.str());
-		boxptr* boxlist = cmpt->boxlist;
-		double* boxVol = cmpt->boxfrac;
-		for(int i=0; i<cmpt->nbox; i++)
-		{
-			for(b=0;b<sim->boxs->nbox;b++) {
-				if (boxlist[i] == sim->boxs->blist[b]) {
-					filestr << "box index:" << b << "     " << "volFrac:" << boxVol[i] <<endl;
-					break;
-				}
-			}
-		}
-		filestr.close();
+		//using namespace std;
+		////write to a file the box volume for each compartment
+		//stringstream ss;
+		//ss << "d:\\smoldynCmpt" << cmpt->cname << ".txt";
+		//ofstream filestr;
+		//filestr.open (ss.str());
+		//boxptr* boxlist = cmpt->boxlist;
+		//double* boxVol = cmpt->boxfrac;
+		//for(int i=0; i<cmpt->nbox; i++)
+		//{
+		//	for(b=0;b<sim->boxs->nbox;b++) {
+		//		if (boxlist[i] == sim->boxs->blist[b]) {
+		//			filestr << "box index:" << b << "     " << "volFrac:" << boxVol[i] <<endl;
+		//			break;
+		//		}
+		//	}
+		//}
+		//filestr.close();
 	}
 
 	return 0; 
@@ -908,12 +908,12 @@ int compartsupdateparams_volumeSample(simptr sim) {
 		cmpt->nbox=0;
 		unsigned char cmptID = getCompartmentID(cmpt->cname, sim->volumeSamplesPtr);
 		
-		using namespace std;
-		stringstream ss;
-		ss << "d:\\volumeCmpt" << cmpt->cname << ".txt";
-		//write to a file the box volume for each compartment
-		ofstream filestr;
-		filestr.open (ss.str());
+		//using namespace std;
+		//stringstream ss;
+		//ss << "d:\\volumeCmpt" << cmpt->cname << ".txt";
+		////write to a file the box volume for each compartment
+		//ofstream filestr;
+		//filestr.open (ss.str());
 		
 		for(b=0;b<boxs->nbox;b++) {											// find boxes that are in the compartment
 			boxptr bptr=boxs->blist[b];
@@ -964,12 +964,12 @@ int compartsupdateparams_volumeSample(simptr sim) {
 				}
 			}
 			double boxVolfrac = insideCmptVol/((boxs->size[0])*(boxs->size[1])*(boxs->size[2]));
-			filestr << "boxIndex " << b << "     " << "volFrac " << boxVolfrac <<endl;
+			//filestr << "boxIndex " << b << "     " << "volFrac " << boxVolfrac <<endl;
 			//if(boxVolfrac <= 1e-8) boxVolfrac = 0; // volume faction is too small, consider it as 0
 			int errorCode = compartupdatebox_volumeSample(sim,cmpt,bptr,boxVolfrac);
 			if(errorCode==-1) return 1;
 		}
-		filestr.close();
+		//filestr.close();
 	}
 
 	return 0; 
