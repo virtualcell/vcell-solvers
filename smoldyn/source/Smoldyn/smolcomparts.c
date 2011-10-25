@@ -103,9 +103,9 @@ int posincompart(simptr sim,double *pos,compartptr cmpt) {
 		for (int idim = 0; idim < dim; idim ++) {
 			double h = volumeSamplePtr->size[idim]/volumeSamplePtr->num[idim];
 			int idx = floor((pos[idim] - volumeSamplePtr->origin[idim])/h);
-			sampleIdxNeighbors[idim][0] = max(0,(idx-1));
+			sampleIdxNeighbors[idim][0] = std::max<int>(0,(idx-1));
 			sampleIdxNeighbors[idim][1] = idx;
-			sampleIdxNeighbors[idim][2] = min((volumeSamplePtr->num[idim]-1),(idx+1));
+			sampleIdxNeighbors[idim][2] = std::min<int>((volumeSamplePtr->num[idim]-1),(idx+1));
 		}
 
 		//int numNeighbors =3;
@@ -940,7 +940,7 @@ int compartsupdateparams_volumeSample(simptr sim) {
 				{
 					sampleLow[1] = volumeSample->origin[1]+ j*sampleDy;
 					sampleHigh[1] = volumeSample->origin[1]+ (j+1)*sampleDy;
-					double intersectY = min(boxHigh[1],sampleHigh[1]) - max(boxLow[1], sampleLow[1]);
+					double intersectY = std::min<double>(boxHigh[1],sampleHigh[1]) - std::max<double>(boxLow[1], sampleLow[1]);
 					if(intersectY<=0)
 					{
 						continue;
@@ -949,7 +949,7 @@ int compartsupdateparams_volumeSample(simptr sim) {
 					{
 						sampleLow[0] = volumeSample->origin[0]+ i*sampleDx;
 						sampleHigh[0] = volumeSample->origin[0]+ (i+1)*sampleDx;
-						double intersectX = min(boxHigh[0],sampleHigh[0]) - max(boxLow[0], sampleLow[0]);
+						double intersectX = std::min<double>(boxHigh[0],sampleHigh[0]) - std::max<double>(boxLow[0], sampleLow[0]);
 						if(intersectX<=0)
 						{
 							continue;
