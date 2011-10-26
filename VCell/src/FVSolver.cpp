@@ -391,7 +391,6 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			simulation->addVolumeVariable(volumeVar, vrmap);
 #ifdef VCELL_HYBRID				
 		} else if (nextToken == "VOLUME_PARTICLE") {
-			string solve_whole_mesh_flag;
 			lineInput >> variable_name >> structure_name;
 
 			Feature* feature = model->getFeatureFromName(structure_name);
@@ -401,6 +400,11 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				vrmap[i] = true;
 			} 
 			simulation->addVolumeVariable(volumeVar, vrmap);
+		} else if (nextToken == "MEMBRANE_PARTICLE") {
+			lineInput >> variable_name >> structure_name;
+			Membrane* membrane = model->getMembraneFromName(structure_name);
+			MembraneVariable* membraneVar = new MembraneVariable(variable_name, membrane, mesh->getNumMembraneElements(), true);
+			simulation->addMembraneVariable(membraneVar);
 #endif			
 		} else if (nextToken == "MEMBRANE_ODE") {
 			lineInput >> variable_name >> structure_name;
