@@ -400,6 +400,9 @@ typedef struct VolumeSamples {
 	CompartmentIdentifierPair* compartmentIDPairPtr;//IDs are used to separate compartments from one antoher
 }* VolumeSamplesPtr;
 
+#ifdef VCELL_HYBRID
+class SimTool;
+#endif
 typedef struct simstruct {
 	enum StructCond condition;	// structure condition
 	char *filepath;							// configuration file path
@@ -436,6 +439,9 @@ typedef struct simstruct {
 	checkwallsfnptr checkwallsfn;								// function for molecule collisions with walls
 
 	VolumeSamplesPtr volumeSamplesPtr;
+#ifdef VCELL_HYBRID
+	SimTool* simTool;
+#endif
 	} *simptr;
 
 /********************************* Molecules *******************************/

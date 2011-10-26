@@ -55,6 +55,11 @@ endif()
 set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
 set(DEP_LIBS IDAWin ExpressionParser netcdf_cxx netcdf zip ${SONICMQ_LIBS})
 
+if (VCELL_SPATIAL_HYBRID)
+add_library(smoldynlib STATIC ${SRC_FILES})
+set_property(TARGET smoldynlib PROPERTY COMPILE_DEFINITIONS VCELL_HYBRID)
+endif()
+
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	if (MSVC)
 		link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../glut-3.7.6)
@@ -67,9 +72,10 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	else()
 		list(APPEND DEP_LIBS glut tiff)
 	endif()
-	add_executable(smoldyn ${SRC_FILES})	
+	add_executable(smoldyn ${SRC_FILES})
 	target_link_libraries(smoldyn ${DEP_LIBS})
 	add_dependencies(smoldyn ExpressionParser IDAWin zip zlib)
+	
 	install(TARGETS smoldyn
         RUNTIME DESTINATION bin)	
 endif()

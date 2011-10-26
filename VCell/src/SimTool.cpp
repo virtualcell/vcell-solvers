@@ -275,7 +275,12 @@ void SimTool::loadFinal()
 			return;
 		}
 	}
-
+#ifdef VCELL_HYBRID		
+	if (smoldynSim != 0) {
+		clearLog();
+		return;
+	}
+#endif
 	if (simulation == NULL){
 		printf("SimTool.loadFinal(), sim=NULL just returning\n");
 		return;
@@ -677,8 +682,26 @@ void SimTool::start() {
 	}
 }
 
+#ifdef VCELL_HYBRID	
+void smoldynOneStep(simptr sim);
+void smoldynEnd(simptr sim);
+simptr smoldynInit(SimTool* simTool, string& root);
+void SimTool::setSmoldynInputFile(string& inputfile) {
+	smoldynInputFile = inputfile;
+}
+#endif
+
 void SimTool::start1() {
 	simulation->initSimulation();
+#ifdef VCELL_HYBRID	
+	smoldynSim = smoldynInit(this, smoldynInputFile);
+	// since smoldyn only initializes variable current value,
+	// we need to copy current to old.
+	for (int i = 0; i < (int)simulation->getNumVariables(); i ++) {
+		Variable* var = simulation->getVariable(i);
+		var->update();
+	}
+#endif
 	if (bLoadFinal) {
 		loadFinal();   // initializes to the latest file if it exists
 	} else {
@@ -787,6 +810,11 @@ void SimTool::start1() {
 		}
 
 		simulation->iterate();
+#ifdef VCELL_HYBRID			
+		if (smoldynSim != NULL) {
+			smoldynOneStep(smoldynSim);
+		}
+#endif
 		simulation->update();
 
 		if (checkStopRequested()) {
@@ -830,6 +858,11 @@ void SimTool::start1() {
 		}
 	}
 
+#ifdef VCELL_HYBRID	
+	if (smoldynSim != NULL) {
+		smoldynEnd(smoldynSim);
+	}
+#endif	
 	if (checkStopRequested()) {
 		return;
 	} 

@@ -44,6 +44,9 @@ private:
 	void loadJMSInfo(istream& ifsInput, int taskID);
 	void loadModel(istream& ifsInput);
 	void loadSimulation(istream& ifsInput);
+#ifdef VCELL_HYBRID	
+	void loadSmoldyn(istream& ifsInput);
+#endif	
 	VCell::Expression* readExpression(istream& ifsInput, string& var_name, string prefix="");
 	VarContext* loadEquation(istream& ifsInput, Structure* structure, Variable* var);
 	void loadJumpCondition(istream& ifsInput, Membrane*, string& var_name);

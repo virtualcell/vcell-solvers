@@ -389,6 +389,19 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				simulation->addSolver(odeSolver);
 			}
 			simulation->addVolumeVariable(volumeVar, vrmap);
+#ifdef VCELL_HYBRID				
+		} else if (nextToken == "VOLUME_PARTICLE") {
+			string solve_whole_mesh_flag;
+			lineInput >> variable_name >> structure_name;
+
+			Feature* feature = model->getFeatureFromName(structure_name);
+			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX, sizeY, sizeZ, true);
+			bool* vrmap = new bool[numVolumeRegions]; // defined everywhere by default
+			for (int i = 0; i < numVolumeRegions; i ++) {
+				vrmap[i] = true;
+			} 
+			simulation->addVolumeVariable(volumeVar, vrmap);
+#endif			
 		} else if (nextToken == "MEMBRANE_ODE") {
 			lineInput >> variable_name >> structure_name;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
@@ -1499,6 +1512,10 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 		} else if (nextToken == "VARIABLE_BEGIN") {
 			loadSimulation(ifsInput);
 			simTool->setSimulation(simulation);
+#ifdef VCELL_HYBRID				
+		} else if (nextToken == "SMOLDYN_BEGIN") {
+			loadSmoldyn(ifsInput);
+#endif			
 		} else if (nextToken == "PARAMETER_BEGIN") {
 			int numParams = 0;
 			lineInput >> numParams;
@@ -1538,6 +1555,35 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 		}
 	}
 }
+
+#ifdef VCELL_HYBRID	
+void FVSolver::loadSmoldyn(istream& ifsInput) {
+	if (simulation == 0) {
+		throw "Simulation has to be initialized before loading smoldyn";
+	}
+
+	string nextToken, line;
+	int nread = 0;
+	while (!ifsInput.eof()) {
+		getline(ifsInput, line);
+		istringstream lineInput(line);
+
+		lineInput >> nextToken;
+		if (nextToken.size() == 0 || nextToken[0] == '#') {
+			continue;
+		}
+		if (nextToken == "SMOLDYN_END") {
+			break;
+		}
+		if (nextToken == "SMOLDYN_INPUT_FILE") {
+			string inputfile;
+			getline(lineInput, inputfile);
+			trimString(inputfile);
+			simTool->setSmoldynInputFile(inputfile);
+		}
+	}
+}
+#endif
 
 FVSolver::FVSolver(istream& fvinput, int taskID, char* outdir, bool bSimZip) {
 	simTool = 0;

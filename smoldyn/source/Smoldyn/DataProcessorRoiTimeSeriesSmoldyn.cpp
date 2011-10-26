@@ -184,7 +184,7 @@ void DataProcessorRoiTimeSeriesSmoldyn::onWrite() {
 		memset(values, 0, numColumns * sizeof(double));
 
 		for (int j = 0; j < vcellSmoldynOutput->numVolumeElements; j ++) {
-			int mols = vcellSmoldynOutput->volVarOutputData[i * vcellSmoldynOutput->numVolumeElements + j];
+			int mols = vcellSmoldynOutput->volVarOutputData[i][j];
 			values[0] += mols;
 
 			if (sampleImage != 0) {
@@ -214,7 +214,7 @@ void DataProcessorRoiTimeSeriesSmoldyn::onWrite() {
 		memset(values, 0, numColumns * sizeof(double));
 
 		for (int j = 0; j < vcellSmoldynOutput->numMembraneElements; j ++) {
-			int mols = vcellSmoldynOutput->memVarOutputData[i * vcellSmoldynOutput->numMembraneElements + j];
+			int mols = vcellSmoldynOutput->memVarOutputData[i][j];
 			values[0] += mols;
 		}
 		// total count

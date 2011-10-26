@@ -11,6 +11,10 @@
 #include <VCELL/Timer.h>
 #include <VCELL/SundialsSolverOptions.h>
 
+#ifdef VCELL_HYBRID	
+#include <smoldyn.h>
+#endif
+
 #ifndef DIRECTORY_SEPARATOR
 #if ( defined(WIN32) || defined(WIN64) )
 #define DIRECTORY_SEPARATOR '\\'
@@ -107,6 +111,10 @@ public:
 	void setLoadFinal(bool b) {
 		bLoadFinal = b;
 	}
+	
+#ifdef VCELL_HYBRID	
+	void setSmoldynInputFile(string& inputfile);
+#endif
 
 private:
 	SimTool();
@@ -152,6 +160,11 @@ private:
 	DataProcessor* dataProcessor;
 	double** serialScanParameterValues;
 	int numSerialParameterScans;
+
+#ifdef VCELL_HYBRID	
+	simptr smoldynSim;
+	string smoldynInputFile;
+#endif
 };
 
 #endif

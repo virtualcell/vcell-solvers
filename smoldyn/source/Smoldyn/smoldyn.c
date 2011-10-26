@@ -13,7 +13,12 @@
 #include "opengl2.h"
 #include "smoldyn.h"
 
+#ifndef VCELL_HYBRID
 int main(int argc,char *argv[]);
+#else
+#include <string>
+using std::string;
+#endif
 void RenderScene(void);
 void TimerFunction(int er);
 void smolsimulategl(simptr sim);
@@ -167,6 +172,7 @@ file name from the user, and then calls setupsim to load the configuration
 file and set up all the structures.  If all goes well, it calls simulate or
 simulategl to run the simulation. */
 
+#ifndef VCELL_HYBRID
 #include <VCELL/SimulationMessaging.h>
 int taskID = -1;
 
@@ -288,3 +294,35 @@ int main(int argc,char *argv[]) {
 //		getchar(); }
   return returnCode; }
 
+#else
+simptr smoldynInit(SimTool* simTool, string& fileName) {
+  char root[STRCHAR],fname[STRCHAR],flags[STRCHAR],*cptr;
+
+	for(int i=0;i<STRCHAR;i++) root[i]=fname[i]=flags[i]='\0';
+	strcpy(root, fileName.c_str());
+	cptr=strrpbrk(root,":\\/");
+	if(cptr) cptr++;
+	else cptr=root;
+	strcpy(fname,cptr);
+	*cptr='\0';
+
+	simptr sim = NULL;
+	int er=setupsim(root,fname,&sim,flags);
+	er=scmdopenfiles(sim->cmds,1);
+	sim->simTool = simTool;
+	sim->clockstt=time(NULL);
+	er=simdocommands(sim);
+	return sim;
+}
+
+void smoldynOneStep(simptr sim){
+	simulatetimestep(sim);
+}
+
+void smoldynEnd(simptr sim) {
+	int er = 0;
+	sim->elapsedtime+=difftime(time(NULL),sim->clockstt);
+	endsimulate(sim,er);
+	simfree(sim);
+}
+#endif

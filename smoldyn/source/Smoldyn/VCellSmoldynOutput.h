@@ -14,13 +14,13 @@ using std::string;
 using std::vector;
 
 class DataProcessorRoiTimeSeriesSmoldyn;
-struct Variable {
+struct SmoldynVariable {
 	string name, domain;
 	VariableType type;
 	compartptr cmpt;
 	surfaceptr srf;
 
-	Variable() {
+	SmoldynVariable() {
 		cmpt = 0;
 		srf = 0;
 	}
@@ -57,14 +57,14 @@ private:
 
 	double extent[3];
 	double origin[3];
-	vector<Variable*> volVariables;
-	vector<Variable*> memVariables;
+	vector<SmoldynVariable*> volVariables;
+	vector<SmoldynVariable*> memVariables;
 	FileHeader fileHeader;
 	DataBlock *dataBlock;
-	double *volVarOutputData;
-	double *memVarOutputData;
+	double **volVarOutputData;
+	double **memVarOutputData;
 	int* molIdentVarIndexMap;
-	Variable** variables;
+	SmoldynVariable** variables;
 
 	DataProcessorRoiTimeSeriesSmoldyn* smoldynDataProcessor;
 	//bool isInSameCompartment(double *pos1, double* pos2);
