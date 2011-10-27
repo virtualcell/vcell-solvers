@@ -1,9 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" href="$class_qwt_dial.html" title="QwtDial class provides a rounded range control." alt="" coords="96,155,163,181"/>
-<area shape="rect" href="$class_qwt_knob.html" title="The Knob Widget." alt="" coords="187,155,261,181"/>
-<area shape="rect" href="$class_qwt_slider.html" title="The Slider Widget." alt="" coords="285,155,363,181"/>
-<area shape="rect" href="$class_qwt_wheel.html" title="The Wheel Widget." alt="" coords="387,155,467,181"/>
-<area shape="rect" href="$class_qwt_double_range.html" title="A class which controls a value within an interval." alt="" coords="213,5,333,32"/>
-<area shape="rect" href="$class_qwt_analog_clock.html" title="An analog clock." alt="" coords="5,229,123,256"/>
-<area shape="rect" href="$class_qwt_compass.html" title="A Compass Widget." alt="" coords="147,229,245,256"/>
-</map>
