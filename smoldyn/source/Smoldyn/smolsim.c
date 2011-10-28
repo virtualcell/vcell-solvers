@@ -694,7 +694,7 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 		graphss=sim->graphss;
 		itct=sscanf(line2,"%lg",&flt1);
 		CHECKS(itct==1,"frame_thickness needs to be a number");
-		CHECKS(flt1>=0,"frame_thickness needs to be ³0");
+		CHECKS(flt1>=0,"frame_thickness needs to be ï¿½0");
 		graphss->framepts=flt1;
 		CHECKS(!strnword(line2,2),"unexpected text following frame_thickness"); }
 
@@ -717,7 +717,7 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 		graphss=sim->graphss;
 		itct=sscanf(line2,"%lg",&flt1);
 		CHECKS(itct==1,"grid_thickness needs to be a number");
-		CHECKS(flt1>=0,"grid_thickness needs to be ³0");
+		CHECKS(flt1>=0,"grid_thickness needs to be ï¿½0");
 		graphss->gridpts=flt1;
 		CHECKS(!strnword(line2,2),"unexpected text following grid_thickness"); }
 
@@ -893,7 +893,7 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 	else if(!strcmp(word,"output_file_number")) {	// output_file_number
 		itct=sscanf(line2,"%s %i",nm,&i1);
 		CHECKS(itct==2,"format for output_file_number: filename number");
-		CHECKS(i1>=0,"output_file_number needs to be ³0");
+		CHECKS(i1>=0,"output_file_number needs to be ï¿½0");
 		er=scmdsetfsuffix(sim->cmds,nm,i1);
 		CHECKS(!er,"error setting output_file_number");
 		CHECKS(!strnword(line2,3),"unexpected text following output_file_number"); }
@@ -1368,6 +1368,7 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
  failure:
 	return 1; }
 
+#ifndef VCELL_HYBRID
 #include <VCELL/SimulationMessaging.h>
 extern int taskID;
 int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
@@ -1421,6 +1422,7 @@ int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 failure:		// failure
 	return 1;
 }
+#endif
 
 unsigned char fromHex(const char* src) {
 	char chs[5];
@@ -1556,8 +1558,10 @@ int loadsim(simptr sim,const char *fileroot,const char *filename,char *erstr,con
 			CHECKS(0,"SMOLDYN BUG: parsing error"); }
 
 		else if(!strcmp(word,"start_jms")) {			// jms settings
-			CHECKS(!loadJMS(sim,&pfp,line2,errstring),errstring); }
-
+#ifndef VCELL_HYBRID		
+			CHECKS(!loadJMS(sim,&pfp,line2,errstring),errstring); 
+#endif
+		}
 		else if(!strcmp(word,"highResVolumeSamplesFile")) {			//highResVolumeSamplesFile
 			CHECKS(!loadHighResVolumeSamples(sim,&pfp,line2,errstring),errstring); }
 

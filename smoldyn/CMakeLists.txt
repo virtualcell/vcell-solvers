@@ -60,8 +60,8 @@ set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
 set(DEP_LIBS IDAWin ExpressionParser netcdf_cxx netcdf zip ${SONICMQ_LIBS})
 
 if (VCELL_SPATIAL_HYBRID)
-add_library(smoldynlib STATIC ${SRC_FILES})
-set_property(TARGET smoldynlib PROPERTY COMPILE_DEFINITIONS VCELL_HYBRID)
+	add_library(smoldynlib STATIC ${SRC_FILES})
+	set_property(TARGET smoldynlib PROPERTY COMPILE_DEFINITIONS VCELL_HYBRID)
 endif()
 
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)

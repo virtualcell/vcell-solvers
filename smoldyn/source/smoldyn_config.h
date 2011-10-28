@@ -26,7 +26,9 @@
 /* #undef HAVE_LIBGLUT */
 
 /* Define to 1 if you have the `tiff' library (-ltiff). */
+#if (!defined(VCELL_HYBRID) && !defined(USE_MESSAGING))
 #define HAVE_LIBTIFF 1
+#endif
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
@@ -74,7 +76,9 @@
 /* #undef NO_MINUS_C_MINUS_O */
 
 /* Whether to compile Smoldyn with OpenGL support */
+#if (!defined(VCELL_HYBRID) && !defined(USE_MESSAGING))
 #define OPENGL 1
+#endif
 
 /* Name of package */
 #define PACKAGE "smoldyn"
