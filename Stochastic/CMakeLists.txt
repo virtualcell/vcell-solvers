@@ -16,9 +16,9 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 		include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../VCell/include)
 		list(APPEND SRC_FILES ../VCell/src/SimulationMessaging.cpp)
 	endif()
-	add_executable(Stochastic ${SRC_FILES})	
-	target_link_libraries(Stochastic ${DEP_LIBS})
-	add_dependencies(Stochastic ExpressionParser)
-	install(TARGETS Stochastic
+	add_executable(VCellStoch ${SRC_FILES})	
+	target_link_libraries(VCellStoch ${DEP_LIBS})
+	add_dependencies(VCellStoch ExpressionParser)
+	install(TARGETS VCellStoch
         RUNTIME DESTINATION bin)
 endif()
