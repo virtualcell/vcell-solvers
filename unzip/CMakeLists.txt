@@ -1,21 +1,21 @@
-PROJECT(unzip)
+project(unzip)
 
-FILE (GLOB SRC_FILES *.c)
+file (GLOB SRC_FILES *.c)
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-IF (WIN32)
-LIST(APPEND SRC_FILES
-win32/nt.c
-win32/win32.c
-)
-INCLUDE_DIRECTORIES(win32)
-ELSE (WIN32)
-LIST(APPEND SRC_FILES
-unix/unix.c
-)
-INCLUDE_DIRECTORIES(unix)
-ADD_DEFINITIONS(-DUNIX)
-ENDIF (WIN32)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+if (MSVC)
+	list(APPEND SRC_FILES
+		win32/nt.c
+		win32/win32.c
+	)
+	include_directories(win32)
+else (MSVC)
+	list(APPEND SRC_FILES
+		unix/unix.c
+	)
+	include_directories(unix)
+	add_definitions(-DUNIX)
+endif (MSVC)
 
-SET_SOURCE_FILES_PROPERTIES( ${SRC_FILES} PROPERTIES LANGUAGE CXX )
-ADD_LIBRARY(unzip STATIC ${SRC_FILES})
+set_source_files_properties( ${SRC_FILES} PROPERTIES LANGUAGE CXX )
+add_library(unzip STATIC ${SRC_FILES})

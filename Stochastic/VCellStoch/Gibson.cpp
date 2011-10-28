@@ -21,13 +21,8 @@ using namespace std;
 #ifdef USE_MESSAGING
 #include <VCELL/SimulationMessaging.h>
 #endif
-#ifdef LINUX
-#include <cmath>
-const double double_infinity = INFINITY;
-#else
 #include <limits>
 const double double_infinity = numeric_limits<double>::infinity();
-#endif
 const double EPSILON = 1E-12;
 /*
  *Empty constructor of Gibson. It will use the defalt settings in StochModel.

@@ -1,13 +1,8 @@
 #include <math.h>
 #include "MathUtil.h"
 
-#if (defined(LINUX) || defined(CYGWIN))
-#include <cmath>
-static double MathUtil::double_infinity = INFINITY;
-#else
 #include <limits>
 double MathUtil::double_infinity = std::numeric_limits<double>::infinity();
-#endif
 
 double MathUtil::acosh(double arg){
     return log(arg+sqrt(arg*arg-1));

@@ -152,6 +152,17 @@ endif()
 #######################################
 if (MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
+else()
+	add_definitions(-DUNIX)
+	if (LINUX)
+		######################################
+		#
+		# SonicCClient uses LINUX
+		# unzip uses LINUX
+		#
+		#######################################	
+		add_definitions(-DLINUX)
+	endif()
 endif()
 
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
