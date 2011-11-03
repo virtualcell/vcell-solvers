@@ -1810,7 +1810,6 @@ int simulatetimestep(simptr sim) {
 
 	return 0; }
 
-
 /* endsimulate */
 void endsimulate(simptr sim,int er) {
 	int qflag,tflag,*eventcount;

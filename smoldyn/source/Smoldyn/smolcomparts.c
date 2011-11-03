@@ -599,6 +599,7 @@ int compartupdatebox(simptr sim,compartptr cmpt,boxptr bptr,double volfrac) {
 
 
 /* compartupdatebox, the volume fraction here is the actual volume fraction for the box inside the compartment*/
+/* volfrac is actual volume fraction, for logic compartment the volfrac is assigned -2 */
 int compartupdatebox_volumeSample(simptr sim,compartptr cmpt,boxptr bptr,double volfrac) {
 	/*int ptsmax=100;*/	// number of random points for volume determination
 	int bc,max,bc2;
@@ -612,25 +613,8 @@ int compartupdatebox_volumeSample(simptr sim,compartptr cmpt,boxptr bptr,double 
 	for(bc=0;bc<cmpt->nbox && cmpt->boxlist[bc]!=bptr;bc++);	// check for box already in cmpt
 	if(bc<cmpt->nbox && volfrac==-2) return 0;				// box is listed and volume ok, so return
 
-
-	//if(volfrac<=0) {										//TODO:when passinging -2, what would we do for logic compartments
-	//	ptsin=0;
-	//	for(i=0;i<ptsmax;i++) {
-	//		boxrandpos(sim,pos,bptr);
-	//		if(posincompart(sim,pos,cmpt)) ptsin++; }
-	//	volfrac2=(double)ptsin/(double)ptsmax; }
-	//else if(volfrac>1) volfrac2=1; //this shouldn't happen
-	//else volfrac2=volfrac; //the actual volume faction
-
-	//if(volfrac<0) {										//TODO:when passinging -2, what would we do for logic compartments
-	//	ptsin=0;
-	//	for(i=0;i<ptsmax;i++) {
-	//		boxrandpos(sim,pos,bptr);
-	//		if(posincompart(sim,pos,cmpt)) ptsin++; }
-	//	volfrac2=(double)ptsin/(double)ptsmax; }
-	//else if(volfrac>1) volfrac2=1; //this shouldn't happen
-	//else 
-	volfrac2=volfrac; //the actual volume faction
+	if(volfrac>1) volfrac2=1; 
+	else volfrac2=volfrac; //the actual volume faction
 
 	if(volfrac2==0) {
 		if(bc==cmpt->nbox) return 0;									// box not listed and 0 volume, so return
@@ -648,16 +632,16 @@ int compartupdatebox_volumeSample(simptr sim,compartptr cmpt,boxptr bptr,double 
 		cmpt->volume=vol;
 		return 2; }
 
-	//if(bc<cmpt->nbox) {													// box was listed, so just update volume
-	//	if(cmpt->boxfrac[bc]==volfrac2) return 0;			// volume was ok, so return
-	//	cmpt->boxfrac[bc]=volfrac2;										// volume not ok, so update it
-	//	boxvol=sim->boxs->boxvol;
-	//	vol=(bc==0)?0:cmpt->cumboxvol[bc-1];
-	//	for(bc2=bc;bc2<cmpt->nbox;bc2++) {
-	//		vol+=boxvol*cmpt->boxfrac[bc2];
-	//		cmpt->cumboxvol[bc2]=vol; }
-	//	cmpt->volume=vol;
-	//	return 3; }
+	if(bc<cmpt->nbox) {													// box was listed, so just update volume
+		if(cmpt->boxfrac[bc]==volfrac2) return 0;			// volume was ok, so return
+		cmpt->boxfrac[bc]=volfrac2;										// volume not ok, so update it
+		boxvol=sim->boxs->boxvol;
+		vol=(bc==0)?0:cmpt->cumboxvol[bc-1];
+		for(bc2=bc;bc2<cmpt->nbox;bc2++) {
+			vol+=boxvol*cmpt->boxfrac[bc2];
+			cmpt->cumboxvol[bc2]=vol; }
+		cmpt->volume=vol;
+		return 3; }
 
 	if(cmpt->nbox==cmpt->maxbox) {									// expand box list
 		max=cmpt->maxbox>0?cmpt->maxbox*2:1;
@@ -855,32 +839,35 @@ int compartsupdateparams_smoldyn(simptr sim) {
 					er=compartupdatebox(sim,cmpt,bptr,-2); }
 		}
 
-		//using namespace std;
-		////write to a file the box volume for each compartment
-		//stringstream ss;
-		//ss << "d:\\smoldynCmpt" << cmpt->cname << ".txt";
-		//ofstream filestr;
-		//filestr.open (ss.str());
-		//boxptr* boxlist = cmpt->boxlist;
-		//double* boxVol = cmpt->boxfrac;
-		//for(int i=0; i<cmpt->nbox; i++)
-		//{
-		//	for(b=0;b<sim->boxs->nbox;b++) {
-		//		if (boxlist[i] == sim->boxs->blist[b]) {
-		//			filestr << "box index:" << b << "     " << "volFrac:" << boxVol[i] <<endl;
-		//			break;
-		//		}
-		//	}
-		//}
-		//filestr.close();
 	}
-
+	//for(c=0;c<cmptss->ncmpt;c++) {
+	//	compartptr cmpt=cmptss->cmptlist[c];
+	//	using namespace std;
+	//	//write to a file the box volume for each compartment
+	//	stringstream ss;
+	//	ss << "d:\\smoldynCmpt" << cmpt->cname << ".txt";
+	//	ofstream filestr;
+	//	filestr.open (ss.str());
+	//	boxptr* boxlist = cmpt->boxlist;
+	//	double* boxVol = cmpt->boxfrac;
+	//	for(int i=0; i<cmpt->nbox; i++)
+	//	{
+	//		for(b=0;b<sim->boxs->nbox;b++) {
+	//			bptr=boxlist[b];
+	//			if (boxlist[i] == sim->boxs->blist[b]) {
+	//				filestr << "box index:" << b << "     " << "volFrac:" << boxVol[i] << ",nneigh=" << bptr->nneigh <<", midneigh="<<bptr->midneigh<<", nwall=" <<bptr->nwall <<",maxpanel="<<bptr->maxpanel<<",npanel="<< bptr->npanel << endl;
+	//				break;
+	//			}
+	//		}
+	//	}
+	//	filestr.close();
+	//}
 	return 0; 
 }
 
 int compartsupdateparams_volumeSample(simptr sim) {
 	//indecies
-	int b,c,d,i,j,k;
+	int b,c,d,i,j,k,cl;
 	//varibles used to check possible boxes and its volFrac in a specific compartment
 	double boxLow[3], boxHigh[3], sampleLow[3], sampleHigh[3];
 
@@ -902,22 +889,34 @@ int compartsupdateparams_volumeSample(simptr sim) {
 	}
 	double sampleDx = volumeSample->size[0]/volumeSample->num[0];
 
+	int inbox,p,s;
 	
+	surfaceptr srf;
+	double pos[DIMMAX];
 	for(c=0;c<cmptss->ncmpt;c++) {
 		compartptr cmpt=cmptss->cmptlist[c];
 		cmpt->nbox=0;
 		unsigned char cmptID = getCompartmentID(cmpt->cname, sim->volumeSamplesPtr);
 		
-		//using namespace std;
-		//stringstream ss;
-		//ss << "d:\\volumeCmpt" << cmpt->cname << ".txt";
-		////write to a file the box volume for each compartment
-		//ofstream filestr;
-		//filestr.open (ss.str());
-		
 		for(b=0;b<boxs->nbox;b++) {											// find boxes that are in the compartment
 			boxptr bptr=boxs->blist[b];
 			
+			inbox=0;
+			for(p=0;p<bptr->npanel && !inbox;p++) {
+				srf=bptr->panel[p]->srf;
+				for(s=0;s<cmpt->nsrf && !inbox;s++){
+					if(cmpt->surflist[s]==srf){
+						inbox=1;
+						for(i=0;i<100;i++) {
+							boxrandpos(sim,pos,bptr);
+						}
+					}
+				}
+			}
+			if(!inbox && cmpt->ncmptl==0) {
+				boxrandpos(sim,pos,bptr);
+				if(posincompart(sim,pos,cmpt)) inbox=2; }
+
 			//finding box low point and high point's indexes in volume sample values.
 			for(d=0;d<dim;d++){
 				boxLow[d] = min[d]+size[d]*bptr->indx[d];
@@ -964,13 +963,50 @@ int compartsupdateparams_volumeSample(simptr sim) {
 				}
 			}
 			double boxVolfrac = insideCmptVol/((boxs->size[0])*(boxs->size[1])*(boxs->size[2]));
-			//filestr << "boxIndex " << b << "     " << "volFrac " << boxVolfrac <<endl;
-			//if(boxVolfrac <= 1e-8) boxVolfrac = 0; // volume faction is too small, consider it as 0
-			int errorCode = compartupdatebox_volumeSample(sim,cmpt,bptr,boxVolfrac);
-			if(errorCode==-1) return 1;
+			if(boxVolfrac <= 1e-8) boxVolfrac = 0; // volume fraction is too small, consider it as 0
+			if((boxVolfrac + 1e-8) >= 1) boxVolfrac = 1; //if volume fraction is almost 1, consider it as 1 
+			if(boxVolfrac > 0)
+			{
+				int errorCode = compartupdatebox_volumeSample(sim,cmpt,bptr,boxVolfrac);
+				if(errorCode==-1) return 1;
+			}
 		}
-		//filestr.close();
+		enum CmptLogic clsym;
+		for(cl=0;cl<cmpt->ncmptl;cl++) {								// still finding boxes that are in compartment
+			clsym=cmpt->clsym[cl];
+			if(clsym==CLequal || clsym==CLor || clsym==CLxor)
+				for(b=0;b<cmpt->cmptl[cl]->nbox;b++) {
+					boxptr bptr=cmpt->cmptl[cl]->boxlist[b];
+					int er=compartupdatebox_volumeSample(sim,cmpt,bptr,-2);
+					if(er==-1) return 1; }
+			else if(clsym==CLequalnot || CLornot)
+				for(b=0;b<boxs->nbox;b++) {
+					boxptr bptr=boxs->blist[b];
+					int er=compartupdatebox_volumeSample(sim,cmpt,bptr,-2); }
+		}
 	}
+	//for(c=0;c<cmptss->ncmpt;c++) {
+	//	compartptr cmpt=cmptss->cmptlist[c];
+	//	using namespace std;
+	//	//write to a file the box volume for each compartment
+	//	stringstream ss;
+	//	ss << "d:\\volumeCmpt" << cmpt->cname << ".txt";
+	//	ofstream filestr;
+	//	filestr.open (ss.str());
+	//	boxptr* boxlist = cmpt->boxlist;
+	//	double* boxVol = cmpt->boxfrac;
+	//	for(int i=0; i<cmpt->nbox; i++)
+	//	{
+	//		for(b=0;b<sim->boxs->nbox;b++) {
+	//			boxptr bptr=boxlist[b];
+	//			if (boxlist[i] == sim->boxs->blist[b]) {
+	//				filestr << "box index:" << b << "     " << "volFrac:" << boxVol[i] << ",nneigh=" << bptr->nneigh <<", midneigh="<<bptr->midneigh<<", nwall=" <<bptr->nwall <<",maxpanel="<<bptr->maxpanel<<",npanel="<< bptr->npanel << endl;
+	//				break;
+	//			}
+	//		}
+	//	}
+	//	filestr.close();
+	//}
 
 	return 0; 
 }
