@@ -1368,7 +1368,6 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
  failure:
 	return 1; }
 
-#ifndef VCELL_HYBRID
 #include <VCELL/SimulationMessaging.h>
 extern int taskID;
 int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
@@ -1400,6 +1399,7 @@ int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 		} else if(!line2) {															// just word
 			CHECKS(0,"missing jms parameters");
 		} else {
+#ifndef VCELL_HYBRID
 #ifdef USE_MESSAGING
 			if (taskID >= 0) {
 				char *jmsBroker = new char[64];
@@ -1414,6 +1414,7 @@ int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 				SimulationMessaging::getInstVar()->start(); // start the thread
 			}
 #endif
+#endif
 		}
 	}
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "setting up simulation"));
@@ -1422,7 +1423,6 @@ int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 failure:		// failure
 	return 1;
 }
-#endif
 
 unsigned char fromHex(const char* src) {
 	char chs[5];
@@ -1558,9 +1558,7 @@ int loadsim(simptr sim,const char *fileroot,const char *filename,char *erstr,con
 			CHECKS(0,"SMOLDYN BUG: parsing error"); }
 
 		else if(!strcmp(word,"start_jms")) {			// jms settings
-#ifndef VCELL_HYBRID		
 			CHECKS(!loadJMS(sim,&pfp,line2,errstring),errstring); 
-#endif
 		}
 		else if(!strcmp(word,"highResVolumeSamplesFile")) {			//highResVolumeSamplesFile
 			CHECKS(!loadHighResVolumeSamples(sim,&pfp,line2,errstring),errstring); }
