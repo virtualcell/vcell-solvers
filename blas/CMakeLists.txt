@@ -8,3 +8,5 @@ endif()
 
 file (GLOB SRC_FILES *.f)    
 add_library(blas STATIC ${SRC_FILES})
+install(TARGETS blas 
+	ARCHIVE DESTINATION bin)

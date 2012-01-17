@@ -19,3 +19,5 @@ endif (MSVC)
 
 set_source_files_properties( ${SRC_FILES} PROPERTIES LANGUAGE CXX )
 add_library(unzip STATIC ${SRC_FILES})
+install(TARGETS unzip 
+	ARCHIVE DESTINATION bin)

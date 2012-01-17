@@ -90,3 +90,6 @@ elseif(UNIX)
 endif()	
 add_library(vcellCodeGen STATIC ${SRC_FILES})
 add_library(pcgwrapperCodeGen STATIC ${PCGWRAPPER_SRC_FILES})
+
+install(TARGETS vcellCodeGen pcgwrapperCodeGen 
+	ARCHIVE DESTINATION bin)

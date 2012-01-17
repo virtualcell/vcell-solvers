@@ -6,3 +6,5 @@ set(SRC_FILES
 )
 
 add_library(netcdf_cxx STATIC ${SRC_FILES})
+install(TARGETS netcdf_cxx 
+	ARCHIVE DESTINATION bin)

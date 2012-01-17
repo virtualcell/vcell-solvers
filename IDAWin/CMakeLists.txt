@@ -24,6 +24,8 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	target_link_libraries(SundialsSolverStandalone ${DEP_LIBS})
 	add_dependencies(SundialsSolverStandalone ExpressionParser IDAWin sundials sundials_nvecserial sundials_cvode sundials_ida)
 	
-	install(TARGETS SundialsSolverStandalone
-            RUNTIME DESTINATION bin)
+	install(TARGETS SundialsSolverStandalone 
+		RUNTIME DESTINATION bin)
 endif()
+install(TARGETS IDAWin 
+	ARCHIVE DESTINATION bin)

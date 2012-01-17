@@ -18,3 +18,5 @@ set (SRC_FILES
 )
 
 add_library(zlib STATIC ${SRC_FILES})
+install(TARGETS zlib 
+	ARCHIVE DESTINATION bin)

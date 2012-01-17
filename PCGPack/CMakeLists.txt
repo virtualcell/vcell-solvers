@@ -8,3 +8,5 @@ endif()
     
 file (GLOB SRC_FILES *.f)   
 add_library(PCGPack STATIC ${SRC_FILES})
+install(TARGETS PCGPack 
+	ARCHIVE DESTINATION bin)
