@@ -173,7 +173,6 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 		endif(APPLE)
 		
 		add_definitions(-DUSE_MESSAGING)
-		include_directories(${CMAKE_CURRENT_SOURCE_DIR}/VCell/include)	
 		if (LINUX)
 			set(SONICMQ_LIBS smq)			
 			if (LINUX_32bit_BINARIES)

@@ -12,7 +12,7 @@ set (EXE_SRC_FILES
 	SundialsSolverStandalone.cpp
 )
 
-include_directories(../ExpressionParser ../sundials/include ../sundials/src)
+include_directories(../ExpressionParser ../sundials/include ../sundials/src ../VCell/include)
 
 set(DEP_LIBS IDAWin ExpressionParser sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS})
 add_library(IDAWin STATIC ${SRC_FILES})
