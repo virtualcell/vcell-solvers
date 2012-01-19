@@ -752,7 +752,7 @@ enum CMDcode cmdmolcountonsurf(simptr sim,cmdptr cmd,char *line2) {
 	itct=sscanf(line2,"%s",nm);
 	SCMDCHECK(itct==1,"cannot read argument");
 	s=stringfind(srfss->snames,srfss->nsrf,nm);
-	SCMDCHECK(s>=0,"surface name not recognized");
+	SCMDCHECK(s>=0,"surface name:%s not recognized", nm);
 	srf=srfss->srflist[s];
 	line2=strnword(line2,2);
 	fptr=scmdgetfptr(sim->cmds,line2);
@@ -2402,11 +2402,13 @@ enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2) {
 		if (token == "begin") {
 			ss >> dataProcName;
 		} else if (token == "end") {
+#ifndef VCELL_HYBRID 
 			if (vcellSmoldynOutput == 0) {
 				vcellSmoldynOutput = new VCellSmoldynOutput(sim);
 			}
 			string input = dataProcessInput.str();
 			vcellSmoldynOutput->parseDataProcessingInput(dataProcName, input);
+#endif
 			dataProcessFirstTime = false;
 		} else {
 			dataProcessInput << line2 << endl;

@@ -14,8 +14,10 @@ using VCell::Expression;
 
 #include <VCELL/Element.h>
 #include <VCELL/VolumeVariable.h>
+#include <VCELL/VolumeParticleVariable.h>
 #include <VCELL/VolumeRegionVariable.h>
 #include <VCELL/MembraneVariable.h>
+#include <VCELL/MembraneParticleVariable.h>
 #include <VCELL/MembraneRegionVariable.h>
 #include <VCELL/VCellModel.h>
 #include <VCELL/Feature.h>
@@ -392,19 +394,14 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 #ifdef VCELL_HYBRID				
 		} else if (nextToken == "VOLUME_PARTICLE") {
 			lineInput >> variable_name >> structure_name;
-
 			Feature* feature = model->getFeatureFromName(structure_name);
-			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX, sizeY, sizeZ, true);
-			bool* vrmap = new bool[numVolumeRegions]; // defined everywhere by default
-			for (int i = 0; i < numVolumeRegions; i ++) {
-				vrmap[i] = true;
-			} 
-			simulation->addVolumeVariable(volumeVar, vrmap);
+			VolumeParticleVariable* volumeParticleVar = new VolumeParticleVariable(variable_name, feature, sizeX, sizeY, sizeZ);
+			simulation->addVolumeParticleVariable(volumeParticleVar);
 		} else if (nextToken == "MEMBRANE_PARTICLE") {
 			lineInput >> variable_name >> structure_name;
 			Membrane* membrane = model->getMembraneFromName(structure_name);
-			MembraneVariable* membraneVar = new MembraneVariable(variable_name, membrane, mesh->getNumMembraneElements(), true);
-			simulation->addMembraneVariable(membraneVar);
+			MembraneParticleVariable* membraneParticleVar = new MembraneParticleVariable(variable_name, membrane, mesh->getNumMembraneElements());
+			simulation->addMembraneParticleVariable(membraneParticleVar);
 #endif			
 		} else if (nextToken == "MEMBRANE_ODE") {
 			lineInput >> variable_name >> structure_name;

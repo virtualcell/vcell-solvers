@@ -22,6 +22,11 @@
 #include <pthread.h>
 #endif
 
+#ifdef VCELL_HYBRID
+#include <VCELL/Simulation.h>
+#include <VCELL/SimTool.h>
+#endif
+
 #define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;} else (void)0
 #define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0'; printfException("%s", B); goto failure;} else (void)0
 
@@ -351,7 +356,10 @@ rxnptr rxnalloc(int order) {
 	rxn->nprod=0;
 	rxn->prdident=NULL;
 	rxn->prdstate=NULL;
-	rxn->rate=-1;
+	rxn->rate=-1; 
+#ifdef VCELL_HYBRID
+	rxn->rateExp=NULL;								
+#endif
 	rxn->bindrad2=-1;
 	rxn->prob=-1;
 	rxn->tau=-1;
@@ -927,7 +935,8 @@ int rxnsetrate(simptr sim,int order,int r,char *erstr) {
 		if(rxn->cmpt) vol=rxn->cmpt->volume;
 		else if(rxn->srf) vol=surfacearea(rxn->srf,sim->dim,NULL);
 		else vol=systemvolume(sim);
-		rxn->prob=rxn->rate*sim->dt*vol; }
+		rxn->prob=rxn->rate*sim->dt*vol;
+	}
 
 	else if(order==1) {															// order 1
 		if(rxn->rate<0) return 1;
@@ -954,7 +963,8 @@ int rxnsetrate(simptr sim,int order,int r,char *erstr) {
 				rxn2=rxnss->rxn[rxnss->table[i][j]];
 				if(rxn2==rxn) j=rxnss->nrxn[i];
 				else sum2+=rxn2->prob; }
-			rxn->prob=rxn->prob/(1.0-sum2); }		// probability, accounting for prior reactions
+				rxn->prob=rxn->prob/(1.0-sum2);
+		}		// probability, accounting for prior reactions
 
 		rev=findreverserxn(sim,1,r,&o2,&r2);	// set own reversible parameter if needed
 		if(rev>0 && o2==2) {
@@ -1291,7 +1301,7 @@ void rxnsetcondition(simptr sim,int order,enum StructCond cond,int upgrade) {
 /* RxnSetValue */
 int RxnSetValue(simptr sim,char *option,rxnptr rxn,double value) {
 	int er;
-
+	
 	er=0;
 	if(!rxn || !option) er=1;
 	else if(!strcmp(option,"rate")) {
@@ -1860,14 +1870,22 @@ int rxnsupdatelists(simptr sim,int order) {
 			i1=rxn->rctident[0];
 			if(order==1) {
 				for(ms1=(MolecState)0;ms1<MSMAX1;ms1=(MolecState)(ms1+1))
+#ifdef VCELL_HYBRID
+					if(rxn->permit[ms1] && (rxn->prob>0 || rxn->rate>0 || rxn->rateExp != NULL)) {
+#else
 					if(rxn->permit[ms1] && (rxn->prob>0 || rxn->rate>0)) {
+#endif
 						ll1=sim->mols->listlookup[i1][ms1];
 						rxnss->rxnmollist[ll1]=1; }}
 			else if(order==2) {
 				i2=rxn->rctident[1];
 				for(ms1=(MolecState)0;ms1<MSMAX1;ms1=(MolecState)(ms1+1))
 					for(ms2=(MolecState)0;ms2<MSMAX1;ms2=(MolecState)(ms2+1))
+#ifdef VCELL_HYBRID
+						if(rxn->permit[ms1*MSMAX1+ms2] && rxn->prob!=0 && (rxn->rate>0 || rxn->bindrad2>0 || rxn->rateExp != NULL)) {
+#else
 						if(rxn->permit[ms1*MSMAX1+ms2] && rxn->prob!=0 && (rxn->rate>0 || rxn->bindrad2>0)) {
+#endif
 							ll1=sim->mols->listlookup[i1][ms1==MSbsoln?MSsoln:ms1];
 							ll2=sim->mols->listlookup[i2][ms2==MSbsoln?MSsoln:ms2];
 							rxnss->rxnmollist[ll1*maxlist+ll2]=1;
@@ -2035,10 +2053,10 @@ int doreact(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int ll1,in
 
 	return 0; }
 
-
 /* zeroreact */
 int zeroreact(simptr sim) {
 	int i,r,nmol;
+	long j; // for number of volume region elements
 	rxnptr rxn;
 	rxnssptr rxnss;
 	double pos[DIMMAX];
@@ -2046,16 +2064,70 @@ int zeroreact(simptr sim) {
 
 	pnl=NULL;
 	rxnss=sim->rxnss[0];
+	
 	if(!rxnss) return 0;
 	for(r=0;r<rxnss->totrxn;r++) {
 		rxn=rxnss->rxn[r];
-		nmol=poisrandD(rxn->prob);
-		for(i=0;i<nmol;i++) {
-			if(rxn->cmpt) compartrandpos(sim,pos,rxn->cmpt);
-			else if(rxn->srf) pnl=surfrandpos(rxn->srf,pos,sim->dim);
-			else systemrandpos(sim,pos);
-			if(doreact(sim,rxn,NULL,NULL,-1,-1,-1,-1,pos,pnl)) return 1; }
-		sim->eventcount[ETrxn0]+=nmol; }
+				
+#ifdef VCELL_HYBRID
+		if(rxn->rateExp != NULL)
+		{
+			SimTool* simTool = sim->simTool;
+			Simulation* simulation = simTool->getSimulation();
+			CartesianMesh* mesh = (CartesianMesh *)simulation->getMesh();
+			double dx = mesh->getXScale_um();
+			double dy = mesh->getYScale_um();
+			double dz = mesh->getZScale_um();
+			double meshv = dx*dy*dz;
+			VolumeElement* volumeElements = mesh->getVolumeElements();
+			
+			int numVolRegion = mesh -> getNumVolumeRegions();
+			
+			for(i=0; i<numVolRegion; i++)
+			{
+				if( !strcmp(rxn->cmpt->cname, mesh->getVolumeRegion(i)->getFeature()->getName().c_str()))
+				{
+					VolumeRegion* volumeRegion = mesh -> getVolumeRegion(i);
+					long numEleInVolumeRegion = volumeRegion->getNumElements();
+					for(j=0; j<numEleInVolumeRegion; j++) // go through each mesh element in the volume region where the reaction happens
+					{
+						int volIndex = volumeRegion->getElementIndex(j);
+						double rate = evaluateRnxRate(rxn->rateExp, sim, volIndex);
+						
+						//Do I have to do rxnsetrate here? it's gonna be i*j*k times more than other reactions(1st order, 2nd order)
+						double prob = rate * sim->dt * meshv;	
+						nmol=poisrandD(prob);
+						int count = 0;
+						//put generated molecules in the same mesh
+						while(count < nmol) {
+							count++;//change here to see if the 0th order generates less molecules.
+							randomPosInMesh(mesh, sim, pos, volIndex); //the generated position saved in pos
+							//since we are using vcell mesh, we double check the pos in compartment
+							if(posincompart(sim,pos,rxn->cmpt))
+							{
+								//count++; 
+								if(doreact(sim,rxn,NULL,NULL,-1,-1,-1,-1,pos,pnl)) return 1; 
+							}
+						}
+						sim->eventcount[ETrxn0]+=nmol;
+					}
+				}
+			}
+		}
+		else
+		{
+#endif
+			nmol=poisrandD(rxn->prob);
+			for(i=0;i<nmol;i++) {
+				if(rxn->cmpt) compartrandpos(sim,pos,rxn->cmpt);
+				else if(rxn->srf) pnl=surfrandpos(rxn->srf,pos,sim->dim);
+				else systemrandpos(sim,pos);
+				if(doreact(sim,rxn,NULL,NULL,-1,-1,-1,-1,pos,pnl)) return 1; }
+			sim->eventcount[ETrxn0]+=nmol;
+#ifdef VCELL_HYBRID
+		}
+#endif
+	}
 	return 0; }
 
 
@@ -2083,6 +2155,20 @@ int unireact(simptr sim) {
 				ms=mptr->mstate;
 				for(j=0;j<nrxn[i];j++) {
 					rxn=rxnlist[table[i][j]];
+#ifdef VCELL_HYBRID
+	if(rxn->rateExp != NULL)
+	{
+		rxn -> rate = evaluateRnxRate(sim, rxn -> rateExp,  mptr->pos);
+				
+		char erstr[256];
+		int er, r;
+		r = table[i][j];
+		er=rxnsetrate(sim,1,r,erstr);
+		//if(er>1) return r;
+	}
+
+#endif
+	
 					if((!rxn->cmpt && !rxn->srf) || (rxn->cmpt && posincompart(sim,mptr->pos,rxn->cmpt)) || (rxn->srf && mptr->pnl && mptr->pnl->srf==rxn->srf))
 						if(coinrandD(rxn->prob) && rxn->permit[ms] && mptr->ident!=0) {
 							if(doreact(sim,rxn,mptr,NULL,ll,m,-1,-1,NULL,NULL)) return 1;
@@ -2130,6 +2216,25 @@ int morebireact(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int ll
 
 	return 0; }
 
+#ifdef VCELL_HYBRID
+void setBiReactRateForHybrid(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int r)
+{
+	if(rxn->rateExp != NULL)
+	{
+		int dimension = sim->dim;
+		double pos[3]; 
+		for(int dimIdx =0; dimIdx < dimension; dimIdx++)
+		{
+			pos[dimIdx] = (mptr1->pos[dimIdx] + mptr2->pos[dimIdx])/2;
+		}
+		rxn -> rate = evaluateRnxRate(sim, rxn -> rateExp, pos);
+
+		char erstr[256];
+		int er, r;
+		er=rxnsetrate(sim,2,r,erstr);
+	}
+}
+#endif
 
 /* bireact */
 int bireact(simptr sim,int neigh) {
@@ -2167,6 +2272,9 @@ int bireact(simptr sim,int neigh) {
 							i=mptr1->ident*maxspecies+mptr2->ident;
 							for(j=0;j<nrxn[i];j++) {
 								rxn=rxnlist[table[i][j]];
+#ifdef VCELL_HYBRID
+								setBiReactRateForHybrid(sim, rxn, mptr1, mptr2, table[i][j]);
+#endif
 								dist2=0;
 								for(d=0;d<dim;d++)
 									dist2+=(mptr1->pos[d]-mptr2->pos[d])*(mptr1->pos[d]-mptr2->pos[d]);
@@ -2194,6 +2302,9 @@ int bireact(simptr sim,int neigh) {
 									i=mptr1->ident*maxspecies+mptr2->ident;
 									for(j=0;j<nrxn[i];j++) {
 										rxn=rxnlist[table[i][j]];
+#ifdef VCELL_HYBRID
+										setBiReactRateForHybrid(sim, rxn, mptr1, mptr2, table[i][j]);
+#endif
 										dist2=0;
 										for(d=0;d<dim;d++) {
 											if((wpcode>>2*d&3)==0)
@@ -2217,16 +2328,20 @@ int bireact(simptr sim,int neigh) {
 									i=mptr1->ident*maxspecies+mptr2->ident;
 									for(j=0;j<nrxn[i];j++) {
 										rxn=rxnlist[table[i][j]];
+#ifdef VCELL_HYBRID
+										setBiReactRateForHybrid(sim, rxn, mptr1, mptr2, table[i][j]);
+#endif
 										dist2=0;
 										for(d=0;d<dim;d++)
 											dist2+=(mptr1->pos[d]-mptr2->pos[d])*(mptr1->pos[d]-mptr2->pos[d]);
-										if(dist2<=rxn->bindrad2 && (rxn->prob==1 || randCOD()<rxn->prob) &&  (mptr1->mstate!=MSsoln || mptr2->mstate!=MSsoln || !rxnXsurface(sim,mptr1,mptr2)) && mptr1->ident!=0 && mptr2->ident!=0) {
+										if(dist2<=rxn->bindrad2 && (rxn->prob==1 || randCOD()<rxn->prob) &&  (mptr1->mstate!=MSsoln || mptr2->mstate!=MSsoln || !rxnXsurface(sim,mptr1,mptr2)) && mptr1->ident!=0 && mptr2->ident!=0) 
+										{
 											if(morebireact(sim,rxn,mptr1,mptr2,ll1,m1,ll2,ETrxn2inter)) return 1;
 											if(mptr1->ident==0) {
 												j=nrxn[i];
 												m2=nmol2;
-												b2=bmax; }}}}}}}
-
+												b2=bmax;}}}}}}
+	}//end of else {} according to if(!neigh)
 	return 0; }
 
 

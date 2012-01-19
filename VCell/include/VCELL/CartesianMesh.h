@@ -33,7 +33,7 @@ public:
 	virtual WorldCoord getVolumeWorldCoord(long volumeIndex);
 	virtual WorldCoord getMembraneWorldCoord(long membraneIndex);
 	virtual WorldCoord getMembraneWorldCoord(MembraneElement *element);
-	//virtual long getVolumeIndex(WorldCoord coord);
+	virtual long getVolumeIndex(WorldCoord coord);
 
 	virtual double getVolumeOfElement_cu(long volumeIndex);
 

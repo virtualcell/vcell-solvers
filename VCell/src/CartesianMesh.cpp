@@ -987,23 +987,23 @@ WorldCoord CartesianMesh::getMembraneWorldCoord(MembraneElement *element)
 		);
 }
 
-//long CartesianMesh::getVolumeIndex(WorldCoord coord)
-//{
-//	MeshCoord meshCoord;
-//
-//	ASSERTION(coord.x>=domainOriginX);
-//	ASSERTION(coord.x<=(domainOriginX + domainSizeX));
-//	ASSERTION(coord.y>=domainOriginY);
-//	ASSERTION(coord.y<=(domainOriginY + domainSizeY));
-//	ASSERTION(coord.z>=domainOriginZ);
-//	ASSERTION(coord.z<=(domainOriginZ + domainSizeZ));
-//
-//	meshCoord.x = (int)((coord.x-domainOriginX) * (numX-1)/domainSizeX + 0.5);
-//	meshCoord.y = (int)((coord.y-domainOriginY) * (numY-1)/domainSizeY + 0.5);
-//	meshCoord.z = (int)((coord.z-domainOriginZ) * (numZ-1)/domainSizeZ + 0.5);
-//
-//	return getVolumeIndex(meshCoord);
-//}
+long CartesianMesh::getVolumeIndex(WorldCoord coord)
+{
+	MeshCoord meshCoord;
+
+	ASSERTION(coord.x>=domainOriginX);
+	ASSERTION(coord.x<=(domainOriginX + domainSizeX));
+	ASSERTION(coord.y>=domainOriginY);
+	ASSERTION(coord.y<=(domainOriginY + domainSizeY));
+	ASSERTION(coord.z>=domainOriginZ);
+	ASSERTION(coord.z<=(domainOriginZ + domainSizeZ));
+
+	meshCoord.x = (int)((coord.x-domainOriginX) * (numX-1)/domainSizeX + 0.5);
+	meshCoord.y = (int)((coord.y-domainOriginY) * (numY-1)/domainSizeY + 0.5);
+	meshCoord.z = (int)((coord.z-domainOriginZ) * (numZ-1)/domainSizeZ + 0.5);
+
+	return meshCoord.x + numX*(meshCoord.y + numY*meshCoord.z);
+}
 
 MeshCoord CartesianMesh::getMeshCoord(long index)
 {

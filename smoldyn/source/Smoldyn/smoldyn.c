@@ -12,19 +12,25 @@
 #include "smoldyn_config.h"
 #include "opengl2.h"
 #include "smoldyn.h"
+#include "random2.h"
 
 #ifndef VCELL_HYBRID
 int main(int argc,char *argv[]);
 #else
 #include <string>
 using std::string;
+#include <VCELL/SimTool.h>
+#include <VCELL/SimulationExpression.h>
+#include <VCELL/Variable.h>
+#include <VCELL/CartesianMesh.h>
+#include <VCELL/DoubleVector3.h>
+#include <VCELL/Element.h>
 #endif
 void RenderScene(void);
 void TimerFunction(int er);
 void smolsimulategl(simptr sim);
 
 simptr Sim;
-
 
 /* RenderScene is the rendering call-back function for OpenGL. */
 void RenderScene(void) {
@@ -179,7 +185,7 @@ int taskID = -1;
 int main(int argc,char *argv[]) {
 	char errorMsg[2048];
 	int returnCode = 0;
-
+	
 	try {
 		SimulationMessaging::create();
 
@@ -287,7 +293,7 @@ int main(int argc,char *argv[]) {
 #endif
 	}
 	delete SimulationMessaging::getInstVar();
-
+		
 //	cptr=getenv("OS");
 //	if(cptr!=NULL && strstr(cptr,"Windows")) {			// true for a Windows system
 //		printf("Press ENTER to close window\n");
@@ -312,6 +318,30 @@ simptr smoldynInit(SimTool* simTool, string& fileName) {
 	sim->simTool = simTool;
 	sim->clockstt=time(NULL);
 	er=simdocommands(sim);
+
+	SimulationExpression* vcellSim = (SimulationExpression*)simTool->getSimulation();
+	SymbolTable* symbolTable = vcellSim->getSymbolTable();
+
+	for(int j = 0; j < MAXORDER; j++)
+	{
+		rxnssptr rxnssInOrder = sim -> rxnss[j]; //loop through 0th, 1st, 2nd order rxn lists
+		if (rxnssInOrder == 0) {
+			continue;
+		}
+		for (int i = 0; i < rxnssInOrder->totrxn; i ++) {
+			try {
+				Expression* rateExpression = rxnssInOrder->rxn[i]->rateExp;
+				double r = rateExpression->evaluateConstant();
+				rxnssInOrder->rxn[i]->rateExp = NULL;
+				rxnssInOrder->rxn[i]->rate = r;
+				char erstr[1024];
+				int er=rxnsetrate(sim,j,i,erstr);
+			} catch (...) {
+				rxnssInOrder->rxn[i]->rateExp->bindExpression(symbolTable);
+			}
+		
+		}
+	}
 	return sim;
 }
 
@@ -325,4 +355,71 @@ void smoldynEnd(simptr sim) {
 	endsimulate(sim,er);
 	simfree(sim);
 }
+
+double evaluateRnxRate(Expression* rateExp, simptr sim, int volIndex){
+	int dim = sim -> dim;
+	SimulationExpression* vcellSim = (SimulationExpression*)sim->simTool->getSimulation();
+	WorldCoord wc = ((CartesianMesh*)vcellSim->getMesh())->getVolumeWorldCoord(volIndex);
+	//vcellSim->setCurrentCoordinate(wc);
+	double pos[3] = {wc.x, wc.y, wc.z};
+	return evaluateRnxRate(sim, rateExp, pos);
+	/*int* indices = vcellSim->getIndices();
+	indices[VAR_MEMBRANE_INDEX] = -1;
+	indices[VAR_MEMBRANE_REGION_INDEX] = -1;
+	indices[VAR_VOLUME_INDEX] = volIndex;
+	indices[VAR_VOLUME_REGION_INDEX] = vcellSim->getMesh()->getVolumeElements()[volIndex].getRegionIndex();
+
+	return rateExp->evaluateProxy();*/
+}
+
+double evaluateRnxRate(simptr sim, Expression* rateExp, double* pos)
+{
+	
+	int dim = sim -> dim;
+	
+	WorldCoord wc(pos[0], dim>1?pos[1]:0, dim>2?pos[2]:0);
+	SimulationExpression* vcellSim = (SimulationExpression*)sim->simTool->getSimulation();
+	vcellSim->setCurrentCoordinate(wc);
+
+	int volIndex = ((CartesianMesh*)vcellSim->getMesh())->getVolumeIndex(wc);
+	int* indices = vcellSim->getIndices();
+	indices[VAR_MEMBRANE_INDEX] = -1;
+	indices[VAR_MEMBRANE_REGION_INDEX] = -1;
+	indices[VAR_VOLUME_INDEX] = volIndex;
+	indices[VAR_VOLUME_REGION_INDEX] = vcellSim->getMesh()->getVolumeElements()[volIndex].getRegionIndex();
+
+	return rateExp->evaluateProxy();	
+}
+
+int randomPosInMesh(CartesianMesh* mesh, simptr sim, double* pos, int volIndex)
+{
+	int dim = sim -> dim;
+	double deltaX, deltaY, deltaZ;
+	double originX, originY, originZ;
+	double domainSizeX, domainSizeY, domainSizeZ;
+	WorldCoord wc = mesh -> getVolumeWorldCoord(volIndex);
+	
+	deltaX = mesh -> getXScale_um();
+	originX = mesh -> getDomainOriginX();
+	domainSizeX = mesh -> getDomainSizeX();
+	pos[0]=unirandCCD(max(originX, (wc.x-0.5*deltaX)) , min((originX+domainSizeX), (wc.x + 0.5*deltaX)));
+	if(dim > 1)
+	{
+		deltaY = mesh -> getYScale_um();
+		originY = mesh -> getDomainOriginY();
+		domainSizeY = mesh -> getDomainSizeY();
+		pos[1]=unirandCCD(max(originY, (wc.y-0.5*deltaY)) , min((originY+domainSizeY), (wc.y + 0.5*deltaY)));
+	}
+	if(dim > 2)
+	{
+		deltaZ = mesh -> getZScale_um();
+		originZ = mesh -> getDomainOriginZ();
+		domainSizeZ = mesh -> getDomainSizeZ();
+		pos[2]=unirandCCD(max(originZ, (wc.z-0.5*deltaZ)) , min((originZ+domainSizeZ), (wc.z + 0.5*deltaZ)));
+	}
+
+	return 0;
+}
+
+
 #endif

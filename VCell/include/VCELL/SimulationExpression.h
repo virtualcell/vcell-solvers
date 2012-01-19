@@ -21,6 +21,8 @@ class RandomVariable;
 class RegionSizeVariable;
 class SymbolTable;
 class ScalarValueProxy;
+class VolumeParticleVariable;
+class MembraneParticleVariable;
 
 class SimulationExpression : public Simulation
 {
@@ -82,9 +84,10 @@ public:
 
 	// right now bSolveRegion is only applicable for volume variables
 	void addVariable(Variable *var, bool* bSolveRegions=0);
-
 	void addVolumeVariable(VolumeVariable *var, bool* bSolveRegions);
+	void addVolumeParticleVariable(VolumeParticleVariable *var);
 	void addMembraneVariable(MembraneVariable *var);
+	void addMembraneParticleVariable(MembraneParticleVariable *var);
 	void addVolumeRegionVariable(VolumeRegionVariable *var);
 	void addMembraneRegionVariable(MembraneRegionVariable *var);
 

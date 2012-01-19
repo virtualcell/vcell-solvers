@@ -27,6 +27,7 @@ set(SRC_FILES
 	src/Membrane.cpp
 	src/MembraneEqnBuilderDiffusion.cpp
 	src/MembraneEqnBuilderForward.cpp
+	src/MembraneParticleVariable.cpp
 	src/MembraneRegion.cpp
 	src/MembraneRegionEqnBuilder.cpp
 	src/MembraneRegionVarContextExpression.cpp
@@ -63,6 +64,7 @@ set(SRC_FILES
 	src/VarContext.cpp
 	src/Variable.cpp
 	src/VCellModel.cpp
+	src/VolumeParticleVariable.cpp
 	src/VolumeRegion.cpp
 	src/VolumeRegionEqnBuilder.cpp
 	src/VolumeRegionVarContextExpression.cpp

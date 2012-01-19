@@ -1107,11 +1107,11 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 			CHECKS(itct==1,"failed to read reaction surface");
 			CHECKS(sim->srfss,"no surfaces defined");
 			s=stringfind(sim->srfss->snames,sim->srfss->nsrf,nm);
-			CHECKS(s>=0,"surface name not recognized");
+			CHECKS(s>=0,"surface name:%s not recognized", nm);
 			srf=sim->srfss->srflist[s];
 			line2=strnword(line2,2);
 			CHECKS(line2,"missing reaction name"); }
-		itct=sscanf(line2,"%s",rname);
+		itct=sscanf(line2,"%s",rname); // reaction name for "reaction"/"reaction_cmpt"/"reaction_surface"
 		CHECKS(itct==1,"failed to read reaction name");
 		for(order=0;order<MAXORDER;order++)
 			if(sim->rxnss[order]) {
@@ -1168,20 +1168,41 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 		rxn=RxnAddReaction(sim,rname,order,rctident,rctstate,nprod,prdident,prdstate,cmpt,srf);
 		CHECKS(rxn,"out of memory trying to create reaction structure");
 		if(line2) {
+#ifdef VCELL_HYBRID 
+			stringstream ss(line2);
+			string expStr;
+			getline(ss,expStr);
+			rxn->rateExp = new Expression(expStr);}
+#else
 			CHECKS((itct=sscanf(line2,"%lg",&flt1))==1,"failed to read reaction rate");
 			er=RxnSetValue(sim,"rate",rxn,flt1);
 			CHECKS(er!=4,"reaction rate value must be non-negative");
 			line2=strnword(line2,2); }
-		CHECKS(!line2,"unexpected text following reaction"); }
+			CHECKS(!line2,"unexpected text following reaction");
+#endif
+	}
 
 	else if(!strcmp(word,"reaction_rate")) {				// reaction_rate
+#ifdef VCELL_HYBRID 
+		stringstream ss(line2);
+		ss >> rname;
+		string expStr;
+		getline(ss,expStr);
+		rxn->rateExp = new Expression(expStr);
+		r=readrxnname(sim,rname,&order,&rxn);
+		CHECKS(r>=0,"unrecognized reaction name");
+
+#else
 		itct=sscanf(line2,"%s %lg",rname,&flt1);
 		CHECKS(itct==2,"reaction_rate format: rname rate");
+
 		r=readrxnname(sim,rname,&order,&rxn);
 		CHECKS(r>=0,"unrecognized reaction name");
 		er=RxnSetValue(sim,"rate",rxn,flt1);
 		CHECKS(er!=4,"reaction rate value must be non-negative");
-		CHECKS(!strnword(line2,3),"unexpected text following reaction"); }
+		CHECKS(!strnword(line2,3),"unexpected text following reaction"); 
+#endif
+	}
 
 	else if(!strcmp(word,"confspread_radius")) {		// confspread_radius
 		itct=sscanf(line2,"%s %lg",rname,&flt1);
@@ -1819,15 +1840,26 @@ void endsimulate(simptr sim,int er) {
 	scmdexecute(sim->cmds,sim->time,sim->dt,-1,1);
 	if(!qflag) {
 		printf("\n");
+		std::ostringstream maxMol;
+		maxMol << sim->mols->maxdlimit;
+		//molecule exceed allowed limit for 0th order
+		string s0 ("Simulation terminated during order 0 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is ");
+		s0 = s0 + maxMol.str() + ".";
+		//molecule exceed allowed limit for 1th order
+		string s1 ("Simulation terminated during order 1 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is ");
+		s1 = s1 + maxMol.str() + ".";
+		//molecule exceed allowed limit for 2nd order
+		string s2 ("Simulation terminated during order 2 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is ");
+		s2 = s2 + maxMol.str() + ".";
 		if(er==1) printf("Simulation complete\n");
-		else if(er==2) printf("Simulation terminated during molecule assignment\n  Out of memory\n");
-		else if(er==3) printf("Simulation terminated during order 0 reaction\n  Not enough molecules allocated\n");
-		else if(er==4) printf("Simulation terminated during order 1 reaction\n  Not enough molecules allocated\n");
-		else if(er==5) printf("Simulation terminated during order 2 reaction\n  Not enough molecules allocated\n");
-		else if(er==6) printf("Simulation terminated during molecule sorting\n  Out of memory\n");
-		else if(er==7) printf("Simulation stopped by a runtime command\n");
-		else if(er==8) printf("Simulation terminated during simulation state updating\n  Out of memory\n");
-		else if(er==9) printf("Simulation terminated during diffusion\n  Out of memory\n");
+		else if(er==2) printfException("Simulation terminated during molecule assignment\n  Out of memory\n");
+		else if(er==3) printfException(s0.c_str());
+		else if(er==4) printfException(s1.c_str());
+		else if(er==5) printfException(s2.c_str());
+		else if(er==6) printfException("Simulation terminated during molecule sorting\n  Out of memory\n");
+		else if(er==7) printfException("Simulation stopped by a runtime command\n");
+		else if(er==8) printfException("Simulation terminated during simulation state updating\n  Out of memory\n");
+		else if(er==9) printfException("Simulation terminated during diffusion\n  Out of memory\n");
 		else printf("Simulation stopped by user\n");
 		printf("Current simulation time: %f\n",sim->time);
 

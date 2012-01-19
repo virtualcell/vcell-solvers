@@ -6,7 +6,9 @@
 #include <VCELL/SimTool.h>
 #include <VCELL/FieldData.h>
 #include <VCELL/VolumeVariable.h>
+#include <VCELL/VolumeParticleVariable.h>
 #include <VCELL/MembraneVariable.h>
+#include <VCELL/MembraneParticleVariable.h>
 #include <VCELL/VolumeRegionVariable.h>
 #include <VCELL/MembraneRegionVariable.h>
 #include <VCELL/Element.h>
@@ -171,6 +173,16 @@ void SimulationExpression::addVolumeVariable(VolumeVariable *var, bool* bSolveRe
 	if (var->isDiffusing()) {
 		numVolPde ++;
 	}
+}
+
+void SimulationExpression::addVolumeParticleVariable(VolumeParticleVariable *var)
+{
+	Simulation::addVariable(var);
+}
+
+void SimulationExpression::addMembraneParticleVariable(MembraneParticleVariable *var)
+{
+	Simulation::addVariable(var);
 }
 
 void SimulationExpression::addMembraneVariable(MembraneVariable *var)

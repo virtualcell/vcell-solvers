@@ -183,13 +183,29 @@ void DataProcessorRoiTimeSeries::onWrite(SimTool* simTool) {
 					double volume = mesh->getVolumeOfElement_cu(j);
 					totalVolume += volume;
 
-					double curr = var->getCurr()[j] * volume;
-					concentrations[0] += curr;
-					totalMolecules[0] += curr * 602.0;
+					double curr = var->getCurr()[j] * volume;// num of moles
+					concentrations[0] += curr; //num of moles
+					totalMolecules[0] += curr * 602.0; //num of molecules
 					if (sampleImage != 0) {
 						int index = (int)sampleImage->getData()[j];
-						concentrations[index + 1] += curr;	
-						totalMolecules[index + 1] += curr * 602.0;
+						concentrations[index + 1] += curr;//num of moles
+						totalMolecules[index + 1] += curr * 602.0; //num of molecules
+					}
+				}
+			}
+		} else if (var->getVarType() == VAR_VOLUME_PARTICLE) {
+			for (int j = 0; j < imgX * imgY * imgZ; j ++) {
+				if (var->getStructure() == 0 || var->getStructure() == volumeElements[j].getFeature()) {					
+					double volume = mesh->getVolumeOfElement_cu(j);
+					totalVolume += volume;
+
+					double curr = var->getCurr()[j];//num of molecules
+					concentrations[0] += curr/602;//num of moles
+					totalMolecules[0] += curr; //num of molecules
+					if (sampleImage != 0) {
+						int index = (int)sampleImage->getData()[j];
+						concentrations[index + 1] += curr/602; //num of moles	
+						totalMolecules[index + 1] += curr; //num of molecules
 					}
 				}
 			}
@@ -220,6 +236,18 @@ void DataProcessorRoiTimeSeries::onWrite(SimTool* simTool) {
 					double mols = var->getCurr()[j] * area;
 					concentrations[0] += mols;
 					totalMolecules[0] += mols;
+				}
+			}
+		} else if (var->getVarType() == VAR_MEMBRANE_PARTICLE) {
+			bVolume = false;
+			for (int j = 0; j < mesh->getNumMembraneElements(); j ++) {
+				if (var->getStructure() == 0 || var->getStructure() == membraneElements[j].getMembrane()) {
+					double area = membraneElements[j].area;
+					totalVolume += area;
+
+					double mols = var->getCurr()[j]; //num of molecules
+					concentrations[0] += mols/602; //num of moles
+					totalMolecules[0] += mols; //num of molecules
 				}
 			}
 		} else if (var->getVarType() == VAR_MEMBRANE_REGION) {
@@ -286,20 +314,20 @@ void DataProcessorRoiTimeSeries::onComplete(SimTool* simTool) {
 	
 	for (int i = 0; i < numVar; i ++) {
 		Variable* var = sim->getVariable(i);
-		if (var->getVarType() == VAR_VOLUME || var->getVarType() == VAR_VOLUME_REGION) {
+		if (var->getVarType() == VAR_VOLUME || var->getVarType() == VAR_VOLUME_REGION || var->getVarType() == VAR_VOLUME_PARTICLE) {
 			NcVar *data = outputFile.add_var((var->getName() + "_total_molecule").c_str(), ncDouble, tDim, volVarDim);
 			data->put(odeResultSet[i]->getRowData(), numT, numVolVarCols);
-		} else if (var->getVarType() == VAR_MEMBRANE || var->getVarType() == VAR_MEMBRANE_REGION) {
+		} else if (var->getVarType() == VAR_MEMBRANE || var->getVarType() == VAR_MEMBRANE_REGION || var->getVarType() == VAR_MEMBRANE_PARTICLE) {
 			NcVar *data = outputFile.add_var((var->getName() + "_total_molecule").c_str(), ncDouble, tDim, memVarDim);
 			data->put(odeResultSet[i]->getRowData(), numT, numMemVarCols);
 		}
 	}
 	for (int i = 0; i < numVar; i ++) {
 		Variable* var = sim->getVariable(i);
-		if (var->getVarType() == VAR_VOLUME || var->getVarType() == VAR_VOLUME_REGION) {
+		if (var->getVarType() == VAR_VOLUME || var->getVarType() == VAR_VOLUME_REGION || var->getVarType() == VAR_VOLUME_PARTICLE) {
 			NcVar *data = outputFile.add_var((var->getName() + "_average_uM").c_str(), ncDouble, tDim, volVarDim);
 			data->put(odeResultSet[numVar + i]->getRowData(), numT, numVolVarCols);
-		} else if (var->getVarType() == VAR_MEMBRANE || var->getVarType() == VAR_MEMBRANE_REGION) {
+		} else if (var->getVarType() == VAR_MEMBRANE || var->getVarType() == VAR_MEMBRANE_REGION || var->getVarType() == VAR_MEMBRANE_PARTICLE) {
 			NcVar *data = outputFile.add_var((var->getName() + "_average_molecules_per_um2").c_str(), ncDouble, tDim, memVarDim);
 			data->put(odeResultSet[numVar + i]->getRowData(), numT, numMemVarCols);
 		}
