@@ -23,8 +23,8 @@ FastSystemExpression::FastSystemExpression(int dimension, int numDepend, Simulat
 {	
 	simulation = sim;
 
-	if (simulation->getNumSerialScanParameters() > 0) {
-		throw "Fast System doesn't support serial parameter scans yet";
+	if (simulation->getNumParameters() > 0) {
+		throw "Fast System doesn't support parameter scans yet";
 	}
 
 	pseudoConstants = new double[numDependents];

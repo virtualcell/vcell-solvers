@@ -681,7 +681,7 @@ void SimTool::start() {
 				bfn.replace(p, strlen(oldIndex), newIndex);
 				setBaseFilename((char*)bfn.c_str());
 			}
-			sim->setSerialScanParameterValues(serialScanParameterValues[scan]);
+			sim->setParameterValues(serialScanParameterValues[scan]);
 			start1();
 		}
 	}

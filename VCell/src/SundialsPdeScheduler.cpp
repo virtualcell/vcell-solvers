@@ -445,9 +445,9 @@ void SundialsPdeScheduler::initSundialsSolver() {
 		regionSizeVariableSymbolOffset = memRegionSymbolOffset + numMemRegionVar;
 		fieldDataSymbolOffset = regionSizeVariableSymbolOffset + simulation->getNumRegionSizeVariables();
 		randomVariableSymbolOffset = fieldDataSymbolOffset + simulation->getNumFields();
-		serialScanParameterSymbolOffset = randomVariableSymbolOffset + simulation->getNumRandomVariables();
+		parameterSymbolOffset = randomVariableSymbolOffset + simulation->getNumRandomVariables();
 
-		int valueArraySize = serialScanParameterSymbolOffset + simulation->getNumSerialScanParameters();
+		int valueArraySize = parameterSymbolOffset + simulation->getNumParameters();
 
 		statePointValues = new double[valueArraySize];
 		memset(statePointValues, 0, valueArraySize * sizeof(double));
@@ -575,10 +575,10 @@ void SundialsPdeScheduler::initSundialsSolver() {
 	cout << "----------------------------------" << endl;
 
 	// only populate once serial scan parameter values
-	simulation->populateSerialScanParameterValues(statePointValues + serialScanParameterSymbolOffset);
+	simulation->populateParameterValues(statePointValues + parameterSymbolOffset);
 	if (bHasVariableDiffusionAdvection) {
 		for (int n = 0; n < 3; n ++) {
-			simulation->populateSerialScanParameterValues(neighborStatePointValues[n] + serialScanParameterSymbolOffset);
+			simulation->populateParameterValues(neighborStatePointValues[n] + parameterSymbolOffset);
 		}			
 	}
 

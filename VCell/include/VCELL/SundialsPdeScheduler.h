@@ -160,7 +160,7 @@ private:
 	int regionSizeVariableSymbolOffset;
 	int fieldDataSymbolOffset;
 	int randomVariableSymbolOffset;
-	int serialScanParameterSymbolOffset;
+	int parameterSymbolOffset;
 
 	CartesianMesh* mesh;
 	int dimension;

@@ -1333,7 +1333,7 @@ void FVSolver::loadSerialScanParameters(istream& ifsInput, int numSerialScanPara
 		}
 		
 		nread ++;
-		simulation->addSerialScanParameter(nextToken);
+		simulation->addParameter(nextToken);
 	}
 	assert(nread == numSerialScanParameters);
 }
@@ -1351,7 +1351,7 @@ void FVSolver::loadSerialScanParameterValues(istream& ifsInput, int numSerialSca
 	}
 	string nextToken, line;
 
-	int numSerialScanParameters = simulation->getNumSerialScanParameters();
+	int numSerialScanParameters = simulation->getNumParameters();
 	double** serialScanParameterValues = new double*[numSerialScanParameterValues];
 
 	for (int i = 0; i < numSerialScanParameterValues; i ++) {
@@ -1377,8 +1377,6 @@ void FVSolver::loadSerialScanParameterValues(istream& ifsInput, int numSerialSca
 		if (nextToken == "SERIAL_SCAN_PARAMETER_VALUE_END") {
 			break;
 		}
-		
-		simulation->addParameter(nextToken);
 	}
 	simTool->setSerialParameterScans(numSerialScanParameterValues, serialScanParameterValues);
 }
