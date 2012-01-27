@@ -437,7 +437,7 @@ void SundialsPdeScheduler::initSundialsSolver() {
 		numSymbolsPerVolVar = SimTool::getInstance()->getModel()->getNumFeatures() + 1;
 
 		// t, x, y, z, (U, U_Feature1_membrane, U_Feature2_membrane, ...), (M), 
-		// (VR, VR_Feature1_membrane, ...), (MR), (RegionSize), (FieldData), (RandomVariable), (SerialScanParameter)
+		// (VR, VR_Feature1_membrane, ...), (MR), (RegionSize), (FieldData), (RandomVariable), (Parameter)
 		volSymbolOffset = 4;
 		memSymbolOffset = volSymbolOffset + numVolVar * numSymbolsPerVolVar;
 		volRegionSymbolOffset = memSymbolOffset + numMemVar;
