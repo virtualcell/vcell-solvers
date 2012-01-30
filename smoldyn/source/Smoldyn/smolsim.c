@@ -1107,7 +1107,9 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 			CHECKS(itct==1,"failed to read reaction surface");
 			CHECKS(sim->srfss,"no surfaces defined");
 			s=stringfind(sim->srfss->snames,sim->srfss->nsrf,nm);
-			CHECKS(s>=0,"surface name:%s not recognized", nm);
+			string nmStr = nm;
+			string msg = "surface name: " + nmStr + " not recognized";
+			CHECKS(s>=0, msg.c_str());
 			srf=sim->srfss->srflist[s];
 			line2=strnword(line2,2);
 			CHECKS(line2,"missing reaction name"); }

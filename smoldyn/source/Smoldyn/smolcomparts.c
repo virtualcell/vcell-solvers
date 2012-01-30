@@ -702,7 +702,9 @@ compartptr compartreadstring(simptr sim,compartptr cmpt,char *word,char *line2,c
 		itct=sscanf(line2,"%s",nm);
 		CHECKS(itct==1,"error reading surface name");
 		s=stringfind(sim->srfss->snames,sim->srfss->nsrf,nm);
-		CHECKS(s>=0,"surface name: %s not recognized", nm);
+		string nmStr = nm;
+		string msg = "surface name: " + nmStr + " not recognized";
+		CHECKS(s>=0, msg.c_str());
 		er=compartaddsurf(cmpt,sim->srfss->srflist[s]);
 		CHECKS(er!=1,"out of memory adding surface to compartment");
 		CHECKS(er!=2,"cannot add surface to compartment more than once");

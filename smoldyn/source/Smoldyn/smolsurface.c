@@ -2663,9 +2663,9 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 					chptr=strchr(nm,':')+1;
 					*(chptr-1)='\0';
 					s2=stringfind(srfss->snames,srfss->nsrf,nm);
-					string surfname(nm);
-					string str = "surface name:" + surfname + " is not recognized";
-					CHECKS(s2>=0,str.c_str());
+					string nmStr = nm;
+					string msg = "surface name:" + nmStr + " is not recognized";
+					CHECKS(s2>=0, msg.c_str());
 					srf2=srfss->srflist[s2]; }
 				else {
 					chptr=nm;

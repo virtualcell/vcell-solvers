@@ -752,7 +752,9 @@ enum CMDcode cmdmolcountonsurf(simptr sim,cmdptr cmd,char *line2) {
 	itct=sscanf(line2,"%s",nm);
 	SCMDCHECK(itct==1,"cannot read argument");
 	s=stringfind(srfss->snames,srfss->nsrf,nm);
-	SCMDCHECK(s>=0,"surface name:%s not recognized", nm);
+	string nmStr = nm;
+	string msg = "surface name: " + nmStr + " not recognized";
+	SCMDCHECK(s>=0,msg.c_str());
 	srf=srfss->srflist[s];
 	line2=strnword(line2,2);
 	fptr=scmdgetfptr(sim->cmds,line2);
