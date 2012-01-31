@@ -8,6 +8,7 @@ set(SRC_FILES
 #	src/ContourSubdomain.cpp
 #	src/ContourVarContext.cpp
 #	src/ContourVariable.cpp
+	src/DataGenerator.cpp
 	src/DataProcessorRoiTimeSeries.cpp
 	src/DataProcessorVFrap.cpp
 	src/DataSet.cpp
@@ -39,6 +40,8 @@ set(SRC_FILES
 #	src/ParticleContext.cpp
 #	src/PDEScheduler.cpp
 	src/PDESolver.cpp
+	src/PostProcessingBlock.cpp
+	src/ProjectionDataGenerator.cpp
 	src/RandomVariable.cpp
 	src/Region.cpp
 	src/RegionSizeVariable.cpp
