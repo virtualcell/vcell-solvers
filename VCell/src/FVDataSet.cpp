@@ -282,7 +282,9 @@ void FVDataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 
 	// Post Processing Block
 	PostProcessingBlock* postProcessingBlock = sim->getPostProcessingBlock();
-	numBlocks += postProcessingBlock->getNumDataGenerators();
+	if (postProcessingBlock != NULL) {
+		numBlocks += postProcessingBlock->getNumDataGenerators();
+	}
 
 	// region size variable
 	int numRegionSizeVars = sim->getNumRegionSizeVariables();
@@ -348,20 +350,22 @@ void FVDataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 	}
 
 	// Post Processing Block
-	const vector<DataGenerator*>& dataGeneratorList = postProcessingBlock->getDataGeneratorList();
-	for (vector<DataGenerator*>::const_iterator iter = dataGeneratorList.begin(); iter < dataGeneratorList.end(); ++iter) {
-		DataGenerator* dataGenerator = *iter;
-		memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-		strcpy(dataBlock[blockIndex].varName, dataGenerator->getQualifiedName().c_str());
+	if (postProcessingBlock != NULL) {
+		const vector<DataGenerator*>& dataGeneratorList = postProcessingBlock->getDataGeneratorList();
+		for (vector<DataGenerator*>::const_iterator iter = dataGeneratorList.begin(); iter < dataGeneratorList.end(); ++iter) {
+			DataGenerator* dataGenerator = *iter;
+			memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
+			strcpy(dataBlock[blockIndex].varName, dataGenerator->getQualifiedName().c_str());
 	
-		dataBlock[blockIndex].varType = dataGenerator->getVarType();
-		dataBlock[blockIndex].size = dataGenerator->getDataSize();
-		dataBlock[blockIndex].dataOffset = dataOffset;
-		DataSet::writeDataBlock(fp,dataBlock + blockIndex);
-		dataOffset += dataBlock[blockIndex].size*sizeof(double);
-		blockIndex ++;
+			dataBlock[blockIndex].varType = dataGenerator->getVarType();
+			dataBlock[blockIndex].size = dataGenerator->getDataSize();
+			dataBlock[blockIndex].dataOffset = dataOffset;
+			DataSet::writeDataBlock(fp,dataBlock + blockIndex);
+			dataOffset += dataBlock[blockIndex].size*sizeof(double);
+			blockIndex ++;
+		}
 	}
-	
+
 	// region size variable
 	for (int i = 0; i < numRegionSizeVars; i ++) {
 		RegionSizeVariable* rsv = sim->getRegionSizeVariable(i);			
@@ -443,24 +447,27 @@ void FVDataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 	}
 
 	// Post Processing Block
-	for (vector<DataGenerator*>::const_iterator iter = dataGeneratorList.begin(); iter < dataGeneratorList.end(); ++iter) {
-		DataGenerator* dataGenerator = *iter;
-		ftell_pos = ftell(fp);
-		if (ftell_pos != dataBlock[blockIndex].dataOffset){
-			char errmsg[512];
-			sprintf(errmsg, "DataSet::write() - offset for data is "
-				"incorrect (block %d, var=%s), ftell() says %ld, should be %d",
-				blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
-			throw errmsg;
-		}
+	if (postProcessingBlock != NULL) {
+		const vector<DataGenerator*>& dataGeneratorList = postProcessingBlock->getDataGeneratorList();
+		for (vector<DataGenerator*>::const_iterator iter = dataGeneratorList.begin(); iter < dataGeneratorList.end(); ++iter) {
+			DataGenerator* dataGenerator = *iter;
+			ftell_pos = ftell(fp);
+			if (ftell_pos != dataBlock[blockIndex].dataOffset){
+				char errmsg[512];
+				sprintf(errmsg, "DataSet::write() - offset for data is "
+					"incorrect (block %d, var=%s), ftell() says %ld, should be %d",
+					blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
+				throw errmsg;
+			}
 
-		if (dataGenerator->getDataSize() != dataBlock[blockIndex].size) {
-			throw "DataSet::write() : inconsistent number of data blocks for variable";
+			if (dataGenerator->getDataSize() != dataBlock[blockIndex].size) {
+				throw "DataSet::write() : inconsistent number of data blocks for variable";
+			}
+			DataSet::writeDoubles(fp, dataGenerator->getData(), dataGenerator->getDataSize());
+			blockIndex ++;
 		}
-		DataSet::writeDoubles(fp, dataGenerator->getData(), dataGenerator->getDataSize());
-		blockIndex ++;
 	}
-	
+
 	//
 	// write data for region size variables
 	//	
