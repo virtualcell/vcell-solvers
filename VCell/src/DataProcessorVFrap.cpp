@@ -10,6 +10,7 @@
 #include <VCELL/VolumeVariable.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/FVDataSet.h>
+#include <VCELL/FVUtils.h>
 #include <OdeResultSet.h>
 #include <netcdfcpp.h>
 
@@ -90,21 +91,6 @@ void DataProcessorVFrap::onStart(SimTool* simTool) {
 		for (int i = 0; i < 2 * numVar; i ++) {
 			odeResultSet[i]->clearData();
 		}
-	}
-}
-
-static void trimString(string& str)
-{
-	string::size_type pos = str.find_last_not_of(" \r\n");
-	if(pos != string::npos) {
-		str.erase(pos + 1);
-		pos = str.find_first_not_of(" \r\n");
-		if(pos != string::npos) {
-			str.erase(0, pos);
-		}
-	}
-	else {
-		str.erase(str.begin(), str.end());
 	}
 }
 

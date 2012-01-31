@@ -29,6 +29,7 @@ bool isNAN(double number);
 bool isInfinity(double number);
 void validateNumber(string& variableName, int index, char* coeffName, double coeffValue);
 void sortColumns(int numCols, int* columnIndices, double* columnValues);
+void trimString(string& str);
 
 #ifndef SUNDIALS_PDE_SOLVER
 #define SUNDIALS_PDE_SOLVER "SUNDIALS_PDE_SOLVER"

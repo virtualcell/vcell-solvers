@@ -49,7 +49,7 @@ void Scheduler::initValues()
 			membrane->initMembraneValues(&pMembraneElement[i]);
 		} else {
 			char errmsg[512];
-			sprintf(errmsg, "feature is null for membrane element %d", i);
+			sprintf(errmsg, "membrane is null for membrane element %d", i);
 			throw errmsg;
 		}
 	}
@@ -75,7 +75,7 @@ void Scheduler::initValues()
 			membrane->initMembraneRegionValues(j);
 		} else {
 			char errmsg[512];
-			sprintf(errmsg, "feature is null for membrane region element %d", j);
+			sprintf(errmsg, "membrane is null for membrane region element %d", j);
 			throw errmsg;
 		} 
 	}

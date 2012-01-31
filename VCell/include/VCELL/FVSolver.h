@@ -72,6 +72,8 @@ private:
 	CartesianMesh *mesh;
 	
 	int loadSolveRegions(istream& instream, int*& solveRegions);
+
+	void loadPostProcessingBlock(istream& ifsInput);
 };
 
 #endif

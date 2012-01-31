@@ -22,6 +22,7 @@
 #include <SimpleSymbolTable.h>
 #include <ScalarValueProxy.h>
 #include <VCELL/FVDataSet.h>
+#include <VCELL/PostProcessingBlock.h>
 
 #include <iostream>
 #include <sstream>
@@ -88,8 +89,7 @@ private:
 };
 
 SimulationExpression::SimulationExpression(Mesh *mesh) : Simulation(mesh) {
-	symbolTable = NULL;	
-	//currSymbolTable = NULL;
+	symbolTable = NULL;
 
 	indices = new int[NUM_VAR_INDEX];
 	for (int i = 0; i < NUM_VAR_INDEX; i ++) {
@@ -116,6 +116,8 @@ SimulationExpression::SimulationExpression(Mesh *mesh) : Simulation(mesh) {
 	memVarList = 0;
 	volRegionVarList = 0;
 	memRegionVarList = 0;
+
+	postProcessingBlock = NULL;
 }
 
 SimulationExpression::~SimulationExpression() 
@@ -141,6 +143,8 @@ SimulationExpression::~SimulationExpression()
 		delete regionSizeVarList[i];
 	}
 	delete[] regionSizeVarList;
+
+	delete postProcessingBlock;
 }
 
 void SimulationExpression::addVariable(Variable *var, bool* bSolveRegions)
@@ -218,6 +222,9 @@ void SimulationExpression::advanceTimeOff() {
 
 void SimulationExpression::update() {
 	Simulation::update();
+	if (postProcessingBlock != NULL) {
+		postProcessingBlock->computePPData();
+	}
 	valueProxyTime->setValue(getTime_sec());
 }
 
@@ -515,6 +522,16 @@ void SimulationExpression::resolveReferences() {
 		createSymbolTable();
 	}
 	Simulation::resolveReferences();
+	if (postProcessingBlock != NULL) {
+		postProcessingBlock->resolveReferences();
+	}
+}
+
+void SimulationExpression::initSimulation() {
+	Simulation::initSimulation();
+	if (postProcessingBlock != NULL) {
+		postProcessingBlock->computePPData();
+	}
 }
 
 void SimulationExpression::setParameterValues(double* paramValues) {
@@ -640,4 +657,10 @@ bool SimulationExpression::isVariable(string& symbol) {
 	// field data, random variables, 
 	// region size variables are only space dependent
 	return false;
+}
+
+void SimulationExpression::createPostProcessingBlock() {
+	if (postProcessingBlock == NULL) {
+		postProcessingBlock = new PostProcessingBlock(this);
+	}
 }

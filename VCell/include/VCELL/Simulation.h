@@ -29,7 +29,7 @@ public:
 	~Simulation();
 
 	virtual void resolveReferences();
-	void initSimulation();   // initializes to t=0
+	virtual void initSimulation();   // initializes to t=0
 	void iterate();          // computes 1 time step
 	virtual void update();           // copies new to old values 
 
@@ -51,7 +51,6 @@ public:
 
 	virtual void writeData(char *filename, bool bCompress)=0;
 	virtual void readData(char *filename);
-	//void    synchronize();
 
 	Variable* getVariable(int index);
 

@@ -274,6 +274,11 @@ static bool zipUnzipWithRetry(bool bZip, char* zipFileName, char* simFileName, c
 
 void SimTool::loadFinal()
 {
+	if (!bLoadFinal) {
+		clearLog();
+		return;
+	}
+	
 	if (dataProcessor != 0) {
 		if (!dataProcessor->checkComplete(this)) {
 			clearLog();
@@ -286,10 +291,6 @@ void SimTool::loadFinal()
 		return;
 	}
 #endif
-	if (simulation == NULL){
-		printf("SimTool.loadFinal(), sim=NULL just returning\n");
-		return;
-	}
 
 	//
 	// read '.log' file to determine simulation time and iteration
@@ -477,95 +478,100 @@ FILE* SimTool::lockForReadWrite() {
 
 void SimTool::updateLog(double progress, double time, int iteration)
 {
-	FILE *logFP;
-	char simFileName[128];
-	char logFileName[128];
-	char zipFileName[128];
-	char particleFileName[128];
+	if (bStoreEnable) {
+		FILE *logFP;
+		char simFileName[128];
+		char logFileName[128];
+		char zipFileName[128];
+		char particleFileName[128];
 
-	bool bSuccess = true;
-	char errmsg[512];
-	FILE* tidFP = lockForReadWrite();
+		bool bSuccess = true;
+		char errmsg[512];
+		FILE* tidFP = lockForReadWrite();
 
-	struct stat buf;
-	static char* tempDir = "/tmp/";
-	static bool bUseTempDir = false;
-	static bool bFirstTimeUpdateLog = true;
+		struct stat buf;
+		static char* tempDir = "/tmp/";
+		static bool bUseTempDir = false;
+		static bool bFirstTimeUpdateLog = true;
 
-	if (bFirstTimeUpdateLog) {
-		if (stat(tempDir, &buf) == 0) {
-			// use local temp directory for .sim files
-			// to avoid network traffic
-			if (buf.st_mode & S_IFDIR) {
-				bUseTempDir = true;
-			}
-		}
-		bFirstTimeUpdateLog = false;
-	}
-
-	// write sim files to local
-	if (bSimZip && bUseTempDir) {
-		sprintf(simFileName,"%s%s%.4d%s", tempDir, baseSimName, simFileCount, SIM_FILE_EXT);
-	} else {
-		sprintf(simFileName,"%s%.4d%s",baseFileName, simFileCount, SIM_FILE_EXT);
-	}
-	sprintf(particleFileName,"%s%s",simFileName, PARTICLE_FILE_EXT);
-
-	simulation->writeData(simFileName,bSimFileCompress);
-
-	sprintf(logFileName,"%s%s",baseFileName, LOG_FILE_EXT);
-	
-	logFP = openFileWithRetry(logFileName, "a");
-
-	if (logFP == 0) {
-		sprintf(errmsg, "SimTool::updateLog() - error opening log file <%s>", logFileName);
-		bSuccess = false;
-	} else {
-	   // write zip file first, then write log file, in case that
-	   // zipping fails
-		if (bSimZip) {
-			sprintf(zipFileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_FILE_EXT);
-			int retcode = 0;
-			if (stat(particleFileName, &buf) == 0) {	// has particle
-				retcode = zip32(2, zipFileName, simFileName, particleFileName);
-				remove(particleFileName);
-			} else {
-				bSuccess = zipUnzipWithRetry(true, zipFileName, simFileName, errmsg);
-			}
-			remove(simFileName);
-
-			// write the log file
-			if (bSuccess) {
-				char zipFileNameWithoutPath[512];
-				sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
-				char simFileNameWithoutPath[512];
-				sprintf(simFileNameWithoutPath,"%s%.4d%s", baseSimName, simFileCount, SIM_FILE_EXT);
-				fprintf(logFP,"%4d %s %s %.15lg\n", iteration, simFileNameWithoutPath, zipFileNameWithoutPath, time);
-
-				if (stat(zipFileName, &buf) == 0) { // if exists
-					if (buf.st_size > ZIP_FILE_LIMIT) {
-						zipFileCount ++;
-					}
+		if (bFirstTimeUpdateLog) {
+			if (stat(tempDir, &buf) == 0) {
+				// use local temp directory for .sim files
+				// to avoid network traffic
+				if (buf.st_mode & S_IFDIR) {
+					bUseTempDir = true;
 				}
 			}
-		} else { // old format, no zip
-			char simFileNameWithoutPath[512];
-			sprintf(simFileNameWithoutPath,"%s%.4d%s",baseSimName, simFileCount, SIM_FILE_EXT);
-			fprintf(logFP,"%4d %s %.15lg\n", iteration, simFileNameWithoutPath, time);
+			bFirstTimeUpdateLog = false;
+		}
+
+		// write sim files to local
+		if (bSimZip && bUseTempDir) {
+			sprintf(simFileName,"%s%s%.4d%s", tempDir, baseSimName, simFileCount, SIM_FILE_EXT);
+		} else {
+			sprintf(simFileName,"%s%.4d%s",baseFileName, simFileCount, SIM_FILE_EXT);
+		}
+		sprintf(particleFileName,"%s%s",simFileName, PARTICLE_FILE_EXT);
+
+		simulation->writeData(simFileName,bSimFileCompress);
+
+		sprintf(logFileName,"%s%s",baseFileName, LOG_FILE_EXT);
+	
+		logFP = openFileWithRetry(logFileName, "a");
+
+		if (logFP == 0) {
+			sprintf(errmsg, "SimTool::updateLog() - error opening log file <%s>", logFileName);
+			bSuccess = false;
+		} else {
+		   // write zip file first, then write log file, in case that
+		   // zipping fails
+			if (bSimZip) {
+				sprintf(zipFileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_FILE_EXT);
+				int retcode = 0;
+				if (stat(particleFileName, &buf) == 0) {	// has particle
+					retcode = zip32(2, zipFileName, simFileName, particleFileName);
+					remove(particleFileName);
+				} else {
+					bSuccess = zipUnzipWithRetry(true, zipFileName, simFileName, errmsg);
+				}
+				remove(simFileName);
+
+				// write the log file
+				if (bSuccess) {
+					char zipFileNameWithoutPath[512];
+					sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
+					char simFileNameWithoutPath[512];
+					sprintf(simFileNameWithoutPath,"%s%.4d%s", baseSimName, simFileCount, SIM_FILE_EXT);
+					fprintf(logFP,"%4d %s %s %.15lg\n", iteration, simFileNameWithoutPath, zipFileNameWithoutPath, time);
+
+					if (stat(zipFileName, &buf) == 0) { // if exists
+						if (buf.st_size > ZIP_FILE_LIMIT) {
+							zipFileCount ++;
+						}
+					}
+				}
+			} else { // old format, no zip
+				char simFileNameWithoutPath[512];
+				sprintf(simFileNameWithoutPath,"%s%.4d%s",baseSimName, simFileCount, SIM_FILE_EXT);
+				fprintf(logFP,"%4d %s %.15lg\n", iteration, simFileNameWithoutPath, time);
+			}
+		}
+		// close log file
+		fclose(logFP);
+		// close tid file
+		if (tidFP != 0) {
+			fclose(tidFP);
+		}
+		if (bSuccess) {
+			simFileCount++;
+		} else {
+			throw errmsg;
 		}
 	}
-	// close log file
-	fclose(logFP);
-	// close tid file
-	if (tidFP != 0) {
-		fclose(tidFP);
+	if (dataProcessor != 0) {
+		dataProcessor->onWrite(this);
 	}
-	if (bSuccess) {
-		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
-		simFileCount++;
-	} else {
-		throw errmsg;
-	}
+	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
 }
 
 int SimTool::getZipCount(char* zipFileName) {
@@ -698,6 +704,7 @@ void SimTool::setSmoldynInputFile(string& inputfile) {
 
 void SimTool::start1() {
 	simulation->initSimulation();
+
 #ifdef VCELL_HYBRID	
 	if (smoldynInputFile != "") {
 		smoldynSim = smoldynInit(this, smoldynInputFile);
@@ -709,16 +716,9 @@ void SimTool::start1() {
 		}
 	}
 #endif
-	if (bLoadFinal) {
-		loadFinal();   // initializes to the latest file if it exists
-	} else {
-		clearLog();
-	}
 
-	if (dataProcessor != 0) {
-		dataProcessor->onStart(this);
-	}
-
+	loadFinal();   // initializes to the latest file if it exists
+	
 	if (!bStoreEnable && dataProcessor != 0) {
 		if (dataProcessor->checkComplete(this)) {
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1, simEndTime));
@@ -730,12 +730,12 @@ void SimTool::start1() {
 		return;
 	}
 
-	if (simulation == NULL) {
-		throw "NULL simulation";
-	}
-
 	if (bStoreEnable && (baseFileName == NULL || strlen(baseFileName) == 0)) {
 		throw "Invalid base file name for dataset";
+	}
+
+	if (dataProcessor != 0) {
+		dataProcessor->onStart(this);
 	}
 
 	char message[256];
@@ -748,12 +748,10 @@ void SimTool::start1() {
     double percentile = simStartTime/simEndTime;
     double increment = 0.01;
 	double lastSentPercentile = percentile;
-	//
-    // store initial log if enabled
-    //
+
 	if (simulation->getCurrIteration()==0) {
-		// simulation starts from scratch
-		ASSERTION(startTime == 0.0);
+		// simulation starts from scratch, needs to 
+		// write .mesh and .meshmetrics file
 		if (bStoreEnable){
 			FILE *fp = NULL;
 			char filename[128];
@@ -774,19 +772,12 @@ void SimTool::start1() {
 			}
 			simulation->getMesh()->writeMeshMetrics(fp);
 			fclose(fp);
-
-			updateLog(0.0, 0.0, 0);
-		} else {
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, 0, 0));
 		}
-		if (dataProcessor != 0) {
-			dataProcessor->onWrite(this);
-		}
+		updateLog(0.0, 0.0, 0);
 	} else {
 		// simulation continues from existing results, send data message
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simStartTime));
 	}
-	
 
     //
     // iterate up to but not including end time
@@ -805,12 +796,7 @@ void SimTool::start1() {
 			if (simulation->getCurrIteration() / keepEvery > keepAtMost){ // reached keep at most
 				break;
 			}
-		} 
-		//else {
-		//	if (simulation->getTime_sec() + simulation->getDT_sec() > simEndTime + epsilon) { // reached the end time
-		//		break;
-		//	}
-		//}
+		}
 
 		if (checkStopRequested()) {
 			return;
@@ -822,19 +808,15 @@ void SimTool::start1() {
 			smoldynOneStep(smoldynSim);
 		}
 #endif
-		simulation->update();
 
 		if (checkStopRequested()) {
 			return;
 		}
 
+		simulation->update();
+
 		if (simulation->getCurrIteration() % keepEvery == 0 || fabs(simEndTime - simulation->getTime_sec()) < epsilon) {
-			if (bStoreEnable){
-				updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
-            }
-			if (dataProcessor != 0) {
-				dataProcessor->onWrite(this);
-			}
+			updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
         }
 		percentile = (simulation->getTime_sec() - simStartTime)/(simEndTime - simStartTime);
 		if (percentile - lastSentPercentile >= increment) {
@@ -853,12 +835,7 @@ void SimTool::start1() {
 			if (uniform) {
 				cout << endl << "!!!Spatially Uniform reached at " << simulation->getTime_sec() << endl;
 				if (simulation->getCurrIteration() % keepEvery != 0) {
-					if (bStoreEnable) {
-						updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
-					}
-					if (dataProcessor != 0) {
-						dataProcessor->onWrite(this);
-					}
+					updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
 				}
 				break;
 			}

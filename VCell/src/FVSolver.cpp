@@ -47,6 +47,8 @@ using VCell::Expression;
 #include <VCELL/FVUtils.h>
 #include <VCELL/RandomVariable.h>
 #include <VCELL/SundialsSolverOptions.h>
+#include <VCELL/PostProcessingBlock.h>
+#include <VCELL/ProjectionDataGenerator.h>
 
 FieldData *getPSFFieldData() {
 	return ((SimulationExpression*)SimTool::getInstance()->getSimulation())->getPSFFieldData();
@@ -206,21 +208,6 @@ void FVSolver::loadModel(istream& ifsInput) {
 					break;
 			}
 		}
-	}
-}
-
-static void trimString(string& str)
-{
-	string::size_type pos = str.find_last_not_of(" \r\n");
-	if(pos != string::npos) {
-		str.erase(pos + 1);
-		pos = str.find_first_not_of(" \r\n");
-		if(pos != string::npos) {
-			str.erase(0, pos);
-		}
-	}
-	else {
-		str.erase(str.begin(), str.end());
 	}
 }
 
@@ -1500,6 +1487,8 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 			string dataProcessorName;
 			lineInput >> dataProcessorName;
 			loadDataProcessor(ifsInput, dataProcessorName);
+		} else if (nextToken == "POST_PROCESSING_BLOCK_BEGIN") {
+			loadPostProcessingBlock(ifsInput);
 		} else if (nextToken == "MODEL_BEGIN") {
 			loadModel(ifsInput);
 			if (model == NULL) {
@@ -1665,4 +1654,49 @@ double FVSolver::getCurrentTime(){
 
 void FVSolver::setEndTime(double endTime){
 	simTool->setEndTimeSec(endTime);
+}
+
+/**
+# Post Processing Block
+POST_PROCESSING_BLOCK_BEGIN
+PROJECTION_DATA_GENERATOR postDex cell x sum (5.0 * Dex_cell);
+POST_PROCESSING_BLOCK_END
+*/
+void FVSolver::loadPostProcessingBlock(istream& ifsInput){
+	if (simulation == 0) {
+		throw "Simulation has to be initialized before loading field data";
+	}
+
+	// create post processing block;
+	simulation->createPostProcessingBlock();
+	PostProcessingBlock* postProcessingBlock = simulation->getPostProcessingBlock();
+
+	string nextToken, line;
+
+	while (!ifsInput.eof()) {
+		getline(ifsInput, line);
+		istringstream lineInput(line);
+
+		nextToken = "";
+		lineInput >> nextToken;
+		if (nextToken.size() == 0 || nextToken[0] == '#') {
+			continue;
+		}
+		if (nextToken == "POST_PROCESSING_BLOCK_END") {
+			break;
+		}
+
+		if (nextToken == "PROJECTION_DATA_GENERATOR") {
+			string name, domain_name, op, axis;
+			lineInput >> name >> domain_name >> axis >> op; 
+			Feature* feature = model->getFeatureFromName(domain_name);
+			Expression* function = readExpression(lineInput, name);
+			ProjectionDataGenerator* dataGenerator = new ProjectionDataGenerator(name, feature, axis, op, function);
+			postProcessingBlock->addDataGenerator(dataGenerator);
+		} else {
+			stringstream ss;
+			ss << "loadPostProcessingBlock(), encountered unknown token " << nextToken << endl;
+			throw ss.str();
+		}
+	}
 }

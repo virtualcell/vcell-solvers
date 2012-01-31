@@ -23,6 +23,7 @@ class SymbolTable;
 class ScalarValueProxy;
 class VolumeParticleVariable;
 class MembraneParticleVariable;
+class PostProcessingBlock;
 
 class SimulationExpression : public Simulation
 {
@@ -31,6 +32,7 @@ public:
 	~SimulationExpression();
 
 	void resolveReferences(); // create symbol table
+	void initSimulation();   // initializes to t=0
 	void update();           // copies new to old values 
 	void advanceTimeOn();
 	void advanceTimeOff();
@@ -128,6 +130,10 @@ public:
 	}
 	void populateRegionSizeVariableValues(double* darray, bool bVolumeRegion, int regionIndex);
 
+	void createPostProcessingBlock();
+	PostProcessingBlock* getPostProcessingBlock() {
+		return postProcessingBlock;
+	}
 private:
 	SymbolTable* symbolTable;
 
@@ -167,6 +173,8 @@ private:
 	int psfFieldDataIndex;
 
 	void reinitConstantValues();
+
+	PostProcessingBlock* postProcessingBlock;
 };
 
 #endif
