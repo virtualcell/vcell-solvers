@@ -49,6 +49,7 @@ using VCell::Expression;
 #include <VCELL/SundialsSolverOptions.h>
 #include <VCELL/PostProcessingBlock.h>
 #include <VCELL/ProjectionDataGenerator.h>
+#include <VCELL/GaussianConvolutionDataGenerator.h>
 
 FieldData *getPSFFieldData() {
 	return ((SimulationExpression*)SimTool::getInstance()->getSimulation())->getPSFFieldData();
@@ -1692,6 +1693,14 @@ void FVSolver::loadPostProcessingBlock(istream& ifsInput){
 			Feature* feature = model->getFeatureFromName(domain_name);
 			Expression* function = readExpression(lineInput, name);
 			ProjectionDataGenerator* dataGenerator = new ProjectionDataGenerator(name, feature, axis, op, function);
+			postProcessingBlock->addDataGenerator(dataGenerator);
+		} else if (nextToken == "GAUSSIAN_CONVOLUTION_DATA_GENERATOR") {
+			string name, domain_name;
+			double sigmaXY, sigmaZ;
+			lineInput >> name >> domain_name >> sigmaXY >> sigmaZ;
+			Feature* feature = model->getFeatureFromName(domain_name);
+			Expression* function = readExpression(lineInput, name);
+			GaussianConvolutionDataGenerator* dataGenerator = new GaussianConvolutionDataGenerator(name, feature, sigmaXY, sigmaZ, function);
 			postProcessingBlock->addDataGenerator(dataGenerator);
 		} else {
 			stringstream ss;

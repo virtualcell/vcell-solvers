@@ -23,6 +23,7 @@ set(SRC_FILES
 	src/FVDataSet.cpp
 	src/FVSolver.cpp
 	src/FVUtils.cpp
+	src/GaussianConvolutionDataGenerator.cpp
 #	src/Histogram.cpp
 	src/JumpCondition.cpp
 	src/Membrane.cpp
