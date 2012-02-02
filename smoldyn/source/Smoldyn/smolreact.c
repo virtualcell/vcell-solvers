@@ -15,6 +15,7 @@
 #include "smoldyn.h"
 #include "Sphere.h"
 #include "Zn.h"
+#include "Geometry.h"
 
 #include "smoldyn_config.h"
 
@@ -2072,44 +2073,88 @@ int zeroreact(simptr sim) {
 #ifdef VCELL_HYBRID
 		if(rxn->rateExp != NULL)
 		{
-			SimTool* simTool = sim->simTool;
-			Simulation* simulation = simTool->getSimulation();
-			CartesianMesh* mesh = (CartesianMesh *)simulation->getMesh();
-			double dx = mesh->getXScale_um();
-			double dy = mesh->getYScale_um();
-			double dz = mesh->getZScale_um();
-			double meshv = dx*dy*dz;
-			VolumeElement* volumeElements = mesh->getVolumeElements();
-			
-			int numVolRegion = mesh -> getNumVolumeRegions();
-			
-			for(i=0; i<numVolRegion; i++)
+			if(rxn->cmpt)
 			{
-				if( !strcmp(rxn->cmpt->cname, mesh->getVolumeRegion(i)->getFeature()->getName().c_str()))
+				SimTool* simTool = sim->simTool;
+				Simulation* simulation = simTool->getSimulation();
+				CartesianMesh* mesh = (CartesianMesh *)simulation->getMesh();
+				double dx = mesh->getXScale_um();
+				double dy = mesh->getYScale_um();
+				double dz = mesh->getZScale_um();
+				double meshv = dx*dy*dz;
+				VolumeElement* volumeElements = mesh->getVolumeElements();
+			
+				int numVolRegion = mesh -> getNumVolumeRegions();
+			
+				for(i=0; i<numVolRegion; i++)
 				{
-					VolumeRegion* volumeRegion = mesh -> getVolumeRegion(i);
-					long numEleInVolumeRegion = volumeRegion->getNumElements();
-					for(j=0; j<numEleInVolumeRegion; j++) // go through each mesh element in the volume region where the reaction happens
+					if( !strcmp(rxn->cmpt->cname, mesh->getVolumeRegion(i)->getFeature()->getName().c_str()))
 					{
-						int volIndex = volumeRegion->getElementIndex(j);
-						double rate = evaluateRnxRate(rxn->rateExp, sim, volIndex);
+						VolumeRegion* volumeRegion = mesh -> getVolumeRegion(i);
+						long numEleInVolumeRegion = volumeRegion->getNumElements();
+						for(j=0; j<numEleInVolumeRegion; j++) // go through each mesh element in the volume region where the reaction happens
+						{
+							int volIndex = volumeRegion->getElementIndex(j);
+							double rate = evaluateRnxRate(rxn->rateExp, sim, volIndex);
 						
-						//Do I have to do rxnsetrate here? it's gonna be i*j*k times more than other reactions(1st order, 2nd order)
-						double prob = rate * sim->dt * meshv;	
-						nmol=poisrandD(prob);
-						int count = 0;
-						//put generated molecules in the same mesh
-						while(count < nmol) {
-							count++;//change here to see if the 0th order generates less molecules.
-							randomPosInMesh(mesh, sim, pos, volIndex); //the generated position saved in pos
-							//since we are using vcell mesh, we double check the pos in compartment
-							if(posincompart(sim,pos,rxn->cmpt))
-							{
-								//count++; 
-								if(doreact(sim,rxn,NULL,NULL,-1,-1,-1,-1,pos,pnl)) return 1; 
+							//Do I have to do rxnsetrate here? it's gonna be i*j*k times more than other reactions(1st order, 2nd order)
+							double prob = rate * sim->dt * meshv;	
+							nmol=poisrandD(prob);
+							int count = 0;
+							//put generated molecules in the same mesh
+							while(count < nmol) {
+								count++;
+								randomPosInMesh(mesh, sim, pos, volIndex); //the generated position saved in pos
+								//since we are using vcell mesh, we double check the pos in compartment
+								if(posincompart(sim,pos,rxn->cmpt))
+								{
+									//count++; 
+									if(doreact(sim,rxn,NULL,NULL,-1,-1,-1,-1,pos,pnl)) return 1; 
+								}
 							}
+							sim->eventcount[ETrxn0]+=nmol;
 						}
-						sim->eventcount[ETrxn0]+=nmol;
+					}
+				}
+			}
+			else if(rxn->srf)
+			{
+				int numOfSuf = sim->srfss->nsrf;
+				surfaceptr * surfaces = sim->srfss->srflist;
+				for(i=0; i<numOfSuf; i++)
+				{
+					if(surfaces[i] == rxn->srf) //find the surface where the reaction happens
+					{
+						//get all the panels on the surface
+						int numOfTriPanels = surfaces[i]->npanel[PStri];
+						panelptr* panels = surfaces[i]->panels[PStri];
+						for(j=0; j<numOfTriPanels; j++)
+						{
+							//evaluate rate 
+							double ** points = panels[j]->point; //point[number][dim]
+							double triCenterPos[3]; 
+							Geo_TriCenter(points, triCenterPos, sim->dim);
+							double rate = evaluateRnxRate(sim, rxn -> rateExp, triCenterPos);
+							//get probability
+							double triPanelArea = Geo_TriArea3D(points[0], points[1], points[2]);
+							double prob = rate * sim->dt * triPanelArea;
+							//num of molecules generated
+							nmol=poisrandD(prob);
+							//uniformly and randomly place the molecule 
+							int count = 0;
+							//put generated molecules in the same mesh
+							while(count < nmol) {
+								count++;
+								panelrandpos(panels[j],pos,sim->dim);//randomly generate a position for surface molecule
+								////since we are using vcell mesh, we double check the pos in compartment
+								//if(posincompart(sim,pos,rxn->cmpt))
+								//{
+									//count++; 
+									if(doreact(sim,rxn,NULL,NULL,-1,-1,-1,-1,pos,panels[j])) return 1; 
+								//}
+							}
+							sim->eventcount[ETrxn0]+=nmol;
+						}
 					}
 				}
 			}

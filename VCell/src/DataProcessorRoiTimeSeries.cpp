@@ -232,7 +232,7 @@ void DataProcessorRoiTimeSeries::onWrite(SimTool* simTool) {
 					totalVolume += area;
 
 					double mols = var->getCurr()[j]; //num of molecules
-					concentrations[0] += mols/602; //num of moles
+					concentrations[0] += mols; //num of molecules
 					totalMolecules[0] += mols; //num of molecules
 				}
 			}

@@ -893,7 +893,7 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 	else if(!strcmp(word,"output_file_number")) {	// output_file_number
 		itct=sscanf(line2,"%s %i",nm,&i1);
 		CHECKS(itct==2,"format for output_file_number: filename number");
-		CHECKS(i1>=0,"output_file_number needs to be �0");
+		CHECKS(i1>=0,"output_file_number needs to be >= 0");
 		er=scmdsetfsuffix(sim->cmds,nm,i1);
 		CHECKS(!er,"error setting output_file_number");
 		CHECKS(!strnword(line2,3),"unexpected text following output_file_number"); }

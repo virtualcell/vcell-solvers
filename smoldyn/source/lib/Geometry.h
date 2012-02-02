@@ -23,6 +23,7 @@ double Geo_SphereNormal(double *cent,double *pt,int front,int dim,double *ans);
 // Area
 double Geo_LineLength(double *pt1,double *pt2,int dim);
 double Geo_TriArea2(double *pt1,double *pt2,double *pt3);
+double Geo_TriArea3D(double *pt1,double *pt2,double *pt3);
 double Geo_TriArea3(double *pt1,double *pt2,double *pt3,double *norm);
 double Geo_QuadArea(double *pt1,double *pt2,double *pt3,double *pt4,int dim);
 
