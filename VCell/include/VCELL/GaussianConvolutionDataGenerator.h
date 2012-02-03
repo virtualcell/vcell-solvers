@@ -26,6 +26,7 @@ private:
 	double sigmaZ;
 	double sigmaRatio;
 	double* gaussianPsfSamples;
+	double* functionValues;
 	int gaussianPsfSampleNx;
 	int gaussianPsfSampleNy;
 	int gaussianPsfSampleNz;

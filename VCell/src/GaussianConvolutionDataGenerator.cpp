@@ -19,11 +19,14 @@ GaussianConvolutionDataGenerator::GaussianConvolutionDataGenerator(string& name,
 		this->sigmaZ = sigmaZ;
 		sigmaRatio = sigmaZ/sigmaXY;
 	this->function = func;
+	gaussianPsfSamples = NULL;
+	functionValues = NULL;
 }
 
 GaussianConvolutionDataGenerator::~GaussianConvolutionDataGenerator() {
 	delete function;
 	delete[] gaussianPsfSamples;
+	delete[] functionValues;
 }
 
 void GaussianConvolutionDataGenerator::resolveReferences(SimulationExpression* sim) {
@@ -34,6 +37,9 @@ void GaussianConvolutionDataGenerator::resolveReferences(SimulationExpression* s
 	dataSize = mesh->getNumVolumeX() * mesh->getNumVolumeY() * mesh->getNumVolumeZ();
 	data = new double[dataSize];
 	memset(data, 0, dataSize * sizeof(double));
+
+	functionValues = new double[dataSize];
+	memset(functionValues, 0, dataSize * sizeof(double));
 
 	double dx = mesh->getXScale_um();
 	double dy = mesh->getYScale_um();
@@ -58,6 +64,7 @@ void GaussianConvolutionDataGenerator::resolveReferences(SimulationExpression* s
 	int midJ = gaussianPsfSampleNy / 2;
 	int midK = gaussianPsfSampleNz / 2;
 	double sum = 0;
+	int volIndex = -1;
 	for (int k = 0; k < gaussianPsfSampleNz; ++k) {
 		double z = (k - midK) * dz;
 		for (int j = 0; j < gaussianPsfSampleNy; ++j) {
@@ -65,7 +72,7 @@ void GaussianConvolutionDataGenerator::resolveReferences(SimulationExpression* s
 			for (int i = 0; i < gaussianPsfSampleNx; ++i) {				
 				double x = (i - midI) * dx;
 
-				int volIndex = k * gaussianPsfSampleNxy + j * gaussianPsfSampleNx + i;
+				++ volIndex;
 				double r = x*x + y*y + sigmaRatio*sigmaRatio*z*z;
 				double d = exp(-(r*r)/(2*sigmaXY*sigmaXY));
 				gaussianPsfSamples[volIndex] = d;
@@ -89,35 +96,56 @@ void GaussianConvolutionDataGenerator::computePPData(SimulationExpression* sim) 
 	int numY = mesh->getNumVolumeY();
 	int numXY = numX * numY;
 	int numZ = mesh->getNumVolumeZ();
-	int midI = -gaussianPsfSampleNx / 2;
-	int midJ = -gaussianPsfSampleNy / 2;
-	int midK = -gaussianPsfSampleNz / 2;
 
+	// precompute function values
+	int volIndex = -1;
 	for (int k = 0; k < numZ; ++k) {
 		for (int j = 0; j < numY; ++j) {
 			for (int i = 0; i < numX; ++i) {				
-				int volIndex = k * numXY + j * numX + i;
+				++ volIndex;
+
+				indices[VAR_VOLUME_INDEX] = volIndex;
+				indices[VAR_VOLUME_REGION_INDEX] = volumeElements[volIndex].getRegionIndex();
+				double value = function->evaluateProxy();								
+				functionValues[volIndex] += value;
+
+			} // end i
+		} // end j
+	} // end k
+
+	int midI = gaussianPsfSampleNx / 2;
+	int midJ = gaussianPsfSampleNy / 2;
+	int midK = gaussianPsfSampleNz / 2;
+	int gaussianPsfSampleNxy = gaussianPsfSampleNx * gaussianPsfSampleNy;
+	volIndex = -1;
+	for (int k = 0; k < numZ; ++k) {
+		for (int j = 0; j < numY; ++j) {
+			for (int i = 0; i < numX; ++i) {
+				++ volIndex;
 
 				data[volIndex] = 0;
-				int psfindex = 0;
-
-				for (int kk = 0; kk < gaussianPsfSampleNz; kk ++) {						
-					for (int jj = 0; jj < gaussianPsfSampleNy; jj ++) {
-						for (int ii = 0; ii < gaussianPsfSampleNx; ii ++) {
-							int i2 = i + midI + ii;
-							int j2 = j + midJ + jj;
-							int k2 = k + midK + kk;
-							double sample = gaussianPsfSamples[psfindex ++];
-
-							if (i2 >= 0 && j2 >= 0 && k2 >= 0 
-									&& i2 < numX && j2 < numY && k2 < numZ) {
-								int volIndex2 = k2 * numXY + j2 * numX + i2;	
-								indices[VAR_VOLUME_INDEX] = volIndex2;
-								indices[VAR_VOLUME_REGION_INDEX] = volumeElements[volIndex2].getRegionIndex();
-
-								double value = function->evaluateProxy();								
-								data[volIndex] += value * sample;
+				int kkOffset = 0;
+				for (int kk = 0; kk < gaussianPsfSampleNz; kk ++, kkOffset += gaussianPsfSampleNxy) {
+					int k2 = k - midK + kk;
+					if (k2 < 0 || k2 >= numZ) {
+						continue;
+					}
+					int jjOffset = kkOffset;
+					for (int jj = 0; jj < gaussianPsfSampleNy; jj ++, jjOffset += gaussianPsfSampleNx) {
+						int j2 = j - midJ + jj;
+						if (j2 < 0 || j2 >= numY) {
+							continue;
+						}
+						int iiOffset = jjOffset;
+						for (int ii = 0; ii < gaussianPsfSampleNx; ii ++, ++iiOffset) {
+							int i2 = i - midI + ii;
+							if (i2 < 0 || i2 >= numX) {
+								continue;
 							}
+							int psfIndex = iiOffset; 
+							int volIndex2 = k2 * numXY + j2 * numX + i2;
+							data[volIndex] += functionValues[volIndex2] * gaussianPsfSamples[psfIndex];
+							
 						} // end ii
 					} // end jj
 				} // end kk

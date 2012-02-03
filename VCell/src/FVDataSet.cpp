@@ -84,6 +84,18 @@ void FVDataSet::readRandomVariables(char *filename, SimulationExpression *sim)
 	fclose(fp);
 }
 
+/**
+  * the variabe name in the data set can be Cell::Dex,
+  * we need to extract Dex
+**/
+static string extractVarNameFromQualifiedName(char* varName) {
+	string str(varName);
+	string::size_type pos = str.find("::");
+	if (pos != string::npos) {
+		str = str.substr(pos + 2);
+	}
+	return str;
+}
 
 void FVDataSet::read(char *filename, Simulation *sim)
 {
@@ -120,7 +132,8 @@ void FVDataSet::read(char *filename, Simulation *sim)
 	}
 
 	for (int i=0;i<fileHeader.numBlocks;i++){
-		Variable *var = sim->getVariableFromName(dataBlock[i].varName);
+		string varName = extractVarNameFromQualifiedName(dataBlock[i].varName);
+		Variable *var = sim->getVariableFromName(varName);
 		if (var==NULL){
 			cout << "DataSet::read() - variable '" << dataBlock[i].varName << "' not found in Simulation" << endl;
 			continue;
