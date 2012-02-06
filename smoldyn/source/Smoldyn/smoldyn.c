@@ -356,13 +356,13 @@ void smoldynEnd(simptr sim) {
 	simfree(sim);
 }
 
-double evaluateRnxRate(Expression* rateExp, simptr sim, int volIndex){
+double evaluateRnxRate(rxnptr reaction, simptr sim, int volIndex){
 	int dim = sim -> dim;
 	SimulationExpression* vcellSim = (SimulationExpression*)sim->simTool->getSimulation();
 	WorldCoord wc = ((CartesianMesh*)vcellSim->getMesh())->getVolumeWorldCoord(volIndex);
 	//vcellSim->setCurrentCoordinate(wc);
 	double pos[3] = {wc.x, wc.y, wc.z};
-	return evaluateRnxRate(sim, rateExp, pos);
+	return evaluateRnxRate2(sim, reaction, pos, NULL);
 	/*int* indices = vcellSim->getIndices();
 	indices[VAR_MEMBRANE_INDEX] = -1;
 	indices[VAR_MEMBRANE_REGION_INDEX] = -1;
@@ -372,24 +372,43 @@ double evaluateRnxRate(Expression* rateExp, simptr sim, int volIndex){
 	return rateExp->evaluateProxy();*/
 }
 
-double evaluateRnxRate(simptr sim, Expression* rateExp, double* pos)
+double evaluateRnxRate2(simptr sim, rxnptr reaction, double* pos, char* panelName)
 {
-	
 	int dim = sim -> dim;
-	
-	WorldCoord wc(pos[0], dim>1?pos[1]:0, dim>2?pos[2]:0);
+	Expression * rateExpression = reaction->rateExp;
 	SimulationExpression* vcellSim = (SimulationExpression*)sim->simTool->getSimulation();
-	vcellSim->setCurrentCoordinate(wc);
-
-	int volIndex = ((CartesianMesh*)vcellSim->getMesh())->getVolumeIndex(wc);
 	int* indices = vcellSim->getIndices();
-	indices[VAR_MEMBRANE_INDEX] = -1;
-	indices[VAR_MEMBRANE_REGION_INDEX] = -1;
-	indices[VAR_VOLUME_INDEX] = volIndex;
-	indices[VAR_VOLUME_REGION_INDEX] = vcellSim->getMesh()->getVolumeElements()[volIndex].getRegionIndex();
+	WorldCoord wc(pos[0], dim>1?pos[1]:0, dim>2?pos[2]:0);
+	vcellSim->setCurrentCoordinate(wc);
+	
+	if(reaction->srf)
+	{
+		if(panelName == NULL)
+		{
+			printfException("Unable to find membrane index(paneName == NULL). Cannot evaluate membrane reaction rate.");
+		}
+		//find membraneIndex
+		string pName(panelName);
+		size_t found = pName.find_last_of("_");
+		int memIndex = atoi((pName.substr(found+1)).c_str());
 
-	return rateExp->evaluateProxy();	
+		indices[VAR_MEMBRANE_INDEX] = memIndex;
+		indices[VAR_MEMBRANE_REGION_INDEX] = vcellSim->getMesh()->getMembraneElements()[memIndex].getRegionIndex();
+		indices[VAR_VOLUME_INDEX] = -1;
+		indices[VAR_VOLUME_REGION_INDEX] = -1;
+	}
+	else
+	{
+		int volIndex = ((CartesianMesh*)vcellSim->getMesh())->getVolumeIndex(wc);
+		int* indices = vcellSim->getIndices();
+		indices[VAR_MEMBRANE_INDEX] = -1;
+		indices[VAR_MEMBRANE_REGION_INDEX] = -1;
+		indices[VAR_VOLUME_INDEX] = volIndex;
+		indices[VAR_VOLUME_REGION_INDEX] = vcellSim->getMesh()->getVolumeElements()[volIndex].getRegionIndex();
+	}
+	return rateExpression->evaluateProxy();	
 }
+
 
 int randomPosInMesh(CartesianMesh* mesh, simptr sim, double* pos, int volIndex)
 {

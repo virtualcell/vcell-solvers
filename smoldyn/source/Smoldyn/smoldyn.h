@@ -943,8 +943,8 @@ void endsimulate(simptr sim,int er);
 int smolsimulate(simptr sim);
 /**************************  extra functions for vcell_hybrid  ***************/
 #ifdef VCELL_HYBRID
-double evaluateRnxRate(simptr sim, Expression* rateExp, double* pos);
-double evaluateRnxRate(Expression* rateExp, simptr sim, int volIndex);
+double evaluateRnxRate2(simptr sim, rxnptr reaction, double* pos, char* panelName);
+double evaluateRnxRate(rxnptr reaction, simptr sim, int volIndex);
 int randomPosInMesh(CartesianMesh* mesh, simptr sim, double* pos, int volIndex); //return 0 with no erorr, othwise there is an error.
 #endif
 /********************************* Threads **********************************/

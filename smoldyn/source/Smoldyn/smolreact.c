@@ -2095,7 +2095,7 @@ int zeroreact(simptr sim) {
 						for(j=0; j<numEleInVolumeRegion; j++) // go through each mesh element in the volume region where the reaction happens
 						{
 							int volIndex = volumeRegion->getElementIndex(j);
-							double rate = evaluateRnxRate(rxn->rateExp, sim, volIndex);
+							double rate = evaluateRnxRate(rxn, sim, volIndex);
 						
 							//Do I have to do rxnsetrate here? it's gonna be i*j*k times more than other reactions(1st order, 2nd order)
 							double prob = rate * sim->dt * meshv;	
@@ -2134,7 +2134,7 @@ int zeroreact(simptr sim) {
 							double ** points = panels[j]->point; //point[number][dim]
 							double triCenterPos[3]; 
 							Geo_TriCenter(points, triCenterPos, sim->dim);
-							double rate = evaluateRnxRate(sim, rxn -> rateExp, triCenterPos);
+							double rate = evaluateRnxRate2(sim, rxn, triCenterPos, panels[j]->pname);
 							//get probability
 							double triPanelArea = Geo_TriArea3D(points[0], points[1], points[2]);
 							double prob = rate * sim->dt * triPanelArea;
@@ -2203,14 +2203,30 @@ int unireact(simptr sim) {
 #ifdef VCELL_HYBRID
 	if(rxn->rateExp != NULL)
 	{
-		rxn -> rate = evaluateRnxRate(sim, rxn -> rateExp,  mptr->pos);
-				
+		
+		if(rxn->srf)//surface reaction
+		{
+			if(mptr->pnl)
+			{
+				rxn -> rate = evaluateRnxRate2(sim, rxn, mptr->pos, mptr->pnl->pname);
+			}
+			else
+			{
+				printfException("Unimolecular membrance reaction should have a membrane reactant.");
+			}
+		}
+		else
+		{
+			rxn -> rate = evaluateRnxRate2(sim, rxn, mptr->pos, NULL);
+		}
+
 		char erstr[256];
 		int er, r;
 		r = table[i][j];
 		er=rxnsetrate(sim,1,r,erstr);
 		//if(er>1) return r;
 	}
+	
 
 #endif
 	
@@ -2272,10 +2288,28 @@ void setBiReactRateForHybrid(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr
 		{
 			pos[dimIdx] = (mptr1->pos[dimIdx] + mptr2->pos[dimIdx])/2;
 		}
-		rxn -> rate = evaluateRnxRate(sim, rxn -> rateExp, pos);
+		if(rxn->srf)//surface reaction
+		{
+			if(mptr1->pnl)
+			{
+				rxn -> rate = evaluateRnxRate2(sim, rxn, pos, mptr1->pnl->pname);
+			}
+			else if(mptr2->pnl)
+			{
+				rxn -> rate = evaluateRnxRate2(sim, rxn, pos, mptr2->pnl->pname);
+			}
+			else
+			{
+				printfException("Bimolecular membrance reaction should have at least one membrane reactant.");
+			}
+		}
+		else
+		{
+			rxn -> rate = evaluateRnxRate2(sim, rxn, pos, NULL);
+		}
 
 		char erstr[256];
-		int er, r;
+		int er;
 		er=rxnsetrate(sim,2,r,erstr);
 	}
 }
