@@ -7,6 +7,13 @@ set (SRC_FILES
 	VCellIDASolver.cpp
 	VCellSundialsSolver.cpp
 )
+set (HEADER_FILES 
+	OdeResultSet.h
+	StoppedByUserException.h	
+	VCellCVodeSolver.h
+	VCellIDASolver.h
+	VCellSundialsSolver.h
+)
 
 set (EXE_SRC_FILES
 	SundialsSolverStandalone.cpp
@@ -15,7 +22,7 @@ set (EXE_SRC_FILES
 include_directories(../ExpressionParser ../sundials/include ../sundials/src ../VCell/include)
 
 set(DEP_LIBS IDAWin ExpressionParser sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS})
-add_library(IDAWin STATIC ${SRC_FILES})
+add_library(IDAWin STATIC ${SRC_FILES} ${HEADER_FILES})
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	if (TARGET_SOLVERS_WITH_MESSAGING)
 		list(APPEND EXE_SRC_FILES ../VCell/src/SimulationMessaging.cpp)

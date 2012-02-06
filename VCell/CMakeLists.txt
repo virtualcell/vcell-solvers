@@ -1,5 +1,86 @@
 project(VCell Fortran)
 
+set(HEADER_FILES 
+	include/VCELL/AlgebraicSystem.h
+	include/VCELL/CartesianMesh.h
+#	include/VCELL/Contour.h
+#	include/VCELL/ContourRegionVariable.h
+#	include/VCELL/ContourSubdomain.h
+#	include/VCELL/ContourVarContext.h
+#	include/VCELL/ContourVariable.h
+	include/VCELL/DataGenerator.h
+	include/VCELL/DataProcessorRoiTimeSeries.h
+	include/VCELL/DataProcessorVFrap.h
+	include/VCELL/DataSet.h
+#	include/VCELL/DomainPDEScheduler.h
+	include/VCELL/DoubleVector3.h
+	include/VCELL/Element.h
+	include/VCELL/EllipticVolumeEqnBuilder.h
+	include/VCELL/EqnBuilder.h
+	include/VCELL/EqnBuilderReactionForward.h
+	include/VCELL/FastSystem.h
+	include/VCELL/FastSystemExpression.h
+	include/VCELL/Feature.h
+	include/VCELL/FieldData.h
+	include/VCELL/FVDataSet.h
+	include/VCELL/FVSolver.h
+	include/VCELL/FVUtils.h
+	include/VCELL/GaussianConvolutionDataGenerator.h
+#	include/VCELL/Histogram.h
+	include/VCELL/IncidenceMatrix.h
+	include/VCELL/JumpCondition.h
+	include/VCELL/Membrane.h
+	include/VCELL/MembraneEqnBuilderDiffusion.h
+	include/VCELL/MembraneEqnBuilderForward.h
+	include/VCELL/MembraneParticleVariable.h
+	include/VCELL/MembraneRegion.h
+	include/VCELL/MembraneRegionEqnBuilder.h
+	include/VCELL/MembraneRegionVarContextExpression.h
+	include/VCELL/MembraneRegionVariable.h
+	include/VCELL/MembraneVarContextExpression.h
+	include/VCELL/MembraneVariable.h
+	include/VCELL/Mesh.h
+	include/VCELL/ODESolver.h
+#	include/VCELL/ParticleContext.h
+#	include/VCELL/PDEScheduler.h
+	include/VCELL/PDESolver.h
+	include/VCELL/PostProcessingBlock.h
+	include/VCELL/ProjectionDataGenerator.h
+	include/VCELL/RandomVariable.h
+	include/VCELL/Region.h
+	include/VCELL/RegionSizeVariable.h
+	include/VCELL/Scheduler.h
+	include/VCELL/SerialScheduler.h
+	include/VCELL/SimTool.h
+	include/VCELL/SimTypes.h
+	include/VCELL/Simulation.h
+	include/VCELL/SimulationExpression.h
+	include/VCELL/SimulationMessaging.h
+	include/VCELL/Solver.h
+	include/VCELL/SparseLinearSolver.h
+#	include/VCELL/SparseMatrix.h
+	include/VCELL/SparseMatrixEqnBuilder.h
+	include/VCELL/SparseMatrixPCG.h
+	include/VCELL/SparseVolumeEqnBuilder.h
+	include/VCELL/SplitScheduler.h
+	include/VCELL/Structure.h
+	include/VCELL/StructuredPDESolver.h
+	include/VCELL/SundialsPdeScheduler.h
+#	include/VCELL/TIFFImage.h
+	include/VCELL/Timer.h
+#	include/VCELL/TriDiagMatrix.h
+	include/VCELL/VarContext.h
+	include/VCELL/Variable.h
+	include/VCELL/VCellModel.h
+	include/VCELL/VolumeParticleVariable.h
+	include/VCELL/VolumeRegion.h
+	include/VCELL/VolumeRegionEqnBuilder.h
+	include/VCELL/VolumeRegionVarContextExpression.h
+	include/VCELL/VolumeRegionVariable.h
+	include/VCELL/VolumeVarContextExpression.h
+	include/VCELL/VolumeVariable.h	
+)
+
 set(SRC_FILES 
 	src/AlgebraicSystem.cpp
 	src/CartesianMesh.cpp
@@ -114,7 +195,7 @@ elseif(UNIX)
 		endif()	
 	endif()
 endif()	
-add_library(vcell STATIC ${SRC_FILES})
+add_library(vcell STATIC ${SRC_FILES} ${HEADER_FILES})
 add_library(pcgwrapper STATIC ${PCGWRAPPER_SRC_FILES})
 
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)

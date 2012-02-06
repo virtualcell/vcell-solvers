@@ -17,6 +17,26 @@ else()
 	endif()
 endif()
 
+set(HEADER_FILES 
+	source/lib/Geometry.h
+	source/lib/math2.h
+	source/lib/opengl2.h
+	source/lib/parse.h
+	source/lib/queue.h
+	source/lib/random2.h
+	source/lib/Rn.h
+	source/lib/RnSort.h
+	source/lib/rxnparam.h
+	source/lib/SimCommand.h
+	source/lib/Sphere.h
+	source/lib/string2.h
+	source/lib/SurfaceParam.h
+	source/lib/Zn.h
+	source/Smoldyn/smoldyn.h
+	source/Smoldyn/DataProcessorRoiTimeSeriesSmoldyn.h
+	source/Smoldyn/VCellSmoldynOutput.h
+)
+
 set(SRC_FILES 
 	source/lib/Geometry.c
 	source/lib/math2.c
@@ -66,7 +86,7 @@ set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
 set(DEP_LIBS IDAWin ExpressionParser netcdf_cxx netcdf zip ${SONICMQ_LIBS})
 
 if (VCELL_SPATIAL_HYBRID)
-	add_library(smoldynlib STATIC ${SRC_FILES})
+	add_library(smoldynlib STATIC ${SRC_FILES} ${HEADER_FILES})
 	set_property(TARGET smoldynlib PROPERTY COMPILE_DEFINITIONS VCELL_HYBRID)
 endif()
 
@@ -89,7 +109,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 			endif()
 		endif()
 	endif()
-	add_executable(smoldyn ${SRC_FILES})
+	add_executable(smoldyn ${SRC_FILES} ${HEADER_FILES})
 	target_link_libraries(smoldyn ${DEP_LIBS})
 	add_dependencies(smoldyn ExpressionParser IDAWin zip zlib)
 	
