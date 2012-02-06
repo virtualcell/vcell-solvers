@@ -226,7 +226,7 @@ double ASTFuncNode::evaluate(int evalType, double* values)
 					result = pow(mantissa, exponent);
 					if (MathUtil::double_infinity == -result || MathUtil::double_infinity == result || result != result) {
 						char problem[1000];
-						sprintf(problem, "u^v evaluated to %lf, u=%lf, v=%lf", result, mantissa);
+						sprintf(problem, "u^v evaluated to %lf, u=%lf, v=%lf", result, mantissa, exponent);
 						string errorMsg = getFunctionDomainError(problem, values, "u", mantissaChild, "v", exponentChild);
 						throw FunctionDomainException(errorMsg);
 					}
