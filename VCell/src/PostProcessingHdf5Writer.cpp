@@ -6,6 +6,7 @@
 #include <VCELL/PostProcessingHdf5Writer.h>
 #include <VCELL/VariableStatisticsDataGenerator.h>
 #include <VCELL/Variable.h>
+#include <typeinfo>
 #include <H5Cpp.h>
 
 const char* PostProcessingHdf5Writer::PPGroupName  = "/PostProcessing";
