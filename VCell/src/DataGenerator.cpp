@@ -2,6 +2,7 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
+#include <VCELL/PostProcessingBlock.h>
 #include <VCELL/DataGenerator.h>
 #include <VCELL/Feature.h>
 
@@ -21,9 +22,9 @@ DataGenerator::~DataGenerator() {
 }
 
 string DataGenerator::getQualifiedName(){
-	if (feature != 0){
-		return feature->getName() + "::" + name;
-	}else{
+	if (feature == NULL){
 		return name;
+	} else {
+		return feature->getName() + "::" + name;
 	}
 }

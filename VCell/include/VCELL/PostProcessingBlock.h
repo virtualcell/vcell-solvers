@@ -14,6 +14,8 @@ class DataGenerator;
 
 class PostProcessingBlock/* : public SymbolTable*/
 {
+	friend class PostProcessingHdf5Writer;
+
 public:
 	PostProcessingBlock(SimulationExpression* sim);
 	virtual ~PostProcessingBlock();
@@ -21,7 +23,6 @@ public:
 	void addDataGenerator(DataGenerator* dataGenerator);
 
 	void resolveReferences();
-	void computePPData();
 
 	int getNumDataGenerators() {
 		return dataGeneratorList.size();

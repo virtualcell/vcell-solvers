@@ -16,6 +16,7 @@
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/SerialScheduler.h>
 #include <VCELL/SundialsPdeScheduler.h>
+#include <VCELL/PostProcessingBlock.h>
 
 Simulation::Simulation(Mesh *mesh)
 {
@@ -70,7 +71,6 @@ void Simulation::update()
 		Variable* var = varList[i];
 		var->update();
 	}
-	//_scheduler->update();
 	currIteration ++;
 }
 
@@ -157,6 +157,9 @@ void Simulation::readData(char *filename)
 void Simulation::resolveReferences() {
 	VCellModel *model = SimTool::getInstance()->getModel();
 	model->resolveReferences();
+	if (postProcessingBlock != NULL) {
+		postProcessingBlock->resolveReferences();
+	}
 }
 
 void Simulation::initSimulation()

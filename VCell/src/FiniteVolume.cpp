@@ -22,8 +22,6 @@ void vcellExit(int returnCode, string& errorMsg) {
 		SimulationMessaging::getInstVar()->waitUntilFinished();
 #endif
 	}
-	delete SimulationMessaging::getInstVar();
-	delete SimTool::getInstance();
 }
 
 void printUsage() {
@@ -42,6 +40,8 @@ int main(int argc, char *argv[])
 	char* outputPath = 0;
 	char* fvInputFile = 0;
 	ifstream ifsInput;
+	FVSolver* fvSolver = NULL;
+
 	bool bSimZip = true;
 	try {
 		int taskID = -1;
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
 			exit(102);
 		}
 
-		FVSolver* fvSolver = new FVSolver(ifsInput, taskID, outputPath, bSimZip);
+		fvSolver = new FVSolver(ifsInput, taskID, outputPath, bSimZip);
 		ifsInput.close();
 
 		fvSolver->solve();
@@ -123,6 +123,7 @@ int main(int argc, char *argv[])
 		returnCode = 1;
 	}
 
+	delete fvSolver;
 	if (ifsInput.is_open()) {
 		ifsInput.close();
 	}

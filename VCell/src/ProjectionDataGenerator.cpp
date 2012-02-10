@@ -41,6 +41,18 @@ void ProjectionDataGenerator::resolveReferences(SimulationExpression* sim) {
 	dataSize = mesh->getNumVolumeX() * mesh->getNumVolumeY() * mesh->getNumVolumeZ();
 	data = new double[dataSize];
 	memset(data, 0, dataSize * sizeof(double));
+
+	hdf5Rank = mesh->getDimension() - 1;
+	if (axis == Projection_Axis_z) { 
+		hdf5Dims[0] = mesh->getNumVolumeX();
+		hdf5Dims[1] = mesh->getNumVolumeY();
+	} else if (axis == Projection_Axis_y) {
+		hdf5Dims[0] = mesh->getNumVolumeX();
+		hdf5Dims[1] = mesh->getNumVolumeZ();
+	} else if (axis == Projection_Axis_x) {
+		hdf5Dims[0] = mesh->getNumVolumeY();
+		hdf5Dims[1] = mesh->getNumVolumeZ();
+	}
 }
 
 void ProjectionDataGenerator::computePPData(SimulationExpression* sim) {

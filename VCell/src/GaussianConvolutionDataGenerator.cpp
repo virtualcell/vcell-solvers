@@ -41,14 +41,19 @@ void GaussianConvolutionDataGenerator::resolveReferences(SimulationExpression* s
 	functionValues = new double[dataSize];
 	memset(functionValues, 0, dataSize * sizeof(double));
 
+	hdf5Rank = mesh->getDimension();
+	hdf5Dims[0] = mesh->getNumVolumeX();
+	hdf5Dims[1] = mesh->getNumVolumeY();
+	hdf5Dims[2] = mesh->getNumVolumeZ();
+
 	double dx = mesh->getXScale_um();
 	double dy = mesh->getYScale_um();
 	double dz = mesh->getZScale_um();
 
 	int numSigmas = 8;
-	gaussianPsfSampleNx = sigmaXY * numSigmas / dx;
-	gaussianPsfSampleNy = mesh->getDimension() > 1 ? sigmaXY * numSigmas / dy : 1;
-	gaussianPsfSampleNz = mesh->getDimension() > 2 ? sigmaZ * numSigmas / dz : 1;
+	gaussianPsfSampleNx = int(sigmaXY * numSigmas / dx);
+	gaussianPsfSampleNy = mesh->getDimension() > 1 ? int(sigmaXY * numSigmas / dy) : 1;
+	gaussianPsfSampleNz = mesh->getDimension() > 2 ? int(sigmaZ * numSigmas / dz) : 1;
 	if (gaussianPsfSampleNx % 2 == 0) {
 		++gaussianPsfSampleNx;
 	}

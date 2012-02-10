@@ -27,10 +27,3 @@ void PostProcessingBlock::resolveReferences() {
 		(*it)->resolveReferences(simulation);
 	}
 }
-
-void PostProcessingBlock::computePPData() {
-	vector<DataGenerator*>::iterator it;
-	for(it = dataGeneratorList.begin(); it < dataGeneratorList.end(); ++ it) {
-		(*it)->computePPData(simulation);
-	}
-}

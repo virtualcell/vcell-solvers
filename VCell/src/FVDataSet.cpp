@@ -293,12 +293,6 @@ void FVDataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 	FieldData* psfFieldData = getPSFFieldData();
 	int numBlocks = psfFieldData == 0 ? numVars : numVars*2;
 
-	// Post Processing Block
-	PostProcessingBlock* postProcessingBlock = sim->getPostProcessingBlock();
-	if (postProcessingBlock != NULL) {
-		numBlocks += postProcessingBlock->getNumDataGenerators();
-	}
-
 	// region size variable
 	int numRegionSizeVars = sim->getNumRegionSizeVariables();
 	numBlocks += numRegionSizeVars;
@@ -355,23 +349,6 @@ void FVDataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 	       
 			dataBlock[blockIndex].varType = VAR_VOLUME;
 			dataBlock[blockIndex].size = volVarSize;
-			dataBlock[blockIndex].dataOffset = dataOffset;
-			DataSet::writeDataBlock(fp,dataBlock + blockIndex);
-			dataOffset += dataBlock[blockIndex].size*sizeof(double);
-			blockIndex ++;
-		}
-	}
-
-	// Post Processing Block
-	if (postProcessingBlock != NULL) {
-		const vector<DataGenerator*>& dataGeneratorList = postProcessingBlock->getDataGeneratorList();
-		for (vector<DataGenerator*>::const_iterator iter = dataGeneratorList.begin(); iter < dataGeneratorList.end(); ++iter) {
-			DataGenerator* dataGenerator = *iter;
-			memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-			strcpy(dataBlock[blockIndex].varName, dataGenerator->getQualifiedName().c_str());
-	
-			dataBlock[blockIndex].varType = dataGenerator->getVarType();
-			dataBlock[blockIndex].size = dataGenerator->getDataSize();
 			dataBlock[blockIndex].dataOffset = dataOffset;
 			DataSet::writeDataBlock(fp,dataBlock + blockIndex);
 			dataOffset += dataBlock[blockIndex].size*sizeof(double);
@@ -457,28 +434,6 @@ void FVDataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 			DataSet::writeDoubles(fp, values, volVarSize);
 			blockIndex ++;
 		}	
-	}
-
-	// Post Processing Block
-	if (postProcessingBlock != NULL) {
-		const vector<DataGenerator*>& dataGeneratorList = postProcessingBlock->getDataGeneratorList();
-		for (vector<DataGenerator*>::const_iterator iter = dataGeneratorList.begin(); iter < dataGeneratorList.end(); ++iter) {
-			DataGenerator* dataGenerator = *iter;
-			ftell_pos = ftell(fp);
-			if (ftell_pos != dataBlock[blockIndex].dataOffset){
-				char errmsg[512];
-				sprintf(errmsg, "DataSet::write() - offset for data is "
-					"incorrect (block %d, var=%s), ftell() says %ld, should be %d",
-					blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
-				throw errmsg;
-			}
-
-			if (dataGenerator->getDataSize() != dataBlock[blockIndex].size) {
-				throw "DataSet::write() : inconsistent number of data blocks for variable";
-			}
-			DataSet::writeDoubles(fp, dataGenerator->getData(), dataGenerator->getDataSize());
-			blockIndex ++;
-		}
 	}
 
 	//

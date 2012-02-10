@@ -6,6 +6,7 @@
 #define DATA_GENERATOR_H
 
 #include <VCELL/SimTypes.h>
+#include <H5Cpp.h>
 #include <string>
 using std::string;
 
@@ -14,6 +15,7 @@ class Feature;
 
 class DataGenerator
 {
+	friend class PostProcessingHdf5Writer;
 public:
 	DataGenerator(string& name, Feature* feature);
 	virtual ~DataGenerator();
@@ -40,6 +42,8 @@ protected:
 	long dataSize;
 	string name;
 	Feature* feature;
+	int hdf5Rank;
+	hsize_t hdf5Dims[3];
 };
 
 #endif

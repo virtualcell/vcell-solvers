@@ -50,6 +50,7 @@ using VCell::Expression;
 #include <VCELL/PostProcessingBlock.h>
 #include <VCELL/ProjectionDataGenerator.h>
 #include <VCELL/GaussianConvolutionDataGenerator.h>
+#include <VCELL/VariableStatisticsDataGenerator.h>
 
 FieldData *getPSFFieldData() {
 	return ((SimulationExpression*)SimTool::getInstance()->getSimulation())->getPSFFieldData();
@@ -1586,6 +1587,14 @@ FVSolver::FVSolver(istream& fvinput, int taskID, char* outdir, bool bSimZip) {
 	}
 }
 
+FVSolver::~FVSolver() {
+	delete SimulationMessaging::getInstVar();
+	delete simulation;
+	delete model;
+	delete mesh;
+	delete simTool;	
+}
+
 void FVSolver::solve(bool bLoadFinal, double* paramValues)
 {
 	if (paramValues != 0) {
@@ -1672,6 +1681,7 @@ void FVSolver::loadPostProcessingBlock(istream& ifsInput){
 	simulation->createPostProcessingBlock();
 	PostProcessingBlock* postProcessingBlock = simulation->getPostProcessingBlock();
 
+	postProcessingBlock->addDataGenerator(new VariableStatisticsDataGenerator());
 	string nextToken, line;
 
 	while (!ifsInput.eof()) {

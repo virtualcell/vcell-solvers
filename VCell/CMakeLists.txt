@@ -45,6 +45,7 @@ set(HEADER_FILES
 #	include/VCELL/PDEScheduler.h
 	include/VCELL/PDESolver.h
 	include/VCELL/PostProcessingBlock.h
+	include/VCELL/PostProcessingHdf5Writer.h
 	include/VCELL/ProjectionDataGenerator.h
 	include/VCELL/RandomVariable.h
 	include/VCELL/Region.h
@@ -71,6 +72,7 @@ set(HEADER_FILES
 #	include/VCELL/TriDiagMatrix.h
 	include/VCELL/VarContext.h
 	include/VCELL/Variable.h
+	include/VCELL/VariableStatisticsDataGenerator.h
 	include/VCELL/VCellModel.h
 	include/VCELL/VolumeParticleVariable.h
 	include/VCELL/VolumeRegion.h
@@ -123,6 +125,7 @@ set(SRC_FILES
 #	src/PDEScheduler.cpp
 	src/PDESolver.cpp
 	src/PostProcessingBlock.cpp
+	src/PostProcessingHdf5Writer.cpp
 	src/ProjectionDataGenerator.cpp
 	src/RandomVariable.cpp
 	src/Region.cpp
@@ -148,6 +151,7 @@ set(SRC_FILES
 #	src/TriDiagMatrix.cpp
 	src/VarContext.cpp
 	src/Variable.cpp
+	src/VariableStatisticsDataGenerator.cpp
 	src/VCellModel.cpp
 	src/VolumeParticleVariable.cpp
 	src/VolumeRegion.cpp
@@ -166,7 +170,7 @@ set (EXE_SRC_FILES
 	src/FiniteVolume.cpp
 )
 
-include_directories(include ../ExpressionParser ${CMAKE_CURRENT_SOURCE_DIR}/../IDAWin ../netcdf-3.6.2/libsrc ../netcdf-3.6.2/cxx ../sundials/include ../sundials/src)
+include_directories(include ../ExpressionParser ../hdf5-1.8.8/c++/src ../hdf5-1.8.8/src ../IDAWin ../netcdf-3.6.2/libsrc ../netcdf-3.6.2/cxx ../sundials/include ../sundials/src)
 if (NOT ZLIB_FOUND)
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../zlib)
 endif()
@@ -184,6 +188,7 @@ if (VCELL_SPATIAL_HYBRID)
 endif()
 
 if (MSVC)
+	include_directories(../hdf5-1.8.8/windows/src)
     set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /names:lowercase")
 elseif(UNIX)
 	set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -static")
@@ -199,7 +204,7 @@ add_library(vcell STATIC ${SRC_FILES} ${HEADER_FILES})
 add_library(pcgwrapper STATIC ${PCGWRAPPER_SRC_FILES})
 
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
-	set(DEP_LIBS vcell pcgwrapper ExpressionParser IDAWin netcdf_cxx netcdf PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS} zip unzip)
+	set(DEP_LIBS vcell pcgwrapper ExpressionParser hdf5_cpp hdf5 IDAWin netcdf_cxx netcdf PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS} zip unzip)
 	if (VCELL_SPATIAL_HYBRID)
 		list(APPEND DEP_LIBS smoldynlib)
 		if (MSVC)

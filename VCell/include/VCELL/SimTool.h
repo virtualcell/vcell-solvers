@@ -28,6 +28,7 @@ class Mesh;
 class Simulation;
 class DataProcessor;
 class Variable;
+class PostProcessingHdf5Writer;
 
 class SimTool {
 public:
@@ -160,6 +161,8 @@ private:
 	DataProcessor* dataProcessor;
 	double** serialScanParameterValues;
 	int numSerialParameterScans;
+
+	PostProcessingHdf5Writer* postProcessingHdf5Writer;
 
 #ifdef VCELL_HYBRID	
 	simptr smoldynSim;

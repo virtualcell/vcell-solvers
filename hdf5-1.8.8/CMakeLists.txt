@@ -69,6 +69,7 @@ PROJECT (HDF5 C CXX)
 #   # Add the sub project
 #   ADD_SUBDIRECTORY(Utilities/hdf5-1.8)
 #-----------------------------------------------------------------------------
+SET(HDF5_EXTERNALLY_CONFIGURED 1)
 IF (BUILD_SHARED_LIBS)
   SET (BUILD_NAME_EXT "SHARED")
 ELSE (BUILD_SHARED_LIBS)
@@ -734,7 +735,7 @@ ENDIF (EXISTS "${HDF5_SOURCE_DIR}/examples" AND IS_DIRECTORY "${HDF5_SOURCE_DIR}
 # Option to build HDF5 C++ Library
 #-----------------------------------------------------------------------------
 IF (EXISTS "${HDF5_SOURCE_DIR}/c++" AND IS_DIRECTORY "${HDF5_SOURCE_DIR}/c++")
-  OPTION (HDF5_BUILD_CPP_LIB  "Build HDF5 C++ Library" OFF)
+  OPTION (HDF5_BUILD_CPP_LIB  "Build HDF5 C++ Library" ON)
   IF (HDF5_BUILD_CPP_LIB)
     # check for unsupported options
     IF (HDF5_ENABLE_PARALLEL)

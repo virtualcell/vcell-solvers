@@ -23,6 +23,8 @@ class Membrane;
 class FVSolver {
 public:
 	FVSolver(istream& fvinput, int taskID=-1, char* outdir=0, bool bSimZip=true);
+	virtual ~FVSolver();
+
 	void createSimTool(istream& ifsInput, int taskID);
 	void solve(bool bLoadFinal=true, double* paramValues=0);
 

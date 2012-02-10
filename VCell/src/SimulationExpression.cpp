@@ -222,9 +222,6 @@ void SimulationExpression::advanceTimeOff() {
 
 void SimulationExpression::update() {
 	Simulation::update();
-	if (postProcessingBlock != NULL) {
-		postProcessingBlock->computePPData();
-	}
 	valueProxyTime->setValue(getTime_sec());
 }
 
@@ -522,16 +519,6 @@ void SimulationExpression::resolveReferences() {
 		createSymbolTable();
 	}
 	Simulation::resolveReferences();
-	if (postProcessingBlock != NULL) {
-		postProcessingBlock->resolveReferences();
-	}
-}
-
-void SimulationExpression::initSimulation() {
-	Simulation::initSimulation();
-	if (postProcessingBlock != NULL) {
-		postProcessingBlock->computePPData();
-	}
 }
 
 void SimulationExpression::setParameterValues(double* paramValues) {

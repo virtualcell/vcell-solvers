@@ -21,6 +21,7 @@ class Variable;
 class Mesh;
 class Solver;
 class Scheduler;
+class PostProcessingBlock;
 
 class Simulation
 {
@@ -29,7 +30,7 @@ public:
 	~Simulation();
 
 	virtual void resolveReferences();
-	virtual void initSimulation();   // initializes to t=0
+	void initSimulation();   // initializes to t=0
 	void iterate();          // computes 1 time step
 	virtual void update();           // copies new to old values 
 
@@ -77,6 +78,11 @@ public:
 	void addSolver(Solver *solver);
 	void setSimStartTime(double st);
 
+	virtual void createPostProcessingBlock()=0;
+	PostProcessingBlock* getPostProcessingBlock() {
+		return postProcessingBlock;
+	}
+
 protected:
 	int currIteration;  // first iteration is currIteration=0
 
@@ -88,6 +94,8 @@ protected:
 	Mesh *_mesh;
 	bool _advanced;
 	bool _initEquations;
+
+	PostProcessingBlock* postProcessingBlock;
 };
 
 #endif

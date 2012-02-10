@@ -23,6 +23,8 @@ using std::endl;
 #include <VCELL/DataProcessorVFrap.h>
 #include <VCELL/DataProcessorRoiTimeSeries.h>
 #include <VCELL/FVUtils.h>
+#include <VCELL/PostProcessingBlock.h>
+#include <VCELL/PostProcessingHdf5Writer.h>
 
 #include <float.h>
 #include <math.h>
@@ -46,6 +48,7 @@ using std::max;
 #define LOG_FILE_EXT ".log"
 #define ZIP_FILE_EXT ".zip"
 #define TID_FILE_EXT ".tid"
+#define HDF5_FILE_EXT ".hdf5"
 
 int zip32(int filecnt, char* zipfile, ...);
 int unzip32(char* zipfile, char* file, char* exdir);
@@ -69,6 +72,7 @@ SimTool::SimTool()
 	zipFileCount = 0;
 	bSimFileCompress = false;
 	baseDirName = NULL;
+	baseFileName = NULL;
 	baseSimName = NULL;
 	bLoadFinal = true;
 
@@ -97,13 +101,17 @@ SimTool::SimTool()
 	smoldynInputFile = "";
 	smoldynSim = NULL;
 #endif
+	
+	postProcessingHdf5Writer = NULL;
 }
 
 SimTool::~SimTool()
 {
-	delete baseSimName;
-	delete baseDirName;
-	delete baseFileName;
+	if (baseSimName != baseDirName) {
+		delete[] baseSimName;
+	}
+	delete[] baseDirName;
+	delete[] baseFileName;
 
 	delete[] discontinuityTimes;
 
@@ -112,6 +120,8 @@ SimTool::~SimTool()
 		delete[] serialScanParameterValues[i];
 	}
 	delete[] serialScanParameterValues;
+
+	delete postProcessingHdf5Writer;
 }
 
 void SimTool::setModel(VCellModel* model) {
@@ -279,6 +289,11 @@ void SimTool::loadFinal()
 		return;
 	}
 	
+	if (simulation->getPostProcessingBlock() != NULL) {
+		clearLog();
+		return;
+	}
+
 	if (dataProcessor != 0) {
 		if (!dataProcessor->checkComplete(this)) {
 			clearLog();
@@ -568,6 +583,14 @@ void SimTool::updateLog(double progress, double time, int iteration)
 			throw errmsg;
 		}
 	}
+	if (simulation->getPostProcessingBlock() != NULL) {
+		if (postProcessingHdf5Writer == NULL) {
+			char h5PPFileName[128];
+			sprintf(h5PPFileName, "%s%s", baseFileName, HDF5_FILE_EXT);
+			postProcessingHdf5Writer = new PostProcessingHdf5Writer(h5PPFileName, simulation->getPostProcessingBlock());
+		}
+		postProcessingHdf5Writer->writeOutput();
+	}
 	if (dataProcessor != 0) {
 		dataProcessor->onWrite(this);
 	}
@@ -856,6 +879,10 @@ void SimTool::start1() {
 
 	if (dataProcessor != 0) {
 		dataProcessor->onComplete(this);
+	}
+
+	if (postProcessingHdf5Writer != NULL) {
+		postProcessingHdf5Writer->onComplete();
 	}
 
 	showSummary(stdout);
