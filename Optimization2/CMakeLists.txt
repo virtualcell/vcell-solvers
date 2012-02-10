@@ -31,6 +31,10 @@ set (SRC_FILES
 	VFRAPObjectiveFunction.cpp
 )
 
+if (APPLE)
+	add_definitions(-DMACOSX)
+endif()
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../ExpressionParser
 	${CMAKE_CURRENT_SOURCE_DIR}/../fsqp
 	${CMAKE_CURRENT_SOURCE_DIR}/../IDAWin
