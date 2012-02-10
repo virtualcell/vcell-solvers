@@ -17,7 +17,7 @@ using std::max;
 using std::min;
 
 VariableStatisticsDataGenerator::VariableStatisticsDataGenerator() 
-	: DataGenerator(string("VariableStatistics"), NULL){
+	: DataGenerator(string("VariableStatistics")){
 }
 
 VariableStatisticsDataGenerator::~VariableStatisticsDataGenerator() {
