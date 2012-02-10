@@ -14,6 +14,7 @@ class DataGenerator;
 class PostProcessingBlock;
 namespace H5 {
 	class H5File;
+	class DataSet;
 }
 
 class PostProcessingHdf5Writer
@@ -23,7 +24,6 @@ public:
 	virtual ~PostProcessingHdf5Writer();
 
 	void writeOutput();
-	void onComplete();
 
 	static const char* PPGroupName;
 	static const char* TimesDataSetName;
@@ -34,7 +34,7 @@ private:
 
 	H5::H5File* h5PPFile;
 	bool bFirstTime;
-
+	H5::DataSet* timesDataSet;
 	void writeDataSet(DataGenerator* dataGenerator, int timeIndex);
 };
 

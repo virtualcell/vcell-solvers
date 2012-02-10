@@ -881,10 +881,6 @@ void SimTool::start1() {
 		dataProcessor->onComplete(this);
 	}
 
-	if (postProcessingHdf5Writer != NULL) {
-		postProcessingHdf5Writer->onComplete();
-	}
-
 	showSummary(stdout);
 }
 
