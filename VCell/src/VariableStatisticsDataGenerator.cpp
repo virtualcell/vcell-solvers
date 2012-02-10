@@ -16,8 +16,10 @@ using VCell::Expression;
 using std::max;
 using std::min;
 
+const string VariableStatisticsDataGenerator::VariableStatistics_Name = "VariableStatistics";
+
 VariableStatisticsDataGenerator::VariableStatisticsDataGenerator() 
-	: DataGenerator(string("VariableStatistics")){
+	: DataGenerator(VariableStatistics_Name, NULL){
 }
 
 VariableStatisticsDataGenerator::~VariableStatisticsDataGenerator() {

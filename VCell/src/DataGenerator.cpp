@@ -10,7 +10,7 @@
 const double DataGenerator::double_max = std::numeric_limits<double>::max();
 const double DataGenerator::double_min = std::numeric_limits<double>::min();
 
-DataGenerator::DataGenerator(string& name, Feature* f) {
+DataGenerator::DataGenerator(const string& name, Feature* f) {
 	this->name = name;
 	this->feature = f;
 	dataSize = 0;

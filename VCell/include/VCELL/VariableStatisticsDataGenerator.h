@@ -16,6 +16,8 @@ public:
 	void resolveReferences(SimulationExpression* sim);
 	void computePPData(SimulationExpression* sim);
 
+private:
+	static const string VariableStatistics_Name;
 };
 
 #endif

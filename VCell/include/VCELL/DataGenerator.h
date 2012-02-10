@@ -17,7 +17,7 @@ class DataGenerator
 {
 	friend class PostProcessingHdf5Writer;
 public:
-	DataGenerator(string& name, Feature* feature=NULL);
+	DataGenerator(const string& name, Feature* feature);
 	virtual ~DataGenerator();
 
 	virtual void resolveReferences(SimulationExpression* sim)=0;
