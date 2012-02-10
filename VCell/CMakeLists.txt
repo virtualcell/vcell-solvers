@@ -170,7 +170,7 @@ set (EXE_SRC_FILES
 	src/FiniteVolume.cpp
 )
 
-include_directories(include ../ExpressionParser ../hdf5-1.8.8/c++/src ../hdf5-1.8.8/src ../IDAWin ../netcdf-3.6.2/libsrc ../netcdf-3.6.2/cxx ../sundials/include ../sundials/src)
+include_directories(include ../ExpressionParser ../hdf5-1.8.8 ../hdf5-1.8.8/c++/src ../hdf5-1.8.8/src ../IDAWin ../netcdf-3.6.2/libsrc ../netcdf-3.6.2/cxx ../sundials/include ../sundials/src)
 if (NOT ZLIB_FOUND)
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../zlib)
 endif()
