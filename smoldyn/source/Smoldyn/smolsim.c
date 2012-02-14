@@ -1171,9 +1171,11 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 		CHECKS(rxn,"out of memory trying to create reaction structure");
 		if(line2) {
 #ifdef VCELL_HYBRID 
+			string rawStr, expStr;
 			stringstream ss(line2);
-			string expStr;
-			getline(ss,expStr);
+			getline(ss,rawStr);
+			size_t found = rawStr.find(";");
+			expStr = rawStr.substr(0, found);
 			rxn->rateExp = new Expression(expStr);}
 #else
 			CHECKS((itct=sscanf(line2,"%lg",&flt1))==1,"failed to read reaction rate");

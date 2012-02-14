@@ -322,6 +322,7 @@ simptr smoldynInit(SimTool* simTool, string& fileName) {
 	SimulationExpression* vcellSim = (SimulationExpression*)simTool->getSimulation();
 	SymbolTable* symbolTable = vcellSim->getSymbolTable();
 
+	//initialization for reaction rates (as expression)
 	for(int j = 0; j < MAXORDER; j++)
 	{
 		rxnssptr rxnssInOrder = sim -> rxnss[j]; //loop through 0th, 1st, 2nd order rxn lists
@@ -332,6 +333,7 @@ simptr smoldynInit(SimTool* simTool, string& fileName) {
 			try {
 				Expression* rateExpression = rxnssInOrder->rxn[i]->rateExp;
 				double r = rateExpression->evaluateConstant();
+				delete rxnssInOrder->rxn[i]->rateExp;
 				rxnssInOrder->rxn[i]->rateExp = NULL;
 				rxnssInOrder->rxn[i]->rate = r;
 				char erstr[1024];
@@ -342,6 +344,43 @@ simptr smoldynInit(SimTool* simTool, string& fileName) {
 		
 		}
 	}
+
+	//initialization for surface action(asorption, desorption, transmission) rates (as expression)
+	surfacessptr surfacess = sim -> srfss;
+	int numSrfs = surfacess->nsrf;
+	surfaceptr * surfacelist = surfacess->srflist;
+	surfactionptr actdetails;
+	enum MolecState ms,ms2;
+	enum PanelFace face;
+	int nspecies=sim->mols?sim->mols->nspecies:0;
+	Expression * surfRateExp;
+	for(int s=0; s<numSrfs; s++) {
+		surfaceptr srf=surfacelist[s];
+		for(int i=0; i<nspecies; i++){
+			for(ms=(MolecState)0; ms<MSMAX; ms=(MolecState)(ms+1)){
+				for(face=(PanelFace)0; face<3; face=(PanelFace)(face+1)){
+					if(srf->actdetails != NULL && srf->actdetails[i]!=NULL && srf->actdetails[i][ms]!=NULL && srf->actdetails[i][ms][face] !=NULL) {
+						actdetails=srf->actdetails[i][ms][face];
+						for(ms2=(MolecState)0;ms2<MSMAX1;ms2=(MolecState)(ms2+1)) {
+							if(actdetails != NULL && actdetails->srfRateExp[ms2] != NULL)
+							{
+								surfRateExp = actdetails->srfRateExp[ms2];
+								try {
+									surfRateExp->evaluateConstant();
+									delete actdetails->srfRateExp[ms2];
+									actdetails->srfRateExp[ms2] = NULL;
+									//if can be evaluated to constant, set rate is done in surfreadstring of smolsurface.c
+								} catch (...) {
+									actdetails->srfRateExp[ms2]->bindExpression(symbolTable);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return sim;
 }
 
@@ -362,7 +401,7 @@ double evaluateRnxRate(rxnptr reaction, simptr sim, int volIndex){
 	WorldCoord wc = ((CartesianMesh*)vcellSim->getMesh())->getVolumeWorldCoord(volIndex);
 	//vcellSim->setCurrentCoordinate(wc);
 	double pos[3] = {wc.x, wc.y, wc.z};
-	return evaluateRnxRate2(sim, reaction, pos, NULL);
+	return evaluateRnxRate2(sim, reaction->rateExp, false, pos, NULL);
 	/*int* indices = vcellSim->getIndices();
 	indices[VAR_MEMBRANE_INDEX] = -1;
 	indices[VAR_MEMBRANE_REGION_INDEX] = -1;
@@ -372,16 +411,16 @@ double evaluateRnxRate(rxnptr reaction, simptr sim, int volIndex){
 	return rateExp->evaluateProxy();*/
 }
 
-double evaluateRnxRate2(simptr sim, rxnptr reaction, double* pos, char* panelName)
+double evaluateRnxRate2(simptr sim, Expression* rateExp, bool isMemRnx, double* pos, char* panelName)
 {
 	int dim = sim -> dim;
-	Expression * rateExpression = reaction->rateExp;
+	Expression * rateExpression = rateExp;
 	SimulationExpression* vcellSim = (SimulationExpression*)sim->simTool->getSimulation();
 	int* indices = vcellSim->getIndices();
 	WorldCoord wc(pos[0], dim>1?pos[1]:0, dim>2?pos[2]:0);
 	vcellSim->setCurrentCoordinate(wc);
 	
-	if(reaction->srf)
+	if(isMemRnx)
 	{
 		if(panelName == NULL)
 		{

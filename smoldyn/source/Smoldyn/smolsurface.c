@@ -17,6 +17,7 @@
 #include "smoldyn.h"
 #include "Sphere.h"
 #include "Zn.h"
+#include <sstream>
 
 #include "smoldyn_config.h"
 
@@ -627,6 +628,9 @@ surfactionptr surfaceactionalloc(int species) {
 	if(!actdetails) return NULL;
 	actdetails->srfnewspec=NULL;
 	actdetails->srfrate=NULL;
+#ifdef VCELL_HYBRID
+	actdetails->srfRateExp=NULL;
+#endif
 	actdetails->srfprob=NULL;
 	actdetails->srfcumprob=NULL;
 	actdetails->srfdatasrc=NULL;
@@ -637,6 +641,11 @@ surfactionptr surfaceactionalloc(int species) {
 
 	CHECK(actdetails->srfrate=(double*) calloc(MSMAX1,sizeof(double)));
 	for(ms=(MolecState)0;ms<MSMAX1;ms=(MolecState)(ms+1)) actdetails->srfrate[ms]=0;
+
+#ifdef VCELL_HYBRID
+	CHECK(actdetails->srfRateExp=(Expression**) calloc(MSMAX1,sizeof(Expression*)));
+	for(ms=(MolecState)0;ms<MSMAX1;ms=(MolecState)(ms+1)) actdetails->srfRateExp[ms]=0;
+#endif
 
 	CHECK(actdetails->srfprob=(double*) calloc(MSMAX1,sizeof(double)));
 	for(ms=(MolecState)0;ms<MSMAX1;ms=(MolecState)(ms+1)) actdetails->srfprob[ms]=0;
@@ -1898,6 +1907,78 @@ int surfsetrate(surfaceptr srf,int ident,enum MolecState ms,enum MolecState ms1,
 	surfsetcondition(srf->srfss,SCparams,0);
 	return 0; }
 
+#ifdef VCELL_HYBRID
+int surfSetRateExp(surfaceptr srf,int ident,enum MolecState ms,enum MolecState ms1,enum MolecState ms2,int newident,Expression* rateExp,int which) {
+	int i1,ilo,ihi;
+	enum MolecState ms3,ms4;
+	enum PanelFace face;
+	surfactionptr actdetails;
+
+	if(ident==0 || ident>=srf->srfss->maxspecies) return 1;
+	else if(ident<0) {ilo=1;ihi=srf->srfss->maxspecies-1;}
+	else ilo=ihi=ident;
+
+	if(ms==MSbsoln || ms==MSall) return 2;
+
+	if(ms1>MSbsoln) return 3;
+	else if(ms!=MSsoln && ms1!=MSsoln && ms1!=MSbsoln && ms1!=ms) return 3;
+
+	if(ms2>MSbsoln) return 4;
+	else if(ms2==ms1) return 4;
+
+	if((newident!=-5 && newident<0) || newident>=srf->srfss->maxspecies) return 5;
+
+	if(rateExp==NULL) return 6;
+	
+	srftristate2index(ms,ms1,ms2,&ms3,&face,&ms4);
+	for(i1=ilo;i1<=ihi;i1++) {
+		if(!srf->actdetails[i1][ms3][face]) {
+			actdetails=surfaceactionalloc(i1);				// allocate action details
+			if(!actdetails) return -1;
+			srf->actdetails[i1][ms3][face]=actdetails; }
+
+		actdetails=srf->actdetails[i1][ms3][face];
+
+		srf->action[i1][ms3][face]=SAmult;						// set action to mult
+		if(which==1) {															// and set up action details
+			actdetails->srfRateExp[ms4]=rateExp;
+			actdetails->srfdatasrc[ms4]=1; }
+		else if(which==2) {
+			actdetails->srfRateExp[ms4]=rateExp;
+			actdetails->srfdatasrc[ms4]=2; }
+		actdetails->srfnewspec[ms4]=(newident==-5)?i1:newident; }
+
+	surfsetcondition(srf->srfss,SCparams,0);
+	return 0; }
+
+int surfUpdateRate(simptr sim, moleculeptr mptr, enum PanelFace face, panelptr pnl) {
+	int molIdent = mptr->ident;
+	surfacessptr surfacess = sim -> srfss;
+	int numSrfs = surfacess->nsrf;
+	surfaceptr * surfacelist = surfacess->srflist;
+	surfactionptr actdetails;
+	enum MolecState ms,ms2;
+	enum PanelFace f; 
+	Expression * surfRateExp;
+	for(int s=0; s<numSrfs; s++) {
+		surfaceptr srf=surfacelist[s];
+		if(srf->actdetails) {
+			for(f=face;f<PFboth;f=(PanelFace)(f+1))
+			{
+				actdetails=srf->actdetails[mptr->ident][mptr->mstate][f];
+				for(ms2=(MolecState)0;ms2<MSMAX1;ms2=(MolecState)(ms2+1)) {
+					if(actdetails != NULL && actdetails->srfRateExp[ms2] != NULL)
+					{
+						surfRateExp = actdetails->srfRateExp[ms2];
+						actdetails->srfrate[ms2] = evaluateRnxRate2(sim, surfRateExp, true, mptr->pos, pnl->pname);
+					}
+				}
+			}
+		}
+		
+	}
+	return 0; }
+#endif
 
 /* surfsetmaxpanel */
 int surfsetmaxpanel(surfaceptr srf,int dim,enum PanelShape ps,int maxpanel) {
@@ -2436,8 +2517,28 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 	else if(!strcmp(word,"rate") || !strcmp(word,"rate_internal")) { // rate, rate_internal
 		CHECKS(srf,"need to enter surface name first");
 		CHECKS(srfss->maxspecies,"need to enter molecules first");
+		
+#ifdef VCELL_HYBRID
+		bool constRate = true;
+
+		stringstream ss(line2);
+		ss >> nm >> nm1 >> nm2;
+		string rawStr;
+		getline(ss, rawStr);
+		size_t found = rawStr.find(";");
+		string rateExpStr = rawStr.substr(0, found);
+		Expression* srfRateExp = new Expression(rateExpStr);
+		try {
+			double rate = srfRateExp->evaluateConstant();
+			f1=rate;
+			constRate = true;			
+		} catch (...) {
+			constRate = false;
+		}
+#else
 		itct=sscanf(line2,"%s %s %s %lg",nm,nm1,nm2,&f1);
 		CHECKS(itct==4,"format: species[(state)] state1 state2 value [new_species]");
+#endif
 		i=readmolname(sim,nm,&ms);
 		CHECKS(i>0 || i==-5,"molecule name not recognized");
 		CHECKS(ms<MSbsoln,"state is not recognized or not permitted");
@@ -2449,8 +2550,16 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 			CHECKS(ms1!=ms2,"it is not permitted for state1 to equal state2"); }
 		else {
 			CHECKS(ms1==ms || ms1==MSsoln || ms1==MSbsoln,"state1 does not make sense"); }
+#ifdef VCELL_HYBRID
+		if(constRate == true)
+			CHECKS(f1>=0,"negative surface rate values are not permitted");
+		string name = rawStr.substr(found+2); //after the ";" denoting the end of rate, the found move one more position(the space) to get to the end of the line, which would be the species name
+		const char* anotherMolName = name.c_str();
+		line2 = const_cast<char *>(anotherMolName); 
+#else
 		CHECKS(f1>=0,"negative surface rate values are not permitted");
 		line2=strnword(line2,5);
+#endif
 		i3=i;
 		if(line2) {
 			itct=sscanf(line2,"%s",nm);
@@ -2458,6 +2567,28 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 			i3=stringfind(sim->mols->spname,sim->mols->nspecies,nm);
 			CHECKS(i3!=-1,"new species name not recognized");
 			line2=strnword(line2,2); }
+#ifdef VCELL_HYBRID
+		if(constRate == true)
+		{
+			if(!strcmp(word,"rate"))
+				er=surfsetrate(srf,i,ms,ms1,ms2,i3,f1,1);
+			else {
+				CHECKS(f1<=1,"surface interaction probabilities cannot be greater than 1");
+				er=surfsetrate(srf,i,ms,ms1,ms2,i3,f1,2); }
+			CHECKS(er!=-1,"out of memory");
+			CHECKS(!er,"BUG: error in surfsetrate");
+		}
+		else //rate is a function
+		{
+			if(!strcmp(word,"rate"))
+				er=surfSetRateExp(srf, i, ms, ms1, ms2, i3, srfRateExp,1);
+			else {
+				CHECKS(f1<=1,"surface interaction probabilities cannot be greater than 1");
+				er=surfSetRateExp(srf, i, ms, ms1, ms2, i3, srfRateExp, 2); }
+			CHECKS(er!=-1,"out of memory");
+			CHECKS(!er,"BUG: error in surfsetrate");
+		}
+#else
 		if(!strcmp(word,"rate"))
 			er=surfsetrate(srf,i,ms,ms1,ms2,i3,f1,1);
 		else {
@@ -2465,7 +2596,8 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 			er=surfsetrate(srf,i,ms,ms1,ms2,i3,f1,2); }
 		CHECKS(er!=-1,"out of memory");
 		CHECKS(!er,"BUG: error in surfsetrate");
-		CHECKS(!line2,"unexpected text at end of line"); }
+#endif
+		CHECKS(!line2,"unexpected text at end of line");}
 
 	else if(!strcmp(word,"color") || !strcmp(word,"colour")) {		// color
 		CHECKS(srf,"need to enter surface name before color");
@@ -3734,11 +3866,18 @@ int checksurfaces(simptr sim,int ll,int reborn) {
 					for(d=0;d<dim;d++) pos[d]=via[d];
 					done=1; }
 				else {
+#ifdef VCELL_HYBRID
+					//if we defined suface rate as function then we have to evaluate the rate every time step when surface activity happens
+					surfUpdateRate(sim, mptr, facemin, pnlmin);
+					//after evaluating all the rate expressions, call surfupdateparams to update probs.
+					surfupdateparams(sim);
+#endif
 					done=dosurfinteract(sim,mptr,ll,m,pnlmin,facemin,crssptmin);
 					for(d=0;d<dim;d++) via[d]=crssptmin[d];
 					sim->eventcount[ETsurf]++; }}
 			else																	// nothing was crossed
 				done=1; }}
+
 	return 0; }
 
 

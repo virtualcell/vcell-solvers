@@ -159,6 +159,9 @@ enum SMLflag {SMLno=0,SMLdiffuse=1,SMLreact=2,SMLsrfbound=4};
 typedef struct surfactionstruct {
 	int *srfnewspec;						// surface convert mol. species [ms]
 	double *srfrate;						// surface action rate [ms]
+#ifdef VCELL_HYBRID
+	Expression** srfRateExp;			//rate for surface actions: asorption, desorption, transmission...etc.
+#endif
 	double *srfprob;						// surface action probability [ms]
 	double *srfcumprob;					// surface cumulative probability [ms]
 	int *srfdatasrc;						// surface data source [ms]
@@ -206,7 +209,7 @@ typedef struct surfacestruct {
 	int *nemitter[2];						// number of emitters [face][i]
 	double **emitteramount[2];	// emitter amounts [face][i][emit]
 	double ***emitterpos[2];		// emitter positions [face][i][emit][d]
-	 } *surfaceptr;
+    } *surfaceptr;
 
 typedef struct surfacesuperstruct {
 	enum StructCond condition;	// structure condition
@@ -673,6 +676,9 @@ int surfsetdrawmode(surfaceptr srf,enum PanelFace face,enum DrawMode dm);
 int surfsetshiny(surfaceptr srf,enum PanelFace face,double shiny);
 int surfsetaction(surfaceptr srf,int i,enum MolecState ms,enum PanelFace face,enum SrfAction act);
 int surfsetrate(surfaceptr srf,int ident,enum MolecState ms,enum MolecState ms1,enum MolecState ms2,int newident,double value,int which);
+#ifdef VCELL_HYBRID
+int surfSetRateExp(surfaceptr srf,int ident,enum MolecState ms,enum MolecState ms1,enum MolecState ms2,int newident,Expression* rateExp,int which);
+#endif
 int surfsetmaxpanel(surfaceptr srf,int dim,enum PanelShape ps,int maxpanel);
 int surfaddpanel(surfaceptr srf,int dim,enum PanelShape ps,const char *string,double *params,const char *name);
 int surfsetemitterabsorption(simptr sim);
@@ -943,7 +949,7 @@ void endsimulate(simptr sim,int er);
 int smolsimulate(simptr sim);
 /**************************  extra functions for vcell_hybrid  ***************/
 #ifdef VCELL_HYBRID
-double evaluateRnxRate2(simptr sim, rxnptr reaction, double* pos, char* panelName);
+double evaluateRnxRate2(simptr sim, Expression* rateExp, bool isMemRnx, double* pos, char* panelName);
 double evaluateRnxRate(rxnptr reaction, simptr sim, int volIndex);
 int randomPosInMesh(CartesianMesh* mesh, simptr sim, double* pos, int volIndex); //return 0 with no erorr, othwise there is an error.
 #endif

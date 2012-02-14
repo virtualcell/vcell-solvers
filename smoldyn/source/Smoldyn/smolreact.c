@@ -2134,7 +2134,7 @@ int zeroreact(simptr sim) {
 							double ** points = panels[j]->point; //point[number][dim]
 							double triCenterPos[3]; 
 							Geo_TriCenter(points, triCenterPos, sim->dim);
-							double rate = evaluateRnxRate2(sim, rxn, triCenterPos, panels[j]->pname);
+							double rate = evaluateRnxRate2(sim, rxn->rateExp, true, triCenterPos, panels[j]->pname);
 							//get probability
 							double triPanelArea = Geo_TriArea3D(points[0], points[1], points[2]);
 							double prob = rate * sim->dt * triPanelArea;
@@ -2208,7 +2208,7 @@ int unireact(simptr sim) {
 		{
 			if(mptr->pnl)
 			{
-				rxn -> rate = evaluateRnxRate2(sim, rxn, mptr->pos, mptr->pnl->pname);
+				rxn -> rate = evaluateRnxRate2(sim, rxn->rateExp, true, mptr->pos, mptr->pnl->pname);
 			}
 			else
 			{
@@ -2217,7 +2217,7 @@ int unireact(simptr sim) {
 		}
 		else
 		{
-			rxn -> rate = evaluateRnxRate2(sim, rxn, mptr->pos, NULL);
+			rxn -> rate = evaluateRnxRate2(sim, rxn->rateExp, false, mptr->pos, NULL);
 		}
 
 		char erstr[256];
@@ -2292,11 +2292,11 @@ void setBiReactRateForHybrid(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr
 		{
 			if(mptr1->pnl)
 			{
-				rxn -> rate = evaluateRnxRate2(sim, rxn, pos, mptr1->pnl->pname);
+				rxn -> rate = evaluateRnxRate2(sim, rxn->rateExp, true, pos, mptr1->pnl->pname);
 			}
 			else if(mptr2->pnl)
 			{
-				rxn -> rate = evaluateRnxRate2(sim, rxn, pos, mptr2->pnl->pname);
+				rxn -> rate = evaluateRnxRate2(sim, rxn->rateExp, true, pos, mptr2->pnl->pname);
 			}
 			else
 			{
@@ -2305,7 +2305,7 @@ void setBiReactRateForHybrid(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr
 		}
 		else
 		{
-			rxn -> rate = evaluateRnxRate2(sim, rxn, pos, NULL);
+			rxn -> rate = evaluateRnxRate2(sim, rxn->rateExp, false, pos, NULL);
 		}
 
 		char erstr[256];
