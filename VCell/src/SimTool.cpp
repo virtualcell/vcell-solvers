@@ -288,11 +288,6 @@ void SimTool::loadFinal()
 		clearLog();
 		return;
 	}
-	
-	if (simulation->getPostProcessingBlock() != NULL) {
-		clearLog();
-		return;
-	}
 
 	if (dataProcessor != 0) {
 		if (!dataProcessor->checkComplete(this)) {
@@ -337,12 +332,14 @@ void SimTool::loadFinal()
 
 		simStartTime = -1;
 		int tempIteration = -1, tempFileCount = 0, tempZipCount = 0;
+		int numTimes = 0;
 
 		while (!feof(logFP)){
-			char logBuffer[201];
-			if (!fgets(logBuffer, 200, logFP)){
+			char logBuffer[1024];
+			if (!fgets(logBuffer, 1024, logFP)){
 				break;
 			}
+			numTimes ++;
 			//
 			// look for line with a valid filename (includes basename)
 			//
@@ -374,10 +371,6 @@ void SimTool::loadFinal()
 		}
 
 		if (!bStartOver) {
-			if (isSundialsPdeSolver()) {
-				simulation->setSimStartTime(simStartTime);
-			}
-
 			if (bSimZip) {
 				// check if zip file exists
 				char zipFileAbsoluteName[512];
@@ -401,40 +394,51 @@ void SimTool::loadFinal()
 				}
 			}			
 			
-			// otherwise check if sim file exists
-			if (stat(dataFileName, &buf)) {
-				cout << "SimTool::loadFinal(), unable to open sim file <" << dataFileName << ">" << endl;	
-				bStartOver = true;
-			} else {
-				try {
-					FVDataSet::read(dataFileName, simulation);
-					simulation->setCurrIteration(tempIteration);
-					simFileCount = tempFileCount;
-
-					if (bSimZip) {
-						remove(dataFileName);
-						zipFileCount = getZipCount(zipFileName);
-						// wrong zip file Name
-						if (zipFileCount < 0) { // should never happen
-							bStartOver = true;
-						}  else {
-							// check if this zip file is already big enough
-							if (stat(zipFileName, &buf) == 0) {
-								if (buf.st_size > ZIP_FILE_LIMIT) {
-									zipFileCount ++;
-								}
-							}
+			if (!bStartOver) {
+				// otherwise check if sim file exists
+				if (stat(dataFileName, &buf)) {
+					cout << "SimTool::loadFinal(), unable to open sim file <" << dataFileName << ">" << endl;	
+					bStartOver = true;
+				} else {
+					try {
+						if (postProcessingHdf5Writer != NULL) {
+							bStartOver = !postProcessingHdf5Writer->loadFinal(numTimes);
 						}
-					} 
-					
-				} catch (const char* msg) {
-					cout << "SimTool::loadFinal() : dataSet.read(" << dataFileName << " failed : " << msg << endl;
-					bStartOver = true;
-				} catch (...) {
-					cout << "SimTool::loadFinal() : dataSet.read(" << dataFileName << " failed : unexpected error" << endl;
-					bStartOver = true;
+
+						if (!bStartOver) {
+							FVDataSet::read(dataFileName, simulation);
+							simulation->setCurrIteration(tempIteration);
+							// set start time on sundials
+							if (isSundialsPdeSolver()) {
+								simulation->setSimStartTime(simStartTime);
+							}
+							simFileCount = tempFileCount;
+
+							if (bSimZip) {
+								remove(dataFileName);
+								zipFileCount = getZipCount(zipFileName);
+								// wrong zip file Name
+								if (zipFileCount < 0) { // should never happen
+									bStartOver = true;
+								}  else {
+									// check if this zip file is already big enough
+									if (stat(zipFileName, &buf) == 0) {
+										if (buf.st_size > ZIP_FILE_LIMIT) {
+											zipFileCount ++;
+										}
+									}
+								}
+							} 
+						}
+					} catch (const char* msg) {
+						cout << "SimTool::loadFinal() : dataSet.read(" << dataFileName << " failed : " << msg << endl;
+						bStartOver = true;
+					} catch (...) {
+						cout << "SimTool::loadFinal() : dataSet.read(" << dataFileName << " failed : unexpected error" << endl;
+						bStartOver = true;
+					}
 				}
-			}			
+			} // if (!bStartOver)
 		}  // if (!bStartOver) 
 	} // if (logFP != NULL)
 
@@ -553,6 +557,11 @@ void SimTool::updateLog(double progress, double time, int iteration)
 
 				// write the log file
 				if (bSuccess) {
+					// write hdf5 post processing before writing log entry
+					if (postProcessingHdf5Writer != NULL) {
+						postProcessingHdf5Writer->writeOutput();
+					}
+
 					char zipFileNameWithoutPath[512];
 					sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
 					char simFileNameWithoutPath[512];
@@ -582,14 +591,6 @@ void SimTool::updateLog(double progress, double time, int iteration)
 		} else {
 			throw errmsg;
 		}
-	}
-	if (simulation->getPostProcessingBlock() != NULL) {
-		if (postProcessingHdf5Writer == NULL) {
-			char h5PPFileName[128];
-			sprintf(h5PPFileName, "%s%s", baseFileName, HDF5_FILE_EXT);
-			postProcessingHdf5Writer = new PostProcessingHdf5Writer(h5PPFileName, simulation->getPostProcessingBlock());
-		}
-		postProcessingHdf5Writer->writeOutput();
 	}
 	if (dataProcessor != 0) {
 		dataProcessor->onWrite(this);
@@ -726,6 +727,16 @@ void SimTool::setSmoldynInputFile(string& inputfile) {
 #endif
 
 void SimTool::start1() {
+
+	// create post processing hdf5 writer
+	if (simulation->getPostProcessingBlock() != NULL) {
+		if (postProcessingHdf5Writer == NULL) {
+			char h5PPFileName[128];
+			sprintf(h5PPFileName, "%s%s", baseFileName, HDF5_FILE_EXT);
+			postProcessingHdf5Writer = new PostProcessingHdf5Writer(h5PPFileName, simulation->getPostProcessingBlock());
+		}
+	}
+
 	simulation->initSimulation();
 
 #ifdef VCELL_HYBRID	

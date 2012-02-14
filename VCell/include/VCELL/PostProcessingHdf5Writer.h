@@ -28,14 +28,17 @@ public:
 	static const char* PPGroupName;
 	static const char* TimesDataSetName;
 
+	bool loadFinal(int numTimes);
+
 private:
 	vector<double> timeList;
 	PostProcessingBlock* postProcessingBlock;
 
+	char* h5PPFileName;
 	H5::H5File* h5PPFile;
-	bool bFirstTime;
 	H5::DataSet* timesDataSet;
-	void writeDataSet(DataGenerator* dataGenerator, int timeIndex);
+	void writeDataGenerator(DataGenerator* dataGenerator, int timeIndex);
+	void createGroups();
 };
 
 #endif
