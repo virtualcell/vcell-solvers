@@ -1176,7 +1176,10 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 			getline(ss,rawStr);
 			size_t found = rawStr.find(";");
 			expStr = rawStr.substr(0, found);
-			rxn->rateExp = new Expression(expStr);}
+			rxn->rateExp = new Expression(expStr);
+			//a "fake" set value to allow RxnSetRate to do proper job, especially when there is reversible
+			//reactions, the rxn->rparamt, and rxn->bindrad2 have to be set.
+		    er = RxnSetValue(sim, "rate", rxn, 1);}
 #else
 			CHECKS((itct=sscanf(line2,"%lg",&flt1))==1,"failed to read reaction rate");
 			er=RxnSetValue(sim,"rate",rxn,flt1);
@@ -1195,7 +1198,9 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 		rxn->rateExp = new Expression(expStr);
 		r=readrxnname(sim,rname,&order,&rxn);
 		CHECKS(r>=0,"unrecognized reaction name");
-
+		//a "fake" set value to allow RxnSetRate to do proper job, especially when there is reversible
+		//reactions, the rxn->rparamt, and rxn->bindrad2 have to be set.
+		er = RxnSetValue(sim, "rate", rxn, 1);
 #else
 		itct=sscanf(line2,"%s %lg",rname,&flt1);
 		CHECKS(itct==2,"reaction_rate format: rname rate");

@@ -1023,7 +1023,6 @@ int rxnsetrate(simptr sim,int order,int r,char *erstr) {
 
 	return 0; }
 
-
 /* rxnsetrates */
 int rxnsetrates(simptr sim,int order,char *erstr) {
 	rxnssptr rxnss;
@@ -1060,11 +1059,11 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 
 	if(nprod==0) {
 		if(!(rparamt==RPnone || rparamt==RPirrev)) {
-			sprintf(erstr,"Illegal product parameter because reaction has no products");er=1; }}		
+			printfException("Illegal product parameter because reaction has no products");er=1; }}		
 
 	else if(nprod==1) {
 		if(!(rparamt==RPnone || rparamt==RPirrev || rparamt==RPbounce || rparamt==RPconfspread || rparamt==RPoffset || rparamt==RPfixed)) {
-			sprintf(erstr,"Illegal product parameter because reaction only has one product");er=2; }		
+			printfException("Illegal product parameter because reaction only has one product");er=2; }		
 		else if(rparamt==RPoffset || rparamt==RPfixed);
 		else {
 			rxn->unbindrad=0;
@@ -1082,7 +1081,7 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 
 		if(rev==0) {
 			if(rparamt==RPpgem || rparamt==RPpgemmax || rparamt==RPpgemmaxw || rparamt==RPratio || rparamt==RPpgem2 || rparamt==RPpgemmax2 || rparamt==RPratio2) {
-				sprintf(erstr,"Illegal product parameter because products don't react");er=3; }		
+				printfException("Illegal product parameter because products don't react");er=3; }		
 			else if(rparamt==RPunbindrad) {
 				if(dsum==0) dsum=(dc1=1.0)+(dc2=1.0);
 				rxn->unbindrad=rpar;
@@ -1099,13 +1098,14 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 			else bindradr=-1;
 
 			if(rparamt==RPnone) {
-				sprintf(erstr,"Undefined product placement for reversible reaction");er=5; }		
+				printfException("Undefined product placement for reversible reaction");er=5;
+			}		
 			else if(rparamt==RPoffset || rparamt==RPfixed || rparamt==RPconfspread);
 			else if(rparamt==RPirrev) {
 				rxn->unbindrad=0;
 				for(d=0;d<dim;d++) rxn->prdpos[0][d]=rxn->prdpos[1][d]=0; }
 			else if(dsum<=0) {						// all below options require dsum > 0
-				sprintf(erstr,"Cannot set unbinding distance because sum of product diffusion constants is 0");er=4; }		
+				printfException("Cannot set unbinding distance because sum of product diffusion constants is 0");er=4; }		
 			else if(rparamt==RPunbindrad) {
 				rxn->unbindrad=rpar;
 				rxn->prdpos[0][0]=rpar*dc1/dsum;
@@ -1115,7 +1115,7 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 				rxn->prdpos[0][0]=rpar*dc1/dsum;
 				rxn->prdpos[1][0]=-rpar*dc2/dsum; }
 			else if(rxnr->bindrad2<0) {			// all below options require bindrad2 > 0
-				sprintf(erstr,"Binding radius of reaction products is undefined");er=6; }		
+				printfException("Binding radius of reaction products is undefined");er=6; }		
 			else if(rparamt==RPratio || rparamt==RPratio2) {
 				rxn->unbindrad=rpar*bindradr;
 				rxn->prdpos[0][0]=rpar*bindradr*dc1/dsum;
@@ -1123,9 +1123,9 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 			else if(rparamt==RPpgem || rparamt==RPpgem2) {
 				rpar=unbindingradius(rpar,sim->dt,dsum,bindradr);
 				if(rpar==-2) {
-					sprintf(erstr,"Cannot create an unbinding radius due to illegal input values");er=7; }		
+					printfException("Cannot create an unbinding radius due to illegal input values");er=7; }		
 				else if(rpar<0) {
-					sprintf(erstr,"Maximum possible geminate binding probability is %g",-rpar);er=8; }		
+					printfException("Maximum possible geminate binding probability is %g",-rpar);er=8; }		
 				else {
 					rxn->unbindrad=rpar;
 					rxn->prdpos[0][0]=rpar*dc1/dsum;
@@ -1133,7 +1133,7 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 			else if(rparamt==RPpgemmax || rparamt==RPpgemmaxw || rparamt==RPpgemmax2) {
 				rpar=unbindingradius(rpar,sim->dt,dsum,bindradr);
 				if(rpar==-2) {
-					sprintf(erstr,"Illegal input values");er=9; }		
+					printfException("Illegal input values");er=9; }		
 				else if(rpar<=0) {
 					rxn->unbindrad=0; }
 				else if(rpar>0) {
@@ -1141,7 +1141,7 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 					rxn->prdpos[0][0]=rpar*dc1/dsum;
 					rxn->prdpos[1][0]=-rpar*dc2/dsum; }}
 			else {
-				sprintf(erstr,"BUG in rxnsetproduct");er=10; }}}		
+				printfException("BUG in rxnsetproduct");er=10; }}}		
 
 	return er; }
 
@@ -1152,7 +1152,7 @@ int rxnsetproducts(simptr sim,int order,char *erstr) {
 	int r,er;
 
 	if(!sim || order<0 || order>MAXORDER || !erstr) {
-		sprintf(erstr,"illegal inputs to setproducts function");return 0;}		
+		printfException("illegal inputs to setproducts function");return 0;}		
 	rxnss=sim->rxnss[order];
 	if(!rxnss) return -1;
 	for(r=0;r<rxnss->totrxn;r++) {
