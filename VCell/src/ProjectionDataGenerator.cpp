@@ -44,14 +44,14 @@ void ProjectionDataGenerator::resolveReferences(SimulationExpression* sim) {
 
 	hdf5Rank = mesh->getDimension() - 1;
 	if (axis == Projection_Axis_z) { 
-		hdf5Dims[0] = mesh->getNumVolumeX();
-		hdf5Dims[1] = mesh->getNumVolumeY();
-	} else if (axis == Projection_Axis_y) {
-		hdf5Dims[0] = mesh->getNumVolumeX();
-		hdf5Dims[1] = mesh->getNumVolumeZ();
-	} else if (axis == Projection_Axis_x) {
+		hdf5Dims[1] = mesh->getNumVolumeX();
 		hdf5Dims[0] = mesh->getNumVolumeY();
-		hdf5Dims[1] = mesh->getNumVolumeZ();
+	} else if (axis == Projection_Axis_y) {
+		hdf5Dims[1] = mesh->getNumVolumeX();
+		hdf5Dims[0] = mesh->getNumVolumeZ();
+	} else if (axis == Projection_Axis_x) {
+		hdf5Dims[1] = mesh->getNumVolumeY();
+		hdf5Dims[0] = mesh->getNumVolumeZ();
 	}
 }
 

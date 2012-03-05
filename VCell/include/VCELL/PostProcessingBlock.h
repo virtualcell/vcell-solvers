@@ -32,6 +32,9 @@ public:
 		return dataGeneratorList;
 	}
 
+	SimulationExpression* getSimulation(){
+		return simulation;
+	}
 	//SymbolTableEntry* getEntry(string identifierString); 
 
 private:

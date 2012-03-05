@@ -6,6 +6,7 @@
 #include <VCELL/PostProcessingBlock.h>
 #include <VCELL/VariableStatisticsDataGenerator.h>
 #include <VCELL/Variable.h>
+#include <VCELL/CartesianMesh.h>
 #include <typeinfo>
 #include <H5Cpp.h>
 #include <iostream>
@@ -148,7 +149,7 @@ void PostProcessingHdf5Writer::createGroups() {
 
 		sprintf(dataGeneratorGroupName, "%s/%s", PPGroupName, dataGenerator->getQualifiedName().c_str());
 		H5::Group dataGeneratorGroup = h5PPFile->createGroup(dataGeneratorGroupName);
-
+		
 		if (typeid(*dataGenerator) == typeid(VariableStatisticsDataGenerator)) {
 			// attributes : all the components
 			int numVar = postProcessingBlock->simulation->getNumVariables();
@@ -167,6 +168,25 @@ void PostProcessingHdf5Writer::createGroups() {
 				attribute = dataGeneratorGroup.createAttribute(attrName, attributeNameStrType, attributeDataSpace);
 				sprintf(compName, "%s_total", varName);
 				attribute.write(attributeNameStrType, compName);
+			}
+		}
+		else 
+		{
+			// adding origin and extent as attributes for all variable
+			string varAttNames[6] = {"OriginX", "OriginY", "OriginZ", "ExtentX", "ExtentY", "ExtentZ"};
+			CartesianMesh* mesh = ((CartesianMesh*)postProcessingBlock->getSimulation()->getMesh());
+			float origin[3] = {mesh->getDomainOriginX(), mesh->getDomainOriginY(), mesh->getDomainOriginZ()};
+			float extent[3] = {mesh->getDomainSizeX(), mesh->getDomainSizeY(), mesh->getDomainSizeZ()};
+			int dim = mesh->getDimension();
+			for (int i = 0; i < dim; i ++) { // add origin
+				H5::FloatType float_type(H5::PredType::NATIVE_FLOAT);
+				H5::Attribute attribute = dataGeneratorGroup.createAttribute(varAttNames[i], float_type, attributeDataSpace);
+				attribute.write(float_type, origin+i);
+			}
+			for (int i = 0; i < dim; i ++) { // add extent
+				H5::FloatType float_type(H5::PredType::NATIVE_FLOAT);
+				H5::Attribute attribute = dataGeneratorGroup.createAttribute(varAttNames[3+i], float_type, attributeDataSpace);
+				attribute.write(float_type, extent+i);
 			}
 		}
 	}

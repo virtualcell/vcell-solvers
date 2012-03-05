@@ -42,8 +42,8 @@ void GaussianConvolutionDataGenerator::resolveReferences(SimulationExpression* s
 	memset(functionValues, 0, dataSize * sizeof(double));
 
 	hdf5Rank = mesh->getDimension();
-	hdf5Dims[0] = mesh->getNumVolumeX();
-	hdf5Dims[1] = mesh->getNumVolumeY();
+	hdf5Dims[1] = mesh->getNumVolumeX();
+	hdf5Dims[0] = mesh->getNumVolumeY();
 	hdf5Dims[2] = mesh->getNumVolumeZ();
 
 	double dx = mesh->getXScale_um();
