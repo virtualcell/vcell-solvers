@@ -123,10 +123,10 @@ int main(int argc, char *argv[])
 		returnCode = 1;
 	}
 
-	delete fvSolver;
 	if (ifsInput.is_open()) {
 		ifsInput.close();
 	}
 	vcellExit(returnCode, errorMsg);
+	delete fvSolver;
 	return returnCode;
 }

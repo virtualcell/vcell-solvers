@@ -20,7 +20,7 @@ namespace H5 {
 class PostProcessingHdf5Writer
 {
 public:
-	PostProcessingHdf5Writer(char* h5PPFileName, PostProcessingBlock* postProcessingBlock);
+	PostProcessingHdf5Writer(char* fileName, PostProcessingBlock* postProcessingBlock);
 	virtual ~PostProcessingHdf5Writer();
 
 	void writeOutput();
@@ -34,7 +34,7 @@ private:
 	vector<double> timeList;
 	PostProcessingBlock* postProcessingBlock;
 
-	char* h5PPFileName;
+	string h5PPFileName;
 	H5::H5File* h5PPFile;
 	H5::DataSet* timesDataSet;
 	void writeDataGenerator(DataGenerator* dataGenerator, int timeIndex);

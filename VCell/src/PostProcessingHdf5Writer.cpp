@@ -19,8 +19,8 @@ using std::endl;
 const char* PostProcessingHdf5Writer::PPGroupName  = POST_PROCESSING_ROOT;
 const char* PostProcessingHdf5Writer::TimesDataSetName  = POST_PROCESSING_ROOT"/Times";
 
-PostProcessingHdf5Writer::PostProcessingHdf5Writer(char* h5PPFileName, PostProcessingBlock* ppb) {
-	this->h5PPFileName = h5PPFileName;
+PostProcessingHdf5Writer::PostProcessingHdf5Writer(char* fileName, PostProcessingBlock* ppb) {
+	this->h5PPFileName = fileName;
 	this->postProcessingBlock = ppb;
 	h5PPFile = NULL;
 	timesDataSet = NULL;
@@ -36,20 +36,20 @@ bool PostProcessingHdf5Writer::loadFinal(int numTimes) {
 
 	struct stat buf;
 	// file doesn't exist
-	if (stat(h5PPFileName, &buf) || buf.st_size == 0) {
+	if (stat(h5PPFileName.c_str(), &buf) || buf.st_size == 0) {
 		return false;
 	}
 
 	bool bSuccess = true;
 	// rename the file
 	char hdf5CopyFileName[128];
-	sprintf(hdf5CopyFileName, "%stmp", h5PPFileName);
+	sprintf(hdf5CopyFileName, "%stmp", h5PPFileName.c_str());
 	// remove if exists
 	remove(hdf5CopyFileName);
-	int r = rename(h5PPFileName, hdf5CopyFileName);
+	int r = rename(h5PPFileName.c_str(), hdf5CopyFileName);
 	// can't rename, copy the file
 	if (r) {
-		std::ifstream infile(h5PPFileName, std::ios_base::binary);
+		std::ifstream infile(h5PPFileName.c_str(), std::ios_base::binary);
 		std::ofstream outfile(hdf5CopyFileName, std::ios_base::binary);
 		outfile << infile.rdbuf();
 		infile.close();
@@ -121,7 +121,7 @@ void PostProcessingHdf5Writer::createGroups() {
 	H5::DataSpace attributeDataSpace(H5S_SCALAR);
 	H5::StrType attributeNameStrType(0, 64);
 
-	h5PPFile = new H5::H5File(h5PPFileName, H5F_ACC_TRUNC);
+	h5PPFile = new H5::H5File(h5PPFileName.c_str(), H5F_ACC_TRUNC);
 
 	// create post processing group /PostProcessing
 	h5PPFile->createGroup(PPGroupName);
