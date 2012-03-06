@@ -43,15 +43,21 @@ void ProjectionDataGenerator::resolveReferences(SimulationExpression* sim) {
 	memset(data, 0, dataSize * sizeof(double));
 
 	hdf5Rank = mesh->getDimension() - 1;
-	if (axis == Projection_Axis_z) { 
-		hdf5Dims[1] = mesh->getNumVolumeX();
-		hdf5Dims[0] = mesh->getNumVolumeY();
-	} else if (axis == Projection_Axis_y) {
-		hdf5Dims[1] = mesh->getNumVolumeX();
-		hdf5Dims[0] = mesh->getNumVolumeZ();
-	} else if (axis == Projection_Axis_x) {
-		hdf5Dims[1] = mesh->getNumVolumeY();
-		hdf5Dims[0] = mesh->getNumVolumeZ();
+	if (hdf5Rank == 1) {
+		hdf5Dims[0] = axis == Projection_Axis_x ? mesh->getNumVolumeY() : mesh->getNumVolumeX();
+	} else if (hdf5Rank == 2) {
+		if (axis == Projection_Axis_z) {
+			hdf5Dims[1] = mesh->getNumVolumeX();
+			hdf5Dims[0] = mesh->getNumVolumeY();
+		} else if (axis == Projection_Axis_y) {
+			hdf5Dims[1] = mesh->getNumVolumeX();
+			hdf5Dims[0] = mesh->getNumVolumeZ();
+		} else if (axis == Projection_Axis_x) {
+			hdf5Dims[1] = mesh->getNumVolumeY();
+			hdf5Dims[0] = mesh->getNumVolumeZ();
+		}
+	} else {
+		throw "Projection is not supported in 1D simulation";
 	}
 }
 
@@ -59,7 +65,7 @@ void ProjectionDataGenerator::computePPData(SimulationExpression* sim) {
 	CartesianMesh* mesh = (CartesianMesh*)sim->getMesh();
 	int dimension = mesh->getDimension();
 	if (dimension == 1) {
-		throw "projection is not supported in 1D simulation";
+		throw "Projection is not supported in 1D simulation";
 	}
 	if (dimension == 2) {
 		computePPData2D(sim);
