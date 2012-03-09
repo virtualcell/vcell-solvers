@@ -6,6 +6,7 @@
 #include "SimpleNode.h"
 #include "StackMachine.h"
 #include <math.h>
+#include <stdio.h>
 #include "MathUtil.h"
 #include "DivideByZeroException.h"
 #include "FunctionDomainException.h"

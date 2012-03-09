@@ -16,6 +16,8 @@ using std::stringstream;
 #include <VCELL/SimulationMessaging.h>
 #endif
 
+#include <memory.h>
+
 #include <cvode/cvode.h>             /* prototypes for CVODE fcts. and consts. */
 #include <nvector/nvector_serial.h>  /* serial N_Vector types, fcts., and macros */
 #include <cvode/cvode_dense.h>       /* prototype for CVDense */

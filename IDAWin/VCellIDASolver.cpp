@@ -21,6 +21,8 @@ using std::stringstream;
 //#include <ida/ida_spgmr.h>
 #include <nvector/nvector_serial.h>
 
+#include <memory.h>
+
 /**
   * calling sequence
   ********************

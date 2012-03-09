@@ -1,5 +1,6 @@
 #include <typeinfo>
 #include <stdlib.h>
+#include <stdio.h>
 #include <iostream>
 #include <sstream>
 using std::cout;

@@ -23,6 +23,9 @@
 using std::ifstream;
 using std::stringstream;
 
+#include <memory.h>
+#include <stdlib.h>
+
 #define CVODE_SOLVER "CVODE"
 #define IDA_SOLVER "IDA"
 

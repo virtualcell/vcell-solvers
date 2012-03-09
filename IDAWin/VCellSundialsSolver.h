@@ -16,6 +16,7 @@ using VCell::Expression;
 #include <nvector/nvector_serial.h>
 #include <sundials/sundials_types.h>
 
+#include <stdio.h>
 
 class SymbolTable;
 class OdeResultSet;

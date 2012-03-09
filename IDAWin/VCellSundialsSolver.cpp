@@ -7,6 +7,8 @@
 #include <sstream>
 using std::stringstream;
 
+#include <memory.h>
+
 #ifdef USE_MESSAGING
 #include <VCELL/SimulationMessaging.h>
 #endif

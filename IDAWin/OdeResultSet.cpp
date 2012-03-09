@@ -4,6 +4,8 @@
 #include "Exception.h"
 using namespace VCell;
 
+#include <memory.h>
+
 OdeResultSet::OdeResultSet()
 {
 	columnWeights = NULL;
