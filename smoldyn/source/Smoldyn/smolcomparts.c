@@ -19,6 +19,10 @@ using std::min;
 #include "RnSort.h"
 #include "smoldyn.h"
 #include "Zn.h"
+extern "C"
+{
+#include "zlib.h"
+}
 
 #define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;} else (void)0
 #define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0'; printfException("%s", B); goto failure;} else (void)0
@@ -181,6 +185,107 @@ int compartrandpos(simptr sim,double *pos,compartptr cmpt) {
 	if(!done) return 1;
 	return 0; }
 
+unsigned char fromHex(const char* src) {
+	char chs[5];
+	chs[0] = '0';
+	chs[1] = 'x';
+	chs[2] = src[0];
+	chs[3] = src[1];
+	chs[4] = 0;
+	int v;
+	sscanf(chs, "%x", &v);
+	return (unsigned char)v;
+}
+
+int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
+	if (line2 == 0) {
+		return 0;
+	}
+	using namespace std;
+	char fileName[128];
+	strcpy(fileName, line2);
+
+	char word[STRCHAR];
+	ParseFilePtr pfp = *pfpptr;
+	int pfpcode=Parse_ReadLine(&pfp,word,&line2,erstr);
+	*pfpptr=pfp;
+
+	VolumeSamplesPtr volumeSamplesPtr = new VolumeSamples;
+	sim->volumeSamplesPtr = volumeSamplesPtr;
+	volumeSamplesPtr->num[0] = volumeSamplesPtr->num[1] = volumeSamplesPtr->num[2] = 1;
+
+	ifstream ifs(fileName);
+	string line, nextToken;
+	while (!ifs.eof()) {		
+		getline(ifs, line);
+		istringstream lineInput(line);
+
+		nextToken = "";
+		lineInput >> nextToken;
+		if (nextToken.size() == 0 || nextToken[0] == '#') {
+			continue;
+		}
+		if (nextToken == "Size") {
+			lineInput >> volumeSamplesPtr->size[0] >> volumeSamplesPtr->size[1] >> volumeSamplesPtr->size[2];
+		} else if (nextToken == "Origin") {
+			lineInput >> volumeSamplesPtr->origin[0] >> volumeSamplesPtr->origin[1] >> volumeSamplesPtr->origin[2];
+		} else if (nextToken == "CompartmentHighResPixelMap") {
+			int count;
+			int pixel;
+			lineInput >> count;
+			volumeSamplesPtr->compartmentIDPairPtr = new CompartmentIdentifierPair[count];
+			for (int i = 0; i < count; i ++) {
+				getline(ifs, line);
+				istringstream lineInput1(line);
+				lineInput1 >> volumeSamplesPtr->compartmentIDPairPtr[i].name >> pixel;
+				volumeSamplesPtr->compartmentIDPairPtr[i].pixel = pixel;
+			}
+			volumeSamplesPtr->nCmptIDPair = count;
+		} else if (nextToken == "VolumeSamples") {
+			lineInput >> volumeSamplesPtr->num[0] >> volumeSamplesPtr->num[1] >> volumeSamplesPtr->num[2];
+			break;
+		}
+	}
+
+	long numVolume = volumeSamplesPtr->num[0] * volumeSamplesPtr->num[1] * volumeSamplesPtr->num[2];
+
+	getline(ifs, line);
+	int compressed_len = line.size();
+	if (compressed_len <= 1) {
+		throw "CartesianMesh::readGeometryFile() : invalid compressed volume";
+	}
+
+	const char* compressed_hex = line.c_str();
+	//volumeSamples compressed, changed from byte to short
+	unsigned char* bytes_from_compressed = new unsigned char[compressed_len+1];
+	memset(bytes_from_compressed, 0, (compressed_len+1) * sizeof(unsigned char));
+	for (int i = 0, j = 0; i < compressed_len; i += 2, j ++) {
+		bytes_from_compressed[j] = fromHex(compressed_hex + i);
+	}
+
+	volumeSamplesPtr->volsamples = new unsigned char[numVolume];
+	memset(volumeSamplesPtr->volsamples, 0, numVolume * sizeof(unsigned char));
+
+	unsigned long inflated_len = numVolume;
+	int retVal = uncompress(volumeSamplesPtr->volsamples, &inflated_len, bytes_from_compressed, compressed_len);
+	
+	if (inflated_len = numVolume) {
+		/*for (unsigned long i = 0; i < inflated_len; i ++) {		
+			if (volumeSamplesPtr->volsamples[i] == 6) {
+				cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
+			}
+			else if (volumeSamplesPtr->volsamples[i] == 16) {
+				cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
+			}
+		}*/
+	} else {
+		throw "loadHighResVolumeSamples : unexpected number of volume samples";
+	}
+	return 0;
+
+failure:		// failure
+	return 1;
+}
 
 /******************************************************************************/
 /******************************* memory management ****************************/

@@ -749,7 +749,8 @@ boxptr line2nextbox(simptr sim,double *pt1,double *pt2,boxptr bptr);
 int reassignmolecs(simptr sim,int diffusing,int reborn);
 
 /******************************* Compartments *******************************/
-
+// volume sample loading
+int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr);
 // enumerated types
 enum CmptLogic compartstring2cl(char *string);
 char *compartcl2string(enum CmptLogic cls,char *string);
