@@ -551,7 +551,16 @@ typedef struct surface_data_struct {
 	int resurrect_only;
 	} *ptrsurfacefuncdata;
 
-
+/********************************* Hybrid **********************************/
+#ifdef VCELL_HYBRID
+namespace VCell {
+	class Expression;
+}
+class CartesianMesh;
+double evaluateRnxRate(rxnptr reaction, simptr sim, int volIndex);
+double evaluateRnxRate2(simptr sim, Expression* rateExp, bool isMemRnx, double* pos, char* panelName);
+int randomPosInMesh(CartesianMesh* mesh, simptr sim, double* pos, int volIndex);
+#endif
 
 #endif
 

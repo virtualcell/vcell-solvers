@@ -89,13 +89,14 @@ elseif (LINUX)
 endif()
 include_directories(source/lib source/Smoldyn source ../ExpressionParser ../IDAWin ../netcdf-3.6.2/libsrc ../netcdf-3.6.2/cxx ../VCell/include)
 
-set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
-set(DEP_LIBS IDAWin ExpressionParser netcdf_cxx netcdf zip ${SONICMQ_LIBS})
-
 if (VCELL_SPATIAL_HYBRID)
+	list(APPEND SRC_FILES source/Smoldyn/smoldynhybrid.c)
 	add_library(smoldynlib STATIC ${SRC_FILES} ${HEADER_FILES})
 	set_property(TARGET smoldynlib PROPERTY COMPILE_DEFINITIONS VCELL_HYBRID)
 endif()
+
+set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
+set(DEP_LIBS IDAWin ExpressionParser netcdf_cxx netcdf zip ${SONICMQ_LIBS})
 
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	if (MSVC)

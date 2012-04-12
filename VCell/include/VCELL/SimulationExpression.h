@@ -100,6 +100,13 @@ public:
 	int getNumMemRegionVariables() { return memRegionVarSize; }
 	MembraneRegionVariable* getMemRegionVariable(int i) { return memRegionVarList[i]; }
 
+	int getNumVolParticleVariables() {
+		return volParticleVarSize;
+	}
+	int getNumMemParticleVariables() {
+		return memParticleVarSize;
+	}
+
 	int getNumMemPde() { return numMemPde; }
 	int getNumVolPde() { return numVolPde; }
 
@@ -155,6 +162,11 @@ private:
 	int volRegionVarSize;
 	MembraneRegionVariable** memRegionVarList;
 	int memRegionVarSize;
+
+	VolumeParticleVariable** volParticleVarList;
+	int volParticleVarSize;
+	MembraneParticleVariable** memParticleVarList;
+	int memParticleVarSize;
 
 	vector<RandomVariable*> randomVarList;
 

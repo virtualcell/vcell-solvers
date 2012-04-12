@@ -2563,9 +2563,9 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 #ifdef VCELL_HYBRID
 		bool constRate = true;
 
-		stringstream ss(line2);
+		std::stringstream ss(line2);
 		ss >> nm >> nm1 >> nm2;
-		string rawStr;
+		std::string rawStr;
 		getline(ss, rawStr);
 		size_t found = rawStr.find(";");
 		string rateExpStr = rawStr.substr(0, found);

@@ -111,11 +111,15 @@ SimulationExpression::SimulationExpression(Mesh *mesh) : Simulation(mesh) {
 	memVarSize = 0;
 	volRegionVarSize = 0;
 	memRegionVarSize = 0;
+	volParticleVarSize = 0;
+	memParticleVarSize = 0;
 
 	volVarList = 0;
 	memVarList = 0;
 	volRegionVarList = 0;
 	memRegionVarList = 0;
+	volParticleVarList = 0;
+	memParticleVarList = 0;
 
 	postProcessingBlock = NULL;
 }
@@ -139,6 +143,8 @@ SimulationExpression::~SimulationExpression()
 	delete[] memVarList;
 	delete[] volRegionVarList;
 	delete[] memRegionVarList;
+	delete[] volParticleVarList;
+	delete[] memParticleVarList;
 	for (int i = 0; i < numRegionSizeVars; i ++) {
 		delete regionSizeVarList[i];
 	}
@@ -182,11 +188,13 @@ void SimulationExpression::addVolumeVariable(VolumeVariable *var, bool* bSolveRe
 void SimulationExpression::addVolumeParticleVariable(VolumeParticleVariable *var)
 {
 	Simulation::addVariable(var);
+	++ volParticleVarSize;
 }
 
 void SimulationExpression::addMembraneParticleVariable(MembraneParticleVariable *var)
 {
 	Simulation::addVariable(var);
+	++ memParticleVarSize;
 }
 
 void SimulationExpression::addMembraneVariable(MembraneVariable *var)
@@ -235,6 +243,11 @@ void SimulationExpression::createSymbolTable() {
 		return;
 	}
 
+	if (SimTool::getInstance()->isSundialsPdeSolver()) {
+		if (volParticleVarSize > 0 || memParticleVarSize > 0) {
+			throw "Fully implicit solver does not support hybrid simulations";
+		}
+	}
 	CartesianMesh *mesh = (CartesianMesh*)_mesh;
 	VCellModel* model = SimTool::getInstance()->getModel();
 
@@ -308,7 +321,14 @@ void SimulationExpression::createSymbolTable() {
 	if (memRegionVarSize > 0) {
 		memRegionVarList = new MembraneRegionVariable*[memRegionVarSize];
 	}
+	if (volParticleVarSize > 0) {
+		volParticleVarList = new VolumeParticleVariable*[volParticleVarSize];
+	}
+	if (memParticleVarSize > 0) {
+		memParticleVarList = new MembraneParticleVariable*[memParticleVarSize];
+	}
 	int volVarCount = 0, memVarCount = 0, volRegionVarCount = 0, memRegionVarCount = 0;
+	int volParticleVarCount = 0, memParticleVarCount = 0;
 	for (int i = 0; i < numVariables; i ++) {
 		Variable* var = varList.at(i);
 		switch (var->getVarType()) {
@@ -324,6 +344,12 @@ void SimulationExpression::createSymbolTable() {
 		case VAR_MEMBRANE_REGION:
 			memRegionVarList[memRegionVarCount ++] = (MembraneRegionVariable*)var;
 			break;
+		case VAR_VOLUME_PARTICLE:
+			volParticleVarList[volParticleVarCount ++] = (VolumeParticleVariable*)var;
+			break;
+		case VAR_MEMBRANE_PARTICLE:
+			memParticleVarList[memParticleVarCount ++] = (MembraneParticleVariable*)var;
+			break;
 		}
 	}
 	
@@ -333,7 +359,8 @@ void SimulationExpression::createSymbolTable() {
 	// MEM, VOLREG, VOLREG_Feature1_membrane, VOLREG_Feature2_membrane, ... (for computing membrane flux for volume region variables), 
 	// MEMREG, REGIONSIZE, field data, random variables, parameters
 	int numSymbols = 4 + volVarSize * (model->getNumFeatures() + 1) + memVarSize 
-		+ volRegionVarSize * (model->getNumFeatures() + 1) + memRegionVarSize + numRegionSizeVars
+		+ volRegionVarSize * (model->getNumFeatures() + 1) + memRegionVarSize + volParticleVarSize
+		+ memParticleVarSize + numRegionSizeVars
 		+ (int)fieldDataList.size() + (int)randomVarList.size() + (int)paramList.size();
 	string* variableNames = new string[numSymbols];	
 
@@ -413,6 +440,22 @@ void SimulationExpression::createSymbolTable() {
 		//	oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_CONTOUR_REGION_INDEX, indices);
 		//	variableNames[variableIndex ++] = string(var->getName());
 		//}		
+
+	// Volume Particle
+	for (int i = 0; i < volParticleVarSize; i ++) {
+		Variable* var = volParticleVarList[i];
+		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_VOLUME_INDEX, indices);
+		variableNames[variableIndex] = string(var->getName());
+		variableIndex ++;
+	}
+
+	// Membrane Particle
+	for (int i = 0; i < memParticleVarSize; i ++) {
+		Variable* var = memParticleVarList[i];
+		oldValueProxies[variableIndex] = new ValueProxy(var->getOld(), VAR_MEMBRANE_INDEX, indices);
+		variableNames[variableIndex] = string(var->getName());
+		variableIndex ++;
+	}
 
 	// add region size variables
 	for (int i = 0; i < numRegionSizeVars; i ++) {

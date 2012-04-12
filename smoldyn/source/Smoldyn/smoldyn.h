@@ -10,6 +10,12 @@
 #include <time.h>
 #include <stdio.h>
 
+#ifdef VCELL_HYBRID
+namespace VCell {
+	class Expression;
+}
+#endif
+
 /********************************** General *********************************/
 
 #define DIMMAX 3							// maximum system dimensionality
@@ -98,7 +104,7 @@ typedef struct rxnstruct {
 	int *prdident;							// list of product identities [prd]
 	enum MolecState *prdstate;	// list of product states [prd]
 #ifdef VCELL_HYBRID
-	Expression* rateExp;								// requested reaction rate
+	VCell::Expression* rateExp;								// requested reaction rate
 #endif
 	double rate;								// requested reaction rate
 	double bindrad2;						// squared binding radius, if appropriate
@@ -140,7 +146,7 @@ typedef struct surfactionstruct {
 	int *srfnewspec;						// surface convert mol. species [ms]
 	double *srfrate;						// surface action rate [ms]
 #ifdef VCELL_HYBRID
-	Expression** srfRateExp;			//rate for surface actions: asorption, desorption, transmission...etc.
+	VCell::Expression** srfRateExp;			//rate for surface actions: asorption, desorption, transmission...etc.
 #endif
 	double *srfprob;						// surface action probability [ms]
 	double *srfcumprob;					// surface cumulative probability [ms]

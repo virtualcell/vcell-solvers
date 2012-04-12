@@ -1230,8 +1230,8 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 		CHECKS(rxn,"out of memory trying to create reaction structure");
 		if(line2) {
 #ifdef VCELL_HYBRID 
-			string rawStr, expStr;
-			stringstream ss(line2);
+			std::string rawStr, expStr;
+			std::stringstream ss(line2);
 			getline(ss,rawStr);
 			size_t found = rawStr.find(";");
 			expStr = rawStr.substr(0, found);
@@ -1250,9 +1250,9 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 
 	else if(!strcmp(word,"reaction_rate")) {				// reaction_rate
 #ifdef VCELL_HYBRID 
-		stringstream ss(line2);
+		std::stringstream ss(line2);
 		ss >> rname;
-		string expStr;
+		std::string expStr;
 		getline(ss,expStr);
 		rxn->rateExp = new Expression(expStr);
 		r=readrxnname(sim,rname,&order,&rxn);
