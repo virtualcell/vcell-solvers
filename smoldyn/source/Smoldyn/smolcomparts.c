@@ -18,14 +18,16 @@ using std::min;
 #include "random2.h"
 #include "RnSort.h"
 #include "smoldyn.h"
+#include "smoldynfuncs.h"
 #include "Zn.h"
 extern "C"
 {
 #include "zlib.h"
 }
 
-#define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;} else (void)0
-#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0'; printfException("%s", B); goto failure;} else (void)0
+
+int compartsupdateparams_original(simptr sim);
+int compartsupdateparams_volumeSample(simptr sim);
 
 
 /******************************************************************************/
@@ -89,8 +91,8 @@ int posincompart(simptr sim,double *pos,compartptr cmpt) {
 	surfaceptr srf;
 	double crsspt[DIMMAX];
 	enum CmptLogic sym;
+	
 	int dim;
-
 	VolumeSamples* volumeSamplePtr;
 	const int numNeighbors =3;
 	int sampleIdxNeighbors[DIMMAX][numNeighbors];
@@ -134,11 +136,12 @@ int posincompart(simptr sim,double *pos,compartptr cmpt) {
 	}
 	if((incmpt == 0 && sameResultCount > 0) || sim->volumeSamplesPtr == NULL) //for original smoldyn simulations(without volumeSample)
 	{
+		incmpt=0;
 		for(k=0;k<cmpt->npts&&incmpt==0;k++) {
 			pcross=0;
 			for(s=0;s<cmpt->nsrf&&!pcross;s++) {
 				srf=cmpt->surflist[s];
-				for(ps=(PanelShape)0;ps<PSMAX&&!pcross;ps=(PanelShape)(ps+1))
+				for(ps=(PanelShape)0;ps<PSMAX&&!pcross;ps=PanelShape(ps+1))
 					for(p=0;p<srf->npanel[ps]&&!pcross;p++)
 						if(lineXpanel(pos,cmpt->points[k],srf->panels[ps][p],sim->dim,crsspt,NULL,NULL,NULL,NULL,NULL)) 
 							pcross=1; }
@@ -196,6 +199,7 @@ unsigned char fromHex(const char* src) {
 	sscanf(chs, "%x", &v);
 	return (unsigned char)v;
 }
+
 
 int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 	if (line2 == 0) {
@@ -268,7 +272,7 @@ int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2,char *e
 
 	unsigned long inflated_len = numVolume;
 	int retVal = uncompress(volumeSamplesPtr->volsamples, &inflated_len, bytes_from_compressed, compressed_len);
-	
+
 	if (inflated_len = numVolume) {
 		/*for (unsigned long i = 0; i < inflated_len; i ++) {		
 			if (volumeSamplesPtr->volsamples[i] == 6) {
@@ -295,7 +299,7 @@ failure:		// failure
 compartptr compartalloc(void) {
 	compartptr cmpt;
 
-	cmpt=(compartptr)malloc(sizeof(struct compartstruct));
+	cmpt=(compartptr) malloc(sizeof(struct compartstruct));
 	if(!cmpt) return NULL;
 	cmpt->cname=NULL;
 	cmpt->nsrf=0;
@@ -413,27 +417,27 @@ void compartoutput(simptr sim) {
 
 	cmptss=sim->cmptss;
 	if(!cmptss) return;
-	printf("COMPARTMENT PARAMETERS\n");
+	simLog(sim,2,"COMPARTMENT PARAMETERS\n");
 	dim=sim->dim;
-	printf(" Compartments allocated: %i, compartments defined: %i\n",cmptss->maxcmpt,cmptss->ncmpt);
+	simLog(sim,2," Compartments allocated: %i, compartments defined: %i\n",cmptss->maxcmpt,cmptss->ncmpt);
 	for(c=0;c<cmptss->ncmpt;c++) {
 		cmpt=cmptss->cmptlist[c];
-		printf(" Compartment: %s\n",cmptss->cnames[c]);
-		printf("  %i bounding surfaces:\n",cmpt->nsrf);
+		simLog(sim,2," Compartment: %s\n",cmptss->cnames[c]);
+		simLog(sim,2,"  %i bounding surfaces:\n",cmpt->nsrf);
 		for(s=0;s<cmpt->nsrf;s++)
-			printf("   %s\n",cmpt->surflist[s]->sname);
-		printf("  %i interior-defining points:\n",cmpt->npts);
+			simLog(sim,2,"   %s\n",cmpt->surflist[s]->sname);
+		simLog(sim,2,"  %i interior-defining points:\n",cmpt->npts);
 		for(k=0;k<cmpt->npts;k++) {
-			printf("   %i: (",k);
+			simLog(sim,2,"   %i: (",k);
 			for(d=0;d<dim-1;d++)
-				printf("%g,",cmpt->points[k][d]);
-			printf("%g)\n",cmpt->points[k][d]); }
-		printf("  %i logically combined compartments\n",cmpt->ncmptl);
+				simLog(sim,2,"%g,",cmpt->points[k][d]);
+			simLog(sim,2,"%g)\n",cmpt->points[k][d]); }
+		simLog(sim,2,"  %i logically combined compartments\n",cmpt->ncmptl);
 		for(cl=0;cl<cmpt->ncmptl;cl++)
-			printf("   %s %s\n",compartcl2string(cmpt->clsym[cl],string),cmpt->cmptl[cl]->cname);
-		printf("  volume: %g\n",cmpt->volume);
-		printf("  %i virtual boxes listed\n",cmpt->nbox); }
-	printf("\n");
+			simLog(sim,2,"   %s %s\n",compartcl2string(cmpt->clsym[cl],string),cmpt->cmptl[cl]->cname);
+		simLog(sim,2,"  volume: %g\n",cmpt->volume);
+		simLog(sim,2,"  %i virtual boxes listed\n",cmpt->nbox); }
+	simLog(sim,2,"\n");
 	return; }
 
 
@@ -479,12 +483,12 @@ int checkcompartparams(simptr sim,int *warnptr) {
 
 	if(cmptss->condition!=SCok) {
 		warn++;
-		printf(" WARNING: compartment structure %s\n",simsc2string(cmptss->condition,string)); }
+		simLog(sim,7," WARNING: compartment structure %s\n",simsc2string(cmptss->condition,string)); }
 
 	for(c=0;c<cmptss->ncmpt;c++) {
 		cmpt=cmptss->cmptlist[c];
-		if(cmpt->volume<=0) {warn++;printf(" WARNING: compartment %s has 0 volume\n",cmpt->cname);}
-		if(cmpt->nbox==0) {warn++;printf(" WARNING: compartment %s overlaps no virtual boxes\n",cmpt->cname);}
+		if(cmpt->volume<=0) {warn++;simLog(sim,5," WARNING: compartment %s has 0 volume\n",cmpt->cname);}
+		if(cmpt->nbox==0) {warn++;simLog(sim,5," WARNING: compartment %s overlaps no virtual boxes\n",cmpt->cname);}
 		if(cmpt->nbox>0&&cmpt->cumboxvol[cmpt->nbox-1]!=cmpt->volume) {error++;printfException(" ERROR: compartment %s box volumes do not add to compartment volume\n",cmpt->cname);} }
 	if(warnptr) *warnptr=warn;
 	return error; }
@@ -501,7 +505,7 @@ void compartsetcondition(compartssptr cmptss,enum StructCond cond,int upgrade) {
 	if(upgrade==0 && cmptss->condition>cond) cmptss->condition=cond;
 	else if(upgrade==1 && cmptss->condition<cond) cmptss->condition=cond;
 	else if(upgrade==2) cmptss->condition=cond;
-	if(cmptss->condition<cmptss->sim->condition) {
+	if(cmptss->sim && cmptss->condition<cmptss->sim->condition) {
 		cond=cmptss->condition;
 		simsetcondition(cmptss->sim,cond==SCinit?SClists:cond,0); }
 	return; }
@@ -554,7 +558,7 @@ int compartaddsurf(compartptr cmpt,surfaceptr srf) {
 	int s;
 	surfaceptr *newsurflist;
 
-	newsurflist=(surfaceptr*)calloc(cmpt->nsrf+1,sizeof(surfaceptr));
+	newsurflist=(surfaceptr*) calloc(cmpt->nsrf+1,sizeof(surfaceptr));
 	if(!newsurflist) return 1;
 	for(s=0;s<cmpt->nsrf;s++) {
 		if(cmpt->surflist[s]==srf) {free(newsurflist);return 2;}
@@ -574,10 +578,10 @@ int compartaddpoint(compartptr cmpt,int dim,double *point) {
 	int d,k;
 	double **newpoints;
 
-	CHECK(newpoints=(double**)calloc(cmpt->npts+1,sizeof(double*)));
+	CHECK(newpoints=(double**) calloc(cmpt->npts+1,sizeof(double*)));
 	for(k=0;k<cmpt->npts;k++)
 		newpoints[k]=cmpt->points[k];
-	CHECK(newpoints[k]=(double*)calloc(dim,sizeof(double)));
+	CHECK(newpoints[k]=(double*) calloc(dim,sizeof(double)));
 	for(d=0;d<dim;d++) newpoints[k][d]=point[d];
 	cmpt->npts++;
 	free(cmpt->points);
@@ -599,9 +603,9 @@ int compartaddcmptl(compartptr cmpt,compartptr cmptl,enum CmptLogic sym) {
 	enum CmptLogic *newclsym;
 
 	if(cmpt==cmptl) return 2;
-	newcmptl=(compartptr*)calloc(cmpt->ncmptl+1,sizeof(compartptr));
+	newcmptl=(compartptr*) calloc(cmpt->ncmptl+1,sizeof(compartptr));
 	if(!newcmptl) return 1;
-	newclsym=(enum CmptLogic*)calloc(cmpt->ncmptl+1,sizeof(enum CmptLogic));
+	newclsym=(enum CmptLogic*) calloc(cmpt->ncmptl+1,sizeof(enum CmptLogic));
 	if(!newclsym) {free(newcmptl);return 1;}
 	for(cl=0;cl<cmpt->ncmptl;cl++) {
 		newcmptl[cl]=cmpt->cmptl[cl];
@@ -618,7 +622,8 @@ int compartaddcmptl(compartptr cmpt,compartptr cmptl,enum CmptLogic sym) {
 	cmpt->volume=0;
 	return 0; }
 
-/* compartupdatebox --- smoldyn original version*/
+
+/* compartupdatebox */
 int compartupdatebox(simptr sim,compartptr cmpt,boxptr bptr,double volfrac) {
 	int ptsmax=100;	// number of random points for volume determination
 	int bc,max,ptsin,i,bc2;
@@ -670,9 +675,9 @@ int compartupdatebox(simptr sim,compartptr cmpt,boxptr bptr,double volfrac) {
 
 	if(cmpt->nbox==cmpt->maxbox) {									// expand box list
 		max=cmpt->maxbox>0?cmpt->maxbox*2:1;
-		CHECK(newboxlist=(boxptr*)calloc(max,sizeof(boxptr)));
-		CHECK(newboxfrac=(double*)calloc(max,sizeof(double)));
-		CHECK(newcumboxvol=(double*)calloc(max,sizeof(double)));
+		CHECK(newboxlist=(boxptr*) calloc(max,sizeof(boxptr)));
+		CHECK(newboxfrac=(double*) calloc(max,sizeof(double)));
+		CHECK(newcumboxvol=(double*) calloc(max,sizeof(double)));
 		for(bc2=0;bc2<cmpt->nbox;bc2++) {
 			newboxlist[bc2]=cmpt->boxlist[bc2];
 			newboxfrac[bc2]=cmpt->boxfrac[bc2];
@@ -701,7 +706,6 @@ int compartupdatebox(simptr sim,compartptr cmpt,boxptr bptr,double volfrac) {
  	free(newboxfrac);
  	free(newcumboxvol);
  	return -1; }
-
 
 /* compartupdatebox, the volume fraction here is the actual volume fraction for the box inside the compartment*/
 /* volfrac is actual volume fraction, for logic compartment the volfrac is assigned -2 */
@@ -782,7 +786,7 @@ int compartupdatebox_volumeSample(simptr sim,compartptr cmpt,boxptr bptr,double 
  	free(newcumboxvol);
  	return -1; }
 
-
+ 
 /* compartreadstring */
 compartptr compartreadstring(simptr sim,compartptr cmpt,char *word,char *line2,char *erstr) {
 	char nm[STRCHAR],nm1[STRCHAR];
@@ -807,8 +811,8 @@ compartptr compartreadstring(simptr sim,compartptr cmpt,char *word,char *line2,c
 		itct=sscanf(line2,"%s",nm);
 		CHECKS(itct==1,"error reading surface name");
 		s=stringfind(sim->srfss->snames,sim->srfss->nsrf,nm);
-		string nmStr = nm;
-		string msg = "surface name: " + nmStr + " not recognized";
+		std::string nmStr = nm;			// ?? logfile
+		std::string msg = "surface name: " + nmStr + " not recognized";//VCELL
 		CHECKS(s>=0, msg.c_str());
 		er=compartaddsurf(cmpt,sim->srfss->srflist[s]);
 		CHECKS(er!=1,"out of memory adding surface to compartment");
@@ -859,7 +863,7 @@ int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 
 	while(!done) {
 		if(pfp->lctr==0&&!strchr(sim->flags,'q'))
-			printf(" Reading file: '%s'\n",pfp->fname);
+			simLog(sim,2," Reading file: '%s'\n",pfp->fname);
 		if(firstline2) {
 			strcpy(word,"name");
 			pfpcode=1;
@@ -888,13 +892,11 @@ int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
  failure:																					// failure
 	return 1; }
 
-
-
 /* compartsupdateparams */
 int compartsupdateparams(simptr sim) {
 	if(sim->volumeSamplesPtr == NULL)
 	{
-		return compartsupdateparams_smoldyn(sim);
+		return compartsupdateparams_original(sim);
 	}
 	else
 	{
@@ -902,7 +904,8 @@ int compartsupdateparams(simptr sim) {
 	}
 }
 
-int compartsupdateparams_smoldyn(simptr sim) {
+/* compartsupdateparams */
+int compartsupdateparams_original(simptr sim) {
 	boxssptr boxs;
 	boxptr bptr;
 	compartssptr cmptss;
@@ -919,6 +922,7 @@ int compartsupdateparams_smoldyn(simptr sim) {
 	for(c=0;c<cmptss->ncmpt;c++) {
 		cmpt=cmptss->cmptlist[c];
 		cmpt->nbox=0;
+
 		for(b=0;b<boxs->nbox;b++) {											// find boxes that are in the compartment
 			bptr=boxs->blist[b];
 			inbox=0;
@@ -943,36 +947,11 @@ int compartsupdateparams_smoldyn(simptr sim) {
 			else if(clsym==CLequalnot || CLornot)
 				for(b=0;b<boxs->nbox;b++) {
 					bptr=boxs->blist[b];
-					er=compartupdatebox(sim,cmpt,bptr,-2); }
-		}
+					er=compartupdatebox(sim,cmpt,bptr,-2); }}}
 
-	}
-	//for(c=0;c<cmptss->ncmpt;c++) {
-	//	compartptr cmpt=cmptss->cmptlist[c];
-	//	using namespace std;
-	//	//write to a file the box volume for each compartment
-	//	stringstream ss;
-	//	ss << "d:\\smoldynCmpt" << cmpt->cname << ".txt";
-	//	ofstream filestr;
-	//	filestr.open (ss.str());
-	//	boxptr* boxlist = cmpt->boxlist;
-	//	double* boxVol = cmpt->boxfrac;
-	//	for(int i=0; i<cmpt->nbox; i++)
-	//	{
-	//		for(b=0;b<sim->boxs->nbox;b++) {
-	//			bptr=boxlist[b];
-	//			if (boxlist[i] == sim->boxs->blist[b]) {
-	//				filestr << "box index:" << b << "     " << "volFrac:" << boxVol[i] << ",nneigh=" << bptr->nneigh <<", midneigh="<<bptr->midneigh<<", nwall=" <<bptr->nwall <<",maxpanel="<<bptr->maxpanel<<",npanel="<< bptr->npanel << endl;
-	//				break;
-	//			}
-	//		}
-	//	}
-	//	filestr.close();
-	//}
-	return 0; 
-}
+	return 0; }
 
-int compartsupdateparams_volumeSample(simptr sim) {
+int compartsupdateparams_volumeSample(simptr sim) {//VCELL
 	//indecies
 	int b,c,d,i,j,k,cl;
 	//varibles used to check possible boxes and its volFrac in a specific compartment

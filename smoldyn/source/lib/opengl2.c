@@ -313,6 +313,16 @@ int WriteTIFF(char *filename,char *description,int x,int y,int width,int height,
 /* ********** Externally accessible routines ********** */
 /* **************************************************** */
 
+
+/* gl2Double2GLfloat */
+GLfloat* gl2Double2GLfloat(double *input,GLfloat *output,int n) {
+	int i;
+
+	for(i=0;i<n;i++)
+		output[i]=(GLfloat)input[i];
+	return output; }
+
+
 /* gl2Initialize */
 void gl2Initialize(char *wname,float xlo,float xhi,float ylo,float yhi,float zlo,float zhi) {
 #ifdef __gl_h_
@@ -371,7 +381,14 @@ void gl2Initialize(char *wname,float xlo,float xhi,float ylo,float yhi,float zlo
 /* gl2glutInit */
 void gl2glutInit(int *argc,char **argv) {
 #ifdef __gl_h_
-	glutInit(argc,argv);
+	static int done=0;
+	int defaultc=1;
+	char *defaultv[]={"default"};
+
+	if(done) return;
+	done=1;
+	if(argc && argv) glutInit(argc,argv);
+	else glutInit(&defaultc,defaultv);
 #endif
 	return; }
 
@@ -469,8 +486,8 @@ char *gl2SetOptionStr(char *option,char *value) {
 /* gl2SetOptionVoid */
 char *gl2SetOptionVoid(char *option,void *value) {
 	if(!strcmp(option,"FreeFunc")) {
-		if(value) FreeFunc=(void (*)(void*))value;
-		else value=(void*)FreeFunc; }
+		if(value) FreeFunc=(void(*)(void*))value;
+		else value=(void*) FreeFunc; }
 	else if(!strcmp(option,"FreePointer")) {
 		if(value) FreePointer=value;
 		else value=FreePointer; }

@@ -14,16 +14,17 @@ names may be required for OpenGL header files, such as <GL/gl.h> */
 #include "smoldyn_config.h"
 
 #if defined(OPENGL)
-
 	#if defined(HAVE_GL_GL_H)
-#ifdef WIN32
-#include <windows.h>
-#endif
+		#ifdef WIN32
+			#include <windows.h>
+		#endif
 		#include <GL/gl.h>
-	#elif defined(HAVE_GL_GLU_H)
-		#include <GL/glu.h>
 	#elif defined(HAVE_OPENGL_GL_H)
 		#include <OpenGl/gl.h>
+	#endif
+
+	#if defined(HAVE_GL_GLU_H)
+		#include <GL/glu.h>
 	#endif
 
 	#if defined(HAVE_GL_GLUT_H)
@@ -40,6 +41,8 @@ names may be required for OpenGL header files, such as <GL/gl.h> */
 	#define GLfloat float
 
 #endif
+
+GLfloat* gl2Double2GLfloat(double *input,GLfloat *output,int n);
 
 void gl2Initialize(char *wname,float xlo,float xhi,float ylo,float yhi,float zlo,float zhi);
 void gl2glutInit(int *argc,char **argv);

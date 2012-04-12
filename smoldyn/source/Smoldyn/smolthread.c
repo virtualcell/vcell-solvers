@@ -5,6 +5,7 @@
  of the Gnu General Public License (GPL). */
 
 #include "smoldyn.h"
+#include "smoldynfuncs.h"
 #include "smoldyn_config.h"
 #include <stdlib.h>
 #include <stdio.h>

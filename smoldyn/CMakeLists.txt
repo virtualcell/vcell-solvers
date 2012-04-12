@@ -1,5 +1,7 @@
 project(smoldyn)
 
+ADD_DEFINITIONS(-DVCELL)
+
 if (TARGET_SOLVERS_WITH_MESSAGING)
 	ADD_DEFINITIONS(-UOPENGL)
 else()
@@ -32,9 +34,12 @@ set(HEADER_FILES
 	source/lib/string2.h
 	source/lib/SurfaceParam.h
 	source/lib/Zn.h
+	source/lib/SFMT/SFMT.h
 	source/Smoldyn/smoldyn.h
+	source/Smoldyn/smoldynfuncs.h
 	source/Smoldyn/DataProcessorRoiTimeSeriesSmoldyn.h
 	source/Smoldyn/VCellSmoldynOutput.h
+	source/vcell/vcellcmd.h
 )
 
 set(SRC_FILES 
@@ -52,6 +57,7 @@ set(SRC_FILES
 	source/lib/string2.c
 	source/lib/SurfaceParam.c
 	source/lib/Zn.c
+	source/lib/SFMT/SFMT.c
 	source/Smoldyn/smolboxes.c
 	source/Smoldyn/smolcmd.c
 	source/Smoldyn/smolcomparts.c
@@ -67,12 +73,12 @@ set(SRC_FILES
 	source/Smoldyn/smolwall.c
 	source/Smoldyn/DataProcessorRoiTimeSeriesSmoldyn.cpp
 	source/Smoldyn/VCellSmoldynOutput.cpp
+	source/vcell/vcellcmd.c
 )
 
 list(APPEND SRC_FILES ../VCell/src/DataSet.cpp)
 list(APPEND SRC_FILES ../VCell/src/FieldData.cpp)
 list(APPEND SRC_FILES ../VCell/src/SimulationMessaging.cpp)
-include_directories(source/lib source/Smoldyn ../ExpressionParser ../IDAWin ../netcdf-3.6.2/libsrc ../netcdf-3.6.2/cxx ../VCell/include)
 
 if (MSVC)
 	include_directories(windows ../glut-3.7.6 ../zlib)
@@ -81,6 +87,7 @@ elseif (APPLE)
 elseif (LINUX)
 	include_directories(source)
 endif()
+include_directories(source/lib source/Smoldyn source ../ExpressionParser ../IDAWin ../netcdf-3.6.2/libsrc ../netcdf-3.6.2/cxx ../VCell/include)
 
 set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
 set(DEP_LIBS IDAWin ExpressionParser netcdf_cxx netcdf zip ${SONICMQ_LIBS})

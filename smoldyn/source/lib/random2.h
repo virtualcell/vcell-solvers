@@ -7,7 +7,7 @@ of the Gnu Lesser General Public License (LGPL). */
 #define __random2_h
 
 // Comment out the following line if the Mersenne Twister is unavailable
-//#include "SFMT/SFMT.h"
+#include "SFMT/SFMT.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -153,8 +153,8 @@ inline static double radrandcircCCD(double r) {
 inline static double radrandsphCCD(double r) {
 	return r*pow(randCCD(),1.0/3.0); }
 
-inline static double radrandsphCCF(float r) {
-	return r*pow((double)randCCF(),1.0/3.0); }
+inline static float radrandsphCCF(float r) {
+	return r*pow(randCCF(),float(1.0/3.0)); }
 
 inline static double thetarandCCD(void) {
 	return acos(1.0-2.0*randCCD()); }
@@ -172,8 +172,8 @@ int poisrandF(float xm);
 float binomialrandF(float p,int n);
 double gaussrandD();
 float gaussrandF();
-void sphererandCCD(double *x,double radians1,double radians2);
-void sphererandCCF(float *x,float radians1,float radians2);
+void sphererandCCD(double *x,double radius1,double radius2);
+void sphererandCCF(float *x,float radius1,float radius2);
 void trianglerandCD(double *pt1,double *pt2,double *pt3,int dim,double *ans);
 void randtableD(double *a,int n,int eq);
 void randtableF(float *a,int n,int eq);

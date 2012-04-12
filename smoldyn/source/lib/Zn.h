@@ -33,6 +33,11 @@ int neighborZV(int *indx,int *c,int *dim,int rank,int type,int *wrap,int *mid);
 int Zn_sameset(int *a,int *b,int *work,int n);
 void Zn_sort(int *a,int *b,int n);
 int Zn_issort(int *a,int n);
+
+/************ combinatorics ***********/
+
 int Zn_permute(int *a,int *b,int n,int k);
+int Zn_permutelex(int *seq,int n);
+
 
 #endif

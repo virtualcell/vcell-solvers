@@ -15,19 +15,17 @@
 #include "RnSort.h"
 #include "SurfaceParam.h"
 #include "smoldyn.h"
+#include "smoldynfuncs.h"
 #include "Sphere.h"
 #include "Zn.h"
 #include <sstream>
+#include <string>
 
 #include "smoldyn_config.h"
 
 #ifdef THREADING
 #include <pthread.h>
 #endif
-
-#define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;} else (void)0
-#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0'; printfException("%s", B); goto failure;} else (void)0
-
 
 /******************************************************************************/
 /********************************** Surfaces **********************************/
@@ -1083,6 +1081,10 @@ void surfaceoutput(simptr sim) {
 	if(!srfss) {
 		printf(" No internal surfaces\n\n");
 		return; }
+
+	if(vflag)
+		printf(" Allocated for %i species\n",srfss->maxspecies-1);
+
 	printf(" Surface epsilon, margin, and neighbor distances: %g %g %g\n",srfss->epsilon,srfss->margin,srfss->neighdist);
 
 	if(sim->mols) {
@@ -1689,18 +1691,30 @@ int checksurfaceparams(simptr sim,int *warnptr) {
 
 /* surfenablesurfaces */
 int surfenablesurfaces(simptr sim,int maxsurf) {
-	surfacessptr surfss;
+	surfacessptr srfss;
 
 	if(sim->srfss)									// check for redundant function call
 		if(maxsurf==-1 || sim->srfss->maxsrf==maxsurf)
 			if((sim->mols && sim->srfss->maxspecies==sim->mols->maxspecies) || (!sim->mols && sim->srfss->maxspecies==0))
 				return 0;
-	surfss=surfacessalloc(sim->srfss,maxsurf<0?5:maxsurf,sim->mols?sim->mols->maxspecies:0,sim->dim);
-	if(!surfss) return 1;
-	sim->srfss=surfss;
-	surfss->sim=sim;
+	srfss=surfacessalloc(sim->srfss,maxsurf<0?5:maxsurf,sim->mols?sim->mols->maxspecies:0,sim->dim);
+	if(!srfss) return 1;
+	sim->srfss=srfss;
+	srfss->sim=sim;
 	boxsetcondition(sim->boxs,SCparams,0);
 	surfsetcondition(sim->srfss,SClists,0);
+	return 0; }
+
+
+/* surfexpandmaxspecies */
+int surfexpandmaxspecies(simptr sim,int maxspecies) {
+	surfacessptr srfss;
+
+	if(!sim->srfss) return 0;
+	srfss=sim->srfss;
+	if(srfss->maxspecies>=maxspecies) return 0;
+	srfss=surfacessalloc(srfss,srfss->maxsrf,maxspecies,sim->dim);
+	if(!srfss) return 1;
 	return 0; }
 
 
@@ -1738,7 +1752,7 @@ void surfsetcondition(surfacessptr surfss,enum StructCond cond,int upgrade) {
 	if(upgrade==0 && surfss->condition>cond) surfss->condition=cond;
 	else if(upgrade==1 && surfss->condition<cond) surfss->condition=cond;
 	else if(upgrade==2) surfss->condition=cond;
-	if(surfss->condition<surfss->sim->condition) {
+	if(surfss->sim && surfss->condition<surfss->sim->condition) {
 		cond=surfss->condition;
 		simsetcondition(surfss->sim,cond==SCinit?SClists:cond,0); }
 	return; }
@@ -1805,11 +1819,14 @@ int surfsetedgepts(surfaceptr srf,double value) {
 
 
 /* surfsetstipple */
-int surfsetstipple(surfaceptr srf,unsigned int factor,unsigned int pattern) {
+int surfsetstipple(surfaceptr srf,int factor,int pattern) {
 	if(!srf) return 1;
-	if(factor<=0 || pattern<0 || pattern>0xFFFF) return 2;
-	srf->edgestipple[0]=factor;
-	srf->edgestipple[1]=pattern;
+	if(factor>=0) {
+		if(factor==0) return 2;
+		srf->edgestipple[0]=(unsigned int) factor; }
+	if(pattern>=0) {
+		if(pattern>0xFFFF) return 2;
+		srf->edgestipple[1]=(unsigned int) pattern; }
 	return 0; }
 
 
@@ -1833,31 +1850,49 @@ int surfsetshiny(surfaceptr srf,enum PanelFace face,double shiny) {
 
 /* surfsetaction */
 int surfsetaction(surfaceptr srf,int ident,enum MolecState ms,enum PanelFace face,enum SrfAction act) {
-	int i1,ilo,ihi;
+	int i;
 	enum MolecState ms1,mslo,mshi;
+	simptr sim;
 
-	if(ident==0 || ident>=srf->srfss->maxspecies) return 1;
-	else if(ident<0) {ilo=1;ihi=srf->srfss->maxspecies-1;}
-	else ilo=ihi=ident;
-
+	sim=srf->srfss->sim;
 	if(ms==MSbsoln || ms==MSnone) return 2;
-	else if(ms==MSall) {mslo=(MolecState)0;mshi=(MolecState)(MSMAX-1);}
+	else if(ms==MSall) {mslo=MolecState(0);mshi=MolecState(MSMAX-1);}
 	else mslo=mshi=ms;
 
 	if(face==PFfront || face==PFback || face==PFboth) {		// face is front, back, or both
 		if(!(act==SAreflect || act==SAtrans || act==SAabsorb || act==SAjump || act==SAport || act==SAmult))
 			return 3;
-		for(i1=ilo;i1<=ihi;i1++)
-			for(ms1=mslo;ms1<=mshi;ms1=(MolecState)(ms1+1)) {
+
+		i=0;
+		while(1) {
+			if(ident>0) {						// single species
+				if(i==ident) break;
+				i=ident; }
+			else if(ident==-5) {		// all species
+				if(++i==sim->mols->nspecies) break; }
+			else if(ident==-6) {		// wildcard selected species
+				if((i=molwildcardname(sim->mols,NULL,0,0))<0) break; }
+			
+			for(ms1=mslo;ms1<=mshi;ms1=MolecState(ms1 + 1)) {
 				if(face==PFfront || face==PFboth)
-					srf->action[i1][ms1][PFfront]=act;
+					srf->action[i][ms1][PFfront]=act;
 				if(face==PFback || face==PFboth)
-					srf->action[i1][ms1][PFback]=act; }}
+					srf->action[i][ms1][PFback]=act; }}}
 	else {																									// face is PFnone
 		if(!(act==SAmult || act==SAno)) return 3;
-		for(i1=ilo;i1<=ihi;i1++)
-			for(ms1=mslo;ms1<=mshi;ms1=(MolecState)(ms1+1))
-				srf->action[i1][ms1][face]=act; }
+
+		i=0;
+		while(1) {
+			if(ident>0) {						// single species
+				if(i==ident) break;
+				i=ident; }
+			else if(ident==-5) {		// all species
+				if(++i==sim->mols->nspecies) break; }
+			else if(ident==-6) {		// wildcard selected species
+				if((i=molwildcardname(sim->mols,NULL,0,0))<0) break; }
+			
+			for(ms1=mslo;ms1<=mshi;ms1=MolecState(ms1 + 1))
+				srf->action[i][ms1][face]=act; }}
 
 	surfsetcondition(srf->srfss,SCparams,0);
 	return 0; }
@@ -1865,15 +1900,13 @@ int surfsetaction(surfaceptr srf,int ident,enum MolecState ms,enum PanelFace fac
 
 /* surfsetrate */
 int surfsetrate(surfaceptr srf,int ident,enum MolecState ms,enum MolecState ms1,enum MolecState ms2,int newident,double value,int which) {
-	int i1,ilo,ihi;
+	int i;
 	enum MolecState ms3,ms4;
 	enum PanelFace face;
 	surfactionptr actdetails;
+	simptr sim;
 
-	if(ident==0 || ident>=srf->srfss->maxspecies) return 1;
-	else if(ident<0) {ilo=1;ihi=srf->srfss->maxspecies-1;}
-	else ilo=ihi=ident;
-
+	sim=srf->srfss->sim;
 	if(ms==MSbsoln || ms==MSall) return 2;
 
 	if(ms1>MSbsoln) return 3;
@@ -1888,21 +1921,31 @@ int surfsetrate(surfaceptr srf,int ident,enum MolecState ms,enum MolecState ms1,
 	else if(which==2 && value>1) return 6;
 
 	srftristate2index(ms,ms1,ms2,&ms3,&face,&ms4);
-	for(i1=ilo;i1<=ihi;i1++) {
-		if(!srf->actdetails[i1][ms3][face]) {
-			actdetails=surfaceactionalloc(i1);				// allocate action details
-			if(!actdetails) return -1;
-			srf->actdetails[i1][ms3][face]=actdetails; }
-		actdetails=srf->actdetails[i1][ms3][face];
 
-		srf->action[i1][ms3][face]=SAmult;						// set action to mult
+	i=0;
+	while(1) {
+		if(ident>0) {						// single species
+			if(i==ident) break;
+			i=ident; }
+		else if(ident==-5) {		// all species
+			if(++i==sim->mols->nspecies) break; }
+		else if(ident==-6) {		// wildcard selected species
+			if((i=molwildcardname(sim->mols,NULL,0,0))<0) break; }
+		
+		if(!srf->actdetails[i][ms3][face]) {
+			actdetails=surfaceactionalloc(i);				// allocate action details
+			if(!actdetails) return -1;
+			srf->actdetails[i][ms3][face]=actdetails; }
+		actdetails=srf->actdetails[i][ms3][face];
+
+		srf->action[i][ms3][face]=SAmult;						// set action to mult
 		if(which==1) {															// and set up action details
 			actdetails->srfrate[ms4]=value;
 			actdetails->srfdatasrc[ms4]=1; }
 		else if(which==2) {
 			actdetails->srfprob[ms4]=value;
 			actdetails->srfdatasrc[ms4]=2; }
-		actdetails->srfnewspec[ms4]=(newident==-5)?i1:newident; }
+		actdetails->srfnewspec[ms4]=(newident==-5)?i:newident; }
 
 	surfsetcondition(srf->srfss,SCparams,0);
 	return 0; }
@@ -2245,7 +2288,7 @@ int surfsetjumppanel(surfaceptr srf,panelptr pnl1,enum PanelFace face1,int bidir
 	if(!pnl1) return 2;
 	if(face1!=PFfront && face1!=PFback) return 3;
 	if(bidirect!=0 && bidirect!=1) return 4;
-	if(!pnl2 || pnl2->ps!=pnl1->ps) return 5;
+	if(!pnl2 || pnl2==pnl1 || pnl2->ps!=pnl1->ps) return 5;
 	if(face2!=PFfront && face2!=PFback) return 6;
 
 	pnl1->jumpp[face1]=pnl2;
@@ -2468,8 +2511,7 @@ int surfaddemitter(surfaceptr srf,enum PanelFace face,int i,double amount,double
 /* surfreadstring */
 surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char *erstr) {
 	char nm[STRCHAR],nm1[STRCHAR],nm2[STRCHAR],facenm[STRCHAR],shapenm[STRCHAR],actnm[STRCHAR],*chptr;
-	int dim,i,p,p2,i1,i3,itct,s2,er;
-	unsigned int ui1,ui2;
+	int dim,i,p,p2,i1,i2,i3,itct,s2,er;
 	const int maxpnllist=128;
 	panelptr pnl,pnllist[128];
 	double fltv1[9],f1;
@@ -2496,18 +2538,18 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 		CHECKS(srfss->maxspecies,"need to enter molecules before action");
 		itct=sscanf(line2,"%s %s %s",nm1,nm2,actnm);
 		CHECKS(itct==3,"action format: species[(state)] face action");
-		i=readmolname(sim,nm1,&ms1);
+		i=readmolname(sim,nm1,&ms1,0);
 		face=surfstring2face(nm2);
 		if(face==PFnone || (i<=0 && i>-5)) {	// try old format
 			face=surfstring2face(nm1);
-			i=readmolname(sim,nm2,&ms1);
+			i=readmolname(sim,nm2,&ms1,0);
 			if(face==PFnone && (i<=0 && i>-5)) {	// back to new format
-				i=readmolname(sim,nm1,&ms1);
+				i=readmolname(sim,nm1,&ms1,0);
 				face=surfstring2face(nm2);
 				CHECKS(face!=PFnone,"in action, face name needs to be 'front', 'back', or 'both'");
-				CHECKS(i>0 || i==-5,"in action, molecule name not recognized"); }
+				CHECKS(i>0 || i==-5 || i==-6,"in action, molecule name not recognized"); }
 			CHECKS(face!=PFnone,"in action, face name needs to be 'front', 'back', or 'both'");
-			CHECKS(i>0 || i==-5,"in action, molecule name not recognized"); }
+			CHECKS(i>0 || i==-5 || i==-6,"in action, molecule name not recognized"); }
 		act=surfstring2act(actnm);
 		CHECKS(act<=SAmult || act==SAadsorb,"in action statement, action not recognized or not permitted");
 		er=surfsetaction(srf,i,ms1,face,act);
@@ -2539,7 +2581,7 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 		itct=sscanf(line2,"%s %s %s %lg",nm,nm1,nm2,&f1);
 		CHECKS(itct==4,"format: species[(state)] state1 state2 value [new_species]");
 #endif
-		i=readmolname(sim,nm,&ms);
+		i=readmolname(sim,nm,&ms,0);		//?? somehow this got corrupted and then fixed.  Need to check stuff below too.
 		CHECKS(i>0 || i==-5,"molecule name not recognized");
 		CHECKS(ms<MSbsoln,"state is not recognized or not permitted");
 		ms1=molstring2ms(nm1);
@@ -2597,7 +2639,7 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 		CHECKS(er!=-1,"out of memory");
 		CHECKS(!er,"BUG: error in surfsetrate");
 #endif
-		CHECKS(!line2,"unexpected text at end of line");}
+		CHECKS(!line2,"unexpected text at end of line"); }
 
 	else if(!strcmp(word,"color") || !strcmp(word,"colour")) {		// color
 		CHECKS(srf,"need to enter surface name before color");
@@ -2627,11 +2669,11 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 
 	else if(!strcmp(word,"stipple")) {					// stipple
 		CHECKS(srf,"need to enter surface name before stipple");
-		itct=sscanf(line2,"%u %x",&ui1,&ui2);
+		itct=sscanf(line2,"%i %i",&i1,&i2);
 		CHECKS(itct==2,"stipple format: factor pattern");
-		CHECKS(ui1>=1,"stipple factor needs to be >=1");
-		CHECKS(ui2>=0 && ui2 <=0xFFFF,"stipple pattern needs to be between 0x00 and 0xFFFF");
-		er=surfsetstipple(srf,ui1,ui2);
+		CHECKS(i1>=1,"stipple factor needs to be >=1");
+		CHECKS(i2>=0 && i2 <=0xFFFF,"stipple pattern needs to be between 0x00 and 0xFFFF");
+		er=surfsetstipple(srf,i1,i2);
 		CHECKS(!er,"BUG: error in surfsetstipple");
 		CHECKS(!strnword(line2,3),"unexpected text following stipple"); }
 
@@ -2713,8 +2755,9 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 		CHECKS(srf,"need to enter surface name before jump");
 		itct=sscanf(line2,"%s %s",nm,facenm);
 		CHECKS(itct==2,"format for jump: panel1 face1 -> panel2 face2");
-		p=ps=(PanelShape)0;
-		while(ps<PSMAX && (p=stringfind(srf->pname[ps],srf->npanel[ps],nm))==-1) ps=(PanelShape)(ps+1);
+		ps=PanelShape(0);
+		p=0;
+		while(ps<PSMAX && (p=stringfind(srf->pname[ps],srf->npanel[ps],nm))==-1) ps=PanelShape(ps + 1);
 		CHECKS(p>=0,"first panel name listed in jump is not recognized");
 		face=surfstring2face(facenm);
 		CHECKS(face<=PFback,"first face listed in jump needs to be 'front' or 'back'");
@@ -2739,6 +2782,7 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 		CHECKS(srf,"need to enter surface name before neighbors");
 		itct=sscanf(line2,"%s",nm);
 		CHECKS(itct==1,"format for neighbors: panel neigh1 neigh2 ...");
+		//VCELL
 		p = -1;
 		ps = (PanelShape)0;
 		if(strstr(nm, "tri_") == nm)//find nm starts with "tri_"
@@ -2747,13 +2791,6 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 			int memIndex;
 			int globalIndex;
 			sscanf(nm, "tri_%d_%d_%d", &p, &globalIndex, &memIndex);
-
-			/*int oldp = -1;
-			PanelShape oldps = (PanelShape)0;
-			while(oldps<PSMAX && (oldp=stringfind(srf->pname[oldps],srf->npanel[oldps],nm))==-1) oldps=(PanelShape)(oldps+1);
-			if (oldp != p || oldps != ps) {
-				throw "oldp != p || oldps != ps";
-			}*/
 		}
 		if(p == -1)
 		{
@@ -2764,6 +2801,7 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 		for(i1=0;i1<maxpnllist && (line2=strnword(line2,2));i1++) {
 			itct=sscanf(line2,"%s",nm);
 			CHECKS(itct==1,"format for neighbors: panel neigh1 neigh2 ...");
+			//VCELL
 			p = -1;
 			ps = (PanelShape)0;
 			if(strstr(nm, "tri_") == nm)//find nm starts with "tri_"
@@ -2773,21 +2811,6 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 				int memIndex;
 				int globalIndex;
 				sscanf(nm, "tri_%d_%d_%d", &p, &globalIndex, &memIndex);
-
-				/*if(strchr(nm,':')) {
-					chptr=strchr(nm,':')+1;
-					*(chptr-1)='\0';
-					s2=stringfind(srfss->snames,srfss->nsrf,nm);
-					CHECKS(s2>=0,"surface name is not recognized");
-					srf2=srfss->srflist[s2]; }
-				else {
-					chptr=nm;
-					srf2=srf; }
-				int oldp=oldps=(PanelShape)0;
-				while(oldps<PSMAX && (oldp=stringfind(srf2->pname[oldps],srf2->npanel[oldps],chptr))==-1) oldps=(PanelShape)(oldps+1);
-				if (oldp != p || oldps != ps) {
-					throw "oldp != p || oldps != ps";
-				}*/
 			}
 			if(p == -1)
 			{
@@ -2795,8 +2818,8 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 					chptr=strchr(nm,':')+1;
 					*(chptr-1)='\0';
 					s2=stringfind(srfss->snames,srfss->nsrf,nm);
-					string nmStr = nm;
-					string msg = "surface name:" + nmStr + " is not recognized";
+					std::string nmStr = nm;
+					std::string msg = "surface name:" + nmStr + " is not recognized";
 					CHECKS(s2>=0, msg.c_str());
 					srf2=srfss->srflist[s2]; }
 				else {
@@ -3168,6 +3191,7 @@ int lineXpanel(double *pt1,double *pt2,panelptr pnl,int dim,double *crsspt,enum 
 		else if(dim==2) {
 			//intsct=((point[0][0]<=crsspt[0] && crsspt[0]<=point[1][0]) || (point[1][0]<=crsspt[0] && crsspt[0]<=point[0][0]));
 			//intsct=intsct && ((point[0][1]<=crsspt[1] && crsspt[1]<=point[1][1]) || (point[1][1]<=crsspt[1] && crsspt[1]<=point[0][1])); }
+			//VCELL
 			double v1[2] = {point[1][0] - point[0][0], point[1][1] - point[0][1]};
 			double v2[2] = {crsspt[0] - point[0][0], crsspt[1] - point[0][1]};
 			intsct = v1[0] * v2[0] + v1[1] * v2[1] >= 0;
@@ -3573,6 +3597,32 @@ double closestpanelpt(panelptr pnl,int dim,double *testpt,double *pnlpt) {
 	return dist; }
 
 
+/* closestsurfacept */
+double closestsurfacept(surfaceptr srf,int dim,double *testpt,double *pnlpt,panelptr *pnlptr) {
+	enum PanelShape ps;
+	int p,d;
+	panelptr pnl,pnlbest;
+	double dist,distbest,pnlpt1[DIMMAX],pnlptbest[DIMMAX];
+
+	distbest=DBL_MAX;
+	pnlbest=NULL;
+	for(ps=PanelShape(0);ps<PSMAX;ps=PanelShape(ps + 1))
+		for(p=0;p<srf->npanel[ps];p++) {
+			pnl=srf->panels[ps][p];
+			dist=closestpanelpt(pnl,dim,testpt,pnlpt1);
+			if(dist<distbest) {
+				distbest=dist;
+				pnlbest=pnl;
+				for(d=0;d<dim;d++) pnlptbest[d]=pnlpt1[d]; }}
+
+	if(distbest==DBL_MAX) return -1;
+	if(pnlpt)
+		for(d=0;d<dim;d++) pnlpt[d]=pnlptbest[d];
+	if(pnlptr)
+		*pnlptr=pnlbest;
+	return distbest; }
+
+
 /* movemol2closepanel */
 void movemol2closepanel(simptr sim,moleculeptr mptr,int dim,double epsilon,double neighdist,double margin) {
 	int nn,p,jump;
@@ -3877,7 +3927,6 @@ int checksurfaces(simptr sim,int ll,int reborn) {
 					sim->eventcount[ETsurf]++; }}
 			else																	// nothing was crossed
 				done=1; }}
-
 	return 0; }
 
 

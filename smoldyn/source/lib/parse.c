@@ -8,11 +8,9 @@ of the Gnu Lesser General Public License (LGPL). */
 #include <stdlib.h>
 #include "parse.h"
 #include "string2.h"
-#include <smoldyn.h>
 
-#define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;} else (void)0
-#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0';printfException("%s", B);goto failure;} else (void)0
-
+#define CHECK(A) if(!(A)) {goto failure;} else (void)0
+#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0'; goto failure;} else (void)0
 
 /* Parse_AllocFilePtr. */
 ParseFilePtr Parse_AllocFilePtr(const char *fileroot,const char *filename) {
@@ -182,8 +180,9 @@ void Parse_DisplayDefine(ParseFilePtr pfp) {
 
 /* Parse_DoDefine. */
 int Parse_DoDefine(ParseFilePtr pfp) {
-	int d,val,ans,offset;
+	int d,val,ans,offset,total;
 	char *line2;
+	static int recurs=0;
 
 	line2=strnword(pfp->line,1);
 	offset=line2-pfp->line;
@@ -194,9 +193,16 @@ int Parse_DoDefine(ParseFilePtr pfp) {
 	if(!strncmp(line2,"ifundefine",10)) return 0;
 
 	ans=0;
+	total=0;
 	for(d=0;d<pfp->ndef;d++) {
 		val=strstrreplace(line2,pfp->defkey[d],pfp->defreplace[d],STRCHAR-offset);
-		if(val<0) ans=2; }
+		if(val<0) ans=2;
+		else total+=val; }
+	if(total && recurs<10) {
+		recurs++;
+		Parse_DoDefine(pfp); }
+	else
+		recurs=0;
 
 	return ans; }
 
@@ -229,7 +235,7 @@ int Parse_CmdLineArg(int *argcptr,char **argv,ParseFilePtr pfp) {
 		argc2=argc/2;
 		if(!pfp && maxdefine-ndefine<argc2) {		// allocate space
 			newmax=ndefine+argc2;
-			
+	
 			CHECK(newkeylist=(char **) calloc(newmax,sizeof(char*)));
 			for(i=0;i<newmax;i++) newkeylist[i]=NULL;
 			for(i=0;i<maxdefine;i++) newkeylist[i]=keylist[i];
@@ -239,7 +245,7 @@ int Parse_CmdLineArg(int *argcptr,char **argv,ParseFilePtr pfp) {
 			for(i=0;i<newmax;i++) newreplist[i]=NULL;
 			for(i=0;i<maxdefine;i++) newreplist[i]=replist[i];
 			for(;i<newmax;i++) CHECK(newreplist[i]=EmptyString());
-			
+
 			maxdefine=newmax;
 			free(keylist);
 			keylist=newkeylist;

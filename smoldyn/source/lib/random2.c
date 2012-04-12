@@ -220,7 +220,7 @@ void sphererandCCF(float *x,float rad1,float rad2) {
 	phi=unirandCOF(0,2.0*PI);
 	if(rad1==rad2);
 	else if(rad1==0) rad1=radrandsphCCF(rad2);
-	else rad1=pow(randCCF()*(rad2*rad2*rad2-rad1*rad1*rad1)+rad1*rad1*rad1,1.0f/3.0f);
+	else rad1=pow(randCCF()*(rad2*rad2*rad2-rad1*rad1*rad1)+rad1*rad1*rad1,float(1.0/3.0));
 	x[0]=rad1*sin(th)*cos(phi);
 	x[1]=rad1*sin(th)*sin(phi);
 	x[2]=rad1*cos(th);

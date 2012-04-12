@@ -395,10 +395,47 @@ int Zn_permute(int *a,int *b,int n,int k) {
 	return ans; }
 
 
+/******** combinatorics *********/
 
 
-
-
+int Zn_permutelex(int *seq,int n) {
+	int i,j;
+	int temp;
+	
+	i=n-1;
+	while(i>0 && seq[i-1]>=seq[i]) i--;
+	if(i==0) {						// input was final sequence
+		i=0;
+		j=n-1;
+		while(i<j) {
+			temp=seq[i];			// swap values at positions i and j
+			seq[i]=seq[j];
+			seq[j]=temp;
+			i++;
+			j--; }
+		return 2; }
+	
+	j=n;
+	while(seq[j-1]<=seq[i-1]) j--;
+	
+  temp=seq[i-1];			// swap values at positions (i-1) and (j-1)
+	seq[i-1]=seq[j-1];
+	seq[j-1]=temp;
+	
+	i++;
+	j=n;
+	while(i<j) {
+		temp=seq[i-1];			// swap values at positions (i-1) and (j-1)
+		seq[i-1]=seq[j-1];
+		seq[j-1]=temp;
+		i++;
+		j--; }
+	
+	i=n-1;
+	while(i>0 && seq[i-1]>=seq[i]) i--;
+	if(i==0) return 1;	// at final sequence
+	
+	return 0; }
 
 
 

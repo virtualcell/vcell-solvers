@@ -13,8 +13,10 @@
 #include "Rn.h"
 #include "RnSort.h"
 #include "smoldyn.h"
+#include "smoldynfuncs.h"
 #include "string2.h"
 #include "Zn.h"
+#include <string>
 
 #include "smoldyn_config.h"
 
@@ -22,11 +24,9 @@
 /**********************************************************/
 /******************** command declarations ****************/
 /**********************************************************/
-// vcell command
-enum CMDcode cmdVCellPrintProgress(simptr sim,cmdptr cmd,char *line2);
-enum CMDcode cmdVCellWriteOutput(simptr sim,cmdptr cmd,char *line2);
-enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2);
-enum CMDcode cmdVCellReact1KillMolecules(simptr sim,cmdptr cmd,char *line2);
+#ifdef VCELL
+#include <vcell/vcellcmd.h>
+#endif
 
 // simulation control
 enum CMDcode cmdstop(simptr sim,cmdptr cmd,char *line2);
@@ -61,6 +61,8 @@ enum CMDcode cmdmolcountincmpts(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdmolcountincmpt2(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdmolcountonsurf(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdmolcountspace(simptr sim,cmdptr cmd,char *line2);
+enum CMDcode cmdmolcountspecies(simptr sim,cmdptr cmd,char *line2);
+enum CMDcode cmdmollistsize(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdspeciesstreamcountheader(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdspeciesstreamcount(simptr sim,cmdptr cmd,char *line2);
 enum CMDcode cmdlistmols(simptr sim,cmdptr cmd,char *line2);
@@ -161,6 +163,8 @@ enum CMDcode docommand(void *cmdfnarg,cmdptr cmd,char *line) {
 	else if(!strcmp(word,"molcountincmpt2")) return cmdmolcountincmpt2(sim,cmd,line2);
 	else if(!strcmp(word,"molcountonsurf")) return cmdmolcountonsurf(sim,cmd,line2);
 	else if(!strcmp(word,"molcountspace")) return cmdmolcountspace(sim,cmd,line2);
+	else if(!strcmp(word,"molcountspecies")) return cmdmolcountspecies(sim,cmd,line2);
+	else if(!strcmp(word,"mollistsize")) return cmdmollistsize(sim,cmd,line2);
 	else if(!strcmp(word,"speciesstreamheader")) return cmdspeciesstreamcountheader(sim,cmd,line2);
 	else if(!strcmp(word,"speciesstreamcount")) return cmdspeciesstreamcount(sim,cmd,line2);
 	else if(!strcmp(word,"listmols")) return cmdlistmols(sim,cmd,line2);
@@ -203,11 +207,12 @@ enum CMDcode docommand(void *cmdfnarg,cmdptr cmd,char *line) {
 	else if(!strcmp(word,"excludesphere")) return cmdexcludesphere(sim,cmd,line2);
 	else if(!strcmp(word,"includeecoli")) return cmdincludeecoli(sim,cmd,line2);
 
+#ifdef VCELL
 	// vcell commands
 	else if(!strcmp(word,"vcellPrintProgress")) return cmdVCellPrintProgress(sim,cmd,line2);
 	else if(!strcmp(word,"vcellWriteOutput")) return cmdVCellWriteOutput(sim,cmd,line2);
 	else if(!strcmp(word,"vcellDataProcess")) return cmdVCellDataProcess(sim,cmd,line2);
-	else if(!strcmp(word,"vcellReact1KillMolecules")) return cmdVCellReact1KillMolecules(sim,cmd,line2);
+#endif
 
 	SCMDCHECK(0,"command not recognized");
 	return CMDwarn; }
@@ -227,7 +232,7 @@ enum CMDcode cmdpause(simptr sim,cmdptr cmd,char *line2) {
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDcontrol;
 	if(!sim->graphss || sim->graphss->graphics==0) {
-		fprintf(stderr,"Simulation paused at time %g.  Press enter to continue.",sim->time);		
+		fprintf(stderr,"Simulation paused at time %g.  Press enter to continue.",sim->time);
 		scanf("%c",&c);
 		return CMDok; }
 	gl2State(1);
@@ -260,7 +265,7 @@ enum CMDcode cmdsetflag(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(line2,"missing argument");
 	itct=sscanf(line2,"%lf",&f1);
 	SCMDCHECK(itct==1,"cannot read flag value");
-	scmdsetflag(sim->cmds,f1);
+	scmdsetflag((cmdssptr) sim->cmds,f1);
 	return CMDok; }
 
 
@@ -313,14 +318,14 @@ enum CMDcode cmdsetgraphic_iter(simptr sim,cmdptr cmd,char *line2) {
 enum CMDcode cmdoverwrite(simptr sim,cmdptr cmd,char *line2) {
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDcontrol;
 	SCMDCHECK(line2,"missing argument");
-	SCMDCHECK(scmdoverwrite(sim->cmds,line2),"failed to open file");
+	SCMDCHECK(scmdoverwrite((cmdssptr) sim->cmds,line2),"failed to open file");
 	return CMDok; }
 
 
 enum CMDcode cmdincrementfile(simptr sim,cmdptr cmd,char *line2) {
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDcontrol;
 	SCMDCHECK(line2,"missing argument");
-	SCMDCHECK(scmdincfile(sim->cmds,line2),"failed to increment file");
+	SCMDCHECK(scmdincfile((cmdssptr) sim->cmds,line2),"failed to increment file");
 	return CMDok; }
 
 
@@ -340,7 +345,7 @@ enum CMDcode cmdifflag(simptr sim,cmdptr cmd,char *line2) {
 	itct=sscanf(line2,"%c %lf",&ch,&f1);
 	SCMDCHECK(itct==2,"cannot read comparison symbol or flag value");
 	SCMDCHECK(ch=='<' || ch=='=' || ch=='>',"comparison symbol has to be <, =, or >");
-	flag=scmdreadflag(sim->cmds);
+	flag=scmdreadflag((cmdssptr) sim->cmds);
 	if((ch=='<' && flag<f1) || (ch=='=' && flag==f1) || (ch=='>' && flag>f1))
 		return docommand(sim,cmd,strnword(line2,3));
 	return CMDok; }
@@ -365,7 +370,7 @@ enum CMDcode cmdifno(simptr sim,cmdptr cmd,char *line2) {
 	enum MolecState ms;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return conditionalcmdtype(sim,cmd,1);
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<=0 && i>-5),"cannot read molecule and/or state name");
 	count=molcount(sim,i,ms,NULL,1);
 	if(count) return CMDok;
@@ -377,7 +382,7 @@ enum CMDcode cmdifless(simptr sim,cmdptr cmd,char *line2) {
 	enum MolecState ms;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return conditionalcmdtype(sim,cmd,2);
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<=0 && i>-5),"cannot read molecule and/or state name");
 	SCMDCHECK(line2=strnword(line2,2),"missing value argument");
 	itct=sscanf(line2,"%i",&min);
@@ -392,7 +397,7 @@ enum CMDcode cmdifmore(simptr sim,cmdptr cmd,char *line2) {
 	enum MolecState ms;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return conditionalcmdtype(sim,cmd,2);
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<=0 && i>-5),"cannot read molecule and/or state name");
 	SCMDCHECK(line2=strnword(line2,2),"missing value argument");
 	itct=sscanf(line2,"%i",&min);
@@ -417,8 +422,9 @@ enum CMDcode cmdifincmpt(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(cmptss,"no compartments defined");
 	SCMDCHECK(sim->mols,"molecules are undefined");
 	SCMDCHECK(line2,"missing argument");
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<=0 && i>-5),"cannot read molecule and/or state name");
+	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	SCMDCHECK(line2=strnword(line2,2),"missing value argument");
 	itct=sscanf(line2,"%c %i %s",&ch,&min,cname);
 	SCMDCHECK(itct==3,"cannot read symbol, value, and/or compartment arguments");
@@ -464,10 +470,11 @@ enum CMDcode cmdwarnescapee(simptr sim,cmdptr cmd,char *line2) {
 	wallptr *wlist;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name");
+	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	line2=strnword(line2,2);
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 
 	dim=sim->dim;
@@ -496,7 +503,7 @@ enum CMDcode cmdecho(simptr sim,cmdptr cmd,char *line2) {
 	char *termqt,str[STRCHAR];
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 	line2=strnword(line2,2);
 	SCMDCHECK(line2=strchr(line2,'"'),"no starting quote on string");
@@ -514,7 +521,7 @@ enum CMDcode cmdmolcountheader(simptr sim,cmdptr cmd,char *line2) {
 	int i;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 	SCMDCHECK(sim->mols,"molecules are undefined");
 	fprintf(fptr,"time");
@@ -529,7 +536,7 @@ enum CMDcode cmdmolcount(simptr sim,cmdptr cmd,char *line2) {
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
 	SCMDCHECK(cmd->i1!=-1,"error on setup");					// failed before, don't try again
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 	SCMDCHECK(sim->mols,"molecules are undefined");
 
@@ -568,7 +575,7 @@ enum CMDcode cmdmolcountinbox(simptr sim,cmdptr cmd,char *line2) {
 		itct=sscanf(line2,"%lg %lg",&low[d],&high[d]);
 		SCMDCHECK(itct==2,"read failure");
 		line2=strnword(line2,3); }
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 
 	nspecies=sim->mols->nspecies;
@@ -613,7 +620,7 @@ enum CMDcode cmdmolcountincmpt(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(c>=0,"compartment name not recognized");
 	cmpt=cmptss->cmptlist[c];
 	line2=strnword(line2,2);
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 	
 	nspecies=sim->mols->nspecies;
@@ -660,7 +667,7 @@ enum CMDcode cmdmolcountincmpts(simptr sim,cmdptr cmd,char *line2) {
 		cmptlist[ic]=cmptss->cmptlist[c];
 		line2=strnword(line2,2);
 		SCMDCHECK(line2,"missing argument"); }
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 
 	nspecies=sim->mols->nspecies;
@@ -711,7 +718,7 @@ enum CMDcode cmdmolcountincmpt2(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(ms!=MSbsoln,"bsoln molecule state not permitted");
 	cmpt=cmptss->cmptlist[c];
 	line2=strnword(line2,3);
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 
 	nspecies=sim->mols->nspecies;
@@ -752,12 +759,12 @@ enum CMDcode cmdmolcountonsurf(simptr sim,cmdptr cmd,char *line2) {
 	itct=sscanf(line2,"%s",nm);
 	SCMDCHECK(itct==1,"cannot read argument");
 	s=stringfind(srfss->snames,srfss->nsrf,nm);
-	string nmStr = nm;
-	string msg = "surface name: " + nmStr + " not recognized";
+	std::string nmStr = nm;	//??????
+	std::string msg = "surface name: " + nmStr + " not recognized";  // VCell
 	SCMDCHECK(s>=0,msg.c_str());
 	srf=srfss->srflist[s];
 	line2=strnword(line2,2);
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 
 	nspecies=sim->mols->nspecies;
@@ -792,8 +799,9 @@ enum CMDcode cmdmolcountspace(simptr sim,cmdptr cmd,char *line2) {
 
 	dim=sim->dim;
 	SCMDCHECK(line2,"missing arguments");
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name")
+	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	line2=strnword(line2,2);
 	SCMDCHECK(line2,"missing arguments");
 	itct=sscanf(line2,"%i",&axis);
@@ -820,7 +828,7 @@ enum CMDcode cmdmolcountspace(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(itct==1,"cannot read average number");
 	SCMDCHECK(average>=0,"illegal average value");
 	line2=strnword(line2,2);
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 
 	if(cmd->i1!=nbin) {														// allocate counter if required
@@ -861,6 +869,41 @@ enum CMDcode cmdmolcountspace(simptr sim,cmdptr cmd,char *line2) {
 	return CMDok; }
 
 
+enum CMDcode cmdmolcountspecies(simptr sim,cmdptr cmd,char *line2) {
+	FILE *fptr;
+	int i,count;
+	enum MolecState ms;
+	
+	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
+	i=readmolname(sim,line2,&ms,0);
+	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name")
+	line2=strnword(line2,2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
+	SCMDCHECK(fptr,"file name not recognized");
+	
+	count=molcount(sim,i,ms,NULL,-1);
+	fprintf(fptr,"%g %i\n",sim->time,count);
+	return CMDok; }
+
+
+enum CMDcode cmdmollistsize(simptr sim,cmdptr cmd,char *line2) {
+	FILE *fptr;
+	int ll,itct;
+	char listname[STRCHAR];
+
+	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
+	itct=sscanf(line2,"%s",listname);
+	SCMDCHECK(itct==1,"cannot read molecule list name");
+	SCMDCHECK(sim->mols && sim->mols->nlist>0,"no molecule lists defined");
+	ll=stringfind(sim->mols->listname,sim->mols->nlist,listname);
+	SCMDCHECK(ll>=0,"molecule list name not recognized");
+	line2=strnword(line2,2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
+	SCMDCHECK(fptr,"file name not recognized");
+	fprintf(fptr,"%g %i\n",sim->time,sim->mols->nl[ll]);
+	return CMDok; }
+
+
 enum CMDcode cmdspeciesstreamcountheader(simptr sim,cmdptr cmd,char *line2) {
 	FILE *fptr;
 	int ndx,er;
@@ -871,7 +914,7 @@ enum CMDcode cmdspeciesstreamcountheader(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(sim->mzrss,"moleculizer is undefined");
 	SCMDCHECK(sim->mzrss->mzr,"moleculizer handle is undefined");
 
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 
 	er=mzrGetSpeciesStreams(sim->mzrss,&speciesStreamNames,&numNames);
@@ -890,7 +933,6 @@ enum CMDcode cmdspeciesstreamcount(simptr sim,cmdptr cmd,char *line2) {
 	FILE *fptr;
 	char** speciesStreamNames;
 	int nspecstreams,nspecies;
-	char moleculizerName[STRCHAR];
 	int *populationArray;
 	int *speciesStreamArray;
 
@@ -899,7 +941,7 @@ enum CMDcode cmdspeciesstreamcount(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(sim->mzrss,"moleculizer is undefined");
 	SCMDCHECK(sim->mzrss->mzr,"moleculizer handle is undefined");
 
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 	er=mzrGetSpeciesStreams(sim->mzrss,&speciesStreamNames,&nspecstreams);
 	SCMDCHECK(!er,"failed to allocate temporary memory");
@@ -926,11 +968,9 @@ enum CMDcode cmdspeciesstreamcount(simptr sim,cmdptr cmd,char *line2) {
 			if(i>0) populationArray[i]++; }
 
 	for(i=0;i<nspecies;i++) {
-		// Convert the name to its moleculizer name, figure out which species streams it is in, increment those counts. 
-		if(!mzrSmolName2TagName(sim->mzrss,sim->mols->spname[i],moleculizerName))
-			for(ss=0;ss<nspecstreams;ss++)
-				if(mzrIsTagNameInStream(sim->mzrss,moleculizerName,speciesStreamNames[ss]))
-					speciesStreamArray[ss]+=populationArray[i]; }
+		for(ss=0;ss<nspecstreams;ss++)
+			if(mzrIsSmolNameInStream(sim->mzrss,sim->mols->spname[i],speciesStreamNames[ss])==1)
+				speciesStreamArray[ss]+=populationArray[i]; }
 
 	fprintf(fptr,"%g ",sim->time);
 	for(ss=0;ss<nspecstreams;ss++)
@@ -948,7 +988,7 @@ enum CMDcode cmdlistmols(simptr sim,cmdptr cmd,char *line2) {
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
 	SCMDCHECK(sim->mols,"molecules are undefined");
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 	for(ll=0;ll<sim->mols->nlist;ll++)
 		for(m=0;m<sim->mols->nl[ll];m++) {
@@ -965,7 +1005,7 @@ enum CMDcode cmdlistmols2(simptr sim,cmdptr cmd,char *line2) {
 	FILE *fptr;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 	invk=cmd?cmd->invoke:0;
 	for(ll=0;ll<sim->mols->nlist;ll++)
@@ -982,12 +1022,13 @@ enum CMDcode cmdlistmols3(simptr sim,cmdptr cmd,char *line2) {
 	moleculeptr *mlist,mptr;
 	FILE *fptr;
 	enum MolecState ms;
-	
+
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name")
+	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	line2=strnword(line2,2);
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 	invk=cmd?cmd->invoke:0;
 	dim=sim->dim;
@@ -1015,8 +1056,9 @@ enum CMDcode cmdlistmolscmpt(simptr sim,cmdptr cmd,char *line2) {
 	compartptr cmpt;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name")
+	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	line2=strnword(line2,2);
 	SCMDCHECK(line2,"missing compartment name");
 	itct=sscanf(line2,"%s",cname);
@@ -1027,7 +1069,7 @@ enum CMDcode cmdlistmolscmpt(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(c>=0,"compartment name not recognized");
 	cmpt=cmptss->cmptlist[c];
 	line2=strnword(line2,2);
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 	invk=cmd?cmd->invoke:0;
 	dim=sim->dim;
@@ -1053,10 +1095,11 @@ enum CMDcode cmdmolpos(simptr sim,cmdptr cmd,char *line2) {
 	enum MolecState ms;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name")
+	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	line2=strnword(line2,2);
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 	dim=sim->dim;
 
@@ -1083,11 +1126,11 @@ enum CMDcode cmdmolmoments(simptr sim,cmdptr cmd,char *line2) {
 	enum MolecState ms;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(i>=0,"cannot read molecule and/or state name; 'all' is not permitted");
 	if(ms==MSall) ms=MSsoln;
 	line2=strnword(line2,2);
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 	dim=sim->dim;
 
@@ -1122,7 +1165,7 @@ enum CMDcode cmdsavesim(simptr sim,cmdptr cmd,char *line2) {
 	FILE *fptr;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 	if(line2) strcutwhite(line2,2);
 
@@ -1135,7 +1178,7 @@ enum CMDcode cmdsavesim(simptr sim,cmdptr cmd,char *line2) {
 	writecomparts(sim,fptr);
 	writereactions(sim,fptr);
 	mzrsswrite(sim,fptr);
-	scmdwritecommands(sim->cmds,fptr,line2);
+	scmdwritecommands((cmdssptr) sim->cmds,fptr,line2);
 	writemolecules(sim,fptr);
 	fprintf(fptr,"\nend_file\n");
 	return CMDok; }
@@ -1162,7 +1205,7 @@ enum CMDcode cmdmeansqrdisp(simptr sim,cmdptr cmd,char *line2) {
 	enum MolecState ms;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(i>=0,"cannot read molecule and/or state name; 'all' is not permitted");
 	if(ms==MSall) ms=MSsoln;
 	line2=strnword(line2,2);
@@ -1175,7 +1218,7 @@ enum CMDcode cmdmeansqrdisp(simptr sim,cmdptr cmd,char *line2) {
 		SCMDCHECK(itct==1,"cannot read dimension");
 		SCMDCHECK(msddim>=0 && msddim<sim->dim,"dimension out of range"); }
 	line2=strnword(line2,2);
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 
 	SCMDCHECK(cmd->i2!=2,"error on setup");					// failed before, don't try again
@@ -1251,7 +1294,7 @@ enum CMDcode cmdmeansqrdisp2(simptr sim,cmdptr cmd,char *line2) {
 	char startchar,reportchar;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(i>=0,"cannot read molecule and/or state name; 'all' is not permitted");
 	if(ms==MSall) ms=MSsoln;
 	line2=strnword(line2,2);
@@ -1271,7 +1314,7 @@ enum CMDcode cmdmeansqrdisp2(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(maxmoment>0,"maxmoment has to be at least 1");
 	SCMDCHECK(maxmoment<=16,"max_moment cannot exceed 16");
 	line2=strnword(line2,5);
-	fptr=scmdgetfptr(sim->cmds,line2);
+	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
 
 	SCMDCHECK(cmd->i2!=2,"error on setup");					// failed before, don't try again
@@ -1388,7 +1431,7 @@ enum CMDcode cmddiagnostics(simptr sim,cmdptr cmd,char *line2) {
 	if(ss==SSwall || ss==SSall) walloutput(sim);
 	if(ss==SSmolec || ss==SSall) molssoutput(sim);
 	if(ss==SSsurf || ss==SSall) surfaceoutput(sim);
-	if(ss==SScmd || ss==SSall) scmdoutput(sim->cmds);
+	if(ss==SScmd || ss==SSall) scmdoutput((cmdssptr) sim->cmds);
 	if(ss==SSbox || ss==SSall) boxssoutput(sim);
 	if(ss==SSrxn || ss==SSall)
 		for(order=0;order<MAXORDER;order++) rxnoutput(sim,order);
@@ -1481,7 +1524,7 @@ enum CMDcode cmdmovesurfacemol(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(sim->srfss,"surfaces are undefined");
 	itct=sscanf(line2,"%s %lg",nm,&prob);
 	SCMDCHECK(itct==2,"failed to read molecule name or probability");
-	i1=readmolname(sim,nm,&ms1);
+	i1=readmolname(sim,nm,&ms1,0);
 	SCMDCHECK(i1>=0 || i1==-5,"failed to read molecule name");
 	SCMDCHECK(ms1==MSfront || ms1==MSback || ms1==MSup || ms1==MSback || ms1==MSall,"failed to read molecule state or illegal state");
 	SCMDCHECK(prob>=0 && prob<=1,"probability out of bounds");
@@ -1534,8 +1577,9 @@ enum CMDcode cmdkillmol(simptr sim,cmdptr cmd,char *line2) {
 	enum MolecState ms;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name");
+	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	if(i<0 || ms==MSall) {lllo=0;llhi=sim->mols->nlist;}
 	else llhi=1+(lllo=sim->mols->listlookup[i][ms]);
 	for(ll=lllo;ll<llhi;ll++) {
@@ -1555,8 +1599,9 @@ enum CMDcode cmdkillmolprob(simptr sim,cmdptr cmd,char *line2) {
 	enum MolecState ms;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name");
+	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	line2=strnword(line2,2);
 	SCMDCHECK(line2,"missing probability value");
 	itct=sscanf(line2,"%lg",&prob);
@@ -1582,8 +1627,9 @@ enum CMDcode cmdkillmolinsphere(simptr sim,cmdptr cmd,char *line2) {
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
 	if(!sim->srfss) return CMDok;
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name");
+	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	line2=strnword(line2,2);
 	SCMDCHECK(line2,"missing surface name");
 	itct=sscanf(line2,"%s",nm);
@@ -1619,8 +1665,9 @@ enum CMDcode cmdkillmolincmpt(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(cmptss,"no compartments defined");
 	SCMDCHECK(sim->mols,"molecules are undefined");
 	SCMDCHECK(line2,"missing argument");
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<=0 && i>-5),"cannot read molecule and/or state name");
+	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	SCMDCHECK(line2=strnword(line2,2),"missing value argument");
 	itct=sscanf(line2,"%s",cname);
 	SCMDCHECK(itct==1,"cannot read compartment name");
@@ -1654,8 +1701,9 @@ enum CMDcode cmdkillmoloutsidesystem(simptr sim,cmdptr cmd,char *line2) {
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
 	if(!sim->srfss) return CMDok;
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name");
+	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	if(i<0 || ms==MSall) {lllo=0;llhi=sim->mols->nlist;}
 	else llhi=1+(lllo=sim->mols->listlookup[i][ms]);
 	for(ll=lllo;ll<llhi;ll++) {
@@ -1711,7 +1759,7 @@ enum CMDcode cmdfixmolcountonsurf(simptr sim,cmdptr cmd,char *line2) {
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
 	SCMDCHECK(line2,"missing argument");
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(i>0,"failed to read molecule name or state");
 	SCMDCHECK(ms!=MSsoln && ms!=MSbsoln,"molecule state needs to be surface-bound");
 	line2=strnword(line2,2);
@@ -1799,11 +1847,11 @@ enum CMDcode cmdequilmol(simptr sim,cmdptr cmd,char *line2) {
 	enum MolecState ms1,ms2;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
-	i1=readmolname(sim,line2,&ms1);
+	i1=readmolname(sim,line2,&ms1,0);
 	SCMDCHECK(i1>0,"cannot read first molecule and/or state name; 'all' is not permitted");
 	if(ms1==MSall) ms1=MSsoln;
 	line2=strnword(line2,2);
-	i2=readmolname(sim,line2,&ms2);
+	i2=readmolname(sim,line2,&ms2,0);
 	SCMDCHECK(i2>0,"cannot read second molecule and/or state name; 'all' is not permitted");
 	if(ms2==MSall) ms2=MSsoln;
 	SCMDCHECK((ms1==MSsoln && ms2==MSsoln) || (ms1!=MSsoln && ms2!=MSsoln),"cannot equilibrate between solution and surface-bound");
@@ -1836,7 +1884,7 @@ enum CMDcode cmdreplacexyzmol(simptr sim,cmdptr cmd,char *line2) {
 	enum MolecState ms;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(i>=0,"cannot read molecule and/or state name; 'all' is not permitted");
 	SCMDCHECK(ms!=MSall,"molecule state may not be 'all'");
 	line2=strnword(line2,2);
@@ -1864,11 +1912,11 @@ enum CMDcode cmdreplacevolmol(simptr sim,cmdptr cmd,char *line2) {
 	enum MolecState ms1,ms2;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
-	i1=readmolname(sim,line2,&ms1);
+	i1=readmolname(sim,line2,&ms1,0);
 	SCMDCHECK(i1>0,"cannot read first molecule and/or state name; 'all' is not permitted");
 	SCMDCHECK(ms1!=MSall,"first state may not be 'all'");
 	line2=strnword(line2,2);
-	i2=readmolname(sim,line2,&ms2);
+	i2=readmolname(sim,line2,&ms2,0);
 	SCMDCHECK(i2>=0,"cannot read second molecule and/or state name; 'all' is not permitted");
 	SCMDCHECK(ms2!=MSall,"second state may not be 'all'");
 	SCMDCHECK((ms1==MSsoln && ms2==MSsoln) || (ms1!=MSsoln && ms2!=MSsoln),"cannot equilibrate between solution and surface-bound");
@@ -1912,12 +1960,12 @@ enum CMDcode cmdreplacecmptmol(simptr sim,cmdptr cmd,char *line2) {
 	moleculeptr mptr;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
-	i1=readmolname(sim,line2,&ms1);
+	i1=readmolname(sim,line2,&ms1,0);
 	SCMDCHECK(i1>0,"cannot read first molecule and/or state name; 'all' is not permitted");
 	SCMDCHECK(ms1!=MSall,"first state may not be 'all'");
 	line2=strnword(line2,2);
 	SCMDCHECK(line2,"missing second species name");
-	i2=readmolname(sim,line2,&ms2);
+	i2=readmolname(sim,line2,&ms2,0);
 	SCMDCHECK(i2>=0,"cannot read second molecule and/or state name; 'all' is not permitted");
 	SCMDCHECK(ms2!=MSall,"second state may not be 'all'");
 	SCMDCHECK((ms1==MSsoln && ms2==MSsoln) || (ms1!=MSsoln && ms2!=MSsoln),"cannot equilibrate between solution and surface-bound");
@@ -1949,11 +1997,11 @@ enum CMDcode cmdmodulatemol(simptr sim,cmdptr cmd,char *line2) {
 	enum MolecState ms1,ms2;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
-	i1=readmolname(sim,line2,&ms1);
+	i1=readmolname(sim,line2,&ms1,0);
 	SCMDCHECK(i1>0,"cannot read first molecule and/or state name; 'all' is not permitted");
 	SCMDCHECK(ms1!=MSall,"first state may not be 'all'");
 	line2=strnword(line2,2);
-	i2=readmolname(sim,line2,&ms2);
+	i2=readmolname(sim,line2,&ms2,0);
 	SCMDCHECK(i2>=0,"cannot read second molecule and/or state name; 'all' is not permitted");
 	SCMDCHECK(ms1!=MSall,"second state may not be 'all'");
 	SCMDCHECK((ms1==MSsoln && ms2==MSsoln) || (ms1!=MSsoln && ms2!=MSsoln),"cannot equilibrate between solution and surface-bound");
@@ -1985,8 +2033,9 @@ enum CMDcode cmdreact1(simptr sim,cmdptr cmd,char *line2) {
 	enum MolecState ms;
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
-	i=readmolname(sim,line2,&ms);
+	i=readmolname(sim,line2,&ms,0);
 	SCMDCHECK(!(i<=0 && i>-5),"cannot read molecule and/or state name");
+	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	line2=strnword(line2,2);
 	SCMDCHECK(line2,"reaction name is missing");
 	itct=sscanf(line2,"%s",rnm);
@@ -2062,9 +2111,9 @@ enum CMDcode cmdshufflereactions(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(line2,"missing argument");
 	itct=sscanf(line2,"%s %s",nm1,nm2);
 	SCMDCHECK(itct==2,"missing argument");
-	i1=readmolname(sim,nm1,&ms1);
+	i1=readmolname(sim,nm1,&ms1,0);
 	SCMDCHECK(i1>=0 || i1==-5,"first species name not recognized");
-	i2=readmolname(sim,nm2,&ms2);
+	i2=readmolname(sim,nm2,&ms2,0);
 	SCMDCHECK(i2>=0 || i2==-5,"second species name not recognized");
 	rxnss=sim->rxnss[2];
 	if(!rxnss) return CMDok;
@@ -2283,7 +2332,7 @@ enum CMDcode conditionalcmdtype(simptr sim,cmdptr cmd,int nparam) {
 	strcpy(string,strptr);
 	strptr=cmd->str;
 	cmd->str=string;
-	ans=scmdcmdtype(sim->cmds,cmd);
+	ans=scmdcmdtype((cmdssptr) sim->cmds,cmd);
 	cmd->str=strptr;
 	return ans; }
 
@@ -2339,113 +2388,5 @@ int molinpanels(simptr sim,int ll,int m,int s,char pshape) {
 	return 0; }
 
 
-#include <VCELL/SimulationMessaging.h>
-#include "VCellSmoldynOutput.h"
 
-static VCellSmoldynOutput* vcellSmoldynOutput = 0;
-enum CMDcode cmdVCellPrintProgress(simptr sim, cmdptr cmd, char *line2) {
-	if(line2 && !strcmp(line2,"cmdtype")) {
-		return CMDobserve;
-	}
-	double progress = (sim->time - sim->tmin) / (sim->tmax - sim->tmin);
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, progress, sim->time));
-	//fprintf(stdout, "[[[progress:%lg%%]]]",  progress * 100.0);
-	if (SimulationMessaging::getInstVar()->isStopRequested()) {
-		throw -1;
-	}
-	return CMDok;
-}
 
-#include <iostream>
-#include <sstream>
-using std::stringstream;
-using std::endl;
-enum CMDcode cmdVCellWriteOutput(simptr sim, cmdptr cmd, char *line2) {
-	static stringstream vcellOutputInput;
-	static bool firstTime = true;
-	if(line2 && !strcmp(line2,"cmdtype")) {
-		return CMDobserve;
-	}
-	if (vcellSmoldynOutput == 0) {
-		vcellSmoldynOutput = new VCellSmoldynOutput(sim);
-	}
-
-	string token;
-	stringstream ss(line2);
-	ss >> token;
-	if (token == "begin") {
-	} else if (token == "end") {
-		if (firstTime) {
-			string input = vcellOutputInput.str();
-			vcellSmoldynOutput->parseInput(input);
-			firstTime = false;
-		}
-		vcellSmoldynOutput->write();
-	} else {
-		if (firstTime) {
-			vcellOutputInput << line2 << endl;
-		}
-	}	
-
-	return CMDok;
-}
-
-enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2) {
-	static bool dataProcessFirstTime = true;
-	static stringstream dataProcessInput;
-	static string dataProcName;
-	if(line2 && !strcmp(line2,"cmdtype")) {
-		return CMDobserve;
-	}	
-	if (dataProcessFirstTime) {
-		string token;
-		stringstream ss(line2);
-		ss >> token;
-		if (token == "begin") {
-			ss >> dataProcName;
-		} else if (token == "end") {
-#ifndef VCELL_HYBRID 
-			if (vcellSmoldynOutput == 0) {
-				vcellSmoldynOutput = new VCellSmoldynOutput(sim);
-			}
-			string input = dataProcessInput.str();
-			vcellSmoldynOutput->parseDataProcessingInput(dataProcName, input);
-#endif
-			dataProcessFirstTime = false;
-		} else {
-			dataProcessInput << line2 << endl;
-		}
-	}
-	return CMDok;
-}
-
-enum CMDcode cmdVCellReact1KillMolecules(simptr sim,cmdptr cmd, char *line2) {
-	int itct,i,ll,m,r,nmol,lllo,llhi;
-	static char rnm[STRCHAR];
-	moleculeptr *mlist,mptr;
-	enum MolecState ms;
-
-	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
-	i=readmolname(sim,line2,&ms);
-	SCMDCHECK(!(i<=0 && i>-5),"cannot read molecule and/or state name");
-	line2=strnword(line2,2);
-	SCMDCHECK(line2,"reaction name is missing");
-	itct=sscanf(line2,"%s",rnm);
-	SCMDCHECK(itct==1,"cannot read reaction name");
-	SCMDCHECK(sim->rxnss[1],"no first order reactions defined");
-	r=stringfind(sim->rxnss[1]->rname,sim->rxnss[1]->totrxn,rnm);
-	SCMDCHECK(r>=0,"reaction not recognized");
-
-	if(i<0) {lllo=0;llhi=sim->mols->nlist;}
-	else llhi=1+(lllo=sim->mols->listlookup[i][ms]);
-	for(ll=lllo;ll<llhi;ll++) {
-		mlist=sim->mols->live[ll];
-		nmol=sim->mols->nl[ll];
-		for(m=0;m<nmol;m++) {
-			mptr=mlist[m];
-			if (!posincompart(sim, mptr->pos, sim->rxnss[1]->rxn[r]->cmpt)) {
-				continue;
-			}
-			if((i<0 && ms==MSall) || (i<0 && mptr->mstate==ms) || (mptr->ident==i && ms==MSall) || (mptr->ident==i && mptr->mstate==ms))
-				if(doreact(sim,sim->rxnss[1]->rxn[r],mptr,NULL,ll,m,-1,-1,NULL,NULL)) return CMDwarn; }}
-	return CMDok; }

@@ -8,12 +8,10 @@
 #include <math.h>
 #include <string.h>
 #include "smoldyn.h"
+#include "smoldynfuncs.h"
 #include "string2.h"
 #include "Zn.h"
-
-#define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;} else (void)0
-#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0'; printfException("%s", B); goto failure;} else (void)0
-
+#include <string>
 
 /******************************************************************************/
 /************************************* Ports **********************************/
@@ -43,7 +41,7 @@ portptr portalloc(void) {
 	return port; }
 
 
-/* portfree.  Frees a port. */
+/* portfree */
 void portfree(portptr port) {
 	if(!port) return;
 	free(port);
@@ -144,8 +142,7 @@ void portoutput(simptr sim) {
 	return; }
 
 
-/* writeports.  Prints information about all ports to file fptr using a format
-that allows the ports to read as a configuration file. */
+/* writeports */
 void writeports(simptr sim,FILE *fptr) {
 	portssptr portss;
 	portptr port;
@@ -165,7 +162,7 @@ void writeports(simptr sim,FILE *fptr) {
 	return; }
 
 
-/* checkportparams.  This checks a few port parameters. */
+/* checkportparams */
 int checkportparams(simptr sim,int *warnptr) {
 	int error,warn,prt,er,i;
 	portssptr portss;
@@ -213,7 +210,7 @@ void portsetcondition(portssptr portss,enum StructCond cond,int upgrade) {
 	if(upgrade==0 && portss->condition>cond) portss->condition=cond;
 	else if(upgrade==1 && portss->condition<cond) portss->condition=cond;
 	else if(upgrade==2) portss->condition=cond;
-	if(portss->condition<portss->sim->condition) {
+	if(portss->sim && portss->condition<portss->sim->condition) {
 		cond=portss->condition;
 		simsetcondition(portss->sim,cond==SCinit?SClists:cond,0); }
 	return; }
@@ -286,8 +283,8 @@ portptr portreadstring(simptr sim,portptr port,char *word,char *line2,char *erst
 		itct=sscanf(line2,"%s",nm);
 		CHECKS(itct==1,"error reading surface name");
 		s=stringfind(sim->srfss->snames,sim->srfss->nsrf,nm);
-		string nmStr = nm;
-		string msg = "surface name: " + nmStr + " not recognized";
+		std::string nmStr = nm;
+		std::string msg = "surface name: " + nmStr + " not recognized";
 		CHECKS(s>=0, msg.c_str());
 		port=portaddport(sim,port->portname,sim->srfss->srflist[s],PFnone);
 		CHECKS(port,"SMOLDYN BUG adding surface to port");
@@ -423,7 +420,7 @@ int portgetmols(simptr sim,portptr port,int ident,enum MolecState ms,int remove)
 
 
 /* portputmols */
-int portputmols(simptr sim,portptr port,int nmol,int ident) {
+int portputmols(simptr sim,portptr port,int nmol,int ident,int *species,double **positions) {
 	moleculeptr mptr;
 	int dim,m,d;
 	panelptr pnl;
@@ -431,18 +428,24 @@ int portputmols(simptr sim,portptr port,int nmol,int ident) {
 	if(!nmol) return 0;
 	if(!port->srf) return 2;
 	if(port->face==PFnone) return 3;
+	if(port->srf->totpanel==0) return 4;
 	dim=sim->dim;
 
 	for(m=0;m<nmol;m++) {
 		mptr=getnextmol(sim->mols);
 		if(!mptr) return 1;
-		mptr->ident=ident;
+		if(species) mptr->ident=species[m];
+		else mptr->ident=ident;
 		mptr->mstate=MSsoln;
-		mptr->list=sim->mols->listlookup[ident][MSsoln];
-		pnl=surfrandpos(port->srf,mptr->posx,dim);
-		if(!pnl) return 4;
-		fixpt2panel(mptr->posx,pnl,dim,port->face,sim->srfss->epsilon);
-		for(d=0;d<dim;d++) mptr->pos[d]=mptr->posx[d];
+		mptr->list=sim->mols->listlookup[mptr->ident][MSsoln];
+		if(positions) {
+			closestsurfacept(port->srf,sim->dim,positions[m],mptr->posx,&pnl);
+			fixpt2panel(mptr->posx,pnl,dim,port->face,sim->srfss->epsilon);
+			for(d=0;d<dim;d++) mptr->pos[d]=positions[m][d]; }
+		else {
+			pnl=surfrandpos(port->srf,mptr->posx,dim);
+			fixpt2panel(mptr->posx,pnl,dim,port->face,sim->srfss->epsilon);
+			for(d=0;d<dim;d++) mptr->pos[d]=mptr->posx[d]; }
 		mptr->box=pos2box(sim,mptr->pos); }
 	sim->eventcount[ETimport]+=nmol;
 	return 0; }
@@ -456,6 +459,6 @@ int porttransport(simptr sim1,portptr port1,simptr sim2,portptr port2) {
 	er=0;
 	for(i=1;i<sim1->mols->nspecies && !er;i++) {
 		nmol=portgetmols(sim1,port1,i,MSall,1);
-		er=portputmols(sim2,port2,nmol,i); }
+		er=portputmols(sim2,port2,nmol,i,NULL,NULL); }
 	return er; }
 

@@ -7,7 +7,6 @@ This code is in the public domain.  It is not copyrighted and may not be copyrig
 #include <stdlib.h>
 #include <string.h>
 #include "SurfaceParam.h"
-#include "smoldyn.h"
 
 /* Comment out either or both of the following include lines if the library
 files are unavailable */
@@ -610,19 +609,19 @@ void xdfmaketableirrev(void) {
 	int i,i2,n,ifitlo,ifithi,npon;
 	char ynmro[256],ynxdf[256];
 
-	fprintf(stderr,"Enter the number of position points for the concentration (e.g. 200): ");	
+	fprintf(stderr,"Enter the number of position points for the concentration (e.g. 200): ");
 	scanf("%i",&n);
 	if(iseven(n)) n++;
-	fprintf(stderr,"Enter low and high x values (e.g. -6 and 10): ");	
+	fprintf(stderr,"Enter low and high x values (e.g. -6 and 10): ");
 	scanf("%lf %lf",&xlo,&xhi);
-	fprintf(stderr,"Enter fit domain for x values (e.g. 3 and 7): ");	
+	fprintf(stderr,"Enter fit domain for x values (e.g. 3 and 7): ");
 	scanf("%lf %lf",&xfitlo,&xfithi);
-	fprintf(stderr,"Enter epsilon (e.g. 0.0001): ");	
+	fprintf(stderr,"Enter epsilon (e.g. 0.0001): ");
 	scanf("%lf",&eps);
-	fprintf(stderr,"Do you want machine readable output (y/n)? ");	
+	fprintf(stderr,"Do you want machine readable output (y/n)? ");
 	scanf("%s",ynmro);
 	if(ynmro[0]!='y') {
-		fprintf(stderr,"Do you want xdf output (y/n)? ");	
+		fprintf(stderr,"Do you want xdf output (y/n)? ");
 		scanf("%s",ynxdf); }
 	else ynxdf[0]='n';
 
@@ -630,7 +629,7 @@ void xdfmaketableirrev(void) {
 	xdfa=(double*)calloc(n,sizeof(double));
 	xdfd=(double*)calloc(n,sizeof(double));
 	if(!x || !xdfa || !xdfd) {
-		printfException("Out of memory.  Function stopped.\n");return; }
+		fprintf(stderr,"Out of memory.  Function stopped.\n");return; }
 
 	dx=(xhi-xlo)/n;
 	x[0]=xlo;
@@ -644,7 +643,7 @@ void xdfmaketableirrev(void) {
 	for(i=0;i<n && ifitlo==-1;i++) if(x[i]>=xfitlo) ifitlo=i;
 	for(;i<n && ifithi==-1;i++) if(x[i]>xfithi) ifithi=i-1;
 	if(ifitlo==-1 || ifithi==-1) {
-		printfException("Fit domain is not within x range\n");return; }
+		fprintf(stderr,"Fit domain is not within x range\n");return; }
 
 	if(ynmro[0]=='y') {
 		npon=0;
@@ -684,23 +683,23 @@ void xdfmaketable(void) {
 	int i,i2,n,npon,npoff;
 	char yn[256];
 
-	fprintf(stderr,"\nFunction for calculating steady-state surface concentrations\n");	
-	fprintf(stderr,"for various adsorption and desorption probabilities.\n\n");	
-	fprintf(stderr,"Enter the number of position points for the concentration (e.g. 200): ");	
+	fprintf(stderr,"\nFunction for calculating steady-state surface concentrations\n");
+	fprintf(stderr,"for various adsorption and desorption probabilities.\n\n");
+	fprintf(stderr,"Enter the number of position points for the concentration (e.g. 200): ");
 	scanf("%i",&n);
-	if(n<10) {printfException("Value is too low.  Function stopped.\n");return; }
+	if(n<10) {fprintf(stderr,"Value is too low.  Function stopped.\n");return; }
 	if(iseven(n)) n++;
-	fprintf(stderr,"Enter level of precision (e.g. 1e-4): ");	
+	fprintf(stderr,"Enter level of precision (e.g. 1e-4): ");
 	scanf("%lf",&eps);
-	if(eps<=0) {printfException("Impossible precision.  Function stopped.\n");return; }
-	fprintf(stderr,"Do you want machine readable output (y/n)? ");	
+	if(eps<=0) {fprintf(stderr,"Impossible precision.  Function stopped.\n");return; }
+	fprintf(stderr,"Do you want machine readable output (y/n)? ");
 	scanf("%s",yn);
 
 	x=(double*)calloc(n,sizeof(double));
 	xdfa=(double*)calloc(n,sizeof(double));
 	xdfd=(double*)calloc(n,sizeof(double));
 	if(!x || !xdfa || !xdfd) {
-		printfException("Out of memory.  Function stopped.\n");return; }
+		fprintf(stderr,"Out of memory.  Function stopped.\n");return; }
 
 	dx=16.0/n;																		// x goes from -6 to about +10
 	x[0]=-6.0;																		// x min is set to -6

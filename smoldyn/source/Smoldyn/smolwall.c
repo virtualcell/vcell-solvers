@@ -8,10 +8,7 @@
 #include <math.h>
 #include "random2.h"
 #include "smoldyn.h"
-
-#define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;}
-#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0'; printfException("%s", B); goto failure;} else (void)0
-
+#include "smoldynfuncs.h"
 
 /******************************************************************************/
 /************************************ Walls ***********************************/
@@ -69,6 +66,26 @@ int posinsystem(simptr sim,double *pos) {
 		if(pos[d]<sim->wlist[2*d]->pos) return 0;
 		if(pos[d]>sim->wlist[2*d+1]->pos) return 0; }
 	return 1; }
+
+
+/* wallcalcdist2 */
+double wallcalcdist2(simptr sim,double *pos1,double *pos2,int wpcode,double *vect) {
+	double dist2,syssize;
+	int d,dim;
+
+	dim=sim->dim;
+	dist2=0;
+	for(d=0;d<dim;d++) {
+		if((wpcode>>(2*d)&3)==0)							// no wrapping
+			vect[d]=pos2[d]-pos1[d];
+		else if((wpcode>>(2*d)&3)==1) {				// wrap towards low side, so pos1 is small and pos2 is big
+			syssize=sim->wlist[2*d+1]->pos-sim->wlist[2*d]->pos;
+			vect[d]=pos2[d]-pos1[d]-syssize; }
+		else {																// wrap towards high side, so pos1 is big and pos2 is small
+			syssize=sim->wlist[2*d+1]->pos-sim->wlist[2*d]->pos;
+			vect[d]=pos2[d]-pos1[d]+syssize; }
+		dist2+=vect[d]*vect[d]; }
+	return dist2; }
 
 
 /******************************************************************************/
@@ -143,7 +160,7 @@ void walloutput(simptr sim) {
 	wlist=sim->wlist;
 	printf("WALL PARAMETERS\n");
 	if(!wlist) {
-		printf(" No walls defined for simulation\n\n");	
+		printf(" No walls defined for simulation\n\n");
 		return; }
 
 	for(w=0;w<2*dim;w++) {
@@ -231,9 +248,23 @@ int walladd(simptr sim,int d,int highside,double pos,char type) {
 
 /* wallsettype */
 int wallsettype(simptr sim,int d,int highside,char type) {
+	int d2;
+
 	if(!sim->wlist) return 1;
-	d=2*d+highside;
-	sim->wlist[d]->type=type;
+	if(d<0)
+		for(d2=0;d2<sim->dim;d2++) {
+			if(highside<0) {
+				sim->wlist[2*d2]->type=type;
+				sim->wlist[2*d2+1]->type=type; }
+			else
+				sim->wlist[2*d2+highside]->type=type; }
+	else {
+		if(highside<0) {
+			sim->wlist[2*d]->type=type;
+			sim->wlist[2*d+1]->type=type; }
+		else
+			sim->wlist[2*d+highside]->type=type; }
+
 	boxsetcondition(sim->boxs,SClists,0);
 	return 0; }
 

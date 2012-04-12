@@ -11,12 +11,8 @@
 #include "math2.h"
 #include "random2.h"
 #include "smoldyn.h"
+#include "smoldynfuncs.h"
 #include "Zn.h"
-
-#define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;}
-#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0'; printfException("%s", B); goto failure;} else (void)0
-
-
 
 /******************************************************************************/
 /******************************** Virtual boxes *******************************/
@@ -163,7 +159,6 @@ boxptr boxalloc(int dim,int nlist) {
 	int d,ll;
 
 	bptr=NULL;
-	CHECK(dim>0);
 	CHECK(bptr=(boxptr) malloc(sizeof(struct boxstruct)));
 	bptr->indx=NULL;
 	bptr->nneigh=0;
@@ -179,14 +174,14 @@ boxptr boxalloc(int dim,int nlist) {
 	bptr->nmol=NULL;
 	bptr->mol=NULL;
 
-	CHECK(bptr->indx=(int*)calloc(dim,sizeof(int)));
+	CHECK(bptr->indx=(int*) calloc(dim,sizeof(int)));
 	for(d=0;d<dim;d++) bptr->indx[d]=0;
 	if(nlist) {
-		CHECK(bptr->maxmol=(int*)calloc(nlist,sizeof(int)));
+		CHECK(bptr->maxmol=(int*) calloc(nlist,sizeof(int)));
 		for(ll=0;ll<nlist;ll++) bptr->maxmol[ll]=0;
-		CHECK(bptr->nmol=(int*)calloc(nlist,sizeof(int)));
+		CHECK(bptr->nmol=(int*) calloc(nlist,sizeof(int)));
 		for(ll=0;ll<nlist;ll++) bptr->nmol[ll]=0;
-		CHECK(bptr->mol=(moleculeptr**)calloc(nlist,sizeof(moleculeptr*)));
+		CHECK(bptr->mol=(moleculeptr**) calloc(nlist,sizeof(moleculeptr*)));
 		for(ll=0;ll<nlist;ll++) bptr->mol[ll]=NULL; }
 
 	return bptr;
@@ -262,8 +257,7 @@ boxptr *boxesalloc(int nbox,int dim,int nlist) {
 	boxptr *blist;
 
 	blist=NULL;
-	CHECK(nbox>0);
-	CHECK(blist=(boxptr*)calloc(nbox,sizeof(boxptr)));
+	CHECK(blist=(boxptr*) calloc(nbox,sizeof(boxptr)));
 	for(b=0;b<nbox;b++) blist[b]=NULL;
 	for(b=0;b<nbox;b++)
 		CHECK(blist[b]=boxalloc(dim,nlist));
@@ -290,7 +284,6 @@ boxssptr boxssalloc(int dim) {
 	int d;
 
 	boxs=NULL;
-	CHECK(dim>0);
 	CHECK(boxs=(boxssptr) malloc(sizeof(struct boxsuperstruct)));
 	boxs->condition=SCinit;
 	boxs->sim=NULL;
@@ -304,7 +297,7 @@ boxssptr boxssalloc(int dim) {
 	boxs->size=NULL;
 	boxs->blist=NULL;
 
-	CHECK(boxs->side=(int*)calloc(dim,sizeof(int)));
+	CHECK(boxs->side=(int*) calloc(dim,sizeof(int)));
 	for(d=0;d<dim;d++) boxs->side[d]=0;
 	CHECK(boxs->min=(double*) calloc(dim,sizeof(double)));
 	for(d=0;d<dim;d++) boxs->min[d]=0;
@@ -337,46 +330,48 @@ void boxssfree(boxssptr boxs) {
 void boxoutput(boxssptr boxs,int blo,int bhi,int dim) {
 	int b,b2,b3,p,d,ll;
 	boxptr bptr;
+	simptr sim;
 
-	printf("INDIVIDUAL BOX PARAMETERS\n");
+	sim=boxs->sim;
+	simLog(sim,2,"INDIVIDUAL BOX PARAMETERS\n");
 	if(!boxs) {
-		printf(" No box superstructure defined\n\n");		
+		simLog(sim,2," No box superstructure defined\n\n");
 		return; }
 	if(bhi<0 || bhi>boxs->nbox) bhi=boxs->nbox;
 	for(b=blo;b<bhi;b++) {
 		bptr=boxs->blist[b];
-		printf(" Box %i: indx=(",b);
-		for(d=0;d<dim-1;d++) printf("%i,",bptr->indx[d]);
-		printf("%i), nwall=%i\n",bptr->indx[d],bptr->nwall);
+		simLog(sim,2," Box %i: indx=(",b);
+		for(d=0;d<dim-1;d++) simLog(sim,2,"%i,",bptr->indx[d]);
+		simLog(sim,2,"%i), nwall=%i\n",bptr->indx[d],bptr->nwall);
 
-		printf("  nneigh=%i midneigh=%i\n",bptr->nneigh,bptr->midneigh);
+		simLog(sim,2,"  nneigh=%i midneigh=%i\n",bptr->nneigh,bptr->midneigh);
 		if(bptr->neigh) {
-			printf("   neighbors:");
+			simLog(sim,2,"   neighbors:");
 			for(b2=0;b2<bptr->nneigh;b2++) {
 				b3=indx2addZV(bptr->neigh[b2]->indx,boxs->side,dim);
-				printf(" %i",b3); }
-			printf("\n"); }
+				simLog(sim,2," %i",b3); }
+			simLog(sim,2,"\n"); }
 		if(bptr->wpneigh) {
-			printf("  wrap code:");
-			for(b2=0;b2<bptr->nneigh;b2++) printf(" %i",bptr->wpneigh[b2]);
-			printf("\n"); }
+			simLog(sim,2,"  wrap code:");
+			for(b2=0;b2<bptr->nneigh;b2++) simLog(sim,2," %i",bptr->wpneigh[b2]);
+			simLog(sim,2,"\n"); }
 
-		printf("  %i panels",bptr->npanel);
+		simLog(sim,2,"  %i panels",bptr->npanel);
 		if(bptr->npanel) {
-			printf(": ");
+			simLog(sim,2,": ");
 			for(p=0;p<bptr->npanel;p++) {
-				printf(" %s",bptr->panel[p]->pname); }}
-		printf("\n");
+				simLog(sim,2," %s",bptr->panel[p]->pname); }}
+		simLog(sim,2,"\n");
 
-		printf("  %i live lists:\n",boxs->nlist);
-		printf("   max:");
-		for(ll=0;ll<boxs->nlist;ll++) printf(" %i",bptr->maxmol[ll]);
-		printf("\n   size:");
-		for(ll=0;ll<boxs->nlist;ll++) printf(" %i",bptr->nmol[ll]);
-		printf("\n"); }
+		simLog(sim,2,"  %i live lists:\n",boxs->nlist);
+		simLog(sim,2,"   max:");
+		for(ll=0;ll<boxs->nlist;ll++) simLog(sim,2," %i",bptr->maxmol[ll]);
+		simLog(sim,2,"\n   size:");
+		for(ll=0;ll<boxs->nlist;ll++) simLog(sim,2," %i",bptr->nmol[ll]);
+		simLog(sim,2,"\n"); }
 
-	if(b<boxs->nbox) printf(" ...\n");
-	printf("\n");
+	if(b<boxs->nbox) simLog(sim,2," ...\n");
+	simLog(sim,2,"\n");
 	return; }
 
 
@@ -386,36 +381,36 @@ void boxssoutput(simptr sim) {
 	boxssptr boxs;
 	double flt1;
 
-	printf("VIRTUAL BOX PARAMETERS\n");
+	simLog(sim,2,"VIRTUAL BOX PARAMETERS\n");
 	if(!sim || !sim->boxs) {
-		printf(" No box superstructure defined\n\n");		
+		simLog(sim,2," No box superstructure defined\n\n");
 		return; }
 	dim=sim->dim;
 	boxs=sim->boxs;
-	printf(" %i boxes\n",boxs->nbox);
-	printf(" Number of boxes on each side:");
-	for(d=0;d<dim;d++) printf(" %i",boxs->side[d]);
-	printf("\n");
-	printf(" Minimum box position: ");
-	for(d=0;d<dim;d++) printf(" %g",boxs->min[d]);
-	printf("\n");
-	if(boxs->boxsize) printf(" Requested box width: %g\n",boxs->boxsize);
-	if(boxs->mpbox) printf(" Requested molecules per box: %g\n",boxs->mpbox);
-	printf(" Box dimensions: ");
-	for(d=0;d<dim;d++) printf(" %g",boxs->size[d]);
-	printf("\n");
+	simLog(sim,2," %i boxes\n",boxs->nbox);
+	simLog(sim,2," Number of boxes on each side:");
+	for(d=0;d<dim;d++) simLog(sim,2," %i",boxs->side[d]);
+	simLog(sim,2,"\n");
+	simLog(sim,2," Minimum box position: ");
+	for(d=0;d<dim;d++) simLog(sim,2," %g",boxs->min[d]);
+	simLog(sim,2,"\n");
+	if(boxs->boxsize) simLog(sim,2," Requested box width: %g\n",boxs->boxsize);
+	if(boxs->mpbox) simLog(sim,2," Requested molecules per box: %g\n",boxs->mpbox);
+	simLog(sim,2," Box dimensions: ");
+	for(d=0;d<dim;d++) simLog(sim,2," %g",boxs->size[d]);
+	simLog(sim,2,"\n");
 	if(boxs->boxvol>0)
-		printf(" Box volumes: %g\n",boxs->boxvol);
+		simLog(sim,2," Box volumes: %g\n",boxs->boxvol);
 	else
-		printf(" Box volumes not computed\n");
+		simLog(sim,2," Box volumes not computed\n");
 
 	if(sim->mols) {
 		flt1=0;
 		for(ll=0;ll<sim->mols->nlist;ll++)
 			if(sim->mols->listtype[ll]==MLTsystem) flt1+=sim->mols->nl[ll];
 		flt1/=boxs->nbox;
-		printf(" Molecules per box= %g\n",flt1);
-		printf("\n"); }
+		simLog(sim,2," Molecules per box= %g\n",flt1);
+		simLog(sim,2,"\n"); }
 
 	return; }
 
@@ -433,20 +428,20 @@ int checkboxparams(simptr sim,int *warnptr) {
 	dim=sim->dim;
 	if(!boxs) {
 		warn++;
-		printf(" WARNING: no box structure defined\n");
+		simLog(sim,9," WARNING: no box structure defined\n");
 		if(warnptr) *warnptr=warn;
 		return 0; }
 
 	if(boxs->condition!=SCok) {
 		warn++;
-		printf(" WARNING: box structure %s\n",simsc2string(boxs->condition,string)); }
+		simLog(sim,7," WARNING: box structure %s\n",simsc2string(boxs->condition,string)); }
 
 	if(boxs->mpbox>100) {																// mpbox value
 		warn++;
-		printf(" WARNING: requested molecules per box, %g, is very high\n",boxs->mpbox); }
+		simLog(sim,5," WARNING: requested molecules per box, %g, is very high\n",boxs->mpbox); }
 	else if(boxs->mpbox>0 && boxs->mpbox<1) {
 		warn++;
-		printf(" WARNING: requested molecules per box, %g, is very low\n",boxs->mpbox); }
+		simLog(sim,5," WARNING: requested molecules per box, %g, is very low\n",boxs->mpbox); }
 	mpbox=boxs->mpbox>0?boxs->mpbox:10;
 
 	for(b=0;b<boxs->nbox;b++) {
@@ -456,11 +451,11 @@ int checkboxparams(simptr sim,int *warnptr) {
 			for(ll=0;ll<sim->mols->nlist;ll++) nmolec+=bptr->nmol[ll];
 			if(nmolec>10*mpbox) {
 				warn++;
-				printf(" WARNING: box (%s) has %i molecules in it, which is very high\n",Zn_vect2csvstring(bptr->indx,dim,string),nmolec); }}
+				simLog(sim,5," WARNING: box (%s) has %i molecules in it, which is very high\n",Zn_vect2csvstring(bptr->indx,dim,string),nmolec); }}
 
 		if(bptr->npanel>20) {
 			warn++;
-			printf(" WARNING: box (%s) has %i panels in it, which is very high\n",Zn_vect2csvstring(bptr->indx,dim,string),bptr->npanel); }}
+			simLog(sim,5," WARNING: box (%s) has %i panels in it, which is very high\n",Zn_vect2csvstring(bptr->indx,dim,string),bptr->npanel); }}
 
 	if(warnptr) *warnptr=warn;
 	return error; }
@@ -478,7 +473,7 @@ void boxsetcondition(boxssptr boxs,enum StructCond cond,int upgrade) {
 	if(upgrade==0 && boxs->condition>cond) boxs->condition=cond;
 	else if(upgrade==1 && boxs->condition<cond) boxs->condition=cond;
 	else if(upgrade==2) boxs->condition=cond;
-	if(boxs->condition<boxs->sim->condition) {
+	if(boxs->sim && boxs->condition<boxs->sim->condition) {
 		cond=boxs->condition;
 		simsetcondition(boxs->sim,cond==SCinit?SClists:cond,0); }
 	return; }
@@ -500,8 +495,10 @@ int boxsetsize(simptr sim,char *info,double val) {
 		boxs=sim->boxs;
 	if(!strcmp(info,"molperbox")) boxs->mpbox=val;
 	else if(!strcmp(info,"boxsize")) boxs->boxsize=val;
+	else return 2;
 	boxsetcondition(boxs,SClists,0);
 	return 0; }
+
 
 /* boxesupdateparams */
 int boxesupdateparams(simptr sim) {
@@ -609,7 +606,7 @@ int boxesupdatelists(simptr sim) {
 	if(mpbox<=0 && boxs->boxsize<=0) mpbox=5;
 	if(mpbox>0) {
 		flt1=systemvolume(sim);
-		flt2=(double)molcount(sim,-1,MSall,NULL,-1);
+		flt2=(double)molcount(sim,-5,MSall,NULL,-1);
 		flt1=pow(flt2/mpbox/flt1,1.0/dim); }
 	else flt1=1.0/boxs->boxsize;
 	nbox=1;

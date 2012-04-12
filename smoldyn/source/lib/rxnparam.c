@@ -16,7 +16,6 @@ History: Started 3/02, converted to a separate file 5/31/03.
 #include <stdlib.h>
 #include <math.h>
 #include "rxnparam.h"
-#include "smoldyn.h"
 
 #define PI 3.14159265358979323846
 #define SQRT2PI 2.50662827462
@@ -227,7 +226,7 @@ double numrxnrate(double step,double a,double b) {
 /* actrxnrate calculates the effective activation limited reaction rate for the
 simulation, which is the reaction rate if the radial correlation function is 1
 for all r>a.  The returned value needs to be divided by delta_t.  The equation
-is ka=4π/3[erfc(√2/s)+s√(2/π)]+2√(2π)/3*s(s^2-1)[exp(-2/s^2)-1].  It was
+is ka=4pi/3[erfc(sqrt(2)/s)+s*sqrt((2/pi))]+2sqrt(2pi)/3*s(s^2-1)[exp(-2/s^2)-1].  It was
 calculated analytically and verified numerically. */
 double actrxnrate(double step,double a) {
 	double ka;
@@ -333,9 +332,9 @@ equal zero but that is not required; if not, then it is assumed that the rdf has
 zero slope at the origin.
    Integration uses a spherical version of the trapezoid rule: at positions r0
 and r1, the function f has values f0 and f1, leading to the linear interpolation
-f=[(r-r0)f1+(r1-r)f0]/(r1-r0).  Its integral is A=∫4πr^2f(r)dr
-A=4π/(r1-r0)*[(f1-f0)/4*(r1^4-r0^4)+(r1f0-r0f1)/3*(r1^3-r0^3)]
-A=π(f1-f0)(r1+r0)(r1^2+r0^2)+4π/3*(r1f0-r0f1)(r1^2+r1r0+r0^2)
+f=[(r-r0)f1+(r1-r)f0]/(r1-r0).  Its integral is A=?4?r^2f(r)dr
+A=4?/(r1-r0)*[(f1-f0)/4*(r1^4-r0^4)+(r1f0-r0f1)/3*(r1^3-r0^3)]
+A=?(f1-f0)(r1+r0)(r1^2+r0^2)+4?/3*(r1f0-r0f1)(r1^2+r1r0+r0^2)
 The left end of the integral assumes zero slope for the rdf.  The right end does
 not terminate exactly at 1, but includes the upper left triangle of the final
 trapezoid.  That way, if there are two absorptions in a row, the second one will
@@ -375,8 +374,8 @@ accomplished by fitting the 10% largest r portion of the rdf with the function
 integrated on to infinity using the previous fit information and an analytical
 result for that integral.  The numerical portion of the integral is carried out
 exactly like the one in absorb but with a different integrand, which is
-c(r)=∫4πr'^2*rdfa(r')*grn(r,r')dr'.  grn(r,r') is the Green's function, equal
-to grn(r,r')=1/(4πrr')[G_step(r-r')-G_step(r+r')] and G_s(x) is a normalized
+c(r)=?4?r'^2*rdfa(r')*grn(r,r')dr'.  grn(r,r') is the Green's function, equal
+to grn(r,r')=1/(4?rr')[G_step(r-r')-G_step(r+r')] and G_s(x) is a normalized
 Gaussian with mean 0 and standard deviation s. */
 void rdfdiffuse(double *r,double *rdfa,double *rdfd,int n,double step) {
 	int i,j;
@@ -498,11 +497,11 @@ void rdfmaketable() {
 	printf("Enter the number of radial points in the rdf (e.g. 200): ");
 	scanf("%i",&n);
 	if(n<10) {
-		printfException("Value is too low.  Function stopped.\n");return; }
+		printf("Value is too low.  Function stopped.\n");return; }
 	printf("Enter level of precision (e.g. 1e-4): ");
 	scanf("%lf",&eps);
 	if(eps<=0) {
-		printfException("Impossible precision.  Function stopped.\n");return; }
+		printf("Impossible precision.  Function stopped.\n");return; }
 	printf("Enter u for increasing step lengths, d for decreasing: ");
 	scanf("%s",dirs);
 	dir=dirs[0];
@@ -514,7 +513,7 @@ void rdfmaketable() {
 	rdfa=(double*)calloc(n,sizeof(double));
 	rdfd=(double*)calloc(n,sizeof(double));
 	if(!r||!rdfa||!rdfd) {
-		printfException("Out of memory.  Function stopped.\n");return; }
+		printf("Out of memory.  Function stopped.\n");return; }
 
 	if(mode=='i'||mode=='I') b=-1;
 	else if(mode=='r'||mode=='R') b=blor;

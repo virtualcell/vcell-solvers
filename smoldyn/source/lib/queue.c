@@ -6,9 +6,8 @@ of the Gnu Lesser General Public License (LGPL). */
 
 #include <stdlib.h>
 #include "queue.h"
-#include "smoldyn.h"
 
-#define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;} else (void)0
+#define CHECK(A) if(!(A)) {goto failure;} else (void)0
 
 queue q_alloc(int n,enum Q_types type,int (*keycmp)(void *,void *)) {
 	queue q;
@@ -29,7 +28,7 @@ queue q_alloc(int n,enum Q_types type,int (*keycmp)(void *,void *)) {
 	q->f=0;
 	q->b=0;
 
-	CHECK(type==Qusort||type==Qvoid||type==Qint||type==Qdouble||type==Qlong);
+	CHECK(type==Qusort || type==Qvoid || type==Qint || type==Qdouble || type==Qlong);
 	if(type==Qvoid) {
 		CHECK(q->kv=(void**) calloc(n,sizeof(void*)));
 		for(i=0;i<n;i++) q->kv[i]=NULL; }
@@ -65,7 +64,7 @@ int q_expand(queue q,int addspace) {
 
 	xnew=(void**)calloc(nnew,sizeof(void*));
 	if(!xnew) return 1;
-	for(i=q->f,j=0;i!=q->b&&j<nnew;i=(i+1)%q->n) xnew[j++]=q->x[i];
+	for(i=q->f,j=0;i!=q->b && j<nnew;i=(i+1)%q->n) xnew[j++]=q->x[i];
 	num=j;
 	for(;j<nnew;j++) xnew[j]=NULL;
 
@@ -77,22 +76,22 @@ int q_expand(queue q,int addspace) {
 	else if(q->type==Qvoid) {
 		kvnew=(void**)calloc(nnew,sizeof(void*));
 		if(!kvnew) {free(xnew);return 1;}
-		for(i=q->f,j=0;i!=q->b&&j<nnew;i=(i+1)%q->n) kvnew[j++]=q->kv[i];
+		for(i=q->f,j=0;i!=q->b && j<nnew;i=(i+1)%q->n) kvnew[j++]=q->kv[i];
 		for(;j<nnew;j++) kvnew[j]=NULL; }
 	else if(q->type==Qint) {
 		kinew=(int*)calloc(nnew,sizeof(int));
 		if(!kinew) {free(xnew);return 1;}
-		for(i=q->f,j=0;i!=q->b&&j<nnew;i=(i+1)%q->n) kinew[j++]=q->ki[i];
+		for(i=q->f,j=0;i!=q->b && j<nnew;i=(i+1)%q->n) kinew[j++]=q->ki[i];
 		for(;j<nnew;j++) kinew[j]=0; }
 	else if(q->type==Qdouble) {
 		kdnew=(double*)calloc(nnew,sizeof(double));
 		if(!kdnew) {free(xnew);return 1;}
-		for(i=q->f,j=0;i!=q->b&&j<nnew;i=(i+1)%q->n) kdnew[j++]=q->kd[i];
+		for(i=q->f,j=0;i!=q->b && j<nnew;i=(i+1)%q->n) kdnew[j++]=q->kd[i];
 		for(;j<nnew;j++) kdnew[j]=0; }
 	else if(q->type==Qlong) {
 		klnew=(Q_LONGLONG*)calloc(nnew,sizeof(Q_LONGLONG));
 		if(!klnew) {free(xnew);return 1;}
-		for(i=q->f,j=0;i!=q->b&&j<nnew;i=(i+1)%q->n) klnew[j++]=q->kl[i];
+		for(i=q->f,j=0;i!=q->b && j<nnew;i=(i+1)%q->n) klnew[j++]=q->kl[i];
 		for(;j<nnew;j++) klnew[j]=0; }
 
 	free(q->x);
@@ -116,10 +115,10 @@ void q_free(queue q,int freek,int freex) {
 	int i;
 
 	if(!q) return;
-	if(freek||freex) {
+	if(freek || freex) {
 		for(i=q->f;i!=q->b;i=(i+1)%q->n) {
 			if(freex) free(q->x[i]);
-			if(freek&&q->type==Qvoid) free(q->kv[i]); }}
+			if(freek && q->type==Qvoid) free(q->kv[i]); }}
 	free(q->x);
 	free(q->kl);
 	free(q->kd);
@@ -170,22 +169,22 @@ int q_insert(void *kv,int ki,double kd,Q_LONGLONG kl,void *x,queue q) {
 	n=q->n;
 	i=0;
 	if(q->type==Qvoid) {
-		for(im1=(n+(i=q->b)-1)%n;i!=q->f&&(q->keycmp)(kv,q->kv[im1])<0;im1=(n+(i=im1)-1)%n) {
+		for(im1=(n+(i=q->b)-1)%n;i!=q->f && (q->keycmp)(kv,q->kv[im1])<0;im1=(n+(i=im1)-1)%n) {
 			q->kv[i]=q->kv[im1];
 			q->x[i]=q->x[im1]; }
 		q->kv[i]=kv; }
 	else if(q->type==Qint) {
-		for(im1=(n+(i=q->b)-1)%n;i!=q->f&&ki<q->ki[im1];im1=(n+(i=im1)-1)%n) {
+		for(im1=(n+(i=q->b)-1)%n;i!=q->f && ki<q->ki[im1];im1=(n+(i=im1)-1)%n) {
 			q->ki[i]=q->ki[im1];
 			q->x[i]=q->x[im1]; }
 		q->ki[i]=ki; }
 	if(q->type==Qdouble) {
-		for(im1=(n+(i=q->b)-1)%n;i!=q->f&&kd<q->kd[im1];im1=(n+(i=im1)-1)%n) {
+		for(im1=(n+(i=q->b)-1)%n;i!=q->f && kd<q->kd[im1];im1=(n+(i=im1)-1)%n) {
 			q->kd[i]=q->kd[im1];
 			q->x[i]=q->x[im1]; }
 		q->kd[i]=kd; }
 	else if(q->type==Qlong) {
-		for(im1=(n+(i=q->b)-1)%n;i!=q->f&&kl<q->kl[im1];im1=(n+(i=im1)-1)%n) {
+		for(im1=(n+(i=q->b)-1)%n;i!=q->f && kl<q->kl[im1];im1=(n+(i=im1)-1)%n) {
 			q->kl[i]=q->kl[im1];
 			q->x[i]=q->x[im1]; }
 		q->kl[i]=kl; }
@@ -206,10 +205,10 @@ void q_front(queue q,void **kvptr,int *kiptr,double *kdptr,Q_LONGLONG *klptr,voi
 		if(klptr) *klptr=0;
 		if(xptr) *xptr=NULL; }
 
-	if(q->type==Qvoid&&kvptr) *kvptr=q->kv[q->f];
-	else if(q->type==Qint&&kiptr) *kiptr=q->ki[q->f];
-	else if(q->type==Qdouble&&kdptr) *kdptr=q->kd[q->f];
-	else if(q->type==Qlong&&klptr) *klptr=q->kl[q->f];
+	if(q->type==Qvoid && kvptr) *kvptr=q->kv[q->f];
+	else if(q->type==Qint && kiptr) *kiptr=q->ki[q->f];
+	else if(q->type==Qdouble && kdptr) *kdptr=q->kd[q->f];
+	else if(q->type==Qlong && klptr) *klptr=q->kl[q->f];
 	if(xptr) *xptr=q->x[q->f];
 	return; }
 
@@ -224,10 +223,10 @@ int q_pop(queue q,void **kvptr,int *kiptr,double *kdptr,Q_LONGLONG *klptr,void *
 		if(xptr) *xptr=NULL;
 		return -1; }
 
-	if(q->type==Qvoid&&kvptr) *kvptr=q->kv[q->f];
-	else if(q->type==Qint&&kiptr) *kiptr=q->ki[q->f];
-	else if(q->type==Qdouble&&kdptr) *kdptr=q->kd[q->f];
-	else if(q->type==Qlong&&klptr) *klptr=q->kl[q->f];
+	if(q->type==Qvoid && kvptr) *kvptr=q->kv[q->f];
+	else if(q->type==Qint && kiptr) *kiptr=q->ki[q->f];
+	else if(q->type==Qdouble && kdptr) *kdptr=q->kd[q->f];
+	else if(q->type==Qlong && klptr) *klptr=q->kl[q->f];
 	if(xptr) *xptr=q->x[q->f];
 	q->f=(q->f+1)%q->n;
 	return (q->n+q->b-q->f)%q->n; }
@@ -250,13 +249,13 @@ int q_next(int i,void **kvptr,int *kiptr,double *kdptr,Q_LONGLONG *klptr,void **
 	f=q->f;
 	b=q->b;
 	if(i<0) i=f;
-	else if(i>=q->n||(b<f&&i<f&&i>=b)||i<f||i>=b) return -1;
+	else if(i>=q->n || (b<f && i<f && i>=b) || i<f || i>=b) return -1;
 	else i=(i+1)%q->n;
-	if((b<f&&i<f&&i>=b)||i<f||i>=b) return -1;
-	if(q->type==Qvoid&&kvptr) *kvptr=q->kv[i];
-	else if(q->type==Qint&&kiptr) *kiptr=q->ki[i];
-	else if(q->type==Qdouble&&kdptr) *kdptr=q->kd[i];
-	else if(q->type==Qlong&&klptr) *klptr=q->kl[i];
+	if((b<f && i<f && i>=b) || i<f || i>=b) return -1;
+	if(q->type==Qvoid && kvptr) *kvptr=q->kv[i];
+	else if(q->type==Qint && kiptr) *kiptr=q->ki[i];
+	else if(q->type==Qdouble && kdptr) *kdptr=q->kd[i];
+	else if(q->type==Qlong && klptr) *klptr=q->kl[i];
 	if(xptr) *xptr=q->x[i];
 	return i; }
 

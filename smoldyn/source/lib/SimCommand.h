@@ -55,6 +55,7 @@ cmdssptr scmdssalloc(enum CMDcode (*cmdfn)(void*,cmdptr,char*),void *cmdfnarg,co
 void scmdssfree(cmdssptr cmds);
 int scmdqalloc(cmdssptr cmds,int n);
 int scmdqalloci(cmdssptr cmds,int n);
+int scmdaddcommand(cmdssptr cmds,char ch,double tmin,double tmax,double dt,double on,double off,double step,double multiplier,const char *commandstring);
 int scmdstr2cmd(cmdssptr cmds,char *line2,double tmin,double tmax,double dt);
 void scmdpop(cmdssptr cmds,double t);
 enum CMDcode scmdexecute(cmdssptr cmds,double time,double simdt,Q_LONGLONG iter,int donow);

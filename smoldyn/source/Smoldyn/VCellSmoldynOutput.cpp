@@ -5,6 +5,7 @@
 #include "VCellSmoldynOutput.h"
 
 #include <VCELL/SimulationMessaging.h>
+#include <SimCommand.h>
 #ifdef VCELL_HYBRID
 #include <VCELL/SimTool.h>
 #include <VCELL/Simulation.h>
@@ -103,8 +104,9 @@ void VCellSmoldynOutput::parseInput(string& input) {
 		return;
 	}
 
-	char* rootdir = smoldynSim->cmds->root;
-	char* fname = smoldynSim->cmds->fname[0];
+	cmdssptr cmds = ((cmdssptr)smoldynSim->cmds);
+	char* rootdir = cmds->root;
+	char* fname = cmds->fname[0];
 	strcpy(baseFileName, rootdir);
 	strcat(baseFileName, fname);
 	char* p = strrchr(baseFileName, '.');

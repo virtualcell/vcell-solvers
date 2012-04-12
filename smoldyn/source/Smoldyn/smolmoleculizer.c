@@ -10,21 +10,57 @@
 #include <assert.h>
 #include <math.h>
 #include "smoldyn.h"
+#include "smoldynfuncs.h"
 #include "string2.h"
 #include "uthash.h"
 
-#define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;} else (void)0
-#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0'; printfException("%s", B); goto failure;} else (void)0
+#include "smoldyn_config.h"
 
-// The ./configure script for compiling smoldyn generates smoldyn_config.h,
-// included in smoldyn.h.  It reports whether libmoleculizer is available
-// through the LIBMOLECULIZER variable.
+// As possible, these functions are declared locally to reduce confusion about what's called from where.
+// If needed, feel free to move functions from here to smoldynfuncs.h.
+// The ./configure script for compiling smoldyn generates smoldyn_config.h.
+// It reports whether libmoleculizer is available through the LIBMOLECULIZER variable.
 
+// low level utilities
+int mzrSmolName2TagName(mzrssptr mzrss,char *smolname,char *tagname);
+int mzrTagName2SmolName(simptr sim,char *tagname);
+int mzrIsTagNameInStream(mzrssptr mzrss,char *tagname,char *stream);
+int mzrGetSpeciesSymmetry(mzrssptr mzrss,char *smolname);
+
+// memory management
+int mzrallocrules(mzrssptr mzrss,int ruleschars);
+int mzrallocstreams(mzrssptr mzrss,int maxstreams);
+void mzrfreestreams(char **streamname,double **displaysize,double ***color,double **strmdifc,int maxstreams);
+int mzrallocnamehash(mzrssptr mzrss,int maxnamehash);
+void mzrfreenamehash(char **tagname,char **smolname,int maxnamehash);
+int mzrallocrxnhash(mzrssptr mzrss,int maxrxnhash);
+void mzrfreerxnhash(char **mzrrxn,char **smolrxn,int maxrxnhash);
+int mzrallocdefaultstate(mzrssptr mzrss,int maxspecies);
+mzrssptr mzrssalloc(void);
+
+// data structure output
+void mzroutput(mzrssptr mzrss);
+
+// structure set up
+void mzrsetcondition(mzrssptr mzrss,enum StructCond cond,int upgrade);
+int mzrAssignDrawingParameters(simptr sim,char *tagname,int ident);
+int mzrAssignDiffCoeff(simptr sim,char *tagname,double mass,int ident);
+int mzrAssignProductDefaultState(mzrssptr mzrss,int *reactants,int nreactants,int *products,int nproducts);
+int mzraddtonamehash(mzrssptr mzrss,char *tagname,char *smolname);
+int mzraddtorxnhash(mzrssptr mzrss,char *mzrrxn,char *smolrxn);
+void mzrNextSmolrxnName(mzrssptr mzrss,char *smolrxn);
+int mzrMakeNameHash(simptr sim);
+int mzrssload(simptr sim,char *erstr);
+
+// core simulation functions
 #ifdef LIBMOLECULIZER
 	#include <libmoleculizer/mzr/libmzr_c_interface.h>
-	int addMzrSpeciesArrayToSim(simptr sim,species **species_array,int number_species);
-	int addMzrReactionArrayToSim(simptr sim,reaction **reactionlist,int number_reactions);
+	int mzrAddSpeciesArrayToSim(simptr sim,species **species_array,int number_species);
+	int mzrAddReactionArrayToSim(simptr sim,reaction **reactionlist,int nreactions);
 #endif
+int mzrExpandNetwork(simptr sim);
+int mzrExpandUnexpandedSpecies(simptr sim);
+int mzrAddRxn(simptr sim,char *name,int order,int *reactants,int *products,int nprod,double rate);
 
 
 /*
@@ -134,6 +170,14 @@ int mzrIsTagNameInStream(mzrssptr mzrss,char *tagname,char *stream) {
 }
 
 
+/* mzrIsSmolNameInStream */
+int mzrIsSmolNameInStream(mzrssptr mzrss,char *smolname,char *stream) {
+	char tagname[STRCHAR];
+
+	if(mzrSmolName2TagName(mzrss,smolname,tagname)) return -1;
+	return mzrIsTagNameInStream(mzrss,tagname,stream); }
+
+
 /* mzrNumberOfSpecies. */
 int mzrNumberOfSpecies(mzrssptr mzrss) {
 #ifdef LIBMOLECULIZER
@@ -145,14 +189,29 @@ int mzrNumberOfSpecies(mzrssptr mzrss) {
 }
 
 
-/* mzrNumberOfReactions. This function returns the number of reactions that 
- moleculizer has recorded thus far. */
+/* mzrNumberOfReactions */
 int mzrNumberOfReactions(mzrssptr mzrss) {
 #ifdef LIBMOLECULIZER
 	if(!mzrss || !mzrss->mzr) return 0;
 	return getNumberOfReactions(mzrss->mzr); 
 #else
 	return 0;
+#endif
+}
+
+
+/* mzrGetSpeciesSymmetry */
+int mzrGetSpeciesSymmetry(mzrssptr mzrss,char *smolname) {
+#ifdef LIBMOLECULIZER
+	char tagname[STRCHAR];
+	int er,automorph;
+
+	if(mzrSmolName2TagName(mzrss,smolname,tagname)) return -1;
+	er=getSpeciesSymmetryDegree(mzrss->mzr,tagname,&automorph);
+	if(er) return -1;
+	return automorph;
+#else
+	return -1;
 #endif
 }
 
@@ -207,14 +266,14 @@ int mzrallocstreams(mzrssptr mzrss,int maxstreams) {
 		for(strm=0;strm<maxstreams;strm++) newdisplaysize[strm]=NULL;
 		for(strm=0;strm<maxstreams;strm++) {
 			CHECK(newdisplaysize[strm]=(double*) calloc(MSMAX,sizeof(double)));
-			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) newdisplaysize[strm][ms]=1.0; }
+			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) newdisplaysize[strm][ms]=1.0; }
 
 		CHECK(newcolor=(double***) calloc(maxstreams,sizeof(double**)));		// allocate color
 		for(strm=0;strm<maxstreams;strm++) newcolor[strm]=NULL;
 		for(strm=0;strm<maxstreams;strm++) {
 			CHECK(newcolor[strm]=(double**) calloc(MSMAX,sizeof(double*)));
-			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) newcolor[strm][ms]=NULL;
-			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
+			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) newcolor[strm][ms]=NULL;
+			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) {
 				CHECK(newcolor[strm][ms]=(double*) calloc(3,sizeof(double)));
 				for(c=0;c<3;c++) newcolor[strm][ms][c]=0; }}
 
@@ -222,11 +281,11 @@ int mzrallocstreams(mzrssptr mzrss,int maxstreams) {
 		for(strm=0;strm<maxstreams;strm++) newstrmdifc[strm]=NULL;
 		for(strm=0;strm<maxstreams;strm++) {
 			CHECK(newstrmdifc[strm]=(double*) calloc(MSMAX,sizeof(double)));
-			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) newstrmdifc[strm][ms]=-1.0; }
+			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) newstrmdifc[strm][ms]=-1.0; }
 
 		for(strm=0;strm<mzrss->nstreams && strm<maxstreams;strm++) {				// copy stuff over
 			strcpy(newstreamname[strm],mzrss->streamname[strm]);
-			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
+			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) {
 				newdisplaysize[strm][ms]=mzrss->displaysize[strm][ms];
 				for(c=0;c<3;c++)
 					newcolor[strm][ms][c]=mzrss->color[strm][ms][c];
@@ -260,7 +319,7 @@ void mzrfreestreams(char **streamname,double **displaysize,double ***color,doubl
 	if(color) {
 		for(strm=0;strm<maxstreams;strm++)
 			if(color[strm]) {
-				for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
+				for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1))
 					free(color[strm][ms]);
 				free(color[strm]); }
 		free(color); }
@@ -441,7 +500,7 @@ mzrssptr mzrssalloc(void) {
 	mzrss->defaultstate=NULL;
 	mzrss->refspecies=0;
 	mzrss->refmass=0;
-	for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) mzrss->refdifc[ms]=0;
+	for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) mzrss->refdifc[ms]=0;
 	mzrss->expandall=0;
 	return mzrss; }
 
@@ -522,13 +581,13 @@ void mzroutput(mzrssptr mzrss) {
 	printf("  Uni-mol-gen reactions: %i\n",getNumUniMolGenReactionRules(mzrss->mzr));
 
 	er=getAllSpecies(mzrss->mzr,&speciesarray,&nspec);
-	CHECK(!er);
+	CHECKBUG(!er,"mzroutput: getAllSpecies has unknown error");
 	getAllSpeciesStreams(mzrss->mzr,&streamarray,&nstrm);
 
 	printf("  Number of species: %i\n",nspec);
 	for(i=0;i<nspec;i++) {
 		i2=stringfind(mzrss->tagname,mzrss->nnamehash,speciesarray[i]->name);
-		CHECK(i2>=0);
+		CHECKBUG(i2>=0,"mzroutput: tagname not found in namehash");
 		printf("   %s, mass=%g\n",mzrss->smolname[i2],*speciesarray[i]->mass); }
 
 	printf("  Species classes: %i\n",nstrm);
@@ -536,10 +595,10 @@ void mzroutput(mzrssptr mzrss) {
 		printf("   %s\n",streamarray[strm]);
 		for(i=0;i<nspec;i++) {
 			i2=checkSpeciesTagIsInSpeciesStream(mzrss->mzr,speciesarray[i]->name,streamarray[strm]);
-			CHECK(i2>=0);
+			CHECKBUG(i2>=0,"mzroutput: unknown error in checkSpeciesTagInSpeciesStream");
 			if(i2) {
 				i2=stringfind(mzrss->tagname,mzrss->nnamehash,speciesarray[i]->name);
-				CHECK(i2>=0);
+				CHECKBUG(i2>=0,"mzroutput: tagged name not in namehash");
 				printf("    %s\n",mzrss->smolname[i2]); }}}
 
 	printf("  Number of generated reactions: %i\n",getNumberOfReactions(mzrss->mzr));
@@ -548,7 +607,6 @@ void mzroutput(mzrssptr mzrss) {
 	if(speciesarray) freeSpeciesArray(speciesarray,nspec);
 	return;
 failure:
-	printf("BUG: in mzroutput\n");
 	return;
 #else
 	return;
@@ -583,7 +641,7 @@ void mzrssoutput(simptr sim) {
 		displaysize=mzrss->displaysize[strm];
 		color=mzrss->color[strm];
 		same=1;
-		for(ms=(MolecState)0;ms<MSMAX && same==1;ms=(MolecState)(ms+1)) {
+		for(ms=MolecState(0);ms<MSMAX && same==1;ms=MolecState(ms + 1)) {
 			if(displaysize[ms]!=displaysize[MSsoln]) same=0;
 			if(color[ms][0]!=color[MSsoln][0]) same=0;
 			if(color[ms][1]!=color[MSsoln][1]) same=0;
@@ -591,16 +649,16 @@ void mzrssoutput(simptr sim) {
 		if(same)
 			printf("  %s(all): size %g, color (%g,%g,%g)\n",mzrss->streamname[strm],displaysize[MSsoln],color[MSsoln][0],color[MSsoln][1],color[MSsoln][2]);
 		else {
-			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
+			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1))
 				printf("  %s(%s): size %g, color (%g,%g,%g)\n",mzrss->streamname[strm],molms2string(ms,string),displaysize[ms],color[MSsoln][0],color[MSsoln][1],color[MSsoln][2]); }
 		strmdifc=mzrss->strmdifc[strm];
 		same=1;
-		for(ms=(MolecState)0;ms<MSMAX && same==1;ms=(MolecState)(ms+1))
+		for(ms=MolecState(0);ms<MSMAX && same==1;ms=MolecState(ms + 1))
 			if(strmdifc[ms]!=strmdifc[MSsoln]) same=0;
 		if(same)
 			printf("  %s(all): difc %g\n",mzrss->streamname[strm],strmdifc[MSsoln]);
 		else {
-			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
+			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1))
 				printf("  %s(%s): difc %g\n",mzrss->streamname[strm],molms2string(ms,string),strmdifc[ms]); }}
 
 	printf(" %i species in hash of %i allocated\n",mzrss->nnamehash,mzrss->maxnamehash);
@@ -623,7 +681,7 @@ void mzrssoutput(simptr sim) {
 	if(!mzrss->defaultstate)
 		printf("  none declared\n");
 	else {
-		for(i=0;i<sim->mols->nspecies;i++) {
+		for(i=1;i<sim->mols->nspecies;i++) {
 			if(i==10 && sim->mols->nspecies>11) {
 				printf("  ...\n");
 				i=sim->mols->nspecies-1; }
@@ -631,7 +689,7 @@ void mzrssoutput(simptr sim) {
 
 	if(mzrss->refspecies>0) {
 		printf(" diff. coeff. reference: %s has mass %g\n  and diff. coeffs.",sim->mols->spname[mzrss->refspecies],mzrss->refmass);
-		for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
+		for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1))
 			printf(" %g",mzrss->refdifc[ms]);
 		printf("\n"); }
 
@@ -647,7 +705,7 @@ void mzrssoutput(simptr sim) {
 
 
 /* mzrsswrite */
-void mzrsswrite(simptr sim,FILE *fptr) {	// ?? This function needs lots of work
+void mzrsswrite(simptr sim,FILE *fptr) {
 	mzrssptr mzrss;
 
 	mzrss=sim->mzrss;
@@ -671,7 +729,7 @@ void mzrsetcondition(mzrssptr mzrss,enum StructCond cond,int upgrade) {
 	if(upgrade==0 && mzrss->condition>cond) mzrss->condition=cond;
 	else if(upgrade==1 && mzrss->condition<cond) mzrss->condition=cond;
 	else if(upgrade==2) mzrss->condition=cond;
-	if(mzrss->condition<mzrss->sim->condition) {
+	if(mzrss->sim && mzrss->condition<mzrss->sim->condition) {
 		cond=mzrss->condition;
 		simsetcondition(mzrss->sim,cond==SCinit?SClists:cond,0); }
 	return; }
@@ -690,7 +748,7 @@ int mzrAssignDrawingParameters(simptr sim,char *tagname,int ident) {
 	got=0;
 	for(strm=0;strm<mzrss->nstreams && !got;strm++)
 		if(checkSpeciesTagIsInSpeciesStream(mzrss->mzr,tagname,mzrss->streamname[strm])) {
-			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
+			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) {
 				molsetcolor(sim,ident,ms,mzrss->color[strm][ms]);									// call to Smoldyn
 				molsetdisplaysize(sim,ident,ms,mzrss->displaysize[strm][ms]); }		// call to Smoldyn
 			got=1; }
@@ -718,7 +776,7 @@ int mzrAssignDiffCoeff(simptr sim,char *tagname,double mass,int ident) {
 	strm--;
 #endif
 
-	for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
+	for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) {
 		if(got && mzrss->strmdifc[strm][ms]>=0)
 			molsetdifc(sim,ident,ms,mzrss->strmdifc[strm][ms]);									// call to Smoldyn
 		else if(mzrss->refmass>0 && mass>0)
@@ -744,39 +802,43 @@ int mzrSetDefaultState(simptr sim,int ident,enum MolecState ms) {
 
 /* mzrAssignProductDefaultState */
 int mzrAssignProductDefaultState(mzrssptr mzrss,int *reactants,int nreactants,int *products,int nproducts) {
-	int i;
-	enum MolecState *defaultstate,ms1,ms2;
+	int i,maxdefst;
+	enum MolecState *defaultstate,ms1,ms2,msprd;
 
 	if(!mzrss->defaultstate) return 0;
 	defaultstate=mzrss->defaultstate;
+	maxdefst=mzrss->maxspecies;
 
 	if(nreactants==0) {
 		ms1=MSsoln;
-		for(i=0;i<nproducts;i++)
-			if(defaultstate[products[i]]==MSnone)
-				defaultstate[products[i]]=ms1; }
-	
+		for(i=0;i<nproducts;i++) {
+			msprd=(products[i]<maxdefst)?defaultstate[products[i]]:MSnone;
+			if(msprd==MSnone)
+				mzrSetDefaultState(mzrss->sim,products[i],ms1); }}
+
 	else if(nreactants==1) {
-		ms1=defaultstate[reactants[0]];
-		for(i=0;i<nproducts;i++)
-			if(defaultstate[products[i]]==MSnone)
-				defaultstate[products[i]]=ms1; }
+		ms1=(reactants[0]<maxdefst)?defaultstate[reactants[0]]:MSnone;
+		for(i=0;i<nproducts;i++) {
+			msprd=(products[i]<maxdefst)?defaultstate[products[i]]:MSnone;
+			if(msprd==MSnone)
+				mzrSetDefaultState(mzrss->sim,products[i],ms1); }}
 
 	else if(nreactants==2) {
-		ms1=defaultstate[reactants[0]];
-		ms2=defaultstate[reactants[1]];
-		for(i=0;i<nproducts;i++)
-			if(defaultstate[products[i]]==MSnone) {
+		ms1=(reactants[0]<maxdefst)?defaultstate[reactants[0]]:MSnone;
+		ms2=(reactants[1]<maxdefst)?defaultstate[reactants[1]]:MSnone;
+		for(i=0;i<nproducts;i++) {
+			msprd=(products[i]<maxdefst)?defaultstate[products[i]]:MSnone;
+			if(msprd==MSnone) {
 				if(ms1==MSnone)
-					defaultstate[products[i]]=ms2;
+					mzrSetDefaultState(mzrss->sim,products[i],ms2);
 				else if(ms2==MSnone)
-					defaultstate[products[i]]=ms1;
+					mzrSetDefaultState(mzrss->sim,products[i],ms1);
 				else if(ms1==MSsoln)
-					defaultstate[products[i]]=ms2;
+					mzrSetDefaultState(mzrss->sim,products[i],ms2);
 				else if(ms2==MSsoln)
-					defaultstate[products[i]]=ms1;
+					mzrSetDefaultState(mzrss->sim,products[i],ms1);
 				else
-					defaultstate[products[i]]=ms1; }}
+					mzrSetDefaultState(mzrss->sim,products[i],ms1); }}}
 
 	else return 2;
 
@@ -796,10 +858,10 @@ int mzrSetStreamDisplay(mzrssptr mzrss,char *streamname,enum MolecState ms,doubl
 		strm=mzrss->nstreams++;
 		strncpy(mzrss->streamname[strm],streamname,STRCHAR); }
 
-	if(ms==MSall) {mslo=(MolecState)0;mshi=(MolecState)MSMAX;}
+	if(ms==MSall) {mslo=MolecState(0);mshi=MolecState(MSMAX);}
 	else if(ms==MSnone) return 0;
-	else {mslo=ms;mshi=(MolecState)(ms+1);}
-	for(ms1=mslo;ms1<mshi;ms1=(MolecState)(ms1+1)) {
+	else {mslo=ms;mshi=MolecState(ms+1);}
+	for(ms1=mslo;ms1<mshi;ms1=MolecState(ms1 + 1)) {
 		if(displaysize>=0) mzrss->displaysize[strm][ms1]=displaysize;
 		if(color)
 			for(c=0;c<3;c++) mzrss->color[strm][ms1][c]=color[c]; }
@@ -820,10 +882,10 @@ int mzrSetStreamDifc(mzrssptr mzrss,char *streamname,enum MolecState ms,double d
 		strm=mzrss->nstreams++;
 		strncpy(mzrss->streamname[strm],streamname,STRCHAR); }
 
-	if(ms==MSall) {mslo=(MolecState)0;mshi=(MolecState)MSMAX;}
+	if(ms==MSall) {mslo=MolecState(0);mshi=MolecState(MSMAX);}
 	else if(ms==MSnone) return 0;
-	else {mslo=ms;mshi=(MolecState)(ms+1);}
-	for(ms1=mslo;ms1<mshi;ms1=(MolecState)(ms1+1))
+	else {mslo=ms;mshi=MolecState(ms+1);}
+	for(ms1=mslo;ms1<mshi;ms1=MolecState(ms1 + 1))
 		mzrss->strmdifc[strm][ms1]=difc;
 
 return 0; }
@@ -912,14 +974,14 @@ int mzrssreadrules(simptr sim,ParseFilePtr *pfpptr,char *erstr) {
 #ifndef LIBMOLECULIZER
 		CHECKS(0,"This Smoldyn compile does not include the libmoleculizer module");
 #endif
-		CHECKS(sim->mzrss=mzrssalloc(),"out of memory allocating moleculizer superstructure");
+		CHECK(sim->mzrss=mzrssalloc());
 		sim->mzrss->sim=sim; }
 	mzrss=sim->mzrss;
 	if(!mzrss->rules) {
-		CHECKS(!mzrallocrules(mzrss,256),"out of memory reading rules"); }
+		CHECK(!mzrallocrules(mzrss,256)); }
 
 	done=0;
-	totallength=strlen(mzrss->rules);
+	totallength=strlen(mzrss->rules);								// totallength is actual current length
 	while(!done) {
 		if(pfp->lctr==0 && !strchr(sim->flags,'q'))
 			printf(" Reading file: '%s'\n",pfp->fname);
@@ -931,7 +993,7 @@ int mzrssreadrules(simptr sim,ParseFilePtr *pfpptr,char *erstr) {
 		else if(pfpcode==2) {													// end reading
 			done=1; }
 		else if(pfpcode==3) {													// error
-			CHECKS(0,"SMOLDYN BUG: parsing error"); }
+			CHECKBUG(0,"parsing error in mzrssreadrules"); }
 		else if(!strcmp(word,"end_rules")) {					// end_rules
 			CHECKS(!line2,"unexpected text following end_rules");
 			return 0; }
@@ -941,9 +1003,9 @@ int mzrssreadrules(simptr sim,ParseFilePtr *pfpptr,char *erstr) {
 				strncpy(chptr+3,"ecules",STRCHAR-(chptr-pfp->line)-3);
 				pfp->line[STRCHAR-1]='\0'; }
 
-			totallength+=strlen(pfp->line)+1;
+			totallength=strlen(mzrss->rules)+strlen(pfp->line)+2;
 			if(totallength>mzrss->ruleschars) {
-				CHECKS(!mzrallocrules(mzrss,2*totallength),"out of memory while reading rules file"); }
+				CHECK(!mzrallocrules(mzrss,2*totallength)); }
 			strcat(mzrss->rules,pfp->line);
 			strcat(mzrss->rules,"\n"); }}
 	
@@ -963,29 +1025,25 @@ int mzrssload(simptr sim,char *erstr) {
 	mzrss=sim->mzrss;
 	if(mzrss->mzr) freeMoleculizerObject(mzrss->mzr);
 	mzrss->mzr=NULL;
-	CHECKS(mzrss->mzr=createNewMoleculizerObject(),"out of memory in createNewMoleculizerObject");
-
-
-        // BEGIN DEBUG CODE
-        FILE* out_file = fopen("./libmzr.tmp", "w");
-        fprintf(out_file, mzrss->rules);
-        fclose(out_file);
-        // END_DEBUGCODE
-
-           
-
+	CHECK(mzrss->mzr=createNewMoleculizerObject());
+/*
+	// BEGIN DEBUG CODE		This code writes the pre-processed rules file to disk as libmzr.tmp for debugging
+	FILE* out_file = fopen("./libmzr.tmp", "w");
+	fprintf(out_file,"%s", mzrss->rules);
+	fclose(out_file);
+	// END_DEBUGCODE
+*/
 	loadCommonRulesString(mzrss->mzr,mzrss->rules);
-	er=getErrorState(mzrss->mzr);	// ?? BUG: This function returns 1 even if there isn't an error
+	er=getErrorState(mzrss->mzr);
 	if(er) {
 		errorstring=getErrorMessage(mzrss->mzr);
 		if(errorstring) {CHECKS(0,errorstring);}
-		else CHECKS(0,"unknown libmoleculizer error"); }
+		else CHECKBUG(0,"unknown libmoleculizer error"); }
 
-	CHECKS(er!=1,"unknown error reading network generation rules");
+	CHECKBUG(er!=1,"unknown error reading network generation rules");
 	CHECKS(er!=2,"document unparsable error reading network generation rules");
 	CHECKS(er!=3,"rules already loaded error reading network generation rules");
 	CHECKS(er!=4,"file not found error reading network generation rules");
-	
 
 	return 0;
 failure:
@@ -1017,7 +1075,7 @@ int mzrsetupmoleculizer(simptr sim,char *erstr) {
 	mzrssptr mzrss;
 	species** new_species_array;
 	reaction** new_reactions_array;
-	int number_species,number_reactions,er,inm,i;
+	int number_species,nreactions,er,inm,i;
 	enum MolecState ms;
 	char errstring[STRCHAR];
 
@@ -1027,13 +1085,13 @@ int mzrsetupmoleculizer(simptr sim,char *erstr) {
 	if(mzrss->condition==SCinit) {
 		CHECKS(!mzrssload(sim,errstring),errstring);
 		er=mzrMakeNameHash(sim);
-		CHECKS(er!=1,"out of memory in mzrMakeNameHash");
-		CHECKS(!(er>1),"BUG: in mzrMakeNameHash");
-		if(er<0) {
+		CHECK(er!=1);
+		CHECKBUG(!(er>1),"BUG: in mzrMakeNameHash");
+		if(er<0) {//?? continue reading here ??
 			sprintf(errstring,"ERROR: species %s has multiple names",mzrss->smolname[-1-er]);
 			CHECKS(0,errstring); }
 		if(mzrss->refspecies>0) {
-			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
+			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1))
 				mzrss->refdifc[ms]=sim->mols->difc[mzrss->refspecies][ms]; }
 		mzrsetcondition(mzrss,SClists,1); }
 
@@ -1052,16 +1110,16 @@ int mzrsetupmoleculizer(simptr sim,char *erstr) {
 		new_species_array=NULL;
 		new_reactions_array=NULL;
 		number_species=0;
-		number_reactions=0;
+		nreactions=0;
 
 		CHECKS(!getDeltaSpecies(mzrss->mzr,&new_species_array,&number_species),"BUG: in getDeltaSpecies");
-		CHECKS(!getDeltaReactions(mzrss->mzr,&new_reactions_array,&number_reactions),"BUG: in getDeltaReactions");
-		CHECKS(!addMzrSpeciesArrayToSim(sim,new_species_array,number_species),"BUG: in addMzrSpeciesArrayToSim");
-		CHECKS(!addMzrReactionArrayToSim(sim,new_reactions_array,number_reactions),"BUG: in addMzrReactionArrayToSim");
+		CHECKS(!getDeltaReactions(mzrss->mzr,&new_reactions_array,&nreactions),"BUG: in getDeltaReactions");
+		CHECKS(!mzrAddSpeciesArrayToSim(sim,new_species_array,number_species),"BUG: in mzrAddSpeciesArrayToSim");
+		CHECKS(!mzrAddReactionArrayToSim(sim,new_reactions_array,nreactions),"BUG: in mzrAddReactionArrayToSim");
 		CHECKS(!clearDeltaState(mzrss->mzr),"BUG: in clearDeltaState");
 
 		freeSpeciesArray(new_species_array,(unsigned int)number_species);
-		freeReactionArray(new_reactions_array,(unsigned int)number_reactions);
+		freeReactionArray(new_reactions_array,(unsigned int)nreactions);
 		mzrsetcondition(sim->mzrss,SCok,1); }
 	
 	return 0;
@@ -1078,62 +1136,71 @@ int mzrsetupmoleculizer(simptr sim,char *erstr) {
 /******************************************************************************/
 
 
-/* addMzrSpeciesArrayToSim */
+/* mzrAddSpeciesArrayToSim */
 #ifdef LIBMOLECULIZER
-int addMzrSpeciesArrayToSim(simptr sim,species **species_array,int number_species) {
+int mzrAddSpeciesArrayToSim(simptr sim,species **species_array,int number_species) {
 	mzrssptr mzrss;
 	int speciesNdx,i,code;
-	char uniqueID[STRCHAR];
+	char smolname[STRCHAR],*tagname;
+	double mass;
 
 	mzrss=sim->mzrss;
 	for(speciesNdx=0;speciesNdx<number_species;speciesNdx++) {
-		i=stringfind(mzrss->tagname,mzrss->nnamehash,species_array[speciesNdx]->name);
-		if(i<0) {
-			code=convertTaggedNameToUniqueID(mzrss->mzr,species_array[speciesNdx]->name,uniqueID,STRCHAR);
+		tagname=species_array[speciesNdx]->name;
+		mass=*species_array[speciesNdx]->mass;
+		i=stringfind(mzrss->tagname,mzrss->nnamehash,tagname);
+		if(i<0) {																	// add to hash between tagname and smolname if needed
+			code=convertTaggedNameToUniqueID(mzrss->mzr,tagname,smolname,STRCHAR);
 			if(code==1 || code==2) return 1;
-			if(code==3) uniqueID[STRCHAR-1]='\0';		// truncate too long name and hope for the best
-			i=mzraddtonamehash(mzrss,species_array[speciesNdx]->name,uniqueID);
+			if(code==3) smolname[STRCHAR-1]='\0';		// truncate too long name and hope for the best
+			i=mzraddtonamehash(mzrss,tagname,smolname);
 			if(i<0) return 1; }
 
 		code=moladdspecies(sim,mzrss->smolname[i]);																	// call to Smoldyn
 		if(code>=0) {
 			molsetexpansionflag(sim,code,1);																					// call to Smoldyn
-			mzrAssignDiffCoeff(sim,species_array[speciesNdx]->name,*species_array[speciesNdx]->mass,code);
-			mzrAssignDrawingParameters(sim,species_array[speciesNdx]->name,code); }
+			mzrAssignDiffCoeff(sim,tagname,mass,code);
+			mzrAssignDrawingParameters(sim,tagname,code); }
 		else if(code==-5) {
 			if(!strcmp(mzrss->smolname[i],sim->mols->spname[mzrss->refspecies]))
-				mzrss->refmass=*species_array[speciesNdx]->mass; }
+				mzrss->refmass=mass; }
 		else return 1; }
 	return 0; }
 #endif
 
 
-/* addMzrReactionArrayToSim */
+
+/* At the ?? comment below:  It should be replaced by a sort, so that small reactants are processed first
+ and then large reactants, so that default states are done correctly.  This sort should do association
+ reactions first and then dissociation reactions, and it should do small reactants first and then big
+ reactants. */
+/* mzrAddReactionArrayToSim */
 #ifdef LIBMOLECULIZER
-int addMzrReactionArrayToSim(simptr sim,reaction **reactionlist,int number_reactions) {
-	int reactionNdx,numReactants,numProducts;
-	int smoldyn_reactants[2],smoldyn_products[MAXPRODUCT];
-	int reactNdx,prodNdx,i,er;
+int mzrAddReactionArrayToSim(simptr sim,reaction **reactionlist,int nreactions) {
+	int r,numReactants,numProducts;
+	int reactants[2],products[MAXPRODUCT];
+	int rct,prd,i,er;
+	double rate;
 
-	for(reactionNdx=0;reactionNdx<number_reactions;reactionNdx++) {
-		if(*reactionlist[reactionNdx]->rate>0) {
-			numReactants=reactionlist[reactionNdx]->numberReactants;
-			numProducts=reactionlist[reactionNdx]->numberProducts;
+	for(r=nreactions-1;r>=0;r--) {		//?? This reverse order seems to give association reactions first.
+		rate=*reactionlist[r]->rate;
+		numReactants=reactionlist[r]->numberReactants;
+		numProducts=reactionlist[r]->numberProducts;
 
-			for(reactNdx=0;reactNdx<numReactants;reactNdx++) {
-				i=mzrTagName2SmolName(sim,reactionlist[reactionNdx]->reactantVector[reactNdx]->name);
-				if(i<0) return 1;
-				smoldyn_reactants[reactNdx]=i; }
+		for(rct=0;rct<numReactants;rct++) {
+			i=mzrTagName2SmolName(sim,reactionlist[r]->reactantVector[rct]->name);
+			if(i<0) return 1;
+			reactants[rct]=i; }
 
-			for(prodNdx=0;prodNdx<numProducts;++prodNdx) {
-				i=mzrTagName2SmolName(sim,reactionlist[reactionNdx]->productVector[prodNdx]->name);
-				if(i<0) return 1;
-				smoldyn_products[prodNdx]=i; }
-			
-			er=mzrAddRxn(sim,reactionlist[reactionNdx]->name,numReactants,smoldyn_reactants,smoldyn_products,numProducts,*reactionlist[reactionNdx]->rate);
-			if(er) return 1;
+		for(prd=0;prd<numProducts;++prd) {
+			i=mzrTagName2SmolName(sim,reactionlist[r]->productVector[prd]->name);
+			if(i<0) return 1;
+			products[prd]=i; }
 
-			mzrAssignProductDefaultState(sim->mzrss,smoldyn_reactants,numReactants,smoldyn_products,numProducts); }}
+		mzrAssignProductDefaultState(sim->mzrss,reactants,numReactants,products,numProducts);
+		if(rate>0)
+			er=mzrAddRxn(sim,reactionlist[r]->name,numReactants,reactants,products,numProducts,rate);
+		if(er) return 1; }
 	return 0; }
 #endif
 
@@ -1148,7 +1215,7 @@ int mzrExpandSpecies(simptr sim,int ident) {
 	mzrss=sim->mzrss;
 	er=convertSomeNameToTaggedName(mzrss->mzr,sim->mols->spname[ident],tagged_name,STRCHAR);
 	if(er) return 1;
-	
+
 	size1=getNumberOfSpecies(mzrss->mzr)*getNumberOfReactions(mzrss->mzr);
 	if(mzrss->maxNetworkSpecies<0 || mzrss->maxNetworkSpecies>getNumberOfSpecies(mzrss->mzr))
 		expandSpeciesByTag(mzrss->mzr,tagged_name);

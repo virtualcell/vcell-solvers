@@ -13,6 +13,7 @@
 #include "Rn.h"
 #include "rxnparam.h"
 #include "smoldyn.h"
+#include "smoldynfuncs.h"
 #include "Sphere.h"
 #include "Zn.h"
 #include "Geometry.h"
@@ -27,11 +28,6 @@
 #include <VCELL/Simulation.h>
 #include <VCELL/SimTool.h>
 #endif
-
-#define CHECK(A) if(!(A)) {printfException("Unknown solver error.");goto failure;} else (void)0
-#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0'; printfException("%s", B); goto failure;} else (void)0
-
-
 /******************************************************************************/
 /********************************** Reactions *********************************/
 /******************************************************************************/
@@ -405,36 +401,53 @@ void rxnfree(rxnptr rxn) {
 
 
 /* rxnssalloc */
-rxnssptr rxnssalloc(int order,int maxspecies) {
-	rxnssptr rxnss;
-	int ni2o,i;
+rxnssptr rxnssalloc(rxnssptr rxnss,int order,int maxspecies) {
+	int newni2o,oldni2o,i,i2,failfree;
+	int ilist[MAXORDER],*newnrxn,**newtable;
 
-	rxnss=NULL;
-	CHECK(order>=0);
-	CHECK(rxnss=(rxnssptr) malloc(sizeof(struct rxnsuperstruct)));
-	rxnss->condition=SCinit;
-	rxnss->sim=NULL;
-	rxnss->order=order;
-	rxnss->maxspecies=maxspecies;
-	rxnss->maxlist=0;
-	rxnss->nrxn=NULL;
-	rxnss->table=NULL;
-	rxnss->maxrxn=0;
-	rxnss->totrxn=0;
-	rxnss->rname=NULL;
-	rxnss->rxn=NULL;
-	rxnss->rxnmollist=NULL;
+	failfree=0;
+	if(!rxnss) {																				// new reaction superstructure
+		rxnss=(rxnssptr) malloc(sizeof(struct rxnsuperstruct));
+		CHECK(rxnss);
+		failfree=1;
+		rxnss->condition=SCinit;
+		rxnss->sim=NULL;
+		rxnss->order=order;
+		rxnss->maxspecies=0;
+		rxnss->maxlist=0;
+		rxnss->nrxn=NULL;
+		rxnss->table=NULL;
+		rxnss->maxrxn=0;
+		rxnss->totrxn=0;
+		rxnss->rname=NULL;
+		rxnss->rxn=NULL;
+		rxnss->rxnmollist=NULL; }
 
-	if(order>0) {
-		ni2o=intpower(maxspecies,order);
-		CHECK(rxnss->nrxn=(int*) calloc(ni2o,sizeof(int)));
-		for(i=0;i<ni2o;i++) rxnss->nrxn[i]=0;
-		CHECK(rxnss->table=(int**) calloc(ni2o,sizeof(int*)));
-		for(i=0;i<ni2o;i++) rxnss->table[i]=NULL; }
+	if(maxspecies>rxnss->maxspecies) {									// initialize or expand nrxn and table
+		if(order>0) {
+			newni2o=intpower(maxspecies,order);							// allocate new stuff
+			CHECK(newnrxn=(int*) calloc(newni2o,sizeof(int)));
+			for(i=0;i<newni2o;i++) newnrxn[i]=0;
+			CHECK(newtable=(int**) calloc(newni2o,sizeof(int*)));
+			for(i=0;i<newni2o;i++) newtable[i]=NULL;
+
+			oldni2o=intpower(rxnss->maxspecies,order);
+			for(i=0;i<oldni2o;i++) {												// copy over old nrxn and table
+				rxnunpackident(order,rxnss->maxspecies,i,ilist);
+				i2=rxnpackident(order,maxspecies,ilist);
+				newnrxn[i2]=rxnss->nrxn[i];
+				newtable[i2]=rxnss->table[i]; }
+
+			free(rxnss->nrxn);															// replace nrxn and table with new ones
+			rxnss->nrxn=newnrxn;
+			free(rxnss->table);
+			rxnss->table=newtable; }
+		rxnss->maxspecies=maxspecies; }										// set maxspecies
+
 	return rxnss;
 
  failure:
-	rxnssfree(rxnss);
+	if(failfree) rxnssfree(rxnss);
 	return NULL; }
 
 
@@ -459,6 +472,18 @@ void rxnssfree(rxnssptr rxnss) {
 	return; }
 
 
+/* rxnexpandmaxspecies */
+int rxnexpandmaxspecies(simptr sim,int maxspecies) {
+	rxnssptr rxnss;
+	int order;
+
+	for(order=0;order<MAXORDER;order++) {
+		if(sim->rxnss[order] && sim->rxnss[order]->maxspecies<maxspecies) {
+			rxnss=sim->rxnss[order];
+			rxnss=rxnssalloc(rxnss,order,maxspecies);
+			if(!rxnss) return order+1; }}
+	return 0; }
+
 
 /******************************************************************************/
 /**************************** data structure output ***************************/
@@ -468,6 +493,7 @@ void rxnssfree(rxnssptr rxnss) {
 /* rxnoutput */
 void rxnoutput(simptr sim,int order) {
 	rxnssptr rxnss;
+	int vflag;
 	int dim,maxlist,maxll2o,ll,ord,ni2o,i,j,r,rct,prd,rev,identlist[MAXORDER],orderr,rr,i1,i2,o2,r2;
 	rxnptr rxn,rxnr;
 	enum MolecState ms,ms1,ms2,nms2o,statelist[MAXORDER];
@@ -475,17 +501,26 @@ void rxnoutput(simptr sim,int order) {
 	char string[STRCHAR];
 	enum RevParam rparamt;
 
+	vflag=strchr(sim->flags,'v')?1:0;
+
 	printf("ORDER %i REACTION PARAMETERS\n",order);
 	if(!sim || !sim->mols || !sim->rxnss[order]) {
-		printf(" No reactions of order %i\n\n",order);		
+		printf(" No reactions of order %i\n\n",order);
 		return; }
 	rxnss=sim->rxnss[order];
 	if(rxnss->condition!=SCok)
 		printf(" structure condition: %s\n",simsc2string(rxnss->condition,string));
 	dim=sim->dim;
 
-	printf(" %i reactions defined, of %i allocated\n",rxnss->totrxn,rxnss->maxrxn);
+	if(vflag) {
+		printf(" allocated for %i species\n",rxnss->maxspecies-1);
+		printf(" allocated for %i molecule lists\n",rxnss->maxlist); }
 
+	printf(" %i reactions defined",rxnss->totrxn);
+	if(vflag)
+		printf(", of %i allocated",rxnss->maxrxn);
+	printf("\n");
+	
 	if(order>0) {
 		printf(" Reactive molecule lists:");
 		if(!rxnss->rxnmollist || !sim->mols->nlist)
@@ -535,8 +570,8 @@ void rxnoutput(simptr sim,int order) {
 			if(rxn->rctstate[rct]==MSsome) rct=order+1;
 		if(rct==order+1) {
 			printf("   permit:");
-			nms2o=(MolecState)intpower(MSMAX1,order);
-			for(ms=(MolecState)0;ms<nms2o;ms=(MolecState)(ms+1)) {
+			nms2o=MolecState(intpower(MSMAX1,order));
+			for(ms=MolecState(0);ms<nms2o;ms=MolecState(ms + 1)) {
 				if(rxn->permit[ms]) {
 					rxnunpackstate(order,ms,statelist);
 					printf(" ");
@@ -723,7 +758,7 @@ int checkrxnparams(simptr sim,int *warnptr) {
 		rxnss=sim->rxnss[order];
 		if(rxnss) {
 			if(!sim->mols) {error++;printfException(" SMOLDYN BUG: Reactions are declared, but not molecules\n");}
-			else if(sim->mols->maxspecies!=sim->rxnss[order]->maxspecies) {error++;printfException(" SMOLDYN BUG: number of molecule species differ between mols and rxnss\n");} }}
+			else if(sim->mols->maxspecies!=rxnss->maxspecies) {error++;printfException(" SMOLDYN BUG: number of molecule species differ between mols and rxnss\n");} }}
 
 	for(order=1;order<=2;order++) {									// reversible parameters
 		rxnss=sim->rxnss[order];
@@ -928,7 +963,7 @@ int rxnsetrate(simptr sim,int order,int r,char *erstr) {
 
 	if(rxn->rparamt==RPconfspread) {								// confspread
 		if(rxn->rate<0) return 1;
-		if(rxn->nprod!=order) {sprintf(erstr,"confspread reaction has a different number of reactants and products");return 3;} 
+		if(rxn->nprod!=order) {printfException("confspread reaction has a different number of reactants and products");return 3;}
 		if(rxn->rate>=0) rxn->prob=1.0-exp(-sim->dt*rxn->rate); }
 
 	else if(order==0) {															// order 0
@@ -936,8 +971,7 @@ int rxnsetrate(simptr sim,int order,int r,char *erstr) {
 		if(rxn->cmpt) vol=rxn->cmpt->volume;
 		else if(rxn->srf) vol=surfacearea(rxn->srf,sim->dim,NULL);
 		else vol=systemvolume(sim);
-		rxn->prob=rxn->rate*sim->dt*vol;
-	}
+		rxn->prob=rxn->rate*sim->dt*vol; }
 
 	else if(order==1) {															// order 1
 		if(rxn->rate<0) return 1;
@@ -955,7 +989,7 @@ int rxnsetrate(simptr sim,int order,int r,char *erstr) {
 			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
 				if(rxn->permit[ms] && sum2==0) sum2=sum[ms];
 				else if(rxn->permit[ms] && sum2!=sum[ms]) {
-					sprintf(erstr,"cannot assign reaction probability because different values are needed for different states"); 
+					printfException("cannot assign reaction probability because different values are needed for different states");
 					return 2; }}
 			if(sum2>0)
 				rxn->prob=rxn->rate/sum2*(1.0-exp(-sim->dt*sum2));	// desired probability
@@ -964,8 +998,7 @@ int rxnsetrate(simptr sim,int order,int r,char *erstr) {
 				rxn2=rxnss->rxn[rxnss->table[i][j]];
 				if(rxn2==rxn) j=rxnss->nrxn[i];
 				else sum2+=rxn2->prob; }
-				rxn->prob=rxn->prob/(1.0-sum2);
-		}		// probability, accounting for prior reactions
+			rxn->prob=rxn->prob/(1.0-sum2); }		// probability, accounting for prior reactions
 
 		rev=findreverserxn(sim,1,r,&o2,&r2);	// set own reversible parameter if needed
 		if(rev>0 && o2==2) {
@@ -1008,7 +1041,7 @@ int rxnsetrate(simptr sim,int order,int r,char *erstr) {
 		if(rxn->prob<0) rxn->prob=1;
 		if(!permit) rxn->bindrad2=0;
 		else if(rate3<=0) rxn->bindrad2=0;
-		else if(dsum<=0) {sprintf(erstr,"Both diffusion coefficients are 0");return 4;}    
+		else if(dsum<=0) {sprintf(erstr,"Both diffusion coefficients are 0");return 4;}
 		else if(rparamt==RPunbindrad) rxn->bindrad2=bindingradius(rate3,sim->dt,dsum,rparam,0);
 		else if(rparamt==RPbounce) rxn->bindrad2=bindingradius(rate3,sim->dt,dsum,rparam,0);
 		else if(rparamt==RPratio) rxn->bindrad2=bindingradius(rate3,sim->dt,dsum,rparam,1);
@@ -1023,13 +1056,14 @@ int rxnsetrate(simptr sim,int order,int r,char *erstr) {
 
 	return 0; }
 
+
 /* rxnsetrates */
 int rxnsetrates(simptr sim,int order,char *erstr) {
 	rxnssptr rxnss;
 	int r,er;
 
 	if(!sim || !erstr || order<0 || order>MAXORDER) {
-			sprintf(erstr,"illegal inputs to rxnsetrates function");return 0;}            
+			printfException("illegal inputs to rxnsetrates function");return 0;}
 	rxnss=sim->rxnss[order];
 	if(!rxnss) return -1;
 
@@ -1074,8 +1108,8 @@ int rxnsetproduct(simptr sim,int order,int r,char *erstr) {
 		ms2=rxn->prdstate[1];
 		if(ms1==MSbsoln) ms1=MSsoln;
 		if(ms2==MSbsoln) ms2=MSsoln;
-		dc1=MolCalcDifcSum(sim,rxn->prdident[0],ms1,0,(MolecState)0);
-		dc2=MolCalcDifcSum(sim,rxn->prdident[1],ms2,0,(MolecState)0);
+		dc1=MolCalcDifcSum(sim,rxn->prdident[0],ms1,0,MSnone);
+		dc2=MolCalcDifcSum(sim,rxn->prdident[1],ms2,0,MSnone);
 		dsum=dc1+dc2;
 		rev=findreverserxn(sim,order,r,&orderr,&rr);
 
@@ -1302,7 +1336,7 @@ void rxnsetcondition(simptr sim,int order,enum StructCond cond,int upgrade) {
 /* RxnSetValue */
 int RxnSetValue(simptr sim,char *option,rxnptr rxn,double value) {
 	int er;
-	
+
 	er=0;
 	if(!rxn || !option) er=1;
 	else if(!strcmp(option,"rate")) {
@@ -1335,14 +1369,20 @@ int RxnSetRevparam(simptr sim,rxnptr rxn,enum RevParam rparamt,double rparam,int
 	if(rxn->rparamt!=RPnone) er=1;
 	rxn->rparamt=rparamt;
 
-	if(rparamt==RPpgem || rparamt==RPpgemmax || rparamt==RPpgem2 || rparamt==RPpgemmax2) {
+	if(rparamt==RPnone || rparamt==RPirrev || rparamt==RPconfspread);
+	else if(rparamt==RPpgem || rparamt==RPpgemmax || rparamt==RPpgemmaxw || rparamt==RPpgem2 || rparamt==RPpgemmax2) {
 		if(!(rparam>0 && rparam<=1)) er=2;
 		rxn->rparam=rparam; }
 	else if(rparamt==RPbounce || rparamt==RPratio || rparamt==RPunbindrad || rparamt==RPratio2) {
 		if(rparam<0) er=2;
 		rxn->rparam=rparam; }
 	else if(rparamt==RPoffset || rparamt==RPfixed) {
-		for(d=0;d<dim;d++) rxn->prdpos[prd][d]=pos[d]; }
+		er=0;
+		if(prd<0 || prd>=rxn->nprod) er=4;
+		else if(!pos) er=5;
+		else for(d=0;d<dim;d++) rxn->prdpos[prd][d]=pos[d]; }
+	else
+		er=3;
 	rxnsetcondition(sim,-1,SCparams,0);
 	return er; }
 
@@ -1374,6 +1414,18 @@ void RxnSetPermit(simptr sim,rxnptr rxn,int order,enum MolecState *rctstate,int 
 	return; }
 
 
+/* RxnSetCmpt */
+void RxnSetCmpt(rxnptr rxn,compartptr cmpt) {
+	rxn->cmpt=cmpt;
+	return; }
+
+
+/* RxnSetSurface */
+void RxnSetSurface(rxnptr rxn,surfaceptr srf) {
+	rxn->srf=srf;
+	return; }
+
+
 /* RxnAddReaction */
 rxnptr RxnAddReaction(simptr sim,const char *rname,int order,int *rctident,enum MolecState *rctstate,int nprod,int *prdident,enum MolecState *prdstate,compartptr cmpt,surfaceptr srf) {
 	char **newrname;
@@ -1391,15 +1443,15 @@ rxnptr RxnAddReaction(simptr sim,const char *rname,int order,int *rctident,enum 
 	maxrxn=0;
 	freerxn=1;
 
-	if(!sim->rxnss[order]) {
+	if(!sim->rxnss[order]) {													// allocate reaction superstructure, if needed
 		CHECK(sim->mols);
-		CHECK(sim->rxnss[order]=rxnssalloc(order,sim->mols->maxspecies));
+		CHECK(sim->rxnss[order]=rxnssalloc(NULL,order,sim->mols->maxspecies));
 		sim->rxnss[order]->sim=sim;
-		rxnsetcondition(sim,order,SCinit,0); 
+		rxnsetcondition(sim,order,SCinit,0);
 		rxnsetcondition(sim,-1,SClists,0); }
 	rxnss=sim->rxnss[order];
 	maxspecies=rxnss->maxspecies;
-	r=stringfind(rxnss->rname,rxnss->totrxn,rname);
+	r=stringfind(rxnss->rname,rxnss->totrxn,rname);		// r is reaction index
 
 	if(r>=0) {
 		CHECK(rxnss->rxn[r]->nprod==0);
@@ -1430,7 +1482,7 @@ rxnptr RxnAddReaction(simptr sim,const char *rname,int order,int *rctident,enum 
 			for(rct=0;rct<order;rct++) rxn->rctstate[rct]=rctstate[rct];
 			RxnSetPermit(sim,rxn,order,rctstate,1); }
 
-		if(order>0) {																		// set up nrxn and table
+		if(order>0) {																		// set up nrxn and table; table is automatically enlarged
 			k=0;
 			done=0;
 			while(!done) {
@@ -1464,8 +1516,8 @@ rxnptr RxnAddReaction(simptr sim,const char *rname,int order,int *rctident,enum 
 			CHECK(rxn->prdpos[prd]=(double*)calloc(sim->dim,sizeof(double)));
 			for(d=0;d<sim->dim;d++) rxn->prdpos[prd][d]=0; }}
 
-	rxn->cmpt=cmpt;																						// add reaction compartment
-	rxn->srf=srf;																							// add reaction surface
+	RxnSetCmpt(rxn,cmpt);																						// add reaction compartment
+	RxnSetSurface(rxn,srf);																							// add reaction surface
 	rxnsetcondition(sim,-1,SClists,0);
 	surfsetcondition(sim->srfss,SClists,0);
 	return rxn;
@@ -1565,7 +1617,7 @@ int loadrxn(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 			CHECKS(itct==1,"error reading order");
 			CHECKS(order>=0 && order<=2,"order needs to be between 0 and 2");
 			if(!sim->rxnss[order]) {
-				CHECKS(sim->rxnss[order]=rxnssalloc(order,maxspecies),"out of memory creating reaction superstructure");
+				CHECKS(sim->rxnss[order]=rxnssalloc(NULL,order,maxspecies),"out of memory creating reaction superstructure");
 				rxnsetcondition(sim,order,SCinit,0);
 				sim->rxnss[order]->sim=sim; }
 			rxnss=sim->rxnss[order];
@@ -1587,13 +1639,14 @@ int loadrxn(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 
 		else if(!strcmp(word,"reactant") && order==1) {	// reactant, 1
 			CHECKS(got[0],"order needs to be entered before reactant");
-			i=readmolname(sim,line2,&ms);
+			i=readmolname(sim,line2,&ms,0);
 			CHECKS(i!=0,"empty molecules cannot react");
 			CHECKS(i!=-1,"reactant format: name[(state)] rxn_name");
 			CHECKS(i!=-2,"mismatched or improper parentheses around molecule state");
 			CHECKS(i!=-3,"cannot read molecule state value");
 			CHECKS(i!=-4,"molecule name not recognized");
 			CHECKS(i!=-5,"molecule name cannot be set to 'all'");
+			CHECKS(i!=-6,"molecule name cannot include wildcards");
 			CHECKS(ms!=MSbsoln,"bsoln is not an allowed state for first order reactants");
 			identlist[0]=i;
 			mslist[0]=ms;
@@ -1608,23 +1661,25 @@ int loadrxn(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 
 		else if(!strcmp(word,"reactant") && order==2) {	// reactant, 2
 			CHECKS(got[0],"order needs to be entered before reactants");
-			i1=readmolname(sim,line2,&ms1);
+			i1=readmolname(sim,line2,&ms1,0);
 			CHECKS(i1!=0,"empty molecules cannot react");
 			CHECKS(i1!=-1,"reactant format: name[(state)] + name[(state)] rxn_name");
 			CHECKS(i1!=-2,"mismatched or improper parentheses around molecule state");
 			CHECKS(i1!=-3,"cannot read molecule state value");
 			CHECKS(i1!=-4,"molecule name not recognized");
 			CHECKS(i1!=-5,"molecule name cannot be set to 'all'");
+			CHECKS(i1!=-6,"molecule name cannot include wildcards");
 			identlist[0]=i1;
 			mslist[0]=ms1;
 			CHECKS(line2=strnword(line2,3),"reactant format: name[(state)] + name[(state)] rxn_list");
-			i2=readmolname(sim,line2,&ms2);
+			i2=readmolname(sim,line2,&ms2,0);
 			CHECKS(i2!=0,"empty molecules cannot react");
 			CHECKS(i2!=-1,"reactant format: name[(state)] + name[(state)] rxn_name value");
 			CHECKS(i2!=-2,"mismatched or improper parentheses around molecule state");
 			CHECKS(i2!=-3,"cannot read molecule state value");
 			CHECKS(i2!=-4,"molecule name not recognized");
 			CHECKS(i2!=-5,"molecule name cannot be set to 'all'");
+			CHECKS(i2!=-6,"molecule name cannot include wildcards");
 			identlist[1]=i2;
 			mslist[1]=ms2;
 			CHECKS(line2=strnword(line2,2),"no reactions listed");
@@ -1641,13 +1696,14 @@ int loadrxn(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 
 		else if(!strcmp(word,"permit") && order==1) {		// permit, 1
 			CHECKS(got[0],"order needs to be entered before permit");
-			i=readmolname(sim,line2,&ms);
+			i=readmolname(sim,line2,&ms,0);
 			CHECKS(i!=0,"empty molecules cannot be entered");
 			CHECKS(i!=-1,"permit format: name(state) rxn_name value");
 			CHECKS(i!=-2,"mismatched or improper parentheses around molecule state");
 			CHECKS(i!=-3,"cannot read molecule state value");
 			CHECKS(i!=-4,"molecule name not recognized");
 			CHECKS(i!=-5,"molecule name cannot be set to 'all'");
+			CHECKS(i!=-6,"molecule name cannot include wildcards");
 			CHECKS(ms<MSMAX,"all and bsoln are not allowed in permit for first order reactions");
 			CHECKS(line2=strnword(line2,2),"permit format: name(state) rxn_name value");
 			itct=sscanf(line2,"%s %i",rxnnm,&i3);
@@ -1662,22 +1718,24 @@ int loadrxn(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 
 		else if(!strcmp(word,"permit") && order==2) {		// permit, 2
 			CHECKS(got[0],"order needs to be entered before permit");
-			i1=readmolname(sim,line2,&ms);
+			i1=readmolname(sim,line2,&ms,0);
 			CHECKS(i1!=0,"empty molecules not allowed");
 			CHECKS(i1!=-1,"permit format: name(state) + name(state) rxn_name value");
 			CHECKS(i1!=-2,"mismatched or improper parentheses around first molecule state");
 			CHECKS(i1!=-3,"cannot read first molecule state value");
 			CHECKS(i1!=-4,"first molecule name not recognized");
 			CHECKS(i1!=-5,"first molecule state missing, or is set to 'all'");
+			CHECKS(i1!=-6,"molecule name cannot include wildcards");
 			CHECKS(ms<MSMAX1,"all is not allowed in permit");
 			CHECKS(line2=strnword(line2,3),"permit format: name(state) + name(state) rxn_name value");
-			i2=readmolname(sim,line2,&ms2);
+			i2=readmolname(sim,line2,&ms2,0);
 			CHECKS(i2!=0,"empty molecules are not allowed");
 			CHECKS(i2!=-1,"permit format: name(state) + name(state) rxn_name value");
 			CHECKS(i2!=-2,"mismatched or improper parentheses around second molecule state");
 			CHECKS(i2!=-3,"cannot read second molecule state value");
 			CHECKS(i2!=-4,"second molecule name not recognized");
 			CHECKS(i2!=-5,"second molecule state missing, or is set to 'all'");
+			CHECKS(i2!=-6,"molecule name cannot include wildcards");
 			CHECKS(ms2<MSMAX1,"all is not allowed in permit");
 			CHECKS(line2=strnword(line2,2),"permit format: name(state) + name(state) rxn_name value");
 			i=i1*maxspecies+i2;
@@ -1747,12 +1805,14 @@ int loadrxn(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 			CHECKS(rxnss->rxn[r]->nprod==0,"products for a reaction can only be entered once");
 			for(prd=0;prd<nptemp;prd++) {
 				CHECKS(line2=strnword(line2,2),"product list is incomplete");
-				i=readmolname(sim,line2,&ms);
+				i=readmolname(sim,line2,&ms,0);
 				CHECKS(i!=0,"empty molecules cannot be products");
 				CHECKS(i!=-1,"product format: rxn_name name(state) + name(state) + ...");
 				CHECKS(i!=-2,"mismatched or improper parentheses around molecule state");
 				CHECKS(i!=-3,"cannot read molecule state value");
 				CHECKS(i!=-4,"molecule name not recognized");
+				CHECKS(i!=-5,"molecule name cannot be 'all'");
+				CHECKS(i!=-6,"molecule name cannot include wildcards");
 				CHECKS(ms<MSMAX1,"product state is not allowed");
 				identlist[prd]=i;
 				mslist[prd]=ms;
@@ -2046,18 +2106,18 @@ int doreact(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int ll1,in
 					mptr->pos[d]=mptr->posx[d]; }}
 		
 		mptr->list=sim->mols->listlookup[mptr->ident][mptr->mstate];
-		if(sim->mols->expand[mptr->ident]){							//???????? new code
-			mzrExpandSpecies(sim,mptr->ident); }}					//??????? new code
+		if(sim->mols->expand[mptr->ident]){
+			mzrExpandSpecies(sim,mptr->ident); }}
 
 	if(mptr1) molkill(sim,mptr1,ll1,m1);					// kill reactants
 	if(mptr2) molkill(sim,mptr2,ll2,m2);
 
 	return 0; }
 
+
 /* zeroreact */
 int zeroreact(simptr sim) {
 	int i,r,nmol;
-	long j; // for number of volume region elements
 	rxnptr rxn;
 	rxnssptr rxnss;
 	double pos[DIMMAX];
@@ -2065,7 +2125,6 @@ int zeroreact(simptr sim) {
 
 	pnl=NULL;
 	rxnss=sim->rxnss[0];
-	
 	if(!rxnss) return 0;
 	for(r=0;r<rxnss->totrxn;r++) {
 		rxn=rxnss->rxn[r];
@@ -2092,7 +2151,7 @@ int zeroreact(simptr sim) {
 					{
 						VolumeRegion* volumeRegion = mesh -> getVolumeRegion(i);
 						long numEleInVolumeRegion = volumeRegion->getNumElements();
-						for(j=0; j<numEleInVolumeRegion; j++) // go through each mesh element in the volume region where the reaction happens
+						for(long j=0; j<numEleInVolumeRegion; j++) // go through each mesh element in the volume region where the reaction happens
 						{
 							int volIndex = volumeRegion->getElementIndex(j);
 							double rate = evaluateRnxRate(rxn, sim, volIndex);
@@ -2128,7 +2187,7 @@ int zeroreact(simptr sim) {
 						//get all the panels on the surface
 						int numOfTriPanels = surfaces[i]->npanel[PStri];
 						panelptr* panels = surfaces[i]->panels[PStri];
-						for(j=0; j<numOfTriPanels; j++)
+						for(long j=0; j<numOfTriPanels; j++)
 						{
 							//evaluate rate 
 							double ** points = panels[j]->point; //point[number][dim]
@@ -2161,14 +2220,14 @@ int zeroreact(simptr sim) {
 		}
 		else
 		{
-#endif
-			nmol=poisrandD(rxn->prob);
-			for(i=0;i<nmol;i++) {
-				if(rxn->cmpt) compartrandpos(sim,pos,rxn->cmpt);
-				else if(rxn->srf) pnl=surfrandpos(rxn->srf,pos,sim->dim);
-				else systemrandpos(sim,pos);
-				if(doreact(sim,rxn,NULL,NULL,-1,-1,-1,-1,pos,pnl)) return 1; }
-			sim->eventcount[ETrxn0]+=nmol;
+#endif		
+		nmol=poisrandD(rxn->prob);
+		for(i=0;i<nmol;i++) {
+			if(rxn->cmpt) compartrandpos(sim,pos,rxn->cmpt);
+			else if(rxn->srf) pnl=surfrandpos(rxn->srf,pos,sim->dim);
+			else systemrandpos(sim,pos);
+			if(doreact(sim,rxn,NULL,NULL,-1,-1,-1,-1,pos,pnl)) return 1; }
+		sim->eventcount[ETrxn0]+=nmol;
 #ifdef VCELL_HYBRID
 		}
 #endif
@@ -2228,19 +2287,21 @@ int unireact(simptr sim) {
 	}
 	
 
-#endif
-	
-					if((!rxn->cmpt && !rxn->srf) || (rxn->cmpt && posincompart(sim,mptr->pos,rxn->cmpt)) || (rxn->srf && mptr->pnl && mptr->pnl->srf==rxn->srf))
-						if(coinrandD(rxn->prob) && rxn->permit[ms] && mptr->ident!=0) {
-							if(doreact(sim,rxn,mptr,NULL,ll,m,-1,-1,NULL,NULL)) return 1;
-							sim->eventcount[ETrxn1]++;
-							j=nrxn[i]; }}}}
+#endif					
+					if(!coinrandD(rxn->prob));																			// failed probability test
+					else if(rxn->cmpt && !posincompart(sim,mptr->pos,rxn->cmpt));		// failed compartment test
+					else if(rxn->srf && (!mptr->pnl || mptr->pnl->srf!=rxn->srf));	// failed surface test
+					else if(!rxn->permit[ms]);																			// failed permit test
+					else if(mptr->ident==0);																				// failed existance test
+					else {																													// react
+						if(doreact(sim,rxn,mptr,NULL,ll,m,-1,-1,NULL,NULL)) return 1;
+						sim->eventcount[ETrxn1]++;
+						j=nrxn[i]; }}}}
 	return 0; }
 
 
-
 /* morebireact */
-int morebireact(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int ll1,int m1,int ll2,enum EventType et) {
+int morebireact(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int ll1,int m1,int ll2,enum EventType et,double *vect) {
 	moleculeptr mptrA,mptrB;
 	int d,swap;
 	enum MolecState ms,msA,msB;
@@ -2266,11 +2327,11 @@ int morebireact(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int ll
 	ms=(MolecState)(msA*MSMAX1+msB);
 
 	if(rxn->permit[ms]) {
-		if(et==ETrxn2wrap && rxn->rparamt!=RPconfspread) {
-			if(sim->mols->difc[mptrA->ident][mptrA->mstate]<sim->mols->difc[mptrB->ident][mptrB->mstate])
-				for(d=0;d<sim->dim;d++) mptrB->pos[d]=mptrA->pos[d];
+		if(et==ETrxn2wrap && rxn->rparamt!=RPconfspread) {		// if wrapping, then move faster diffusing molecule
+			if(sim->mols->difc[mptr1->ident][mptr1->mstate]<sim->mols->difc[mptr2->ident][mptr2->mstate])
+				for(d=0;d<sim->dim;d++) mptr2->pos[d]=mptr1->pos[d]+vect[d];
 			else
-				for(d=0;d<sim->dim;d++) mptrA->pos[d]=mptrB->pos[d]; }
+				for(d=0;d<sim->dim;d++) mptr1->pos[d]=mptr2->pos[d]-vect[d]; }
 		sim->eventcount[et]++;
 		if(!swap) return doreact(sim,rxn,mptrA,mptrB,ll1,m1,ll2,-1,NULL,NULL);
 		else return doreact(sim,rxn,mptrA,mptrB,ll2,-1,ll1,m1,NULL,NULL); }
@@ -2319,7 +2380,7 @@ void setBiReactRateForHybrid(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr
 int bireact(simptr sim,int neigh) {
 	int dim,maxspecies,ll1,ll2,i,j,d,*nl,nmol2,b2,m1,m2,bmax,wpcode,nlist,maxlist;
 	int *nrxn,**table;
-	double dist2,pos2;
+	double dist2,vect[DIMMAX];
 	rxnssptr rxnss;
 	rxnptr rxn,*rxnlist;
 	boxptr bptr;
@@ -2358,7 +2419,7 @@ int bireact(simptr sim,int neigh) {
 								for(d=0;d<dim;d++)
 									dist2+=(mptr1->pos[d]-mptr2->pos[d])*(mptr1->pos[d]-mptr2->pos[d]);
 								if(dist2<=rxn->bindrad2 && (rxn->prob==1 || randCOD()<rxn->prob) && (mptr1->mstate!=MSsoln || mptr2->mstate!=MSsoln || !rxnXsurface(sim,mptr1,mptr2)) && mptr1->ident!=0 && mptr2->ident!=0) {
-									if(morebireact(sim,rxn,mptr1,mptr2,ll1,m1,ll2,ETrxn2intra)) return 1;
+									if(morebireact(sim,rxn,mptr1,mptr2,ll1,m1,ll2,ETrxn2intra,NULL)) return 1;
 									if(mptr1->ident==0) {
 										j=nrxn[i];
 										m2=nmol2; }}}}}}
@@ -2384,18 +2445,9 @@ int bireact(simptr sim,int neigh) {
 #ifdef VCELL_HYBRID
 										setBiReactRateForHybrid(sim, rxn, mptr1, mptr2, table[i][j]);
 #endif
-										dist2=0;
-										for(d=0;d<dim;d++) {
-											if((wpcode>>2*d&3)==0)
-												dist2+=(mptr1->pos[d]-mptr2->pos[d])*(mptr1->pos[d]-mptr2->pos[d]);
-											else if((wpcode>>2*d&3)==1) {
-												pos2=sim->wlist[2*d+1]->pos-sim->wlist[2*d]->pos;
-												dist2+=(mptr1->pos[d]-mptr2->pos[d]+pos2)*(mptr1->pos[d]-mptr2->pos[d]+pos2); }
-											else {
-												pos2=sim->wlist[2*d+1]->pos-sim->wlist[2*d]->pos;
-												dist2+=(mptr1->pos[d]-mptr2->pos[d]-pos2)*(mptr1->pos[d]-mptr2->pos[d]-pos2); }}
+										dist2=wallcalcdist2(sim,mptr1->pos,mptr2->pos,wpcode,vect);
 										if(dist2<=rxn->bindrad2 && (rxn->prob==1 || randCOD()<rxn->prob) && mptr1->ident!=0 && mptr2->ident!=0) {
-											if(morebireact(sim,rxn,mptr1,mptr2,ll1,m1,ll2,ETrxn2wrap)) return 1;
+											if(morebireact(sim,rxn,mptr1,mptr2,ll1,m1,ll2,ETrxn2wrap,vect)) return 1;
 											if(mptr1->ident==0) {
 												j=nrxn[i];
 												m2=nmol2;
@@ -2413,14 +2465,13 @@ int bireact(simptr sim,int neigh) {
 										dist2=0;
 										for(d=0;d<dim;d++)
 											dist2+=(mptr1->pos[d]-mptr2->pos[d])*(mptr1->pos[d]-mptr2->pos[d]);
-										if(dist2<=rxn->bindrad2 && (rxn->prob==1 || randCOD()<rxn->prob) &&  (mptr1->mstate!=MSsoln || mptr2->mstate!=MSsoln || !rxnXsurface(sim,mptr1,mptr2)) && mptr1->ident!=0 && mptr2->ident!=0) 
-										{
-											if(morebireact(sim,rxn,mptr1,mptr2,ll1,m1,ll2,ETrxn2inter)) return 1;
+										if(dist2<=rxn->bindrad2 && (rxn->prob==1 || randCOD()<rxn->prob) &&  (mptr1->mstate!=MSsoln || mptr2->mstate!=MSsoln || !rxnXsurface(sim,mptr1,mptr2)) && mptr1->ident!=0 && mptr2->ident!=0) {
+											if(morebireact(sim,rxn,mptr1,mptr2,ll1,m1,ll2,ETrxn2inter,NULL)) return 1;
 											if(mptr1->ident==0) {
 												j=nrxn[i];
 												m2=nmol2;
-												b2=bmax;}}}}}}
-	}//end of else {} according to if(!neigh)
+												b2=bmax; }}}}}}}
+
 	return 0; }
 
 
@@ -2837,7 +2888,7 @@ int bireact_threaded_interbox(simptr sim)
 						{
 							// VDEBUG_printf("X morebireact: (%p, %p, %p, %d, %d, %d)\n", rxn, mptr1, mptr2, ll1, m1, ll2);
 							// printf("X morebireact: (%p, %p, %p, %d, %d, %d)\n", rxn, mptr1, mptr2, ll1, m1, ll2);
-							if(morebireact(sim,rxn,mptr1,mptr2,ll1,m1,ll2,et)) return 1;
+							if(morebireact(sim,rxn,mptr1,mptr2,ll1,m1,ll2,et,NULL)) return 1; // bug: vect is set to NULL even for wrapping reactions
 						}
 					}
 				}
