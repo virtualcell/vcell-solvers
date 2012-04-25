@@ -41,6 +41,7 @@ SimulationMessaging::SimulationMessaging() {
 	workerEvent = NULL;
 #ifdef USE_MESSAGING
 	m_taskID = -1;
+	bStarted = false;
 #endif
 	workerEventOutputMode = WORKEREVENT_OUTPUT_MODE_STDOUT;
 }
@@ -98,6 +99,7 @@ SimulationMessaging::SimulationMessaging(char* broker, char* smqusername, char* 
 	bNewWorkerEvent = false;
 #endif
 
+	bStarted = false;
 }
 #endif
 
@@ -602,6 +604,11 @@ void SimulationMessaging::start() {
 	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
 		return;
 	}
+	if (bStarted) {
+		return;
+	}
+	bStarted = true;
+
 #if ( defined(WIN32) || defined(WIN64) )
 	HANDLE hThread; 
 	DWORD IDThread; 
@@ -707,7 +714,8 @@ void* startMessagingThread(void* lpParam){
 
 	while (true) {
 		waitReturn = 1;
-		gettimeofday(&start, NULL);		
+		gettimeofday(&start, NULL);
+		timeout.tv_sec = start.tv_sec;
 		// condition might be signalled before this thread gets blocked
 		// so this thread might miss signal and doesn't get wakened
 		// if this happens don't want to wait too long to check if there 

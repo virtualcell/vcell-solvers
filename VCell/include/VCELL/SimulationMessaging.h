@@ -94,8 +94,6 @@ class SimulationMessaging
 #endif
 {
 public:
-	static SimulationMessaging *m_inst;
-
     ~SimulationMessaging();
 	static SimulationMessaging* create();
 	static SimulationMessaging* getInstVar();
@@ -124,6 +122,7 @@ public:
 
 private:
 	SimulationMessaging();
+	static SimulationMessaging *m_inst;
 	WorkerEvent* workerEvent;
 	int workerEventOutputMode;
 
@@ -131,6 +130,8 @@ private:
 	bool bStopRequested;
 
 #ifdef USE_MESSAGING
+	bool bStarted;
+
 	SimulationMessaging(char* broker, char* smqusername, char* passwd, char* qname, char*tname, char* vcusername, jint simKey, jint jobIndex,  jint taskID, jint ttl=DEFAULT_TTL);
 
 	WorkerEvent* getWorkerEvent();
