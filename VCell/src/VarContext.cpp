@@ -19,6 +19,7 @@ using VCell::Expression;
 #include <VCELL/Membrane.h>
 #include <VCELL/JumpCondition.h>
 #include <VCELL/SimTool.h>
+#include <string.h>
 
 VarContext::VarContext(Structure *s, Variable* var)
 {

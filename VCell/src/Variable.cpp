@@ -9,6 +9,7 @@ using std::endl;
 #include <VCELL/Variable.h>
 #include <VCELL/Structure.h>
 #include <math.h>
+#include <string.h>
 
 Variable::Variable(string& nameStr, Structure* s, long Asize, bool diff)
 {

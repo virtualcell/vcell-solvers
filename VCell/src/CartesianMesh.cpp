@@ -15,6 +15,7 @@ using std::min;
 
 #include <MathUtil.h>
 #include <assert.h>
+#include <string.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/Element.h>
 #include <VCELL/Feature.h>

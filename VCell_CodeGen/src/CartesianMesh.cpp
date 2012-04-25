@@ -6,6 +6,7 @@
 #include <iomanip>
 using namespace std;
 
+#include <stdlib.h>
 #include <assert.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/Element.h>

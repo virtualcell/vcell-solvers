@@ -1,4 +1,5 @@
 #include <VCELL/RandomVariable.h>
+#include <string.h>
 
 RandomVariable::RandomVariable(string& arg_name, VariableType vt, int s)
 {

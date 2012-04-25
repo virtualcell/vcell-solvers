@@ -9,6 +9,7 @@
 #include <VCELL/Variable.h>
 #include <VCELL/Feature.h>
 #include <VCELL/Membrane.h>
+#include <string.h>
 #include <Expression.h>
 using VCell::Expression;
 

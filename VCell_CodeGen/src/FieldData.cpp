@@ -2,6 +2,7 @@
 #include <VCELL/FieldData.h>
 
 #include <sstream>
+#include <string.h>
 #include <string>
 #include <iostream>
 using namespace std;

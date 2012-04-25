@@ -15,6 +15,7 @@ using std::swap;
 #include <MathUtil.h>
 #include <VCELL/FVUtils.h>
 #include <float.h>
+#include <stdio.h>
 #include <math.h>
 
 extern "C"

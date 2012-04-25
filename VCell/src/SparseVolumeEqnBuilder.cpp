@@ -23,6 +23,7 @@ using std::max;
 #include <VCELL/SparseMatrixPCG.h>
 
 #include <assert.h>
+#include <string.h>
 
 static double epsilon = 1e-10;    // zero diffusion threshold at 1e-10 micron^2/second
 

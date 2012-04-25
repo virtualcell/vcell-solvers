@@ -8,6 +8,7 @@ using namespace std;
 #include <VCELL/SimTypes.h>
 #include <VCELL/Variable.h>
 #include <VCELL/FVUtils.h>
+#include <string.h>
 
 Variable::Variable(long Asize, string& nameStr, string& Aunits, bool pde)
 {

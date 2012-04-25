@@ -34,6 +34,8 @@ using std::endl;
 #include <VCELL/SparseMatrixPCG.h>
 
 #include <assert.h>
+#include <string.h>
+#include <limits.h>
 
 #include <cvode/cvode.h>             /* prototypes for CVODE fcts. and consts. */
 #include <nvector/nvector_serial.h>  /* serial N_Vector types, fcts., and macros */

@@ -13,6 +13,7 @@
 // Dec 2002
 // Handles symmetric or general (non-symmetric) storage - Diana Resasco
 
+#include <string.h>
 #include <iostream>
 #include <iomanip>
 using std::cout;

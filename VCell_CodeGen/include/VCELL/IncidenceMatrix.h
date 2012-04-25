@@ -1,6 +1,8 @@
 #ifndef INCIDENCEMATRIX
 #define INCIDENCEMATRIX
 
+#include <string.h>
+
 /*----------------------------------------------------------------------------
 	Sparse matrix stored in PCGPAK2 form
 	IncidenceMatrix  contains all the diagonal elements and all the non-zero off diagonal elements

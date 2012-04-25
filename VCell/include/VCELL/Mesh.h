@@ -5,6 +5,7 @@
 #ifndef MESH_H
 #define MESH_H
 
+#include <stdio.h>
 #include <VCELL/SimTypes.h>
 //#include <VCELL/Contour.h>
 //#include <VCELL/ContourSubdomain.h>

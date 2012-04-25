@@ -1,5 +1,7 @@
 #include <VCELL/SparseMatrixPCG.h>
 #include <VCELL/FVUtils.h>
+#include <string.h>
+#include <stdio.h>
 
 /*----------------------------------------------------------------------------
 	SparseMatrixPCG contains all the diagonal elements and all the non-zero off diagonal elements

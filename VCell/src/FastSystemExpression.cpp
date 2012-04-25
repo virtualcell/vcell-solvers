@@ -18,6 +18,8 @@ using VCell::Expression;
 #include <sstream>
 using std::stringstream;
 
+#include <string.h>
+
 FastSystemExpression::FastSystemExpression(int dimension, int numDepend, SimulationExpression* sim) 
 : FastSystem(dimension, numDepend)
 {	

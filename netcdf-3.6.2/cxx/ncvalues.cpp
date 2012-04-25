@@ -10,6 +10,7 @@
 #include <config.h>
 #include <iostream>
 #include <string>
+#include <string.h>
 
 #include "ncvalues.h"
 

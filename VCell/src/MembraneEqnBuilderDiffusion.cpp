@@ -16,6 +16,7 @@
 #include <VCELL/SparseMatrixPCG.h>
 #include <VCELL/VCellModel.h>
 
+#include <string.h>
 #include <assert.h>
 
 MembraneEqnBuilderDiffusion::MembraneEqnBuilderDiffusion(MembraneVariable *Aspecies, Mesh *Amesh)

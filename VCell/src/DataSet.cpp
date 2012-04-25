@@ -4,6 +4,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <VCELL/DataSet.h>
 #include <iostream>
 using std::cout;

@@ -4,6 +4,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <VCELL/FVDataSet.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/Variable.h>

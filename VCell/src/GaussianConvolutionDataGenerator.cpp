@@ -9,6 +9,7 @@
 #include <Expression.h>
 using VCell::Expression;
 
+#include <string.h>
 #include <algorithm>
 using std::max;
 using std::min;

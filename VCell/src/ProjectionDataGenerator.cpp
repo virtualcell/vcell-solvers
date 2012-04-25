@@ -6,6 +6,7 @@
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/Element.h>
+#include <string.h>
 #include <Expression.h>
 using VCell::Expression;
 

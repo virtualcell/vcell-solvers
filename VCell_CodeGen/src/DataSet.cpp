@@ -7,6 +7,7 @@
 #endif
 
 #include <stdlib.h>
+#include <typeinfo>
 
 #include <VCELL/SimTypes.h>
 #include <VCELL/Variable.h>

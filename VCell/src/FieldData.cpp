@@ -4,6 +4,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <string.h>
 #include <string>
 using std::string;
 using std::stringstream;
