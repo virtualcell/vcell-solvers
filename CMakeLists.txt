@@ -138,7 +138,7 @@ endif()
 if (LINUX_32bit_BINARIES)
 	find_program(IFORT_EXECUTABLE ifort /opt/intel/fc/10.1.015/bin/)
 elseif (LINUX_64bit_BINARIES)
-	find_program(IFORT_EXECUTABLE ifort /opt/intel/fce/10.1.015/bin/)
+	find_program(IFORT_EXECUTABLE ifort /opt/intel/fce/10.1.015/bin/ /cm/shared/apps/intel/fce/10.1.015/bin/)
 endif()
 
 if (IFORT_EXECUTABLE MATCHES IFORT_EXECUTABLE-NOTFOUND)
@@ -152,57 +152,14 @@ endif()
 #######################################
 if (MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
-else()
-	add_definitions(-DUNIX)
-	if (LINUX)
+	
+	if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
+		
 		######################################
 		#
-		# SonicCClient uses LINUX
-		# unzip uses LINUX
+		# use /MT instead of /MD on Windows
 		#
 		#######################################	
-		add_definitions(-DLINUX)
-	endif()
-endif()
-
-if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
-
-	if (TARGET_SOLVERS_WITH_MESSAGING)
-		if (APPLE)
-			message(FATAL_ERROR "TARGET_SOLVERS_WITH_MESSAGING is not supported on MAC OS X")
-		endif(APPLE)
-		
-		add_definitions(-DUSE_MESSAGING)
-		if (LINUX)
-			set(SONICMQ_LIBS smq)			
-			if (LINUX_32bit_BINARIES)
-				set(SONICMQ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SonicCClient/PROGRESS_SONIC_CCLIENT_8.5.1_RHLNX_32)	
-				include_directories(${SONICMQ_DIR}/include ${SONICMQ_DIR}/include/CPP)
-				link_directories(${SONICMQ_DIR}/bin/release)
-			endif()
-			if (LINUX_64bit_BINARIES)
-				set(SONICMQ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SonicCClient/PROGRESS_SONIC_CCLIENT_8.5.1_RHLNX_64)	
-				include_directories(${SONICMQ_DIR}/include ${SONICMQ_DIR}/include/CPP)
-				link_directories(${SONICMQ_DIR}/bin/release)
-			endif()						
-		elseif (MSVC)
-			set(SONICMQ_LIBS libsmq libsmqj Ws2_32)
-			if (ARCH_64bit)
-				set(SONICMQ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SonicCClient/PROGRESS_SONIC_CCLIENT_8.5.1_WIN_64)
-			else()
-				set(SONICMQ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SonicCClient/PROGRESS_SONIC_CCLIENT_8.5.1_WIN_32)
-			endif()	
-			include_directories(${SONICMQ_DIR}/include ${SONICMQ_DIR}/include/CPP)
-			link_directories(${SONICMQ_DIR}/lib/release)
-		endif()		
-	endif()
-	
-	######################################
-	#
-	# use /MT instead of /MD on Windows
-	#
-	#######################################	
-	if (MSVC)
 		foreach(flag_var
 				CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
 				CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
@@ -229,20 +186,9 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
             	endif()
             	set(${flag_var} ${temp_var} CACHE STRING "Flags used by the compiler" FORCE)            	
 			endif()			
-		endforeach(flag_var)	
-	endif (MSVC)
-endif() 
-
-if (TARGET_JAVA_BINDING)
-	if (UNIX)
-		######################################
-		#
-		# use -fPIC on UNIX
-		#
-		#######################################	
-		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-	elseif (MSVC)
+		endforeach(flag_var)
+		
+	elseif(TARGET_JAVA_BINDING)
 		######################################
 		#
 		# use /MD instead of /MT on Windows
@@ -275,9 +221,58 @@ if (TARGET_JAVA_BINDING)
             	set(${flag_var} ${temp_var} CACHE STRING "Flags used by the compiler" FORCE)
 			endif()
 		endforeach(flag_var)
-	endif(UNIX)
-endif(TARGET_JAVA_BINDING)
+	endif()
+		
+else()
+	
+	add_definitions(-DUNIX)
+	if (LINUX)
+		######################################
+		#
+		# SonicCClient uses LINUX
+		# unzip uses LINUX
+		#
+		#######################################	
+		add_definitions(-DLINUX)
+	endif(LINUX)
+	
+	if (TARGET_JAVA_BINDING)
+		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+	endif()
+	
+endif(MSVC)
 
+
+if (TARGET_SOLVERS_WITH_MESSAGING)
+	if (APPLE)
+		message(FATAL_ERROR "TARGET_SOLVERS_WITH_MESSAGING is not supported on MAC OS X")
+	endif(APPLE)
+	
+	add_definitions(-DUSE_MESSAGING)
+	if (LINUX)
+		set(SONICMQ_LIBS smq)			
+		if (LINUX_32bit_BINARIES)
+			set(SONICMQ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SonicCClient/PROGRESS_SONIC_CCLIENT_8.5.1_RHLNX_32)	
+			include_directories(${SONICMQ_DIR}/include ${SONICMQ_DIR}/include/CPP)
+			link_directories(${SONICMQ_DIR}/bin/release)
+		endif()
+		if (LINUX_64bit_BINARIES)
+			set(SONICMQ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SonicCClient/PROGRESS_SONIC_CCLIENT_8.5.1_RHLNX_64)	
+			include_directories(${SONICMQ_DIR}/include ${SONICMQ_DIR}/include/CPP)
+			link_directories(${SONICMQ_DIR}/bin/release)
+		endif()						
+	elseif (MSVC)
+		set(SONICMQ_LIBS libsmq libsmqj Ws2_32)
+		if (ARCH_64bit)
+			set(SONICMQ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SonicCClient/PROGRESS_SONIC_CCLIENT_8.5.1_WIN_64)
+		else()
+			set(SONICMQ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SonicCClient/PROGRESS_SONIC_CCLIENT_8.5.1_WIN_32)
+		endif()	
+		include_directories(${SONICMQ_DIR}/include ${SONICMQ_DIR}/include/CPP)
+		link_directories(${SONICMQ_DIR}/lib/release)
+	endif()		
+endif()
 
 ######################################
 #
@@ -302,14 +297,17 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	endif()
 	add_subdirectory(smoldyn) 
 	add_subdirectory(Stochastic)
-	add_subdirectory(unzip)
-	add_subdirectory(VCell_CodeGen) 
+	add_subdirectory(unzip) 
 	add_subdirectory(VCell) 
 	add_subdirectory(zip)
 	if (NOT ZLIB_FOUND)
 		add_subdirectory(zlib)
 	endif()
 endif() 
+
+if (TARGET_SOLVERS_WITH_MESSAGING)
+	add_subdirectory(VCell_CodeGen)
+endif(TARGET_SOLVERS_WITH_MESSAGING)
 
 if (TARGET_JAVA_BINDING)
 	add_subdirectory(fsqp)
