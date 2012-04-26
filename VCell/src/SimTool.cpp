@@ -696,6 +696,9 @@ void SimTool::setSolver(string& s) {
 }
 
 void SimTool::start() {
+	if (simulation->getNumVariables() == 0) {
+		return;
+	}
 	simulation->resolveReferences();
 	if (numSerialParameterScans == 0 || SimulationMessaging::getInstVar()->getTaskID() >= 0) { // only do it when not in messaging mode	
 		start1();
