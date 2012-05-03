@@ -9,13 +9,8 @@
 
 #include <time.h>
 #include <stdio.h>
-
-#ifdef VCELL_HYBRID
-namespace VCell {
-	class Expression;
-}
-#endif
-
+#include <string>
+using namespace std;
 /********************************** General *********************************/
 
 #define DIMMAX 3							// maximum system dimensionality
@@ -94,6 +89,8 @@ typedef struct wallstruct {
 #define MAXPRODUCT 16
 enum RevParam {RPnone,RPirrev,RPconfspread,RPbounce,RPpgem,RPpgemmax,RPpgemmaxw,RPratio,RPunbindrad,RPpgem2,RPpgemmax2,RPratio2,RPoffset,RPfixed};
 
+class ValueProvider;
+typedef ValueProvider* valueproviderptr;
 typedef struct rxnstruct {
 	struct rxnsuperstruct *rxnss;	// pointer to superstructure
 	char *rname;								// pointer to name of reaction
@@ -103,9 +100,7 @@ typedef struct rxnstruct {
 	int nprod;									// number of products
 	int *prdident;							// list of product identities [prd]
 	enum MolecState *prdstate;	// list of product states [prd]
-#ifdef VCELL_HYBRID
-	VCell::Expression* rateExp;								// requested reaction rate
-#endif
+	valueproviderptr rateValueProvider;			// requested reaction rate
 	double rate;								// requested reaction rate
 	double bindrad2;						// squared binding radius, if appropriate
 	double prob;								// reaction probability
@@ -145,9 +140,7 @@ enum SMLflag {SMLno=0,SMLdiffuse=1,SMLreact=2,SMLsrfbound=4};
 typedef struct surfactionstruct {
 	int *srfnewspec;						// surface convert mol. species [ms]
 	double *srfrate;						// surface action rate [ms]
-#ifdef VCELL_HYBRID
-	VCell::Expression** srfRateExp;			//rate for surface actions: asorption, desorption, transmission...etc.
-#endif
+	valueproviderptr* srfRateValueProvider;	//rate for surface actions: asorption, desorption, transmission...etc.
 	double *srfprob;						// surface action probability [ms]
 	double *srfcumprob;					// surface cumulative probability [ms]
 	int *srfdatasrc;						// surface data source [ms]
@@ -310,8 +303,8 @@ typedef struct mzrsuperstruct {
 	double ***color;									// colors for streams [strm][ms][c]
 	double **strmdifc;								// diff. coeff. for streams [strm][ms]
 	int maxNetworkSpecies;						// maximum expansion size of network
-	int maxnamehash;									// allocated size of name hash
-	int nnamehash;										// actual size of name hash
+	unsigned int maxnamehash;					// allocated size of name hash
+	unsigned int nnamehash;						// actual size of name hash
 	char **tagname;										// hash list of mzr tagged names
 	char **smolname;									// hash list of Smoldyn names
 	int maxrxnhash;										// allocated size of reaction hash
@@ -327,7 +320,7 @@ typedef struct mzrsuperstruct {
 	} *mzrssptr;
 
 /******************************** Threading ********************************/
-//???????????? nothing in this section is documented yet
+//?? nothing in this section is documented yet
 #define BASE_STACK_SIZE sizeof(int) * 16;
 
 typedef struct stackstruct { // Used internally by threads for input/output
@@ -351,7 +344,7 @@ typedef struct threadingsuperstruct { // Master structure that contains all the 
 
 /********************************* Graphics ********************************/
 
-#define MAXLIGHTS 8						// must be ≤ GL_MAX_LIGHTS
+#define MAXLIGHTS 8						// must be ? GL_MAX_LIGHTS
 enum LightParam {LPambient,LPdiffuse,LPspecular,LPposition,LPon,LPoff,LPauto,LPnone};
 
 typedef struct graphicssuperstruct {
@@ -410,9 +403,9 @@ typedef struct VolumeSamples {
 	CompartmentIdentifierPair* compartmentIDPairPtr;//ID vs. comptName pairs.
 }* VolumeSamplesPtr;
 
-#ifdef VCELL_HYBRID
-class SimTool;
-#endif
+class ValueProviderFactory;
+class AbstractMesh;
+
 typedef struct simstruct {
 	enum StructCond condition;	// structure condition
 	FILE *logfile;							// file to send output
@@ -451,11 +444,33 @@ typedef struct simstruct {
 	checkwallsfnptr checkwallsfn;								// function for molecule collisions with walls
 
 	VolumeSamplesPtr volumeSamplesPtr;
-#ifdef VCELL_HYBRID
-	SimTool* simTool;
-#endif
+	ValueProviderFactory* valueProviderFactory;
+	AbstractMesh* mesh;
 	} *simptr;
 
+
+class ValueProvider {
+public:
+	virtual ~ValueProvider(){};
+	virtual double getConstantValue()=0;
+	virtual double getValue(double t, double x, double y, double z, rxnptr rxn)=0;
+	virtual double getValue(double t, double x, double y, double z, rxnptr rxn, char* panelName)=0;
+	virtual double getValue(double t, double x, double y, double z, surfactionptr actiondetails, char* panelName)=0;
+};
+
+class ValueProviderFactory {
+public:
+	virtual ~ValueProviderFactory(){};
+	virtual ValueProvider* createValueProvider(string& rateExp)=0;
+};
+
+class AbstractMesh{
+public:
+	virtual ~AbstractMesh(){};
+	virtual void getCenterCoordinates(int volIndex, double* coords)=0;
+	virtual void getDeltaXYZ(double* delta)=0;
+	virtual void getNumXYZ(int* num)=0;
+};
 
 
 #endif

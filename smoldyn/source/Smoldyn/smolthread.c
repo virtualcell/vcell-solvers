@@ -6,7 +6,7 @@
 
 #include "smoldyn.h"
 #include "smoldynfuncs.h"
-#include "smoldyn_config.h"
+#include "smoldynconfigure.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

@@ -14,12 +14,42 @@
 #include "Rn.h"
 #include "smoldyn.h"
 #include "smoldynfuncs.h"
-#include "smoldyn_config.h"
+#include "smoldynconfigure.h"
 #include "string2.h"
 
 /******************************************************************************/
 /*********************************** Graphics *********************************/
 /******************************************************************************/
+
+
+/******************************************************************************/
+/****************************** Local declarations ****************************/
+/******************************************************************************/
+
+// enumerated types
+char *graphicslp2string(enum LightParam lp,char *string);
+
+// low level utilities
+
+// memory management
+graphicsssptr graphssalloc(void);
+
+// data structure output
+
+// structure setup
+
+// structure update functions
+int graphicsupdateinit(simptr sim);
+int graphicsupdatelists(simptr sim);
+int graphicsupdateparams(simptr sim);
+
+// core simulation functions
+void RenderSurfaces(simptr sim);
+void RenderMolecs(simptr sim);
+void RenderText(simptr sim);
+void RenderSim(simptr sim);
+
+// top level OpenGL functions
 
 /******************************************************************************/
 /******************************* enumerated types *****************************/
@@ -127,7 +157,7 @@ graphicsssptr graphssalloc(void) {
 	int lt;
 
 	graphss=NULL;
-	CHECK(graphss=(graphicsssptr) malloc(sizeof(struct graphicssuperstruct)));
+	CHECKMEM(graphss=(graphicsssptr) malloc(sizeof(struct graphicssuperstruct)));
 
 	graphss->condition=SCinit;
 	graphss->sim=NULL;
@@ -170,6 +200,7 @@ graphicsssptr graphssalloc(void) {
 	
 failure:
 	graphssfree(graphss);
+	simLog(NULL,10,"Failed to allocate memory in graphssalloc");
 	return NULL; }
 
 
@@ -189,54 +220,54 @@ void graphssfree(graphicsssptr graphss) {
 /* graphssoutput */
 void graphssoutput(simptr sim) {
 	graphicsssptr graphss;
-	char *str,string[STRCHAR];
+	char string1[STRCHAR],string2[STRCHAR];
 	int i1,i2,lt;
 
 	graphss=sim->graphss;
-	printf("GRAPHICS PARAMETERS\n");
+	simLog(sim,2,"GRAPHICS PARAMETERS\n");
 	if(!graphss || graphss->graphics==0) {
-		printf(" No graphical output\n\n");
+		simLog(sim,2," No graphical output\n\n");
 		return; }
 
-	printf(" display: ");
-	if(graphss->graphics==1) printf("OpenGL");
-	else if(graphss->graphics==2) printf("OpenGL_good");
-	else if(graphss->graphics==3) printf("OpenGL_better");
-	printf(", every %i iterations\n",graphss->graphicit);
-	if(graphss->graphicdelay>0) printf(" delay per frame: %ui ms\n",graphss->graphicdelay);
+	simLog(sim,2," display: ");
+	if(graphss->graphics==1) simLog(sim,2,"OpenGL");
+	else if(graphss->graphics==2) simLog(sim,2,"OpenGL_good");
+	else if(graphss->graphics==3) simLog(sim,2,"OpenGL_better");
+	simLog(sim,2,", every %i iterations\n",graphss->graphicit);
+	if(graphss->graphicdelay>0) simLog(sim,2," delay per frame: %ui ms\n",graphss->graphicdelay);
 
-	printf(" frame thickness: %g",graphss->framepts);
-	if(graphss->gridpts) printf(", grid thickness: %g",graphss->gridpts);
-	printf("\n");
-	if(graphss->framepts) printf(" frame color: %g,%g,%g,%g\n",graphss->framecolor[0],graphss->framecolor[1],graphss->framecolor[2],graphss->framecolor[3]);
-	if(graphss->gridpts) printf(" grid color: %g,%g,%g,%g\n",graphss->gridcolor[0],graphss->gridcolor[1],graphss->gridcolor[2],graphss->gridcolor[3]);
-	printf(" background color: %g,%g,%g,%g\n",graphss->backcolor[0],graphss->backcolor[1],graphss->backcolor[2],graphss->backcolor[3]);
+	simLog(sim,2," frame thickness: %g",graphss->framepts);
+	if(graphss->gridpts) simLog(sim,2,", grid thickness: %g",graphss->gridpts);
+	simLog(sim,2,"\n");
+	if(graphss->framepts) simLog(sim,2," frame color: %g,%g,%g,%g\n",graphss->framecolor[0],graphss->framecolor[1],graphss->framecolor[2],graphss->framecolor[3]);
+	if(graphss->gridpts) simLog(sim,2," grid color: %g,%g,%g,%g\n",graphss->gridcolor[0],graphss->gridcolor[1],graphss->gridcolor[2],graphss->gridcolor[3]);
+	simLog(sim,2," background color: %g,%g,%g,%g\n",graphss->backcolor[0],graphss->backcolor[1],graphss->backcolor[2],graphss->backcolor[3]);
 
 	if(graphss->ntextitems) {
-		printf(" text color: %g,%g,%g,%g\n",graphss->textcolor[0],graphss->textcolor[1],graphss->textcolor[2],graphss->textcolor[3]);
-		printf(" text items:");
+		simLog(sim,2," text color: %g,%g,%g,%g\n",graphss->textcolor[0],graphss->textcolor[1],graphss->textcolor[2],graphss->textcolor[3]);
+		simLog(sim,2," text items:");
 		for(i1=0;i1<graphss->ntextitems;i1++)
-			printf(" %s",graphss->textitems[i1]);
-		printf("\n"); }
+			simLog(sim,2," %s",graphss->textitems[i1]);
+		simLog(sim,2,"\n"); }
 
 	if(graphss->graphics>=3)
-		printf(" ambient light (%s): %g %g %g %g\n",graphicslp2string(graphss->roomstate,string),graphss->ambiroom[0],graphss->ambiroom[1],graphss->ambiroom[2],graphss->ambiroom[3]);
+		simLog(sim,2," ambient light (%s): %g %g %g %g\n",graphicslp2string(graphss->roomstate,string1),graphss->ambiroom[0],graphss->ambiroom[1],graphss->ambiroom[2],graphss->ambiroom[3]);
 	for(lt=0;lt<MAXLIGHTS;lt++)
 		if(graphss->lightstate[lt]!=LPauto) {
-			printf(" light %i: %s\n",lt,graphicslp2string(graphss->lightstate[lt],string));
-			printf("  position: %g %g %g\n",graphss->lightpos[lt][0],graphss->lightpos[lt][1],graphss->lightpos[lt][2]);
-			printf("  ambient: %g %g %g %g\n",graphss->ambilight[lt][0],graphss->ambilight[lt][1],graphss->ambilight[lt][2],graphss->ambilight[lt][3]);
-			printf("  diffuse: %g %g %g %g\n",graphss->difflight[lt][0],graphss->difflight[lt][1],graphss->difflight[lt][2],graphss->difflight[lt][3]);
-			printf("  specular: %g %g %g %g\n",graphss->speclight[lt][0],graphss->speclight[lt][1],graphss->speclight[lt][2],graphss->speclight[lt][3]); }
+			simLog(sim,2," light %i: %s\n",lt,graphicslp2string(graphss->lightstate[lt],string1));
+			simLog(sim,2,"  position: %g %g %g\n",graphss->lightpos[lt][0],graphss->lightpos[lt][1],graphss->lightpos[lt][2]);
+			simLog(sim,2,"  ambient: %g %g %g %g\n",graphss->ambilight[lt][0],graphss->ambilight[lt][1],graphss->ambilight[lt][2],graphss->ambilight[lt][3]);
+			simLog(sim,2,"  diffuse: %g %g %g %g\n",graphss->difflight[lt][0],graphss->difflight[lt][1],graphss->difflight[lt][2],graphss->difflight[lt][3]);
+			simLog(sim,2,"  specular: %g %g %g %g\n",graphss->speclight[lt][0],graphss->speclight[lt][1],graphss->speclight[lt][2],graphss->speclight[lt][3]); }
 
-	str=gl2SetOptionStr("TiffName",NULL);
-	gl2GetString("TiffNameDefault",string);
+	gl2GetString("TiffName",string1);
+	gl2GetString("TiffNameDefault",string2);
 	i1=(int)gl2GetNumber("TiffNumber");
 	i2=(int)gl2GetNumber("TiffNumMax");
-	if(strcmp(str,string)) printf(" TIFF name: %s\n",str);
+	if(strcmp(string1,string2)) simLog(sim,2," TIFF name: %s\n",string1);
 	if(i1!=(int)gl2GetNumber("TiffNumberDefault") || i2!=(int)gl2GetNumber("TiffNumMaxDefault"))
-		printf(" TIFFs numbered from %i to %i\n",i1,i2);
-	printf("\n");
+		simLog(sim,2," TIFFs numbered from %i to %i\n",i1,i2);
+	simLog(sim,2,"\n");
 	return; }
 
 
@@ -258,7 +289,7 @@ void writegraphss(simptr sim,FILE *fptr) {
 	if(graphss->graphicdelay>0) fprintf(fptr,"graphic_delay %ui\n",graphss->graphicdelay);
 
 	if(graphss->tiffit>0) fprintf(fptr,"tiff_iter %i\n",graphss->tiffit);
-	fprintf(fptr,"tiff_name %s\n",gl2SetOptionStr("TiffName",NULL));
+	fprintf(fptr,"tiff_name %s\n",gl2GetString("TiffName",string));
 	fprintf(fptr,"tiff_min %i\n",gl2SetOptionInt("TiffNumber",-1));
 	fprintf(fptr,"tiff_max %i\n",gl2SetOptionInt("TiffNumMax",-1));
 
@@ -301,7 +332,7 @@ int checkgraphicsparams(simptr sim,int *warnptr) {
 
 	if(graphss->condition!=SCok) {
 		warn++;
-		printf(" WARNING: graphics structure %s\n",simsc2string(graphss->condition,string)); }
+		simLog(sim,7," WARNING: graphics structure %s\n",simsc2string(graphss->condition,string)); }
 
 	if(warnptr) *warnptr=warn;
 	return error; }
@@ -594,7 +625,7 @@ int graphicsupdateinit(simptr sim) {
 	gl2SetOptionInt("Fix2DAspect",1);
 	gl2SetOptionVoid("FreeFunc",(void*) &simfree);
 	gl2SetOptionVoid("FreePointer",(void*)sim);
-	if(!qflag) printf("Starting simulation\n");
+	if(!qflag) simLog(sim,2,"Starting simulation\n");
 	dim=sim->dim;
 	wlist=sim->wlist;
 	if(dim==1) gl2Initialize(sim->filename,(float)wlist[0]->pos,(float)wlist[1]->pos,0,0,0,0);
@@ -961,7 +992,7 @@ void RenderSurfaces(simptr sim) {
 					theta=gl2FindRotateD(vect,front,axis);
 					glRotated((GLdouble)theta,(GLdouble)(axis[0]),(GLdouble)(axis[1]),(GLdouble)(axis[2]));
 					vect2[0]=vect2[1]=vect2[2]=0;
-					gl2DrawCircleD(vect2,point[1][0],(int)point[1][1],'f',3);//???? 'f' isn't right
+					gl2DrawCircleD(vect2,point[1][0],(int)point[1][1],'f',3);		//?? 'f' isn't right
 					glPopMatrix(); }
 
 				if(glIsEnabled(GL_LINE_STIPPLE))
@@ -1144,7 +1175,7 @@ void TimerFunction(int state) {
 	if(oldstate==1 && gl2State(-1)==0) {							// leave pause state
 		oldstate=0;
 		sim->clockstt=time(NULL);
-		if(!qflag) printf("Simulation running\n"); }
+		simLog(sim,2,"Simulation running\n"); }
 
 	if(state==0 && gl2State(-1)==0) {										// normal run mode
 		it=graphss->currentit;
@@ -1160,7 +1191,7 @@ void TimerFunction(int state) {
 		sim->elapsedtime+=difftime(time(NULL),sim->clockstt);
 		oldstate=1;
 		delay=20;
-		if(!qflag) printf("Simulation paused at simulation time: %g\n",sim->time); }
+		simLog(sim,2,"Simulation paused at simulation time: %g\n",sim->time); }
 	else {																						// still in pause state or simulation is over
 		glutPostRedisplay();
 		delay=20; }
@@ -1184,7 +1215,7 @@ void smolsimulategl(simptr sim) {
 	if(er) endsimulate(sim,er);
 	glutMainLoop();
 #else
-	fprintf(stderr,"Graphics are unavailable, so performing non-graphics simulation.\n");
+	simLog(sim,5,"Graphics are unavailable, so performing non-graphics simulation.\n");
 	smolsimulate(sim);
 #endif
 	return; }

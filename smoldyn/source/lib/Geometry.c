@@ -215,14 +215,15 @@ double Geo_LineLength(double *pt1,double *pt2,int dim) {
 double Geo_TriArea2(double *pt1,double *pt2,double *pt3) {
 	return -0.5*((pt2[1]-pt1[1])*(pt3[0]-pt1[0])-(pt2[0]-pt1[0])*(pt3[1]-pt1[1])); }
 
+
 double Geo_TriArea3D(double *pt1,double *pt2,double *pt3) {
-	double a,b,c,s;
+	double a,b,c;
 
 	a = sqrt((pt1[0]-pt2[0])*(pt1[0]-pt2[0]) + (pt1[1]-pt2[1])*(pt1[1]-pt2[1]) + (pt1[2]-pt2[2])*(pt1[2]-pt2[2])); //distance p1 to p2
 	b = sqrt((pt1[0]-pt3[0])*(pt1[0]-pt3[0]) + (pt1[1]-pt3[1])*(pt1[1]-pt3[1]) + (pt1[2]-pt3[2])*(pt1[2]-pt3[2])); //distance p1 to p3
 	c = sqrt((pt2[0]-pt3[0])*(pt2[0]-pt3[0]) + (pt2[1]-pt3[1])*(pt2[1]-pt3[1]) + (pt2[2]-pt3[2])*(pt2[2]-pt3[2])); //distance p2 to p3
-	s = (a+b+c)/2;
-	return sqrt(s*(s-a)*(s-b)*(s-c)); }
+	return sqrt((a+(b+c))*(c-(a-b))*(c+(a-b))*(a+(b-c)))/4.0; }
+
 
 double Geo_TriArea3(double *pt1,double *pt2,double *pt3,double *norm) {
 	double base[3],cross[3];

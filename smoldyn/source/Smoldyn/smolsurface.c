@@ -21,7 +21,7 @@
 #include <sstream>
 #include <string>
 
-#include "smoldyn_config.h"
+#include "smoldynconfigure.h"
 
 #ifdef THREADING
 #include <pthread.h>
@@ -30,6 +30,55 @@
 /******************************************************************************/
 /********************************** Surfaces **********************************/
 /******************************************************************************/
+
+
+/******************************************************************************/
+/****************************** Local declarations ****************************/
+/******************************************************************************/
+
+// enumerated types
+enum SrfAction surfstring2act(char *string);
+char *surfact2string(enum SrfAction act,char *string);
+enum DrawMode surfstring2dm(char *string);
+char *surfdm2string(enum DrawMode dm,char *string);
+
+// low level utilities
+panelptr readpanelname(simptr sim,surfaceptr srf,const char *str);
+int panelpoints(enum PanelShape ps,int dim);
+int surfpanelparams(enum PanelShape ps,int dim);
+void panelmiddle(panelptr pnl,double *middle,int dim,int onpanel);
+int srfsamestate(enum MolecState ms1,enum PanelFace face1,enum MolecState ms2,enum MolecState *ms3ptr);
+void srfreverseaction(enum MolecState ms1,enum PanelFace face1,enum MolecState ms2,enum MolecState *ms3ptr,enum PanelFace *face2ptr,enum MolecState *ms4ptr);
+void srftristate2index(enum MolecState ms,enum MolecState ms1,enum MolecState ms2,enum MolecState *ms3ptr,enum PanelFace *faceptr,enum MolecState *ms4ptr);
+void srfindex2tristate(enum MolecState ms3,enum PanelFace face,enum MolecState ms4,enum MolecState *msptr,enum MolecState *ms1ptr,enum MolecState *ms2ptr);
+
+// memory management
+surfactionptr surfaceactionalloc(int species);
+void surfaceactionfree(surfactionptr actdetails);
+int panelsalloc(surfaceptr srf,int dim,int maxpanel,int maxspecies,enum PanelShape ps);
+void panelfree(panelptr pnl);
+int emittersalloc(surfaceptr srf,enum PanelFace face,int oldmaxspecies,int maxspecies);
+surfaceptr surfacealloc(surfaceptr srf,int oldmaxspecies,int maxspecies,int dim);
+void surfacefree(surfaceptr srf,int maxspecies);
+surfacessptr surfacessalloc(surfacessptr srfss,int maxsurface,int maxspecies,int dim);
+
+// data structure output
+
+// structure set up
+int surfsetmaxpanel(surfaceptr srf,int dim,enum PanelShape ps,int maxpanel);
+int surfsetemitterabsorption(simptr sim);
+double srfcalcrate(simptr sim,surfaceptr srf,int i,enum MolecState ms1,enum PanelFace face,enum MolecState ms2);
+double srfcalcprob(simptr sim,surfaceptr srf,int i,enum MolecState ms1,enum PanelFace face,enum MolecState ms2);
+int surfupdateparams(simptr sim);
+int surfupdatelists(simptr sim);
+
+// core simulation functions
+void panelnormal(panelptr pnl,double *pos,enum PanelFace face,int dim,double *norm);
+void movept2panel(double *pt,panelptr pnl,int dim,double margin);
+double closestpanelpt(panelptr pnl,int dim,double *testpt,double *pnlpt);
+void surfacereflect(moleculeptr mptr,panelptr pnl,double *crsspt,int dim,enum PanelFace face);
+int surfacejump(moleculeptr mptr,panelptr pnl,double *crsspt,enum PanelFace face,int dim);
+int dosurfinteract(simptr sim,moleculeptr mptr,int ll,int m,panelptr pnl,enum PanelFace face,double *crsspt);
 
 
 /******************************************************************************/
@@ -157,44 +206,71 @@ char *surfdm2string(enum DrawMode dm,char *string) {
 
 
 /* readsurfacename. */
-int readsurfacename(simptr sim,char *str,enum PanelShape *psptr,int *pptr) {
-	char nm[STRCHAR],*colon;
+int readsurfacename(simptr sim,const char *str,enum PanelShape *psptr,int *pptr) {
+	char snm[STRCHAR],pnm[STRCHAR],*colon;
 	int itct,s,p;
 	enum PanelShape ps;
 
 	if(!str) return -1;
 	if(!sim->srfss || !sim->srfss->nsrf) return -2;
 
-	itct=sscanf(str,"%s",nm);
-	if(itct!=1) return -1;	// cannot read name
-	colon=strchr(nm,':');
-	ps=PSall;
+	itct=sscanf(str,"%s",snm);
+	if(itct!=1) return -3;														// cannot read name
+	colon=strchr(snm,':');
+	if(colon) {
+		strcpy(pnm,colon+1);
+		*colon='\0'; }
+	else pnm[0]='\0';
+	ps=PSnone;
 	p=-1;
 
-	if(!strcmp(nm,"all:all") || !strcmp(nm,"all")) {
-		s=-5; }
-	else if(!colon) {
-		s=stringfind(sim->srfss->snames,sim->srfss->nsrf,nm);
-		if(s==-1) return -3; }
-	else {
-		*colon='\0';
-		if(!strcmp(nm,"all")) return -4;
-		s=stringfind(sim->srfss->snames,sim->srfss->nsrf,nm);
-		if(s==-1) return -3;
-		if(!strcmp(colon+1,"all"));
+	if(!strcmp(snm,"all")) {													// all surfaces
+		s=-5;
+		if(pnm[0]=='\0');																// all surface, no panel
+		else if(!strcmp(pnm,"all")) {										// all:all
+			ps=PSall;
+			p=-5; }
+		else																						// all:panel
+			p=-2; }
+	else {																						// specific surface
+		s=stringfind(sim->srfss->snames,sim->srfss->nsrf,snm);
+		if(s==-1)																				// unknown surface
+			s=-4;
 		else {
-			for(ps=(PanelShape)0;p==-1 && ps<PSMAX;ps=(PanelShape)(ps+1))
-				p=stringfind(sim->srfss->srflist[s]->pname[ps],sim->srfss->srflist[s]->npanel[ps],colon+1);
-			if(p==-1) {
-				ps=PSnone;
-				p=-2; }
-			else
-				ps=(PanelShape)(ps-1); }
-		*colon=':'; }
+			if(pnm[0]=='\0');															// no panel name
+			else if(!strcmp(pnm,"all")) {									// surface:all
+				ps=PSall;
+				p=-5; }
+			else if(VCellDefined && strstr(pnm,"tri_")==pnm) {		// surface:tri_#_#_#	(VCELL)
+				ps=PStri;
+				int memIndex;
+				int globalIndex;
+				sscanf(pnm,"tri_%d_%d_%d",&p,&globalIndex,&memIndex); }
+			else {																				// surface:panel
+				for(ps=(PanelShape)0;p==-1 && ps<PSMAX;ps=(PanelShape)(ps+1))
+					p=stringfind(sim->srfss->srflist[s]->pname[ps],sim->srfss->srflist[s]->npanel[ps],pnm);
+				if(p==-1) {
+					ps=PSnone;
+					p=-3; }
+				else ps=(PanelShape)(ps-1); }}}
 
 	if(psptr) *psptr=ps;
 	if(pptr) *pptr=p;
 	return s; }
+
+
+/* readpanelname */
+panelptr readpanelname(simptr sim,surfaceptr srf,const char *str) {
+	enum PanelShape ps;
+	char name[STRCHAR];
+	int s,p;
+
+	if(strchr(str,':')) strcpy(name,str);
+	else if(srf) sprintf(name,"%s:%s",srf->sname,str);
+	else return NULL;
+	s=readsurfacename(sim,name,&ps,&p);
+	if(s<0 || p<0) return NULL;
+	return sim->srfss->srflist[s]->panels[ps][p]; }
 
 
 /* panelpoints */
@@ -626,41 +702,38 @@ surfactionptr surfaceactionalloc(int species) {
 	if(!actdetails) return NULL;
 	actdetails->srfnewspec=NULL;
 	actdetails->srfrate=NULL;
-#ifdef VCELL_HYBRID
-	actdetails->srfRateExp=NULL;
-#endif
+	actdetails->srfRateValueProvider=NULL;
 	actdetails->srfprob=NULL;
 	actdetails->srfcumprob=NULL;
 	actdetails->srfdatasrc=NULL;
 	actdetails->srfrevprob=NULL;
 
-	CHECK(actdetails->srfnewspec=(int*) calloc(MSMAX1,sizeof(int)));
+	CHECKMEM(actdetails->srfnewspec=(int*) calloc(MSMAX1,sizeof(int)));
 	for(ms=(MolecState)0;ms<MSMAX1;ms=(MolecState)(ms+1)) actdetails->srfnewspec[ms]=species;
 
-	CHECK(actdetails->srfrate=(double*) calloc(MSMAX1,sizeof(double)));
+	CHECKMEM(actdetails->srfrate=(double*) calloc(MSMAX1,sizeof(double)));
 	for(ms=(MolecState)0;ms<MSMAX1;ms=(MolecState)(ms+1)) actdetails->srfrate[ms]=0;
 
-#ifdef VCELL_HYBRID
-	CHECK(actdetails->srfRateExp=(Expression**) calloc(MSMAX1,sizeof(Expression*)));
-	for(ms=(MolecState)0;ms<MSMAX1;ms=(MolecState)(ms+1)) actdetails->srfRateExp[ms]=0;
-#endif
+	CHECKMEM(actdetails->srfRateValueProvider=(ValueProvider**) calloc(MSMAX1,sizeof(ValueProvider*)));
+	for(ms=(MolecState)0;ms<MSMAX1;ms=(MolecState)(ms+1)) actdetails->srfRateValueProvider[ms]=0;
 
-	CHECK(actdetails->srfprob=(double*) calloc(MSMAX1,sizeof(double)));
+	CHECKMEM(actdetails->srfprob=(double*) calloc(MSMAX1,sizeof(double)));
 	for(ms=(MolecState)0;ms<MSMAX1;ms=(MolecState)(ms+1)) actdetails->srfprob[ms]=0;
 
-	CHECK(actdetails->srfcumprob=(double*) calloc(MSMAX1,sizeof(double)));
+	CHECKMEM(actdetails->srfcumprob=(double*) calloc(MSMAX1,sizeof(double)));
 	for(ms=(MolecState)0;ms<MSMAX1;ms=(MolecState)(ms+1)) actdetails->srfcumprob[ms]=0;
 
-	CHECK(actdetails->srfdatasrc=(int*) calloc(MSMAX1,sizeof(int)));
+	CHECKMEM(actdetails->srfdatasrc=(int*) calloc(MSMAX1,sizeof(int)));
 	for(ms=(MolecState)0;ms<MSMAX1;ms=(MolecState)(ms+1)) actdetails->srfdatasrc[ms]=0;
 
-	CHECK(actdetails->srfrevprob=(double*) calloc(MSMAX1,sizeof(double)));
+	CHECKMEM(actdetails->srfrevprob=(double*) calloc(MSMAX1,sizeof(double)));
 	for(ms=(MolecState)0;ms<MSMAX1;ms=(MolecState)(ms+1)) actdetails->srfrevprob[ms]=0;
 
 	return actdetails;
 
  failure:
 	surfaceactionfree(actdetails);
+	simLog(NULL,10,"Unable to allocate memory in surfaceactionalloc");
 	return NULL; }
 
 
@@ -686,26 +759,26 @@ int panelsalloc(surfaceptr srf,int dim,int maxpanel,int maxspecies,enum PanelSha
 	npts=panelpoints(ps,dim);
 	newpname=NULL;
 	newpnls=NULL;
-	CHECK(srf);
+	CHECKBUG(srf,"missing surface parameter in panelsalloc");
 	oldmaxpanel=srf->maxpanel[ps];
 
 	if(maxpanel<=0 || maxpanel<oldmaxpanel) return 0;
 	else if(maxpanel==oldmaxpanel) return 1;
 
-	CHECK(newpname=(char**) calloc(maxpanel,sizeof(char*)));
+	CHECKMEM(newpname=(char**) calloc(maxpanel,sizeof(char*)));
 	for(p=0;p<maxpanel;p++) newpname[p]=NULL;
 	for(p=0;p<oldmaxpanel;p++)
 		newpname[p]=srf->pname[ps][p];
 	for(;p<maxpanel;p++) {
-		CHECK(newpname[p]=EmptyString());
+		CHECKMEM(newpname[p]=EmptyString());
 		sprintf(newpname[p],"%s%i",surfps2string(ps,string),p); }
 
-	CHECK(newpnls=(panelptr*) calloc(maxpanel,sizeof(panelptr)));
+	CHECKMEM(newpnls=(panelptr*) calloc(maxpanel,sizeof(panelptr)));
 	for(p=0;p<maxpanel;p++) newpnls[p]=NULL;
 	for(p=0;p<oldmaxpanel;p++)
 		newpnls[p]=srf->panels[ps][p];
 	for(;p<maxpanel;p++) {
-		CHECK(newpnls[p]=(panelptr) malloc(sizeof(struct panelstruct)));
+		CHECKMEM(newpnls[p]=(panelptr) malloc(sizeof(struct panelstruct)));
 		pnl=newpnls[p];
 		pnl->pname=newpname[p];
 		pnl->ps=ps;
@@ -718,10 +791,10 @@ int panelsalloc(surfaceptr srf,int dim,int maxpanel,int maxspecies,enum PanelSha
 		pnl->emitterabsorb[PFfront]=NULL;
 		pnl->emitterabsorb[PFback]=NULL;
 
-		CHECK(pnl->point=(double**) calloc(npts,sizeof(double*)));
+		CHECKMEM(pnl->point=(double**) calloc(npts,sizeof(double*)));
 		for(pt=0;pt<npts;pt++) pnl->point[pt]=NULL;
 		for(pt=0;pt<npts;pt++) {
-			CHECK(pnl->point[pt]=(double*) calloc(dim,sizeof(double)));
+			CHECKMEM(pnl->point[pt]=(double*) calloc(dim,sizeof(double)));
 			for(d=0;d<dim;d++) pnl->point[pt][d]=0; }
 		pnl->front[0]=pnl->front[1]=pnl->front[2]=0;
 		pnl->jumpp[0]=pnl->jumpp[1]=NULL;
@@ -741,6 +814,7 @@ int panelsalloc(surfaceptr srf,int dim,int maxpanel,int maxspecies,enum PanelSha
 	return 1;
 
  failure:
+	if(ErrorType!=1) simLog(NULL,10,"Unable to allocate memory in panelsalloc");
 	return 0; }
 
 
@@ -778,19 +852,19 @@ int emittersalloc(surfaceptr srf,enum PanelFace face,int oldmaxspecies,int maxsp
 		oldmaxspecies=0;
 
 	if(maxspecies>oldmaxspecies) {		// surface structure data, for either from scratch or larger maxspecies
-		CHECK(newmaxemitter=(int*) calloc(maxspecies,sizeof(int)));
+		CHECKMEM(newmaxemitter=(int*) calloc(maxspecies,sizeof(int)));
 		for(i1=0;i1<oldmaxspecies;i1++) newmaxemitter[i1]=srf->maxemitter[face][i1];
 		for(;i1<maxspecies;i1++) newmaxemitter[i1]=0;
 
-		CHECK(newnemitter=(int*) calloc(maxspecies,sizeof(int)));
+		CHECKMEM(newnemitter=(int*) calloc(maxspecies,sizeof(int)));
 		for(i1=0;i1<oldmaxspecies;i1++) newnemitter[i1]=srf->nemitter[face][i1];
 		for(;i1<maxspecies;i1++) newnemitter[i1]=0;
 		
-		CHECK(newemitteramount=(double**) calloc(maxspecies,sizeof(double*)));
+		CHECKMEM(newemitteramount=(double**) calloc(maxspecies,sizeof(double*)));
 		for(i1=0;i1<oldmaxspecies;i1++) newemitteramount[i1]=srf->emitteramount[face][i1];
 		for(;i1<maxspecies;i1++) newemitteramount[i1]=NULL;
 
-		CHECK(newemitterpos=(double***) calloc(maxspecies,sizeof(double**)));
+		CHECKMEM(newemitterpos=(double***) calloc(maxspecies,sizeof(double**)));
 		for(i1=0;i1<oldmaxspecies;i1++) newemitterpos[i1]=srf->emitterpos[face][i1];
 		for(;i1<maxspecies;i1++) newemitterpos[i1]=NULL;
 
@@ -807,7 +881,7 @@ int emittersalloc(surfaceptr srf,enum PanelFace face,int oldmaxspecies,int maxsp
 		for(p=0;p<srf->maxpanel[ps];p++) {
 			pnl=srf->panels[ps][p];
 			if(!pnl->emitterabsorb[face] || maxspecies>oldmaxspecies) {
-				CHECK(newemitterabsorb=(double*) calloc(maxspecies,sizeof(double)));
+				CHECKMEM(newemitterabsorb=(double*) calloc(maxspecies,sizeof(double)));
 				i1=0;
 				if(maxspecies>oldmaxspecies)
 					for(i1=0;i1<oldmaxspecies;i1++) newemitterabsorb[i1]=pnl->emitterabsorb[face][i1];
@@ -818,6 +892,7 @@ int emittersalloc(surfaceptr srf,enum PanelFace face,int oldmaxspecies,int maxsp
 	return 0;
 
  failure:
+	simLog(NULL,10,"Unable to allocate memory in emittersalloc");
 	return 1; }
 
 
@@ -869,29 +944,29 @@ surfaceptr surfacealloc(surfaceptr srf,int oldmaxspecies,int maxspecies,int dim)
 		srf->emitterpos[PFfront]=srf->emitterpos[PFback]=NULL; }
 	
 	if(maxspecies) {
-		CHECK(newaction=(enum SrfAction***) calloc(maxspecies,sizeof(enum SrfAction**)));
+		CHECKMEM(newaction=(enum SrfAction***) calloc(maxspecies,sizeof(enum SrfAction**)));
 		for(i=0;i<maxspecies;i++) newaction[i]=NULL;
 		for(i=0;i<oldmaxspecies;i++)
 			newaction[i]=srf->action[i];
 		for(;i<maxspecies;i++) {
-			CHECK(newaction[i]=(enum SrfAction**) calloc(MSMAX,sizeof(enum SrfAction*)));
+			CHECKMEM(newaction[i]=(enum SrfAction**) calloc(MSMAX,sizeof(enum SrfAction*)));
 			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 				newaction[i][ms]=NULL;
 			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
-				CHECK(newaction[i][ms]=(enum SrfAction*) calloc(3,sizeof(enum SrfAction)));
+				CHECKMEM(newaction[i][ms]=(enum SrfAction*) calloc(3,sizeof(enum SrfAction)));
 				newaction[i][ms][PFfront]=newaction[i][ms][PFback]=SAtrans;
 				newaction[i][ms][PFnone]=SAno; }}
 		
-		CHECK(newactdetails=(surfactionptr***) calloc(maxspecies,sizeof(surfactionptr**)));
+		CHECKMEM(newactdetails=(surfactionptr***) calloc(maxspecies,sizeof(surfactionptr**)));
 		for(i=0;i<maxspecies;i++) newactdetails[i]=NULL;
 		for(i=0;i<oldmaxspecies;i++)
 			newactdetails[i]=srf->actdetails[i];
 		for(;i<maxspecies;i++) {
-			CHECK(newactdetails[i]=(surfactionptr**) calloc(MSMAX,sizeof(surfactionptr*)));
+			CHECKMEM(newactdetails[i]=(surfactionptr**) calloc(MSMAX,sizeof(surfactionptr*)));
 			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
 				newactdetails[i][ms]=NULL;
 			for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
-				CHECK(newactdetails[i][ms]=(surfactionptr*) calloc(3,sizeof(surfactionptr)));
+				CHECKMEM(newactdetails[i][ms]=(surfactionptr*) calloc(3,sizeof(surfactionptr)));
 				newactdetails[i][ms][PFfront]=NULL;
 				newactdetails[i][ms][PFback]=NULL;
 				newactdetails[i][ms][PFnone]=NULL; }}
@@ -910,6 +985,7 @@ surfaceptr surfacealloc(surfaceptr srf,int oldmaxspecies,int maxspecies,int dim)
 	
 failure:
 	if(freesrf) surfacefree(srf,maxspecies);
+	simLog(NULL,10,"Unable to allocate memory in surfacealloc");
 	return NULL; }
 
 
@@ -1006,13 +1082,13 @@ surfacessptr surfacessalloc(surfacessptr srfss,int maxsurface,int maxspecies,int
 		srfss->maxspecies=maxspecies; }
 
 	if(maxsurface>srfss->maxsrf) {			// allocate any new surface names and surfaces
-		CHECK(newnames=(char**) calloc(maxsurface,sizeof(char*)));		// surface names
+		CHECKMEM(newnames=(char**) calloc(maxsurface,sizeof(char*)));		// surface names
 		for(s=0;s<maxsurface;s++) newnames[s]=NULL;
 		for(s=0;s<srfss->maxsrf;s++) newnames[s]=srfss->snames[s];
 		for(;s<maxsurface;s++)
-			CHECK(newnames[s]=EmptyString());
+			CHECKMEM(newnames[s]=EmptyString());
 
-		CHECK(newsrflist=(surfaceptr*) calloc(maxsurface,sizeof(surfaceptr)));	// surface list
+		CHECKMEM(newsrflist=(surfaceptr*) calloc(maxsurface,sizeof(surfaceptr)));	// surface list
 		for(s=0;s<maxsurface;s++) newsrflist[s]=NULL;
 		for(s=0;s<srfss->maxsrf;s++)
 			newsrflist[s]=srfss->srflist[s];
@@ -1031,6 +1107,7 @@ surfacessptr surfacessalloc(surfacessptr srfss,int maxsurface,int maxspecies,int
 
  failure:
  	if(newsrfss) surfacessfree(srfss);
+	if(ErrorType!=1) simLog(NULL,10,"Unable to allocate memory in surfacessalloc");
  	return NULL; }
 
 
@@ -1061,7 +1138,7 @@ void surfacessfree(surfacessptr srfss) {
 
 /* surfaceoutput */
 void surfaceoutput(simptr sim) {
-	int s,p,i,dim,nspecies,jumpfrnt,jumpback,ll,vflag,p2,emit,d,same,none;
+	int s,p,i,dim,nspecies,jumpfrnt,jumpback,ll,p2,emit,d,same,none;
 	surfacessptr srfss;
 	surfaceptr srf;
 	double **point,*front,prob;
@@ -1072,44 +1149,41 @@ void surfaceoutput(simptr sim) {
 	enum PanelFace face;
 	surfactionptr actdetails;
 
-	vflag=strchr(sim->flags,'v')?1:0;
-
-	printf("SURFACE PARAMETERS\n");
+	simLog(sim,2,"SURFACE PARAMETERS\n");
 	srfss=sim->srfss;
 	dim=sim->dim;
 	nspecies=sim->mols?sim->mols->nspecies:0;
 	if(!srfss) {
-		printf(" No internal surfaces\n\n");
+		simLog(sim,2," No internal surfaces\n\n");
 		return; }
 
-	if(vflag)
-		printf(" Allocated for %i species\n",srfss->maxspecies-1);
+	simLog(sim,1," Allocated for %i species\n",srfss->maxspecies-1);
 
-	printf(" Surface epsilon, margin, and neighbor distances: %g %g %g\n",srfss->epsilon,srfss->margin,srfss->neighdist);
+	simLog(sim,2," Surface epsilon, margin, and neighbor distances: %g %g %g\n",srfss->epsilon,srfss->margin,srfss->neighdist);
 
 	if(sim->mols) {
-		printf(" Molecule lists checked after diffusion:");
+		simLog(sim,2," Molecule lists checked after diffusion:");
 		for(ll=0;ll<srfss->nmollist;ll++)
-			if(srfss->srfmollist[ll]&SMLdiffuse) printf(" %s",sim->mols->listname[ll]);
-		printf("\n");
-		printf(" Molecule lists checked after reactions:");
+			if(srfss->srfmollist[ll]&SMLdiffuse) simLog(sim,2," %s",sim->mols->listname[ll]);
+		simLog(sim,2,"\n");
+		simLog(sim,2," Molecule lists checked after reactions:");
 		for(ll=0;ll<srfss->nmollist;ll++)
-			if(srfss->srfmollist[ll]&SMLreact) printf(" %s",sim->mols->listname[ll]);
-		printf("\n");
-		printf(" Molecule lists checked for surface-bound molecules:");
+			if(srfss->srfmollist[ll]&SMLreact) simLog(sim,2," %s",sim->mols->listname[ll]);
+		simLog(sim,2,"\n");
+		simLog(sim,2," Molecule lists checked for surface-bound molecules:");
 		for(ll=0;ll<srfss->nmollist;ll++)
-			if(srfss->srfmollist[ll]&SMLsrfbound) printf(" %s",sim->mols->listname[ll]);
-		printf("\n"); }
+			if(srfss->srfmollist[ll]&SMLsrfbound) simLog(sim,2," %s",sim->mols->listname[ll]);
+		simLog(sim,2,"\n"); }
 
-	printf(" Surfaces allocated: %i, surfaces defined: %i\n\n",srfss->maxsrf,srfss->nsrf);
+	simLog(sim,2," Surfaces allocated: %i, surfaces defined: %i\n\n",srfss->maxsrf,srfss->nsrf);
 	for(s=0;s<srfss->nsrf;s++) {
 		srf=srfss->srflist[s];
-		printf(" Surface: %s\n",srfss->snames[s]);
-		if(srf->port[PFfront]) printf("  The front of this surface is part of port %s\n",srf->port[PFfront]->portname);
-		if(srf->port[PFback]) printf("  The back of this surface is part of port %s\n",srf->port[PFback]->portname);
+		simLog(sim,2," Surface: %s\n",srfss->snames[s]);
+		if(srf->port[PFfront]) simLog(sim,2,"  The front of this surface is part of port %s\n",srf->port[PFfront]->portname);
+		if(srf->port[PFback]) simLog(sim,2,"  The back of this surface is part of port %s\n",srf->port[PFback]->portname);
 
 		if(sim->mols && srf->action) {
-			printf("  actions for molecules:\n");
+			simLog(sim,2,"  actions for molecules:\n");
 			action=srf->action;
 			for(i=1;i<nspecies;i++) {
 				for(face=(PanelFace)0;face<2;face=(PanelFace)(face+1)) {
@@ -1119,15 +1193,15 @@ void surfaceoutput(simptr sim) {
 						if(action[i][ms][face]!=act) same=0;
 					if(same) {
 						if(act!=SAmult)
-							printf("   %s(all) at %s: %s\n",sim->mols->spname[i],face==PFfront?"front":"back",surfact2string(act,string)); }
+							simLog(sim,2,"   %s(all) at %s: %s\n",sim->mols->spname[i],face==PFfront?"front":"back",surfact2string(act,string)); }
 					else {
 						for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1)) {
 							act=action[i][ms][face];
 							if(sim->mols->exist[i][ms] && act!=SAmult) {
-								printf("   %s(%s)",sim->mols->spname[i],molms2string(ms,string));
-								printf(" at %s: %s\n",face==PFfront?"front":"back",surfact2string(act,string)); }}}}}
+								simLog(sim,2,"   %s(%s)",sim->mols->spname[i],molms2string(ms,string));
+								simLog(sim,2," at %s: %s\n",face==PFfront?"front":"back",surfact2string(act,string)); }}}}}
 
-			printf("  rates for molecules:");
+			simLog(sim,2,"  rates for molecules:");
 			none=1;
 			for(i=1;i<nspecies;i++)
 				for(ms=(MolecState)0;ms<MSMAX;ms=(MolecState)(ms+1))
@@ -1139,34 +1213,34 @@ void surfaceoutput(simptr sim) {
 								if(prob>0 && !srfsamestate(ms,face,ms2,NULL)) {
 									if(none) {
 										none=0;
-										printf("\n"); }
+										simLog(sim,2,"\n"); }
 									srfindex2tristate(ms,face,ms2,&ms3,&ms4,&ms5);
-									printf("    %s(%s)",sim->mols->spname[i],molms2string(ms3,string));
-									printf(" %s ->",molms2string(ms4,string));
-									printf(" %s",molms2string(ms5,string));
-									if(actdetails->srfnewspec[ms2]!=i) printf(" (convert to %s)",sim->mols->spname[actdetails->srfnewspec[ms2]]);
-									if(actdetails->srfdatasrc[ms2]==1) printf(", requested rate=%g",actdetails->srfrate[ms2]);
-									else if(actdetails->srfdatasrc[ms2]==2) printf(", requested prob=%g",actdetails->srfprob[ms2]);
-									printf(", actual rate=%g, prob=%g\n",srfcalcrate(sim,srf,i,ms,face,ms2),prob); }}}
-			if(none) printf(" no stochastic interactions\n"); }
+									simLog(sim,2,"    %s(%s)",sim->mols->spname[i],molms2string(ms3,string));
+									simLog(sim,2," %s ->",molms2string(ms4,string));
+									simLog(sim,2," %s",molms2string(ms5,string));
+									if(actdetails->srfnewspec[ms2]!=i) simLog(sim,2," (convert to %s)",sim->mols->spname[actdetails->srfnewspec[ms2]]);
+									if(actdetails->srfdatasrc[ms2]==1) simLog(sim,2,", requested rate=%g",actdetails->srfrate[ms2]);
+									else if(actdetails->srfdatasrc[ms2]==2) simLog(sim,2,", requested prob=%g",actdetails->srfprob[ms2]);
+									simLog(sim,2,", actual rate=%g, prob=%g\n",srfcalcrate(sim,srf,i,ms,face,ms2),prob); }}}
+			if(none) simLog(sim,2," no stochastic interactions\n"); }
 
-		printf("  front color: %g %g %g %g\n",srf->fcolor[0],srf->fcolor[1],srf->fcolor[2],srf->fcolor[3]);
-		printf("  back color: %g %g %g %g\n",srf->bcolor[0],srf->bcolor[1],srf->bcolor[2],srf->bcolor[3]);
-		printf("  edge points: %g, polygon modes: %s %s\n",srf->edgepts,surfdm2string(srf->fdrawmode,string),surfdm2string(srf->bdrawmode,string));
-		if(srf->edgestipple[1]!=0xFFFF) printf("   edge stippling: %ui %X\n",srf->edgestipple[0],srf->edgestipple[1]);
-		if(srf->fshiny!=0) printf("  front shininess: %g\n",srf->fshiny);
-		if(srf->bshiny!=0) printf("  back shininess: %g\n",srf->bshiny);
+		simLog(sim,2,"  front color: %g %g %g %g\n",srf->fcolor[0],srf->fcolor[1],srf->fcolor[2],srf->fcolor[3]);
+		simLog(sim,2,"  back color: %g %g %g %g\n",srf->bcolor[0],srf->bcolor[1],srf->bcolor[2],srf->bcolor[3]);
+		simLog(sim,2,"  edge points: %g, polygon modes: %s %s\n",srf->edgepts,surfdm2string(srf->fdrawmode,string),surfdm2string(srf->bdrawmode,string));
+		if(srf->edgestipple[1]!=0xFFFF) simLog(sim,2,"   edge stippling: %ui %X\n",srf->edgestipple[0],srf->edgestipple[1]);
+		if(srf->fshiny!=0) simLog(sim,2,"  front shininess: %g\n",srf->fshiny);
+		if(srf->bshiny!=0) simLog(sim,2,"  back shininess: %g\n",srf->bshiny);
 		
 		for(face=PFfront;face<=PFback;face=(PanelFace)(face+1)) {
 			if(srf->nemitter[face])
 				for(i=0;i<nspecies;i++)
 					if(srf->nemitter[face][i]) {
-						printf("  %i %s-side emitters defined, of %i allocated:\n",srf->nemitter[face][i],surfface2string(face,string),srf->maxemitter[face][i]);
+						simLog(sim,2,"  %i %s-side emitters defined, of %i allocated:\n",srf->nemitter[face][i],surfface2string(face,string),srf->maxemitter[face][i]);
 						for(emit=0;emit<srf->nemitter[face][i];emit++) {
-							printf("   %g at (%g",srf->emitteramount[face][i][emit],srf->emitterpos[face][i][emit][0]);
+							simLog(sim,2,"   %g at (%g",srf->emitteramount[face][i][emit],srf->emitterpos[face][i][emit][0]);
 							for(d=1;d<dim;d++)
-								printf(",%g",srf->emitterpos[face][i][emit][d]);
-							printf(")\n"); }}}
+								simLog(sim,2,",%g",srf->emitterpos[face][i][emit][d]);
+							simLog(sim,2,")\n"); }}}
 		
 		jumpfrnt=jumpback=0;
 		if(srf->action) {
@@ -1176,174 +1250,174 @@ void surfaceoutput(simptr sim) {
 		
 		if(srf->maxpanel[PSrect]) {
 			pname=srf->pname[PSrect];
-			printf("  rectangle panels allocated: %i, defined: %i\n",srf->maxpanel[PSrect],srf->npanel[PSrect]);
-			for(p=0;p<srf->npanel[PSrect] && (vflag || p<21);p++) {
-				if(!vflag && p==20) {
-					printf("   ...\n");
+			simLog(sim,2,"  rectangle panels allocated: %i, defined: %i\n",srf->maxpanel[PSrect],srf->npanel[PSrect]);
+			for(p=0;p<srf->npanel[PSrect] && p<21;p++) {
+				if(p==20) {
+					simLog(sim,2,"   ...\n");
 					p=srf->npanel[PSrect]-1; }
 				pnl=srf->panels[PSrect][p];
 				point=pnl->point;
 				front=pnl->front;
-				if(dim==1) printf("   %s: %g, facing %c0",pname[p],point[0][0],front[0]==1?'+':'-');
-				else if(dim==2) printf("   %s: (%g,%g), (%g,%g), facing: %c%1.0f, length: %g",pname[p],point[0][0],point[0][1],point[1][0],point[1][1],front[0]==1?'+':'-',front[1],Geo_LineLength(point[0],point[1],2));
-				else printf("   %s: (%g,%g,%g), (%g,%g,%g), (%g,%g,%g), (%g,%g,%g), facing: %c%1.0f, area: %g",pname[p],point[0][0],point[0][1],point[0][2],point[1][0],point[1][1],point[1][2],point[2][0],point[2][1],point[2][2],point[3][0],point[3][1],point[3][2],front[0]==1?'+':'-',front[1],Geo_QuadArea(point[0],point[1],point[2],point[3],3));
-				if(jumpfrnt && pnl->jumpp[PFfront]) printf("; front jump: %s, %s",pnl->jumpp[PFfront]->pname,surfface2string(pnl->jumpf[PFfront],string));
-				else if(jumpfrnt) printf("; front jump: NO PANEL");
-				if(jumpback && pnl->jumpp[PFback]) printf("; back jump: %s, %s",pnl->jumpp[PFback]->pname,surfface2string(pnl->jumpf[PFback],string));
-				else if(jumpback) printf("; back jump: NO PANEL");
+				if(dim==1) simLog(sim,2,"   %s: %g, facing %c0",pname[p],point[0][0],front[0]==1?'+':'-');
+				else if(dim==2) simLog(sim,2,"   %s: (%g,%g), (%g,%g), facing: %c%1.0f, length: %g",pname[p],point[0][0],point[0][1],point[1][0],point[1][1],front[0]==1?'+':'-',front[1],Geo_LineLength(point[0],point[1],2));
+				else simLog(sim,2,"   %s: (%g,%g,%g), (%g,%g,%g), (%g,%g,%g), (%g,%g,%g), facing: %c%1.0f, area: %g",pname[p],point[0][0],point[0][1],point[0][2],point[1][0],point[1][1],point[1][2],point[2][0],point[2][1],point[2][2],point[3][0],point[3][1],point[3][2],front[0]==1?'+':'-',front[1],Geo_QuadArea(point[0],point[1],point[2],point[3],3));
+				if(jumpfrnt && pnl->jumpp[PFfront]) simLog(sim,2,"; front jump: %s, %s",pnl->jumpp[PFfront]->pname,surfface2string(pnl->jumpf[PFfront],string));
+				else if(jumpfrnt) simLog(sim,2,"; front jump: NO PANEL");
+				if(jumpback && pnl->jumpp[PFback]) simLog(sim,2,"; back jump: %s, %s",pnl->jumpp[PFback]->pname,surfface2string(pnl->jumpf[PFback],string));
+				else if(jumpback) simLog(sim,2,"; back jump: NO PANEL");
 				for(face=PFfront;face<=PFback;face=(PanelFace)(face+1)) {
 					if(pnl->emitterabsorb[face]) {
-						printf("; %s absorb probs.:",surfface2string(face,string));
+						simLog(sim,2,"; %s absorb probs.:",surfface2string(face,string));
 						for(i=1;i<nspecies;i++)
-							printf(" %g",pnl->emitterabsorb[face][i]); }}
-				printf("\n");
-				if(vflag && pnl->maxneigh) {
-					printf("    neighbors allocated: %i, defined: %i",pnl->maxneigh,pnl->nneigh);
+							simLog(sim,2," %g",pnl->emitterabsorb[face][i]); }}
+				simLog(sim,2,"\n");
+				if(pnl->maxneigh) {
+					simLog(sim,1,"    neighbors allocated: %i, defined: %i",pnl->maxneigh,pnl->nneigh);
 					for(p2=0;p2<pnl->nneigh;p2++)
-						printf(", %s",pnl->neigh[p2]->pname);
-					printf("\n"); }}}
+						simLog(sim,1,", %s",pnl->neigh[p2]->pname);
+					simLog(sim,1,"\n"); }}}
 		if(srf->maxpanel[PStri]) {
 			pname=srf->pname[PStri];
-			printf("  triangle panels allocated: %i, defined: %i\n",srf->maxpanel[PStri],srf->npanel[PStri]);
-			for(p=0;p<srf->npanel[PStri] && (vflag || p<21);p++) {
-				if(!vflag && p==20) {
-					printf("   ...\n");
+			simLog(sim,2,"  triangle panels allocated: %i, defined: %i\n",srf->maxpanel[PStri],srf->npanel[PStri]);
+			for(p=0;p<srf->npanel[PStri] && p<21;p++) {
+				if(p==20) {
+					simLog(sim,2,"   ...\n");
 					p=srf->npanel[PStri]-1; }
 				pnl=srf->panels[PStri][p];
 				point=pnl->point;
 				front=pnl->front;
-				if(dim==1) printf("   %s: %g, facing %c0",pname[p],point[0][0],front[0]==1?'+':'-');
-				else if(dim==2) printf("   %s: (%g,%g), (%g,%g), facing: (%g,%g), length: %g",pname[p],point[0][0],point[0][1],point[1][0],point[1][1],front[0],front[1],Geo_LineLength(point[0],point[1],2));
-				else printf("   %s: (%g,%g,%g), (%g,%g,%g), (%g,%g,%g), facing: (%g,%g,%g), area: %g",pname[p],point[0][0],point[0][1],point[0][2],point[1][0],point[1][1],point[1][2],point[2][0],point[2][1],point[2][2],front[0],front[1],front[2],Geo_TriArea3(point[0],point[1],point[2],front));
-				if(jumpfrnt && pnl->jumpp[PFfront]) printf("; front jump: %s, %s",pnl->jumpp[PFfront]->pname,surfface2string(pnl->jumpf[PFfront],string));
-				else if(jumpfrnt) printf("; front jump: NO PANEL");
-				if(jumpback && pnl->jumpp[PFback]) printf("; back jump: %s, %s",pnl->jumpp[PFback]->pname,surfface2string(pnl->jumpf[PFback],string));
-				else if(jumpback) printf("; back jump: NO PANEL");
+				if(dim==1) simLog(sim,2,"   %s: %g, facing %c0",pname[p],point[0][0],front[0]==1?'+':'-');
+				else if(dim==2) simLog(sim,2,"   %s: (%g,%g), (%g,%g), facing: (%g,%g), length: %g",pname[p],point[0][0],point[0][1],point[1][0],point[1][1],front[0],front[1],Geo_LineLength(point[0],point[1],2));
+				else simLog(sim,2,"   %s: (%g,%g,%g), (%g,%g,%g), (%g,%g,%g), facing: (%g,%g,%g), area: %g",pname[p],point[0][0],point[0][1],point[0][2],point[1][0],point[1][1],point[1][2],point[2][0],point[2][1],point[2][2],front[0],front[1],front[2],Geo_TriArea3(point[0],point[1],point[2],front));
+				if(jumpfrnt && pnl->jumpp[PFfront]) simLog(sim,2,"; front jump: %s, %s",pnl->jumpp[PFfront]->pname,surfface2string(pnl->jumpf[PFfront],string));
+				else if(jumpfrnt) simLog(sim,2,"; front jump: NO PANEL");
+				if(jumpback && pnl->jumpp[PFback]) simLog(sim,2,"; back jump: %s, %s",pnl->jumpp[PFback]->pname,surfface2string(pnl->jumpf[PFback],string));
+				else if(jumpback) simLog(sim,2,"; back jump: NO PANEL");
 				for(face=PFfront;face<=PFback;face=(PanelFace)(face+1)) {
 					if(pnl->emitterabsorb[face]) {
-						printf("; %s absorb probs.:",surfface2string(face,string));
+						simLog(sim,2,"; %s absorb probs.:",surfface2string(face,string));
 						for(i=1;i<nspecies;i++)
-							printf(" %g",pnl->emitterabsorb[face][i]); }}
-				printf("\n");
-				if(vflag && pnl->maxneigh) {
-					printf("    neighbors allocated: %i, defined: %i",pnl->maxneigh,pnl->nneigh);
+							simLog(sim,2," %g",pnl->emitterabsorb[face][i]); }}
+				simLog(sim,2,"\n");
+				if(pnl->maxneigh) {
+					simLog(sim,1,"    neighbors allocated: %i, defined: %i",pnl->maxneigh,pnl->nneigh);
 					for(p2=0;p2<pnl->nneigh;p2++)
-						printf(", %s",pnl->neigh[p2]->pname);
-					printf("\n"); }}}
+						simLog(sim,1,", %s",pnl->neigh[p2]->pname);
+					simLog(sim,1,"\n"); }}}
 		if(srf->maxpanel[PSsph]) {
 			pname=srf->pname[PSsph];
-			printf("  sphere panels allocated: %i, defined: %i\n",srf->maxpanel[PSsph],srf->npanel[PSsph]);
-			for(p=0;p<srf->npanel[PSsph] && (vflag || p<21);p++) {
-				if(!vflag && p==20) {
-					printf("   ...\n");
+			simLog(sim,2,"  sphere panels allocated: %i, defined: %i\n",srf->maxpanel[PSsph],srf->npanel[PSsph]);
+			for(p=0;p<srf->npanel[PSsph] && p<21;p++) {
+				if(p==20) {
+					simLog(sim,2,"   ...\n");
 					p=srf->npanel[PSsph]-1; }
 				pnl=srf->panels[PSsph][p];
 				point=pnl->point;
 				front=pnl->front;
-				if(dim==1) printf("   %s: %g, R=%g, facing: %s",pname[p],point[0][0],point[1][0],front[0]==1?"out":"in");
-				else if(dim==2) printf("   %s: (%g,%g), R=%g, facing: %s, draw: %g, length: %g",pname[p],point[0][0],point[0][1],point[1][0],front[0]==1?"out":"in",point[1][1],2.0*PI*point[1][0]);
-				else printf("   %s: (%g,%g,%g), R=%g, facing: %s, draw: %g %g, area: %g",pname[p],point[0][0],point[0][1],point[0][2],point[1][0],front[0]==1?"out":"in",point[1][1],point[1][2],4.0*PI*point[1][0]*point[1][0]);
-				if(jumpfrnt && pnl->jumpp[PFfront]) printf("; front jump: %s, %s",pnl->jumpp[PFfront]->pname,surfface2string(pnl->jumpf[PFfront],string));
-				else if(jumpfrnt) printf("; front jump: NO PANEL");
-				if(jumpback && pnl->jumpp[PFback]) printf("; back jump: %s, %s",pnl->jumpp[PFback]->pname,surfface2string(pnl->jumpf[PFback],string));
-				else if(jumpback) printf("; back jump: NO PANEL");
+				if(dim==1) simLog(sim,2,"   %s: %g, R=%g, facing: %s",pname[p],point[0][0],point[1][0],front[0]==1?"out":"in");
+				else if(dim==2) simLog(sim,2,"   %s: (%g,%g), R=%g, facing: %s, draw: %g, length: %g",pname[p],point[0][0],point[0][1],point[1][0],front[0]==1?"out":"in",point[1][1],2.0*PI*point[1][0]);
+				else simLog(sim,2,"   %s: (%g,%g,%g), R=%g, facing: %s, draw: %g %g, area: %g",pname[p],point[0][0],point[0][1],point[0][2],point[1][0],front[0]==1?"out":"in",point[1][1],point[1][2],4.0*PI*point[1][0]*point[1][0]);
+				if(jumpfrnt && pnl->jumpp[PFfront]) simLog(sim,2,"; front jump: %s, %s",pnl->jumpp[PFfront]->pname,surfface2string(pnl->jumpf[PFfront],string));
+				else if(jumpfrnt) simLog(sim,2,"; front jump: NO PANEL");
+				if(jumpback && pnl->jumpp[PFback]) simLog(sim,2,"; back jump: %s, %s",pnl->jumpp[PFback]->pname,surfface2string(pnl->jumpf[PFback],string));
+				else if(jumpback) simLog(sim,2,"; back jump: NO PANEL");
 				for(face=PFfront;face<=PFback;face=(PanelFace)(face+1)) {
 					if(pnl->emitterabsorb[face]) {
-						printf("; %s absorb probs.:",surfface2string(face,string));
+						simLog(sim,2,"; %s absorb probs.:",surfface2string(face,string));
 						for(i=1;i<nspecies;i++)
-							printf(" %g",pnl->emitterabsorb[face][i]); }}
-				printf("\n");
-				if(vflag && pnl->maxneigh) {
-					printf("    neighbors allocated: %i, defined: %i",pnl->maxneigh,pnl->nneigh);
+							simLog(sim,2," %g",pnl->emitterabsorb[face][i]); }}
+				simLog(sim,2,"\n");
+				if(pnl->maxneigh) {
+					simLog(sim,1,"    neighbors allocated: %i, defined: %i",pnl->maxneigh,pnl->nneigh);
 					for(p2=0;p2<pnl->nneigh;p2++)
-						printf(", %s",pnl->neigh[p2]->pname);
-					printf("\n"); }}}
+						simLog(sim,1,", %s",pnl->neigh[p2]->pname);
+					simLog(sim,1,"\n"); }}}
 		if(srf->maxpanel[PScyl]) {
 			pname=srf->pname[PScyl];
-			printf("  cylinder panels allocated: %i, defined: %i\n",srf->maxpanel[PScyl],srf->npanel[PScyl]);
-			for(p=0;p<srf->npanel[PScyl] && (vflag || p<21);p++) {
-				if(!vflag && p==20) {
-					printf("   ...\n");
+			simLog(sim,2,"  cylinder panels allocated: %i, defined: %i\n",srf->maxpanel[PScyl],srf->npanel[PScyl]);
+			for(p=0;p<srf->npanel[PScyl] && p<21;p++) {
+				if(p==20) {
+					simLog(sim,2,"   ...\n");
 					p=srf->npanel[PScyl]-1; }
 				pnl=srf->panels[PScyl][p];
 				point=pnl->point;
 				front=pnl->front;
-				if(dim==1) printfException("   error, cylinders are not implemented in 1-D");
-				else if(dim==2) printf("   %s: (%g,%g) to (%g,%g), R=%g, facing: %s, length: %g",pname[p],point[0][0],point[0][1],point[1][0],point[1][1],point[2][0],front[2]==1?"out":"in",2.0*Geo_LineLength(point[0],point[1],2));
-				else printf("   %s: (%g,%g,%g) to (%g,%g,%g), R=%g, facing: %s, draw: %g %g, area: %g",pname[p],point[0][0],point[0][1],point[0][2],point[1][0],point[1][1],point[1][2],point[2][0],front[2]==1?"out":"in",point[2][1],point[2][2],2.0*PI*point[2][0]*Geo_LineLength(point[0],point[1],3));
-				if(jumpfrnt && pnl->jumpp[PFfront]) printf("; front jump: %s, %s",pnl->jumpp[PFfront]->pname,surfface2string(pnl->jumpf[PFfront],string));
-				else if(jumpfrnt) printf("; front jump: NO PANEL");
-				if(jumpback && pnl->jumpp[PFback]) printf("; back jump: %s, %s",pnl->jumpp[PFback]->pname,surfface2string(pnl->jumpf[PFback],string));
-				else if(jumpback) printf("; back jump: NO PANEL");
+				if(dim==1) simLog(sim,10,"   error, cylinders are not implemented in 1-D");
+				else if(dim==2) simLog(sim,2,"   %s: (%g,%g) to (%g,%g), R=%g, facing: %s, length: %g",pname[p],point[0][0],point[0][1],point[1][0],point[1][1],point[2][0],front[2]==1?"out":"in",2.0*Geo_LineLength(point[0],point[1],2));
+				else simLog(sim,2,"   %s: (%g,%g,%g) to (%g,%g,%g), R=%g, facing: %s, draw: %g %g, area: %g",pname[p],point[0][0],point[0][1],point[0][2],point[1][0],point[1][1],point[1][2],point[2][0],front[2]==1?"out":"in",point[2][1],point[2][2],2.0*PI*point[2][0]*Geo_LineLength(point[0],point[1],3));
+				if(jumpfrnt && pnl->jumpp[PFfront]) simLog(sim,2,"; front jump: %s, %s",pnl->jumpp[PFfront]->pname,surfface2string(pnl->jumpf[PFfront],string));
+				else if(jumpfrnt) simLog(sim,2,"; front jump: NO PANEL");
+				if(jumpback && pnl->jumpp[PFback]) simLog(sim,2,"; back jump: %s, %s",pnl->jumpp[PFback]->pname,surfface2string(pnl->jumpf[PFback],string));
+				else if(jumpback) simLog(sim,2,"; back jump: NO PANEL");
 				for(face=PFfront;face<=PFback;face=(PanelFace)(face+1)) {
 					if(pnl->emitterabsorb[face]) {
-						printf("; %s absorb probs.:",surfface2string(face,string));
+						simLog(sim,2,"; %s absorb probs.:",surfface2string(face,string));
 						for(i=1;i<nspecies;i++)
-							printf(" %g",pnl->emitterabsorb[face][i]); }}
-				printf("\n");
-				if(vflag && pnl->maxneigh) {
-					printf("    neighbors allocated: %i, defined: %i",pnl->maxneigh,pnl->nneigh);
+							simLog(sim,2," %g",pnl->emitterabsorb[face][i]); }}
+				simLog(sim,2,"\n");
+				if(pnl->maxneigh) {
+					simLog(sim,1,"    neighbors allocated: %i, defined: %i",pnl->maxneigh,pnl->nneigh);
 					for(p2=0;p2<pnl->nneigh;p2++)
-						printf(", %s",pnl->neigh[p2]->pname);
-					printf("\n"); }}}
+						simLog(sim,1,", %s",pnl->neigh[p2]->pname);
+					simLog(sim,1,"\n"); }}}
 		if(srf->maxpanel[PShemi]) {
 			pname=srf->pname[PShemi];
-			printf("  hemisphere panels allocated: %i, defined: %i\n",srf->maxpanel[PShemi],srf->npanel[PShemi]);
-			for(p=0;p<srf->npanel[PShemi] && (vflag || p<21);p++) {
-				if(!vflag && p==20) {
-					printf("   ...\n");
+			simLog(sim,2,"  hemisphere panels allocated: %i, defined: %i\n",srf->maxpanel[PShemi],srf->npanel[PShemi]);
+			for(p=0;p<srf->npanel[PShemi] && p<21;p++) {
+				if(p==20) {
+					simLog(sim,2,"   ...\n");
 					p=srf->npanel[PShemi]-1; }
 				pnl=srf->panels[PShemi][p];
 				point=pnl->point;
 				front=pnl->front;
-				if(dim==1) printf("   error, hemispheres are not implemented in 1-D");
-				else if(dim==2) printf("   %s: (%g,%g), R=%g, facing: %s, opening: (%g,%g), draw: %g, length: %g",pname[p],point[0][0],point[0][1],point[1][0],front[0]==1?"out":"in",point[2][0],point[2][1],point[1][1],PI*point[1][0]);
-				else printf("   %s: (%g,%g,%g), R=%g, facing: %s, opening: (%g,%g,%g), draw: %g %g, area: %g",pname[p],point[0][0],point[0][1],point[0][2],point[1][0],front[0]==1?"out":"in",point[2][0],point[2][1],point[2][2],point[1][1],point[1][2],2.0*PI*point[1][0]*point[1][0]);
-				if(jumpfrnt && pnl->jumpp[PFfront]) printf("; front jump: %s, %s",pnl->jumpp[PFfront]->pname,surfface2string(pnl->jumpf[PFfront],string));
-				else if(jumpfrnt) printf("; front jump: NO PANEL");
-				if(jumpback && pnl->jumpp[PFback]) printf("; back jump: %s, %s",pnl->jumpp[PFback]->pname,surfface2string(pnl->jumpf[PFback],string));
-				else if(jumpback) printf("; back jump: NO PANEL");
+				if(dim==1) simLog(sim,2,"   error, hemispheres are not implemented in 1-D");
+				else if(dim==2) simLog(sim,2,"   %s: (%g,%g), R=%g, facing: %s, opening: (%g,%g), draw: %g, length: %g",pname[p],point[0][0],point[0][1],point[1][0],front[0]==1?"out":"in",point[2][0],point[2][1],point[1][1],PI*point[1][0]);
+				else simLog(sim,2,"   %s: (%g,%g,%g), R=%g, facing: %s, opening: (%g,%g,%g), draw: %g %g, area: %g",pname[p],point[0][0],point[0][1],point[0][2],point[1][0],front[0]==1?"out":"in",point[2][0],point[2][1],point[2][2],point[1][1],point[1][2],2.0*PI*point[1][0]*point[1][0]);
+				if(jumpfrnt && pnl->jumpp[PFfront]) simLog(sim,2,"; front jump: %s, %s",pnl->jumpp[PFfront]->pname,surfface2string(pnl->jumpf[PFfront],string));
+				else if(jumpfrnt) simLog(sim,2,"; front jump: NO PANEL");
+				if(jumpback && pnl->jumpp[PFback]) simLog(sim,2,"; back jump: %s, %s",pnl->jumpp[PFback]->pname,surfface2string(pnl->jumpf[PFback],string));
+				else if(jumpback) simLog(sim,2,"; back jump: NO PANEL");
 				for(face=PFfront;face<=PFback;face=(PanelFace)(face+1)) {
 					if(pnl->emitterabsorb[face]) {
-						printf("; %s absorb probs.:",surfface2string(face,string));
+						simLog(sim,2,"; %s absorb probs.:",surfface2string(face,string));
 						for(i=1;i<nspecies;i++)
-							printf(" %g",pnl->emitterabsorb[face][i]); }}
-				printf("\n");
-				if(vflag && pnl->maxneigh) {
-					printf("    neighbors allocated: %i, defined: %i",pnl->maxneigh,pnl->nneigh);
+							simLog(sim,2," %g",pnl->emitterabsorb[face][i]); }}
+				simLog(sim,2,"\n");
+				if(pnl->maxneigh) {
+					simLog(sim,1,"    neighbors allocated: %i, defined: %i",pnl->maxneigh,pnl->nneigh);
 					for(p2=0;p2<pnl->nneigh;p2++)
-						printf(", %s",pnl->neigh[p2]->pname);
-					printf("\n"); }}}
+						simLog(sim,1,", %s",pnl->neigh[p2]->pname);
+					simLog(sim,1,"\n"); }}}
 		if(srf->maxpanel[PSdisk]) {
 			pname=srf->pname[PSdisk];
-			printf("  disk panels allocated: %i, defined: %i\n",srf->maxpanel[PSdisk],srf->npanel[PSdisk]);
-			for(p=0;p<srf->npanel[PSdisk] && (vflag || p<21);p++) {
-				if(!vflag && p==20) {
-					printf("   ...\n");
+			simLog(sim,2,"  disk panels allocated: %i, defined: %i\n",srf->maxpanel[PSdisk],srf->npanel[PSdisk]);
+			for(p=0;p<srf->npanel[PSdisk] && p<21;p++) {
+				if(p==20) {
+					simLog(sim,2,"   ...\n");
 					p=srf->npanel[PSdisk]-1; }
 				pnl=srf->panels[PSdisk][p];
 				point=pnl->point;
 				front=pnl->front;
-				if(dim==1) printfException("   error, disks are not implemented in 1-D");
-				else if(dim==2) printf("   %s: (%g,%g), R=%g, facing: (%g,%g), length: %g",pname[p],point[0][0],point[0][1],point[1][0],front[0],front[1],2.0*point[1][0]);
-				else printf("   %s: (%g,%g,%g), R=%g, facing: (%g,%g,%g), draw: %g, area: %g",pname[p],point[0][0],point[0][1],point[0][2],point[1][0],front[0],front[1],front[2],point[1][1],PI*point[1][0]*point[1][0]);
-				if(jumpfrnt && pnl->jumpp[PFfront]) printf("; front jump: %s, %s",pnl->jumpp[PFfront]->pname,surfface2string(pnl->jumpf[PFfront],string));
-				else if(jumpfrnt) printf("; front jump: NO PANEL");
-				if(jumpback && pnl->jumpp[PFback]) printf("; back jump: %s, %s",pnl->jumpp[PFback]->pname,surfface2string(pnl->jumpf[PFback],string));
-				else if(jumpback) printf("; back jump: NO PANEL");
+				if(dim==1) simLog(sim,10,"   error, disks are not implemented in 1-D");
+				else if(dim==2) simLog(sim,2,"   %s: (%g,%g), R=%g, facing: (%g,%g), length: %g",pname[p],point[0][0],point[0][1],point[1][0],front[0],front[1],2.0*point[1][0]);
+				else simLog(sim,2,"   %s: (%g,%g,%g), R=%g, facing: (%g,%g,%g), draw: %g, area: %g",pname[p],point[0][0],point[0][1],point[0][2],point[1][0],front[0],front[1],front[2],point[1][1],PI*point[1][0]*point[1][0]);
+				if(jumpfrnt && pnl->jumpp[PFfront]) simLog(sim,2,"; front jump: %s, %s",pnl->jumpp[PFfront]->pname,surfface2string(pnl->jumpf[PFfront],string));
+				else if(jumpfrnt) simLog(sim,2,"; front jump: NO PANEL");
+				if(jumpback && pnl->jumpp[PFback]) simLog(sim,2,"; back jump: %s, %s",pnl->jumpp[PFback]->pname,surfface2string(pnl->jumpf[PFback],string));
+				else if(jumpback) simLog(sim,2,"; back jump: NO PANEL");
 				for(face=PFfront;face<=PFback;face=(PanelFace)(face+1)) {
 					if(pnl->emitterabsorb[face]) {
-						printf("; %s absorb probs.:",surfface2string(face,string));
+						simLog(sim,2,"; %s absorb probs.:",surfface2string(face,string));
 						for(i=1;i<nspecies;i++)
-							printf(" %g",pnl->emitterabsorb[face][i]); }}
-				printf("\n");
-				if(vflag && pnl->maxneigh) {
-					printf("    neighbors allocated: %i, defined: %i",pnl->maxneigh,pnl->nneigh);
+							simLog(sim,2," %g",pnl->emitterabsorb[face][i]); }}
+				simLog(sim,2,"\n");
+				if(pnl->maxneigh) {
+					simLog(sim,1,"    neighbors allocated: %i, defined: %i",pnl->maxneigh,pnl->nneigh);
 					for(p2=0;p2<pnl->nneigh;p2++)
-						printf(", %s",pnl->neigh[p2]->pname);
-					printf("\n"); }}}
+						simLog(sim,1,", %s",pnl->neigh[p2]->pname);
+					simLog(sim,1,"\n"); }}}
 
-		printf("\n"); }
+		simLog(sim,2,"\n"); }
 	return; }
 
 
@@ -1490,7 +1564,7 @@ int checksurfaceparams(simptr sim,int *warnptr) {
 	enum PanelShape ps;
 	enum PanelFace face;
 	panelptr pnl;
-	char string[STRCHAR];
+	char string[STRCHAR],string2[STRCHAR];
 	surfactionptr actdetails;
 
 	error=warn=0;
@@ -1509,57 +1583,57 @@ int checksurfaceparams(simptr sim,int *warnptr) {
 
 	if(srfss->condition!=SCok) {											// condition
 		warn++;
-		printf(" WARNING: surface structure %s\n",simsc2string(srfss->condition,string)); }
+		simLog(sim,7," WARNING: surface structure %s\n",simsc2string(srfss->condition,string)); }
 
 	if(sim->mols)																			// maxspecies
-		if(sim->mols->maxspecies!=sim->srfss->maxspecies) {error++;printfException(" SMOLDYN BUG: number of molecule species differ between mols and srfss\n");}
+		if(sim->mols->maxspecies!=sim->srfss->maxspecies) {error++;simLog(sim,10," SMOLDYN BUG: number of molecule species differ between mols and srfss\n");}
 
 	if(sim->mols)																			// nmollist
-		if(srfss->nmollist!=sim->mols->nlist) {error++;printfException(" SMOLDYN BUG: mismatch between number of molecule lists in surface and in molecule structures");}
+		if(srfss->nmollist!=sim->mols->nlist) {error++;simLog(sim,10," SMOLDYN BUG: mismatch between number of molecule lists in surface and in molecule structures");}
 
 																										// possible superstructure warnings, errors
-	if(srfss->nsrf==0) {warn++;printf(" WARNING: Surface superstructure is defined, but no surfaces are defined\n");}
-	if(srfss->nsrf>srfss->maxsrf) {error++;printfException(" SMOLDYN BUG: More surfaces are defined than allocated\n");}
-	if(srfss->epsilon>0.01*syslen) {warn++;printf(" WARNING: surface epsilon value is large compared to system size\n");}
-	if(srfss->margin>0.01*syslen) {warn++;printf(" WARNING: surface margin value is large compared to system size\n");}
-	if(srfss->neighdist>0.01*syslen) {warn++;printf(" WARNING: surface neighbor distance value is large compared to system size\n");}
+	if(srfss->nsrf==0) {warn++;simLog(sim,5," WARNING: Surface superstructure is defined, but no surfaces are defined\n");}
+	if(srfss->nsrf>srfss->maxsrf) {error++;simLog(sim,10," SMOLDYN BUG: More surfaces are defined than allocated\n");}
+	if(srfss->epsilon>0.01*syslen) {warn++;simLog(sim,5," WARNING: surface epsilon value is large compared to system size\n");}
+	if(srfss->margin>0.01*syslen) {warn++;simLog(sim,5," WARNING: surface margin value is large compared to system size\n");}
+	if(srfss->neighdist>0.01*syslen) {warn++;simLog(sim,5," WARNING: surface neighbor distance value is large compared to system size\n");}
 
 	for(s=0;s<srfss->nsrf;s++) {											// surface missing and incorrect elements, not panels
-		if(strlen(srfss->snames[s])==0) {error++;printfException(" ERROR: surface %i is unnamed\n",s);}
-		if(!srfss->srflist[s]) {error++;printfException(" SMOLDYN BUG: pointer to surface %i is NULL",s);}
+		if(strlen(srfss->snames[s])==0) {error++;simLog(sim,9," ERROR: surface %i is unnamed\n",s);}
+		if(!srfss->srflist[s]) {error++;simLog(sim,10," SMOLDYN BUG: pointer to surface %i is NULL",s);}
 		srf=srfss->srflist[s];
-		if(srf->sname!=srfss->snames[s]) {error++;printfException(" SMOLDYN BUG: surface %i name pointer does not match surface superstructure pointer\n",s);}
+		if(srf->sname!=srfss->snames[s]) {error++;simLog(sim,10," SMOLDYN BUG: surface %i name pointer does not match surface superstructure pointer\n",s);}
 		for(c=0;c<4;c++) {
-			if(srf->fcolor[c]<0 || srf->fcolor[c]>1) {error++;printfException(" SMOLDYN BUG: surface %i front color %i value is out of bounds\n",s,c);}
-			if(srf->bcolor[c]<0 || srf->bcolor[c]>1) {error++;printfException(" SMOLDYN BUG: surface %i front color %i value is out of bounds\n",s,c);} }
-		if(srf->edgepts<0) {error++;printfException(" SMOLDYN BUG: surface %i drawing thickness is negative\n",s);}
-		if(srf->fdrawmode<DMno || srf->fdrawmode>DMvef) {error++;printfException(" SMOLDYN BUG: surface %i front drawing mode is out of bounds\n",s);}
-		if(srf->bdrawmode<DMno || srf->bdrawmode>DMvef) {error++;printfException(" SMOLDYN BUG: surface %i back drawing mode is out of bounds\n",s);}
-		if(srf->fshiny<0 || srf->fshiny>128) {error++;printfException(" SMOLDYN BUG: surface %i front shininess is out of bounds\n",s);}
-		if(srf->bshiny<0 || srf->bshiny>128) {error++;printfException(" SMOLDYN BUG: surface %i back shininess is out of bounds\n",s);} }
+			if(srf->fcolor[c]<0 || srf->fcolor[c]>1) {error++;simLog(sim,10," SMOLDYN BUG: surface %i front color %i value is out of bounds\n",s,c);}
+			if(srf->bcolor[c]<0 || srf->bcolor[c]>1) {error++;simLog(sim,10," SMOLDYN BUG: surface %i front color %i value is out of bounds\n",s,c);} }
+		if(srf->edgepts<0) {error++;simLog(sim,10," SMOLDYN BUG: surface %i drawing thickness is negative\n",s);}
+		if(srf->fdrawmode<DMno || srf->fdrawmode>DMvef) {error++;simLog(sim,10," SMOLDYN BUG: surface %i front drawing mode is out of bounds\n",s);}
+		if(srf->bdrawmode<DMno || srf->bdrawmode>DMvef) {error++;simLog(sim,10," SMOLDYN BUG: surface %i back drawing mode is out of bounds\n",s);}
+		if(srf->fshiny<0 || srf->fshiny>128) {error++;simLog(sim,10," SMOLDYN BUG: surface %i front shininess is out of bounds\n",s);}
+		if(srf->bshiny<0 || srf->bshiny>128) {error++;simLog(sim,10," SMOLDYN BUG: surface %i back shininess is out of bounds\n",s);} }
 
 	for(s=0;s<srfss->nsrf;s++) {											// surface missing and incorrect elements, about panels
 		srf=srfss->srflist[s];
 		for(ps=(PanelShape)0;ps<PSMAX;ps=(PanelShape)(ps+1)) {
-			if(srf->npanel[ps]>srf->maxpanel[ps]) {error++;printfException(" SMOLDYN BUG: surface %i has more panels of shape %i defined than allocated\n",s,ps);}
+			if(srf->npanel[ps]>srf->maxpanel[ps]) {error++;simLog(sim,10," SMOLDYN BUG: surface %i has more panels of shape %i defined than allocated\n",s,ps);}
 			if(srf->npanel[ps]>0) {
-				if(!srf->pname || !srf->pname[ps]) {error++;printfException(" SMOLDYN BUG: surface %i has no name strings allocated for shape %i\n",s,ps);}
-				if(!srf->panels || !srf->panels[ps]) {error++;printfException(" SMOLDYN BUG: surface %i has panels listed but not allocated for shape %i\n",s,ps);} }
+				if(!srf->pname || !srf->pname[ps]) {error++;simLog(sim,10," SMOLDYN BUG: surface %i has no name strings allocated for shape %i\n",s,ps);}
+				if(!srf->panels || !srf->panels[ps]) {error++;simLog(sim,10," SMOLDYN BUG: surface %i has panels listed but not allocated for shape %i\n",s,ps);} }
 			for(p=0;p<srf->npanel[ps];p++) {
-				if(strlen(srf->pname[ps][p])==0) {error++;printfException(" ERROR: surface %i, panel shape %i, panel %i is unnamed\n",s,ps,p);}
-				if(!srf->panels[ps][p]) {error++;printfException(" SMOLDYN BUG: surface %i, panel shape %i, panel %i pointer is NULL\n",s,ps,p);} }}}
+				if(strlen(srf->pname[ps][p])==0) {error++;simLog(sim,10," ERROR: surface %i, panel shape %i, panel %i is unnamed\n",s,ps,p);}
+				if(!srf->panels[ps][p]) {error++;simLog(sim,10," SMOLDYN BUG: surface %i, panel shape %i, panel %i pointer is NULL\n",s,ps,p);} }}}
 
 	for(s=0;s<srfss->nsrf;s++) {											// panel missing and incorrect elements
 		srf=srfss->srflist[s];
 		for(ps=(PanelShape)0;ps<PSMAX;ps=(PanelShape)(ps+1))
 			for(p=0;p<srf->npanel[ps];p++) {
 				pnl=srf->panels[ps][p];
-				if(pnl->pname!=srf->pname[ps][p]) {error++;printfException(" SMOLDYN BUG: surface %i, panel shape %i, panel %i name pointer does not match surface pointer\n",s,ps,p);}
-				if(pnl->ps!=ps) {error++;printfException(" SMOLDYN BUG: surface %i, shape %i, panel %i listing of shape does not match actual shape\n",s,ps,p);}
-				if(pnl->srf!=srf) {error++;printfException(" SMOLDYN BUG: surface %i, shape %i, panel %i listing of surface does not match actual surface\n",s,ps,p);}
-				if(pnl->npts!=panelpoints(ps,dim)) {error++;printfException(" SMOLDYN BUG: surface %i, shape %i, panel %i number of points (npts) is incorrect\n",s,ps,p);}
+				if(pnl->pname!=srf->pname[ps][p]) {error++;simLog(sim,10," SMOLDYN BUG: surface %i, panel shape %i, panel %i name pointer does not match surface pointer\n",s,ps,p);}
+				if(pnl->ps!=ps) {error++;simLog(sim,10," SMOLDYN BUG: surface %i, shape %i, panel %i listing of shape does not match actual shape\n",s,ps,p);}
+				if(pnl->srf!=srf) {error++;simLog(sim,10," SMOLDYN BUG: surface %i, shape %i, panel %i listing of surface does not match actual surface\n",s,ps,p);}
+				if(pnl->npts!=panelpoints(ps,dim)) {error++;simLog(sim,10," SMOLDYN BUG: surface %i, shape %i, panel %i number of points (npts) is incorrect\n",s,ps,p);}
 				for(pt=0;pt<pnl->npts;pt++)
-					if(!pnl->point || !pnl->point[pt]) {error++;printfException(" SMOLDYN BUG: surface %i, shape %i, panel %i points element is not fully allocated\n",s,ps,p);} }}
+					if(!pnl->point || !pnl->point[pt]) {error++;simLog(sim,10," SMOLDYN BUG: surface %i, shape %i, panel %i points element is not fully allocated\n",s,ps,p);} }}
 
 	for(s=0;s<srfss->nsrf;s++) {											// panel points and front
 		srf=srfss->srflist[s];
@@ -1570,14 +1644,14 @@ int checksurfaceparams(simptr sim,int *warnptr) {
 				front=pnl->front;
 				if(ps==PSrect) {
 					if(dim==1) {
-						if(point[0][0]<lowwall[0]) {warn++;printf(" WARNING: surface %s, panel %s is entirely outside the system volume\n",srf->sname,pnl->pname);}
-						if(point[0][0]>highwall[0]) {warn++;printf(" WARNING: surface %s, panel %s is entirely outside the system volume\n",srf->sname,pnl->pname);}
-						if(!(front[0]==-1 || front[0]==1)) {error++;printfException(" SMOLDYN BUG: surface %s, panel %s front vector is set incorrectly\n",srf->sname,pnl->pname);}
-						if(front[1]!=0) {error++;printfException(" SMOLDYN BUG: surface %s, panel %s front vector is set incorrectly\n",srf->sname,pnl->pname);} }
+						if(point[0][0]<lowwall[0]) {warn++;simLog(sim,5," WARNING: surface %s, panel %s is entirely outside the system volume\n",srf->sname,pnl->pname);}
+						if(point[0][0]>highwall[0]) {warn++;simLog(sim,5," WARNING: surface %s, panel %s is entirely outside the system volume\n",srf->sname,pnl->pname);}
+						if(!(front[0]==-1 || front[0]==1)) {error++;simLog(sim,10," SMOLDYN BUG: surface %s, panel %s front vector is set incorrectly\n",srf->sname,pnl->pname);}
+						if(front[1]!=0) {error++;simLog(sim,10," SMOLDYN BUG: surface %s, panel %s front vector is set incorrectly\n",srf->sname,pnl->pname);} }
 					else if(dim==2) {
 						Geo_LineNormal(point[0],point[1],norm);
-						if(!Geo_LineXaabb2(point[0],point[1],norm,lowwall,highwall)) {warn++;printf(" WARNING: surface %s, panel %s is entirely outside the system volume\n",srf->sname,pnl->pname);}
-						if(!(front[0]==-1 || front[0]==1)) {error++;printfException(" SMOLDYN BUG: surface %s, panel %s front vector is set incorrectly\n",srf->sname,pnl->pname);} }}}}
+						if(!Geo_LineXaabb2(point[0],point[1],norm,lowwall,highwall)) {warn++;simLog(sim,5," WARNING: surface %s, panel %s is entirely outside the system volume\n",srf->sname,pnl->pname);}
+						if(!(front[0]==-1 || front[0]==1)) {error++;simLog(sim,10," SMOLDYN BUG: surface %s, panel %s front vector is set incorrectly\n",srf->sname,pnl->pname);} }}}}
 				//?? need to check points and front for other shapes and dimensions
 
 	for(s=0;s<srfss->nsrf;s++) {											// jump surfaces and panels
@@ -1591,23 +1665,23 @@ int checksurfaceparams(simptr sim,int *warnptr) {
 				for(ps=(PanelShape)0;ps<PSMAX;ps=(PanelShape)(ps+1))
 					for(p=0;p<srf->npanel[ps];p++) {
 						pnl=srf->panels[ps][p];
-						if(!pnl->jumpp[PFfront]) {warn++;printf(" WARNING: front of surface %s has jump action but panel %s has no jump destination\n",srf->sname,pnl->pname);}
-						else if(pnl->jumpp[PFfront]==pnl) {warn++;printf(" WARNING: surface %s, panel %s front is a jump type panel that is its own destination\n",srf->sname,pnl->pname);}
-						if(pnl->jumpp[PFfront] && !(pnl->jumpf[PFfront]==PFfront || pnl->jumpf[PFfront]==PFback)) {error++;printfException(" SMOLDYN BUG: surface %s, panel %s jumps to an undefined panel face\n",srf->sname,pnl->pname);} }
+						if(!pnl->jumpp[PFfront]) {warn++;simLog(sim,5," WARNING: front of surface %s has jump action but panel %s has no jump destination\n",srf->sname,pnl->pname);}
+						else if(pnl->jumpp[PFfront]==pnl) {warn++;simLog(sim,5," WARNING: surface %s, panel %s front is a jump type panel that is its own destination\n",srf->sname,pnl->pname);}
+						if(pnl->jumpp[PFfront] && !(pnl->jumpf[PFfront]==PFfront || pnl->jumpf[PFfront]==PFback)) {error++;simLog(sim,10," SMOLDYN BUG: surface %s, panel %s jumps to an undefined panel face\n",srf->sname,pnl->pname);} }
 			if(bjump)
 				for(ps=(PanelShape)0;ps<PSMAX;ps=(PanelShape)(ps+1))
 					for(p=0;p<srf->npanel[ps];p++) {
 						pnl=srf->panels[ps][p];
-						if(!pnl->jumpp[PFback]) {warn++;printf(" WARNING: back of surface %s has jump action but panel %s has no jump destination\n",srf->sname,pnl->pname);}
-						else if(pnl->jumpp[PFback]==pnl) {warn++;printf(" WARNING: surface %s, panel %s back is a jump type panel that is its own destination\n",srf->sname,pnl->pname);}
-						if(pnl->jumpp[PFback] && !(pnl->jumpf[PFback]==PFfront || pnl->jumpf[PFback]==PFback)) {error++;printfException(" SMOLDYN BUG: surface %s, panel %s jumps to an undefined panel face\n",srf->sname,pnl->pname);} }}}
+						if(!pnl->jumpp[PFback]) {warn++;simLog(sim,5," WARNING: back of surface %s has jump action but panel %s has no jump destination\n",srf->sname,pnl->pname);}
+						else if(pnl->jumpp[PFback]==pnl) {warn++;simLog(sim,5," WARNING: surface %s, panel %s back is a jump type panel that is its own destination\n",srf->sname,pnl->pname);}
+						if(pnl->jumpp[PFback] && !(pnl->jumpf[PFback]==PFfront || pnl->jumpf[PFback]==PFback)) {error++;simLog(sim,10," SMOLDYN BUG: surface %s, panel %s jumps to an undefined panel face\n",srf->sname,pnl->pname);} }}}
 
 	for(s=0;s<srfss->nsrf;s++) {											// make sure panel panel neighbors are stored correctly
 		srf=srfss->srflist[s];
 		for(ps=(PanelShape)0;ps<PSMAX;ps=(PanelShape)(ps+1))
 			for(p=0;p<srf->npanel[ps];p++) {
 				pnl=srf->panels[ps][p];
-				if(pnl->nneigh>0 && !pnl->neigh) {error++;printfException(" SMOLDYN BUG: surface %s, panel %s has %i neighbors, but none listed\n",srf->sname,pnl->pname,pnl->nneigh);} }}
+				if(pnl->nneigh>0 && !pnl->neigh) {error++;simLog(sim,10," SMOLDYN BUG: surface %s, panel %s has %i neighbors, but none listed\n",srf->sname,pnl->pname,pnl->nneigh);} }}
 
 	for(s=0;s<srfss->nsrf;s++) {											// make sure porting actions are linked to ports
 		srf=srfss->srflist[s];
@@ -1618,11 +1692,11 @@ int checksurfaceparams(simptr sim,int *warnptr) {
 				if(srf->action[i][MSsoln][PFback]==SAport) bport=1; }
 			if(fport && !srf->port[PFfront]) {
 				error++;
-				printfException(" ERROR: surface %s front face has porting action, but is not linked to a port\n",srf->sname);
+				simLog(sim,9," ERROR: surface %s front face has porting action, but is not linked to a port\n",srf->sname);
 				for(i=0;i<nspecies;i++) if(srf->action[i][MSsoln][PFfront]==SAport) srf->action[i][MSsoln][PFfront]=SAreflect; }
 			if(bport && !srf->port[PFback]) {
 				error++;
-				printfException(" ERROR: surface %s back face has porting action, but is not linked to a port\n",srf->sname);
+				simLog(sim,9," ERROR: surface %s back face has porting action, but is not linked to a port\n",srf->sname);
 				for(i=0;i<nspecies;i++) if(srf->action[i][MSsoln][PFback]==SAport) srf->action[i][MSsoln][PFback]=SAreflect; }}}
 
 	if(sim->mols)																			// check that requested surface rates can be achieved
@@ -1635,19 +1709,18 @@ int checksurfaceparams(simptr sim,int *warnptr) {
 							if(srf->action[i][ms][face]==SAmult) {
 								actdetails=srf->actdetails[i][ms][face];
 								if(!actdetails) {
-									printfException(" SMOLDYN BUG: action is SAmult but action details not allocated");error++;}
+									simLog(sim,10," SMOLDYN BUG: action is SAmult but action details not allocated");error++;}
 								else {
 									for(ms2=(MolecState)0;ms2<MSMAX1;ms2=(MolecState)(ms2+1)) {
 										prob=actdetails->srfprob[ms2];
 										if(prob<0 || prob>1) {
 											error++;
-											printfException(" SMOLDYN BUG: surface interaction probability is <0 or >1\n"); }
+											simLog(sim,10," SMOLDYN BUG: surface interaction probability is <0 or >1\n"); }
 										else {
 											if(actdetails->srfdatasrc[ms2]==1)
 												if(fabs((actdetails->srfrate[ms2]-srfcalcrate(sim,srf,i,ms,face,ms2))/actdetails->srfrate[ms2])>0.01) {
 													warn++;
-													printf(" WARNING: requested surface '%s' rate for %s(%s) ->",srf->sname,sim->mols->spname[i],molms2string(ms,string));
-													printf(" %s(%s) cannot be achieved\n",sim->mols->spname[i],molms2string(ms2,string)); }}}}}}}
+													simLog(sim,5," WARNING: requested surface '%s' rate for %s(%s) -> %s(%s) cannot be achieved\n",srf->sname,sim->mols->spname[i],molms2string(ms,string),sim->mols->spname[i],molms2string(ms2,string2)); }}}}}}}
 
 	if(sim->mols)																			// check that don't have conflicting surface actions and emitters
 		for(s=0;s<srfss->nsrf;s++) {
@@ -1658,8 +1731,7 @@ int checksurfaceparams(simptr sim,int *warnptr) {
 						if(srf->nemitter[face] && srf->nemitter[face][i])
 							if(srf->action[i][MSsoln][face]!=SAreflect) {
 								warn++;
-								printf(" WARNING: surface '%s' %s-side action for %s",srf->sname,surfface2string(face,string),sim->mols->spname[i]);
-								printf(" is listed as %s, but molecules will absorb instead because of unbounded emitters\n",surfact2string(srf->action[i][MSsoln][face],string)); }}}}
+								simLog(sim,5," WARNING: surface '%s' %s-side action for %s is listed as %s, but molecules will absorb instead because of unbounded emitters\n",srf->sname,surfface2string(face,string),sim->mols->spname[i],surfact2string(srf->action[i][MSsoln][face],string2)); }}}}
 
 	if(sim->mols)																			// check that emitter absorptions aren't pegged to 1
 		for(s=0;s<srfss->nsrf;s++) {
@@ -1671,8 +1743,7 @@ int checksurfaceparams(simptr sim,int *warnptr) {
 							for(p=0;p<srf->npanel[ps];p++)
 								if(srf->panels[ps][p]->emitterabsorb[face][i]==1.0) {
 									warn++;
-									printf(" WARNING: surface '%s', panel %s, %s-side absorption probability for %s",srf->sname,srf->panels[ps][p]->pname,surfface2string(face,string),sim->mols->spname[i]);
-									printf(" cannot be made large enough for accurate effective unbounded diffusion\n"); }}
+									simLog(sim,5," WARNING: surface '%s', panel %s, %s-side absorption probability for %s cannot be made large enough for accurate effective unbounded diffusion\n",srf->sname,srf->panels[ps][p]->pname,surfface2string(face,string),sim->mols->spname[i]); }}
 
 // check panels that normals are normal and normalized, with proper signs (error)
 // check that panels are at least partially inside system volume (warning)
@@ -1950,8 +2021,8 @@ int surfsetrate(surfaceptr srf,int ident,enum MolecState ms,enum MolecState ms1,
 	surfsetcondition(srf->srfss,SCparams,0);
 	return 0; }
 
-#ifdef VCELL_HYBRID
-int surfSetRateExp(surfaceptr srf,int ident,enum MolecState ms,enum MolecState ms1,enum MolecState ms2,int newident,Expression* rateExp,int which) {
+/* surfSetRateExp */
+int surfSetRateExp(surfaceptr srf,int ident,enum MolecState ms,enum MolecState ms1,enum MolecState ms2,int newident,ValueProvider* valueProvider,int which) {
 	int i1,ilo,ihi;
 	enum MolecState ms3,ms4;
 	enum PanelFace face;
@@ -1970,9 +2041,9 @@ int surfSetRateExp(surfaceptr srf,int ident,enum MolecState ms,enum MolecState m
 	else if(ms2==ms1) return 4;
 
 	if((newident!=-5 && newident<0) || newident>=srf->srfss->maxspecies) return 5;
-
-	if(rateExp==NULL) return 6;
 	
+	if(valueProvider==NULL) return 6;
+
 	srftristate2index(ms,ms1,ms2,&ms3,&face,&ms4);
 	for(i1=ilo;i1<=ihi;i1++) {
 		if(!srf->actdetails[i1][ms3][face]) {
@@ -1984,25 +2055,28 @@ int surfSetRateExp(surfaceptr srf,int ident,enum MolecState ms,enum MolecState m
 
 		srf->action[i1][ms3][face]=SAmult;						// set action to mult
 		if(which==1) {															// and set up action details
-			actdetails->srfRateExp[ms4]=rateExp;
+			actdetails->srfRateValueProvider[ms4]=valueProvider;
 			actdetails->srfdatasrc[ms4]=1; }
 		else if(which==2) {
-			actdetails->srfRateExp[ms4]=rateExp;
+			actdetails->srfRateValueProvider[ms4]=valueProvider;
 			actdetails->srfdatasrc[ms4]=2; }
 		actdetails->srfnewspec[ms4]=(newident==-5)?i1:newident; }
 
 	surfsetcondition(srf->srfss,SCparams,0);
 	return 0; }
 
+
+/* surfUpdateRate */
 int surfUpdateRate(simptr sim, moleculeptr mptr, enum PanelFace face, panelptr pnl) {
-	int molIdent = mptr->ident;
 	surfacessptr surfacess = sim -> srfss;
 	int numSrfs = surfacess->nsrf;
 	surfaceptr * surfacelist = surfacess->srflist;
 	surfactionptr actdetails;
-	enum MolecState ms,ms2;
+	enum MolecState ms2;
 	enum PanelFace f; 
-	Expression * surfRateExp;
+	bool hasRateExp = false;
+
+
 	for(int s=0; s<numSrfs; s++) {
 		surfaceptr srf=surfacelist[s];
 		if(srf->actdetails) {
@@ -2010,18 +2084,21 @@ int surfUpdateRate(simptr sim, moleculeptr mptr, enum PanelFace face, panelptr p
 			{
 				actdetails=srf->actdetails[mptr->ident][mptr->mstate][f];
 				for(ms2=(MolecState)0;ms2<MSMAX1;ms2=(MolecState)(ms2+1)) {
-					if(actdetails != NULL && actdetails->srfRateExp[ms2] != NULL)
+					if(actdetails != NULL && actdetails->srfRateValueProvider[ms2] != NULL)
 					{
-						surfRateExp = actdetails->srfRateExp[ms2];
-						actdetails->srfrate[ms2] = evaluateRnxRate2(sim, surfRateExp, true, mptr->pos, pnl->pname);
+						actdetails->srfrate[ms2] = evaluateSurfActionRate(sim, actdetails, ms2, mptr->pos, pnl->pname);
+						hasRateExp = true;
 					}
 				}
 			}
 		}
 		
 	}
+	//after evaluating all the rate expressions, call surfupdateparams to update probs.
+	if(hasRateExp) {
+		surfupdateparams(sim);
+	}
 	return 0; }
-#endif
 
 /* surfsetmaxpanel */
 int surfsetmaxpanel(surfaceptr srf,int dim,enum PanelShape ps,int maxpanel) {
@@ -2279,6 +2356,7 @@ int surfsetemitterabsorption(simptr sim) {
 								prob=surfaceprob(kappa,0,sim->dt,difc,NULL,SPAirrAds);
 								pnl->emitterabsorb[face][i]=prob; }}}
 
+	if(er) simLog(sim,5,"WARNING: an unbounded emitter is at a surface panel which will cause inaccurate operation");
 	return er; }
 
 
@@ -2472,18 +2550,18 @@ int surfaddemitter(surfaceptr srf,enum PanelFace face,int i,double amount,double
 		oldmax=srf->maxemitter[face][i];
 		newmax=oldmax*2+1;
 
-		CHECK(newamount=(double*) calloc(newmax,sizeof(double)));	// emitteramount
+		CHECKMEM(newamount=(double*) calloc(newmax,sizeof(double)));	// emitteramount
 		for(emit=0;emit<oldmax;emit++)
 			newamount[emit]=srf->emitteramount[face][i][emit];
 		for(;emit<newmax;emit++) newamount[emit]=0;
 
-		CHECK(newpos=(double**) calloc(newmax,sizeof(double*)));	// emitterpos
+		CHECKMEM(newpos=(double**) calloc(newmax,sizeof(double*)));	// emitterpos
 		for(emit=0;emit<oldmax;emit++)
 			newpos[emit]=srf->emitterpos[face][i][emit];
 		for(;emit<newmax;emit++)
 			newpos[emit]=NULL;
 		for(emit=oldmax;emit<newmax;emit++) {
-			CHECK(newpos[emit]=(double*) calloc(dim,sizeof(double)));
+			CHECKMEM(newpos[emit]=(double*) calloc(dim,sizeof(double)));
 			for(d=0;d<dim;d++) newpos[emit][d]=0; }
 
 		free(srf->emitteramount[face][i]);						// replace old with new
@@ -2504,19 +2582,19 @@ int surfaddemitter(surfaceptr srf,enum PanelFace face,int i,double amount,double
  failure:
 	free(newamount);
 	free(newpos);
+	if(ErrorType!=1) simLog(NULL,10,"Unable to allocate memory in surfaddemitter");
 	return 1; }
 
 
 
 /* surfreadstring */
-surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char *erstr) {
-	char nm[STRCHAR],nm1[STRCHAR],nm2[STRCHAR],facenm[STRCHAR],shapenm[STRCHAR],actnm[STRCHAR],*chptr;
-	int dim,i,p,p2,i1,i2,i3,itct,s2,er;
+surfaceptr surfreadstring(simptr sim,ParseFilePtr pfp,surfaceptr srf,const char *word,char *line2) {
+	char nm[STRCHAR],nm1[STRCHAR],nm2[STRCHAR],facenm[STRCHAR],shapenm[STRCHAR],actnm[STRCHAR];
+	int dim,i,p,p2,i1,i2,i3,itct,er;
 	const int maxpnllist=128;
 	panelptr pnl,pnllist[128];
 	double fltv1[9],f1;
 	surfacessptr srfss;
-	surfaceptr srf2;
 	enum PanelShape ps;
 	enum PanelFace face,face2;
 	enum SrfAction act;
@@ -2560,27 +2638,31 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 		CHECKS(srf,"need to enter surface name first");
 		CHECKS(srfss->maxspecies,"need to enter molecules first");
 		
-#ifdef VCELL_HYBRID
 		bool constRate = true;
-
-		std::stringstream ss(line2);
+		stringstream ss(line2);
 		ss >> nm >> nm1 >> nm2;
-		std::string rawStr;
+		string rawStr;
 		getline(ss, rawStr);
 		size_t found = rawStr.find(";");
-		string rateExpStr = rawStr.substr(0, found);
-		Expression* srfRateExp = new Expression(rateExpStr);
-		try {
-			double rate = srfRateExp->evaluateConstant();
-			f1=rate;
-			constRate = true;			
-		} catch (...) {
-			constRate = false;
+		ValueProvider* valueProvider = NULL;
+		if(found!=string::npos)
+		{
+			string rateExpStr = rawStr.substr(0, found);
+			valueProvider = sim->valueProviderFactory->createValueProvider(rateExpStr);
+			try {
+				double rate = valueProvider->getConstantValue();
+				f1=rate;
+				constRate = true;
+			} catch (...) {
+				constRate = false;
+			}
 		}
-#else
-		itct=sscanf(line2,"%s %s %s %lg",nm,nm1,nm2,&f1);
-		CHECKS(itct==4,"format: species[(state)] state1 state2 value [new_species]");
-#endif
+		else
+		{
+			itct=sscanf(line2,"%s %s %s %lg",nm,nm1,nm2,&f1);
+			CHECKS(itct==4,"format: species[(state)] state1 state2 value [new_species]");
+		}
+
 		i=readmolname(sim,nm,&ms,0);		//?? somehow this got corrupted and then fixed.  Need to check stuff below too.
 		CHECKS(i>0 || i==-5,"molecule name not recognized");
 		CHECKS(ms<MSbsoln,"state is not recognized or not permitted");
@@ -2592,16 +2674,20 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 			CHECKS(ms1!=ms2,"it is not permitted for state1 to equal state2"); }
 		else {
 			CHECKS(ms1==ms || ms1==MSsoln || ms1==MSbsoln,"state1 does not make sense"); }
-#ifdef VCELL_HYBRID
-		if(constRate == true)
+		if(found!=string::npos)
+		{
+			if(constRate == true)
+				CHECKS(f1>=0,"negative surface rate values are not permitted");
+			string name = rawStr.substr(found+2); //after the ";" denoting the end of rate, the found move one more position(the space) to get to the end of the line, which would be the species name
+			const char* anotherMolName = name.c_str();
+			line2 = const_cast<char *>(anotherMolName);
+		}
+        else
+		{
 			CHECKS(f1>=0,"negative surface rate values are not permitted");
-		string name = rawStr.substr(found+2); //after the ";" denoting the end of rate, the found move one more position(the space) to get to the end of the line, which would be the species name
-		const char* anotherMolName = name.c_str();
-		line2 = const_cast<char *>(anotherMolName); 
-#else
-		CHECKS(f1>=0,"negative surface rate values are not permitted");
-		line2=strnword(line2,5);
-#endif
+			line2=strnword(line2,5);
+		}
+
 		i3=i;
 		if(line2) {
 			itct=sscanf(line2,"%s",nm);
@@ -2609,8 +2695,30 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 			i3=stringfind(sim->mols->spname,sim->mols->nspecies,nm);
 			CHECKS(i3!=-1,"new species name not recognized");
 			line2=strnword(line2,2); }
-#ifdef VCELL_HYBRID
-		if(constRate == true)
+		if(found!=string::npos)
+		{
+			if(constRate == true)
+			{
+				if(!strcmp(word,"rate"))
+					er=surfsetrate(srf,i,ms,ms1,ms2,i3,f1,1);
+				else {
+					CHECKS(f1<=1,"surface interaction probabilities cannot be greater than 1");
+					er=surfsetrate(srf,i,ms,ms1,ms2,i3,f1,2); }
+				CHECKS(er!=-1,"out of memory");
+				CHECKS(!er,"BUG: error in surfsetrate");
+			}
+			else //rate is a function
+			{
+				if(!strcmp(word,"rate"))
+					er=surfSetRateExp(srf, i, ms, ms1, ms2, i3, valueProvider,1);
+				else {
+					CHECKS(f1<=1,"surface interaction probabilities cannot be greater than 1");
+					er=surfSetRateExp(srf, i, ms, ms1, ms2, i3, valueProvider, 2); }
+				CHECKS(er!=-1,"out of memory");
+				CHECKS(!er,"BUG: error in surfsetrate");
+			}
+		}
+		else
 		{
 			if(!strcmp(word,"rate"))
 				er=surfsetrate(srf,i,ms,ms1,ms2,i3,f1,1);
@@ -2620,25 +2728,6 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 			CHECKS(er!=-1,"out of memory");
 			CHECKS(!er,"BUG: error in surfsetrate");
 		}
-		else //rate is a function
-		{
-			if(!strcmp(word,"rate"))
-				er=surfSetRateExp(srf, i, ms, ms1, ms2, i3, srfRateExp,1);
-			else {
-				CHECKS(f1<=1,"surface interaction probabilities cannot be greater than 1");
-				er=surfSetRateExp(srf, i, ms, ms1, ms2, i3, srfRateExp, 2); }
-			CHECKS(er!=-1,"out of memory");
-			CHECKS(!er,"BUG: error in surfsetrate");
-		}
-#else
-		if(!strcmp(word,"rate"))
-			er=surfsetrate(srf,i,ms,ms1,ms2,i3,f1,1);
-		else {
-			CHECKS(f1<=1,"surface interaction probabilities cannot be greater than 1");
-			er=surfsetrate(srf,i,ms,ms1,ms2,i3,f1,2); }
-		CHECKS(er!=-1,"out of memory");
-		CHECKS(!er,"BUG: error in surfsetrate");
-#endif
 		CHECKS(!line2,"unexpected text at end of line"); }
 
 	else if(!strcmp(word,"color") || !strcmp(word,"colour")) {		// color
@@ -2782,54 +2871,13 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 		CHECKS(srf,"need to enter surface name before neighbors");
 		itct=sscanf(line2,"%s",nm);
 		CHECKS(itct==1,"format for neighbors: panel neigh1 neigh2 ...");
-		//VCELL
-		p = -1;
-		ps = (PanelShape)0;
-		if(strstr(nm, "tri_") == nm)//find nm starts with "tri_"
-		{
-			ps=PStri;
-			int memIndex;
-			int globalIndex;
-			sscanf(nm, "tri_%d_%d_%d", &p, &globalIndex, &memIndex);
-		}
-		if(p == -1)
-		{
-			while(ps<PSMAX && (p=stringfind(srf->pname[ps],srf->npanel[ps],nm))==-1) ps=(PanelShape)(ps+1);
-		}
-		CHECKS(p>=0,"first panel name listed in neighbors is not recognized");
-		pnl=srf->panels[ps][p];
+		pnl=readpanelname(sim,srf,nm);
+		CHECKS(pnl,"first panel name listed in neighbors, '%s', not recognized",nm);
 		for(i1=0;i1<maxpnllist && (line2=strnword(line2,2));i1++) {
 			itct=sscanf(line2,"%s",nm);
 			CHECKS(itct==1,"format for neighbors: panel neigh1 neigh2 ...");
-			//VCELL
-			p = -1;
-			ps = (PanelShape)0;
-			if(strstr(nm, "tri_") == nm)//find nm starts with "tri_"
-			{
-				ps=PStri;
-				srf2=srf;
-				int memIndex;
-				int globalIndex;
-				sscanf(nm, "tri_%d_%d_%d", &p, &globalIndex, &memIndex);
-			}
-			if(p == -1)
-			{
-				if(strchr(nm,':')) {
-					chptr=strchr(nm,':')+1;
-					*(chptr-1)='\0';
-					s2=stringfind(srfss->snames,srfss->nsrf,nm);
-					std::string nmStr = nm;
-					std::string msg = "surface name:" + nmStr + " is not recognized";
-					CHECKS(s2>=0, msg.c_str());
-					srf2=srfss->srflist[s2]; }
-				else {
-					chptr=nm;
-					srf2=srf; }
-				p=ps=(PanelShape)0;
-				while(ps<PSMAX && (p=stringfind(srf2->pname[ps],srf2->npanel[ps],chptr))==-1) ps=(PanelShape)(ps+1);
-			}
-			CHECKS(p>=0,"a neighbor panel name is not recognized");
-			pnllist[i1]=srf2->panels[ps][p]; }
+			pnllist[i1]=readpanelname(sim,srf,nm);
+			CHECKS(pnllist[i1],"neighbor panel name '%s' not recognized",nm); }
 		CHECKS(i1<maxpnllist,"too many neighbor panels listed in one line");
 		er=surfsetneighbors(pnl,pnllist,i1,1);
 		CHECKS(!er,"out of memory allocating neighbor list"); }
@@ -2883,11 +2931,12 @@ surfaceptr surfreadstring(simptr sim,surfaceptr srf,char *word,char *line2,char 
 	return srf;
 
  failure:
+	simParseError(sim,pfp);
 	return NULL; }
 
 
 /* loadsurface */
-int loadsurface(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
+int loadsurface(simptr sim,ParseFilePtr *pfpptr,char *line2) {
 	ParseFilePtr pfp;
 	char word[STRCHAR],errstring[STRCHAR];
 	int done,pfpcode,firstline2;
@@ -2899,8 +2948,8 @@ int loadsurface(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 	firstline2=line2?1:0;
 
 	while(!done) {
-		if(pfp->lctr==0 && !strchr(sim->flags,'q'))
-			printf(" Reading file: '%s'\n",pfp->fname);
+		if(pfp->lctr==0)
+			simLog(sim,2," Reading file: '%s'\n",pfp->fname);
 		if(firstline2) {
 			strcpy(word,"name");
 			pfpcode=1;
@@ -2908,25 +2957,24 @@ int loadsurface(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 		else
 			pfpcode=Parse_ReadLine(&pfp,word,&line2,errstring);
 		*pfpptr=pfp;
-		CHECKS(pfpcode!=3,errstring);
+		CHECKS(pfpcode!=3,"%s",errstring);
 
 		if(pfpcode==0);																// already taken care of
 		else if(pfpcode==2) {													// end reading
 			done=1; }
-		else if(pfpcode==3) {													// error
-			CHECKS(0,"SMOLDYN BUG: parsing error"); }
 		else if(!strcmp(word,"end_surface")) {				// end_surface
 			CHECKS(!line2,"unexpected text following end_surface");
 			return 0; }
 		else if(!line2) {															// just word
 			CHECKS(0,"unknown word or missing parameter"); }
 		else {
-			srf=surfreadstring(sim,srf,word,line2,errstring);
-			CHECKS(srf!=NULL,errstring); }}
+			srf=surfreadstring(sim,pfp,srf,word,line2);
+			CHECK(srf); }}
 
 	CHECKS(0,"end of file encountered before end_surface statement");	// end of file
 
  failure:																					// failure
+	if(ErrorType!=1) simParseError(sim,pfp);
 	return 1; }
 
 
@@ -2934,7 +2982,7 @@ int loadsurface(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 int surfupdateparams(simptr sim) {
 	surfacessptr srfss;
 	surfaceptr srf;
-	int nspecies,i,s,er;
+	int nspecies,i,s;
 	double dt,**difc,sum,**difstep,difstepmax;
 	enum MolecState ms1,ms2,ms3,ms4;
 	enum PanelFace face,face2;
@@ -2993,9 +3041,7 @@ int surfupdateparams(simptr sim) {
 								sum+=actdetails->srfprob[ms2];
 								actdetails->srfcumprob[ms2]=sum; }}}}
 	
-		er=surfsetemitterabsorption(sim);
-		if(er)
-			printf("WARNING: an unbounded emitter is at a surface panel, which will cause inaccurate operation\n"); }
+		surfsetemitterabsorption(sim); }
 	
 	return 0; }
 
@@ -3891,7 +3937,7 @@ int checksurfaces(simptr sim,int ll,int reborn) {
 		while(!done) {
 			if(++it>50) {
 				for(d=0;d<dim;d++) pos[d]=mptr->posx[d];
-				//fprintf(stderr,"SMOLDYN ERROR: surface calculation failure after 50 iterations\n");
+				simLog(sim,7,"SURFACE CALCULATION ERROR: molecule could not be placed after 50 iterations\n");
 				break; }
 			crossmin=crossmin2=2;
 			facemin=PFfront;
@@ -3916,12 +3962,8 @@ int checksurfaces(simptr sim,int ll,int reborn) {
 					for(d=0;d<dim;d++) pos[d]=via[d];
 					done=1; }
 				else {
-#ifdef VCELL_HYBRID
 					//if we defined suface rate as function then we have to evaluate the rate every time step when surface activity happens
 					surfUpdateRate(sim, mptr, facemin, pnlmin);
-					//after evaluating all the rate expressions, call surfupdateparams to update probs.
-					surfupdateparams(sim);
-#endif
 					done=dosurfinteract(sim,mptr,ll,m,pnlmin,facemin,crssptmin);
 					for(d=0;d<dim;d++) via[d]=crssptmin[d];
 					sim->eventcount[ETsurf]++; }}
@@ -3996,7 +4038,7 @@ void* check_surfaces_on_subset_mols(void* data) {
 		while(!done) {
 			if(++it>50) {
 				for(d=0;d<dim;d++) pos[d]=mptr->posx[d];
-				//fprintf(stderr,"SMOLDYN ERROR: surface calculation failure after 50 iterations\n");
+				simLog(sim,7,"SURFACE CALCULATION ERROR: molecule could not be placed after 50 iterations\n");
 				break; }
 			crossmin=2;
 			facemin=PFfront;

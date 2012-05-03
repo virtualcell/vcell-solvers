@@ -36,6 +36,28 @@ int compartsupdateparams_volumeSample(simptr sim);
 
 
 /******************************************************************************/
+/****************************** Local declarations ****************************/
+/******************************************************************************/
+
+// enumerated types
+enum CmptLogic compartstring2cl(char *string);
+char *compartcl2string(enum CmptLogic cls,char *string);
+
+// low level utilities
+
+// memory management
+compartptr compartalloc(void);
+void compartfree(compartptr cmpt);
+compartssptr compartssalloc(compartssptr cmptss,int maxcmpt);
+
+// data structure output
+
+// structure set up
+int compartupdatebox(simptr sim,compartptr cmpt,boxptr bptr,double volfrac);
+int compartsupdateparams(simptr sim);
+int compartsupdatelists(simptr sim);
+
+/******************************************************************************/
 /********************************* enumerated types ***************************/
 /******************************************************************************/
 
@@ -71,6 +93,7 @@ char *compartcl2string(enum CmptLogic cls,char *string) {
 /******************************************************************************/
 /****************************** low level utilities ***************************/
 /******************************************************************************/
+
 //called by posincompart and compartsupdateparams_volumeSample
 unsigned char getCompartmentID(char* cmptName, VolumeSamplesPtr vSamplesPtr)
 {
@@ -81,8 +104,9 @@ unsigned char getCompartmentID(char* cmptName, VolumeSamplesPtr vSamplesPtr)
 			return vSamplesPtr->compartmentIDPairPtr[c].pixel;
 		}
 	}
-	return 0; //TODO: if can't find the compartment ID, what should we do?
+	return 0; //TODO: if can't find the compartment ID, what should we do? ??
 }
+
 
 /* posincompart */
 int posincompart(simptr sim,double *pos,compartptr cmpt) {
@@ -188,6 +212,8 @@ int compartrandpos(simptr sim,double *pos,compartptr cmpt) {
 	if(!done) return 1;
 	return 0; }
 
+
+/* fromHex */
 unsigned char fromHex(const char* src) {
 	char chs[5];
 	chs[0] = '0';
@@ -201,65 +227,73 @@ unsigned char fromHex(const char* src) {
 }
 
 
-int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
-	if (line2 == 0) {
-		return 0;
-	}
-	using namespace std;
-	char fileName[128];
-	strcpy(fileName, line2);
+/* loadHighResVolumeSamples */
+int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2) {		//?? needs to be added to user manual
+	char errstring[STRCHAR];
 
 	char word[STRCHAR];
 	ParseFilePtr pfp = *pfpptr;
-	int pfpcode=Parse_ReadLine(&pfp,word,&line2,erstr);
+	int pfpcode;
 	*pfpptr=pfp;
 
 	VolumeSamplesPtr volumeSamplesPtr = new VolumeSamples;
 	sim->volumeSamplesPtr = volumeSamplesPtr;
 	volumeSamplesPtr->num[0] = volumeSamplesPtr->num[1] = volumeSamplesPtr->num[2] = 1;
 
-	ifstream ifs(fileName);
-	string line, nextToken;
-	while (!ifs.eof()) {		
-		getline(ifs, line);
-		istringstream lineInput(line);
+	int done = 0;
+	string pixelLine;
+	while(!done) {
+		pfpcode=Parse_ReadLine(&pfp,word,&line2,errstring);
 
-		nextToken = "";
-		lineInput >> nextToken;
-		if (nextToken.size() == 0 || nextToken[0] == '#') {
-			continue;
-		}
-		if (nextToken == "Size") {
-			lineInput >> volumeSamplesPtr->size[0] >> volumeSamplesPtr->size[1] >> volumeSamplesPtr->size[2];
-		} else if (nextToken == "Origin") {
-			lineInput >> volumeSamplesPtr->origin[0] >> volumeSamplesPtr->origin[1] >> volumeSamplesPtr->origin[2];
-		} else if (nextToken == "CompartmentHighResPixelMap") {
-			int count;
-			int pixel;
-			lineInput >> count;
-			volumeSamplesPtr->compartmentIDPairPtr = new CompartmentIdentifierPair[count];
-			for (int i = 0; i < count; i ++) {
-				getline(ifs, line);
-				istringstream lineInput1(line);
-				lineInput1 >> volumeSamplesPtr->compartmentIDPairPtr[i].name >> pixel;
-				volumeSamplesPtr->compartmentIDPairPtr[i].pixel = pixel;
-			}
-			volumeSamplesPtr->nCmptIDPair = count;
-		} else if (nextToken == "VolumeSamples") {
-			lineInput >> volumeSamplesPtr->num[0] >> volumeSamplesPtr->num[1] >> volumeSamplesPtr->num[2];
+		*pfpptr=pfp;
+		CHECKS(pfpcode!=3,errstring);
+
+		if(pfpcode==0);	// already taken care of
+
+		else if(pfpcode==2) { // end reading
+			done = 1;
+		} else if(pfpcode==3) {	// error
+			CHECKS(0,"SMOLDYN BUG: parsing error");
+		} else if(!strcmp(word,"end_highResVolumeSamples")) {  // end_jms
+			CHECKS(!line2,"unexpected text following end_highResVolumeSamplesFile");
 			break;
+		} else {
+			if (!strcmp(word, "Size")) {
+				istringstream lineInput(line2);
+				lineInput >> volumeSamplesPtr->size[0] >> volumeSamplesPtr->size[1] >> volumeSamplesPtr->size[2];
+			} else if (!strcmp(word, "Origin")) {
+				istringstream lineInput(line2);
+				lineInput >> volumeSamplesPtr->origin[0] >> volumeSamplesPtr->origin[1] >> volumeSamplesPtr->origin[2];
+			} else if (!strcmp(word, "CompartmentHighResPixelMap")) {
+				istringstream lineInput(line2);
+				lineInput >> volumeSamplesPtr->nCmptIDPair;
+				volumeSamplesPtr->compartmentIDPairPtr = new CompartmentIdentifierPair[volumeSamplesPtr->nCmptIDPair];
+				for (int i = 0; i < volumeSamplesPtr->nCmptIDPair; i ++) {
+					pfpcode=Parse_ReadLine(&pfp,word,&line2,errstring);
+					strcpy(volumeSamplesPtr->compartmentIDPairPtr[i].name, word);
+					istringstream lineInput1(line2);
+					int pixel;
+					lineInput1 >> pixel;
+					volumeSamplesPtr->compartmentIDPairPtr[i].pixel = pixel;
+				}
+			} else if (!strcmp(word, "VolumeSamples")) {
+				istringstream lineInput(line2);
+				lineInput >> volumeSamplesPtr->num[0] >> volumeSamplesPtr->num[1] >> volumeSamplesPtr->num[2];
+			} else {//volume sample data  with no token in front
+				pixelLine += word;
+			}
 		}
 	}
 
+#ifdef HAVE_ZLIB
 	long numVolume = volumeSamplesPtr->num[0] * volumeSamplesPtr->num[1] * volumeSamplesPtr->num[2];
-
-	getline(ifs, line);
-	int compressed_len = line.size();
+	//cout<<pixelLine<<endl;
+	int compressed_len = pixelLine.size();
 	if (compressed_len <= 1) {
 		throw "CartesianMesh::readGeometryFile() : invalid compressed volume";
 	}
 
-	const char* compressed_hex = line.c_str();
+	const char* compressed_hex = pixelLine.c_str();
 	//volumeSamples compressed, changed from byte to short
 	unsigned char* bytes_from_compressed = new unsigned char[compressed_len+1];
 	memset(bytes_from_compressed, 0, (compressed_len+1) * sizeof(unsigned char));
@@ -274,22 +308,26 @@ int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2,char *e
 	int retVal = uncompress(volumeSamplesPtr->volsamples, &inflated_len, bytes_from_compressed, compressed_len);
 
 	if (inflated_len = numVolume) {
-		/*for (unsigned long i = 0; i < inflated_len; i ++) {		
-			if (volumeSamplesPtr->volsamples[i] == 6) {
-				cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
-			}
-			else if (volumeSamplesPtr->volsamples[i] == 16) {
-				cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
-			}
-		}*/
+		for (unsigned long i = 0; i < inflated_len; i ++) {
+			//if (volumeSamplesPtr->volsamples[i] == 6) {
+				//cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
+			//}
+			//else if (volumeSamplesPtr->volsamples[i] == 16) {
+			//	cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
+			//}
+		}
 	} else {
 		throw "loadHighResVolumeSamples : unexpected number of volume samples";
 	}
 	return 0;
+#else
+	throw "loadHighResVolumeSamples : function unavailable because compile does not include zlib";
+#endif
 
 failure:		// failure
 	return 1;
 }
+
 
 /******************************************************************************/
 /******************************* memory management ****************************/
@@ -300,7 +338,7 @@ compartptr compartalloc(void) {
 	compartptr cmpt;
 
 	cmpt=(compartptr) malloc(sizeof(struct compartstruct));
-	if(!cmpt) return NULL;
+	CHECKMEM(cmpt);
 	cmpt->cname=NULL;
 	cmpt->nsrf=0;
 	cmpt->surflist=NULL;
@@ -315,7 +353,10 @@ compartptr compartalloc(void) {
 	cmpt->boxlist=NULL;
 	cmpt->boxfrac=NULL;
 	cmpt->cumboxvol=NULL;
-	return cmpt; }
+	return cmpt;
+ failure:
+	simLog(NULL,10,"Failed to allocate memory in compartalloc");
+	return NULL; }
 
 
 /* compartfree */
@@ -342,7 +383,7 @@ compartssptr compartssalloc(compartssptr cmptss,int maxcmpt) {
 	char **newnames;
 	compartptr *newcmptlist;
 
-	if(maxcmpt<1) return NULL;
+	CHECKBUG(maxcmpt>0,"maxcmpt, in compartssalloc, needs to be >0");
 
 	newcmptss=0;
 	newnames=NULL;
@@ -350,7 +391,7 @@ compartssptr compartssalloc(compartssptr cmptss,int maxcmpt) {
 
 	if(!cmptss) {																			// new allocation
 		cmptss=(compartssptr) malloc(sizeof(struct compartsuperstruct));
-		if(!cmptss) return NULL;
+		CHECKMEM(cmptss);
 		newcmptss=1;
 		cmptss->condition=SCinit;
 		cmptss->sim=NULL;
@@ -359,20 +400,20 @@ compartssptr compartssalloc(compartssptr cmptss,int maxcmpt) {
 		cmptss->cnames=NULL;
 		cmptss->cmptlist=NULL; }
 	else {																						// minor check
-		if(maxcmpt<cmptss->maxcmpt) return NULL; }
+		if(maxcmpt<cmptss->maxcmpt) return cmptss; }
 
 	if(maxcmpt>cmptss->maxcmpt) {											// allocate new compartment names and compartments
-		CHECK(newnames=(char**) calloc(maxcmpt,sizeof(char*)));
+		CHECKMEM(newnames=(char**) calloc(maxcmpt,sizeof(char*)));
 		for(c=0;c<maxcmpt;c++) newnames[c]=NULL;
 		for(c=0;c<cmptss->maxcmpt;c++) newnames[c]=cmptss->cnames[c];
 		for(;c<maxcmpt;c++)
-			CHECK(newnames[c]=EmptyString());
+			CHECKMEM(newnames[c]=EmptyString());
 
-		CHECK(newcmptlist=(compartptr*) calloc(maxcmpt,sizeof(compartptr)));	// compartment list
+		CHECKMEM(newcmptlist=(compartptr*) calloc(maxcmpt,sizeof(compartptr)));	// compartment list
 		for(c=0;c<maxcmpt;c++) newcmptlist[c]=NULL;
 		for(c=0;c<cmptss->maxcmpt;c++) newcmptlist[c]=cmptss->cmptlist[c];
 		for(;c<maxcmpt;c++) {
-			CHECK(newcmptlist[c]=compartalloc());
+			CHECKMEM(newcmptlist[c]=compartalloc());
 			newcmptlist[c]->cmptss=cmptss;
 			newcmptlist[c]->cname=newnames[c]; }}
 
@@ -386,6 +427,7 @@ compartssptr compartssalloc(compartssptr cmptss,int maxcmpt) {
 
  failure:
  	compartssfree(cmptss);
+	simLog(NULL,10,"%s","Failed to allocated memory in compartssalloc");
  	return NULL; }
 
 
@@ -489,7 +531,7 @@ int checkcompartparams(simptr sim,int *warnptr) {
 		cmpt=cmptss->cmptlist[c];
 		if(cmpt->volume<=0) {warn++;simLog(sim,5," WARNING: compartment %s has 0 volume\n",cmpt->cname);}
 		if(cmpt->nbox==0) {warn++;simLog(sim,5," WARNING: compartment %s overlaps no virtual boxes\n",cmpt->cname);}
-		if(cmpt->nbox>0&&cmpt->cumboxvol[cmpt->nbox-1]!=cmpt->volume) {error++;printfException(" ERROR: compartment %s box volumes do not add to compartment volume\n",cmpt->cname);} }
+		if(cmpt->nbox>0&&cmpt->cumboxvol[cmpt->nbox-1]!=cmpt->volume) {error++;simLog(sim,10," BUG: compartment %s box volumes do not add to compartment volume\n",cmpt->cname);} }
 	if(warnptr) *warnptr=warn;
 	return error; }
 
@@ -578,10 +620,10 @@ int compartaddpoint(compartptr cmpt,int dim,double *point) {
 	int d,k;
 	double **newpoints;
 
-	CHECK(newpoints=(double**) calloc(cmpt->npts+1,sizeof(double*)));
+	CHECKMEM(newpoints=(double**) calloc(cmpt->npts+1,sizeof(double*)));
 	for(k=0;k<cmpt->npts;k++)
 		newpoints[k]=cmpt->points[k];
-	CHECK(newpoints[k]=(double*) calloc(dim,sizeof(double)));
+	CHECKMEM(newpoints[k]=(double*) calloc(dim,sizeof(double)));
 	for(d=0;d<dim;d++) newpoints[k][d]=point[d];
 	cmpt->npts++;
 	free(cmpt->points);
@@ -593,6 +635,7 @@ int compartaddpoint(compartptr cmpt,int dim,double *point) {
 
  failure:
 	if(newpoints) free(newpoints);
+	simLog(NULL,10,"Failed to allocate memory in compartaddpoint");
 	return 1; }
 
 
@@ -675,9 +718,9 @@ int compartupdatebox(simptr sim,compartptr cmpt,boxptr bptr,double volfrac) {
 
 	if(cmpt->nbox==cmpt->maxbox) {									// expand box list
 		max=cmpt->maxbox>0?cmpt->maxbox*2:1;
-		CHECK(newboxlist=(boxptr*) calloc(max,sizeof(boxptr)));
-		CHECK(newboxfrac=(double*) calloc(max,sizeof(double)));
-		CHECK(newcumboxvol=(double*) calloc(max,sizeof(double)));
+		CHECKMEM(newboxlist=(boxptr*) calloc(max,sizeof(boxptr)));
+		CHECKMEM(newboxfrac=(double*) calloc(max,sizeof(double)));
+		CHECKMEM(newcumboxvol=(double*) calloc(max,sizeof(double)));
 		for(bc2=0;bc2<cmpt->nbox;bc2++) {
 			newboxlist[bc2]=cmpt->boxlist[bc2];
 			newboxfrac[bc2]=cmpt->boxfrac[bc2];
@@ -705,7 +748,9 @@ int compartupdatebox(simptr sim,compartptr cmpt,boxptr bptr,double volfrac) {
  	free(newboxlist);
  	free(newboxfrac);
  	free(newcumboxvol);
+	simLog(sim,10,"%s","Failed to allocate memory in compartupdatebox");
  	return -1; }
+
 
 /* compartupdatebox, the volume fraction here is the actual volume fraction for the box inside the compartment*/
 /* volfrac is actual volume fraction, for logic compartment the volfrac is assigned -2 */
@@ -754,9 +799,9 @@ int compartupdatebox_volumeSample(simptr sim,compartptr cmpt,boxptr bptr,double 
 
 	if(cmpt->nbox==cmpt->maxbox) {									// expand box list
 		max=cmpt->maxbox>0?cmpt->maxbox*2:1;
-		CHECK(newboxlist=(boxptr*)calloc(max,sizeof(boxptr)));
-		CHECK(newboxfrac=(double*)calloc(max,sizeof(double)));
-		CHECK(newcumboxvol=(double*)calloc(max,sizeof(double)));
+		CHECKMEM(newboxlist=(boxptr*)calloc(max,sizeof(boxptr)));
+		CHECKMEM(newboxfrac=(double*)calloc(max,sizeof(double)));
+		CHECKMEM(newcumboxvol=(double*)calloc(max,sizeof(double)));
 		for(bc2=0;bc2<cmpt->nbox;bc2++) {
 			newboxlist[bc2]=cmpt->boxlist[bc2];
 			newboxfrac[bc2]=cmpt->boxfrac[bc2];
@@ -784,11 +829,12 @@ int compartupdatebox_volumeSample(simptr sim,compartptr cmpt,boxptr bptr,double 
  	free(newboxlist);
  	free(newboxfrac);
  	free(newcumboxvol);
+	simLog(sim,10,"%s","Failed to allocate memory in compartupdatebox_volumeSample");
  	return -1; }
 
  
 /* compartreadstring */
-compartptr compartreadstring(simptr sim,compartptr cmpt,char *word,char *line2,char *erstr) {
+compartptr compartreadstring(simptr sim,ParseFilePtr pfp,compartptr cmpt,const char *word,char *line2) {
 	char nm[STRCHAR],nm1[STRCHAR];
 	int s,er,cl,dim,itct;
 	double v1[DIMMAX];
@@ -811,9 +857,7 @@ compartptr compartreadstring(simptr sim,compartptr cmpt,char *word,char *line2,c
 		itct=sscanf(line2,"%s",nm);
 		CHECKS(itct==1,"error reading surface name");
 		s=stringfind(sim->srfss->snames,sim->srfss->nsrf,nm);
-		std::string nmStr = nm;			// ?? logfile
-		std::string msg = "surface name: " + nmStr + " not recognized";//VCELL
-		CHECKS(s>=0, msg.c_str());
+		CHECKS(s>=0,"surface name '%s' not recognized",nm);
 		er=compartaddsurf(cmpt,sim->srfss->srflist[s]);
 		CHECKS(er!=1,"out of memory adding surface to compartment");
 		CHECKS(er!=2,"cannot add surface to compartment more than once");
@@ -846,11 +890,12 @@ compartptr compartreadstring(simptr sim,compartptr cmpt,char *word,char *line2,c
 	return cmpt;
 
  failure:
+	simParseError(sim,pfp);
 	return NULL; }
 
 
 /* loadcompart */
-int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
+int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2) {
 	ParseFilePtr pfp;
 	char word[STRCHAR],errstring[STRCHAR];
 	int done,pfpcode,firstline2;
@@ -862,7 +907,7 @@ int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 	firstline2=line2?1:0;
 
 	while(!done) {
-		if(pfp->lctr==0&&!strchr(sim->flags,'q'))
+		if(pfp->lctr==0)
 			simLog(sim,2," Reading file: '%s'\n",pfp->fname);
 		if(firstline2) {
 			strcpy(word,"name");
@@ -871,26 +916,26 @@ int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 		else
 			pfpcode=Parse_ReadLine(&pfp,word,&line2,errstring);
 		*pfpptr=pfp;
-		CHECKS(pfpcode!=3,errstring);
+		CHECKS(pfpcode!=3,"%s",errstring);
 
 		if(pfpcode==0);																// already taken care of
 		else if(pfpcode==2) {													// end reading
 			done=1; }
-		else if(pfpcode==3) {													// error
-			CHECKS(0,"SMOLDYN BUG: parsing error"); }
 		else if(!strcmp(word,"end_compartment")) {		// end_compartment
 			CHECKS(!line2,"unexpected text following end_compartment");
 			return 0; }
 		else if(!line2) {															// just word
 			CHECKS(0,"unknown word or missing parameter"); }
 		else {
-			cmpt=compartreadstring(sim,cmpt,word,line2,errstring);
-			CHECKS(cmpt!=NULL,errstring); }}
+			cmpt=compartreadstring(sim,pfp,cmpt,word,line2);
+			CHECK(cmpt); }}															// failed but error has already been reported
 
 	CHECKS(0,"end of file encountered before end_compartment statement");	// end of file
 
  failure:																					// failure
+	if(ErrorType!=1) simParseError(sim,pfp);
 	return 1; }
+
 
 /* compartsupdateparams */
 int compartsupdateparams(simptr sim) {
@@ -903,6 +948,7 @@ int compartsupdateparams(simptr sim) {
 		return compartsupdateparams_volumeSample(sim);
 	}
 }
+
 
 /* compartsupdateparams */
 int compartsupdateparams_original(simptr sim) {
@@ -951,7 +997,9 @@ int compartsupdateparams_original(simptr sim) {
 
 	return 0; }
 
-int compartsupdateparams_volumeSample(simptr sim) {//VCELL
+
+/* compartsupdateparams_volumeSample */
+int compartsupdateparams_volumeSample(simptr sim) {					//VCELL
 	//indecies
 	int b,c,d,i,j,k,cl;
 	//varibles used to check possible boxes and its volFrac in a specific compartment
@@ -1068,7 +1116,8 @@ int compartsupdateparams_volumeSample(simptr sim) {//VCELL
 			else if(clsym==CLequalnot || CLornot)
 				for(b=0;b<boxs->nbox;b++) {
 					boxptr bptr=boxs->blist[b];
-					int er=compartupdatebox_volumeSample(sim,cmpt,bptr,-2); }
+					int er=compartupdatebox_volumeSample(sim,cmpt,bptr,-2);
+					if(er==-1) return 1; }
 		}
 	}
 	//for(c=0;c<cmptss->ncmpt;c++) {

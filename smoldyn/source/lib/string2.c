@@ -98,7 +98,7 @@ char *StrChrQuote(char *cs,char c) {
 
 /* StrChrPQuote */
 int StrChrPQuote(const char *cs,char c) {
-	int i,pn,qt;
+	unsigned int i,pn,qt;
 	
 	pn=qt=0;
 	for(i=0;i<strlen(cs);i++)

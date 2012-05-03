@@ -199,31 +199,31 @@ float gaussrandF() {
 		return gset; }}
 
 
-void sphererandCCD(double *x,double rad1,double rad2) {
+void sphererandCCD(double *x,double radius1,double radius2) {
 	double th,phi;
 
 	th=thetarandCCD();
 	phi=unirandCOD(0,2*PI);
-	if(rad1==rad2);
-	else if(rad1==0) rad1=radrandsphCCD(rad2);
-	else rad1=pow(randCCD()*(rad2*rad2*rad2-rad1*rad1*rad1)+rad1*rad1*rad1,1.0/3.0);
-	x[0]=rad1*sin(th)*cos(phi);
-	x[1]=rad1*sin(th)*sin(phi);
-	x[2]=rad1*cos(th);
+	if(radius1==radius2);
+	else if(radius1==0) radius1=radrandsphCCD(radius2);
+	else radius1=pow(randCCD()*(radius2*radius2*radius2-radius1*radius1*radius1)+radius1*radius1*radius1,1.0/3.0);
+	x[0]=radius1*sin(th)*cos(phi);
+	x[1]=radius1*sin(th)*sin(phi);
+	x[2]=radius1*cos(th);
 	return; }
 
 
-void sphererandCCF(float *x,float rad1,float rad2) {
+void sphererandCCF(float *x,float radius1,float radius2) {
 	float th,phi;
 
 	th=thetarandCCF();
 	phi=unirandCOF(0,2.0*PI);
-	if(rad1==rad2);
-	else if(rad1==0) rad1=radrandsphCCF(rad2);
-	else rad1=pow(randCCF()*(rad2*rad2*rad2-rad1*rad1*rad1)+rad1*rad1*rad1,float(1.0/3.0));
-	x[0]=rad1*sin(th)*cos(phi);
-	x[1]=rad1*sin(th)*sin(phi);
-	x[2]=rad1*cos(th);
+	if(radius1==radius2);
+	else if(radius1==0) radius1=radrandsphCCF(radius2);
+	else radius1=pow(randCCF()*(radius2*radius2*radius2-radius1*radius1*radius1)+radius1*radius1*radius1,float(1.0/3.0));
+	x[0]=radius1*sin(th)*cos(phi);
+	x[1]=radius1*sin(th)*sin(phi);
+	x[2]=radius1*cos(th);
 	return; }
 
 

@@ -15,20 +15,54 @@
 #include "random2.h"
 #include "Rn.h"
 #include "smoldyn.h"
-#include "smoldyn_config.h"
+#include "smoldynconfigure.h"
 #include "smoldynfuncs.h"
 #include "Zn.h"
 #include <string>
 #include <sstream>
 
-
 /******************************************************************************/
 /************************* Global variable definitions ************************/
 /******************************************************************************/
 
-void (*LoggingCallback)(simptr,int,const char*);
-int ThrowThreshold;
-FILE *LogFile;
+void (*LoggingCallback)(simptr,int,const char*)=NULL;
+int ThrowThreshold=10;
+FILE *LogFile=NULL;
+char ErrorString[STRCHARLONG]="";
+int ErrorType=0;
+char SimFlags[STRCHAR]="";
+int VCellDefined=0;
+
+
+/******************************************************************************/
+/***************************** Simulation structure ***************************/
+/******************************************************************************/
+
+
+/******************************************************************************/
+/****************************** Local declarations ****************************/
+/******************************************************************************/
+
+// error handling
+
+// enumerated types
+char *simss2string(enum SmolStruct ss,char *string);
+
+// low level utilities
+
+// memory management
+
+// data structure output
+
+// structure set up
+int simsetpthreads(simptr sim,int number);
+
+// core simulation functions
+
+
+/******************************************************************************/
+/********************************* Error handling *****************************/
+/******************************************************************************/
 
 
 /* simSetLogging */
@@ -44,10 +78,45 @@ void simSetThrowing(int corethreshold) {
 	return; }
 
 
+/* simLog */
+void simLog(simptr sim,int importance,const char* format, ...) {
+	char message[STRCHARLONG],*flags;
+	va_list arguments;
+	int qflag,vflag,wflag;
+	FILE *fptr;
 
-/******************************************************************************/
-/***************************** Simulation structure ***************************/
-/******************************************************************************/
+	va_start(arguments, format);
+	vsprintf(message, format, arguments);
+	va_end(arguments);
+
+	if(LoggingCallback)
+		(*LoggingCallback)(sim,importance,message);
+
+	if(sim && sim->logfile) fptr=sim->logfile;
+	else if(LogFile) fptr=LogFile;
+	else fptr=stdout;
+	if(sim) flags=sim->flags;
+	else flags=SimFlags;
+	qflag=strchr(flags,'q')?1:0;
+	vflag=strchr(flags,'v')?1:0;
+	wflag=strchr(flags,'w')?1:0;
+	if(vflag || importance>=2)
+		if(!qflag || importance>=5)
+			if(!wflag || importance<=4 || importance>=7)
+				fprintf(fptr,"%s", message);
+
+	if(importance>=ThrowThreshold) throw message;
+
+	return; }
+
+
+/* simParseError */
+void simParseError(simptr sim,ParseFilePtr pfp) {
+	char parseerrstr[STRCHAR];
+
+	if(pfp) Parse_ReadFailure(pfp,parseerrstr);
+	simLog(sim,8,"%s\nMessage: %s\n",parseerrstr,ErrorString);
+	return; }
 
 
 /******************************************************************************/
@@ -133,7 +202,7 @@ simptr simalloc(const char *fileroot) {
 	enum EventType et;
 
 	sim=NULL;
-	CHECK(sim=(simptr) malloc(sizeof(struct simstruct)));
+	CHECKMEM(sim=(simptr) malloc(sizeof(struct simstruct)));
 	sim->logfile=NULL;
 	sim->condition=SCinit;
 	sim->filepath=NULL;
@@ -163,14 +232,15 @@ simptr simalloc(const char *fileroot) {
 	sim->threads=NULL;
 	simsetpthreads(sim,0);
 
-	CHECK(sim->filepath=EmptyString());
-	CHECK(sim->filename=EmptyString());
-	CHECK(sim->flags=EmptyString());
-	CHECK(sim->cmds=(void*) scmdssalloc(&docommand,(void*)sim,fileroot));
+	CHECKMEM(sim->filepath=EmptyString());
+	CHECKMEM(sim->filename=EmptyString());
+	CHECKMEM(sim->flags=EmptyString());
+	CHECKMEM(sim->cmds=(void*) scmdssalloc(&docommand,(void*)sim,fileroot));
 	return sim;
 
  failure:
 	simfree(sim);
+	simLog(NULL,10,"Unable to allocate memory in simalloc");
 	return NULL; }
 
 
@@ -210,66 +280,37 @@ void simfuncfree(void) {
 /******************************************************************************/
 
 
-/* simLog */
-void simLog(simptr sim,int importance,const char* format, ...) {
-	char message[4000];	//?? maybe improve this
-	va_list arguments;
-	int qflag,vflag,wflag;
-	FILE *fptr;
-
-	va_start(arguments, format);
-	vsprintf(message, format, arguments);
-	va_end(arguments);
-
-	if(LoggingCallback)
-		(*LoggingCallback)(sim,importance,message);	//?? This might need va_start and va_end
-	else if(!sim) {
-		fptr=LogFile?LogFile:stderr;
-		fprintf(fptr,"%s", message); }
-	else if(sim) {
-		if(sim->logfile) fptr=sim->logfile;
-		else if(LogFile) fptr=LogFile;
-		else fptr=stdout;
-		qflag=strchr(sim->flags,'q')?1:0;
-		vflag=strchr(sim->flags,'v')?1:0;
-		wflag=strchr(sim->flags,'w')?1:0;
-		// ?? need to account for flags and importance
-		fprintf(fptr,"%s", message); }
-	if(importance>=ThrowThreshold) throw message;
-
-	return; }	//?? need to add sim->logfn to Libsmoldyn and input
-
-
 /* simoutput */
 void simoutput(simptr sim) {
-	int vflag;
-
-	vflag=strchr(sim->flags,'v')?1:0;
-	
-	printf("SIMULATION PARAMETERS\n");
+	simLog(sim,2,"SIMULATION PARAMETERS\n");
 	if(!sim) {
-		printf(" No simulation parameters\n\n");
+		simLog(sim,2," No simulation parameters\n\n");
 		return; }
 	if(sim->filename[0]!='\0')
-		printf(" file: %s%s\n",sim->filepath,sim->filename);
-	printf(" starting clock time: %s",ctime(&sim->clockstt));
-	printf(" %i dimensions\n",sim->dim);
-	if(sim->accur<10 || vflag) printf(" Accuracy level: %g\n",sim->accur);
-	printf(" Random number seed: %li\n",sim->randseed);
+		simLog(sim,2," file: %s%s\n",sim->filepath,sim->filename);
+	simLog(sim,2," starting clock time: %s",ctime(&sim->clockstt));
+	simLog(sim,2," %i dimensions\n",sim->dim);
+	if(sim->accur<10) simLog(sim,2," Accuracy level: %g\n",sim->accur);
+	else simLog(sim,1," Accuracy level: %g\n",sim->accur);
+	simLog(sim,2," Random number seed: %li\n",sim->randseed);
 
-	if(sim->threads) printf(" Using threading with %d threads\n",sim->threads->nthreads);
-	else if(vflag) printf(" Running in single-threaded mode\n");
+	if(sim->threads) simLog(sim,2," Using threading with %d threads\n",sim->threads->nthreads);
+	else simLog(sim,1," Running in single-threaded mode\n");
 	
-	printf(" Time from %g to %g step %g\n",sim->tmin,sim->tmax,sim->dt);
-	if(sim->time!=sim->tmin) printf(" Current time: %g\n",sim->time);
-	printf("\n");
+	simLog(sim,2," Time from %g to %g step %g\n",sim->tmin,sim->tmax,sim->dt);
+	if(sim->time!=sim->tmin) simLog(sim,2," Current time: %g\n",sim->time);
+	simLog(sim,2,"\n");
 	return; }
 
 
 /* simsystemoutput */
 void simsystemoutput(simptr sim) {
-	int order;
+	int order,vflag;
 
+	if(!sim) {
+		simLog(sim,2," No simulation parameters\n\n");
+		return; }
+	vflag=strchr(sim->flags,'v')?1:0;
 	simoutput(sim);
 	graphssoutput(sim);
 	walloutput(sim);
@@ -277,12 +318,15 @@ void simsystemoutput(simptr sim) {
 	surfaceoutput(sim);
 	scmdoutput((cmdssptr) sim->cmds);
 	boxssoutput(sim);
+	if(vflag)
+		boxoutput(sim->boxs,0,20,sim->dim);
 	for(order=0;order<MAXORDER;order++)
 		rxnoutput(sim,order);
 	compartoutput(sim);
 	portoutput(sim);
 	mzrssoutput(sim);
 	return; }
+
 
 
 /* writesim */
@@ -308,7 +352,7 @@ void checksimparams(simptr sim) {
 	int warn,error,warndiff;
 	char string[STRCHAR];
 
-	printf("PARAMETER CHECK\n");
+	simLog(sim,2,"PARAMETER CHECK\n");
 	warn=error=0;
 
 	error+=checkmolparams(sim,&warndiff);warn+=warndiff;
@@ -323,13 +367,13 @@ void checksimparams(simptr sim) {
 
 	if(sim->condition!=SCok) {
 		warn++;
-		printf(" WARNING: simulation structure %s\n",simsc2string(sim->condition,string)); }
+		simLog(sim,7," WARNING: simulation structure %s\n",simsc2string(sim->condition,string)); }
 
-	if(error>0) printf(" %i total errors\n",error);
-	else printf(" No errors\n");
-	if(warn>0) printf(" %i total warnings\n",warn);
-	else printf(" No warnings\n");
-	printf("\n");
+	if(error>0) simLog(sim,2," %i total errors\n",error);
+	else simLog(sim,2," No errors\n");
+	if(warn>0) simLog(sim,2," %i total warnings\n",warn);
+	else simLog(sim,2," No warnings\n");
+	simLog(sim,2,"\n");
 	return; }
 
 
@@ -414,8 +458,8 @@ int simsettime(simptr sim,double time,int code) {
 
 
 /* simreadstring */
-int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
-	char nm[STRCHAR],nm1[STRCHAR],shapenm[STRCHAR],ch,rname[STRCHAR],errstring[STRCHAR];
+int simreadstring(simptr sim,ParseFilePtr pfp,const char *word,char *line2) {
+	char nm[STRCHAR],nm1[STRCHAR],shapenm[STRCHAR],ch,rname[STRCHAR];
 	int er,dim,i,nmol,d,i1,s,c,ll,order,more,rctident[MAXORDER],nprod,prdident[MAXPRODUCT],r,ord,prd,itct,prt,lt;
 	double flt1,flt2,v1[DIMMAX*DIMMAX],v2[4],poslo[DIMMAX],poshi[DIMMAX];
 	enum MolecState ms,rctstate[MAXORDER],prdstate[MAXPRODUCT];
@@ -986,8 +1030,8 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 
 	else if(!strcmp(word,"new_surface")) {				// new_surface
 		CHECKS(dim>0,"need to enter dim before new_surface");
-		srf=surfreadstring(sim,NULL,"name",line2,errstring);
-		CHECKS(srf!=NULL,errstring); }
+		srf=surfreadstring(sim,pfp,NULL,"name",line2);
+		CHECK(srf!=NULL); }
 
 	else if(!strcmp(word,"surface")) {						// surface
 		CHECKS(dim>0,"need to enter dim before surface");
@@ -999,8 +1043,8 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 		s=stringfind(sim->srfss->snames,sim->srfss->nsrf,nm);
 		CHECKS(s>=0,"surface is unrecognized");
 		srf=sim->srfss->srflist[s];
-		srf=surfreadstring(sim,srf,nm1,line2,errstring);
-		CHECKS(srf!=NULL,errstring); }
+		srf=surfreadstring(sim,pfp,srf,nm1,line2);
+		CHECK(srf!=NULL); }
 
 	// compartments
 
@@ -1012,8 +1056,8 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 		CHECKS(!strnword(line2,2),"unexpected text following max_compartment"); }
 
 	else if(!strcmp(word,"new_compartment")) {		// new_compartment
-		cmpt=compartreadstring(sim,NULL,"name",line2,errstring);
-		CHECKS(cmpt!=NULL,errstring); }
+		cmpt=compartreadstring(sim,pfp,NULL,"name",line2);
+		CHECK(cmpt!=NULL); }
 
 	else if(!strcmp(word,"compartment")) {				// compartment
 		CHECKS(sim->cmptss,"individual compartments need to be defined before using compartment");
@@ -1024,8 +1068,8 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 		c=stringfind(sim->cmptss->cnames,sim->cmptss->ncmpt,nm);
 		CHECKS(c>=0,"compartment is unrecognized");
 		cmpt=sim->cmptss->cmptlist[c];
-		cmpt=compartreadstring(sim,cmpt,nm1,line2,errstring);
-		CHECKS(cmpt!=NULL,errstring); }
+		cmpt=compartreadstring(sim,pfp,cmpt,nm1,line2);
+		CHECK(cmpt!=NULL); }
 
 	// ports
 
@@ -1037,8 +1081,8 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 		CHECKS(!strnword(line2,2),"unexpected text following max_port"); }
 
 	else if(!strcmp(word,"new_port")) {					// new_port
-		port=portreadstring(sim,NULL,"name",line2,errstring);
-		CHECKS(port!=NULL,errstring); }
+		port=portreadstring(sim,pfp,NULL,"name",line2);
+		CHECK(port!=NULL); }
 
 	else if(!strcmp(word,"port")) {							// port
 		CHECKS(sim->portss,"individual ports need to be defined before using port");
@@ -1049,8 +1093,8 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 		prt=stringfind(sim->portss->portnames,sim->portss->nport,nm);
 		CHECKS(prt>=0,"port is unrecognized");
 		port=sim->portss->portlist[prt];
-		port=portreadstring(sim,port,nm1,line2,errstring);
-		CHECKS(port!=NULL,errstring); }
+		port=portreadstring(sim,pfp,port,nm1,line2);
+		CHECK(port!=NULL); }
 
 	// moleculizer
 
@@ -1164,9 +1208,7 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 			CHECKS(itct==1,"failed to read reaction surface");
 			CHECKS(sim->srfss,"no surfaces defined");
 			s=stringfind(sim->srfss->snames,sim->srfss->nsrf,nm);
-			std::string nmStr = nm;
-			std::string msg = "surface name: " + nmStr + " not recognized";
-			CHECKS(s>=0, msg.c_str());
+			CHECKS(s>=0,"surface %s not recognized",nm);
 			srf=sim->srfss->srflist[s];
 			line2=strnword(line2,2);
 			CHECKS(line2,"missing reaction name"); }
@@ -1228,47 +1270,75 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 				CHECKS(line2=strnword(line2,3),"incomplete product list"); }
 		rxn=RxnAddReaction(sim,rname,order,rctident,rctstate,nprod,prdident,prdstate,cmpt,srf);
 		CHECKS(rxn,"out of memory trying to create reaction structure");
+
 		if(line2) {
-#ifdef VCELL_HYBRID 
-			std::string rawStr, expStr;
-			std::stringstream ss(line2);
+			string rawStr, expStr;
+			stringstream ss(line2);
 			getline(ss,rawStr);
 			size_t found = rawStr.find(";");
-			expStr = rawStr.substr(0, found);
-			rxn->rateExp = new Expression(expStr);
-			//a "fake" set value to allow RxnSetRate to do proper job, especially when there is reversible
-			//reactions, the rxn->rparamt, and rxn->bindrad2 have to be set.
-		    er = RxnSetValue(sim, "rate", rxn, 1);}
-#else
-			CHECKS((itct=sscanf(line2,"%lg",&flt1))==1,"failed to read reaction rate");
-			er=RxnSetValue(sim,"rate",rxn,flt1);
-			CHECKS(er!=4,"reaction rate value must be non-negative");
-			line2=strnword(line2,2); }
-			CHECKS(!line2,"unexpected text following reaction");
-#endif
+			if(found!=string::npos)
+			{
+				expStr = rawStr.substr(0, found);
+				ValueProvider* valueProvider = sim->valueProviderFactory->createValueProvider(expStr);
+				double constRate = 1;
+				try {
+					constRate = valueProvider->getConstantValue();
+				} catch (...) {
+					rxn->rateValueProvider = valueProvider;
+				}
+
+				//if rate is a exp, a "fake" set value has to be set to allow RxnSetRate to do proper job, especially when there
+				//is reversible reactions, the rxn->rparamt, and rxn->bindrad2 have to be set.
+				er = RxnSetValue(sim, "rate", rxn, constRate);
+				line2=NULL;
+			}
+			else
+			{
+				CHECKS((itct=sscanf(line2,"%lg",&flt1))==1,"failed to read reaction rate");
+				er=RxnSetValue(sim,"rate",rxn,flt1);
+				CHECKS(er!=4,"reaction rate value must be non-negative");
+				line2=strnword(line2,2);
+				CHECKS(!line2,"unexpected text following reaction");
+			}
+		}
+
 	}
 
 	else if(!strcmp(word,"reaction_rate")) {				// reaction_rate
-#ifdef VCELL_HYBRID 
-		std::stringstream ss(line2);
-		ss >> rname;
-		std::string expStr;
-		getline(ss,expStr);
-		rxn->rateExp = new Expression(expStr);
-		r=readrxnname(sim,rname,&order,&rxn);
-		CHECKS(r>=0,"unrecognized reaction name");
-		//a "fake" set value to allow RxnSetRate to do proper job, especially when there is reversible
-		//reactions, the rxn->rparamt, and rxn->bindrad2 have to be set.
-		er = RxnSetValue(sim, "rate", rxn, 1);
-#else
-		itct=sscanf(line2,"%s %lg",rname,&flt1);
-		CHECKS(itct==2,"reaction_rate format: rname rate");
-		r=readrxnname(sim,rname,&order,&rxn);
-		CHECKS(r>=0,"unrecognized reaction name");
-		er=RxnSetValue(sim,"rate",rxn,flt1);
-		CHECKS(er!=4,"reaction rate value must be non-negative");
-		CHECKS(!strnword(line2,3),"unexpected text following reaction"); 
-#endif
+		if(line2){
+			stringstream ss(line2);
+			ss >> rname;
+			string rawStr, expStr;
+			getline(ss, rawStr);
+			size_t found = rawStr.find(";");
+
+			if(found!=string::npos)
+			{
+				expStr = rawStr.substr(0, found);
+				ValueProvider* valueProvider = sim->valueProviderFactory->createValueProvider(expStr);
+				double constRate = 1;
+				try {
+					constRate = valueProvider->getConstantValue();
+				} catch (...) {
+					rxn->rateValueProvider = valueProvider;
+				}
+
+				//if rate is a exp, a "fake" set value has to be set to allow RxnSetRate to do proper job, especially when there
+				//is reversible reactions, the rxn->rparamt, and rxn->bindrad2 have to be set.
+				er = RxnSetValue(sim, "rate", rxn, constRate);
+				line2=NULL;
+			}
+			else
+			{
+				itct=sscanf(line2,"%s %lg",rname,&flt1);
+				CHECKS(itct==2,"reaction_rate format: rname rate");
+				r=readrxnname(sim,rname,&order,&rxn);
+				CHECKS(r>=0,"unrecognized reaction name");
+				er=RxnSetValue(sim,"rate",rxn,flt1);
+				CHECKS(er!=4,"reaction rate value must be non-negative");
+				CHECKS(!strnword(line2,3),"unexpected text following reaction");
+			}
+		}
 	}
 
 	else if(!strcmp(word,"confspread_radius")) {		// confspread_radius
@@ -1454,144 +1524,87 @@ int simreadstring(simptr sim,const char *word,char *line2,char *erstr) {
 	return 0;
 
  failure:
+	simParseError(sim,pfp);
 	return 1; }
 
 #ifdef VCELL
-#include <VCELL/SimulationMessaging.h>
-extern int taskID;
-int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
-
-	char word[STRCHAR];
-	ParseFilePtr pfp = *pfpptr;
-	int done = 0, pfpcode;
-	bool firstline2 = (line2 != NULL);
-	while(!done) {
-		if (firstline2) {
-			strcpy(word,"name");
-			pfpcode=1;
-			firstline2 = false;
-		} else {
-			pfpcode=Parse_ReadLine(&pfp,word,&line2,erstr);
-		}
-		*pfpptr=pfp;
-		CHECKS(pfpcode!=3,erstr);
-
-		if(pfpcode==0);	// already taken care of
-
-		else if(pfpcode==2) { // end reading
-			done = 1;
-		} else if(pfpcode==3) {	// error
-			CHECKS(0,"SMOLDYN BUG: parsing error");
-		} else if(!strcmp(word,"end_jms")) {  // end_jms
-			CHECKS(!line2,"unexpected text following end_jms");
-			break;
-		} else if(!line2) {															// just word
-			CHECKS(0,"missing jms parameters");
-		} else {
-#ifndef VCELL_HYBRID
-#ifdef USE_MESSAGING
-			if (taskID >= 0) {
-				char *jmsBroker = new char[64];
-				char *jmsUser = new char[64];
-				char* jmsPwd = new char[64];
-				char* jmsQueue = new char[64];
-				char* jmsTopic = new char[64];
-				char* vcellUser = new char[64];
-				int simKey, jobIndex;
-				sscanf(line2, "%s%s%s%s%s%s%d%d", jmsBroker, jmsUser, jmsPwd, jmsQueue, jmsTopic, vcellUser, &simKey, &jobIndex);
-				SimulationMessaging::create(jmsBroker, jmsUser, jmsPwd, jmsQueue, jmsTopic, vcellUser, simKey, jobIndex, taskID);
-				SimulationMessaging::getInstVar()->start(); // start the thread
-			}
-#endif
-#endif
-		}
-	}
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "setting up simulation"));
-	return 0;
-
-failure:		// failure
-	return 1;
-}
+int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr);
 #endif
 
 /* loadsim */
-int loadsim(simptr sim,const char *fileroot,const char *filename,char *erstr,const char *flags) {
+int loadsim(simptr sim,const char *fileroot,const char *filename,const char *flags) {
 	int done,pfpcode,er;
-	char word[STRCHAR],*line2,errstring[STRCHAR];
+	char word[STRCHAR],*line2,errstring[STRCHARLONG];
 	ParseFilePtr pfp;
 
-	if(!sim || !fileroot || !filename || !erstr || !flags) return 0;
+	CHECKBUG(sim && fileroot && filename && flags,"loadsim missing parameters");
 	strncpy(sim->filepath,fileroot,STRCHAR);
 	strncpy(sim->filename,filename,STRCHAR);
 	strncpy(sim->flags,flags,STRCHAR);
 	done=0;
 	pfp=Parse_Start(fileroot,filename,errstring);
-	CHECKS(pfp,errstring);
+	CHECKS(pfp,"%s",errstring);
 	er=Parse_CmdLineArg(NULL,NULL,pfp);
-	CHECKS(!er,"out of memory");
+	CHECKMEM(!er);
 	sim->volumeSamplesPtr = NULL;//initialize the volumesample to null
 
 	while(!done) {
 		if(pfp->lctr==0 && !strchr(flags,'q'))
-			printf(" Reading file: '%s'\n",pfp->fname);
+			simLog(sim,2," Reading file: '%s'\n",pfp->fname);
 		pfpcode=Parse_ReadLine(&pfp,word,&line2,errstring);
-		CHECKS(pfpcode!=3,errstring);
+		CHECKS(pfpcode!=3,"%s",errstring);
+		er=0;
 
 		if(pfpcode==0);																// already taken care of
 
 		else if(pfpcode==2) {													// end reading
 			done=1; }
 
-		else if(pfpcode==3) {													// error
-			CHECKS(0,"SMOLDYN BUG: parsing error"); }
-
 #ifdef VCELL
 		else if(!strcmp(word,"start_jms")) {			// jms settings
-			CHECKS(!loadJMS(sim,&pfp,line2,errstring),errstring); 
+			er=loadJMS(sim,&pfp,line2, errstring);
 		}
 #endif
-		else if(!strcmp(word,"highResVolumeSamplesFile")) {			//highResVolumeSamplesFile
-			CHECKS(!loadHighResVolumeSamples(sim,&pfp,line2,errstring),errstring); }
+		else if(!strcmp(word,"start_highResVolumeSamples")) {			//highResVolumeSamplesFile
+			er=loadHighResVolumeSamples(sim,&pfp,line2); }
 
 		else if(!strcmp(word,"start_reaction")) {			// start_reaction
 			CHECKS(sim->mols,"need to enter species before reactions");
-			CHECKS(!loadrxn(sim,&pfp,line2,errstring),errstring); }
+			er=loadrxn(sim,&pfp,line2); }
 
 		else if(!strcmp(word,"start_surface")) {			// start_surface
 			CHECKS(sim->dim>0,"need to enter dim before start_surface");
-			CHECKS(!loadsurface(sim,&pfp,line2,errstring),errstring); }
+			er=loadsurface(sim,&pfp,line2); }
 
 		else if(!strcmp(word,"start_compartment")) {	// start_compartment
 			CHECKS(sim->dim>0,"need to enter dim before start_compartment");
-			CHECKS(!loadcompart(sim,&pfp,line2,errstring),errstring); }
+			er=loadcompart(sim,&pfp,line2); }
 
 		else if(!strcmp(word,"start_port")) {					// start_port
-			CHECKS(!loadport(sim,&pfp,line2,errstring),errstring); }
+			er=loadport(sim,&pfp,line2); }
 
 		else if(!strcmp(word,"start_rules")) {				// start_rules
-			CHECKS(!mzrssreadrules(sim,&pfp,errstring),errstring); }
+			er=mzrssreadrules(sim,&pfp); }
 
 		else if(!line2) {															// just word
 			CHECKS(0,"unknown word or missing parameter"); }
 
 		else {
-			er=simreadstring(sim,word,line2,errstring);
-			CHECKS(!er,errstring); }}
+			er=simreadstring(sim,pfp,word,line2); }
+
+		if(er) return 1; }
 
 	return 0;
 
  failure:																					// failure
-	if(!done)
-		er=10+Parse_ReadFailure(pfp,erstr);
-	else er=10;
-	return er; }
+	simParseError(sim,pfp);
+	return 1; }
 
 
 /* simupdate */
-int simupdate(simptr sim,char *erstr) {
-	int er,qflag;
+int simupdate(simptr sim) {
+	int er;
 	static int recurs=0;
-	char errstring[STRCHAR];
 
 	if(sim->condition==SCok) {
 		return 0; }
@@ -1600,74 +1613,81 @@ int simupdate(simptr sim,char *erstr) {
 		return 2; }
 	recurs++;
 
-	qflag=strchr(sim->flags,'q')?1:0;
-
-	if(sim->condition==SCinit && !qflag && sim->mols) printf(" setting up molecules\n");
+	if(sim->condition==SCinit && sim->mols)
+		simLog(sim,2," setting up molecules\n");
 	er=molsupdate(sim);
-	CHECKS(er!=1,"out of memory setting up molecules");
+	CHECK(er!=1);
 
-	if(sim->condition==SCinit && !qflag) printf(" setting up virtual boxes\n");
+	if(sim->condition==SCinit)
+		simLog(sim,2," setting up virtual boxes\n");
 	er=boxesupdate(sim);
-	CHECKS(er!=1,"out of memory setting up spatial partitions");
+	CHECK(er!=1);
 	CHECKS(er!=3,"simulation dimensions or boundaries are undefined");
 
 	er=molsort(sim);
-	CHECKS(er!=1,"out of memory during molecule sorting\n");
+	CHECK(er!=1);
 
-	if(sim->condition==SCinit && !qflag && sim->cmptss) printf(" setting up compartments\n");
+	if(sim->condition==SCinit && sim->cmptss)
+		simLog(sim,2," setting up compartments\n");
 	er=compartsupdate(sim);
-	CHECKS(er!=1,"out of memory setting up compartments");
+	CHECK(er!=1);
 
-	if(sim->condition==SCinit && !qflag && (sim->rxnss[0] || sim->rxnss[1] || sim->rxnss[2])) printf(" setting up reactions\n");
+	if(sim->condition==SCinit && (sim->rxnss[0] || sim->rxnss[1] || sim->rxnss[2]))
+		simLog(sim,2," setting up reactions\n");
 	er=rxnsupdate(sim);
-	CHECKS(er!=1,"out of memory setting up reactions");
+	CHECK(er!=1);
 	CHECKS(er!=3,"failed to set up reactions");
 
-	if(sim->condition==SCinit && !qflag && sim->srfss) printf(" setting up surfaces\n");
+	if(sim->condition==SCinit && sim->srfss)
+		simLog(sim,2," setting up surfaces\n");
 	er=surfupdate(sim);
-	CHECKS(er!=1,"out of memory setting up surfaces");
+	CHECK(er!=1);
 
-	if(sim->condition==SCinit && !qflag && sim->portss) printf(" setting up ports\n");
+	if(sim->condition==SCinit && sim->portss)
+		simLog(sim,2," setting up ports\n");
 	er=portsupdate(sim);
-	CHECKS(er!=1,"out of memory setting up ports");
+	CHECK(er!=1);
 
-	if(sim->condition==SCinit && !qflag && sim->mzrss) printf(" setting up moleculizer\n");
-	CHECKS(!mzrsetupmoleculizer(sim,errstring),errstring);
+	if(sim->condition==SCinit && sim->mzrss)
+		simLog(sim,2," setting up moleculizer\n");
+	er=mzrsetupmoleculizer(sim);
+	CHECK(!er);
 
-	if(sim->condition==SCinit && !qflag && sim->graphss) printf(" setting up graphics\n");
+	if(sim->condition==SCinit && sim->graphss)
+		simLog(sim,2," setting up graphics\n");
 	er=graphicsupdate(sim);
-	CHECKS(er!=1,"out of memory setting up graphics");
+	CHECK(er!=1);
 	
 	if(sim->mols && sim->mols->condition!=SCok) {
-		er=simupdate(sim,errstring);
-		CHECKS(!er,errstring); }
+		er=simupdate(sim);
+		CHECK(!er); }
 	if(sim->boxs && sim->boxs->condition!=SCok) {
-		er=simupdate(sim,errstring);
-		CHECKS(!er,errstring); }
+		er=simupdate(sim);
+		CHECK(!er); }
 	if(sim->cmptss && sim->cmptss->condition!=SCok) {
-		er=simupdate(sim,errstring);
-		CHECKS(!er,errstring); }
+		er=simupdate(sim);
+		CHECK(!er); }
 	if(sim->rxnss[0] && sim->rxnss[0]->condition!=SCok) {
-		er=simupdate(sim,errstring);
-		CHECKS(!er,errstring); }
+		er=simupdate(sim);
+		CHECK(!er); }
 	if(sim->rxnss[1] && sim->rxnss[1]->condition!=SCok) {
-		er=simupdate(sim,errstring);
-		CHECKS(!er,errstring); }
+		er=simupdate(sim);
+		CHECK(!er); }
 	if(sim->rxnss[2] && sim->rxnss[2]->condition!=SCok) {
-		er=simupdate(sim,errstring);
-		CHECKS(!er,errstring); }
+		er=simupdate(sim);
+		CHECK(!er); }
 	if(sim->srfss && sim->srfss->condition!=SCok) {
-		er=simupdate(sim,errstring);
-		CHECKS(!er,errstring); }
+		er=simupdate(sim);
+		CHECK(!er); }
 	if(sim->portss && sim->portss->condition!=SCok) {
-		er=simupdate(sim,errstring);
-		CHECKS(!er,errstring); }
+		er=simupdate(sim);
+		CHECK(!er); }
 	if(sim->mzrss && sim->mzrss->condition!=SCok) {
-		er=simupdate(sim,errstring);
-		CHECKS(!er,errstring); }
+		er=simupdate(sim);
+		CHECK(!er); }
 	if(sim->graphss && sim->graphss->condition!=SCok) {
-		er=simupdate(sim,errstring);
-		CHECKS(!er,errstring); }
+		er=simupdate(sim);
+		CHECK(!er); }
 		
 	simsetcondition(sim,SCok,1);
 	recurs=0;
@@ -1675,65 +1695,55 @@ int simupdate(simptr sim,char *erstr) {
 	return 0;
 
  failure:
+	if(ErrorType!=1) simLog(sim,10,"%s",ErrorString);
 	return 1; }
 
 
-
-/* setupsim */
-int setupsim(const char *fileroot,const char *filename,simptr *smptr,const char *flags) {
+/* simInitAndLoad */
+int simInitAndLoad(const char *fileroot,const char *filename,simptr *smptr,const char *flags, ValueProviderFactory* valueProviderFactory, AbstractMesh* mesh) {
 	simptr sim;
-	int er,order,qflag,wflag,vflag;
-	char errstring[STRCHAR],erstr[STRCHAR];
+	int er,qflag;
 
 	sim=*smptr;
 	if(!sim) {
 		qflag=strchr(flags,'q')?1:0;
 		if(!qflag) {
-			printf("--------------------------------------------------------------\n");
-			printf("Running Smoldyn %s\n",VERSION);
-			printf("\nCONFIGURATION FILE\n");
-			printf(" Root: '%s'\n",fileroot);
-			printf(" Name: '%s'\n",filename); }
+			simLog(NULL,2,"--------------------------------------------------------------\n");
+			simLog(NULL,2,"Running Smoldyn %s\n",VERSION);
+			simLog(NULL,2,"\nCONFIGURATION FILE\n");
+			simLog(NULL,2," Path: '%s'\n",fileroot);
+			simLog(NULL,2," Name: '%s'\n",filename); }
 		sim=simalloc(fileroot);
-		CHECKS(sim,"out of memory");
-		er=loadsim(sim,fileroot,filename,errstring,flags);
+		CHECKMEM(sim);
+		sim->valueProviderFactory = valueProviderFactory; //create value provider factory
+		sim->mesh = mesh;
+		er=loadsim(sim,fileroot,filename,flags);		// load sim
+		CHECK(!er);
 
-		if(er) {
-			printfException("\nError reading file in line %i : %s\n",er-10, errstring);
-			simfree(sim);
-			sim=NULL;
-			CHECKS(0,errstring); }
-		if(!qflag) printf(" Loaded file successfully\n"); }
-
-	qflag=strchr(sim->flags,'q')?1:0;
-	wflag=strchr(sim->flags,'w')?1:0;
-	vflag=strchr(sim->flags,'v')?1:0;
-
-	er=simupdate(sim,errstring);
-	CHECKS(!er,errstring);
-
-	if(!qflag) printf("\n");
-	if(!qflag) simoutput(sim);
-	if(!qflag) graphssoutput(sim);
-	if(!qflag) walloutput(sim);
-	if(!qflag) molssoutput(sim);
-	if(!qflag) surfaceoutput(sim);
-	if(!qflag) scmdoutput((cmdssptr) sim->cmds);
-	if(!qflag) boxssoutput(sim);
-	if(vflag) boxoutput(sim->boxs,0,20,sim->dim);
-	for(order=0;order<MAXORDER;order++)
-		if(!qflag) rxnoutput(sim,order);
-	if(!qflag) compartoutput(sim);
-	if(!qflag) portoutput(sim);
-	if(!qflag) mzrssoutput(sim);
-	if(!wflag) checksimparams(sim);
+		simLog(sim,2," Loaded file successfully\n"); }
 
 	*smptr=sim;
 	return 0;
 
- failure:
-	printfException("%s\n",erstr);
+failure:
+	if(ErrorType!=1) simLog(sim,10,ErrorString);
 	if(!*smptr) simfree(sim);
+	return 1; }
+
+
+/* simUpdateAndDisplay */
+int simUpdateAndDisplay(simptr sim) {
+	int er;
+
+	er=simupdate(sim);														// update sim
+	CHECK(!er);
+
+	simLog(sim,2,"\n");														// diagnostics output
+	simsystemoutput(sim);
+	checksimparams(sim);
+	return 0;
+
+ failure:
 	return 1; }
 
 
@@ -1746,13 +1756,10 @@ int setupsim(const char *fileroot,const char *filename,simptr *smptr,const char 
 int simdocommands(simptr sim) {
 	int er;
 	enum CMDcode ccode;
-	char erstr[STRCHAR];
 
 	ccode=scmdexecute((cmdssptr) sim->cmds,sim->time,sim->dt,-1,0);
-	er=simupdate(sim,erstr);
-	if(er) {
-		printfException("%s",erstr);
-		return 8; }
+	er=simupdate(sim);
+	if(er) return 8;
 	er=molsort(sim);														// sort live and dead
 	if(er) return 6;
 	if(ccode==CMDstop || ccode==CMDabort) return 7;
@@ -1762,15 +1769,10 @@ int simdocommands(simptr sim) {
 /* simulatetimestep */
 int simulatetimestep(simptr sim) {
 	int er,ll;
-	char errstring[STRCHAR];
-
-	er=simupdate(sim,errstring);										// update any data structure changes
-	if(er) {
-		printfException("%s\n",errstring);
-		return 8; }
+	er=simupdate(sim);															// update any data structure changes
+	if(er) return 8;
 	er=(*sim->diffusefn)(sim);											// diffuse
 	if(er) return 9;
-
 	if(sim->srfss) {																// deal with surface or wall collisions
 		for(ll=0;ll<sim->srfss->nmollist;ll++) {
 			if(sim->srfss->srfmollist[ll] & SMLdiffuse) {
@@ -1830,46 +1832,35 @@ void endsimulate(simptr sim,int er) {
 	tflag=strchr(sim->flags,'t')?1:0;
 	scmdpop((cmdssptr) sim->cmds,sim->tmax);
 	scmdexecute((cmdssptr) sim->cmds,sim->time,sim->dt,-1,1);
-	if(!qflag) {
-		printf("\n");
-		std::ostringstream maxMol;
-		maxMol << sim->mols->maxdlimit;
-		//molecule exceed allowed limit for 0th order
-		std::string s0 ("Simulation terminated during order 0 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is ");
-		s0 = s0 + maxMol.str() + ".";
-		//molecule exceed allowed limit for 1th order
-		std::string s1 ("Simulation terminated during order 1 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is ");
-		s1 = s1 + maxMol.str() + ".";
-		//molecule exceed allowed limit for 2nd order
-		std::string s2 ("Simulation terminated during order 2 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is ");
-		s2 = s2 + maxMol.str() + ".";
-		if(er==1) printf("Simulation complete\n");
-		else if(er==2) printfException("Simulation terminated during molecule assignment\n  Out of memory\n");
-		else if(er==3) printfException(s0.c_str());
-		else if(er==4) printfException(s1.c_str());
-		else if(er==5) printfException(s2.c_str());
-		else if(er==6) printfException("Simulation terminated during molecule sorting\n  Out of memory\n");
-		else if(er==7) printfException("Simulation stopped by a runtime command\n");
-		else if(er==8) printfException("Simulation terminated during simulation state updating\n  Out of memory\n");
-		else if(er==9) printfException("Simulation terminated during diffusion\n  Out of memory\n");
-		else printf("Simulation stopped by user\n");
-		printf("Current simulation time: %f\n",sim->time);
 
-		eventcount=sim->eventcount;
-		if(eventcount[ETwall]) printf("%i wall interactions\n",eventcount[ETwall]);
-		if(eventcount[ETsurf]) printf("%i surface interactions\n",eventcount[ETsurf]);
-		if(eventcount[ETdesorb]) printf("%i desorptions\n",eventcount[ETdesorb]);
-		if(eventcount[ETrxn0]) printf("%i zeroth order reactions\n",eventcount[ETrxn0]);
-		if(eventcount[ETrxn1]) printf("%i unimolecular reactions\n",eventcount[ETrxn1]);
-		if(eventcount[ETrxn2intra]) printf("%i intrabox bimolecular reactions\n",eventcount[ETrxn2intra]);
-		if(eventcount[ETrxn2inter]) printf("%i interbox bimolecular reactions\n",eventcount[ETrxn2inter]);
-		if(eventcount[ETrxn2wrap]) printf("%i wrap-around bimolecular reactions\n",eventcount[ETrxn2wrap]);
-		if(eventcount[ETimport]) printf("%i imported molecules\n",eventcount[ETimport]);
-		if(eventcount[ETexport]) printf("%i exported molecules\n",eventcount[ETexport]);
-		if(sim->mzrss) printf("%i species generated\n",mzrNumberOfSpecies(sim->mzrss));
-		if(sim->mzrss) printf("%i reactions generated\n",mzrNumberOfReactions(sim->mzrss));
+	simLog(sim,2,"\n");
+	if(er==1) simLog(sim,2,"Simulation complete\n");
+	else if(er==2) simLog(sim,5,"Simulation terminated during molecule assignment\n  Out of memory\n");
+	else if(er==3) simLog(sim,5,"Simulation terminated during order 0 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is %i",sim->mols->maxdlimit);
+	else if(er==4) simLog(sim,5,"Simulation terminated during order 1 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is %i",sim->mols->maxdlimit);
+	else if(er==5) simLog(sim,5,"Simulation terminated during order 2 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is %i",sim->mols->maxdlimit);
+	else if(er==6) simLog(sim,5,"Simulation terminated during molecule sorting\n  Out of memory\n");
+	else if(er==7) simLog(sim,5,"Simulation stopped by a runtime command\n");
+	else if(er==8) simLog(sim,5,"Simulation terminated during simulation state updating\n  Out of memory\n");
+	else if(er==9) simLog(sim,5,"Simulation terminated during diffusion\n  Out of memory\n");
+	else simLog(sim,2,"Simulation stopped by user\n");
+	simLog(sim,2,"Current simulation time: %f\n",sim->time);
 
-		printf("total execution time: %g seconds\n",sim->elapsedtime); }
+	eventcount=sim->eventcount;
+	if(eventcount[ETwall]) simLog(sim,2,"%i wall interactions\n",eventcount[ETwall]);
+	if(eventcount[ETsurf]) simLog(sim,2,"%i surface interactions\n",eventcount[ETsurf]);
+	if(eventcount[ETdesorb]) simLog(sim,2,"%i desorptions\n",eventcount[ETdesorb]);
+	if(eventcount[ETrxn0]) simLog(sim,2,"%i zeroth order reactions\n",eventcount[ETrxn0]);
+	if(eventcount[ETrxn1]) simLog(sim,2,"%i unimolecular reactions\n",eventcount[ETrxn1]);
+	if(eventcount[ETrxn2intra]) simLog(sim,2,"%i intrabox bimolecular reactions\n",eventcount[ETrxn2intra]);
+	if(eventcount[ETrxn2inter]) simLog(sim,2,"%i interbox bimolecular reactions\n",eventcount[ETrxn2inter]);
+	if(eventcount[ETrxn2wrap]) simLog(sim,2,"%i wrap-around bimolecular reactions\n",eventcount[ETrxn2wrap]);
+	if(eventcount[ETimport]) simLog(sim,2,"%i imported molecules\n",eventcount[ETimport]);
+	if(eventcount[ETexport]) simLog(sim,2,"%i exported molecules\n",eventcount[ETexport]);
+	if(sim->mzrss) simLog(sim,2,"%i species generated\n",mzrNumberOfSpecies(sim->mzrss));
+	if(sim->mzrss) simLog(sim,2,"%i reactions generated\n",mzrNumberOfReactions(sim->mzrss));
+
+	simLog(sim,2,"total execution time: %g seconds\n",sim->elapsedtime);
 
 	if(sim->graphss && sim->graphss->graphics>0 && !tflag)
 		fprintf(stderr,"\nPress 'Q' to quit.\a\n");
@@ -1882,7 +1873,7 @@ int smolsimulate(simptr sim) {
 
 	er=0;
 	qflag=strchr(sim->flags,'q')?1:0;
-	if(!qflag) printf("Simulating\n");
+	if(!qflag) simLog(sim,2,"Simulating\n");
 	sim->clockstt=time(NULL);
 	er=simdocommands(sim);
 	if(!er)

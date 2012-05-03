@@ -10,7 +10,7 @@ of the Gnu Lesser General Public License (LGPL). */
 #include "string2.h"
 
 #define CHECK(A) if(!(A)) {goto failure;} else (void)0
-#define CHECKS(A,B) if(!(A)) {strncpy(erstr,B,STRCHAR-1);erstr[STRCHAR-1]='\0'; goto failure;} else (void)0
+#define CHECKS(A,...)		if(!(A)) {sprintf(erstr,__VA_ARGS__); goto failure;} else (void)0
 
 /* Parse_AllocFilePtr. */
 ParseFilePtr Parse_AllocFilePtr(const char *fileroot,const char *filename) {
@@ -120,8 +120,9 @@ int Parse_ExpandDefine(ParseFilePtr pfp,int maxdef) {
 
 
 /* Parse_AddDefine. */
-int Parse_AddDefine(ParseFilePtr pfp,char *key,char *replace,int global) {
-	int d,d2,len;
+int Parse_AddDefine(ParseFilePtr pfp,const char *key,const char *replace,int global) {
+	int d,d2;
+	unsigned int len;
 
 	d=stringfind(pfp->defkey,pfp->ndef,key);
 	if(d>=0) return 2;
@@ -291,7 +292,7 @@ ParseFilePtr Parse_Start(const char *fileroot,const char *filename,char *erstr) 
 	if(!pfp->fptr) {
 		sprintf(string,"File '%s' not found\n",pfp->fname);
 		Parse_FreeFilePtr(pfp);
-		CHECKS(0,string); }
+		CHECKS(0,"%s",string); }
 	return pfp;
 
  failure:
@@ -307,7 +308,7 @@ int Parse_ReadLine(ParseFilePtr *pfpptr,char *word,char **line2ptr,char *erstr) 
 	int d;
 	char str1[STRCHAR];
 
-	CHECKS(pfpptr && word && line2ptr && erstr,"PROGRAM BUG: Parse_ReadLine");
+	CHECKS(pfpptr && word && line2ptr && erstr,"BUG: Parse_ReadLine missing parameters");
 	pfp=*pfpptr;
 	if(!pfp) return 2;
 
@@ -322,7 +323,7 @@ int Parse_ReadLine(ParseFilePtr *pfpptr,char *word,char **line2ptr,char *erstr) 
 		if(strchr(line,'\r')) {											// check for Mac format
 			strcpy(strchr(line,'\r'),"\n");
 			strcpy(pfp->linecopy,line);
-			CHECKS(0,"Macintosh format file; needs to be changed to Unix format"); }
+			CHECKS(0,"%s is Macintosh format file; needs to be changed to Unix format",pfp->fname); }
 		if(strchr(line,'#')) {											// single-line comment
 			*strchr(line,'#')='\0';
 			if(toolong) {
@@ -339,7 +340,7 @@ int Parse_ReadLine(ParseFilePtr *pfpptr,char *word,char **line2ptr,char *erstr) 
 			else if(!strncmp(line,"endif",5)) pfp->inifdef--;
 			else if(pfp->inifdef==1 && !strncmp(line,"else",4)) pfp->inifdef=0; }
 		if(!skip) {
-			CHECKS(!toolong,"Line exceeds maximum allowable length of 256 characters");
+			CHECKS(!toolong,"Line exceeds maximum allowable length of %i characters",STRCHAR);
 			er=Parse_DoDefine(pfp);
 			CHECKS(er!=2,"overflow in line due to macro substitution");
 			itct=sscanf(line,"%s",word);
@@ -377,7 +378,7 @@ int Parse_ReadLine(ParseFilePtr *pfpptr,char *word,char **line2ptr,char *erstr) 
 		pfp=pfp1;
 		*pfpptr=pfp;
 		pfp->fptr=fopen(pfp->fname,"r");
-		CHECKS(pfp->fptr,"file not found in read_file"); }
+		CHECKS(pfp->fptr,"file %s not found in read_file",pfp->fname); }
 
 	else if(!strcmp(word,"define")) {							// define
 		CHECKS(line2,"missing define text");
@@ -444,6 +445,7 @@ int Parse_ReadFailure(ParseFilePtr pfp,char *erstr) {
 	if(!pfp) i1=0;
 	else {
 		i1=pfp->lctr;
+		sprintf(erstr,"Error reading file in line %i",i1);
 		if(pfp->linecopy[0]) {
 			strncat(erstr,"\nline: ",STRCHAR-1-strlen(erstr));
 			if(strchr(pfp->linecopy,'\n')) *(strchr(pfp->linecopy,'\n'))='\0';

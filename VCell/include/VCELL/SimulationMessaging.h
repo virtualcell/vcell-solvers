@@ -179,6 +179,8 @@ private:
 	bool lockWorkerEvent(bool bTry=false);
 	void unlockWorkerEvent();
 
+	bool bStarted;
+
 #ifdef WIN32
     CRITICAL_SECTION lockForMessaging;
 	CRITICAL_SECTION lockForWorkerEvent;

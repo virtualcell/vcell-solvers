@@ -16,7 +16,7 @@
 #include "RnSort.h"
 #include "smoldyn.h"
 #include "smoldynfuncs.h"
-#include "smoldyn_config.h"
+#include "smoldynconfigure.h"
 
 #ifdef THREADING
 #include <pthread.h>
@@ -25,6 +25,40 @@
 /******************************************************************************/
 /*********************************** Molecules ********************************/
 /******************************************************************************/
+
+
+/******************************************************************************/
+/****************************** Local declarations ****************************/
+/******************************************************************************/
+
+// enumerated type functions
+enum MolListType molstring2mlt(char *string);
+char *molmlt2string(enum MolListType mlt,char *string);
+
+// low level utilities
+char *molpos2string(simptr sim,moleculeptr mptr,char *string);
+
+// memory management
+moleculeptr molalloc(int dim);
+void molfree(moleculeptr mptr);
+molssptr molssalloc(molssptr mols,int maxspecies);
+int mollistalloc(molssptr mols,int maxlist,enum MolListType mlt);
+int molexpandlist(molssptr mols,int dim,int ll,int nspaces,int nmolecs);
+
+// data structure output
+
+// structure setup
+int molsetmaxspecies(simptr sim,int max);
+int molsupdateparams(molssptr mols,double dt);
+int molsupdatelists(simptr sim);
+
+// adding and removing molecules
+moleculeptr newestmol(molssptr mols);
+int molgetexport(simptr sim,int ident,enum MolecState ms);
+int molputimport(simptr sim,int nmol,int ident,enum MolecState ms,panelptr pnl,enum PanelFace face);
+int moldummyporter(simptr sim);
+
+// core simulation functions
 
 
 /******************************************************************************/
@@ -212,7 +246,7 @@ char *molpos2string(simptr sim,moleculeptr mptr,char *string) {
 
 		if(!done) {
 			if(++count>50) {
-				printf("WARNING: unable to write %s molecule position (%s) on the correct side of all surfaces\n",sim->mols->spname[mptr->ident],string);
+				simLog(sim,8,"WARNING: unable to write %s molecule position (%s) on the correct side of all surfaces\n",sim->mols->spname[mptr->ident],string);
 				return string; }
 
 			if(dist==0) {
@@ -280,14 +314,17 @@ int molssetgausstable(simptr sim,int size) {
 	else if(!is2ton(size)) return 3;
 
 	newtable=(double*) calloc(size,sizeof(double));
-	if(!newtable) return 1;
+	CHECKMEM(newtable);
 	randtableD(newtable,size,1);
 	randshuffletableD(newtable,size);
 
 	if(mols->gausstbl) free(mols->gausstbl);
 	mols->ngausstbl=size;
 	mols->gausstbl=newtable;
-	return 0; }
+	return 0;
+failure:
+	simLog(sim,10,"Unable to allocate memory in molssetgausstable");
+	return 1; }
 
 
 /* molsetdifc */
@@ -346,7 +383,7 @@ int molsetdifm(simptr sim,int ident,enum MolecState ms,double *difm) {
 			difmat=sim->mols->difm[i][ms];
 			if(!difmat) {
 				difmat=(double*) calloc(sim->dim*sim->dim,sizeof(double));
-				if(!difmat) return 1;
+				CHECKMEM(difmat);
 				sim->mols->difm[i][ms]=difmat; }
 			for(d=0;d<sim->dim*sim->dim;d++)
 				difmat[d]=difm[d];
@@ -354,7 +391,10 @@ int molsetdifm(simptr sim,int ident,enum MolecState ms,double *difm) {
 			sim->mols->difc[i][ms]=traceMD(dm2,dim)/dim; }}
 
 	molsetcondition(sim->mols,SCparams,0);
-	return 0; }
+	return 0;
+failure:
+	simLog(sim,10,"Unable to allocate memory in molsetdifm");
+	return 1; }
 
 
 /* molsetdrift */
@@ -384,13 +424,16 @@ int molsetdrift(simptr sim,int ident,enum MolecState ms,double *drift) {
 			driftvect=sim->mols->drift[i][ms];
 			if(!driftvect) {
 				driftvect=(double*) calloc(sim->dim,sizeof(double));
-				if(!driftvect) return 1;
+				CHECKMEM(driftvect);
 				sim->mols->drift[i][ms]=driftvect; }
 			for(d=0;d<sim->dim;d++)
 				driftvect[d]=drift[d]; }}
 
 	molsetcondition(sim->mols,SCparams,0);
-	return 0; }
+	return 0;
+failure:
+	simLog(sim,10,"Unable to allocate memory in molsetdrift");
+	return 1; }
 
 
 /* molsetdisplaysize */
@@ -586,7 +629,7 @@ moleculeptr molalloc(int dim) {
 	int d;
 
 	mptr=NULL;
-	CHECK(mptr=(moleculeptr) malloc(sizeof(struct moleculestruct)));
+	CHECKMEM(mptr=(moleculeptr) malloc(sizeof(struct moleculestruct)));
 	mptr->serno=0;
 	mptr->list=-1;
 	mptr->pos=NULL;
@@ -598,15 +641,16 @@ moleculeptr molalloc(int dim) {
 	mptr->box=NULL;
 	mptr->pnl=NULL;
 
-	CHECK(mptr->pos=(double*) calloc(dim,sizeof(double)));
-	CHECK(mptr->posx=(double*) calloc(dim,sizeof(double)));
-	CHECK(mptr->via=(double*) calloc(dim,sizeof(double)));
-	CHECK(mptr->posoffset=(double*) calloc(dim,sizeof(double)));
+	CHECKMEM(mptr->pos=(double*) calloc(dim,sizeof(double)));
+	CHECKMEM(mptr->posx=(double*) calloc(dim,sizeof(double)));
+	CHECKMEM(mptr->via=(double*) calloc(dim,sizeof(double)));
+	CHECKMEM(mptr->posoffset=(double*) calloc(dim,sizeof(double)));
 	for(d=0;d<dim;d++)
 		mptr->pos[d]=mptr->posx[d]=mptr->via[d]=mptr->posoffset[d]=0;
 	return mptr;
  failure:
 	molfree(mptr);
+	simLog(NULL,10,"Unable to allocate memory in molalloc");
 	return NULL; }
 
 
@@ -635,7 +679,7 @@ molssptr molssalloc(molssptr mols,int maxspecies) {
 
 	if(!mols) {
 		mols=(molssptr) malloc(sizeof(struct molsuperstruct));
-		if(!mols) return NULL;
+		CHECKMEM(mols);
 		newmols=1;
 
 		mols->condition=SCinit;
@@ -673,74 +717,74 @@ molssptr molssalloc(molssptr mols,int maxspecies) {
 
 	if(maxspecies>mols->maxspecies) {
 
-		CHECK(newspname=(char**) calloc(maxspecies,sizeof(char*)));
+		CHECKMEM(newspname=(char**) calloc(maxspecies,sizeof(char*)));
 		for(i=0;i<maxspecies;i++) newspname[i]=NULL;
 		for(i=0;i<mols->maxspecies;i++) newspname[i]=mols->spname[i];
 		for(;i<maxspecies;i++) {
-			CHECK(newspname[i]=EmptyString()); }
+			CHECKMEM(newspname[i]=EmptyString()); }
 
 		strncpy(newspname[0],"empty",STRCHAR-1);
 
-		CHECK(newdifc=(double**) calloc(maxspecies,sizeof(double*)));
+		CHECKMEM(newdifc=(double**) calloc(maxspecies,sizeof(double*)));
 		for(i=0;i<maxspecies;i++) newdifc[i]=NULL;
 		for(i=0;i<mols->maxspecies;i++) newdifc[i]=mols->difc[i];
 		for(;i<maxspecies;i++) {
-			CHECK(newdifc[i]=(double*) calloc(MSMAX,sizeof(double)));
+			CHECKMEM(newdifc[i]=(double*) calloc(MSMAX,sizeof(double)));
 			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) newdifc[i][ms]=0; }
 
-		CHECK(newdifstep=(double**) calloc(maxspecies,sizeof(double*)));
+		CHECKMEM(newdifstep=(double**) calloc(maxspecies,sizeof(double*)));
 		for(i=0;i<maxspecies;i++) newdifstep[i]=NULL;
 		for(i=0;i<mols->maxspecies;i++) newdifstep[i]=mols->difstep[i];
 		for(;i<maxspecies;i++) {
-			CHECK(newdifstep[i]=(double*) calloc(MSMAX,sizeof(double)));
+			CHECKMEM(newdifstep[i]=(double*) calloc(MSMAX,sizeof(double)));
 			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) newdifstep[i][ms]=0; }
 
-		CHECK(newdifm=(double***) calloc(maxspecies,sizeof(double**)));
+		CHECKMEM(newdifm=(double***) calloc(maxspecies,sizeof(double**)));
 		for(i=0;i<maxspecies;i++) newdifm[i]=NULL;
 		for(i=0;i<mols->maxspecies;i++) newdifm[i]=mols->difm[i];
 		for(;i<maxspecies;i++) {
-			CHECK(newdifm[i]=(double**) calloc(MSMAX,sizeof(double*)));
+			CHECKMEM(newdifm[i]=(double**) calloc(MSMAX,sizeof(double*)));
 			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) newdifm[i][ms]=NULL; }
 
-		CHECK(newdrift=(double***) calloc(maxspecies,sizeof(double**)));
+		CHECKMEM(newdrift=(double***) calloc(maxspecies,sizeof(double**)));
 		for(i=0;i<maxspecies;i++) newdrift[i]=NULL;
 		for(i=0;i<mols->maxspecies;i++) newdrift[i]=mols->drift[i];
 		for(;i<maxspecies;i++) {
-			CHECK(newdrift[i]=(double**) calloc(MSMAX,sizeof(double*)));
+			CHECKMEM(newdrift[i]=(double**) calloc(MSMAX,sizeof(double*)));
 			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) newdrift[i][ms]=NULL; }
 
-		CHECK(newdisplay=(double**) calloc(maxspecies,sizeof(double*)));
+		CHECKMEM(newdisplay=(double**) calloc(maxspecies,sizeof(double*)));
 		for(i=0;i<maxspecies;i++) newdisplay[i]=NULL;
 		for(i=0;i<mols->maxspecies;i++) newdisplay[i]=mols->display[i];
 		for(;i<maxspecies;i++) {
-			CHECK(newdisplay[i]=(double*) calloc(MSMAX,sizeof(double)));
+			CHECKMEM(newdisplay[i]=(double*) calloc(MSMAX,sizeof(double)));
 			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) newdisplay[i][ms]=3; }
 
-		CHECK(newcolor=(double ***) calloc(maxspecies,sizeof(double **)));
+		CHECKMEM(newcolor=(double ***) calloc(maxspecies,sizeof(double **)));
 		for(i=0;i<maxspecies;i++) newcolor[i]=NULL;
 		for(i=0;i<mols->maxspecies;i++) newcolor[i]=mols->color[i];
 		for(;i<maxspecies;i++) {
-			CHECK(newcolor[i]=(double**) calloc(MSMAX,sizeof(double*)));
+			CHECKMEM(newcolor[i]=(double**) calloc(MSMAX,sizeof(double*)));
 			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) newcolor[i][ms]=NULL;
 			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) {
-				CHECK(newcolor[i][ms]=(double*) calloc(3,sizeof(double)));
+				CHECKMEM(newcolor[i][ms]=(double*) calloc(3,sizeof(double)));
 				newcolor[i][ms][0]=newcolor[i][ms][1]=newcolor[i][ms][2]=0; }}
 
-		CHECK(newexist=(int**) calloc(maxspecies,sizeof(int*)));
+		CHECKMEM(newexist=(int**) calloc(maxspecies,sizeof(int*)));
 		for(i=0;i<maxspecies;i++) newexist[i]=NULL;
 		for(i=0;i<mols->maxspecies;i++) newexist[i]=mols->exist[i];
 		for(;i<maxspecies;i++) {
-			CHECK(newexist[i]=(int*) calloc(MSMAX,sizeof(int)));
+			CHECKMEM(newexist[i]=(int*) calloc(MSMAX,sizeof(int)));
 			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) newexist[i][ms]=0; }
 
-		CHECK(newlistlookup=(int**) calloc(maxspecies,sizeof(int*)));
+		CHECKMEM(newlistlookup=(int**) calloc(maxspecies,sizeof(int*)));
 		for(i=0;i<maxspecies;i++) newlistlookup[i]=NULL;
 		for(i=0;i<mols->maxspecies;i++) newlistlookup[i]=mols->listlookup[i];
 		for(;i<maxspecies;i++) {
-			CHECK(newlistlookup[i]=(int*) calloc(MSMAX,sizeof(int)));
+			CHECKMEM(newlistlookup[i]=(int*) calloc(MSMAX,sizeof(int)));
 			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) newlistlookup[i][ms]=-1; }
 
-		CHECK(newexpand=(int*) calloc(maxspecies,sizeof(int)));
+		CHECKMEM(newexpand=(int*) calloc(maxspecies,sizeof(int)));
 		for(i=0;i<mols->maxspecies;i++) newexpand[i]=mols->expand[i];
 		for(;i<maxspecies;i++) newexpand[i]=0;
 
@@ -769,6 +813,7 @@ molssptr molssalloc(molssptr mols,int maxspecies) {
 	return mols;
 
  failure:
+	simLog(NULL,10,"Unable to allocate memory in molssalloc");
 	return NULL; }
 
 
@@ -792,28 +837,28 @@ int mollistalloc(molssptr mols,int maxlist,enum MolListType mlt) {
 	sortl=NULL;
 	diffuselist=NULL;
 
-	CHECK(listname=(char**) calloc(maxlist,sizeof(char*)));
+	CHECKMEM(listname=(char**) calloc(maxlist,sizeof(char*)));
 	for(ll=0;ll<maxlist;ll++) listname[ll]=NULL;
 
-	CHECK(listtype=(enum MolListType*) calloc(maxlist,sizeof(enum MolListType)));
+	CHECKMEM(listtype=(enum MolListType*) calloc(maxlist,sizeof(enum MolListType)));
 	for(ll=0;ll<maxlist;ll++) listtype[ll]=MLTnone;
 
-	CHECK(live=(moleculeptr**) calloc(maxlist,sizeof(moleculeptr*)));
+	CHECKMEM(live=(moleculeptr**) calloc(maxlist,sizeof(moleculeptr*)));
 	for(ll=0;ll<maxlist;ll++) live[ll]=NULL;
 
-	CHECK(maxl=(int*) calloc(maxlist,sizeof(int)));
+	CHECKMEM(maxl=(int*) calloc(maxlist,sizeof(int)));
 	for(ll=0;ll<maxlist;ll++) maxl[ll]=0;
 
-	CHECK(nl=(int*) calloc(maxlist,sizeof(int)));
+	CHECKMEM(nl=(int*) calloc(maxlist,sizeof(int)));
 	for(ll=0;ll<maxlist;ll++) nl[ll]=0;
 
-	CHECK(topl=(int*) calloc(maxlist,sizeof(int)));
+	CHECKMEM(topl=(int*) calloc(maxlist,sizeof(int)));
 	for(ll=0;ll<maxlist;ll++) topl[ll]=0;
 
-	CHECK(sortl=(int*) calloc(maxlist,sizeof(int)));
+	CHECKMEM(sortl=(int*) calloc(maxlist,sizeof(int)));
 	for(ll=0;ll<maxlist;ll++) sortl[ll]=0;
 
-	CHECK(diffuselist=(int*) calloc(maxlist,sizeof(int)));
+	CHECKMEM(diffuselist=(int*) calloc(maxlist,sizeof(int)));
 	for(ll=0;ll<maxlist;ll++) diffuselist[ll]=0;
 
 	for(ll=0;ll<mols->maxlist;ll++) {			// copy over existing portions
@@ -827,7 +872,7 @@ int mollistalloc(molssptr mols,int maxlist,enum MolListType mlt) {
 		diffuselist[ll]=mols->diffuselist[ll]; }
 
 	for(ll=mols->maxlist;ll<maxlist;ll++) {					// listnames and listtypes
-		CHECK(listname[ll]=EmptyString());
+		CHECKMEM(listname[ll]=EmptyString());
 		listtype[ll]=mlt; }
 
 	for(ll=mols->maxlist;ll<maxlist;ll++) maxl[ll]=1;			// calculate maxl
@@ -839,7 +884,7 @@ int mollistalloc(molssptr mols,int maxlist,enum MolListType mlt) {
 		if(maxl[ll]>mols->maxd) maxl[ll]=mols->maxd; }
 
 	for(ll=mols->maxlist;ll<maxlist;ll++) {			// allocate live lists
-		CHECK(live[ll]=(moleculeptr*) calloc(maxl[ll],sizeof(moleculeptr)));
+		CHECKMEM(live[ll]=(moleculeptr*) calloc(maxl[ll],sizeof(moleculeptr)));
 		for(m=0;m<maxl[ll];m++) live[ll][m]=NULL; }
 
 	if(mols->maxlist) {										// free any old lists
@@ -876,6 +921,7 @@ int mollistalloc(molssptr mols,int maxlist,enum MolListType mlt) {
 	free(topl);
 	free(sortl);
 	free(diffuselist);
+	simLog(NULL,10,"Unable to allocate memory in mollistalloc");
 	return -1; }
 
 
@@ -895,7 +941,7 @@ int molexpandlist(molssptr mols,int dim,int ll,int nspaces,int nmolecs) {
 	if(nold+nmolecs>maxnew) return 3;
 
 	newlist=(moleculeptr*) calloc(maxnew,sizeof(moleculeptr));
-	if(!newlist) return 1;
+	CHECKMEM(newlist);
 	for(m=0;m<maxold;m++) newlist[m]=oldlist[m];
 	for(;m<maxnew;m++) newlist[m]=NULL;
 	if(ll<0) {
@@ -916,7 +962,10 @@ int molexpandlist(molssptr mols,int dim,int ll,int nspaces,int nmolecs) {
 			if(!newlist[m]) return 4; }
 		mols->topd+=nmolecs;
 		mols->nd+=nmolecs; }
-	return 0; }
+	return 0;
+failure:
+	simLog(NULL,10,"Unable to allocate memory in molexpandlist");
+	return 1; }
 
 
 /* molssfree */
@@ -1004,42 +1053,38 @@ void molssfree(molssptr mols) {
 
 /* molssoutput */
 void molssoutput(simptr sim) {
-	int nspecies,i,ll,same,sum,vflag;
+	int nspecies,i,ll,same,sum;
 	molssptr mols;
 	char string[STRCHAR];
 	double maxstep;
 	enum MolecState ms;
 
-	vflag=strchr(sim->flags,'v')?1:0;
-
-	printf("MOLECULE PARAMETERS\n");
+	simLog(sim,2,"MOLECULE PARAMETERS\n");
 	if(!sim || !sim->mols) {
-		printf(" No molecule superstructure defined\n\n");
+		simLog(sim,2," No molecule superstructure defined\n\n");
 		return; }
 	mols=sim->mols;
 	nspecies=mols->nspecies;
 
-	if(vflag || mols->condition!=SCok)
-		printf(" Molecule superstructure condition: %s\n",simsc2string(mols->condition,string));
-	if(vflag) {
-		printf(" Next molecule serial number: %li\n",mols->serno);
-		if(mols->gausstbl) printf(" Table for Gaussian distributed random numbers has %i values\n",mols->ngausstbl);
-		else printf(" Table for Gaussian distributed random numbers has not been set up\n"); }
+	if(mols->condition!=SCok)
+		simLog(sim,7," Molecule superstructure condition: %s\n",simsc2string(mols->condition,string));
+	simLog(sim,1," Next molecule serial number: %li\n",mols->serno);
+	if(mols->gausstbl) simLog(sim,1," Table for Gaussian distributed random numbers has %i values\n",mols->ngausstbl);
+	else simLog(sim,1," Table for Gaussian distributed random numbers has not been set up\n");
 
-	if(vflag) printf(" %i species allocated\n",mols->maxspecies-1);
-	printf(" %i species defined:\n",mols->nspecies-1);
+	simLog(sim,1," %i species allocated\n",mols->maxspecies-1);
+	simLog(sim,2," %i species defined:\n",mols->nspecies-1);
 	maxstep=-1;
 	for(i=1;i<nspecies;i++) {
-		printf(" %s:\n",mols->spname[i]);
-		if(vflag) {
-			printf("  states used:");
-			sum=0;
-			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1))
-				if(mols->exist[i][ms]) {
-					sum++;
-					printf(" %s",molms2string(ms,string)); }
-			if(!sum) printf(" none");
-			printf("\n"); }
+		simLog(sim,2," %s:\n",mols->spname[i]);
+		simLog(sim,1,"  states used:");
+		sum=0;
+		for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1))
+			if(mols->exist[i][ms]) {
+				sum++;
+				simLog(sim,1," %s",molms2string(ms,string)); }
+		if(!sum) simLog(sim,1," none");
+		simLog(sim,1,"\n");
 
 		same=1;
 		for(ms=MolecState(0);ms<MSMAX && same;ms=MolecState(ms + 1)) {
@@ -1051,20 +1096,20 @@ void molssoutput(simptr sim) {
 			if(mols->listlookup[i][ms]!=mols->listlookup[i][MSsoln]) same=0; }
 		if(same) {
 			if(mols->difstep[i][MSsoln]>maxstep) maxstep=mols->difstep[i][MSsoln];
-			printf("  all states: difc=%g, rms step=%g",mols->difc[i][MSsoln],mols->difstep[i][MSsoln]);
-			if(mols->difm[i][MSsoln]) printf(" (anisotropic)");
-			if(mols->drift[i][MSsoln]) printf(" (drift)");
-			if(mols->listname) printf(", list=%s",mols->listname[mols->listlookup[i][MSsoln]]);
-			printf(", number=%i\n",molcount(sim,i,MSall,NULL,-1)); }
+			simLog(sim,2,"  all states: difc=%g, rms step=%g",mols->difc[i][MSsoln],mols->difstep[i][MSsoln]);
+			if(mols->difm[i][MSsoln]) simLog(sim,2," (anisotropic)");
+			if(mols->drift[i][MSsoln]) simLog(sim,2," (drift)");
+			if(mols->listname) simLog(sim,2,", list=%s",mols->listname[mols->listlookup[i][MSsoln]]);
+			simLog(sim,2,", number=%i\n",molcount(sim,i,MSall,NULL,-1)); }
 		else {
 			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1))
 				if(mols->exist[i][ms]) {
 					if(mols->difstep[i][ms]>maxstep) maxstep=mols->difstep[i][ms];
-					printf("  %s: difc=%g, rms step=%g",molms2string(ms,string),mols->difc[i][ms],mols->difstep[i][ms]);
-					if(mols->difm[i][ms]) printf(" (anisotropic)");
-					if(mols->drift[i][ms]) printf(" (drift)");
-					if(mols->listname) printf(", list=%s",mols->listname[mols->listlookup[i][ms]]);
-					printf(", number=%i\n",molcount(sim,i,ms,NULL,-1)); }}
+					simLog(sim,2,"  %s: difc=%g, rms step=%g",molms2string(ms,string),mols->difc[i][ms],mols->difstep[i][ms]);
+					if(mols->difm[i][ms]) simLog(sim,2," (anisotropic)");
+					if(mols->drift[i][ms]) simLog(sim,2," (drift)");
+					if(mols->listname) simLog(sim,2,", list=%s",mols->listname[mols->listlookup[i][ms]]);
+					simLog(sim,2,", number=%i\n",molcount(sim,i,ms,NULL,-1)); }}
 
 		if(sim->graphss) {
 			same=1;
@@ -1074,46 +1119,42 @@ void molssoutput(simptr sim) {
 				if(mols->color[i][ms][1]!=mols->color[i][MSsoln][1]) same=0;
 				if(mols->color[i][ms][2]!=mols->color[i][MSsoln][2]) same=0; }
 			if(same) {
-				printf("  all states:");
+				simLog(sim,2,"  all states:");
 				if(mols->display[i][MSsoln])
-					printf(" color= %g,%g,%g, size=%g\n",mols->color[i][MSsoln][0],mols->color[i][MSsoln][1],mols->color[i][MSsoln][2],mols->display[i][MSsoln]);
-				else printf(" not displayed to graphics\n"); }
+					simLog(sim,2," color= %g,%g,%g, size=%g\n",mols->color[i][MSsoln][0],mols->color[i][MSsoln][1],mols->color[i][MSsoln][2],mols->display[i][MSsoln]);
+				else simLog(sim,2," not displayed to graphics\n"); }
 			else {
 				for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1))
 					if(mols->exist[i][ms]) {
-						printf("  %s:",molms2string(ms,string));
+						simLog(sim,2,"  %s:",molms2string(ms,string));
 						if(mols->display[i][ms])
-							printf(" color= %g,%g,%g, display size= %g\n",mols->color[i][ms][0],mols->color[i][ms][1],mols->color[i][ms][2],mols->display[i][ms]);
-						else printf(" not displayed to graphics\n"); }}}}
+							simLog(sim,2," color= %g,%g,%g, display size= %g\n",mols->color[i][ms][0],mols->color[i][ms][1],mols->color[i][ms][2],mols->display[i][ms]);
+						else simLog(sim,2," not displayed to graphics\n"); }}}}
 
-	if(vflag) {
-		if(mols->dead==NULL) printf(" No dead list allocated\n");
-		printf(" Dead list: allocated size=%i, number of molecules=%i",mols->maxd,mols->nd);
-		if(mols->topd!=mols->nd) printf(", top value=%i",mols->topd);
-		printf("\n");
-		if(mols->maxdlimit>=0) printf("  limited to %i molecules\n",mols->maxdlimit); }
+	if(mols->dead==NULL) simLog(sim,1," No dead list allocated\n");
+	simLog(sim,1," Dead list: allocated size=%i, number of molecules=%i",mols->maxd,mols->nd);
+	if(mols->topd!=mols->nd) simLog(sim,1,", top value=%i",mols->topd);
+	simLog(sim,1,"\n");
+	if(mols->maxdlimit>=0) simLog(sim,1,"  limited to %i molecules\n",mols->maxdlimit);
 
-	printf(" %i molecule lists:\n",mols->nlist);
+	simLog(sim,2," %i molecule lists:\n",mols->nlist);
 	for(ll=0;ll<mols->nlist;ll++) {
-		if(vflag) {
-			if(mols->live[ll]==NULL) printf("  list %i is not allocated\n",ll);
-			printf("  %s: type=%s, allocated size=%i, number of molecules=%i",mols->listname[ll],molmlt2string(mols->listtype[ll],string),mols->maxl[ll],mols->nl[ll]);
-			if(mols->topl[ll]!=mols->nl[ll] && !mols->topl!=0) printf(", top value=%i",mols->topl[ll]);
-			if(mols->sortl[ll]!=mols->nl[ll]) printf(", sort value=%i",mols->sortl[ll]);
-			printf("\n"); }
-		else
-			printf("%s%s%s",ll==0?"  ":" ",mols->listname[ll],ll==mols->nlist-1?"\n":","); }
+		if(mols->live[ll]==NULL) simLog(sim,1,"  list %i is not allocated\n",ll);
+		simLog(sim,1,"  %s: type=%s, allocated size=%i, number of molecules=%i",mols->listname[ll],molmlt2string(mols->listtype[ll],string),mols->maxl[ll],mols->nl[ll]);
+		if(mols->topl[ll]!=mols->nl[ll] && !mols->topl!=0) simLog(sim,1,", top value=%i",mols->topl[ll]);
+		if(mols->sortl[ll]!=mols->nl[ll]) simLog(sim,1,", sort value=%i",mols->sortl[ll]);
+		simLog(sim,1,"\n");
+		simLog(sim,2,"%s%s%s",ll==0?"  ":" ",mols->listname[ll],ll==mols->nlist-1?"\n":","); }
 
-	if(vflag) {
-		printf(" Diffusion molecule lists:");
-		for(ll=0;ll<mols->nlist;ll++)
-			if(mols->diffuselist[ll]) printf(" %s",mols->listname[ll]);
-		printf("\n"); }
+	simLog(sim,1," Diffusion molecule lists:");
+	for(ll=0;ll<mols->nlist;ll++)
+		if(mols->diffuselist[ll]) simLog(sim,1," %s",mols->listname[ll]);
+	simLog(sim,1,"\n");
 
-	printf(" Overall spatial resolution:");
-	if(maxstep==-1 || mols->condition<SCok) printf(" not computed\n");
-	else printf(" %g\n",maxstep);
-	printf("\n");
+	simLog(sim,2," Overall spatial resolution:");
+	if(maxstep==-1 || mols->condition<SCok) simLog(sim,2," not computed\n");
+	else simLog(sim,2," %g\n",maxstep);
+	simLog(sim,2,"\n");
 	return; }
 
 
@@ -1242,37 +1283,37 @@ int checkmolparams(simptr sim,int *warnptr) {
 
 	if(mols->condition!=SCok) {
 		warn++;
-		printf(" WARNING: molecule structure %s\n",simsc2string(mols->condition,string)); }
+		simLog(sim,7," WARNING: molecule structure %s\n",simsc2string(mols->condition,string)); }
 
 	for(ll=0;ll<mols->nlist;ll++) {				// check molecule list sorting
 		for(m=0;m<mols->nl[ll];m++) {
 			mptr=mols->live[ll][m];
-			if(!mptr) {error++;printfException(" SMOLDYN BUG: NULL molecule in live list %i at %i\n",ll,m);}
-			else if(mptr->list!=ll) {warn++;printf(" WARNING: mis-sorted molecule in live list %i at %i\n",ll,m);}
-			else if(!mptr->ident) {warn++;printf(" WARNING: empty molecule in live list %i at %i\n",ll,m);} }
+			if(!mptr) {error++;simLog(sim,10," SMOLDYN BUG: NULL molecule in live list %i at %i\n",ll,m);}
+			else if(mptr->list!=ll) {warn++;simLog(sim,9," WARNING: mis-sorted molecule in live list %i at %i\n",ll,m);}
+			else if(!mptr->ident) {warn++;simLog(sim,5," WARNING: empty molecule in live list %i at %i\n",ll,m);} }
 		for(;m<mols->maxl[ll];m++) {
 			mptr=mols->live[ll][m];
-			if(mptr) {error++;printfException(" SMOLDYN BUG: misplaced molecule in live list %i at %i\n",ll,m);} }}
+			if(mptr) {error++;simLog(sim,10," SMOLDYN BUG: misplaced molecule in live list %i at %i\n",ll,m);} }}
 
 	for(m=0;m<mols->topd;m++) {
 		mptr=mols->dead[m];
-		if(!mptr) {error++;printfException(" SMOLDYN BUG: NULL molecule in dead list at %i\n",m);}
-		else if(mptr->list!=-1) {error++;printfException(" SMOLDYN BUG: mis-sorted molecule in dead list at %i (species %i, serno %li)\n",m,mptr->ident,mptr->serno);}
-		else if(mptr->ident) {error++;printfException(" SMOLDYN BUG: live molecule in dead list at %i\n",m);} }
+		if(!mptr) {error++;simLog(sim,10," SMOLDYN BUG: NULL molecule in dead list at %i\n",m);}
+		else if(mptr->list!=-1) {error++;simLog(sim,10," SMOLDYN BUG: mis-sorted molecule in dead list at %i (species %i, serno %li)\n",m,mptr->ident,mptr->serno);}
+		else if(mptr->ident) {error++;simLog(sim,10," SMOLDYN BUG: live molecule in dead list at %i\n",m);} }
 	for(;m<mols->nd;m++) {
 		mptr=mols->dead[m];
-		if(!mptr) {error++;printfException(" SMOLDYN BUG: NULL molecule in resurrected list at %i\n",m);}
-		else if(mptr->list==-1) {error++;printfException(" SMOLDYN BUG: mis-sorted molecule in resurrected list at %i\n",m);}
-		else if(!mptr->ident) {error++;printfException(" BUG: dead molecule in resurrected list at %i\n",m);} }
+		if(!mptr) {error++;simLog(sim,10," SMOLDYN BUG: NULL molecule in resurrected list at %i\n",m);}
+		else if(mptr->list==-1) {error++;simLog(sim,10," SMOLDYN BUG: mis-sorted molecule in resurrected list at %i\n",m);}
+		else if(!mptr->ident) {error++;simLog(sim,10," BUG: dead molecule in resurrected list at %i\n",m);} }
 	for(;m<mols->maxd;m++) {
 		mptr=mols->dead[m];
-		if(mptr) {error++;printfException(" SMOLDYN BUG: misplaced molecule in dead list at %i\n",m);} }
+		if(mptr) {error++;simLog(sim,10," SMOLDYN BUG: misplaced molecule in dead list at %i\n",m);} }
 
 	for(ll=0;ll<mols->nlist;ll++)
 		for(m=0;m<mols->nl[ll];m++)	{									// check for molecules outside system
 			mptr=mols->live[ll][m];
 			if(!posinsystem(sim,mptr->pos)) {
-				printf(" WARNING: molecule of type '%s' is outside system volume\n",spname[mptr->ident]);
+				simLog(sim,5," WARNING: molecule of type '%s' is outside system volume\n",spname[mptr->ident]);
 				warn++; }}
 
 	for(i=1;i<nspecies;i++)														// check for asymmetric diffusion matrices
@@ -1280,14 +1321,14 @@ int checkmolparams(simptr sim,int *warnptr) {
 			if(mols->difm[i][ms]) {
 				dotMMD(mols->difm[i][ms],mols->difm[i][ms],m2,dim,dim,dim);
 				if(!issymmetricMD(m2,dim)) {
-					printf(" WARNING: diffusion matrix for molecule %s (%s) is asymmetric\n",spname[i],molms2string(ms,string));
+					simLog(sim,5," WARNING: diffusion matrix for molecule %s (%s) is asymmetric\n",spname[i],molms2string(ms,string));
 					warn++; }}
 
 	for(i=1;i<nspecies;i++) {													// check for unused molecules
 		sum=0;
 		for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) sum+=mols->exist[i][ms];
 		if(!sum) {
-			printf(" WARNING: molecule %s is never used\n",spname[i]);
+			simLog(sim,5," WARNING: molecule %s is never used\n",spname[i]);
 			warn++; }}
 
 	if(sim->graphss && sim->graphss->graphics>1) {		// check for molecules that may not display
@@ -1295,10 +1336,10 @@ int checkmolparams(simptr sim,int *warnptr) {
 		for(i=1;i<nspecies;i++)
 			for(ms=MolecState(0);ms<MSMAX;ms=MolecState(ms + 1)) {
 				if(mols->display[i][ms]>0.1*diag) {
-					printf(" WARNING: very large display size for molecule %s (%s)\n",spname[i],molms2string(ms,string));
+					simLog(sim,5," WARNING: very large display size for molecule %s (%s)\n",spname[i],molms2string(ms,string));
 					warn++; }
 				if(mols->display[i][ms]<0.001*diag) {
-					printf(" WARNING: very small display size for molecule %s (%s)\n",spname[i],molms2string(ms,string));
+					simLog(sim,5," WARNING: very small display size for molecule %s (%s)\n",spname[i],molms2string(ms,string));
 					warn++; }}}
 
 	if(warnptr) *warnptr=warn;
@@ -1750,14 +1791,14 @@ int molsort(simptr sim) {
 					if(mptr->box) boxremovemol(mptr,ll);
 					if(nl[ll2]==maxl[ll2])
 						if(molexpandlist(mols,sim->dim,ll2,-1,0)) {
-							printfException("out of memory in molsort\n");return 1;}
+							simLog(sim,10,"out of memory in molsort\n");return 1;}
 					live[ll2][nl[ll2]++]=mptr;
 					mlist[m]=NULL;
 					if(listtype[ll2]==MLTsystem) {
 						if(bptr) mptr->box=bptr;
 						else mptr->box=pos2box(sim,mptr->pos);
 						if(boxaddmol(mptr,ll2)) {
-							printfException("out of memory in molsort\n");return 1;} }}
+							simLog(sim,10,"out of memory in molsort\n");return 1;} }}
 
 				mlist[m]=mlist[--topl[ll]];				// compact original live list
 				mlist[topl[ll]]=mlist[--nl[ll]];
@@ -1769,12 +1810,12 @@ int molsort(simptr sim) {
 		ll2=mptr->list;
 		if(nl[ll2]==maxl[ll2])
 			if(molexpandlist(mols,sim->dim,ll2,-1,0)) {
-				printfException("out of memory in molsort\n");return 1;}
+				simLog(sim,10,"out of memory in molsort\n");return 1;}
 		live[ll2][nl[ll2]++]=mptr;
 		dead[m]=NULL;
 		if(listtype[ll2]==MLTsystem) {
 			if(boxaddmol(mptr,ll2)) {
-				printfException("out of memory in molsort\n");return 1;} }}
+				simLog(sim,10,"out of memory in molsort\n");return 1;} }}
 	mols->nd=mols->topd;
 
 	for(ll=0;ll<nlist;ll++)								// reset sortl indicies
@@ -1833,7 +1874,7 @@ int diffuse(simptr sim) {
 	return 0; }
 
 
-//??????????????? new code start
+//?? Start of threading code.  All of this is undocumented.
 typedef struct ll_threading_struct {
 	simptr sim;
 	int ll_ndx;
@@ -1843,7 +1884,7 @@ typedef struct ll_threading_struct {
 
 
 /* Diffuse live list. */
-void* diffuseLiveList_threaded(void* ndx_as_void) {	//??????? new function
+void* diffuseLiveList_threaded(void* ndx_as_void) {
 #ifndef THREADING
 	return NULL;
 #else
@@ -1926,9 +1967,8 @@ void* diffuseLiveList_threaded(void* ndx_as_void) {	//??????? new function
 }
 
 
-
 /* diffuse_threaded */
-int diffuse_threaded(simptr sim) {//??????????? new function
+int diffuse_threaded(simptr sim) {
 #ifndef THREADING
 	return 2;
 #else
@@ -1993,5 +2033,5 @@ int diffuse_threaded(simptr sim) {//??????????? new function
 #endif
 }
 
-
+//?? End of threading code.
 

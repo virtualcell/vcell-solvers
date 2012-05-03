@@ -20,6 +20,32 @@
 
 
 /******************************************************************************/
+/****************************** Local declarations ****************************/
+/******************************************************************************/
+
+// low level utilities
+boxptr pos2box(simptr sim,double *pos);
+int panelinbox(simptr sim,panelptr pnl,boxptr bptr);
+
+// memory management
+boxptr boxalloc(int dim,int nlist);
+int expandbox(boxptr bptr,int n,int ll);
+int expandboxpanels(boxptr bptr,int n);
+void boxfree(boxptr bptr,int nlist);
+boxptr *boxesalloc(int nbox,int dim,int nlist);
+void boxesfree(boxptr *blist,int nbox,int nlist);
+boxssptr boxssalloc(int dim);
+
+// data structure output
+
+// structure set up
+int boxesupdateparams(simptr sim);
+int boxesupdatelists(simptr sim);
+
+// core simulation functions
+
+
+/******************************************************************************/
 /***************************** low level utilities ****************************/
 /******************************************************************************/
 
@@ -159,7 +185,7 @@ boxptr boxalloc(int dim,int nlist) {
 	int d,ll;
 
 	bptr=NULL;
-	CHECK(bptr=(boxptr) malloc(sizeof(struct boxstruct)));
+	CHECKMEM(bptr=(boxptr) malloc(sizeof(struct boxstruct)));
 	bptr->indx=NULL;
 	bptr->nneigh=0;
 	bptr->midneigh=0;
@@ -174,20 +200,21 @@ boxptr boxalloc(int dim,int nlist) {
 	bptr->nmol=NULL;
 	bptr->mol=NULL;
 
-	CHECK(bptr->indx=(int*) calloc(dim,sizeof(int)));
+	CHECKMEM(bptr->indx=(int*) calloc(dim,sizeof(int)));
 	for(d=0;d<dim;d++) bptr->indx[d]=0;
 	if(nlist) {
-		CHECK(bptr->maxmol=(int*) calloc(nlist,sizeof(int)));
+		CHECKMEM(bptr->maxmol=(int*) calloc(nlist,sizeof(int)));
 		for(ll=0;ll<nlist;ll++) bptr->maxmol[ll]=0;
-		CHECK(bptr->nmol=(int*) calloc(nlist,sizeof(int)));
+		CHECKMEM(bptr->nmol=(int*) calloc(nlist,sizeof(int)));
 		for(ll=0;ll<nlist;ll++) bptr->nmol[ll]=0;
-		CHECK(bptr->mol=(moleculeptr**) calloc(nlist,sizeof(moleculeptr*)));
+		CHECKMEM(bptr->mol=(moleculeptr**) calloc(nlist,sizeof(moleculeptr*)));
 		for(ll=0;ll<nlist;ll++) bptr->mol[ll]=NULL; }
 
 	return bptr;
 
  failure:
 	boxfree(bptr,nlist);
+	simLog(NULL,10,"Failed to allocate memory in boxalloc");
 	return NULL; }
 
 
@@ -257,14 +284,15 @@ boxptr *boxesalloc(int nbox,int dim,int nlist) {
 	boxptr *blist;
 
 	blist=NULL;
-	CHECK(blist=(boxptr*) calloc(nbox,sizeof(boxptr)));
+	CHECKMEM(blist=(boxptr*) calloc(nbox,sizeof(boxptr)));
 	for(b=0;b<nbox;b++) blist[b]=NULL;
 	for(b=0;b<nbox;b++)
-		CHECK(blist[b]=boxalloc(dim,nlist));
+		CHECKMEM(blist[b]=boxalloc(dim,nlist));
 	return blist;
 
  failure:
 	boxesfree(blist,nbox,nlist);
+	simLog(NULL,10,"Failed to allocate memory in boxesalloc");
 	return NULL; }
 
 
@@ -284,7 +312,7 @@ boxssptr boxssalloc(int dim) {
 	int d;
 
 	boxs=NULL;
-	CHECK(boxs=(boxssptr) malloc(sizeof(struct boxsuperstruct)));
+	CHECKMEM(boxs=(boxssptr) malloc(sizeof(struct boxsuperstruct)));
 	boxs->condition=SCinit;
 	boxs->sim=NULL;
 	boxs->nlist=0;
@@ -297,16 +325,17 @@ boxssptr boxssalloc(int dim) {
 	boxs->size=NULL;
 	boxs->blist=NULL;
 
-	CHECK(boxs->side=(int*) calloc(dim,sizeof(int)));
+	CHECKMEM(boxs->side=(int*) calloc(dim,sizeof(int)));
 	for(d=0;d<dim;d++) boxs->side[d]=0;
-	CHECK(boxs->min=(double*) calloc(dim,sizeof(double)));
+	CHECKMEM(boxs->min=(double*) calloc(dim,sizeof(double)));
 	for(d=0;d<dim;d++) boxs->min[d]=0;
-	CHECK(boxs->size=(double*) calloc(dim,sizeof(double)));
+	CHECKMEM(boxs->size=(double*) calloc(dim,sizeof(double)));
 	for(d=0;d<dim;d++) boxs->size[d]=0;
 	return boxs;
 
  failure:
 	boxssfree(boxs);
+	simLog(NULL,10,"Failed to allocate memory in boxssalloc");
 	return NULL; }
 
 
@@ -480,7 +509,7 @@ void boxsetcondition(boxssptr boxs,enum StructCond cond,int upgrade) {
 
 
 /* boxsetsize */
-int boxsetsize(simptr sim,char *info,double val) {
+int boxsetsize(simptr sim,const char *info,double val) {
 	boxssptr boxs;
 
 	if(val<=0) return 2;

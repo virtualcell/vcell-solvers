@@ -8,8 +8,21 @@ of the Gnu Lesser General Public License (LGPL). */
 #include <string.h>
 #include <limits.h>
 #include "SimCommand.h"
-#include "smoldynfuncs.h"
 #include "Zn.h"
+
+
+/* Define SMOLDYN to 1 if this library is used in Smoldyn, or undefine this definition
+ if it is not used in Smoldyn.  */
+
+#define SMOLDYN 1
+
+#if defined(SMOLDYN)
+	#include "smoldynfuncs.h"
+	#define SCMDPRINTF(A,...) simLog(NULL,A,__VA_ARGS__)
+#else
+	#define SCMDPRINTF(A,...) printf(__VA_ARGS__)
+#endif
+
 
 void scmdcatfname(cmdssptr cmds,int fid,char *str);
 
@@ -25,7 +38,7 @@ void scmdcatfname(cmdssptr cmds,int fid,char *str) {
 	strncat(str,cmds->froot,STRCHAR-strlen(str));
 	dot=strrchr(cmds->fname[fid],'.');
 	if(dot)	{
-		min=STRCHAR-strlen(str)<dot-cmds->fname[fid]?STRCHAR-strlen(str):dot-cmds->fname[fid];
+		min=STRCHAR-strlen(str)<(unsigned int)(dot-cmds->fname[fid])?STRCHAR-strlen(str):dot-cmds->fname[fid];
 		strncat(str,cmds->fname[fid],min); }
 	else strncat(str,cmds->fname[fid],STRCHAR);
 	if(cmds->fsuffix[fid] && STRCHAR-strlen(str)>4) sprintf(str+strlen(str),"_%03i",cmds->fsuffix[fid]);
@@ -340,8 +353,8 @@ enum CMDcode scmdexecute(cmdssptr cmds,double time,double simdt,Q_LONGLONG iter,
 			cmd->invoke++;
 			code1=(*cmds->cmdfn)(cmds->cmdfnarg,cmd,cmd->str);
 			if(code1==CMDwarn) {
-				if(strlen(cmd->erstr)) simLog(NULL,7,"command '%s' error: %s\n",cmd->str,cmd->erstr);
-				else simLog(NULL,7,"error with command: '%s'\n",cmd->str); }
+				if(strlen(cmd->erstr)) SCMDPRINTF(7,"command '%s' error: %s\n",cmd->str,cmd->erstr);
+				else SCMDPRINTF(7,"error with command: '%s'\n",cmd->str); }
 			if(cmd->oni+cmd->dti<=cmd->offi && !donow && (code1==CMDok || code1==CMDpause)) {
 				cmd->oni+=cmd->dti;
 				q_insert(NULL,0,0,cmd->oni,(void*)cmd,cmds->cmdi); }
@@ -356,8 +369,8 @@ enum CMDcode scmdexecute(cmdssptr cmds,double time,double simdt,Q_LONGLONG iter,
 			cmd->invoke++;
 			code1=(*cmds->cmdfn)(cmds->cmdfnarg,cmd,cmd->str);
 			if(code1==CMDwarn) {
-				if(strlen(cmd->erstr)) simLog(NULL,7,"command '%s' error: %s\n",cmd->str,cmd->erstr);
-				else simLog(NULL,7,"error with command: '%s'\n",cmd->str); }
+				if(strlen(cmd->erstr)) SCMDPRINTF(7,"command '%s' error: %s\n",cmd->str,cmd->erstr);
+				else SCMDPRINTF(7,"error with command: '%s'\n",cmd->str); }
 			dt=(cmd->dt>=simdt)?cmd->dt:simdt;
 			if(cmd->on+dt<=cmd->off && !donow && (code1==CMDok || code1==CMDpause)) {
 				cmd->on+=dt;
@@ -438,49 +451,49 @@ void scmdoutput(cmdssptr cmds) {
 	void* voidptr;
 	char string[STRCHAR],string2[STRCHAR];
 
-	simLog(NULL,2,"RUNTIME COMMAND INTERPRETER\n");
+	SCMDPRINTF(2,"RUNTIME COMMAND INTERPRETER\n");
 	if(!cmds) {
-		simLog(NULL,2," No command superstructure defined\n\n");
+		SCMDPRINTF(2," No command superstructure defined\n\n");
 		return; }
-	if(!cmds->cmdfn) simLog(NULL,10," ERROR: Command executer undefined");
-	if(!cmds->cmdfnarg) simLog(NULL,10," WARNING: No argument for command executer");
-	if(cmds->iter) simLog(NULL,2," Commands iteration counter: %i\n",cmds->iter);
+	if(!cmds->cmdfn) SCMDPRINTF(10," ERROR: Command executer undefined");
+	if(!cmds->cmdfnarg) SCMDPRINTF(10," WARNING: No argument for command executer");
+	if(cmds->iter) SCMDPRINTF(2," Commands iteration counter: %i\n",cmds->iter);
 	if(cmds->nfile) {
-		simLog(NULL,2," Output file root: '%s%s'\n",cmds->root,cmds->froot);
-		simLog(NULL,2," Output file paths and names:\n"); }
+		SCMDPRINTF(2," Output file root: '%s%s'\n",cmds->root,cmds->froot);
+		SCMDPRINTF(2," Output file paths and names:\n"); }
 	else
-		simLog(NULL,2," No output files\n");
+		SCMDPRINTF(2," No output files\n");
 	for(fid=0;fid<cmds->nfile;fid++) {
 		if(!strcmp(cmds->fname[fid],"stdout") || !strcmp(cmds->fname[fid],"stderr"))
-			simLog(NULL,2,"  %s (file open): %s\n",cmds->fname[fid],cmds->fname[fid]);
+			SCMDPRINTF(2,"  %s (file open): %s\n",cmds->fname[fid],cmds->fname[fid]);
 		else {
 			scmdcatfname(cmds,fid,string);
-			simLog(NULL,2,"  %s (file %s): %s\n",cmds->fname[fid],cmds->fptr[fid]?"open":"closed",string); }}
+			SCMDPRINTF(2,"  %s (file %s): %s\n",cmds->fname[fid],cmds->fptr[fid]?"open":"closed",string); }}
 
 	cmdq=cmds->cmd;
 	if(cmdq) {
-		simLog(NULL,2," Time queue:\n");
-		simLog(NULL,2,"  %i queue spaces used of %i total\n",q_length(cmdq),q_maxlength(cmdq)-1);
-		simLog(NULL,2,"  Times to start, stop, and step, strings, and command type:\n");
+		SCMDPRINTF(2," Time queue:\n");
+		SCMDPRINTF(2,"  %i queue spaces used of %i total\n",q_length(cmdq),q_maxlength(cmdq)-1);
+		SCMDPRINTF(2,"  Times to start, stop, and step, strings, and command type:\n");
 		i=-1;
 		while((i=q_next(i,NULL,NULL,NULL,NULL,&voidptr,cmdq))>=0) {
 			cmd=(cmdptr)voidptr;
-			simLog(NULL,2,"  %g %g%s%g '%s' (%s)\n",cmd->on,cmd->off,cmd->xt>1?" *":" ",cmd->xt>1?cmd->xt:cmd->dt,cmd->str,scmdcode2string(scmdcmdtype(cmds,cmd),string)); }}
+			SCMDPRINTF(2,"  %g %g%s%g '%s' (%s)\n",cmd->on,cmd->off,cmd->xt>1?" *":" ",cmd->xt>1?cmd->xt:cmd->dt,cmd->str,scmdcode2string(scmdcmdtype(cmds,cmd),string)); }}
 	cmdq=cmds->cmdi;
 	if(cmdq) {
-		simLog(NULL,2," Integer queue:\n");
-		simLog(NULL,2,"  %i queue spaces used of %i total\n",q_length(cmdq),q_maxlength(cmdq)-1);
-		simLog(NULL,2,"  Iterations to start, stop, and step, strings, and command type:\n");
+		SCMDPRINTF(2," Integer queue:\n");
+		SCMDPRINTF(2,"  %i queue spaces used of %i total\n",q_length(cmdq),q_maxlength(cmdq)-1);
+		SCMDPRINTF(2,"  Iterations to start, stop, and step, strings, and command type:\n");
 		i=-1;
 		while((i=q_next(i,NULL,NULL,NULL,NULL,&voidptr,cmdq))>=0) {
 			cmd=(cmdptr)voidptr;
 			if(cmd->offi!=Q_LLONG_MAX) {
 				sprintf(string2,"  %s %s %s '%%s' (%%s)\n",Q_LLI,Q_LLI,Q_LLI);
-				simLog(NULL,2,string2,cmd->oni,cmd->offi,cmd->dti,cmd->str,scmdcode2string(scmdcmdtype(cmds,cmd),string)); }
+				SCMDPRINTF(2,string2,cmd->oni,cmd->offi,cmd->dti,cmd->str,scmdcode2string(scmdcmdtype(cmds,cmd),string)); }
 			else {
 				sprintf(string2,"  %s end %s '%%s' (%%s)\n",Q_LLI,Q_LLI);
-				simLog(NULL,2,string2,cmd->oni,cmd->dti,cmd->str,scmdcode2string(scmdcmdtype(cmds,cmd),string)); }}}
-	simLog(NULL,2,"\n");
+				SCMDPRINTF(2,string2,cmd->oni,cmd->dti,cmd->str,scmdcode2string(scmdcmdtype(cmds,cmd),string)); }}}
+	SCMDPRINTF(2,"\n");
 	return; }
 
 
@@ -642,7 +655,7 @@ int scmdopenfiles(cmdssptr cmds,int overwrite) {
 			if(cmds->fappend[fid]) cmds->fptr[fid]=fopen(str1,"a");
 			else cmds->fptr[fid]=fopen(str1,"w"); }
 		if(!cmds->fptr[fid]) {
-			simLog(NULL,10,"Failed to open file '%s' for writing\n",cmds->fname[fid]);
+			SCMDPRINTF(7,"Failed to open file '%s' for writing\n",cmds->fname[fid]);
 			return 1; }}
 
 	return 0; }

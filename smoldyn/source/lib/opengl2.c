@@ -23,7 +23,7 @@ void ChangeSize(int w,int h);
 void KeyPush(unsigned char key,int x,int y);
 void SpecialKeyPush2(unsigned char key,int x,int y);
 void SpecialKeyPush(int key,int x,int y);
-int WriteTIFF(char *filename,char *description,int x,int y,int width,int height,int compression);
+int WriteTIFF(const char *filename,const char *description,int x,int y,int width,int height,int compression);
 
 GLfloat ClipSize,ClipMidx,ClipMidy,ClipMidz;
 GLfloat ClipLeft,ClipRight,ClipBot,ClipTop,ClipBack,ClipFront;
@@ -270,7 +270,7 @@ void SpecialKeyPush(int key,int x,int y) {
 written and copyrighted by Mark Kilgard, 1997.  This function requires the use
 of the libtiff library that was written by Sam Leffler and can be downloaded
 from www.libtiff.org. */
-int WriteTIFF(char *filename,char *description,int x,int y,int width,int height,int compression) {
+int WriteTIFF(const char *filename,const char *description,int x,int y,int width,int height,int compression) {
 #if defined _TIFFIO_ && defined __gl_h_
   TIFF *file;
   GLubyte *image,*p;
@@ -383,12 +383,21 @@ void gl2glutInit(int *argc,char **argv) {
 #ifdef __gl_h_
 	static int done=0;
 	int defaultc=1;
-	char *defaultv[]={"default"};
+	char **defaultv;
 
 	if(done) return;
 	done=1;
-	if(argc && argv) glutInit(argc,argv);
-	else glutInit(&defaultc,defaultv);
+	if(argc && argv)
+		glutInit(argc,argv);
+	else {
+		defaultv=(char**) calloc(1,sizeof(char*));
+		if(!defaultv) return;
+		defaultv[0]=(char*) calloc(STRCHAR,sizeof(char));
+		if(!defaultv[0]) return;
+		strcpy(defaultv[0],"default");
+		glutInit(&defaultc,(char**) defaultv);
+		free(defaultv[0]);
+		free(defaultv); }
 #endif
 	return; }
 
@@ -401,7 +410,7 @@ int gl2State(int state) {
 
 
 /* gl2GetNumber */
-float gl2GetNumber(char *variable) {
+float gl2GetNumber(const char *variable) {
 	float value;
 
 	if(!strcmp(variable,"ClipSize")) value=ClipSize;
@@ -437,7 +446,7 @@ float gl2GetNumber(char *variable) {
 
 
 /* gl2GetString */
-char *gl2GetString(char *option,char *string) {
+char *gl2GetString(const char *option,char *string) {
 	if(!strcmp(option,"TiffName"))
 		strncpy(string,TiffName,STRCHAR);
 	if(!strcmp(option,"TiffNameDefault"))
@@ -448,7 +457,7 @@ char *gl2GetString(char *option,char *string) {
 
 
 /* gl2SetOptionInt */
-int gl2SetOptionInt(char *option,int value) {
+int gl2SetOptionInt(const char *option,int value) {
 	if(!strcmp(option,"Fix2DAspect")) {
 		if(value>=0) Fix2DAspect=value;
 		else value=Fix2DAspect; }
@@ -465,7 +474,7 @@ int gl2SetOptionInt(char *option,int value) {
 
 
 /* gl2SetOptionFlt */
-float gl2SetOptionFlt(char *option,float value) {
+float gl2SetOptionFlt(const char *option,float value) {
 	if(!strcmp(option,"RotateAngle")) {
 		if(value>0) RotateAngle=(GLfloat) value;
 		else value=(float) RotateAngle; }
@@ -474,17 +483,15 @@ float gl2SetOptionFlt(char *option,float value) {
 
 
 /* gl2SetOptionStr */
-char *gl2SetOptionStr(char *option,char *value) {
+void gl2SetOptionStr(const char *option,const char *value) {
 	if(!strcmp(option,"TiffName")) {
 		if(value) strncpy(TiffName,value,STRCHAR);
-		else value=TiffName; }
-	if(!strcmp(option,"TiffNameDefault")) {
-		value=TiffNameDefault; }
-	return value; }
+		else strncpy(TiffName,TiffNameDefault,STRCHAR); }
+	return; }
 
 
 /* gl2SetOptionVoid */
-char *gl2SetOptionVoid(char *option,void *value) {
+void *gl2SetOptionVoid(const char *option,void *value) {
 	if(!strcmp(option,"FreeFunc")) {
 		if(value) FreeFunc=(void(*)(void*))value;
 		else value=(void*) FreeFunc; }
@@ -492,7 +499,7 @@ char *gl2SetOptionVoid(char *option,void *value) {
 		if(value) FreePointer=value;
 		else value=FreePointer; }
 	else value=NULL;
-	return (char*)value; }
+	return (void*)value; }
 
 
 /* gl2SetKeyPush */

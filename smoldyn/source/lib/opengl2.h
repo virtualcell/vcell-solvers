@@ -7,30 +7,32 @@ of the Gnu Lesser General Public License (LGPL). */
 #ifndef __opengl2_h
 #define __opengl2_h
 
-/* If the OpenGL graphics libraries are unavailable, comment out the following
-lines (most functions here will become non-active).  Also, note that different
-names may be required for OpenGL header files, such as <GL/gl.h> */
+/* If the OpenGL graphics libraries are unavailable, then #undefine OPENGL.  This
+ should be done automatically with smoldynconfigure.h */
 
-#include "smoldyn_config.h"
+#include "smoldynconfigure.h"
 
-#if defined(OPENGL)
-	#if defined(HAVE_GL_GL_H)
-		#ifdef WIN32
-			#include <windows.h>
-		#endif
-		#include <GL/gl.h>
-	#elif defined(HAVE_OPENGL_GL_H)
-		#include <OpenGl/gl.h>
+#if defined(HAVE_OPENGL)							// Do NOT change the sequence of these if..elses without contacting Steve
+	#ifdef WIN32
+		#include <windows.h>
 	#endif
 
-	#if defined(HAVE_GL_GLU_H)
+	#if defined(HAVE_OPENGL_GL_H)
+		#include <OpenGl/gl.h>
+	#elif defined(HAVE_GL_GL_H)
+		#include <GL/gl.h>
+	#endif
+
+	#if defined(HAVE_OPENGL_GLU_H)
+		#include <OpenGl/glu.h>
+	#elif defined(HAVE_GL_GLU_H)
 		#include <GL/glu.h>
 	#endif
 
-	#if defined(HAVE_GL_GLUT_H)
-		#include <GL/glut.h>
-	#elif defined(HAVE_GLUT_GLUT_H)
+	#if defined(HAVE_GLUT_GLUT_H)
 		#include <GLUT/glut.h>
+	#elif defined(HAVE_GL_GLUT_H)
+		#include <GL/glut.h>
 	#endif
 
 	#if defined(HAVE_LIBTIFF)
@@ -47,12 +49,12 @@ GLfloat* gl2Double2GLfloat(double *input,GLfloat *output,int n);
 void gl2Initialize(char *wname,float xlo,float xhi,float ylo,float yhi,float zlo,float zhi);
 void gl2glutInit(int *argc,char **argv);
 int gl2State(int state);
-float gl2GetNumber(char *variable);
-char *gl2GetString(char *option,char *string);
-int gl2SetOptionInt(char *option,int value);
-float gl2SetOptionFlt(char *option,float value);
-char *gl2SetOptionStr(char *option,char *value);
-char *gl2SetOptionVoid(char *option,void *value);
+float gl2GetNumber(const char *variable);
+char *gl2GetString(const char *option,char *string);
+int gl2SetOptionInt(const char *option,int value);
+float gl2SetOptionFlt(const char *option,float value);
+void gl2SetOptionStr(const char *option,const char *value);
+void *gl2SetOptionVoid(const char *option,void *value);
 void gl2SetKeyPush(unsigned char key);
 void gl2SetColor(char c);
 

@@ -16,6 +16,24 @@
 
 
 /******************************************************************************/
+/****************************** Local declarations ****************************/
+/******************************************************************************/
+
+// low level utilities
+
+// memory management
+wallptr wallalloc(void);
+void wallfree(wallptr wptr);
+wallptr *wallsalloc(int dim);
+
+// data structure output
+
+// structure setup
+
+// core simulation functions
+
+
+/******************************************************************************/
 /****************************** low level utilities ***************************/
 /******************************************************************************/
 
@@ -96,14 +114,16 @@ double wallcalcdist2(simptr sim,double *pos1,double *pos2,int wpcode,double *vec
 wallptr wallalloc(void) {
 	wallptr wptr;
 
-	wptr=(wallptr) malloc(sizeof(struct wallstruct));
-	if(!wptr) return 0;
+	CHECKMEM(wptr=(wallptr) malloc(sizeof(struct wallstruct)));
 	wptr->wdim=0;
 	wptr->side=0;
 	wptr->pos=0;
 	wptr->type='r';
 	wptr->opp=NULL;
-	return wptr; }
+	return wptr;
+failure:
+	simLog(NULL,10,"Unable to allocate memory in wallalloc");
+	return NULL; }
 
 
 /* wallfree */
@@ -119,11 +139,10 @@ wallptr *wallsalloc(int dim) {
 	wallptr *wlist;
 
 	if(dim<1) return NULL;
-	wlist=(wallptr *) calloc(2*dim,sizeof(wallptr));
-	if(!wlist) return 0;
+	CHECKMEM(wlist=(wallptr *) calloc(2*dim,sizeof(wallptr)));
 	for(w=0;w<2*dim;w++) wlist[w]=NULL;
 	for(w=0;w<2*dim;w++)
-		if(!(wlist[w]=wallalloc())) {wallsfree(wlist,dim);return 0;}
+		CHECKMEM(wlist[w]=wallalloc());
 	for(d=0;d<dim;d++) {
 		wlist[2*d]->wdim=wlist[2*d+1]->wdim=d;
 		wlist[2*d]->side=0;
@@ -133,7 +152,11 @@ wallptr *wallsalloc(int dim) {
 		wlist[2*d]->type=wlist[2*d+1]->type='r';
 		wlist[2*d]->opp=wlist[2*d+1];
 		wlist[2*d+1]->opp=wlist[2*d]; }
-	return wlist; }
+	return wlist;
+failure:
+	wallsfree(wlist,dim);
+	simLog(NULL,10,"Unable to allocate memory in wallsalloc");
+	return NULL; }
 
 
 /* wallsfree */
@@ -158,28 +181,28 @@ void walloutput(simptr sim) {
 
 	dim=sim->dim;
 	wlist=sim->wlist;
-	printf("WALL PARAMETERS\n");
+	simLog(sim,2,"WALL PARAMETERS\n");
 	if(!wlist) {
-		printf(" No walls defined for simulation\n\n");
+		simLog(sim,2," No walls defined for simulation\n\n");
 		return; }
 
 	for(w=0;w<2*dim;w++) {
 		wptr=wlist[w];
-		printf(" wall %i: dimension %i, at %g, type %c\n",w,wptr->wdim,wptr->pos,wptr->type);
-		if(wlist[w+1-2*(w%2)]!=wptr->opp) printfException(" ERROR: opposing wall is incorrect\n"); }
+		simLog(sim,2," wall %i: dimension %i, at %g, type %c\n",w,wptr->wdim,wptr->pos,wptr->type);
+		if(wlist[w+1-2*(w%2)]!=wptr->opp) simLog(sim,10," ERROR: opposing wall is incorrect\n"); }
 
 	vol=systemvolume(sim);
-	if(dim==1) printf(" length: %g\n",vol);
-	else if(dim==2) printf(" area: %g\n",vol);
-	else printf(" volume: %g\n",vol);
+	if(dim==1) simLog(sim,2," length: %g\n",vol);
+	else if(dim==2) simLog(sim,2," area: %g\n",vol);
+	else simLog(sim,2," volume: %g\n",vol);
 
 	systemcorners(sim,poslo,poshi);
-	printf(" system corners: (%g",poslo[0]);
-	for(d=1;d<dim;d++) printf(",%g",poslo[d]);
-	printf(") and (%g",poshi[0]);
-	for(d=1;d<dim;d++) printf(",%g",poshi[d]);
-	printf(")\n");
-	printf("\n");
+	simLog(sim,2," system corners: (%g",poslo[0]);
+	for(d=1;d<dim;d++) simLog(sim,2,",%g",poslo[d]);
+	simLog(sim,2,") and (%g",poshi[0]);
+	for(d=1;d<dim;d++) simLog(sim,2,",%g",poshi[d]);
+	simLog(sim,2,")\n");
+	simLog(sim,2,"\n");
 
 	return; }
 
@@ -211,17 +234,17 @@ int checkwallparams(simptr sim,int *warnptr) {
 	syslen=0;
 	for(d=0;d<dim;d++) syslen+=(highwall[d]-lowwall[d])*(highwall[d]-lowwall[d]);
 	syslen=sqrt(syslen);
-	if(syslen<=0) {error++;printfException(" ERROR: Total system size is zero\n");}
+	if(syslen<=0) {error++;simLog(sim,10," ERROR: Total system size is zero\n");}
 
 	for(d=0;d<dim;d++)
 		if(lowwall[d]>=highwall[d]) {
-			printfException(" ERROR: low_wall positions need to be smaller than high_wall positions");
+			simLog(sim,10," ERROR: low_wall positions need to be smaller than high_wall positions");
 			error++; }
 
 	if(!sim->srfss) {
 		for(d=0;d<dim;d++)								// check for asymmetric periodic boundary condition
 			if(wlist[2*d]->type=='p'&&wlist[2*d+1]->type!='p') {
-				printf(" WARNING: only one wall on dimension %i has a periodic boundary condition\n",d);
+				simLog(sim,5," WARNING: only one wall on dimension %i has a periodic boundary condition\n",d);
 				warn++; }}
 
 	if(warnptr) *warnptr=warn;
@@ -290,7 +313,7 @@ int checkwalls(simptr sim,int ll,int reborn,boxptr bptr) {
 		mlist=sim->mols->live[ll]; }
 	if(!reborn) m=0;
 	else if(reborn&&!bptr) m=sim->mols->topl[ll];
-	else {m=0;printfException("SMOLDYN ERROR: in checkwalls, both bptr and reborn are defined");}
+	else {m=0;simLog(sim,10,"SMOLDYN ERROR: in checkwalls, both bptr and reborn are defined");}
 
 	for(w=0;w<2*sim->dim;w++) {
 		wptr=sim->wlist[w];
@@ -353,7 +376,7 @@ int checkwalls_threaded(simptr sim,int ll,int reborn,boxptr bptr) {// changed na
 		mlist=sim->mols->live[ll]; }
 	if(!reborn) m=0;
 	else if(reborn&&!bptr) m=sim->mols->topl[ll];
-	else {m=0;printfException("SMOLDYN ERROR: in checkwalls, both bptr and reborn are defined");}
+	else {m=0;simLog(sim,10,"SMOLDYN ERROR: in checkwalls, both bptr and reborn are defined");}
 
 	for(w=0;w<2*sim->dim;w++) {
 		wptr=sim->wlist[w];

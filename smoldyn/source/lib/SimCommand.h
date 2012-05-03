@@ -9,7 +9,7 @@ of the Gnu Lesser General Public License (LGPL). */
 #include "queue.h"
 #include "string2.h"
 
-#define SCMDCHECK(A,B) if(!(A)) {if(cmd) strncpy(cmd->erstr,B,STRCHAR);return CMDwarn;}
+#define SCMDCHECK(A,...) if(!(A)) {if(cmd) sprintf(cmd->erstr,__VA_ARGS__);return CMDwarn;} else (void)0
 
 enum CMDcode {CMDok,CMDwarn,CMDpause,CMDstop,CMDabort,CMDnone,CMDcontrol,CMDobserve,CMDmanipulate,CMDctrlORobs,CMDall};
 

@@ -19,9 +19,21 @@
 
 
 /******************************************************************************/
-/****************************** low level utilities ***************************/
+/****************************** Local declarations ****************************/
 /******************************************************************************/
 
+// memory management
+portptr portalloc(void);
+void portfree(portptr port);
+portssptr portssalloc(portssptr portss,int maxport);
+
+// data structure output
+
+// structure set up
+int portsupdateparams(simptr sim);
+int portsupdatelists(simptr sim);
+
+// core simulation functions
 
 
 /******************************************************************************/
@@ -33,12 +45,15 @@ portptr portalloc(void) {
 	portptr port;
 
 	port=(portptr)malloc(sizeof(struct portstruct));
-	if(!port) return NULL;
+	CHECKMEM(port);
 	port->portname=NULL;
 	port->srf=NULL;
 	port->face=PFnone;
 	port->llport=-1;
-	return port; }
+	return port;
+failure:
+	simLog(NULL,10,"Unable to allocate memory in portalloc");
+	return NULL; }
 
 
 /* portfree */
@@ -62,7 +77,7 @@ portssptr portssalloc(portssptr portss,int maxport) {
 
 	if(!portss) {																			// new allocation
 		portss=(portssptr) malloc(sizeof(struct portsuperstruct));
-		if(!portss) return NULL;
+		CHECKMEM(portss);
 		newportss=1;
 		portss->condition=SCinit;
 		portss->sim=NULL;
@@ -74,17 +89,17 @@ portssptr portssalloc(portssptr portss,int maxport) {
 		if(maxport<portss->maxport) return NULL; }
 
 	if(maxport>portss->maxport) {											// allocate new port names and ports
-		CHECK(newnames=(char**) calloc(maxport,sizeof(char*)));
+		CHECKMEM(newnames=(char**) calloc(maxport,sizeof(char*)));
 		for(p=0;p<maxport;p++) newnames[p]=NULL;
 		for(p=0;p<portss->maxport;p++) newnames[p]=portss->portnames[p];
 		for(;p<maxport;p++)
-			CHECK(newnames[p]=EmptyString());
+			CHECKMEM(newnames[p]=EmptyString());
 
-		CHECK(newportlist=(portptr*) calloc(maxport,sizeof(portptr)));	// port list
+		CHECKMEM(newportlist=(portptr*) calloc(maxport,sizeof(portptr)));	// port list
 		for(p=0;p<maxport;p++) newportlist[p]=NULL;
 		for(p=0;p<portss->maxport;p++) newportlist[p]=portss->portlist[p];
 		for(;p<maxport;p++) {
-			CHECK(newportlist[p]=portalloc());
+			CHECKMEM(newportlist[p]=portalloc());
 			newportlist[p]->portss=portss;
 			newportlist[p]->portname=newnames[p]; }}
 
@@ -98,6 +113,7 @@ portssptr portssalloc(portssptr portss,int maxport) {
 
  failure:
  	portssfree(portss);
+	simLog(NULL,10,"Unable to allocate memory in portssalloc");
  	return NULL; }
 
 
@@ -129,16 +145,16 @@ void portoutput(simptr sim) {
 
 	portss=sim->portss;
 	if(!portss) return;
-	printf("PORT PARAMETERS\n");
-	printf(" Ports allocated: %i, ports defined: %i\n",portss->maxport,portss->nport);
+	simLog(sim,2,"PORT PARAMETERS\n");
+	simLog(sim,2," Ports allocated: %i, ports defined: %i\n",portss->maxport,portss->nport);
 	for(prt=0;prt<portss->nport;prt++) {
 		port=portss->portlist[prt];
-		printf(" Port: %s\n",portss->portnames[prt]);
-		if(port->srf) printf("  surface: %s, %s\n",port->srf->sname,surfface2string(port->face,string));
-		else printf("  no surface assigned\n");
-		if(port->llport>=0) printf("  molecule list: %s\n",sim->mols->listname[port->llport]);
-		else printf("  no molecule list assigned"); }
-	printf("\n");
+		simLog(sim,2," Port: %s\n",portss->portnames[prt]);
+		if(port->srf) simLog(sim,2,"  surface: %s, %s\n",port->srf->sname,surfface2string(port->face,string));
+		else simLog(sim,2,"  no surface assigned\n");
+		if(port->llport>=0) simLog(sim,2,"  molecule list: %s\n",sim->mols->listname[port->llport]);
+		else simLog(sim,2,"  no molecule list assigned"); }
+	simLog(sim,2,"\n");
 	return; }
 
 
@@ -177,23 +193,23 @@ int checkportparams(simptr sim,int *warnptr) {
 
 	if(portss->condition!=SCok) {
 		warn++;
-		printf(" WARNING: port structure %s\n",simsc2string(portss->condition,string)); }
+		simLog(sim,7," WARNING: port structure %s\n",simsc2string(portss->condition,string)); }
 
 	for(prt=0;prt<portss->nport;prt++) {
 		port=portss->portlist[prt];					// check for porting surface
-		if(!port->srf) {warn++;printf(" WARNING: there is no porting surface assigned to port %s\n",port->portname);}
+		if(!port->srf) {warn++;simLog(sim,5," WARNING: there is no porting surface assigned to port %s\n",port->portname);}
 		if(!(port->face==PFfront || port->face==PFback))
-			{error++;printfException(" ERROR: no surface face has been assigned to port %s\n",port->portname);}
+			{error++;simLog(sim,10," ERROR: no surface face has been assigned to port %s\n",port->portname);}
 
 		if(port->srf && (!port->srf->port || port->srf->port[port->face]!=port))
-			{error++;printfException(" ERROR: port %s is not registered by surface %s\n",port->portname,port->srf->sname);}
+			{error++;simLog(sim,10," ERROR: port %s is not registered by surface %s\n",port->portname,port->srf->sname);}
 
 		if(sim->mols && port->srf && port->srf->action) {
 			er=1;																// make sure surface action is set to port
 			for(i=0;i<sim->mols->nspecies && er;i++)
 				if(port->srf->action[i][MSsoln][port->face]==SAport) er=0;
-			if(er) {warn++;printf(" WARNING: port %s is nonfunctional because no molecule actions at the surface %s are set to port\n",port->portname,port->srf->sname);}
-			if(!port->llport) {error++;printfException(" BUG: port %s has no molecule buffer\n",port->portname);} }}
+			if(er) {warn++;simLog(sim,5," WARNING: port %s is nonfunctional because no molecule actions at the surface %s are set to port\n",port->portname,port->srf->sname);}
+			if(!port->llport) {error++;simLog(sim,10," BUG: port %s has no molecule buffer\n",port->portname);} }}
 
 	if(warnptr) *warnptr=warn;
 	return error; }
@@ -263,7 +279,7 @@ portptr portaddport(simptr sim,const char *portname,surfaceptr srf,enum PanelFac
 
 
 /* portreadstring */
-portptr portreadstring(simptr sim,portptr port,char *word,char *line2,char *erstr) {
+portptr portreadstring(simptr sim,ParseFilePtr pfp,portptr port,const char *word,char *line2) {
 	char nm[STRCHAR];
 	portssptr portss;
 	int itct,s;
@@ -283,11 +299,9 @@ portptr portreadstring(simptr sim,portptr port,char *word,char *line2,char *erst
 		itct=sscanf(line2,"%s",nm);
 		CHECKS(itct==1,"error reading surface name");
 		s=stringfind(sim->srfss->snames,sim->srfss->nsrf,nm);
-		std::string nmStr = nm;
-		std::string msg = "surface name: " + nmStr + " not recognized";
-		CHECKS(s>=0, msg.c_str());
+		CHECKS(s>=0,"surface '%s' not recognized",nm);
 		port=portaddport(sim,port->portname,sim->srfss->srflist[s],PFnone);
-		CHECKS(port,"SMOLDYN BUG adding surface to port");
+		CHECKBUG(port,"SMOLDYN BUG adding surface to port");
 		CHECKS(!strnword(line2,2),"unexpected text following surface"); }
 
 	else if(!strcmp(word,"face")) {								// face
@@ -297,7 +311,7 @@ portptr portreadstring(simptr sim,portptr port,char *word,char *line2,char *erst
 		face=surfstring2face(nm);
 		CHECKS(face==PFfront || face==PFback,"face needs to be either front or back");
 		port=portaddport(sim,port->portname,NULL,face);
-		CHECKS(port,"SMOLDYN BUG adding face to port");
+		CHECKBUG(port,"SMOLDYN BUG adding face to port");
 		CHECKS(!strnword(line2,2),"unexpected text following face"); }
 
 	else {																				// unknown word
@@ -306,11 +320,12 @@ portptr portreadstring(simptr sim,portptr port,char *word,char *line2,char *erst
 	return port;
 
  failure:
+	simParseError(sim,pfp);
 	return NULL; }
 
 
 /* loadport */
-int loadport(simptr sim,ParseFilePtr *pfpptr,char* line2,char *erstr) {
+int loadport(simptr sim,ParseFilePtr *pfpptr,char* line2) {
 	ParseFilePtr pfp;
 	char word[STRCHAR],errstring[STRCHAR];
 	int done,pfpcode,firstline2;
@@ -322,8 +337,8 @@ int loadport(simptr sim,ParseFilePtr *pfpptr,char* line2,char *erstr) {
 	firstline2=line2?1:0;
 
 	while(!done) {
-		if(pfp->lctr==0 && !strchr(sim->flags,'q'))
-			printf(" Reading file: '%s'\n",pfp->fname);
+		if(pfp->lctr==0)
+			simLog(sim,2," Reading file: '%s'\n",pfp->fname);
 		if(firstline2) {
 			strcpy(word,"name");
 			pfpcode=1;
@@ -331,25 +346,24 @@ int loadport(simptr sim,ParseFilePtr *pfpptr,char* line2,char *erstr) {
 		else
 			pfpcode=Parse_ReadLine(&pfp,word,&line2,errstring);
 		*pfpptr=pfp;
-		CHECKS(pfpcode!=3,errstring);
+		CHECKS(pfpcode!=3,"%s",errstring);
 
 		if(pfpcode==0);																// already taken care of
 		else if(pfpcode==2) {													// end reading
 			done=1; }
-		else if(pfpcode==3) {													// error
-			CHECKS(0,"SMOLDYN BUG: parsing error"); }
 		else if(!strcmp(word,"end_port")) {						// end_port
 			CHECKS(!line2,"unexpected text following end_port");
 			return 0; }
 		else if(!line2) {															// just word
 			CHECKS(0,"unknown word or missing parameter"); }
 		else {
-			port=portreadstring(sim,port,word,line2,errstring);
-			CHECKS(port!=NULL,errstring); }}
+			port=portreadstring(sim,pfp,port,word,line2);
+			CHECK(port); }}															// failed but error has already been reported
 
 	CHECKS(0,"end of file encountered before end_port statement");	// end of file
 
  failure:																					// failure
+	if(ErrorType!=1) simParseError(sim,pfp);
 	return 1; }
 
 

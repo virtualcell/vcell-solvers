@@ -7,6 +7,7 @@ of the Gnu Lesser General Public License (LGPL). */
 #define __string2_h
 
 #define STRCHAR 4000
+#define STRCHARLONG 4000
 
 
 /******************* String classification ************************/

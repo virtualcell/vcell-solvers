@@ -18,14 +18,15 @@
 #include "Zn.h"
 #include <string>
 
-#include "smoldyn_config.h"
+#include "smoldynconfigure.h"
 
 
 /**********************************************************/
 /******************** command declarations ****************/
 /**********************************************************/
+
 #ifdef VCELL
-#include <vcell/vcellcmd.h>
+#include <vcellcmd.h>
 #endif
 
 // simulation control
@@ -112,6 +113,7 @@ enum CMDcode conditionalcmdtype(simptr sim,cmdptr cmd,int nparam);
 int insideecoli(double *pos,double *ofst,double rad,double length);
 void putinecoli(double *pos,double *ofst,double rad,double length);
 int molinpanels(simptr sim,int ll,int m,int s,char pshape);
+void cmdmeansqrdispfree(cmdptr cmd);
 
 
 /**********************************************************/
@@ -759,9 +761,7 @@ enum CMDcode cmdmolcountonsurf(simptr sim,cmdptr cmd,char *line2) {
 	itct=sscanf(line2,"%s",nm);
 	SCMDCHECK(itct==1,"cannot read argument");
 	s=stringfind(srfss->snames,srfss->nsrf,nm);
-	std::string nmStr = nm;	//??????
-	std::string msg = "surface name: " + nmStr + " not recognized";  // VCell
-	SCMDCHECK(s>=0,msg.c_str());
+	SCMDCHECK(s>=0,"surface name '%s' not recognized",nm);
 	srf=srfss->srflist[s];
 	line2=strnword(line2,2);
 	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
@@ -800,7 +800,7 @@ enum CMDcode cmdmolcountspace(simptr sim,cmdptr cmd,char *line2) {
 	dim=sim->dim;
 	SCMDCHECK(line2,"missing arguments");
 	i=readmolname(sim,line2,&ms,0);
-	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name")
+	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name");
 	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	line2=strnword(line2,2);
 	SCMDCHECK(line2,"missing arguments");
@@ -876,7 +876,7 @@ enum CMDcode cmdmolcountspecies(simptr sim,cmdptr cmd,char *line2) {
 	
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
 	i=readmolname(sim,line2,&ms,0);
-	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name")
+	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name");
 	line2=strnword(line2,2);
 	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
 	SCMDCHECK(fptr,"file name not recognized");
@@ -1025,7 +1025,7 @@ enum CMDcode cmdlistmols3(simptr sim,cmdptr cmd,char *line2) {
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
 	i=readmolname(sim,line2,&ms,0);
-	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name")
+	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name");
 	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	line2=strnword(line2,2);
 	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
@@ -1057,7 +1057,7 @@ enum CMDcode cmdlistmolscmpt(simptr sim,cmdptr cmd,char *line2) {
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
 	i=readmolname(sim,line2,&ms,0);
-	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name")
+	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name");
 	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	line2=strnword(line2,2);
 	SCMDCHECK(line2,"missing compartment name");
@@ -1096,7 +1096,7 @@ enum CMDcode cmdmolpos(simptr sim,cmdptr cmd,char *line2) {
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDobserve;
 	i=readmolname(sim,line2,&ms,0);
-	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name")
+	SCMDCHECK(!(i<0 && i>-5),"cannot read molecule and/or state name");
 	SCMDCHECK(i!=-6,"wildcard characters not permitted in species name");
 	line2=strnword(line2,2);
 	fptr=scmdgetfptr((cmdssptr) sim->cmds,line2);
@@ -1449,7 +1449,7 @@ enum CMDcode cmddiagnostics(simptr sim,cmdptr cmd,char *line2) {
 
 enum CMDcode cmdset(simptr sim,cmdptr cmd,char *line2) {
 	int er,itct;
-	char word[STRCHAR],errstring[STRCHAR];
+	char word[STRCHAR];
 
 	if(line2 && !strcmp(line2,"cmdtype")) return CMDmanipulate;
 	SCMDCHECK(line2,"missing argument");
@@ -1457,8 +1457,8 @@ enum CMDcode cmdset(simptr sim,cmdptr cmd,char *line2) {
 	SCMDCHECK(itct==1,"missing statement");
 	line2=strnword(line2,2);
 	SCMDCHECK(line2,"missing statement text");
-	er=simreadstring(sim,word,line2,errstring);
-	SCMDCHECK(!er,errstring);
+	er=simreadstring(sim,NULL,word,line2);
+	SCMDCHECK(!er,"%s",ErrorString);
 	return CMDok; }
 
 
