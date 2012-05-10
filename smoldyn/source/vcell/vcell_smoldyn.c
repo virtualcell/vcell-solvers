@@ -20,6 +20,9 @@
 /* ********************** main() segment *************************** */
 /* ***************************************************************** */
 
+#include <VCELL/SimulationMessaging.h>
+int taskID = -1;
+
 /* main */
 int main(int argc,char **argv) {
 	int exitCode = 0;
@@ -50,11 +53,16 @@ int main(int argc,char **argv) {
 			return 0; }
 		if(argc>1) {
 			if(argv[1][0]=='-') {
-				strncpy(flags,argv[1],STRCHAR-1);
-				flags[STRCHAR-1]='\0';
-				strcpy(SimFlags,flags);
-				argc--;
-				argv++; }
+				// -tid is always at the end of argument list
+				// and it is used in conjunction with PBS
+				// should not be used when called from command line manually
+				if (strcmp(argv[1], "-tid")) {
+					strncpy(flags,argv[1],STRCHAR-1);
+					flags[STRCHAR-1]='\0';
+					strcpy(SimFlags,flags);
+					argc--;
+					argv++; }
+			}
 			else {
 				fprintf(stderr,"Command line format: smoldyn [config_file] [-options] [-OpenGL_options]\n");
 				return 0; }}
@@ -77,6 +85,17 @@ int main(int argc,char **argv) {
 			simLog(NULL,4,"%s\n",VERSION);
 			return 0; }
 		sim=NULL;
+
+		if (argc > 1) {
+			if (!strcmp(argv[1], "-tid")) {
+				argc --;
+				argv ++;
+
+				sscanf(argv[1], "%d", &taskID);
+				argc --;
+				argv ++;
+			}
+		}
 
 		er=simInitAndLoad(root,fname,&sim,flags,new SimpleValueProviderFactory(), new SimpleMesh());
 		if(!er) {
@@ -104,8 +123,26 @@ int main(int argc,char **argv) {
 	catch (const char* errmsg) {
 		fprintf(stderr, "%s\n", errmsg);
 		exitCode = 1; }
+	} catch (int stop) {
+	// stopped by user
+	}
 	catch (...) {
 		fprintf(stderr, "unknown error\n");
 		exitCode = 1; }
+
+	if (SimulationMessaging::getInstVar() == NULL) {
+		if (exitCode != 0) {
+			printfException("%s\n", errorMsg);
+		}
+	} else if (!SimulationMessaging::getInstVar()->isStopRequested()) {
+		if (exitCode != 0) {
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_FAILURE, errorMsg));
+		}
+#ifdef USE_MESSAGING
+		SimulationMessaging::getInstVar()->waitUntilFinished();
+#endif
+	}
+	delete SimulationMessaging::getInstVar();
+
 	return exitCode; }
 
