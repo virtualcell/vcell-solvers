@@ -286,6 +286,7 @@ int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2) {		//?
 	}
 
 #ifdef HAVE_ZLIB
+	{
 	long numVolume = volumeSamplesPtr->num[0] * volumeSamplesPtr->num[1] * volumeSamplesPtr->num[2];
 	//cout<<pixelLine<<endl;
 	int compressed_len = pixelLine.size();
@@ -320,6 +321,7 @@ int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2) {		//?
 		throw "loadHighResVolumeSamples : unexpected number of volume samples";
 	}
 	return 0;
+	}
 #else
 	throw "loadHighResVolumeSamples : function unavailable because compile does not include zlib";
 #endif
