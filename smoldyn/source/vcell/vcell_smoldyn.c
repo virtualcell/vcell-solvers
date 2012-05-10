@@ -29,6 +29,9 @@ int main(int argc,char **argv) {
 	int exitCode = 0;
 	  simptr sim;
 	try {
+		simSetThrowing(10);
+		SimulationMessaging::create();
+
 	  int i,er,pflag,qflag,wflag,tflag,Vflag,oflag;
 	  char root[STRCHAR],fname[STRCHAR],flags[STRCHAR],*cptr;
 
@@ -115,7 +118,8 @@ int main(int argc,char **argv) {
 			fflush(stderr);
 			if(tflag || !sim->graphss || sim->graphss->graphics==0) {
 				er=smolsimulate(sim);
-				endsimulate(sim,er); }
+				endsimulate(sim,er);
+				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1.0, sim->time));}
 			else {
 				smolsimulategl(sim); }}
 		simfree(sim);
