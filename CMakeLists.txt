@@ -78,8 +78,6 @@ if (TARGET_COUNT GREATER 1 OR TARGET_COUNT EQUAL 0)
 	message(FATAL_ERROR "It is required to select one target, either TARGET_SOLVERS_WITH_MESSAGING, or TARGET_SOLVERS_NO_MESSAGING or TARGET_JAVA_BINDING")
 endif()
 
-option(VCELL_SPATIAL_HYBRID "VCell Spatial Hybrid" OFF)
-
 #############################################
 #
 #  Build universal binaries on Mac

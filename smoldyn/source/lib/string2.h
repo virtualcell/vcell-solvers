@@ -6,7 +6,7 @@ of the Gnu Lesser General Public License (LGPL). */
 #ifndef __string2_h
 #define __string2_h
 
-#define STRCHAR 4000
+#define STRCHAR 256
 #define STRCHARLONG 4000
 
 

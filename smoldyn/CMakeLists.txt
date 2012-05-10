@@ -79,6 +79,12 @@ include_directories(source/lib source/Smoldyn source/vcell ${CMAKE_BINARY_DIR})
 ####### Option: Compile for VCell ##########
 
 option(OPTION_VCELL "Compile Smoldyn for VCell" OFF)
+if(OPTION_VCELL)
+	set(MAIN_FILES
+		source/vcell/vcell_smoldyn.c
+	)
+	set_source_files_properties(${MAIN_FILES} PROPERTIES LANGUAGE CXX )
+endif()
 
 
 ####### Build for debugging or release ##########
