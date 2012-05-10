@@ -113,13 +113,7 @@ endif(MINGW)
 
 ######### Platform dependent information ##########
 
-if (OPTION_VCELL)
-	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-	ADD_DEFINITIONS(-DVCELL)
-	include_directories(../IDAWin ../ExpressionParser ../netcdf-3.6.2/libsrc ../netcdf-3.6.2/cxx ../VCell/include ${CMAKE_CURRENT_BINARY_DIR})
-	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/source/vcell)
-	list(APPEND DEP_LIBS vcell IDAWin netcdf_cxx netcdf zip ExpressionParser ${SONICMQ_LIBS})
-elseif (MINGW)
+if (MINGW)
 	include_directories(${MINGWDIR}/include windows)
 	link_directories(${MINGWDIR}/lib ${CMAKE_CURRENT_SOURCE_DIR}/windows/dll)
 	list(APPEND DEP_LIBS opengl32 glu32 freeglut z)
@@ -261,6 +255,33 @@ if(OPTION_USE_LIBMZR)
 	set(LIBMOLECULIZER TRUE)
 endif(OPTION_USE_LIBMZR)
 
+if (OPTION_VCELL)
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+	ADD_DEFINITIONS(-DVCELL)
+	include_directories(../IDAWin ../ExpressionParser ../netcdf-3.6.2/libsrc ../netcdf-3.6.2/cxx ../VCell/include ${CMAKE_CURRENT_BINARY_DIR})
+	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/source/vcell ${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
+	list(APPEND DEP_LIBS vcell IDAWin netcdf_cxx netcdf zip ExpressionParser ${SONICMQ_LIBS})
+
+	if (OPTION_USE_OPENGL)
+		if (MSVC)
+			message(WARNING, ${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
+			include_directories(${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
+			link_directories(${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
+			if (ARCH_64bit)
+				list(APPEND DEP_LIBS glut64)
+			else()
+				list(APPEND DEP_LIBS glut32)
+			endif()			
+		endif()
+	endif()
+	
+	if (ZLIB_FOUND)
+		list(APPEND DEP_LIBS z)
+	else()
+		list(APPEND DEP_LIBS zlib)
+	endif()
+	
+endif()
 
 ####### Targets ##########
 
@@ -272,26 +293,13 @@ if(OPTION_TARGET_SMOLDYN)
 	target_link_libraries(smoldyn ${DEP_LIBS})
 endif()
 
+if (OPTION_VCELL)
+	set(OPTION_TARGET_LIBSMOLDYN ON) 
+endif()
 if(OPTION_TARGET_LIBSMOLDYN)
 	add_library(smoldynlib STATIC ${SRC_FILES} ${HEADER_FILES})
 endif()
 
-if (OPTION_VCELL)
-	if (OPTION_USE_OPENGL)
-		if (MSVC)
-			include_directories(${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
-			link_directories(l ${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
-			if (ARCH_64bit)
-				list(APPEND DEP_LIBS glut64)
-			else()
-				list(APPEND DEP_LIBS glut32)
-			endif()			
-		endif()
-	endif()
-	if (OPTION_USE_ZLIB)
-		list(APPEND DEP_LIBS zlib)
-	endif()
-endif()
 
 ########## install ###########
 
