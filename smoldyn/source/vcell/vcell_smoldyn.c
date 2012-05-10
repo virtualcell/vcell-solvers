@@ -25,9 +25,10 @@ int taskID = -1;
 
 /* main */
 int main(int argc,char **argv) {
+	char errorMsg[2048];
 	int exitCode = 0;
-	try {
 	  simptr sim;
+	try {
 	  int i,er,pflag,qflag,wflag,tflag,Vflag,oflag;
 	  char root[STRCHAR],fname[STRCHAR],flags[STRCHAR],*cptr;
 
@@ -123,7 +124,7 @@ int main(int argc,char **argv) {
 	catch (const char* errmsg) {
 		fprintf(stderr, "%s\n", errmsg);
 		exitCode = 1; }
-	} catch (int stop) {
+	catch (int stop) {
 	// stopped by user
 	}
 	catch (...) {
@@ -132,7 +133,7 @@ int main(int argc,char **argv) {
 
 	if (SimulationMessaging::getInstVar() == NULL) {
 		if (exitCode != 0) {
-			printfException("%s\n", errorMsg);
+			simLog(sim,10, "%s\n", errorMsg);
 		}
 	} else if (!SimulationMessaging::getInstVar()->isStopRequested()) {
 		if (exitCode != 0) {
