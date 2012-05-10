@@ -265,7 +265,6 @@ if (OPTION_VCELL)
 
 	if (OPTION_USE_OPENGL)
 		if (MSVC)
-			message(WARNING, ${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
 			include_directories(${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
 			link_directories(${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
 			if (ARCH_64bit)
