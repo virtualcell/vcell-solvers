@@ -65,6 +65,7 @@ set(SRC_FILES
 	source/vcell/DataProcessorRoiTimeSeriesSmoldyn.cpp
 	source/vcell/VCellSmoldynOutput.cpp
 	source/vcell/vcellcmd.c
+	source/vcell/vcellhybrid.c
 )
 
 set(MAIN_FILES
