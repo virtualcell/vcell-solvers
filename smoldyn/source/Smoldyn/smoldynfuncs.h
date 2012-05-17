@@ -285,6 +285,25 @@ int portgetmols(simptr sim,portptr port,int ident,enum MolecState ms,int remove)
 int portputmols(simptr sim,portptr port,int nmol,int ident,int *species,double **positions);
 int porttransport(simptr sim1,portptr port1,simptr sim2,portptr port2);
 
+/******************************** Filaments *******************************/
+
+// enumerated types
+
+// low level utilities
+
+// memory management
+void filssfree(filamentssptr filss);
+
+// data structure output
+void filssoutput(simptr sim);
+int filcheckparams(simptr sim,int *warnptr);
+
+// structure set up
+int filenablefilaments(simptr sim,int maxfil);
+filamentptr filreadstring(simptr sim,ParseFilePtr pfp,filamentptr fil,const char *word,char *line2);
+int filload(simptr sim,ParseFilePtr *pfpptr,char *line2);
+int filsupdate(simptr sim);
+
 /******************************** Moleculizer *******************************/
 
 // low level utilities

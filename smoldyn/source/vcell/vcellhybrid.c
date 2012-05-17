@@ -12,6 +12,10 @@ using std::string;
 
 #include <algorithm>
 using namespace std;
+#include <VCELL/SimTool.h>
+#include <VCELL/SimulationExpression.h>
+#include "VCellValueProvider.h"
+#include "VCellMesh.h"
 
 simptr smoldynInit(SimTool* simTool, string& fileName) {
 	LoggingCallback=NULL;
@@ -29,9 +33,11 @@ simptr smoldynInit(SimTool* simTool, string& fileName) {
 
 	simptr sim = NULL;
 	int er;
-	er=setupsim(root,fname,&sim,flags);
+
+	er=simInitAndLoad(root,fname,&sim,flags,new VCellValueProviderFactory(simTool), new VCellMesh(simTool));
+	er=simUpdateAndDisplay(sim);
 	er=scmdopenfiles((cmdssptr)sim->cmds,1);
-	sim->simTool = simTool;
+	
 	sim->clockstt=time(NULL);
 	er=simdocommands(sim);
 
@@ -46,18 +52,11 @@ simptr smoldynInit(SimTool* simTool, string& fileName) {
 			continue;
 		}
 		for (int i = 0; i < rxnssInOrder->totrxn; i ++) {
-			try {
-				Expression* rateExpression = rxnssInOrder->rxn[i]->rateExp;
-				double r = rateExpression->evaluateConstant();
-				delete rxnssInOrder->rxn[i]->rateExp;
-				rxnssInOrder->rxn[i]->rateExp = NULL;
-				rxnssInOrder->rxn[i]->rate = r;
-				
-				er=rxnsetrate(sim,j,i,erstr);
-			} catch (...) {
-				rxnssInOrder->rxn[i]->rateExp->bindExpression(symbolTable);
+			valueproviderptr valueProvider = rxnssInOrder->rxn[i]->rateValueProvider;
+			if(valueProvider != NULL)
+			{
+				((VCellValueProvider*)valueProvider)->bindExpression(symbolTable);
 			}
-		
 		}
 	}
 
@@ -73,7 +72,6 @@ simptr smoldynInit(SimTool* simTool, string& fileName) {
 			enum MolecState ms,ms2;
 			enum PanelFace face;
 			int nspecies=sim->mols?sim->mols->nspecies:0;
-			Expression * surfRateExp;
 			for(int s=0; s<numSrfs; s++) {
 				surfaceptr srf=surfacelist[s];
 				for(int i=0; i<nspecies; i++){
@@ -82,17 +80,10 @@ simptr smoldynInit(SimTool* simTool, string& fileName) {
 							if(srf->actdetails != NULL && srf->actdetails[i]!=NULL && srf->actdetails[i][ms]!=NULL && srf->actdetails[i][ms][face] !=NULL) {
 								actdetails=srf->actdetails[i][ms][face];
 								for(ms2=(MolecState)0;ms2<MSMAX1;ms2=(MolecState)(ms2+1)) {
-									if(actdetails != NULL && actdetails->srfRateExp[ms2] != NULL)
+									if(actdetails != NULL && actdetails->srfRateValueProvider[ms2] != NULL)
 									{
-										surfRateExp = actdetails->srfRateExp[ms2];
-										try {
-											surfRateExp->evaluateConstant();
-											delete actdetails->srfRateExp[ms2];
-											actdetails->srfRateExp[ms2] = NULL;
-											//if can be evaluated to constant, set rate is done in surfreadstring of smolsurface.c
-										} catch (...) {
-											actdetails->srfRateExp[ms2]->bindExpression(symbolTable);
-										}
+										valueproviderptr valueProvider = actdetails->srfRateValueProvider[ms2];
+										((VCellValueProvider*)valueProvider)->bindExpression(symbolTable);
 									}
 								}
 							}

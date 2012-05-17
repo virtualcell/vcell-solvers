@@ -135,6 +135,7 @@ enum SmolStruct simstring2ss(char *string) {
 	else if(!strcmp(string,"box")) ans=SSbox;
 	else if(!strcmp(string,"compartment")) ans=SScmpt;
 	else if(!strcmp(string,"port")) ans=SSport;
+	else if(!strcmp(string,"filament")) ans=SSfilament;
 	else if(!strcmp(string,"command")) ans=SScmd;
 	else if(!strcmp(string,"simulation")) ans=SSsim;
 	else if(!strcmp(string,"check")) ans=SScheck;
@@ -152,6 +153,7 @@ char *simss2string(enum SmolStruct ss,char *string) {
 	else if(ss==SSbox) strcpy(string,"box");
 	else if(ss==SScmpt) strcpy(string,"compartment");
 	else if(ss==SSport) strcpy(string,"port");
+	else if(ss==SSfilament) strcpy(string,"filament");
 	else if(ss==SScmd) strcpy(string,"command");
 	else if(ss==SSsim) strcpy(string,"simulation");
 	else if(ss==SScheck) strcpy(string,"check");
@@ -226,6 +228,7 @@ simptr simalloc(const char *fileroot) {
 	sim->boxs=NULL;
 	sim->cmptss=NULL;
 	sim->portss=NULL;
+	sim->filss=NULL;
 	sim->mzrss=NULL;
 	sim->cmds=NULL;
 	sim->graphss=NULL;
@@ -255,6 +258,7 @@ void simfree(simptr sim) {
 	graphssfree(sim->graphss);
 	scmdssfree((cmdssptr) sim->cmds);
 	mzrssfree(sim->mzrss);
+	filssfree(sim->filss);
 	portssfree(sim->portss);
 	compartssfree(sim->cmptss);
 	boxssfree(sim->boxs);
@@ -324,6 +328,7 @@ void simsystemoutput(simptr sim) {
 		rxnoutput(sim,order);
 	compartoutput(sim);
 	portoutput(sim);
+	filssoutput(sim);
 	mzrssoutput(sim);
 	return; }
 
@@ -362,6 +367,7 @@ void checksimparams(simptr sim) {
 	error+=checksurfaceparams(sim,&warndiff);warn+=warndiff;
 	error+=checkcompartparams(sim,&warndiff);warn+=warndiff;
 	error+=checkportparams(sim,&warndiff);warn+=warndiff;
+	error+=filcheckparams(sim,&warndiff);warn+=warndiff;
 	error+=mzrCheckParams(sim,&warndiff);warn+=warndiff;
 	error+=checkgraphicsparams(sim,&warndiff);warn+=warndiff;
 
@@ -460,7 +466,7 @@ int simsettime(simptr sim,double time,int code) {
 /* simreadstring */
 int simreadstring(simptr sim,ParseFilePtr pfp,const char *word,char *line2) {
 	char nm[STRCHAR],nm1[STRCHAR],shapenm[STRCHAR],ch,rname[STRCHAR];
-	int er,dim,i,nmol,d,i1,s,c,ll,order,more,rctident[MAXORDER],nprod,prdident[MAXPRODUCT],r,ord,prd,itct,prt,lt;
+	int er,dim,i,nmol,d,i1,s,c,ll,order,more,rctident[MAXORDER],nprod,prdident[MAXPRODUCT],r,ord,prd,itct,prt,lt,f;
 	double flt1,flt2,v1[DIMMAX*DIMMAX],v2[4],poslo[DIMMAX],poshi[DIMMAX];
 	enum MolecState ms,rctstate[MAXORDER],prdstate[MAXPRODUCT];
 	enum PanelShape ps;
@@ -470,6 +476,7 @@ int simreadstring(simptr sim,ParseFilePtr pfp,const char *word,char *line2) {
 	compartptr cmpt;
 	surfaceptr srf;
 	portptr port;
+	filamentptr fil;
 	long int li1;
 
 	dim=sim->dim;
@@ -1096,6 +1103,31 @@ int simreadstring(simptr sim,ParseFilePtr pfp,const char *word,char *line2) {
 		port=portreadstring(sim,pfp,port,nm1,line2);
 		CHECK(port!=NULL); }
 
+	// filaments
+	
+	else if(!strcmp(word,"max_filament")) {				// max_filament
+		itct=sscanf(line2,"%i",&i1);
+		CHECKS(itct==1,"max_filament needs to be a number");
+		CHECKS(i1>=0,"max_filament must be at least 0");
+		CHECKS(filenablefilaments(sim,i1),"failed to enable filaments");
+		CHECKS(!strnword(line2,2),"unexpected text following max_filament"); }
+	
+	else if(!strcmp(word,"new_filament")) {				// new_filament
+		fil=filreadstring(sim,pfp,NULL,"name",line2);
+		CHECK(fil!=NULL); }
+	
+	else if(!strcmp(word,"filament")) {						// filament
+		CHECKS(sim->filss,"individual filaments need to be defined before using filament");
+		itct=sscanf(line2,"%s %s",nm,nm1);
+		CHECKS(itct==2,"filament format: filament_name statement_name statement_text");
+		line2=strnword(line2,3);
+		CHECKS(line2,"filament format: filament_name statement_name statement_text");
+		f=stringfind(sim->filss->fnames,sim->filss->nfil,nm);
+		CHECKS(f>=0,"filament is unrecognized");
+		fil=sim->filss->fillist[f];
+		fil=filreadstring(sim,pfp,fil,nm1,line2);
+		CHECK(fil!=NULL); }
+	
 	// moleculizer
 
 	else if(!strcmp(word,"reference_difc")) {							// reference_difc
@@ -1283,6 +1315,7 @@ int simreadstring(simptr sim,ParseFilePtr pfp,const char *word,char *line2) {
 				double constRate = 1;
 				try {
 					constRate = valueProvider->getConstantValue();
+					delete valueProvider;
 				} catch (...) {
 					rxn->rateValueProvider = valueProvider;
 				}
@@ -1583,6 +1616,9 @@ int loadsim(simptr sim,const char *fileroot,const char *filename,const char *fla
 		else if(!strcmp(word,"start_port")) {					// start_port
 			er=loadport(sim,&pfp,line2); }
 
+		else if(!strcmp(word,"start_filament")) {			// start_filament
+			er=filload(sim,&pfp,line2); }
+		
 		else if(!strcmp(word,"start_rules")) {				// start_rules
 			er=mzrssreadrules(sim,&pfp); }
 
@@ -1648,6 +1684,11 @@ int simupdate(simptr sim) {
 	er=portsupdate(sim);
 	CHECK(er!=1);
 
+	if(sim->condition==SCinit && sim->filss)
+		simLog(sim,2," setting up filaments\n");
+	er=filsupdate(sim);
+	CHECK(er!=1);
+	
 	if(sim->condition==SCinit && sim->mzrss)
 		simLog(sim,2," setting up moleculizer\n");
 	er=mzrsetupmoleculizer(sim);
@@ -1680,6 +1721,9 @@ int simupdate(simptr sim) {
 		er=simupdate(sim);
 		CHECK(!er); }
 	if(sim->portss && sim->portss->condition!=SCok) {
+		er=simupdate(sim);
+		CHECK(!er); }
+	if(sim->filss && sim->filss->condition!=SCok) {
 		er=simupdate(sim);
 		CHECK(!er); }
 	if(sim->mzrss && sim->mzrss->condition!=SCok) {
@@ -1719,6 +1763,10 @@ int simInitAndLoad(const char *fileroot,const char *filename,simptr *smptr,const
 		sim->mesh = mesh;
 		er=loadsim(sim,fileroot,filename,flags);		// load sim
 		CHECK(!er);
+		if(sim && sim->valueProviderFactory)
+		{
+			sim->valueProviderFactory->setSimptr(sim);
+		}
 
 		simLog(sim,2," Loaded file successfully\n"); }
 

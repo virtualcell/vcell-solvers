@@ -29,6 +29,8 @@ set(HEADER_FILES
 	source/vcell/DataProcessorRoiTimeSeriesSmoldyn.h
 	source/vcell/VCellSmoldynOutput.h
 	source/vcell/vcellcmd.h
+	source/vcell/VCellValueProvider.h
+	source/vcell/VCellMesh.h
 )
 
 set(SRC_FILES
@@ -50,6 +52,7 @@ set(SRC_FILES
 	source/Smoldyn/smolboxes.c
 	source/Smoldyn/smolcmd.c
 	source/Smoldyn/smolcomparts.c
+	source/Smoldyn/smolfilament.c
 	source/Smoldyn/smolgraphics.c
 	source/Smoldyn/smoldynhybrid.c
 	source/Smoldyn/smolmolec.c
@@ -66,6 +69,8 @@ set(SRC_FILES
 	source/vcell/VCellSmoldynOutput.cpp
 	source/vcell/vcellcmd.c
 	source/vcell/vcellhybrid.c
+	source/vcell/VCellValueProvider.cpp
+	source/vcell/VCellMesh.cpp
 )
 
 set(MAIN_FILES
@@ -261,7 +266,10 @@ if (OPTION_VCELL)
 	ADD_DEFINITIONS(-DVCELL)
 	include_directories(../IDAWin ../ExpressionParser ../netcdf-3.6.2/libsrc ../netcdf-3.6.2/cxx ../VCell/include ${CMAKE_CURRENT_BINARY_DIR})
 	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/source/vcell ${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
-	list(APPEND DEP_LIBS vcell IDAWin netcdf_cxx netcdf zip ExpressionParser ${SONICMQ_LIBS})
+	list(APPEND DEP_LIBS vcell pcgwrapper ExpressionParser hdf5_cpp hdf5 IDAWin netcdf_cxx netcdf PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS} zip unzip)
+	if (MSVC OR LINUX)
+		list(APPEND DEP_LIBS blas)
+	endif()
 
 	if (OPTION_USE_OPENGL)
 		if (MSVC)

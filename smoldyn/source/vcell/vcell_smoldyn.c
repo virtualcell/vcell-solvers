@@ -101,7 +101,7 @@ int main(int argc,char **argv) {
 			}
 		}
 
-		er=simInitAndLoad(root,fname,&sim,flags,new SimpleValueProviderFactory(), new SimpleMesh());
+		er=simInitAndLoad(root,fname,&sim,flags, NULL, NULL);
 		if(!er) {
 			if(!tflag && sim->graphss && sim->graphss->graphics!=0)
 				gl2glutInit(&argc,argv);

@@ -2653,6 +2653,7 @@ surfaceptr surfreadstring(simptr sim,ParseFilePtr pfp,surfaceptr srf,const char 
 				double rate = valueProvider->getConstantValue();
 				f1=rate;
 				constRate = true;
+				delete valueProvider;
 			} catch (...) {
 				constRate = false;
 			}
@@ -2679,8 +2680,9 @@ surfaceptr surfreadstring(simptr sim,ParseFilePtr pfp,surfaceptr srf,const char 
 			if(constRate == true)
 				CHECKS(f1>=0,"negative surface rate values are not permitted");
 			string name = rawStr.substr(found+2); //after the ";" denoting the end of rate, the found move one more position(the space) to get to the end of the line, which would be the species name
-			const char* anotherMolName = name.c_str();
-			line2 = const_cast<char *>(anotherMolName);
+			char * tempLine = new char[name.size() + 1];
+			std::strcpy(tempLine, name.c_str());
+			line2 = tempLine;
 		}
         else
 		{
@@ -2697,7 +2699,7 @@ surfaceptr surfreadstring(simptr sim,ParseFilePtr pfp,surfaceptr srf,const char 
 			line2=strnword(line2,2); }
 		if(found!=string::npos)
 		{
-			if(constRate == true)
+			if(constRate)
 			{
 				if(!strcmp(word,"rate"))
 					er=surfsetrate(srf,i,ms,ms1,ms2,i3,f1,1);

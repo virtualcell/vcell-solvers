@@ -40,13 +40,13 @@ int randomPosInMesh(simptr sim, double* centerPos,  double* pos)
 	deltaX = delta[0];
 	originX = sim->wlist[0]->pos; //wlist[0],[1] are x origin and x far most
 	domainSizeX = sim->wlist[1]->pos - sim->wlist[0]->pos;
-	pos[0]=unirandCCD(max(originX, (centerPos[0]-0.5*deltaX)) , min((originX+domainSizeX), (centerPos[0] + 0.5*deltaX)));
+	pos[0]=unirandCCD(max(originX, (centerPos[0]-0.5*deltaX)), min((originX+domainSizeX), (centerPos[0] + 0.5*deltaX)));
 	if(dim > 1)
 	{
 		deltaY = delta[1];
 		originY = sim->wlist[2]->pos; //wlist[2],[3] are y origin and y far most
 		domainSizeY = sim->wlist[3]->pos - sim->wlist[2]->pos;
-		pos[1]=unirandCCD(max(originY, (centerPos[1]-0.5*deltaY)) , min((originY+domainSizeY), (centerPos[1] + 0.5*deltaY)));
+		pos[1]=unirandCCD(max(originY, (centerPos[1]-0.5*deltaY)), min((originY+domainSizeY), (centerPos[1] + 0.5*deltaY)));
 	}
 	if(dim > 2)
 	{

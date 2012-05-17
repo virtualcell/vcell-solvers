@@ -133,6 +133,8 @@ int posincompart(simptr sim,double *pos,compartptr cmpt) {
 		for (int idim = 0; idim < dim; idim ++) {
 			double h = volumeSamplePtr->size[idim]/volumeSamplePtr->num[idim];
 			int idx = floor((pos[idim] - volumeSamplePtr->origin[idim])/h);
+			idx = max(0,idx);//clamp index lower bound to 0
+			idx = min((volumeSamplePtr->num[idim]-1),idx);//clamp index upper bound to number of volume sample at specific dimension
 			sampleIdxNeighbors[idim][0] = std::max<int>(0,(idx-1));
 			sampleIdxNeighbors[idim][1] = idx;
 			sampleIdxNeighbors[idim][2] = std::min<int>((volumeSamplePtr->num[idim]-1),(idx+1));
@@ -246,7 +248,7 @@ int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2) {		//?
 		pfpcode=Parse_ReadLine(&pfp,word,&line2,errstring);
 
 		*pfpptr=pfp;
-		CHECKS(pfpcode!=3,errstring);
+		CHECKS(pfpcode!=3,"%s",errstring);
 
 		if(pfpcode==0);	// already taken care of
 
@@ -287,40 +289,40 @@ int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2) {		//?
 
 #ifdef HAVE_ZLIB
 	{
-	long numVolume = volumeSamplesPtr->num[0] * volumeSamplesPtr->num[1] * volumeSamplesPtr->num[2];
-	//cout<<pixelLine<<endl;
-	int compressed_len = pixelLine.size();
-	if (compressed_len <= 1) {
-		throw "CartesianMesh::readGeometryFile() : invalid compressed volume";
-	}
-
-	const char* compressed_hex = pixelLine.c_str();
-	//volumeSamples compressed, changed from byte to short
-	unsigned char* bytes_from_compressed = new unsigned char[compressed_len+1];
-	memset(bytes_from_compressed, 0, (compressed_len+1) * sizeof(unsigned char));
-	for (int i = 0, j = 0; i < compressed_len; i += 2, j ++) {
-		bytes_from_compressed[j] = fromHex(compressed_hex + i);
-	}
-
-	volumeSamplesPtr->volsamples = new unsigned char[numVolume];
-	memset(volumeSamplesPtr->volsamples, 0, numVolume * sizeof(unsigned char));
-
-	unsigned long inflated_len = numVolume;
-	int retVal = uncompress(volumeSamplesPtr->volsamples, &inflated_len, bytes_from_compressed, compressed_len);
-
-	if (inflated_len = numVolume) {
-		for (unsigned long i = 0; i < inflated_len; i ++) {
-			//if (volumeSamplesPtr->volsamples[i] == 6) {
-				//cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
-			//}
-			//else if (volumeSamplesPtr->volsamples[i] == 16) {
-			//	cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
-			//}
+		long numVolume = volumeSamplesPtr->num[0] * volumeSamplesPtr->num[1] * volumeSamplesPtr->num[2];
+		//cout<<pixelLine<<endl;
+		int compressed_len = pixelLine.size();
+		if (compressed_len <= 1) {
+			throw "CartesianMesh::readGeometryFile() : invalid compressed volume";
 		}
-	} else {
-		throw "loadHighResVolumeSamples : unexpected number of volume samples";
-	}
-	return 0;
+
+		const char* compressed_hex = pixelLine.c_str();
+		//volumeSamples compressed, changed from byte to short
+		unsigned char* bytes_from_compressed = new unsigned char[compressed_len+1];
+		memset(bytes_from_compressed, 0, (compressed_len+1) * sizeof(unsigned char));
+		for (int i = 0, j = 0; i < compressed_len; i += 2, j ++) {
+			bytes_from_compressed[j] = fromHex(compressed_hex + i);
+		}
+
+	 	volumeSamplesPtr->volsamples = new unsigned char[numVolume];
+	 	memset(volumeSamplesPtr->volsamples, 0, numVolume * sizeof(unsigned char));
+
+		unsigned long inflated_len = numVolume;
+		int retVal = uncompress(volumeSamplesPtr->volsamples, &inflated_len, bytes_from_compressed, compressed_len);
+
+		if (inflated_len = numVolume) {
+			for (unsigned long i = 0; i < inflated_len; i ++) {
+				//if (volumeSamplesPtr->volsamples[i] == 6) {
+				//cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
+				//}
+				//else if (volumeSamplesPtr->volsamples[i] == 16) {
+				//	cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
+				//}
+			}
+		} else {
+			throw "loadHighResVolumeSamples : unexpected number of volume samples";
+		}
+		return 0;
 	}
 #else
 	throw "loadHighResVolumeSamples : function unavailable because compile does not include zlib";

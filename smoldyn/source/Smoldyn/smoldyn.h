@@ -288,6 +288,38 @@ typedef struct portsuperstruct {
 	portptr *portlist;					// list of ports
 	} *portssptr;
 
+/********************************* Filaments ********************************/
+
+typedef struct filamentstruct {
+	struct filamentsuperstruct *filss;	// filament superstructure
+	char *fname;								// filament name
+	int nmax;				// number of monomers allocated [1,inf)
+	int n;					// number of monomers
+	double **px;		// Coords. for monomer ends [nmax+1][3]
+	double *pl;			// monomer length [nmax]
+	double **pa;		// relative ypr angles [nmax][3]
+	double **pd;		// relative dcm [nmax][9]
+	double **po;		// absolute monomer orientation [9]
+	double *pthk;		// thickness of monomer [nmax], [0,inf)
+	double lstd;		// minimum energy monomer length
+	double astd[3];	// minimum energy bend angle
+	double lk;			// force constant for length
+	double ak[3];		// force constant for angle
+	double kT;			// thermodynamic temperature, [0,inf)
+	char surf;			// character for surface shape
+	double spar[2];// parameters of surface
+	} *filamentptr;
+
+typedef struct filamentsuperstruct {
+	enum StructCond condition;			// structure condition
+	struct simstruct *sim;					// simulation structure
+	int maxfil;											// maximum number of filaments
+	int nfil;												// actual number of filaments
+	char **fnames;								// filament names
+	filamentptr *fillist;						// list of filaments
+	} *filamentssptr;
+
+
 /******************************* Moleculizer ********************************/
 
 typedef struct mzrsuperstruct {
@@ -377,7 +409,7 @@ typedef struct graphicssuperstruct {
 /******************************** Simulation *******************************/
 
 #define ETMAX 10
-enum SmolStruct {SSmolec,SSwall,SSrxn,SSsurf,SSbox,SScmpt,SSport,SScmd,SSmzr,SSsim,SScheck,SSall,SSnone};
+enum SmolStruct {SSmolec,SSwall,SSrxn,SSsurf,SSbox,SScmpt,SSport,SSfilament,SScmd,SSmzr,SSsim,SScheck,SSall,SSnone};
 enum EventType {ETwall,ETsurf,ETdesorb,ETrxn0,ETrxn1,ETrxn2intra,ETrxn2inter,ETrxn2wrap,ETimport,ETexport};
 
 typedef int (*diffusefnptr)(struct simstruct *);
@@ -430,6 +462,7 @@ typedef struct simstruct {
 	boxssptr boxs;							// box superstructure
 	compartssptr cmptss;				// compartment superstructure
 	portssptr portss;						// port superstructure
+	filamentssptr filss;				// filament superstructure
 	mzrssptr mzrss;							// network generation rule superstructure
 	void* cmds;									// command superstructure
 	graphicsssptr graphss;			// graphics superstructure
@@ -452,7 +485,7 @@ typedef struct simstruct {
 class ValueProvider {
 public:
 	virtual ~ValueProvider(){};
-	virtual double getConstantValue()=0;
+	virtual double getConstantValue() = 0;
 	virtual double getValue(double t, double x, double y, double z, rxnptr rxn)=0;
 	virtual double getValue(double t, double x, double y, double z, rxnptr rxn, char* panelName)=0;
 	virtual double getValue(double t, double x, double y, double z, surfactionptr actiondetails, char* panelName)=0;
@@ -462,6 +495,10 @@ class ValueProviderFactory {
 public:
 	virtual ~ValueProviderFactory(){};
 	virtual ValueProvider* createValueProvider(string& rateExp)=0;
+	void setSimptr(simptr sim){this->sim = sim;}
+	simptr getSimptr(){return this->sim;}
+private:
+	simptr sim;
 };
 
 class AbstractMesh{
