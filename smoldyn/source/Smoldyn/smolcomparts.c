@@ -238,6 +238,11 @@ int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2) {		//?
 	int pfpcode;
 	*pfpptr=pfp;
 
+	unsigned long inflated_len;
+	const char* compressed_hex;
+	unsigned char* bytes_from_compressed;
+	int compressed_len;
+	long numVolumeSamples;
 	VolumeSamplesPtr volumeSamplesPtr = new VolumeSamples;
 	sim->volumeSamplesPtr = volumeSamplesPtr;
 	volumeSamplesPtr->num[0] = volumeSamplesPtr->num[1] = volumeSamplesPtr->num[2] = 1;
@@ -288,42 +293,54 @@ int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2) {		//?
 	}
 
 #ifdef HAVE_ZLIB
-	{
-		long numVolume = volumeSamplesPtr->num[0] * volumeSamplesPtr->num[1] * volumeSamplesPtr->num[2];
-		//cout<<pixelLine<<endl;
-		int compressed_len = pixelLine.size();
-		if (compressed_len <= 1) {
-			throw "CartesianMesh::readGeometryFile() : invalid compressed volume";
-		}
-
-		const char* compressed_hex = pixelLine.c_str();
-		//volumeSamples compressed, changed from byte to short
-		unsigned char* bytes_from_compressed = new unsigned char[compressed_len+1];
-		memset(bytes_from_compressed, 0, (compressed_len+1) * sizeof(unsigned char));
-		for (int i = 0, j = 0; i < compressed_len; i += 2, j ++) {
-			bytes_from_compressed[j] = fromHex(compressed_hex + i);
-		}
-
-	 	volumeSamplesPtr->volsamples = new unsigned char[numVolume];
-	 	memset(volumeSamplesPtr->volsamples, 0, numVolume * sizeof(unsigned char));
-
-		unsigned long inflated_len = numVolume;
-		int retVal = uncompress(volumeSamplesPtr->volsamples, &inflated_len, bytes_from_compressed, compressed_len);
-
-		if (inflated_len = numVolume) {
-			for (unsigned long i = 0; i < inflated_len; i ++) {
-				//if (volumeSamplesPtr->volsamples[i] == 6) {
-				//cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
-				//}
-				//else if (volumeSamplesPtr->volsamples[i] == 16) {
-				//	cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
-				//}
-			}
-		} else {
-			throw "loadHighResVolumeSamples : unexpected number of volume samples";
-		}
-		return 0;
+	numVolumeSamples = volumeSamplesPtr->num[0] * volumeSamplesPtr->num[1] * volumeSamplesPtr->num[2];
+	//cout<<pixelLine<<endl;
+	compressed_len = pixelLine.size();
+	if (compressed_len <= 1) {
+		throw "CartesianMesh::readGeometryFile() : invalid compressed volume";
 	}
+
+	compressed_hex = pixelLine.c_str();
+	//volumeSamples compressed, changed from byte to short
+	bytes_from_compressed = new unsigned char[compressed_len+1];
+	memset(bytes_from_compressed, 0, (compressed_len+1) * sizeof(unsigned char));
+	for (int i = 0, j = 0; i < compressed_len; i += 2, j ++) {
+		bytes_from_compressed[j] = fromHex(compressed_hex + i);
+	}
+
+	volumeSamplesPtr->volsamples = new unsigned char[numVolumeSamples];
+	memset(volumeSamplesPtr->volsamples, 0, numVolumeSamples * sizeof(unsigned char));
+
+	inflated_len = numVolumeSamples;
+	int returnVal = uncompress(volumeSamplesPtr->volsamples, &inflated_len, bytes_from_compressed, compressed_len);
+	//check if the data can be properly uncompressed, Z_OK should be returned if successfully uncompressed.
+	if(returnVal == Z_MEM_ERROR)
+	{
+		throw "There is not enough memory to uncompress volume samples.";
+	}
+	else if(returnVal == Z_BUF_ERROR)
+	{
+		throw "There is not enough room in the output buffer for volume samples.";
+	}
+	else if(returnVal == Z_DATA_ERROR)
+	{
+		throw "The volume sample input data was corrupted.";
+	}
+	//check if we get the expected number of volume samples after uncompression
+	if ((long)inflated_len != numVolumeSamples) {
+		throw "loadHighResVolumeSamples : unexpected number of volume samples";
+	}
+	//for debug purpose
+	/*for (unsigned long i = 0; i < inflated_len; i ++) {		
+		if (volumeSamplesPtr->volsamples[i] == 6) {
+			cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
+		}
+		else if (volumeSamplesPtr->volsamples[i] == 16) {
+			cout << "volume sample  at " << i<< " is " << ((int)volumeSamplesPtr->volsamples[i])<< endl;
+		}
+	}*/
+	return 0;
+		
 #else
 	throw "loadHighResVolumeSamples : function unavailable because compile does not include zlib";
 #endif
