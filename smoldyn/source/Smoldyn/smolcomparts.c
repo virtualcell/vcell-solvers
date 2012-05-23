@@ -241,7 +241,7 @@ int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2) {		//?
 	unsigned long inflated_len;
 	const char* compressed_hex;
 	unsigned char* bytes_from_compressed;
-	int compressed_len;
+	int compressed_len, returnVal;
 	long numVolumeSamples;
 	VolumeSamplesPtr volumeSamplesPtr = new VolumeSamples;
 	sim->volumeSamplesPtr = volumeSamplesPtr;
@@ -312,7 +312,7 @@ int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2) {		//?
 	memset(volumeSamplesPtr->volsamples, 0, numVolumeSamples * sizeof(unsigned char));
 
 	inflated_len = numVolumeSamples;
-	int returnVal = uncompress(volumeSamplesPtr->volsamples, &inflated_len, bytes_from_compressed, compressed_len);
+	returnVal = uncompress(volumeSamplesPtr->volsamples, &inflated_len, bytes_from_compressed, compressed_len);
 	//check if the data can be properly uncompressed, Z_OK should be returned if successfully uncompressed.
 	if(returnVal == Z_MEM_ERROR)
 	{

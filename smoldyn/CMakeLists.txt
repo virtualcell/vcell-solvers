@@ -26,7 +26,9 @@ set(HEADER_FILES
 	source/Smoldyn/smoldynfuncs.h
 	source/vcell/SimpleMesh.h
 	source/vcell/SimpleValueProvider.h
-	source/vcell/DataProcessorRoiTimeSeriesSmoldyn.h
+	source/vcell/SmoldynDataGenerator.h
+	source/vcell/SmoldynHdf5Writer.h
+	source/vcell/SmoldynVarStatDataGenerator.h
 	source/vcell/VCellSmoldynOutput.h
 	source/vcell/vcellcmd.h
 	source/vcell/VCellValueProvider.h
@@ -65,7 +67,9 @@ set(SRC_FILES
 	source/Smoldyn/smolwall.c
 	source/vcell/SimpleMesh.cpp
 	source/vcell/SimpleValueProvider.cpp
-	source/vcell/DataProcessorRoiTimeSeriesSmoldyn.cpp
+	source/vcell/SmoldynDataGenerator.cpp
+	source/vcell/SmoldynHdf5Writer.cpp
+	source/vcell/SmoldynVarStatDataGenerator.cpp
 	source/vcell/VCellSmoldynOutput.cpp
 	source/vcell/vcellcmd.c
 	source/vcell/vcellhybrid.c
@@ -80,7 +84,7 @@ set(MAIN_FILES
 set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
 set_source_files_properties(${MAIN_FILES} PROPERTIES LANGUAGE CXX )
 
-include_directories(source/lib source/Smoldyn source/vcell ${CMAKE_BINARY_DIR})
+include_directories(source/lib source/Smoldyn source/vcell ${CMAKE_BINARY_DIR} ${HDF5_BINARY_DIR} ../hdf5-1.8.8/c++/src ../hdf5-1.8.8/src)
 
 ####### Option: Compile for VCell ##########
 

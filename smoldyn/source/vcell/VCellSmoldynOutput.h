@@ -6,6 +6,7 @@
 #define VCELLSMOLDYNOUTPUT_H
 
 #include "smoldyn.h"
+#include "SmoldynDataGenerator.h"
 #include <VCELL/DataSet.h>
 
 #include <string>
@@ -13,7 +14,7 @@
 using std::string;
 using std::vector;
 
-class DataProcessorRoiTimeSeriesSmoldyn;
+class SmoldynHdf5Writer;
 struct SmoldynVariable {
 	string name, domain;
 	VariableType type;
@@ -65,13 +66,13 @@ private:
 	double **memVarOutputData;
 	int* molIdentVarIndexMap;
 	SmoldynVariable** variables;
-
-	DataProcessorRoiTimeSeriesSmoldyn* smoldynDataProcessor;
-	//bool isInSameCompartment(double *pos1, double* pos2);
 	double distance2(double* pos1, double* pos2);
 
-	friend class DataProcessorRoiTimeSeriesSmoldyn;
+	SmoldynHdf5Writer* hdf5DataWriter;
+	vector<SmoldynDataGenerator*> dataGeneratorList;
 	
+	friend class SmoldynHdf5Writer;
+	friend class SmoldynVarStatDataGenerator;
 };
 
 #endif

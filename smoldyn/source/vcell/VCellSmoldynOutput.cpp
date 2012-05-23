@@ -11,12 +11,12 @@
 #include <VCELL/Simulation.h>
 #include <VCELL/Variable.h>
 #endif
-#include "DataProcessorRoiTimeSeriesSmoldyn.h"
-
+#include "SmoldynVarStatDataGenerator.h"
+#include "SmoldynHdf5Writer.h"
 #define SIM_FILE_EXT "sim"
 #define LOG_FILE_EXT "log"
 #define ZIP_FILE_EXT "zip"
-#define DATAPROCOUTPUT_EXT "dataProcOutput"
+#define HDF5_EXT "hdf5"
 #define ZIP_FILE_LIMIT 1E9
 
 typedef int int32;
@@ -53,7 +53,7 @@ VCellSmoldynOutput::VCellSmoldynOutput(simptr sim){
 	numVolumeElements = 0;
 	numMembraneElements = 0;
 	dimension = 0;
-	smoldynDataProcessor = 0;
+	hdf5DataWriter = 0;
 
 	dataBlock = 0;
 	volVarOutputData = 0;
@@ -77,7 +77,7 @@ VCellSmoldynOutput::~VCellSmoldynOutput() {
 	delete[] molIdentVarIndexMap;
 	delete[] dataBlock;
 
-	delete smoldynDataProcessor;
+	delete hdf5DataWriter;
 	for (int i = 0; i < smoldynSim->mols->nspecies - 1; i ++) {
 		delete variables[i];
 	}
@@ -85,8 +85,11 @@ VCellSmoldynOutput::~VCellSmoldynOutput() {
 }
 
 void VCellSmoldynOutput::parseDataProcessingInput(string& name, string& input) {
+	//always add variable statistics data generator
+	SmoldynVarStatDataGenerator* dataGenerator = new SmoldynVarStatDataGenerator();
+	dataGeneratorList.push_back(dataGenerator);
 	if (name == "RoiTimeSeries") {
-		smoldynDataProcessor = new DataProcessorRoiTimeSeriesSmoldyn(this, name, input);
+		//dataProcessor = new DataProcessorRoiTimeSeriesSmoldyn(this, name, input);
 	} else {
 		throw "unknown DataProcessor";
 	}
@@ -278,81 +281,85 @@ void VCellSmoldynOutput::parseInput(string& input) {
 		memVarOutputData[i] = new double[numMembraneElements];
 #endif
 	}
+	//initialize hdf5 writer
+	if(hdf5DataWriter == 0)
+	{
+		char hdf5FileName[256];
+		sprintf(hdf5FileName, "%s.%s", baseFileName, HDF5_EXT);
+		hdf5DataWriter = new SmoldynHdf5Writer(hdf5FileName, this);
+	}
+	//initialize data generators
+	for(int i=0; i < dataGeneratorList.size(); i++)
+	{
+		dataGeneratorList[i]->initialize(this);
+	}
 }
 
-void VCellSmoldynOutput::write() {	
+void VCellSmoldynOutput::write() {	//for each save time interval
 	computeOutputData();
 #ifdef VCELL_HYBRID
 	return;
 #endif
-	if (smoldynDataProcessor == 0 || smoldynDataProcessor->isStoreEnabled()) {
-		// write sim file
-		char simFileName[256];
-		char zipFileName[256];
+	
+	// write sim file
+	char simFileName[256];
+	char zipFileName[256];
 
-		struct stat buf;
-		static char* tempDir = "/tmp/";
-		static bool bUseTempDir = false;
-		static bool bFirstTimeWrite = true;
+	struct stat buf;
+	static char* tempDir = "/tmp/";
+	static bool bUseTempDir = false;
+	static bool bFirstTimeWrite = true;
 
-		if (bFirstTimeWrite) {
-			if (stat(tempDir, &buf) == 0) {
-				// use local temp directory for .sim files
-				// to avoid network traffic
-				if (buf.st_mode & S_IFDIR) {
-					bUseTempDir = true;
-				}
+	if (bFirstTimeWrite) {
+		if (stat(tempDir, &buf) == 0) {
+			// use local temp directory for .sim files
+			// to avoid network traffic
+			if (buf.st_mode & S_IFDIR) {
+				bUseTempDir = true;
 			}
-			bFirstTimeWrite = false;
 		}
-		if (bUseTempDir) {
-			sprintf(simFileName, "%s%s%.4d.%s", tempDir, baseSimName, simFileCount, SIM_FILE_EXT);
-		} else {
-			sprintf(simFileName, "%s%.4d.%s", baseFileName, simFileCount, SIM_FILE_EXT);
-		}
-		sprintf(zipFileName, "%s%.2d.%s", baseFileName, zipFileCount, ZIP_FILE_EXT);
+		bFirstTimeWrite = false;
+	}
+	if (bUseTempDir) {
+		sprintf(simFileName, "%s%s%.4d.%s", tempDir, baseSimName, simFileCount, SIM_FILE_EXT);
+	} else {
+		sprintf(simFileName, "%s%.4d.%s", baseFileName, simFileCount, SIM_FILE_EXT);
+	}
+	sprintf(zipFileName, "%s%.2d.%s", baseFileName, zipFileCount, ZIP_FILE_EXT);
 
-		writeSim(simFileName, zipFileName);	
+	writeSim(simFileName, zipFileName);	
 
-		// write log file
-		char logfilename[256];
-		sprintf(logfilename, "%s.%s", baseFileName, LOG_FILE_EXT);
-		FILE* logfp = NULL;
-		if (simFileCount == 0) {
-			logfp = fopen(logfilename, "w");
-		} else {
-			logfp = fopen(logfilename, "a");
-		}
-		if (logfp == NULL) {
-			throw "can't open logfile for write";
-		}
-		int iteration = (int)(smoldynSim->time/smoldynSim->dt + 0.5);
-		char zipFileNameWithoutPath[512];
-		sprintf(zipFileNameWithoutPath,"%s%.2d.%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
-		char simFileNameWithoutPath[512];
-		sprintf(simFileNameWithoutPath,"%s%.4d.%s", baseSimName, simFileCount, SIM_FILE_EXT);
-		fprintf(logfp,"%4d %s %s %.15lg\n", iteration, simFileNameWithoutPath, zipFileNameWithoutPath, smoldynSim->time);
-		fclose(logfp);
+	// write log file
+	char logfilename[256];
+	sprintf(logfilename, "%s.%s", baseFileName, LOG_FILE_EXT);
+	FILE* logfp = NULL;
+	if (simFileCount == 0) {
+		logfp = fopen(logfilename, "w");
+	} else {
+		logfp = fopen(logfilename, "a");
+	}
+	if (logfp == NULL) {
+		throw "can't open logfile for write";
+	}
+	int iteration = (int)(smoldynSim->time/smoldynSim->dt + 0.5);
+	char zipFileNameWithoutPath[512];
+	sprintf(zipFileNameWithoutPath,"%s%.2d.%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
+	char simFileNameWithoutPath[512];
+	sprintf(simFileNameWithoutPath,"%s%.4d.%s", baseSimName, simFileCount, SIM_FILE_EXT);
+	fprintf(logfp,"%4d %s %s %.15lg\n", iteration, simFileNameWithoutPath, zipFileNameWithoutPath, smoldynSim->time);
+	fclose(logfp);
 
-		// print message
-		simFileCount ++;
+	// print message
+	simFileCount ++;
 
-		if (stat(zipFileName, &buf) == 0) { // if exists
-			if (buf.st_size > ZIP_FILE_LIMIT) {
-				zipFileCount ++;
-			}
+	if (stat(zipFileName, &buf) == 0) { // if exists
+		if (buf.st_size > ZIP_FILE_LIMIT) {
+			zipFileCount ++;
 		}
 	}
-	if (smoldynDataProcessor != 0) {
-		if (smoldynSim->time == 0) {
-			smoldynDataProcessor->onStart();
-		}
-		smoldynDataProcessor->onWrite();
-		if (smoldynSim->time + smoldynSim->dt - smoldynSim->tmax > 1e-12) {
-			char fileName[256];
-			sprintf(fileName, "%s.%s", baseFileName, DATAPROCOUTPUT_EXT);
-			smoldynDataProcessor->onComplete(fileName);
-		}
+	
+	if (hdf5DataWriter != 0) {
+		hdf5DataWriter->writeOutput();
 	}
 
 	double progress = (smoldynSim->time - smoldynSim->tmin) / (smoldynSim->tmax - smoldynSim->tmin);
@@ -388,29 +395,10 @@ void VCellSmoldynOutput::clearLog() {
 	cout << "clearLog(), removing log file " << logFileName << endl;
 	remove(logFileName);
 
-	char dataProcOutput[128];
-	sprintf(dataProcOutput,"%s.%s",baseFileName, DATAPROCOUTPUT_EXT);
-	remove(dataProcOutput);
+	char hdf5FileName[128];
+	sprintf(hdf5FileName,"%s.%s",baseFileName, HDF5_EXT);
+	remove(hdf5FileName);
 }
-
-//bool VCellSmoldynOutput::isInSameCompartment(double *pos1, double* pos2) {
-//
-//	for(int cl=0;cl<smoldynSim->cmptss->ncmpt;cl++) {
-//		int in1=posincompart(smoldynSim,pos1,smoldynSim->cmptss->cmptlist[cl]);
-//		int in2=posincompart(smoldynSim,pos2,smoldynSim->cmptss->cmptlist[cl]);
-//		if (in1 == 1 && in2 == 1) {
-//			return true;
-//		}
-//		if (in1 == 1 || in2 == 1) {
-//			return false;
-//		}
-//	}
-//	//stringstream ss;
-//	//ss << "Point (" << pos1[0] << "," << pos1[1] << "," << pos1[2] << ") and " << 
-//	//	"Point (" << pos2[0] << "," << pos2[1] << "," << pos2[2] << ") are not in any compartment. This should not happen.";
-//	//throw ss.str();
-//	return false;
-//}
 
 double VCellSmoldynOutput::distance2(double* pos1, double* pos2) {
 	if (dimension == 1) {
