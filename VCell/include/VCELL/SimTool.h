@@ -26,7 +26,6 @@
 class VCellModel;
 class Mesh;
 class Simulation;
-class DataProcessor;
 class Variable;
 class PostProcessingHdf5Writer;
 
@@ -105,8 +104,6 @@ public:
 	double getSimStartTime() { return simStartTime; }
 	void setSundialsOneStepOutput() { bSundialsOneStepOutput = true; }
 	bool isSundialsOneStepOutput() { return bSundialsOneStepOutput; }
-
-	void createDataProcessor(string& name, string& text);
 	
 	void setSerialParameterScans(int numScans, double** values);
 	void setLoadFinal(bool b) {
@@ -158,7 +155,6 @@ private:
 	bool bSundialsOneStepOutput;
 	int keepAtMost;
 
-	DataProcessor* dataProcessor;
 	double** serialScanParameterValues;
 	int numSerialParameterScans;
 

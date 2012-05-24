@@ -9,8 +9,6 @@ set(HEADER_FILES
 #	include/VCELL/ContourVarContext.h
 #	include/VCELL/ContourVariable.h
 	include/VCELL/DataGenerator.h
-	include/VCELL/DataProcessorRoiTimeSeries.h
-	include/VCELL/DataProcessorVFrap.h
 	include/VCELL/DataSet.h
 #	include/VCELL/DomainPDEScheduler.h
 	include/VCELL/DoubleVector3.h
@@ -92,8 +90,6 @@ set(SRC_FILES
 #	src/ContourVarContext.cpp
 #	src/ContourVariable.cpp
 	src/DataGenerator.cpp
-	src/DataProcessorRoiTimeSeries.cpp
-	src/DataProcessorVFrap.cpp
 	src/DataSet.cpp
 #	src/DomainPDEScheduler.cpp
 	src/EllipticVolumeEqnBuilder.cpp

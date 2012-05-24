@@ -60,7 +60,6 @@ private:
 	void loadFeature(istream& ifsInput, Feature* feature);
 	void loadMembrane(istream& ifsInput, Membrane*);
 	void loadSimulationParameters(istream& ifsInput);
-	void loadDataProcessor(istream& ifsInput, string& dataProcessorName);
 	void loadMesh(istream& ifsInput);
 	void loadFieldData(istream& ifsInput);
 	void loadParameters(istream& ifsInput, int numParams);

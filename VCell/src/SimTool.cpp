@@ -20,8 +20,6 @@ using std::endl;
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/VolumeRegion.h>
 #include <VCELL/MembraneRegion.h>
-#include <VCELL/DataProcessorVFrap.h>
-#include <VCELL/DataProcessorRoiTimeSeries.h>
 #include <VCELL/FVUtils.h>
 #include <VCELL/PostProcessingBlock.h>
 #include <VCELL/PostProcessingHdf5Writer.h>
@@ -93,7 +91,6 @@ SimTool::SimTool()
 	bSundialsOneStepOutput = false;
 	keepAtMost = 5000;
 
-	dataProcessor = 0;
 	numSerialParameterScans = 0;
 	serialScanParameterValues = 0;
 
@@ -115,7 +112,6 @@ SimTool::~SimTool()
 
 	delete[] discontinuityTimes;
 
-	delete dataProcessor;
 	for (int i = 0; i < numSerialParameterScans; i ++) {
 		delete[] serialScanParameterValues[i];
 	}
@@ -289,12 +285,6 @@ void SimTool::loadFinal()
 		return;
 	}
 
-	if (dataProcessor != 0) {
-		if (!dataProcessor->checkComplete(this)) {
-			clearLog();
-			return;
-		}
-	}
 #ifdef VCELL_HYBRID		
 	if (smoldynSim != NULL) {
 		clearLog();
@@ -592,9 +582,7 @@ void SimTool::updateLog(double progress, double time, int iteration)
 			throw errmsg;
 		}
 	}
-	if (dataProcessor != 0) {
-		dataProcessor->onWrite(this);
-	}
+
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
 }
 
@@ -755,13 +743,6 @@ void SimTool::start1() {
 #endif
 
 	loadFinal();   // initializes to the latest file if it exists
-	
-	if (!bStoreEnable && dataProcessor != 0) {
-		if (dataProcessor->checkComplete(this)) {
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1, simEndTime));
-			return;
-		}		
-	}
 
 	if (checkStopRequested()) {
 		return;
@@ -769,10 +750,6 @@ void SimTool::start1() {
 
 	if (bStoreEnable && (baseFileName == NULL || strlen(baseFileName) == 0)) {
 		throw "Invalid base file name for dataset";
-	}
-
-	if (dataProcessor != 0) {
-		dataProcessor->onStart(this);
 	}
 
 	char message[256];
@@ -891,10 +868,6 @@ void SimTool::start1() {
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, 1.0, simulation->getTime_sec()));
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));	
 
-	if (dataProcessor != 0) {
-		dataProcessor->onComplete(this);
-	}
-
 	showSummary(stdout);
 }
 
@@ -942,16 +915,6 @@ bool SimTool::checkSpatiallyUniform(Variable* var) {
 			return true;
 		default:
 			return true;
-	}
-}
-
-void SimTool::createDataProcessor(string& name, string& text) {
-	if (name == "VFRAP") {
-		dataProcessor = new DataProcessorVFrap(name, text);
-	} else if (name == "RoiTimeSeries") {
-		dataProcessor = new DataProcessorRoiTimeSeries(name, text);
-	} else {
-		throw "unknown DataProcessor";
 	}
 }
 

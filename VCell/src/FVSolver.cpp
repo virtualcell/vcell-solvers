@@ -989,42 +989,6 @@ void FVSolver::loadMembrane(istream& ifsInput, Membrane* membrane) {
 }
 
 /*
-DATA_PROCESSOR_BEGIN VFRAP
-VolumePoints 49
-2667 2676 2679 2771 2969 2877 3067 3277 3185 3283 3473 3580 3690 3687 3878 4086 3990 4182 4193 1077
-2257 1984 2269 2648 3561 2890 3116 4104 4383 3995 4561 3909 3816 3820 5024 4429 4979 5102 6011 6094
-6338 6081 6527 7705 7305 8040 7423 8105 8023
-SampleImage 41 0 32742266 field(imageFieldDataName1,mask,0.0,Volume)
-StoreEnabled false
-
-SampleImageFile mask 0.0 \\\\cfs01.vcell.uchc.edu\\raid\\Vcell\\users\\schaff\\SimID_32742646_0_imageFieldDataName1_mask_0_0_Volume.fdat
-DATA_PROCESSOR_END
-*/
-void FVSolver::loadDataProcessor(istream& ifsInput, string& dataProcessorName) {
-	string text;
-	string nextToken, line;
-
-	while (!ifsInput.eof()) {
-		getline(ifsInput, line);
-		istringstream lineInput(line);
-
-		nextToken = "";
-		lineInput >> nextToken;
-		if (nextToken.size() == 0 || nextToken[0] == '#') {
-			continue;
-		} 
-		if (nextToken == "DATA_PROCESSOR_END") {
-			break;
-		}
-
-		text += nextToken;
-		getline(lineInput, nextToken);
-		text += nextToken + "\n";		 
-	}
-	simTool->createDataProcessor(dataProcessorName, text);
-}
-
-/*
 # Simulation Parameters
 SIMULATION_PARAM_BEGIN
 SOLVER SUNDIALS_PDE_SOLVER 1.0E-7 1.0E-9 1.0
@@ -1485,10 +1449,6 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "preprocessing started"));
 		} else if (nextToken == "SIMULATION_PARAM_BEGIN") {
 			loadSimulationParameters(ifsInput);
-		} else if (nextToken == "DATA_PROCESSOR_BEGIN") {
-			string dataProcessorName;
-			lineInput >> dataProcessorName;
-			loadDataProcessor(ifsInput, dataProcessorName);
 		} else if (nextToken == "POST_PROCESSING_BLOCK_BEGIN") {
 			loadPostProcessingBlock(ifsInput);
 		} else if (nextToken == "MODEL_BEGIN") {
