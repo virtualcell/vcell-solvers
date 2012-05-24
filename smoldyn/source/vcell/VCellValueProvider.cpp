@@ -1,4 +1,5 @@
 #include "VCellValueProvider.h"
+#include <stdlib.h>
 #include <smoldynfuncs.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/CartesianMesh.h>

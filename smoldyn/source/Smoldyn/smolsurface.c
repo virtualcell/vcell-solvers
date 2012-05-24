@@ -2681,7 +2681,7 @@ surfaceptr surfreadstring(simptr sim,ParseFilePtr pfp,surfaceptr srf,const char 
 				CHECKS(f1>=0,"negative surface rate values are not permitted");
 			string name = rawStr.substr(found+2); //after the ";" denoting the end of rate, the found move one more position(the space) to get to the end of the line, which would be the species name
 			char * tempLine = new char[name.size() + 1];
-			std::strcpy(tempLine, name.c_str());
+			strcpy(tempLine, name.c_str());
 			line2 = tempLine;
 		}
         else

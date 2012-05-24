@@ -9,6 +9,8 @@
 #include "Sphere.h"
 #include "smoldyn.h"
 #include "smoldynfuncs.h"
+#include <string.h>
+#include <stdlib.h>
 
 
 /******************************************************************************/

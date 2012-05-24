@@ -7,6 +7,7 @@
 #include "smoldyn.h"
 #include "random2.h"
 #include "smoldynfuncs.h"
+#include <string.h>
 #include <string>
 using std::string;
 

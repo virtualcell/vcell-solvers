@@ -3,7 +3,7 @@
  * All rights reserved.
  */
 #include "SmoldynHdf5Writer.h"
-#include <VCELL/VariableStatisticsDataGenerator.h>
+#include <SmoldynVarStatDataGenerator.h>
 #include <VCELL/Variable.h>
 #include <VCELL/CartesianMesh.h>
 #include <typeinfo>
