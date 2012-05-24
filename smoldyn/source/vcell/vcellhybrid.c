@@ -17,8 +17,9 @@ using namespace std;
 #include <VCELL/SimulationExpression.h>
 #include "VCellValueProvider.h"
 #include "VCellMesh.h"
+#include <VCellSmoldynOutput.h>
 
-extern VCellSmoldynOutput* vcellSmoldynOutput
+extern VCellSmoldynOutput* vcellSmoldynOutput;
 simptr smoldynInit(SimTool* simTool, string& fileName) {
 	LoggingCallback=NULL;
 	ThrowThreshold=10;

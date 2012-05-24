@@ -274,7 +274,7 @@ void VCellSmoldynOutput::parseInput(string& input) {
 	memVarOutputData = new double*[memVariables.size()];
 	for (int i = 0; i < memVariables.size(); i ++) {
 #ifdef VCELL_HYBRID
-		Simulation* sim = smoldynSim->simTool->getSimulation();
+		Simulation* sim = simTool->getSimulation();
 		Variable* var = sim->getVariableFromName(memVariables[i]->name);
 		memVarOutputData[i] = var->getCurr();
 #else
