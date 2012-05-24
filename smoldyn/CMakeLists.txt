@@ -310,6 +310,9 @@ if (OPTION_VCELL)
 endif()
 if(OPTION_TARGET_LIBSMOLDYN)
 	add_library(smoldynlib STATIC ${SRC_FILES} ${HEADER_FILES})
+	if (OPTION_VCELL)
+		set_property(TARGET smoldynlib PROPERTY COMPILE_DEFINITIONS VCELL_HYBRID)
+	endif()
 endif()
 
 

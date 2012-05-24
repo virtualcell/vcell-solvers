@@ -15,6 +15,8 @@ using std::string;
 using std::vector;
 
 class SmoldynHdf5Writer;
+class SimTool;
+
 struct SmoldynVariable {
 	string name, domain;
 	VariableType type;
@@ -39,7 +41,9 @@ public:
 	void write();
 	void parseInput(string& input);	
 	void parseDataProcessingInput(string& name, string& input);
-
+	void setSimTool(SimTool* st) {
+		simTool = st;
+	}
 private:
 	
 	void clearLog();
@@ -70,6 +74,7 @@ private:
 
 	SmoldynHdf5Writer* hdf5DataWriter;
 	vector<SmoldynDataGenerator*> dataGeneratorList;
+	SimTool* simTool;
 	
 	friend class SmoldynHdf5Writer;
 	friend class SmoldynVarStatDataGenerator;

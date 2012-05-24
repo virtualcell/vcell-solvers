@@ -18,6 +18,7 @@ using namespace std;
 #include "VCellValueProvider.h"
 #include "VCellMesh.h"
 
+extern VCellSmoldynOutput* vcellSmoldynOutput
 simptr smoldynInit(SimTool* simTool, string& fileName) {
 	LoggingCallback=NULL;
 	ThrowThreshold=10;
@@ -39,6 +40,8 @@ simptr smoldynInit(SimTool* simTool, string& fileName) {
 	er=simUpdateAndDisplay(sim);
 	er=scmdopenfiles((cmdssptr)sim->cmds,1);
 	
+	vcellSmoldynOutput->setSimTool(simTool);
+
 	sim->clockstt=time(NULL);
 	er=simdocommands(sim);
 

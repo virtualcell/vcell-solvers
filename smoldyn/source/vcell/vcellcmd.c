@@ -4,11 +4,10 @@
 /**********************************************************/
 /******************** command declarations ****************/
 /**********************************************************/
-#ifdef VCELL
 #include <VCELL/SimulationMessaging.h>
 #include "VCellSmoldynOutput.h"
 
-static VCellSmoldynOutput* vcellSmoldynOutput = 0;
+VCellSmoldynOutput* vcellSmoldynOutput = 0;
 enum CMDcode cmdVCellPrintProgress(simptr sim, cmdptr cmd, char *line2) {
 	SimulationMessaging::create();
 	if(line2 && !strcmp(line2,"cmdtype")) {
@@ -89,7 +88,9 @@ enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2) {
 #include <VCELL/SimulationMessaging.h>
 #include "smoldyn.h"
 #include "smoldynfuncs.h"
+#ifndef VCELL_HYBRID
 extern int taskID;
+#endif
 int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 
 	char word[STRCHAR];
@@ -119,7 +120,7 @@ int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 		} else if(!line2) {															// just word
 			CHECKS(0,"missing jms parameters");
 		} else {
-#ifdef USE_MESSAGING
+#if (defined(USE_MESSAGING) && !defined(VCELL_HYBRID))
 			if (taskID >= 0) {
 				char *jmsBroker = new char[64];
 				char *jmsUser = new char[64];
@@ -141,6 +142,4 @@ int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 failure:		// failure
 	return 1;
 }
-
-#endif
 
