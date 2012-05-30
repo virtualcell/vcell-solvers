@@ -28,6 +28,8 @@
 
 #define UNZIP_INTERNAL
 #include "unzip.h"
+#include <unistd.h>
+#include <utime.h>
 
 #ifdef SCO_XENIX
 #  define SYSNDIR
@@ -1025,7 +1027,11 @@ void close_outfile(__G)    /* GRR: change to return PK-style warning level */
     }
 
     /* set the file's access and modification times */
+#ifdef CYGWIN
+	if (utime(G.filename, (const utimbuf*)&zt)) {
+#else
     if (utime(G.filename, (ztimbuf *)&zt)) {
+#endif
 #ifdef AOS_VS
         if (uO.qflag)
             Info(slide, 0x201, ((char *)slide, "... cannot set time for %s\n",
@@ -1086,7 +1092,11 @@ int set_direc_attribs(__G__ dirtime* d)
         if (!errval)
             errval = PK_WARN;
     }
+#ifdef CYGWIN
+    if (utime(d->fn, (const utimbuf*)&d->u.t2)) {
+#else
     if (utime(d->fn, &d->u.t2)) {
+#endif
         Info(slide, 0x201, ((char *)slide,
           LoadFarString(DirlistUtimeFailed), FnFilter1(d->fn)));
         if (!errval)
@@ -1122,7 +1132,11 @@ int stamp_file(ZCONST char* fname, time_t modtime)
     ztimbuf tp;
 
     tp.modtime = tp.actime = modtime;
+#ifdef CYGWIN
+	return (utime(fname, (const utimbuf*)&tp));
+#else
     return (utime(fname, &tp));
+#endif
 
 } /* end function stamp_file() */
 

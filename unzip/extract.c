@@ -39,6 +39,7 @@
 #  endif
 #endif
 #include "crypt.h"
+#include <unistd.h>
 
 #define GRRDUMP(buf,len) { \
     int i, j; \

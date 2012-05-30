@@ -62,6 +62,7 @@
 #endif
 #include "crypt.h"
 #include "ttyio.h"
+#include <unistd.h>
 
 /* setup of codepage conversion for decryption passwords */
 #if CRYPT
