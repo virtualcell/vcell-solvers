@@ -12,6 +12,7 @@
 #include <VCELL/Variable.h>
 #endif
 #include "SmoldynVarStatDataGenerator.h"
+//#include "SmoldynROIDataGenerator.h"
 #include "SmoldynHdf5Writer.h"
 #define SIM_FILE_EXT "sim"
 #define LOG_FILE_EXT "log"
@@ -86,10 +87,10 @@ VCellSmoldynOutput::~VCellSmoldynOutput() {
 
 void VCellSmoldynOutput::parseDataProcessingInput(string& name, string& input) {
 	//always add variable statistics data generator
-	SmoldynVarStatDataGenerator* dataGenerator = new SmoldynVarStatDataGenerator();
+	SmoldynDataGenerator* dataGenerator = new SmoldynVarStatDataGenerator();
 	dataGeneratorList.push_back(dataGenerator);
 	if (name == "RoiTimeSeries") {
-		//dataProcessor = new DataProcessorRoiTimeSeriesSmoldyn(this, name, input);
+		//SmoldynDataGenerator* roiDataProcessor = new SmoldynROIDataGenerator();
 	} else {
 		throw "unknown DataProcessor";
 	}

@@ -28,7 +28,10 @@
 
 #include "zip.h"
 #include "crypt.h"
+
+#ifdef UNIX
 #include <unistd.h>
+#endif
 
 #if (CRYPT || (defined(UNZIP) && !defined(FUNZIP)))
 /* Non-echo console/keyboard input is needed for (en/de)cryption's password

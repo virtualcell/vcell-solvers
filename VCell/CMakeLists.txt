@@ -205,6 +205,11 @@ if (TARGET_CHOMBO_BUILD)
 endif()
 
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
+	set(EXE_FILE FiniteVolume)
+	if (ARCH_64bit) 
+		set(EXE_FILE ${EXE_FILE}_x64)
+	endif()
+
 	set(DEP_LIBS vcell pcgwrapper ExpressionParser hdf5_cpp hdf5 IDAWin netcdf_cxx netcdf PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS} zip unzip)
 	list(APPEND DEP_LIBS smoldynlib)
 	if (MSVC)
@@ -227,10 +232,10 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	if (TARGET_SOLVERS_WITH_MESSAGING)
 		list(APPEND EXE_SRC_FILES ../VCell/src/SimulationMessaging.cpp)
 	endif()
-	add_executable(FiniteVolume ${EXE_SRC_FILES})	
-	target_link_libraries(FiniteVolume ${DEP_LIBS})
-	add_dependencies(FiniteVolume vcell pcgwrapper ExpressionParser IDAWin netcdf qhull sundials sundials_nvecserial sundials_cvode sundials_ida zip unzip)
-	install(TARGETS FiniteVolume
+	add_executable(${EXE_FILE} ${EXE_SRC_FILES})	
+	target_link_libraries(${EXE_FILE} ${DEP_LIBS})
+	add_dependencies(${EXE_FILE} vcell pcgwrapper ExpressionParser IDAWin netcdf qhull sundials sundials_nvecserial sundials_cvode sundials_ida zip unzip)
+	install(TARGETS ${EXE_FILE} 
             RUNTIME DESTINATION bin)
 	
 endif()

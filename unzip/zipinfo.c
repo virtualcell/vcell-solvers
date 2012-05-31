@@ -24,7 +24,10 @@
 
 #define UNZIP_INTERNAL
 #include "unzip.h"
+
+#ifdef UNIX
 #include <unistd.h>
+#endif
 
 #ifndef NO_ZIPINFO  /* strings use up too much space in small-memory systems */
 

@@ -42,7 +42,7 @@ public:
 	void parseInput(string& input);	
 	void parseDataProcessingInput(string& name, string& input);
 	void setSimTool(SimTool* st) {
-		simTool = st;
+		this->simTool = st;
 	}
 private:
 	

@@ -41,6 +41,7 @@ simptr smoldynInit(SimTool* simTool, string& fileName) {
 	er=simUpdateAndDisplay(sim);
 	er=scmdopenfiles((cmdssptr)sim->cmds,1);
 	
+	vcellSmoldynOutput = new VCellSmoldynOutput(sim);///check it out.
 	vcellSmoldynOutput->setSimTool(simTool);
 
 	sim->clockstt=time(NULL);

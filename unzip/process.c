@@ -28,7 +28,11 @@
 
 #define UNZIP_INTERNAL
 #include "unzip.h"
+
+#ifdef UNIX
 #include <unistd.h>
+#endif
+
 #ifdef WINDLL
 #  ifdef POCKET_UNZIP
 #    include "wince/intrface.h"

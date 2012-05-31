@@ -7,7 +7,7 @@
 #include <VCELL/SimulationMessaging.h>
 #include "VCellSmoldynOutput.h"
 
-VCellSmoldynOutput* vcellSmoldynOutput = 0;
+VCellSmoldynOutput* vcellSmoldynOutput = NULL;
 enum CMDcode cmdVCellPrintProgress(simptr sim, cmdptr cmd, char *line2) {
 	SimulationMessaging::create();
 	if(line2 && !strcmp(line2,"cmdtype")) {
@@ -32,7 +32,7 @@ enum CMDcode cmdVCellWriteOutput(simptr sim, cmdptr cmd, char *line2) {
 	if(line2 && !strcmp(line2,"cmdtype")) {
 		return CMDobserve;
 	}
-	if (vcellSmoldynOutput == 0) {
+	if (vcellSmoldynOutput == NULL) {
 		vcellSmoldynOutput = new VCellSmoldynOutput(sim);
 	}
 
@@ -71,8 +71,8 @@ enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2) {
 			ss >> dataProcName;
 		} else if (token == "end") {
 #ifndef VCELL_HYBRID 
-			if (vcellSmoldynOutput == 0) {
-				vcellSmoldynOutput = new VCellSmoldynOutput(sim);
+			if (vcellSmoldynOutput == NULL) {
+				vcellSmoldynOutput = new VCellSmoldynOutput(sim);///check it out.
 			}
 			string input = dataProcessInput.str();
 			vcellSmoldynOutput->parseDataProcessingInput(dataProcName, input);

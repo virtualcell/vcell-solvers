@@ -64,7 +64,10 @@
 #include "unzip.h"      /* includes, typedefs, macros, prototypes, etc. */
 #include "crypt.h"
 #include "unzvers.h"
+
+#ifdef UNIX
 #include <unistd.h>
+#endif
 
 #ifndef WINDLL          /* The WINDLL port uses windll/windll.c instead... */
 

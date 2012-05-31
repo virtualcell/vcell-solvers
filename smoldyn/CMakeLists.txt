@@ -301,8 +301,13 @@ option(OPTION_TARGET_SMOLDYN "Create stand-alone Smoldyn program" ON)
 option(OPTION_TARGET_LIBSMOLDYN "Create LibSmoldyn library" OFF)
 
 if(OPTION_TARGET_SMOLDYN)
-	add_executable(smoldyn ${SRC_FILES} ${MAIN_FILES} ${HEADER_FILES})
-	target_link_libraries(smoldyn ${DEP_LIBS})
+	set(EXE_FILE smoldyn)
+	if (ARCH_64bit) 
+		set(EXE_FILE ${EXE_FILE}_x64)
+	endif()
+
+	add_executable(${EXE_FILE} ${SRC_FILES} ${MAIN_FILES} ${HEADER_FILES})
+	target_link_libraries(${EXE_FILE} ${DEP_LIBS})
 endif()
 
 if (OPTION_VCELL)
@@ -319,11 +324,9 @@ endif()
 ########## install ###########
 
 if(OPTION_VCELL)
-	install(TARGETS smoldyn
-        	RUNTIME DESTINATION bin)
+	install(TARGETS ${EXE_FILE} RUNTIME DESTINATION bin)
 else()
-	install(TARGETS smoldyn
-        	RUNTIME DESTINATION /usr/local/bin)
+	install(TARGETS ${EXE_FILE} RUNTIME DESTINATION /usr/local/bin)
 endif()
 
 ########## configure file #########
