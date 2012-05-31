@@ -481,10 +481,14 @@ ENDIF (H5_HAVE_PARALLEL)
 # Option to use 1.6.x API
 #-----------------------------------------------------------------------------
 OPTION (HDF5_USE_16_API_DEFAULT "Use the HDF5 1.6.x API by default" OFF)
+if (TARGET_CHOMBO_BUILD)
+	SET (H5_USE_16_API_DEFAULT 1)
+else(TARGET_CHOMBO_BUILD)
 SET (H5_USE_16_API_DEFAULT 0)
 IF (HDF5_USE_16_API_DEFAULT)
   SET (H5_USE_16_API_DEFAULT 1)
 ENDIF (HDF5_USE_16_API_DEFAULT)
+endif()
 
 #-----------------------------------------------------------------------------
 # Options for HDF5 Filters
