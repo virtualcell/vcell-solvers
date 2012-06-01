@@ -166,7 +166,7 @@ set (EXE_SRC_FILES
 	src/FiniteVolume.cpp
 )
 
-include_directories(include ../ExpressionParser ${HDF5_BINARY_DIR} ../hdf5-1.8.8/c++/src ../hdf5-1.8.8/src ../IDAWin ../netcdf-3.6.2/libsrc ../netcdf-3.6.2/cxx ../sundials/include ../sundials/src)
+include_directories(include ../ExpressionParser ${HDF5_BINARY_DIR} ../hdf5-1.8.8/c++/src ../hdf5-1.8.8/src ../IDAWin ../sundials/include ../sundials/src)
 if (NOT ZLIB_FOUND)
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../zlib)
 endif()
@@ -210,7 +210,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 		set(EXE_FILE ${EXE_FILE}_x64)
 	endif()
 
-	set(DEP_LIBS vcell pcgwrapper ExpressionParser hdf5_cpp hdf5 IDAWin netcdf_cxx netcdf PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS} zip unzip)
+	set(DEP_LIBS vcell pcgwrapper ExpressionParser hdf5_cpp hdf5 IDAWin PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS} zip unzip)
 	list(APPEND DEP_LIBS smoldynlib)
 	if (MSVC)
 		link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../smoldyn/windows/glut-3.7.6/)
@@ -234,7 +234,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	endif()
 	add_executable(${EXE_FILE} ${EXE_SRC_FILES})	
 	target_link_libraries(${EXE_FILE} ${DEP_LIBS})
-	add_dependencies(${EXE_FILE} vcell pcgwrapper ExpressionParser IDAWin netcdf qhull sundials sundials_nvecserial sundials_cvode sundials_ida zip unzip)
+	add_dependencies(${EXE_FILE} vcell pcgwrapper ExpressionParser IDAWin qhull sundials sundials_nvecserial sundials_cvode sundials_ida zip unzip)
 	install(TARGETS ${EXE_FILE} 
             RUNTIME DESTINATION bin)
 	
