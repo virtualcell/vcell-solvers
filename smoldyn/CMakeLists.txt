@@ -24,16 +24,20 @@ set(HEADER_FILES
 	source/lib/SFMT/SFMT.h
 	source/Smoldyn/smoldyn.h
 	source/Smoldyn/smoldynfuncs.h
-	source/vcell/SimpleMesh.h
-	source/vcell/SimpleValueProvider.h
+#	source/vcell/SimpleMesh.h
+#	source/vcell/SimpleValueProvider.h
 	source/vcell/SmoldynDataGenerator.h
 	source/vcell/SmoldynHdf5Writer.h
 	source/vcell/SmoldynVarStatDataGenerator.h
 	source/vcell/VCellSmoldynOutput.h
 	source/vcell/vcellcmd.h
+)
+
+set(HYBRID_HEADER_FILES	
 	source/vcell/VCellValueProvider.h
 	source/vcell/VCellMesh.h
 )
+
 
 set(SRC_FILES
 	source/lib/Geometry.c
@@ -65,36 +69,44 @@ set(SRC_FILES
 	source/Smoldyn/smolsurface.c
 	source/Smoldyn/smolthread.c
 	source/Smoldyn/smolwall.c
-	source/vcell/SimpleMesh.cpp
-	source/vcell/SimpleValueProvider.cpp
+#	source/vcell/SimpleMesh.cpp
+#	source/vcell/SimpleValueProvider.cpp
 	source/vcell/SmoldynDataGenerator.cpp
 	source/vcell/SmoldynHdf5Writer.cpp
 	source/vcell/SmoldynVarStatDataGenerator.cpp
 	source/vcell/VCellSmoldynOutput.cpp
 	source/vcell/vcellcmd.c
+)
+
+list(APPEND SRC_FILES ../VCell/src/DataSet.cpp)
+list(APPEND SRC_FILES ../VCell/src/FieldData.cpp)
+list(APPEND SRC_FILES ../VCell/src/SimulationMessaging.cpp)
+
+set(HYBRID_SRC_FILES	
 	source/vcell/vcellhybrid.c
 	source/vcell/VCellValueProvider.cpp
 	source/vcell/VCellMesh.cpp
 )
 
 set(MAIN_FILES
-	source/Smoldyn/smoldyn.c
+	source/vcell/vcell_smoldyn.c
 )
 
 set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
 set_source_files_properties(${MAIN_FILES} PROPERTIES LANGUAGE CXX )
+set_source_files_properties(${HYBRID_SRC_FILES} PROPERTIES LANGUAGE CXX )
 
 include_directories(source/lib source/Smoldyn source/vcell ${CMAKE_BINARY_DIR} ${HDF5_BINARY_DIR} ../hdf5-1.8.8/c++/src ../hdf5-1.8.8/src)
 
 ####### Option: Compile for VCell ##########
 
 option(OPTION_VCELL "Compile Smoldyn for VCell" OFF)
-if(OPTION_VCELL)
-	set(MAIN_FILES
-		source/vcell/vcell_smoldyn.c
-	)
-	set_source_files_properties(${MAIN_FILES} PROPERTIES LANGUAGE CXX )
-endif()
+#if(OPTION_VCELL)
+#	set(MAIN_FILES
+#		source/vcell/vcell_smoldyn.c
+#	)
+#	set_source_files_properties(${MAIN_FILES} PROPERTIES LANGUAGE CXX )
+#endif()
 
 
 ####### Build for debugging or release ##########
@@ -140,30 +152,32 @@ endif()
 
 option(OPTION_USE_OPENGL "Build with OpenGL support" ON)
 
-if (OPTION_USE_OPENGL AND OPTION_VCELL)
-	set(HAVE_OPENGL TRUE)
-	set(HAVE_GL_GLUT_H TRUE)
-	set(HAVE_GL_GLU_H TRUE)
-	set(HAVE_GL_GL_H TRUE)
-elseif(OPTION_USE_OPENGL)
-	find_file(HAVE_GL_GL_H GL/gl.h)
-	find_file(HAVE_OPENGL_GL_H OpenGL/gl.h)
-	find_file(HAVE_GL_GLU_H GL/glu.h)
-	find_file(HAVE_OPENGL_GLU_H OpenGL/glu.h)
-	find_file(HAVE_GL_GLUT_H GL/glut.h)
-	find_file(HAVE_GLUT_GLUT_H GLUT/glut.h)
-
-	include(FindOpenGL)
-	include(FindGLUT)
-	if(NOT OPENGL_FOUND)
-		message(FATAL_ERROR, "OpenGL not found.  Building without OpenGL is possible.")
+if (OPTION_USE_OPENGL)
+	if (OPTION_VCELL AND MSVC)
+		set(HAVE_OPENGL TRUE)
+		set(HAVE_GL_GLUT_H TRUE)
+		set(HAVE_GL_GLU_H TRUE)
+		set(HAVE_GL_GL_H TRUE)
+	else()
+		find_file(HAVE_GL_GL_H GL/gl.h)
+		find_file(HAVE_OPENGL_GL_H OpenGL/gl.h)
+		find_file(HAVE_GL_GLU_H GL/glu.h)
+		find_file(HAVE_OPENGL_GLU_H OpenGL/glu.h)
+		find_file(HAVE_GL_GLUT_H GL/glut.h)
+		find_file(HAVE_GLUT_GLUT_H GLUT/glut.h)
+	
+		include(FindOpenGL)
+		include(FindGLUT)
+		if(NOT OPENGL_FOUND)
+			message(FATAL_ERROR, "OpenGL not found.  Building without OpenGL is possible.")
+		endif()
+		if(NOT GLUT_FOUND)
+			message(FATAL_ERROR, "Glut not found.  Building without OpenGL is possible.")
+		endif()
+		set(HAVE_OPENGL TRUE)
+		include_directories(${OPEN_GL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
+		list(APPEND DEP_LIBS ${GLUT_glut_LIBRARY} ${OPENGL_gl_LIBRARY})
 	endif()
-	if(NOT GLUT_FOUND)
-		message(FATAL_ERROR, "Glut not found.  Building without OpenGL is possible.")
-	endif()
-	set(HAVE_OPENGL TRUE)
-	include_directories(${OPEN_GL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
-	list(APPEND DEP_LIBS ${GLUT_LIBRARIES} ${OPENGL_LIBRARIES})
 endif()
 
 
@@ -195,14 +209,16 @@ endif(OPTION_USE_LIBTIFF)
 
 ####### Option: Build with Zlib ##########
 if (OPTION_VCELL) 
-	set(OPTION_USE_ZLIB OFF)
-	set(HAVE_ZLIB TRUE)
+	if (MSVC)
+		set(OPTION_USE_ZLIB OFF)
+		set(HAVE_ZLIB TRUE)
+	endif()
 else()
 	option(OPTION_USE_ZLIB "Build with Zlib support" ON)
 endif()
 
 if(OPTION_USE_ZLIB)
-	include(FindZlib)
+	include(FindZLIB)
 	if(NOT ZLIB_FOUND)
 		message(FATAL_ERROR, "Zlib not found.  Builiding without Zlib is possible.")
 	endif()
@@ -210,7 +226,7 @@ if(OPTION_USE_ZLIB)
 	include_directories(${ZLIB_INCLUDE_DIRS})
 #	link_directories(${ZLIB_LINK_DIRECTORIES})
 #	list(APPEND DEP_LIBS z)
-	list(APPEND DEP_LIBS ${ZLIB_LIBRARIES})
+	list(APPEND DEP_LIBS ${ZLIB_LIBRARY})
 endif(OPTION_USE_ZLIB)
 
 
@@ -268,9 +284,8 @@ endif(OPTION_USE_LIBMZR)
 if (OPTION_VCELL)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 	ADD_DEFINITIONS(-DVCELL)
-	include_directories(../IDAWin ../ExpressionParser ../VCell/include ${CMAKE_CURRENT_BINARY_DIR})
-	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/source/vcell ${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
-	list(APPEND DEP_LIBS vcell pcgwrapper ExpressionParser hdf5_cpp hdf5 IDAWin PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS} zip unzip)
+	include_directories(../IDAWin ../ExpressionParser ../VCell/include ${CMAKE_CURRENT_BINARY_DIR})	
+	list(APPEND DEP_LIBS hdf5_cpp hdf5 ${SONICMQ_LIBS} zip)
 	if (MSVC OR LINUX)
 		list(APPEND DEP_LIBS blas)
 	endif()
@@ -278,12 +293,12 @@ if (OPTION_VCELL)
 	if (OPTION_USE_OPENGL)
 		if (MSVC)
 			include_directories(${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
-			link_directories(${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
+			link_directories(${CMAKE_CURRENT_SOURCE_DIR}/source/vcell ${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
 			if (ARCH_64bit)
 				list(APPEND DEP_LIBS glut64)
 			else()
 				list(APPEND DEP_LIBS glut32)
-			endif()			
+			endif()
 		endif()
 	endif()
 	
@@ -314,9 +329,10 @@ if (OPTION_VCELL)
 	set(OPTION_TARGET_LIBSMOLDYN ON) 
 endif()
 if(OPTION_TARGET_LIBSMOLDYN)
-	add_library(smoldynlib STATIC ${SRC_FILES} ${HEADER_FILES})
+	set(HAVE_OPENGL FALSE)
+	add_library(smoldynlib STATIC ${SRC_FILES} ${HEADER_FILES} ${HYBRID_SRC_FILES} ${HYBRID_HEADER_FILES})
 	if (OPTION_VCELL)
-		set_property(TARGET smoldynlib PROPERTY COMPILE_DEFINITIONS VCELL_HYBRID)
+		set_property(TARGET smoldynlib PROPERTY COMPILE_FLAGS "-DVCELL_HYBRID")
 	endif()
 endif()
 
