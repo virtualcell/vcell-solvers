@@ -10,6 +10,6 @@ include_directories(linux)
 endif()
 
 add_subdirectory(libsrc)
-add_subdirectory(cxx)
+#add_subdirectory(cxx)
 add_subdirectory(fortran)
 add_subdirectory(f90)

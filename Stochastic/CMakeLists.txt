@@ -14,6 +14,8 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	set(EXE_FILE VCellStoch)
 	if (ARCH_64bit) 
 		set(EXE_FILE ${EXE_FILE}_x64)
+	elseif (MACOSX_BINARIES_ppc)
+		set(EXE_FILE ${EXE_FILE}_ppc)
 	endif()
 
 	set(DEP_LIBS ExpressionParser ${SONICMQ_LIBS})

@@ -319,6 +319,8 @@ if(OPTION_TARGET_SMOLDYN)
 	set(EXE_FILE smoldyn)
 	if (ARCH_64bit) 
 		set(EXE_FILE ${EXE_FILE}_x64)
+	elseif (MACOSX_BINARIES_ppc)
+		set(EXE_FILE ${EXE_FILE}_ppc)
 	endif()
 
 	add_executable(${EXE_FILE} ${SRC_FILES} ${MAIN_FILES} ${HEADER_FILES})

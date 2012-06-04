@@ -5,6 +5,10 @@ if (MSVC)
 elseif (UNIX)
 	set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -static")
 endif()
+
+if (APPLE)
+	set (CMAKE_Fortran_COMPILER gfortran)
+endif()
     
 file (GLOB SRC_FILES *.f)   
 add_library(PCGPack STATIC ${SRC_FILES})

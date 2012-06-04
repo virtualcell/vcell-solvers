@@ -161,6 +161,9 @@ set(SRC_FILES
 set (PCGWRAPPER_SRC_FILES
 	src/pcgwrapper.f
 )
+if (APPLE)
+	set (CMAKE_Fortran_COMPILER gfortran)
+endif()
  
 set (EXE_SRC_FILES
 	src/FiniteVolume.cpp
@@ -208,6 +211,8 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	set(EXE_FILE FiniteVolume)
 	if (ARCH_64bit) 
 		set(EXE_FILE ${EXE_FILE}_x64)
+	elseif (MACOSX_BINARIES_ppc)
+		set(EXE_FILE ${EXE_FILE}_ppc)
 	endif()
 
 	set(DEP_LIBS vcell pcgwrapper ExpressionParser hdf5_cpp hdf5 IDAWin PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS} zip unzip)
@@ -221,16 +226,14 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 		endif()
 	endif()
 	
-	if (MSVC OR LINUX)
-		list(APPEND DEP_LIBS blas)
-	endif()
+	list(APPEND DEP_LIBS blas)
 	if (ZLIB_FOUND)
 		list(APPEND DEP_LIBS z)
 	else()
 		list(APPEND DEP_LIBS zlib)
 	endif()
-	if (TARGET_SOLVERS_WITH_MESSAGING)
-		list(APPEND EXE_SRC_FILES ../VCell/src/SimulationMessaging.cpp)
+	if (APPLE)
+		list(APPEND DEP_LIBS gfortran)
 	endif()
 	add_executable(${EXE_FILE} ${EXE_SRC_FILES})	
 	target_link_libraries(${EXE_FILE} ${DEP_LIBS})
