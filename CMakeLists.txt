@@ -22,7 +22,7 @@ include (FindZLIB)
 
 set(LINUX FALSE)
 if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
-	set(LINUX TRUE)
+        set(LINUX TRUE)
 endif()
 
 set (ARCH_64bit FALSE)
@@ -106,6 +106,7 @@ elseif (LINUX)
 	endif()
 	
 	if (LINUX_32bit_BINARIES) 
+		set (ARCH_64bit FALSE)
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
 		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32")
 		set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -m32")
