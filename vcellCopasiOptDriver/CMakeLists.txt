@@ -48,7 +48,8 @@ list (APPEND SRC_FILES
 	../Optimization2/OptXmlWriter2.cpp
 )
 
-set(COPASIDIR ${CMAKE_CURRENT_SOURCE_DIR}/../Copasi/copasi-34-src)
+set(COPASIDIR ${CMAKE_CURRENT_SOURCE_DIR}/../../Copasi/copasi-34-src)
+set(COPASITHIRDLIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/../../Copasi/thirdparty_libs)
 include_directories(${COPASIDIR}
 	${COPASIDIR}/copasi 
 	${COPASIDIR}/copasi/commandline 
@@ -65,16 +66,17 @@ include_directories(${COPASIDIR}
 add_definitions(-DWITH_CSPMETHOD -DXML_STATIC -DLIBSBML_STATIC -DRAPTOR_STATIC)
 if (MSVC)
 	add_definitions(-DUSE_CLAPACK)
+	link_directories(${COPASIDIR}/copasi/tmp/debug ${COPASITHIRDLIBDIR}/win)
 elseif (APPLE)
 	set(CMAKE_OSX_ARCHITECTURES "i386;x86_64")
 	add_definitions(-DDarwin)
-	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../Copasi/thirdparty_libs/mac ${COPASIDIR}/copasi/libs/mac)
+	link_directories(${COPASITHIRDLIBDIR}/mac ${COPASIDIR}/copasi/libs/mac)
 elseif (LINUX)
 	add_definitions(-DLinux -DUSE_CLAPACK)
 	if (LINUX_64bit_BINARIES)
-		link_directories(${COPASIDIR}/copasi/libs/linux/m64 ${CMAKE_CURRENT_SOURCE_DIR}/../Copasi/thirdparty_libs/linux/m64)
+		link_directories(${COPASIDIR}/copasi/libs/linux/m64 ${COPASITHIRDLIBDIR}/linux/m64)
 	elseif (LINUX_32bit_BINARIES)
-		link_directories(${COPASIDIR}/copasi/libs/linux/m32 ${CMAKE_CURRENT_SOURCE_DIR}/../Copasi/thirdparty_libs/linux/m32)
+		link_directories(${COPASIDIR}/copasi/libs/linux/m32 ${COPASITHIRDLIBDIR}/linux/m32)
 	endif()
 endif ()
 
@@ -108,18 +110,25 @@ set (DEP_LIBS
  	report
 	compareExpressions
 	commandline
-	sbml
-	raptor
+	libsbmld
+	raptord
 )
 
 if (APPLE)
 	list(APPEND DEP_LIBS 
 		lapack
 		blas
-		${CMAKE_CURRENT_SOURCE_DIR}/../Copasi/thirdparty_libs/mac/libexpat.a
+		${COPASITHIRDLIBDIR}/mac/libexpat.a
 		/System/Library/Frameworks/Carbon.framework
 	)
-elseif (MSVC OR LINUX)
+elseif (MSVC)
+	list(APPEND DEP_LIBS 
+		lapackd
+		libf2cd
+		blasd
+		libexpatd
+	)
+elseif  (LINUX)
 	list(APPEND DEP_LIBS 
 		lapack
 		f2c
