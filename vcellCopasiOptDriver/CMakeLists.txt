@@ -110,8 +110,8 @@ set (DEP_LIBS
  	report
 	compareExpressions
 	commandline
-	libsbmld
-	raptord
+	sbml
+	raptor
 )
 
 if (APPLE)
@@ -139,5 +139,8 @@ endif()
 target_link_libraries(vcellCopasiOptDriver ${DEP_LIBS})
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
-install(TARGETS vcellCopasiOptDriver
-		RUNTIME DESTINATION bin)
+if(MSVC)
+	install(TARGETS vcellCopasiOptDriver RUNTIME DESTINATION bin)
+else()
+	install(TARGETS vcellCopasiOptDriver LIBRARY DESTINATION bin)
+endif()
