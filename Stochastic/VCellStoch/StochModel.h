@@ -35,6 +35,7 @@ class StochModel
        double STARTING_TIME;//simulation staring time
 	   double ENDING_TIME;//simulation ending time
 	   double SAVE_PERIOD;//the time interval to save the results
+	   long MAX_SAVE_POINTS;//the maximum output points to be saved
 	   long MAX_ITERATION;//the restriction of maximum loops in a simulation
 	   double TOLERANCE;//the lowest value for propensity
 	   int SAMPLE_INTERVAL;//the sampling interval, e.g SAMPLE_INTERVAL=3 means sampling once for every three time points

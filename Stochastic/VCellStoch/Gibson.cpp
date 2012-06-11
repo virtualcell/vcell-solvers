@@ -82,6 +82,10 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 		{
 			infile >> SAMPLE_INTERVAL;
 		}
+		else if (instring == "MAX_SAVE_POINTS")
+		{
+			infile >> MAX_SAVE_POINTS;
+		}
 		else if (instring == "NUM_TRIAL")
 		{
 			infile >> NUM_TRIAL;
@@ -261,7 +265,8 @@ int Gibson::core()
 	double simtime = STARTING_TIME;//time calculated for next reaction
 	double* lastStepVals = new double[listOfIniValues.size()];//to remember the last step values, used for save output by save_period
 	double p, r; //temp variables used for propability and random number
-	int sampleCount = SAMPLE_INTERVAL; //sampling counter
+	int saveIntervalCount = SAMPLE_INTERVAL; //sampling counter, for default output time spec, keep every
+	int savedSampleCount = 1; //for default output time spec, keep at most, value is 1 because the first time step is written in march()
 	int iterationCounter=0;//counter used for termination of the loop when max_iteration is reached
 	int i; //loop variable
 	double prog = 0.19; // to control the output of progress, start from >0.19....>0.99
@@ -314,7 +319,12 @@ int Gibson::core()
 			break;
 		}
 #endif
-
+		//check if maximum save points is reached, then quit the simulation
+		if(savedSampleCount > MAX_SAVE_POINTS)
+		{
+			cerr << "Simulation exceeded maximum saved time points. Patial results may be available. \nYou can increase the save interval (\"keep every\") or increase the maximum number of saved time points (\"keep at most\"). ";
+			exit(1);
+		}
 		//save last step variables' values
 		for(i = 0;i<varLen;i++){
 			lastStepVals[i]=*listOfVars.at(i)->getCurr();
@@ -341,6 +351,8 @@ int Gibson::core()
 			}
 			break;
 		}
+		//increase output save points by 1
+		savedSampleCount ++;
 		//update affected variables
 		int numVars = event->getNumVars();
 		for(i = 0;i<numVars;i++){
@@ -412,7 +424,7 @@ int Gibson::core()
 #endif
 		if(NUM_TRIAL ==1)
 		{
-			if(sampleCount == SAMPLE_INTERVAL)
+			if(saveIntervalCount == SAMPLE_INTERVAL)
 			{
 				//output the result to file if the num_trial is one and the outputTimer reaches the new save period
 				if(flag_savePeriod)
@@ -461,10 +473,10 @@ int Gibson::core()
 					oldTime = currentTime;
 				}
 			}
-			if(sampleCount == 1)
-				sampleCount = SAMPLE_INTERVAL;
+			if(saveIntervalCount == 1)
+				saveIntervalCount = SAMPLE_INTERVAL;
 			else
-				sampleCount--;
+				saveIntervalCount--;
 			// output simulaiton progress message
 //              if((simtime/ENDING_TIME) > prog)
 //				{
