@@ -5,6 +5,8 @@
 #include <Windows.h>
 #endif
 #include <iostream>
+#include <sstream>
+#include <string>
 #include <iomanip>
 #include <vector>
 #include <math.h>
@@ -50,8 +52,10 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 	string instring;
 	infile.open(arg_infilename);
 	if (!infile) {
-		cerr << "Unable to open file " << arg_infilename;
-		exit(1);   // call system to stop
+		stringstream ss;
+		ss << "Unable to open file " << arg_infilename;
+		string errStr = ss.str();   // call system to stop
+		throw errStr;
 	}
 	flag_savePeriod=false;
 	while(infile >> instring)
@@ -289,8 +293,10 @@ int Gibson::core()
 		//amended Oct 11th, 2007. Stop the simulation and send error message back if
 		//anyone of the propensity functions is negtive.
 		if(p < 0){
-			cerr << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(jump->getNameIndex()) <<" turned to be a negtive value. Simulation abort!" << endl;
-			exit(1);
+			stringstream ss;
+			ss <<  "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(jump->getNameIndex()) <<" turned to be a negtive value. Simulation abort!";
+			string errStr = ss.str();
+			throw errStr;
 		}
 		//amended May 17th,2007 we can not take the first time random number to be 0.
 		//Otherwise, there is a situation that no previous random number to be reused.
@@ -319,11 +325,11 @@ int Gibson::core()
 			break;
 		}
 #endif
-		//check if maximum save points is reached, then quit the simulation
-		if(savedSampleCount > MAX_SAVE_POINTS)
+		//check if maximum save points is reached, then quit the simulation (if not using uniformOutputTimeSpec)
+		if(!flag_savePeriod && savedSampleCount > MAX_SAVE_POINTS)
 		{
-			cerr << "Simulation exceeded maximum saved time points. Patial results may be available. \nYou can increase the save interval (\"keep every\") or increase the maximum number of saved time points (\"keep at most\"). ";
-			exit(1);
+			string errStr = "Simulation exceeded maximum saved time points. Patial results may be available. \nYou can increase the save interval (\"keep every\") or increase the maximum number of saved time points (\"keep at most\").";
+			throw errStr;
 		}
 		//save last step variables' values
 		for(i = 0;i<varLen;i++){
@@ -351,8 +357,10 @@ int Gibson::core()
 			}
 			break;
 		}
-		//increase output save points by 1
-		savedSampleCount ++;
+		//increase output save points by 1, if not using uniformOutputTimeSpec
+		if(!flag_savePeriod){
+			savedSampleCount ++;
+		}
 		//update affected variables
 		int numVars = event->getNumVars();
 		for(i = 0;i<numVars;i++){
@@ -370,8 +378,10 @@ int Gibson::core()
 		//amended Oct 11th, 2007. Stop the simulation and send error message back if
 		//anyone of the propensity functions is negtive.
 		if(p < 0){
-			cerr << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(event->getNameIndex()) <<" turned to be a negtive value. Simulation abort!" << endl;
-			exit(1);
+			stringstream ss;
+			ss << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(event->getNameIndex()) <<" turned to be a negtive value. Simulation abort!";
+			string errStr = ss.str();
+			throw errStr;
 		}
 		//amended May 17th. The previous sentence will cause the time of a process stuck in double_infinity when r<=0
 		if(r>0)
@@ -396,8 +406,10 @@ int Gibson::core()
 			//amended Oct 11th, 2007. Stop the simulation and send error message back if
 			//anyone of the propensity functions is negtive.
 			if(p_new < 0){
-				cerr << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(dJump->getNameIndex()) <<" turned to be a negtive value. Simulation abort!" << endl;
-				exit(1);
+				stringstream ss;
+				ss << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(dJump->getNameIndex()) <<" turned to be a negtive value. Simulation abort!";
+				string errStr = ss.str();
+				throw errStr;
 			}
 			double tau = dJump->getTime();
 			//amended May 17th. to make sure that tau is a finite double
@@ -600,7 +612,8 @@ void Gibson::march()
 	}
 	else
 	{
-		cerr << "Number of trial smaller than 1!";
+		string errStr = "Number of trial smaller than 1!";
+		throw errStr;
 	}
 #ifdef DEBUG
 	//Count performance time for single trial

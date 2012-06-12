@@ -162,13 +162,10 @@ void Jump::addDependentJump(Jump *jump)
  */
 void Jump::setProbabilityExpression(string exp, string* names, int numOfNames)
 {
-	try {
-		probExpression=new Expression(exp);
-		SymbolTable* table=new SimpleSymbolTable(names,numOfNames);
-		probExpression->bindExpression(table);
-	} catch (Exception ex) {
-		cerr << ex.getMessage() << endl;
-	}
+	probExpression=new Expression(exp);
+	SymbolTable* table=new SimpleSymbolTable(names,numOfNames);
+	probExpression->bindExpression(table);
+	
 }//end of method setProbabilityExpression()
 
 /*
