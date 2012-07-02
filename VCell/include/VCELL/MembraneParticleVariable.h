@@ -5,11 +5,11 @@
 #ifndef MEMBRANEPARTICLEVARIABLE_H
 #define MEMBRANEPARTICLEVARIABLE_H
 
-#include <VCELL/Variable.h>
+#include <VCELL/ParticleVariable.h>
 
 class Membrane;
 
-class MembraneParticleVariable : public Variable
+class MembraneParticleVariable : public ParticleVariable
 {
 public:
 	MembraneParticleVariable(string& nameStr, Membrane* membrane, long size);

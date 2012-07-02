@@ -41,6 +41,7 @@ set(HEADER_FILES
 	include/VCELL/ODESolver.h
 #	include/VCELL/ParticleContext.h
 #	include/VCELL/PDEScheduler.h
+    include/VCELL/ParticleVariable.h
 	include/VCELL/PDESolver.h
 	include/VCELL/PostProcessingBlock.h
 	include/VCELL/PostProcessingHdf5Writer.h
@@ -48,6 +49,7 @@ set(HEADER_FILES
 	include/VCELL/RandomVariable.h
 	include/VCELL/Region.h
 	include/VCELL/RegionSizeVariable.h
+	include/VCELL/RoiDataGenerator.h
 	include/VCELL/Scheduler.h
 	include/VCELL/SerialScheduler.h
 	include/VCELL/SimTool.h
@@ -119,6 +121,7 @@ set(SRC_FILES
 	src/ODESolver.cpp
 #	src/ParticleContext.cpp
 #	src/PDEScheduler.cpp
+	src/ParticleVariable.cpp
 	src/PDESolver.cpp
 	src/PostProcessingBlock.cpp
 	src/PostProcessingHdf5Writer.cpp
@@ -126,6 +129,7 @@ set(SRC_FILES
 	src/RandomVariable.cpp
 	src/Region.cpp
 	src/RegionSizeVariable.cpp
+	src/RoiDataGenerator.cpp
 	src/Scheduler.cpp
 	src/SerialScheduler.cpp
 	src/SimTool.cpp

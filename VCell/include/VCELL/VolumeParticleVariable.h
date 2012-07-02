@@ -5,11 +5,11 @@
 #ifndef VOLUMEPARTICLEVARIABLE_H
 #define VOLUMEPARTICLEVARIABLE_H
 
-#include <VCELL/Variable.h>
+#include <VCELL/ParticleVariable.h>
 
 class Feature;
 
-class VolumeParticleVariable : public Variable
+class VolumeParticleVariable : public ParticleVariable
 {
 public:
 	VolumeParticleVariable(string& nameStr, Feature* feature, long sizeX, long sizeY, long sizeZ);

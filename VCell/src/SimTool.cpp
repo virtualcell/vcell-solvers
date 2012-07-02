@@ -23,6 +23,9 @@ using std::endl;
 #include <VCELL/FVUtils.h>
 #include <VCELL/PostProcessingBlock.h>
 #include <VCELL/PostProcessingHdf5Writer.h>
+#include <VCELL/VolumeParticleVariable.h>
+#include <VCELL/MembraneParticleVariable.h>
+#include <VCELL/Element.h>
 
 #include <float.h>
 #include <math.h>
@@ -820,6 +823,32 @@ void SimTool::start1() {
 #ifdef VCELL_HYBRID			
 		if (smoldynSim != NULL) {
 			smoldynOneStep(smoldynSim);
+			//translating the particle counts into concentration (molecules/mesh size) for each mesh element
+			int numVars = simulation->getNumVariables();
+			for (int i=0; i<numVars; i++){
+				if(simulation->getVariable(i)->getVarType() == VAR_VOLUME_PARTICLE){
+					VolumeParticleVariable* var = (VolumeParticleVariable*)simulation->getVariable(i);
+					for(int j=0; j<simulation->getMesh()->getNumVolumeElements(); j++){
+						double count = var->getMoleculeCounts()[j];
+						if(count>0){
+							var->getCurr()[j]=count/(simulation->getMesh()->getVolumeOfElement_cu(j));
+						}else {
+							var->getCurr()[j]=0;
+						}
+					}
+				}
+				else if(simulation->getVariable(i)->getVarType() == VAR_MEMBRANE_PARTICLE){
+					MembraneParticleVariable* var = (MembraneParticleVariable*)simulation->getVariable(i);
+					for(int j=0; j<simulation->getMesh()->getNumMembraneElements(); j++){
+						double count = var->getMoleculeCounts()[j];
+						if(count>0){
+							var->getCurr()[j]=count/(simulation->getMesh()->getMembraneElements()[j].area);
+						}else {
+							var->getCurr()[j]=0;
+						}
+					}
+				} 
+			}
 		}
 #endif
 

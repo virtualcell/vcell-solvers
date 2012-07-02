@@ -9,7 +9,7 @@ using std::ofstream;
 using std::endl;
 
 VolumeParticleVariable::VolumeParticleVariable(string& nameStr, Feature* feature, long numX, long numY, long numZ)
-: Variable(nameStr, feature, numX*numY*numZ, true)
+: ParticleVariable(nameStr, feature, numX*numY*numZ)
 {
 	sizeX = numX;
 	sizeY = numY;

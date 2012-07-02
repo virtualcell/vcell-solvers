@@ -11,6 +11,7 @@
 #include <VCELL/Membrane.h>
 #include <string.h>
 #include <Expression.h>
+#include <VCELL/ParticleVariable.h>
 using VCell::Expression;
 
 #include <algorithm>
@@ -72,27 +73,27 @@ void VariableStatisticsDataGenerator::computePPData(SimulationExpression* sim) {
 
 		double& average = data[i * 2];
 		double& total = data[i * 2  + 1];
-		bool bVolume = true;
 		if (var->getVarType() == VAR_VOLUME) {
 			for (int j = 0; j < meshX * meshY * meshZ; j ++) {
 				if (var->getStructure() == 0 || var->getStructure() == volumeElements[j].getFeature()) {					
 					double volume = mesh->getVolumeOfElement_cu(j);
 					totalVolume += volume;
 
-					double curr = var->getCurr()[j] * volume;// num of moles
-					average += curr; //num of moles
-					total += curr * 602.0; //num of molecules
+					double curr = var->getCurr()[j] * volume;// num of (1e-21) moles (=uM*um3)
+					average += curr; //num of (1e-21) moles (=uM*um3)
+					total += curr * 602.0; //num of molecules (602 = (molecules/um3*uM)*6.02e23)
 				}
 			}
 		} else if (var->getVarType() == VAR_VOLUME_PARTICLE) {
+			ParticleVariable* particleVar = (ParticleVariable *)var;
 			for (int j = 0; j < meshX * meshY * meshZ; j ++) {
 				if (var->getStructure() == 0 || var->getStructure() == volumeElements[j].getFeature()) {					
 					double volume = mesh->getVolumeOfElement_cu(j);
 					totalVolume += volume;
 
-					double curr = var->getCurr()[j];//num of molecules
-					average += curr/602;//num of moles
-					total += curr; //num of molecules
+					long count = particleVar->getMoleculeCounts()[j];//num of (1e-21) moles (=uM*um3)
+					average += count/602.0;//num of (1e-21) moles (=uM*um3)
+					total += count; //num of molecules (602 = (molecules/um3*uM)*6.02e23)
 				}
 			}
 		} else if (var->getVarType() == VAR_VOLUME_REGION) {
@@ -108,7 +109,6 @@ void VariableStatisticsDataGenerator::computePPData(SimulationExpression* sim) {
 				}
 			}		
 		} else if (var->getVarType() == VAR_MEMBRANE) {
-			bVolume = false;
 			for (int j = 0; j < mesh->getNumMembraneElements(); j ++) {
 				if (var->getStructure() == 0 || var->getStructure() == membraneElements[j].getMembrane()) {
 					double area = membraneElements[j].area;
@@ -120,19 +120,18 @@ void VariableStatisticsDataGenerator::computePPData(SimulationExpression* sim) {
 				}
 			}
 		} else if (var->getVarType() == VAR_MEMBRANE_PARTICLE) {
-			bVolume = false;
+			ParticleVariable* particleVar = (ParticleVariable *)var;
 			for (int j = 0; j < mesh->getNumMembraneElements(); j ++) {
 				if (var->getStructure() == 0 || var->getStructure() == membraneElements[j].getMembrane()) {
 					double area = membraneElements[j].area;
 					totalVolume += area;
 
-					double mols = var->getCurr()[j]; //num of molecules
-					average += mols; //num of molecules
-					total += mols; //num of molecules
+					long count = particleVar->getMoleculeCounts()[j]; //num of molecules
+					average += count; //num of molecules
+					total += count; //num of molecules
 				}
 			}
 		} else if (var->getVarType() == VAR_MEMBRANE_REGION) {
-			bVolume = false;
 			for (int j = 0; j < mesh->getNumMembraneElements(); j ++) {
 				if (var->getStructure() == 0 || var->getStructure() == membraneElements[j].getMembrane()) {
 					int regionIndex = membraneElements[j].region->getIndex();

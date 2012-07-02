@@ -7,6 +7,6 @@
 #include <VCELL/Membrane.h>
 
 MembraneParticleVariable::MembraneParticleVariable(string& nameStr, Membrane* membrane, long size)
-: Variable(nameStr, membrane, size, true)
+: ParticleVariable(nameStr, membrane, size)
 {
 }
