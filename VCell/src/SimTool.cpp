@@ -584,8 +584,14 @@ void SimTool::updateLog(double progress, double time, int iteration)
 		} else {
 			throw errmsg;
 		}
-	}
+	} else{
+		// write hdf5 post processing before writing log entry
+		if (postProcessingHdf5Writer != NULL) {
+			postProcessingHdf5Writer->writeOutput();
+		}
 
+	}
+	   
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
 }
 
@@ -736,6 +742,7 @@ void SimTool::start1() {
 #ifdef VCELL_HYBRID	
 	if (smoldynInputFile != "") {
 		smoldynSim = smoldynInit(this, smoldynInputFile);
+		copyParticleCountsToConcentration();
 		// since smoldyn only initializes variable current value,
 		// we need to copy current to old.
 		for (int i = 0; i < (int)simulation->getNumVariables(); i ++) {
@@ -823,32 +830,7 @@ void SimTool::start1() {
 #ifdef VCELL_HYBRID			
 		if (smoldynSim != NULL) {
 			smoldynOneStep(smoldynSim);
-			//translating the particle counts into concentration (molecules/mesh size) for each mesh element
-			int numVars = simulation->getNumVariables();
-			for (int i=0; i<numVars; i++){
-				if(simulation->getVariable(i)->getVarType() == VAR_VOLUME_PARTICLE){
-					VolumeParticleVariable* var = (VolumeParticleVariable*)simulation->getVariable(i);
-					for(int j=0; j<simulation->getMesh()->getNumVolumeElements(); j++){
-						double count = var->getMoleculeCounts()[j];
-						if(count>0){
-							var->getCurr()[j]=count/(simulation->getMesh()->getVolumeOfElement_cu(j));
-						}else {
-							var->getCurr()[j]=0;
-						}
-					}
-				}
-				else if(simulation->getVariable(i)->getVarType() == VAR_MEMBRANE_PARTICLE){
-					MembraneParticleVariable* var = (MembraneParticleVariable*)simulation->getVariable(i);
-					for(int j=0; j<simulation->getMesh()->getNumMembraneElements(); j++){
-						double count = var->getMoleculeCounts()[j];
-						if(count>0){
-							var->getCurr()[j]=count/(simulation->getMesh()->getMembraneElements()[j].area);
-						}else {
-							var->getCurr()[j]=0;
-						}
-					}
-				} 
-			}
+			copyParticleCountsToConcentration();
 		}
 #endif
 
@@ -899,6 +881,36 @@ void SimTool::start1() {
 
 	showSummary(stdout);
 }
+
+void SimTool::copyParticleCountsToConcentration(){ //concentration in terms of particleCounts/mesh element size
+	//translating the particle counts into concentration (molecules/mesh size) for each mesh element
+	int numVars = simulation->getNumVariables();
+	for (int i=0; i<numVars; i++){
+		if(simulation->getVariable(i)->getVarType() == VAR_VOLUME_PARTICLE){
+			VolumeParticleVariable* var = (VolumeParticleVariable*)simulation->getVariable(i);
+			for(int j=0; j<simulation->getMesh()->getNumVolumeElements(); j++){
+				double count = var->getMoleculeCounts()[j];
+				if(count>0){
+					var->getCurr()[j]=count/(simulation->getMesh()->getVolumeOfElement_cu(j));
+				}else {
+					var->getCurr()[j]=0;
+				}
+			}
+		}
+		else if(simulation->getVariable(i)->getVarType() == VAR_MEMBRANE_PARTICLE){
+			MembraneParticleVariable* var = (MembraneParticleVariable*)simulation->getVariable(i);
+			for(int j=0; j<simulation->getMesh()->getNumMembraneElements(); j++){
+				double count = var->getMoleculeCounts()[j];
+				if(count>0){
+					var->getCurr()[j]=count/(simulation->getMesh()->getMembraneElements()[j].area);
+				}else {
+					var->getCurr()[j]=0;
+				}
+			}
+		} 
+	}
+}
+
 
 bool SimTool::checkSpatiallyUniform(Variable* var) {
 	double* currSol = var->getCurr();

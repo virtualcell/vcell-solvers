@@ -159,7 +159,7 @@ private:
 	int numSerialParameterScans;
 
 	PostProcessingHdf5Writer* postProcessingHdf5Writer;
-
+	void copyParticleCountsToConcentration();
 #ifdef VCELL_HYBRID	
 	simptr smoldynSim;
 	string smoldynInputFile;
