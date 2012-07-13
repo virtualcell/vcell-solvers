@@ -9,7 +9,8 @@
 #ifdef VCELL_HYBRID
 #include <VCELL/SimTool.h>
 #include <VCELL/Simulation.h>
-#include <VCELL/Variable.h>
+#include <VCELL/VolumeParticleVariable.h>
+#include <VCELL/MembraneParticleVariable.h>
 #endif
 #include "SmoldynVarStatDataGenerator.h"
 //#include "SmoldynROIDataGenerator.h"
@@ -266,8 +267,10 @@ void VCellSmoldynOutput::parseInput(string& input) {
 	for (int i = 0; i < volVariables.size(); i ++) {
 #ifdef VCELL_HYBRID
 		Simulation* sim = simTool->getSimulation();
-		Variable* var = sim->getVariableFromName(volVariables[i]->name);
-		volVarOutputData[i] = var->getCurr();
+		VolumeParticleVariable* var = (VolumeParticleVariable*)sim->getVariableFromName(volVariables[i]->name);
+		//reminder that we ask smoldyn to write to molecule counts and in simtool we convert the counts to counts/mesh element size for FV 
+		//volVarOutputData[i] = var->getCurr(); 
+		volVarOutputData[i] = var->getMoleculeCounts();
 #else
 		volVarOutputData[i] = new double[numVolumeElements];
 #endif
@@ -276,8 +279,10 @@ void VCellSmoldynOutput::parseInput(string& input) {
 	for (int i = 0; i < memVariables.size(); i ++) {
 #ifdef VCELL_HYBRID
 		Simulation* sim = simTool->getSimulation();
-		Variable* var = sim->getVariableFromName(memVariables[i]->name);
-		memVarOutputData[i] = var->getCurr();
+		MembraneParticleVariable* var = (MembraneParticleVariable*)sim->getVariableFromName(memVariables[i]->name);
+		//reminder that we ask smoldyn to write to molecule counts and in simtool we convert the counts to counts/mesh element size for FV 
+		//memVarOutputData[i] = var->getCurr(); 
+		memVarOutputData[i] = var->getMoleculeCounts();
 #else
 		memVarOutputData[i] = new double[numMembraneElements];
 #endif

@@ -32,26 +32,13 @@ void VariableStatisticsDataGenerator::resolveReferences(SimulationExpression* si
 
 	// compute data size
 	CartesianMesh* mesh = (CartesianMesh*)sim->getMesh();
-	dataSize = numVar * 2;
+	dataSize = numVar * 2; // total and average
 	data = new double[dataSize];
 	memset(data, 0, dataSize * sizeof(double));
 
 	hdf5Rank = 1;
-	// total and average
-	hdf5Dims[0] =  dataSize;
-	//hdf5Dims[0] = 1;
-
-	//compType = new H5::CompType(size_t(sizeof(double) * dataSize));
-	//for (int i = 0; i < numVar; i ++) {
-	//	Variable* var = sim->getVariable(i);
-
-	//	char compName[64];
-	//	sprintf(compName, "%s_average", var->getName().c_str());
-	//	compType->insertMember(compName, i * 2 * sizeof(double),  H5::PredType::NATIVE_DOUBLE);
-	//	
-	//	sprintf(compName, "%s_total", var->getName().c_str());
-	//	compType->insertMember(compName, (i * 2  + 1) * sizeof(double),  H5::PredType::NATIVE_DOUBLE);
-	//}
+	hdf5Dims[0] = dataSize;
+	
 }
 
 void VariableStatisticsDataGenerator::computePPData(SimulationExpression* sim) {

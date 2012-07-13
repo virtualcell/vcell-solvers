@@ -19,6 +19,8 @@
 #include <VCELL/RegionSizeVariable.h>
 #include <VCELL/PostProcessingBlock.h>
 #include <VCELL/DataGenerator.h>
+#include <VCELL/VolumeParticleVariable.h>
+#include <VCELL/MembraneParticleVariable.h>
 using std::endl;
 
 #define CONVOLVE_SUFFIX "_Convolved"
@@ -406,7 +408,19 @@ void FVDataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
 		if (var->getSize() != dataBlock[blockIndex].size) {
 			throw "DataSet::write() : inconsistent number of data blocks for variable";
 		}
-		DataSet::writeDoubles(fp, var->getCurr(), var->getSize());
+
+		double* dataVal = 0;
+		if(var->getVarType() == VAR_VOLUME_PARTICLE){
+			VolumeParticleVariable* volParticleVar = (VolumeParticleVariable*)var;
+			dataVal = volParticleVar->getMoleculeCounts();
+		}else if(var->getVarType() == VAR_MEMBRANE_PARTICLE){
+			MembraneParticleVariable* memParticleVar = (MembraneParticleVariable*)var;
+			dataVal = memParticleVar->getMoleculeCounts();
+		}else{
+			dataVal = var->getCurr();
+		}
+		
+		DataSet::writeDoubles(fp, dataVal, var->getSize());
 		blockIndex ++;
 	}
 	
