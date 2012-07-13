@@ -121,6 +121,7 @@ void PostProcessingHdf5Writer::createGroups() {
 	}
 	H5::DataSpace attributeDataSpace(H5S_SCALAR);
 	H5::StrType attributeNameStrType(0, 64);
+	H5::StrType attributeUnitStrType(0,64);
 
 	h5PPFile = new H5::H5File(h5PPFileName.c_str(), H5F_ACC_TRUNC);
 
@@ -151,23 +152,40 @@ void PostProcessingHdf5Writer::createGroups() {
 		H5::Group dataGeneratorGroup = h5PPFile->createGroup(dataGeneratorGroupName);
 		
 		if (typeid(*dataGenerator) == typeid(VariableStatisticsDataGenerator)) {
-			// attributes : all the components
+			// attributes : all the components, e.g. comp_0_name = varName, comp_0_unit = varUnit, comp_1_name = ... comp_1_unit = ...
 			int numVar = postProcessingBlock->simulation->getNumVariables();
 			for (int i = 0; i < numVar; i ++) {
 				Variable* var = postProcessingBlock->simulation->getVariable(i);
 				const char* varName = var->getName().c_str();
 				char attrName[64];
 				char compName[64];
+				char compUnit[64];
 
-				sprintf(attrName, "comp_%d", 2 * i);
+				//write var average name and unit
+				sprintf(attrName, "comp_%d_name", 2 * i);
 				H5::Attribute attribute = dataGeneratorGroup.createAttribute(attrName, attributeNameStrType, attributeDataSpace);
 				sprintf(compName, "%s_average", varName);
 				attribute.write(attributeNameStrType, compName);
 
-				sprintf(attrName, "comp_%d", 2 * i + 1);
+				sprintf(attrName, "comp_%d_unit", 2 * i);
+				attribute = dataGeneratorGroup.createAttribute(attrName, attributeUnitStrType, attributeDataSpace);
+				if (var->getVarType() == VAR_MEMBRANE || var->getVarType() == VAR_MEMBRANE_PARTICLE || var->getVarType() == VAR_MEMBRANE_REGION){
+					sprintf(compUnit, "molecules.um-2");
+				} else{
+					sprintf(compUnit, "uM");
+				}
+				attribute.write(attributeUnitStrType, compUnit);
+
+				//write var total name and unit
+				sprintf(attrName, "comp_%d_name", 2 * i + 1);
 				attribute = dataGeneratorGroup.createAttribute(attrName, attributeNameStrType, attributeDataSpace);
 				sprintf(compName, "%s_total", varName);
 				attribute.write(attributeNameStrType, compName);
+
+				sprintf(attrName, "comp_%d_unit", 2 * i + 1);
+				attribute = dataGeneratorGroup.createAttribute(attrName, attributeUnitStrType, attributeDataSpace);
+				sprintf(compUnit, "molecules");
+				attribute.write(attributeUnitStrType, compUnit);
 			}
 		}
 		else 
@@ -236,7 +254,7 @@ void PostProcessingHdf5Writer::writeDataGenerator(DataGenerator* dataGenerator, 
 	sprintf(dataSetName, "%s/%s/time%06d", PPGroupName, dataGenerator->getQualifiedName().c_str(), timeIndex);	
 
 	// create dataspace
-	H5::DataSpace dataspace(dataGenerator->hdf5Rank, dataGenerator->hdf5Dims); 
+	H5::DataSpace dataspace(dataGenerator->hdf5Rank, dataGenerator->hdf5Dims);
 	H5::DataSet dataSet = h5PPFile->createDataSet(dataSetName, H5::PredType::NATIVE_DOUBLE, dataspace);
 
 	// write dataset

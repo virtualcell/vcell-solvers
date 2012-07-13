@@ -37,6 +37,7 @@ void SmoldynHdf5Writer::createGroups() {
 	}
 	H5::DataSpace attributeDataSpace(H5S_SCALAR);
 	H5::StrType attributeNameStrType(0, 64);
+	H5::StrType attributeUnitStrType(0,64);
 
 	h5PPFile = new H5::H5File(h5PPFileName.c_str(), H5F_ACC_TRUNC);
 
@@ -70,38 +71,63 @@ void SmoldynHdf5Writer::createGroups() {
 			// attributes : all the components
 			int numVolVar = vso->volVariables.size();
 			int numMemVar = vso->memVariables.size();
+			// write volume var
 			for (int i = 0; i < numVolVar; i ++) {
 				SmoldynVariable* volvar = vso->volVariables[i];
 				const char* varName = volvar->name.c_str();
 				char attrName[64];
 				char compName[64];
-
-				sprintf(attrName, "comp_%d", 2*i);
+				char compUnit[64];
+				//var total name and unit
+				sprintf(attrName, "comp_%d_name", 2*i);
 				H5::Attribute attribute = dataGeneratorGroup.createAttribute(attrName, attributeNameStrType, attributeDataSpace);
 				sprintf(compName, "%s_total", varName);
 				attribute.write(attributeNameStrType, compName);
 
-				sprintf(attrName, "comp_%d", 2*i + 1);
+				sprintf(attrName, "comp_%d_unit", 2*i);
+				attribute = dataGeneratorGroup.createAttribute(attrName, attributeUnitStrType, attributeDataSpace);
+				sprintf(compUnit, "molecules");
+				attribute.write(attributeUnitStrType, compUnit);
+
+				//var average name and unit
+				sprintf(attrName, "comp_%d_name", 2*i + 1);
 				attribute = dataGeneratorGroup.createAttribute(attrName, attributeNameStrType, attributeDataSpace);
 				sprintf(compName, "%s_average", varName);
 				attribute.write(attributeNameStrType, compName);
+
+				sprintf(attrName, "comp_%d_unit", 2*i + 1);
+				attribute = dataGeneratorGroup.createAttribute(attrName, attributeUnitStrType, attributeDataSpace);
+				sprintf(compUnit, "uM");
+				attribute.write(attributeUnitStrType, compUnit);
 			}
+			//write membrane var 
 			int offset = 2*numVolVar;
 			for (int i = 0; i < numMemVar; i ++) {
 				SmoldynVariable* memvar = vso->memVariables[i];
 				const char* varName = memvar->name.c_str();
 				char attrName[64];
 				char compName[64];
-
-				sprintf(attrName, "comp_%d", offset + 2*i);
+				char compUnit[64];
+				//var total name and unit
+				sprintf(attrName, "comp_%d_name", offset + 2*i);
 				H5::Attribute attribute = dataGeneratorGroup.createAttribute(attrName, attributeNameStrType, attributeDataSpace);
 				sprintf(compName, "%s_total", varName);
 				attribute.write(attributeNameStrType, compName);
 
-				sprintf(attrName, "comp_%d", offset + 2*i + 1);
+				sprintf(attrName, "comp_%d_unit", offset + 2*i);
+				attribute = dataGeneratorGroup.createAttribute(attrName, attributeUnitStrType, attributeDataSpace);
+				sprintf(compUnit, "molecules");
+				attribute.write(attributeUnitStrType, compUnit);
+				//var average name and unit
+				sprintf(attrName, "comp_%d_name", offset + 2*i + 1);
 				attribute = dataGeneratorGroup.createAttribute(attrName, attributeNameStrType, attributeDataSpace);
 				sprintf(compName, "%s_average", varName);
 				attribute.write(attributeNameStrType, compName);
+
+				sprintf(attrName, "comp_%d_unit", offset + 2*i + 1);
+				attribute = dataGeneratorGroup.createAttribute(attrName, attributeUnitStrType, attributeDataSpace);
+				sprintf(compUnit, "molecules.um-2");
+				attribute.write(attributeUnitStrType, compUnit);
 			}
 		}
 	}
