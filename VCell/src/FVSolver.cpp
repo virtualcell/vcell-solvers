@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <sys/stat.h>
+#include <string.h>
 #include <fstream>
 #include <sstream>
 using std::ifstream;
@@ -51,6 +52,7 @@ using VCell::Expression;
 #include <VCELL/ProjectionDataGenerator.h>
 #include <VCELL/GaussianConvolutionDataGenerator.h>
 #include <VCELL/VariableStatisticsDataGenerator.h>
+#include <VCELL/RoiDataGenerator.h>
 
 FieldData *getPSFFieldData() {
 	return ((SimulationExpression*)SimTool::getInstance()->getSimulation())->getPSFFieldData();
@@ -1640,10 +1642,10 @@ void FVSolver::loadPostProcessingBlock(istream& ifsInput){
 	// create post processing block;
 	simulation->createPostProcessingBlock();
 	PostProcessingBlock* postProcessingBlock = simulation->getPostProcessingBlock();
-
+	// add var statistics data generator always
 	postProcessingBlock->addDataGenerator(new VariableStatisticsDataGenerator());
-	string nextToken, line;
-
+	
+	string nextToken, line, storeEnabledStr, fieldName, strNotUsed;
 	while (!ifsInput.eof()) {
 		getline(ifsInput, line);
 		istringstream lineInput(line);
@@ -1672,10 +1674,87 @@ void FVSolver::loadPostProcessingBlock(istream& ifsInput){
 			Expression* function = readExpression(lineInput, name);
 			GaussianConvolutionDataGenerator* dataGenerator = new GaussianConvolutionDataGenerator(name, feature, sigmaXY, sigmaZ, function);
 			postProcessingBlock->addDataGenerator(dataGenerator);
+		} else if (nextToken == "ROI_DATA_GENERATOR_BEGIN") {
+			int* volumePoints = 0;
+			int* membranePoints = 0;
+			int numVolumePoints = 0;
+			int numMembranePoints = 0;
+			FieldData* sampleImage;
+			int numImageRegions = 0;
+			int zSlice = 0;
+			string roiDGName;
+			
+			lineInput >> roiDGName; //read ROI data generator name
+			//read other info. for ROI data generator
+			while (!ifsInput.eof()) {
+				getline(ifsInput, line);
+				istringstream lineInput_roi(line);
+
+				nextToken = "";
+				lineInput_roi >> nextToken;
+				if (nextToken.size() == 0 || nextToken[0] == '#') {
+					continue;
+				}
+				if (nextToken == "ROI_DATA_GENERATOR_END") {
+					break;
+				}
+				if (nextToken == "VolumePoints") {
+					lineInput_roi >> numVolumePoints;
+					volumePoints = new int[numVolumePoints];
+					memset(volumePoints, 0, numVolumePoints * sizeof(int));
+					getline(ifsInput, line);
+					istringstream vpStream(line);
+					for (int i = 0; i < numVolumePoints; i ++) {
+						vpStream >> volumePoints[i];
+					}
+				} else if (nextToken == "MembranePoints") {
+					lineInput_roi >> numMembranePoints;
+					membranePoints = new int[numMembranePoints];
+					memset(membranePoints, 0, numMembranePoints * sizeof(int));
+					for (int i = 0; i < numMembranePoints; i ++) {
+						lineInput_roi >> membranePoints[i];
+					}
+				} else if (nextToken == "StoreEnabled") {
+					lineInput_roi >> storeEnabledStr;
+					if (storeEnabledStr == "false") {
+						simTool->setStoreEnable(false);
+					}
+				} else if (nextToken == "SampleImage") {
+					lineInput_roi >> numImageRegions >> zSlice;
+					lineInput_roi >> strNotUsed;
+					getline(lineInput_roi, fieldName);
+					//loadSampleImage(simTool, vcdataID, varName, time);			
+				} else if (nextToken == "SampleImageFile") {			
+					string varName;
+					double time;
+					lineInput_roi >> varName >> time;
+					string fieldfilename;
+					getline(lineInput_roi, fieldfilename);
+					trimString(fieldfilename);
+					sampleImage = new FieldData(0, VAR_VOLUME, "", fieldName, varName, time, fieldfilename);
+				}
+			}// end while loop for roi data generator
+			RoiDataGenerator* dataGenerator = new RoiDataGenerator(roiDGName,  volumePoints, numVolumePoints, membranePoints, numMembranePoints, sampleImage, numImageRegions, zSlice);
+			postProcessingBlock->addDataGenerator(dataGenerator);
 		} else {
 			stringstream ss;
 			ss << "loadPostProcessingBlock(), encountered unknown token " << nextToken << endl;
 			throw ss.str();
 		}
+	}
+}
+
+static void trimString(string& str)
+{
+	string::size_type pos = str.find_last_not_of(" \r\n");
+	if(pos != string::npos) {
+		str.erase(pos + 1);
+		pos = str.find_first_not_of(" \r\n");
+		if(pos != string::npos) {
+			str.erase(0, pos);
+		}
+	}
+	else {
+		str.erase(str.begin(), str.end());
 	}
 }
