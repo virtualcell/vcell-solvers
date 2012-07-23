@@ -139,34 +139,41 @@ void VCellSundialsSolver::writeFileHeader(FILE* outputFile) {
 	}
 }
 
-void VCellSundialsSolver::printProgress(double currTime, double& percentile, double increment, FILE* outputFile) {
+void VCellSundialsSolver::printProgress(double currTime, double& lastPercentile, clock_t& lastTime, double increment, FILE* outputFile) {
 	fflush(outputFile);
 
 	if (currTime == STARTING_TIME) { // print 0%
 #ifdef USE_MESSAGING
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, currTime));
 #else
-		printf("[[[progress:%lg%%]]]", percentile*100.0);
+		printf("[[[progress:%lg%%]]]", lastPercentile*100.0);
 		fflush(stdout);
 #endif
 	} else {
-		double oldp = percentile;
-		while (true) {
-			double midTime = (percentile + increment) * (ENDING_TIME - STARTING_TIME);
-			if (STARTING_TIME + midTime > currTime) { 
-				break;
-			}
-			percentile += increment;
-		}
-		if ( percentile != oldp) {
+		clock_t currentTime = clock();
+		double duration = (double)(currentTime - lastTime) / CLOCKS_PER_SEC;
+		if (duration >= 2){ //send out message every 2 seconds
+			double newPercentile = (long)((currTime - STARTING_TIME)/(ENDING_TIME - STARTING_TIME)/increment) * increment;
+
+			/*while (true) {
+				double midTime = (percentile + increment) * (ENDING_TIME - STARTING_TIME);
+				if (STARTING_TIME + midTime > currTime) { 
+					break;
+				}
+				percentile += increment;
+			}*/
+			if ( lastPercentile != newPercentile) {
 #ifdef USE_MESSAGING
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, currTime));		
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, currTime));
+				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, newPercentile, currTime));		
+				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, newPercentile, currTime));
 #else
-			printf("[[[progress:%lg%%]]]", percentile*100.0);
-			printf("[[[data:%lg]]]", currTime); 
-			fflush(stdout);
+				printf("[[[progress:%lg%%]]]", newPercentile*100.0);
+				printf("[[[data:%lg]]]", currTime); 
+				fflush(stdout);
 #endif
+				lastPercentile = newPercentile;
+				lastTime = currentTime;
+			}
 		}
 	}
 }

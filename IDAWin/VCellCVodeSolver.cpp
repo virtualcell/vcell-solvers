@@ -8,7 +8,8 @@
 #include <FunctionDomainException.h>
 #include <FunctionRangeException.h>
 #include "StoppedByUserException.h"
-
+#include <time.h>
+#include <sys/timeb.h>
 #include <sstream>
 using std::stringstream;
 
@@ -400,15 +401,16 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 	}
 
 	realtype Time = STARTING_TIME;
-	double percentile=0.00;
-	double increment =0.01;
+	double lastPercentile=0.00;
+	clock_t lastTime = clock(); // to control the output of progress, send progress every 2 seconds
+	double increment = 0.01;
 	long iterationCount=0;
 	long outputCount=0;
 
 	// write intial conditions
 	writeData(Time, outputFile);
 	if (bPrintProgress) {
-		printProgress(Time, percentile, increment, outputFile);
+		printProgress(Time, lastPercentile, lastTime, increment, outputFile);
 	}
 
 	if (outputTimes.size() == 0) {
@@ -439,7 +441,7 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 					}
 					writeData(Time, outputFile);
 					if (bPrintProgress) {
-						printProgress(Time, percentile, increment, outputFile);
+						printProgress(Time, lastPercentile, lastTime, increment, outputFile);
 					}
 				}
 			} else {
@@ -474,7 +476,7 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 					if (Time == sampleTime) {
 						writeData(Time, outputFile);
 						if (bPrintProgress) {
-							printProgress(Time, percentile, increment, outputFile);
+							printProgress(Time, lastPercentile, lastTime, increment, outputFile);
 						}
 						outputCount ++;
 						break;

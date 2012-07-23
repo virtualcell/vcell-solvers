@@ -7,7 +7,8 @@
 #include <DivideByZeroException.h>
 #include <FunctionDomainException.h>
 #include <FunctionRangeException.h>
-
+#include <time.h>
+#include <sys/timeb.h>
 #include <sstream>
 using std::stringstream;
 
@@ -589,15 +590,16 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 	}
 
 	realtype Time = STARTING_TIME;
-	double percentile=0.00;
-	double increment =0.01;
+	double lastPercentile=0.00;
+	clock_t lastTime = clock(); // to control the output of progress, send progress every 2 seconds
+	double increment = 0.01;
 	long iterationCount=0;
 	long outputCount = 0;
 
 	// write initial conditions
 	writeData(Time, outputFile);
 	if (bPrintProgress) {
-		printProgress(Time, percentile, increment, outputFile);
+		printProgress(Time, lastPercentile, lastTime, increment, outputFile);
 	}
 
 	if (outputTimes.size() == 0) {
@@ -628,7 +630,7 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 					}
 					writeData(Time, outputFile);
 					if (bPrintProgress) {
-						printProgress(Time, percentile, increment, outputFile);
+						printProgress(Time, lastPercentile, lastTime, increment, outputFile);
 					}
 				}
 			} else {
@@ -663,7 +665,7 @@ void VCellIDASolver::idaSolve(bool bPrintProgress, FILE* outputFile, void (*chec
 					if (Time == sampleTime) {
 						writeData(Time, outputFile);
 						if (bPrintProgress) {
-							printProgress(Time, percentile, increment, outputFile);
+							printProgress(Time, lastPercentile, lastTime, increment, outputFile);
 						}
 						outputCount ++;
 						break;

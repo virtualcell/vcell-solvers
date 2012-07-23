@@ -29,6 +29,8 @@ using std::endl;
 
 #include <float.h>
 #include <math.h>
+#include <time.h>
+#include <sys/timeb.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -810,7 +812,7 @@ void SimTool::start1() {
 		increment = 0.001;
 	}
 	double epsilon = 1e-12;
-
+	clock_t oldTime = clock(); // to control the output of progress, send progress every 2 seconds.
 	while (true) {
 		if (simulation->getTime_sec() - simEndTime > epsilon // currentTime past endTime
 				|| fabs(simEndTime - simulation->getTime_sec()) < epsilon) { // reached the end time
@@ -843,10 +845,16 @@ void SimTool::start1() {
 		if (simulation->getCurrIteration() % keepEvery == 0 || fabs(simEndTime - simulation->getTime_sec()) < epsilon) {
 			updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
         }
-		percentile = (simulation->getTime_sec() - simStartTime)/(simEndTime - simStartTime);
-		if (percentile - lastSentPercentile >= increment) {
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec()));
-			lastSentPercentile = percentile;
+		
+		clock_t currentTime = clock();
+		double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
+		if (duration >= 2){
+			percentile = (simulation->getTime_sec() - simStartTime)/(simEndTime - simStartTime);
+			if (percentile - lastSentPercentile >= increment) {
+				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec()));
+				lastSentPercentile = percentile;
+				oldTime = currentTime;
+			}
 		}
 
 		if (bCheckSpatiallyUniform) {
