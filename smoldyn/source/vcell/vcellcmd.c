@@ -1,6 +1,7 @@
 #include "smoldyn.h"
 #include <SimCommand.h>
 
+
 /**********************************************************/
 /******************** command declarations ****************/
 /**********************************************************/
@@ -8,13 +9,20 @@
 #include "VCellSmoldynOutput.h"
 
 VCellSmoldynOutput* vcellSmoldynOutput = NULL;
+static clock_t lastTime = 0; // the static variable to allow sending out progress every two seconds
 enum CMDcode cmdVCellPrintProgress(simptr sim, cmdptr cmd, char *line2) {
 	SimulationMessaging::create();
 	if(line2 && !strcmp(line2,"cmdtype")) {
 		return CMDobserve;
 	}
 	double progress = (sim->time - sim->tmin) / (sim->tmax - sim->tmin);
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, progress, sim->time));
+	clock_t currentTime = clock();
+	double duration = (double)(currentTime - lastTime) / CLOCKS_PER_SEC;
+	if (duration >= 2)
+	{
+		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, progress, sim->time));
+		lastTime = currentTime;
+	}
 	//fprintf(stdout, "[[[progress:%lg%%]]]",  progress * 100.0);
 	if (SimulationMessaging::getInstVar()->isStopRequested()) {
 		throw -1;
