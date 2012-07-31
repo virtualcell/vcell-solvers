@@ -47,7 +47,7 @@ SimulationMessaging::SimulationMessaging() {
 }
 
 #ifdef USE_MESSAGING
-SimulationMessaging::SimulationMessaging(char* broker, char* smqusername, char* passwd, char*qname,  char* tname, char* vcusername, jint simKey, jint jobIndex, jint taskID, jint ttl) {
+SimulationMessaging::SimulationMessaging(char* broker, char* smqusername, char* passwd, char*qname,  char* tname, char* vcusername, jint simKey, jint jobIndex, jint taskID, jint ttl_low, jint ttl_high) {
 	m_qConnect = NULL;
     m_qSession = NULL;
     m_qSender = NULL;
@@ -68,7 +68,9 @@ SimulationMessaging::SimulationMessaging(char* broker, char* smqusername, char* 
 	m_jobIndex = jobIndex;
 	m_taskID = taskID;
 	
-	m_ttl = ttl;
+	m_ttl_lowPriority = ttl_low;
+	m_ttl_highPriority = ttl_high;
+
 	m_connActive = false;
 
 	{
@@ -224,7 +226,25 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 		cout << "]" << endl;
 		//send
 		try {
-			getQueueSender()->send(msg, DeliveryMode_PERSISTENT, Message_DEFAULT_PRIORITY, m_ttl); 	
+			jint timeToLive = m_ttl_highPriority;
+			switch (newWorkerEvent->status) {
+			case JOB_DATA:
+				timeToLive = m_ttl_lowPriority; 	
+				break;
+			case JOB_PROGRESS:
+				timeToLive = m_ttl_lowPriority; 	
+				break;
+			case JOB_STARTING:
+				timeToLive = m_ttl_highPriority; 	
+				break;
+			case JOB_COMPLETED:
+				timeToLive = m_ttl_highPriority; 	
+				break;
+			case JOB_FAILURE:
+				timeToLive = m_ttl_highPriority; 			
+				break;
+			}
+			getQueueSender()->send(msg, DeliveryMode_PERSISTENT, Message_DEFAULT_PRIORITY, timeToLive);
 		} catch (JMSExceptionRef jmse) {
 			cout << "!!!SimulationMessaging::sendStatus [" << (const char*)jmse->getMessage()->toAscii() << "]" << endl;
 		}
@@ -530,7 +550,7 @@ void SimulationMessaging::keepAlive() {
 		msg->setIntProperty(createString(WORKEREVENT_STATUS), JOB_WORKER_ALIVE);
 
 		//send
-		getQueueSender()->send(msg, DeliveryMode_PERSISTENT, Message_DEFAULT_PRIORITY, m_ttl); 
+		getQueueSender()->send(msg, DeliveryMode_PERSISTENT, Message_DEFAULT_PRIORITY, m_ttl_lowPriority); 
 		time(&lastSentEventTime);
 	}
 }
@@ -560,14 +580,14 @@ char* SimulationMessaging::getStatusString(jint status) {
 	}
 }
 
-SimulationMessaging* SimulationMessaging::create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, jint simKey, jint jobIndex, jint taskID, jint ttl)
+SimulationMessaging* SimulationMessaging::create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, jint simKey, jint jobIndex, jint taskID, jint ttl_low, jint ttl_high)
 {
 	if (m_inst != NULL && m_inst->workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
 		delete m_inst;
 		m_inst = NULL;
 	}
 	if (m_inst == NULL){    
-        m_inst = new SimulationMessaging(broker, smqusername, passwd, qname, tname, vcusername, simKey, jobIndex, taskID, ttl);
+        m_inst = new SimulationMessaging(broker, smqusername, passwd, qname, tname, vcusername, simKey, jobIndex, taskID, ttl_low, ttl_high);
 	}
 
     return(m_inst);

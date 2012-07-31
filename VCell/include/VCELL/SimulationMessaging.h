@@ -21,7 +21,8 @@ using namespace progress::message::jclient;
 
 static const int ONE_SECOND = 1000;
 static const int ONE_MINUTE = 60 * ONE_SECOND;
-static const int DEFAULT_TTL = 10 * ONE_MINUTE;
+static const int DEFAULT_TTL_HIGH = 10 * ONE_MINUTE;
+static const int DEFAULT_TTL_LOW = ONE_MINUTE;
 #endif
 
 static const int WORKEREVENT_OUTPUT_MODE_STDOUT = 0;
@@ -113,7 +114,7 @@ public:
 	}
 
 #ifdef USE_MESSAGING
-	static SimulationMessaging* create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, jint simKey, jint jobIndex, jint taskID, jint ttl=DEFAULT_TTL);
+	static SimulationMessaging* create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, jint simKey, jint jobIndex, jint taskID, jint ttl_low=DEFAULT_TTL_LOW, jint ttl_high=DEFAULT_TTL_HIGH);
     void onException(JMSExceptionRef anException);
 	void onMessage(MessageRef aMessage);
 	void waitUntilFinished();
@@ -132,7 +133,7 @@ private:
 #ifdef USE_MESSAGING
 	bool bStarted;
 
-	SimulationMessaging(char* broker, char* smqusername, char* passwd, char* qname, char*tname, char* vcusername, jint simKey, jint jobIndex,  jint taskID, jint ttl=DEFAULT_TTL);
+	SimulationMessaging(char* broker, char* smqusername, char* passwd, char* qname, char*tname, char* vcusername, jint simKey, jint jobIndex,  jint taskID, jint ttl_low=DEFAULT_TTL_LOW, jint ttl_high=DEFAULT_TTL_HIGH);
 
 	WorkerEvent* getWorkerEvent();
 	void keepAlive();
@@ -167,7 +168,8 @@ private:
 	char* m_tListener;
 
 	char m_hostname[256];
-	jint  m_ttl;
+	jint  m_ttl_lowPriority;
+	jint  m_ttl_highPriority;
 	time_t lastSentEventTime;
 
 	char* getStatusString(jint status);
