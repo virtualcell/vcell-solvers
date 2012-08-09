@@ -39,6 +39,7 @@ public:
 	~VCellSmoldynOutput();
 
 	void write();
+	void computeHistogram();
 	void parseInput(string& input);	
 	void parseDataProcessingInput(string& name, string& input);
 	void setSimTool(SimTool* st) {
@@ -48,8 +49,7 @@ private:
 	
 	void clearLog();
 	void writeSim(char* simFileName, char* zipFileName);
-	void computeOutputData();
-
+	
 	simptr smoldynSim;
 	int simFileCount;
 	int zipFileCount;

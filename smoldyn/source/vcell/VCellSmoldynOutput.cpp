@@ -302,7 +302,7 @@ void VCellSmoldynOutput::parseInput(string& input) {
 }
 
 void VCellSmoldynOutput::write() {	//for each save time interval
-	computeOutputData();
+	computeHistogram();
 #ifdef VCELL_HYBRID
 	return;
 #endif
@@ -421,7 +421,7 @@ double VCellSmoldynOutput::distance2(double* pos1, double* pos2) {
 	}
 }
 
-void VCellSmoldynOutput::computeOutputData() {
+void VCellSmoldynOutput::computeHistogram() {
 	molssptr mols = smoldynSim->mols;
 
 	for (int i = 0; i < volVariables.size(); i ++) {

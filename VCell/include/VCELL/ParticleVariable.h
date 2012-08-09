@@ -17,7 +17,7 @@ public:
 	~ParticleVariable();
 	double* getMoleculeCounts(){return moleculeCounts;}
 private:
-	double *moleculeCounts; //list of molecule counts in the corresponding volume/membrane elements
+	double *moleculeCounts; //list of molecule counts corresponding volume/membrane elements
 };
 
 #endif

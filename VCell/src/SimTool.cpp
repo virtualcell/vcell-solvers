@@ -743,7 +743,7 @@ void SimTool::start1() {
 
 #ifdef VCELL_HYBRID	
 	if (smoldynInputFile != "") {
-		smoldynSim = smoldynInit(this, smoldynInputFile);
+		smoldynSim = smoldynInit(this, smoldynInputFile);//smoldynInit will write output therefore computeHistogram is called by VCellSmoldynOutput.write().
 		copyParticleCountsToConcentration();
 		// since smoldyn only initializes variable current value,
 		// we need to copy current to old.
@@ -831,7 +831,7 @@ void SimTool::start1() {
 		simulation->iterate();
 #ifdef VCELL_HYBRID			
 		if (smoldynSim != NULL) {
-			smoldynOneStep(smoldynSim);
+			smoldynOneStep(smoldynSim);//smoldynOneStep includes computeHistogram after each time step.
 			copyParticleCountsToConcentration();
 		}
 #endif

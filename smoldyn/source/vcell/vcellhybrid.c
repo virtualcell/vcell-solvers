@@ -104,6 +104,7 @@ simptr smoldynInit(SimTool* simTool, string& fileName) {
 
 void smoldynOneStep(simptr sim){
 	simulatetimestep(sim);
+	vcellSmoldynOutput->computeHistogram();
 }
 
 void smoldynEnd(simptr sim) {
