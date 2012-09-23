@@ -271,6 +271,11 @@ if (TARGET_SOLVERS_WITH_MESSAGING)
 		message(FATAL_ERROR "TARGET_SOLVERS_WITH_MESSAGING is not supported on MAC OS X")
 	endif(APPLE)
 	
+	add_subdirectory(apr-1.4.6)
+	add_subdirectory(apr-iconv-1.2.1)
+	add_subdirectory(apr-util-1.4.1) 
+	add_subdirectory(activemq-cpp-library-3.4.4)
+
 	add_definitions(-DUSE_MESSAGING)
 	if (LINUX)
 		set(SONICMQ_LIBS smq)			
