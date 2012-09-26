@@ -4,11 +4,13 @@
  Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
  of the Gnu General Public License (GPL). */
 
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <VCELL/SimulationMessaging.h>
 #include "opengl2.h"
 #include "smoldyn.h"
 #include "random2.h"
@@ -20,7 +22,7 @@
 /* ********************** main() segment *************************** */
 /* ***************************************************************** */
 
-#include <VCELL/SimulationMessaging.h>
+
 int taskID = -1;
 
 /* main */
