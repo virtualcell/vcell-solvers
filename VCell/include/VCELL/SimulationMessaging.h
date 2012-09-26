@@ -1,6 +1,7 @@
 #ifndef _SIMULATIONMESSAGING_H_
 #define _SIMULATIONMESSAGING_H_
 
+#ifdef USE_MESSAGING
 #include <activemq/library/ActiveMQCPP.h>
 #include <decaf/lang/Thread.h>
 #include <decaf/lang/Runnable.h>
@@ -22,19 +23,30 @@
 #include <iostream>
 #include <memory>
 
-#ifdef USE_MESSAGING
-#if ( !defined(WIN32) && !defined(WIN64) )
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif
-
 using namespace activemq::core;
 using namespace decaf::util::concurrent;
 using namespace decaf::util;
 using namespace decaf::lang;
 using namespace cms;
+#endif
+
 using namespace std;
+
+#if (defined(WIN32) || defined(WIN64) )
+#include <windows.h>
+#else
+#include <pthread.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <memory.h>
+#endif
+
+#ifdef USE_MESSAGING
+#if (!defined(WIN32) && !defined(WIN64) )
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
 
 static const int ONE_SECOND = 1000;
 static const int ONE_MINUTE = 60 * ONE_SECOND;
