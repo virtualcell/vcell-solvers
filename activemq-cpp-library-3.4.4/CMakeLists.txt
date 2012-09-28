@@ -52,13 +52,15 @@ file(GLOB HEADER_FILES
 	src/main/decaf/util/logging/*.h
 	src/main/decaf/util/zip/*.h) 
 
-# there are two Queue.cpp in ActiveMQ, on Linux it will be a problem
-# if we use default ar option cr which will do replace. So only one Queue.o can be included
-# so use cq option instead to just add everything, no replace
-SET(CMAKE_C_ARCHIVE_CREATE "<CMAKE_AR> <LINK_FLAGS> cq <TARGET> <OBJECTS>")
-SET(CMAKE_C_ARCHIVE_APPEND "<CMAKE_AR> <LINK_FLAGS> q <TARGET> <OBJECTS>")
-SET(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> <LINK_FLAGS> cq <TARGET> <OBJECTS>")
-SET(CMAKE_CXX_ARCHIVE_APPEND "<CMAKE_AR> <LINK_FLAGS> q <TARGET> <OBJECTS>")
+if (UNIX)	
+	# there are two Queue.cpp in ActiveMQ, on Linux it will be a problem
+	# if we use default ar option cr which will do replace. So only one Queue.o can be included
+	# so use cq option instead to just add everything, no replace
+	SET(CMAKE_C_ARCHIVE_CREATE "<CMAKE_AR> <LINK_FLAGS> cq <TARGET> <OBJECTS>")
+	SET(CMAKE_C_ARCHIVE_APPEND "<CMAKE_AR> <LINK_FLAGS> q <TARGET> <OBJECTS>")
+	SET(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> <LINK_FLAGS> cq <TARGET> <OBJECTS>")
+	SET(CMAKE_CXX_ARCHIVE_APPEND "<CMAKE_AR> <LINK_FLAGS> q <TARGET> <OBJECTS>")
+endif()
 
 file(GLOB SRC_FILES
 	src/main/cms/*.cpp
