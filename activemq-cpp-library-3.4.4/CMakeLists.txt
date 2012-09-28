@@ -52,8 +52,11 @@ file(GLOB HEADER_FILES
 	src/main/decaf/util/logging/*.h
 	src/main/decaf/util/zip/*.h) 
 
-file(GLOB SRC_FILES
+file(GLOB SRC_FILES-1
 	src/main/cms/*.cpp
+)
+
+file(GLOB SRC_FILES
 	src/main/activemq/util/*.cpp
 	src/main/activemq/commands/*.cpp
 	src/main/activemq/core/*.cpp
@@ -105,14 +108,29 @@ file(GLOB SRC_FILES
 )
 
 include_directories(src/main ../apr-1.4.6/include ../apr-util-1.4.1/include)
+set(APR_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/../apr-1.4.6/include)
+set(APU_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/../apr-util-1.4.1/include)
+include_directories(${APR_INCLUDE_DIR} ${APU_INCLUDE_DIR})
 if (MSVC)
-	set(APR_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/../apr-1.4.6/include)
-	set(APU_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/../apr-util-1.4.1/include)
-	include_directories(${APR_INCLUDE_DIR} ${APU_INCLUDE_DIR})
 	add_definitions(-D_LIB -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_DEPRECATE -DNOMINMAX -DAPR_DECLARE_STATIC -DAPU_DECLARE_STATIC -DAPI_DECLARE_STATIC)
+elseif (UNIX)
+	add_definitions(-DHAVE_CONFIG_H -DLINUX=2 -D_REENTRANT -D_GNU_SOURCE)
+	include_directories(${CMAKE_CURRENT_BINARY_DIR})
+	configure_file (
+		${CMAKE_CURRENT_SOURCE_DIR}/config.hu
+		${CMAKE_CURRENT_BINARY_DIR}/config.h
+	)
 endif()
-add_library(activemq-cpp STATIC ${SRC_FILES} ${HEADER_FILES})
+if (MSVC)
+	add_library(activemq-cpp STATIC ${SRC_FILES-1} ${SRC_FILES} ${HEADER_FILES})
+elseif (UNIX)
+	add_library(activemq-cpp-1 STATIC ${SRC_FILES-1} ${HEADER_FILES})
+	add_library(activemq-cpp STATIC ${SRC_FILES} ${HEADER_FILES})
+	add_dependencies(activemq-cpp-1 apr-1)
+	add_dependencies(activemq-cpp-1 aprutil-1)
+	add_dependencies(activemq-cpp-1 apriconv-1)
+endif()
 add_dependencies(activemq-cpp apr-1)
 add_dependencies(activemq-cpp aprutil-1)
 add_dependencies(activemq-cpp apriconv-1)
-install(TARGETS activemq-cpp ARCHIVE DESTINATION bin)
+

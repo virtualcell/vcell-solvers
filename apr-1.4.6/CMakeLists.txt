@@ -90,13 +90,14 @@ elseif (UNIX)
 		locks/${APR_OS_DIR}/*.c
 		memory/${APR_OS_DIR}/*.c
 		misc/${APR_OS_DIR}/*.c
-		mmap/${APR_OS_DIR}/mmap.c
+		mmap/${APR_OS_DIR}/*.c
 		network_io/${APR_OS_DIR}/*.c
-		passwd/apr_getpass.c
-		poll/${APR_OS_DIR}/poll.c
-		random/${APR_OS_DIR}/apr_random.c
-		shmem/${APR_OS_DIR}/shm.c
+		passwd/*.c
+		poll/${APR_OS_DIR}/*.c
+		random/${APR_OS_DIR}/*.c
+		shmem/${APR_OS_DIR}/*.c
 		strings/*.c
+		support/unix/*.c
 		tables/*.c
 		threadproc/${APR_OS_DIR}/*.c
 		time/${APR_OS_DIR}/*.c
@@ -108,13 +109,13 @@ include_directories(include include/arch/ include/arch/${APR_OS_DIR}/ include/ar
 add_library(apr-1 STATIC ${SRC_FILES} ${HEADER_FILES})
 
 file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}/include APR_INCLUDE_DIR)
+include_directories(${APR_INCLUDE_DIR})
 if (MSVC)
 	add_definitions(-DAPR_DECLARE_STATIC)
 	
 	# copy apr.hw to apr.h
 	file(TO_NATIVE_PATH	${CMAKE_CURRENT_SOURCE_DIR}/include/apr.hw APR_HW)
 	file(TO_NATIVE_PATH	${APR_INCLUDE_DIR}/apr.h APR_H)
-	include_directories(${APR_INCLUDE_DIR})
 	ADD_CUSTOM_COMMAND(
 		TARGET apr-1
 		PRE_BUILD
@@ -122,11 +123,14 @@ if (MSVC)
 		COMMAND copy ${APR_HW} ${APR_H}
 	)
 elseif (UNIX)
+	add_definitions(-DHAVE_CONFIG_H -DLINUX=2 -D_REENTRANT -D_GNU_SOURCE)
    	# another way to copy file
 	configure_file (
 		${CMAKE_CURRENT_SOURCE_DIR}/include/apr.hu
 		${CMAKE_CURRENT_BINARY_DIR}/include/apr.h
 	)
+	configure_file (
+		${CMAKE_CURRENT_SOURCE_DIR}/include/arch/unix/apr_private.hu
+		${CMAKE_CURRENT_BINARY_DIR}/include/apr_private.h
+	)
 endif()
-add_dependencies(apr-1 include/apr.h)
-install(TARGETS apr-1 ARCHIVE DESTINATION bin)

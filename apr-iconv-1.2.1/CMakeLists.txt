@@ -20,9 +20,15 @@ set(SRC_FILES
 include_directories(../apr-1.4.6/include include lib)
 if (MSVC)
 	add_definitions(-DAPR_DECLARE_STATIC -DAPI_DECLARE_STATIC)
-	set(APR_H_DIR ${CMAKE_CURRENT_BINARY_DIR}/../apr-1.4.6/include)
-	include_directories(${APR_H_DIR})
+elseif (UNIX)
+	configure_file (
+		${CMAKE_CURRENT_SOURCE_DIR}/lib/apr_iconv_private.hu
+		${CMAKE_CURRENT_BINARY_DIR}/lib/apr_iconv_private.h
+	)
+	include_directories(${CMAKE_CURRENT_BINARY_DIR}/lib)
 endif()
+
+set(APR_H_DIR ${CMAKE_BINARY_DIR}/apr-1.4.6/include)
+include_directories(${APR_H_DIR})
 add_library(apriconv-1 STATIC ${SRC_FILES} ${HEADER_FILES})
 add_dependencies(apriconv-1 apr-1)
-install(TARGETS apriconv-1 ARCHIVE DESTINATION bin)

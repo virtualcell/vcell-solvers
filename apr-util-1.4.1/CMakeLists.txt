@@ -89,12 +89,14 @@ set(SRC_FILES
 
 include_directories(include include/private xml/expat/lib dbm/sdbm ../apr-1.4.6/include ../apr-iconv-1.2.1/include)
 add_library(aprutil-1 STATIC ${SRC_FILES} ${HEADER_FILES})
+set(APR_INCLUDE_DIR ${CMAKE_BINARY_DIR}/apr-1.4.6/include)
+include_directories(${APR_INCLUDE_DIR})
+
 file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}/include APU_INCLUDE_DIR)
-file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}/include/private APU_PRIVATE_INCLUDE_DIR)
+include_directories(${APU_INCLUDE_DIR})
+
 if (MSVC)
 	add_definitions(-DAPR_DECLARE_STATIC -DAPU_DECLARE_STATIC -DAPI_DECLARE_STATIC -DAPU_USE_SDBM -DHAVE_SQL_H -DXML_STATIC)
-	set(APR_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/../apr-1.4.6/include)
-	include_directories(${APR_INCLUDE_DIR})
 	
 	# copy apu.hw apu.h
 	file(TO_NATIVE_PATH	${CMAKE_CURRENT_SOURCE_DIR}/include/apu.hw APU_HW)
@@ -105,11 +107,10 @@ if (MSVC)
 	file(TO_NATIVE_PATH	${APU_INCLUDE_DIR}/apr_ldap.h APR_LDAP_H)
 	
 	file(TO_NATIVE_PATH	${CMAKE_CURRENT_SOURCE_DIR}/include/private/apu_config.hw APU_CONFIG_HW)
-	file(TO_NATIVE_PATH	${APU_PRIVATE_INCLUDE_DIR}/apu_config.h APU_CONFIG_H)
+	file(TO_NATIVE_PATH	${APU_INCLUDE_DIR}/apu_config.h APU_CONFIG_H)
 	file(TO_NATIVE_PATH	${CMAKE_CURRENT_SOURCE_DIR}/include/private/apu_select_dbm.hw APU_SELECT_DBM_HW)
-	file(TO_NATIVE_PATH	${APU_PRIVATE_INCLUDE_DIR}/apu_select_dbm.h APU_SELECT_DBM_H)
+	file(TO_NATIVE_PATH	${APU_INCLUDE_DIR}/apu_select_dbm.h APU_SELECT_DBM_H)
 	
-	include_directories(${APU_INCLUDE_DIR} ${APU_PRIVATE_INCLUDE_DIR})
 	ADD_CUSTOM_COMMAND(
 		TARGET aprutil-1
 		PRE_BUILD
@@ -121,13 +122,32 @@ if (MSVC)
 		COMMAND copy ${APU_WANT_HW} ${APU_WANT_H}
 		# copy apu_ldap.hw apu_ldap.h
 		COMMAND copy ${APR_LDAP_HW} ${APR_LDAP_H}
-		# include/private
-		COMMAND if not exist ${APU_PRIVATE_INCLUDE_DIR} mkdir ${APU_PRIVATE_INCLUDE_DIR}
 		# copy apu_config.hw to apu_config.h
 		COMMAND copy ${APU_CONFIG_HW} ${APU_CONFIG_H}
 		# copy apu_select_dbm.hw to apu_select_dbm.h
 		COMMAND copy ${APU_SELECT_DBM_HW} ${APU_SELECT_DBM_H}
 	)
+elseif (UNIX)
+	add_definitions(-DLINUX=2 -D_REENTRANT -D_GNU_SOURCE)
+	configure_file (
+		${CMAKE_CURRENT_SOURCE_DIR}/include/apu.hu
+		${APU_INCLUDE_DIR}/apu.h
+	)
+	configure_file (
+		${CMAKE_CURRENT_SOURCE_DIR}/include/apu_want.hu
+		${APU_INCLUDE_DIR}/apu_want.h
+	)
+	configure_file (
+		${CMAKE_CURRENT_SOURCE_DIR}/include/apr_ldap.hu
+		${APU_INCLUDE_DIR}/apr_ldap.h
+	)
+	configure_file (
+		${CMAKE_CURRENT_SOURCE_DIR}/include/private/apu_config.hu
+		${APU_INCLUDE_DIR}/apu_config.h
+	)
+	configure_file (
+		${CMAKE_CURRENT_SOURCE_DIR}/include/private/apu_select_dbm.hu
+		${APU_INCLUDE_DIR}/apu_select_dbm.h
+	)
 endif()
 add_dependencies(aprutil-1 apr-1)
-install(TARGETS aprutil-1 ARCHIVE DESTINATION bin)

@@ -102,7 +102,7 @@ SimulationMessaging::SimulationMessaging(char* broker, char* smqusername, char* 
 }
 #endif
 
-SimulationMessaging::~SimulationMessaging()
+SimulationMessaging::~SimulationMessaging() throw()
 {
 	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
 		return;
@@ -418,7 +418,7 @@ void SimulationMessaging::delay(int duration)
  * Handle the message
  * Required by cms::MessageListener.
  */
-void SimulationMessaging::onMessage(const Message* message)
+void SimulationMessaging::onMessage(const Message* message) throw()
 {
 	// Cast the message as a TextMessage if possible.
     try

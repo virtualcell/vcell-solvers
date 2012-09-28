@@ -127,7 +127,7 @@ class SimulationMessaging
 #endif
 {
 public:
-    ~SimulationMessaging();
+    virtual ~SimulationMessaging() throw();
 	static SimulationMessaging* create();
 	static SimulationMessaging* getInstVar();
 	void start();
@@ -148,7 +148,7 @@ public:
 #ifdef USE_MESSAGING
 	static SimulationMessaging* create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, int simKey, int jobIndex, int taskID, int ttl_low=DEFAULT_TTL_LOW, int ttl_high=DEFAULT_TTL_HIGH);
     void onException(const CMSException& anException);
-	void onMessage(const Message* aMessage);
+	void onMessage(const Message* aMessage) throw();
 	void waitUntilFinished();
 	friend void* startMessagingThread(void* param);
 #endif
