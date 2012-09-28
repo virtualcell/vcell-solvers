@@ -52,11 +52,16 @@ file(GLOB HEADER_FILES
 	src/main/decaf/util/logging/*.h
 	src/main/decaf/util/zip/*.h) 
 
-file(GLOB SRC_FILES-1
-	src/main/cms/*.cpp
-)
+# there are two Queue.cpp in ActiveMQ, on Linux it will be a problem
+# if we use default ar option cr which will do replace. So only one Queue.o can be included
+# so use cq option instead to just add everything, no replace
+SET(CMAKE_C_ARCHIVE_CREATE "<CMAKE_AR> <LINK_FLAGS> cq <TARGET> <OBJECTS>")
+SET(CMAKE_C_ARCHIVE_APPEND "<CMAKE_AR> <LINK_FLAGS> q <TARGET> <OBJECTS>")
+SET(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> <LINK_FLAGS> cq <TARGET> <OBJECTS>")
+SET(CMAKE_CXX_ARCHIVE_APPEND "<CMAKE_AR> <LINK_FLAGS> q <TARGET> <OBJECTS>")
 
 file(GLOB SRC_FILES
+	src/main/cms/*.cpp
 	src/main/activemq/util/*.cpp
 	src/main/activemq/commands/*.cpp
 	src/main/activemq/core/*.cpp
@@ -124,11 +129,7 @@ endif()
 if (MSVC)
 	add_library(activemq-cpp STATIC ${SRC_FILES-1} ${SRC_FILES} ${HEADER_FILES})
 elseif (UNIX)
-	add_library(activemq-cpp-1 STATIC ${SRC_FILES-1} ${HEADER_FILES})
 	add_library(activemq-cpp STATIC ${SRC_FILES} ${HEADER_FILES})
-	add_dependencies(activemq-cpp-1 apr-1)
-	add_dependencies(activemq-cpp-1 aprutil-1)
-	add_dependencies(activemq-cpp-1 apriconv-1)
 endif()
 add_dependencies(activemq-cpp apr-1)
 add_dependencies(activemq-cpp aprutil-1)

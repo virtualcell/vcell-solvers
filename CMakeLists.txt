@@ -277,7 +277,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING)
 	if (MSVC)
 		list(APPEND SONICMQ_LIBS ws2_32 Mswsock Rpcrt4)
 	elseif (UNIX)
-		list(APPEND SONICMQ_LIBS activemq-cpp-1 ssl crypt pthread)
+		list(APPEND SONICMQ_LIBS ssl crypt pthread)
 	endif()
 endif()
 
