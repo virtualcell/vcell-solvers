@@ -1,7 +1,9 @@
 #include <VCELL/SimulationMessaging.h>
 #include <utility>
 #include <iostream>
-using namespace std;
+using std::cerr;
+using std::cout;
+using std::endl;
 
 #ifdef USE_MESSAGING
 #if ( !defined(WIN32) && !defined(WIN64) ) // UNIX
@@ -11,8 +13,6 @@ using namespace std;
 #include <signal.h>
 #include <errno.h>
 #endif
-
-#include <jmsconstants.h>
 
 static const char* MESSAGE_TYPE_PROPERTY	= "MessageType";
 static const char* MESSAGE_TYPE_WORKEREVENT_VALUE	= "WorkerEvent";
@@ -39,19 +39,19 @@ SimulationMessaging::SimulationMessaging() {
 	workerEvent = NULL;
 #ifdef USE_MESSAGING
 	m_taskID = -1;
+	bStarted = false;
 #endif
 	workerEventOutputMode = WORKEREVENT_OUTPUT_MODE_STDOUT;
 }
 
 #ifdef USE_MESSAGING
-SimulationMessaging::SimulationMessaging(char* broker, char* smqusername, char* passwd, char*qname,  char* tname, char* vcusername, jint simKey, jint jobIndex, jint taskID, jint ttl) {
-	m_qConnect = NULL;
-    m_qSession = NULL;
-    m_qSender = NULL;
-	m_tConnect = NULL;
-    m_tSession = NULL;
-    m_tSubscriber = NULL;
+SimulationMessaging::SimulationMessaging(char* broker, char* smqusername, char* passwd, char*qname,  char* tname, char* vcusername, int simKey, int jobIndex, int taskID, int ttl_low, int ttl_high) {
 	workerEvent = NULL;
+
+	connection = NULL;
+	session = NULL;
+	qProducer = NULL;
+	tConsumer = NULL;
 	bStopRequested = false;
 
 	m_broker = broker;
@@ -65,7 +65,9 @@ SimulationMessaging::SimulationMessaging(char* broker, char* smqusername, char* 
 	m_jobIndex = jobIndex;
 	m_taskID = taskID;
 	
-	m_ttl = ttl;
+	m_ttl_lowPriority = ttl_low;
+	m_ttl_highPriority = ttl_high;
+
 	m_connActive = false;
 
 	{
@@ -96,10 +98,11 @@ SimulationMessaging::SimulationMessaging(char* broker, char* smqusername, char* 
 	bNewWorkerEvent = false;
 #endif
 
+	bStarted = false;
 }
 #endif
 
-SimulationMessaging::~SimulationMessaging()
+SimulationMessaging::~SimulationMessaging() throw()
 {
 	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
 		return;
@@ -109,16 +112,7 @@ SimulationMessaging::~SimulationMessaging()
 		workerEvent = NULL;
 	}
 #ifdef USE_MESSAGING
-	try {
-		if (m_qConnect != null) {
-			m_qConnect->close();
-		}
-		if (m_tConnect != null) {
-			m_tConnect->close();
-		}
-	} catch (JMSExceptionRef jmse) {
-	} catch (...) {		
-	}
+	cleanup();
 #if ( defined(WIN32) || defined(WIN64) )
     DeleteCriticalSection(&lockForMessaging);
 	DeleteCriticalSection(&lockForWorkerEvent);
@@ -128,7 +122,7 @@ SimulationMessaging::~SimulationMessaging()
 	pthread_mutex_destroy(&mutex_cond_workerEvent);
 	pthread_cond_destroy(&cond_workerEvent);
 #endif
-
+	activemq::library::ActiveMQCPP::shutdownLibrary();
 #endif
 }
 
@@ -141,7 +135,6 @@ SimulationMessaging* SimulationMessaging::create()
 	if (m_inst == 0){    
         m_inst = new SimulationMessaging();
 	}
-
     return(m_inst);
 }
 
@@ -178,7 +171,7 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 		WorkerEvent* newWorkerEvent = new WorkerEvent(workerEvent);
 		unlockWorkerEvent();
 
-		TextMessageRef msg = initWorkerEventMessage();
+		TextMessage* msg = initWorkerEventMessage();
 	
 		char* revisedMsg = newWorkerEvent->eventMessage;
 		if (revisedMsg != NULL) {
@@ -200,15 +193,15 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 		}
 
 		//status
-		msg->setIntProperty(createString(WORKEREVENT_STATUS), newWorkerEvent->status);
+		msg->setIntProperty(WORKEREVENT_STATUS, newWorkerEvent->status);
 		//event message
 		if (revisedMsg != NULL) {
-			msg->setStringProperty(createString(WORKEREVENT_STATUSMSG), createString(revisedMsg));
+			msg->setStringProperty(WORKEREVENT_STATUSMSG, revisedMsg);
 		}
 		//progress
-		msg->setDoubleProperty(createString(WORKEREVENT_PROGRESS), newWorkerEvent->progress);
+		msg->setDoubleProperty(WORKEREVENT_PROGRESS, newWorkerEvent->progress);
 		//timePoint
-		msg->setDoubleProperty(createString(WORKEREVENT_TIMEPOINT), newWorkerEvent->timepoint);		
+		msg->setDoubleProperty(WORKEREVENT_TIMEPOINT, newWorkerEvent->timepoint);		
 
 		cout << "!!!SimulationMessaging::sendStatus [" << (long)m_simKey << ":" << getStatusString(newWorkerEvent->status);
 		if (revisedMsg != NULL) {
@@ -220,9 +213,27 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 		cout << "]" << endl;
 		//send
 		try {
-			getQueueSender()->send(msg, DeliveryMode_PERSISTENT, Message_DEFAULT_PRIORITY, m_ttl); 	
-		} catch (JMSExceptionRef jmse) {
-			cout << "!!!SimulationMessaging::sendStatus [" << (const char*)jmse->getMessage()->toAscii() << "]" << endl;
+			int timeToLive = m_ttl_highPriority;
+			switch (newWorkerEvent->status) {
+			case JOB_DATA:
+				timeToLive = m_ttl_lowPriority; 	
+				break;
+			case JOB_PROGRESS:
+				timeToLive = m_ttl_lowPriority; 	
+				break;
+			case JOB_STARTING:
+				timeToLive = m_ttl_highPriority; 	
+				break;
+			case JOB_COMPLETED:
+				timeToLive = m_ttl_highPriority; 	
+				break;
+			case JOB_FAILURE:
+				timeToLive = m_ttl_highPriority; 			
+				break;
+			}
+			qProducer->send(msg, DeliveryMode::PERSISTENT, DEFAULT_PRIORITY, timeToLive);
+		} catch (CMSException& e) {
+			cout << "!!!SimulationMessaging::sendStatus [" << e.getMessage() << "]" << endl;
 		}
 
 		time(&lastSentEventTime);
@@ -254,7 +265,7 @@ void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
 		bool ifset = true;
 		bool iftry = false;
 		lockWorkerEvent();
-		jint lastStatus = -1;
+		int lastStatus = -1;
 		if (workerEvent != NULL) {
 			lastStatus = workerEvent->status;
 		}
@@ -308,63 +319,93 @@ void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
  */
 void SimulationMessaging::setupConnection () { //synchronized
 	lockMessaging();
+	try
+    {
+		if(connection == NULL){
+			activemq::library::ActiveMQCPP::initializeLibrary();
+		}
+        // Create a connection factory
+        auto_ptr<ConnectionFactory> connectionFactory(
+			ConnectionFactory::createCMSConnectionFactory(m_broker) );
 
-    // Eliminate a damaged connection
-    if (!m_connActive) {
-        if (m_qConnect != NULL){
-            m_qConnect = NULL;
-        }
+        // Create a Connection
+        connection = connectionFactory->createConnection();
+		connection ->start();
+
+        m_connActive = true;
+    
+		//create AUTO_ACKNOWLEDGE session
+		session = connection->createSession( Session::AUTO_ACKNOWLEDGE );
+		// create  the destinations (Topic & Queue)
+		m_topic = session->createTopic(m_tname);
+		m_queue = session->createQueue(m_qname);
+       
+    } catch (CMSException& e){
+        cerr << "error: Cannot connect to Broker - " << m_broker ;
+        cerr << ".  Try again in  - " << CONNECTION_RETRY_PERIOD/1000 << " seconds." << "\n" ;
+        delay(CONNECTION_RETRY_PERIOD);
     }
 
-    while (m_qConnect == NULL) {
-    // Create a connection.
-        try
-        {
-            // Create a connection and sessions.
-            m_qConnect = createQueueConnection(createString(m_broker), createString(""),
-                createString(m_smqusername), createString(m_password));
-            m_tConnect = createTopicConnection(createString(m_broker), createString(""),
-                createString(m_smqusername), createString(m_password));
-
-            m_connActive = true;
-            // Ping the broker periodically to ensure that the connection is still active.
-            m_qConnect->setPingInterval(CONNECTION_PING_PERIOD);
-            m_qConnect->setExceptionListenerObj(this);
-        } catch (JMSExceptionRef e){
-            cerr << "error: Cannot connect to Broker - " << m_broker ;
-            cerr << ".  Try again in  - " << CONNECTION_RETRY_PERIOD/1000 << " seconds." << "\n" ;
-            delay(CONNECTION_RETRY_PERIOD);
-            continue;
+    // Create producer/consumer  for queue and topic
+    try {
+        if (m_qname != NULL){
+            qProducer = session->createProducer(m_queue);
+            qProducer->setDeliveryMode( DeliveryMode::PERSISTENT );
         }
+		if (m_tname != NULL) {
+			tConsumer = session->createConsumer(m_topic);
+            tConsumer->setMessageListener(this);
+			tConsumer->start();
+		}			
+    } catch (CMSException& e) {
+        onException(e);
+    }
 
-        // Create Sender and Receiver to 'talk' queue
-        try {
-            m_qSession = m_qConnect->createQueueSession(jfalse,Session_AUTO_ACKNOWLEDGE);            
-			m_tSession = m_tConnect->createTopicSession(jfalse,Session_AUTO_ACKNOWLEDGE);  
-            if (m_qname != NULL){
-                m_queue = m_qSession->createQueue(createString(m_qname));
-                m_qSender = m_qSession->createSender(m_queue);
-                m_qSender->setDeliveryMode(DeliveryMode_PERSISTENT);
-				m_qConnect->start();
-            }
-			if (m_tname != NULL) {
-                m_topic = m_tSession->createTopic(createString(m_tname));
-                m_tSubscriber = m_tSession->createSubscriber(m_topic);
-				m_tSubscriber->setMessageListenerObj(this);
-				m_tConnect->start();
-			}			
-        } catch (JMSExceptionRef e) {
-            onException(e);
-        }
-    }   //end-while
-
-    unlockMessaging();
+	unlockMessaging();
 }
+
+void SimulationMessaging::cleanup(){
+
+    // Destroy resources.
+    try{
+        if(m_topic != NULL ) delete m_topic;
+		if(m_queue != NULL ) delete m_queue;
+    }catch ( CMSException& e ) { e.printStackTrace(); }
+    m_topic = NULL;
+	m_queue = NULL;
+
+    try{
+        if( qProducer != NULL ) delete qProducer;
+		if( tConsumer != NULL ) {
+			tConsumer->close();
+			delete tConsumer;
+		}
+    }catch ( CMSException& e ) { e.printStackTrace(); }
+    tConsumer = NULL;
+	qProducer = NULL;
+
+    // Close open resources.
+    try{
+        if( session != NULL ) session->close();
+        if( connection != NULL ) connection->close();
+    }catch ( CMSException& e ) { e.printStackTrace(); }
+
+    try{
+        if( session != NULL ) delete session;
+    }catch ( CMSException& e ) { e.printStackTrace(); }
+    session = NULL;
+
+    try{
+        if( connection != NULL ) delete connection;
+    }catch ( CMSException& e ) { e.printStackTrace(); }
+    connection = NULL;
+}
+
 
 /**
  * Suspend the current thread for "duration" milliseconds.
  */
-void SimulationMessaging::delay(jint duration)
+void SimulationMessaging::delay(int duration)
 {
 #if ( defined(WIN32) || defined(WIN64) )
     Sleep(duration);
@@ -373,50 +414,58 @@ void SimulationMessaging::delay(jint duration)
 #endif
 }
 
-QueueSessionRef SimulationMessaging::getQueueSession() {
-	return(m_qSession);
-}
-
-QueueSenderRef SimulationMessaging::getQueueSender() {
-	return(m_qSender);
-}
-
 /**
  * Handle the message
- * (as specified in the javax::jms::MessageListener interface).
+ * Required by cms::MessageListener.
  */
-void SimulationMessaging::onMessage(MessageRef aMessage)
+void SimulationMessaging::onMessage(const Message* message) throw()
 {
-    // Cast the message as a TextMessage if possible.
+	// Cast the message as a TextMessage if possible.
     try
     {
-		StringRef msgType = aMessage->getStringProperty(createString(MESSAGE_TYPE_PROPERTY));	
-		if (msgType == NULL) {
+		vector<string> pNames = message->getPropertyNames();
+		for(int i=0; i<pNames.size(); i++){
+			cout << pNames.at(i) << endl;
+			if(pNames.at(i).compare(SIMKEY_PROPERTY) == 0){
+				long simKey = message->getLongProperty(SIMKEY_PROPERTY);
+				cout << "simKey:" <<simKey << endl;
+			}else if(pNames.at(i).compare(MESSAGE_TYPE_PROPERTY) == 0){
+				string msgType = message->getStringProperty(MESSAGE_TYPE_PROPERTY);
+				cout << "messageType:" << msgType << endl;
+			}
+		}
+
+		string msgType = message->getStringProperty(MESSAGE_TYPE_PROPERTY);
+		if (msgType == "") {//empty string
 			return;
 		}
 		
-		jlong key = aMessage->getLongProperty(createString(SIMKEY_PROPERTY));
+		long key = message->getLongProperty(SIMKEY_PROPERTY);
 
-		if (strcmp((const char*)msgType->toAscii(), MESSAGE_TYPE_STOPSIMULATION_VALUE) == 0 && key==m_simKey) {	
+		if (msgType.compare(MESSAGE_TYPE_STOPSIMULATION_VALUE) == 0 && key==m_simKey) {	
 			cout << "Stopped by user" << endl;
 			bStopRequested = true;
 		}
 
-    } catch(JMSExceptionRef jmse) {
-        onException(jmse);
+    } catch(CMSException& e) {
+        onException(e);
     }
 }
 
-void SimulationMessaging::onException(JMSExceptionRef e)
+/**
+ * Handle the message
+ * Required by cms::ExceptionListener.
+ */
+void SimulationMessaging::onException(const CMSException& ex AMQCPP_UNUSED)
 {
-	cout << "!!!JMSException: " << (const char *)e->getMessage()->toAscii() << endl;
-	int dropCode = ErrorCodes_ERR_CONNECTION_DROPPED;
+	cout << "!!!CMSException: " << ex.getMessage() << endl;
+	/*int dropCode = ErrorCodes_ERR_CONNECTION_DROPPED;
 	if (ErrorCodes::testException(e, dropCode)) {
 		m_connActive = false;
 		setupConnection();
 		m_connActive = true;
 		cout << "Connection restored.  Messages will now be accepted again" << endl;
-	}
+	}*/
 }
 
 bool SimulationMessaging::lockMessaging()
@@ -502,36 +551,36 @@ char* SimulationMessaging::trim(char* str) {
 	return newstr;
 }
 
-TextMessageRef SimulationMessaging::initWorkerEventMessage() {
-	TextMessageRef msg = getQueueSession()->createTextMessage();
+TextMessage* SimulationMessaging::initWorkerEventMessage() {
+	TextMessage* msg = session->createTextMessage();
 	// message type
-	msg->setStringProperty(createString(MESSAGE_TYPE_PROPERTY), createString(MESSAGE_TYPE_WORKEREVENT_VALUE));
+	msg->setStringProperty(MESSAGE_TYPE_PROPERTY, MESSAGE_TYPE_WORKEREVENT_VALUE);
 	//Hostname
-	msg->setStringProperty(createString(HOSTNAME_PROPERTY), createString(m_hostname));
+	msg->setStringProperty(HOSTNAME_PROPERTY, m_hostname);
 	//Username
-	msg->setStringProperty(createString(USERNAME_PROPERTY), createString(m_vcusername));
+	msg->setStringProperty(USERNAME_PROPERTY, m_vcusername);
 	//simKey
-	msg->setLongProperty(createString(SIMKEY_PROPERTY), m_simKey);
+	msg->setLongProperty(SIMKEY_PROPERTY, m_simKey);
 	//jobIndex
-	msg->setIntProperty(createString(JOBINDEX_PROPERTY), m_jobIndex);
+	msg->setIntProperty(JOBINDEX_PROPERTY, m_jobIndex);
 	//taskID
-	msg->setIntProperty(createString(TASKID_PROPERTY), m_taskID);
+	msg->setIntProperty(TASKID_PROPERTY, m_taskID);
 	return msg;
 }
 
 void SimulationMessaging::keepAlive() {
 	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_MESSAGING) {
-		TextMessageRef msg = initWorkerEventMessage();
+		TextMessage* msg = initWorkerEventMessage();
 		//status
-		msg->setIntProperty(createString(WORKEREVENT_STATUS), JOB_WORKER_ALIVE);
+		msg->setIntProperty(WORKEREVENT_STATUS, JOB_WORKER_ALIVE);
 
 		//send
-		getQueueSender()->send(msg, DeliveryMode_PERSISTENT, Message_DEFAULT_PRIORITY, m_ttl); 
+		qProducer->send(msg, DeliveryMode::PERSISTENT, Message_DEFAULT_PRIORITY, m_ttl_lowPriority); 
 		time(&lastSentEventTime);
 	}
 }
 
-char* SimulationMessaging::getStatusString(jint status) {
+char* SimulationMessaging::getStatusString(int status) {
 	switch (status) {
 	case JOB_STARTING:
 		return "JOB_STARTING";
@@ -556,10 +605,14 @@ char* SimulationMessaging::getStatusString(jint status) {
 	}
 }
 
-SimulationMessaging* SimulationMessaging::create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, jint simKey, jint jobIndex, jint taskID, jint ttl)
+SimulationMessaging* SimulationMessaging::create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, int simKey, int jobIndex, int taskID, int ttl_low, int ttl_high)
 {
+	if (m_inst != NULL && m_inst->workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
+		delete m_inst;
+		m_inst = NULL;
+	}
 	if (m_inst == NULL){    
-        m_inst = new SimulationMessaging(broker, smqusername, passwd, qname, tname, vcusername, simKey, jobIndex, taskID, ttl);
+        m_inst = new SimulationMessaging(broker, smqusername, passwd, qname, tname, vcusername, simKey, jobIndex, taskID, ttl_low, ttl_high);
 	}
 
     return(m_inst);
@@ -590,14 +643,17 @@ void SimulationMessaging::waitUntilFinished() {
 #endif
 }
 
-#ifdef LINUX64
 void* startMessagingThread(void* param);
-#endif
 
 void SimulationMessaging::start() {
 	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
 		return;
 	}
+	if (bStarted) {
+		return;
+	}
+	bStarted = true;
+
 #if ( defined(WIN32) || defined(WIN64) )
 	HANDLE hThread; 
 	DWORD IDThread; 
@@ -703,7 +759,7 @@ void* startMessagingThread(void* lpParam){
 
 	while (true) {
 		waitReturn = 1;
-		gettimeofday(&start, NULL);		
+		gettimeofday(&start, NULL);
 		timeout.tv_sec = start.tv_sec;
 		// condition might be signalled before this thread gets blocked
 		// so this thread might miss signal and doesn't get wakened

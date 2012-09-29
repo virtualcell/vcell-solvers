@@ -1,7 +1,38 @@
 #ifndef _SIMULATIONMESSAGING_H_
 #define _SIMULATIONMESSAGING_H_
 
-#if ( defined(WIN32) || defined(WIN64) )
+#ifdef USE_MESSAGING
+#include <activemq/library/ActiveMQCPP.h>
+#include <decaf/lang/Thread.h>
+#include <decaf/lang/Runnable.h>
+#include <decaf/util/concurrent/CountDownLatch.h>
+#include <decaf/lang/Integer.h>
+#include <decaf/lang/Long.h>
+#include <decaf/lang/System.h>
+#include <activemq/core/ActiveMQConnectionFactory.h>
+#include <activemq/util/Config.h>
+#include <cms/Connection.h>
+#include <cms/Session.h>
+#include <cms/TextMessage.h>
+#include <cms/BytesMessage.h>
+#include <cms/MapMessage.h>
+#include <cms/ExceptionListener.h>
+#include <cms/MessageListener.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <iostream>
+#include <memory>
+
+using namespace activemq::core;
+using namespace decaf::util::concurrent;
+using namespace decaf::util;
+using namespace decaf::lang;
+using namespace cms;
+#endif
+
+using namespace std;
+
+#if (defined(WIN32) || defined(WIN64) )
 #include <windows.h>
 #else
 #include <pthread.h>
@@ -11,17 +42,16 @@
 #endif
 
 #ifdef USE_MESSAGING
-#if ( !defined(WIN32) && !defined(WIN64) )
+#if (!defined(WIN32) && !defined(WIN64) )
 #include <sys/time.h>
 #else
 #include <time.h>
 #endif
-#include <progress/message/jclient/package.h>
-using namespace progress::message::jclient;
 
 static const int ONE_SECOND = 1000;
 static const int ONE_MINUTE = 60 * ONE_SECOND;
-static const int DEFAULT_TTL = 10 * ONE_MINUTE;
+static const int DEFAULT_TTL_HIGH = 10 * ONE_MINUTE;
+static const int DEFAULT_TTL_LOW = ONE_MINUTE;
 #endif
 
 static const int WORKEREVENT_OUTPUT_MODE_STDOUT = 0;
@@ -33,6 +63,9 @@ static const int JOB_PROGRESS = 1001;
 static const int JOB_FAILURE = 1002;
 static const int JOB_COMPLETED = 1003;
 static const int JOB_WORKER_ALIVE = 1004;
+
+static const int DEFAULT_PRIORITY = 0; //range 0-127, the bigger number the higher priority
+static const int Message_DEFAULT_PRIORITY = 0;
 
 struct WorkerEvent {
 	int status;
@@ -88,15 +121,13 @@ struct WorkerEvent {
 };
 
 #ifdef USE_MESSAGING
-class SimulationMessaging : public progress::message::jclient::ExceptionListener, progress::message::jclient::MessageListener
+class SimulationMessaging : public ExceptionListener, MessageListener/*, Runnable*/
 #else
 class SimulationMessaging
 #endif
 {
 public:
-	static SimulationMessaging *m_inst;
-
-    ~SimulationMessaging();
+    virtual ~SimulationMessaging() throw();
 	static SimulationMessaging* create();
 	static SimulationMessaging* getInstVar();
 	void start();
@@ -115,15 +146,16 @@ public:
 	}
 
 #ifdef USE_MESSAGING
-	static SimulationMessaging* create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, jint simKey, jint jobIndex, jint taskID, jint ttl=DEFAULT_TTL);
-    void onException(JMSExceptionRef anException);
-	void onMessage(MessageRef aMessage);
+	static SimulationMessaging* create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, int simKey, int jobIndex, int taskID, int ttl_low=DEFAULT_TTL_LOW, int ttl_high=DEFAULT_TTL_HIGH);
+    void onException(const CMSException& anException);
+	void onMessage(const Message* aMessage) throw();
 	void waitUntilFinished();
 	friend void* startMessagingThread(void* param);
 #endif
 
 private:
 	SimulationMessaging();
+	static SimulationMessaging *m_inst;
 	WorkerEvent* workerEvent;
 	int workerEventOutputMode;
 
@@ -131,27 +163,35 @@ private:
 	bool bStopRequested;
 
 #ifdef USE_MESSAGING
-	SimulationMessaging(char* broker, char* smqusername, char* passwd, char* qname, char*tname, char* vcusername, jint simKey, jint jobIndex,  jint taskID, jint ttl=DEFAULT_TTL);
+	bool bStarted;
+
+	SimulationMessaging(char* broker, char* smqusername, char* passwd, char* qname, char*tname, char* vcusername, int simKey, int jobIndex,  int taskID, int ttl_low=DEFAULT_TTL_LOW, int ttl_high=DEFAULT_TTL_HIGH);
 
 	WorkerEvent* getWorkerEvent();
 	void keepAlive();
 	static char* trim(char* str);
 	void setupConnection ();    //synchronized
-	QueueSessionRef getQueueSession();
-	QueueSenderRef getQueueSender();
-
-	TextMessageRef initWorkerEventMessage();
+	Session& getQueueSession();
+	//Queue& getQueueSender();
+	TextMessage* initWorkerEventMessage();
+	void cleanup();
+	
 	bool m_connActive;
+	Connection* connection;
+	Session* session;
+	//always send message from queue
+	Destination* m_queue;
+	MessageProducer* qProducer;
+//	QueueConnectionRef m_qConnect;
+//	QueueSessionRef m_qSession;
+//	QueueSenderRef m_qSender;
 
-	QueueRef m_queue;
-	QueueConnectionRef m_qConnect;
-	QueueSessionRef m_qSession;
-	QueueSenderRef m_qSender;
-
-	TopicRef m_topic;
-	TopicConnectionRef m_tConnect;
-	TopicSessionRef m_tSession;
-	TopicSubscriberRef m_tSubscriber;
+	//always receive message from topic
+	Destination* m_topic;
+	MessageConsumer* tConsumer;
+//	TopicConnectionRef m_tConnect;
+//	TopicSessionRef m_tSession;
+//	TopicSubscriberRef m_tSubscriber;
 
 	char *m_broker;
 	char *m_smqusername;
@@ -159,21 +199,22 @@ private:
 	char *m_qname;
 	char* m_tname;
 	char* m_vcusername;
-	jint m_simKey;
-	jint m_taskID;
-	jint m_jobIndex;
+	int m_simKey;
+	int m_taskID;
+	int m_jobIndex;
 
 	char* m_tListener;
 
 	char m_hostname[256];
-	jint  m_ttl;
+	int  m_ttl_lowPriority;
+	int  m_ttl_highPriority;
 	time_t lastSentEventTime;
 
-	char* getStatusString(jint status);
+	char* getStatusString(int status);
 
 	bool lockMessaging();
 	void unlockMessaging();
-	void delay(jint duration);
+	void delay(int duration);
 
 	bool lockWorkerEvent(bool bTry=false);
 	void unlockWorkerEvent();
