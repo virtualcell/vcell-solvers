@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <string.h>
+#include <stdlib.h>
 #include <Exception.h>
 #ifdef USE_MESSAGING
 #include <VCELL/SimulationMessaging.h>

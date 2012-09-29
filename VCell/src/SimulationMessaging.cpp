@@ -5,9 +5,9 @@ using std::cerr;
 using std::cout;
 using std::endl;
 
+#include <stdio.h>
 #ifdef USE_MESSAGING
 #if ( !defined(WIN32) && !defined(WIN64) ) // UNIX
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
