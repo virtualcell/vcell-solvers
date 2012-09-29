@@ -14,7 +14,7 @@ set (F90_SRC_FILES
 )
 set_source_files_properties( ${F90_SRC_FILES} PROPERTIES LANGUAGE Fortran)
 include_directories(${CMAKE_BINARY_DIR}/netcdf-3.6.2/f90 ${JMS_INCS})
-set(DEP_LIBS netcdf_f90 netcdf_for netcdf ${JMS_LIBS})
+set(DEP_LIBS netcdf_f90 netcdf_for netcdf)
 
 if (TARGET_SOLVERS_WITH_MESSAGING)
 	set (C_SRC_FILES
@@ -25,7 +25,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING)
 	add_definitions(${JMS_DEFS})
 	set_source_files_properties(${C_SRC_FILES} PROPERTIES LANGUAGE CXX)
 	add_library(Hy3S_Msg STATIC ${C_SRC_FILES})
-	list(APPEND DEP_LIBS Hy3S_Msg Advapi32)
+	list(APPEND DEP_LIBS Hy3S_Msg ${JMS_LIBS})
 	if (MSVC)
 		list(APPEND DEP_LIBS Advapi32)
 	elseif (UNIX)

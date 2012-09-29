@@ -69,6 +69,8 @@ set (PCGWRAPPER_SRC_FILES
 )
 
 include_directories(include ../ExpressionParser ${CMAKE_CURRENT_SOURCE_DIR}/../IDAWin ../netcdf-3.6.2/libsrc ../netcdf-3.6.2/cxx ../sundials/include ../sundials/src)
+include_directories(${JMS_INCS})
+add_definitions(${JMS_DEFS})
 if (NOT ZLIB_FOUND)
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../zlib)
 endif()
@@ -93,3 +95,4 @@ add_library(pcgwrapperCodeGen STATIC ${PCGWRAPPER_SRC_FILES})
 
 install(TARGETS vcellCodeGen pcgwrapperCodeGen 
 	ARCHIVE DESTINATION bin)
+
