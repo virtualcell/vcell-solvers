@@ -269,16 +269,14 @@ if (TARGET_SOLVERS_WITH_MESSAGING)
 	add_definitions(-DUSE_MESSAGING)
 	set(APR_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/apr-1.4.6/include ${CMAKE_BINARY_DIR}/apr-1.4.6/include)
 	set(ACTIVEMQ_CPP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/activemq-cpp-library-3.4.4/src/main ${CMAKE_BINARY_DIR}/activemq-cpp-library-3.4.4)
-	include_directories(${ACTIVEMQ_CPP_INCLUDE_DIR} ${APR_INCLUDE_DIR})
-	# we used sonicmq before, so SONICMQ_LIBS was used.
-	# however, if a general name is preferred, change SONICMQ_LIBS throughout 
-	# all the CMakeLists.txt.
-	set(SONICMQ_LIBS activemq-cpp aprutil-1 apriconv-1 apr-1)
+	set(JMS_INCS ${ACTIVEMQ_CPP_INCLUDE_DIR} ${APR_INCLUDE_DIR})
+
+	set(JMS_LIBS activemq-cpp aprutil-1 apriconv-1 apr-1)
 	if (MSVC)
-		list(APPEND SONICMQ_LIBS ws2_32 Mswsock Rpcrt4)
+		list(APPEND JMS_LIBS ws2_32 Mswsock Rpcrt4)
 	elseif (UNIX)
-		add_definitions(-DHAVE_CONFIG_H -DLINUX=2 -D_REENTRANT -D_GNU_SOURCE)
-		list(APPEND SONICMQ_LIBS ssl crypt pthread)
+		set(JMS_DEFS -DHAVE_CONFIG_H -DLINUX=2 -D_REENTRANT -D_GNU_SOURCE)
+		list(APPEND JMS_LIBS ssl crypt pthread)
 	endif()
 endif()
 

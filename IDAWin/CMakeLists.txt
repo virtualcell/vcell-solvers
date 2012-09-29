@@ -21,7 +21,9 @@ set (EXE_SRC_FILES
 
 include_directories(../ExpressionParser ../sundials/include ../sundials/src ../VCell/include)
 
-set(DEP_LIBS IDAWin ExpressionParser sundials_cvode sundials_ida sundials_nvecserial sundials ${SONICMQ_LIBS})
+set(DEP_LIBS IDAWin ExpressionParser sundials_cvode sundials_ida sundials_nvecserial sundials ${JMS_LIBS})
+include_directories(${JMS_INCS})
+add_definitions(${JMS_DEFS})
 add_library(IDAWin STATIC ${SRC_FILES} ${HEADER_FILES})
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	set(EXE_FILE SundialsSolverStandalone)

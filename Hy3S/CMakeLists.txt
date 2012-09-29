@@ -13,8 +13,8 @@ set (F90_SRC_FILES
 		src/mainprogram-HyJCMSS.f90
 )
 set_source_files_properties( ${F90_SRC_FILES} PROPERTIES LANGUAGE Fortran)
-include_directories(${CMAKE_BINARY_DIR}/netcdf-3.6.2/f90)
-set(DEP_LIBS netcdf_f90 netcdf_for netcdf ${SONICMQ_LIBS})
+include_directories(${CMAKE_BINARY_DIR}/netcdf-3.6.2/f90 ${JMS_INCS})
+set(DEP_LIBS netcdf_f90 netcdf_for netcdf ${JMS_LIBS})
 
 if (TARGET_SOLVERS_WITH_MESSAGING)
 	set (C_SRC_FILES
@@ -22,6 +22,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING)
 		../VCell/src/SimulationMessaging.cpp
 	)
 	include_directories(../VCell/include)
+	add_definitions(${JMS_DEFS})
 	set_source_files_properties(${C_SRC_FILES} PROPERTIES LANGUAGE CXX)
 	add_library(Hy3S_Msg STATIC ${C_SRC_FILES})
 	list(APPEND DEP_LIBS Hy3S_Msg Advapi32)
