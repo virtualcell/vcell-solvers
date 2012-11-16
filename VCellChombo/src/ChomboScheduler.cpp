@@ -761,26 +761,14 @@ void ChomboScheduler::writeMembraneSolution() {
 	int totalVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
 	int numMembraneVars = simulation->getNumMemVariables();
 	
-	char fileName[128];
-	sprintf(fileName, "%s%04d%s", SimTool::getInstance()->getBaseFileName(), SimTool::getInstance()->getSimulation()->getCurrIteration(), MEMBRANE_SIM_FILE_EXT);
-	ofstream outfile (fileName);
-	
 	int iphase = 0;
 	int ilev = numLevels - 1;  // only consider the finest level
-	outfile << "index,i,j";
-	if (SpaceDim == 3)
-	{
-		outfile << ",k";
-	}
-	outfile << ",membrane";
 	// membrane variable names
 	for(int memVarIdx = 0; memVarIdx < numMembraneVars; memVarIdx++){
 		Variable* var = (Variable*)simulation->getMemVariable(memVarIdx);
-		outfile << "," << var->getName() ;
 		double* varCurr = var->getCurr();
 		memset(varCurr, 0, sizeof(double) * var->getSize());
 	}
-	outfile << endl;
 	for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 		Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
 
@@ -808,13 +796,7 @@ void ChomboScheduler::writeMembraneSolution() {
 
 					Feature* jFeature = phaseVolumeList[jphase][jvol]->feature;
 					Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(iFeature, jFeature);
-					outfile << memIndex << ",";
 					const RealVect gridIndex = vof.gridIndex();
-					for (int i = 0; i < SpaceDim; ++ i)
-					{
-						outfile << gridIndex[i] << ",";
-					}
-					outfile << membrane->getName();
 					for (int memVarIdx = 0; memVarIdx < numMembraneVars; ++ memVarIdx)
 					{
 						Variable* var = (Variable*)simulation->getMemVariable(memVarIdx);
@@ -832,15 +814,12 @@ void ChomboScheduler::writeMembraneSolution() {
 								break;
 							}
 						}
-						outfile << "," << varCurr[memIndex] ;
 					}
-					outfile << endl;
 					break;
 				} // end for jvol
 			} // for (VoFIterator vofit(irregCells,currEBGraph);
 		} // end DataIter
 	} // end ivol
-	outfile.close(); 
 }
 
 void ChomboScheduler::writeMembraneEdgeCrossPoints()
