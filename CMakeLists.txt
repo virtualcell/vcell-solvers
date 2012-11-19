@@ -30,7 +30,7 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 	set (ARCH_64bit TRUE)
 endif()
 
-if (NOT MSVC AND NOT APPLE AND NOT LINUX)
+if (NOT MSVC AND NOT APPLE AND NOT LINUX AND NOT CYGWIN)
 	message(FATAL_ERROR "Unsupported Operating System or C/C++ Compiler.")
 endif()
 
@@ -62,7 +62,7 @@ endif()
 option(TARGET_SOLVERS_WITH_MESSAGING "Server Side Solvers (With Messaging)" OFF)
 option(TARGET_SOLVERS_NO_MESSAGING "Client Side Solvers (Without Messaging)" ON)
 option(TARGET_JAVA_BINDING "Java Binding" OFF)
-option(TARGET_CHOMBO_BUILD "Chombo Build" OFF)
+option(TARGET_CHOMBO_CYGWIN_BUILD "Chombo Build on Cygwin" OFF)
 
 set (TARGET_COUNT 0)
 if (TARGET_SOLVERS_WITH_MESSAGING)
@@ -74,12 +74,20 @@ endif()
 if (TARGET_JAVA_BINDING)
 	math(EXPR TARGET_COUNT "${TARGET_COUNT} + 1")
 endif()
-if (TARGET_CHOMBO_BUILD)
+if (TARGET_CHOMBO_CYGWIN_BUILD)
 	math(EXPR TARGET_COUNT "${TARGET_COUNT} + 1")
 endif()
 
 if (TARGET_COUNT GREATER 1 OR TARGET_COUNT EQUAL 0)
-	message(FATAL_ERROR "It is required to select one target, either TARGET_SOLVERS_WITH_MESSAGING, or TARGET_SOLVERS_NO_MESSAGING or TARGET_JAVA_BINDING or TARGET_CHOMBO_BUILD")
+	message(FATAL_ERROR "It is required to select one target, either TARGET_SOLVERS_WITH_MESSAGING, or TARGET_SOLVERS_NO_MESSAGING or TARGET_JAVA_BINDING or TARGET_CHOMBO_CYGWIN_BUILD")
+endif()
+
+if (CYGWIN AND NOT TARGET_CHOMBO_CYGWIN_BUILD)
+	message(FATAL_ERROR "Currently only TARGET_CHOMBO_CYGWIN_BUILD is supported under CYGWIN")
+endif()
+
+if (TARGET_CHOMBO_CYGWIN_BUILD AND NOT CYGWIN)
+	message(FATAL_ERROR "Currently we only build TARGET_CHOMBO_CYGWIN_BUILD under CYGWIN")
 endif()
 
 #############################################
@@ -288,13 +296,14 @@ endif()
 ######################################
 #
 # Add subdirectories
-#
+# 
+# Expression Parser is used by all targets
 #######################################
 add_subdirectory(ExpressionParser)
-add_subdirectory(IDAWin)
-add_subdirectory(sundials)
  
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
+	add_subdirectory(IDAWin)
+	add_subdirectory(sundials)
 	if (MSVC OR LINUX)
 		add_subdirectory(blas)
 	endif()
@@ -312,36 +321,29 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	add_subdirectory(Stochastic)
 	add_subdirectory(unzip) 
 	add_subdirectory(VCell) 
+	if (TARGET_SOLVERS_WITH_MESSAGING)
+		add_subdirectory(VCell_CodeGen)
+	endif(TARGET_SOLVERS_WITH_MESSAGING)
 	add_subdirectory(zip)
 	if (NOT ZLIB_FOUND)
 		add_subdirectory(zlib)
 	endif()
 endif() 
 
-if (TARGET_SOLVERS_WITH_MESSAGING)
-	add_subdirectory(VCell_CodeGen)
-endif(TARGET_SOLVERS_WITH_MESSAGING)
-
 if (TARGET_JAVA_BINDING)
+	add_subdirectory(IDAWin)
+	add_subdirectory(sundials)
 	add_subdirectory(fsqp)
 	add_subdirectory(tinyxml)
 	add_subdirectory(JavaBinding)
 	add_subdirectory(Optimization2)
 endif(TARGET_JAVA_BINDING)
 
-if (TARGET_CHOMBO_BUILD)
+if (TARGET_CHOMBO_CYGWIN_BUILD)
 	add_subdirectory(ExpressionParser)
-	add_subdirectory(sundials)
-
 	add_subdirectory(hdf5-1.8.8)
-	add_subdirectory(PCGPack) 
-	add_subdirectory(qhull)
 	add_subdirectory(unzip)
-	add_subdirectory(VCell)
 	add_subdirectory(zip)
-	if (NOT ZLIB_FOUND)
-		add_subdirectory(zlib)
-	endif()
 endif()
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
