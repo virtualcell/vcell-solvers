@@ -12,6 +12,7 @@ using std::setprecision;
 #include <VCELL/Timer.h>
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 
 #define TimerResolution 1E-6
 #define DoubleToSec(t)       ((long)(floor((double)(t))))
@@ -130,7 +131,7 @@ void Timer::show()
 
 void Timer::checkForOverflow()
 {
-#if ( !defined(WIN32) && !defined(WIN64) && !defined(CYGWIN))
+#if ( !defined(WIN32) && !defined(WIN64))
 	getitimer(which, &time);
 	double currValue = TimeToDouble(time.it_value);
 	if (currValue > value){

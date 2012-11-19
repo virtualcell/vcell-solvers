@@ -1,0 +1,32 @@
+---SVN checkout
+. vcell/trunk/Chombo
+. vcell/trunk/numerics
+. vcell/trunk/numerics/VCellChombo
+
+--- Chomobo
+. open shell command or cygwin terminal
+. cd Chombo/lib
+. cp mk/Make.defs.local.debug.2D mk/Make.defs.local
+. make lib USE_MF=TRUE (this will build 2D debug libs)
+. cp mk/Make.defs.local.release.2D mk/Make.defs.local
+. make lib USE_MF=TRUE (this will build 2D release libs)
+. cp mk/Make.defs.local.debug.3D mk/Make.defs.local
+. make lib USE_MF=TRUE (this will build 3D debug libs)
+. cp mk/Make.defs.local.release.3D mk/Make.defs.local
+. make lib USE_MF=TRUE (this will build 3D release libs)
+(only need to build what you need, for example, in cygwin, build 2D and 3D debug libs,
+on cluster, build 2D and 3D release libs)
+
+--- numerics (only for cygwin, otherwise on cluster build it normal way)
+. open cygwin terminal
+. cd numerics, mkdir cmake-build-cygwin
+. cd cmake-build-cygwin
+. cmake -i .. (first time)
+. change TARGET_CHOMBO_CYGWIN_BUILD to ON
+. cmake -i .. (second time)
+. make
+. make install
+
+-- VCellChombo
+. after checkout, it should be a NetBeans project.
+. right click, click "Build Project"
