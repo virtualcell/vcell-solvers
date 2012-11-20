@@ -340,7 +340,6 @@ if (TARGET_JAVA_BINDING)
 endif(TARGET_JAVA_BINDING)
 
 if (TARGET_CHOMBO_CYGWIN_BUILD)
-	add_subdirectory(ExpressionParser)
 	add_subdirectory(hdf5-1.8.8)
 	add_subdirectory(unzip)
 	add_subdirectory(zip)

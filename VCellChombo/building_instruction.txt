@@ -1,9 +1,11 @@
----SVN checkout
+---SVN checkout(put the following folders under one directory and at the same level)
 . vcell/trunk/Chombo
 . vcell/trunk/numerics
 . vcell/trunk/numerics/VCellChombo
 
 --- Chomobo
+. to set HDF5 flag when compiling Chombo, in Make.defs.local, we add "-DH5_USE_16_API" to HDFINCLFAGS and HDFMPIINCFLAGS (ignore if not doing MPI) 
+ (* it also can be compiled with the flag "--with-default-api-version=v16" and then no additional flags are needed to compile Chombo*)
 . open shell command or cygwin terminal
 . cd Chombo/lib
 . cp mk/Make.defs.local.debug.2D mk/Make.defs.local
@@ -22,11 +24,12 @@ on cluster, build 2D and 3D release libs)
 . cd numerics, mkdir cmake-build-cygwin
 . cd cmake-build-cygwin
 . cmake -i .. (first time)
-. change TARGET_CHOMBO_CYGWIN_BUILD to ON
+. change TARGET_CHOMBO_CYGWIN_BUILD to ON (when choose this, TARGET_SOLVER_WITH_MESSAGING, TARGET_SOLVER_NO_MESSAGING should be all OFF)
 . cmake -i .. (second time)
-. make
+. make (build expression parser, hdf5 and unzip, zip only)
 . make install
+(this puts hdf5 in cmake-build-cygwin/lib and other three in cmake-build-cygwin/bin)
 
 -- VCellChombo
 . after checkout, it should be a NetBeans project.
-. right click, click "Build Project"
+. right click, click "Build Project" (this exe is saved at /dist Debug_2D(/3D/Release_2D/3D)/Cygwin_4.x-Windows
