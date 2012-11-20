@@ -19,6 +19,14 @@
                     <name>Release_2D</name>
                     <type>1</type>
                 </confElem>
+                <confElem>
+                    <name>Debug_3D</name>
+                    <type>1</type>
+                </confElem>
+                <confElem>
+                    <name>Release_3D</name>
+                    <type>1</type>
+                </confElem>
             </confList>
         </data>
     </configuration>
