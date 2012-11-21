@@ -4,17 +4,20 @@
 . vcell/trunk/numerics/VCellChombo
 
 --- Chomobo
-. to set HDF5 flag when compiling Chombo, in Make.defs.local, we add "-DH5_USE_16_API" to HDFINCLFAGS and HDFMPIINCFLAGS (ignore if not doing MPI) 
+note 1. to set HDF5 flag when compiling Chombo, in Make.defs.local, we add "-DH5_USE_16_API" to HDFINCLFAGS and HDFMPIINCFLAGS (ignore if not doing MPI) 
  (* it also can be compiled with the flag "--with-default-api-version=v16" and then no additional flags are needed to compile Chombo*)
+note 2. when building Chombo in cygwin, HUGE has to be changed to HUGE_VAL in ConstrainedLS.cpp (4 matches) and LSProblemImplem.H (3 matches). The change
+is not needed when building on Linux server.
+
 . open shell command or cygwin terminal
 . cd Chombo/lib
-. cp mk/Make.defs.local.debug.2D mk/Make.defs.local
+. cp mk/Make.defs.local.debug.2D mk/Make.defs.local (open the file, choose the proper hdf5 flags)
 . make lib USE_MF=TRUE (this will build 2D debug libs)
-. cp mk/Make.defs.local.release.2D mk/Make.defs.local
+. cp mk/Make.defs.local.release.2D mk/Make.defs.local (open the file, choose the proper hdf5 flags)
 . make lib USE_MF=TRUE (this will build 2D release libs)
-. cp mk/Make.defs.local.debug.3D mk/Make.defs.local
+. cp mk/Make.defs.local.debug.3D mk/Make.defs.local (open the file, choose the proper hdf5 flags)
 . make lib USE_MF=TRUE (this will build 3D debug libs)
-. cp mk/Make.defs.local.release.3D mk/Make.defs.local
+. cp mk/Make.defs.local.release.3D mk/Make.defs.local (open the file, choose the proper hdf5 flags)
 . make lib USE_MF=TRUE (this will build 3D release libs)
 (only need to build what you need, for example, in cygwin, build 2D and 3D debug libs,
 on cluster, build 2D and 3D release libs)
