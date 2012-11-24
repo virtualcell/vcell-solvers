@@ -67,19 +67,20 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 
 	add_definitions(-DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_USE_64 -DCH_USE_COMPLEX 
 		-DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API)
-	if (CYGWIN)
-		add_definitions(-DCH_CYGWIN)
-		set(LIB_NAME_OS CYGWIN)
-	elseif (LINUX)
-		add_definitions(-DCH_LINUX)
-		set(LIB_NAME_OS LINUX)
-	endif()
-
 	include_directories(
 		${CMAKE_SOURCE_DIR}/../Chombo/lib/include 
 		${CMAKE_SOURCE_DIR}/ExpressionParser 
 		${CMAKE_CURRENT_SOURCE_DIR}/include 
-		${CMAKE_SOURCE_DIR}/hdf5-1.8.8/src)
+	)
+	if (CYGWIN)
+		add_definitions(-DCH_CYGWIN)
+		set(LIB_NAME_OS CYGWIN)
+		include_directories(${CMAKE_SOURCE_DIR}/hdf5-1.8.8/src)
+	elseif (LINUX)
+		add_definitions(-DCH_Linux)
+		set(LIB_NAME_OS Linux)
+		include_directories(${CMAKE_BINARY_DIR}/include)
+	endif()
 
 	include_directories(${JMS_INCS})
 	add_definitions(${JMS_DEFS})

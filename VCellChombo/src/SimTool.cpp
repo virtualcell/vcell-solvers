@@ -9,14 +9,14 @@ using std::stringstream;
 using std::cout;
 using std::endl;
 
+#include <VCELL/ChomboIF.h>
+#include <VCELL/ChomboSpec.h>
 #include <VCELL/SimTypes.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/DataSet.h>
 #include <VCELL/SimulationMessaging.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/Variable.h>
-#include <VCELL/ChomboIF.h>
-#include <VCELL/ChomboSpec.h>
 
 #include <float.h>
 #include <math.h>
