@@ -36,3 +36,12 @@ on cluster, build 2D and 3D release libs)
 -- VCellChombo
 . after checkout, it should be a NetBeans project.
 . right click, click "Build Project" (this exe is saved at /dist Debug_2D(/3D/Release_2D/3D)/Cygwin_4.x-Windows
+
+*******building on cluster for VCell C/S mode, read this
+(building order: numerics(without VCellChombo), then Chombo libs and at the last VCellChombo(which has to go with building of numerics again)
+"check" command under original Chombo is not executable, remember to make it executable and then start building Chombo libs.
+In addition, to build Chombo libs, we have to have numerics built and installed first. so that Chombo can reference HDF5 libs and included h files.
+
+If you checkout a fresh numerics, you have to go to CMakeList to comment the VCellChombo and do make install first.
+Then uncomment VCellChombo and do make install.
+

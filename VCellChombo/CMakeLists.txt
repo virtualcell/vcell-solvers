@@ -114,12 +114,18 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		)
 
 	set(EXE_2D VCellChombo2D)
+	if (ARCH_64bit) 
+		set(EXE_2D ${EXE_2D}_x64)
+	endif()
 	add_executable(${EXE_2D} ${SRC_FILES})
 	target_link_libraries(${EXE_2D} ${DEP_LIBS_2D})
 	add_dependencies(${EXE_2D} hdf5_cpp hdf5 ExpressionParser zip unzip)
 	set_property(TARGET ${EXE_2D} PROPERTY COMPILE_DEFINITIONS CH_SPACEDIM=2)
 
 	set(EXE_3D VCellChombo3D)
+	if (ARCH_64bit) 
+		set(EXE_3D ${EXE_3D}_x64)
+	endif()
 	add_executable(${EXE_3D} ${SRC_FILES})
 	target_link_libraries(${EXE_3D} ${DEP_LIBS_3D})
 	add_dependencies(${EXE_3D} hdf5_cpp hdf5 ExpressionParser zip unzip)
