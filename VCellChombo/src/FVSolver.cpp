@@ -965,8 +965,8 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 	string nextToken, line;
 	int numLevels = 1;
 	int* refineratios = 0;
-	int maxBoxSize;
-	double fillRatio;
+	int maxBoxSize = 64;
+	double fillRatio = 0.9;
 
 	ChomboGeometry* chomboGeometry = new ChomboGeometry();
 	chomboSpec = new ChomboSpec();

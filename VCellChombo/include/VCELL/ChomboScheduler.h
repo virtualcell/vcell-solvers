@@ -113,6 +113,7 @@ protected:
 	void writeMembraneEdgeCrossPoints();
 	void writeMembraneMetrics();
 	int numMembranePoints;
+	bool computeOneFaceCross(int, int, int, RealVect&, RealVect&, RealVect&, RealVect&, RealVect&);
 };
 
 #endif

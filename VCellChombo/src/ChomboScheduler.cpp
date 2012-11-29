@@ -54,7 +54,7 @@ extern bool refine_all_irregular;
 #define HDF5_FILE_EXT ".hdf5"
 #define EDGE_CROSS_POINTS_FILE_EXT ".crspts"
 #define CHOMBO_MEMBRANE_METRICS_FILE_EXT ".chombo.memmetrics"
-#define MEMBRANE_SIM_FILE_EXT ".memsim"
+#define MEMBRANE_SLICE_CROSS_FILE_EXT ".slccrs"
 
 ChomboScheduler::ChomboScheduler(SimulationExpression* sim, ChomboSpec* chomboSpec) {
 	simulation = sim;
@@ -828,6 +828,7 @@ void ChomboScheduler::writeMembraneEdgeCrossPoints()
 	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), EDGE_CROSS_POINTS_FILE_EXT);
 
 	ofstream ofs(fileName);
+	ofstream ofs2;
 	if (SpaceDim == 2)
 	{
 		ofs << "index,i,j,x0,y0,x1,y1,x2,y2" << endl;
@@ -835,6 +836,10 @@ void ChomboScheduler::writeMembraneEdgeCrossPoints()
 	else if (SpaceDim == 3)
 	{
 		ofs << "index,face,i,j,k,x0,y0,z0,x1,y1,z1,x2,y2,z2" << endl;
+		char fileName2[128];
+		sprintf(fileName2, "%s%s", SimTool::getInstance()->getBaseFileName(), MEMBRANE_SLICE_CROSS_FILE_EXT);
+		ofs2.open(fileName2);
+		ofs2 << "index,y1,z1,y2,z2,x1,z1,x2,z2,x1,y1,x2,y2" << endl;
 	}
 	int iphase = 0;
 	int ilev = numLevels - 1; // only consider the finest level
@@ -916,6 +921,21 @@ void ChomboScheduler::writeMembraneEdgeCrossPoints()
 				else
 				{
 					int faceCount = -1;
+					RealVect V[2];
+					Real sliceCrossPoints[SpaceDim][4];
+					int sliceCrossPointCount[SpaceDim];
+					const RealVect& origin = getChomboGeometry()->getDomainOrigin();
+					Real minOrigin = std::min<Real>(origin[0], origin[1]);
+					minOrigin = std::min<Real>(minOrigin, origin[2]);
+					Real dv = minOrigin - 1;
+					for (int dir = 0; dir < SpaceDim; ++ dir)
+					{
+						sliceCrossPointCount[dir] = 0;
+						for (int i = 0; i < 4; ++ i)
+						{
+							sliceCrossPoints[dir][i] = dv;
+						}
+					}
 					for (int face = 0; face < SpaceDim; ++ face)
 					{
 						for (int hiLoFace = 0; hiLoFace < 2; ++ hiLoFace)
@@ -925,7 +945,7 @@ void ChomboScheduler::writeMembraneEdgeCrossPoints()
 							bool faceCovered;
 							bool faceRegular;
 							bool faceDontKnow;
-
+							
 							chomboGeoShop.edgeData3D(edges,
 												 faceCovered,
 												 faceRegular,
@@ -938,7 +958,6 @@ void ChomboScheduler::writeMembraneEdgeCrossPoints()
 												 vectDomains[ilev],
 												 chomboGeometry->getDomainOrigin());
 							int crossedEdgeCount = 0;
-							stringstream ss;
 							for (int iedge = 0; iedge < 4; ++ iedge)
 							{
 								bool irreg = edges[iedge].dontKnow();
@@ -949,9 +968,9 @@ void ChomboScheduler::writeMembraneEdgeCrossPoints()
 									RealVect cross_point = cp;
 									cross_point *= vectDxes[ilev];
 									cross_point += vol_point;
-									for (int i = 0; i < SpaceDim; ++ i)
+									if (crossedEdgeCount < 2)
 									{
-										ss << "," << cross_point[i];
+										V[crossedEdgeCount] = cross_point;
 									}
 									crossedEdgeCount ++;
 								}
@@ -968,15 +987,92 @@ void ChomboScheduler::writeMembraneEdgeCrossPoints()
 								{
 									ofs << "," << mem_point[i];
 								}
-								ofs << ss.str() << endl;
+								for (int v = 0; v < 1; ++ v)
+								{
+									for (int i = 0; i < SpaceDim; ++ i)
+									{
+										ofs << "," << V[v][i];
+									}
+								}
+								ofs << endl;
+								for(int dir = 0; dir < SpaceDim; ++ dir)
+								{
+									RealVect crossPoint;
+									bool oneFaceCross = computeOneFaceCross(dir, face, hiLoFace == 0 ? -1 : 1, vectDxes[ilev], 
+													vol_point, V[0], V[1], crossPoint);
+									if (oneFaceCross)
+									{
+										sliceCrossPoints[dir][sliceCrossPointCount[dir] * 2] = crossPoint[0];
+										sliceCrossPoints[dir][sliceCrossPointCount[dir] * 2 + 1] = crossPoint[1];
+										++ sliceCrossPointCount[dir];
+									}
+								}
 							}
 						} // end for (int hiLoFace
-					} // end for (int faceNormal
+					} // end for (int face
+					ofs2 << memIndex;
+					for(int dir = 0; dir < SpaceDim; ++ dir)
+					{
+						for (int i = 0; i < 4; ++ i)
+						{
+							ofs2 << "," << sliceCrossPoints[dir][i];
+						}
+					}
+					ofs2 << endl;
 				} // end if (SpaceDim == 2)
 			} // end for (VoFIterator vofit
 		} // end for(DataIterator dit
 	} // end 	for (int ivol 
 	ofs.close();
+	ofs2.close();
+}
+
+bool ChomboScheduler::computeOneFaceCross(int dir, int face, int hiLoFace, RealVect& H, RealVect& v0, 
+				RealVect& v1, RealVect& v2, RealVect& crossPoint)
+{
+	if (dir == face)
+	{
+		return false;
+	}
+	static int slicedirs[SpaceDim][2] = {{1, 2}, {0, 2}, {0, 1}};
+	
+	int jlohi, jcross;
+	int planedir0, planedir1;
+	planedir0 = dir;
+	if (face == slicedirs[dir][0])    // y- or y+
+	{
+    planedir1 = slicedirs[dir][1];   // not y direction,
+    jlohi = 0;    
+		jcross = 1;
+	} 
+	else                         // z- or z+
+	{
+    planedir1 = slicedirs[dir][0];   // not z direction,
+    jlohi = 1;    
+		jcross = 0;
+	}
+	
+	RealVect DP = v2 - v1;
+	Real thisDP0 = DP[planedir0];
+	Real thisDP1 = DP[planedir1];
+
+	if (abs(thisDP0) > 1.e-8 * abs(thisDP1))
+	{
+    // if slope too large, return a number out of range
+    Real xc = v0[planedir0]; 
+		Real yc = v0[planedir1];
+    Real p10 = v1[planedir0];
+    Real p11 = v1[planedir1];
+    Real a = thisDP1 / thisDP0;
+    Real value = a * (xc - p10) + p11;
+    if (abs(value - yc) <= H[planedir1]/2)
+		{
+			crossPoint[jlohi]  = v0[face] + hiLoFace * H[face]/2 ;
+			crossPoint[jcross] = value;
+			return true;
+    }
+	}
+	return false;
 }
 
 void ChomboScheduler::writeMembraneMetrics() {
