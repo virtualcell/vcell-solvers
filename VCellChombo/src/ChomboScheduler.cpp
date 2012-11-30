@@ -1034,7 +1034,7 @@ bool ChomboScheduler::computeOneFaceCross(int dir, int face, int hiLoFace, RealV
 	{
 		return false;
 	}
-	static int slicedirs[SpaceDim][2] = {{1, 2}, {0, 2}, {0, 1}};
+	static int slicedirs[3][2] = {{1, 2}, {0, 2}, {0, 1}};
 	
 	int jlohi, jcross;
 	int planedir0, planedir1;
