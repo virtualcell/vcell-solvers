@@ -843,6 +843,16 @@ void ChomboScheduler::writeMembraneEdgeCrossPoints()
 	}
 	int iphase = 0;
 	int ilev = numLevels - 1; // only consider the finest level
+	
+	// for 3D slice view
+	Real sliceCrossPointDefaultValue = 0;
+	if (SpaceDim == 3)
+	{
+		const RealVect& origin = getChomboGeometry()->getDomainOrigin();
+		Real minOrigin = std::min<Real>(origin[0], origin[1]);
+		minOrigin = std::min<Real>(minOrigin, origin[2]);
+		sliceCrossPointDefaultValue = minOrigin - 1;
+	}
 	ChomboGeometryShop chomboGeoShop(geoIfs[iphase], vectDxes[ilev]);
 	for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol) 
 	{
@@ -924,16 +934,12 @@ void ChomboScheduler::writeMembraneEdgeCrossPoints()
 					RealVect V[2];
 					Real sliceCrossPoints[SpaceDim][4];
 					int sliceCrossPointCount[SpaceDim];
-					const RealVect& origin = getChomboGeometry()->getDomainOrigin();
-					Real minOrigin = std::min<Real>(origin[0], origin[1]);
-					minOrigin = std::min<Real>(minOrigin, origin[2]);
-					Real dv = minOrigin - 1;
 					for (int dir = 0; dir < SpaceDim; ++ dir)
 					{
 						sliceCrossPointCount[dir] = 0;
 						for (int i = 0; i < 4; ++ i)
 						{
-							sliceCrossPoints[dir][i] = dv;
+							sliceCrossPoints[dir][i] = sliceCrossPointDefaultValue;
 						}
 					}
 					for (int face = 0; face < SpaceDim; ++ face)
