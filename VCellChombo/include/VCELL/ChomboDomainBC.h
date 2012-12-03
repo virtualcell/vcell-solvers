@@ -3,7 +3,7 @@
 
 #include "RefCountedPtr.H"
 #include <VCELL/VarContext.h>
-#include <VCELL/SimTypes.h>
+#include <VCELL/Structure.h>
 #include <DirichletPoissonDomainBC.H>
 #include <NeumannPoissonDomainBC.H>
 

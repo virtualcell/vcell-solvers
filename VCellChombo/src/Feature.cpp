@@ -8,10 +8,9 @@
 #include <VCELL/VolumeVarContextExpression.h>
 #include <VCELL/VolumeRegionVarContextExpression.h>
 
-Feature::Feature(string& name, unsigned char findex, FeatureHandle Ahandle) : Structure(name)
+Feature::Feature(string& name, unsigned char findex) : Structure(name)
 {
 	index = findex;
-	handle = Ahandle;
 }
 
 Feature::~Feature()
@@ -39,11 +38,6 @@ void Feature::addVolumeVarContext(VolumeVarContextExpression *vvc)
 void Feature::addVolumeRegionVarContext(VolumeRegionVarContextExpression *vrvc)
 {
 	volumeRegionVarContextList.push_back(vrvc);
-}
-
-FeatureHandle Feature::getHandle()
-{
-	return handle;
 }
 
 VolumeVarContextExpression* Feature::getVolumeVarContext(VolumeVariable *volVar)

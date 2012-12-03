@@ -8,16 +8,19 @@
 #ifndef SIMTOOL_H
 #define SIMTOOL_H
 
-#include <VCELL/Timer.h>
 #include <stdio.h>
 
 #ifndef DIRECTORY_SEPARATOR
-#if ( defined(WIN32) || defined(WIN64) || defined(CYGWIN) )
+#if ( defined(WIN32) || defined(WIN64) || defined(CH_CYGWIN) )
 #define DIRECTORY_SEPARATOR '\\'
 #else
 #define DIRECTORY_SEPARATOR '/'
 #endif
 #endif
+#define EDGE_CROSS_POINTS_FILE_EXT ".crspts"
+#define CHOMBO_MEMBRANE_METRICS_FILE_EXT ".chombo.memmetrics"
+#define MEMBRANE_SLICE_CROSS_FILE_EXT ".slccrs"
+#define HDF5_FILE_EXT ".hdf5"
 
 class VCellModel;
 class SimulationExpression;
@@ -58,10 +61,6 @@ public:
 	SimulationExpression* getSimulation() { return simulation; }
 	VCellModel* getModel() { return vcellModel; }
 	bool checkStopRequested();
-	TimerHandle getTimerHandle(string& timerName);
-	void        startTimer(TimerHandle hnd);
-	void        stopTimer(TimerHandle hnd);
-	double      getElapsedTimeSec(TimerHandle hnd);
 
 	void setSolver(string& s);
 	bool isChomboSemiImplicitSolver();
@@ -117,7 +116,6 @@ private:
 	bool bSimZip;
 	VCellModel* vcellModel;
 	SimulationExpression  *simulation;
-	Timer  *_timer;
 
 	double simEndTime, simStartTime;
 	double simDeltaTime;
@@ -132,7 +130,6 @@ private:
 	double* discontinuityTimes;
 	int numDiscontinuityTimes;
 	bool bLoadFinal;
-
 
 	double sundialsRelTol, sundialsAbsTol, sundialsMaxStep;
 	double pcgRelTol;

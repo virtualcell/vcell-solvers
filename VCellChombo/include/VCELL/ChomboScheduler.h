@@ -51,7 +51,9 @@ class ChomboScheduler {
 public:
 	ChomboScheduler(SimulationExpression* sim, ChomboSpec* chomboSpec);
 	~ChomboScheduler();
-	virtual void initValues();
+	
+	void initializeGrids();
+	virtual void initValues()=0;
 
 	void writeData(char* dataFileName);
 	int getNumMembranePoints()
@@ -63,6 +65,7 @@ public:
 		return chomboGeometry;
 	}
 	virtual void iterate()=0;
+	void writeMembraneFiles();
 	
 protected:
 	SimulationExpression* simulation;
@@ -98,7 +101,6 @@ protected:
 
 	int hdf5FileCount;
 
-	void defineGrids();
 	void writeVolumeSolution();
 	void writeMembraneSolution();
 

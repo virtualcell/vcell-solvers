@@ -11,7 +11,6 @@
 using std::cout;
 using std::endl;
 using std::string;
-#include <VCELL/SimTypes.h>
 #include <VCELL/Variable.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/ChomboGeometry.h>

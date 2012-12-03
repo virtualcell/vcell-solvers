@@ -8,12 +8,20 @@
 #ifndef VARIABLE_H
 #define VARIABLE_H
 
-#include <VCELL/SimTypes.h>
 #include <string>
 using std::string;
 using std::ofstream;
 
 class Structure;
+enum VariableType {
+	VAR_UNKNOWN =			0,
+	VAR_VOLUME =			1,
+	VAR_MEMBRANE =			2,
+	VAR_CONTOUR =			3,
+	VAR_VOLUME_REGION =		4,
+	VAR_MEMBRANE_REGION=	5,
+	VAR_CONTOUR_REGION =	6
+} ;
 
 class Variable 
 {

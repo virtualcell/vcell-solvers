@@ -42,7 +42,6 @@
 
 static const int blockFactor = 8;  // smallest box, 8 is recommended.
 static const int nestingRadius  = 2; //ghostPhi[0];  // should be the same as ghost phi size, but Terry used 2
-//static int maxBoxSize = 1024;  // biggest box 32(3D) and 64(2D), but Terry used 1024
 static const int maxCoarsen = -1;
 static const int numPreCondIters = 4;
 static const int relaxType = 2;
@@ -50,11 +49,6 @@ static const int relaxType = 2;
 static const int numGhostEBISLayout = 4;
 
 extern bool refine_all_irregular;
-
-#define HDF5_FILE_EXT ".hdf5"
-#define EDGE_CROSS_POINTS_FILE_EXT ".crspts"
-#define CHOMBO_MEMBRANE_METRICS_FILE_EXT ".chombo.memmetrics"
-#define MEMBRANE_SLICE_CROSS_FILE_EXT ".slccrs"
 
 ChomboScheduler::ChomboScheduler(SimulationExpression* sim, ChomboSpec* chomboSpec) {
 	simulation = sim;
@@ -69,7 +63,6 @@ ChomboScheduler::ChomboScheduler(SimulationExpression* sim, ChomboSpec* chomboSp
 	numGhostSoln = IntVect::Unit * 3;
 	cout << "maxBoxSiz=" << chomboSpec->getMaxBoxSize() << endl;
 	cout << "fillRatio=" << chomboSpec->getFillRatio() << endl;
-	defineGrids();
 }
 
 ChomboScheduler::~ChomboScheduler() {
@@ -88,7 +81,7 @@ ChomboScheduler::~ChomboScheduler() {
 	membranePointIndexes.clear();
 }
 
-void ChomboScheduler::initValues() {
+void ChomboScheduler::writeMembraneFiles() {
 	writeMembraneMetrics();
 	writeMembraneEdgeCrossPoints();
 }
@@ -128,30 +121,14 @@ double ChomboScheduler::getExpressionConstantValue(Variable* var, ExpressionInde
 	return varContextExp->evaluateConstantExpression(expIndex);
 }
 
-//double ChomboScheduler::evaluateExpressionRegular(Variable* var, ExpressionIndex expIndex, int level, Feature* feature,
-//			const IntVect& gridIndex, double* variableValues) {
-//	RealVect coord = EBArith::getIVLocation(gridIndex, vectDxes[level], chomboGeometry->getDomainOrigin());
-//	vectValues[0] = simulation->getTime_sec();
-//	vectValues[1] = coord[0];
-//	vectValues[2] = coord[1];
-//	vectValues[3] = SpaceDim < 3 ? 0.5 : coord[2];
-//	if (variableValues != 0) {
-//		vectValues[4] = variableValues[0];
-//	}
-//
-//	VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)feature->getVolumeVarContext((VolumeVariable*)var);
-//	return varContextExp->evaluateExpression(expIndex, vectValues);
-//
-//}
-
-void ChomboScheduler::defineGrids() {
+void ChomboScheduler::initializeGrids() {
 	if (SpaceDim != chomboGeometry->getDimension()) {
 		stringstream ss;
 		ss << "Wrong executable (" << SpaceDim << "d) for this simulation (" << chomboGeometry->getDimension() << "d)" << endl;
 		throw ss.str();
 	}
 
-	cout << endl << "ChomboScheduler:: define grids" << endl;
+	cout << endl << "ChomboScheduler:: generating grids" << endl;
 	IntVect coarsestNx = chomboGeometry->getGridSize();
 	RealVect coarsestDx = chomboGeometry->getDomainSize();
 	
@@ -182,7 +159,7 @@ void ChomboScheduler::defineGrids() {
 	}
     
     // Define Geometry
-	cout << "ChomboScheduler:: define geometry" << endl;
+	cout << "ChomboScheduler:: processing geometry" << endl;
 
 	ProblemDomain finestDomain = vectDomains[numLevels - 1];
 	RealVect fineDx = vectDxes[numLevels - 1];
@@ -323,11 +300,7 @@ void ChomboScheduler::defineGrids() {
 		} else {
 			pout() << "ChomboScheduler:: tag user defined cells" << endl;
 		}
-
-//		RealVect lofilter(D_DECL(0.15, -0.25, -0.25));
-//		RealVect hifilter(D_DECL(1, 0.25, 0.25));
-//		RealVect lofilter(D_DECL(0.425,-0.24,-0.24));
-//		RealVect hifilter(D_DECL(0.875, 0.125, 0.125));
+		
 		int taglevel = numLevels - 2;
 		if (refine_all_irregular) {
 			for (int phase0 = 0; phase0 < NUM_PHASES; phase0 ++) {
@@ -352,29 +325,6 @@ void ChomboScheduler::defineGrids() {
 					}
 				}
 			}
-//			RealVect lofilter1(D_DECL(1,10,-0.1));
-//			RealVect hifilter1(D_DECL(3,18,0.1));
-//			RealVect lofilter2(D_DECL(-3,10,-0.1));
-//			RealVect hifilter2(D_DECL(-1,18,0.1));
-//			const RealVect& origin = chomboGeometry->getDomainOrigin();
-//
-//			IntVect lofilterIndex1;
-//			IntVect hifilterIndex1;
-//			IntVect lofilterIndex2;
-//			IntVect hifilterIndex2;
-//
-//			for (int i = 0; i < SpaceDim; i++) {
-//				lofilterIndex1[i] = floor((lofilter1[i] - origin[i]) / vectDxes[taglevel][i]);
-//				hifilterIndex1[i] = ceil ((hifilter1[i] - origin[i]) / vectDxes[taglevel][i]);
-//				lofilterIndex2[i] = floor((lofilter2[i] - origin[i]) / vectDxes[taglevel][i]);
-//				hifilterIndex2[i] = ceil ((hifilter2[i] - origin[i]) / vectDxes[taglevel][i]);
-//			}
-//
-//			Box tagVol1(lofilterIndex1,hifilterIndex1);
-//			Box tagVol2(lofilterIndex2,hifilterIndex2);
-//
-//			tags[taglevel] |= tagVol1;
-//			tags[taglevel] |= tagVol2;
 		}
 
 		if (tags[taglevel].isEmpty()) {
@@ -441,39 +391,7 @@ void ChomboScheduler::defineGrids() {
 	}
 
 	// find membrane for each irregular point
-	{
-//		Vector<IntVect> ivs;
-//		ivs.push_back(IntVect(9,8));
-//		ivs.push_back(IntVect(9,9));
-//		ivs.push_back(IntVect(9,10));
-//		for (int phase0 = 0; phase0 < NUM_PHASES; phase0 ++) {
-//			for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol++) {
-//				Feature* feature = phaseVolumeList[phase0][ivol]->feature;
-//				for (int ilev = 0; ilev < 1; ilev ++) {
-//					for(DataIterator dit = vectGrids[0].dataIterator(); dit.ok(); ++dit) {
-//						const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
-//						
-//						for (int a = 0; a < ivs.size(); ++ a) {
-//							IntVect& iv = ivs[a];
-//							pout() << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev << ":" << iv << " is ";
-//							//RealVect vol_point = EBArith::getIVLocation(iv, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-//							if (currEBISBox.isCovered(iv)) {
-//								pout() << "covered";
-//							} else if (currEBISBox.isRegular(iv)) {
-//								pout() << "regular";
-//							} else if (currEBISBox.isIrregular(iv)) {
-//								VolIndex vof(iv, 0);
-//								double volfrac = currEBISBox.volFrac(vof);
-//								double areafrac = currEBISBox.bndryArea(vof);
-//								pout() << "irrregular, volfrac=" << volfrac << ",bndryArea=" << areafrac;
-//							}
-//							pout() << endl;
-//						}
-//					}
-//				}
-//			}
-//		}
-		
+	{		
 		// initialize all membrane IDs to -1 first
 		for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
 			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
@@ -529,7 +447,6 @@ void ChomboScheduler::defineGrids() {
 							ss << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev 
 									<< ": no membrane id for point " << vof.gridIndex() << " at "  << vol_point << ".";
 							cout << ss.str() << endl;
-							//throw ss.str();
 							(*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0) = -1;
 						}
 					}
@@ -557,23 +474,6 @@ void ChomboScheduler::defineGrids() {
 					
 					const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
 					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
-//					const EBGraph& currEBGraph = currEBISBox.getEBGraph();
-//					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit) {
-//						const VolIndex& vof = vofit();
-//						const IntVect& gridIndex = vof.gridIndex();
-//						Vector<VolIndex> vofs = currEBISBox.getVoFs(gridIndex);
-//						if (ilev == 1) {		
-//							RealVect vol_point = EBArith::getVofLocation(vof,vectDxes[ilev], chomboGeometry->getDomainOrigin());
-//							const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
-//							RealVect mem_point = mem_centroid;
-//							mem_point *= vectDxes[ilev];
-//							mem_point += vol_point;
-//							pout() << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev << ":" << ", at " << gridIndex << ", centroid " << mem_point << endl;
-//						}
-//						if (vofs.size() > 1) {
-//							pout() << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev << ":" << ", multi valued (" << vofs.size() << ") cells at " << gridIndex << endl;
-//						}
-//					}
 					
 					pout() << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev << ":" << " Box " << currBox << endl;
 					totalPtsLevel += currBox.numPts();
@@ -610,13 +510,6 @@ void ChomboScheduler::writeVolumeSolution() {
 			memset(varCurr, 0, sizeof(double) * var->getSize());
 		}
 	}
-//	double alpha = 0.2;
-//	double lambda = 0.5;
-//	double max_error = 0;
-//	double max_error_ignore_small_volfrac = 0;
-//	double t = simulation->getTime_sec();
-
-//	cout << "+++++++vol_frac_cutoff = " << vol_frac_cutoff << "+++++++" << endl;
 		
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
@@ -661,27 +554,7 @@ void ChomboScheduler::writeVolumeSolution() {
 										continue;
 									}
 
-//									VolIndex vof(gridIndex, 0);
-//									double volFrac = currEBISBox.volFrac(vof);
-
 									double sol = solnDataPtr[getChomboBoxLocalIndex(solnSize, ivar, D_DECL(i, j, k))];
-
-//									RealVect coord = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-//									double x = coord[0];
-//									double y = coord[1];
-//#if CH_SPACEDIM==3
-//									double z = coord[2];
-//									double rho = sqrt(x * x + y * y + z * z);
-//#else
-//									double rho = sqrt(x * x + y * y);
-//#endif
-//									double f = cos(alpha * rho);
-//									double exact_sol =  f * exp(-t * lambda);
-//									double error = fabs(sol - exact_sol);
-//									max_error = max(max_error, error);
-//									if (volFrac > vol_frac_cutoff) {
-//										max_error_ignore_small_volfrac = max(max_error_ignore_small_volfrac, error);
-//									}
 #if CH_SPACEDIM==3
 									for (int kk = 0; kk < refratio; kk ++) {
 #endif
@@ -706,8 +579,6 @@ void ChomboScheduler::writeVolumeSolution() {
 			} // for (int ivar)
 		} // for ivol
 	} // for iphase
-//	pout() << "max error " << t << " " << max_error << endl;
-//	pout() << "max error " << t << " " << max_error_ignore_small_volfrac << endl;
 }
 
 void ChomboScheduler::writeData(char* dataFileName) {
@@ -796,7 +667,6 @@ void ChomboScheduler::writeMembraneSolution() {
 
 					Feature* jFeature = phaseVolumeList[jphase][jvol]->feature;
 					Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(iFeature, jFeature);
-					const RealVect gridIndex = vof.gridIndex();
 					for (int memVarIdx = 0; memVarIdx < numMembraneVars; ++ memVarIdx)
 					{
 						Variable* var = (Variable*)simulation->getMemVariable(memVarIdx);
@@ -839,7 +709,7 @@ void ChomboScheduler::writeMembraneEdgeCrossPoints()
 		char fileName2[128];
 		sprintf(fileName2, "%s%s", SimTool::getInstance()->getBaseFileName(), MEMBRANE_SLICE_CROSS_FILE_EXT);
 		ofs2.open(fileName2);
-		ofs2 << "index,y1,z1,y2,z2,x1,z1,x2,z2,x1,y1,x2,y2" << endl;
+		ofs2 << "index,x_y1,x_z1,x_y2,x_z2,y_x1,y_z1,y_x2,y_z2,z_x1,z_y1,z_x2,z_y2" << endl;
 	}
 	int iphase = 0;
 	int ilev = numLevels - 1; // only consider the finest level
@@ -1142,4 +1012,3 @@ void ChomboScheduler::writeMembraneMetrics() {
 	} // end ivol
 	outfile.close(); 
 }
-

@@ -5,12 +5,14 @@
 #ifndef DATASET_H
 #define DATASET_H
 
-#include <VCELL/SimTypes.h>
 #include <stdio.h>
 
 #define DATABLOCK_STRING_SIZE  124
 #define MAGIC_STRING "VCell Data Dump"
 #define VERSION_STRING  "2.0.1  "
+
+typedef int int32;
+typedef unsigned int uint32;
 
 struct FileHeader {
 	char   magicString[16];

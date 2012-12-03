@@ -41,7 +41,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/MembraneVarContextExpression.o \
 	${OBJECTDIR}/src/ChomboSemiImplicitScheduler.o \
 	${OBJECTDIR}/src/MembraneRegionVariable.o \
-	${OBJECTDIR}/src/Timer.o \
 	${OBJECTDIR}/src/SimTool.o \
 	${OBJECTDIR}/src/DataSet.o \
 	${OBJECTDIR}/src/MembraneVariable.o \
@@ -119,11 +118,6 @@ ${OBJECTDIR}/src/MembraneRegionVariable.o: src/MembraneRegionVariable.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_SPACEDIM=2 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.8/src -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/MembraneRegionVariable.o src/MembraneRegionVariable.cpp
-
-${OBJECTDIR}/src/Timer.o: src/Timer.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_SPACEDIM=2 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.8/src -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Timer.o src/Timer.cpp
 
 ${OBJECTDIR}/src/SimTool.o: src/SimTool.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src

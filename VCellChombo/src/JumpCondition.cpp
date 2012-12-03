@@ -3,7 +3,6 @@
 #include <sstream>
 using std::stringstream;
 
-#include <VCELL/SimTypes.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/SimTool.h>
 #include <Expression.h>

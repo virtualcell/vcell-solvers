@@ -5,7 +5,6 @@
 #ifndef VCELLMODEL_H
 #define VCELLMODEL_H 
 
-#include <VCELL/SimTypes.h>
 #include <string>
 #include <vector>
 using std::vector;
@@ -24,8 +23,7 @@ public:
 	int getNumFeatures() {
 		return (int)featureList.size();
 	}
-	Feature* addFeature(string& name, FeatureHandle handle);
-	Feature* getFeatureFromHandle(FeatureHandle handle);
+	Feature* addFeature(string& name);
 	Feature* getFeatureFromName(const string&  name);
 	Feature* getFeatureFromIndex(int index);
 

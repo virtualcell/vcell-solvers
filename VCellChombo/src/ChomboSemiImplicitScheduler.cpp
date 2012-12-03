@@ -82,7 +82,6 @@ ChomboSemiImplicitScheduler::~ChomboSemiImplicitScheduler() {
 }
 
 void ChomboSemiImplicitScheduler::initValues() {
-	ChomboScheduler::initValues();
 	setInitialConditions();
 
 	ebBEIntegratorList.resize(NUM_PHASES);
@@ -174,18 +173,7 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 	extrapValues.resize(NUM_PHASES);
 
 	int totalVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
-	//output information during initialization
-//	time_t seconds;
-//    seconds = time (NULL);
-//	stringstream ss;
-//	ss << "D:\\ChomboInitInfo_" << seconds << ".csv";
-//	string fileName =  ss.str();
-//	ofstream outfile (fileName.c_str());
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
-//		if (outfile.is_open())
-//		{
-//			outfile << "PhaseID\t" << iphase << "\n"; 
-//		}
 		int numVols = phaseVolumeList[iphase].size();
 
 		volSoln[iphase].resize(numVols);
@@ -202,9 +190,7 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 		}
 		
 		for (int ivol = 0; ivol < numVols; ivol++) {
-//			outfile << "VolumeID\t" << ivol << "\n";
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-//			outfile << "FeatureName\t" << feature->getName() << "\n";
 			int numDefinedVolVars = feature->getNumDefinedVariables();
 			int numDefinedMemVars = feature->getMemVarIndexesInAdjacentMembranes().size();
 			if (numDefinedVolVars  == 0 && numDefinedMemVars == 0) {
@@ -221,13 +207,12 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 				extrapValues[iphase][ivol].resize(numLevels);
 			}
 			
-			if (iphase == 0) {//abcde
+			if (iphase == 0) {
 				memSoln[ivol].resize(numLevels);
 				memSolnOld[ivol].resize(numLevels);
 			}
 		
 			for (int ilev = 0; ilev < numLevels; ilev ++) {
-//				outfile << "LevelID\t" << ilev << "\n";
 				RefCountedPtr< LayoutData<IntVectSet> > irrSet = RefCountedPtr<LayoutData<IntVectSet> >(new LayoutData<IntVectSet>(vectGrids[ilev]));
 
 				if (numDefinedVolVars > 0) {
@@ -274,7 +259,6 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 									for (int ivar = 0; ivar < numDefinedVolVars; ivar ++) {
 										Variable* volVar = feature->getDefinedVariable(ivar);
 										VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)feature->getVolumeVarContext((VolumeVariable*)volVar);
-	//									double ic = evaluateExpressionRegular(feature->getDefinedVariable(ivar), INITIAL_VALUE_EXP, ilev, feature, gridIndex, 0);
 										double ic = varContextExp->evaluateExpression(INITIAL_VALUE_EXP, vectValues);
 										int solnLocalIndex = getChomboBoxLocalIndex(solnSize, ivar, D_DECL(i, j, k));
 										solnDataPtr[solnLocalIndex] = ic;

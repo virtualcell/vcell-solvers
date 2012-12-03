@@ -4,7 +4,6 @@
 #include "EBArith.H"
 #include "Stencils.H"
 #include "VoFIterator.H"
-#include "VCELL/Structure.h"
 #include <VCELL/VarContext.h>
 #include <VCELL/Feature.h>
 #include <VCELL/ChomboSemiImplicitScheduler.h>

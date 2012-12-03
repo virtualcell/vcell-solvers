@@ -21,11 +21,9 @@
       <itemPath>include/VCELL/MembraneVarContextExpression.h</itemPath>
       <itemPath>include/VCELL/MembraneVariable.h</itemPath>
       <itemPath>include/VCELL/SimTool.h</itemPath>
-      <itemPath>include/VCELL/SimTypes.h</itemPath>
       <itemPath>include/VCELL/SimulationExpression.h</itemPath>
       <itemPath>include/VCELL/SimulationMessaging.h</itemPath>
       <itemPath>include/VCELL/Structure.h</itemPath>
-      <itemPath>include/VCELL/Timer.h</itemPath>
       <itemPath>include/VCELL/VCellModel.h</itemPath>
       <itemPath>include/VCELL/VarContext.h</itemPath>
       <itemPath>include/VCELL/Variable.h</itemPath>
@@ -62,7 +60,6 @@
       <itemPath>src/SimulationExpression.cpp</itemPath>
       <itemPath>src/SimulationMessaging.cpp</itemPath>
       <itemPath>src/Structure.cpp</itemPath>
-      <itemPath>src/Timer.cpp</itemPath>
       <itemPath>src/VCellModel.cpp</itemPath>
       <itemPath>src/VarContext.cpp</itemPath>
       <itemPath>src/Variable.cpp</itemPath>

@@ -129,7 +129,7 @@ void FVSolver::loadModel(istream& ifsInput) {
 		if (nextToken == "FEATURE") {
 			numFeatures ++;
 			lineInput >> feature_name >> handle;
-			Feature* feature = model->addFeature(feature_name, handle);
+			Feature* feature = model->addFeature(feature_name);
 			structure = feature;
 		} else if (nextToken == "MEMBRANE") {
 			numMembranes ++;
@@ -232,6 +232,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 	simulation = new SimulationExpression();
 	// process geometry
 	chomboScheduler = new ChomboSemiImplicitScheduler(simulation, chomboSpec);
+	chomboScheduler->initializeGrids();
 	simulation->setScheduler(chomboScheduler);
 	
 	int numMembranePoints = chomboScheduler->getNumMembranePoints();

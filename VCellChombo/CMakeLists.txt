@@ -23,7 +23,6 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		include/VCELL/SimulationExpression.h
 		include/VCELL/SimulationMessaging.h
 		include/VCELL/Structure.h
-		include/VCELL/Timer.h
 		include/VCELL/VarContext.h
 		include/VCELL/Variable.h
 		include/VCELL/VCellModel.h
@@ -55,7 +54,6 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		src/SimulationExpression.cpp
 		src/SimulationMessaging.cpp
 		src/Structure.cpp
-		src/Timer.cpp
 		src/VarContext.cpp
 		src/Variable.cpp
 		src/VCellModel.cpp

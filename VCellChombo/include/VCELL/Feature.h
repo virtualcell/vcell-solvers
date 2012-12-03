@@ -24,12 +24,11 @@ class MembraneRegionVariable;
 class Feature : public Structure
 {
 public:
-	Feature(string& name, unsigned char findex, FeatureHandle handle);
+	Feature(string& name, unsigned char findex);
 	~Feature();
 
 	void resolveReferences(SimulationExpression *sim);
 
-	FeatureHandle   getHandle();
 	unsigned char getIndex() {
 		return index;
 	}
@@ -53,7 +52,6 @@ protected:
 	vector<VolumeVarContextExpression*> volumeVarContextList;
 	vector<VolumeRegionVarContextExpression*> volumeRegionVarContextList;
 	   
-	FeatureHandle handle;
 	unsigned char index;
 	
 	vector<int> memVarIndexesInAdjacentMembranes;

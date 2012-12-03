@@ -20,6 +20,10 @@ public:
 	virtual ~SimulationExpression();
 
 	void initSimulation();
+	ChomboScheduler* getScheduler()
+	{
+		return _scheduler;
+	}
 	void setScheduler(ChomboScheduler *scheduler)
 	{
 		_scheduler = scheduler;

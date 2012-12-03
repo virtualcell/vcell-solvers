@@ -1,7 +1,6 @@
 #ifndef STRUCTURE_H
 #define STRUCTURE_H
 
-#include <VCELL/SimTypes.h>
 #include <VCELL/Variable.h>
 #include <vector>
 #include <string>
@@ -10,6 +9,11 @@ using std::vector;
 
 class Region;
 class FastSystem;
+enum BoundaryType {
+	BOUNDARY_VALUE, 
+	BOUNDARY_FLUX, 
+	BOUNDARY_PERIODIC
+};
 
 class Structure
 {

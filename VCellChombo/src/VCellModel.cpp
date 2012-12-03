@@ -25,10 +25,10 @@ VCellModel::~VCellModel()
 	membraneList.clear();
  }
                          
-Feature* VCellModel::addFeature(string& name, FeatureHandle handle)
+Feature* VCellModel::addFeature(string& name)
 {
 	unsigned char findex = (unsigned char)featureList.size();
-	Feature* feature = new Feature(name, findex, handle);
+	Feature* feature = new Feature(name, findex);
 	featureList.push_back(feature);
 	return feature;
 }
@@ -39,17 +39,6 @@ Feature *VCellModel::getFeatureFromIndex(int index)
 		throw "VCellModel: getFeature(index) : index out of bounds";
 	}
 	return featureList.at(index);
-}
-
-Feature *VCellModel::getFeatureFromHandle(FeatureHandle handle)
-{
-	for (int i = 0; i < (int)featureList.size(); i ++) {
-		Feature* feature = featureList[i];
-		if (handle == feature->getHandle()) {
-			return feature;
-		}
-	}
-	return NULL;
 }
 
 Feature *VCellModel::getFeatureFromName(const string& name)

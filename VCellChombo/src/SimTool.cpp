@@ -11,7 +11,6 @@ using std::endl;
 
 #include <VCELL/ChomboIF.h>
 #include <VCELL/ChomboSpec.h>
-#include <VCELL/SimTypes.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/DataSet.h>
 #include <VCELL/SimulationMessaging.h>
@@ -29,10 +28,7 @@ using std::endl;
 
 #define ZIP_FILE_LIMIT 1E9
 
-#define MESH_FILE_EXT ".mesh"
-#define MESHMETRICS_FILE_EXT ".meshmetrics"
 #define SIM_FILE_EXT ".sim"
-#define PARTICLE_FILE_EXT ".particle"
 #define LOG_FILE_EXT ".log"
 #define ZIP_FILE_EXT ".zip"
 #define TID_FILE_EXT ".tid"
@@ -62,7 +58,6 @@ SimTool::SimTool()
 	baseSimName = NULL;
 	bLoadFinal = true;
 
-	_timer = 0;
 	vcellModel = 0;
 	simulation = 0;
 
@@ -130,31 +125,6 @@ void SimTool::requestNoZip() {
 
 bool SimTool::checkStopRequested() {
 	 return SimulationMessaging::getInstVar()->isStopRequested();
-}
-
-TimerHandle SimTool::getTimerHandle(string& identifier)
-{
-	if (_timer==NULL){
-		_timer = new Timer();
-	}
-	return _timer->registerID(identifier);
-}
-
-void SimTool::startTimer(TimerHandle hnd)
-{
-	_timer->start(hnd);
-}
-
-void SimTool::stopTimer(TimerHandle hnd)
-{
-	_timer->stop(hnd);
-}
-
-double SimTool::getElapsedTimeSec(TimerHandle hnd)
-{
-	double time=0.0;
-	_timer->getElapsedTimeSec(hnd, time);
-	return time;
 }
 
 void SimTool::setBaseFilename(char *fname) {
@@ -438,7 +408,6 @@ void SimTool::updateLog(double progress, double time, int iteration)
 	} else {
 		sprintf(simFileName,"%s%.4d%s",baseFileName, simFileCount, SIM_FILE_EXT);
 	}
-	sprintf(particleFileName,"%s%s",simFileName, PARTICLE_FILE_EXT);
 
 	simulation->writeData(simFileName);
 
@@ -523,10 +492,13 @@ void SimTool::clearLog()
 	char buffer[256];
 
 	// remove mesh file
-	sprintf(buffer,"%s%s",baseFileName, MESH_FILE_EXT);
+	sprintf(buffer,"%s%s",baseFileName, EDGE_CROSS_POINTS_FILE_EXT);
 	remove(buffer);
 
-	sprintf(buffer,"%s%s",baseFileName, MESHMETRICS_FILE_EXT);
+	sprintf(buffer,"%s%s",baseFileName, CHOMBO_MEMBRANE_METRICS_FILE_EXT);
+	remove(buffer);
+
+	sprintf(buffer,"%s%s",baseFileName, MEMBRANE_SLICE_CROSS_FILE_EXT);
 	remove(buffer);
 
 	sprintf(buffer,"%s%s",baseFileName, ZIP_FILE_EXT);
@@ -563,8 +535,6 @@ void SimTool::clearLog()
 		}
 		*dotSim = '\0';
 		sprintf(buffer,"%s%s", simFileName, SIM_FILE_EXT);
-		remove(buffer);
-		sprintf(buffer,"%s%s%s",simFileName, SIM_FILE_EXT, PARTICLE_FILE_EXT);
 		remove(buffer);
 		if (bSimZip) {
 			count = getZipCount(zipFileName);
@@ -623,6 +593,7 @@ void SimTool::start() {
 	if (simulation->getCurrIteration()==0) {
 		// simulation starts from scratch
 		if (bStoreEnable){
+			simulation->getScheduler()->writeMembraneFiles();
 			updateLog(0.0, 0.0, 0);
 		} else {
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, 0, 0));
@@ -655,8 +626,8 @@ void SimTool::start() {
 		if (simulation->getCurrIteration() % keepEvery == 0 || simulation->getTime_sec() > simEndTime - epsilon){
 			if (bStoreEnable){
 				updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
-            }
-        }
+      }
+    }
 		percentile = (simulation->getTime_sec() - simStartTime)/(simEndTime - simStartTime);
 		if (percentile - lastSentPercentile >= increment) {
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec()));
