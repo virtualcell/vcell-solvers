@@ -968,7 +968,7 @@ void ChomboScheduler::writeMembraneMetrics() {
 	{
 		outfile << "i,j,k,x,y,z,normalX,normalY,normalZ,";
 	}
-	outfile << "areaFraction" << endl;
+	outfile << "volumeFraction,areaFraction" << endl;
 	for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 
 		DisjointBoxLayout& currGrids = vectGrids[ilev];
@@ -988,6 +988,7 @@ void ChomboScheduler::writeMembraneMetrics() {
 				RealVect vol_point = EBArith::getVofLocation(vof,vectDxes[ilev], chomboGeometry->getDomainOrigin());
 				RealVect memPointNormal = currEBISBox.normal(vof);
 				Real memAreaFrac = currEBISBox.bndryArea(vof);
+				Real volFrac = currEBISBox.volFrac(vof);
 
 				RealVect mem_point = mem_centroid;
 				mem_point *= vectDxes[ilev];
@@ -1006,7 +1007,7 @@ void ChomboScheduler::writeMembraneMetrics() {
 				{
 					outfile << memPointNormal[i] << ",";
 				}
-				outfile << memAreaFrac << endl;
+				outfile << volFrac << "," << memAreaFrac << endl;
 			} // for (VoFIterator vofit(irregCells,currEBGraph);
 		} // end DataIter
 	} // end ivol
