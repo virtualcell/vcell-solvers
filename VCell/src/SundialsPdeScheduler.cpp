@@ -1421,8 +1421,8 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, doubl
 			// add diffusion and convection
 			for (int n = 0; n < dimension; n ++) {
 				int neighborIndex = volumeNeighbors[n];
-				int neighborVectorIndex = getVolumeElementVectorOffset(neighborIndex, regionID) + activeVarCount;
-				int neighborMask = pVolumeElement[neighborIndex].neighborMask;
+				int neighborMask = neighborIndex < 0 ? 0 : pVolumeElement[neighborIndex].neighborMask;
+				int neighborVectorIndex  = neighborIndex < 0 ? -1 : getVolumeElementVectorOffset(neighborIndex, regionID) + activeVarCount;
 				bool bNeighborDirichlet = (neighborMask & BOUNDARY_TYPE_DIRICHLET);
 
 				if (varContext->hasGradient(n)) {					
@@ -1433,7 +1433,7 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, doubl
 						if (!bDirichlet) {
 							rhsGradients[vectorIndex] += (-gradi + grad_near) * oneOverH[n];
 						}
-						if (!bNeighborDirichlet) {
+						if (!bNeighborDirichlet && neighborVectorIndex>=0) {
 							rhsGradients[neighborVectorIndex] -= gradi * oneOverH[n] / 2;
 						}
 					} else if (neighborIndex < 0) { // no plus neighbor
