@@ -112,10 +112,9 @@ protected:
 	bool isInNextFinerLevel(int level, const IntVect& gridIndex);
 
 	Vector< Vector<ConnectedComponent*> > phaseVolumeList;
-	void writeMembraneEdgeCrossPoints();
-	void writeMembraneMetrics();
 	int numMembranePoints;
 	bool computeOneFaceCross(int, int, int, RealVect&, RealVect&, RealVect&, RealVect&, RealVect&);
+	
 };
 
 #endif

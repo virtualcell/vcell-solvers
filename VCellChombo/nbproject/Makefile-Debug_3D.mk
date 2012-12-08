@@ -58,9 +58,9 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/VolumeVariable.o \
 	${OBJECTDIR}/src/FVSolver.o \
 	${OBJECTDIR}/src/SimulationExpression.o \
-	${OBJECTDIR}/src/VCellModel.o \
 	${OBJECTDIR}/src/ChomboGeometry.o \
 	${OBJECTDIR}/src/Feature.o \
+	${OBJECTDIR}/src/VCellModel.o \
 	${OBJECTDIR}/src/VolumeVarContextExpression.o \
 	${OBJECTDIR}/src/VolumeRegionVarContextExpression.o
 
@@ -204,11 +204,6 @@ ${OBJECTDIR}/src/SimulationExpression.o: src/SimulationExpression.cpp
 	${RM} $@.d
 	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_SPACEDIM=3 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.8/src -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/SimulationExpression.o src/SimulationExpression.cpp
 
-${OBJECTDIR}/src/VCellModel.o: src/VCellModel.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_SPACEDIM=3 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.8/src -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/VCellModel.o src/VCellModel.cpp
-
 ${OBJECTDIR}/src/ChomboGeometry.o: src/ChomboGeometry.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
@@ -218,6 +213,11 @@ ${OBJECTDIR}/src/Feature.o: src/Feature.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_SPACEDIM=3 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.8/src -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Feature.o src/Feature.cpp
+
+${OBJECTDIR}/src/VCellModel.o: src/VCellModel.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_SPACEDIM=3 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.8/src -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/VCellModel.o src/VCellModel.cpp
 
 ${OBJECTDIR}/src/VolumeVarContextExpression.o: src/VolumeVarContextExpression.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src

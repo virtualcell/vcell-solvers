@@ -81,11 +81,6 @@ ChomboScheduler::~ChomboScheduler() {
 	membranePointIndexes.clear();
 }
 
-void ChomboScheduler::writeMembraneFiles() {
-	writeMembraneMetrics();
-	writeMembraneEdgeCrossPoints();
-}
-
 bool ChomboScheduler::isInNextFinerLevel(int level, const IntVect& gridIndex) {
 	if (level >= numLevels - 1) {
 		return false;
@@ -692,25 +687,31 @@ void ChomboScheduler::writeMembraneSolution() {
 	} // end ivol
 }
 
-void ChomboScheduler::writeMembraneEdgeCrossPoints()
+void ChomboScheduler::writeMembraneFiles()
 {
 	char fileName[128];
+	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), CHOMBO_MEMBRANE_METRICS_FILE_EXT);
+	ofstream metrics_ofs(fileName);
+	
 	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), EDGE_CROSS_POINTS_FILE_EXT);
-
-	ofstream ofs(fileName);
-	ofstream ofs2;
+	ofstream crspts_ofs(fileName);
+	
+	ofstream slccrs_ofs;
 	if (SpaceDim == 2)
 	{
-		ofs << "index,i,j,x0,y0,x1,y1,x2,y2" << endl;
+		crspts_ofs << "index,i,j,x0,y0,x1,y1,x2,y2" << endl;
+		metrics_ofs << "index,i,j,x,y,normalX,normalY,";
 	}
 	else if (SpaceDim == 3)
 	{
-		ofs << "index,face,i,j,k,x0,y0,z0,x1,y1,z1,x2,y2,z2" << endl;
-		char fileName2[128];
-		sprintf(fileName2, "%s%s", SimTool::getInstance()->getBaseFileName(), MEMBRANE_SLICE_CROSS_FILE_EXT);
-		ofs2.open(fileName2);
-		ofs2 << "index,x_y1,x_z1,x_y2,x_z2,y_x1,y_z1,y_x2,y_z2,z_x1,z_y1,z_x2,z_y2" << endl;
+		crspts_ofs << "index,face,i,j,k,x0,y0,z0,x1,y1,z1,x2,y2,z2" << endl;
+		sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MEMBRANE_SLICE_CROSS_FILE_EXT);
+		slccrs_ofs.open(fileName);
+		slccrs_ofs << "index,x_y1,x_z1,x_y2,x_z2,y_x1,y_z1,y_x2,y_z2,z_x1,z_y1,z_x2,z_y2" << endl;
+		metrics_ofs << "index,i,j,k,x,y,z,normalX,normalY,normalZ,";
 	}
+	metrics_ofs << "volumeFraction,areaFraction" << endl;
+	
 	int iphase = 0;
 	int ilev = numLevels - 1; // only consider the finest level
 	
@@ -745,6 +746,25 @@ void ChomboScheduler::writeMembraneEdgeCrossPoints()
 				RealVect mem_point = mem_centroid;
 				mem_point *= vectDxes[ilev];
 				mem_point += vol_point;
+				
+				RealVect memPointNormal = currEBISBox.normal(vof);
+				Real memAreaFrac = currEBISBox.bndryArea(vof);
+				Real volFrac = currEBISBox.volFrac(vof);
+	
+				metrics_ofs << memIndex << ",";
+				for (int i = 0; i < SpaceDim; ++ i)
+				{
+					metrics_ofs << gridIndex[i] << ",";
+				}
+				for (int i = 0; i < SpaceDim; ++ i)
+				{
+					metrics_ofs << mem_point[i] << ",";
+				}
+				for (int i = 0; i < SpaceDim; ++ i)
+				{
+					metrics_ofs << memPointNormal[i] << ",";
+				}
+				metrics_ofs << volFrac << "," << memAreaFrac << endl;
 				
 				if (SpaceDim == 2)
 				{
@@ -786,16 +806,16 @@ void ChomboScheduler::writeMembraneEdgeCrossPoints()
 					assert(crossedEdgeCount == 0 || crossedEdgeCount == 2);
 					if (crossedEdgeCount == 2)
 					{
-						ofs << memIndex;
+						crspts_ofs << memIndex;
 						for (int i = 0; i < SpaceDim; ++ i)
 						{
-							ofs << "," << gridIndex[i];
+							crspts_ofs << "," << gridIndex[i];
 						}
 						for (int i = 0; i < SpaceDim; ++ i)
 						{
-							ofs << "," << mem_point[i];
+							crspts_ofs << "," << mem_point[i];
 						}
-						ofs << ss.str() << endl;
+						crspts_ofs << ss.str() << endl;
 					}
 				}
 				else
@@ -854,23 +874,23 @@ void ChomboScheduler::writeMembraneEdgeCrossPoints()
 							assert(crossedEdgeCount == 0 || crossedEdgeCount == 2);
 							if (crossedEdgeCount == 2)
 							{
-								ofs << memIndex << "," << faceCount;
+								crspts_ofs << memIndex << "," << faceCount;
 								for (int i = 0; i < SpaceDim; ++ i)
 								{
-									ofs << "," << gridIndex[i];
+									crspts_ofs << "," << gridIndex[i];
 								}
 								for (int i = 0; i < SpaceDim; ++ i)
 								{
-									ofs << "," << mem_point[i];
+									crspts_ofs << "," << mem_point[i];
 								}
 								for (int v = 0; v < 1; ++ v)
 								{
 									for (int i = 0; i < SpaceDim; ++ i)
 									{
-										ofs << "," << V[v][i];
+										crspts_ofs << "," << V[v][i];
 									}
 								}
-								ofs << endl;
+								crspts_ofs << endl;
 								for(int dir = 0; dir < SpaceDim; ++ dir)
 								{
 									RealVect crossPoint;
@@ -886,21 +906,22 @@ void ChomboScheduler::writeMembraneEdgeCrossPoints()
 							}
 						} // end for (int hiLoFace
 					} // end for (int face
-					ofs2 << memIndex;
+					slccrs_ofs << memIndex;
 					for(int dir = 0; dir < SpaceDim; ++ dir)
 					{
 						for (int i = 0; i < 4; ++ i)
 						{
-							ofs2 << "," << sliceCrossPoints[dir][i];
+							slccrs_ofs << "," << sliceCrossPoints[dir][i];
 						}
 					}
-					ofs2 << endl;
+					slccrs_ofs << endl;
 				} // end if (SpaceDim == 2)
 			} // end for (VoFIterator vofit
 		} // end for(DataIterator dit
 	} // end 	for (int ivol 
-	ofs.close();
-	ofs2.close();
+	crspts_ofs.close();
+	slccrs_ofs.close();
+	metrics_ofs.close();
 }
 
 bool ChomboScheduler::computeOneFaceCross(int dir, int face, int hiLoFace, RealVect& H, RealVect& v0, 
@@ -949,67 +970,4 @@ bool ChomboScheduler::computeOneFaceCross(int dir, int face, int hiLoFace, RealV
     }
 	}
 	return false;
-}
-
-void ChomboScheduler::writeMembraneMetrics() {
-	
-	char fileName[128];
-	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), CHOMBO_MEMBRANE_METRICS_FILE_EXT);
-	ofstream outfile (fileName);
-	
-	int iphase = 0;
-	int ilev = numLevels - 1;  // only consider finest level
-	outfile << "index,";
-	if (SpaceDim == 2)
-	{
-		outfile << "i,j,x,y,normalX,normalY,";
-	}
-	else
-	{
-		outfile << "i,j,k,x,y,z,normalX,normalY,normalZ,";
-	}
-	outfile << "volumeFraction,areaFraction" << endl;
-	for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
-
-		DisjointBoxLayout& currGrids = vectGrids[ilev];
-
-		for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++dit)	{
-			const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
-			const Box& currBox = vectGrids[ilev][dit()];
-
-			const EBGraph& currEBGraph = currEBISBox.getEBGraph();
-			IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
-			for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit) {
-				const VolIndex& vof = vofit();
-				int memIndex = (*membranePointIndexes[ivol])[dit()](vof, 0);
-
-				const RealVect gridIndex = vof.gridIndex();
-				const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
-				RealVect vol_point = EBArith::getVofLocation(vof,vectDxes[ilev], chomboGeometry->getDomainOrigin());
-				RealVect memPointNormal = currEBISBox.normal(vof);
-				Real memAreaFrac = currEBISBox.bndryArea(vof);
-				Real volFrac = currEBISBox.volFrac(vof);
-
-				RealVect mem_point = mem_centroid;
-				mem_point *= vectDxes[ilev];
-				mem_point += vol_point;
-
-				outfile << memIndex << ",";
-				for (int i = 0; i < SpaceDim; ++ i)
-				{
-					outfile << gridIndex[i] << ",";
-				}
-				for (int i = 0; i < SpaceDim; ++ i)
-				{
-					outfile << mem_point[i] << ",";
-				}
-				for (int i = 0; i < SpaceDim; ++ i)
-				{
-					outfile << memPointNormal[i] << ",";
-				}
-				outfile << volFrac << "," << memAreaFrac << endl;
-			} // for (VoFIterator vofit(irregCells,currEBGraph);
-		} // end DataIter
-	} // end ivol
-	outfile.close(); 
 }
