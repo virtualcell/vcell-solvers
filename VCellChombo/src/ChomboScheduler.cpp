@@ -39,6 +39,7 @@
 #include <VCELL/ChomboGeometryShop.h>
 #include <assert.h>
 #include <sstream>
+#include <H5Cpp.h>
 
 static const int blockFactor = 8;  // smallest box, 8 is recommended.
 static const int nestingRadius  = 2; //ghostPhi[0];  // should be the same as ghost phi size, but Terry used 2
@@ -583,7 +584,7 @@ void ChomboScheduler::writeData(char* dataFileName) {
 		writeMembraneSolution();
 		DataSet::write(dataFileName, simulation);
 	}
-	static bool bFirstTime = true;
+	static bool bFirstTime = false;
 	bool bWriteHdf5 = false;
 	// we need at least one hdf5 to show mesh in viewer.
 	if (bWriteHdf5 || bFirstTime) {
@@ -687,6 +688,163 @@ void ChomboScheduler::writeMembraneSolution() {
 	} // end ivol
 }
 
+#define MESH_GROUP "/Mesh"
+#define METRICS_DATASET MESH_GROUP"/Metrics"
+#define CROSS_POINTS_DATASET MESH_GROUP"/Cross Points"
+#if CH_SPACEDIM == 3
+#define SLICE_VIEW_DATASET MESH_GROUP"/Slice View"
+#endif
+
+struct MeshMetrics
+{
+	int index;
+	IntVect gridIndex;
+	RealVect coord, normal;
+	double volumeFraction,areaFraction;
+	
+	static void printTitle(ostream& os)
+	{
+		os << "index" D_TERM(<< ",i", <<",j", << ",k") D_TERM(<< ",x", << ",y", << ",z") 
+			D_TERM(<< ",normalX", << ",normalY", << ",normalZ") << ",volumeFraction,areaFraction" << endl;
+	}
+	
+	friend ostream& operator<<(ostream& os, const MeshMetrics& mm) {
+		os << mm.index;
+		for (int dir = 0; dir < SpaceDim; ++ dir)
+		{
+			os << "," << mm.gridIndex[dir];
+		}
+		for (int dir = 0; dir < SpaceDim; ++ dir)
+		{
+			os << "," << mm.coord[dir];
+		}
+		for (int dir = 0; dir < SpaceDim; ++ dir)
+		{
+			os << "," << mm.normal[dir];
+		}
+		os	<< "," << mm.volumeFraction << "," << mm.areaFraction;
+		return os;
+	}
+};
+
+void populateMetricsDataType(H5::CompType& metricsType)
+{
+		metricsType.insertMember("index", HOFFSET(MeshMetrics, index), H5::PredType::NATIVE_INT);
+		D_TERM(metricsType.insertMember("i", HOFFSET(MeshMetrics, gridIndex[0]), H5::PredType::NATIVE_INT);,
+			     metricsType.insertMember("j", HOFFSET(MeshMetrics, gridIndex[1]), H5::PredType::NATIVE_INT);,
+			     metricsType.insertMember("k", HOFFSET(MeshMetrics, gridIndex[2]), H5::PredType::NATIVE_INT);)
+		D_TERM(metricsType.insertMember("x", HOFFSET(MeshMetrics, coord[0]), H5::PredType::NATIVE_DOUBLE);,
+			     metricsType.insertMember("y", HOFFSET(MeshMetrics, coord[1]), H5::PredType::NATIVE_DOUBLE);,
+			     metricsType.insertMember("z", HOFFSET(MeshMetrics, coord[2]), H5::PredType::NATIVE_DOUBLE);)
+		D_TERM(metricsType.insertMember("normalX", HOFFSET(MeshMetrics, normal[0]), H5::PredType::NATIVE_DOUBLE);,
+			     metricsType.insertMember("normalY", HOFFSET(MeshMetrics, normal[1]), H5::PredType::NATIVE_DOUBLE);,
+			     metricsType.insertMember("normalZ", HOFFSET(MeshMetrics, normal[2]), H5::PredType::NATIVE_DOUBLE);)
+		metricsType.insertMember("volumeFraction", HOFFSET(MeshMetrics, volumeFraction), H5::PredType::NATIVE_DOUBLE);
+		metricsType.insertMember("areaFraction", HOFFSET(MeshMetrics, areaFraction), H5::PredType::NATIVE_DOUBLE);
+}
+
+struct CrossPoint
+{
+	int index;
+	IntVect gridIndex;
+#if CH_SPACEDIM == 3
+	int face;
+#endif
+	RealVect triVertices[3];
+	
+	static void printTitle(ostream& os)
+	{
+		os << "index" D_TERM(<< ",i", <<",j", << ",k") 
+#if CH_SPACEDIM == 3
+		<< ",face"
+#endif
+		D_TERM(<< ",x0", <<",y0", << ",z0") 
+		D_TERM(<< ",x1", << ",y1", << ",z1") 
+		D_TERM(<< ",x2", << ",y2", << ",z2") << endl;
+	}
+	
+	friend ostream& operator<<(ostream& os, const CrossPoint& cp) {
+		os << cp.index;
+		for (int dir = 0; dir < SpaceDim; ++ dir)
+		{
+			os << "," << cp.gridIndex[dir]; 
+		}
+#if CH_SPACEDIM == 3
+		os << "," << cp.face;
+#endif
+		for (int i = 0; i < 3; ++ i)
+		{
+			for (int dir = 0; dir < SpaceDim; ++ dir)
+			{
+				os << "," << cp.triVertices[i][dir]; 
+			}
+		}
+		return os;
+	}
+};
+
+void populateCrossPointDataType(H5::CompType& crossPointType)
+{
+		crossPointType.insertMember("index", HOFFSET(CrossPoint, index), H5::PredType::NATIVE_INT);
+		D_TERM(crossPointType.insertMember("i", HOFFSET(CrossPoint, gridIndex[0]), H5::PredType::NATIVE_INT);,
+					 crossPointType.insertMember("j", HOFFSET(CrossPoint, gridIndex[1]), H5::PredType::NATIVE_INT);,
+			     crossPointType.insertMember("k", HOFFSET(CrossPoint, gridIndex[2]), H5::PredType::NATIVE_INT);)
+#if CH_SPACEDIM == 3
+		crossPointType.insertMember("face", HOFFSET(CrossPoint, face), H5::PredType::NATIVE_INT);
+#endif
+		D_TERM(crossPointType.insertMember("x0", HOFFSET(CrossPoint, triVertices[0][0]), H5::PredType::NATIVE_DOUBLE);,
+			     crossPointType.insertMember("y0", HOFFSET(CrossPoint, triVertices[0][1]), H5::PredType::NATIVE_DOUBLE);,
+			     crossPointType.insertMember("z0", HOFFSET(CrossPoint, triVertices[0][2]), H5::PredType::NATIVE_DOUBLE);)
+		D_TERM(crossPointType.insertMember("x1", HOFFSET(CrossPoint, triVertices[1][0]), H5::PredType::NATIVE_DOUBLE);,
+			     crossPointType.insertMember("y1", HOFFSET(CrossPoint, triVertices[1][1]), H5::PredType::NATIVE_DOUBLE);,
+			     crossPointType.insertMember("z1", HOFFSET(CrossPoint, triVertices[1][2]), H5::PredType::NATIVE_DOUBLE);)
+		D_TERM(crossPointType.insertMember("x2", HOFFSET(CrossPoint, triVertices[2][0]), H5::PredType::NATIVE_DOUBLE);,
+					 crossPointType.insertMember("y2", HOFFSET(CrossPoint, triVertices[2][1]), H5::PredType::NATIVE_DOUBLE);,
+					 crossPointType.insertMember("z2", HOFFSET(CrossPoint, triVertices[2][2]), H5::PredType::NATIVE_DOUBLE);)
+}
+
+#if CH_SPACEDIM == 3
+struct SliceView
+{
+	int index;
+	double crossPoints[3][4];
+	
+	static void printTitle(ostream& os)
+	{
+		os << "index,x_y1,x_z1,x_y2,x_z2,y_x1,y_z1,y_x2,y_z2,z_x1,z_y1,z_x2,z_y2" << endl;
+	}
+	
+	friend ostream& operator<<(ostream& os, const SliceView& sv) {
+		os << sv.index;
+		for (int dir = 0; dir < 3; ++ dir)
+		{
+			for (int i = 0; i < 4; ++ i)
+			{
+				os << "," << sv.crossPoints[dir][i];
+			}
+		}
+		return os;
+	}
+};
+
+void populateSliceViewDataType(H5::CompType& sliceViewType)
+{
+		sliceViewType.insertMember("index", HOFFSET(SliceView, index), H5::PredType::NATIVE_INT);
+		sliceViewType.insertMember("x_y1", HOFFSET(SliceView, crossPoints[0][0]), H5::PredType::NATIVE_DOUBLE);
+		sliceViewType.insertMember("x_z1", HOFFSET(SliceView, crossPoints[0][1]), H5::PredType::NATIVE_DOUBLE);
+		sliceViewType.insertMember("x_y2", HOFFSET(SliceView, crossPoints[0][2]), H5::PredType::NATIVE_DOUBLE);
+		sliceViewType.insertMember("x_z2", HOFFSET(SliceView, crossPoints[0][3]), H5::PredType::NATIVE_DOUBLE);
+		sliceViewType.insertMember("y_x1", HOFFSET(SliceView, crossPoints[1][0]), H5::PredType::NATIVE_DOUBLE);
+		sliceViewType.insertMember("y_z1", HOFFSET(SliceView, crossPoints[1][1]), H5::PredType::NATIVE_DOUBLE);
+		sliceViewType.insertMember("y_x2", HOFFSET(SliceView, crossPoints[1][2]), H5::PredType::NATIVE_DOUBLE);
+		sliceViewType.insertMember("y_z2", HOFFSET(SliceView, crossPoints[1][3]), H5::PredType::NATIVE_DOUBLE);
+		sliceViewType.insertMember("z_x1", HOFFSET(SliceView, crossPoints[2][0]), H5::PredType::NATIVE_DOUBLE);
+		sliceViewType.insertMember("z_y1", HOFFSET(SliceView, crossPoints[2][1]), H5::PredType::NATIVE_DOUBLE);
+		sliceViewType.insertMember("z_x2", HOFFSET(SliceView, crossPoints[2][2]), H5::PredType::NATIVE_DOUBLE);
+		sliceViewType.insertMember("z_y2", HOFFSET(SliceView, crossPoints[2][3]), H5::PredType::NATIVE_DOUBLE);
+}
+#endif
+
 void ChomboScheduler::writeMembraneFiles()
 {
 	char fileName[128];
@@ -695,35 +853,31 @@ void ChomboScheduler::writeMembraneFiles()
 	
 	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), EDGE_CROSS_POINTS_FILE_EXT);
 	ofstream crspts_ofs(fileName);
-	
-	ofstream slccrs_ofs;
-	if (SpaceDim == 2)
-	{
-		crspts_ofs << "index,i,j,x0,y0,x1,y1,x2,y2" << endl;
-		metrics_ofs << "index,i,j,x,y,normalX,normalY,";
-	}
-	else if (SpaceDim == 3)
-	{
-		crspts_ofs << "index,face,i,j,k,x0,y0,z0,x1,y1,z1,x2,y2,z2" << endl;
-		sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MEMBRANE_SLICE_CROSS_FILE_EXT);
-		slccrs_ofs.open(fileName);
-		slccrs_ofs << "index,x_y1,x_z1,x_y2,x_z2,y_x1,y_z1,y_x2,y_z2,z_x1,z_y1,z_x2,z_y2" << endl;
-		metrics_ofs << "index,i,j,k,x,y,z,normalX,normalY,normalZ,";
-	}
-	metrics_ofs << "volumeFraction,areaFraction" << endl;
+
+	MeshMetrics::printTitle(metrics_ofs);
+	CrossPoint::printTitle(crspts_ofs);
+#if (CH_SPACEDIM == 3)
+	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MEMBRANE_SLICE_CROSS_FILE_EXT);
+	ofstream slccrs_ofs(fileName);
+	SliceView::printTitle(slccrs_ofs);
+
+	const RealVect& origin = getChomboGeometry()->getDomainOrigin();
+	Real minOrigin = std::min<Real>(origin[0], origin[1]);
+	minOrigin = std::min<Real>(minOrigin, origin[2]);
+	Real sliceCrossPointDefaultValue = minOrigin - 1;
+	SliceView* sliceViewData = new SliceView[numMembranePoints];
+#endif
 	
 	int iphase = 0;
 	int ilev = numLevels - 1; // only consider the finest level
+	MeshMetrics* metricsData = new MeshMetrics[numMembranePoints];
+#if CH_SPACEDIM == 2
+	CrossPoint* crossPointData = new CrossPoint[numMembranePoints];
+#else
+	CrossPoint* crossPointData = new CrossPoint[numMembranePoints*6];
+#endif
+	int crossPointCount = 0;
 	
-	// for 3D slice view
-	Real sliceCrossPointDefaultValue = 0;
-	if (SpaceDim == 3)
-	{
-		const RealVect& origin = getChomboGeometry()->getDomainOrigin();
-		Real minOrigin = std::min<Real>(origin[0], origin[1]);
-		minOrigin = std::min<Real>(minOrigin, origin[2]);
-		sliceCrossPointDefaultValue = minOrigin - 1;
-	}
 	ChomboGeometryShop chomboGeoShop(geoIfs[iphase], vectDxes[ilev]);
 	for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol) 
 	{
@@ -740,188 +894,209 @@ void ChomboScheduler::writeMembraneFiles()
 				const VolIndex& vof = vofit();
 				int memIndex = (*membranePointIndexes[ivol])[dit()](vof, 0);
 				
-				const RealVect& gridIndex = vof.gridIndex();
+				const IntVect& gridIndex = vof.gridIndex();
 				RealVect vol_point = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
 				const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
 				RealVect mem_point = mem_centroid;
 				mem_point *= vectDxes[ilev];
 				mem_point += vol_point;
 				
-				RealVect memPointNormal = currEBISBox.normal(vof);
-				Real memAreaFrac = currEBISBox.bndryArea(vof);
-				Real volFrac = currEBISBox.volFrac(vof);
+				metricsData[memIndex].index = memIndex;
+				metricsData[memIndex].gridIndex = gridIndex;
+				metricsData[memIndex].coord = mem_point;
+				metricsData[memIndex].normal = currEBISBox.normal(vof);
+				metricsData[memIndex].areaFraction = currEBISBox.bndryArea(vof);
+				metricsData[memIndex].volumeFraction = currEBISBox.volFrac(vof);
 	
-				metrics_ofs << memIndex << ",";
-				for (int i = 0; i < SpaceDim; ++ i)
-				{
-					metrics_ofs << gridIndex[i] << ",";
-				}
-				for (int i = 0; i < SpaceDim; ++ i)
-				{
-					metrics_ofs << mem_point[i] << ",";
-				}
-				for (int i = 0; i < SpaceDim; ++ i)
-				{
-					metrics_ofs << memPointNormal[i] << ",";
-				}
-				metrics_ofs << volFrac << "," << memAreaFrac << endl;
+				metrics_ofs << metricsData[memIndex] << endl;
 				
-				if (SpaceDim == 2)
-				{
-					edgeMo edges[4];
+#if CH_SPACEDIM == 2
+				edgeMo edges[4];
 
-					bool faceCovered;
-					bool faceRegular;
-					bool faceDontKnow;
-					
-					//get edgeType and intersection points
-					chomboGeoShop.edgeData2D(edges,
-										 faceCovered,
-										 faceRegular,
-										 faceDontKnow,
-										 vectDxes[ilev][0],
-										 vectDxes[ilev],
-										 vof.gridIndex(),
-										 vectDomains[ilev],
-										 chomboGeometry->getDomainOrigin());
-					int crossedEdgeCount = 0;
-					stringstream ss;
-					for (int iedge = 0; iedge < 4; ++ iedge)
+				bool faceCovered;
+				bool faceRegular;
+				bool faceDontKnow;
+
+				//get edgeType and intersection points
+				chomboGeoShop.edgeData2D(edges,
+									 faceCovered,
+									 faceRegular,
+									 faceDontKnow,
+									 vectDxes[ilev][0],
+									 vectDxes[ilev],
+									 vof.gridIndex(),
+									 vectDomains[ilev],
+									 chomboGeometry->getDomainOrigin());
+				int crossedEdgeCount = 0;
+				for (int iedge = 0; iedge < 4; ++ iedge)
+				{
+					bool irreg = edges[iedge].dontKnow();
+					if (irreg)
 					{
-						bool irreg = edges[iedge].dontKnow();
-						if (irreg)
+						RealVect cp = (edges[iedge].getIntersectLo()) ? edges[iedge].getLo() : edges[iedge].getHi();
+						// get the real coordinate
+						RealVect cross_point = cp;
+						cross_point *= vectDxes[ilev];
+						cross_point += vol_point;
+						crossedEdgeCount ++;
+						if (crossedEdgeCount < 3)
 						{
-							RealVect cp = (edges[iedge].getIntersectLo()) ? edges[iedge].getLo() : edges[iedge].getHi();
-							// get the real coordinate
-							RealVect cross_point = cp;
-							cross_point *= vectDxes[ilev];
-							cross_point += vol_point;
-							for (int i = 0; i < SpaceDim; ++ i)
-							{
-								ss << "," << cross_point[i];
-							}
-							crossedEdgeCount ++;
+							crossPointData[crossPointCount].triVertices[crossedEdgeCount] = cross_point;
 						}
-					}
-					assert(crossedEdgeCount == 0 || crossedEdgeCount == 2);
-					if (crossedEdgeCount == 2)
-					{
-						crspts_ofs << memIndex;
-						for (int i = 0; i < SpaceDim; ++ i)
-						{
-							crspts_ofs << "," << gridIndex[i];
-						}
-						for (int i = 0; i < SpaceDim; ++ i)
-						{
-							crspts_ofs << "," << mem_point[i];
-						}
-						crspts_ofs << ss.str() << endl;
 					}
 				}
-				else
+				assert(crossedEdgeCount == 0 || crossedEdgeCount == 2);
+				if (crossedEdgeCount == 2)
 				{
-					int faceCount = -1;
-					RealVect V[2];
-					Real sliceCrossPoints[SpaceDim][4];
-					int sliceCrossPointCount[SpaceDim];
-					for (int dir = 0; dir < SpaceDim; ++ dir)
+					crossPointData[crossPointCount].index = memIndex;
+					crossPointData[crossPointCount].gridIndex = gridIndex;
+					crossPointData[crossPointCount].triVertices[0] = mem_point;
+					crspts_ofs << crossPointData[crossPointCount] << endl;
+					++ crossPointCount;
+				}
+#else
+				int faceCount = -1;
+				int sliceCrossPointCount[SpaceDim];
+				sliceViewData[memIndex].index = memIndex;
+				for (int dir = 0; dir < SpaceDim; ++ dir)
+				{
+					sliceCrossPointCount[dir] = 0;
+					for (int i = 0; i < 4; ++ i)
 					{
-						sliceCrossPointCount[dir] = 0;
-						for (int i = 0; i < 4; ++ i)
-						{
-							sliceCrossPoints[dir][i] = sliceCrossPointDefaultValue;
-						}
+						sliceViewData[memIndex].crossPoints[dir][i] = sliceCrossPointDefaultValue;
 					}
-					for (int face = 0; face < SpaceDim; ++ face)
+				}
+				for (int face = 0; face < SpaceDim; ++ face)
+				{
+					for (int hiLoFace = 0; hiLoFace < 2; ++ hiLoFace)
 					{
-						for (int hiLoFace = 0; hiLoFace < 2; ++ hiLoFace)
+						++ faceCount;
+						edgeMo edges[4];
+						bool faceCovered;
+						bool faceRegular;
+						bool faceDontKnow;
+
+						chomboGeoShop.edgeData3D(edges,
+											 faceCovered,
+											 faceRegular,
+											 faceDontKnow,
+											 hiLoFace,
+											 face,
+											 vectDxes[ilev][0],
+											 vectDxes[ilev],
+											 vof.gridIndex(),
+											 vectDomains[ilev],
+											 chomboGeometry->getDomainOrigin());
+						int crossedEdgeCount = 0;
+						for (int iedge = 0; iedge < 4; ++ iedge)
 						{
-							++ faceCount;
-							edgeMo edges[4];
-							bool faceCovered;
-							bool faceRegular;
-							bool faceDontKnow;
+							bool irreg = edges[iedge].dontKnow();
+							if (irreg)
+							{
+								RealVect cp = (edges[iedge].getIntersectLo()) ? edges[iedge].getLo() : edges[iedge].getHi();
+								// get the real coordinate
+								RealVect cross_point = cp;
+								cross_point *= vectDxes[ilev];
+								cross_point += vol_point;
+								crossedEdgeCount ++;
+								if (crossedEdgeCount < 3)
+								{
+									crossPointData[crossPointCount].triVertices[crossedEdgeCount] = cross_point;
+								}
+							}
+						}
+						assert(crossedEdgeCount == 0 || crossedEdgeCount == 2);
+						if (crossedEdgeCount == 2)
+						{
+							crossPointData[crossPointCount].index = memIndex;
+							crossPointData[crossPointCount].gridIndex = gridIndex;
+							crossPointData[crossPointCount].face = faceCount;
+							crossPointData[crossPointCount].triVertices[0] = mem_point;
+							crspts_ofs << crossPointData[crossPointCount] << endl;
 							
-							chomboGeoShop.edgeData3D(edges,
-												 faceCovered,
-												 faceRegular,
-												 faceDontKnow,
-												 hiLoFace,
-												 face,
-												 vectDxes[ilev][0],
-												 vectDxes[ilev],
-												 vof.gridIndex(),
-												 vectDomains[ilev],
-												 chomboGeometry->getDomainOrigin());
-							int crossedEdgeCount = 0;
-							for (int iedge = 0; iedge < 4; ++ iedge)
+							for(int dir = 0; dir < SpaceDim; ++ dir)
 							{
-								bool irreg = edges[iedge].dontKnow();
-								if (irreg)
+								RealVect crossPoint;
+								bool oneFaceCross = computeOneFaceCross(dir, face, hiLoFace == 0 ? -1 : 1, vectDxes[ilev], 
+												vol_point, crossPointData[crossPointCount].triVertices[1], 
+												crossPointData[crossPointCount].triVertices[2], crossPoint);
+								if (oneFaceCross)
 								{
-									RealVect cp = (edges[iedge].getIntersectLo()) ? edges[iedge].getLo() : edges[iedge].getHi();
-									// get the real coordinate
-									RealVect cross_point = cp;
-									cross_point *= vectDxes[ilev];
-									cross_point += vol_point;
-									if (crossedEdgeCount < 2)
-									{
-										V[crossedEdgeCount] = cross_point;
-									}
-									crossedEdgeCount ++;
+									sliceViewData[memIndex].crossPoints[dir][sliceCrossPointCount[dir] * 2] = crossPoint[0];
+									sliceViewData[memIndex].crossPoints[dir][sliceCrossPointCount[dir] * 2 + 1] = crossPoint[1];
+									++ sliceCrossPointCount[dir];
 								}
 							}
-							assert(crossedEdgeCount == 0 || crossedEdgeCount == 2);
-							if (crossedEdgeCount == 2)
-							{
-								crspts_ofs << memIndex << "," << faceCount;
-								for (int i = 0; i < SpaceDim; ++ i)
-								{
-									crspts_ofs << "," << gridIndex[i];
-								}
-								for (int i = 0; i < SpaceDim; ++ i)
-								{
-									crspts_ofs << "," << mem_point[i];
-								}
-								for (int v = 0; v < 1; ++ v)
-								{
-									for (int i = 0; i < SpaceDim; ++ i)
-									{
-										crspts_ofs << "," << V[v][i];
-									}
-								}
-								crspts_ofs << endl;
-								for(int dir = 0; dir < SpaceDim; ++ dir)
-								{
-									RealVect crossPoint;
-									bool oneFaceCross = computeOneFaceCross(dir, face, hiLoFace == 0 ? -1 : 1, vectDxes[ilev], 
-													vol_point, V[0], V[1], crossPoint);
-									if (oneFaceCross)
-									{
-										sliceCrossPoints[dir][sliceCrossPointCount[dir] * 2] = crossPoint[0];
-										sliceCrossPoints[dir][sliceCrossPointCount[dir] * 2 + 1] = crossPoint[1];
-										++ sliceCrossPointCount[dir];
-									}
-								}
-							}
-						} // end for (int hiLoFace
-					} // end for (int face
-					slccrs_ofs << memIndex;
-					for(int dir = 0; dir < SpaceDim; ++ dir)
-					{
-						for (int i = 0; i < 4; ++ i)
-						{
-							slccrs_ofs << "," << sliceCrossPoints[dir][i];
+							++ crossPointCount;
 						}
-					}
-					slccrs_ofs << endl;
-				} // end if (SpaceDim == 2)
+					} // end for (int hiLoFace
+				} // end for (int face
+				slccrs_ofs << sliceViewData[memIndex] << endl;
+#endif
 			} // end for (VoFIterator vofit
 		} // end for(DataIterator dit
 	} // end 	for (int ivol 
 	crspts_ofs.close();
-	slccrs_ofs.close();
 	metrics_ofs.close();
+#if CH_SPACEDIM == 3
+	slccrs_ofs.close();
+#endif
+	
+	try
+	{
+		/*
+		* Turn off the auto-printing when failure occurs so that we can
+		* handle the errors appropriately
+		*/
+		H5::Exception::dontPrint();
+		sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MESH_HDF5_FILE_EXT);
+		H5::H5File* h5MeshFile = new H5::H5File(fileName, H5F_ACC_TRUNC);	
+		h5MeshFile->createGroup(MESH_GROUP);   //  first level /Mesh
+
+		{
+		H5::CompType metricsType(sizeof(MeshMetrics));
+		populateMetricsDataType(metricsType);
+		hsize_t dim[] = {numMembranePoints};   /* Dataspace dimensions */
+		int rank = 1;
+		H5::DataSpace space(rank, dim);
+		H5::DataSet* metricsDataset = new H5::DataSet(h5MeshFile->createDataSet(METRICS_DATASET, metricsType, space));
+		metricsDataset->write(metricsData, metricsType);						
+		delete[] metricsData;
+		delete metricsDataset;
+		}
+		
+		{
+		H5::CompType crossPointType(sizeof(CrossPoint));
+		populateCrossPointDataType(crossPointType);
+		hsize_t dim[] = {crossPointCount};   /* Dataspace dimensions */
+		int rank = 1;
+		H5::DataSpace space(rank, dim);
+		H5::DataSet* crossPointDataset = new H5::DataSet(h5MeshFile->createDataSet(CROSS_POINTS_DATASET, crossPointType, space));
+		crossPointDataset->write(crossPointData, crossPointType);						
+		delete[] crossPointData;
+		delete crossPointDataset;
+		}
+		
+#if CH_SPACEDIM == 3
+		{
+		H5::CompType sliceViewType(sizeof(SliceView));
+		populateSliceViewDataType(sliceViewType);
+		hsize_t dim[] = {numMembranePoints};   /* Dataspace dimensions */
+		int rank = 1;
+		H5::DataSpace space(rank, dim);
+		H5::DataSet* sliceViewDataset = new H5::DataSet(h5MeshFile->createDataSet(SLICE_VIEW_DATASET, sliceViewType, space));
+		sliceViewDataset->write(sliceViewData, sliceViewType);						
+		delete[] sliceViewData;
+		delete sliceViewDataset;
+		}
+#endif
+		
+		delete h5MeshFile;
+	}
+	catch (H5::Exception e)
+	{
+		cout << "H5 Exception:" << e.getCDetailMsg() << endl;
+	}
 }
 
 bool ChomboScheduler::computeOneFaceCross(int dir, int face, int hiLoFace, RealVect& H, RealVect& v0, 

@@ -73,11 +73,11 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	if (CYGWIN)
 		add_definitions(-DCH_CYGWIN)
 		set(LIB_NAME_OS CYGWIN)
-		include_directories(${CMAKE_SOURCE_DIR}/hdf5-1.8.8/src)
+		include_directories(${CMAKE_SOURCE_DIR}/hdf5-1.8.8/src ${CMAKE_SOURCE_DIR}/hdf5-1.8.8/c++/src)
 	elseif (LINUX)
 		add_definitions(-DCH_Linux)
 		set(LIB_NAME_OS Linux)
-		include_directories(${CMAKE_BINARY_DIR}/include)
+		include_directories(${CMAKE_BINARY_DIR}/include ${CMAKE_BINARY_DIR}/include/cpp)
 	endif()
 
 	include_directories(${JMS_INCS})

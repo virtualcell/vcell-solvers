@@ -21,6 +21,7 @@
 #define CHOMBO_MEMBRANE_METRICS_FILE_EXT ".chombo.memmetrics"
 #define MEMBRANE_SLICE_CROSS_FILE_EXT ".slccrs"
 #define HDF5_FILE_EXT ".hdf5"
+#define MESH_HDF5_FILE_EXT ".mesh.hdf5"
 
 class VCellModel;
 class SimulationExpression;
