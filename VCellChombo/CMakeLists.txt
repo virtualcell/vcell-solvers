@@ -73,18 +73,18 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	if (CYGWIN)
 		add_definitions(-DCH_CYGWIN)
 		set(LIB_NAME_OS CYGWIN)
-		include_directories(${CMAKE_SOURCE_DIR}/hdf5-1.8.8/src ${CMAKE_SOURCE_DIR}/hdf5-1.8.8/c++/src)
+		include_directories(${CMAKE_SOURCE_DIR}/hdf5-1.8.8/src)
 	elseif (LINUX)
 		add_definitions(-DCH_Linux)
 		set(LIB_NAME_OS Linux)
-		include_directories(${CMAKE_BINARY_DIR}/include ${CMAKE_BINARY_DIR}/include/cpp)
+		include_directories(${CMAKE_BINARY_DIR}/include)
 	endif()
 
 	include_directories(${JMS_INCS})
 	add_definitions(${JMS_DEFS})
 
 	link_directories(${CMAKE_SOURCE_DIR}/../Chombo/lib)
-	set(DEP_LIBS hdf5_cpp hdf5 ${JMS_LIBS} ExpressionParser zip unzip gfortran)
+	set(DEP_LIBS hdf5 ${JMS_LIBS} ExpressionParser zip unzip gfortran)
 
 	set(DEP_LIBS_2D 
 			mftools2d.${LIB_NAME_OS}.64.g++.gfortran.OPT
@@ -117,7 +117,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	endif()
 	add_executable(${EXE_2D} ${SRC_FILES})
 	target_link_libraries(${EXE_2D} ${DEP_LIBS_2D})
-	add_dependencies(${EXE_2D} hdf5_cpp hdf5 ExpressionParser zip unzip)
+	add_dependencies(${EXE_2D} hdf5 ExpressionParser zip unzip)
 	set_property(TARGET ${EXE_2D} PROPERTY COMPILE_DEFINITIONS CH_SPACEDIM=2)
 
 	set(EXE_3D VCellChombo3D)
@@ -126,7 +126,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	endif()
 	add_executable(${EXE_3D} ${SRC_FILES})
 	target_link_libraries(${EXE_3D} ${DEP_LIBS_3D})
-	add_dependencies(${EXE_3D} hdf5_cpp hdf5 ExpressionParser zip unzip)
+	add_dependencies(${EXE_3D} hdf5 ExpressionParser zip unzip)
 	set_property(TARGET ${EXE_3D} PROPERTY COMPILE_DEFINITIONS CH_SPACEDIM=3)
 
 	install(TARGETS ${EXE_2D} RUNTIME DESTINATION bin)

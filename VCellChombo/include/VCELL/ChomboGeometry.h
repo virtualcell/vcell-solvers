@@ -35,8 +35,8 @@ public:
   	void setDomainSize(RealVect& rv) {
   		domainSize = rv;
   	}
-  	void setGridSize(IntVect& iv) {
-  		gridSize = iv;
+  	void setMeshSize(IntVect& iv) {
+  		meshSize = iv;
   	}
   	void setDimension(int dim) {
   		assert(dim == SpaceDim);
@@ -51,20 +51,20 @@ public:
 		const RealVect& getDomainSize() {
   		return domainSize;
   	}
-  	const IntVect& getGridSize() {
-  		return gridSize;
+  	const IntVect& getMeshSize() {
+  		return meshSize;
   	}
 		const int getNumX()
 		{
-			return gridSize[0];
+			return meshSize[0];
 		}
 		const int getNumY()
 		{
-			return gridSize[1];
+			return meshSize[1];
 		}
 		const int getNumZ()
 		{
-			return geoDim == 2 ? 1 : gridSize[2];
+			return geoDim == 2 ? 1 : meshSize[2];
 		}
 
   	const int getNumSubdomains() {
@@ -87,7 +87,7 @@ private:
 	
 	RealVect domainOrigin;
 	RealVect domainSize;
-	IntVect gridSize;
+	IntVect meshSize;
 	int geoDim;
 };
 

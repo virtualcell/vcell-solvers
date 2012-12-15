@@ -990,12 +990,12 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 			lineInput >> geoDim;
 			assert(geoDim == SpaceDim);
 			chomboGeometry->setDimension(geoDim);
-		} else if (nextToken == "GRID_SIZE") {
-			IntVect gridSize;
+		} else if (nextToken == "MESH_SIZE") {
+			IntVect meshSize;
 			for (int i = 0; i < SpaceDim; i ++) {
-				lineInput >> gridSize[i];
+				lineInput >> meshSize[i];
 			}
-			chomboGeometry->setGridSize(gridSize);
+			chomboGeometry->setMeshSize(meshSize);
 		} else if (nextToken == "DOMAIN_SIZE") {
 			RealVect domainSize;
 			for (int idir = 0; idir < SpaceDim; idir ++) {

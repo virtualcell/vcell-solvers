@@ -101,8 +101,7 @@ protected:
 
 	int hdf5FileCount;
 
-	void writeVolumeSolution();
-	void writeMembraneSolution();
+	void updateSolution();
 
 	int getChomboBoxLocalIndex(const IntVect& size, int ivar, const IntVect& ijk);
 	int getChomboBoxLocalIndex(const IntVect& size, int ivar, D_DECL(int i, int j, int k));

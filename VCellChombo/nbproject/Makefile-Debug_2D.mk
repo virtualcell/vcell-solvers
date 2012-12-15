@@ -14,11 +14,11 @@ GREP=grep
 NM=nm
 CCADMIN=CCadmin
 RANLIB=ranlib
-CC=gcc
-CCC=g++
-CXX=g++
-FC=gfortran
-AS=as
+CC=gcc.exe
+CCC=g++.exe
+CXX=g++.exe
+FC=gfortran.exe
+AS=as.exe
 
 # Macros
 CND_PLATFORM=Cygwin_4.x-Windows
@@ -79,7 +79,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L../Chombo/lib -L../numerics/cmake-build-cygwin/bin -L../numerics/cmake-build-cygwin/lib -lmftools2d.CYGWIN.64.g++.gfortran.DEBUG -lebamrelliptic2d.CYGWIN.64.g++.gfortran.DEBUG -lebamrtools2d.CYGWIN.64.g++.gfortran.DEBUG -lebtools2d.CYGWIN.64.g++.gfortran.DEBUG -lamrelliptic2d.CYGWIN.64.g++.gfortran.DEBUG -lamrtools2d.CYGWIN.64.g++.gfortran.DEBUG -lworkshop2d.CYGWIN.64.g++.gfortran.DEBUG -lbasetools2d.CYGWIN.64.g++.gfortran.DEBUG -lboxtools2d.CYGWIN.64.g++.gfortran.DEBUG -lhdf5_cpp -lhdf5 -lunzip -lzip -lExpressionParser -lgfortran
+LDLIBSOPTIONS=-L../Chombo/lib -L../numerics/cmake-build-cygwin/bin -L../numerics/cmake-build-cygwin/lib -lmftools2d.CYGWIN.64.g++.gfortran.DEBUG -lebamrelliptic2d.CYGWIN.64.g++.gfortran.DEBUG -lebamrtools2d.CYGWIN.64.g++.gfortran.DEBUG -lebtools2d.CYGWIN.64.g++.gfortran.DEBUG -lamrelliptic2d.CYGWIN.64.g++.gfortran.DEBUG -lamrtools2d.CYGWIN.64.g++.gfortran.DEBUG -lworkshop2d.CYGWIN.64.g++.gfortran.DEBUG -lbasetools2d.CYGWIN.64.g++.gfortran.DEBUG -lboxtools2d.CYGWIN.64.g++.gfortran.DEBUG -lhdf5 -lunzip -lzip -lExpressionParser -lgfortran
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}

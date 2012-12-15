@@ -39,7 +39,12 @@
 #include <VCELL/ChomboGeometryShop.h>
 #include <assert.h>
 #include <sstream>
-#include <H5Cpp.h>
+#include <hdf5.h>
+
+#ifdef HOFFSET
+   #undef HOFFSET
+#endif
+#define HOFFSET(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 
 static const int blockFactor = 8;  // smallest box, 8 is recommended.
 static const int nestingRadius  = 2; //ghostPhi[0];  // should be the same as ghost phi size, but Terry used 2
@@ -64,6 +69,8 @@ ChomboScheduler::ChomboScheduler(SimulationExpression* sim, ChomboSpec* chomboSp
 	numGhostSoln = IntVect::Unit * 3;
 	cout << "maxBoxSiz=" << chomboSpec->getMaxBoxSize() << endl;
 	cout << "fillRatio=" << chomboSpec->getFillRatio() << endl;
+
+	H5dont_atexit();
 }
 
 ChomboScheduler::~ChomboScheduler() {
@@ -90,7 +97,7 @@ bool ChomboScheduler::isInNextFinerLevel(int level, const IntVect& gridIndex) {
 	int nextFinerLevel = level + 1;
 	int refRatio = vectRefRatios[nextFinerLevel];
 	IntVect gridIndexInNextFinerLevel = gridIndex * refRatio;
-	
+
 	for (LayoutIterator lit = vectGrids[nextFinerLevel].layoutIterator(); lit.ok(); ++ lit) {
 		const Box& box = vectGrids[nextFinerLevel].get(lit());
 		if (box.contains(gridIndexInNextFinerLevel)) {
@@ -107,7 +114,7 @@ int ChomboScheduler::getChomboBoxLocalIndex(const IntVect& size, int ivar, const
 int ChomboScheduler::getChomboBoxLocalIndex(const IntVect& size, int ivar, D_DECL(int i, int j, int k)) {
 #if CH_SPACEDIM==2
 	return ivar * size[0] * size[1] + j * size[0] + i;
-#else 
+#else
 	return ivar * size[0] * size[1] * size[2] + k * size[0] * size[1] + j * size[0] + i;
 #endif
 }
@@ -125,15 +132,15 @@ void ChomboScheduler::initializeGrids() {
 	}
 
 	cout << endl << "ChomboScheduler:: generating grids" << endl;
-	IntVect coarsestNx = chomboGeometry->getGridSize();
+	IntVect coarsestNx = chomboGeometry->getMeshSize();
 	RealVect coarsestDx = chomboGeometry->getDomainSize();
-	
+
 	IntVect lo = IntVect::Zero;
 	IntVect hi = coarsestNx;
 	hi -= IntVect::Unit;
 	Box crseDomBox(lo,hi);
 	ProblemDomain coarsestDomain(crseDomBox);
-	
+
 	for (int idir = 0; idir < SpaceDim; idir ++) {
 		coarsestDx[idir] /= coarsestNx[idir];
 		coarsestDomain.setPeriodic(idir, false);
@@ -153,7 +160,7 @@ void ChomboScheduler::initializeGrids() {
 		vectNxes[ilev] *= vectRefRatios[ilev-1];
 		vectDomains[ilev] = refine(vectDomains[ilev-1], vectRefRatios[ilev-1]);
 	}
-    
+
     // Define Geometry
 	cout << "ChomboScheduler:: processing geometry" << endl;
 
@@ -258,7 +265,7 @@ void ChomboScheduler::initializeGrids() {
 	// define grids for each level
   Vector<int> coarsestProcs;
 	Vector<Box> coarsestBoxes;
-	
+
 	domainSplit(coarsestDomain, coarsestBoxes, chomboSpec->getMaxBoxSize(), blockFactor);
 	mortonOrdering(coarsestBoxes);
 	LoadBalance(coarsestProcs, coarsestBoxes);
@@ -296,7 +303,7 @@ void ChomboScheduler::initializeGrids() {
 		} else {
 			pout() << "ChomboScheduler:: tag user defined cells" << endl;
 		}
-		
+
 		int taglevel = numLevels - 2;
 		if (refine_all_irregular) {
 			for (int phase0 = 0; phase0 < NUM_PHASES; phase0 ++) {
@@ -329,12 +336,12 @@ void ChomboScheduler::initializeGrids() {
 
 		Vector<Vector<Box> > oldBoxes(numLevels);
 		Vector<Vector<Box> > newBoxes;
-	    // Need the boxes on the coarsest level and the tags on the second to
-	    // finest level to make all the boxes on all the levels
+		// Need the boxes on the coarsest level and the tags on the second to
+		// finest level to make all the boxes on all the levels
 	 	oldBoxes[0]= coarsestBoxes;
-	 	 // Make all the boxes on all the levels
+		// Make all the boxes on all the levels
 	 	meshRefine.regrid(newBoxes, tags, 0, numLevels - 1, oldBoxes);
-	
+
 	  ProblemDomain domainLev = coarsestDomain;
 		for(int ilev = 1; ilev < numLevels; ilev++) {
 			Vector<int> newProcs;
@@ -343,7 +350,7 @@ void ChomboScheduler::initializeGrids() {
 			LoadBalance(newProcs, newBoxes[ilev]);
 
 			vectGrids[ilev] = DisjointBoxLayout(newBoxes[ilev], newProcs, domainLev);
-		    //generate ebislayout
+		  //generate ebislayout
 		  for(int phase0 = 0; phase0 < NUM_PHASES; phase0 ++) {
 				for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++) {
 					vectEbis[phase0][ivol].resize(numLevels);
@@ -366,7 +373,7 @@ void ChomboScheduler::initializeGrids() {
 		{
 			membranePointIndexes.resize(numVols);
 		}
-		for (int ivol = 0; ivol < numVols; ++ ivol) 
+		for (int ivol = 0; ivol < numVols; ++ ivol)
 		{
 			irregularPointMembraneIDs[iphase][ivol].resize(numLevels);
 			for (int ilev = 0; ilev < numLevels; ilev ++) {
@@ -387,7 +394,7 @@ void ChomboScheduler::initializeGrids() {
 	}
 
 	// find membrane for each irregular point
-	{		
+	{
 		// initialize all membrane IDs to -1 first
 		for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
 			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
@@ -401,15 +408,15 @@ void ChomboScheduler::initializeGrids() {
 				}
 			}
 		}
-		
+
 		int phase0 = 0;
-		int phase1 = 1;		
-		int totalVolumes = phaseVolumeList[phase0].size() + phaseVolumeList[phase1].size();		
+		int phase1 = 1;
+		int totalVolumes = phaseVolumeList[phase0].size() + phaseVolumeList[phase1].size();
 		bool* bAdjacent = new bool[phaseVolumeList[phase1].size()];
 		numMembranePoints = 0;
 		for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol++) {
 			memset(bAdjacent, 0, phaseVolumeList[phase1].size() * sizeof(bool));
-			
+
 			for (int ilev = 0; ilev < numLevels; ilev ++) {
 				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit) {
 					const Box& currBox = vectGrids[ilev][dit()];
@@ -440,7 +447,7 @@ void ChomboScheduler::initializeGrids() {
 							Feature* feature = phaseVolumeList[phase0][ivol]->feature;
 							RealVect vol_point = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
 							stringstream ss;
-							ss << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev 
+							ss << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev
 									<< ": no membrane id for point " << vof.gridIndex() << " at "  << vol_point << ".";
 							cout << ss.str() << endl;
 							(*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0) = -1;
@@ -453,11 +460,11 @@ void ChomboScheduler::initializeGrids() {
 					phaseVolumeList[phase0][ivol]->adjacentVolumes.push_back(phaseVolumeList[phase1][jvol]);
 					phaseVolumeList[phase1][jvol]->adjacentVolumes.push_back(phaseVolumeList[phase0][ivol]);
 				}
-			}			
+			}
 		}
 		delete[] bAdjacent;
 	}
-	
+
 	for(int phase0 = 0; phase0 < NUM_PHASES; phase0 ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++) {
 			Feature* feature = phaseVolumeList[phase0][ivol]->feature;
@@ -467,10 +474,10 @@ void ChomboScheduler::initializeGrids() {
 
 				for (DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit) {
 					const Box&  currBox      = vectGrids[ilev][dit()];
-					
+
 					const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
 					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
-					
+
 					pout() << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev << ":" << " Box " << currBox << endl;
 					totalPtsLevel += currBox.numPts();
 					totalIrregLevel += irregCells.numPts();
@@ -494,19 +501,25 @@ void ChomboScheduler::initializeGrids() {
   }
 }
 
-//extern double vol_frac_cutoff;
-void ChomboScheduler::writeVolumeSolution() {
+void resetVariable(Variable* var)
+{
+	double* varCurr = var->getCurr();
+	for (int i = 0; i < var->getSize(); ++ i)
+	{
+		varCurr[i] = BASEFAB_REAL_SETVAL;
+	}
+}
+void ChomboScheduler::updateSolution() {
+	// first volume variables
 	for (int ifeature = 0; ifeature < chomboGeometry->getNumSubdomains(); ifeature ++) {
 		Feature* feature = chomboGeometry->getFeature(ifeature);
 		int numDefinedVars = feature->getNumDefinedVariables();
 		for (int ivar = 0; ivar < numDefinedVars; ivar ++) {
 			Variable* var = feature->getDefinedVariable(ivar);
-
-			double* varCurr = var->getCurr();
-			memset(varCurr, 0, sizeof(double) * var->getSize());
+			resetVariable(var);
 		}
 	}
-		
+
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
@@ -529,7 +542,7 @@ void ChomboScheduler::writeVolumeSolution() {
 				for(int ilev = 0; ilev < numLevels; ilev ++) {
 					for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit)	{
 						const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
-						
+
 						EBCellFAB& solnEBCellFAB = (*volSoln[iphase][ivol][ilev])[dit()];
 						FArrayBox& solnFab = solnEBCellFAB.getFArrayBox();
 						const IntVect& solnSize = solnFab.size();
@@ -575,66 +588,17 @@ void ChomboScheduler::writeVolumeSolution() {
 			} // for (int ivar)
 		} // for ivol
 	} // for iphase
-}
 
-void ChomboScheduler::writeData(char* dataFileName) {
-	bool bWriteSim = true;
-	if (bWriteSim) {
-		writeVolumeSolution();
-		writeMembraneSolution();
-		DataSet::write(dataFileName, simulation);
-	}
-	static bool bFirstTime = false;
-	bool bWriteHdf5 = false;
-	// we need at least one hdf5 to show mesh in viewer.
-	if (bWriteHdf5 || bFirstTime) {
-		for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
-			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
-				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-				if (feature->getNumDefinedVariables() == 0) {
-					continue;
-				}
-				char hdf5FileName[128];
-				sprintf(hdf5FileName, "%s%06d.feature_%s.vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), ivol, HDF5_FILE_EXT);
-				Vector<string> names(feature->getNumDefinedVariables());
-				for (int ivar = 0; ivar < feature->getNumDefinedVariables(); ivar ++) {
-					Variable* var = feature->getDefinedVariable(ivar);
-					char charstr[100];
-					sprintf(charstr, "%s.vol%d",var->getName().c_str(), ivol);
-					names[ivar] = string(charstr);
-				}
-
-				bool replaceCovered = false;
-				Vector<Real> dummy;
-
-				writeEBHDF5(string(hdf5FileName), vectGrids, volSoln[iphase][ivol], names,
-					 vectDomains[0].domainBox(), vectDxes[0][0], simulation->getDT_sec(), simulation->getTime_sec(),
-					 vectRefRatios, numLevels, replaceCovered, dummy);
-				if (!bWriteHdf5) {
-					break;
-				}
-			}
-			if (!bWriteHdf5) {
-				break;
-			}
-		}
-		bFirstTime = false;
-	}
-	hdf5FileCount ++;
-}
-
-void ChomboScheduler::writeMembraneSolution() {
-	
+	// membrane variables
 	int totalVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
 	int numMembraneVars = simulation->getNumMemVariables();
-	
+
 	int iphase = 0;
 	int ilev = numLevels - 1;  // only consider the finest level
 	// membrane variable names
 	for(int memVarIdx = 0; memVarIdx < numMembraneVars; memVarIdx++){
 		Variable* var = (Variable*)simulation->getMemVariable(memVarIdx);
-		double* varCurr = var->getCurr();
-		memset(varCurr, 0, sizeof(double) * var->getSize());
+		resetVariable(var);
 	}
 	for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 		Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
@@ -668,12 +632,12 @@ void ChomboScheduler::writeMembraneSolution() {
 						Variable* var = (Variable*)simulation->getMemVariable(memVarIdx);
 						double* varCurr = var->getCurr();
 						varCurr[memIndex] = 0;
-						for (int ivar = 0; ivar < iFeature->getMemVarIndexesInAdjacentMembranes().size(); ++ ivar) 
+						for (int ivar = 0; ivar < iFeature->getMemVarIndexesInAdjacentMembranes().size(); ++ ivar)
 						{
 							int varIndex =	iFeature->getMemVarIndexesInAdjacentMembranes()[ivar];
 							if (varIndex == memVarIdx)
 							{
-								if (membrane->isVariableDefined(var)) 
+								if (membrane->isVariableDefined(var))
 								{
 									varCurr[memIndex] = (*memSoln[ivol][ilev])[dit()](vof, ivar);
 								}
@@ -688,12 +652,88 @@ void ChomboScheduler::writeMembraneSolution() {
 	} // end ivol
 }
 
-#define MESH_GROUP "/Mesh"
-#define METRICS_DATASET MESH_GROUP"/Metrics"
-#define CROSS_POINTS_DATASET MESH_GROUP"/Cross Points"
+void ChomboScheduler::writeData(char* dataFileName) {
+	bool bWriteSim = true;
+	if (bWriteSim) {
+		updateSolution();
+		DataSet::write(dataFileName, simulation);
+	}
+	static bool bFirstTime = true;
+	bool bWriteHdf5 = true;
+	// we need at least one hdf5 to show mesh in viewer.
+	if (bWriteHdf5 || bFirstTime) {
+		for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
+			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
+				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+				if (feature->getNumDefinedVariables() == 0) {
+					continue;
+				}
+				char hdf5FileName[128];
+				sprintf(hdf5FileName, "%s%06d.feature_%s.vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), ivol, HDF5_FILE_EXT);
+				Vector<string> names(feature->getNumDefinedVariables());
+				for (int ivar = 0; ivar < feature->getNumDefinedVariables(); ivar ++) {
+					Variable* var = feature->getDefinedVariable(ivar);
+					char charstr[100];
+					sprintf(charstr, "%s.vol%d",var->getName().c_str(), ivol);
+					names[ivar] = string(charstr);
+				}
+
+				bool replaceCovered = false;
+				Vector<Real> dummy;
+
+				writeEBHDF5(string(hdf5FileName), vectGrids, volSoln[iphase][ivol], names,
+					 vectDomains[0].domainBox(), vectDxes[0][0], simulation->getDT_sec(), simulation->getTime_sec(),
+					 vectRefRatios, numLevels, replaceCovered, dummy);
+				bFirstTime = false;
+				if (!bWriteHdf5) {
+					break;
+				}
+			}
+			if (!bWriteHdf5 && !bFirstTime) {
+				break;
+			}
+		}
+		bFirstTime = false;
+	}
+	hdf5FileCount ++;
+}
+
+#define MESH_GROUP "/mesh"
+#define BOXES_DATASET MESH_GROUP"/boxes"
+#define METRICS_DATASET MESH_GROUP"/metrics"
+#define CROSS_POINTS_DATASET MESH_GROUP"/surface"
 #if CH_SPACEDIM == 3
-#define SLICE_VIEW_DATASET MESH_GROUP"/Slice View"
+#define SLICE_VIEW_DATASET MESH_GROUP"/slice view"
 #endif
+
+void populateIntVectDataType(hid_t& intVectType)
+{
+	D_TERM(H5Tinsert(intVectType, "i", HOFFSET(IntVect, dataPtr()[0]), H5T_NATIVE_INT);,
+				 H5Tinsert(intVectType, "j", HOFFSET(IntVect, dataPtr()[1]), H5T_NATIVE_INT);,
+				 H5Tinsert(intVectType, "k", HOFFSET(IntVect, dataPtr()[2]), H5T_NATIVE_INT);)
+}
+
+void populateRealVectDataType(hid_t& realVectType)
+{
+	D_TERM(H5Tinsert(realVectType, "x", HOFFSET(RealVect, dataPtr()[0]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(realVectType, "y", HOFFSET(RealVect, dataPtr()[1]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(realVectType, "z", HOFFSET(RealVect, dataPtr()[2]), H5T_NATIVE_DOUBLE);)
+}
+
+struct MeshBox
+{
+	IntVect lo, hi;
+};
+
+void populateBoxDataType(hid_t& boxType)
+{
+	D_TERM(H5Tinsert(boxType, "lo_i", HOFFSET(MeshBox, lo[0]), H5T_NATIVE_INT);,
+				 H5Tinsert(boxType, "lo_j", HOFFSET(MeshBox, lo[1]), H5T_NATIVE_INT);,
+				 H5Tinsert(boxType, "lo_k", HOFFSET(MeshBox, lo[2]), H5T_NATIVE_INT);)
+	D_TERM(H5Tinsert(boxType, "hi_i", HOFFSET(MeshBox, hi[0]), H5T_NATIVE_INT);,
+				 H5Tinsert(boxType, "hi_j", HOFFSET(MeshBox, hi[1]), H5T_NATIVE_INT);,
+				 H5Tinsert(boxType, "hi_k", HOFFSET(MeshBox, hi[2]), H5T_NATIVE_INT);)
+}
 
 struct MeshMetrics
 {
@@ -701,13 +741,13 @@ struct MeshMetrics
 	IntVect gridIndex;
 	RealVect coord, normal;
 	double volumeFraction,areaFraction;
-	
+
 	static void printTitle(ostream& os)
 	{
-		os << "index" D_TERM(<< ",i", <<",j", << ",k") D_TERM(<< ",x", << ",y", << ",z") 
+		os << "index" D_TERM(<< ",i", <<",j", << ",k") D_TERM(<< ",x", << ",y", << ",z")
 			D_TERM(<< ",normalX", << ",normalY", << ",normalZ") << ",volumeFraction,areaFraction" << endl;
 	}
-	
+
 	friend ostream& operator<<(ostream& os, const MeshMetrics& mm) {
 		os << mm.index;
 		for (int dir = 0; dir < SpaceDim; ++ dir)
@@ -727,48 +767,43 @@ struct MeshMetrics
 	}
 };
 
-void populateMetricsDataType(H5::CompType& metricsType)
+void populateMetricsDataType(hid_t& metricsType)
 {
-		metricsType.insertMember("index", HOFFSET(MeshMetrics, index), H5::PredType::NATIVE_INT);
-		D_TERM(metricsType.insertMember("i", HOFFSET(MeshMetrics, gridIndex[0]), H5::PredType::NATIVE_INT);,
-			     metricsType.insertMember("j", HOFFSET(MeshMetrics, gridIndex[1]), H5::PredType::NATIVE_INT);,
-			     metricsType.insertMember("k", HOFFSET(MeshMetrics, gridIndex[2]), H5::PredType::NATIVE_INT);)
-		D_TERM(metricsType.insertMember("x", HOFFSET(MeshMetrics, coord[0]), H5::PredType::NATIVE_DOUBLE);,
-			     metricsType.insertMember("y", HOFFSET(MeshMetrics, coord[1]), H5::PredType::NATIVE_DOUBLE);,
-			     metricsType.insertMember("z", HOFFSET(MeshMetrics, coord[2]), H5::PredType::NATIVE_DOUBLE);)
-		D_TERM(metricsType.insertMember("normalX", HOFFSET(MeshMetrics, normal[0]), H5::PredType::NATIVE_DOUBLE);,
-			     metricsType.insertMember("normalY", HOFFSET(MeshMetrics, normal[1]), H5::PredType::NATIVE_DOUBLE);,
-			     metricsType.insertMember("normalZ", HOFFSET(MeshMetrics, normal[2]), H5::PredType::NATIVE_DOUBLE);)
-		metricsType.insertMember("volumeFraction", HOFFSET(MeshMetrics, volumeFraction), H5::PredType::NATIVE_DOUBLE);
-		metricsType.insertMember("areaFraction", HOFFSET(MeshMetrics, areaFraction), H5::PredType::NATIVE_DOUBLE);
+	H5Tinsert(metricsType, "index", HOFFSET(MeshMetrics, index), H5T_NATIVE_INT);
+	D_TERM(H5Tinsert(metricsType, "i", HOFFSET(MeshMetrics, gridIndex[0]), H5T_NATIVE_INT);,
+				 H5Tinsert(metricsType, "j", HOFFSET(MeshMetrics, gridIndex[1]), H5T_NATIVE_INT);,
+				 H5Tinsert(metricsType, "k", HOFFSET(MeshMetrics, gridIndex[2]), H5T_NATIVE_INT);)
+	D_TERM(H5Tinsert(metricsType, "x", HOFFSET(MeshMetrics, coord[0]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(metricsType, "y", HOFFSET(MeshMetrics, coord[1]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(metricsType, "z", HOFFSET(MeshMetrics, coord[2]), H5T_NATIVE_DOUBLE);)
+	D_TERM(H5Tinsert(metricsType, "normalX", HOFFSET(MeshMetrics, normal[0]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(metricsType, "normalY", HOFFSET(MeshMetrics, normal[1]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(metricsType, "normalZ", HOFFSET(MeshMetrics, normal[2]), H5T_NATIVE_DOUBLE);)
+	H5Tinsert(metricsType, "volumeFraction", HOFFSET(MeshMetrics, volumeFraction), H5T_NATIVE_DOUBLE);
+	H5Tinsert(metricsType, "areaFraction", HOFFSET(MeshMetrics, areaFraction), H5T_NATIVE_DOUBLE);
 }
 
 struct CrossPoint
 {
 	int index;
-	IntVect gridIndex;
 #if CH_SPACEDIM == 3
 	int face;
 #endif
 	RealVect triVertices[3];
-	
+
 	static void printTitle(ostream& os)
 	{
-		os << "index" D_TERM(<< ",i", <<",j", << ",k") 
+		os << "index"
 #if CH_SPACEDIM == 3
 		<< ",face"
 #endif
-		D_TERM(<< ",x0", <<",y0", << ",z0") 
-		D_TERM(<< ",x1", << ",y1", << ",z1") 
+		D_TERM(<< ",x0", <<",y0", << ",z0")
+		D_TERM(<< ",x1", << ",y1", << ",z1")
 		D_TERM(<< ",x2", << ",y2", << ",z2") << endl;
 	}
-	
+
 	friend ostream& operator<<(ostream& os, const CrossPoint& cp) {
 		os << cp.index;
-		for (int dir = 0; dir < SpaceDim; ++ dir)
-		{
-			os << "," << cp.gridIndex[dir]; 
-		}
 #if CH_SPACEDIM == 3
 		os << "," << cp.face;
 #endif
@@ -776,31 +811,28 @@ struct CrossPoint
 		{
 			for (int dir = 0; dir < SpaceDim; ++ dir)
 			{
-				os << "," << cp.triVertices[i][dir]; 
+				os << "," << cp.triVertices[i][dir];
 			}
 		}
 		return os;
 	}
 };
 
-void populateCrossPointDataType(H5::CompType& crossPointType)
+void populateCrossPointDataType(hid_t& crossPointType)
 {
-		crossPointType.insertMember("index", HOFFSET(CrossPoint, index), H5::PredType::NATIVE_INT);
-		D_TERM(crossPointType.insertMember("i", HOFFSET(CrossPoint, gridIndex[0]), H5::PredType::NATIVE_INT);,
-					 crossPointType.insertMember("j", HOFFSET(CrossPoint, gridIndex[1]), H5::PredType::NATIVE_INT);,
-			     crossPointType.insertMember("k", HOFFSET(CrossPoint, gridIndex[2]), H5::PredType::NATIVE_INT);)
+	H5Tinsert(crossPointType, "index", HOFFSET(CrossPoint, index), H5T_NATIVE_INT);
 #if CH_SPACEDIM == 3
-		crossPointType.insertMember("face", HOFFSET(CrossPoint, face), H5::PredType::NATIVE_INT);
+	H5Tinsert(crossPointType, "face", HOFFSET(CrossPoint, face), H5T_NATIVE_INT);
 #endif
-		D_TERM(crossPointType.insertMember("x0", HOFFSET(CrossPoint, triVertices[0][0]), H5::PredType::NATIVE_DOUBLE);,
-			     crossPointType.insertMember("y0", HOFFSET(CrossPoint, triVertices[0][1]), H5::PredType::NATIVE_DOUBLE);,
-			     crossPointType.insertMember("z0", HOFFSET(CrossPoint, triVertices[0][2]), H5::PredType::NATIVE_DOUBLE);)
-		D_TERM(crossPointType.insertMember("x1", HOFFSET(CrossPoint, triVertices[1][0]), H5::PredType::NATIVE_DOUBLE);,
-			     crossPointType.insertMember("y1", HOFFSET(CrossPoint, triVertices[1][1]), H5::PredType::NATIVE_DOUBLE);,
-			     crossPointType.insertMember("z1", HOFFSET(CrossPoint, triVertices[1][2]), H5::PredType::NATIVE_DOUBLE);)
-		D_TERM(crossPointType.insertMember("x2", HOFFSET(CrossPoint, triVertices[2][0]), H5::PredType::NATIVE_DOUBLE);,
-					 crossPointType.insertMember("y2", HOFFSET(CrossPoint, triVertices[2][1]), H5::PredType::NATIVE_DOUBLE);,
-					 crossPointType.insertMember("z2", HOFFSET(CrossPoint, triVertices[2][2]), H5::PredType::NATIVE_DOUBLE);)
+	D_TERM(H5Tinsert(crossPointType, "x0", HOFFSET(CrossPoint, triVertices[0][0]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(crossPointType, "y0", HOFFSET(CrossPoint, triVertices[0][1]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(crossPointType, "z0", HOFFSET(CrossPoint, triVertices[0][2]), H5T_NATIVE_DOUBLE);)
+	D_TERM(H5Tinsert(crossPointType, "x1", HOFFSET(CrossPoint, triVertices[1][0]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(crossPointType, "y1", HOFFSET(CrossPoint, triVertices[1][1]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(crossPointType, "z1", HOFFSET(CrossPoint, triVertices[1][2]), H5T_NATIVE_DOUBLE);)
+	D_TERM(H5Tinsert(crossPointType, "x2", HOFFSET(CrossPoint, triVertices[2][0]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(crossPointType, "y2", HOFFSET(CrossPoint, triVertices[2][1]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(crossPointType, "z2", HOFFSET(CrossPoint, triVertices[2][2]), H5T_NATIVE_DOUBLE);)
 }
 
 #if CH_SPACEDIM == 3
@@ -808,12 +840,12 @@ struct SliceView
 {
 	int index;
 	double crossPoints[3][4];
-	
+
 	static void printTitle(ostream& os)
 	{
 		os << "index,x_y1,x_z1,x_y2,x_z2,y_x1,y_z1,y_x2,y_z2,z_x1,z_y1,z_x2,z_y2" << endl;
 	}
-	
+
 	friend ostream& operator<<(ostream& os, const SliceView& sv) {
 		os << sv.index;
 		for (int dir = 0; dir < 3; ++ dir)
@@ -827,21 +859,21 @@ struct SliceView
 	}
 };
 
-void populateSliceViewDataType(H5::CompType& sliceViewType)
+void populateSliceViewDataType(hid_t& sliceViewType)
 {
-		sliceViewType.insertMember("index", HOFFSET(SliceView, index), H5::PredType::NATIVE_INT);
-		sliceViewType.insertMember("x_y1", HOFFSET(SliceView, crossPoints[0][0]), H5::PredType::NATIVE_DOUBLE);
-		sliceViewType.insertMember("x_z1", HOFFSET(SliceView, crossPoints[0][1]), H5::PredType::NATIVE_DOUBLE);
-		sliceViewType.insertMember("x_y2", HOFFSET(SliceView, crossPoints[0][2]), H5::PredType::NATIVE_DOUBLE);
-		sliceViewType.insertMember("x_z2", HOFFSET(SliceView, crossPoints[0][3]), H5::PredType::NATIVE_DOUBLE);
-		sliceViewType.insertMember("y_x1", HOFFSET(SliceView, crossPoints[1][0]), H5::PredType::NATIVE_DOUBLE);
-		sliceViewType.insertMember("y_z1", HOFFSET(SliceView, crossPoints[1][1]), H5::PredType::NATIVE_DOUBLE);
-		sliceViewType.insertMember("y_x2", HOFFSET(SliceView, crossPoints[1][2]), H5::PredType::NATIVE_DOUBLE);
-		sliceViewType.insertMember("y_z2", HOFFSET(SliceView, crossPoints[1][3]), H5::PredType::NATIVE_DOUBLE);
-		sliceViewType.insertMember("z_x1", HOFFSET(SliceView, crossPoints[2][0]), H5::PredType::NATIVE_DOUBLE);
-		sliceViewType.insertMember("z_y1", HOFFSET(SliceView, crossPoints[2][1]), H5::PredType::NATIVE_DOUBLE);
-		sliceViewType.insertMember("z_x2", HOFFSET(SliceView, crossPoints[2][2]), H5::PredType::NATIVE_DOUBLE);
-		sliceViewType.insertMember("z_y2", HOFFSET(SliceView, crossPoints[2][3]), H5::PredType::NATIVE_DOUBLE);
+	H5Tinsert(sliceViewType, "index", HOFFSET(SliceView, index), H5T_NATIVE_INT);
+	H5Tinsert(sliceViewType, "x_y1", HOFFSET(SliceView, crossPoints[0][0]), H5T_NATIVE_DOUBLE);
+	H5Tinsert(sliceViewType, "x_z1", HOFFSET(SliceView, crossPoints[0][1]), H5T_NATIVE_DOUBLE);
+	H5Tinsert(sliceViewType, "x_y2", HOFFSET(SliceView, crossPoints[0][2]), H5T_NATIVE_DOUBLE);
+	H5Tinsert(sliceViewType, "x_z2", HOFFSET(SliceView, crossPoints[0][3]), H5T_NATIVE_DOUBLE);
+	H5Tinsert(sliceViewType, "y_x1", HOFFSET(SliceView, crossPoints[1][0]), H5T_NATIVE_DOUBLE);
+	H5Tinsert(sliceViewType, "y_z1", HOFFSET(SliceView, crossPoints[1][1]), H5T_NATIVE_DOUBLE);
+	H5Tinsert(sliceViewType, "y_x2", HOFFSET(SliceView, crossPoints[1][2]), H5T_NATIVE_DOUBLE);
+	H5Tinsert(sliceViewType, "y_z2", HOFFSET(SliceView, crossPoints[1][3]), H5T_NATIVE_DOUBLE);
+	H5Tinsert(sliceViewType, "z_x1", HOFFSET(SliceView, crossPoints[2][0]), H5T_NATIVE_DOUBLE);
+	H5Tinsert(sliceViewType, "z_y1", HOFFSET(SliceView, crossPoints[2][1]), H5T_NATIVE_DOUBLE);
+	H5Tinsert(sliceViewType, "z_x2", HOFFSET(SliceView, crossPoints[2][2]), H5T_NATIVE_DOUBLE);
+	H5Tinsert(sliceViewType, "z_y2", HOFFSET(SliceView, crossPoints[2][3]), H5T_NATIVE_DOUBLE);
 }
 #endif
 
@@ -850,7 +882,7 @@ void ChomboScheduler::writeMembraneFiles()
 	char fileName[128];
 	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), CHOMBO_MEMBRANE_METRICS_FILE_EXT);
 	ofstream metrics_ofs(fileName);
-	
+
 	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), EDGE_CROSS_POINTS_FILE_EXT);
 	ofstream crspts_ofs(fileName);
 
@@ -867,7 +899,7 @@ void ChomboScheduler::writeMembraneFiles()
 	Real sliceCrossPointDefaultValue = minOrigin - 1;
 	SliceView* sliceViewData = new SliceView[numMembranePoints];
 #endif
-	
+
 	int iphase = 0;
 	int ilev = numLevels - 1; // only consider the finest level
 	MeshMetrics* metricsData = new MeshMetrics[numMembranePoints];
@@ -877,9 +909,9 @@ void ChomboScheduler::writeMembraneFiles()
 	CrossPoint* crossPointData = new CrossPoint[numMembranePoints*6];
 #endif
 	int crossPointCount = 0;
-	
+
 	ChomboGeometryShop chomboGeoShop(geoIfs[iphase], vectDxes[ilev]);
-	for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol) 
+	for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol)
 	{
 		DisjointBoxLayout& currGrids = vectGrids[ilev];
 
@@ -889,27 +921,27 @@ void ChomboScheduler::writeMembraneFiles()
 
 			const EBGraph& currEBGraph = currEBISBox.getEBGraph();
 			IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
-			for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++ vofit) 
+			for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++ vofit)
 			{
 				const VolIndex& vof = vofit();
 				int memIndex = (*membranePointIndexes[ivol])[dit()](vof, 0);
-				
+
 				const IntVect& gridIndex = vof.gridIndex();
 				RealVect vol_point = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
 				const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
 				RealVect mem_point = mem_centroid;
 				mem_point *= vectDxes[ilev];
 				mem_point += vol_point;
-				
+
 				metricsData[memIndex].index = memIndex;
 				metricsData[memIndex].gridIndex = gridIndex;
 				metricsData[memIndex].coord = mem_point;
 				metricsData[memIndex].normal = currEBISBox.normal(vof);
 				metricsData[memIndex].areaFraction = currEBISBox.bndryArea(vof);
 				metricsData[memIndex].volumeFraction = currEBISBox.volFrac(vof);
-	
+
 				metrics_ofs << metricsData[memIndex] << endl;
-				
+
 #if CH_SPACEDIM == 2
 				edgeMo edges[4];
 
@@ -949,7 +981,6 @@ void ChomboScheduler::writeMembraneFiles()
 				if (crossedEdgeCount == 2)
 				{
 					crossPointData[crossPointCount].index = memIndex;
-					crossPointData[crossPointCount].gridIndex = gridIndex;
 					crossPointData[crossPointCount].triVertices[0] = mem_point;
 					crspts_ofs << crossPointData[crossPointCount] << endl;
 					++ crossPointCount;
@@ -1009,16 +1040,15 @@ void ChomboScheduler::writeMembraneFiles()
 						if (crossedEdgeCount == 2)
 						{
 							crossPointData[crossPointCount].index = memIndex;
-							crossPointData[crossPointCount].gridIndex = gridIndex;
 							crossPointData[crossPointCount].face = faceCount;
 							crossPointData[crossPointCount].triVertices[0] = mem_point;
 							crspts_ofs << crossPointData[crossPointCount] << endl;
-							
+
 							for(int dir = 0; dir < SpaceDim; ++ dir)
 							{
 								RealVect crossPoint;
-								bool oneFaceCross = computeOneFaceCross(dir, face, hiLoFace == 0 ? -1 : 1, vectDxes[ilev], 
-												vol_point, crossPointData[crossPointCount].triVertices[1], 
+								bool oneFaceCross = computeOneFaceCross(dir, face, hiLoFace == 0 ? -1 : 1, vectDxes[ilev],
+												vol_point, crossPointData[crossPointCount].triVertices[1],
 												crossPointData[crossPointCount].triVertices[2], crossPoint);
 								if (oneFaceCross)
 								{
@@ -1035,71 +1065,130 @@ void ChomboScheduler::writeMembraneFiles()
 #endif
 			} // end for (VoFIterator vofit
 		} // end for(DataIterator dit
-	} // end 	for (int ivol 
+	} // end 	for (int ivol
 	crspts_ofs.close();
 	metrics_ofs.close();
 #if CH_SPACEDIM == 3
 	slccrs_ofs.close();
 #endif
-	
-	try
-	{
-		/*
-		* Turn off the auto-printing when failure occurs so that we can
-		* handle the errors appropriately
-		*/
-		H5::Exception::dontPrint();
-		sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MESH_HDF5_FILE_EXT);
-		H5::H5File* h5MeshFile = new H5::H5File(fileName, H5F_ACC_TRUNC);	
-		h5MeshFile->createGroup(MESH_GROUP);   //  first level /Mesh
 
-		{
-		H5::CompType metricsType(sizeof(MeshMetrics));
-		populateMetricsDataType(metricsType);
-		hsize_t dim[] = {numMembranePoints};   /* Dataspace dimensions */
-		int rank = 1;
-		H5::DataSpace space(rank, dim);
-		H5::DataSet* metricsDataset = new H5::DataSet(h5MeshFile->createDataSet(METRICS_DATASET, metricsType, space));
-		metricsDataset->write(metricsData, metricsType);						
-		delete[] metricsData;
-		delete metricsDataset;
-		}
-		
-		{
-		H5::CompType crossPointType(sizeof(CrossPoint));
-		populateCrossPointDataType(crossPointType);
-		hsize_t dim[] = {crossPointCount};   /* Dataspace dimensions */
-		int rank = 1;
-		H5::DataSpace space(rank, dim);
-		H5::DataSet* crossPointDataset = new H5::DataSet(h5MeshFile->createDataSet(CROSS_POINTS_DATASET, crossPointType, space));
-		crossPointDataset->write(crossPointData, crossPointType);						
-		delete[] crossPointData;
-		delete crossPointDataset;
-		}
-		
-#if CH_SPACEDIM == 3
-		{
-		H5::CompType sliceViewType(sizeof(SliceView));
-		populateSliceViewDataType(sliceViewType);
-		hsize_t dim[] = {numMembranePoints};   /* Dataspace dimensions */
-		int rank = 1;
-		H5::DataSpace space(rank, dim);
-		H5::DataSet* sliceViewDataset = new H5::DataSet(h5MeshFile->createDataSet(SLICE_VIEW_DATASET, sliceViewType, space));
-		sliceViewDataset->write(sliceViewData, sliceViewType);						
-		delete[] sliceViewData;
-		delete sliceViewDataset;
-		}
-#endif
-		
-		delete h5MeshFile;
-	}
-	catch (H5::Exception e)
+	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MESH_HDF5_FILE_EXT);
+	hid_t h5MeshFile = H5Fcreate(fileName, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	hid_t meshGroup = H5Gcreate(h5MeshFile, MESH_GROUP, H5P_DEFAULT);
+
+	// attribute
 	{
-		cout << "H5 Exception:" << e.getCDetailMsg() << endl;
+	// dimension
+	hid_t scalarDataSpace = H5Screate(H5S_SCALAR); // shared among all attributes
+
+	hid_t attribute = H5Acreate(meshGroup, "dimension", H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
+	int dim = chomboGeometry->getDimension();
+	H5Awrite(attribute, H5T_NATIVE_INT, &dim);
+	H5Aclose(attribute);
+
+	// origin
+	hid_t realVectType = H5Tcreate(H5T_COMPOUND, sizeof(RealVect));
+	populateRealVectDataType(realVectType);
+	attribute = H5Acreate(meshGroup, "origin", realVectType, scalarDataSpace, H5P_DEFAULT);
+	H5Awrite(attribute, realVectType, chomboGeometry->getDomainOrigin().dataPtr());
+	H5Aclose(attribute);
+
+	// extent
+	realVectType = H5Tcreate(H5T_COMPOUND, sizeof(RealVect));
+	populateRealVectDataType(realVectType);
+	attribute = H5Acreate(meshGroup, "extent", realVectType, scalarDataSpace, H5P_DEFAULT);
+	H5Awrite(attribute, realVectType, chomboGeometry->getDomainSize().dataPtr());
+	H5Aclose(attribute);
+
+	// mesh size
+	hid_t intVectType = H5Tcreate(H5T_COMPOUND, sizeof(IntVect));
+	populateIntVectDataType(intVectType);
+	attribute = H5Acreate(meshGroup, "Nx", intVectType, scalarDataSpace, H5P_DEFAULT);
+	H5Awrite(attribute, intVectType, vectNxes[ilev].dataPtr());
+	H5Aclose(attribute);
+
+	// grid size
+	attribute = H5Acreate(meshGroup, "Dx", realVectType, scalarDataSpace, H5P_DEFAULT);
+	H5Awrite(attribute, realVectType, vectDxes[ilev].dataPtr());
+	H5Aclose(attribute);
+	
+	H5Sclose(scalarDataSpace);
 	}
+
+	// boxes
+	{
+	hid_t boxType = H5Tcreate(H5T_COMPOUND, sizeof(MeshBox));
+	populateBoxDataType(boxType);
+	Vector<Box> vectBoxes = vectGrids[ilev].boxArray();
+	int numBoxes = vectBoxes.size();
+	MeshBox* boxData = new MeshBox[numBoxes];
+	for (int i = 0; i < numBoxes; ++ i)
+	{
+		boxData[i].lo = vectBoxes[i].smallEnd();
+		boxData[i].hi = vectBoxes[i].bigEnd();
+	}
+	hsize_t dim[] = {numBoxes};   /* Dataspace dimensions */
+	int rank = 1;
+	hid_t space = H5Screate_simple (rank, dim, NULL);
+	hid_t boxDataSet = H5Dcreate (h5MeshFile, BOXES_DATASET, boxType, space, H5P_DEFAULT);
+	H5Dwrite(boxDataSet, boxType, H5S_ALL, H5S_ALL, H5P_DEFAULT, boxData);
+	H5Dclose(boxDataSet);
+	H5Sclose(space);
+	H5Tclose(boxType);
+	delete[] boxData;
+	}
+
+	// metrics
+	{
+	hid_t metricsType = H5Tcreate(H5T_COMPOUND, sizeof(MeshMetrics));
+	populateMetricsDataType(metricsType);
+	hsize_t dim[] = {numMembranePoints};   /* Dataspace dimensions */
+	int rank = 1;
+	hid_t space = H5Screate_simple (rank, dim, NULL);
+	hid_t metricsDataset = H5Dcreate (h5MeshFile, METRICS_DATASET, metricsType, space, H5P_DEFAULT);
+	H5Dwrite(metricsDataset, metricsType, H5S_ALL, H5S_ALL, H5P_DEFAULT, metricsData);
+	H5Dclose(metricsDataset);
+	H5Sclose(space);
+	H5Tclose(metricsType);
+	delete[] metricsData;
+	}
+
+	// cross points
+	{
+	hid_t crossPointType = H5Tcreate(H5T_COMPOUND, sizeof(CrossPoint));
+	populateCrossPointDataType(crossPointType);
+	hsize_t dim[] = {crossPointCount};   /* Dataspace dimensions */
+	int rank = 1;
+	hid_t space = H5Screate_simple(rank, dim, NULL);
+	hid_t crossPointDataset = H5Dcreate (h5MeshFile, CROSS_POINTS_DATASET, crossPointType, space, H5P_DEFAULT);
+	H5Dwrite(crossPointDataset, crossPointType, H5S_ALL, H5S_ALL, H5P_DEFAULT, crossPointData);
+	H5Dclose(crossPointDataset);
+	H5Sclose(space);
+	H5Tclose(crossPointType);
+	delete[] crossPointData;
+	}
+
+#if CH_SPACEDIM == 3
+	// slice view
+	{
+	hid_t sliceViewType = H5Tcreate(H5T_COMPOUND, sizeof(SliceView));
+	populateSliceViewDataType(sliceViewType);
+	hsize_t dim[] = {numMembranePoints};   /* Dataspace dimensions */
+	int rank = 1;
+	hid_t space = H5Screate_simple(rank, dim, NULL);
+	hid_t sliceViewDataset = H5Dcreate(h5MeshFile, SLICE_VIEW_DATASET, sliceViewType, space, H5P_DEFAULT);
+	H5Dwrite(sliceViewDataset, sliceViewType, H5S_ALL, H5S_ALL, H5P_DEFAULT, sliceViewData);
+	H5Dclose(sliceViewDataset);
+	H5Sclose(space);
+	delete[] sliceViewData;
+	}
+#endif
+
+	H5Gclose(meshGroup);
+	H5Fclose(h5MeshFile);
 }
 
-bool ChomboScheduler::computeOneFaceCross(int dir, int face, int hiLoFace, RealVect& H, RealVect& v0, 
+bool ChomboScheduler::computeOneFaceCross(int dir, int face, int hiLoFace, RealVect& H, RealVect& v0,
 				RealVect& v1, RealVect& v2, RealVect& crossPoint)
 {
 	if (dir == face)
@@ -1107,23 +1196,23 @@ bool ChomboScheduler::computeOneFaceCross(int dir, int face, int hiLoFace, RealV
 		return false;
 	}
 	static int slicedirs[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-	
+
 	int jlohi, jcross;
 	int planedir0, planedir1;
 	planedir0 = dir;
 	if (face == slicedirs[dir][0])    // y- or y+
 	{
     planedir1 = slicedirs[dir][1];   // not y direction,
-    jlohi = 0;    
+    jlohi = 0;
 		jcross = 1;
-	} 
+	}
 	else                         // z- or z+
 	{
     planedir1 = slicedirs[dir][0];   // not z direction,
-    jlohi = 1;    
+    jlohi = 1;
 		jcross = 0;
 	}
-	
+
 	RealVect DP = v2 - v1;
 	Real thisDP0 = DP[planedir0];
 	Real thisDP1 = DP[planedir1];
@@ -1131,7 +1220,7 @@ bool ChomboScheduler::computeOneFaceCross(int dir, int face, int hiLoFace, RealV
 	if (abs(thisDP0) > 1.e-8 * abs(thisDP1))
 	{
     // if slope too large, return a number out of range
-    Real xc = v0[planedir0]; 
+    Real xc = v0[planedir0];
 		Real yc = v0[planedir1];
     Real p10 = v1[planedir0];
     Real p11 = v1[planedir1];
