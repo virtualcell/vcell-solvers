@@ -364,6 +364,11 @@ VarContext* FVSolver::loadEquation(istream& ifsInput, Structure* structure, Vari
 		throw ss.str();
 	}
 
+	if (var->getStructure() == structure)
+	{
+		// now Variable only has one VarContext that makes sense. Others are dummy.
+		var->setVarContext(varContext);
+	}
 	string nextToken, line;
 
 	while (!ifsInput.eof()) {
@@ -384,6 +389,8 @@ VarContext* FVSolver::loadEquation(istream& ifsInput, Structure* structure, Vari
 		ExpressionIndex expIndex;
 		if (nextToken == "INITIAL") {
 			expIndex = INITIAL_VALUE_EXP;
+		} else if (nextToken == "EXACT") {
+			expIndex = EXACT_EXP;
 		} else if (nextToken == "DIFFUSION") {
 			expIndex = DIFF_RATE_EXP;
 		} else if (nextToken == "RATE") {
@@ -448,7 +455,6 @@ void FVSolver::loadJumpCondition(istream& ifsInput, Membrane* membrane, string& 
 			Feature* f = model->getFeatureFromName(featurename);
 			string var_name = var->getName();
 			VCell::Expression* exp = readExpression(lineInput, var_name);
-			VarContext *varContext = 0;
 			if (var->getVarType() == VAR_VOLUME) {
 				f->getVolumeVarContext((VolumeVariable*)var)->addJumpCondition(membrane, exp);
 			} else if (var->getVarType() == VAR_VOLUME_REGION) {

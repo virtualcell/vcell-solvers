@@ -9,3 +9,14 @@ MembraneRegionVariable::MembraneRegionVariable(string& nameStr, Membrane* membra
 : Variable(nameStr, membrane, size)
 {
 }
+
+Variable* MembraneRegionVariable::createExactErrorVariable()
+{
+	if (exactErrorVar == NULL)
+	{
+		string errorVarName = name + ERROR_VAR_SUFFIX;
+		exactErrorVar = new MembraneRegionVariable(errorVarName, (Membrane*)structure, size);
+	}
+
+	return exactErrorVar;
+}

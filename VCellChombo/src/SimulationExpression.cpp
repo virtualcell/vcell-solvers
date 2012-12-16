@@ -98,17 +98,15 @@ void SimulationExpression::readData(char *filename)
 	DataSet::read(filename, this);
 }
 
-void SimulationExpression::resolveReferences() {
-	if (symbolTable == 0) 
+void SimulationExpression::initSimulation()
+{
+	if (symbolTable == 0)
 	{
 		createSymbolTable();
 	}
 	VCellModel *model = SimTool::getInstance()->getModel();
 	model->resolveReferences();
-}
-
-void SimulationExpression::initSimulation()
-{
+	
 	_scheduler->initValues();
 	currIteration = 0;
 }
@@ -243,7 +241,7 @@ void SimulationExpression::createSymbolTable() {
 
 	assert(numSymbols == variableIndex);
 	symbolTable = new SimpleSymbolTable(variableNames, variableIndex);
-	delete[] variableNames;	
+	delete[] variableNames;
 }
 
 int  SimulationExpression::getNumSymbols() {

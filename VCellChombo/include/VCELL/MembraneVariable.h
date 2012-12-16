@@ -15,6 +15,8 @@ public:
 	MembraneVariable(string& nameStr, Membrane* membrane, long size, bool diff=false);
 
 	VariableType getVarType() { return VAR_MEMBRANE; }
+
+	Variable* createExactErrorVariable();
 };
 
 #endif

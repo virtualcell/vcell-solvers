@@ -19,6 +19,8 @@ Variable::Variable(string& nameStr, Structure* s, long Asize, bool diff)
 	old = new double[size];
 	curr = new double[size];
 	bDiffusing = diff;
+	varContext = 0;
+	exactErrorVar = 0;
 	clear();
 }
 

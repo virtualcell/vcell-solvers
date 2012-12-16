@@ -8,14 +8,13 @@
 using std::ofstream;
 using std::endl;
 
-VolumeVariable::VolumeVariable(string& nameStr, Feature* feature, long numX, long numY, long numZ, bool diff, bool advect, bool grad)
+VolumeVariable::VolumeVariable(string& nameStr, Feature* feature, long numX, long numY, long numZ, bool diff, bool advect)
 : Variable(nameStr, feature, numX*numY*numZ, diff)
 {
 	sizeX = numX;
 	sizeY = numY;
 	sizeZ = numZ;
 	bAdvecting = advect;
-	bHasGradient = grad;
 }
 
 void VolumeVariable::show(ofstream& fp)
@@ -40,4 +39,14 @@ void VolumeVariable::show(ofstream& fp)
 			fp << endl;		
 		}
 	}
+}
+
+Variable* VolumeVariable::createExactErrorVariable()
+{
+	if (exactErrorVar == NULL)
+	{
+		string errorVarName = name + ERROR_VAR_SUFFIX;
+		exactErrorVar = new VolumeVariable(errorVarName, (Feature*)structure, sizeX, sizeY, sizeZ, bDiffusing, bAdvecting);
+	}
+	return exactErrorVar;
 }

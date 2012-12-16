@@ -12,6 +12,8 @@
 using std::string;
 using std::ofstream;
 
+#define ERROR_VAR_SUFFIX "__error"
+
 class Structure;
 enum VariableType {
 	VAR_UNKNOWN =			0,
@@ -23,6 +25,7 @@ enum VariableType {
 	VAR_CONTOUR_REGION =	6
 } ;
 
+class VarContext;
 class Variable 
 {
 protected:
@@ -54,7 +57,22 @@ public:
 	Structure* getStructure() {
 		return structure;
 	}
-   
+
+	void setVarContext(VarContext* vc)
+	{
+		varContext = vc;
+	}
+	VarContext* getVarContext()
+	{
+		return varContext;
+	}
+	Variable* getExactErrorVariable()
+	{
+		return exactErrorVar;
+	}
+
+	virtual Variable* createExactErrorVariable()=0;
+	
 protected:
 	void clear();
 
@@ -66,6 +84,8 @@ protected:
 	double *curr;
 
 	bool bDiffusing;
+	VarContext* varContext;
+	Variable* exactErrorVar;
 };
 
 #endif

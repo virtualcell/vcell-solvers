@@ -333,6 +333,14 @@ void DataSet::write(char *filename, SimulationExpression *sim)
 	}
    
 	int numBlocks = numVars;
+	for (int i = 0; i < numVars; ++ i)
+	{
+		Variable* var = sim->getVariable(i);
+		if (var->getExactErrorVariable() != NULL)
+		{
+			++ numBlocks;
+		}
+	}
 
 	fileHeader.sizeX = numX;
 	fileHeader.sizeY = numY;
@@ -369,6 +377,20 @@ void DataSet::write(char *filename, SimulationExpression *sim)
 		DataSet::writeDataBlock(fp,dataBlock+blockIndex);
 		dataOffset += dataBlock[blockIndex].size*sizeof(double);
 		blockIndex ++;
+		
+		var = var->getExactErrorVariable();
+		if (var != NULL)
+		{
+			memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
+			strcpy(dataBlock[blockIndex].varName, var->getQualifiedName().c_str());
+
+			dataBlock[blockIndex].varType = var->getVarType();
+			dataBlock[blockIndex].size = var->getSize();
+			dataBlock[blockIndex].dataOffset = dataOffset;
+			DataSet::writeDataBlock(fp,dataBlock+blockIndex);
+			dataOffset += dataBlock[blockIndex].size*sizeof(double);
+			blockIndex ++;
+		}
 	}
 
 	//
@@ -377,7 +399,7 @@ void DataSet::write(char *filename, SimulationExpression *sim)
 	blockIndex = 0;
 	for (int i = 0; i < numVars; i ++) {
 		Variable* var = sim->getVariable(i);
-		if (!var){
+		if (var == NULL){
 			char errmsg[512];
 			sprintf(errmsg, "DataSet::write() - variable '%s' not found during write", dataBlock[blockIndex].varName);
 			throw errmsg;
@@ -388,13 +410,27 @@ void DataSet::write(char *filename, SimulationExpression *sim)
 			sprintf(errmsg, "DataSet::write() - offset for data is incorrect (block %d, var=%s), ftell() says %ld, should be %d", blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
 			throw errmsg;
 		}
-
 		if (var->getSize() != dataBlock[blockIndex].size) {
 			throw "DataSet::write() : inconsistent number of data blocks for variable";
-		}
-		
+		}		
 		DataSet::writeDoubles(fp, var->getCurr(), var->getSize());
 		blockIndex ++;
+
+		var = var->getExactErrorVariable();
+		if (var != NULL)
+		{
+			ftell_pos = ftell(fp);
+			if (ftell_pos != dataBlock[blockIndex].dataOffset){
+				char errmsg[512];
+				sprintf(errmsg, "DataSet::write() - offset for data is incorrect (block %d, var=%s), ftell() says %ld, should be %d", blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
+				throw errmsg;
+			}
+			if (var->getSize() != dataBlock[blockIndex].size) {
+				throw "DataSet::write() : inconsistent number of data blocks for variable";
+			}
+			DataSet::writeDoubles(fp, var->getCurr(), var->getSize());
+			blockIndex ++;
+		}
 	}
 
 	fclose(fp);

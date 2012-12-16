@@ -32,8 +32,9 @@ VarContext::VarContext(Structure *s, Variable* var)
 void VarContext::resolveReferences(SimulationExpression *Asim)
 {
 	sim = Asim;
-	if (sim == 0) {
-		throw "VarContext::resolveReference(), simulation can't be null";
+	if (expressions[EXACT_EXP] != NULL)
+	{
+		variable->createExactErrorVariable();
 	}
 }
 

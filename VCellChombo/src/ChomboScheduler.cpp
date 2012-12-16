@@ -517,6 +517,11 @@ void ChomboScheduler::updateSolution() {
 		for (int ivar = 0; ivar < numDefinedVars; ivar ++) {
 			Variable* var = feature->getDefinedVariable(ivar);
 			resetVariable(var);
+			Variable* errorVar = var->getExactErrorVariable();
+			if (errorVar != NULL);
+			{
+				memset(errorVar->getCurr(), 0, errorVar->getSize() * sizeof(double));
+			}
 		}
 	}
 
@@ -532,6 +537,14 @@ void ChomboScheduler::updateSolution() {
 			for (int ivar = 0; ivar < numDefinedVars; ivar ++) {
 				Variable* var = feature->getDefinedVariable(ivar);
 				double* varCurr = var->getCurr();
+				double* errorCurr = 0;
+				bool bComputeError = false;
+				Variable* errorVar = var->getExactErrorVariable();
+				if (errorVar != NULL)
+				{
+					bComputeError = true;
+					errorCurr = errorVar->getCurr();
+				}
 
 				int refratio = 1;
 				for(int ilev = 0; ilev < numLevels - 1; ilev ++) {
@@ -564,6 +577,18 @@ void ChomboScheduler::updateSolution() {
 									}
 
 									double sol = solnDataPtr[getChomboBoxLocalIndex(solnSize, ivar, D_DECL(i, j, k))];
+									double error = 0;
+									if (bComputeError)
+									{
+										RealVect coord = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+										memset(vectValues, 0, numSymbols * sizeof(double));
+										vectValues[0] = simulation->getTime_sec();
+										vectValues[1] = coord[0];
+										vectValues[2] = coord[1];
+										vectValues[3] = SpaceDim < 3 ? 0.5 : coord[2];
+										double exact = var->getVarContext()->evaluateExpression(EXACT_EXP, vectValues);
+										error = abs(exact - sol);
+									}
 #if CH_SPACEDIM==3
 									for (int kk = 0; kk < refratio; kk ++) {
 #endif
@@ -572,6 +597,10 @@ void ChomboScheduler::updateSolution() {
 												IntVect finestGridIndex(D_DECL(ioffset * refratio + ii, joffset * refratio + jj, koffset * refratio + kk));
 												int globalIndex = getChomboBoxLocalIndex(vectNxes[finestLevel], 0, finestGridIndex);
 												varCurr[globalIndex] = sol;
+												if (bComputeError)
+												{
+													errorCurr[globalIndex] = error;
+												}
 											} // end for ii
 										} // end for jj
 #if CH_SPACEDIM==3
@@ -599,6 +628,11 @@ void ChomboScheduler::updateSolution() {
 	for(int memVarIdx = 0; memVarIdx < numMembraneVars; memVarIdx++){
 		Variable* var = (Variable*)simulation->getMemVariable(memVarIdx);
 		resetVariable(var);
+		Variable* errorVar = var->getExactErrorVariable();
+		if (errorVar != NULL)
+		{
+			memset(errorVar->getCurr(), 0, errorVar->getSize() * sizeof(double));
+		}
 	}
 	for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 		Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
@@ -630,8 +664,6 @@ void ChomboScheduler::updateSolution() {
 					for (int memVarIdx = 0; memVarIdx < numMembraneVars; ++ memVarIdx)
 					{
 						Variable* var = (Variable*)simulation->getMemVariable(memVarIdx);
-						double* varCurr = var->getCurr();
-						varCurr[memIndex] = 0;
 						for (int ivar = 0; ivar < iFeature->getMemVarIndexesInAdjacentMembranes().size(); ++ ivar)
 						{
 							int varIndex =	iFeature->getMemVarIndexesInAdjacentMembranes()[ivar];
@@ -639,7 +671,27 @@ void ChomboScheduler::updateSolution() {
 							{
 								if (membrane->isVariableDefined(var))
 								{
-									varCurr[memIndex] = (*memSoln[ivol][ilev])[dit()](vof, ivar);
+									double* varCurr = var->getCurr();
+									double sol = (*memSoln[ivol][ilev])[dit()](vof, ivar);
+									varCurr[memIndex] = sol;
+
+									Variable* errorVar = var->getExactErrorVariable();
+									if (errorVar != NULL)
+									{
+										RealVect vol_point = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+										const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
+										RealVect coord = mem_centroid;
+										coord *= vectDxes[ilev];
+										coord += vol_point;
+										memset(vectValues, 0, numSymbols * sizeof(double));
+										vectValues[0] = simulation->getTime_sec();
+										vectValues[1] = coord[0];
+										vectValues[2] = coord[1];
+										vectValues[3] = SpaceDim < 3 ? 0.5 : coord[2];
+										double exact = var->getVarContext()->evaluateExpression(EXACT_EXP, vectValues);
+										double* errorCurr = errorVar->getCurr();
+										errorCurr[memIndex] = abs(exact - sol);
+									}
 								}
 								break;
 							}

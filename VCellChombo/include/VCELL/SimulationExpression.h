@@ -60,8 +60,6 @@ public:
 		return (int)varList.size();
 	}
 	
-	void resolveReferences(); // create symbol table
-
 	void writeData(char *filename);
 
 	SymbolTable* getSymbolTable() { 

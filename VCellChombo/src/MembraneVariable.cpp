@@ -10,3 +10,14 @@ MembraneVariable::MembraneVariable(string& nameStr, Membrane* membrane, long siz
 : Variable(nameStr, membrane, size, diff)
 {
 }
+
+Variable* MembraneVariable::createExactErrorVariable()
+{
+	if (exactErrorVar == NULL)
+	{
+		string errorVarName = name + ERROR_VAR_SUFFIX;
+		exactErrorVar = new MembraneVariable(errorVarName, (Membrane*)structure, size, bDiffusing);
+	}
+
+	return exactErrorVar;
+}

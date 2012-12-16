@@ -560,7 +560,6 @@ void SimTool::setSolver(string& s) {
 }
 
 void SimTool::start() {
-	simulation->resolveReferences();
 	simulation->initSimulation();
 	// always clear log, don't know how to load final
 	clearLog();
