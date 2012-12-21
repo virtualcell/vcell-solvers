@@ -518,7 +518,7 @@ void ChomboScheduler::updateSolution() {
 			Variable* var = feature->getDefinedVariable(ivar);
 			resetVariable(var);
 			Variable* errorVar = var->getExactErrorVariable();
-			if (errorVar != NULL);
+			if (errorVar != NULL)
 			{
 				memset(errorVar->getCurr(), 0, errorVar->getSize() * sizeof(double));
 			}
