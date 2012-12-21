@@ -55,7 +55,7 @@ public:
 	void initializeGrids();
 	virtual void initValues()=0;
 
-	void writeData(char* dataFileName);
+	void writeData();
 	int getNumMembranePoints()
 	{
 		return numMembranePoints;
@@ -113,7 +113,6 @@ protected:
 	Vector< Vector<ConnectedComponent*> > phaseVolumeList;
 	int numMembranePoints;
 	bool computeOneFaceCross(int, int, int, RealVect&, RealVect&, RealVect&, RealVect&, RealVect&);
-	
 };
 
 #endif

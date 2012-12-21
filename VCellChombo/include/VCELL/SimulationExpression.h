@@ -60,7 +60,7 @@ public:
 		return (int)varList.size();
 	}
 	
-	void writeData(char *filename);
+	void writeData();
 
 	SymbolTable* getSymbolTable() { 
 		return symbolTable; 

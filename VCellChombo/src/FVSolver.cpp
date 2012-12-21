@@ -652,43 +652,34 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 			string solver="";
 			lineInput >> solver;
 			simTool->setSolver(solver);
-//			if (solver == CHOMBO_SUNDIALS_SOLVER) {
+			if (solver == CHOMBO_SEMIIMPLICIT_SOLVER)
+			{
+			}
+//			else if (solver == CHOMBO_SUNDIALS_SOLVER) {
 //				double sundialsRelTol = 1e-7;
 //				double sundialsAbsTol = 1e-9;
 //				double maxStep = 0.1;
 //				lineInput >> sundialsRelTol >> sundialsAbsTol >> maxStep;
 //				simTool->setSundialsErrorTolerances(sundialsRelTol, sundialsAbsTol);
 //				simTool->setSundialsMaxStep(maxStep);
-//			} else if (solver == CHOMBO_SEMIIMPLICIT_SOLVER) {
 //			}
 		} else if (nextToken == "DISCONTINUITY_TIMES") {
-			int numDisTimes = 0;
-			lineInput >> numDisTimes;
-			if (numDisTimes > 0) {
-				double* discontinuityTimes = 0;
-				discontinuityTimes = new double[numDisTimes];
-				for (int i = 0; i < numDisTimes; i ++) {
-					lineInput >> discontinuityTimes[i];
-				}
-				simTool->setDiscontinuityTimes(numDisTimes, discontinuityTimes);
-			}
+			throw "discontinuity times not supported.";
+//			int numDisTimes = 0;
+//			lineInput >> numDisTimes;
+//			if (numDisTimes > 0) {
+//				double* discontinuityTimes = 0;
+//				discontinuityTimes = new double[numDisTimes];
+//				for (int i = 0; i < numDisTimes; i ++) {
+//					lineInput >> discontinuityTimes[i];
+//				}
+//				simTool->setDiscontinuityTimes(numDisTimes, discontinuityTimes);
+//			}
 		} else if (nextToken == "BASE_FILE_NAME") {
 			string basefilename;
 			getline(lineInput, basefilename);
 			trimString(basefilename);
-			if (outputPath == 0) {
-				simTool->setBaseFilename((char*)basefilename.c_str());
-			} else {
-				const char* baseSimName = strrchr(basefilename.c_str(), DIRECTORY_SEPARATOR);
-				if (baseSimName == NULL) {
-					baseSimName = basefilename.c_str();
-				} else {
-					baseSimName += 1;
-				}
-				char newBaseName[512];
-				sprintf(newBaseName, "%s%c%s", outputPath, DIRECTORY_SEPARATOR, baseSimName);
-				simTool->setBaseFilename(newBaseName);
-			}	
+			simTool->setBaseFilename((char*)basefilename.c_str());
 		} else if (nextToken == "ENDING_TIME") {
 			double end_time;
 			lineInput >> end_time;
@@ -704,17 +695,19 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 			string one_step, keep_every_str;
 			lineInput >> one_step >> keep_every_str;
 			if (one_step == "ONE_STEP") {
-				simTool->setSundialsOneStepOutput();
+				throw "keep every one step not supported";
+//				simTool->setSundialsOneStepOutput();
 			} else {
-				keep_every_str = one_step;	
-			}	
+				keep_every_str = one_step;
+			}
 			keep_every = atoi(keep_every_str.c_str());
-			
+
 			simTool->setKeepEvery(keep_every);
 		} else if (nextToken == "KEEP_AT_MOST") {
-			int keep_at_most;
-			lineInput >> keep_at_most;
-			simTool->setKeepAtMost(keep_at_most);
+			throw "keep at most not supported.";
+//			int keep_at_most;
+//			lineInput >> keep_at_most;
+//			simTool->setKeepAtMost(keep_at_most);
 		} else if (nextToken == "STORE_ENABLE") {
 			int bStoreEnable=1;
 			lineInput >> bStoreEnable;
@@ -945,25 +938,18 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 	}
 }
 
-FVSolver::FVSolver(istream& fvinput, int taskID, char* outdir, bool bSimZip) {
+FVSolver::FVSolver(istream& fvinput, int taskID) {
 	simTool = 0;
 	simulation = 0;
 	model = 0;
 	chomboScheduler = 0;
 	chomboSpec = 0;
-	outputPath = outdir;
 	createSimTool(fvinput, taskID);
-	if (!bSimZip) {
-		SimTool::getInstance()->requestNoZip();
-	}
 }
 
-void FVSolver::solve(bool bLoadFinal)
+void FVSolver::solve()
 {
-	simTool->setLoadFinal(bLoadFinal);
-
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "preprocessing finished"));
-
 	simTool->start();
 }
 

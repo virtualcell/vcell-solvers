@@ -63,10 +63,10 @@ void SimulationExpression::iterate()
 
 void SimulationExpression::update()
 {
-	for (int i = 0; i < (int)varList.size(); i ++) {
-		Variable* var = varList[i];
-		var->update();
-	}
+//	for (int i = 0; i < (int)varList.size(); i ++) {
+//		Variable* var = varList[i];
+//		var->update();
+//	}
 }
 
 Variable* SimulationExpression::getVariable(int index) {
@@ -248,7 +248,7 @@ int  SimulationExpression::getNumSymbols() {
 	return numSymbols;
 }
 
-void SimulationExpression::writeData(char *filename)
+void SimulationExpression::writeData()
 {
-	((ChomboScheduler*)_scheduler)->writeData(filename);
+	_scheduler->writeData();
 }

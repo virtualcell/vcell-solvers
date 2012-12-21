@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <VCELL/DataSet.h>
+#include <VCELL/SimTool.h>
 #include <iostream>
 #include <string>
 using std::cout;
@@ -14,6 +15,8 @@ using std::string;
 #include <VCELL/Variable.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/ChomboGeometry.h>
+#include <hdf5.h>
+#include <H5Tpublic.h>
 
 /*
  * Little-endian operating systems:
@@ -295,7 +298,6 @@ void DataSet::read(char *filename, SimulationExpression *sim)
 			throw errmsg;
 		}
 		DataSet::readDoubles(fp, var->getCurr(), var->getSize());
-		var->update();   
 		cout << "read data for variable '" << var->getName() << "'" << endl;
 	}
 	delete[] dataBlock;
@@ -303,20 +305,18 @@ void DataSet::read(char *filename, SimulationExpression *sim)
 	fclose(fp);
 }
 
-void DataSet::write(char *filename, SimulationExpression *sim)
+void DataSet::write(SimulationExpression *sim, bool bWriteHdf5)
 {
 	FILE *fp=NULL;
 	FileHeader fileHeader;
 	DataBlock *dataBlock;
-	static double *writeBuffer = NULL;
 
 	int numX = sim->getChomboGeometry()->getNumX();
 	int numY = sim->getChomboGeometry()->getNumY();
 	int numZ = sim->getChomboGeometry()->getNumZ();
-	if (writeBuffer==NULL){
-		writeBuffer = new double[numX * numY * numZ];
-	}
 
+	char filename[128];
+	SimTool::getInstance()->getSimFileName(filename);
 	if ((fp=fopen(filename, "wb"))==NULL){
 		char errmsg[512];
 		sprintf(errmsg, "DataSet::write() - could not open file '%s'.", filename); 
@@ -416,8 +416,8 @@ void DataSet::write(char *filename, SimulationExpression *sim)
 		DataSet::writeDoubles(fp, var->getCurr(), var->getSize());
 		blockIndex ++;
 
-		var = var->getExactErrorVariable();
-		if (var != NULL)
+		Variable* errVar = var->getExactErrorVariable();
+		if (errVar != NULL)
 		{
 			ftell_pos = ftell(fp);
 			if (ftell_pos != dataBlock[blockIndex].dataOffset){
@@ -425,14 +425,81 @@ void DataSet::write(char *filename, SimulationExpression *sim)
 				sprintf(errmsg, "DataSet::write() - offset for data is incorrect (block %d, var=%s), ftell() says %ld, should be %d", blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
 				throw errmsg;
 			}
-			if (var->getSize() != dataBlock[blockIndex].size) {
+			if (errVar->getSize() != dataBlock[blockIndex].size) {
 				throw "DataSet::write() : inconsistent number of data blocks for variable";
 			}
-			DataSet::writeDoubles(fp, var->getCurr(), var->getSize());
+			DataSet::writeDoubles(fp, errVar->getCurr(), errVar->getSize());
 			blockIndex ++;
 		}
 	}
 
 	fclose(fp);
 	delete[] dataBlock;
+
+	if (!bWriteHdf5)
+	{
+		return;
+	}
+	
+	static const char* SOLUTION_GROUP = "/Solution";
+	SimTool::getInstance()->getSimHdf5FileName(filename);
+	hid_t h5SimFile = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	hid_t solGroup = H5Gcreate(h5SimFile, SOLUTION_GROUP, H5P_DEFAULT);
+	
+	hid_t scalarDataSpace = H5Screate(H5S_SCALAR); // shared among all attributes
+
+	// attribute: time
+	hid_t attribute = H5Acreate(solGroup, "time", H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
+	double t = sim->getTime_sec();
+	H5Awrite(attribute, H5T_NATIVE_DOUBLE, &t);
+	H5Aclose(attribute);
+
+	for (int i = 0; i < numVars; i ++) {
+		Variable* var = sim->getVariable(i);
+		hsize_t dim[] = {var->getSize()};   /* Dataspace dimensions */
+		int rank = 1;
+		hid_t space = H5Screate_simple (rank, dim, NULL);
+		char dsName[128];
+		sprintf(dsName, "%s/%s", SOLUTION_GROUP, var->getName().c_str());
+		hid_t varDataset = H5Dcreate (h5SimFile, dsName, H5T_NATIVE_DOUBLE, space, H5P_DEFAULT);
+		H5Dwrite(varDataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, var->getCurr());
+
+		// attribute: mean
+		hid_t attribute = H5Acreate(varDataset, "mean", H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
+		double d = var->getMean();
+		H5Awrite(attribute, H5T_NATIVE_DOUBLE, &d);
+		H5Aclose(attribute);
+
+		attribute = H5Acreate(varDataset, "sum of volume fraction", H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
+		d = var->getSumVolFrac();
+		H5Awrite(attribute, H5T_NATIVE_DOUBLE, &d);
+		H5Aclose(attribute);
+
+		Variable* errVar = var->getExactErrorVariable();
+		if (errVar != NULL)
+		{
+			// attribute: max error
+			attribute = H5Acreate(varDataset, "max error", H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
+			d = var->getMaxError();
+			H5Awrite(attribute, H5T_NATIVE_DOUBLE, &d);
+			H5Aclose(attribute);
+
+			attribute = H5Acreate(varDataset, "relative L2 error", H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
+			d = var->getL2Error();
+			H5Awrite(attribute, H5T_NATIVE_DOUBLE, &d);
+			H5Aclose(attribute);
+	
+			sprintf(dsName, "%s/%s", SOLUTION_GROUP, errVar->getName().c_str());
+			hid_t ds = H5Dcreate (h5SimFile, dsName, H5T_NATIVE_DOUBLE, space, H5P_DEFAULT);
+			H5Dwrite(ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, errVar->getCurr());
+			H5Dclose(ds);
+		}
+		H5Dclose(varDataset);
+		H5Sclose(space);
+	}
+
+	H5Sclose(scalarDataSpace);
+	H5Gclose(solGroup);
+	H5Fclose(h5SimFile);
 }
+

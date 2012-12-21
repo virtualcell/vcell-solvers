@@ -22,13 +22,10 @@ class ChomboIF;
 
 class FVSolver {
 public:
-	FVSolver(istream& fvinput, int taskID=-1, char* outdir=0, bool bSimZip=true);
+	FVSolver(istream& fvinput, int taskID=-1);
 	void createSimTool(istream& ifsInput, int taskID);
-	void solve(bool bLoadFinal=true);
+	void solve();
 
-	void init(double* paramValues=0);
-	void step(double* paramValues=0);
-	
 	double getCurrentTime();
 	void setEndTime(double endTime);
 
@@ -54,7 +51,6 @@ private:
 	void loadSerialScanParameterValues(istream& ifsInput, int numSerialScanParamValues);
 	void loadChomboSpec(istream& ifsInput);
 
-	char* outputPath;
 	SimTool* simTool;
 	SimulationExpression *simulation;
 	VCellModel *model;

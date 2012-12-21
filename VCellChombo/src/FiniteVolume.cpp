@@ -40,23 +40,17 @@ void printUsage() {
 
 #include <math.h>
 
-//double vol_frac_cutoff = 1e-2;
 bool refine_all_irregular = true;
 int main(int argc, char *argv[])
 {
 #ifdef CH_MPI
   MPI_Init(&argc, &argv);
 #endif
-//	if (argc == 3) {
-//		sscanf(argv[1], "%f", &vol_frac_cutoff);
-//	}
 	int returnCode = 0;
 	string errorMsg = "Exception : ";
 
-	char* outputPath = 0;
 	char* fvInputFile = 0;
 	ifstream ifsInput;
-	bool bSimZip = true;
 	try {
 		int taskID = -1;
 		if (argc < 2) {
@@ -65,20 +59,7 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 		for (int i = 1; i < argc; i ++) {
-			if (!strcmp(argv[i], "-nz")) {
-				bSimZip = false;
-			} else if (!strcmp(argv[i], "-tagirreg")) {
-				refine_all_irregular = true;
-				cout << "++++++++Notice: tag all irregular cells!++++++++++++++" << endl;
-			} else if (!strcmp(argv[i], "-d")) {
-				i ++;
-				if (i >= argc) {
-					cout << "Missing output directory!" << endl;
-					printUsage();
-					exit(1);
-				}
-				outputPath = argv[i];
-			} else if (!strcmp(argv[i], "-tid")) {
+			if (!strcmp(argv[i], "-tid")) {
 #ifdef USE_MESSAGING
 				i ++;
 				if (i >= argc) {
@@ -103,25 +84,20 @@ int main(int argc, char *argv[])
 				fvInputFile = argv[i];
 			}
 		}
-		struct stat buf;
-		if (outputPath != 0 && stat(outputPath, &buf)) {
-			cerr << "Output directory [" << outputPath <<"] doesn't exist" << endl;
-			exit(1);
-		}
 
 		// strip " in case that file name has " around
 		int fl = strlen(fvInputFile);
-        if (fvInputFile[0] == '"' && fvInputFile[fl-1] == '"') {
-                fvInputFile[fl-1] = 0;
-                fvInputFile ++;
-        }
+		if (fvInputFile[0] == '"' && fvInputFile[fl-1] == '"') {
+						fvInputFile[fl-1] = 0;
+						fvInputFile ++;
+		}
 		ifsInput.open(fvInputFile);
 		if (!ifsInput.is_open()) {
 			cout << "File doesn't exist: " << fvInputFile << endl;
 			exit(102);
 		}
 
-		FVSolver* fvSolver = new FVSolver(ifsInput, taskID, outputPath, bSimZip);
+		FVSolver* fvSolver = new FVSolver(ifsInput, taskID);
 		ifsInput.close();
 
 		fvSolver->solve();

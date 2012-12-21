@@ -34,27 +34,16 @@ protected:
 public:
 	virtual ~Variable();
 
-	virtual void show(ofstream&);
-
-	double *getOld()  { return old; }
+//	double *getOld()  { return old; }
 	double *getCurr() { return curr; }
 	long getSize() { return size; }
-
-	double getOld(long index);           // if doesn't exist, return 0.0
-	double getCurr(long index);          // if doesn't exist, return 0.0
-
-	void setOld(long index, double value);
-	void setCurr(long index, double value);
-	
 	const string& getName() { return name; }
 	string getQualifiedName();
-
 	virtual VariableType getVarType() {	return VAR_UNKNOWN; }
-
-	void update();
-
 	bool isDiffusing() { return bDiffusing; }
-	Structure* getStructure() {
+	
+	Structure* getStructure()
+	{
 		return structure;
 	}
 
@@ -72,20 +61,48 @@ public:
 	}
 
 	virtual Variable* createExactErrorVariable()=0;
-	
-protected:
-	void clear();
 
+	void addL2Error(double d);
+	void addL2Exact(double d);
+	void addMean(double d);
+	void addVolFrac(double d);
+	void computeFinalL2Error();
+	void computeFinalMean();
+	double getL2Error()
+	{
+		return l2Error;
+	}
+	double getMean()
+	{
+		return mean;
+	}
+	double getSumVolFrac()
+	{
+		return sumVolFrac;
+	}
+	void updateMaxError(double d);
+	double getMaxError()
+	{
+		return maxError;
+	}
+	void reset();
+
+protected:
 	string name;
 	Structure* structure;
 	    
 	long size;
-	double *old;
+//	double *old;
 	double *curr;
 
 	bool bDiffusing;
 	VarContext* varContext;
 	Variable* exactErrorVar;
+	double l2Error;
+	double maxError;
+	double l2Exact;
+	double mean;
+	double sumVolFrac;
 };
 
 #endif

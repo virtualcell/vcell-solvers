@@ -9,6 +9,8 @@
 #define SIMTOOL_H
 
 #include <stdio.h>
+#include <string>
+using std::string;
 
 #ifndef DIRECTORY_SEPARATOR
 #if ( defined(WIN32) || defined(WIN64) || defined(CH_CYGWIN) )
@@ -17,11 +19,8 @@
 #define DIRECTORY_SEPARATOR '/'
 #endif
 #endif
-#define EDGE_CROSS_POINTS_FILE_EXT ".crspts"
-#define CHOMBO_MEMBRANE_METRICS_FILE_EXT ".chombo.memmetrics"
-#define MEMBRANE_SLICE_CROSS_FILE_EXT ".slccrs"
-#define HDF5_FILE_EXT ".hdf5"
-#define MESH_HDF5_FILE_EXT ".mesh.hdf5"
+
+#define CHOMBO_SEMIIMPLICIT_SOLVER "CHOMBO_SEMIIMPLICIT_SOLVER"
 
 class VCellModel;
 class SimulationExpression;
@@ -36,7 +35,6 @@ public:
 	~SimTool();
 
 	virtual void start();
-	virtual void loadFinal();
 
 	void setModel(VCellModel* model);
 	void setSimulation(SimulationExpression* sim);
@@ -46,7 +44,6 @@ public:
 	double getEndTime() { return simEndTime; }
 
 	void setKeepEvery(int ke) { keepEvery = ke; }
-	void setKeepAtMost(int kam) { keepAtMost = kam; }
 	void setBaseFilename(char *fname);
 	char* getBaseFileName() {
 		return baseFileName;
@@ -57,8 +54,7 @@ public:
 	void setStoreEnable(bool enable) {
 		bStoreEnable = enable;
 	}
-	void requestNoZip();
-
+	
 	SimulationExpression* getSimulation() { return simulation; }
 	VCellModel* getModel() { return vcellModel; }
 	bool checkStopRequested();
@@ -66,55 +62,49 @@ public:
 	void setSolver(string& s);
 	bool isChomboSemiImplicitSolver();
 	bool isChomboSundialsSolver();
+	void getSimFileName(char* filename);
+	void getSimHdf5FileName(char* filename);
 
-	void setDiscontinuityTimes(int num, double* times) {
-		numDiscontinuityTimes = num;
-		discontinuityTimes = times;
-	}
-	int getNumDiscontinuityTimes() { return numDiscontinuityTimes; }
-	double* getDiscontinuityTimes() { return discontinuityTimes; }
-	
-	void setSundialsErrorTolerances(double rtol, double atol) {
-		sundialsRelTol = rtol;
-		sundialsAbsTol = atol;
-	}
-
-	void setSundialsMaxStep(double ms) {
-		sundialsMaxStep = ms;
-	}
-
-	double getSundialsRelativeTolerance() { return sundialsRelTol; }
-	double getSundialsAbsoluteTolerance() { return sundialsAbsTol; }
-	double getSundialsMaxStep() { return sundialsMaxStep; }
-
-	void setPCGRelativeErrorTolerance(double rtol) {
-		pcgRelTol = rtol;
-	}
-	double getPCGRelativeErrorTolerance() {
-		return pcgRelTol;
-	}
-
-	double getSimStartTime() { return simStartTime; }
-	void setSundialsOneStepOutput() { bSundialsOneStepOutput = true; }
-	bool isSundialsOneStepOutput() { return bSundialsOneStepOutput; }
-
-	void setSerialParameterScans(int numScans, double** values);
-	void setLoadFinal(bool b) {
-		bLoadFinal = b;
-	}
+//	void setKeepAtMost(int kam) { keepAtMost = kam; }
+//	void setDiscontinuityTimes(int num, double* times) {
+//		numDiscontinuityTimes = num;
+//		discontinuityTimes = times;
+//	}
+//	int getNumDiscontinuityTimes() { return numDiscontinuityTimes; }
+//	double* getDiscontinuityTimes() { return discontinuityTimes; }
+//
+//	void setSundialsErrorTolerances(double rtol, double atol) {
+//		sundialsRelTol = rtol;
+//		sundialsAbsTol = atol;
+//	}
+//
+//	void setSundialsMaxStep(double ms) {
+//		sundialsMaxStep = ms;
+//	}
+//
+//	double getSundialsRelativeTolerance() { return sundialsRelTol; }
+//	double getSundialsAbsoluteTolerance() { return sundialsAbsTol; }
+//	double getSundialsMaxStep() { return sundialsMaxStep; }
+//
+//	void setPCGRelativeErrorTolerance(double rtol) {
+//		pcgRelTol = rtol;
+//	}
+//	double getPCGRelativeErrorTolerance() {
+//		return pcgRelTol;
+//	}
+//
+//	void setSundialsOneStepOutput() { bSundialsOneStepOutput = true; }
+//	bool isSundialsOneStepOutput() { return bSundialsOneStepOutput; }
 
 private:
 	SimTool();
 
 	FILE* lockForReadWrite();
-
-	void updateLog(double progress,double time,int iteration);
-	void clearLog();
-	int	getZipCount(char* zipFileName);
+	void writeData(double progress,double time,int iteration);
+	void cleanupLastRun();
 
 	static SimTool* instance;
 
-	bool bSimZip;
 	VCellModel* vcellModel;
 	SimulationExpression  *simulation;
 
@@ -128,15 +118,13 @@ private:
 	char* baseDirName;
 	int zipFileCount;
 	string solver;
-	double* discontinuityTimes;
-	int numDiscontinuityTimes;
-	bool bLoadFinal;
 
-	double sundialsRelTol, sundialsAbsTol, sundialsMaxStep;
-	double pcgRelTol;
-
-	bool bSundialsOneStepOutput;
-	int keepAtMost;
+//	double* discontinuityTimes;
+//	int numDiscontinuityTimes;
+//	double sundialsRelTol, sundialsAbsTol, sundialsMaxStep;
+//	double pcgRelTol;
+//	bool bSundialsOneStepOutput;
+//	int keepAtMost;
 };
 
 #endif

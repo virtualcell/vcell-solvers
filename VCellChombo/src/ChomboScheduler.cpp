@@ -46,6 +46,12 @@
 #endif
 #define HOFFSET(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 
+#define EDGE_CROSS_POINTS_FILE_EXT ".crspts"
+#define CHOMBO_MEMBRANE_METRICS_FILE_EXT ".chombo.memmetrics"
+#define MEMBRANE_SLICE_CROSS_FILE_EXT ".slccrs"
+#define HDF5_FILE_EXT ".hdf5"
+#define MESH_HDF5_FILE_EXT ".mesh.hdf5"
+
 static const int blockFactor = 8;  // smallest box, 8 is recommended.
 static const int nestingRadius  = 2; //ghostPhi[0];  // should be the same as ghost phi size, but Terry used 2
 static const int maxCoarsen = -1;
@@ -420,6 +426,7 @@ void ChomboScheduler::initializeGrids() {
 			for (int ilev = 0; ilev < numLevels; ilev ++) {
 				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit) {
 					const Box& currBox = vectGrids[ilev][dit()];
+					
 					const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
 					const EBGraph& currEBGraph = currEBISBox.getEBGraph();
 					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
@@ -477,7 +484,6 @@ void ChomboScheduler::initializeGrids() {
 
 					const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
 					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
-
 					pout() << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev << ":" << " Box " << currBox << endl;
 					totalPtsLevel += currBox.numPts();
 					totalIrregLevel += irregCells.numPts();
@@ -501,30 +507,22 @@ void ChomboScheduler::initializeGrids() {
   }
 }
 
-void resetVariable(Variable* var)
-{
-	double* varCurr = var->getCurr();
-	for (int i = 0; i < var->getSize(); ++ i)
-	{
-		varCurr[i] = BASEFAB_REAL_SETVAL;
-	}
-}
 void ChomboScheduler::updateSolution() {
-	// first volume variables
-	for (int ifeature = 0; ifeature < chomboGeometry->getNumSubdomains(); ifeature ++) {
-		Feature* feature = chomboGeometry->getFeature(ifeature);
-		int numDefinedVars = feature->getNumDefinedVariables();
-		for (int ivar = 0; ivar < numDefinedVars; ivar ++) {
-			Variable* var = feature->getDefinedVariable(ivar);
-			resetVariable(var);
-			Variable* errorVar = var->getExactErrorVariable();
-			if (errorVar != NULL)
-			{
-				memset(errorVar->getCurr(), 0, errorVar->getSize() * sizeof(double));
-			}
-		}
+	cout << endl << "ChomboScheduler:: updateSolution" << endl;
+	// reset variables
+	int numVars = simulation->getNumVariables();
+	for(int v = 0; v < numVars; ++ v){
+		Variable* var = (Variable*)simulation->getVariable(v);
+		var->reset();
 	}
 
+	int cfRefRatio = 1;
+	for(int ilev = 0; ilev < numLevels - 1; ilev ++) {
+		cfRefRatio *= vectRefRatios[ilev];
+	}
+
+	int finestLevel = numLevels - 1;
+	double smallVolFrac = 1e-3;
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
@@ -546,12 +544,9 @@ void ChomboScheduler::updateSolution() {
 					errorCurr = errorVar->getCurr();
 				}
 
-				int refratio = 1;
-				for(int ilev = 0; ilev < numLevels - 1; ilev ++) {
-					refratio *= vectRefRatios[ilev];
-				}
+				int refratio = cfRefRatio;
+				int numRepeats = refratio^SpaceDim;
 				// copy phi to var, repeat values for coarse levels
-				int finestLevel = numLevels - 1;
 				for(int ilev = 0; ilev < numLevels; ilev ++) {
 					for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit)	{
 						const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
@@ -576,7 +571,15 @@ void ChomboScheduler::updateSolution() {
 										continue;
 									}
 
+									double volFrac = 1.0;
+									if (currEBISBox.isIrregular(gridIndex))
+									{
+										volFrac = currEBISBox.volFrac(VolIndex(gridIndex, 0));
+									}
 									double sol = solnDataPtr[getChomboBoxLocalIndex(solnSize, ivar, D_DECL(i, j, k))];
+									double mean = sol * volFrac;
+									var->addMean(mean);
+									var->addVolFrac(volFrac);
 									double error = 0;
 									if (bComputeError)
 									{
@@ -587,7 +590,16 @@ void ChomboScheduler::updateSolution() {
 										vectValues[2] = coord[1];
 										vectValues[3] = SpaceDim < 3 ? 0.5 : coord[2];
 										double exact = var->getVarContext()->evaluateExpression(EXACT_EXP, vectValues);
-										error = abs(exact - sol);
+										error = exact - sol;
+
+										if (volFrac  > smallVolFrac)
+										{
+											var->updateMaxError(abs(error));
+										}
+										double l2 = error * error * volFrac * numRepeats;
+										double exactl2 = exact * exact * volFrac * numRepeats;
+										var->addL2Error(l2);
+										var->addL2Exact(exactl2);
 									}
 #if CH_SPACEDIM==3
 									for (int kk = 0; kk < refratio; kk ++) {
@@ -613,27 +625,28 @@ void ChomboScheduler::updateSolution() {
 #endif
 					} // end for (DataIterator
 					refratio /= vectRefRatios[ilev];
+					numRepeats = refratio^SpaceDim;
 				} // end for ilev
 			} // for (int ivar)
 		} // for ivol
 	} // for iphase
 
+	for (int i = 0; i < simulation->getNumVolVariables(); ++ i)
+	{
+		Variable* var = simulation->getVolVariable(i);
+		var->computeFinalMean();
+		if (var->getExactErrorVariable() != NULL)
+		{
+			var->computeFinalL2Error();
+		}
+	}
+	
 	// membrane variables
 	int totalVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
 	int numMembraneVars = simulation->getNumMemVariables();
 
 	int iphase = 0;
 	int ilev = numLevels - 1;  // only consider the finest level
-	// membrane variable names
-	for(int memVarIdx = 0; memVarIdx < numMembraneVars; memVarIdx++){
-		Variable* var = (Variable*)simulation->getMemVariable(memVarIdx);
-		resetVariable(var);
-		Variable* errorVar = var->getExactErrorVariable();
-		if (errorVar != NULL)
-		{
-			memset(errorVar->getCurr(), 0, errorVar->getSize() * sizeof(double));
-		}
-	}
 	for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 		Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
 
@@ -659,6 +672,7 @@ void ChomboScheduler::updateSolution() {
 						continue;
 					}
 
+					double areaFrac = currEBISBox.bndryArea(vof);
 					Feature* jFeature = phaseVolumeList[jphase][jvol]->feature;
 					Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(iFeature, jFeature);
 					for (int memVarIdx = 0; memVarIdx < numMembraneVars; ++ memVarIdx)
@@ -673,8 +687,11 @@ void ChomboScheduler::updateSolution() {
 								{
 									double* varCurr = var->getCurr();
 									double sol = (*memSoln[ivol][ilev])[dit()](vof, ivar);
+									double mean = sol * areaFrac;
+									var->addVolFrac(areaFrac);
+									var->addMean(mean);
+									
 									varCurr[memIndex] = sol;
-
 									Variable* errorVar = var->getExactErrorVariable();
 									if (errorVar != NULL)
 									{
@@ -690,7 +707,14 @@ void ChomboScheduler::updateSolution() {
 										vectValues[3] = SpaceDim < 3 ? 0.5 : coord[2];
 										double exact = var->getVarContext()->evaluateExpression(EXACT_EXP, vectValues);
 										double* errorCurr = errorVar->getCurr();
-										errorCurr[memIndex] = abs(exact - sol);
+										double error = sol - exact;
+										errorCurr[memIndex] = error;
+										var->updateMaxError(abs(error));
+
+										double l2 = error * error * areaFrac;
+										double l2exact = exact * exact * areaFrac;
+										var->addL2Error(l2);
+										var->addL2Exact(l2exact);
 									}
 								}
 								break;
@@ -702,13 +726,24 @@ void ChomboScheduler::updateSolution() {
 			} // for (VoFIterator vofit(irregCells,currEBGraph);
 		} // end DataIter
 	} // end ivol
+
+	for (int i = 0; i < simulation->getNumMemVariables(); ++ i)
+	{
+		Variable* var = simulation->getMemVariable(i);
+		var->computeFinalMean();
+		if (var->getExactErrorVariable() != NULL)
+		{
+			// note: I assume this means sqrt(sum*finestDs)
+			var->computeFinalL2Error();
+		}
+	}
 }
 
-void ChomboScheduler::writeData(char* dataFileName) {
+void ChomboScheduler::writeData() {
 	bool bWriteSim = true;
 	if (bWriteSim) {
 		updateSolution();
-		DataSet::write(dataFileName, simulation);
+		DataSet::write(simulation);
 	}
 	static bool bFirstTime = true;
 	bool bWriteHdf5 = true;

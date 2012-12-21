@@ -52,7 +52,7 @@ public:
 	static void writeDoubles(FILE *fp, double *data, int length);
 
 	static void read(char *filename, SimulationExpression *sim);
-	static void write(char *filename, SimulationExpression *sim);
+	static void write(SimulationExpression *sim, bool bWriteHdf5=true);
 	
 private:
 	static Endian endian;
