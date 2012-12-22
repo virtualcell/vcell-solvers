@@ -66,7 +66,11 @@ public:
 	}
 	virtual void iterate()=0;
 	void writeMembraneFiles();
-	
+
+	const IntVect& getFinestMeshSize()
+	{
+		return vectNxes[numLevels - 1];
+	}
 protected:
 	SimulationExpression* simulation;
 

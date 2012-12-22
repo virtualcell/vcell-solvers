@@ -526,13 +526,11 @@ void ChomboScheduler::updateSolution() {
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-			int numDefinedVars = feature->getNumDefinedVariables();
 			int numDefinedVolVars = feature->getNumDefinedVariables();
-			int numDefinedMemVars = iphase == 0 ? feature->getMemVarIndexesInAdjacentMembranes().size() : 0;
-			if (numDefinedVolVars == 0 && numDefinedMemVars == 0) {
+			if (numDefinedVolVars == 0) {
 				continue;
 			}
-			for (int ivar = 0; ivar < numDefinedVars; ivar ++) {
+			for (int ivar = 0; ivar < numDefinedVolVars; ivar ++) {
 				Variable* var = feature->getDefinedVariable(ivar);
 				double* varCurr = var->getCurr();
 				double* errorCurr = 0;

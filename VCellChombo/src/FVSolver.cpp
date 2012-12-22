@@ -199,23 +199,6 @@ static void trimString(string& str)
 	}
 }
 
-void FVSolver::loadSolveStructures(Variable* var, istream& lineInput) {
-	while (true) {
-		string feature_name = "";
-		lineInput >> feature_name;
-		if (feature_name == "") {
-			break;
-		}
-		Feature* feature = SimTool::getInstance()->getModel()->getFeatureFromName(feature_name);
-		if (feature == NULL) {
-			stringstream ss;
-			ss << "Feature '" << feature_name << "' doesn't exist!";
-			throw ss.str();
-		}
-		feature->addDefinedVariable(var);
-	}
-}
-
 /*
 # Variables : type name time_dependent_flag advection_flag solve_whole_mesh_flag solve_regions
 VARIABLE_BEGIN
@@ -237,9 +220,10 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 	
 	int numMembranePoints = chomboScheduler->getNumMembranePoints();
 	string nextToken, line;
-	long sizeX = chomboScheduler->getChomboGeometry()->getNumX();
-	long sizeY = chomboScheduler->getChomboGeometry()->getNumY();
-	long sizeZ = chomboScheduler->getChomboGeometry()->getNumZ();
+	IntVect finestMeshSize = chomboScheduler->getFinestMeshSize();
+	long sizeX = finestMeshSize[0];
+	long sizeY = finestMeshSize[1];
+	long sizeZ = chomboScheduler->getChomboGeometry()->getDimension() == 3 ? finestMeshSize[2] : 1;
 	string variable_name, variable_domain;
 
 	while (!ifsInput.eof()) {

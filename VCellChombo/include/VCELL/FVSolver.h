@@ -56,8 +56,6 @@ private:
 	VCellModel *model;
 	ChomboSpec* chomboSpec;
 	ChomboScheduler* chomboScheduler;
-	
-	void loadSolveStructures(Variable* var, istream& instream);
 };
 
 #endif
