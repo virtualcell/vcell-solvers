@@ -46,9 +46,9 @@
 #endif
 #define HOFFSET(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 
-#define EDGE_CROSS_POINTS_FILE_EXT ".crspts"
-#define CHOMBO_MEMBRANE_METRICS_FILE_EXT ".chombo.memmetrics"
-#define MEMBRANE_SLICE_CROSS_FILE_EXT ".slccrs"
+//#define EDGE_CROSS_POINTS_FILE_EXT ".crspts"
+//#define CHOMBO_MEMBRANE_METRICS_FILE_EXT ".chombo.memmetrics"
+//#define MEMBRANE_SLICE_CROSS_FILE_EXT ".slccrs"
 #define HDF5_FILE_EXT ".hdf5"
 #define MESH_HDF5_FILE_EXT ".mesh.hdf5"
 
@@ -746,7 +746,7 @@ void ChomboScheduler::writeData() {
 		DataSet::write(simulation);
 	}
 	static bool bFirstTime = true;
-	bool bWriteHdf5 = true;
+	bool bWriteHdf5 = false;
 	// we need at least one hdf5 to show mesh in viewer.
 	if (bWriteHdf5 || bFirstTime) {
 		for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
@@ -786,9 +786,14 @@ void ChomboScheduler::writeData() {
 }
 
 #define MESH_GROUP "/mesh"
+#define MESH_ATTR_DIMENSION "dimension"
+#define MESH_ATTR_ORIGIN "origin"
+#define MESH_ATTR_EXTENT "extent"
+#define MESH_ATTR_NX "Nx"
+#define MESH_ATTR_DX "Dx"
 #define BOXES_DATASET MESH_GROUP"/boxes"
 #define METRICS_DATASET MESH_GROUP"/metrics"
-#define CROSS_POINTS_DATASET MESH_GROUP"/surface"
+#define SURFACE_DATASET MESH_GROUP"/surface"
 #if CH_SPACEDIM == 3
 #define SLICE_VIEW_DATASET MESH_GROUP"/slice view"
 #endif
@@ -870,7 +875,7 @@ void populateMetricsDataType(hid_t& metricsType)
 	H5Tinsert(metricsType, "areaFraction", HOFFSET(MeshMetrics, areaFraction), H5T_NATIVE_DOUBLE);
 }
 
-struct CrossPoint
+struct Triangle
 {
 	int index;
 #if CH_SPACEDIM == 3
@@ -889,7 +894,7 @@ struct CrossPoint
 		D_TERM(<< ",x2", << ",y2", << ",z2") << endl;
 	}
 
-	friend ostream& operator<<(ostream& os, const CrossPoint& cp) {
+	friend ostream& operator<<(ostream& os, const Triangle& cp) {
 		os << cp.index;
 #if CH_SPACEDIM == 3
 		os << "," << cp.face;
@@ -905,21 +910,21 @@ struct CrossPoint
 	}
 };
 
-void populateCrossPointDataType(hid_t& crossPointType)
+void populateTriangleDataType(hid_t& triangleType)
 {
-	H5Tinsert(crossPointType, "index", HOFFSET(CrossPoint, index), H5T_NATIVE_INT);
+	H5Tinsert(triangleType, "index", HOFFSET(Triangle, index), H5T_NATIVE_INT);
 #if CH_SPACEDIM == 3
-	H5Tinsert(crossPointType, "face", HOFFSET(CrossPoint, face), H5T_NATIVE_INT);
+	H5Tinsert(triangleType, "face", HOFFSET(Triangle, face), H5T_NATIVE_INT);
 #endif
-	D_TERM(H5Tinsert(crossPointType, "x0", HOFFSET(CrossPoint, triVertices[0][0]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(crossPointType, "y0", HOFFSET(CrossPoint, triVertices[0][1]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(crossPointType, "z0", HOFFSET(CrossPoint, triVertices[0][2]), H5T_NATIVE_DOUBLE);)
-	D_TERM(H5Tinsert(crossPointType, "x1", HOFFSET(CrossPoint, triVertices[1][0]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(crossPointType, "y1", HOFFSET(CrossPoint, triVertices[1][1]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(crossPointType, "z1", HOFFSET(CrossPoint, triVertices[1][2]), H5T_NATIVE_DOUBLE);)
-	D_TERM(H5Tinsert(crossPointType, "x2", HOFFSET(CrossPoint, triVertices[2][0]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(crossPointType, "y2", HOFFSET(CrossPoint, triVertices[2][1]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(crossPointType, "z2", HOFFSET(CrossPoint, triVertices[2][2]), H5T_NATIVE_DOUBLE);)
+	D_TERM(H5Tinsert(triangleType, "x0", HOFFSET(Triangle, triVertices[0][0]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(triangleType, "y0", HOFFSET(Triangle, triVertices[0][1]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(triangleType, "z0", HOFFSET(Triangle, triVertices[0][2]), H5T_NATIVE_DOUBLE);)
+	D_TERM(H5Tinsert(triangleType, "x1", HOFFSET(Triangle, triVertices[1][0]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(triangleType, "y1", HOFFSET(Triangle, triVertices[1][1]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(triangleType, "z1", HOFFSET(Triangle, triVertices[1][2]), H5T_NATIVE_DOUBLE);)
+	D_TERM(H5Tinsert(triangleType, "x2", HOFFSET(Triangle, triVertices[2][0]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(triangleType, "y2", HOFFSET(Triangle, triVertices[2][1]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(triangleType, "z2", HOFFSET(Triangle, triVertices[2][2]), H5T_NATIVE_DOUBLE);)
 }
 
 #if CH_SPACEDIM == 3
@@ -967,18 +972,18 @@ void populateSliceViewDataType(hid_t& sliceViewType)
 void ChomboScheduler::writeMembraneFiles()
 {
 	char fileName[128];
-	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), CHOMBO_MEMBRANE_METRICS_FILE_EXT);
-	ofstream metrics_ofs(fileName);
+//	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), CHOMBO_MEMBRANE_METRICS_FILE_EXT);
+//	ofstream metrics_ofs(fileName);
+//
+//	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), EDGE_CROSS_POINTS_FILE_EXT);
+//	ofstream crspts_ofs(fileName);
 
-	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), EDGE_CROSS_POINTS_FILE_EXT);
-	ofstream crspts_ofs(fileName);
-
-	MeshMetrics::printTitle(metrics_ofs);
-	CrossPoint::printTitle(crspts_ofs);
+//	MeshMetrics::printTitle(metrics_ofs);
+//	Triangle::printTitle(crspts_ofs);
 #if (CH_SPACEDIM == 3)
-	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MEMBRANE_SLICE_CROSS_FILE_EXT);
-	ofstream slccrs_ofs(fileName);
-	SliceView::printTitle(slccrs_ofs);
+//	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MEMBRANE_SLICE_CROSS_FILE_EXT);
+//	ofstream slccrs_ofs(fileName);
+//	SliceView::printTitle(slccrs_ofs);
 
 	const RealVect& origin = getChomboGeometry()->getDomainOrigin();
 	Real minOrigin = std::min<Real>(origin[0], origin[1]);
@@ -991,11 +996,11 @@ void ChomboScheduler::writeMembraneFiles()
 	int ilev = numLevels - 1; // only consider the finest level
 	MeshMetrics* metricsData = new MeshMetrics[numMembranePoints];
 #if CH_SPACEDIM == 2
-	CrossPoint* crossPointData = new CrossPoint[numMembranePoints];
+	Triangle* surfaceData = new Triangle[numMembranePoints];
 #else
-	CrossPoint* crossPointData = new CrossPoint[numMembranePoints*6];
+	Triangle* surfaceData = new Triangle[numMembranePoints*6];
 #endif
-	int crossPointCount = 0;
+	int triangleCount = 0;
 
 	ChomboGeometryShop chomboGeoShop(geoIfs[iphase], vectDxes[ilev]);
 	for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol)
@@ -1027,7 +1032,7 @@ void ChomboScheduler::writeMembraneFiles()
 				metricsData[memIndex].areaFraction = currEBISBox.bndryArea(vof);
 				metricsData[memIndex].volumeFraction = currEBISBox.volFrac(vof);
 
-				metrics_ofs << metricsData[memIndex] << endl;
+//				metrics_ofs << metricsData[memIndex] << endl;
 
 #if CH_SPACEDIM == 2
 				edgeMo edges[4];
@@ -1060,17 +1065,17 @@ void ChomboScheduler::writeMembraneFiles()
 						crossedEdgeCount ++;
 						if (crossedEdgeCount < 3)
 						{
-							crossPointData[crossPointCount].triVertices[crossedEdgeCount] = cross_point;
+							surfaceData[triangleCount].triVertices[crossedEdgeCount] = cross_point;
 						}
 					}
 				}
 				assert(crossedEdgeCount == 0 || crossedEdgeCount == 2);
 				if (crossedEdgeCount == 2)
 				{
-					crossPointData[crossPointCount].index = memIndex;
-					crossPointData[crossPointCount].triVertices[0] = mem_point;
-					crspts_ofs << crossPointData[crossPointCount] << endl;
-					++ crossPointCount;
+					surfaceData[triangleCount].index = memIndex;
+					surfaceData[triangleCount].triVertices[0] = mem_point;
+//					crspts_ofs << surfaceData[triangleCount] << endl;
+					++ triangleCount;
 				}
 #else
 				int faceCount = -1;
@@ -1119,24 +1124,24 @@ void ChomboScheduler::writeMembraneFiles()
 								crossedEdgeCount ++;
 								if (crossedEdgeCount < 3)
 								{
-									crossPointData[crossPointCount].triVertices[crossedEdgeCount] = cross_point;
+									surfaceData[triangleCount].triVertices[crossedEdgeCount] = cross_point;
 								}
 							}
 						}
 						assert(crossedEdgeCount == 0 || crossedEdgeCount == 2);
 						if (crossedEdgeCount == 2)
 						{
-							crossPointData[crossPointCount].index = memIndex;
-							crossPointData[crossPointCount].face = faceCount;
-							crossPointData[crossPointCount].triVertices[0] = mem_point;
-							crspts_ofs << crossPointData[crossPointCount] << endl;
+							surfaceData[triangleCount].index = memIndex;
+							surfaceData[triangleCount].face = faceCount;
+							surfaceData[triangleCount].triVertices[0] = mem_point;
+//							crspts_ofs << surfaceData[triangleCount] << endl;
 
 							for(int dir = 0; dir < SpaceDim; ++ dir)
 							{
 								RealVect crossPoint;
 								bool oneFaceCross = computeOneFaceCross(dir, face, hiLoFace == 0 ? -1 : 1, vectDxes[ilev],
-												vol_point, crossPointData[crossPointCount].triVertices[1],
-												crossPointData[crossPointCount].triVertices[2], crossPoint);
+												vol_point, surfaceData[triangleCount].triVertices[1],
+												surfaceData[triangleCount].triVertices[2], crossPoint);
 								if (oneFaceCross)
 								{
 									sliceViewData[memIndex].crossPoints[dir][sliceCrossPointCount[dir] * 2] = crossPoint[0];
@@ -1144,20 +1149,20 @@ void ChomboScheduler::writeMembraneFiles()
 									++ sliceCrossPointCount[dir];
 								}
 							}
-							++ crossPointCount;
+							++ triangleCount;
 						}
 					} // end for (int hiLoFace
 				} // end for (int face
-				slccrs_ofs << sliceViewData[memIndex] << endl;
+//				slccrs_ofs << sliceViewData[memIndex] << endl;
 #endif
 			} // end for (VoFIterator vofit
 		} // end for(DataIterator dit
 	} // end 	for (int ivol
-	crspts_ofs.close();
-	metrics_ofs.close();
-#if CH_SPACEDIM == 3
-	slccrs_ofs.close();
-#endif
+//	crspts_ofs.close();
+//	metrics_ofs.close();
+//#if CH_SPACEDIM == 3
+//	slccrs_ofs.close();
+//#endif
 
 	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MESH_HDF5_FILE_EXT);
 	hid_t h5MeshFile = H5Fcreate(fileName, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
@@ -1168,7 +1173,7 @@ void ChomboScheduler::writeMembraneFiles()
 	// dimension
 	hid_t scalarDataSpace = H5Screate(H5S_SCALAR); // shared among all attributes
 
-	hid_t attribute = H5Acreate(meshGroup, "dimension", H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
+	hid_t attribute = H5Acreate(meshGroup, MESH_ATTR_DIMENSION, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
 	int dim = chomboGeometry->getDimension();
 	H5Awrite(attribute, H5T_NATIVE_INT, &dim);
 	H5Aclose(attribute);
@@ -1176,26 +1181,26 @@ void ChomboScheduler::writeMembraneFiles()
 	// origin
 	hid_t realVectType = H5Tcreate(H5T_COMPOUND, sizeof(RealVect));
 	populateRealVectDataType(realVectType);
-	attribute = H5Acreate(meshGroup, "origin", realVectType, scalarDataSpace, H5P_DEFAULT);
+	attribute = H5Acreate(meshGroup, MESH_ATTR_ORIGIN, realVectType, scalarDataSpace, H5P_DEFAULT);
 	H5Awrite(attribute, realVectType, chomboGeometry->getDomainOrigin().dataPtr());
 	H5Aclose(attribute);
 
 	// extent
 	realVectType = H5Tcreate(H5T_COMPOUND, sizeof(RealVect));
 	populateRealVectDataType(realVectType);
-	attribute = H5Acreate(meshGroup, "extent", realVectType, scalarDataSpace, H5P_DEFAULT);
+	attribute = H5Acreate(meshGroup, MESH_ATTR_EXTENT, realVectType, scalarDataSpace, H5P_DEFAULT);
 	H5Awrite(attribute, realVectType, chomboGeometry->getDomainSize().dataPtr());
 	H5Aclose(attribute);
 
 	// mesh size
 	hid_t intVectType = H5Tcreate(H5T_COMPOUND, sizeof(IntVect));
 	populateIntVectDataType(intVectType);
-	attribute = H5Acreate(meshGroup, "Nx", intVectType, scalarDataSpace, H5P_DEFAULT);
+	attribute = H5Acreate(meshGroup, MESH_ATTR_NX, intVectType, scalarDataSpace, H5P_DEFAULT);
 	H5Awrite(attribute, intVectType, vectNxes[ilev].dataPtr());
 	H5Aclose(attribute);
 
 	// grid size
-	attribute = H5Acreate(meshGroup, "Dx", realVectType, scalarDataSpace, H5P_DEFAULT);
+	attribute = H5Acreate(meshGroup, MESH_ATTR_DX, realVectType, scalarDataSpace, H5P_DEFAULT);
 	H5Awrite(attribute, realVectType, vectDxes[ilev].dataPtr());
 	H5Aclose(attribute);
 	
@@ -1242,17 +1247,17 @@ void ChomboScheduler::writeMembraneFiles()
 
 	// cross points
 	{
-	hid_t crossPointType = H5Tcreate(H5T_COMPOUND, sizeof(CrossPoint));
-	populateCrossPointDataType(crossPointType);
-	hsize_t dim[] = {crossPointCount};   /* Dataspace dimensions */
+	hid_t triangleType = H5Tcreate(H5T_COMPOUND, sizeof(Triangle));
+	populateTriangleDataType(triangleType);
+	hsize_t dim[] = {triangleCount};   /* Dataspace dimensions */
 	int rank = 1;
 	hid_t space = H5Screate_simple(rank, dim, NULL);
-	hid_t crossPointDataset = H5Dcreate (h5MeshFile, CROSS_POINTS_DATASET, crossPointType, space, H5P_DEFAULT);
-	H5Dwrite(crossPointDataset, crossPointType, H5S_ALL, H5S_ALL, H5P_DEFAULT, crossPointData);
-	H5Dclose(crossPointDataset);
+	hid_t surfaceDataset = H5Dcreate (h5MeshFile, SURFACE_DATASET, triangleType, space, H5P_DEFAULT);
+	H5Dwrite(surfaceDataset, triangleType, H5S_ALL, H5S_ALL, H5P_DEFAULT, surfaceData);
+	H5Dclose(surfaceDataset);
 	H5Sclose(space);
-	H5Tclose(crossPointType);
-	delete[] crossPointData;
+	H5Tclose(triangleType);
+	delete[] surfaceData;
 	}
 
 #if CH_SPACEDIM == 3
