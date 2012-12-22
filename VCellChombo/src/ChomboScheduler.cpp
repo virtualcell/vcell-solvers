@@ -745,7 +745,7 @@ void ChomboScheduler::writeData() {
 		updateSolution();
 		DataSet::write(simulation);
 	}
-	static bool bFirstTime = true;
+	static bool bFirstTime = false;
 	bool bWriteHdf5 = false;
 	// we need at least one hdf5 to show mesh in viewer.
 	if (bWriteHdf5 || bFirstTime) {
