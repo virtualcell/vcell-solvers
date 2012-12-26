@@ -441,7 +441,18 @@ void DataSet::write(SimulationExpression *sim, bool bWriteHdf5)
 		return;
 	}
 	
-	static const char* SOLUTION_GROUP = "/Solution";
+	static const char* SOLUTION_GROUP = "/solution";
+	static const char* SOLUTION_ATTR_TIME = "time";
+	static const char* SOLUTION_ATTR_VARIABLES = "variables";
+	static const char* SOLUTION_ATTR_VARIABLE_TYPES = "variable types";
+	
+	static const char* SOLUTION_DATASET_ATTR_DOMAIN = "domain";
+	static const char* SOLUTION_DATASET_ATTR_VARIABLE_TYPE = "variable type";
+	static const char* SOLUTION_DATASET_ATTR_MEAN = "mean";
+	static const char* SOLUTION_DATASET_ATTR_SUM_VOLFRAC = "sum of volume fraction";
+	static const char* SOLUTION_DATASET_ATTR_RELATIVE_L2ERROR = "relative L2 error";
+	static const char* SOLUTION_DATASET_ATTR_MAX_ERROR = "max error";
+
 	SimTool::getInstance()->getSimHdf5FileName(filename);
 	hid_t h5SimFile = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	hid_t solGroup = H5Gcreate(h5SimFile, SOLUTION_GROUP, H5P_DEFAULT);
@@ -449,28 +460,61 @@ void DataSet::write(SimulationExpression *sim, bool bWriteHdf5)
 	hid_t scalarDataSpace = H5Screate(H5S_SCALAR); // shared among all attributes
 
 	// attribute: time
-	hid_t attribute = H5Acreate(solGroup, "time", H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
+	hid_t attribute = H5Acreate(solGroup, SOLUTION_ATTR_TIME, H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
 	double t = sim->getTime_sec();
 	H5Awrite(attribute, H5T_NATIVE_DOUBLE, &t);
 	H5Aclose(attribute);
 
+	int rank = 1;
+	hsize_t dim[1] = {sim->getOutputVarCount()};
+	hid_t strType = H5Tcopy(H5T_C_S1);
+  H5Tset_size(strType, H5T_VARIABLE);
+	hsize_t space = H5Screate_simple(rank, dim, NULL);
+	// attribute : variables
+	attribute = H5Acreate(solGroup, SOLUTION_ATTR_VARIABLES, strType, space, H5P_DEFAULT);
+	H5Awrite(attribute, strType, sim->getOutputVarNames());
+	H5Aclose(attribute);
+	H5Tclose(strType);
+
+	// attribute : variable types
+	attribute = H5Acreate(solGroup, SOLUTION_ATTR_VARIABLE_TYPES, H5T_NATIVE_INT, space, H5P_DEFAULT);
+	H5Awrite(attribute, H5T_NATIVE_INT, sim->getOutputVarTypes());
+	H5Aclose(attribute);
+
+	H5Sclose(space);
+	
 	for (int i = 0; i < numVars; i ++) {
 		Variable* var = sim->getVariable(i);
-		hsize_t dim[] = {var->getSize()};   /* Dataspace dimensions */
-		int rank = 1;
-		hid_t space = H5Screate_simple (rank, dim, NULL);
+		dim[0] = var->getSize();   /* Dataspace dimensions */
+		space = H5Screate_simple(rank, dim, NULL);
 		char dsName[128];
 		sprintf(dsName, "%s/%s", SOLUTION_GROUP, var->getName().c_str());
 		hid_t varDataset = H5Dcreate (h5SimFile, dsName, H5T_NATIVE_DOUBLE, space, H5P_DEFAULT);
 		H5Dwrite(varDataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, var->getCurr());
 
+		// attribute: domain
+		hid_t strtype = H5Tcopy(H5T_C_S1);
+		char domainName[50];
+		sprintf(domainName, "%s", var->getStructure()->getName().c_str());
+    H5Tset_size(strtype, strlen(domainName));
+		hid_t attribute = H5Acreate(varDataset, SOLUTION_DATASET_ATTR_DOMAIN, strtype, scalarDataSpace, H5P_DEFAULT);
+		H5Awrite(attribute, strtype, domainName);
+		H5Aclose(attribute);
+
+		// attribute: variable type
+		attribute = H5Acreate(varDataset, SOLUTION_DATASET_ATTR_VARIABLE_TYPE, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
+		VariableType varType = var->getVarType();
+		H5Awrite(attribute, H5T_NATIVE_INT, &varType);
+		H5Aclose(attribute);
+		
 		// attribute: mean
-		hid_t attribute = H5Acreate(varDataset, "mean", H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
+		attribute = H5Acreate(varDataset, SOLUTION_DATASET_ATTR_MEAN, H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
 		double d = var->getMean();
 		H5Awrite(attribute, H5T_NATIVE_DOUBLE, &d);
 		H5Aclose(attribute);
 
-		attribute = H5Acreate(varDataset, "sum of volume fraction", H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
+		// attribute: sum of vol fraction
+		attribute = H5Acreate(varDataset, SOLUTION_DATASET_ATTR_SUM_VOLFRAC, H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
 		d = var->getSumVolFrac();
 		H5Awrite(attribute, H5T_NATIVE_DOUBLE, &d);
 		H5Aclose(attribute);
@@ -479,25 +523,38 @@ void DataSet::write(SimulationExpression *sim, bool bWriteHdf5)
 		if (errVar != NULL)
 		{
 			// attribute: max error
-			attribute = H5Acreate(varDataset, "max error", H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
+			attribute = H5Acreate(varDataset, SOLUTION_DATASET_ATTR_MAX_ERROR, H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
 			d = var->getMaxError();
 			H5Awrite(attribute, H5T_NATIVE_DOUBLE, &d);
 			H5Aclose(attribute);
 
-			attribute = H5Acreate(varDataset, "relative L2 error", H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
+			// attribute: l2 error
+			attribute = H5Acreate(varDataset, SOLUTION_DATASET_ATTR_RELATIVE_L2ERROR, H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
 			d = var->getL2Error();
 			H5Awrite(attribute, H5T_NATIVE_DOUBLE, &d);
 			H5Aclose(attribute);
-	
+
+			// dataset : error variable
 			sprintf(dsName, "%s/%s", SOLUTION_GROUP, errVar->getName().c_str());
-			hid_t ds = H5Dcreate (h5SimFile, dsName, H5T_NATIVE_DOUBLE, space, H5P_DEFAULT);
-			H5Dwrite(ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, errVar->getCurr());
-			H5Dclose(ds);
+			hid_t errorVarDataSet = H5Dcreate (h5SimFile, dsName, H5T_NATIVE_DOUBLE, space, H5P_DEFAULT);
+			H5Dwrite(errorVarDataSet, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, errVar->getCurr());
+
+			// attribute: domain
+			hid_t attribute = H5Acreate(errorVarDataSet, SOLUTION_DATASET_ATTR_DOMAIN, strtype, scalarDataSpace, H5P_DEFAULT);
+			H5Awrite(attribute, strtype, domainName);
+			H5Aclose(attribute);
+			
+			// attribute: variable type
+			attribute = H5Acreate(errorVarDataSet, SOLUTION_DATASET_ATTR_VARIABLE_TYPE, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
+			H5Awrite(attribute, H5T_NATIVE_INT, &varType);
+			H5Aclose(attribute);
+
+			H5Dclose(errorVarDataSet);
 		}
 		H5Dclose(varDataset);
-		H5Sclose(space);
+		H5Tclose(strtype);
 	}
-
+	H5Sclose(space);
 	H5Sclose(scalarDataSpace);
 	H5Gclose(solGroup);
 	H5Fclose(h5SimFile);

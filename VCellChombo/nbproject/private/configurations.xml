@@ -27,6 +27,7 @@
           <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_77612838_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_77660777_0_.fvinput</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_77825603_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_77764707_0_.fvinput</runcommandpicklistitem>
         </runcommandpicklist>
         <runcommand>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_77764707_0_.fvinput</runcommand>

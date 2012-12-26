@@ -37,6 +37,10 @@ SimulationExpression::SimulationExpression() {
 	memVarList = 0;
 	volRegionVarList = 0;
 	memRegionVarList = 0;
+
+	outputVarNames = 0;
+	outputVarCnt = 0;
+	outputVarTypes = 0;
 }
 
 SimulationExpression::~SimulationExpression() 
@@ -53,6 +57,13 @@ SimulationExpression::~SimulationExpression()
 	delete[] memVarList;
 	delete[] volRegionVarList;
 	delete[] memRegionVarList;
+
+	for (int i = 0; i < outputVarCnt; ++ i)
+	{
+		delete[] outputVarNames[i];
+	}
+	delete[] outputVarNames;
+	delete[] outputVarTypes;
 }
 
 void SimulationExpression::iterate()
@@ -251,4 +262,57 @@ int  SimulationExpression::getNumSymbols() {
 void SimulationExpression::writeData()
 {
 	_scheduler->writeData();
+}
+
+char** SimulationExpression::getOutputVarNames()
+{
+	if (outputVarCnt == 0)
+	{
+		outputVarCnt = 0;
+		for (int i = 0; i < varList.size(); i ++)
+		{
+			Variable* var = varList[i];
+			++ outputVarCnt;
+			Variable* errVar = var->getExactErrorVariable();
+			if (errVar != NULL)
+			{
+				++ outputVarCnt;
+			}
+		}
+		outputVarNames = new char*[outputVarCnt];
+		outputVarTypes = new int[outputVarCnt];
+		int varcnt = 0;
+		for (int i = 0; i < varList.size(); i ++)
+		{
+			Variable* var = varList[i];
+			outputVarTypes[varcnt] = var->getVarType();
+			string name = var->getQualifiedName();
+			outputVarNames[varcnt] = new char[name.size() + 1];
+			sprintf(outputVarNames[varcnt], "%s", name.c_str());
+			++ varcnt;
+
+			Variable* errVar = var->getExactErrorVariable();
+			if (errVar != NULL)
+			{
+				outputVarTypes[varcnt] = var->getVarType();
+				name = errVar->getQualifiedName();
+				outputVarNames[varcnt] = new char[name.size() + 1];
+				sprintf(outputVarNames[varcnt], "%s", name.c_str());
+				++ varcnt;
+			}
+		}
+	}
+	return outputVarNames;
+}
+
+int SimulationExpression::getOutputVarCount()
+{
+	getOutputVarNames();
+	return outputVarCnt;
+}
+
+int* SimulationExpression::getOutputVarTypes()
+{
+	getOutputVarNames();
+	return outputVarTypes;
 }

@@ -91,6 +91,10 @@ public:
 
 	int getNumSymbols();
 
+	char** getOutputVarNames();
+	int getOutputVarCount();
+	int* getOutputVarTypes();
+
 private:
 	int currIteration;  // first iteration is currIteration=0
 
@@ -116,6 +120,10 @@ private:
 	int numVolPde;
 	int numMemPde;
 	bool bHasTimeDependentDiffusionAdvection;
+
+	char** outputVarNames;
+	int outputVarCnt;
+	int* outputVarTypes;
 };
 
 #endif

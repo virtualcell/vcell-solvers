@@ -128,7 +128,7 @@
             <linkerLibLibItem>workshop2d.CYGWIN.64.g++.gfortran.DEBUG</linkerLibLibItem>
             <linkerLibLibItem>basetools2d.CYGWIN.64.g++.gfortran.DEBUG</linkerLibLibItem>
             <linkerLibLibItem>boxtools2d.CYGWIN.64.g++.gfortran.DEBUG</linkerLibLibItem>
-            <linkerLibLibItem>hdf5</linkerLibLibItem>
+            <linkerLibLibItem>hdf5_debug</linkerLibLibItem>
             <linkerLibLibItem>unzip</linkerLibLibItem>
             <linkerLibLibItem>zip</linkerLibLibItem>
             <linkerLibLibItem>ExpressionParser</linkerLibLibItem>
