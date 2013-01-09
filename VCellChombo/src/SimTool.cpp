@@ -250,9 +250,8 @@ void SimTool::getSimHdf5FileName(char* filename)
 void SimTool::writeData(double progress, double time, int iteration)
 {
 	FILE *logFP;
-	char buffer[128];
+	char hdf5SimFileName[128];
 	char logFileName[128];
-	char zipFileName[128];
 	char zipHdf5FileName[128];
 
 	bool bSuccess = true;
@@ -269,26 +268,24 @@ void SimTool::writeData(double progress, double time, int iteration)
 		bSuccess = false;
 	} else {
 		// write zip file
-		sprintf(zipFileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_FILE_EXT);
-		getSimFileName(buffer);
-		bSuccess = zipUnzipWithRetry(true, zipFileName, buffer, errmsg);
-		remove(buffer);
+//		sprintf(zipFileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_FILE_EXT);
+//		getSimFileName(buffer);
+//		bSuccess = zipUnzipWithRetry(true, zipFileName, buffer, errmsg);
+//		remove(buffer);
 		
 		sprintf(zipHdf5FileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_HDF5_FILE_EXT);
-		getSimHdf5FileName(buffer);
-		bSuccess = zipUnzipWithRetry(true, zipHdf5FileName, buffer, errmsg);
-		remove(buffer);
+		getSimHdf5FileName(hdf5SimFileName);
+		bSuccess = zipUnzipWithRetry(true, zipHdf5FileName, hdf5SimFileName, errmsg);
+		remove(hdf5SimFileName);
 
 		// write the log file
 		if (bSuccess) {
 			char zipFileNameWithoutPath[512];
-			char simFileNameWithoutPath[512];
-			sprintf(simFileNameWithoutPath,"%s%.4d%s",baseSimName, simFileCount, SIM_FILE_EXT);
-			sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_FILE_EXT);
-			fprintf(logFP,"%4d %s %s %.15lg\n", iteration, simFileNameWithoutPath, zipFileNameWithoutPath, time);
+			sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_HDF5_FILE_EXT);
+			fprintf(logFP,"%4d %s %s %.15lg\n", iteration, hdf5SimFileName, zipFileNameWithoutPath, time);
 
 			struct stat buf;
-			if (stat(zipFileName, &buf) == 0 || stat(zipHdf5FileName, &buf)) { // if exists
+			if (stat(zipHdf5FileName, &buf) == 0 || stat(zipHdf5FileName, &buf)) { // if exists
 				if (buf.st_size > ZIP_FILE_LIMIT) {
 					zipFileCount ++;
 				}
