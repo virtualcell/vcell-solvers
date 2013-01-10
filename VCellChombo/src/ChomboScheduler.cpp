@@ -574,6 +574,7 @@ void ChomboScheduler::updateSolution() {
 									{
 										volFrac = currEBISBox.volFrac(VolIndex(gridIndex, 0));
 									}
+									volFrac *= numRepeats;
 									double sol = solnDataPtr[getChomboBoxLocalIndex(solnSize, ivar, D_DECL(i, j, k))];
 									double mean = sol * volFrac;
 									var->addMean(mean);
@@ -594,8 +595,8 @@ void ChomboScheduler::updateSolution() {
 										{
 											var->updateMaxError(abs(error));
 										}
-										double l2 = error * error * volFrac * numRepeats;
-										double exactl2 = exact * exact * volFrac * numRepeats;
+										double l2 = error * error * volFrac;
+										double exactl2 = exact * exact * volFrac;
 										var->addL2Error(l2);
 										var->addL2Exact(exactl2);
 									}
