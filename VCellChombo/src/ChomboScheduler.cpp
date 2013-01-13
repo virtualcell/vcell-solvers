@@ -971,19 +971,7 @@ void populateSliceViewDataType(hid_t& sliceViewType)
 void ChomboScheduler::writeMembraneFiles()
 {
 	char fileName[128];
-//	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), CHOMBO_MEMBRANE_METRICS_FILE_EXT);
-//	ofstream metrics_ofs(fileName);
-//
-//	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), EDGE_CROSS_POINTS_FILE_EXT);
-//	ofstream crspts_ofs(fileName);
-
-//	MeshMetrics::printTitle(metrics_ofs);
-//	Triangle::printTitle(crspts_ofs);
 #if (CH_SPACEDIM == 3)
-//	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MEMBRANE_SLICE_CROSS_FILE_EXT);
-//	ofstream slccrs_ofs(fileName);
-//	SliceView::printTitle(slccrs_ofs);
-
 	const RealVect& origin = getChomboGeometry()->getDomainOrigin();
 	Real minOrigin = std::min<Real>(origin[0], origin[1]);
 	minOrigin = std::min<Real>(minOrigin, origin[2]);
@@ -1031,8 +1019,6 @@ void ChomboScheduler::writeMembraneFiles()
 				metricsData[memIndex].areaFraction = currEBISBox.bndryArea(vof);
 				metricsData[memIndex].volumeFraction = currEBISBox.volFrac(vof);
 
-//				metrics_ofs << metricsData[memIndex] << endl;
-
 #if CH_SPACEDIM == 2
 				edgeMo edges[4];
 
@@ -1068,12 +1054,14 @@ void ChomboScheduler::writeMembraneFiles()
 						}
 					}
 				}
-				assert(crossedEdgeCount == 0 || crossedEdgeCount == 2);
+				if (crossedEdgeCount > 2)
+				{
+					throw "Mesh is too coarse to resolve. Please use finer mesh or mesh refinement.";
+				}
 				if (crossedEdgeCount == 2)
 				{
 					surfaceData[triangleCount].index = memIndex;
 					surfaceData[triangleCount].triVertices[0] = mem_point;
-//					crspts_ofs << surfaceData[triangleCount] << endl;
 					++ triangleCount;
 				}
 #else
@@ -1127,13 +1115,15 @@ void ChomboScheduler::writeMembraneFiles()
 								}
 							}
 						}
-						assert(crossedEdgeCount == 0 || crossedEdgeCount == 2);
+						if (crossedEdgeCount > 2)
+						{
+							throw "Mesh is too coarse to resolve. Please use finer mesh or mesh refinement.";
+						}
 						if (crossedEdgeCount == 2)
 						{
 							surfaceData[triangleCount].index = memIndex;
 							surfaceData[triangleCount].face = faceCount;
 							surfaceData[triangleCount].triVertices[0] = mem_point;
-//							crspts_ofs << surfaceData[triangleCount] << endl;
 
 							for(int dir = 0; dir < SpaceDim; ++ dir)
 							{
@@ -1152,16 +1142,10 @@ void ChomboScheduler::writeMembraneFiles()
 						}
 					} // end for (int hiLoFace
 				} // end for (int face
-//				slccrs_ofs << sliceViewData[memIndex] << endl;
 #endif
 			} // end for (VoFIterator vofit
 		} // end for(DataIterator dit
 	} // end 	for (int ivol
-//	crspts_ofs.close();
-//	metrics_ofs.close();
-//#if CH_SPACEDIM == 3
-//	slccrs_ofs.close();
-//#endif
 
 	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MESH_HDF5_FILE_EXT);
 	hid_t h5MeshFile = H5Fcreate(fileName, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
