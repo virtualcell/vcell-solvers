@@ -27,12 +27,16 @@ int taskID = -1;
 
 /* main */
 int main(int argc,char **argv) {
-	char errorMsg[2048];
+	const int errMsgLen = 2048;
+	char errorMsg[errMsgLen];
 	int exitCode = 0;
 	  simptr sim;
 	try {
 		simSetThrowing(10);
 		SimulationMessaging::create();
+	
+	  //clear the errormesage
+	  memset(errorMsg, 0, errMsgLen * sizeof(char));
 
 	  int i,er,pflag,qflag,wflag,tflag,Vflag,oflag;
 	  char root[STRCHAR],fname[STRCHAR],flags[STRCHAR],*cptr;

@@ -1883,14 +1883,14 @@ void endsimulate(simptr sim,int er) {
 
 	simLog(sim,2,"\n");
 	if(er==1) simLog(sim,2,"Simulation complete\n");
-	else if(er==2) simLog(sim,5,"Simulation terminated during molecule assignment\n  Out of memory\n");
-	else if(er==3) simLog(sim,5,"Simulation terminated during order 0 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is %i",sim->mols->maxdlimit);
-	else if(er==4) simLog(sim,5,"Simulation terminated during order 1 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is %i",sim->mols->maxdlimit);
-	else if(er==5) simLog(sim,5,"Simulation terminated during order 2 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is %i",sim->mols->maxdlimit);
-	else if(er==6) simLog(sim,5,"Simulation terminated during molecule sorting\n  Out of memory\n");
+	else if(er==2) simLog(sim,10,"Simulation terminated during molecule assignment\n  Out of memory\n");
+	else if(er==3) simLog(sim,10,"Simulation terminated during order 0 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is %i",sim->mols->maxdlimit);
+	else if(er==4) simLog(sim,10,"Simulation terminated during order 1 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is %i",sim->mols->maxdlimit);
+	else if(er==5) simLog(sim,10,"Simulation terminated during order 2 reaction\n  Not enough molecules allocated\n Maximum allowed molecule number is %i",sim->mols->maxdlimit);
+	else if(er==6) simLog(sim,10,"Simulation terminated during molecule sorting\n  Out of memory\n");
 	else if(er==7) simLog(sim,5,"Simulation stopped by a runtime command\n");
-	else if(er==8) simLog(sim,5,"Simulation terminated during simulation state updating\n  Out of memory\n");
-	else if(er==9) simLog(sim,5,"Simulation terminated during diffusion\n  Out of memory\n");
+	else if(er==8) simLog(sim,10,"Simulation terminated during simulation state updating\n  Out of memory\n");
+	else if(er==9) simLog(sim,10,"Simulation terminated during diffusion\n  Out of memory\n");
 	else simLog(sim,2,"Simulation stopped by user\n");
 	simLog(sim,2,"Current simulation time: %f\n",sim->time);
 
