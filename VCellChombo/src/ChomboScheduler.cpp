@@ -543,7 +543,7 @@ void ChomboScheduler::updateSolution() {
 				}
 
 				int refratio = cfRefRatio;
-				int numRepeats = refratio^SpaceDim;
+				int numRepeats = pow(refratio,SpaceDim);
 				// copy phi to var, repeat values for coarse levels
 				for(int ilev = 0; ilev < numLevels; ilev ++) {
 					for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit)	{
