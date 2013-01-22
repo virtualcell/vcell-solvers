@@ -1671,9 +1671,26 @@ void FVSolver::loadPostProcessingBlock(istream& ifsInput){
 			double sigmaXY, sigmaZ;
 			lineInput >> name >> domain_name >> sigmaXY >> sigmaZ;
 			Feature* feature = model->getFeatureFromName(domain_name);
-			Expression* function = readExpression(lineInput, name);
-			GaussianConvolutionDataGenerator* dataGenerator = new GaussianConvolutionDataGenerator(name, feature, sigmaXY, sigmaZ, function);
+			string volFunctionKeyword = "GAUSSIAN_CONVOLUTION_VOL_FUNCTION";
+			string memFunctionKeyword = "GAUSSIAN_CONVOLUTION_MEM_FUNCTION";
+			size_t indexOfVolumeFunctionKeyword = line.find(volFunctionKeyword);
+			size_t indexOfMembraneFunctionKeyword = line.find(memFunctionKeyword);
+
+			size_t indexOfVolumeExp = indexOfVolumeFunctionKeyword+volFunctionKeyword.size();
+			string volumeFunctionString = line.substr(indexOfVolumeExp, indexOfMembraneFunctionKeyword-indexOfVolumeExp);
+			trimString(volumeFunctionString);
+			Expression* volumeFunction = new Expression(volumeFunctionString);
+
+			size_t indexOfMembraneExp = indexOfMembraneFunctionKeyword+memFunctionKeyword.size();
+			string membraneFunctionString = line.substr(indexOfMembraneExp, string::npos);
+			trimString(membraneFunctionString);
+			Expression* membraneFunction = new Expression(membraneFunctionString);
+			GaussianConvolutionDataGenerator* dataGenerator = new GaussianConvolutionDataGenerator(name, feature, sigmaXY, sigmaZ, volumeFunction, membraneFunction);
 			postProcessingBlock->addDataGenerator(dataGenerator);
+
+			string garbage;
+			getline(lineInput, garbage);
+
 		} else if (nextToken == "ROI_DATA_GENERATOR_BEGIN") {
 			int* volumePoints = 0;
 			int* membranePoints = 0;

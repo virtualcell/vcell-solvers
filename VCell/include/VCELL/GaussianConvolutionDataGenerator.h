@@ -14,7 +14,7 @@ namespace VCell {
 class GaussianConvolutionDataGenerator : public DataGenerator
 {
 public:
-	GaussianConvolutionDataGenerator(string& name, Feature* f, double sigmaXY, double sigmaZ, VCell::Expression* func);
+	GaussianConvolutionDataGenerator(string& name, Feature* f, double sigmaXY, double sigmaZ, VCell::Expression* volFunc, VCell::Expression* memFunc);
 	virtual ~GaussianConvolutionDataGenerator();
 
 	void resolveReferences(SimulationExpression* sim);
@@ -27,10 +27,12 @@ private:
 	double sigmaRatio;
 	double* gaussianPsfSamples;
 	double* functionValues;
+	int funcValueSize;
 	int gaussianPsfSampleNx;
 	int gaussianPsfSampleNy;
 	int gaussianPsfSampleNz;
-	VCell::Expression* function;
+	VCell::Expression* volFunction;
+	VCell::Expression* memFunction;
 };
 
 #endif
