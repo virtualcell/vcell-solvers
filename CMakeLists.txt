@@ -59,8 +59,8 @@ endif()
 #  3. java binding
 #
 ##############################################
-option(TARGET_SOLVERS_WITH_MESSAGING "Server Side Solvers (With Messaging)" OFF)
-option(TARGET_SOLVERS_NO_MESSAGING "Client Side Solvers (Without Messaging)" ON)
+option(TARGET_SOLVERS_WITH_MESSAGING "Server Side Solvers (With Messaging)" ON)
+option(TARGET_SOLVERS_NO_MESSAGING "Client Side Solvers (Without Messaging)" OFF)
 option(TARGET_JAVA_BINDING "Java Binding" OFF)
 option(TARGET_CHOMBO_CYGWIN_BUILD "Chombo Build on Cygwin" OFF)
 

@@ -100,7 +100,7 @@ include_directories(source/lib source/Smoldyn source/vcell ${CMAKE_BINARY_DIR} $
 
 ####### Option: Compile for VCell ##########
 
-option(OPTION_VCELL "Compile Smoldyn for VCell" OFF)
+option(OPTION_VCELL "Compile Smoldyn for VCell" ON)
 #if(OPTION_VCELL)
 #	set(MAIN_FILES
 #		source/vcell/vcell_smoldyn.c
@@ -153,7 +153,7 @@ endif()
 option(OPTION_USE_OPENGL "Build with OpenGL support" ON)
 
 if (OPTION_USE_OPENGL)
-	if (OPTION_VCELL AND MSVC)
+	if (MSVC)
 		set(HAVE_OPENGL TRUE)
 		set(HAVE_GL_GLUT_H TRUE)
 		set(HAVE_GL_GLU_H TRUE)
@@ -182,33 +182,10 @@ endif()
 
 
 ####### Option: Build with LibTiff ##########
-
-if (OPTION_VCELL) 
-	set(OPTION_USE_LIBTIFF OFF)
-else()
-	option(OPTION_USE_LIBTIFF "Build with LibTiff support" ON)
-endif()
-
-if(OPTION_USE_LIBTIFF)
-	if(NOT HAVE_OPENGL)
-		message(WARNING, "LibTiff won't be used because build does not include OpenGL.")
-	endif()
-
-	FIND_PACKAGE(TIFF)
-	if(NOT TIFF_FOUND)
-		message(FATAL_ERROR "LibTiff not found.  Building without LibTiff is possible.")
-	endif()
-	set(HAVE_LIBTIFF TRUE)
-
-	include_directories(${TIFF_INCLUDE_DIR})
-#	link_directories(${TIFF_LINK_DIRECTORIES})
-#	list(APPEND DEP_LIBS tiff)
-	list(APPEND DEP_LIBS ${TIFF_LIBRARY})
-endif(OPTION_USE_LIBTIFF)
-
+set(OPTION_USE_LIBTIFF OFF)
 
 ####### Option: Build with Zlib ##########
-if (OPTION_VCELL AND MSVC) 
+if (MSVC) 
 	set(OPTION_USE_ZLIB OFF)
 	set(HAVE_ZLIB TRUE)
 else()
@@ -279,7 +256,6 @@ if(OPTION_USE_LIBMZR)
 	set(LIBMOLECULIZER TRUE)
 endif(OPTION_USE_LIBMZR)
 
-if (OPTION_VCELL)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 	ADD_DEFINITIONS(-DVCELL)
 	include_directories(../IDAWin ../ExpressionParser ../VCell/include ${CMAKE_CURRENT_BINARY_DIR})	
@@ -308,7 +284,7 @@ if (OPTION_VCELL)
 		list(APPEND DEP_LIBS zlib)
 	endif()
 	
-endif()
+
 
 ####### Targets ##########
 
@@ -330,24 +306,14 @@ if(OPTION_TARGET_SMOLDYN)
 	endif()
 endif()
 
-if (OPTION_VCELL)
 	set(OPTION_TARGET_LIBSMOLDYN ON) 
-endif()
-if(OPTION_TARGET_LIBSMOLDYN)
 	add_library(smoldynlib STATIC ${SRC_FILES} ${HEADER_FILES} ${HYBRID_SRC_FILES} ${HYBRID_HEADER_FILES})
-	if (OPTION_VCELL)
-		set_property(TARGET smoldynlib PROPERTY COMPILE_FLAGS "-DVCELL_HYBRID")
-	endif()
-endif()
+	set_property(TARGET smoldynlib PROPERTY COMPILE_FLAGS "-DVCELL_HYBRID")
 
 
 ########## install ###########
 
-if(OPTION_VCELL)
-	install(TARGETS ${EXE_FILE} RUNTIME DESTINATION bin)
-else()
-	install(TARGETS ${EXE_FILE} RUNTIME DESTINATION /usr/local/bin)
-endif()
+    install(TARGETS ${EXE_FILE} RUNTIME DESTINATION bin)
 
 ########## configure file #########
 
