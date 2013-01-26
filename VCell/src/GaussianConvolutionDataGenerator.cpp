@@ -82,8 +82,8 @@ void GaussianConvolutionDataGenerator::resolveReferences(SimulationExpression* s
 				double x = (i - midI) * dx;
 
 				++ volIndex;
-				double r = x*x + y*y + z*z/(sigmaRatio*sigmaRatio);
-				double d = exp(-(r*r)/(2*sigmaXY*sigmaXY));
+				double r2 = x*x + y*y + z*z/(sigmaRatio*sigmaRatio);
+				double d = exp(-r2/(2*sigmaXY*sigmaXY));
 				gaussianPsfSamples[volIndex] = d;
 				sum += d;
 			}
