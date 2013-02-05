@@ -100,10 +100,10 @@ bool ChomboScheduler::isInNextFinerLevel(int level, const IntVect& gridIndex) {
 		return false;
 	}
 
-	int nextFinerLevel = level + 1;
-	int refRatio = vectRefRatios[nextFinerLevel];
+	int refRatio = vectRefRatios[level];
 	IntVect gridIndexInNextFinerLevel = gridIndex * refRatio;
 
+	int nextFinerLevel = level + 1;
 	for (LayoutIterator lit = vectGrids[nextFinerLevel].layoutIterator(); lit.ok(); ++ lit) {
 		const Box& box = vectGrids[nextFinerLevel].get(lit());
 		if (box.contains(gridIndexInNextFinerLevel)) {
@@ -543,9 +543,9 @@ void ChomboScheduler::updateSolution() {
 				}
 
 				int refratio = cfRefRatio;
-				int numRepeats = pow(refratio,SpaceDim);
 				// copy phi to var, repeat values for coarse levels
 				for(int ilev = 0; ilev < numLevels; ilev ++) {
+					int numRepeats = pow(refratio,SpaceDim);
 					for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit)	{
 						const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
 
@@ -624,7 +624,6 @@ void ChomboScheduler::updateSolution() {
 #endif
 					} // end for (DataIterator
 					refratio /= vectRefRatios[ilev];
-					numRepeats = refratio^SpaceDim;
 				} // end for ilev
 			} // for (int ivar)
 		} // for ivol
