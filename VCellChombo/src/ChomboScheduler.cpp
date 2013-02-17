@@ -196,9 +196,9 @@ void ChomboScheduler::initializeGrids() {
 	mfIndexSpace.define(finestDomain.domainBox(), domainOrigin, fineDx[0], geometries, chomboSpec->getMaxBoxSize()/* ,maxCoarsenings */);
 
 	phaseVolumeList.resize(NUM_PHASES);
-	for (int phase0 = 0; phase0 < NUM_PHASES; phase0 ++) {
+	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		// Select one index-space
-		Chombo_EBIS::alias((EBIndexSpace*) mfIndexSpace.EBIS(phase0));
+		Chombo_EBIS::alias((EBIndexSpace*) mfIndexSpace.EBIS(iphase));
 		EBIndexSpace* ebisPtr = Chombo_EBIS::instance();
 		Vector<RefCountedPtr<EBIndexSpace> > volumes = ebisPtr->connectedComponents();
 		for (int ivol = 0; ivol < volumes.size(); ivol++) {
@@ -247,27 +247,30 @@ void ChomboScheduler::initializeGrids() {
 						if (featureFoundIrregular == NULL) {
 							featureFoundIrregular = fi;
 						} else if (featureFoundIrregular != fi) {
-							throw "Mesh is too coarse!";
+							stringstream ss;
+							ss << "Irregular point is in different feature than regular point in volume " << ivol << " in phase " << iphase << ". Mesh is too coarse!";
+							throw ss.str();
 						}
 					}
 				}
 			} // end for DataIterator
 
 			if (featureFoundRegular == NULL && featureFoundIrregular == NULL) {
-				throw "Mesh is too coarse!";
+				stringstream ss;
+				ss << "Didn't find feature for volume " << ivol << " in phase " << iphase << ". Mesh is too coarse!";
+				throw ss.str();
 			}
 			Feature* finalFeature = featureFoundRegular != NULL ? featureFoundRegular : featureFoundIrregular;
 			ConnectedComponent* cc = new ConnectedComponent;
 			cc->feature = finalFeature;
-			cout << "Phase " << phase0 << ", Volume " << ivol << ", Feature " << finalFeature->getName() << endl;
-			cc->phase = phase0;
+			cout << "Phase " << iphase << ", Volume " << ivol << ", Feature " << finalFeature->getName() << endl;
+			cc->phase = iphase;
 			cc->volumeIndexInPhase = ivol;
 			cc->volume = volume;
-			phaseVolumeList[phase0].push_back(cc);
+			phaseVolumeList[iphase].push_back(cc);
 		} // end for comp
 	}// end for phase
-
-
+	
 	// define grids for each level
   Vector<int> coarsestProcs;
 	Vector<Box> coarsestBoxes;
@@ -1055,7 +1058,10 @@ void ChomboScheduler::writeMembraneFiles()
 				}
 				if (crossedEdgeCount > 2)
 				{
-					throw "Mesh is too coarse to resolve. Please use finer mesh or mesh refinement.";
+					stringstream ss;
+					ss << "Point " << gridIndex << " has " << crossedEdgeCount << " cross edge points, is multi-valued point."
+									<< "Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
+					throw ss.str();
 				}
 				if (crossedEdgeCount == 2)
 				{
@@ -1116,7 +1122,10 @@ void ChomboScheduler::writeMembraneFiles()
 						}
 						if (crossedEdgeCount > 2)
 						{
-							throw "Mesh is too coarse to resolve. Please use finer mesh or mesh refinement.";
+							stringstream ss;
+							ss << "Point " << gridIndex << " has " << crossedEdgeCount << " cross edge points, is multi-valued point."
+											<< "Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
+							throw ss.str();
 						}
 						if (crossedEdgeCount == 2)
 						{
