@@ -29,6 +29,8 @@ public:
 	static string trim(string str);
 	void getSymbols(vector<string>& symbols); 
 
+	string getEvaluationSummary(double* values);
+
 	SymbolTableEntry* getSymbolBinding(string symbol);
 	double evaluateProxy();
 	

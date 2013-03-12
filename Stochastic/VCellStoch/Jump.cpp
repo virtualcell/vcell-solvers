@@ -183,3 +183,12 @@ double Jump::getProbabilityRate(double* expVal)
 	}
 	return 0;
 }//end of method getProbabilityRate()
+
+string Jump::getEvaluationSummary(double* values)
+{
+	if (probExpression!=NULL)
+	{
+		return probExpression->getEvaluationSummary(values);
+	}
+	return NULL;
+}

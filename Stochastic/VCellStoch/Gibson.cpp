@@ -9,6 +9,7 @@
 #include <string>
 #include <iomanip>
 #include <vector>
+#include <stdint.h>
 #include <math.h>
 #include <stdlib.h>
 using namespace std;
@@ -111,8 +112,8 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 				infile >> name;
 				infile >> amount;
 				listOfVarNames.push_back(name);
-				listOfIniValues.push_back((int)amount);
-				StochVar *var=new StochVar((int)amount);
+				listOfIniValues.push_back((uint64_t)amount);
+				StochVar *var=new StochVar((uint64_t)amount);
 				listOfVars.push_back(var);
 			}
 		}
@@ -292,10 +293,10 @@ int Gibson::core()
 		currvals[varLen] = simtime;
 		p = jump->getProbabilityRate(currvals);
 		//amended Oct 11th, 2007. Stop the simulation and send error message back if
-		//anyone of the propensity functions is negtive.
+		//anyone of the propensity functions is negative.
 		if(p < 0){
 			stringstream ss;
-			ss <<  "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(jump->getNameIndex()) <<" turned to be a negtive value. Simulation abort!";
+			ss <<  "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(jump->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << jump->getEvaluationSummary(currvals);
 			string errStr = ss.str();
 			throw errStr;
 		}
@@ -377,10 +378,10 @@ int Gibson::core()
 		double r = getRandomUniform();
 		p = event->getProbabilityRate(currvals);
 		//amended Oct 11th, 2007. Stop the simulation and send error message back if
-		//anyone of the propensity functions is negtive.
+		//anyone of the propensity functions is negative.
 		if(p < 0){
 			stringstream ss;
-			ss << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(event->getNameIndex()) <<" turned to be a negtive value. Simulation abort!";
+			ss << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(event->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << event->getEvaluationSummary(currvals);
 			string errStr = ss.str();
 			throw errStr;
 		}
@@ -405,10 +406,10 @@ int Gibson::core()
 			double p_old = dJump->getOldProbabilityRate();
 			double p_new = dJump->getProbabilityRate(currvals);
 			//amended Oct 11th, 2007. Stop the simulation and send error message back if
-			//anyone of the propensity functions is negtive.
+			//anyone of the propensity functions is negative.
 			if(p_new < 0){
 				stringstream ss;
-				ss << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(dJump->getNameIndex()) <<" turned to be a negtive value. Simulation abort!";
+				ss << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(dJump->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << dJump->getEvaluationSummary(currvals);
 				string errStr = ss.str();
 				throw errStr;
 			}

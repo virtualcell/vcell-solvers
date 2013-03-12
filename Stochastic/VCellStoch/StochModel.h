@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <stdint.h>
 #include "StochVar.h"
 #include "Jump.h"
 
@@ -43,7 +44,7 @@ class StochModel
 	   int SEED;//random seed
 	   vector <StochVar*> listOfVars;//list of stochasic variables in the model
 	   vector <string> listOfVarNames;//list of variable names 
-	   vector <int> listOfIniValues;//keep original values for multiple trials
+	   vector <uint64_t> listOfIniValues;//keep original values for multiple trials
 	   vector <Jump*> listOfProcesses;//keep original values for multiple trials
 	   vector <string> listOfProcessNames;//list of process names
 };

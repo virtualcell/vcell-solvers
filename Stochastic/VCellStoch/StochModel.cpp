@@ -63,6 +63,7 @@ int StochModel::getVarIndex(string varName)
 		if(varName==listOfVarNames.at(i))
 			return i;
 	}
+	return -1;
 }//end of method getVarInex()
 
 /*
@@ -76,5 +77,6 @@ int StochModel::getProcessIndex(string processName)
 		if(processName==listOfProcessNames.at(i))
 			return i;
 	}
+	return -1;
 }//end of method getProcessIndex()
 

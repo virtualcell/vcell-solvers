@@ -92,8 +92,13 @@ double VCell::Expression::evaluateVectorTree(double* values)
 	try {
 		return rootNode->evaluate(EVALUATE_VECTOR, values);
 	} catch (Exception& ex) {
-		Exception::rethrowException(ex, ex.getMessage() + " in " + rootNode->getNodeSummary(values, rootNode));
+		Exception::rethrowException(ex, ex.getMessage() + " in " + getEvaluationSummary(values));
 	}
+}
+
+string VCell::Expression::getEvaluationSummary(double* values)
+{
+	return rootNode->getNodeSummary(values, rootNode);
 }
 
 double VCell::Expression::evaluateVector(double* values)
@@ -101,7 +106,7 @@ double VCell::Expression::evaluateVector(double* values)
 	try {
 		return getStackMachine()->evaluate(values);
 	} catch (Exception& ex) {
-		Exception::rethrowException(ex, ex.getMessage()+ " in " + rootNode->getNodeSummary(values, rootNode));
+		Exception::rethrowException(ex, ex.getMessage()+ " in " + getEvaluationSummary(values));
 	}
 }
 

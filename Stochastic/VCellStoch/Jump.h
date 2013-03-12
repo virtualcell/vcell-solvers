@@ -80,6 +80,8 @@ class Jump
 	   void setProbabilityExpression(string, string*, int);
 	   double getOldProbabilityRate() {return propensity;}
 	   double getProbabilityRate(double*);
+	   string getEvaluationSummary(double* values);
+
 
     private:
        double tau;  // absolute time (from starting time)
