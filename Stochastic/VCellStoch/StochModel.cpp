@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <math.h>
 #include <time.h>
+#include <sstream>
+#include <string>
 #include "StochModel.h"
 
 using namespace std;
@@ -63,7 +65,10 @@ int StochModel::getVarIndex(string varName)
 		if(varName==listOfVarNames.at(i))
 			return i;
 	}
-	return -1;
+	stringstream ss;
+	ss << "variable name " << varName << " not found in model";
+	string errStr = ss.str();   // call system to stop
+	throw errStr;
 }//end of method getVarInex()
 
 /*
@@ -77,6 +82,9 @@ int StochModel::getProcessIndex(string processName)
 		if(processName==listOfProcessNames.at(i))
 			return i;
 	}
-	return -1;
+	stringstream ss;
+	ss << "process name " << processName << " not found in model";
+	string errStr = ss.str();   // call system to stop
+	throw errStr;
 }//end of method getProcessIndex()
 

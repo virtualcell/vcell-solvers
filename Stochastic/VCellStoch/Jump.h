@@ -80,7 +80,7 @@ class Jump
 	   void setProbabilityExpression(string, string*, int);
 	   double getOldProbabilityRate() {return propensity;}
 	   double getProbabilityRate(double*);
-	   string getEvaluationSummary(double* values);
+	   string getProbabilityRateEvaluationSummary(double* values);
 
 
     private:

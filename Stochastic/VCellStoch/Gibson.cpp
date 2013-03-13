@@ -296,7 +296,7 @@ int Gibson::core()
 		//anyone of the propensity functions is negative.
 		if(p < 0){
 			stringstream ss;
-			ss <<  "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(jump->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << jump->getEvaluationSummary(currvals);
+			ss <<  "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(jump->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << jump->getProbabilityRateEvaluationSummary(currvals);
 			string errStr = ss.str();
 			throw errStr;
 		}
@@ -381,7 +381,7 @@ int Gibson::core()
 		//anyone of the propensity functions is negative.
 		if(p < 0){
 			stringstream ss;
-			ss << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(event->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << event->getEvaluationSummary(currvals);
+			ss << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(event->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << event->getProbabilityRateEvaluationSummary(currvals);
 			string errStr = ss.str();
 			throw errStr;
 		}
@@ -409,7 +409,7 @@ int Gibson::core()
 			//anyone of the propensity functions is negative.
 			if(p_new < 0){
 				stringstream ss;
-				ss << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(dJump->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << dJump->getEvaluationSummary(currvals);
+				ss << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(dJump->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << dJump->getProbabilityRateEvaluationSummary(currvals);
 				string errStr = ss.str();
 				throw errStr;
 			}
