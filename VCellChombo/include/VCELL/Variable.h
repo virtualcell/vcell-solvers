@@ -8,13 +8,14 @@
 #ifndef VARIABLE_H
 #define VARIABLE_H
 
+#include <VCELL/Structure.h>
 #include <string>
 using std::string;
 using std::ofstream;
 
 #define ERROR_VAR_SUFFIX "__error"
+#define RELATIVE_ERROR_VAR_SUFFIX "__relative_error"
 
-class Structure;
 enum VariableType {
 	VAR_UNKNOWN =			0,
 	VAR_VOLUME =			1,
@@ -24,6 +25,7 @@ enum VariableType {
 	VAR_MEMBRANE_REGION=	5,
 	VAR_CONTOUR_REGION =	6
 } ;
+class Membrane;
 
 class VarContext;
 class Variable 
@@ -60,7 +62,12 @@ public:
 		return exactErrorVar;
 	}
 
-	virtual Variable* createExactErrorVariable()=0;
+	Variable* getRelativeErrorVariable()
+	{
+		return relativeErrorVar;
+	}
+
+	virtual void createErrorVariables()=0;
 
 	void addL2Error(double d);
 	void addL2Exact(double d);
@@ -98,6 +105,7 @@ protected:
 	bool bDiffusing;
 	VarContext* varContext;
 	Variable* exactErrorVar;
+	Variable* relativeErrorVar;
 	double l2Error;
 	double maxError;
 	double l2Exact;

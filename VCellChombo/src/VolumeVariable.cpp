@@ -17,36 +17,13 @@ VolumeVariable::VolumeVariable(string& nameStr, Feature* feature, long numX, lon
 	bAdvecting = advect;
 }
 
-void VolumeVariable::show(ofstream& fp)
-{
-	double *pCurr=curr;
-	fp << getName() << endl;
-	int i, j, k;
-	for (k=0;k<sizeZ;k++){
-		if (sizeZ > 1) 
-			fp << "z=" << k << ",";
-		for (j = 0; j < sizeY; j ++){
-			if (sizeY > 1) 
-				fp << "y=" << j << ",";
-			for (i = 0; i < sizeX; i ++){
-				fp << *pCurr << " ";
-				pCurr++;
-				if (i % 10 == 9) 
-					fp << endl;
-			}
-			if (i % 10 != 0) 
-				fp << endl;
-			fp << endl;		
-		}
-	}
-}
-
-Variable* VolumeVariable::createExactErrorVariable()
+void VolumeVariable::createErrorVariables()
 {
 	if (exactErrorVar == NULL)
 	{
 		string errorVarName = name + ERROR_VAR_SUFFIX;
 		exactErrorVar = new VolumeVariable(errorVarName, (Feature*)structure, sizeX, sizeY, sizeZ, bDiffusing, bAdvecting);
+		errorVarName = name + RELATIVE_ERROR_VAR_SUFFIX;
+		relativeErrorVar = new VolumeVariable(errorVarName, (Feature*)structure, sizeX, sizeY, sizeZ, bDiffusing, bAdvecting);
 	}
-	return exactErrorVar;
 }

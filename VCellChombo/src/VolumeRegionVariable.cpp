@@ -10,13 +10,13 @@ VolumeRegionVariable::VolumeRegionVariable(string& nameStr, Feature* feature, in
 {
 }
 
-Variable* VolumeRegionVariable::createExactErrorVariable()
+void VolumeRegionVariable::createErrorVariables()
 {
 	if (exactErrorVar == NULL)
 	{
 		string errorVarName = name + ERROR_VAR_SUFFIX;
 		exactErrorVar = new VolumeRegionVariable(errorVarName, (Feature*)structure, size);
+		errorVarName = name + RELATIVE_ERROR_VAR_SUFFIX;
+		relativeErrorVar = new VolumeRegionVariable(errorVarName, (Feature*)structure, size);
 	}
-
-	return exactErrorVar;
 }

@@ -7,6 +7,9 @@
 #include <VCELL/Feature.h>
 #include <VCELL/VolumeVarContextExpression.h>
 #include <VCELL/VolumeRegionVarContextExpression.h>
+#include <assert.h>
+#include <sstream>
+using std::stringstream;
 
 Feature::Feature(string& name, unsigned char findex) : Structure(name)
 {
@@ -18,45 +21,34 @@ Feature::~Feature()
 }
 
 void Feature::resolveReferences(SimulationExpression *sim)
-{	
-	for (int i = 0; i < (int)volumeVarContextList.size(); i ++) {
-		VolumeVarContextExpression* volumeVarContext = volumeVarContextList[i];
-		volumeVarContext->resolveReferences(sim);
-	}
-	
-	for (int i = 0; i < (int)volumeRegionVarContextList.size(); i ++) {
-		VolumeRegionVarContextExpression *volumeRegionVarContext = volumeRegionVarContextList[i];
-		volumeRegionVarContext->resolveReferences(sim);
-	}
-}
-
-void Feature::addVolumeVarContext(VolumeVarContextExpression *vvc)
 {
-	volumeVarContextList.push_back(vvc);
-}
-
-void Feature::addVolumeRegionVarContext(VolumeRegionVarContextExpression *vrvc)
-{
-	volumeRegionVarContextList.push_back(vrvc);
-}
-
-VolumeVarContextExpression* Feature::getVolumeVarContext(VolumeVariable *volVar)
-{
-	for (int i = 0; i < (int)volumeVarContextList.size(); i ++) {
-		if (volumeVarContextList[i]->getVar() == volVar) {
-			return volumeVarContextList[i];
+	Structure::resolveReferences(sim);
+	std::map<Membrane*, BoundaryType>::iterator it = ebBcTypeMap.begin();
+	if (it != ebBcTypeMap.end())
+	{
+		BoundaryType bt = it->second;
+		for (++ it; it != ebBcTypeMap.end(); ++ it)
+		{
+			if (bt != it->second)
+			{
+				stringstream ss;
+				ss << "Different EB boundary condition types are defined in feature " << getName() << ". Please make correction before proceeding.";
+			}
 		}
 	}
-	return 0;
 }
 
-VolumeRegionVarContextExpression* Feature::getVolumeRegionVarContext(VolumeRegionVariable *volRegionVar)
+BoundaryType Feature::getEbBcType(Membrane* mem)
 {
-	for (int i = 0; i < (int)volumeRegionVarContextList.size(); i ++) {
-		if (volumeRegionVarContextList[i]->getVar() == volRegionVar) {
-			return volumeRegionVarContextList[i];
-		}
-	}
-	return 0;
+	return getEbBcType();
+
+	map<Membrane*, BoundaryType>::iterator iter = ebBcTypeMap.find(mem);
+	assert(iter != ebBcTypeMap.end());
+	return ebBcTypeMap[mem];
+}
+
+BoundaryType Feature::getEbBcType()
+{
+	return name=="subVolume1" ? BOUNDARY_VALUE : BOUNDARY_FLUX;
 }
 

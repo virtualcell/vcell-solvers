@@ -23,14 +23,7 @@ public:
 	Membrane(string& name, Feature* f1, Feature* f2);
 	~Membrane();
 
-	MembraneVarContextExpression *getMembraneVarContext(string& membraneVarName);
-	MembraneVarContextExpression *getMembraneVarContext(MembraneVariable *var);
-	void addMembraneVarContext(MembraneVarContextExpression *vc);
-
-	MembraneRegionVarContextExpression *getMembraneRegionVarContext(MembraneRegionVariable *var);
-	void addMembraneRegionVarContext(MembraneRegionVarContextExpression *vc);
-
-	void resolveReferences(SimulationExpression *sim);
+	virtual void resolveReferences(SimulationExpression *sim);
 
 	Feature* getFeature1() {
 		return feature1;
@@ -39,14 +32,23 @@ public:
 		return feature2;
 	}
 	bool inBetween(Feature* f1, Feature* f2);
-	void reinitConstantValues();
+
+	void setPhaseEbBcType(int phase, BoundaryType bt)
+	{
+		ebbcType[phase] = bt;
+	}
+	
+	BoundaryType getPhaseEbBcType(int phase)
+	{
+		return ebbcType[phase];
+	}
 
 private:
 	Feature* feature1;
 	Feature* feature2;
-
-	vector<MembraneVarContextExpression*> membraneVarContextList;
-	vector<MembraneRegionVarContextExpression*> membraneRegionVarContextList;
+  BoundaryType ebbcType[2];
+//	vector<MembraneVarContextExpression*> membraneVarContextList;
+//	vector<MembraneRegionVarContextExpression*> membraneRegionVarContextList;
 };
 
 #endif

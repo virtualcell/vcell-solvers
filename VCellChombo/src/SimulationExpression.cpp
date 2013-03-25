@@ -273,9 +273,9 @@ char** SimulationExpression::getOutputVarNames()
 		{
 			Variable* var = varList[i];
 			++ outputVarCnt;
-			Variable* errVar = var->getExactErrorVariable();
-			if (errVar != NULL)
+			if (var->getExactErrorVariable() != NULL)
 			{
+				++ outputVarCnt;
 				++ outputVarCnt;
 			}
 		}
@@ -294,6 +294,13 @@ char** SimulationExpression::getOutputVarNames()
 			Variable* errVar = var->getExactErrorVariable();
 			if (errVar != NULL)
 			{
+				outputVarTypes[varcnt] = var->getVarType();
+				name = errVar->getQualifiedName();
+				outputVarNames[varcnt] = new char[name.size() + 1];
+				sprintf(outputVarNames[varcnt], "%s", name.c_str());
+				++ varcnt;
+
+				errVar = var->getRelativeErrorVariable();
 				outputVarTypes[varcnt] = var->getVarType();
 				name = errVar->getQualifiedName();
 				outputVarNames[varcnt] = new char[name.size() + 1];

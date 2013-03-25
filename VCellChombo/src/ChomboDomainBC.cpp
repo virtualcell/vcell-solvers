@@ -4,10 +4,10 @@
 #include "EBArith.H"
 #include "Stencils.H"
 #include "VoFIterator.H"
-#include <VCELL/VarContext.h>
 #include <VCELL/Feature.h>
 #include <VCELL/ChomboSemiImplicitScheduler.h>
 #include <VCELL/VolumeVarContextExpression.h>
+#include <VCELL/Variable.h>
 
 #include <assert.h>
 
@@ -36,17 +36,18 @@ Real ChomboDomainBCValue::value(const RealVect& a_point,
 	vectValues[1] = a_point[0];
 	vectValues[2] = a_point[1];
 	vectValues[3] = SpaceDim > 2 ? a_point[2] : 0.5;
-	VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)feature->getVolumeVarContext((VolumeVariable*)var);
+	VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)var->getVarContext();
 	double eval = varContextExp->evaluateExpression(bcExpIndex, vectValues);
   return eval;
 }
 
-ChomboDomainBC::ChomboDomainBC(ChomboSemiImplicitScheduler* scheduler, int iphase, int ivol, Feature* f, Variable* var)
+ChomboDomainBC::ChomboDomainBC(ChomboSemiImplicitScheduler* scheduler, int a_iphase, int a_ivol, 
+				Feature* f, Variable* a_var)
 	: semiImpScheduler(scheduler),
-		phaseIndex(iphase),
-		ccVolIndex(ivol),
+		iphase(a_iphase),
+		ivol(a_ivol),
 		feature(f),
-		variable(var)
+		var(a_var)
 {
 	domainBCValue = new ChomboDomainBCValue();
 	RefCountedPtr<BaseBCValue> domainBCValueRef(domainBCValue);
@@ -111,7 +112,7 @@ BaseDomainBC* ChomboDomainBC::getDomainBC(const int&  a_idir, const Side::LoHiSi
 	bool bConstBC = true;
 	try
 	{
-		bcValue = semiImpScheduler->getExpressionConstantValue(variable, expIndex, feature);
+		bcValue = semiImpScheduler->getExpressionConstantValue(var, expIndex, feature);
 	}
 	catch (...)
 	{
@@ -126,7 +127,7 @@ BaseDomainBC* ChomboDomainBC::getDomainBC(const int&  a_idir, const Side::LoHiSi
 		}
 		else
 		{
-			domainBCValue->setBCValueInfo(feature, variable, expIndex);
+			domainBCValue->setBCValueInfo(feature, var, expIndex);
 			return &dirichletBC_Function;
 		}
 	}
@@ -139,7 +140,7 @@ BaseDomainBC* ChomboDomainBC::getDomainBC(const int&  a_idir, const Side::LoHiSi
 		}
 		else
 		{
-			domainBCValue->setBCValueInfo(feature, variable, expIndex);
+			domainBCValue->setBCValueInfo(feature, var, expIndex);
 			return &neumannBC_Function;
 		}
 	}
@@ -313,12 +314,13 @@ bool ChomboDomainBC::isDirichletDom(const VolIndex&   a_ivof,
 	return bcType == BOUNDARY_VALUE;
 }
 
-ChomboDomainBCFactory::ChomboDomainBCFactory(ChomboSemiImplicitScheduler* scheduler, int iphase, int ivol, Feature* f, Variable* var)
+ChomboDomainBCFactory::ChomboDomainBCFactory(ChomboSemiImplicitScheduler* scheduler, int a_iphase, 
+				int a_ivol, Feature* f, Variable* a_var)
 	: semiImpScheduler(scheduler),
-		phaseIndex(iphase),
-		ccVolIndex(ivol),
+		iphase(a_iphase),
+		ivol(a_ivol),
 		feature(f),
-		variable(var)
+		var(a_var)
 {
 }
 
@@ -330,6 +332,6 @@ ChomboDomainBCFactory::~ChomboDomainBCFactory()
   	        	const EBISLayout&    a_layout,
     	      	const RealVect&      a_dx)
 {
-	ChomboDomainBC* newBC = new ChomboDomainBC(semiImpScheduler, phaseIndex, ccVolIndex, feature, variable);
+	ChomboDomainBC* newBC = new ChomboDomainBC(semiImpScheduler, iphase, ivol, feature, var);
   return newBC;
 }

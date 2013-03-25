@@ -16,7 +16,7 @@ public:
 
 	VariableType getVarType() { return VAR_MEMBRANE; }
 
-	Variable* createExactErrorVariable();
+	void createErrorVariables();
 };
 
 #endif

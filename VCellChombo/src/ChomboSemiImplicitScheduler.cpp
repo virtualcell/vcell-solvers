@@ -1,10 +1,10 @@
 #include <EBAMRDataOps.H>
 #include <NeumannPoissonEBBC.H>
-#include <NeumannPoissonDomainBC.H>
-#include <DirichletPoissonDomainBC.H>
+#include <DirichletPoissonEBBC.H>
 #include <EBAMRPoissonOpFactory.H>
 
 #include <VCELL/ChomboSemiImplicitScheduler.h>
+#include <VCELL/Variable.h>
 #include <VCELL/VarContext.h>
 #include <VCELL/ChomboGeometry.h>
 #include <VCELL/ChomboIF.h>
@@ -16,6 +16,7 @@
 #include <VCELL/VolumeVarContextExpression.h>
 #include <VCELL/MembraneVarContextExpression.h>
 #include <VCELL/ChomboDomainBC.h>
+#include <VCELL/ChomboEBBC.h>
 
 #include <time.h>
 #include <sstream>
@@ -257,7 +258,7 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 									// at the cell centers so that is where these functions should be evaluated.
 									for (int ivar = 0; ivar < numDefinedVolVars; ivar ++) {
 										Variable* volVar = feature->getDefinedVariable(ivar);
-										VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)feature->getVolumeVarContext((VolumeVariable*)volVar);
+										VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)volVar->getVarContext();
 										double ic = varContextExp->evaluateExpression(INITIAL_VALUE_EXP, vectValues);
 										int solnLocalIndex = getChomboBoxLocalIndex(solnSize, ivar, D_DECL(i, j, k));
 										solnDataPtr[solnLocalIndex] = ic;
@@ -320,7 +321,7 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 							int varIndex = feature->getMemVarIndexesInAdjacentMembranes()[ivar];
 							Variable *memVar = (Variable*)simulation->getMemVariable(varIndex);
 							if (membrane->isVariableDefined(memVar)) {
-								MembraneVarContextExpression* varContextExp = (MembraneVarContextExpression*)membrane->getMembraneVarContext((MembraneVariable*)memVar);
+								MembraneVarContextExpression* varContextExp = (MembraneVarContextExpression*)memVar->getVarContext();
 								double ic = varContextExp->evaluateExpression(INITIAL_VALUE_EXP, vectValues);							
 								(*memSolnOld[ivol][ilev])[dit()](vof, ivar) = ic;
 								(*memSoln[ivol][ilev])[dit()](vof, ivar) = ic;
@@ -413,8 +414,9 @@ void ChomboSemiImplicitScheduler::getEBLGAndQuadCFI(Vector<EBLevelGrid>  & ebLev
 	}
 }
 
-void ChomboSemiImplicitScheduler::createConstantCoeffOpFactory(RefCountedPtr<EBAMRPoissonOpFactory>& a_factory, int iphase, int ivol, Feature* feature, Variable* var)
+void ChomboSemiImplicitScheduler::createConstantCoeffOpFactory(RefCountedPtr<EBAMRPoissonOpFactory>& a_factory, int iphase, int ivol, Feature* feature, int ivar)
 {
+	Variable* var = feature->getDefinedVariable(ivar);
   // Set up the no flux domain and embedded boundary conditions
 //    RefCountedPtr<NeumannPoissonDomainBCFactory> domainBCPtr(new NeumannPoissonDomainBCFactory());
 //    RefCountedPtr<DirichletPoissonDomainBCFactory> domainBCPtr(new DirichletPoissonDomainBCFactory());
@@ -424,11 +426,12 @@ void ChomboSemiImplicitScheduler::createConstantCoeffOpFactory(RefCountedPtr<EBA
 
 	RefCountedPtr<ChomboDomainBCFactory> domainBCPtr(new ChomboDomainBCFactory(this, iphase, ivol, feature, var));
 	
-  RefCountedPtr<NeumannPoissonEBBCFactory> ebBCPtr(new NeumannPoissonEBBCFactory());
-  ebBCPtr->setValue(0.0);
+//  RefCountedPtr<NeumannPoissonEBBCFactory> ebBCPtr(new NeumannPoissonEBBCFactory());
+//  ebBCPtr->setValue(0.0);
+//	RefCountedPtr<DirichletPoissonEBBCFactory> ebBCPtr(new DirichletPoissonEBBCFactory());
+//  ebBCPtr->setValue(1.0);
 
-//	ChomboDomainBCFactory* domainBCFactory = new ChomboDomainBCFactory();
-//	ChomboFluxEBBCFactory* ebBCFactory = new ChomboFluxEBBCFactory(this);
+	RefCountedPtr<ChomboEBBCFactory> ebBCPtr(new ChomboEBBCFactory(this, iphase, ivol, feature, ivar));
 
 	Vector<EBLevelGrid>  eblg;
 	Vector<RefCountedPtr<EBQuadCFInterp> > quadCFI;
@@ -442,10 +445,6 @@ void ChomboSemiImplicitScheduler::createConstantCoeffOpFactory(RefCountedPtr<EBA
 					  numPreCondIters, relaxType,
 					  domainBCPtr, ebBCPtr,
 					  alpha, beta, currTime, numGhostSoln, numGhostSource, numLevels));
-//	int a = 2;
-//	a_factory->setWhichReflux(a);
-//	a_factory->setData(m_scalBou[a_ivol]);
-
 }
 
 void ChomboSemiImplicitScheduler::defineSolver()
@@ -476,7 +475,7 @@ void ChomboSemiImplicitScheduler::defineSolver()
 //					operatorFactory = opfact;
 //				} else {
 					RefCountedPtr<EBAMRPoissonOpFactory> opfact;
-					createConstantCoeffOpFactory(opfact, iphase, ivol, feature, feature->getDefinedVariable(ivar));
+					createConstantCoeffOpFactory(opfact, iphase, ivol, feature, ivar);
 					operatorFactory = opfact;
 //				}
 
@@ -588,32 +587,32 @@ void ChomboSemiImplicitScheduler::extrapolateDataToBoundary() {
   		for (int ivol = 0; ivol < numVols; ivol ++) {
   	  		Feature* feature = phaseVolumeList[iphase][ivol]->feature;
   	  		int numDefinedVars = feature->getNumDefinedVariables();
-  			if (numDefinedVars == 0) {
-  				continue;
-  			}
+					if (numDefinedVars == 0) {
+						continue;
+					}
   	  		int isrc = 0;
   	  		int idst = 0;
   	  		int inco = numDefinedVars;
-			Vector<EBLevelGrid> eblg;
-			Vector<RefCountedPtr<EBQuadCFInterp> > quadCFI;
-			getEBLGAndQuadCFI(eblg, quadCFI, iphase, ivol, inco);
+					Vector<EBLevelGrid> eblg;
+					Vector<RefCountedPtr<EBQuadCFInterp> > quadCFI;
+					getEBLGAndQuadCFI(eblg, quadCFI, iphase, ivol, inco);
 
-  			for(int ilev = 0; ilev < numLevels; ilev++) {
-  				DisjointBoxLayout& currGrids = vectGrids[ilev];
+					for(int ilev = 0; ilev < numLevels; ilev++) {
+						DisjointBoxLayout& currGrids = vectGrids[ilev];
 
-  				if (ilev > 0) {
-  					Interval interv(0, inco-1);
-  					quadCFI[ilev]->interpolate((*volSolnOld[iphase][ivol][ilev]), (*volSolnOld[iphase][ivol][ilev-1]), interv);
-  				}
-  				(*volSolnOld[iphase][ivol][ilev]).exchange();
-  				for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++dit)	{
-					//the last arguments say to loop over  all the variables with the stencil
-					//and the false is not just increment the solution but replace the value there.
-					(*extrapStencils[iphase][ivol][ilev])[dit()]->apply((*extrapValues[iphase][ivol][ilev])[dit()],
-															 (*volSolnOld[iphase][ivol][ilev])[dit()],
-														 isrc, idst, inco, false);
+						if (ilev > 0) {
+							Interval interv(0, inco-1);
+							quadCFI[ilev]->interpolate((*volSolnOld[iphase][ivol][ilev]), (*volSolnOld[iphase][ivol][ilev-1]), interv);
+						}
+						(*volSolnOld[iphase][ivol][ilev]).exchange();
+						for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++dit)	{
+						//the last arguments say to loop over  all the variables with the stencil
+						//and the false is not just increment the solution but replace the value there.
+						(*extrapStencils[iphase][ivol][ilev])[dit()]->apply((*extrapValues[iphase][ivol][ilev])[dit()],
+																 (*volSolnOld[iphase][ivol][ilev])[dit()],
+															 isrc, idst, inco, false);
+					}
 				}
-			}
   		}
     }
 }
@@ -697,7 +696,7 @@ void ChomboSemiImplicitScheduler::updateSource() {
 
 									for (int ivar = 0; ivar < numDefinedVolVars; ivar ++) {
 										Variable* var = iFeature->getDefinedVariable(ivar);
-										VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)iFeature->getVolumeVarContext((VolumeVariable*)var);
+										VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)var->getVarContext();
 										double eval = varContextExp->evaluateExpression(REACT_RATE_EXP, vectValues);
 										if (var->isDiffusing())
 										{
@@ -802,10 +801,17 @@ void ChomboSemiImplicitScheduler::updateSource() {
 									{
 										continue;
 									}
-									VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)iFeature->getVolumeVarContext((VolumeVariable*)var);
+									VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)var->getVarContext();
 									double Jval = varContextExp->evaluateJumpCondition(membrane, vectValues);
-									double flux = Jval * mem_areaFrac/(volFrac * maxDxComponent);
-									sourceEBCellFAB(vof, ivar, vof.cellIndex()) += flux;
+									if (iFeature->getEbBcType(membrane) == BOUNDARY_VALUE)
+									{
+										(*extrapValues[iphase][ivol][ilev])[dit()](vof, ivar) = Jval;
+									}
+									else
+									{
+										double flux = Jval * mem_areaFrac/(volFrac * maxDxComponent);
+										sourceEBCellFAB(vof, ivar, vof.cellIndex()) += flux;
+									}
 								}
 							}
 							
@@ -814,7 +820,7 @@ void ChomboSemiImplicitScheduler::updateSource() {
 									int varIndex =	iFeature->getMemVarIndexesInAdjacentMembranes()[ivar];
 									Variable* var = (Variable*)simulation->getMemVariable(varIndex);
 									if (membrane->isVariableDefined(var)) {
-										MembraneVarContextExpression* varContextExp = membrane->getMembraneVarContext((MembraneVariable*)var);
+										MembraneVarContextExpression* varContextExp = (MembraneVarContextExpression*)var->getVarContext();
 										double eval = varContextExp->evaluateExpression(REACT_RATE_EXP, vectValues);
 										Real oldSol = (*memSolnOld[ivol][ilev])[dit()](vof, ivar);
 										(*memSoln[ivol][ilev])[dit()](vof, ivar) = oldSol + deltaT * eval;

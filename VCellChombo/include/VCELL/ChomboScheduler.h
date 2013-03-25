@@ -25,11 +25,8 @@ class EBISLayout;
 template <class> class RefCountedPtr;
 template <class> class LevelData;
 class Box;
-//class VolIndex;
 class EBAMRPoissonOpFactory;
 class DisjointBoxLayout;
-class BaseEBBC;
-class BaseDomainBC;
 class EBIndexSpace;
 template <class> class BaseIVFAB;
 
@@ -47,6 +44,7 @@ struct ConnectedComponent {
 class ChomboScheduler {
 
 	friend class ChomboDomainBC;
+	friend class ChomboEBBC;
 	
 public:
 	ChomboScheduler(SimulationExpression* sim, ChomboSpec* chomboSpec);
@@ -92,6 +90,7 @@ protected:
 	Vector<RealVect> vectDxes;
 	Vector<IntVect> vectNxes;
 	Vector< Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<int> > > > > > irregularPointMembraneIDs; // here it stores membrane index
+	int findLevel(const ProblemDomain& domain);
 
 	Vector< Vector< Vector<LevelData<EBCellFAB>*> > > volSoln;
 	Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<Real> > > > > memSoln;

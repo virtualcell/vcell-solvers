@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <VCELL/Variable.h>
 #include <VCELL/Structure.h>
+#include <VCELL/VarContext.h>
 #include <REAL.H>
 #include <cmath>
 
@@ -15,11 +16,11 @@ Variable::Variable(string& nameStr, Structure* s, long Asize, bool diff)
 	name = nameStr;
 	structure = s;
 	size = Asize;
-//	old = new double[size];
 	curr = new double[size];
 	bDiffusing = diff;
 	varContext = 0;
 	exactErrorVar = 0;
+	relativeErrorVar = 0;
 	reset();
 }
 
@@ -27,6 +28,7 @@ Variable::~Variable()
 {
 //	delete[] old;
 	delete[] curr;
+	delete varContext;
 }
 
 void Variable::reset()
@@ -43,15 +45,15 @@ void Variable::reset()
 	if (exactErrorVar != NULL)
 	{
 		memset(exactErrorVar->getCurr(), 0, exactErrorVar->getSize() * sizeof(double));
+		memset(relativeErrorVar->getCurr(), 0, relativeErrorVar->getSize() * sizeof(double));
 	}
 }
 
 string Variable::getQualifiedName(){
 	if (structure != 0){
 		return structure->getName() + "::" + name;
-	}else{
-		return name;
 	}
+	return name;
 }
 
 void Variable::addL2Error(double d)

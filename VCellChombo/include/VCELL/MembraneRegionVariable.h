@@ -15,7 +15,7 @@ public:
 	MembraneRegionVariable(string& nameStr, Membrane* membrane, long size);
 
 	VariableType getVarType() { return VAR_MEMBRANE_REGION; }
-	Variable* createExactErrorVariable();
+	void createErrorVariables();
 };
 
 #endif

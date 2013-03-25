@@ -11,6 +11,8 @@ class EBQuadCFInterp;
 
 class ChomboSemiImplicitScheduler : public ChomboScheduler {
 
+	friend class ChomboEBBC;
+	
 public:
 	ChomboSemiImplicitScheduler(SimulationExpression* sim, ChomboSpec* chomboSpec);
 	~ChomboSemiImplicitScheduler();
@@ -45,7 +47,7 @@ private:
 	void defineSolver();
 	void setInitialConditions();
 //	void createVariableCoeffOpFactory(RefCountedPtr<EBConductivityOpFactory>& a_factory, int a_ivol, int a_ivar);
-	void createConstantCoeffOpFactory(RefCountedPtr<EBAMRPoissonOpFactory>& a_factory, int iphase, int ivol, Feature* feature, Variable* var);
+	void createConstantCoeffOpFactory(RefCountedPtr<EBAMRPoissonOpFactory>& a_factory, int iphase, int ivol, Feature* feature, int ivar);
 	void getEBLGAndQuadCFI(Vector<EBLevelGrid>  & ebLevelGrids, Vector<RefCountedPtr<EBQuadCFInterp> >& quadCFInterp, int iphase, int ivol, int ncomp =1);
 
 	void extrapolateDataToBoundary();

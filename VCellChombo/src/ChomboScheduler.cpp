@@ -126,7 +126,7 @@ int ChomboScheduler::getChomboBoxLocalIndex(const IntVect& size, int ivar, D_DEC
 }
 
 double ChomboScheduler::getExpressionConstantValue(Variable* var, ExpressionIndex expIndex, Feature* feature) {
-	VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)feature->getVolumeVarContext((VolumeVariable*)var);
+	VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)var->getVarContext();
 	return varContextExp->evaluateConstantExpression(expIndex);
 }
 
@@ -268,6 +268,7 @@ void ChomboScheduler::initializeGrids() {
 			cc->volumeIndexInPhase = ivol;
 			cc->volume = volume;
 			phaseVolumeList[iphase].push_back(cc);
+			finalFeature->setPhase(iphase);
 		} // end for comp
 	}// end for phase
 	
@@ -537,12 +538,14 @@ void ChomboScheduler::updateSolution() {
 				Variable* var = feature->getDefinedVariable(ivar);
 				double* varCurr = var->getCurr();
 				double* errorCurr = 0;
+				double* relErrCurr = 0;
 				bool bComputeError = false;
 				Variable* errorVar = var->getExactErrorVariable();
 				if (errorVar != NULL)
 				{
 					bComputeError = true;
 					errorCurr = errorVar->getCurr();
+					relErrCurr = var->getRelativeErrorVariable()->getCurr();
 				}
 
 				int refratio = cfRefRatio;
@@ -583,6 +586,7 @@ void ChomboScheduler::updateSolution() {
 									var->addMean(mean);
 									var->addVolFrac(volFrac);
 									double error = 0;
+									double relErr = 0;
 									if (bComputeError)
 									{
 										RealVect coord = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
@@ -593,6 +597,7 @@ void ChomboScheduler::updateSolution() {
 										vectValues[3] = SpaceDim < 3 ? 0.5 : coord[2];
 										double exact = var->getVarContext()->evaluateExpression(EXACT_EXP, vectValues);
 										error = exact - sol;
+										relErr = exact == 0 ? 0 : std::abs(error/exact);
 
 										if (volFrac  > smallVolFrac)
 										{
@@ -614,6 +619,7 @@ void ChomboScheduler::updateSolution() {
 												if (bComputeError)
 												{
 													errorCurr[globalIndex] = error;
+													relErrCurr[globalIndex] = relErr;
 												}
 											} // end for ii
 										} // end for jj
@@ -710,6 +716,9 @@ void ChomboScheduler::updateSolution() {
 										double* errorCurr = errorVar->getCurr();
 										double error = sol - exact;
 										errorCurr[memIndex] = error;
+										Variable* relErrVar = var->getRelativeErrorVariable();
+										double* relErrCurr = relErrVar->getCurr();
+										relErrCurr[memIndex] = exact = 0 ? 0 : std::abs(error/exact);
 										var->updateMaxError(abs(error));
 
 										double l2 = error * error * areaFrac;
@@ -1122,7 +1131,7 @@ void ChomboScheduler::writeMembraneFiles()
 						}
 						if (crossedEdgeCount > 2)
 						{
-							stringstream ss;
+						stringstream ss;
 							ss << "Point " << gridIndex << " has " << crossedEdgeCount << " cross edge points, is multi-valued point."
 											<< "Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
 							throw ss.str();
@@ -1317,4 +1326,20 @@ bool ChomboScheduler::computeOneFaceCross(int dir, int face, int hiLoFace, RealV
     }
 	}
 	return false;
+}
+
+int ChomboScheduler::findLevel(const ProblemDomain& domain)
+{
+	if (numLevels == 1)
+	{
+		return 0;
+	}
+	for (int i = 0; i < numLevels; ++ i)
+	{
+		if (vectDomains[i].domainBox() == domain.domainBox())
+		{
+			return i;
+		}
+	}
+	return -1;
 }

@@ -11,13 +11,13 @@ MembraneVariable::MembraneVariable(string& nameStr, Membrane* membrane, long siz
 {
 }
 
-Variable* MembraneVariable::createExactErrorVariable()
+void MembraneVariable::createErrorVariables()
 {
 	if (exactErrorVar == NULL)
 	{
 		string errorVarName = name + ERROR_VAR_SUFFIX;
 		exactErrorVar = new MembraneVariable(errorVarName, (Membrane*)structure, size, bDiffusing);
+		errorVarName = name + RELATIVE_ERROR_VAR_SUFFIX;
+		relativeErrorVar = new MembraneVariable(errorVarName, (Membrane*)structure, size, bDiffusing);
 	}
-
-	return exactErrorVar;
 }

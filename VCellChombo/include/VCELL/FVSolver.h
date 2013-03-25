@@ -40,7 +40,7 @@ private:
 	void loadModel(istream& ifsInput);
 	void loadSimulation(istream& ifsInput);
 	VCell::Expression* readExpression(istream& ifsInput, string& var_name, string prefix="");
-	VarContext* loadEquation(istream& ifsInput, Structure* structure, Variable* var);
+	void loadVarContext(istream& ifsInput, Structure* structure, Variable* var);
 	void loadJumpCondition(istream& ifsInput, Membrane*, string& var_name);
 	void loadFeature(istream& ifsInput, Feature* feature);
 	void loadMembrane(istream& ifsInput, Membrane*);

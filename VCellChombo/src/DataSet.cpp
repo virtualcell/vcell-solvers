@@ -341,7 +341,8 @@ void DataSet::write(SimulationExpression *sim, bool bWriteSimFile)
 			Variable* var = sim->getVariable(i);
 			if (var->getExactErrorVariable() != NULL)
 			{
-				++ numBlocks;
+				++ numBlocks; // error
+				++ numBlocks; // relative error
 			}
 		}
 
@@ -393,6 +394,17 @@ void DataSet::write(SimulationExpression *sim, bool bWriteSimFile)
 				DataSet::writeDataBlock(fp,dataBlock+blockIndex);
 				dataOffset += dataBlock[blockIndex].size*sizeof(double);
 				blockIndex ++;
+
+				var = var->getRelativeErrorVariable();
+				memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
+				strcpy(dataBlock[blockIndex].varName, var->getQualifiedName().c_str());
+
+				dataBlock[blockIndex].varType = var->getVarType();
+				dataBlock[blockIndex].size = var->getSize();
+				dataBlock[blockIndex].dataOffset = dataOffset;
+				DataSet::writeDataBlock(fp,dataBlock+blockIndex);
+				dataOffset += dataBlock[blockIndex].size*sizeof(double);
+				blockIndex ++;
 			}
 		}
 
@@ -422,6 +434,19 @@ void DataSet::write(SimulationExpression *sim, bool bWriteSimFile)
 			Variable* errVar = var->getExactErrorVariable();
 			if (errVar != NULL)
 			{
+				ftell_pos = ftell(fp);
+				if (ftell_pos != dataBlock[blockIndex].dataOffset){
+					char errmsg[512];
+					sprintf(errmsg, "DataSet::write() - offset for data is incorrect (block %d, var=%s), ftell() says %ld, should be %d", blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
+					throw errmsg;
+				}
+				if (errVar->getSize() != dataBlock[blockIndex].size) {
+					throw "DataSet::write() : inconsistent number of data blocks for variable";
+				}
+				DataSet::writeDoubles(fp, errVar->getCurr(), errVar->getSize());
+				blockIndex ++;
+
+				errVar = var->getRelativeErrorVariable();
 				ftell_pos = ftell(fp);
 				if (ftell_pos != dataBlock[blockIndex].dataOffset){
 					char errmsg[512];
@@ -543,6 +568,23 @@ void DataSet::write(SimulationExpression *sim, bool bWriteSimFile)
 			H5Awrite(attribute, strtype, domainName);
 			H5Aclose(attribute);
 			
+			// attribute: variable type
+			attribute = H5Acreate(errorVarDataSet, SOLUTION_DATASET_ATTR_VARIABLE_TYPE, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
+			H5Awrite(attribute, H5T_NATIVE_INT, &varType);
+			H5Aclose(attribute);
+
+			H5Dclose(errorVarDataSet);
+
+			errVar = var->getRelativeErrorVariable();
+			sprintf(dsName, "%s/%s", SOLUTION_GROUP, errVar->getName().c_str());
+			errorVarDataSet = H5Dcreate (h5SimFile, dsName, H5T_NATIVE_DOUBLE, space, H5P_DEFAULT);
+			H5Dwrite(errorVarDataSet, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, errVar->getCurr());
+
+			// attribute: domain
+			attribute = H5Acreate(errorVarDataSet, SOLUTION_DATASET_ATTR_DOMAIN, strtype, scalarDataSpace, H5P_DEFAULT);
+			H5Awrite(attribute, strtype, domainName);
+			H5Aclose(attribute);
+
 			// attribute: variable type
 			attribute = H5Acreate(errorVarDataSet, SOLUTION_DATASET_ATTR_VARIABLE_TYPE, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
 			H5Awrite(attribute, H5T_NATIVE_INT, &varType);

@@ -10,8 +10,6 @@
 class ChomboSemiImplicitScheduler;
 class Variable;
 class Feature;
-class DirichletPoissonDomainBC;
-class NeumannPoissonDomainBC;
 class ChomboDomainBCValue;
 
 class ChomboDomainBCValue: public BaseBCValue
@@ -40,6 +38,12 @@ private:
 	DirichletPoissonDomainBC dirichletBC_Function;
 	NeumannPoissonDomainBC neumannBC_Function;
 	ChomboDomainBCValue *domainBCValue;
+	
+	ChomboSemiImplicitScheduler* semiImpScheduler;
+	int iphase;
+	int ivol;
+	Feature* feature;
+	Variable* var;
 	
 public:
    ChomboDomainBC(ChomboSemiImplicitScheduler* scheduler, int iphase, int ivol, Feature* f, Variable* var);
@@ -151,14 +155,7 @@ public:
 									const int&            a_icomp,
 									const Real&           a_time,
 									const Side::LoHiSide& a_side,
-									const bool&           a_doDivFreeOutflow);
-	
-private:
-	ChomboSemiImplicitScheduler* semiImpScheduler;
-	int phaseIndex;
-	int ccVolIndex;
-	Feature* feature;
-	Variable* variable;
+									const bool&           a_doDivFreeOutflow);	
 };
 
 class ChomboDomainBCFactory: public BaseDomainBCFactory
@@ -174,10 +171,10 @@ public:
 
 private:
 	ChomboSemiImplicitScheduler* semiImpScheduler;
-	int phaseIndex;
-	int ccVolIndex;
+	int iphase;
+	int ivol;
 	Feature* feature;
-	Variable* variable;
+	Variable* var;
 };
 
 #endif

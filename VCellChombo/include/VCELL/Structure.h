@@ -1,7 +1,6 @@
 #ifndef STRUCTURE_H
 #define STRUCTURE_H
 
-#include <VCELL/Variable.h>
 #include <vector>
 #include <string>
 using std::string;
@@ -9,7 +8,11 @@ using std::vector;
 
 class Region;
 class FastSystem;
+class Variable;
+class SimulationExpression;
+
 enum BoundaryType {
+	BOUNDARY_UNKNOWN,
 	BOUNDARY_VALUE, 
 	BOUNDARY_FLUX, 
 	BOUNDARY_PERIODIC
@@ -35,28 +38,12 @@ public:
 	virtual void setZmBoundaryType(BoundaryType bt) { boundaryType[4] = bt; }
 	virtual void setZpBoundaryType(BoundaryType bt) { boundaryType[5] = bt; }
 
+	virtual void resolveReferences(SimulationExpression *sim);
+
 	const string& getName() { return name; }
 
-	void addDefinedVariable(Variable* var) {
-		definedVariableList.push_back(var);
-		if (var->isDiffusing())
-		{
-			++ pdeVarCount; 
-		}
-		else
-		{
-			++ odeVarCount;
-		}
-	}
-
-	bool isVariableDefined(Variable* var){
-		for (int i = 0; i < definedVariableList.size(); i ++) {
-			if (var == definedVariableList[i]) {
-				return true;
-			}
-		}
-		return false;
-	}
+	void addDefinedVariable(Variable* var);
+	bool isVariableDefined(Variable* var);
 	int getNumDefinedVariables() {
 		return definedVariableList.size();
 	}

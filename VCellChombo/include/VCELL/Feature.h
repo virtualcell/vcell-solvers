@@ -7,37 +7,21 @@
 
 #include <VCELL/Structure.h>
 #include <vector>
+#include <map>
 using std::vector;
+using std::map;
 
-class VolumeVarContextExpression;
-class VolumeRegionVarContextExpression;
-class MembraneVarContextExpression;
-class MembraneRegionVarContextExpression;
-class FastSystem;
-class Feature;
-class SimulationExpression;
-class VolumeVariable;
-class MembraneVariable;
-class VolumeRegionVariable;
-class MembraneRegionVariable;
-
+class Membrane;
 class Feature : public Structure
 {
 public:
 	Feature(string& name, unsigned char findex);
 	~Feature();
 
-	void resolveReferences(SimulationExpression *sim);
-
 	unsigned char getIndex() {
 		return index;
 	}
-
-	VolumeVarContextExpression *getVolumeVarContext(VolumeVariable *var);
-	VolumeRegionVarContextExpression *getVolumeRegionVarContext(VolumeRegionVariable *var);
-	   
-	void addVolumeVarContext(VolumeVarContextExpression *vc);
-	void addVolumeRegionVarContext(VolumeRegionVarContextExpression *vc);
+	virtual void resolveReferences(SimulationExpression *sim);
 	
 	vector<int>& getMemVarIndexesInAdjacentMembranes() {
 		return memVarIndexesInAdjacentMembranes;
@@ -46,15 +30,31 @@ public:
 	void addMemVarIndexInAdjacentMembrane(int index) {
 		memVarIndexesInAdjacentMembranes.push_back(index);
 	}
-	
-protected:
 
-	vector<VolumeVarContextExpression*> volumeVarContextList;
-	vector<VolumeRegionVarContextExpression*> volumeRegionVarContextList;
-	   
-	unsigned char index;
+	void setPhase(int p)
+	{
+		phase = p;
+	}
 	
+	int getPhase()
+	{
+		return phase;
+	}
+
+	void setEbBcType(Membrane* mem, BoundaryType bcType)
+	{
+		ebBcTypeMap[mem] = bcType;
+	}
+
+	BoundaryType getEbBcType(Membrane* mem);
+	BoundaryType getEbBcType();
+	
+private:
+	unsigned char index;	
 	vector<int> memVarIndexesInAdjacentMembranes;
+
+	int phase;
+	map<Membrane*, BoundaryType> ebBcTypeMap;
 };  
 
 #endif

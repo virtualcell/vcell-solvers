@@ -13,26 +13,26 @@ class Feature;
 class VolumeVariable : public Variable
 {
 public:
-	VolumeVariable(string& nameStr, Feature* feature, long sizeX, long sizeY, long sizeZ, bool diff=true, bool advect=false);
+	VolumeVariable(string& nameStr, Feature* feature, long sizeX, long sizeY, long sizeZ, bool diff=true, bool bAdvecting=false);
 
 	virtual VariableType	getVarType() {return VAR_VOLUME;}
 
-	virtual void show(ofstream& fp);
-
 	long getSizeX() { return sizeX;} 
 	long getSizeY() { return sizeY;} 
-	long getSizeZ() { return sizeZ;} 
-	bool isAdvecting() { return bAdvecting; }
+	long getSizeZ() { return sizeZ;}
 
-	Variable* createExactErrorVariable();
+	bool isAdvecting()
+	{
+		return bAdvecting;
+	}
+
+	void createErrorVariables();
 	
 protected:
 	long    sizeX;
 	long    sizeY;
 	long    sizeZ;
-	
 	bool bAdvecting;
-	bool bHasGradient;
 };
 
 #endif

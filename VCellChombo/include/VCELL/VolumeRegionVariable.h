@@ -15,7 +15,7 @@ public:
 	VolumeRegionVariable(string& nameStr, Feature* feature, int size);
 
 	VariableType getVarType() { return VAR_VOLUME_REGION; }
-	Variable* createExactErrorVariable();
+	void createErrorVariables();
 };
 
 #endif

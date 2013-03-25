@@ -5,6 +5,7 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>include/VCELL/ChomboDomainBC.h</itemPath>
+      <itemPath>include/VCELL/ChomboEBBC.h</itemPath>
       <itemPath>include/VCELL/ChomboGeometry.h</itemPath>
       <itemPath>include/VCELL/ChomboGeometryShop.h</itemPath>
       <itemPath>include/VCELL/ChomboIF.h</itemPath>
@@ -41,6 +42,7 @@
                    displayName="Source Files"
                    projectFiles="true">
       <itemPath>src/ChomboDomainBC.cpp</itemPath>
+      <itemPath>src/ChomboEBBC.cpp</itemPath>
       <itemPath>src/ChomboGeometry.cpp</itemPath>
       <itemPath>src/ChomboGeometryShop.cpp</itemPath>
       <itemPath>src/ChomboIF.cpp</itemPath>

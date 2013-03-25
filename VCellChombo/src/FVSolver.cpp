@@ -329,9 +329,14 @@ BOUNDARY_YM (sin((3.14159265358979 * x)) * sin((3.14159265358979 * y)) * exp( - 
 BOUNDARY_YP (sin((3.14159265358979 * x)) * sin((3.14159265358979 * y)) * exp( - (19.739208802178677 * t)));
 EQUATION_END
 */
-VarContext* FVSolver::loadEquation(istream& ifsInput, Structure* structure, Variable* var) {
+void FVSolver::loadVarContext(istream& ifsInput, Structure* structure, Variable* var) {
 
 	//cout << "loading volume var context " << var_name << endl;
+	if (var->getStructure() != structure)
+	{
+		// now Variable only has one VarContext that makes sense. Others are dummy.
+		return;
+	}
 
 	VarContext* varContext = NULL;
 	if (var->getVarType() == VAR_VOLUME) {
@@ -347,14 +352,9 @@ VarContext* FVSolver::loadEquation(istream& ifsInput, Structure* structure, Vari
 		ss << "loadEquation: variable type '" << var->getVarType() << "' is not supported yet for variable '" << var->getName() << "'";
 		throw ss.str();
 	}
+	var->setVarContext(varContext);
 
-	if (var->getStructure() == structure)
-	{
-		// now Variable only has one VarContext that makes sense. Others are dummy.
-		var->setVarContext(varContext);
-	}
 	string nextToken, line;
-
 	while (!ifsInput.eof()) {
 		getline(ifsInput, line);
 		istringstream lineInput(line);
@@ -406,7 +406,6 @@ VarContext* FVSolver::loadEquation(istream& ifsInput, Structure* structure, Vari
 		}
 		varContext->setExpression(exp, expIndex);
 	}
-	return varContext;
 }
 
 /*
@@ -432,17 +431,18 @@ void FVSolver::loadJumpCondition(istream& ifsInput, Membrane* membrane, string& 
 		if (nextToken == "JUMP_CONDITION_END") {
 			break;
 		}
-		if (nextToken == "FLUX") {
+		if (nextToken == "FLUX" || nextToken == "VALUE") {
 			string featurename;
 			lineInput >> featurename;
 			assert(!featurename.empty());
 			Feature* f = model->getFeatureFromName(featurename);
 			string var_name = var->getName();
 			VCell::Expression* exp = readExpression(lineInput, var_name);
+			VarContext* varContext = var->getVarContext();
 			if (var->getVarType() == VAR_VOLUME) {
-				f->getVolumeVarContext((VolumeVariable*)var)->addJumpCondition(membrane, exp);
+				varContext->addJumpCondition(membrane, exp);
 			} else if (var->getVarType() == VAR_VOLUME_REGION) {
-				f->getVolumeRegionVarContext((VolumeRegionVariable*)var)->addJumpCondition(membrane, exp);
+				varContext->addJumpCondition(membrane, exp);
 			} else {
 				throw "Only volume variables and volume region variables have jump conditions";
 			}
@@ -510,11 +510,9 @@ void FVSolver::loadFeature(istream& ifsInput, Feature* feature) {
 			char var_name[256];
 			lineInput >> var_name;
 			Variable* var = simulation->getVariableFromName(var_name);
-			VarContext *varContext = loadEquation(ifsInput, feature, var);
-			if (var->getVarType() == VAR_VOLUME) {
-				feature->addVolumeVarContext((VolumeVarContextExpression*)varContext);
-			} else {
-				feature->addVolumeRegionVarContext((VolumeRegionVarContextExpression*)varContext);
+			if (var->getStructure() == feature)
+			{
+				loadVarContext(ifsInput, feature, var);
 			}
 		} else if (nextToken == "FAST_SYSTEM_BEGIN") {
 			throw "Fast system not supported";
@@ -581,13 +579,8 @@ void FVSolver::loadMembrane(istream& ifsInput, Membrane* membrane) {
 			string var_name;
 			lineInput >> var_name;
 			Variable* var = simulation->getVariableFromName(var_name);
-			VarContext *varContext = loadEquation(ifsInput, membrane, var);
-			if (var->getVarType() == VAR_MEMBRANE) {
-				membrane->addMembraneVarContext((MembraneVarContextExpression*)varContext);
-			} else {
-				membrane->addMembraneRegionVarContext((MembraneRegionVarContextExpression*)varContext);
-			}
-		}  else if (nextToken == "FAST_SYSTEM_BEGIN") {
+			loadVarContext(ifsInput, membrane, var);
+		} else if (nextToken == "FAST_SYSTEM_BEGIN") {
 			throw "Fast system not supported";
 		} else if (nextToken == "JUMP_CONDITION_BEGIN") {
 			string var_name;

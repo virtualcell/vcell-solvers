@@ -34,7 +34,7 @@ void VarContext::resolveReferences(SimulationExpression *Asim)
 	sim = Asim;
 	if (expressions[EXACT_EXP] != NULL)
 	{
-		variable->createExactErrorVariable();
+		variable->createErrorVariables();
 	}
 }
 
