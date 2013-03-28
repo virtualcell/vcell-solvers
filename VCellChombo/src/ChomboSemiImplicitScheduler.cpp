@@ -85,12 +85,15 @@ void ChomboSemiImplicitScheduler::initValues() {
 	setInitialConditions();
 
 	ebBEIntegratorList.resize(NUM_PHASES);
+	ebMlgSolver.resize(NUM_PHASES);
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		ebBEIntegratorList[iphase].resize(phaseVolumeList[iphase].size());
+		ebMlgSolver[iphase].resize(phaseVolumeList[iphase].size());
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
 			int numDefinedVars = feature->getNumDefinedVariables();
 			ebBEIntegratorList[iphase][ivol].resize(numDefinedVars);
+			ebMlgSolver[iphase][ivol].resize(numDefinedVars);
 		}
 	}
 	initStencils();
@@ -98,7 +101,7 @@ void ChomboSemiImplicitScheduler::initValues() {
 
 void ChomboSemiImplicitScheduler::iterate() {
 	static bool bFirstTime = true;
-	cout  << endl << "time = " << simulation->getTime_sec() << endl;
+	pout()  << endl << "time = " << simulation->getTime_sec() << endl;
 	EBAMRPoissonOp::setOperatorTime(simulation->getTime_sec());
 
 	// copy new to old
@@ -117,37 +120,75 @@ void ChomboSemiImplicitScheduler::iterate() {
 		}
 	}
 
-	if (bFirstTime  /*|| (!m_params.m_constCoeff)*/) {
+	if (bFirstTime  /*|| (!m_params.m_constCoeff)*/)
+	{
 		defineSolver();
 	}
 	double dt = simulation->getDT_sec();
 	updateSource();
 
-	bool zeroPhi = true;
-	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
-		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
-			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-			int numDefinedVars = feature->getNumDefinedVariables();
+	// loop for elliptic variables
+	if (simulation->hasElliptic())
+	{
+		for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
+			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
+				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+				int numDefinedVars = feature->getNumDefinedVariables();
 
-			for(int ivar = 0; ivar < numDefinedVars; ++ ivar) {
-				Variable* var = feature->getDefinedVariable(ivar);
-				if (!var->isDiffusing())
-				{
-					continue;
+				for(int ivar = 0; ivar < numDefinedVars; ++ ivar) {
+					Variable* var = feature->getDefinedVariable(ivar);
+					if (!var->isElliptic())
+					{
+						continue;
+					}
+					pout() << "solving elliptic variable '" << var->getName() << "'" << endl;
+					Interval zeroint(0,0);
+					Interval ivarint(ivar, ivar);
+
+					//solver is for a single variable.  copy solution and rhs to scratch space
+					for(int ilev = 0; ilev < numLevels; ++ ilev)
+					{
+						volSoln[iphase][ivol][ilev]->copyTo(ivarint, *volSolnWorkspace[iphase][ivol][ilev], zeroint);
+						volSource[iphase][ivol][ilev]->copyTo(ivarint, *volSourceWorkspace[iphase][ivol][ilev], zeroint);
+					}
+
+					ebMlgSolver[iphase][ivol][ivar]->solve(volSolnWorkspace[iphase][ivol], volSourceWorkspace[iphase][ivol], numLevels - 1, 0);
+					EBAMRDataOps::assign(volSoln[iphase][ivol], volSolnWorkspace[iphase][ivol], ivarint, zeroint);
 				}
-				Interval zeroint(0,0);
-				Interval ivarint(ivar, ivar);
+			}
+		}
+	}
 
-				//solver is for a single variable.  copy solution and rhs to scratch space
-				for(int ilev = 0; ilev < numLevels; ilev++) {
-					volSolnOld[iphase][ivol][ilev]->copyTo(ivarint, *volSolnOldWorkspace[iphase][ivol][ilev], zeroint);
-					volSoln[iphase][ivol][ilev]->copyTo(ivarint, *volSolnWorkspace[iphase][ivol][ilev], zeroint);
-					volSource[iphase][ivol][ilev]->copyTo(ivarint, *volSourceWorkspace[iphase][ivol][ilev], zeroint);
-				}
+	if (simulation->hasParabolic())
+	{
+		bool zeroPhi = true;
+		for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
+			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
+				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+				int numDefinedVars = feature->getNumDefinedVariables();
 
-				ebBEIntegratorList[iphase][ivol][ivar]->oneStep(volSolnWorkspace[iphase][ivol], volSolnOldWorkspace[iphase][ivol],
+				for(int ivar = 0; ivar < numDefinedVars; ++ ivar) {
+					Variable* var = feature->getDefinedVariable(ivar);
+					if (!var->isDiffusing() || var->isElliptic())
+					{
+						continue;
+					}
+					pout() << "solving parabolic variable '" << var->getName() << "'" << endl;
+
+					Interval zeroint(0,0);
+					Interval ivarint(ivar, ivar);
+
+					//solver is for a single variable.  copy solution and rhs to scratch space
+					for(int ilev = 0; ilev < numLevels; ilev++) {
+						volSolnOld[iphase][ivol][ilev]->copyTo(ivarint, *volSolnOldWorkspace[iphase][ivol][ilev], zeroint);
+						volSoln[iphase][ivol][ilev]->copyTo(ivarint, *volSolnWorkspace[iphase][ivol][ilev], zeroint);
+						volSource[iphase][ivol][ilev]->copyTo(ivarint, *volSourceWorkspace[iphase][ivol][ilev], zeroint);
+					}
+
+					ebBEIntegratorList[iphase][ivol][ivar]->oneStep(volSolnWorkspace[iphase][ivol], volSolnOldWorkspace[iphase][ivol],
 								volSourceWorkspace[iphase][ivol], dt, 0, numLevels - 1, zeroPhi);
-				EBAMRDataOps::assign(volSoln[iphase][ivol], volSolnWorkspace[iphase][ivol], ivarint, zeroint);
+					EBAMRDataOps::assign(volSoln[iphase][ivol], volSolnWorkspace[iphase][ivol], ivarint, zeroint);
+				}
 			}
 		}
 	}
@@ -438,7 +479,7 @@ void ChomboSemiImplicitScheduler::createConstantCoeffOpFactory(RefCountedPtr<EBA
 	getEBLGAndQuadCFI(eblg, quadCFI, iphase, ivol);
 
 	Real currTime = simulation->getTime_sec();
-	Real alpha = 1.;
+	Real alpha = var->isElliptic() ? 0 : 1.;
 	Real beta = getExpressionConstantValue(var, DIFF_RATE_EXP, phaseVolumeList[iphase][ivol]->feature);
 	a_factory = RefCountedPtr<EBAMRPoissonOpFactory>(new EBAMRPoissonOpFactory(eblg, vectRefRatios, quadCFI,
 					  vectDxes[0], chomboGeometry->getDomainOrigin(),
@@ -463,10 +504,11 @@ void ChomboSemiImplicitScheduler::defineSolver()
 					continue;
 				}
 				// This is the multigrid solver used for backward Euler
-				RefCountedPtr<AMRMultiGrid<LevelData<EBCellFAB> > > solver(new AMRMultiGrid<LevelData<EBCellFAB> > );
+				ebMlgSolver[iphase][ivol][ivar] = RefCountedPtr<AMRMultiGrid<LevelData<EBCellFAB> > > (new AMRMultiGrid<LevelData<EBCellFAB> >() );
 
 				// Set the verbosity of the bottom solver for multigrid
-				bottomSolver.m_verbosity = 0;
+				BiCGStabSolver<LevelData<EBCellFAB> >* bottomSolver = new BiCGStabSolver<LevelData<EBCellFAB> >();
+				bottomSolver->m_verbosity = 0;
 
 				RefCountedPtr<AMRLevelOpFactory<LevelData<EBCellFAB> > > operatorFactory;
 //				if (!m_params.m_constCoeff) {
@@ -480,19 +522,22 @@ void ChomboSemiImplicitScheduler::defineSolver()
 //				}
 
 				// Define the multigrid solver and set various parameters
-				solver->define(vectDomains[0], *operatorFactory, &bottomSolver, numLevels);
+				ebMlgSolver[iphase][ivol][ivar]->define(vectDomains[0], *operatorFactory, bottomSolver, numLevels);
 
-				solver->setSolverParameters(numSmooth, numSmooth, numSmooth,
+				ebMlgSolver[iphase][ivol][ivar]->setSolverParameters(numSmooth, numSmooth, numSmooth,
 				                      numMGCycles, maxIter, tolerance, hang, normThresh);
 
-				solver->m_verbosity = 3;
-				solver->init(volSolnOldWorkspace[iphase][ivol], volSourceWorkspace[iphase][ivol], numLevels - 1, 0);
+				ebMlgSolver[iphase][ivol][ivar]->m_verbosity = 3;
+				ebMlgSolver[iphase][ivol][ivar]->init(volSolnOldWorkspace[iphase][ivol], volSourceWorkspace[iphase][ivol], numLevels - 1, 0);
 
-				// Create the backward Euler solver based on the multigrid solver
-				ebBEIntegratorList[iphase][ivol][ivar] = RefCountedPtr<EBBackwardEuler> (
-						new EBBackwardEuler(solver, *operatorFactory,
-								vectDomains[0], vectRefRatios,
-								numLevels));
+				if (!var->isElliptic() && var->isDiffusing())
+				{
+					// Create the backward Euler solver based on the multigrid solver
+					ebBEIntegratorList[iphase][ivol][ivar] = RefCountedPtr<EBBackwardEuler> (
+							new EBBackwardEuler(ebMlgSolver[iphase][ivol][ivar], *operatorFactory,
+									vectDomains[0], vectRefRatios,
+									numLevels));
+				}
 			}
 		}
 	}

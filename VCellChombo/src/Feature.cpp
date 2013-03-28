@@ -49,6 +49,7 @@ BoundaryType Feature::getEbBcType(Membrane* mem)
 
 BoundaryType Feature::getEbBcType()
 {
-	return name=="subVolume1" ? BOUNDARY_VALUE : BOUNDARY_FLUX;
+//	return name=="subVolume1" ? BOUNDARY_VALUE : BOUNDARY_FLUX;
+	return BOUNDARY_VALUE;
 }
 

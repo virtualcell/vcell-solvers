@@ -12,11 +12,14 @@ class Membrane;
 class MembraneVariable : public Variable
 {
 public:
-	MembraneVariable(string& nameStr, Membrane* membrane, long size, bool diff=false);
+	MembraneVariable(string& nameStr, Membrane* membrane, long size);
 
 	VariableType getVarType() { return VAR_MEMBRANE; }
 
 	void createErrorVariables();
+
+protected:
+	MembraneVariable* clone(string& varName);
 };
 
 #endif

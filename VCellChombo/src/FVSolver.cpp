@@ -239,13 +239,16 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			break;
 		}
 
-		if (nextToken == "VOLUME_RANDOM") {
+		if (nextToken == "VOLUME_RANDOM")
+		{
 			throw "VolumeRandomVariable not supported yet";
-		} else if (nextToken == "MEMBRANE_RANDOM") {
+		} 
+		else if (nextToken == "MEMBRANE_RANDOM")
+		{
 			throw "MembraneRandomVariable not supported yet";
-		} else if (nextToken == "VOLUME_PDE_STEADY") {
-			throw "VolumeVariable Steady not supported yet";
-		} else if (nextToken == "VOLUME_PDE") {			
+		}
+		else if (nextToken == "VOLUME_PDE" || nextToken == "VOLUME_PDE_STEADY")
+		{
 			string advectionflag, time_dependent_diffusion_flag, grad_flag;
 			lineInput >> variable_name >> variable_domain >> time_dependent_diffusion_flag >> advectionflag >> grad_flag;
 
@@ -268,7 +271,17 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			{
 				throw "gradient not supported yet";
 			}
-			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX, sizeY, sizeZ, true, bConvection);
+			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX*sizeY*sizeZ);
+			volumeVar->setDiffusing();
+			if (nextToken == "VOLUME_PDE_STEADY")
+			{
+				volumeVar->setElliptic();
+				simulation->setHasElliptic();
+			}
+			else
+			{
+				simulation->setHasParabolic();
+			}
 			feature->addDefinedVariable(volumeVar);
 			simulation->addVariable(volumeVar);
 		} else if (nextToken == "VOLUME_ODE") {
@@ -279,13 +292,15 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				ss << "volume variable " << variable_name << " is not defined in any feature.";
 				throw ss.str();
 			}
-			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX, sizeY, sizeZ, false);
+			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX*sizeY*sizeZ);
 			feature->addDefinedVariable(volumeVar);
 			simulation->addVariable(volumeVar);
-		} else if (nextToken == "MEMBRANE_ODE") {
+		} 
+		else if (nextToken == "MEMBRANE_ODE")
+		{
 			lineInput >> variable_name >> variable_domain;
 			Membrane* membrane = model->getMembraneFromName(variable_domain);
-			MembraneVariable* membraneVar = new MembraneVariable(variable_name, membrane, numMembranePoints, false);
+			MembraneVariable* membraneVar = new MembraneVariable(variable_name, membrane, numMembranePoints);
 			if (membrane == NULL) {
 				stringstream ss;
 				ss << "membrane variable " << variable_name << " is not defined on any membrane.";

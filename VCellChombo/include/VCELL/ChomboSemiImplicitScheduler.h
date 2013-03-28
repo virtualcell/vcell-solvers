@@ -32,9 +32,8 @@ private:
 	
 	Vector< Vector< RefCountedPtr< LevelData<BaseIVFAB<Real> > > > > memSolnOld;
 	
-	BiCGStabSolver<LevelData<EBCellFAB> > bottomSolver;
-
 	Vector< Vector< Vector<RefCountedPtr<EBBackwardEuler> > > > ebBEIntegratorList;
+	Vector< Vector< Vector< RefCountedPtr<AMRMultiGrid<LevelData<EBCellFAB> > > > > > ebMlgSolver;
 
 	//this is the stencil that extrapolates data to the irregular boundary
 	Vector< Vector< Vector< LayoutData< RefCountedPtr< AggStencil< EBCellFAB, BaseIVFAB<Real> > > >* > > > extrapStencils;

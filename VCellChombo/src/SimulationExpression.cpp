@@ -21,6 +21,9 @@ SimulationExpression::SimulationExpression() {
 	_dT_sec = 0;   // seconds
 	currIteration = 0;
 	_scheduler = NULL;
+
+	bHasElliptic = false;
+	bHasParabolic = false;
 	
 	symbolTable = NULL;	
 

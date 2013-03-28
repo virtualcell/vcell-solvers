@@ -11,13 +11,14 @@
 #include <REAL.H>
 #include <cmath>
 
-Variable::Variable(string& nameStr, Structure* s, long Asize, bool diff)
+Variable::Variable(string& nameStr, Structure* s, long Asize)
 {
 	name = nameStr;
 	structure = s;
 	size = Asize;
 	curr = new double[size];
-	bDiffusing = diff;
+	bDiffusing = false;
+	bElliptic = false;
 	varContext = 0;
 	exactErrorVar = 0;
 	relativeErrorVar = 0;

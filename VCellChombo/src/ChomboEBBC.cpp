@@ -37,10 +37,8 @@ ChomboEBBC::ChomboEBBC(ChomboSemiImplicitScheduler* scheduler, int a_iphase, int
 {
 	var = iFeature->getDefinedVariable(ivar);
 
-	//pout() << "ChomboEBBC: ";
 	if (iFeature->getEbBcType() == BOUNDARY_VALUE)
 	{
-		//pout() << "Dirichlet";
 		dirichletEbBc = new DirichletPoissonEBBC(domain, layout, dx, &ghostCellsPhi, &ghostCellsRhs);
 		dirichletEbBc->setValue(0);
 		neumannEbBc = 0;
@@ -48,13 +46,11 @@ ChomboEBBC::ChomboEBBC(ChomboSemiImplicitScheduler* scheduler, int a_iphase, int
 	}
 	else
 	{
-		//pout() << "Neumann";
 		dirichletEbBc = 0;
 		neumannEbBc = new NeumannPoissonEBBC(domain, layout, dx);
 		neumannEbBc->setValue(0);
 		ebbc = neumannEbBc;
 	}
-	//pout() << " EB BC for " << var->getName() << " in feature " << iFeature->getName() << endl;
 }
 
 ChomboEBBC::~ChomboEBBC()
@@ -88,7 +84,7 @@ void ChomboEBBC::applyEBFlux(EBCellFAB&  a_lphi,
 	const ProblemDomain& domain = ebisBox.getDomain();
 	int ilev = semiImpScheduler->findLevel(domain);
 	assert(ilev >= 0);
-	pout() << "Entry(ChomboEBBC::applyEBFlux) Variable " << var->getName() << " at level " << ilev << " in feature " << iFeature->getName() << endl;
+//	pout() << "Entry(ChomboEBBC::applyEBFlux) Variable " << var->getName() << " at level " << ilev << " in feature " << iFeature->getName() << endl;
   
 	int totalVolumes = semiImpScheduler->phaseVolumeList[0].size() + semiImpScheduler->phaseVolumeList[1].size();
 	Vector<ConnectedComponent*>& adjacentVolumes = semiImpScheduler->phaseVolumeList[iphase][ivol]->adjacentVolumes;
@@ -99,9 +95,12 @@ void ChomboEBBC::applyEBFlux(EBCellFAB&  a_lphi,
 		int jvol = adjacentVolumes[j]->volumeIndexInPhase;
 
 		int currentMembraneID = 0;
-		if (iphase == 0) {
+		if (iphase == 0)
+		{
 			currentMembraneID = ivol * totalVolumes + jvol;
-		} else if (iphase == 1) {
+		} 
+		else if (iphase == 1)
+		{
 			currentMembraneID = jvol * totalVolumes + ivol;
 		}
 
@@ -132,7 +131,7 @@ void ChomboEBBC::applyEBFlux(EBCellFAB&  a_lphi,
 			}
 		}
 	}
-	pout() << "Exist(ChomboEBBC::applyEBFlux)" << endl;
+//	pout() << "Exist(ChomboEBBC::applyEBFlux)" << endl;
 }
 
 ChomboEBBCFactory::ChomboEBBCFactory(ChomboSemiImplicitScheduler* scheduler, int a_iphase, int a_ivol,

@@ -13,13 +13,9 @@ class Feature;
 class VolumeVariable : public Variable
 {
 public:
-	VolumeVariable(string& nameStr, Feature* feature, long sizeX, long sizeY, long sizeZ, bool diff=true, bool bAdvecting=false);
+	VolumeVariable(string& nameStr, Feature* feature, long size);
 
 	virtual VariableType	getVarType() {return VAR_VOLUME;}
-
-	long getSizeX() { return sizeX;} 
-	long getSizeY() { return sizeY;} 
-	long getSizeZ() { return sizeZ;}
 
 	bool isAdvecting()
 	{
@@ -28,10 +24,8 @@ public:
 
 	void createErrorVariables();
 	
-protected:
-	long    sizeX;
-	long    sizeY;
-	long    sizeZ;
+private:
+	VolumeVariable* clone(string& varName);
 	bool bAdvecting;
 };
 

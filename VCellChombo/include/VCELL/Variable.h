@@ -30,20 +30,30 @@ class Membrane;
 class VarContext;
 class Variable 
 {
-protected:
-	Variable(string& nameStr, Structure* structure, long Asize, bool diff=false);
-
 public:
 	virtual ~Variable();
 
-//	double *getOld()  { return old; }
 	double *getCurr() { return curr; }
 	long getSize() { return size; }
 	const string& getName() { return name; }
 	string getQualifiedName();
 	virtual VariableType getVarType() {	return VAR_UNKNOWN; }
-	bool isDiffusing() { return bDiffusing; }
-	
+	bool isDiffusing()
+	{
+		return bDiffusing;
+	}
+	bool isElliptic()
+	{
+		return bElliptic;
+	}
+	void setDiffusing()
+	{
+		 bDiffusing = true;
+	}
+	void setElliptic()
+	{
+		bElliptic = true;
+	}
 	Structure* getStructure()
 	{
 		return structure;
@@ -95,14 +105,16 @@ public:
 	void reset();
 
 protected:
+	Variable(string& nameStr, Structure* structure, long Asize);
+
 	string name;
 	Structure* structure;
 	    
 	long size;
-//	double *old;
 	double *curr;
 
 	bool bDiffusing;
+	bool bElliptic;
 	VarContext* varContext;
 	Variable* exactErrorVar;
 	Variable* relativeErrorVar;

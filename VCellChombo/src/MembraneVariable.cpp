@@ -6,9 +6,17 @@
 #include <VCELL/MembraneVariable.h>
 #include <VCELL/Membrane.h>
 
-MembraneVariable::MembraneVariable(string& nameStr, Membrane* membrane, long size, bool diff)
-: Variable(nameStr, membrane, size, diff)
+MembraneVariable::MembraneVariable(string& nameStr, Membrane* membrane, long size)
+: Variable(nameStr, membrane, size)
 {
+}
+
+MembraneVariable* MembraneVariable::clone(string& varName)
+{
+	MembraneVariable* newVar = new MembraneVariable(varName, (Membrane*)structure, size);
+	newVar->bDiffusing = bDiffusing;
+	newVar->bElliptic = bElliptic;
+	return newVar;
 }
 
 void MembraneVariable::createErrorVariables()
@@ -16,8 +24,8 @@ void MembraneVariable::createErrorVariables()
 	if (exactErrorVar == NULL)
 	{
 		string errorVarName = name + ERROR_VAR_SUFFIX;
-		exactErrorVar = new MembraneVariable(errorVarName, (Membrane*)structure, size, bDiffusing);
+		exactErrorVar = clone(errorVarName);
 		errorVarName = name + RELATIVE_ERROR_VAR_SUFFIX;
-		relativeErrorVar = new MembraneVariable(errorVarName, (Membrane*)structure, size, bDiffusing);
+		relativeErrorVar = clone(errorVarName);
 	}
 }

@@ -8,13 +8,19 @@
 using std::ofstream;
 using std::endl;
 
-VolumeVariable::VolumeVariable(string& nameStr, Feature* feature, long numX, long numY, long numZ, bool diff, bool advect)
-: Variable(nameStr, feature, numX*numY*numZ, diff)
+VolumeVariable::VolumeVariable(string& nameStr, Feature* feature, long size)
+: Variable(nameStr, feature, size)
 {
-	sizeX = numX;
-	sizeY = numY;
-	sizeZ = numZ;
-	bAdvecting = advect;
+	bAdvecting = false;
+}
+
+VolumeVariable* VolumeVariable::clone(string& varName)
+{
+	VolumeVariable* newVar = new VolumeVariable(varName, (Feature*)structure, size);
+	newVar->bDiffusing = bDiffusing;
+	newVar->bElliptic = bElliptic;
+	newVar->bAdvecting = bAdvecting;
+	return newVar;
 }
 
 void VolumeVariable::createErrorVariables()
@@ -22,8 +28,8 @@ void VolumeVariable::createErrorVariables()
 	if (exactErrorVar == NULL)
 	{
 		string errorVarName = name + ERROR_VAR_SUFFIX;
-		exactErrorVar = new VolumeVariable(errorVarName, (Feature*)structure, sizeX, sizeY, sizeZ, bDiffusing, bAdvecting);
+		exactErrorVar = clone(errorVarName);
 		errorVarName = name + RELATIVE_ERROR_VAR_SUFFIX;
-		relativeErrorVar = new VolumeVariable(errorVarName, (Feature*)structure, sizeX, sizeY, sizeZ, bDiffusing, bAdvecting);
+		relativeErrorVar = clone(errorVarName);
 	}
 }

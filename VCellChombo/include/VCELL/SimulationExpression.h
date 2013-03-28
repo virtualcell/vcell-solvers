@@ -95,8 +95,27 @@ public:
 	int getOutputVarCount();
 	int* getOutputVarTypes();
 
+	void setHasElliptic()
+	{
+		bHasElliptic = true;
+	}
+	bool hasElliptic()
+	{
+		return bHasElliptic;
+	}
+	void setHasParabolic()
+	{
+		bHasParabolic = true;
+	}
+	bool hasParabolic()
+	{
+		return bHasParabolic;
+	}
+
 private:
 	int currIteration;  // first iteration is currIteration=0
+  bool bHasElliptic;
+	bool bHasParabolic;
 
 	double          _dT_sec;                  // seconds
 	ChomboScheduler  *_scheduler;
