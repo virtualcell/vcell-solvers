@@ -41,11 +41,7 @@ public:
 		return phase;
 	}
 
-	void setEbBcType(Membrane* mem, BoundaryType bcType)
-	{
-		ebBcTypeMap[mem] = bcType;
-	}
-
+	void setEbBcType(Membrane* mem, BoundaryType bcType);
 	BoundaryType getEbBcType(Membrane* mem);
 	BoundaryType getEbBcType();
 	

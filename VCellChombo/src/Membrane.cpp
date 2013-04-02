@@ -1,10 +1,6 @@
 #include <VCELL/Membrane.h>
-#include <VCELL/MembraneVariable.h>
-#include <VCELL/MembraneRegionVariable.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/Feature.h>
-#include <VCELL/MembraneVarContextExpression.h>
-#include <VCELL/MembraneRegionVarContextExpression.h>
 #include <VCELL/JumpCondition.h>
 #include <SimpleSymbolTable.h>
 #include <sstream>
@@ -31,7 +27,7 @@ void Membrane::resolveReferences(SimulationExpression *sim)
 	Structure::resolveReferences(sim);
 	
 	for (int i = 0; i < sim->getNumMemVariables(); i ++) {
-		Variable* var = sim->getMemVariable(i);
+		Variable* var = (Variable*)sim->getMemVariable(i);
 		if (isVariableDefined(var)) {
 			feature1->addMemVarIndexInAdjacentMembrane(i);
 			feature2->addMemVarIndexInAdjacentMembrane(i);

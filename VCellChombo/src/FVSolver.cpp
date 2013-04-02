@@ -451,18 +451,22 @@ void FVSolver::loadJumpCondition(istream& ifsInput, Membrane* membrane, string& 
 			lineInput >> featurename;
 			assert(!featurename.empty());
 			Feature* f = model->getFeatureFromName(featurename);
+			f->setEbBcType(membrane, nextToken == "FLUX" ? BOUNDARY_FLUX : BOUNDARY_VALUE);
 			string var_name = var->getName();
 			VCell::Expression* exp = readExpression(lineInput, var_name);
 			VarContext* varContext = var->getVarContext();
-			if (var->getVarType() == VAR_VOLUME) {
+			if (var->getVarType() == VAR_VOLUME || var->getVarType() == VAR_VOLUME_REGION)
+			{
 				varContext->addJumpCondition(membrane, exp);
-			} else if (var->getVarType() == VAR_VOLUME_REGION) {
-				varContext->addJumpCondition(membrane, exp);
-			} else {
+			} 
+			else
+			{
 				throw "Only volume variables and volume region variables have jump conditions";
 			}
-		} else {
-			throw "Expecting FLUX in JumpCondition.";
+		} 
+		else
+		{
+			throw "Expecting FLUX or VALUE in JumpCondition.";
 		}
 	}
 }

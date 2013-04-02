@@ -2,14 +2,14 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
-#include <VCELL/VolumeVariable.h>
-#include <VCELL/VolumeRegionVariable.h>
 #include <VCELL/Feature.h>
-#include <VCELL/VolumeVarContextExpression.h>
-#include <VCELL/VolumeRegionVarContextExpression.h>
+#include <VCELL/Membrane.h>
 #include <assert.h>
+#include <iostream>
 #include <sstream>
 using std::stringstream;
+using std::cout;
+using std::endl;
 
 Feature::Feature(string& name, unsigned char findex) : Structure(name)
 {
@@ -38,10 +38,14 @@ void Feature::resolveReferences(SimulationExpression *sim)
 	}
 }
 
+void Feature::setEbBcType(Membrane* mem, BoundaryType bcType)
+	{
+		cout << "Feature " << name << ", Membrane " << mem->getName() << ", bcType="
+					<< (bcType == BOUNDARY_VALUE ? "Dirichlet" : "Neumann") << endl;
+		ebBcTypeMap[mem] = bcType;
+	}
 BoundaryType Feature::getEbBcType(Membrane* mem)
 {
-	return getEbBcType();
-
 	map<Membrane*, BoundaryType>::iterator iter = ebBcTypeMap.find(mem);
 	assert(iter != ebBcTypeMap.end());
 	return ebBcTypeMap[mem];
@@ -49,7 +53,14 @@ BoundaryType Feature::getEbBcType(Membrane* mem)
 
 BoundaryType Feature::getEbBcType()
 {
-//	return name=="subVolume1" ? BOUNDARY_VALUE : BOUNDARY_FLUX;
-	return BOUNDARY_VALUE;
+	// we don't allow mixed boundary condition in one feature for now.
+	// so return the first boundary condition type
+	std::map<Membrane*, BoundaryType>::iterator it = ebBcTypeMap.begin();
+	if (it != ebBcTypeMap.end())
+	{
+		BoundaryType bt = it->second;
+		return bt;
+	}
+	assert(0);
 }
 
