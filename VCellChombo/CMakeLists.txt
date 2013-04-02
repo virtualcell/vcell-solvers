@@ -3,6 +3,7 @@ project(VCellChombo)
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMBO_CYGWIN_BUILD)
 	set(HEADER_FILES 
 		include/VCELL/ChomboDomainBC.h
+		include/VCELL/ChomboEBBC.h
 		include/VCELL/ChomboGeometry.h
 		include/VCELL/ChomboGeometryShop.h
 		include/VCELL/ChomboIF.h
@@ -34,6 +35,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 
 	set(SRC_FILES 
 		src/ChomboDomainBC.cpp
+		src/ChomboEBBC.cpp
 		src/ChomboGeometry.cpp
 		src/ChomboGeometryShop.cpp
 		src/ChomboIF.cpp
