@@ -12,6 +12,7 @@
       <itemPath>include/VCELL/ChomboScheduler.h</itemPath>
       <itemPath>include/VCELL/ChomboSemiImplicitScheduler.h</itemPath>
       <itemPath>include/VCELL/ChomboSpec.h</itemPath>
+      <itemPath>include/VCELL/ConnectedComponent.h</itemPath>
       <itemPath>include/VCELL/DataSet.h</itemPath>
       <itemPath>include/VCELL/FVSolver.h</itemPath>
       <itemPath>include/VCELL/Feature.h</itemPath>

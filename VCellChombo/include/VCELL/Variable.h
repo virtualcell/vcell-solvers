@@ -82,7 +82,6 @@ public:
 	void addL2Error(double d);
 	void addL2Exact(double d);
 	void addMean(double d);
-	void addVolFrac(double d);
 	void computeFinalL2Error();
 	void computeFinalMean();
 	double getL2Error()
@@ -92,10 +91,6 @@ public:
 	double getMean()
 	{
 		return mean;
-	}
-	double getSumVolFrac()
-	{
-		return sumVolFrac;
 	}
 	void updateMaxError(double d);
 	double getMaxError()
@@ -122,7 +117,6 @@ protected:
 	double maxError;
 	double l2Exact;
 	double mean;
-	double sumVolFrac;
 };
 
 #endif

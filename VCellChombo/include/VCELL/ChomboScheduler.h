@@ -31,15 +31,7 @@ class EBIndexSpace;
 template <class> class BaseIVFAB;
 
 #define NUM_PHASES 2
-
-struct ConnectedComponent {
-	int phase;
-	int volumeIndexInPhase;
-	Feature* feature;
-	RefCountedPtr<EBIndexSpace> volume;
-	Vector<ConnectedComponent*> adjacentVolumes;
-	Vector<int> definedMemVarIndexList;
-};
+struct ConnectedComponent;
 
 class ChomboScheduler {
 
@@ -114,6 +106,7 @@ protected:
 	bool isInNextFinerLevel(int level, const IntVect& gridIndex);
 
 	Vector< Vector<ConnectedComponent*> > phaseVolumeList;
+	int numConnectedComponents;
 	int numMembranePoints;
 	bool computeOneFaceCross(int, int, int, RealVect&, RealVect&, RealVect&, RealVect&, RealVect&);
 };

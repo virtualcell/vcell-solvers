@@ -37,6 +37,7 @@
 #include <VCELL/ChomboSpec.h>
 #include <VCELL/ChomboGeometry.h>
 #include <VCELL/ChomboGeometryShop.h>
+#include <VCELL/ConnectedComponent.h>
 #include <assert.h>
 #include <sstream>
 #include <hdf5.h>
@@ -196,12 +197,15 @@ void ChomboScheduler::initializeGrids() {
 	mfIndexSpace.define(finestDomain.domainBox(), domainOrigin, fineDx[0], geometries, chomboSpec->getMaxBoxSize()/* ,maxCoarsenings */);
 
 	phaseVolumeList.resize(NUM_PHASES);
+	numConnectedComponents = 0;
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		// Select one index-space
 		Chombo_EBIS::alias((EBIndexSpace*) mfIndexSpace.EBIS(iphase));
 		EBIndexSpace* ebisPtr = Chombo_EBIS::instance();
 		Vector<RefCountedPtr<EBIndexSpace> > volumes = ebisPtr->connectedComponents();
 		for (int ivol = 0; ivol < volumes.size(); ivol++) {
+			++ numConnectedComponents;
+			
 			// find the feature for this volume
 			RefCountedPtr<EBIndexSpace> volume = volumes[ivol];
 			int depth = volume->getLevel(finestDomain);
@@ -271,7 +275,7 @@ void ChomboScheduler::initializeGrids() {
 			finalFeature->setPhase(iphase);
 		} // end for comp
 	}// end for phase
-	
+
 	// define grids for each level
   Vector<int> coarsestProcs;
 	Vector<Box> coarsestBoxes;
@@ -476,6 +480,100 @@ void ChomboScheduler::initializeGrids() {
 		delete[] bAdjacent;
 	}
 
+	// compute size of each connected component
+	{
+		int cfRefRatio = 1;
+		for(int ilev = 0; ilev < numLevels - 1; ++ ilev)
+		{
+			cfRefRatio *= vectRefRatios[ilev];
+		}
+		double unitV = vectDxes[numLevels - 1].product();
+		for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
+		{
+			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol)
+			{
+				double sumVolFrac = 0;
+				int refratio = cfRefRatio;
+
+				for(int ilev = 0; ilev < numLevels; ++ ilev)
+				{
+					int numRepeats = pow(refratio,SpaceDim);
+					
+					for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
+					{
+						const Box& currBox = vectGrids[ilev][dit()];
+						const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
+
+						const IntVect& bigEnd = currBox.bigEnd();
+						const IntVect& smallEnd = currBox.smallEnd();
+
+#if CH_SPACEDIM==3
+						for (int k = smallEnd[2]; k <= bigEnd[2]; ++ k)
+						{
+#endif
+							for (int j = smallEnd[1]; j <= bigEnd[1]; ++ j)
+							{
+								for (int i = smallEnd[0]; i <= bigEnd[0]; ++ i)
+								{
+									IntVect gridIndex(D_DECL(i, j, k));
+									if (currEBISBox.isCovered(gridIndex) || isInNextFinerLevel(ilev, gridIndex))
+									{
+										continue;
+									}
+
+									double volFrac = 1.0;
+									if (currEBISBox.isIrregular(gridIndex))
+									{
+										volFrac = currEBISBox.volFrac(VolIndex(gridIndex, 0));
+									}
+									volFrac *= numRepeats;
+									sumVolFrac += volFrac;
+								} // i
+							} // j
+#if CH_SPACEDIM==3
+						} // k
+#endif
+						if (iphase == 0 && ilev == numLevels - 1) // only consider the finest level for membrane
+						{
+							int totalVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
+							Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
+							const EBGraph& currEBGraph = currEBISBox.getEBGraph();
+							IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
+							Vector<ConnectedComponent*>& adjacentVolumes = phaseVolumeList[iphase][ivol]->adjacentVolumes;
+
+							for (int j = 0; j < adjacentVolumes.size(); ++ j)
+							{
+								int jphase = adjacentVolumes[j]->phase;
+								int jvol = adjacentVolumes[j]->volumeIndexInPhase;
+
+								int currentMembraneID = ivol * totalVolumes + jvol;
+								Feature* jFeature = phaseVolumeList[jphase][jvol]->feature;
+								Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(iFeature, jFeature);
+								for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
+								{
+									const VolIndex& vof = vofit();
+									int membraneID = (*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()](vof, 0);
+									if (membraneID != currentMembraneID)
+									{
+										continue;
+									}
+									double areaFrac = currEBISBox.bndryArea(vof);
+									membrane->addSize(areaFrac * unitV);
+									membrane->addSizeFrac(areaFrac);
+								}
+							}
+						}
+					} // dit
+					refratio /= vectRefRatios[ilev];
+				} // level
+				double s = sumVolFrac * unitV;
+				phaseVolumeList[iphase][ivol]->size = s;
+				phaseVolumeList[iphase][ivol]->feature->addSize(s);
+				phaseVolumeList[iphase][ivol]->feature->addSizeFrac(sumVolFrac);
+			} // vol
+		} // phase
+	} // compute size
+
 	for(int phase0 = 0; phase0 < NUM_PHASES; phase0 ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++) {
 			Feature* feature = phaseVolumeList[phase0][ivol]->feature;
@@ -584,7 +682,7 @@ void ChomboScheduler::updateSolution() {
 									double sol = solnDataPtr[getChomboBoxLocalIndex(solnSize, ivar, D_DECL(i, j, k))];
 									double mean = sol * volFrac;
 									var->addMean(mean);
-									var->addVolFrac(volFrac);
+//									var->addVolFrac(volFrac);
 									double error = 0;
 									double relErr = 0;
 									if (bComputeError)
@@ -695,7 +793,7 @@ void ChomboScheduler::updateSolution() {
 									double* varCurr = var->getCurr();
 									double sol = (*memSoln[ivol][ilev])[dit()](vof, ivar);
 									double mean = sol * areaFrac;
-									var->addVolFrac(areaFrac);
+//									var->addVolFrac(areaFrac);
 									var->addMean(mean);
 									
 									varCurr[memIndex] = sol;

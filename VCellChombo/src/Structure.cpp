@@ -1,15 +1,16 @@
 #include <VCELL/Structure.h>
 #include <VCELL/Variable.h>
-
-#include "VCELL/VarContext.h"
+#include <VCELL/VarContext.h>
 
 Structure::Structure(string& Aname) {
 	name = Aname;
-	odeVarCount = 0;
-	pdeVarCount = 0;
+	size = 0;
+//	odeVarCount = 0;
+//	pdeVarCount = 0;
 
-	for (int i = 0; i < 6; i ++) {
-		boundaryType[i] = BOUNDARY_VALUE;
+	for (int i = 0; i < 6; i ++)
+	{
+		boundaryType[i] = BOUNDARY_UNKNOWN;
 	}
 }
 
@@ -19,14 +20,14 @@ Structure::~Structure(void)
 
 void Structure::addDefinedVariable(Variable* var) {
 	definedVariableList.push_back(var);
-	if (var->isDiffusing())
-	{
-		++ pdeVarCount;
-	}
-	else
-	{
-		++ odeVarCount;
-	}
+//	if (var->isDiffusing())
+//	{
+//		++ pdeVarCount;
+//	}
+//	else
+//	{
+//		++ odeVarCount;
+//	}
 }
 
 bool Structure::isVariableDefined(Variable* var){

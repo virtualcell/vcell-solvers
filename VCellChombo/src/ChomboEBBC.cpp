@@ -11,6 +11,7 @@
 #include <VCELL/ChomboSemiImplicitScheduler.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/ChomboGeometry.h>
+#include <VCELL/ConnectedComponent.h>
 #include <sstream>
 using std::stringstream;
 

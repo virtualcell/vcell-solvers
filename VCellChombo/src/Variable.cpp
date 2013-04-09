@@ -42,7 +42,7 @@ void Variable::reset()
 	l2Error = 0;
 	l2Exact = 0;
 	mean = 0;
-	sumVolFrac = 0;
+//	sumVolFrac = 0;
 	if (exactErrorVar != NULL)
 	{
 		memset(exactErrorVar->getCurr(), 0, exactErrorVar->getSize() * sizeof(double));
@@ -69,10 +69,6 @@ void Variable::addMean(double d)
 {
 	mean += d;
 }
-void Variable::addVolFrac(double vf)
-{
-	sumVolFrac += vf;
-}
 
 void Variable::updateMaxError(double d)
 {
@@ -89,5 +85,5 @@ void Variable::computeFinalL2Error()
 }
 void Variable::computeFinalMean()
 {
-	mean /= sumVolFrac;
+	mean /= structure->getSizeFrac();
 }

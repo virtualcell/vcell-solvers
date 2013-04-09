@@ -17,6 +17,7 @@
 #include <VCELL/MembraneVarContextExpression.h>
 #include <VCELL/ChomboDomainBC.h>
 #include <VCELL/ChomboEBBC.h>
+#include <VCELL/ConnectedComponent.h>
 
 #include <time.h>
 #include <sstream>

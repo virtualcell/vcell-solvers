@@ -539,7 +539,7 @@ void DataSet::write(SimulationExpression *sim, bool bWriteSimFile)
 
 		// attribute: sum of vol fraction
 		attribute = H5Acreate(varDataset, SOLUTION_DATASET_ATTR_SUM_VOLFRAC, H5T_NATIVE_DOUBLE, scalarDataSpace, H5P_DEFAULT);
-		d = var->getSumVolFrac();
+		d = var->getStructure()->getSizeFrac();
 		H5Awrite(attribute, H5T_NATIVE_DOUBLE, &d);
 		H5Aclose(attribute);
 

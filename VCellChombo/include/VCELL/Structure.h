@@ -54,18 +54,35 @@ public:
 	const BoundaryType* getBoundaryTypes() {
 		return boundaryType;
 	}
-	int getPdeVarCount()
+
+	double getSize()
 	{
-		return pdeVarCount;
+		return size;
 	}
+	double getSizeFrac()
+	{
+		return sizeFrac;
+	}
+	void addSize(double s)
+	{
+		size += s;
+	}
+	void addSizeFrac(double f)
+	{
+		sizeFrac += f;
+	}
+//	int getPdeVarCount()
+//	{
+//		return pdeVarCount;
+//	}
 protected:
 	string  name;
 	vector<Variable*> definedVariableList;
-
-private:
-	int odeVarCount;
-	int pdeVarCount;
+//	int odeVarCount;
+//	int pdeVarCount;
 	BoundaryType boundaryType[6];
+	double size;
+	double sizeFrac;
 };
 
 #endif
