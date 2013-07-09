@@ -3,6 +3,7 @@
 
 //#include <vector>
 #include <iostream>
+#include <map>
 using namespace std;
 
 #include <VCELL/VarContext.h>
@@ -32,6 +33,7 @@ template <class> class BaseIVFAB;
 
 #define NUM_PHASES 2
 struct ConnectedComponent;
+struct Triangle;
 
 class ChomboScheduler {
 
@@ -86,7 +88,7 @@ protected:
 
 	Vector< Vector< Vector<LevelData<EBCellFAB>*> > > volSoln;
 	Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<Real> > > > > memSoln;
-	Vector< RefCountedPtr< LevelData< BaseIVFAB<int> > > > membranePointIndexes; // here it stores membrane index
+	//Vector< RefCountedPtr< LevelData< BaseIVFAB<int> > > > membranePointIndexes; // here it stores membrane index
 	IntVect numGhostSoln;
 
 	Vector<EBAMRPoissonOpFactory *> opFactories;
@@ -109,6 +111,16 @@ protected:
 	int numConnectedComponents;
 	int numMembranePoints;
 	bool computeOneFaceCross(int, int, int, RealVect&, RealVect&, RealVect&, RealVect&, RealVect&);
+
+	static void populateBoxDataType(hid_t& boxType);
+	static void populateRealVectDataType(hid_t& realVectType);
+	static void populateIntVectDataType(hid_t& intVectType);
+	static void populateMetricsDataType(hid_t& metricsType);
+	static void populateSliceViewDataType(hid_t& sliceViewType);
+	static void populateTriangleDataType(hid_t& triangleType);
+	map<int, int> irregVolumeMembraneMap;
+
+	bool findNeighborMembraneIndex(int ilev, const IntVect& gridIndex, Triangle& triangle, RealVect& normalizedCrossPoint);
 };
 
 #endif
