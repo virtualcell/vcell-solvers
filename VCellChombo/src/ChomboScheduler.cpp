@@ -912,8 +912,11 @@ void ChomboScheduler::writeData() {
 #define MESH_ATTR_DX "Dx"
 #define BOXES_DATASET MESH_GROUP"/boxes"
 #define METRICS_DATASET MESH_GROUP"/metrics"
-#define SURFACE_DATASET MESH_GROUP"/surface"
-#if CH_SPACEDIM == 3
+#define VERTICES_DATASET MESH_GROUP"/vertices"
+#if CH_SPACEDIM == 2
+#define SEGMENTS_DATASET MESH_GROUP"/segments"
+#else
+#define SURFACE_DATASET MESH_GROUP"/surface triangles"
 #define SLICE_VIEW_DATASET MESH_GROUP"/slice view"
 #endif
 
@@ -970,6 +973,38 @@ void ChomboScheduler::populateMetricsDataType(hid_t& metricsType)
 	H5Tinsert(metricsType, "areaFraction", HOFFSET(MeshMetrics, areaFraction), H5T_NATIVE_DOUBLE);
 }
 
+struct Vertex
+{
+	RealVect coords;
+};
+void ChomboScheduler::populateVertexDataType(hid_t& vertexType)
+{
+	D_TERM(H5Tinsert(vertexType, "x", HOFFSET(Vertex, coords[0]), H5T_NATIVE_DOUBLE);,
+				H5Tinsert(vertexType, "y", HOFFSET(Vertex, coords[1]), H5T_NATIVE_DOUBLE);,
+				H5Tinsert(vertexType, "z", HOFFSET(Vertex, coords[2]), H5T_NATIVE_DOUBLE);)
+}
+
+#if CH_SPACEDIM == 2
+struct Segment
+{
+	int index;
+	int vertexIndexes[2];
+	int neighborIndexes[2];
+	Segment()
+	{
+		vertexIndexes[0] = vertexIndexes[1] = -1;
+		neighborIndexes[0] = neighborIndexes[1] = MEMBRANE_NEIGHBOR_UNKNOWN;
+	}
+};
+void ChomboScheduler::populateSegmentDataType(hid_t& segmentType)
+{
+	H5Tinsert(segmentType, "index", HOFFSET(Segment, index), H5T_NATIVE_INT);
+	H5Tinsert(segmentType, "vertex_1", HOFFSET(Segment, vertexIndexes[0]), H5T_NATIVE_INT);
+	H5Tinsert(segmentType, "vertex_2", HOFFSET(Segment, vertexIndexes[1]), H5T_NATIVE_INT);
+	H5Tinsert(segmentType, "neighbor_1", HOFFSET(Segment, neighborIndexes[0]), H5T_NATIVE_INT);
+	H5Tinsert(segmentType, "neighbor_2", HOFFSET(Segment, neighborIndexes[1]), H5T_NATIVE_INT);
+}
+#else
 struct Triangle
 {
 	int index;
@@ -994,7 +1029,6 @@ void ChomboScheduler::populateTriangleDataType(hid_t& triangleType)
 				 H5Tinsert(triangleType, "z2", HOFFSET(Triangle, triVertices[2][2]), H5T_NATIVE_DOUBLE);)
 }
 
-#if CH_SPACEDIM == 3
 struct SliceView
 {
 	int index;
@@ -1019,14 +1053,15 @@ void ChomboScheduler::populateSliceViewDataType(hid_t& sliceViewType)
 }
 #endif
 
-bool ChomboScheduler::findNeighborMembraneIndex(int ilev, const IntVect& gridIndex, Triangle& triangle, RealVect& normalizedCrossPoint)
+#if CH_SPACEDIM == 2
+int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const IntVect& gridIndex, 
+				int iedge, const RealVect& cp, const RealVect& cpcoords, int& neighborEdge)
 {
 	bool bHasNeighbor = false;
 	IntVect diff = IntVect::Zero;
-	int idir = triangle.face / Side::NUMSIDES;
-	int hilo = triangle.face % Side::NUMSIDES;
-#if CH_SPACEDIM == 2
-	int otherDir = (idir + 1) % 2;
+	int idir = iedge / Side::NUMSIDES;
+	int hilo = iedge % Side::NUMSIDES;
+
 	bool bNotNextToWall = false;
 	if (hilo == Side::Lo)
 	{
@@ -1040,25 +1075,77 @@ bool ChomboScheduler::findNeighborMembraneIndex(int ilev, const IntVect& gridInd
 	}
 
 	static double cornerTol = 1.e-12;
-	bool bCornerCross = false;
 	int nidx = MEMBRANE_NEIGHBOR_UNKNOWN;
 	if (bNotNextToWall)
 	{
 		bHasNeighbor = true;
 		
-		double otherCoord = normalizedCrossPoint[otherDir];
-		if (abs(abs(otherCoord) - 0.5) <= cornerTol)
+		int otherDir = (idir + 1) % 2;
+		if (abs(cp[otherDir]) >= (0.5-cornerTol))
 		{
-			bHasNeighbor = false;
-			bCornerCross = true;
+			double e = 0.25;
+			RealVect nearByPointOffsets[4] =
+			{
+				RealVect(0, -e * cp[1] * vectDxes[ilev][1]),
+				RealVect(0, e * cp[1] * vectDxes[ilev][1]),
+				RealVect(-e * cp[0] * vectDxes[ilev][0], 0),
+				RealVect(e * cp[0] * vectDxes[ilev][0], 0),
+			};
+			bool F[4];
+			for (int i = 0; i < 4; ++ i)
+			{
+				F[i] = geoIfs[iphase]->value(cpcoords + nearByPointOffsets[i]) < 0;
+			}
+			if (F[0] == F[2])
+			{
+				throw "Invalid segment with corner cross point";
+			}
+			else if ((F[1] == F[2]) && (F[0] == F[3]))
+			{
+				// diagonal
+				diff[otherDir] = cp[otherDir] < 0 ? -1 : +1;
+				diff[idir]     = cp[idir] < 0 ? -1 : +1;
+				diff[otherDir] = cp[otherDir] < 0 ? -1 : +1;
+				// define a different neighborEdge here:
+				if (cp[otherDir] > 0)
+				{
+					neighborEdge = 2 * otherDir;
+				}
+				else
+				{
+					neighborEdge = 2 * otherDir + 1;
+				}
+			}
+			else if (F[1] != F[2])
+			{
+				// y direction
+				diff[0] = 0;
+				diff[1] = cp[1] < 0 ? -1 : +1;
+				if (idir == 0)
+				{
+					neighborEdge = iedge;
+				}
+			}
+			else if (F[0] != F[3])
+			{
+				// x direction
+				diff[0] = cp[0] < 0 ? -1 : +1;
+				diff[1] = 0;
+				if (idir == 1)
+				{
+					neighborEdge = iedge;
+				}
+			} 
+			else
+			{
+				bHasNeighbor = false;
+			}
 		}
 	}
 	else
 	{
 		nidx = MEMBRANE_NEIGHBOR_NEXT_TO_WALL;
 	}
-#elif CH_SPACEDIM == 3
-#endif
 
 	if (bHasNeighbor)
 	{
@@ -1076,10 +1163,9 @@ bool ChomboScheduler::findNeighborMembraneIndex(int ilev, const IntVect& gridInd
 			nidx = iter->second;
 		}
 	}
-	triangle.neighborIndex = nidx;
-	cout << "triangle: " << triangle.index << "," << triangle.face << "," << triangle.neighborIndex;
-	return bCornerCross;
+	return nidx;
 }
+#endif
 
 void ChomboScheduler::writeMembraneFiles()
 {
@@ -1096,12 +1182,24 @@ void ChomboScheduler::writeMembraneFiles()
 	int ilev = numLevels - 1; // only consider the finest level
 	MeshMetrics* metricsData = new MeshMetrics[numMembranePoints];
 #if CH_SPACEDIM == 2
-	Triangle* surfaceData = new Triangle[numMembranePoints*2];
+	Segment* segmentList = new Segment[numMembranePoints];
+	int* edgeVertices = new int[numMembranePoints * 4];
+	std::fill(edgeVertices, edgeVertices + numMembranePoints * 4, -1);
+	
+	double coeff = 0.1;
+	RealVect edgePointOffset[4] =
+	{
+		RealVect(0, -vectDxes[ilev][1]*coeff),
+		RealVect(0, vectDxes[ilev][1]*coeff),
+		RealVect(vectDxes[ilev][0]*coeff, 0),
+		RealVect(-vectDxes[ilev][0]*coeff, 0)
+	};
 #else
+	int triangleCount = 0;
 	Triangle* surfaceData = new Triangle[numMembranePoints*6];
 #endif
-	vector<int> cornerTriangleList;
-	int triangleCount = 0;
+	int vertexCount = 0;
+	Vertex* vertexList = new Vertex[numMembranePoints * 2];
 
 	ChomboGeometryShop chomboGeoShop(geoIfs[iphase], vectDxes[ilev]);
 	for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol)
@@ -1135,6 +1233,7 @@ void ChomboScheduler::writeMembraneFiles()
 				metricsData[memIndex].volumeFraction = currEBISBox.volFrac(vof);
 
 #if CH_SPACEDIM == 2
+				segmentList[memIndex].index = memIndex;
 				edgeMo edges[4];
 
 				bool faceCovered;
@@ -1151,35 +1250,71 @@ void ChomboScheduler::writeMembraneFiles()
 									 vof.gridIndex(),
 									 vectDomains[ilev],
 									 chomboGeometry->getDomainOrigin());
-				int crossedEdgeCount = 0;
+				int crossedEdgeCount = -1;
 				int iedge = -1;
 				for (int idir = 0; idir < SpaceDim; ++ idir)
 				{
 					for (int lohi = Side::Lo; lohi < Side::NUMSIDES;  ++ lohi)
 					{
 						++ iedge;
+						if (edgeVertices[memIndex * 4 + iedge] >= 0)
+						{
+							++ crossedEdgeCount;
+							continue;
+						}
 						bool irreg = edges[iedge].dontKnow();
 						if (irreg)
 						{
-							crossedEdgeCount ++;
-							if (crossedEdgeCount < 3)
+							++ crossedEdgeCount;
+							if (crossedEdgeCount < 2)
 							{
 								RealVect cp = (edges[iedge].getIntersectLo()) ? edges[iedge].getLo() : edges[iedge].getHi();
 								RealVect cross_point = cp;
 								cross_point *= vectDxes[ilev];
 								cross_point += vol_point;
 								
-								surfaceData[triangleCount].index = memIndex;
-								surfaceData[triangleCount].face = iedge;
-					      surfaceData[triangleCount].triVertices[0] = mem_point;
-								// get the real coordinate
-								surfaceData[triangleCount].triVertices[1] = cross_point;
-								bool bCornerCross = findNeighborMembraneIndex(ilev, gridIndex, surfaceData[triangleCount], cp);
-								if (bCornerCross)
+								int neighborEdge = (iedge ^ 1);
+								int nidx  = findNeighborMembraneIndex2D(iphase, ilev, gridIndex, iedge, cp, cross_point, neighborEdge);
+								if (nidx == MEMBRANE_NEIGHBOR_UNKNOWN)
 								{
-									cornerTriangleList.push_back(triangleCount);
+//									stringstream ss;
+//									ss << "failed to set a neighbor for membrane " << memIndex;
+//									throw ss.str();
+									cout << "did not find one of the neighbors for membrane point (not next to wall) " << memIndex;
 								}
-								++ triangleCount;
+								else
+								{
+									// determine if vertex is first or second
+									// compute Q (as membrane enters the volume element from outside
+									// find a point to the right of cross point, and compute fQ=implF(Q);
+									RealVect Q = cross_point + edgePointOffset[iedge];
+									Real funcQ = geoIfs[iphase]->value(Q);
+									int orderV, orderN;
+									if (funcQ < 0)
+									{
+										orderV = 0;
+										orderN = 1;
+									}
+									else
+									{
+										orderV = 1;
+										orderN = 0;
+									 }
+
+									// set neighbor vertex and neighbor
+									// valid neighbor
+									segmentList[memIndex].vertexIndexes[orderV] = vertexCount;
+									segmentList[memIndex].neighborIndexes[orderV] = nidx;
+									edgeVertices[memIndex * 4 + iedge] = vertexCount;
+									if (nidx != MEMBRANE_NEIGHBOR_NEXT_TO_WALL)
+									{
+										segmentList[nidx].vertexIndexes[orderN] = vertexCount;
+										segmentList[nidx].neighborIndexes[orderN] = memIndex;
+										edgeVertices[nidx * 4 + neighborEdge] = vertexCount;
+									}
+									vertexList[vertexCount].coords = cross_point;
+									++ vertexCount;
+								}
 							}
 							else
 							{
@@ -1276,30 +1411,10 @@ void ChomboScheduler::writeMembraneFiles()
 
 	// find membrane neighbors for points having corner neighbors.
 #if CH_SPACEDIM == 2
-	unsigned int numCornerTriangles = cornerTriangleList.size();
-	for (unsigned int i = 0; i < numCornerTriangles; ++ i)
-	{
-		Triangle& thisTriangle = surfaceData[cornerTriangleList.at(i)];
-		if (thisTriangle.neighborIndex != MEMBRANE_NEIGHBOR_UNKNOWN)
-		{
-			continue;
-		}
-		for (unsigned int j = 0; j < numCornerTriangles; ++ j)
-		{
-			if (i != j)
-			{
-				Triangle& anotherTriangle = surfaceData[cornerTriangleList.at(j)];
-				if (thisTriangle.triVertices[1] == anotherTriangle.triVertices[1])
-				{
-					thisTriangle.neighborIndex = anotherTriangle.index;
-					anotherTriangle.neighborIndex = thisTriangle.index;
-					break;
-				}
-			}
-		}
-	}
+	delete[] edgeVertices;
 #endif
-	
+
+	// now start writing we have computed so far
 	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MESH_HDF5_FILE_EXT);
 	hid_t h5MeshFile = H5Fcreate(fileName, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	hid_t meshGroup = H5Gcreate(h5MeshFile, MESH_GROUP, H5P_DEFAULT);
@@ -1381,6 +1496,38 @@ void ChomboScheduler::writeMembraneFiles()
 	delete[] metricsData;
 	}
 
+	// vertices
+	{
+	hid_t vertexType = H5Tcreate(H5T_COMPOUND, sizeof(Vertex));
+	populateVertexDataType(vertexType);
+	hsize_t dim[] = {vertexCount};   /* Dataspace dimensions */
+	int rank = 1;
+	hid_t space = H5Screate_simple(rank, dim, NULL);
+	hid_t verticesDataset = H5Dcreate (h5MeshFile, VERTICES_DATASET, vertexType, space, H5P_DEFAULT);
+	H5Dwrite(verticesDataset, vertexType, H5S_ALL, H5S_ALL, H5P_DEFAULT, vertexList);
+	H5Dclose(verticesDataset);
+	H5Sclose(space);
+	H5Tclose(vertexType);
+	delete[] vertexList;
+	}
+
+#if CH_SPACEDIM == 2
+	// segments
+	{
+	hid_t segmentType = H5Tcreate(H5T_COMPOUND, sizeof(Segment));
+	populateSegmentDataType(segmentType);
+	hsize_t dim[] = {numMembranePoints};   /* Dataspace dimensions */
+	int rank = 1;
+	hid_t space = H5Screate_simple(rank, dim, NULL);
+	hid_t segmentsDataset = H5Dcreate (h5MeshFile, SEGMENTS_DATASET, segmentType, space, H5P_DEFAULT);
+	H5Dwrite(segmentsDataset, segmentType, H5S_ALL, H5S_ALL, H5P_DEFAULT, segmentList);
+	H5Dclose(segmentsDataset);
+	H5Sclose(space);
+	H5Tclose(segmentType);
+	delete[] segmentList;
+	}
+
+#else
 	// cross points
 	{
 	hid_t triangleType = H5Tcreate(H5T_COMPOUND, sizeof(Triangle));
@@ -1396,7 +1543,6 @@ void ChomboScheduler::writeMembraneFiles()
 	delete[] surfaceData;
 	}
 
-#if CH_SPACEDIM == 3
 	// slice view
 	{
 	hid_t sliceViewType = H5Tcreate(H5T_COMPOUND, sizeof(SliceView));

@@ -116,11 +116,14 @@ protected:
 	static void populateRealVectDataType(hid_t& realVectType);
 	static void populateIntVectDataType(hid_t& intVectType);
 	static void populateMetricsDataType(hid_t& metricsType);
+	static void populateVertexDataType(hid_t& metricsType);
+	static void populateSegmentDataType(hid_t& triangleType);
 	static void populateSliceViewDataType(hid_t& sliceViewType);
 	static void populateTriangleDataType(hid_t& triangleType);
 	map<int, int> irregVolumeMembraneMap;
 
-	bool findNeighborMembraneIndex(int ilev, const IntVect& gridIndex, Triangle& triangle, RealVect& normalizedCrossPoint);
+	int findNeighborMembraneIndex2D(int iphase, int ilev, const IntVect& gridIndex, int iedge, 
+		const RealVect& normalizedCrossPoint, const RealVect& crossPointRealCoords, int& neighborEdge);
 };
 
 #endif
