@@ -169,17 +169,13 @@ double ChomboIF::interpolateDistance(const RealVect& a_point) const {
     double f2 = 0, f3 = 0;
     for (int i = 0; i < baseNumCorners; ++i) {
     	int gilo = baseIList[i];
-        f2 += distanceMap[gilo]* Xprd[i] ;
-        if (SpaceDim > 2) {
-        	int gihi = gilo  + sampleOffsetXY;
-            f3 += distanceMap[gihi]*Xprd[i];
-        }
+			f2 += distanceMap[gilo]* Xprd[i] ;
+			if (SpaceDim > 2) {
+				int gihi = gilo  + sampleOffsetXY;
+				f3 += distanceMap[gihi]*Xprd[i];
+			}
     }
-    double f = f2*(1 - fpoint[2]) + f3 * fpoint[2];
-//	double exact_f = sqrt((a_point[0]-2.001)*(a_point[0]-2.001) + (a_point[1]-2.001)*(a_point[1]-2.001) + (a_point[2]-2.001)*(a_point[2]-2.001))-1;
-//	if (abs(f)< 0.2 && a_point[0] > 2 && a_point[1] > 2 && a_point[2] > 2) {
-//		ofs << a_point[0] << " " << a_point[1] << " " << a_point[2] << " " << exact_f << " " << f << endl;
-//	}
+    double f = SpaceDim == 2 ? f2 : f2*(1 - fpoint[2]) + f3 * fpoint[2];
     return f;
 }
 
