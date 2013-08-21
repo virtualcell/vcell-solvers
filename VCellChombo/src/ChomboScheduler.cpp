@@ -212,7 +212,7 @@ void ChomboScheduler::initializeGrids() {
 		Vector<RefCountedPtr<EBIndexSpace> > volumes = ebisPtr->connectedComponents();
 		for (int ivol = 0; ivol < volumes.size(); ivol++) {
 			++ numConnectedComponents;
-			
+
 			// find the feature for this volume
 			RefCountedPtr<EBIndexSpace> volume = volumes[ivol];
 			int depth = volume->getLevel(finestDomain);
@@ -441,7 +441,7 @@ void ChomboScheduler::initializeGrids() {
 			for (int ilev = 0; ilev < numLevels; ilev ++) {
 				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit) {
 					const Box& currBox = vectGrids[ilev][dit()];
-					
+
 					const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
 					const EBGraph& currEBGraph = currEBISBox.getEBGraph();
 					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
@@ -507,7 +507,7 @@ void ChomboScheduler::initializeGrids() {
 				for(int ilev = 0; ilev < numLevels; ++ ilev)
 				{
 					int numRepeats = pow(refratio,SpaceDim);
-					
+
 					for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
 					{
 						const Box& currBox = vectGrids[ilev][dit()];
@@ -754,7 +754,7 @@ void ChomboScheduler::updateSolution() {
 			var->computeFinalL2Error();
 		}
 	}
-	
+
 	// membrane variables
 	int totalVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
 	int numMembraneVars = simulation->getNumMemVariables();
@@ -806,7 +806,7 @@ void ChomboScheduler::updateSolution() {
 									double mean = sol * areaFrac;
 //									var->addVolFrac(areaFrac);
 									var->addMean(mean);
-									
+
 									varCurr[memIndex] = sol;
 									Variable* errorVar = var->getExactErrorVariable();
 									if (errorVar != NULL)
@@ -1054,7 +1054,7 @@ void ChomboScheduler::populateSliceViewDataType(hid_t& sliceViewType)
 #endif
 
 #if CH_SPACEDIM == 2
-int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const IntVect& gridIndex, 
+int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const IntVect& gridIndex,
 				int iedge, const RealVect& cp, const RealVect& cpcoords, int& neighborEdge)
 {
 	bool bHasNeighbor = false;
@@ -1079,7 +1079,7 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 	if (bNotNextToWall)
 	{
 		bHasNeighbor = true;
-		
+
 		int otherDir = (idir + 1) % 2;
 		if (abs(cp[otherDir]) >= (0.5-cornerTol))
 		{
@@ -1098,7 +1098,8 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 			}
 			if (F[0] == F[2])
 			{
-				throw "Invalid segment with corner cross point";
+				throw " cross-point calculation: membrane is tangent to an element face. "
+								"It may help if domain origin is shifted by a small number";
 			}
 			else if ((F[1] == F[2]) && (F[0] == F[3]))
 			{
@@ -1135,7 +1136,7 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 				{
 					neighborEdge = iedge;
 				}
-			} 
+			}
 			else
 			{
 				bHasNeighbor = false;
@@ -1185,7 +1186,7 @@ void ChomboScheduler::writeMembraneFiles()
 	Segment* segmentList = new Segment[numMembranePoints];
 	int* edgeVertices = new int[numMembranePoints * 4];
 	std::fill(edgeVertices, edgeVertices + numMembranePoints * 4, -1);
-	
+
 	double coeff = 0.1;
 	RealVect edgePointOffset[4] =
 	{
@@ -1272,7 +1273,7 @@ void ChomboScheduler::writeMembraneFiles()
 								RealVect cross_point = cp;
 								cross_point *= vectDxes[ilev];
 								cross_point += vol_point;
-								
+
 								int neighborEdge = (iedge ^ 1);
 								int nidx  = findNeighborMembraneIndex2D(iphase, ilev, gridIndex, iedge, cp, cross_point, neighborEdge);
 								if (nidx == MEMBRANE_NEIGHBOR_UNKNOWN)
@@ -1454,7 +1455,7 @@ void ChomboScheduler::writeMembraneFiles()
 	attribute = H5Acreate(meshGroup, MESH_ATTR_DX, realVectType, scalarDataSpace, H5P_DEFAULT);
 	H5Awrite(attribute, realVectType, vectDxes[ilev].dataPtr());
 	H5Aclose(attribute);
-	
+
 	H5Sclose(scalarDataSpace);
 	}
 
