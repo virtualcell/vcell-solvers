@@ -96,17 +96,7 @@ set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
 set_source_files_properties(${MAIN_FILES} PROPERTIES LANGUAGE CXX )
 set_source_files_properties(${HYBRID_SRC_FILES} PROPERTIES LANGUAGE CXX )
 
-include_directories(source/lib source/Smoldyn source/vcell ${CMAKE_BINARY_DIR} ${HDF5_BINARY_DIR} ../hdf5-1.8.8/c++/src ../hdf5-1.8.8/src)
-
-####### Option: Compile for VCell ##########
-
-option(OPTION_VCELL "Compile Smoldyn for VCell" ON)
-#if(OPTION_VCELL)
-#	set(MAIN_FILES
-#		source/vcell/vcell_smoldyn.c
-#	)
-#	set_source_files_properties(${MAIN_FILES} PROPERTIES LANGUAGE CXX )
-#endif()
+include_directories(source/lib source/Smoldyn source/vcell ${CMAKE_BINARY_DIR} ${HDF5_BINARY_DIR} ../${HDF_VERSION}/c++/src ../${HDF_VERSION}/src)
 
 
 ####### Build for debugging or release ##########
@@ -127,10 +117,11 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 
 option(MINGW "Cross-compile for Windows using MinGW compiler" OFF)
 
-if (MINGW)
+if (MINGW AND NOT WINDOWS)
+	message("mingw cross compile")
 	set (MINGWDIR /opt/local/i386-mingw32)
 	set (CMAKE_CXX_COMPILER /opt/local/bin/i386-mingw32-g++)
-endif(MINGW)
+endif()
 
 
 ######### Platform dependent information ##########
@@ -158,6 +149,8 @@ if (OPTION_USE_OPENGL)
 		set(HAVE_GL_GLUT_H TRUE)
 		set(HAVE_GL_GLU_H TRUE)
 		set(HAVE_GL_GL_H TRUE)
+	elseif (CYGWIN)
+		message(FATAL_ERROR "cygwin opengl not supported")
 	else()
 		find_file(HAVE_GL_GL_H GL/gl.h)
 		find_file(HAVE_OPENGL_GL_H OpenGL/gl.h)
@@ -187,7 +180,7 @@ set(OPTION_USE_LIBTIFF OFF)
 ####### Option: Build with Zlib ##########
 if (MSVC) 
 	set(OPTION_USE_ZLIB OFF)
-	set(HAVE_ZLIB TRUE)
+	set(HAVE_ZLIB FALSE)
 else()
 	option(OPTION_USE_ZLIB "Build with Zlib support" ON)
 endif()

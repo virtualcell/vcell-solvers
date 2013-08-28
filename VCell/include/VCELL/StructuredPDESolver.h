@@ -5,6 +5,7 @@
 #ifndef STRUCTUREDPDESOLVER_H
 #define STRUCTUREDPDESOLVER_H
 
+#include <stdio.h>
 #include <VCELL/PDESolver.h>
 
 typedef struct {

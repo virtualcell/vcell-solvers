@@ -1,3 +1,4 @@
+#include <cstring> //memset
 #include "VFRAPObjectiveFunction.h"
 #include "SpatialReferenceData.h"
 #include "ParameterDescription.h"

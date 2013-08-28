@@ -1,3 +1,4 @@
+#include <cstdio> //sprintf
 #include "MemoryManager.h"
 extern "C" {
 	#include "MemoryUtils.h"

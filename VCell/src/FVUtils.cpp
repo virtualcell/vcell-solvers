@@ -18,17 +18,6 @@ using std::swap;
 #include <stdio.h>
 #include <math.h>
 
-extern "C"
-{
-#ifdef WIN32
-	#define IDAMAX idamax
-	int IDAMAX(long *, double*, int*);
-#else
-	#define IDAMAX idamax_
-	extern int IDAMAX(...);
-#endif
-}
-
 bool isNAN(double number) {
 	if (number != number) {
 		return true;

@@ -4,6 +4,8 @@
  */
 #ifndef SIMTYPES_H
 #define SIMTYPES_H
+#include <sstream>
+#include <stdexcept>
 
 struct DoubleVector3;
 
@@ -61,11 +63,23 @@ typedef struct {
 	double w;
 } LocalCoord;
 
-typedef struct {
+ struct IntVector3 {
 	int x;
 	int y;
 	int z;
-} IntVector3;
+	IntVector3 & operator-=(const IntVector3 &rhs) {
+		x -= rhs.x;
+		y -= rhs.y;
+		z -= rhs.z;
+		return *this;
+	}
+};
+
+inline IntVector3 operator-(const IntVector3 &lhs,const IntVector3 &rhs) { 
+	IntVector3 copy(lhs);
+	copy -= rhs;
+	return copy;
+}
 
 typedef DoubleVector3 WorldCoord;
 typedef IntVector3    MeshCoord;
@@ -78,4 +92,109 @@ typedef enum {
 	MATRIX_GENERAL=0,
 	MATRIX_SYMMETRIC=1,
 } MatrixSymmFlag;
+
+namespace NeighborType { 
+	enum NeighborStatus {good = 0,unset= -1,wall = -2, boundary = -3, unknown = -4};
+}
+
+template <class T, class E>
+struct StatusIndex {
+
+	/**
+	* construct with value
+	*/
+	StatusIndex(T index = 0) 
+		:value(index) {
+			checkNonNegative(index);
+		}
+	/**
+	* construct with status code
+	*/
+	StatusIndex(E e) 
+		:value(e)
+	{ verifyErrorValue(e); } 
+
+	StatusIndex & operator=(T index) {
+		checkNonNegative(index);
+		value = index;
+		return *this;
+	}
+	StatusIndex & operator=(E e) {
+		verifyErrorValue(e);
+		value = e;
+		return *this;
+	}
+
+	/**
+	* explicit get value
+	*/
+	unsigned int get( ) const {
+		assert( valid( )); 
+		return value;
+	}
+
+	/**
+	* implicit get 
+	*/
+	operator unsigned int( ) {
+		return get( );
+	}
+	
+	bool valid( ) const {
+		return value >= 0;
+	}
+
+	E validity( ) const {
+		if (value >= 0) {
+			return static_cast<E>(0);
+		}
+		return static_cast<E>(value);
+	}
+
+private:
+	T value; 
+#ifndef NDEBUG
+	void checkNonNegative(T index) {
+		if (index >= static_cast<T>(0)) {
+			return;
+		}
+		std::stringstream ss;
+		ss << "StatusIndex " << index << " must be non-negative ";
+		throw std::invalid_argument(ss.str( ));
+	}
+	void verifyErrorValue(E e) {
+		if (e < 0) {
+			return;
+		}
+		std::stringstream ss;
+		ss << "StatusIndex enum " << e <<  " must be negative";
+		throw std::invalid_argument(ss.str( ));
+	}
+#else
+	void checkNonNegative(T index) { }
+	void verifyErrorValue(E e) { }
+#endif
+//friend operator==(const StatusIndex<T,E> &lhs,const StatusIndex<T,E> &rhs); 
+};
+
+template <class T, class E>
+inline bool operator==(const StatusIndex<T,E> &lhs,const StatusIndex<T,E> &rhs) {
+	return lhs.value == rhs.value;
+}
+template <class T, class E>
+inline bool operator==(const StatusIndex<T,E> &lhs,const T &rhs) {
+	return lhs.valid() && lhs.get( ) == rhs;
+}
+template <class T, class E>
+inline bool operator==(const T &lhs,const StatusIndex<T,E> &rhs) {
+	return rhs.valid() && lhs == rhs.get( );
+}
+template <class T, class E>
+inline bool operator==(const E &lhs,const StatusIndex<T,E> &rhs) {
+	return lhs == rhs.validity( );
+}
+template <class T, class E>
+inline bool operator==(const StatusIndex<T,E> &lhs,const E &rhs) {
+	return lhs.validity( ) == rhs;
+}
 #endif

@@ -1,4 +1,11 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.9)
+
+set(RULE_MESSAGES OFF)
+set(CMAKE_COLOR_MAKEFILE OFF)
+set(HDF_VERSION "hdf5-1.8.11")
+set(ZLIB_VERSION "zlib-1.2.8")
+
+#include (VCellCMakeShowVariables.txt)
 
 if(DEFINED CMAKE_BUILD_TYPE)
    SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
@@ -19,10 +26,46 @@ project(numerics)
 #include (CheckSymbolExists)
 #include (CheckTypeSize)
 include (FindZLIB)
+#message("gen "${CMAKE_GENERATOR})
+#message("extra "${CMAKE_EXTRA_GENERATOR})
+#message("system "${CMAKE_SYSTEM_NAME})
+#message("windows "${WINDOWS})
+
+set(HDF5_BUILD_CPP_LIB ON CACHE BOOL "" )
+if (CYGWIN) 
+	set(NETBEANS_WINDOWS TRUE)
+	set(OPTION_TARGET_SMOLDYN ON CACHE BOOL "")
+	set(OPTION_TARGET_LIBSMOLDYN ON CACHE BOOL "")
+	set(OPTION_USE_OPENGL OFF CACHE BOOL "")
+	set(CMAKE_RC_FLAGS "-DGCC_WINDRES")
+	set(CLIENT_SIDE_DEFAULT TRUE)
+	set(SERVER_SIDE_DEFAULT FALSE)
+	set(HYBRID_DEFAULT FALSE)
+endif(CYGWIN)
 
 set(LINUX FALSE)
 if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
 	set(LINUX TRUE)
+	set(CLIENT_SIDE_DEFAULT FALSE)
+	set(SERVER_SIDE_DEFAULT TRUE)
+	set(HYBRID_DEFAULT FALSE)
+endif()
+
+if (APPLE) 
+	set(CLIENT_SIDE_DEFAULT TRUE)
+	set(SERVER_SIDE_DEFAULT FALSE)
+	set(HYBRID_DEFAULT FALSE)
+endif(APPLE)
+if (MSVC) 
+	set(CLIENT_SIDE_DEFAULT FALSE)
+	set(SERVER_SIDE_DEFAULT FALSE)
+	set(HYBRID_DEFAULT TRUE)
+endif(MSVC)
+
+set(WINDOWS FALSE)
+if (${CMAKE_SYSTEM_NAME} MATCHES Windows)
+	set(WINDOWS TRUE)
+	set(WIN32 TRUE)
 endif()
 
 set (ARCH_64bit FALSE)
@@ -33,6 +76,12 @@ endif()
 if (NOT MSVC AND NOT APPLE AND NOT LINUX AND NOT CYGWIN)
 	message(FATAL_ERROR "Unsupported Operating System or C/C++ Compiler.")
 endif()
+
+if (MSVC)
+#	add_definitions(-DFORTRAN_BARE)
+else( ) 
+	add_definitions(-DFORTRAN_UNDERSCORE)
+endif( )
 
 #############################################
 #
@@ -59,10 +108,17 @@ endif()
 #  3. java binding
 #
 ##############################################
-option(TARGET_SOLVERS_WITH_MESSAGING "Server Side Solvers (With Messaging)" ON)
-option(TARGET_SOLVERS_NO_MESSAGING "Client Side Solvers (Without Messaging)" OFF)
+if (CYGWIN OR APPLE)
+	option(TARGET_SOLVERS_NO_MESSAGING "Client Side Solvers (Without Messaging)" ${CLIENT_SIDE_DEFAULT})
+else()
+	option(TARGET_SOLVERS_WITH_MESSAGING "Server Side Solvers (With Messaging)" ${SERVER_SIDE_DEFAULT})
+	option(TARGET_SOLVERS_NO_MESSAGING "Client Side Solvers (Without Messaging)" ${CLIENT_SIDE_DEFAULT})
+endif ()
+if (WINDOWS) 
+	#need MSVC and IFortran for these
+	option(TARGET_HYBRID_SOLVERS "Hybrid solvers (Without Messaging)" ${HYBRID_DEFAULT})
+endif( )
 option(TARGET_JAVA_BINDING "Java Binding" OFF)
-option(TARGET_CHOMBO_CYGWIN_BUILD "Chombo Build on Cygwin" OFF)
 
 set (TARGET_COUNT 0)
 if (TARGET_SOLVERS_WITH_MESSAGING)
@@ -74,21 +130,14 @@ endif()
 if (TARGET_JAVA_BINDING)
 	math(EXPR TARGET_COUNT "${TARGET_COUNT} + 1")
 endif()
-if (TARGET_CHOMBO_CYGWIN_BUILD)
+if (TARGET_HYBRID_SOLVERS)
 	math(EXPR TARGET_COUNT "${TARGET_COUNT} + 1")
 endif()
 
 if (TARGET_COUNT GREATER 1 OR TARGET_COUNT EQUAL 0)
-	message(FATAL_ERROR "It is required to select one target, either TARGET_SOLVERS_WITH_MESSAGING, or TARGET_SOLVERS_NO_MESSAGING or TARGET_JAVA_BINDING or TARGET_CHOMBO_CYGWIN_BUILD")
+	message(FATAL_ERROR "It is required to select one target, either TARGET_SOLVERS_WITH_MESSAGING, or TARGET_SOLVERS_NO_MESSAGING or TARGET_JAVA_BINDING or TARGET_HYBRID_SOLVERS")
 endif()
 
-if (CYGWIN AND NOT TARGET_CHOMBO_CYGWIN_BUILD)
-	message(FATAL_ERROR "Currently only TARGET_CHOMBO_CYGWIN_BUILD is supported under CYGWIN")
-endif()
-
-if (TARGET_CHOMBO_CYGWIN_BUILD AND NOT CYGWIN)
-	message(FATAL_ERROR "Currently we only build TARGET_CHOMBO_CYGWIN_BUILD under CYGWIN")
-endif()
 
 #############################################
 #
@@ -171,7 +220,7 @@ elseif (LINUX_64bit_BINARIES)
 	find_program(IFORT_EXECUTABLE ifort /opt/intel/fce/10.1.015/bin/ /cm/shared/apps/intel/fce/10.1.015/bin/)
 endif()
 
-if (IFORT_EXECUTABLE MATCHES IFORT_EXECUTABLE-NOTFOUND)
+if (IFORT_EXECUTABLE MATCHES IFORT_EXECUTABLE-NOTFOUND AND NOT CYGWIN)
 	message(FATAL_ERROR "intel fortran compiler (ifort) is required")
 endif()
 	
@@ -183,7 +232,7 @@ endif()
 if (MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
 	
-	if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
+	if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_HYBRID_SOLVERS)
 		
 		######################################
 		#
@@ -253,10 +302,10 @@ if (MSVC)
 		endforeach(flag_var)
 	endif()
 		
-else()
+else(MSVC)
 	
 	add_definitions(-DUNIX)
-	if (TARGET_JAVA_BINDING)
+	if (TARGET_JAVA_BINDING AND NOT CYGWIN)
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 	endif()
@@ -265,9 +314,11 @@ endif(MSVC)
 
 
 if (TARGET_SOLVERS_WITH_MESSAGING)
-	if (APPLE)
-		message(FATAL_ERROR "TARGET_SOLVERS_WITH_MESSAGING is not supported on MAC OS X")
-	endif(APPLE)
+	if (APPLE OR CYGWIN)
+		message(FATAL_ERROR "TARGET_SOLVERS_WITH_MESSAGING is not supported on MAC OS X and cygwin")
+	endif(APPLE OR CYGWIN)
+	#don't need graphics for server side solvers
+	set(OPTION_USE_OPENGL OFF CACHE BOOL "")
 	
 	set(APR_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/apr-1.4.6/include ${CMAKE_BINARY_DIR}/apr-1.4.6/include)
 	set(ACTIVEMQ_CPP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/activemq-cpp-library-3.4.4/src/main ${CMAKE_BINARY_DIR}/activemq-cpp-library-3.4.4)
@@ -297,18 +348,33 @@ endif()
 #
 # Add subdirectories
 # 
-# Expression Parser is used by all targets
 #######################################
-add_subdirectory(ExpressionParser)
  
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
+	add_subdirectory(ExpressionParser)
+	if (NOT MSVC)
+		add_subdirectory(VCellChombo)
+	endif()
+	
+	set(HDF5_EXTERNALLY_CONFIGURED 1)
+	set(HDF5_LIB_DEPENDENCIES "w2_32")
+	set(H5_HAVE_GETHOSTNAME 0)
+#	if (CYGWIN) 
+#		cmake_policy(SET CMP0000 OLD)
+#	endif (CYGWIN) 
+	add_subdirectory(${HDF_VERSION})
+#	include_directories(${ZLIB_VERSION})
+#	include_directories(${CMAKE_BINARY_DIR}/${ZLIB_VERSION})
+	#add_subdirectory(${ZLIB_VERSION})
+
 	add_subdirectory(IDAWin)
 	add_subdirectory(sundials)
-	if (MSVC OR LINUX)
+	if (NOT APPLE)
 		add_subdirectory(blas)
 	endif()
-	add_subdirectory(hdf5-1.8.8)
-	if (NOT MACOSX_BINARIES_ppc)
+
+
+	if (NOT MACOSX_BINARIES_ppc AND NOT CYGWIN)
 		add_subdirectory(Hy3S)
 		add_subdirectory(netcdf-3.6.2)
 	endif()
@@ -324,19 +390,21 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	add_subdirectory(Stochastic)
 	add_subdirectory(unzip) 
 	add_subdirectory(VCell) 
-	if (NOT MSVC)
-		add_subdirectory(VCellChombo)
-	endif()
 	if (TARGET_SOLVERS_WITH_MESSAGING)
 		add_subdirectory(VCell_CodeGen)
 	endif(TARGET_SOLVERS_WITH_MESSAGING)
 	add_subdirectory(zip)
 	if (NOT ZLIB_FOUND)
-		add_subdirectory(zlib)
+#		add_subdirectory(zlib)
 	endif()
 endif() 
 
 if (TARGET_JAVA_BINDING)
+	if (CYGWIN OR LINUX)
+		set(JAVA_INCLUDE_PATH ${CMAKE_SOURCE_DIR}/JNI/Linux/include)
+		set(JAVA_AWT_INCLUDE_PATH ${JAVA_INCLUDE_PATH})
+	endif (CYGWIN OR LINUX)
+	add_subdirectory(ExpressionParser)
 	add_subdirectory(IDAWin)
 	add_subdirectory(sundials)
 	add_subdirectory(fsqp)
@@ -345,11 +413,14 @@ if (TARGET_JAVA_BINDING)
 	add_subdirectory(Optimization2)
 endif(TARGET_JAVA_BINDING)
 
-if (TARGET_CHOMBO_CYGWIN_BUILD)
-	add_subdirectory(hdf5-1.8.8)
-	add_subdirectory(VCellChombo)
-	add_subdirectory(unzip)
+if (TARGET_HYBRID_SOLVERS)
+	add_subdirectory(Hy3S)
+	add_subdirectory(netcdf-3.6.2)
+	set(HDF5_EXTERNALLY_CONFIGURED 1)
+	add_subdirectory(blas)
 	add_subdirectory(zip)
+	add_subdirectory(${HDF_VERSION})
+	add_subdirectory(smoldyn)
 endif()
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")

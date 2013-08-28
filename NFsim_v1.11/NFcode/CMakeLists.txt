@@ -84,5 +84,9 @@ link_directories()
 link_libraries()
 
 set(exe_target NFsim)
+if (ARCH_64bit) 
+	set(exe_target ${exe_target}_x64)
+endif (ARCH_64bit) 
 add_executable(${exe_target} ${SRC_FILES})
+
 install(TARGETS ${exe_target} RUNTIME DESTINATION bin)

@@ -1,5 +1,6 @@
 // OptSolverLibrary.cpp : Defines the entry point for the application.
 //
+#include <cstring> //memset
 #include "ExplicitObjectiveFunction.h"
 
 #include <float.h>

@@ -20,6 +20,16 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../ExpressionParser
 )
 
 add_library(NativeSolvers SHARED ${SRC_FILES})
+add_dependencies(NativeSolvers 
+	Optimization2
+	fsqp
+	tinyxml
+	IDAWin
+	sundials_ida
+	sundials_cvode
+	sundials_nvecserial
+	sundials
+	ExpressionParser)
 set (DEP_LIBS
 	vcellOpt
 	fsqp
@@ -33,5 +43,5 @@ set (DEP_LIBS
 )
 target_link_libraries(NativeSolvers ${DEP_LIBS})
 install(TARGETS NativeSolvers
-        RUNTIME DESTINATION bin)	
+        LIBRARY DESTINATION bin)	
 

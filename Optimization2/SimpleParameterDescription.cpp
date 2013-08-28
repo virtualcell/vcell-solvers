@@ -1,6 +1,7 @@
 // OptSolverLibrary.cpp : Defines the entry point for the application.
 //
 
+#include <cstring> //memset
 #include "SimpleParameterDescription.h"
 #include "SimpleSymbolTable.h"
 

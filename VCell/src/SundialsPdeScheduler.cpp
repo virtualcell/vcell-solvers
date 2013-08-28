@@ -59,24 +59,6 @@ static int plusMasks[3] = {NEIGHBOR_XP_MASK, NEIGHBOR_YP_MASK, NEIGHBOR_ZP_MASK}
 
 #define PRECOMPUTE_DIFFUSION_COEFFICIENT
 
-extern "C"
-{
-	//SUBROUTINE PCILU(ICODE,N,IJA,A,W,ISP,RSP)
-#if ( defined(WIN32) || defined(WIN64) )
-#ifdef WIN32
-#define PCILU pcilu
-#define DAXPY daxpy
-#endif
-	void PCILU(int *, long *, int32 *, double *, double *, double *, double *);
-	void DAXPY(long*, double*, double*, int*, double*, int*);
-#else
-	#define PCILU pcilu_
-	extern void PCILU(...);
-
-	#define DAXPY daxpy_
-	extern void DAXPY(...);
-#endif
-}
 
 SundialsPdeScheduler::SundialsPdeScheduler(Simulation *sim, const SundialsSolverOptions& sso, int numDisTimes, double* disTimes, bool bDefaultOuptput) : Scheduler(sim)
 {

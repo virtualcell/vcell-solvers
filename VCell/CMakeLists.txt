@@ -1,4 +1,8 @@
 project(VCell Fortran)
+if (CYGWIN)
+	#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+	add_definitions(-DWIN64)
+endif (CYGWIN)
 
 set(HEADER_FILES 
 	include/VCELL/AlgebraicSystem.h
@@ -173,7 +177,7 @@ set (EXE_SRC_FILES
 	src/FiniteVolume.cpp
 )
 
-include_directories(include ../ExpressionParser ${HDF5_BINARY_DIR} ../hdf5-1.8.8/c++/src ../hdf5-1.8.8/src ../IDAWin ../sundials/include ../sundials/src)
+include_directories(include ../ExpressionParser ${HDF5_BINARY_DIR} ../${HDF_VERSION}/c++/src ../${HDF_VERSION}/src ../IDAWin ../sundials/include ../sundials/src ../zip)
 if (NOT ZLIB_FOUND)
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../zlib)
 endif()
@@ -190,8 +194,10 @@ elseif (LINUX)
 endif()
 
 
+
+
 if (MSVC)
-	include_directories(../hdf5-1.8.8/windows/src)
+	include_directories(../${HDF_VERSION}/windows/src)
     set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /names:lowercase")
 elseif(UNIX)
 	set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -static")

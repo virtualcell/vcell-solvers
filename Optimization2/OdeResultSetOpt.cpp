@@ -1,3 +1,4 @@
+#include <cstring> //memcpy
 #include "OdeResultSetOpt.h"
 #include "Expression.h"
 #include "SymbolTable.h"

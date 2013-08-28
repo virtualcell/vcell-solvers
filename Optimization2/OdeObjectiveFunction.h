@@ -2,6 +2,7 @@
 #define ODEOBJECTIVEFUNCTION_H
 
 #include <vector>
+#include <string>
 using namespace std;
 
 #include "ObjectiveFunction.h"

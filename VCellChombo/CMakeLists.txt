@@ -68,67 +68,116 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	add_definitions(-DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_USE_64 -DCH_USE_COMPLEX 
 		-DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API)
 	include_directories(
-		${CMAKE_SOURCE_DIR}/../Chombo/lib/include 
+		${CMAKE_SOURCE_DIR}/Chombo/lib/include 
 		${CMAKE_SOURCE_DIR}/ExpressionParser 
 		${CMAKE_CURRENT_SOURCE_DIR}/include 
 	)
+	set(CHOMBO_DEFS_FILE ${CMAKE_SOURCE_DIR}/Chombo/lib/mk/Make.defs.local)
+	include_directories(${CMAKE_SOURCE_DIR}/${HDF_VERSION})
+	include_directories(${CMAKE_BINARY_DIR}/${HDF_VERSION})
+	include_directories(${CMAKE_SOURCE_DIR}/${HDF_VERSION}/src)
 	if (CYGWIN)
 		add_definitions(-DCH_CYGWIN)
 		set(LIB_NAME_OS CYGWIN)
-		include_directories(${CMAKE_SOURCE_DIR}/hdf5-1.8.8/src)
+		file(COPY "Make.defs.local.cygwin" DESTINATION "${CMAKE_SOURCE_DIR}/Chombo/lib/mk") 
+		file(RENAME "${CMAKE_SOURCE_DIR}/Chombo/lib/mk/Make.defs.local.cygwin" ${CHOMBO_DEFS_FILE})
 	elseif (LINUX)
 		add_definitions(-DCH_Linux)
 		set(LIB_NAME_OS Linux)
 		include_directories(${CMAKE_BINARY_DIR}/include)
+		file(COPY "Make.defs.local.linux" DESTINATION "${CMAKE_SOURCE_DIR}/Chombo/lib/mk") 
+		file(RENAME "${CMAKE_SOURCE_DIR}/Chombo/lib/mk/Make.defs.local.linux" ${CHOMBO_DEFS_FILE})
 	endif()
 
 	include_directories(${JMS_INCS})
 	add_definitions(${JMS_DEFS})
 
-	link_directories(${CMAKE_SOURCE_DIR}/../Chombo/lib)
+	link_directories(${CMAKE_SOURCE_DIR}/Chombo/lib)
 	set(DEP_LIBS hdf5 ${JMS_LIBS} ExpressionParser zip unzip gfortran)
 
-	set(DEP_LIBS_2D 
-			mftools2d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			ebamrelliptic2d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			ebamrtools2d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			ebtools2d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			amrelliptic2d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			amrtools2d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			workshop2d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			boxtools2d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			basetools2d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			${DEP_LIBS}
+####################################################################################
+#
+# We set full path names of Chombo libraries for use in "add_custom_command". The cmake
+# generated Makefiles will find these on the system and not rebuild them if they 
+# already exist.
+#
+####################################################################################
+	if (ARCH_64bit) 
+		set(OPT64 "64.")
+		set(USE64 TRUE)
+		set(CHOMBO_COMPILE_FLAGS -m64)
+	else (ARCH_64bit) 
+		set(OPT64 "")
+		set(USE64 FALSE)
+		set(CHOMBO_COMPILE_FLAGS "")
+	endif (ARCH_64bit) 
+	set(CHOMBO_LIB_DIR ${CMAKE_SOURCE_DIR}/Chombo/lib)
+	set(CHOMBO_LIBS_2D 
+		${CHOMBO_LIB_DIR}/libmftools2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libebamrelliptic2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libebamrtools2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libebtools2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libamrelliptic2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libamrtools2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libworkshop2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libboxtools2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libbasetools2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
 		)
-	set(DEP_LIBS_3D 
-			mftools3d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			ebamrelliptic3d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			ebamrtools3d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			ebtools3d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			amrelliptic3d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			amrtools3d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			workshop3d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			boxtools3d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			basetools3d.${LIB_NAME_OS}.64.g++.gfortran.OPT
-			${DEP_LIBS}
+	set(DEP_LIBS_2D  ${CHOMBO_LIBS_2D} ${DEP_LIBS})
+
+	set(CHOMBO_LIBS_3D 
+		${CHOMBO_LIB_DIR}/libmftools3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libebamrelliptic3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libebamrtools3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libebtools3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libamrelliptic3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libamrtools3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libworkshop3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libboxtools3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libbasetools3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
 		)
+	set(DEP_LIBS_3D  ${CHOMBO_LIBS_3D} ${DEP_LIBS})
 
 	set(EXE_2D VCellChombo2D)
 	if (ARCH_64bit) 
 		set(EXE_2D ${EXE_2D}_x64)
 	endif()
-	add_executable(${EXE_2D} ${SRC_FILES})
+
+	#use the same command for 2d and 3d ; we'll just add DIM=3 to the 3d case
+	#Setting USE_MF in Chombo's Make.defs.local didn't seem to work, so set both USE_EB and USE_MF from command line
+
+	list(APPEND CHOMBO_COMPILE_FLAGS " -I${CMAKE_BINARY_DIR}/${HDF_VERSION}")
+	file(APPEND ${CHOMBO_DEFS_FILE} XTRACXXFLAGS=${CHOMBO_COMPILE_FLAGS}) 
+	set(CHOMBO_BUILD_CMD make lib CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}  HDF_VERSION=${HDF_VERSION} CMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR} USE_EB=TRUE USE_MF=TRUE USE_64=${USE64})
+	#message(${CHOMBO_BUILD_CMD})
+	add_custom_command(OUTPUT ${CHOMBO_LIBS_2D}
+		PRE_BUILD
+		COMMAND ${CHOMBO_BUILD_CMD} 
+#		DEPENDS don't add depends line ... causes recompiling of Chombo every time 
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/Chombo/lib
+#		VERBATIM
+	)
+	# include the Chombo libraries as "source" file to trigger building them via "add_custom_command"
+	# if they don't exist
+	add_executable(${EXE_2D} ${CHOMBO_LIBS_2D} ${SRC_FILES})
 	target_link_libraries(${EXE_2D} ${DEP_LIBS_2D})
-	add_dependencies(${EXE_2D} hdf5 ExpressionParser zip unzip)
+	add_dependencies(${EXE_2D} hdf5 hdf5_cpp ExpressionParser zip unzip ${DEP_LIBS}) 
 	set_property(TARGET ${EXE_2D} PROPERTY COMPILE_DEFINITIONS CH_SPACEDIM=2)
 
 	set(EXE_3D VCellChombo3D)
 	if (ARCH_64bit) 
 		set(EXE_3D ${EXE_3D}_x64)
 	endif()
-	add_executable(${EXE_3D} ${SRC_FILES})
+
+	add_custom_command(OUTPUT ${CHOMBO_LIBS_3D}
+		PRE_BUILD
+		COMMAND ${CHOMBO_BUILD_CMD} DIM=3
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/Chombo/lib
+		VERBATIM
+	)
+	add_executable(${EXE_3D} ${CHOMBO_LIBS_3D} ${SRC_FILES})
 	target_link_libraries(${EXE_3D} ${DEP_LIBS_3D})
-	add_dependencies(${EXE_3D} hdf5 ExpressionParser zip unzip)
+	add_dependencies(${EXE_3D} hdf5 hdf5_cpp ExpressionParser zip unzip ${DEP_LIBS}) 
 	set_property(TARGET ${EXE_3D} PROPERTY COMPILE_DEFINITIONS CH_SPACEDIM=3)
 
 	install(TARGETS ${EXE_2D} RUNTIME DESTINATION bin)
