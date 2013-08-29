@@ -124,8 +124,7 @@ FC            = gfortran
 #USE_CCSE      =
 #USE_HDF       =
 HDFINCFLAGS   = -DH5_USE_16_API -I${CMAKE_SOURCE_DIR}/${HDF_VERSION} -I${CMAKE_SOURCE_DIR}/${HDF_VERSION}/src 
-HDFLIBFLAGS   = -L${CHOMBO_HOME}/../../numerics/cmake-build/lib/  -L${CHOMBO_HOME}/../../numerics/cmake-build/hdf5-1.8.8/src  -lhdf5 -lz 
-HDFLIBFLAGS   = -L${CMAKE_BINARY_DIR}/${HDF_VERSION}/src -lhdf5 -lz
+HDFLIBFLAGS   = -L${CMAKE_BINARY_DIR}/${HDF_VERSION}/src -l${HDF_LIB} -lz
 #-----------------------------------------------------
 ## Note: don't set the HDFMPI* variables if you don't have parallel HDF installed
 #HDFMPIINCFLAGS= -I<hdf_parallel_dir>/include
