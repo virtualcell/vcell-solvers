@@ -13,6 +13,12 @@ else()
    SET(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
 endif()
 
+#CMakeList.txt that comes with hdf5 switches library name if compiled with debug
+set(HDF_LIB "hdf5")
+if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+	set(HDF_LIB "hdf5_debug")
+endif( )
+
 project(numerics)
 
 #include (CMakeTestCCompiler)
