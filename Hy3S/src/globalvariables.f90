@@ -50,6 +50,9 @@ Type (RxnDataType), Allocatable, Dimension(:), Public  :: RxnData
 
 Type (DGraphType), Allocatable, Dimension(:), Public :: DGraph
 
+! only warn about brown tree rows (see progagators-HyJCMSSS) once per run.
+! vcell - gcw 08/2013
+Logical  :: brownianTreeWarned = .FALSE.
 
 !****v dataio/N
 !VARIABLE

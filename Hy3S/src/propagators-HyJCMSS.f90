@@ -278,7 +278,7 @@ Integer :: MultipleSlowRxn(M), MFast, BeforeMFast
 Integer :: SpecialEventNumber, Current_Tree_Row
 Integer :: reactioncount_old(M), Multicounter_old
 
-Logical :: DGraphMask(M), TwoTrue(2), Warned, ErrorOk, Once
+Logical :: DGraphMask(M), TwoTrue(2), ErrorOk, Once
 Logical :: SpecialEvent, SpecialEventOnceThrough, SlowRxnOccurredMask(M)
 
 Character(len = 256) :: errmsg
@@ -379,7 +379,6 @@ do while ((TStop - t)/(TStop - TStart) > eps)          !Main time iterative loop
 	print*, "SDE Iteration # = ", Itercounter
 !DEC$ Endif
 
-       Warned = .FALSE.
 
        Allocate(dW(Mfast))
 
@@ -539,10 +538,10 @@ do while ((TStop - t)/(TStop - TStart) > eps)          !Main time iterative loop
           !Nothing happens if Current_Tree_Row > Tree_Row
           Call SDE_BrownianPath_Generate(Fast, Current_Tree_Row, Tree_Row, Reset = .FALSE.)
 
-          if (Tree_Row >= 15.AND..NOT.Warned) THEN
+          if (Tree_Row >= 15.AND..NOT.brownianTreeWarned) THEN
              print*, "***WARNING***: The Brownian Tree Is Allocated To >=15 Rows. "
              print*, "A Segmentation Fault (Out of Memory) May Be Approaching!"
-             Warned = .TRUE.
+             brownianTreeWarned = .TRUE.
           end if
 
 !DEC$ If (Defined(Debug_State))
