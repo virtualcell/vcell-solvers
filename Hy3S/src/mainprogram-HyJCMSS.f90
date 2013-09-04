@@ -599,6 +599,9 @@ if (me == 0) THEN
   Call cpu_time(t5)
 
   print*, "Total CPU Time required: ", t5 - t1, " seconds using ", NumProcs, " processors."
+  if (brownianTreeWarningCount > 0) then
+	print*, "Brownian tree warning occurred ", brownianTreeWarningCount , " times."		
+  end if
 end if
 
 
