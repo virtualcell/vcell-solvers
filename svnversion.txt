@@ -5,7 +5,6 @@ if (NOT ${UNVERSIONED})
 		RESULT_VARIABLE RCODE 
 		OUTPUT_VARIABLE SVERSIONRAW 
 		ERROR_VARIABLE VERISON_ERROR )
-		message("rcode ${RCODE}")
 	if (NOT ${RCODE} EQUAL 0) 
 		message("set option UNVERSIONED TO skip version check")
 		message(FATAL_ERROR "version not found svnversion returned ${RCODE}, ${VERSION_ERROR}")
@@ -19,6 +18,6 @@ if (NOT ${UNVERSIONED})
 else( )
 	set(SVERSION "unversioned build")
 endif( )
-message("sversion is ${SVERSION}")
+message("svnversion ${SVERSION}")
 add_definitions(-DSVNVERSION=svn${SVERSION})
 
