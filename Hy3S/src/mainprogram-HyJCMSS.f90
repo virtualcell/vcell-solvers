@@ -157,7 +157,7 @@ SDEdt = 1.000d9 !Let SaveTime be the SDEdt
 #endif
 #define VCELLSVNQ(x) #x
 #define VCELLSVNQUOTE(x) VCELLSVNQ(x)
-    print *, "This is Virtual Cell version $Url$"VCELLSVNQUOTE(SVNVERSION) 
+    print *, "This is Virtual Cell version $URL$"VCELLSVNQUOTE(SVNVERSION) 
 
       End if
 
