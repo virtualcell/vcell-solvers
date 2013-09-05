@@ -107,7 +107,6 @@ Call cpu_time(t1)
 Call ParseCLA(NumCLParameters, CLParameters)
 
 !DEC$ IF (Defined(Adaptive))
-
 !Default values
 epsilon = 1.000d2
 lambda = 1.000d1
@@ -120,7 +119,7 @@ SDEdt = 1.000d9 !Let SaveTime be the SDEdt
       Case (-1)
 
       If (me == 0) THEN
-	print*, "You are using Hy3S: Hybrid Stochastic Simulation for Supercomputers"
+	print*, "You are using Hy3S: Hybrid Stochastic Simulation for Supercomputers, Adaptive"
 	print*, "Visit our website at http://hysss.sourceforge.net"
 	print*, ""
 	print*, "Algorithm: Hybrid Jump/Continuous Markov process simulator"
@@ -152,6 +151,13 @@ SDEdt = 1.000d9 !Let SaveTime be the SDEdt
 	print*, "-OV : Include to overwrite previously written solution data."
 	print*, ""
 	print*, "Program is stopping."
+
+#ifndef SVNVERSION
+#error "SVNVERSION required"
+#endif
+#define VCELLSVNQ(x) #x
+#define VCELLSVNQUOTE(x) VCELLSVNQ(x)
+    print *, "This is Virtual Cell version $Url$"VCELLSVNQUOTE(SVNVERSION) 
 
       End if
 
