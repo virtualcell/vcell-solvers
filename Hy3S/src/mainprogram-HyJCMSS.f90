@@ -98,6 +98,13 @@ Real*8 :: SumAvgModelTime
   me = 0
 !DEC$ ENDIF
 
+#ifndef SVNVERSION
+#error "SVNVERSION required"
+#endif
+#define VCELLSVNQ(x) #x
+#define VCELLSVNQUOTE(x) VCELLSVNQ(x)
+    print *, "Virtual Cell version $URL$"VCELLSVNQUOTE(SVNVERSION) 
+
 Call cpu_time(t1)
 
 !Get simulation parameters from command line arguments
@@ -119,7 +126,7 @@ SDEdt = 1.000d9 !Let SaveTime be the SDEdt
       Case (-1)
 
       If (me == 0) THEN
-	print*, "You are using Hy3S: Hybrid Stochastic Simulation for Supercomputers, Adaptive"
+	print*, "You are using Hy3S: Hybrid Stochastic Simulation for Supercomputers"
 	print*, "Visit our website at http://hysss.sourceforge.net"
 	print*, ""
 	print*, "Algorithm: Hybrid Jump/Continuous Markov process simulator"
@@ -152,12 +159,6 @@ SDEdt = 1.000d9 !Let SaveTime be the SDEdt
 	print*, ""
 	print*, "Program is stopping."
 
-#ifndef SVNVERSION
-#error "SVNVERSION required"
-#endif
-#define VCELLSVNQ(x) #x
-#define VCELLSVNQUOTE(x) VCELLSVNQ(x)
-    print *, "This is Virtual Cell version $URL$"VCELLSVNQUOTE(SVNVERSION) 
 
       End if
 
