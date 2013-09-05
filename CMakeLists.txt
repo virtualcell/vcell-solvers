@@ -219,6 +219,8 @@ endif()
 
 if (APPLE)
 	find_program(IFORT_EXECUTABLE ifort)
+	#make sure preprocessor called
+	set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fpp")
 endif()
 
 if (LINUX_32bit_BINARIES)
