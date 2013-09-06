@@ -219,8 +219,6 @@ endif()
 
 if (APPLE)
 	find_program(IFORT_EXECUTABLE ifort)
-	#make sure preprocessor called
-	set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fpp")
 endif()
 
 if (LINUX_32bit_BINARIES)
@@ -361,7 +359,7 @@ endif()
  
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	add_subdirectory(ExpressionParser)
-	if (NOT MSVC)
+	if (NOT MSVC AND NOT APPLE)
 		add_subdirectory(VCellChombo)
 	endif()
 	

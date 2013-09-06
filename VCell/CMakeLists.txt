@@ -171,6 +171,7 @@ set (PCGWRAPPER_SRC_FILES
 )
 if (APPLE)
 	set (CMAKE_Fortran_COMPILER gfortran)
+	set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -m64")
 endif()
  
 set (EXE_SRC_FILES

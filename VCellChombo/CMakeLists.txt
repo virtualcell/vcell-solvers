@@ -88,7 +88,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		set(LIB_NAME_OS CYGWIN)
 		file(COPY "Make.defs.local.cygwin" DESTINATION "${CMAKE_SOURCE_DIR}/Chombo/lib/mk") 
 		file(RENAME "${CMAKE_SOURCE_DIR}/Chombo/lib/mk/Make.defs.local.cygwin" ${CHOMBO_DEFS_FILE})
-	elseif (LINUX)
+	elseif (LINUX OR APPLE)
 		add_definitions(-DCH_Linux)
 		set(LIB_NAME_OS Linux)
 		include_directories(${CMAKE_BINARY_DIR}/include)

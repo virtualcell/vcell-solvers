@@ -39,6 +39,11 @@ if (TARGET_SOLVERS_WITH_MESSAGING)
 endif()
 
 set (CMAKE_Fortran_COMPILER ${IFORT_EXECUTABLE})
+if (APPLE)
+	#make sure preprocessor called
+	set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fpp")
+endif (APPLE)
+
 if (MSVC)
 	set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /iface:mixed_str_len_arg /check:bounds")
 endif()

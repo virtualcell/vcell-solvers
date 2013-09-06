@@ -8,6 +8,7 @@ endif()
 
 if (APPLE)
 	set (CMAKE_Fortran_COMPILER gfortran)
+	set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -m64")
 endif()
     
 file (GLOB SRC_FILES *.f)   
