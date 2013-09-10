@@ -220,13 +220,3 @@ long Mesh::getNumMembraneElements()
 //{
 //	volumeLists[volumeIndex].push_back(element);
 //}
-
-SparseMatrixPCG* Mesh::getMembraneCoupling() {
-	if (dimension == 1) {
-		throw "Membrane diffusion is not supported in 1D applications!";
-	}
-	if (membraneElementCoupling == 0) {
-		computeMembraneCoupling();
-	}
-	return membraneElementCoupling;
-}
