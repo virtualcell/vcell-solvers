@@ -1522,7 +1522,6 @@ void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, doub
 		return;
 	}
 
-	SparseMatrixPCG* membraneElementCoupling = mesh->getMembraneCoupling();
 	for (int mi = 0; mi < mesh->getNumMembraneElements(); mi ++) {
 		Membrane* membrane = pMembraneElement[mi].getMembrane();
 		for (int v = 0; v < simulation->getNumMemVariables(); v ++) {
@@ -1555,7 +1554,7 @@ void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, doub
 			}
 
 			double Di = varContext->evaluateExpression(DIFF_RATE_EXP, statePointValues);
-			double volume = membraneElementCoupling->getValue(mi, mi);
+			double volume = mesh->getMembraneCoupling()->getValue(mi, mi);
 			if (mask & BOUNDARY_TYPE_NEUMANN) { // boundary and neumann
 				if (dimension == 2) { // all the flux area is 1
 					if (mask & NEIGHBOR_XM_BOUNDARY){
@@ -1596,7 +1595,7 @@ void SundialsPdeScheduler::applyMembraneDiffusionReactionOperator(double t, doub
 
 			int32* membraneNeighbors;
 			double* s_over_d;
-			int numMembraneNeighbors = membraneElementCoupling->getColumns(mi, membraneNeighbors, s_over_d);
+			int numMembraneNeighbors = mesh->getMembraneCoupling()->getColumns(mi, membraneNeighbors, s_over_d);
 
 			double Aii = 0;
 			for (long j = 0; j < numMembraneNeighbors; j ++) {
@@ -1859,8 +1858,6 @@ void SundialsPdeScheduler::preallocateM() {
 
 	// membrane variable
 	if (simulation->getNumMemVariables() > 0) {
-		SparseMatrixPCG* membraneElementCoupling = mesh->getMembraneCoupling();
-
 		int columns[20];
 		for (int mi = 0; mi < mesh->getNumMembraneElements(); mi ++) {
 			for (int v = 0; v < simulation->getNumMemVariables(); v ++) {
@@ -1873,7 +1870,7 @@ void SundialsPdeScheduler::preallocateM() {
 
 				int32* membraneNeighbors;
 				double* s_over_d;
-				int numMembraneNeighbors = membraneElementCoupling->getColumns(mi, membraneNeighbors, s_over_d);
+				int numMembraneNeighbors = mesh->getMembraneCoupling()->getColumns(mi, membraneNeighbors, s_over_d);
 				for (long j = 0; j < numMembraneNeighbors; j ++) {
 					int32 neighborIndex = membraneNeighbors[j];
 					int neighborVectorIndex = getMembraneElementVectorOffset(neighborIndex) + v;
@@ -2142,7 +2139,6 @@ void SundialsPdeScheduler::buildM_Membrane(double t, double* yinput, double gamm
 	if (simulation->getNumMemVariables() == 0) {
 		return;
 	}
-	SparseMatrixPCG* membraneElementCoupling = ((CartesianMesh*)mesh)->getMembraneCoupling();
 
 	for (int mi = 0; mi < mesh->getNumMembraneElements(); mi ++) {
 		Membrane* membrane = pMembraneElement[mi].getMembrane();
@@ -2176,9 +2172,9 @@ void SundialsPdeScheduler::buildM_Membrane(double t, double* yinput, double gamm
 
 			int32* membraneNeighbors;
 			double* s_over_d;
-			int numMembraneNeighbors = membraneElementCoupling->getColumns(mi, membraneNeighbors, s_over_d);
+			int numMembraneNeighbors = mesh->getMembraneCoupling()->getColumns(mi, membraneNeighbors, s_over_d);
 			assert(numColumns == numMembraneNeighbors);
-			double volume = membraneElementCoupling->getValue(mi, mi);
+			double volume = mesh->getMembraneCoupling()->getValue(mi, mi);
 			double Aii = 0;
 			for (long j = 0; j < numMembraneNeighbors; j ++) {
 				int32 neighborIndex = membraneNeighbors[j];
