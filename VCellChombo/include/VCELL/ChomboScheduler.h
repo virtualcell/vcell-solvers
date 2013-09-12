@@ -12,6 +12,7 @@ using namespace std;
 #include <IntVect.H>
 #include <EBIndexSpace.H>
 #include <BaseIF.H>
+#include <Expression.h>
 
 class SimulationExpression;
 class Membrane;
@@ -19,7 +20,7 @@ class Variable;
 class Feature;
 class ChomboGeometry;
 class ChomboSpec;
-
+class SymbolTable;
 class ProblemDomain;
 class EBCellFAB;
 class EBISLayout;
@@ -35,11 +36,16 @@ template <class> class BaseIVFAB;
 struct ConnectedComponent;
 struct Triangle;
 
+enum MembraneInvalidIndex
+{
+	MEMBRANE_INDEX_IN_FINER_LEVEL = -1,
+};
+
 class ChomboScheduler {
 
 	friend class ChomboDomainBC;
 	friend class ChomboEBBC;
-	
+
 public:
 	ChomboScheduler(SimulationExpression* sim, ChomboSpec* chomboSpec);
 	~ChomboScheduler();
@@ -65,6 +71,8 @@ public:
 	}
 protected:
 	SimulationExpression* simulation;
+	VCell::Expression* refinementRoiExp;
+	SymbolTable* refinementRoiSymbolTable;
 
 	int numLevels;
 	int numUnknowns;
@@ -87,7 +95,7 @@ protected:
 	int findLevel(const ProblemDomain& domain);
 
 	Vector< Vector< Vector<LevelData<EBCellFAB>*> > > volSoln;
-	Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<Real> > > > > memSoln;
+	//Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<Real> > > > > memSoln;
 	//Vector< RefCountedPtr< LevelData< BaseIVFAB<int> > > > membranePointIndexes; // here it stores membrane index
 	IntVect numGhostSoln;
 
@@ -120,7 +128,7 @@ protected:
 	static void populateSegmentDataType(hid_t& triangleType);
 	static void populateSliceViewDataType(hid_t& sliceViewType);
 	static void populateTriangleDataType(hid_t& triangleType);
-	map<int, int> irregVolumeMembraneMap;
+	Vector< map<int, int> > irregVolumeMembraneMap;
 
 	int findNeighborMembraneIndex2D(int iphase, int ilev, const IntVect& gridIndex, int iedge, 
 		const RealVect& normalizedCrossPoint, const RealVect& crossPointRealCoords, int& neighborEdge);

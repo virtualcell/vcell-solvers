@@ -22,6 +22,10 @@ Variable::Variable(string& nameStr, Structure* s, long Asize)
 	varContext = 0;
 	exactErrorVar = 0;
 	relativeErrorVar = 0;
+	for (int i = 0; i < size; ++ i)
+	{
+		curr[i] = BASEFAB_REAL_SETVAL;
+	}
 	reset();
 }
 
@@ -34,10 +38,6 @@ Variable::~Variable()
 
 void Variable::reset()
 {
-	for (int i = 0; i < size; ++ i)
-	{
-		curr[i] = BASEFAB_REAL_SETVAL;
-	}
 	maxError = 0;
 	l2Error = 0;
 	l2Exact = 0;

@@ -956,6 +956,7 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 	int* refineratios = 0;
 	int maxBoxSize = 64;
 	double fillRatio = 0.9;
+	string roi;
 
 	ChomboGeometry* chomboGeometry = new ChomboGeometry();
 	chomboSpec = new ChomboSpec();
@@ -1032,8 +1033,10 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 			lineInput >> maxBoxSize;
 		} else if (nextToken == "FILL_RATIO") {
 			lineInput >> fillRatio;
+		} else if (nextToken == "REFINEMENT_ROI") {
+			getline(lineInput, roi);
 		}
 	}
 
-	chomboSpec = new ChomboSpec(chomboGeometry, numLevels, maxBoxSize, fillRatio, refineratios);	
+	chomboSpec = new ChomboSpec(chomboGeometry, numLevels, maxBoxSize, fillRatio, roi, refineratios);
 }

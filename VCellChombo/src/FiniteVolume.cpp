@@ -40,7 +40,6 @@ void printUsage() {
 
 #include <math.h>
 
-bool refine_all_irregular = true;
 int main(int argc, char *argv[])
 {
 #ifdef CH_MPI

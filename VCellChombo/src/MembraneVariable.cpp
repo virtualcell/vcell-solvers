@@ -5,10 +5,27 @@
 
 #include <VCELL/MembraneVariable.h>
 #include <VCELL/Membrane.h>
+#include <string.h>
+#include <REAL.H>
 
 MembraneVariable::MembraneVariable(string& nameStr, Membrane* membrane, long size)
 : Variable(nameStr, membrane, size)
 {
+	old = new double[size];
+	for (int i = 0; i < size; ++ i)
+	{
+		old[i] = BASEFAB_REAL_SETVAL;
+	}
+}
+
+MembraneVariable::~MembraneVariable()
+{
+	delete[] old;
+}
+
+void MembraneVariable::update()
+{
+	memcpy(old, curr, sizeof(double)*size);
 }
 
 MembraneVariable* MembraneVariable::clone(string& varName)
