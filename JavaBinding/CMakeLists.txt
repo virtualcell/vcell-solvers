@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 2.8)
 project(JavaBinding)
 
 include (FindJNI)
+if (JNI_FOUND) 
+	include_directories(${JNI_INCLUDE_DIRS})
+else (JNI_FOUND) 
+	message(FATAL "Can' find JNI")
+endif (JNI_FOUND) 
 
 set (SRC_FILES 
 	cbit_vcell_solvers_NativeCVODESolver.cpp
