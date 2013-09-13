@@ -6,6 +6,7 @@ endif (NOT DEFINED HDF_VERSION)
 if (NOT DEFINED HDF_LIB) 
 	message(FATAL_ERROR "HDF_LIB not set")
 endif (NOT DEFINED HDF_LIB) 
+OPTION(CHOMBO_3D "Compile VCellChombo 3d" OFF)
 
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMBO_CYGWIN_BUILD)
 	set(HEADER_FILES 
@@ -170,24 +171,26 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	target_link_libraries(${EXE_2D} ${DEP_LIBS_2D})
 	add_dependencies(${EXE_2D} hdf5 hdf5_cpp ExpressionParser zip unzip ${DEP_LIBS}) 
 	set_property(TARGET ${EXE_2D} PROPERTY COMPILE_DEFINITIONS CH_SPACEDIM=2)
-
-	set(EXE_3D VCellChombo3D)
-	if (ARCH_64bit) 
-		set(EXE_3D ${EXE_3D}_x64)
-	endif()
-
-	add_custom_command(OUTPUT ${CHOMBO_LIBS_3D}
-		PRE_BUILD
-		COMMAND ${CHOMBO_BUILD_CMD} DIM=3
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/Chombo/lib
-		VERBATIM
-	)
-	add_executable(${EXE_3D} ${CHOMBO_LIBS_3D} ${SRC_FILES})
-	target_link_libraries(${EXE_3D} ${DEP_LIBS_3D})
-	add_dependencies(${EXE_3D} hdf5 hdf5_cpp ExpressionParser zip unzip ${DEP_LIBS}) 
-	set_property(TARGET ${EXE_3D} PROPERTY COMPILE_DEFINITIONS CH_SPACEDIM=3)
-
 	install(TARGETS ${EXE_2D} RUNTIME DESTINATION bin)
-	install(TARGETS ${EXE_3D} RUNTIME DESTINATION bin)
+
+	if (CHOMBO_3D)
+		set(EXE_3D VCellChombo3D)
+		if (ARCH_64bit) 
+			set(EXE_3D ${EXE_3D}_x64)
+		endif()
+
+		add_custom_command(OUTPUT ${CHOMBO_LIBS_3D}
+			PRE_BUILD
+			COMMAND ${CHOMBO_BUILD_CMD} DIM=3
+			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/Chombo/lib
+			VERBATIM
+		)
+		add_executable(${EXE_3D} ${CHOMBO_LIBS_3D} ${SRC_FILES})
+		target_link_libraries(${EXE_3D} ${DEP_LIBS_3D})
+		add_dependencies(${EXE_3D} hdf5 hdf5_cpp ExpressionParser zip unzip ${DEP_LIBS}) 
+		set_property(TARGET ${EXE_3D} PROPERTY COMPILE_DEFINITIONS CH_SPACEDIM=3)
+
+		install(TARGETS ${EXE_3D} RUNTIME DESTINATION bin)
+	endif (CHOMBO_3D)
 	
 endif (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMBO_CYGWIN_BUILD)
