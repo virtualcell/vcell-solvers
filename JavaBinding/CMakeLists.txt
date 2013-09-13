@@ -48,5 +48,6 @@ set (DEP_LIBS
 )
 target_link_libraries(NativeSolvers ${DEP_LIBS})
 install(TARGETS NativeSolvers
-        LIBRARY DESTINATION bin)	
+        LIBRARY DESTINATION bin	
+        RUNTIME DESTINATION bin)	
 
