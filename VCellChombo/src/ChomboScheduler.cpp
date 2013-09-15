@@ -1143,11 +1143,11 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 
 	static double cornerTol = 1.e-12;
 	int nidx = MEMBRANE_NEIGHBOR_UNKNOWN;
+	int otherDir = (idir + 1) % 2;
 	if (bNotNextToWall)
 	{
 		bHasNeighbor = true;
 
-		int otherDir = (idir + 1) % 2;
 		if (abs(cp[otherDir]) >= (0.5-cornerTol))
 		{
 			double e = 0.25;
@@ -1220,12 +1220,40 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 		IntVect neighborGridIndex = gridIndex + diff;
 		int vi = getChomboBoxLocalIndex(vectNxes[ilev], 0, neighborGridIndex);
 		map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(vi);
-		if (iter == irregVolumeMembraneMap[ilev].end() || iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
+		if (iter == irregVolumeMembraneMap[ilev].end())
 		{
 			stringstream ss;
-			ss << "Volume element " << vi << " is not an irregular point or is in finer level";
-			cout << ss.str() << endl;
-			//throw ss.str();
+			ss << "Volume element " << vi << " is not an irregular point";
+			//cout << ss.str() << endl;
+			throw ss.str();
+		}
+		else if (iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
+		{
+			int rr = vectRefRatios[ilev];
+			double cp_tmp = (cp[otherDir] + 0.5) * rr;
+			IntVect fineGridIndex = gridIndex *  rr;
+			fineGridIndex[otherDir] = fineGridIndex[otherDir] + std::min<int>((rr-1), int(cp_tmp));
+			if (hilo == Side::Lo)
+			{
+				fineGridIndex[idir] = fineGridIndex[idir] - 1;
+			}
+			else
+			{
+				fineGridIndex[idir] = fineGridIndex[idir] + rr + 1;
+			}
+			int fvi = getChomboBoxLocalIndex(vectNxes[ilev + 1], 0, fineGridIndex);
+
+			map<int,int>::iterator fiter = irregVolumeMembraneMap[ilev+1].find(fvi);
+			if (fiter == irregVolumeMembraneMap[ilev+1].end() )
+			{
+					stringstream ss;
+					ss << "warning: Volume element " << fvi << " in finer level is not irregular.";
+					throw ss.str();
+			}
+			else
+			{
+					nidx = fiter->second;
+			}
 		}
 		else
 		{
