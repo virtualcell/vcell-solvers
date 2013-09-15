@@ -514,8 +514,11 @@ void ChomboScheduler::initializeGrids() {
 								map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(volIndex);
 								if (iter != irregVolumeMembraneMap[ilev].end())
 								{
+									Feature* feature = phaseVolumeList[phase0][ivol]->feature;
+									RealVect vol_point = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
 									stringstream ss;
-									ss << "Point " << gridIndex << " is multi-valued point."
+									ss << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev 
+											<< ", Point " << gridIndex << " at "  << vol_point << " is multi-valued point."
 											<< "Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
 									throw ss.str();
 								}
@@ -1268,6 +1271,7 @@ void ChomboScheduler::writeMembraneFiles()
 				continue;
 			}
 			ChomboGeometryShop chomboGeoShop(geoIfs[iphase], vectDxes[ilev]);
+#if CH_SPACEDIM == 2
 			RealVect edgePointOffset[4] =
 			{
 				RealVect(0, -vectDxes[ilev][1]*coeff),
@@ -1275,6 +1279,7 @@ void ChomboScheduler::writeMembraneFiles()
 				RealVect(vectDxes[ilev][0]*coeff, 0),
 				RealVect(-vectDxes[ilev][0]*coeff, 0)
 			};
+#endif
 			DisjointBoxLayout& currGrids = vectGrids[ilev];
 
 			for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++ dit)	{
