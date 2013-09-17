@@ -40,7 +40,7 @@ void printUsage() {
 int main(int argc, char *argv[])
 {
     	std::cout 
-	    << "Virtual Cell version $URL$"VCELLSVNQUOTE(SVNVERSION) 
+	    << "Finite Volume version $URL$"VCELLSVNQUOTE(SVNVERSION) 
 	    << std::endl; 
 
     
