@@ -31,9 +31,19 @@ void printUsage() {
 	cout << "Arguments : [-d output] [-nz] fvInputFile" <<  endl;
 #endif
 }
+#if !defined(SVNVERSION)
+#error SVNVERSION version not defined
+#endif
+#define VCELLSVNQ(x) #x
+#define VCELLSVNQUOTE(x) VCELLSVNQ(x)
 
 int main(int argc, char *argv[])
 {
+    	std::cout 
+	    << "Virtual Cell version $URL$"VCELLSVNQUOTE(SVNVERSION) 
+	    << std::endl; 
+
+    
 	int returnCode = 0;
 	string errorMsg = "Exception : ";
 
