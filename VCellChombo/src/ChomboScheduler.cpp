@@ -1129,25 +1129,30 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 	int idir = iedge / Side::NUMSIDES;
 	int hilo = iedge % Side::NUMSIDES;
 
-	bool bNotNextToWall = false;
+	bool bNextToWall = false;
 	if (hilo == Side::Lo)
 	{
-		bNotNextToWall = gridIndex[idir] > 0;
+		bNextToWall = gridIndex[idir] == 0;
 		diff[idir] = -1;
 	}
 	else if (hilo == Side::Hi)
 	{
-		 bNotNextToWall = gridIndex[idir] < vectNxes[ilev][idir] - 1;
+		 bNextToWall = gridIndex[idir] == vectNxes[ilev][idir] - 1;
 		 diff[idir] = +1;
 	}
 
 	static double cornerTol = 1.e-12;
 	int nidx = MEMBRANE_NEIGHBOR_UNKNOWN;
 	int otherDir = (idir + 1) % 2;
-	if (bNotNextToWall)
+	if (bNextToWall)
+	{
+		nidx = MEMBRANE_NEIGHBOR_NEXT_TO_WALL;
+	}
+	else
 	{
 		bHasNeighbor = true;
 
+		// cross point exactly on the corner
 		if (abs(cp[otherDir]) >= (0.5-cornerTol))
 		{
 			double e = 0.25;
@@ -1171,7 +1176,6 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 			else if ((F[1] == F[2]) && (F[0] == F[3]))
 			{
 				// diagonal
-				diff[otherDir] = cp[otherDir] < 0 ? -1 : +1;
 				diff[idir]     = cp[idir] < 0 ? -1 : +1;
 				diff[otherDir] = cp[otherDir] < 0 ? -1 : +1;
 				// define a different neighborEdge here:
@@ -1210,11 +1214,21 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 			}
 		}
 	}
-	else
-	{
-		nidx = MEMBRANE_NEIGHBOR_NEXT_TO_WALL;
-	}
 
+	// check again if neighbor could be next to the wall
+	if (bHasNeighbor)
+	{
+		for (int idir = 0; idir < SpaceDim; ++ idir)
+		{
+			if (gridIndex[idir] == 0 && diff[idir] == -1
+						||	gridIndex[idir] == vectNxes[ilev][idir] - 1 && diff[idir] == +1 )
+			{
+				bHasNeighbor = false;
+				nidx = MEMBRANE_NEIGHBOR_NEXT_TO_WALL;
+				break;
+			}
+		}
+	}
 	if (bHasNeighbor)
 	{
 		IntVect neighborGridIndex = gridIndex + diff;
