@@ -1244,29 +1244,82 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 		else if (iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
 		{
 			int rr = vectRefRatios[ilev];
+			IntVect fineGridIndex = gridIndex * rr;
+			if (diff[idir] != 0)
+			{
+				// most likely case
+				if (hilo == Side::Hi)
+				{
+					fineGridIndex[idir] = fineGridIndex[idir] + rr;
+				}
+				else
+				{
+					fineGridIndex[idir] = fineGridIndex[idir] - 1;
+				}
+			}
+			else
+			{
+				// unusual case when eb becomes tangent at corner and neighbor is in otherdir direction:
+				if (hilo == Side::Hi)
+				{
+					fineGridIndex[idir] = fineGridIndex[idir] + rr - 1;
+				}
+				else
+				{
+					fineGridIndex[idir] = fineGridIndex[idir];
+				}
+      }
+            //
 			double cp_tmp = (cp[otherDir] + 0.5) * rr;
-			IntVect fineGridIndex = gridIndex *  rr;
-			fineGridIndex[otherDir] = fineGridIndex[otherDir] + std::min<int>((rr-1), int(cp_tmp));
-			if (hilo == Side::Lo)
+			if (diff[otherDir] == 0)
 			{
-				fineGridIndex[idir] = fineGridIndex[idir] - 1;
+				fineGridIndex[otherDir] = fineGridIndex[otherDir] + std::min<int>((rr - 1), int(cp_tmp));
 			}
 			else
 			{
-				fineGridIndex[idir] = fineGridIndex[idir] + rr + 1;
+				// case when neighbor is diagonal
+				if (diff[otherDir] == -1)
+				{
+					fineGridIndex[otherDir] = fineGridIndex[otherDir] - 1;
+				}
+				else if (diff[otherDir] == 1)
+				{
+					fineGridIndex[otherDir] = fineGridIndex[otherDir] + rr ;
+				}
 			}
-			int fvi = getChomboBoxLocalIndex(vectNxes[ilev + 1], 0, fineGridIndex);
 
-			map<int,int>::iterator fiter = irregVolumeMembraneMap[ilev+1].find(fvi);
-			if (fiter == irregVolumeMembraneMap[ilev+1].end() )
+			int nextLevel = ilev + 1;
+			int fvi = getChomboBoxLocalIndex(vectNxes[nextLevel], 0, fineGridIndex);
+			map<int, int>::iterator fiter = irregVolumeMembraneMap[nextLevel].find(fvi);
+			if (fiter == irregVolumeMembraneMap[nextLevel].end())
 			{
+				stringstream ss;
+				ss << " Volume element " << fvi << " in finer level is not irregular (testing neighbor)";
+				if (cp_tmp - int(cp_tmp) > 0.5)
+				{
+					// try next element up (diagonal in refined level?)
+					fineGridIndex[otherDir] = fineGridIndex[otherDir] + 1;
+				}
+				else
+				{
+					// try next element down (diagonal in refined level? )
+					fineGridIndex[otherDir] = fineGridIndex[otherDir] - 1;
+				}
+				fvi = getChomboBoxLocalIndex(vectNxes[ilev+1], 0, fineGridIndex);
+				map<int,int>::iterator fiter = irregVolumeMembraneMap[ilev+1].find(fvi);
+				if (fiter == irregVolumeMembraneMap[ilev+1].end())
+				{
 					stringstream ss;
-					ss << "warning: Volume element " << fvi << " in finer level is not irregular.";
-					throw ss.str();
+					ss << "warning: Volume element " << fvi << " in finer level is ALSO not irregular ?";
+				}
+				else
+				{
+					nidx = fiter->second;
+				}
 			}
 			else
 			{
-					nidx = fiter->second;
+				nidx = fiter->second;
 			}
 		}
 		else
