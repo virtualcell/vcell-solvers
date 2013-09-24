@@ -89,6 +89,11 @@ static void errExit(int returnCode, string& errorMsg) {
 #endif
 	
 }
+#if !defined(SVNVERSION)
+#error SVNVERSION version not defined
+#endif
+#define VCELLSVNQ(x) #x
+#define VCELLSVNQUOTE(x) VCELLSVNQ(x)
 
 /* This file is the entrance of the Virtual Cell stochastic simulation package.
  * It parses the commandline arguments to load different simulators. Four parameters
@@ -101,6 +106,9 @@ static void errExit(int returnCode, string& errorMsg) {
  */
 int main(int argc, char *argv[])
 {
+    std::cout 
+	    << "Stochastic simulation version $URL$"VCELLSVNQUOTE(SVNVERSION) 
+	    << std::endl; 
 	if (argc != 4 && argc != 6) {
 		cout << "Wrong arguments!" << endl;
 		printUsage();
