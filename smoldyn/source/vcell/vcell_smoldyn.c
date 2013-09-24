@@ -17,16 +17,25 @@
 #include "smoldynfuncs.h"
 #include "SimpleValueProvider.h"
 #include "SimpleMesh.h"
+#include <iostream>
 
 /* ***************************************************************** */
 /* ********************** main() segment *************************** */
 /* ***************************************************************** */
+#if !defined(SVNVERSION)
+#error SVNVERSION version not defined
+#endif
+#define VCELLSVNQ(x) #x
+#define VCELLSVNQUOTE(x) VCELLSVNQ(x)
 
 
 int taskID = -1;
 
 /* main */
 int main(int argc,char **argv) {
+    	std::cout 
+	    << "Smoldyn solver version $URL$"VCELLSVNQUOTE(SVNVERSION) 
+	    << std::endl; 
 	const int errMsgLen = 2048;
 	char errorMsg[errMsgLen];
 	int exitCode = 0;
