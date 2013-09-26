@@ -972,6 +972,9 @@ void ChomboScheduler::writeData() {
 #define MESH_GROUP "/mesh"
 #define MESH_ATTR_DIMENSION "dimension"
 #define MESH_ATTR_ORIGIN "origin"
+#define MESH_ATTR_NUM_LEVELS "numLevels"
+#define MESH_ATTR_REFINE_RATIOS "refineRatios"
+#define MESH_ATTR_VIEW_LEVEL "viewLevel"
 #define MESH_ATTR_EXTENT "extent"
 #define MESH_ATTR_NX "Nx"
 #define MESH_ATTR_DX "Dx"
@@ -1593,7 +1596,7 @@ void ChomboScheduler::writeMembraneFiles()
 #endif
 
 
-	int ilev = numLevels - 1;
+	int finestLevel = numLevels - 1;
 	// now start writing we have computed so far
 	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MESH_HDF5_FILE_EXT);
 	hid_t h5MeshFile = H5Fcreate(fileName, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
@@ -1605,8 +1608,8 @@ void ChomboScheduler::writeMembraneFiles()
 	hid_t scalarDataSpace = H5Screate(H5S_SCALAR); // shared among all attributes
 
 	hid_t attribute = H5Acreate(meshGroup, MESH_ATTR_DIMENSION, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
-	int dim = chomboGeometry->getDimension();
-	H5Awrite(attribute, H5T_NATIVE_INT, &dim);
+	int dimension = chomboGeometry->getDimension();
+	H5Awrite(attribute, H5T_NATIVE_INT, &dimension);
 	H5Aclose(attribute);
 
 	// origin
@@ -1627,22 +1630,46 @@ void ChomboScheduler::writeMembraneFiles()
 	hid_t intVectType = H5Tcreate(H5T_COMPOUND, sizeof(IntVect));
 	populateIntVectDataType(intVectType);
 	attribute = H5Acreate(meshGroup, MESH_ATTR_NX, intVectType, scalarDataSpace, H5P_DEFAULT);
-	H5Awrite(attribute, intVectType, vectNxes[ilev].dataPtr());
+	H5Awrite(attribute, intVectType, vectNxes[finestLevel].dataPtr());
 	H5Aclose(attribute);
 
 	// grid size
 	attribute = H5Acreate(meshGroup, MESH_ATTR_DX, realVectType, scalarDataSpace, H5P_DEFAULT);
-	H5Awrite(attribute, realVectType, vectDxes[ilev].dataPtr());
+	H5Awrite(attribute, realVectType, vectDxes[finestLevel].dataPtr());
 	H5Aclose(attribute);
 
+	// number of levels
+	attribute = H5Acreate(meshGroup, MESH_ATTR_NUM_LEVELS, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
+	H5Awrite(attribute, H5T_NATIVE_INT, &numLevels);
+	H5Aclose(attribute);
+
+	// view level
+	attribute = H5Acreate(meshGroup, MESH_ATTR_VIEW_LEVEL, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
+	H5Awrite(attribute, H5T_NATIVE_INT, &finestLevel);
+	H5Aclose(attribute);
 	H5Sclose(scalarDataSpace);
+
+	// refine ratios
+	int* ratios = new int[vectRefRatios.size()];
+	for (int i = 0; i < vectRefRatios.size(); ++ i)
+	{
+		ratios[i] = vectRefRatios[i];
+	}
+	int rank = 1;
+	hsize_t dim[1] = {vectRefRatios.size()};
+	hid_t intArrayDataSpace = H5Screate_simple(rank, dim, NULL); // shared among all attributes
+	attribute = H5Acreate(meshGroup, MESH_ATTR_REFINE_RATIOS, H5T_NATIVE_INT, intArrayDataSpace, H5P_DEFAULT);
+	H5Awrite(attribute, H5T_NATIVE_INT, ratios);
+	H5Aclose(attribute);
+	H5Sclose(intArrayDataSpace);
+	delete[] ratios;
 	}
 
 	// boxes
 	{
 	hid_t boxType = H5Tcreate(H5T_COMPOUND, sizeof(MeshBox));
 	populateBoxDataType(boxType);
-	Vector<Box> vectBoxes = vectGrids[ilev].boxArray();
+	Vector<Box> vectBoxes = vectGrids[finestLevel].boxArray();
 	int numBoxes = vectBoxes.size();
 	MeshBox* boxData = new MeshBox[numBoxes];
 	for (int i = 0; i < numBoxes; ++ i)
