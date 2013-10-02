@@ -38,7 +38,20 @@ void printUsage() {
 #endif
 }
 
-#include <math.h>
+bool bConsoleOutput = true;
+char stdErrBuffer[1024];
+void onExit()
+{
+	if (strlen(stdErrBuffer) > 0)
+	{
+		string errMsg = "";
+		if (!bConsoleOutput)
+		{
+			errMsg = stdErrBuffer;
+		}
+		vcellExit(1, errMsg);
+	}
+}
 
 int main(int argc, char *argv[])
 {
@@ -74,6 +87,10 @@ int main(int argc, char *argv[])
 					}
 				}
 				taskID = atoi(argv[i]);
+				if (taskID >= 0)
+				{
+					bConsoleOutput = false;
+				}
 #else
 				cout << "Wrong argument : " << argv[i] << endl;
 				printUsage();
@@ -83,7 +100,12 @@ int main(int argc, char *argv[])
 				fvInputFile = argv[i];
 			}
 		}
-
+		
+    atexit(onExit);
+		// redirect std::cerr because Chombo would write out to std::cerr and exit.
+		//std::cerr.rdbuf(stdErrBuffer.rdbuf());
+		stdErrBuffer[0] = '\0';
+		setvbuf (stderr , stdErrBuffer , _IOFBF , 1024 );
 		// strip " in case that file name has " around
 		int fl = strlen(fvInputFile);
 		if (fvInputFile[0] == '"' && fvInputFile[fl-1] == '"') {
