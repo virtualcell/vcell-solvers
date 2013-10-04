@@ -1,4 +1,8 @@
 project(apriutil)
+find_file(SQL3 sqlite3.h)
+if (SQL3 MATCHES SQL3-NOTFOUND)
+	message(FATAL_ERROR "${PROJECT_NAME} requires sqlite3")
+endif (SQL3 MATCHES SQL3-NOTFOUND)
 
 set (HEADER_FILES 
 	dbm/sdbm/sdbm_pair.h
