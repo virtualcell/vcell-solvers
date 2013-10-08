@@ -389,7 +389,6 @@ void SimTool::start() {
 		}
 
 		simulation->iterate();
-		simulation->update();
 
 		if (checkStopRequested()) {
 			return;

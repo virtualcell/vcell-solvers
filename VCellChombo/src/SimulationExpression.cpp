@@ -72,15 +72,11 @@ SimulationExpression::~SimulationExpression()
 void SimulationExpression::iterate()
 {
 	_scheduler->iterate();
+	for (int i = 0; i < (int)varList.size(); i ++) {
+		Variable* var = varList[i];
+		var->update();
+	}
 	currIteration ++;
-}
-
-void SimulationExpression::update()
-{
-//	for (int i = 0; i < (int)varList.size(); i ++) {
-//		Variable* var = varList[i];
-//		var->update();
-//	}
 }
 
 Variable* SimulationExpression::getVariable(int index) {

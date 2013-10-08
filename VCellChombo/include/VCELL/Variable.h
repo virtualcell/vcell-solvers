@@ -98,6 +98,9 @@ public:
 		return maxError;
 	}
 	void reset();
+	virtual void update()
+	{
+	}
 
 protected:
 	Variable(string& nameStr, Structure* structure, long Asize);

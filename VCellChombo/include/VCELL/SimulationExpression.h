@@ -33,7 +33,6 @@ public:
 		return _scheduler->getChomboGeometry();
 	}
 	void iterate();          // computes 1 time step
-	void update();           // copies new to old values 
 
 	double getTime_sec();
 	void setCurrIteration(int curriter) { 

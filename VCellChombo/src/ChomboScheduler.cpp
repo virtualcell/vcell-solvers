@@ -919,7 +919,6 @@ void ChomboScheduler::updateSolution() {
 			// note: I assume this means sqrt(sum*finestDs)
 			var->computeFinalL2Error();
 		}
-		var->update();
 	}
 }
 

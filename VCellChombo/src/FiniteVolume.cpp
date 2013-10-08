@@ -13,6 +13,8 @@ using namespace std;
 #include <mpi.h>
 #endif
 
+static bool bNormalReturn = false;
+
 void vcellExit(int returnCode, string& errorMsg) {
 	if (SimulationMessaging::getInstVar() == 0) {
 		if (returnCode != 0) {
@@ -42,6 +44,11 @@ bool bConsoleOutput = true;
 char stdErrBuffer[1024];
 void onExit()
 {
+	if (bNormalReturn)
+	{
+		return;
+	}
+	// chombo errors
 	if (strlen(stdErrBuffer) > 0)
 	{
 		string errMsg = "";
@@ -140,9 +147,11 @@ int main(int argc, char *argv[])
 	if (ifsInput.is_open()) {
 		ifsInput.close();
 	}
+
 	vcellExit(returnCode, errorMsg);
 #ifdef CH_MPI
   MPI_Finalize();
 #endif
+	bNormalReturn = true;
 	return returnCode;
 }
