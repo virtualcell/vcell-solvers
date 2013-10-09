@@ -59,9 +59,19 @@ void onExit()
 		vcellExit(1, errMsg);
 	}
 }
+#if !defined(SVNVERSION)
+#error SVNVERSION version not defined
+#endif
+#define VCELLSVNQ(x) #x
+#define VCELLSVNQUOTE(x) VCELLSVNQ(x)
 
 int main(int argc, char *argv[])
 {
+    	std::cout 
+	    << "Chombo solver "VCELLSVNQUOTE(CH_SPACEDIM)"D version $URL: svn://code.vcell.uchc.edu/vcell/trunk/numerics/VCell/src/FiniteVolume.cpp $"VCELLSVNQUOTE(SVNVERSION) 
+	    << std::endl; 
+
+
 #ifdef CH_MPI
   MPI_Init(&argc, &argv);
 #endif
