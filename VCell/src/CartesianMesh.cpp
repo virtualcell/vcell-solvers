@@ -33,7 +33,7 @@ using std::min;
 
 
 #define MAXNEIGHBOR_2D 3
-#define MAXNEIGHBOR_3D 20
+#define MAXNEIGHBOR_3D 30
 #define GOING_OUT_LAYERS 3
 
 #define NORMAL_MINLENGTH_THRESHOLD 1E-2
