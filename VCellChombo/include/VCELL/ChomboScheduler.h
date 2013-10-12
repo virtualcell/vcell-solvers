@@ -71,7 +71,7 @@ public:
 	}
 protected:
 	SimulationExpression* simulation;
-	VCell::Expression* refinementRoiExp;
+	VCell::Expression** refinementRoiExps;
 	SymbolTable* refinementRoiSymbolTable;
 
 	int numLevels;

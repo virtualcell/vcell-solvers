@@ -70,22 +70,33 @@ ChomboScheduler::ChomboScheduler(SimulationExpression* sim, ChomboSpec* chomboSp
 	simulation = sim;
 	this->chomboSpec = chomboSpec;
 	chomboGeometry = this->chomboSpec->getChomboGeometry();
-	if (chomboSpec->getRefinementRoi().empty())
-	{
-		refinementRoiExp = NULL;
-		refinementRoiSymbolTable = NULL;
-	}
-	else
-	{
-		refinementRoiExp = new VCell::Expression(chomboSpec->getRefinementRoi());
-		string spatialSymbols[3] = {"x", "y", "z"};
-		refinementRoiSymbolTable = new SimpleSymbolTable(spatialSymbols, 3, NULL);
-		refinementRoiExp->bindExpression(refinementRoiSymbolTable);
-	}
 	numLevels = chomboSpec->getNumLevels();
 	int* ratios = chomboSpec->getRefRatios();
-	for (int i = 0; i < numLevels; i ++) {
-		vectRefRatios.push_back(ratios[i]);
+	refinementRoiExps = new VCell::Expression*[numLevels];
+	bool bHasRoi = false;
+	string spatialSymbols[3] = {"x", "y", "z"};
+	refinementRoiSymbolTable = new SimpleSymbolTable(spatialSymbols, 3, NULL);
+	for (int ilev = 0; ilev < numLevels; ++ ilev)
+	{
+		vectRefRatios.push_back(ratios[ilev]);
+		const string& roi = chomboSpec->getRefinementRoi(ilev);
+		if (roi.empty())
+		{
+			refinementRoiExps[ilev] = NULL;
+		}
+		else
+		{
+			bHasRoi = true;
+			refinementRoiExps[ilev] = new VCell::Expression(roi);
+			refinementRoiExps[ilev]->bindExpression(refinementRoiSymbolTable);
+		}
+	}
+	if (!bHasRoi)
+	{
+		delete[] refinementRoiExps;
+		delete refinementRoiSymbolTable;
+		refinementRoiExps = NULL;
+		refinementRoiSymbolTable = NULL;
 	}
 	hdf5FileCount = 0;
 	numGhostSoln = IntVect::Unit * 3;
@@ -111,6 +122,16 @@ ChomboScheduler::~ChomboScheduler() {
 	irregularPointMembraneIDs.clear();
 	//membranePointIndexes.clear();
 	irregVolumeMembraneMap.clear();
+
+	if (refinementRoiExps != NULL)
+	{
+		for (int ilev = 0; ilev < numLevels - 1; ++ ilev)
+		{
+			delete refinementRoiExps[ilev];
+		}
+		delete[] refinementRoiExps;
+		delete refinementRoiSymbolTable;
+	}
 }
 
 bool ChomboScheduler::isInNextFinerLevel(int level, const IntVect& gridIndex) {
@@ -319,78 +340,85 @@ void ChomboScheduler::initializeGrids() {
 
 	if (numLevels > 1) {
 		// If there is more than one level, the finer levels need to created by "BRMeshRefine"
-	  BRMeshRefine meshRefine(coarsestDomain, vectRefRatios, chomboSpec->getFillRatio(), blockFactor, nestingRadius, chomboSpec->getMaxBoxSize());
+	  BRMeshRefine meshRefine(coarsestDomain, vectRefRatios, chomboSpec->getFillRatio(), blockFactor,
+						nestingRadius, chomboSpec->getMaxBoxSize());
 
-	    //tag all irregular coarse iv's coarsest domain
-		ProblemDomain secondFinestDomain = coarsestDomain;
-		 // Compute the second finest domain
-		for (int ilev = 0; ilev < numLevels - 2; ilev ++) {
-			secondFinestDomain.refine(vectRefRatios[ilev]);
-		}
 		// Tags for creating the finer levels
 		Vector<IntVectSet> tags(numLevels);
 
-		if (refinementRoiExp == NULL) {
+		if (refinementRoiExps == NULL) {
 			pout() << "ChomboScheduler:: tag all irregular cells" << endl;
 		} else {
 			pout() << "ChomboScheduler:: tag user defined cells" << endl;
 		}
-
-		int taglevel = numLevels - 2;
-		if (refinementRoiExp == NULL) {
+		
+		bool bCellsTagged = false;
+		if (refinementRoiExps == NULL) {
+			int tagLevel = numLevels - 2;
 			for (int phase0 = 0; phase0 < NUM_PHASES; phase0 ++) {
 				for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++) {
 					// Get the depth of the second to finest level
-					int depth = phaseVolumeList[phase0][ivol]->volume->getLevel(secondFinestDomain);
+					int depth = phaseVolumeList[phase0][ivol]->volume->getLevel(vectDomains[tagLevel]);
 
 					IntVectSet tagsVol = phaseVolumeList[phase0][ivol]->volume->irregCells(depth);
 					tagsVol.grow(2);
-					tags[taglevel] |= tagsVol;
+					tags[tagLevel] |= tagsVol;
 				}
 			}
+			bCellsTagged |= !tags[tagLevel].isEmpty();
 		}
 		else
 		{
 			// tag points in second finest level that satisfy ROI
-			for (int phase0 = 0; phase0 < NUM_PHASES; phase0 ++)
+			for (int ilev = 0; ilev < numLevels - 1; ++ ilev)
 			{
-				for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++)
+				if (refinementRoiExps[ilev] == NULL)
 				{
-					int depth = phaseVolumeList[phase0][ivol]->volume->getLevel(secondFinestDomain);
-
-					IntVectSet tagsVol = phaseVolumeList[phase0][ivol]->volume->irregCells(depth);
-					Vector<Box> boxes = tagsVol.boxes();
-					for (int b = 0; b < boxes.size(); ++ b)
+					continue;
+				}
+				for (int phase0 = 0; phase0 < NUM_PHASES; phase0 ++)
+				{
+					for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++)
 					{
-						const Box& currBox = boxes[b];
-						const int* loVect = currBox.loVect();
-						const int* hiVect = currBox.hiVect();
-#if CH_SPACEDIM == 3
-						for (int k = loVect[2]; k <= hiVect[2]; ++ k)
+						// for next level
+						int depth = phaseVolumeList[phase0][ivol]->volume->getLevel(vectDomains[ilev]);
+
+						IntVectSet tagsVol = phaseVolumeList[phase0][ivol]->volume->irregCells(depth);
+						Vector<Box> boxes = tagsVol.boxes();
+						for (int b = 0; b < boxes.size(); ++ b)
 						{
-#endif
-							for (int j = loVect[1]; j <= hiVect[1]; ++ j)
+							const Box& currBox = boxes[b];
+							const int* loVect = currBox.loVect();
+							const int* hiVect = currBox.hiVect();
+#if CH_SPACEDIM == 3
+							for (int k = loVect[2]; k <= hiVect[2]; ++ k)
 							{
-								for (int i = loVect[0]; i <= hiVect[0]; ++ i)
+#endif
+								for (int j = loVect[1]; j <= hiVect[1]; ++ j)
 								{
-									IntVect gridIndex = IntVect(D_DECL(i, j, k));
-									RealVect vol_point = EBArith::getIVLocation(gridIndex, vectDxes[taglevel], chomboGeometry->getDomainOrigin());
-									if (refinementRoiExp->evaluateVector(vol_point.dataPtr()))
+									for (int i = loVect[0]; i <= hiVect[0]; ++ i)
 									{
-										cout << "tagging point " << gridIndex << endl;
-										tags[taglevel] |= gridIndex;
+										IntVect gridIndex = IntVect(D_DECL(i, j, k));
+										RealVect vol_point = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+										if (refinementRoiExps[ilev]->evaluateVector(vol_point.dataPtr()))
+										{
+											cout << "tagging point " << gridIndex << " at level " << ilev << endl;
+											tags[ilev] |= gridIndex;
+										}
 									}
 								}
-							}
 #if CH_SPACEDIM == 3
-						}
+							}
 #endif
-					} // boxes
-				} // ivol
-			} // iphase
+						} // boxes
+					} // ivol
+				} // iphase
+				bCellsTagged |= !tags[ilev].isEmpty();
+			} // ilev
 		}
 
-		if (tags[taglevel].isEmpty()) {
+		if (!bCellsTagged)
+		{
 			MayDay::Error("No cells tagged for refinement");
 		}
 

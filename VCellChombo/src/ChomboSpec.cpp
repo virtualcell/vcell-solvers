@@ -9,12 +9,12 @@ ChomboSpec::ChomboSpec() {
 	fillRatio = 0.9;
 }
 
-ChomboSpec::ChomboSpec(ChomboGeometry* cg, int nl, int boxsize, double fr, const string& roi, int* ros)
+ChomboSpec::ChomboSpec(ChomboGeometry* cg, int nl, int boxsize, double fr, string* roi, int* ros)
 	: chomboGeometry(cg),
 		numLevels(nl),
 		maxBoxSize(boxsize),
 		fillRatio(fr),
-		refinementRoi(roi),
+		refinementRois(roi),
 		refRatios(ros)
 {
 }
@@ -23,4 +23,5 @@ ChomboSpec::~ChomboSpec()
 {
 	delete chomboGeometry;
 	delete[] refRatios;
+	delete[] refinementRois;
 }
