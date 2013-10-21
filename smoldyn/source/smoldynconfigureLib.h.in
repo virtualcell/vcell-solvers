@@ -1,0 +1,18 @@
+/* Smoldyn configuration file for input to CMake.  */
+/* Written by Steve Andrews, 4/12/12.  */
+/* gcw remove OPEN_GL for lib variant 
+* note two distince smoldynconfigure.h's will be generated;
+this one is for the library and will not have OPEN_GL in it 
+*/
+
+/* Whether to compile Smoldyn with LibTiff support */
+#cmakedefine HAVE_LIBTIFF
+
+/* Whether to compile Smoldyn with Zlib support */
+#cmakedefine HAVE_ZLIB
+
+/* Whether to compile Smoldyn with libmoleculizer support */
+#cmakedefine LIBMOLECULIZER
+
+/* Define to the version of this package. */
+#define VERSION "${SMOLDYN_VERSION}"

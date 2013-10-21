@@ -96,7 +96,7 @@ set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
 set_source_files_properties(${MAIN_FILES} PROPERTIES LANGUAGE CXX )
 set_source_files_properties(${HYBRID_SRC_FILES} PROPERTIES LANGUAGE CXX )
 
-include_directories(source/lib source/Smoldyn source/vcell ${CMAKE_BINARY_DIR} ${HDF5_BINARY_DIR} ../${HDF_VERSION}/c++/src ../${HDF_VERSION}/src)
+include_directories(source/lib source/Smoldyn source/vcell ${CMAKE_BINARY_DIR}/smoldyn ${HDF5_BINARY_DIR} ../${HDF_VERSION}/c++/src ../${HDF_VERSION}/src)
 
 
 ####### Build for debugging or release ##########
@@ -140,6 +140,7 @@ endif()
 
 
 ####### Option: Build with OpenGL ##########
+set(SMOLDYN_LOCAL_LIB smoldynlib)
 
 option(OPTION_USE_OPENGL "Build with OpenGL support" ON)
 
@@ -150,7 +151,12 @@ if (OPTION_USE_OPENGL)
 		set(HAVE_GL_GLU_H TRUE)
 		set(HAVE_GL_GL_H TRUE)
 	elseif (CYGWIN)
-		message(FATAL_ERROR "cygwin opengl not supported")
+		set(HAVE_OPENGL TRUE)
+		set(HAVE_GL_GLUT_H TRUE)
+		set(HAVE_GL_GLU_H TRUE)
+		set(HAVE_GL_GL_H TRUE)
+		link_directories(${CMAKE_CURRENT_SOURCE_DIR}/cygwin/freeglut/lib/x64)
+		list(APPEND DEP_LIBS freeglut glu32 opengl32) 
 	else()
 		find_file(HAVE_GL_GL_H GL/gl.h)
 		find_file(HAVE_OPENGL_GL_H OpenGL/gl.h)
@@ -167,7 +173,6 @@ if (OPTION_USE_OPENGL)
 		if(NOT GLUT_FOUND)
 			message(FATAL_ERROR, "Glut not found.  Building without OpenGL is possible.")
 		endif()
-#		set(HAVE_OPENGL TRUE)
 		include_directories(${OPEN_GL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
 		list(APPEND DEP_LIBS ${GLUT_glut_LIBRARY} ${OPENGL_gl_LIBRARY})
 	endif()
@@ -282,8 +287,10 @@ endif(OPTION_USE_LIBMZR)
 ####### Targets ##########
 
 option(OPTION_TARGET_SMOLDYN "Create stand-alone Smoldyn program" ON)
-option(OPTION_TARGET_LIBSMOLDYN "Create LibSmoldyn library" OFF)
+option(OPTION_TARGET_LIBSMOLDYN "Create LibSmoldyn library" ON)
 
+add_library(${SMOLDYN_LOCAL_LIB} STATIC ${SRC_FILES} ${HEADER_FILES} ${HYBRID_SRC_FILES} ${HYBRID_HEADER_FILES})
+set_property(TARGET ${SMOLDYN_LOCAL_LIB} PROPERTY COMPILE_FLAGS "-DVCELL_HYBRID")
 if(OPTION_TARGET_SMOLDYN)
 	set(EXE_FILE smoldyn)
 	if (ARCH_64bit) 
@@ -295,23 +302,36 @@ if(OPTION_TARGET_SMOLDYN)
 	add_executable(${EXE_FILE} ${SRC_FILES} ${MAIN_FILES} ${HEADER_FILES})
 	target_link_libraries(${EXE_FILE} ${DEP_LIBS})
 	if (OPTION_USE_OPENGL)
-		set_property(TARGET ${EXE_FILE} PROPERTY COMPILE_FLAGS "-DHAVE_OPENGL")
+		set_property(TARGET ${EXE_FILE} 
+			APPEND 
+			PROPERTY INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/cygwin/freeglut/include)
 	endif()
 endif()
 
-	set(OPTION_TARGET_LIBSMOLDYN ON) 
-	add_library(smoldynlib STATIC ${SRC_FILES} ${HEADER_FILES} ${HYBRID_SRC_FILES} ${HYBRID_HEADER_FILES})
-	set_property(TARGET smoldynlib PROPERTY COMPILE_FLAGS "-DVCELL_HYBRID")
 
 
 ########## install ###########
 
-    install(TARGETS ${EXE_FILE} RUNTIME DESTINATION bin)
+install(TARGETS ${EXE_FILE} RUNTIME DESTINATION bin)
 
-########## configure file #########
-
+########## configure specific configurations  #########
+# set variable for smoldynconfigure.h directory, config file, add to EXE include directories
+set(EXE_SPECIFIC_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${EXE_FILE}.dir)
 configure_file (
-	${CMAKE_CURRENT_SOURCE_DIR}/source/smoldynconfigure.h.in
-	${CMAKE_CURRENT_BINARY_DIR}/smoldynconfigure.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/smoldynconfigureExe.h.in
+	${EXE_SPECIFIC_INCLUDE_DIR}/smoldynconfigure.h
 )
+set_property(TARGET ${EXE_FILE} 
+	APPEND 
+	PROPERTY INCLUDE_DIRECTORIES ${EXE_SPECIFIC_INCLUDE_DIR})
+
+#repeat for library
+set(LIB_SPECIFIC_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/smoldynlib.dir)
+configure_file (
+	${CMAKE_CURRENT_SOURCE_DIR}/source/smoldynconfigureLib.h.in
+	${LIB_SPECIFIC_INCLUDE_DIR}/smoldynconfigure.h
+)
+set_property(TARGET smoldynlib 
+	APPEND 
+	PROPERTY INCLUDE_DIRECTORIES ${LIB_SPECIFIC_INCLUDE_DIR})
 

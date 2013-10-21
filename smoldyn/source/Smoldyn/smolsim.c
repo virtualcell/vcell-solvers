@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include "SimCommand.h"
 #include "math2.h"
 #include "opengl2.h"
 #include "random2.h"
@@ -1805,7 +1806,7 @@ int simdocommands(simptr sim) {
 	int er;
 	enum CMDcode ccode;
 
-	ccode=scmdexecute((cmdssptr) sim->cmds,sim->time,sim->dt,-1,0);
+	ccode=scmdexecute((cmdssptr) sim->cmds,sim->time,sim->dt,static_cast<Q_LONGLONG>(-1),0);
 	er=simupdate(sim);
 	if(er) return 8;
 	er=molsort(sim);														// sort live and dead
@@ -1879,7 +1880,7 @@ void endsimulate(simptr sim,int er) {
 	qflag=strchr(sim->flags,'q')?1:0;
 	tflag=strchr(sim->flags,'t')?1:0;
 	scmdpop((cmdssptr) sim->cmds,sim->tmax);
-	scmdexecute((cmdssptr) sim->cmds,sim->time,sim->dt,-1,1);
+	scmdexecute((cmdssptr) sim->cmds,sim->time,sim->dt,static_cast<Q_LONGLONG>(-1),1);
 
 	simLog(sim,2,"\n");
 	if(er==1) simLog(sim,2,"Simulation complete\n");
