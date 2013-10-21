@@ -78,14 +78,18 @@ struct VolumeElement
 	}
 };
 
+class CartesianMesh;
 struct MembraneElement
 {
+	MembraneElement( ) {
+	}
+	//orientation? x, y, z gcw
     double	area;
 	DoubleVector3 unitNormal;
 	//DoubleVector3 smoothedCoord;
 	long vindexFeatureLo, vindexFeatureHi, vindexFeatureLoFar, vindexFeatureHiFar;
     long index;  
-    long neighborMEIndex[4];
+	StatusIndex<long,NeighborType::NeighborStatus> neighborMEIndex[4];
     MembraneRegion  *region;
 
 	inline Membrane* getMembrane() {
