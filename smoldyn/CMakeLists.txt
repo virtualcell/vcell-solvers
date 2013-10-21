@@ -1,4 +1,3 @@
-project(smoldyn)
 cmake_minimum_required(VERSION 2.6)
 set(SMOLDYN_VERSION "2.27")
 
@@ -155,8 +154,24 @@ if (OPTION_USE_OPENGL)
 		set(HAVE_GL_GLUT_H TRUE)
 		set(HAVE_GL_GLU_H TRUE)
 		set(HAVE_GL_GL_H TRUE)
-		link_directories(${CMAKE_CURRENT_SOURCE_DIR}/cygwin/freeglut/lib/x64)
 		list(APPEND DEP_LIBS freeglut glu32 opengl32) 
+		if (ARCH_64bit) 
+		message(STATUS "A64")
+			link_directories(${CMAKE_CURRENT_SOURCE_DIR}/cygwin/freeglut/lib/x64)
+			install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cygwin/freeglut/bin/x64/freeglut.dll
+				PERMISSIONS 
+					OWNER_READ GROUP_READ WORLD_READ
+					OWNER_EXECUTE GROUP_EXECUTE WORLD_EXECUTE
+				DESTINATION bin)
+		else (ARCH_64bit) 
+			link_directories(${CMAKE_CURRENT_SOURCE_DIR}/cygwin/freeglut/lib)
+			install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cygwin/freeglut/bin/freeglut.dll
+				PERMISSIONS 
+					OWNER_READ GROUP_READ WORLD_READ
+					OWNER_EXECUTE GROUP_EXECUTE WORLD_EXECUTE
+				RUNTIME DESTINATION bin)
+		endif (ARCH_64bit) 
+list(APPEND DEP_LIBS freeglut glu32 opengl32) 
 	else()
 		find_file(HAVE_GL_GL_H GL/gl.h)
 		find_file(HAVE_OPENGL_GL_H OpenGL/gl.h)
