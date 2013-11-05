@@ -93,6 +93,7 @@
       </toolsSet>
       <compileType>
         <ccTool>
+          <commandlineTool>g++</commandlineTool>
           <incDir>
             <pElem>../Chombo/lib/include</pElem>
             <pElem>../numerics/ExpressionParser</pElem>
@@ -112,6 +113,7 @@
             <Elem>CH_USE_MEMORY_TRACKING</Elem>
             <Elem>CH_USE_SETVAL</Elem>
             <Elem>H5_USE_16_API</Elem>
+            <Elem>SVNVERSION=1</Elem>
           </preprocessorList>
         </ccTool>
         <linkerTool>
@@ -121,6 +123,7 @@
             <pElem>../numerics/cmake-build-cygwin/bin</pElem>
             <pElem>../numerics/cmake-build-cygwin/lib</pElem>
           </linkerAddLib>
+          <commandlineTool>g++</commandlineTool>
           <linkerLibItems>
             <linkerLibLibItem>mftools2d.CYGWIN.64.g++.gfortran.DEBUG</linkerLibLibItem>
             <linkerLibLibItem>ebamrelliptic2d.CYGWIN.64.g++.gfortran.DEBUG</linkerLibLibItem>
@@ -131,7 +134,7 @@
             <linkerLibLibItem>workshop2d.CYGWIN.64.g++.gfortran.DEBUG</linkerLibLibItem>
             <linkerLibLibItem>basetools2d.CYGWIN.64.g++.gfortran.DEBUG</linkerLibLibItem>
             <linkerLibLibItem>boxtools2d.CYGWIN.64.g++.gfortran.DEBUG</linkerLibLibItem>
-            <linkerLibLibItem>hdf5_debug</linkerLibLibItem>
+            <linkerLibLibItem>hdf5</linkerLibLibItem>
             <linkerLibLibItem>unzip</linkerLibLibItem>
             <linkerLibLibItem>zip</linkerLibLibItem>
             <linkerLibLibItem>ExpressionParser</linkerLibLibItem>
@@ -219,6 +222,7 @@
             <Elem>CH_USE_MEMORY_TRACKING</Elem>
             <Elem>CH_USE_SETVAL</Elem>
             <Elem>H5_USE_16_API</Elem>
+            <Elem>SVNVERSION=1</Elem>
           </preprocessorList>
         </ccTool>
         <linkerTool>

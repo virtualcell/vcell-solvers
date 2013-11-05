@@ -220,10 +220,10 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 	
 	int numMembranePoints = chomboScheduler->getNumMembranePoints();
 	string nextToken, line;
-	IntVect finestMeshSize = chomboScheduler->getFinestMeshSize();
-	long sizeX = finestMeshSize[0];
-	long sizeY = finestMeshSize[1];
-	long sizeZ = chomboScheduler->getChomboGeometry()->getDimension() == 3 ? finestMeshSize[2] : 1;
+	IntVect viewLevelMeshSize = chomboScheduler->getViewLevelMeshSize();
+	long sizeX = viewLevelMeshSize[0];
+	long sizeY = viewLevelMeshSize[1];
+	long sizeZ = chomboScheduler->getChomboGeometry()->getDimension() == 3 ? viewLevelMeshSize[2] : 1;
 	string variable_name, variable_domain;
 
 	while (!ifsInput.eof()) {
@@ -955,6 +955,7 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 	int numLevels = 1;
 	int* refineratios = 0;
 	int maxBoxSize = 64;
+	int viewLevel = -1;
 	double fillRatio = 0.9;
 	string* rois;
 
@@ -1037,10 +1038,16 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 			}
 		} else if (nextToken == "MAX_BOX_SIZE") {
 			lineInput >> maxBoxSize;
+		} else if (nextToken == "VIEW_LEVEL") {
+			lineInput >> viewLevel;
 		} else if (nextToken == "FILL_RATIO") {
 			lineInput >> fillRatio;
 		}
 	}
 
-	chomboSpec = new ChomboSpec(chomboGeometry, numLevels, maxBoxSize, fillRatio, rois, refineratios);
+	if (viewLevel < 0)
+	{
+		viewLevel = numLevels - 1; // finest level
+	}
+	chomboSpec = new ChomboSpec(chomboGeometry, numLevels, maxBoxSize, fillRatio, viewLevel, rois, refineratios);
 }

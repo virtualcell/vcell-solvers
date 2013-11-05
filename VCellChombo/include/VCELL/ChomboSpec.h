@@ -10,7 +10,7 @@ class ChomboSpec
 {
 public:
 	ChomboSpec();
-	ChomboSpec(ChomboGeometry* cg, int numLevels, int boxsize, double fillRatio, string* roi, int* ratios);
+	ChomboSpec(ChomboGeometry* cg, int numLevels, int boxsize, double fillRatio, int viewLevel, string* roi, int* ratios);
 	virtual ~ChomboSpec();
 
 	int getNumLevels() {
@@ -38,12 +38,18 @@ public:
 	{
 		return refinementRois[ilev];
 	}
+
+	int getViewLevel()
+	{
+		return viewLevel;
+	}
 private:
 	ChomboGeometry* chomboGeometry;
 	int numLevels;
 	int* refRatios;
 	int maxBoxSize;
 	double fillRatio;
+	int viewLevel;
 	string* refinementRois;
 };
 

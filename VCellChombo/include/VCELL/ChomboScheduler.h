@@ -13,6 +13,7 @@ using namespace std;
 #include <EBIndexSpace.H>
 #include <BaseIF.H>
 #include <Expression.h>
+#include <VCELL/ChomboSpec.h>
 
 class SimulationExpression;
 class Membrane;
@@ -65,9 +66,9 @@ public:
 	virtual void iterate()=0;
 	void writeMembraneFiles();
 
-	const IntVect& getFinestMeshSize()
+	const IntVect& getViewLevelMeshSize()
 	{
-		return vectNxes[numLevels - 1];
+		return vectNxes[chomboSpec->getViewLevel()];
 	}
 protected:
 	SimulationExpression* simulation;

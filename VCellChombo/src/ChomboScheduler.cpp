@@ -712,11 +712,11 @@ void ChomboScheduler::updateSolution() {
 	}
 
 	int cfRefRatio = 1;
-	for(int ilev = 0; ilev < numLevels - 1; ilev ++) {
+	int viewLevel = chomboSpec->getViewLevel();
+	for(int ilev = 0; ilev < viewLevel; ilev ++) {
 		cfRefRatio *= vectRefRatios[ilev];
 	}
 
-	int finestLevel = numLevels - 1;
 	double smallVolFrac = 1e-3;
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
@@ -741,7 +741,7 @@ void ChomboScheduler::updateSolution() {
 
 				int refratio = cfRefRatio;
 				// copy phi to var, repeat values for coarse levels
-				for(int ilev = 0; ilev < numLevels; ilev ++) {
+				for(int ilev = 0; ilev <= viewLevel; ilev ++) {
 					int numRepeats = pow(refratio,SpaceDim);
 					for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit)	{
 						const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
@@ -762,7 +762,7 @@ void ChomboScheduler::updateSolution() {
 									int ioffset = i + solnLo[0];
 
 									IntVect gridIndex(D_DECL(ioffset, joffset, koffset));
-									if (currEBISBox.isCovered(gridIndex) || isInNextFinerLevel(ilev, gridIndex)) {
+									if (currEBISBox.isCovered(gridIndex) || ilev < viewLevel && isInNextFinerLevel(ilev, gridIndex)) {
 										continue;
 									}
 
@@ -804,8 +804,8 @@ void ChomboScheduler::updateSolution() {
 #endif
 										for (int jj = 0; jj < refratio; jj ++) {
 											for (int ii = 0; ii < refratio; ii ++) {
-												IntVect finestGridIndex(D_DECL(ioffset * refratio + ii, joffset * refratio + jj, koffset * refratio + kk));
-												int globalIndex = getChomboBoxLocalIndex(vectNxes[finestLevel], 0, finestGridIndex);
+												IntVect viewLevelGridIndex(D_DECL(ioffset * refratio + ii, joffset * refratio + jj, koffset * refratio + kk));
+												int globalIndex = getChomboBoxLocalIndex(vectNxes[viewLevel], 0, viewLevelGridIndex);
 												varCurr[globalIndex] = sol;
 												if (bComputeError)
 												{
@@ -1624,6 +1624,7 @@ void ChomboScheduler::writeMembraneFiles()
 
 
 	int finestLevel = numLevels - 1;
+	int viewLevel = chomboSpec->getViewLevel();
 	// now start writing we have computed so far
 	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MESH_HDF5_FILE_EXT);
 	hid_t h5MeshFile = H5Fcreate(fileName, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
@@ -1657,7 +1658,7 @@ void ChomboScheduler::writeMembraneFiles()
 	hid_t intVectType = H5Tcreate(H5T_COMPOUND, sizeof(IntVect));
 	populateIntVectDataType(intVectType);
 	attribute = H5Acreate(meshGroup, MESH_ATTR_NX, intVectType, scalarDataSpace, H5P_DEFAULT);
-	H5Awrite(attribute, intVectType, vectNxes[finestLevel].dataPtr());
+	H5Awrite(attribute, intVectType, vectNxes[viewLevel].dataPtr());
 	H5Aclose(attribute);
 
 	// grid size
@@ -1672,7 +1673,7 @@ void ChomboScheduler::writeMembraneFiles()
 
 	// view level
 	attribute = H5Acreate(meshGroup, MESH_ATTR_VIEW_LEVEL, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
-	H5Awrite(attribute, H5T_NATIVE_INT, &finestLevel);
+	H5Awrite(attribute, H5T_NATIVE_INT, &viewLevel);
 	H5Aclose(attribute);
 	H5Sclose(scalarDataSpace);
 

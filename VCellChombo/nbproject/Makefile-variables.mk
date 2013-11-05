@@ -7,37 +7,37 @@ CND_BASEDIR=`pwd`
 CND_BUILDDIR=build
 CND_DISTDIR=dist
 # Debug_2D configuration
-CND_PLATFORM_Debug_2D=Cygwin_4.x-Windows
-CND_ARTIFACT_DIR_Debug_2D=dist/Debug_2D/Cygwin_4.x-Windows
+CND_PLATFORM_Debug_2D=Cygwin_4.x_1-Windows
+CND_ARTIFACT_DIR_Debug_2D=dist/Debug_2D/Cygwin_4.x_1-Windows
 CND_ARTIFACT_NAME_Debug_2D=vcellchombo
-CND_ARTIFACT_PATH_Debug_2D=dist/Debug_2D/Cygwin_4.x-Windows/vcellchombo
-CND_PACKAGE_DIR_Debug_2D=dist/Debug_2D/Cygwin_4.x-Windows/package
+CND_ARTIFACT_PATH_Debug_2D=dist/Debug_2D/Cygwin_4.x_1-Windows/vcellchombo
+CND_PACKAGE_DIR_Debug_2D=dist/Debug_2D/Cygwin_4.x_1-Windows/package
 CND_PACKAGE_NAME_Debug_2D=vcellchombo.tar
-CND_PACKAGE_PATH_Debug_2D=dist/Debug_2D/Cygwin_4.x-Windows/package/vcellchombo.tar
+CND_PACKAGE_PATH_Debug_2D=dist/Debug_2D/Cygwin_4.x_1-Windows/package/vcellchombo.tar
 # Release_2D configuration
-CND_PLATFORM_Release_2D=Cygwin_4.x-Windows
-CND_ARTIFACT_DIR_Release_2D=dist/Release_2D/Cygwin_4.x-Windows
+CND_PLATFORM_Release_2D=Cygwin_4.x_1-Windows
+CND_ARTIFACT_DIR_Release_2D=dist/Release_2D/Cygwin_4.x_1-Windows
 CND_ARTIFACT_NAME_Release_2D=vcellchombo
-CND_ARTIFACT_PATH_Release_2D=dist/Release_2D/Cygwin_4.x-Windows/vcellchombo
-CND_PACKAGE_DIR_Release_2D=dist/Release_2D/Cygwin_4.x-Windows/package
+CND_ARTIFACT_PATH_Release_2D=dist/Release_2D/Cygwin_4.x_1-Windows/vcellchombo
+CND_PACKAGE_DIR_Release_2D=dist/Release_2D/Cygwin_4.x_1-Windows/package
 CND_PACKAGE_NAME_Release_2D=vcellchombo.tar
-CND_PACKAGE_PATH_Release_2D=dist/Release_2D/Cygwin_4.x-Windows/package/vcellchombo.tar
+CND_PACKAGE_PATH_Release_2D=dist/Release_2D/Cygwin_4.x_1-Windows/package/vcellchombo.tar
 # Debug_3D configuration
-CND_PLATFORM_Debug_3D=Cygwin_4.x-Windows
-CND_ARTIFACT_DIR_Debug_3D=dist/Debug_3D/Cygwin_4.x-Windows
+CND_PLATFORM_Debug_3D=Cygwin_4.x_1-Windows
+CND_ARTIFACT_DIR_Debug_3D=dist/Debug_3D/Cygwin_4.x_1-Windows
 CND_ARTIFACT_NAME_Debug_3D=vcellchombo
-CND_ARTIFACT_PATH_Debug_3D=dist/Debug_3D/Cygwin_4.x-Windows/vcellchombo
-CND_PACKAGE_DIR_Debug_3D=dist/Debug_3D/Cygwin_4.x-Windows/package
+CND_ARTIFACT_PATH_Debug_3D=dist/Debug_3D/Cygwin_4.x_1-Windows/vcellchombo
+CND_PACKAGE_DIR_Debug_3D=dist/Debug_3D/Cygwin_4.x_1-Windows/package
 CND_PACKAGE_NAME_Debug_3D=vcellchombo.tar
-CND_PACKAGE_PATH_Debug_3D=dist/Debug_3D/Cygwin_4.x-Windows/package/vcellchombo.tar
+CND_PACKAGE_PATH_Debug_3D=dist/Debug_3D/Cygwin_4.x_1-Windows/package/vcellchombo.tar
 # Release_3D configuration
-CND_PLATFORM_Release_3D=Cygwin_4.x-Windows
-CND_ARTIFACT_DIR_Release_3D=dist/Release_3D/Cygwin_4.x-Windows
+CND_PLATFORM_Release_3D=Cygwin_4.x_1-Windows
+CND_ARTIFACT_DIR_Release_3D=dist/Release_3D/Cygwin_4.x_1-Windows
 CND_ARTIFACT_NAME_Release_3D=vcellchombo
-CND_ARTIFACT_PATH_Release_3D=dist/Release_3D/Cygwin_4.x-Windows/vcellchombo
-CND_PACKAGE_DIR_Release_3D=dist/Release_3D/Cygwin_4.x-Windows/package
+CND_ARTIFACT_PATH_Release_3D=dist/Release_3D/Cygwin_4.x_1-Windows/vcellchombo
+CND_PACKAGE_DIR_Release_3D=dist/Release_3D/Cygwin_4.x_1-Windows/package
 CND_PACKAGE_NAME_Release_3D=vcellchombo.tar
-CND_PACKAGE_PATH_Release_3D=dist/Release_3D/Cygwin_4.x-Windows/package/vcellchombo.tar
+CND_PACKAGE_PATH_Release_3D=dist/Release_3D/Cygwin_4.x_1-Windows/package/vcellchombo.tar
 #
 # include compiler specific variables
 #
