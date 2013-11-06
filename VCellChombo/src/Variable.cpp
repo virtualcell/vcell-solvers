@@ -3,9 +3,9 @@
  * All rights reserved.
  */
 
+#include <VCELL/Variable.h>
 #include <string.h>
 #include <algorithm>
-#include <VCELL/Variable.h>
 #include <VCELL/Structure.h>
 #include <VCELL/VarContext.h>
 #include <REAL.H>

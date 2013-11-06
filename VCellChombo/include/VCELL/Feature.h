@@ -12,6 +12,7 @@ using std::vector;
 using std::map;
 
 class Membrane;
+class VolumeVariable;
 class Feature : public Structure
 {
 public:
@@ -44,13 +45,22 @@ public:
 	void setEbBcType(Membrane* mem, BoundaryType bcType);
 	BoundaryType getEbBcType(Membrane* mem);
 	BoundaryType getEbBcType();
-	
+
+	VolumeVariable* getIFVariable()
+	{
+		return ifVar;
+	}
+	void setIFVariable(VolumeVariable* var)
+	{
+		ifVar = var;
+	}
 private:
 	unsigned char index;	
 	vector<int> memVarIndexesInAdjacentMembranes;
 
 	int phase;
 	map<Membrane*, BoundaryType> ebBcTypeMap;
+	VolumeVariable* ifVar;
 };  
 
 #endif

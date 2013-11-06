@@ -4,6 +4,7 @@
  */
 #include <VCELL/Feature.h>
 #include <VCELL/Membrane.h>
+#include <VCELL/VolumeVariable.h>
 #include <assert.h>
 #include <iostream>
 #include <sstream>
@@ -14,10 +15,12 @@ using std::endl;
 Feature::Feature(string& name, unsigned char findex) : Structure(name)
 {
 	index = findex;
+	ifVar = NULL;
 }
 
 Feature::~Feature()
 {
+	delete ifVar;
 }
 
 void Feature::resolveReferences(SimulationExpression *sim)

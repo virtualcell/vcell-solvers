@@ -948,6 +948,50 @@ void ChomboScheduler::updateSolution() {
 			var->computeFinalL2Error();
 		}
 	}
+
+	// first time to save IF as volume variable
+	static bool bIFVariableUpdated = false;
+	if (!bIFVariableUpdated)
+	{
+		// create IF variables
+		int numSubdomains = chomboGeometry->getNumSubdomains();
+		for (int d = 0; d < numSubdomains; ++ d)
+		{
+			ChomboIF* chomboIf = chomboGeometry->getChomboIF(d);
+			Feature* feature = chomboIf->getFeature();
+			VolumeVariable* var = feature->getIFVariable();
+			if (var == NULL)
+			{
+				string varname = string("IF_") + feature->getName();
+				var = new VolumeVariable(varname, feature, vectNxes[viewLevel].product());
+				feature->setIFVariable(var);
+			}
+		}
+		const Box& viewLevelBox = vectDomains[viewLevel].domainBox();
+		const IntVect& bigEnd = viewLevelBox.bigEnd();
+		const IntVect& smallEnd = viewLevelBox.smallEnd();
+#if CH_SPACEDIM == 3
+		for (int k = smallEnd[2]; k <= bigEnd[2]; k ++) {
+#endif
+			for (int j = smallEnd[1]; j <= bigEnd[1]; j ++) {
+				for (int i = smallEnd[0]; i <= bigEnd[0]; i ++) {
+					IntVect viewLevelGridIndex(D_DECL(i, j, k));
+					int globalIndex = getChomboBoxLocalIndex(vectNxes[viewLevel], 0, viewLevelGridIndex);
+					RealVect a_point = EBArith::getIVLocation(viewLevelGridIndex, vectDxes[viewLevel], chomboGeometry->getDomainOrigin());
+					for (int d = 0; d < numSubdomains; ++ d)
+					{
+						ChomboIF* chomboIf = chomboGeometry->getChomboIF(d);
+						Feature* feature = chomboIf->getFeature();
+						VolumeVariable* var = feature->getIFVariable();
+						var->getCurr()[globalIndex] = chomboIf->value(a_point);
+					}
+				}
+			}
+#if CH_SPACEDIM == 3
+		}
+#endif
+		bIFVariableUpdated = true;
+	}
 }
 
 void ChomboScheduler::writeData() {

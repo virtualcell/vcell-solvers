@@ -9,10 +9,11 @@
 #include <VCELL/SimTool.h>
 #include <iostream>
 #include <string>
+#include <vector>
 using std::cout;
 using std::endl;
 using std::string;
-#include <VCELL/Variable.h>
+#include <VCELL/VolumeVariable.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/ChomboGeometry.h>
 #include <hdf5.h>
@@ -305,165 +306,25 @@ void DataSet::read(char *filename, SimulationExpression *sim)
 	fclose(fp);
 }
 
-void DataSet::write(SimulationExpression *sim, bool bWriteSimFile)
+void DataSet::write(SimulationExpression *sim)
 {
-
-	int numX = sim->getChomboGeometry()->getNumX();
-	int numY = sim->getChomboGeometry()->getNumY();
-	int numZ = sim->getChomboGeometry()->getNumZ();
-
-	int numVars = sim->getNumVariables();
-	if (numVars <= 0){
+  vector<Variable*> allVarList;
+	// sim variables
+	for (int i = 0; i < sim->getNumVariables(); ++ i)
+	{
+		allVarList.push_back(sim->getVariable(i));
+	}
+	// IF variables
+	for (int i = 0; i < sim->getChomboGeometry()->getNumSubdomains(); ++ i)
+	{
+		allVarList.push_back(sim->getChomboGeometry()->getChomboIF(i)->getFeature()->getIFVariable());
+	}
+	if (allVarList.size() <= 0)
+	{
 		cout << "DataSet::write() - no variables defined" << endl;
 	}
 	
 	char filename[128];
-	if (bWriteSimFile)
-	{
-		FILE *fp=NULL;
-		FileHeader fileHeader;
-		DataBlock *dataBlock;
-		SimTool::getInstance()->getSimFileName(filename);
-		if ((fp=fopen(filename, "wb"))==NULL){
-			char errmsg[512];
-			sprintf(errmsg, "DataSet::write() - could not open file '%s'.", filename);
-			throw errmsg;
-		}
-
-		rewind(fp);
-
-		strcpy(fileHeader.magicString, MAGIC_STRING);
-		strcpy(fileHeader.versionString, VERSION_STRING);
-
-		int numBlocks = numVars;
-		for (int i = 0; i < numVars; ++ i)
-		{
-			Variable* var = sim->getVariable(i);
-			if (var->getExactErrorVariable() != NULL)
-			{
-				++ numBlocks; // error
-				++ numBlocks; // relative error
-			}
-		}
-
-		fileHeader.sizeX = numX;
-		fileHeader.sizeY = numY;
-		fileHeader.sizeZ = numZ;
-		fileHeader.numBlocks = numBlocks;
-		fileHeader.firstBlockOffset = sizeof(FileHeader);
-
-		//
-		// write file header
-		//
-		DataSet::writeHeader(fp, &fileHeader);
-		long ftell_pos = ftell(fp);
-		if (ftell_pos != fileHeader.firstBlockOffset){
-			char errmsg[512];
-			sprintf(errmsg, "DataSet::write() - file offset for first block is incorrect, ftell() says %ld, should be %d", ftell_pos, fileHeader.firstBlockOffset);
-			throw errmsg;
-		}
-
-		dataBlock = new DataBlock[numBlocks];
-
-		//
-		// write data blocks (describing data)
-		//
-		int blockIndex = 0;
-		int32 dataOffset = fileHeader.firstBlockOffset + numBlocks * sizeof(DataBlock);
-		for (int i = 0; i < numVars; i ++) {
-			Variable* var = sim->getVariable(i);
-			memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-			strcpy(dataBlock[blockIndex].varName, var->getQualifiedName().c_str());
-
-			dataBlock[blockIndex].varType = var->getVarType();
-			dataBlock[blockIndex].size = var->getSize();
-			dataBlock[blockIndex].dataOffset = dataOffset;
-			DataSet::writeDataBlock(fp,dataBlock+blockIndex);
-			dataOffset += dataBlock[blockIndex].size*sizeof(double);
-			blockIndex ++;
-
-			var = var->getExactErrorVariable();
-			if (var != NULL)
-			{
-				memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-				strcpy(dataBlock[blockIndex].varName, var->getQualifiedName().c_str());
-
-				dataBlock[blockIndex].varType = var->getVarType();
-				dataBlock[blockIndex].size = var->getSize();
-				dataBlock[blockIndex].dataOffset = dataOffset;
-				DataSet::writeDataBlock(fp,dataBlock+blockIndex);
-				dataOffset += dataBlock[blockIndex].size*sizeof(double);
-				blockIndex ++;
-
-				var = var->getRelativeErrorVariable();
-				memset(dataBlock[blockIndex].varName, 0, DATABLOCK_STRING_SIZE * sizeof(char));
-				strcpy(dataBlock[blockIndex].varName, var->getQualifiedName().c_str());
-
-				dataBlock[blockIndex].varType = var->getVarType();
-				dataBlock[blockIndex].size = var->getSize();
-				dataBlock[blockIndex].dataOffset = dataOffset;
-				DataSet::writeDataBlock(fp,dataBlock+blockIndex);
-				dataOffset += dataBlock[blockIndex].size*sizeof(double);
-				blockIndex ++;
-			}
-		}
-
-		//
-		// write data
-		//
-		blockIndex = 0;
-		for (int i = 0; i < numVars; i ++) {
-			Variable* var = sim->getVariable(i);
-			if (var == NULL){
-				char errmsg[512];
-				sprintf(errmsg, "DataSet::write() - variable '%s' not found during write", dataBlock[blockIndex].varName);
-				throw errmsg;
-			}
-			ftell_pos = ftell(fp);
-			if (ftell_pos != dataBlock[blockIndex].dataOffset){
-				char errmsg[512];
-				sprintf(errmsg, "DataSet::write() - offset for data is incorrect (block %d, var=%s), ftell() says %ld, should be %d", blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
-				throw errmsg;
-			}
-			if (var->getSize() != dataBlock[blockIndex].size) {
-				throw "DataSet::write() : inconsistent number of data blocks for variable";
-			}
-			DataSet::writeDoubles(fp, var->getCurr(), var->getSize());
-			blockIndex ++;
-
-			Variable* errVar = var->getExactErrorVariable();
-			if (errVar != NULL)
-			{
-				ftell_pos = ftell(fp);
-				if (ftell_pos != dataBlock[blockIndex].dataOffset){
-					char errmsg[512];
-					sprintf(errmsg, "DataSet::write() - offset for data is incorrect (block %d, var=%s), ftell() says %ld, should be %d", blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
-					throw errmsg;
-				}
-				if (errVar->getSize() != dataBlock[blockIndex].size) {
-					throw "DataSet::write() : inconsistent number of data blocks for variable";
-				}
-				DataSet::writeDoubles(fp, errVar->getCurr(), errVar->getSize());
-				blockIndex ++;
-
-				errVar = var->getRelativeErrorVariable();
-				ftell_pos = ftell(fp);
-				if (ftell_pos != dataBlock[blockIndex].dataOffset){
-					char errmsg[512];
-					sprintf(errmsg, "DataSet::write() - offset for data is incorrect (block %d, var=%s), ftell() says %ld, should be %d", blockIndex, dataBlock[blockIndex].varName, ftell_pos, dataBlock[blockIndex].dataOffset);
-					throw errmsg;
-				}
-				if (errVar->getSize() != dataBlock[blockIndex].size) {
-					throw "DataSet::write() : inconsistent number of data blocks for variable";
-				}
-				DataSet::writeDoubles(fp, errVar->getCurr(), errVar->getSize());
-				blockIndex ++;
-			}
-		}
-
-		fclose(fp);
-		delete[] dataBlock;
-	}
 	
 	static const char* SOLUTION_GROUP = "/solution";
 	static const char* SOLUTION_ATTR_TIME = "time";
@@ -507,8 +368,9 @@ void DataSet::write(SimulationExpression *sim, bool bWriteSimFile)
 
 	H5Sclose(space);
 	
-	for (int i = 0; i < numVars; i ++) {
-		Variable* var = sim->getVariable(i);
+	for (int i = 0; i < allVarList.size(); i ++)
+	{
+		Variable* var = allVarList[i];
 		dim[0] = var->getSize();   /* Dataspace dimensions */
 		space = H5Screate_simple(rank, dim, NULL);
 		char dsName[128];
