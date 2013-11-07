@@ -126,9 +126,9 @@ endif()
 ######### Platform dependent information ##########
 
 if (MINGW)
-	include_directories(${MINGWDIR}/include windows)
-	link_directories(${MINGWDIR}/lib ${CMAKE_CURRENT_SOURCE_DIR}/windows/dll)
-	list(APPEND DEP_LIBS opengl32 glu32 freeglut z)
+#	include_directories(${MINGWDIR}/include windows)
+#	link_directories(${MINGWDIR}/lib ${CMAKE_CURRENT_SOURCE_DIR}/windows/dll)
+#	list(APPEND DEP_LIBS opengl32 glu32 freeglut z)
 #elseif (APPLE)
 #	include_directories(Mac)
 #	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/Mac/libtiff/lib ${CMAKE_CURRENT_SOURCE_DIR}/Mac/zlib/lib)
@@ -150,7 +150,7 @@ if (OPTION_USE_OPENGL)
 		set(HAVE_GL_GLUT_H TRUE)
 		set(HAVE_GL_GLU_H TRUE)
 		set(HAVE_GL_GL_H TRUE)
-	elseif (CYGWIN)
+	elseif (CYGWIN OR MINGW)
 		set(HAVE_OPENGL TRUE)
 		set(HAVE_GL_GLUT_H TRUE)
 		set(HAVE_GL_GLU_H TRUE)
@@ -169,7 +169,7 @@ if (OPTION_USE_OPENGL)
 				PERMISSIONS 
 					OWNER_READ GROUP_READ WORLD_READ
 					OWNER_EXECUTE GROUP_EXECUTE WORLD_EXECUTE
-				RUNTIME DESTINATION bin)
+				DESTINATION bin)
 		endif (ARCH_64bit) 
 		list(APPEND DEP_LIBS freeglut glu32 opengl32) 
 	elseif(LINUX) 
@@ -205,7 +205,7 @@ endif()
 set(OPTION_USE_LIBTIFF OFF)
 
 ####### Option: Build with Zlib ##########
-if (MSVC) 
+if (MSVC OR MINGW) 
 	set(OPTION_USE_ZLIB OFF)
 	set(HAVE_ZLIB FALSE)
 else()
@@ -301,7 +301,7 @@ endif(OPTION_USE_LIBMZR)
 	if (ZLIB_FOUND)
 		list(APPEND DEP_LIBS z)
 	else()
-		list(APPEND DEP_LIBS zlib)
+#		list(APPEND DEP_LIBS zlib)
 	endif()
 	
 

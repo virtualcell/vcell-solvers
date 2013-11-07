@@ -13,6 +13,11 @@ of the Gnu Lesser General Public License (LGPL). */
 #include "smoldynconfigure.h"
 
 #if defined(HAVE_OPENGL)							// Do NOT change the sequence of these if..elses without contacting Steve
+	#ifdef __CYGWIN32__
+		//GL/glu.h broken, uses undefined "CALLBACK"
+		#include <windef.h>
+		#define _WIN32
+	#endif
 	#ifdef WIN32
 		#include <windows.h>
 	#endif
