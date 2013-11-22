@@ -7,7 +7,6 @@
 #include <GeometryShop.H>
 #include <EBEllipticLoadBalance.H>
 #include <EBCoarseAverage.H>
-#include <EBPWLFineInterp.H>
 #include <EBAMRDataOps.H>
 #include <EBLevelDataOps.H>
 #include <MFIndexSpace.H>
@@ -725,6 +724,15 @@ void ChomboScheduler::updateSolution() {
 			if (numDefinedVolVars == 0) {
 				continue;
 			}
+			// average fine to coarse
+		  Interval interv(0, numDefinedVolVars - 1);
+			for(int ilev = numLevels - 1; ilev > viewLevel; ilev --) {
+				int coarseLevel = ilev - 1;
+				EBCoarseAverage averageOp(vectGrids[ilev], vectGrids[coarseLevel], vectEbis[iphase][ivol][ilev], vectEbis[iphase][ivol][coarseLevel],
+					vectDomains[coarseLevel], vectRefRatios[coarseLevel], numDefinedVolVars, (const EBIndexSpace *)phaseVolumeList[iphase][ivol]->volume);
+				averageOp.average(*volSoln[iphase][ivol][coarseLevel], *volSoln[iphase][ivol][ilev], interv);
+			}
+			
 			for (int ivar = 0; ivar < numDefinedVolVars; ivar ++) {
 				Variable* var = feature->getDefinedVariable(ivar);
 				double* varCurr = var->getCurr();
@@ -1092,6 +1100,7 @@ struct MeshMetrics
 {
 	int index;
 	int level;
+	int membraneId;
 	IntVect gridIndex;
 	RealVect coord, normal;
 	double volumeFraction,areaFraction;
@@ -1101,6 +1110,7 @@ void ChomboScheduler::populateMetricsDataType(hid_t& metricsType)
 {
 	H5Tinsert(metricsType, "index", HOFFSET(MeshMetrics, index), H5T_NATIVE_INT);
 	H5Tinsert(metricsType, "level", HOFFSET(MeshMetrics, level), H5T_NATIVE_INT);
+	H5Tinsert(metricsType, "membraneId", HOFFSET(MeshMetrics, membraneId), H5T_NATIVE_INT);
 	D_TERM(H5Tinsert(metricsType, "i", HOFFSET(MeshMetrics, gridIndex[0]), H5T_NATIVE_INT);,
 				 H5Tinsert(metricsType, "j", HOFFSET(MeshMetrics, gridIndex[1]), H5T_NATIVE_INT);,
 				 H5Tinsert(metricsType, "k", HOFFSET(MeshMetrics, gridIndex[2]), H5T_NATIVE_INT);)
@@ -1410,8 +1420,7 @@ void ChomboScheduler::writeMembraneFiles()
 	char fileName[128];
 #if (CH_SPACEDIM == 3)
 	const RealVect& origin = getChomboGeometry()->getDomainOrigin();
-	Real minOrigin = std::min<Real>(origin[0], origin[1]);
-	minOrigin = std::min<Real>(minOrigin, origin[2]);
+	Real minOrigin = std::min<Real>(std::min<Real>(origin[0], origin[1]), origin[2]);
 	Real sliceCrossPointDefaultValue = minOrigin - 1;
 	SliceView* sliceViewData = new SliceView[numMembranePoints];
 #endif
@@ -1477,6 +1486,7 @@ void ChomboScheduler::writeMembraneFiles()
 
 					metricsData[memIndex].index = memIndex;
 					metricsData[memIndex].level = ilev;
+					metricsData[memIndex].membraneId = (*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()](vof, 0);;
 					metricsData[memIndex].gridIndex = gridIndex;
 					metricsData[memIndex].coord = mem_point;
 					metricsData[memIndex].normal = currEBISBox.normal(vof);
