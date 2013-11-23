@@ -1100,17 +1100,16 @@ struct MeshMetrics
 {
 	int index;
 	int level;
-	int membraneId;
 	IntVect gridIndex;
 	RealVect coord, normal;
 	double volumeFraction,areaFraction;
+	int membraneId;
 };
 
 void ChomboScheduler::populateMetricsDataType(hid_t& metricsType)
 {
 	H5Tinsert(metricsType, "index", HOFFSET(MeshMetrics, index), H5T_NATIVE_INT);
 	H5Tinsert(metricsType, "level", HOFFSET(MeshMetrics, level), H5T_NATIVE_INT);
-	H5Tinsert(metricsType, "membraneId", HOFFSET(MeshMetrics, membraneId), H5T_NATIVE_INT);
 	D_TERM(H5Tinsert(metricsType, "i", HOFFSET(MeshMetrics, gridIndex[0]), H5T_NATIVE_INT);,
 				 H5Tinsert(metricsType, "j", HOFFSET(MeshMetrics, gridIndex[1]), H5T_NATIVE_INT);,
 				 H5Tinsert(metricsType, "k", HOFFSET(MeshMetrics, gridIndex[2]), H5T_NATIVE_INT);)
@@ -1122,6 +1121,7 @@ void ChomboScheduler::populateMetricsDataType(hid_t& metricsType)
 				 H5Tinsert(metricsType, "normalZ", HOFFSET(MeshMetrics, normal[2]), H5T_NATIVE_DOUBLE);)
 	H5Tinsert(metricsType, "volumeFraction", HOFFSET(MeshMetrics, volumeFraction), H5T_NATIVE_DOUBLE);
 	H5Tinsert(metricsType, "areaFraction", HOFFSET(MeshMetrics, areaFraction), H5T_NATIVE_DOUBLE);
+	H5Tinsert(metricsType, "membraneId", HOFFSET(MeshMetrics, membraneId), H5T_NATIVE_INT);
 }
 
 struct Vertex
