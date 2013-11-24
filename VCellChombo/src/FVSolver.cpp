@@ -957,6 +957,8 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 	int maxBoxSize = 64;
 	int viewLevel = -1;
 	double fillRatio = 0.9;
+	bool bSaveVCellOutput = true;
+	bool bSaveChomboOutput = false;
 	string* rois;
 
 	ChomboGeometry* chomboGeometry = new ChomboGeometry();
@@ -1040,6 +1042,12 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 			lineInput >> maxBoxSize;
 		} else if (nextToken == "VIEW_LEVEL") {
 			lineInput >> viewLevel;
+		} else if (nextToken == "SAVE_VCELL_OUTPUT") {
+			lineInput >> nextToken;
+			bSaveVCellOutput = nextToken == "true";
+		} else if (nextToken == "SAVE_CHOMBO_OUTPUT") {
+			lineInput >> nextToken;
+			bSaveChomboOutput = nextToken == "true";
 		} else if (nextToken == "FILL_RATIO") {
 			lineInput >> fillRatio;
 		}
@@ -1049,5 +1057,6 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 	{
 		viewLevel = numLevels - 1; // finest level
 	}
-	chomboSpec = new ChomboSpec(chomboGeometry, numLevels, maxBoxSize, fillRatio, viewLevel, rois, refineratios);
+	chomboSpec = new ChomboSpec(chomboGeometry, numLevels, maxBoxSize, fillRatio, viewLevel, bSaveVCellOutput, bSaveChomboOutput, rois, refineratios);
+	simTool->setChomboSpec(chomboSpec);
 }

@@ -86,9 +86,10 @@ public:
 //	double getSundialsAbsoluteTolerance() { return sundialsAbsTol; }
 //	double getSundialsMaxStep() { return sundialsMaxStep; }
 //
-//	void setPCGRelativeErrorTolerance(double rtol) {
-//		pcgRelTol = rtol;
-//	}
+	void setChomboSpec(ChomboSpec* cs)
+	{
+		chomboSpec = cs;
+	}
 //	double getPCGRelativeErrorTolerance() {
 //		return pcgRelTol;
 //	}
@@ -107,6 +108,7 @@ private:
 
 	VCellModel* vcellModel;
 	SimulationExpression  *simulation;
+	ChomboSpec* chomboSpec;
 
 	double simEndTime, simStartTime;
 	double simDeltaTime;

@@ -260,45 +260,48 @@ void SimTool::writeData(double progress, double time, int iteration)
 
 	simulation->writeData();
 
-	sprintf(logFileName,"%s%s",baseFileName, LOG_FILE_EXT);
-	logFP = openFileWithRetry(logFileName, "a");
+	if (chomboSpec->isSaveVCellOutput())
+	{
+		sprintf(logFileName,"%s%s",baseFileName, LOG_FILE_EXT);
+		logFP = openFileWithRetry(logFileName, "a");
 
-	if (logFP == 0) {
-		sprintf(errmsg, "SimTool::updateLog() - error opening log file <%s>", logFileName);
-		bSuccess = false;
-	} else {
-		// write zip file
-//		sprintf(zipFileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_FILE_EXT);
-//		getSimFileName(buffer);
-//		bSuccess = zipUnzipWithRetry(true, zipFileName, buffer, errmsg);
-//		remove(buffer);
-		
-		sprintf(zipHdf5FileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_HDF5_FILE_EXT);
-		getSimHdf5FileName(hdf5SimFileName);
-		bSuccess = zipUnzipWithRetry(true, zipHdf5FileName, hdf5SimFileName, errmsg);
-		remove(hdf5SimFileName);
+		if (logFP == 0) {
+			sprintf(errmsg, "SimTool::updateLog() - error opening log file <%s>", logFileName);
+			bSuccess = false;
+		} else {
+			// write zip file
+	//		sprintf(zipFileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_FILE_EXT);
+	//		getSimFileName(buffer);
+	//		bSuccess = zipUnzipWithRetry(true, zipFileName, buffer, errmsg);
+	//		remove(buffer);
 
-		// write the log file
-		if (bSuccess) {
-			char zipFileNameWithoutPath[512];
-			sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_HDF5_FILE_EXT);
-			fprintf(logFP,"%4d %s %s %.15lg\n", iteration, hdf5SimFileName, zipFileNameWithoutPath, time);
+			sprintf(zipHdf5FileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_HDF5_FILE_EXT);
+			getSimHdf5FileName(hdf5SimFileName);
+			bSuccess = zipUnzipWithRetry(true, zipHdf5FileName, hdf5SimFileName, errmsg);
+			remove(hdf5SimFileName);
 
-			struct stat buf;
-			if (stat(zipHdf5FileName, &buf) == 0 || stat(zipHdf5FileName, &buf)) { // if exists
-				if (buf.st_size > ZIP_FILE_LIMIT) {
-					zipFileCount ++;
+			// write the log file
+			if (bSuccess) {
+				char zipFileNameWithoutPath[512];
+				sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_HDF5_FILE_EXT);
+				fprintf(logFP,"%4d %s %s %.15lg\n", iteration, hdf5SimFileName, zipFileNameWithoutPath, time);
+
+				struct stat buf;
+				if (stat(zipHdf5FileName, &buf) == 0 || stat(zipHdf5FileName, &buf)) { // if exists
+					if (buf.st_size > ZIP_FILE_LIMIT) {
+						zipFileCount ++;
+					}
 				}
 			}
 		}
+		// close log file
+		fclose(logFP);
+		// close tid file
+		if (tidFP != 0) {
+			fclose(tidFP);
+		}
 	}
-	// close log file
-	fclose(logFP);
-	// close tid file
-	if (tidFP != 0) {
-		fclose(tidFP);
-	}
-
+	
 	if (bSuccess) {
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
 		simFileCount++;
@@ -354,10 +357,10 @@ void SimTool::start() {
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, message));
 
 	//
-    // destroy any partial results from unfinished iterations
-    //
-    double percentile = simStartTime/simEndTime;
-    double increment = 0.01;
+	// destroy any partial results from unfinished iterations
+	//
+	double percentile = simStartTime/simEndTime;
+	double increment = 0.01;
 	double lastSentPercentile = percentile;
 	//
     // store initial log if enabled

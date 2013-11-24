@@ -1003,15 +1003,13 @@ void ChomboScheduler::updateSolution() {
 }
 
 void ChomboScheduler::writeData() {
-	bool bWriteSim = true;
-	if (bWriteSim) {
+	if (chomboSpec->isSaveVCellOutput())
+	{
 		updateSolution();
 		DataSet::write(simulation);
 	}
-	static bool bFirstTime = false;
-	bool bWriteHdf5 = false;
 	// we need at least one hdf5 to show mesh in viewer.
-	if (bWriteHdf5 || bFirstTime) {
+	if (chomboSpec->isSaveChomboOutput()) {
 		for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
@@ -1034,16 +1032,8 @@ void ChomboScheduler::writeData() {
 				writeEBHDF5(string(hdf5FileName), vectGrids, volSoln[iphase][ivol], names,
 					 vectDomains[0].domainBox(), vectDxes[0][0], simulation->getDT_sec(), simulation->getTime_sec(),
 					 vectRefRatios, numLevels, replaceCovered, dummy);
-				bFirstTime = false;
-				if (!bWriteHdf5) {
-					break;
-				}
-			}
-			if (!bWriteHdf5 && !bFirstTime) {
-				break;
 			}
 		}
-		bFirstTime = false;
 	}
 	hdf5FileCount ++;
 }
@@ -1417,6 +1407,10 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 
 void ChomboScheduler::writeMembraneFiles()
 {
+	if (!chomboSpec->isSaveVCellOutput())
+	{
+		return;
+	}
 	char fileName[128];
 #if (CH_SPACEDIM == 3)
 	const RealVect& origin = getChomboGeometry()->getDomainOrigin();
