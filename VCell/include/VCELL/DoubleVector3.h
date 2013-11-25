@@ -30,6 +30,7 @@ struct DoubleVector3 {
 		z = arg_z;
 	}
 
+	//review
 	bool isAbsolutelyZero( ) const {
 		return (x == 0) &&  (y == 0) && (z == 0);
 	}
@@ -211,7 +212,7 @@ public:
 };
 
 /**
-* wrapper to return an array -- should be replaced with std::array when compilers upgraded
+* wrapper to return an array
 * @param T type being returned
 * @param N number in array
 */
@@ -249,32 +250,36 @@ public:
 * in must not be zero
 */
 inline ArrayHolder<UnitVector3,2> perpendicular(const DoubleVector3 & in) {
+	const double epsilon = 1e-10;
+	//review
+	const double inSq = in.lengthSquared( );
 	assert(!in.isAbsolutelyZero( ));
 	ArrayHolder<UnitVector3,2> rval; 
+	DoubleVector3 arbitrary(1,1,1);
 
-	const double epsilon = 1e-10;
-	const double aX = std::abs(in.x);
-	const double aY = std::abs(in.y);
-	const double aZ = std::abs(in.z);
-	//divide by largest component to minimize floating point issues
-	if (aZ > aX && aZ > aY) {
-		const double arbX = 1; 
-		const double arbY = 1; 
-		//solve for z that makes dot product zero
-		const double zComponent = -(in.x*arbX + in.y*arbY)/in.z;
-		rval[0] = UnitVector3(arbX,arbY,zComponent);
-	} 
-	else if (aX > aY && aX > aZ) {
-		const double arbY = 1; 
-		const double arbZ = 1; 
-		const double xComponent = -(in.y*arbY + in.z*arbZ)/in.x;
-		rval[0] = UnitVector3(xComponent,arbY,arbZ);
-	} else {
-		const double arbX = 1; 
-		const double arbZ = 1; 
-		const double yComponent = -(in.x*arbX + in.z*arbZ)/in.y;
-		rval[0] = UnitVector3(arbX,yComponent,arbZ);
+	double nxDot = arbitrary.dotProduct(in); 
+
+	// find portion of "arbitrary" that is perpendicular to "in" (this direction will be first unit vector)
+	DoubleVector3  diff = arbitrary - in.scale(nxDot);					
+
+	// as long arbitrary wasn't parallel to "normal" (i.e. "in" wasn't a zero vector) 
+	// then compute second unit vector which is perpendicular to both first and "in" 
+	//review
+	if (std::fabs(diff.lengthSquared( )) < inSq * epsilon) {
+		rval[0] = diff;
+		rval[1] = in.crossProduct(rval[0]);
+		return rval;
 	}
+	//change arbitrary vector and repeat process
+	arbitrary.x += inSq * 1000;
+	nxDot = arbitrary.dotProduct(in); 
+
+	diff = arbitrary - in.scale(nxDot);					
+
+	if (std::fabs(diff.lengthSquared( )) < inSq * epsilon) {
+		throw std::logic_error("second perpendicular vector failed");
+	}
+	rval[0] = diff;
 	rval[1] = in.crossProduct(rval[0]);
 	return rval;
 }
