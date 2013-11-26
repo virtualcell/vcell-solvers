@@ -119,7 +119,6 @@ ChomboScheduler::~ChomboScheduler() {
 	}
 	phaseVolumeList.clear();
 	irregularPointMembraneIDs.clear();
-	//membranePointIndexes.clear();
 	irregVolumeMembraneMap.clear();
 
 	if (refinementRoiExps != NULL)
@@ -901,14 +900,14 @@ void ChomboScheduler::updateSolution() {
 							{
 								if (membrane->isVariableDefined(var))
 								{
-									//double* varCurr = var->getCurr();
-									//double sol = (*memSoln[ivol][ilev])[dit()](vof, ivar);
-									double sol = var->getCurr()[memIndex];
+									double* varCurr = var->getCurr();
+									double sol = (*memSoln[ivol][ilev])[dit()](vof, ivar);
+//									double sol = var->getCurr()[memIndex];
 									double mean = sol * areaFrac;
 //									var->addVolFrac(areaFrac);
 									var->addMean(mean);
 
-									//varCurr[memIndex] = sol;
+									varCurr[memIndex] = sol;
 									Variable* errorVar = var->getExactErrorVariable();
 									if (errorVar != NULL)
 									{

@@ -4,7 +4,7 @@
 #include <EBAMRPoissonOpFactory.H>
 
 #include <VCELL/ChomboSemiImplicitScheduler.h>
-#include <VCELL/MembraneVariable.h>
+#include <VCELL/Variable.h>
 #include <VCELL/VarContext.h>
 #include <VCELL/ChomboGeometry.h>
 #include <VCELL/ChomboIF.h>
@@ -78,8 +78,8 @@ ChomboSemiImplicitScheduler::~ChomboSemiImplicitScheduler() {
 	volSourceWorkspace.clear();
 	extrapStencils.clear();
 	
-//	memSoln.clear();
-//	memSolnOld.clear();
+	memSoln.clear();
+	memSolnOld.clear();
 }
 
 void ChomboSemiImplicitScheduler::initValues() {
@@ -113,11 +113,11 @@ void ChomboSemiImplicitScheduler::iterate() {
 				EBAMRDataOps::assign(volSolnOld[iphase][ivol], volSoln[iphase][ivol]);
 			}
 			
-//			if (iphase == 0 && feature->getMemVarIndexesInAdjacentMembranes().size() > 0) {
-//				for(int ilev = 0; ilev < numLevels; ++ ilev) {
-//					memSoln[ivol][ilev]->copyTo(*memSolnOld[ivol][ilev]);
-//				}
-//			}
+			if (iphase == 0 && feature->getMemVarIndexesInAdjacentMembranes().size() > 0) {
+				for(int ilev = 0; ilev < numLevels; ++ ilev) {
+					memSoln[ivol][ilev]->copyTo(*memSolnOld[ivol][ilev]);
+				}
+			}
 		}
 	}
 
@@ -226,10 +226,10 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 		volSourceWorkspace[iphase].resize(numVols);
 		extrapValues[iphase].resize(numVols);
 		
-//		if (iphase == 0) {
-//			memSoln.resize(numVols);
-//			memSolnOld.resize(numVols);
-//		}
+		if (iphase == 0) {
+			memSoln.resize(numVols);
+			memSolnOld.resize(numVols);
+		}
 		
 		for (int ivol = 0; ivol < numVols; ivol++) {
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
@@ -249,10 +249,10 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 				extrapValues[iphase][ivol].resize(numLevels);
 			}
 			
-//			if (iphase == 0) {
-//				memSoln[ivol].resize(numLevels);
-//				memSolnOld[ivol].resize(numLevels);
-//			}
+			if (iphase == 0) {
+				memSoln[ivol].resize(numLevels);
+				memSolnOld[ivol].resize(numLevels);
+			}
 		
 			for (int ilev = 0; ilev < numLevels; ilev ++) {
 				RefCountedPtr< LayoutData<IntVectSet> > irrSet = RefCountedPtr<LayoutData<IntVectSet> >(new LayoutData<IntVectSet>(vectGrids[ilev]));
@@ -329,8 +329,8 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 
 				int jphase = 1;
 				// initialize membrane variable, only do it when phase=0
-//				memSoln[ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<Real> > >(new LevelData< BaseIVFAB<Real> >(vectGrids[ilev], numDefinedMemVars, IntVect::Zero, bivfabFactory));
-//				memSolnOld[ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<Real> > >(new LevelData< BaseIVFAB<Real> >(vectGrids[ilev], numDefinedMemVars, IntVect::Zero, bivfabFactory));
+				memSoln[ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<Real> > >(new LevelData< BaseIVFAB<Real> >(vectGrids[ilev], numDefinedMemVars, IntVect::Zero, bivfabFactory));
+				memSolnOld[ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<Real> > >(new LevelData< BaseIVFAB<Real> >(vectGrids[ilev], numDefinedMemVars, IntVect::Zero, bivfabFactory));
 				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit) {
 					const Box& currBox = vectGrids[ilev][dit()];
 					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
@@ -339,14 +339,6 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 
 					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit) {
 						const VolIndex& vof = vofit();
-						const IntVect& gridIndex = vof.gridIndex();
-						int volIndex = getChomboBoxLocalIndex(vectNxes[ilev], 0, gridIndex);
-						map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(volIndex);
-						if (iter == irregVolumeMembraneMap[ilev].end() || iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
-						{
-							continue;
-						}
-						int memIndex = iter->second;
 						int membraneID = (*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()](vof, 0);
 						if (membraneID < 0) {
 							continue;
@@ -369,15 +361,12 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 						vectValues[3] = SpaceDim == 2 ? 0.5 : mem_point[2];
 						for (int ivar = 0; ivar < numDefinedMemVars; ++ ivar) {
 							int varIndex = feature->getMemVarIndexesInAdjacentMembranes()[ivar];
-							MembraneVariable *memVar = (MembraneVariable*)simulation->getMemVariable(varIndex);
-							if (membrane->isVariableDefined((Variable*)memVar)) {
+							Variable *memVar = (Variable*)simulation->getMemVariable(varIndex);
+							if (membrane->isVariableDefined(memVar)) {
 								MembraneVarContextExpression* varContextExp = (MembraneVarContextExpression*)memVar->getVarContext();
 								double ic = varContextExp->evaluateExpression(INITIAL_VALUE_EXP, vectValues);	
-								
-								memVar->getOld()[memIndex] = ic;
-								memVar->getCurr()[memIndex] = ic;
-//								(*memSolnOld[ivol][ilev])[dit()](vof, ivar) = ic;
-//								(*memSoln[ivol][ilev])[dit()](vof, ivar) = ic;
+								(*memSolnOld[ivol][ilev])[dit()](vof, ivar) = ic;
+								(*memSoln[ivol][ilev])[dit()](vof, ivar) = ic;
 							}
 						}
 					}
@@ -769,12 +758,9 @@ void ChomboSemiImplicitScheduler::updateSource() {
 						} // end for k
 #endif
 					} // if (numDefinedVolVars > 0)
-					
-					if (irregVolumeMembraneMap[ilev].size() == 0)
-					{
-						continue;
-					}
-					
+
+					// update source with membrane flux or dirichlet values
+					// solve membrane variables
 					const EBGraph& currEBGraph = currEBISBox.getEBGraph();
 					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
 					Vector<ConnectedComponent*>& adjacentVolumes = phaseVolumeList[iphase][ivol]->adjacentVolumes;
@@ -801,8 +787,6 @@ void ChomboSemiImplicitScheduler::updateSource() {
 							{
 								continue;
 							}
-							int memIndex = iter->second;
-								
 							int membraneID = (*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()](vof, 0);
 							if (membraneID != currentMembraneID) {
 								continue;
@@ -842,13 +826,13 @@ void ChomboSemiImplicitScheduler::updateSource() {
 							}
 							
 							{
+								int ivolInPhase0 = iphase == 0 ? ivol : jvol;
 								Feature* iFeatureInPhase0 = iphase == 0 ? iFeature : jFeature;
 								for (int ivar = 0; ivar < iFeatureInPhase0->getMemVarIndexesInAdjacentMembranes().size(); ivar ++) {
 									int varIndex =	iFeatureInPhase0->getMemVarIndexesInAdjacentMembranes()[ivar];
-									MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(varIndex);
-									if (membrane->isVariableDefined((Variable*)var)) {
-										//Real mv = (*memSolnOld[ivolInPhase0][ilev])[dit()](vof, ivar);
-										Real mv = var->getOld()[memIndex];
+									Variable* var = (Variable*)simulation->getMemVariable(varIndex);
+									if (membrane->isVariableDefined(var)) {
+										Real mv = (*memSolnOld[ivolInPhase0][ilev])[dit()](vof, ivar);
 										vectValues[memSymbolOffset + varIndex] = mv;
 									}
 								}
@@ -879,14 +863,12 @@ void ChomboSemiImplicitScheduler::updateSource() {
 							if (iphase == 0 && numDefinedMemVars > 0) {
 								for (int ivar = 0; ivar < iFeature->getMemVarIndexesInAdjacentMembranes().size(); ivar ++) {
 									int varIndex =	iFeature->getMemVarIndexesInAdjacentMembranes()[ivar];
-									MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(varIndex);
-									if (membrane->isVariableDefined((Variable*)var)) {
+									Variable* var = (Variable*)simulation->getMemVariable(varIndex);
+									if (membrane->isVariableDefined(var)) {
 										MembraneVarContextExpression* varContextExp = (MembraneVarContextExpression*)var->getVarContext();
 										double eval = varContextExp->evaluateExpression(REACT_RATE_EXP, vectValues);
-										//Real oldSol = (*memSolnOld[ivol][ilev])[dit()](vof, ivar);
-										//(*memSoln[ivol][ilev])[dit()](vof, ivar) = oldSol + deltaT * eval;
-										Real oldSol = var->getOld()[memIndex];
-										var->getCurr()[memIndex] = oldSol + deltaT * eval;
+										Real oldSol = (*memSolnOld[ivol][ilev])[dit()](vof, ivar);
+										(*memSoln[ivol][ilev])[dit()](vof, ivar) = oldSol + deltaT * eval;
 									}
 								}
 							}					

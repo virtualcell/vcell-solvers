@@ -96,8 +96,7 @@ protected:
 	int findLevel(const ProblemDomain& domain);
 
 	Vector< Vector< Vector<LevelData<EBCellFAB>*> > > volSoln;
-	//Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<Real> > > > > memSoln;
-	//Vector< RefCountedPtr< LevelData< BaseIVFAB<int> > > > membranePointIndexes; // here it stores membrane index
+	Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<Real> > > > > memSoln;
 	IntVect numGhostSoln;
 
 	Vector<EBAMRPoissonOpFactory *> opFactories;

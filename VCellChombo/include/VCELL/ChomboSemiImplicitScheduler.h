@@ -30,7 +30,7 @@ private:
 	Vector< Vector< Vector<LevelData<EBCellFAB>*> > > volSolnOld;
 	Vector< Vector< Vector<LevelData<EBCellFAB>*> > > volSolnOldWorkspace;
 	
-	//Vector< Vector< RefCountedPtr< LevelData<BaseIVFAB<Real> > > > > memSolnOld;
+	Vector< Vector< RefCountedPtr< LevelData<BaseIVFAB<Real> > > > > memSolnOld;
 	
 	Vector< Vector< Vector<RefCountedPtr<EBBackwardEuler> > > > ebBEIntegratorList;
 	Vector< Vector< Vector< RefCountedPtr<AMRMultiGrid<LevelData<EBCellFAB> > > > > > ebMlgSolver;

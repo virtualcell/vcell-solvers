@@ -18,17 +18,10 @@ public:
 	VariableType getVarType() { return VAR_MEMBRANE; }
 
 	void createErrorVariables();
-	double* getOld()
-	{
-		return old;
-	}
-	void update();
 
 protected:
 	MembraneVariable* clone(string& varName);
 
-private:
-	double* old;
 };
 
 #endif
