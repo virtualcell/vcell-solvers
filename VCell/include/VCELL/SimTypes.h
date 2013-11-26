@@ -150,6 +150,12 @@ struct StatusIndex {
 		}
 		return static_cast<E>(value);
 	}
+	/**
+	 * @return as signed int for writing to file
+	 */
+	signed long int asSignedLong( ) {
+	  return static_cast<signed long int>(value);
+	}
 
 private:
 	T value; 
