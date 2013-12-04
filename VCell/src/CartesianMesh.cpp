@@ -1848,7 +1848,7 @@ void CartesianMesh::computeMembraneCoupling(){
 	switch (getDimension()) {
 	case 2: {
 		double totalLenghth = 0;
-		long arr[2];			
+		StatusIndex<long,NeighborType::NeighborStatus> arr[2];
 
 		SparseMatrixPCG* smat = new SparseMatrixPCG(N, MAXNEIGHBOR_2D * N, MATRIX_GENERAL);	
 		for (int i = 0; i < N; i ++) {				
@@ -1859,24 +1859,23 @@ void CartesianMesh::computeMembraneCoupling(){
 				currentOnBoundary = true;
 			}
 
-			//sort the neighbor index as needed by sparse matrix format
-			memcpy(arr, pMembraneElement[currentIndex].neighborMEIndex, 2 * sizeof(long));
-			if (arr[0] > arr[1]) {
-				long a = arr[0];
-				arr[0] = arr[1];
-				arr[1] = a;
+			 
+			int numNeighbors = 0;
+			for (int m = 0; m < 2; m++) {
+			  const StatusIndex<long,NeighborType::NeighborStatus> & ns =  pMembraneElement[currentIndex].neighborMEIndex[m];
+			  if (ns.valid( )) {
+			    arr[numNeighbors++] = ns;
+			  }
 			}
-
+			if (numNeighbors == 2 && arr[0] > arr[1]) {
+			  //sort the neighbor index as needed by sparse matrix format
+			  std::swap(arr[0],arr[1]);
+			}
 			smat->addNewRow();
 			double sum_arclength = 0;
-			int numNeighbors = 0;
-			for (int j = 0; j < 2; j ++) {
+			for (int j = 0; j < numNeighbors; j ++) {
 				long neighborIndex = arr[j];
-				if (neighborIndex == -1) {
-					continue;
-				}
 
-				numNeighbors ++;
 				double arc_length = 0;
 				if (getMembraneNeighborMask(neighborIndex) & NEIGHBOR_BOUNDARY_MASK) {
 					arc_length += pMembraneElement[neighborIndex].area;
@@ -2350,7 +2349,7 @@ bool CartesianMesh::findCurve(int startingIndex, CurvePlane curvePlane, vector<d
 			if (!neighborIndex.valid( )) {
 				switch (neighborIndex.validity( )) {
 				case NeighborType::unset:
-					assert(false);
+				  
 				case NeighborType::boundary:
 					//specific actions to be determined
 				case NeighborType::wall:
