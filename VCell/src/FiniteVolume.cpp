@@ -125,6 +125,9 @@ int main(int argc, char *argv[])
 	} catch (string& exStr){
 		errorMsg += exStr;
 		returnCode = 1;
+	} catch (std::exception & e) {
+		errorMsg += e.what(); 
+		returnCode = 1;
 	} catch (VCell::Exception& ex){
 		errorMsg += ex.getMessage();
 		returnCode = 1;

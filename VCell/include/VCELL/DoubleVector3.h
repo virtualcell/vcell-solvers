@@ -267,8 +267,11 @@ inline ArrayHolder<UnitVector3,2> perpendicular(const DoubleVector3 & in) {
 	//review
 	if (std::fabs(diff.lengthSquared( )) < inSq * epsilon) {
 		rval[0] = diff;
-		rval[1] = in.crossProduct(rval[0]);
-		return rval;
+		DoubleVector3 product = in.crossProduct(rval[0]);
+		if (!product.isAbsolutelyZero()) {
+		  rval[1] = in.crossProduct(rval[0]);
+		  return rval;
+		}
 	}
 	//change arbitrary vector and repeat process
 	arbitrary.x += inSq * 1000;
