@@ -1968,7 +1968,18 @@ void CartesianMesh::computeMembraneCoupling(){
 			DoubleVector3 centralNormal = wc1 - wc2;
 
 			getNeighborCandidates(neighborCandidates, centralNormal, currentIndex, GOING_OUT_LAYERS);
-			assert(neighborCandidates.size() > 1);							
+			if (neighborCandidates.size( ) <= 1) {
+				stringstream ss;
+				ss << "index " << index << " at " << currentWC << " has no neighborCandidates: ";
+				NeighborIndex* neighbors = pMembraneElement[index].neighborMEIndex;	
+				for (int i = 0; i < 4; i ++) {
+					ss << neighbors[i] << ' ';
+				}
+				std::cout << ss.str( ) << std::endl; 
+				throw std::logic_error(ss.str( ));
+			}
+			
+			//assert(neighborCandidates.size() > 1);							
 
 			/*==========================================================
 			start projection
@@ -2696,4 +2707,27 @@ double* CartesianMesh::getMembraneFluxArea(long index) {
 		throw errmsg;
 	}
 	return iter->second;
+}
+
+namespace NeighborType { 
+	std::ostream& operator<<(std::ostream & os,NeighborStatus ns) {
+		switch (ns) {
+			case good: 
+				os << "good";
+				break;
+			case unset: 
+				os << "unset";
+				break;
+			case wall: 
+				os << "wall";
+				break;
+			case boundary: 
+				os << "boundary";
+				break;
+			case unknown: 
+				os << "unknown";
+				break;
+		}
+		return os;
+	}
 }

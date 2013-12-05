@@ -95,6 +95,7 @@ typedef enum {
 
 namespace NeighborType { 
 	enum NeighborStatus {good = 0,unset= -1,wall = -2, boundary = -3, unknown = -4};
+	std::ostream& operator<<(std::ostream &,NeighborStatus);
 }
 
 template <class T, class E>
@@ -128,7 +129,7 @@ struct StatusIndex {
 	/**
 	* explicit get value
 	*/
-	unsigned int get( ) const {
+	T get( ) const {
 		assert( valid( )); 
 		return value;
 	}
@@ -136,7 +137,7 @@ struct StatusIndex {
 	/**
 	* implicit get 
 	*/
-	operator unsigned int( ) {
+	operator T( ) const {
 		return get( );
 	}
 	
@@ -202,5 +203,15 @@ inline bool operator==(const E &lhs,const StatusIndex<T,E> &rhs) {
 template <class T, class E>
 inline bool operator==(const StatusIndex<T,E> &lhs,const E &rhs) {
 	return lhs.validity( ) == rhs;
+}
+template <class T, class E>
+inline std::ostream & operator<<(std::ostream & os, const StatusIndex<T,E> &e) {
+	if (e.valid( )) {
+		os << e.get( );
+	}
+	else {
+		os << e.validity( );
+	}
+	return os;
 }
 #endif
