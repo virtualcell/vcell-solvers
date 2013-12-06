@@ -1979,6 +1979,9 @@ void CartesianMesh::computeMembraneCoupling(){
 				}
 				std::cout << ss.str( ) << std::endl; 
 			}
+			else {
+				std::cout << "y " << index << std::endl;
+			}
 			
 			//assert(neighborCandidates.size() > 1);							
 
@@ -2091,7 +2094,7 @@ void CartesianMesh::computeMembraneCoupling(){
 
 			long *temp =  0;
 			int numRealNeighbors =  0;	
-			if (vrRidges.size( ) > 1 ) {
+			if (neighborCandidates.size( ) > 1 ) {
 				temp = qvoronoi(2, numPoints, &points[0], 0, vrRidges, (int)neighborCandidates.size());
 				numRealNeighbors = static_cast<int>(vrRidges.size());				
 			}
