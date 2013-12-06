@@ -87,6 +87,7 @@ typedef IntVector3    MeshCoord;
 typedef long          MeshIndex;
 typedef unsigned char FeatureHandle;
 //typedef unsigned char ContourHandle;
+	std::ostream& operator<<(std::ostream &,const IntVector3 & );
 
 typedef enum {
 	MATRIX_GENERAL=0,
