@@ -1969,14 +1969,15 @@ void CartesianMesh::computeMembraneCoupling(){
 
 			getNeighborCandidates(neighborCandidates, centralNormal, currentIndex, GOING_OUT_LAYERS);
 			if (neighborCandidates.size( ) <= 1) {
+				MembraneElement & me = pMembraneElement[index];	
 				stringstream ss;
-				ss << "index " << index << " at " << currentWC << " has no neighborCandidates: ";
-				NeighborIndex* neighbors = pMembraneElement[index].neighborMEIndex;	
+				ss << "index " << index << " at " << currentWC <<  " between " << wc1  << getMeshCoord(me.vindexFeatureHi)
+					<< " and " << wc2 << getMeshCoord(me.vindexFeatureLo) << " has no neighborCandidates: ";
+				NeighborIndex* neighbors = me.neighborMEIndex;	
 				for (int i = 0; i < 4; i ++) {
 					ss << neighbors[i] << ' ';
 				}
 				std::cout << ss.str( ) << std::endl; 
-				throw std::logic_error(ss.str( ));
 			}
 			
 			//assert(neighborCandidates.size() > 1);							
@@ -2088,8 +2089,15 @@ void CartesianMesh::computeMembraneCoupling(){
 			}				
 
 
-			long *temp = qvoronoi(2, numPoints, &points[0], 0, vrRidges, (int)neighborCandidates.size());
-			int numRealNeighbors = static_cast<int>(vrRidges.size());				
+			long *temp =  0;
+			int numRealNeighbors =  0;	
+			if (vrRidges.size( ) > 1 ) {
+				temp = qvoronoi(2, numPoints, &points[0], 0, vrRidges, (int)neighborCandidates.size());
+				numRealNeighbors = static_cast<int>(vrRidges.size());				
+			}
+			else {
+				numPoints = 0;
+			}
 			ManagedArrayPtr<long> vertices(numPoints, temp);
 
 			//Bug http://code.vcell.uchc.edu/bugzilla/show_bug.cgi?id=3518 temporary fix
@@ -2707,6 +2715,11 @@ double* CartesianMesh::getMembraneFluxArea(long index) {
 		throw errmsg;
 	}
 	return iter->second;
+}
+
+std::ostream& operator<<(std::ostream &os ,const IntVector3 & v) {
+	os << '[' << v.x << ',' << v.y << ',' << v.z << ']'; 
+	return os;
 }
 
 namespace NeighborType { 
