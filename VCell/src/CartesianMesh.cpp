@@ -1979,9 +1979,6 @@ void CartesianMesh::computeMembraneCoupling(){
 				}
 				std::cout << ss.str( ) << std::endl; 
 			}
-			else {
-				std::cout << "y " << index << std::endl;
-			}
 			
 			//assert(neighborCandidates.size() > 1);							
 
