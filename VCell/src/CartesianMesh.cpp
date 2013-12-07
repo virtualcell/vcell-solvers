@@ -932,6 +932,17 @@ void CartesianMesh::writeMeshMetrics(FILE *fp)
 	fprintf(fp,"}");	
 }
 
+namespace {
+	/**
+	 * output NeighborStatus in format expected by Java client ; index value or -1 if invalid
+	 */
+	inline signed long clientAnnotatedOutput(const StatusIndex<long,NeighborType::NeighborStatus> &si) {
+		if (si.valid( )) {
+			return si.asSignedLong( );
+		}
+		return -1;
+	}
+}
 
 void CartesianMesh::writeMembraneElements_Connectivity_Region(FILE *fp)
 {
@@ -944,12 +955,11 @@ void CartesianMesh::writeMembraneElements_Connectivity_Region(FILE *fp)
 			memEl->index,
 			memEl->vindexFeatureLo,
 			memEl->vindexFeatureHi,
-			memEl->neighborMEIndex[0].asSignedLong( ), 
-			memEl->neighborMEIndex[1].asSignedLong( ),
-			memEl->neighborMEIndex[2].asSignedLong( ),
-			memEl->neighborMEIndex[3].asSignedLong( ),
+			clientAnnotatedOutput(memEl->neighborMEIndex[0]),
+			clientAnnotatedOutput(memEl->neighborMEIndex[1]),
+			clientAnnotatedOutput(memEl->neighborMEIndex[2]),
+			clientAnnotatedOutput(memEl->neighborMEIndex[3]),
 			memEl->getRegionIndex());
-
 	}
 	fprintf(fp,"\t}\n");
 }
@@ -1670,7 +1680,7 @@ int CartesianMesh::getMembraneNeighborMask(MembraneElement* element) {
 CartesianMesh::NeighborIndex CartesianMesh::orthoIndex(long memIndex, long idxLo,long idxHi,long indexer,int bmask)
 {
 	MembraneElement* meptr = getMembraneElements();
-	const int NO_CONNECTING_NEIGHBOR = -1;
+	//const int NO_CONNECTING_NEIGHBOR = -1;
 	VolumeElement* veptr = getVolumeElements();
 
 	//If we are at the world boundary, there are no neighbors
@@ -1900,7 +1910,8 @@ void CartesianMesh::computeMembraneCoupling(){
 					volLength = sum_arclength/2;
 				} else {
 					stringstream ss;
-					ss << "Unexpected zero area membrane element [" << currentIndex << + "]"; 
+					ss << "Unexpected zero area membrane element [" << currentIndex << + "]" << getMembraneWorldCoord(currentIndex)
+					<< " with neighbors " << arr[0] << " and " << arr[1]; 
 					throw ss.str();
 				}
 			}
@@ -2220,7 +2231,7 @@ void CartesianMesh::computeMembraneCoupling(){
 			int numNeighbors = 0;
 			for (int j = 0; j < numColumns; j ++) {							
 				int32 neighborIndex = columns[j];
-				if (neighborIndex == -1) {
+				if (neighborIndex <= -1) {
 					break;
 				}
 
@@ -2269,7 +2280,21 @@ void CartesianMesh::computeMembraneCoupling(){
 			} else {
 				if (vol == 0) {
 					stringstream ss;
-					ss << "Unexpected zero area membrane element [" << index << + "]"; 
+					ss << "Unexpected zero (0)  area membrane element [" << index << + "]" << getMembraneWorldCoord(index) << std::endl;
+					MembraneElement & me = pMembraneElement[index];
+					ss << " Feature hi at " << getMeshCoord(me.vindexFeatureHi) << " and feature low at " << getMeshCoord(me.vindexFeatureLo) << std::endl;
+					ss << " with " << numColumns << " candidate neighbors with index/status ";
+					for (int j = 0; j < numColumns; j ++) {							
+						int32 neighborIndex = columns[j];
+						if (neighborIndex >= 0) {
+							ss << neighborIndex << ' ' << getMembraneWorldCoord(neighborIndex) << ' ';
+						}
+						else {
+							const NeighborType::NeighborStatus ns = static_cast<NeighborType::NeighborStatus>(neighborIndex);
+							ss << ns << ' ';
+						}
+					}
+					 
 					throw ss.str();
 				}
 			}
@@ -2650,7 +2675,7 @@ IncidenceMatrix<VoronoiRidge>* CartesianMesh::symmetrize(IncidenceMatrix<Voronoi
 
 		for (int j = 0; j < numColumns; j ++) {	
 			int32 neighborIndex = columnIndices[j];
-			if (neighborIndex == -1) {
+			if (neighborIndex <= -1) {
 				break;
 			}
 
