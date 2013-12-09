@@ -155,7 +155,7 @@ struct StatusIndex {
 	/**
 	 * @return as signed int for writing to file
 	 */
-	signed long int asSignedLong( ) {
+	signed long int asSignedLong( ) const {
 	  return static_cast<signed long int>(value);
 	}
 
