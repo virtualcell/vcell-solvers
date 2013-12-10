@@ -42,7 +42,8 @@ void Variable::reset()
 	l2Error = 0;
 	l2Exact = 0;
 	mean = 0;
-//	sumVolFrac = 0;
+	total = 0;
+
 	if (exactErrorVar != NULL)
 	{
 		memset(exactErrorVar->getCurr(), 0, exactErrorVar->getSize() * sizeof(double));
@@ -69,21 +70,25 @@ void Variable::addMean(double d)
 {
 	mean += d;
 }
-
+void Variable::addTotal(double d)
+{
+	total += d;
+}
 void Variable::updateMaxError(double d)
 {
 	maxError = std::max<double>(maxError, d);
 }
 
-void Variable::computeFinalL2Error()
+void Variable::computeFinalStatistics()
 {
+	mean /= structure->getSizeFrac();
+	if (getVarType() == VAR_VOLUME || getVarType() == VAR_VOLUME_REGION)
+	{
+		total *= 620;
+	}
 	if (l2Exact != 0)
 	{
 		l2Error /= l2Exact;
 	}
 	l2Error = std::sqrt(l2Error);
-}
-void Variable::computeFinalMean()
-{
-	mean /= structure->getSizeFrac();
 }

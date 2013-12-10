@@ -13,6 +13,7 @@
       <itemPath>include/VCELL/ChomboSemiImplicitScheduler.h</itemPath>
       <itemPath>include/VCELL/ChomboSpec.h</itemPath>
       <itemPath>include/VCELL/ConnectedComponent.h</itemPath>
+      <itemPath>include/VCELL/DataGenerator.h</itemPath>
       <itemPath>include/VCELL/DataSet.h</itemPath>
       <itemPath>include/VCELL/FVSolver.h</itemPath>
       <itemPath>include/VCELL/Feature.h</itemPath>
@@ -22,6 +23,8 @@
       <itemPath>include/VCELL/MembraneRegionVariable.h</itemPath>
       <itemPath>include/VCELL/MembraneVarContextExpression.h</itemPath>
       <itemPath>include/VCELL/MembraneVariable.h</itemPath>
+      <itemPath>include/VCELL/PostProcessingBlock.h</itemPath>
+      <itemPath>include/VCELL/PostProcessingHdf5Writer.h</itemPath>
       <itemPath>include/VCELL/SimTool.h</itemPath>
       <itemPath>include/VCELL/SimulationExpression.h</itemPath>
       <itemPath>include/VCELL/SimulationMessaging.h</itemPath>
@@ -29,6 +32,7 @@
       <itemPath>include/VCELL/VCellModel.h</itemPath>
       <itemPath>include/VCELL/VarContext.h</itemPath>
       <itemPath>include/VCELL/Variable.h</itemPath>
+      <itemPath>include/VCELL/VariableStatisticsDataGenerator.h</itemPath>
       <itemPath>include/VCELL/VolumeRegionVarContextExpression.h</itemPath>
       <itemPath>include/VCELL/VolumeRegionVariable.h</itemPath>
       <itemPath>include/VCELL/VolumeVarContextExpression.h</itemPath>
@@ -50,6 +54,7 @@
       <itemPath>src/ChomboScheduler.cpp</itemPath>
       <itemPath>src/ChomboSemiImplicitScheduler.cpp</itemPath>
       <itemPath>src/ChomboSpec.cpp</itemPath>
+      <itemPath>src/DataGenerator.cpp</itemPath>
       <itemPath>src/DataSet.cpp</itemPath>
       <itemPath>src/FVSolver.cpp</itemPath>
       <itemPath>src/Feature.cpp</itemPath>
@@ -60,6 +65,8 @@
       <itemPath>src/MembraneRegionVariable.cpp</itemPath>
       <itemPath>src/MembraneVarContextExpression.cpp</itemPath>
       <itemPath>src/MembraneVariable.cpp</itemPath>
+      <itemPath>src/PostProcessingBlock.cpp</itemPath>
+      <itemPath>src/PostProcessingHdf5Writer.cpp</itemPath>
       <itemPath>src/SimTool.cpp</itemPath>
       <itemPath>src/SimulationExpression.cpp</itemPath>
       <itemPath>src/SimulationMessaging.cpp</itemPath>
@@ -67,6 +74,7 @@
       <itemPath>src/VCellModel.cpp</itemPath>
       <itemPath>src/VarContext.cpp</itemPath>
       <itemPath>src/Variable.cpp</itemPath>
+      <itemPath>src/VariableStatisticsDataGenerator.cpp</itemPath>
       <itemPath>src/VolumeRegionVarContextExpression.cpp</itemPath>
       <itemPath>src/VolumeRegionVariable.cpp</itemPath>
       <itemPath>src/VolumeVarContextExpression.cpp</itemPath>

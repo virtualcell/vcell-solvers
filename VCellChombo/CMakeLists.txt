@@ -22,6 +22,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		include/VCELL/ChomboScheduler.h
 		include/VCELL/ChomboSemiImplicitScheduler.h
 		include/VCELL/ChomboSpec.h
+		include/VCELL/DataGenerator.h
 		include/VCELL/DataSet.h
 		include/VCELL/Feature.h
 		include/VCELL/FVSolver.h
@@ -31,6 +32,8 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		include/VCELL/MembraneRegionVariable.h
 		include/VCELL/MembraneVarContextExpression.h
 		include/VCELL/MembraneVariable.h
+		include/VCELL/PostProcessingBlock.h
+		include/VCELL/PostProcessingHdf5Writer.h
 		include/VCELL/SimTool.h
 		include/VCELL/SimTypes.h
 		include/VCELL/SimulationExpression.h
@@ -38,6 +41,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		include/VCELL/Structure.h
 		include/VCELL/VarContext.h
 		include/VCELL/Variable.h
+		include/VCELL/VariableStatisticsDataGenerator.h
 		include/VCELL/VCellModel.h
 		include/VCELL/VolumeRegionVarContextExpression.h
 		include/VCELL/VolumeRegionVariable.h
@@ -54,6 +58,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		src/ChomboScheduler.cpp
 		src/ChomboSemiImplicitScheduler.cpp
 		src/ChomboSpec.cpp
+		src/DataGenerator.cpp
 		src/DataSet.cpp
 		src/Feature.cpp
 		src/FiniteVolume.cpp
@@ -64,12 +69,15 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		src/MembraneRegionVariable.cpp
 		src/MembraneVarContextExpression.cpp
 		src/MembraneVariable.cpp
+		src/PostProcessingBlock.cpp
+		src/PostProcessingHdf5Writer.cpp
 		src/SimTool.cpp
 		src/SimulationExpression.cpp
 		src/SimulationMessaging.cpp
 		src/Structure.cpp
 		src/VarContext.cpp
 		src/Variable.cpp
+		src/VariableStatisticsDataGenerator.cpp
 		src/VCellModel.cpp
 		src/VolumeRegionVarContextExpression.cpp
 		src/VolumeRegionVariable.cpp

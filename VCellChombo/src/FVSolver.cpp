@@ -20,6 +20,8 @@
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/ChomboSemiImplicitScheduler.h>
 #include <VCELL/ChomboSpec.h>
+#include <VCELL/PostProcessingBlock.h>
+#include <VCELL/VariableStatisticsDataGenerator.h>
 
 #include <assert.h>
 #include <sstream>
@@ -908,6 +910,8 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 			loadSerialScanParameterValues(ifsInput, numSerialScanParamValues);
 		} else if (nextToken == "FIELD_DATA_BEGIN") {
 			loadFieldData(ifsInput);
+		} else if (nextToken == "POST_PROCESSING_BLOCK_BEGIN") {
+			loadPostProcessingBlock(ifsInput);
 		} else if (nextToken == "COMPARTMENT_BEGIN") {
 			string feature_name;
 			lineInput >> feature_name;
@@ -1059,4 +1063,56 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 	}
 	chomboSpec = new ChomboSpec(chomboGeometry, numLevels, maxBoxSize, fillRatio, viewLevel, bSaveVCellOutput, bSaveChomboOutput, rois, refineratios);
 	simTool->setChomboSpec(chomboSpec);
+}
+
+/**
+# Post Processing Block
+POST_PROCESSING_BLOCK_BEGIN
+PROJECTION_DATA_GENERATOR postDex cell x sum (5.0 * Dex_cell);
+POST_PROCESSING_BLOCK_END
+*/
+void FVSolver::loadPostProcessingBlock(istream& ifsInput){
+	if (simulation == 0)
+	{
+		throw "Simulation has to be initialized before loading field data";
+	}
+
+	// create post processing block;
+	PostProcessingBlock* postProcessingBlock = simulation->createPostProcessingBlock();
+	// add var statistics data generator always
+	postProcessingBlock->addDataGenerator(new VariableStatisticsDataGenerator());
+
+	string line, nextToken;
+	while (!ifsInput.eof()) {
+		getline(ifsInput, line);
+		istringstream lineInput(line);
+
+		nextToken = "";
+		lineInput >> nextToken;
+		if (nextToken.size() == 0 || nextToken[0] == '#') {
+			continue;
+		}
+		if (nextToken == "POST_PROCESSING_BLOCK_END") {
+			break;
+		}
+
+		if (nextToken == "PROJECTION_DATA_GENERATOR")
+		{
+			throw "Projection data generator is not supported yet";
+		} 
+		else if (nextToken == "GAUSSIAN_CONVOLUTION_DATA_GENERATOR")
+		{
+			throw "Guassian convolution data generator is not supported yet";
+		} 
+		else if (nextToken == "ROI_DATA_GENERATOR_BEGIN")
+		{
+			throw "ROI data generator is not supported yet";
+		} 
+		else
+		{
+			stringstream ss;
+			ss << "loadPostProcessingBlock(), encountered unknown token " << nextToken << endl;
+			throw ss.str();
+		}
+	}
 }

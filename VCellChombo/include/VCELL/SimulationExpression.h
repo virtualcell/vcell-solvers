@@ -12,6 +12,7 @@ class MembraneRegionVariable;
 class VolumeRegionVariable;
 class SymbolTable;
 class VolumeVariable;
+class PostProcessingBlock;
 
 class SimulationExpression
 {
@@ -59,7 +60,7 @@ public:
 		return (int)varList.size();
 	}
 	
-	void writeData();
+	void writeData(char* filename);
 
 	SymbolTable* getSymbolTable() { 
 		return symbolTable; 
@@ -111,6 +112,9 @@ public:
 		return bHasParabolic;
 	}
 
+	PostProcessingBlock* createPostProcessingBlock();
+	PostProcessingBlock* getPostProcessingBlock();
+	
 private:
 	int currIteration;  // first iteration is currIteration=0
   bool bHasElliptic;
@@ -142,6 +146,8 @@ private:
 	char** outputVarNames;
 	int outputVarCnt;
 	int* outputVarTypes;
+
+	PostProcessingBlock* postProcessingBlock;
 };
 
 #endif

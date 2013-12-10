@@ -51,14 +51,18 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/ChomboIF.o \
 	${OBJECTDIR}/src/JumpCondition.o \
 	${OBJECTDIR}/src/FiniteVolume.o \
+	${OBJECTDIR}/src/VariableStatisticsDataGenerator.o \
 	${OBJECTDIR}/src/Variable.o \
 	${OBJECTDIR}/src/ChomboSpec.o \
 	${OBJECTDIR}/src/VolumeRegionVariable.o \
+	${OBJECTDIR}/src/DataGenerator.o \
 	${OBJECTDIR}/src/MembraneRegionVarContextExpression.o \
 	${OBJECTDIR}/src/Membrane.o \
 	${OBJECTDIR}/src/VolumeVariable.o \
+	${OBJECTDIR}/src/PostProcessingHdf5Writer.o \
 	${OBJECTDIR}/src/FVSolver.o \
 	${OBJECTDIR}/src/SimulationExpression.o \
+	${OBJECTDIR}/src/PostProcessingBlock.o \
 	${OBJECTDIR}/src/ChomboGeometry.o \
 	${OBJECTDIR}/src/Feature.o \
 	${OBJECTDIR}/src/VCellModel.o \
@@ -170,6 +174,11 @@ ${OBJECTDIR}/src/FiniteVolume.o: src/FiniteVolume.cpp
 	${RM} $@.d
 	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_SPACEDIM=3 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -DSVNVERSION=1 -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.8/c++/src -I../numerics/hdf5-1.8.8/src -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/FiniteVolume.o src/FiniteVolume.cpp
 
+${OBJECTDIR}/src/VariableStatisticsDataGenerator.o: src/VariableStatisticsDataGenerator.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_SPACEDIM=3 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -DSVNVERSION=1 -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.8/c++/src -I../numerics/hdf5-1.8.8/src -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/VariableStatisticsDataGenerator.o src/VariableStatisticsDataGenerator.cpp
+
 ${OBJECTDIR}/src/Variable.o: src/Variable.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
@@ -184,6 +193,11 @@ ${OBJECTDIR}/src/VolumeRegionVariable.o: src/VolumeRegionVariable.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_SPACEDIM=3 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -DSVNVERSION=1 -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.8/c++/src -I../numerics/hdf5-1.8.8/src -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/VolumeRegionVariable.o src/VolumeRegionVariable.cpp
+
+${OBJECTDIR}/src/DataGenerator.o: src/DataGenerator.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_SPACEDIM=3 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -DSVNVERSION=1 -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.8/c++/src -I../numerics/hdf5-1.8.8/src -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/DataGenerator.o src/DataGenerator.cpp
 
 ${OBJECTDIR}/src/MembraneRegionVarContextExpression.o: src/MembraneRegionVarContextExpression.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
@@ -200,6 +214,11 @@ ${OBJECTDIR}/src/VolumeVariable.o: src/VolumeVariable.cpp
 	${RM} $@.d
 	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_SPACEDIM=3 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -DSVNVERSION=1 -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.8/c++/src -I../numerics/hdf5-1.8.8/src -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/VolumeVariable.o src/VolumeVariable.cpp
 
+${OBJECTDIR}/src/PostProcessingHdf5Writer.o: src/PostProcessingHdf5Writer.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_SPACEDIM=3 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -DSVNVERSION=1 -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.8/c++/src -I../numerics/hdf5-1.8.8/src -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/PostProcessingHdf5Writer.o src/PostProcessingHdf5Writer.cpp
+
 ${OBJECTDIR}/src/FVSolver.o: src/FVSolver.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
@@ -209,6 +228,11 @@ ${OBJECTDIR}/src/SimulationExpression.o: src/SimulationExpression.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_SPACEDIM=3 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -DSVNVERSION=1 -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.8/c++/src -I../numerics/hdf5-1.8.8/src -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/SimulationExpression.o src/SimulationExpression.cpp
+
+${OBJECTDIR}/src/PostProcessingBlock.o: src/PostProcessingBlock.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_SPACEDIM=3 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -DSVNVERSION=1 -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.8/c++/src -I../numerics/hdf5-1.8.8/src -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/PostProcessingBlock.o src/PostProcessingBlock.cpp
 
 ${OBJECTDIR}/src/ChomboGeometry.o: src/ChomboGeometry.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src

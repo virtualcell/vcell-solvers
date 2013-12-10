@@ -306,7 +306,7 @@ void DataSet::read(char *filename, SimulationExpression *sim)
 	fclose(fp);
 }
 
-void DataSet::write(SimulationExpression *sim)
+void DataSet::write(SimulationExpression *sim, char* filename)
 {
   vector<Variable*> allVarList;
 	// sim variables
@@ -324,8 +324,6 @@ void DataSet::write(SimulationExpression *sim)
 		cout << "DataSet::write() - no variables defined" << endl;
 	}
 	
-	char filename[128];
-	
 	static const char* SOLUTION_GROUP = "/solution";
 	static const char* SOLUTION_ATTR_TIME = "time";
 	static const char* SOLUTION_ATTR_VARIABLES = "variables";
@@ -338,7 +336,6 @@ void DataSet::write(SimulationExpression *sim)
 	static const char* SOLUTION_DATASET_ATTR_RELATIVE_L2ERROR = "relative L2 error";
 	static const char* SOLUTION_DATASET_ATTR_MAX_ERROR = "max error";
 
-	SimTool::getInstance()->getSimHdf5FileName(filename);
 	hid_t h5SimFile = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	hid_t solGroup = H5Gcreate(h5SimFile, SOLUTION_GROUP, H5P_DEFAULT);
 	

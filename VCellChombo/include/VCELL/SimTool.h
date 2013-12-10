@@ -27,6 +27,7 @@ class SimulationExpression;
 class Variable;
 class ChomboIF;
 class ChomboSpec;
+class PostProcessingHdf5Writer;
 
 class SimTool {
 public:
@@ -62,8 +63,6 @@ public:
 	void setSolver(string& s);
 	bool isChomboSemiImplicitSolver();
 	bool isChomboSundialsSolver();
-	void getSimFileName(char* filename);
-	void getSimHdf5FileName(char* filename);
 
 //	void setKeepAtMost(int kam) { keepAtMost = kam; }
 //	void setDiscontinuityTimes(int num, double* times) {
@@ -120,6 +119,8 @@ private:
 	char* baseDirName;
 	int zipFileCount;
 	string solver;
+
+	PostProcessingHdf5Writer* postProcessingHdf5Writer;
 
 //	double* discontinuityTimes;
 //	int numDiscontinuityTimes;

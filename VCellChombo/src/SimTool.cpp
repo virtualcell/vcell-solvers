@@ -16,6 +16,7 @@ using std::endl;
 #include <VCELL/SimulationMessaging.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/Variable.h>
+#include <VCELL/PostProcessingHdf5Writer.h>
 
 #include <float.h>
 #include <math.h>
@@ -30,10 +31,12 @@ using std::endl;
 
 #define SIM_FILE_EXT ".sim"
 #define SIM_HDF5_FILE_EXT ".sim.hdf5"
+#define MESH_HDF5_FILE_EXT ".mesh.hdf5"
 #define LOG_FILE_EXT ".log"
 #define ZIP_FILE_EXT ".zip"
 #define ZIP_HDF5_FILE_EXT ".hdf5.zip"
 #define TID_FILE_EXT ".tid"
+#define PP_HDF5_FILE_EXT ".hdf5"
 
 int zip32(int filecnt, char* zipfile, ...);
 int unzip32(char* zipfile, char* file, char* exdir);
@@ -59,6 +62,8 @@ SimTool::SimTool()
 	simulation = 0;
 	solver = CHOMBO_SEMIIMPLICIT_SOLVER;
 	simStartTime = 0;
+	
+	postProcessingHdf5Writer = NULL;
 
 //	numDiscontinuityTimes = 0;
 //	discontinuityTimes = 0;
@@ -76,6 +81,10 @@ SimTool::~SimTool()
 	delete baseDirName;
 	delete baseFileName;
 
+	if (postProcessingHdf5Writer != NULL)
+	{
+		delete postProcessingHdf5Writer;
+	}
 //	delete[] discontinuityTimes;
 }
 
@@ -237,16 +246,6 @@ FILE* SimTool::lockForReadWrite() {
 	return fp;
 }
 
-void SimTool::getSimFileName(char* filename)
-{
-	sprintf(filename,"%s%.4d%s",baseSimName, simFileCount, SIM_FILE_EXT);
-}
-
-void SimTool::getSimHdf5FileName(char* filename)
-{
-	sprintf(filename,"%s%.4d%s",baseSimName, simFileCount, SIM_HDF5_FILE_EXT);
-}
-
 void SimTool::writeData(double progress, double time, int iteration)
 {
 	FILE *logFP;
@@ -258,7 +257,8 @@ void SimTool::writeData(double progress, double time, int iteration)
 	char errmsg[512];
 	FILE* tidFP = lockForReadWrite();
 
-	simulation->writeData();
+	sprintf(hdf5SimFileName,"%s%.4d%s",baseSimName, simFileCount, SIM_HDF5_FILE_EXT);
+	simulation->writeData(hdf5SimFileName);
 
 	if (chomboSpec->isSaveVCellOutput())
 	{
@@ -269,19 +269,18 @@ void SimTool::writeData(double progress, double time, int iteration)
 			sprintf(errmsg, "SimTool::updateLog() - error opening log file <%s>", logFileName);
 			bSuccess = false;
 		} else {
-			// write zip file
-	//		sprintf(zipFileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_FILE_EXT);
-	//		getSimFileName(buffer);
-	//		bSuccess = zipUnzipWithRetry(true, zipFileName, buffer, errmsg);
-	//		remove(buffer);
-
 			sprintf(zipHdf5FileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_HDF5_FILE_EXT);
-			getSimHdf5FileName(hdf5SimFileName);
 			bSuccess = zipUnzipWithRetry(true, zipHdf5FileName, hdf5SimFileName, errmsg);
 			remove(hdf5SimFileName);
 
 			// write the log file
 			if (bSuccess) {
+				// write hdf5 post processing before writing log entry
+				if (postProcessingHdf5Writer != NULL)
+				{
+					postProcessingHdf5Writer->writeOutput();
+				}
+					
 				char zipFileNameWithoutPath[512];
 				sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_HDF5_FILE_EXT);
 				fprintf(logFP,"%4d %s %s %.15lg\n", iteration, hdf5SimFileName, zipFileNameWithoutPath, time);
@@ -318,11 +317,16 @@ void SimTool::cleanupLastRun()
 
 	cout << "SimTool::cleanupLastRun(), removing log and zip files" << endl;
 	char buffer[256];
-	sprintf(buffer,"%s%s",baseFileName, ZIP_FILE_EXT);
+	sprintf(buffer,"%s%s",baseFileName, MESH_HDF5_FILE_EXT);
 	remove(buffer);
-	sprintf(buffer,"%s%s",baseFileName, ZIP_HDF5_FILE_EXT);
-	remove(buffer);
+	for (int i = 0; i < 10; ++ i)
+	{
+		sprintf(buffer,"%s%s%02d",baseFileName, zipFileCount, ZIP_HDF5_FILE_EXT);
+		remove(buffer);
+	}
 	sprintf(buffer,"%s%s",baseFileName, LOG_FILE_EXT);
+	remove(buffer);
+	sprintf(buffer,"%s%s",baseFileName, PP_HDF5_FILE_EXT);
 	remove(buffer);
 }
 
@@ -335,8 +339,15 @@ void SimTool::setSolver(string& s) {
 	solver = s;
 }
 
-void SimTool::start() {
-	simulation->initSimulation();
+void SimTool::start()
+{
+	if (simulation->getPostProcessingBlock() != NULL)
+	{
+		char h5PPFileName[128];
+		sprintf(h5PPFileName, "%s%s", baseFileName, PP_HDF5_FILE_EXT);
+		postProcessingHdf5Writer = new PostProcessingHdf5Writer(h5PPFileName, simulation->getPostProcessingBlock());
+	}
+	simulation->initSimulation();	
 	// clean up last run results
 	cleanupLastRun();
 

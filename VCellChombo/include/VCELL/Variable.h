@@ -82,8 +82,9 @@ public:
 	void addL2Error(double d);
 	void addL2Exact(double d);
 	void addMean(double d);
-	void computeFinalL2Error();
-	void computeFinalMean();
+	void addTotal(double d);
+	void computeFinalStatistics();
+	
 	double getL2Error()
 	{
 		return l2Error;
@@ -96,6 +97,10 @@ public:
 	double getMaxError()
 	{
 		return maxError;
+	}
+	double getTotal()
+	{
+		return total;
 	}
 	void reset();
 
@@ -117,6 +122,7 @@ protected:
 	double maxError;
 	double l2Exact;
 	double mean;
+	double total;
 };
 
 #endif

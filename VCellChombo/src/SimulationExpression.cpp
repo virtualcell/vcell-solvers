@@ -13,6 +13,7 @@
 #include <VCELL/Membrane.h>
 #include <VCELL/VCellModel.h>
 #include <VCELL/DataSet.h>
+#include <VCELL/PostProcessingBlock.h>
 #include <SimpleSymbolTable.h>
 #include <sstream>
 #include <assert.h>
@@ -44,6 +45,8 @@ SimulationExpression::SimulationExpression() {
 	outputVarNames = 0;
 	outputVarCnt = 0;
 	outputVarTypes = 0;
+
+	postProcessingBlock = NULL;
 }
 
 SimulationExpression::~SimulationExpression() 
@@ -112,7 +115,10 @@ void SimulationExpression::initSimulation()
 	}
 	VCellModel *model = SimTool::getInstance()->getModel();
 	model->resolveReferences();
-	
+	if (postProcessingBlock != NULL)
+	{
+		postProcessingBlock->resolveReferences();
+	}
 	_scheduler->initValues();
 	currIteration = 0;
 }
@@ -254,9 +260,9 @@ int  SimulationExpression::getNumSymbols() {
 	return numSymbols;
 }
 
-void SimulationExpression::writeData()
+void SimulationExpression::writeData(char* filename)
 {
-	_scheduler->writeData();
+	_scheduler->writeData(filename);
 }
 
 char** SimulationExpression::getOutputVarNames()
@@ -317,4 +323,17 @@ int* SimulationExpression::getOutputVarTypes()
 {
 	getOutputVarNames();
 	return outputVarTypes;
+}
+
+PostProcessingBlock* SimulationExpression::createPostProcessingBlock() {
+	if (postProcessingBlock == NULL)
+	{
+		postProcessingBlock = new PostProcessingBlock(this);
+	}
+	return postProcessingBlock;
+}
+
+PostProcessingBlock* SimulationExpression::getPostProcessingBlock()
+{
+	return postProcessingBlock;
 }

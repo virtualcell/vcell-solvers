@@ -51,6 +51,8 @@ private:
 	void loadSerialScanParameterValues(istream& ifsInput, int numSerialScanParamValues);
 	void loadChomboSpec(istream& ifsInput);
 
+	void loadPostProcessingBlock(istream& ifsInput);
+
 	SimTool* simTool;
 	SimulationExpression *simulation;
 	VCellModel *model;

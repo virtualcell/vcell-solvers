@@ -565,6 +565,7 @@ void ChomboScheduler::initializeGrids() {
 	}
 
 	// compute size of each connected component
+	// this part does not seem right
 	{
 		int cfRefRatio = 1;
 		for(int ilev = 0; ilev < numLevels - 1; ++ ilev)
@@ -617,7 +618,7 @@ void ChomboScheduler::initializeGrids() {
 #if CH_SPACEDIM==3
 						} // k
 #endif
-						if (iphase == 0 && irregVolumeMembraneMap[ilev].size() > 0)
+						if (iphase == 0)
 						{
 							int totalVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
 							Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
@@ -665,6 +666,7 @@ void ChomboScheduler::initializeGrids() {
 		} // phase
 	} // compute size
 
+	// print summary
 	for(int phase0 = 0; phase0 < NUM_PHASES; phase0 ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++) {
 			Feature* feature = phaseVolumeList[phase0][ivol]->feature;
@@ -716,6 +718,7 @@ void ChomboScheduler::updateSolution() {
 	}
 
 	double smallVolFrac = 1e-3;
+	double unitV = vectDxes[viewLevel].product();
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
@@ -782,7 +785,7 @@ void ChomboScheduler::updateSolution() {
 									double sol = solnDataPtr[getChomboBoxLocalIndex(solnSize, ivar, D_DECL(i, j, k))];
 									double mean = sol * volFrac;
 									var->addMean(mean);
-//									var->addVolFrac(volFrac);
+									var->addTotal(mean * unitV);
 									double error = 0;
 									double relErr = 0;
 									if (bComputeError)
@@ -839,11 +842,7 @@ void ChomboScheduler::updateSolution() {
 	for (int i = 0; i < simulation->getNumVolVariables(); ++ i)
 	{
 		Variable* var = simulation->getVolVariable(i);
-		var->computeFinalMean();
-		if (var->getExactErrorVariable() != NULL)
-		{
-			var->computeFinalL2Error();
-		}
+		var->computeFinalStatistics();
 	}
 
 	// membrane variables
@@ -857,12 +856,10 @@ void ChomboScheduler::updateSolution() {
 
 		for (int ilev = 0; ilev < numLevels; ++ ilev)
 		{
-			if (irregVolumeMembraneMap[ilev].size() == 0)
-			{
-				continue;
-			}
+			// unit volume in this level
+			unitV = vectDxes[ilev].product();
+			
 			DisjointBoxLayout& currGrids = vectGrids[ilev];
-
 			for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++dit)	{
 				const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
 				const Box& currBox = vectGrids[ilev][dit()];
@@ -902,9 +899,8 @@ void ChomboScheduler::updateSolution() {
 								{
 									double* varCurr = var->getCurr();
 									double sol = (*memSoln[ivol][ilev])[dit()](vof, ivar);
-//									double sol = var->getCurr()[memIndex];
 									double mean = sol * areaFrac;
-//									var->addVolFrac(areaFrac);
+									var->addTotal(mean * unitV);
 									var->addMean(mean);
 
 									varCurr[memIndex] = sol;
@@ -948,12 +944,7 @@ void ChomboScheduler::updateSolution() {
 	for (int i = 0; i < simulation->getNumMemVariables(); ++ i)
 	{
 		MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(i);
-		var->computeFinalMean();
-		if (var->getExactErrorVariable() != NULL)
-		{
-			// note: I assume this means sqrt(sum*finestDs)
-			var->computeFinalL2Error();
-		}
+		var->computeFinalStatistics();
 	}
 
 	// first time to save IF as volume variable
@@ -1001,11 +992,11 @@ void ChomboScheduler::updateSolution() {
 	}
 }
 
-void ChomboScheduler::writeData() {
+void ChomboScheduler::writeData(char* filename) {
 	if (chomboSpec->isSaveVCellOutput())
 	{
 		updateSolution();
-		DataSet::write(simulation);
+		DataSet::write(simulation, filename);
 	}
 	// we need at least one hdf5 to show mesh in viewer.
 	if (chomboSpec->isSaveChomboOutput()) {
@@ -1437,10 +1428,6 @@ void ChomboScheduler::writeMembraneFiles()
 	{
 		for (int ilev = 0; ilev < numLevels; ++ ilev)
 		{
-			if (irregVolumeMembraneMap[ilev].size() == 0)
-			{
-				continue;
-			}
 			ChomboGeometryShop chomboGeoShop(geoIfs[iphase], vectDxes[ilev]);
 #if CH_SPACEDIM == 2
 			RealVect edgePointOffset[4] =

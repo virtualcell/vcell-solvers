@@ -54,7 +54,7 @@ public:
 	void initializeGrids();
 	virtual void initValues()=0;
 
-	void writeData();
+	void writeData(char* filename);
 	int getNumMembranePoints()
 	{
 		return numMembranePoints;
