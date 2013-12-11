@@ -12,10 +12,6 @@ using std::vector;
 
 class DataGenerator;
 class PostProcessingBlock;
-namespace H5 {
-	class H5File;
-	class DataSet;
-}
 
 class PostProcessingHdf5Writer
 {

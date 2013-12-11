@@ -6,7 +6,7 @@
 #define DATA_GENERATOR_H
 
 #include <VCELL/Variable.h>
-#include <H5Cpp.h>
+#include <hdf5.h>
 #include <string>
 using std::string;
 

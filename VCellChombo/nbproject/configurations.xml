@@ -215,7 +215,6 @@
             <pElem>../Chombo/lib/include</pElem>
             <pElem>../numerics/ExpressionParser</pElem>
             <pElem>include</pElem>
-            <pElem>../numerics/hdf5-1.8.8/c++/src</pElem>
             <pElem>../numerics/hdf5-1.8.8/src</pElem>
           </incDir>
           <preprocessorList>
