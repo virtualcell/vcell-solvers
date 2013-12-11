@@ -96,6 +96,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	include_directories(${CMAKE_SOURCE_DIR}/${HDF_VERSION})
 	include_directories(${CMAKE_BINARY_DIR}/${HDF_VERSION})
 	include_directories(${CMAKE_SOURCE_DIR}/${HDF_VERSION}/src)
+	include_directories(${CMAKE_SOURCE_DIR}/${HDF_VERSION}/c++/src)
 	if (CYGWIN)
 		add_definitions(-DCH_CYGWIN)
 		set(LIB_NAME_OS CYGWIN)
