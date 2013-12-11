@@ -2283,7 +2283,7 @@ void CartesianMesh::computeMembraneCoupling(){
 					ss << "Unexpected zero (0)  area membrane element [" << index << + "]" << getMembraneWorldCoord(index) << std::endl;
 					MembraneElement & me = pMembraneElement[index];
 					ss << " Feature hi at " << getMeshCoord(me.vindexFeatureHi) << " and feature low at " << getMeshCoord(me.vindexFeatureLo) << std::endl;
-					ss << " with " << numColumns << " candidate neighbors with index/status ";
+					ss << " with  candidate neighbors with index/status ";
 					for (int j = 0; j < numColumns; j ++) {							
 						int32 neighborIndex = columns[j];
 						if (neighborIndex >= 0) {
@@ -2294,8 +2294,8 @@ void CartesianMesh::computeMembraneCoupling(){
 							ss << ns << ' ';
 						}
 					}
-					 
-					throw ss.str();
+					std::cout << ss.str( ) << std::endl;
+					vol = pMembraneElement[index].area;
 				}
 			}
 			smat->setDiag(index, vol);
