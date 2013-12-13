@@ -1084,6 +1084,7 @@ struct MeshMetrics
 	RealVect coord, normal;
 	double volumeFraction,areaFraction;
 	int membraneId;
+	unsigned short cornerPhaseMask;
 };
 
 void ChomboScheduler::populateMetricsDataType(hid_t& metricsType)
@@ -1102,6 +1103,7 @@ void ChomboScheduler::populateMetricsDataType(hid_t& metricsType)
 	H5Tinsert(metricsType, "volumeFraction", HOFFSET(MeshMetrics, volumeFraction), H5T_NATIVE_DOUBLE);
 	H5Tinsert(metricsType, "areaFraction", HOFFSET(MeshMetrics, areaFraction), H5T_NATIVE_DOUBLE);
 	H5Tinsert(metricsType, "membraneId", HOFFSET(MeshMetrics, membraneId), H5T_NATIVE_INT);
+	H5Tinsert(metricsType, "cornerPhaseMask", HOFFSET(MeshMetrics, cornerPhaseMask), H5T_NATIVE_USHORT);
 }
 
 struct Vertex
@@ -1472,6 +1474,34 @@ void ChomboScheduler::writeMembraneFiles()
 					metricsData[memIndex].normal = currEBISBox.normal(vof);
 					metricsData[memIndex].areaFraction = currEBISBox.bndryArea(vof);
 					metricsData[memIndex].volumeFraction = currEBISBox.volFrac(vof);
+					metricsData[memIndex].cornerPhaseMask = 0;
+
+					// compute corner phase mask
+					RealVect dP[2] = {-0.5 * vectDxes[ilev], 0.5 * vectDxes[ilev]};
+					RealVect P = vol_point;
+					
+					int cindex = 0;
+#if CH_SPACEDIM == 3
+					for (int k = 0; k < 2; ++ k)
+					{
+						P[2] = vol_point[2] + dP[k][2];
+#endif
+						for (int j = 0; j < 2 ; ++ j)
+						{
+							P[1] = vol_point[1] + dP[j][1];
+							for (int i = 0; i < 2 ; ++ i)
+							{
+								P[0] = vol_point[0] + dP[i][0];
+								if (geoIfs[0]->value(P) > 0)
+								{
+									metricsData[memIndex].cornerPhaseMask |= (0x1 << cindex);
+								}
+								++ cindex;
+							}
+						}
+#if CH_SPACEDIM == 3
+          }
+#endif
 
 #if CH_SPACEDIM == 2
 					segmentList[memIndex].index = memIndex;
