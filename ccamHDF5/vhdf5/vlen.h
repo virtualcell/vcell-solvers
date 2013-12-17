@@ -32,16 +32,21 @@ namespace vcellH5 {
 	};
 	template <class T>
 	struct VarLenSimple : public VarLen<T> {
-		static H5::DataType supportedType;
 		/**
 		* use #TPredType for #T to generate default
 		*/
 		VarLenSimple( )
-		:VarLen<T>(supportedType) {}
+		:VarLen<T>(supportedType( ) ) {}
+	private:
+		/**
+		 * return default type; must be function (not static member) due to static member 
+		 * initialization issues
+		 */
+		static H5::DataType &supportedType( ) {
+			static H5::DataType st(TPredType<T>::predType( ));
+			return st;
+		}
 	};
-	
-	template <class T>
-	H5::DataType VarLenSimple<T>::supportedType(TPredType<T>::predType( ));
 	
 }
 #endif
