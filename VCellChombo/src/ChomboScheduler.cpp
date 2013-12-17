@@ -1476,10 +1476,21 @@ void ChomboScheduler::writeMembraneFiles()
 					metricsData[memIndex].volumeFraction = currEBISBox.volFrac(vof);
 					metricsData[memIndex].cornerPhaseMask = 0;
 
+					// correct normal signs (direction), we want normals pointing from phase 1 to phase 0
+#if CH_SPACEDIM == 3
+					double alpha = 0.25;
+					RealVect offset = alpha * vectDxes[ilev] * metricsData[memIndex].normal;
+					double Fp = geoIfs[0]->value(mem_point + offset);
+					double Fm = geoIfs[0]->value(mem_point - offset);
+					if ( Fp > Fm )
+					{
+						metricsData[memIndex].normal = - metricsData[memIndex].normal;
+					}
+#endif
 					// compute corner phase mask
 					RealVect dP[2] = {-0.5 * vectDxes[ilev], 0.5 * vectDxes[ilev]};
 					RealVect P = vol_point;
-					
+
 					int cindex = 0;
 #if CH_SPACEDIM == 3
 					for (int k = 0; k < 2; ++ k)
