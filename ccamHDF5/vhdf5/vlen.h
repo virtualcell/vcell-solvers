@@ -10,11 +10,6 @@ namespace vcellH5 {
 		*/
 		VarLen(H5::DataType dt) 
 			:dataType(H5::VarLenType(&dt)) {}
-		/**
-		* use #TPredType for #T to generate default
-		*/
-		VarLen( )
-			:dataType(H5::VarLenType(&TPredType<T>::predType( ) ) ) {} 
 
 		/**
 		* @return hvl_t backed by vector passed at constructor; will most likely become invalidated if vector altered 
@@ -35,5 +30,18 @@ namespace vcellH5 {
 	private:
 		const H5::DataType dataType;
 	};
+	template <class T>
+	struct VarLenSimple : public VarLen<T> {
+		static H5::DataType supportedType;
+		/**
+		* use #TPredType for #T to generate default
+		*/
+		VarLenSimple( )
+		:VarLen<T>(supportedType) {}
+	};
+	
+	template <class T>
+	H5::DataType VarLenSimple<T>::supportedType(TPredType<T>::predType( ));
+	
 }
 #endif

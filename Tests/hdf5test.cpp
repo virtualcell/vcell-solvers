@@ -553,7 +553,7 @@ TEST(hdf5,compoundWithVar) {
 
 	try {
 		std::vector<double> data;
-		vcellH5::VarLen<double> vlen;
+		vcellH5::VarLenSimple<double> vlen;
 
 		CompType demoType( sizeof(DemoPoint) ); 
 		demoType.insertMember("x", HOFFSET(DemoPoint,x),vcellH5::TPredType<double>::predType( ));
