@@ -35,6 +35,11 @@ namespace spatial {
 			pointType.insertMember("y",HOFFSET(PODPoint,y),vcellH5::TPredType<T>::predType( ));
 			return pointType;
 		}
+		/**
+		* singleton function for var len type; must be method due to static initialization
+		* dependencies
+		*/ 
+		static vcellH5::VarLen<PODPoint<T> > & vectorType( );
 	};
 
 	struct HElementRecord {
@@ -71,7 +76,7 @@ namespace spatial {
 		{ }
 		void set(const spatial::TPoint<size_t,2> & idx, const HElementRecord & er, double time)
 		{
-			static vcellH5::VarLen<PODPoint<double> > & vtype = vectorType( );
+			static vcellH5::VarLen<PODPoint<double> > & vtype = PODPoint<double>::vectorType( );
 			mass = er.mass;
 			volume = er.volume;
 			concentrationNumeric = er.concentration;
@@ -85,11 +90,6 @@ namespace spatial {
 			static H5::CompType ct = getType(sizeof(ResultPoint));
 			return ct;
 		}
-		/**
-		* singleton function for var len type; must be method due to static initialization
-		* dependencies
-		*/ 
-		static vcellH5::VarLen<PODPoint<double> > & vectorType( );
 	protected:
 		static H5::CompType getType(size_t size) {
 			using H5::PredType;
@@ -98,7 +98,7 @@ namespace spatial {
 			resultPointType.insertMember("mass", offsetof(ResultPoint,mass),dtype);
 			resultPointType.insertMember("volume", HOFFSET(ResultPoint,volume),dtype);
 			resultPointType.insertMember("uNumeric", HOFFSET(ResultPoint,concentrationNumeric),dtype);
-			resultPointType.insertMember("volumePoints", HOFFSET(ResultPoint,volumePoints),vectorType( ).getType( ));
+			resultPointType.insertMember("volumePoints", HOFFSET(ResultPoint,volumePoints),PODPoint<double>::vectorType( ).getType( ));
 			return resultPointType;
 		}
 	};
@@ -193,13 +193,13 @@ namespace spatial {
 		* @param f file to write to
 		* @param mbpp the problem 
 		* @param numberReports number time steps to record
-		* @param datasetName name of dataset in HDF5 file if not default
+		* @param baseName name of dataset in HDF5 file if not default
 		* @param startTime_ when to start recording (time 0 always recorded)
 		*/
 		NHDF5Client(H5::H5File &f, 
 			const spatial::MovingBoundaryParabolicProblem &mbpp, 
 			unsigned int numberReports,
-			const char *datasetName = nullptr,
+			const char *baseName = nullptr,
 			const double startTime_ = 0) 
 			:file(f),
 			startTime(startTime_),
@@ -212,7 +212,8 @@ namespace spatial {
 			genTime(),
 			timeStep(mbpp.baseTimeStep( )),
 			buffer(),
-			dataset( ),
+			baseGroup( ),
+			elementDataset( ),
 			worldDim( ),
 			reportStep(calcReportStep(mbpp,startTime_,numberReports)),
 			reportCounter(0),
@@ -222,20 +223,34 @@ namespace spatial {
 		{
 			int numberGenerations = mbpp.numberTimeSteps( );
 			timer.start( );
-			using spatial::cX;
-			using spatial::cY;
+			{ //create group
 
-			std::string dsName;
-			if (datasetName != nullptr) {
-				dsName = datasetName;
-			}
-			else
-				if (datasetName == nullptr) {
+				std::string groupName;
+				if (baseName != nullptr) {
+					groupName = baseName;
+				}
+				else {
 					std::ostringstream oss;
 					oss << "result-" << numberGenerations << '-' <<  meshDef.numCells(cX)  << '-' <<meshDef.numCells(cY); 
-					dsName = oss.str( );
+					groupName = oss.str( );
 				}
+				{
+					vcellH5::Suppressor s; //no error message if not there
+					H5Ldelete( file.getLocId(), groupName.c_str( ), H5P_DEFAULT );
+				}
+				std::cerr << "creating " << groupName << std::endl;
+				baseGroup = file.createGroup(groupName);
+				vcellH5::writeAttribute(baseGroup,"timeStep",timeStep);
+				if (SOLUTION::validates) {
+					const std::string s = SOLUTION::expression( ); 
+					vcellH5::writeAttribute(baseGroup,"expression",s);
+				}
+			} //create group
 
+
+			{ //create element dataset
+				using spatial::cX;
+				using spatial::cY;
 				const size_t xSize = meshDef.numCells(cX);
 				const size_t ySize = meshDef.numCells(cY);
 				worldDim[timeArrayIndex] = timeChunkSize;
@@ -249,38 +264,39 @@ namespace spatial {
 				prop.setChunk(3, chunkDim);
 				H5::CompType dataType = SOLUTION::DataType::getType( ); 
 
-				{
-					vcellH5::Suppressor s; //no error message if not there
-					H5Ldelete( file.getLocId(), dsName.c_str( ), H5P_DEFAULT );
-				}
+				elementDataset = baseGroup.createDataSet( "elements", dataType, dataspace ,prop);
+				const double startx = meshDef.startCorner(spatial::cX);
+				const double starty = meshDef.startCorner(spatial::cY);
+				const double hx = meshDef.interval(spatial::cX);
+				const double hy = meshDef.interval(spatial::cY);
+				vcellH5::writeAttribute(elementDataset,"startX",startx);
+				vcellH5::writeAttribute(elementDataset,"startY",starty);
+				vcellH5::writeAttribute(elementDataset,"numX",xSize);
+				vcellH5::writeAttribute(elementDataset,"numY",ySize);
+				vcellH5::writeAttribute(elementDataset,"hx",hx);
+				vcellH5::writeAttribute(elementDataset,"hy",hy);
+				const std::string layout("time x X x Y (transposed in MATLAB)");
+				vcellH5::writeAttribute(elementDataset,"layout",layout);
+				std::vector<double> xvalues = meshDef.coordinateValues(spatial::cX);
+				std::vector<double> yvalues = meshDef.coordinateValues(spatial::cY);
+				vcellH5::SeqFacade<std::vector<double> > xv(xvalues); 
+				vcellH5::facadeWriteAttribute(elementDataset,"xvalues",xv);
+				vcellH5::SeqFacade<std::vector<double> > yv(yvalues); 
+				vcellH5::facadeWriteAttribute(elementDataset,"yvalues",yv);
+			} //create element dataset
 
-				dataset = file.createDataSet( dsName, dataType, dataspace ,prop);
-				std::cerr << "creating " << dsName << std::endl;
-				{ //metadata setting via HDF attributes
-					const double startx = meshDef.startCorner(spatial::cX);
-					const double starty = meshDef.startCorner(spatial::cY);
-					const double hx = meshDef.interval(spatial::cX);
-					const double hy = meshDef.interval(spatial::cY);
-					vcellH5::writeAttribute(dataset,"startX",startx);
-					vcellH5::writeAttribute(dataset,"startY",starty);
-					vcellH5::writeAttribute(dataset,"numX",xSize);
-					vcellH5::writeAttribute(dataset,"numY",ySize);
-					vcellH5::writeAttribute(dataset,"hx",hx);
-					vcellH5::writeAttribute(dataset,"hy",hy);
-					vcellH5::writeAttribute(dataset,"timeStep",timeStep);
-					const std::string layout("time x X x Y (transposed in MATLAB)");
-					vcellH5::writeAttribute(dataset,"layout",layout);
-					if (SOLUTION::validates) {
-						const std::string s = SOLUTION::expression( ); 
-						vcellH5::writeAttribute(dataset,"expression",s);
-					}
-					std::vector<double> xvalues = meshDef.coordinateValues(spatial::cX);
-					std::vector<double> yvalues = meshDef.coordinateValues(spatial::cY);
-					vcellH5::SeqFacade<std::vector<double> > xv(xvalues); 
-					vcellH5::facadeWriteAttribute(dataset,"xvalues",xv);
-					vcellH5::SeqFacade<std::vector<double> > yv(yvalues); 
-					vcellH5::facadeWriteAttribute(dataset,"yvalues",yv);
-				}
+			{ //create boundary dataset
+				boundaryDim[0] = timeChunkSize;
+				hsize_t     maxdim[1]= {H5S_UNLIMITED};
+				H5::DataSpace dataspace(1,boundaryDim,maxdim); 
+
+				H5::DSetCreatPropList  prop;
+				hsize_t     chunkDim[1]  = {timeChunkSize};
+				prop.setChunk(1, chunkDim);
+				vcellH5::VarLen<PODPoint<double> > & vtype = PODPoint<double>::vectorType( );
+
+				boundaryDataset = baseGroup.createDataSet( "boundaries", vtype.getType( ), dataspace ,prop);
+			} //create boundary dataset
 		}
 
 		/**
@@ -288,7 +304,7 @@ namespace spatial {
 		*/
 		void addInitial(const spatial::MovingBoundarySetup & mbs) {
 			const std::string s = mbs.concentrationFunctionStr; 
-			vcellH5::writeAttribute(dataset,"concentrationFunction",s);
+			vcellH5::writeAttribute(baseGroup,"concentrationFunction",s);
 		}
 		/**
 		* free form annotation of data set for including notes in HDF file
@@ -296,7 +312,7 @@ namespace spatial {
 		* @param value 
 		*/
 		void annotate(const char *attributeName, const std::string & value) { 
-			vcellH5::writeAttribute(dataset,attributeName,value);
+			vcellH5::writeAttribute(elementDataset,attributeName,value);
 		}
 
 		virtual void time(double t, bool last, const GeometryInfo<double> & geometryInfo) { 
@@ -308,6 +324,7 @@ namespace spatial {
 				}
 				reportActive = (reportCounter%reportStep == 0) || last;
 				if (reportActive) {
+					writeBoundary(genTime.size( ),geometryInfo.boundary);
 					currentTime = t;
 					totalStuff = 0;
 					std::cout << "generation " << std::setw(2) <<  generationCounter << " time " << currentTime << std::endl;
@@ -321,7 +338,36 @@ namespace spatial {
 			generationCounter++;
 		}
 
-		static PODPoint<double> cf(const TPoint<double,2> &in) {
+		void writeBoundary(hsize_t timeIndex, const std::vector<TPoint<double,2> > & boundary) {
+			try {
+				std::vector<PODPoint<double> > outVector(boundary.size( ));
+				std::transform(boundary.begin( ),boundary.end( ),outVector.begin( ),convertFrontToPOD);
+				vcellH5::VarLen<PODPoint<double> > & vtype = PODPoint<double>::vectorType( );
+
+				hvl_t variableBoundaryData = vtype.adapt(outVector);
+
+				const hsize_t singleTimeSlice = 1;
+				hsize_t  bufferDim[1] = {singleTimeSlice};
+				H5::DataSpace memoryspace(1,bufferDim); 
+
+				//is dataset big enough in time dimension?
+				if (timeIndex >= boundaryDim[0]) {
+					boundaryDim[0] += timeChunkSize;
+					boundaryDataset.extend(boundaryDim);
+				}
+
+				hsize_t offset[1] = {timeIndex};
+				H5::DataSpace dataspace = boundaryDataset.getSpace( );
+				dataspace.selectHyperslab(H5S_SELECT_SET,bufferDim,offset);
+
+				boundaryDataset.write(&variableBoundaryData,vtype.getType( ),memoryspace,dataspace);
+			} catch (H5::Exception & e) {
+				std::cerr << e.getDetailMsg( ) << std::endl;
+			}
+		}
+
+
+		static PODPoint<double> convertFrontToPOD(const TPoint<double,2> &in) {
 			PODPoint<double> p(in(cX),in(cY));
 			return p;
 		};
@@ -352,8 +398,8 @@ namespace spatial {
 				}
 				Volume<double,2>::PointVector & pVec = vOfv.front( );
 				er.controlVolume.resize(pVec.size( ));
-				std::transform(pVec.begin( ),pVec.end( ),er.controlVolume.begin( ),cf);
-				
+				std::transform(pVec.begin( ),pVec.end( ),er.controlVolume.begin( ),convertFrontToPOD);
+
 				totalStuff += m;
 			}
 		}
@@ -403,15 +449,15 @@ namespace spatial {
 					//is dataset big enough in time dimension?
 					if (timeIndex >= worldDim[timeArrayIndex]) {
 						worldDim[timeArrayIndex] += timeChunkSize;
-						dataset.extend(worldDim);
+						elementDataset.extend(worldDim);
 					}
 
 					hsize_t offset[3] = {timeIndex ,minI,minJ};
-					H5::DataSpace dataspace = dataset.getSpace( );
+					H5::DataSpace dataspace = elementDataset.getSpace( );
 					dataspace.selectHyperslab(H5S_SELECT_SET,bufferDim,offset);
 
 					H5::CompType dataType = SOLUTION::DataType::getType( ); 
-					dataset.write(buffer.ptr( ),dataType,memoryspace,dataspace);
+					elementDataset.write(buffer.ptr( ),dataType,memoryspace,dataspace);
 				}
 
 				catch (H5::Exception &e) {
@@ -430,13 +476,13 @@ namespace spatial {
 			try {
 				timer.stop( );
 				const double totalTime = timer.elapsed( );
-				vcellH5::writeAttribute(dataset,"endTime",currentTime, true);
-				vcellH5::writeAttribute(dataset,"runTime",totalTime, true);
+				vcellH5::writeAttribute(baseGroup,"endTime",currentTime, true);
+				vcellH5::writeAttribute(baseGroup,"runTime",totalTime, true);
 				unsigned int lastTimeIndex = static_cast<unsigned int>(genTime.size( ));
-				vcellH5::writeAttribute(dataset,"lastTimeIndex",lastTimeIndex, true);
+				vcellH5::writeAttribute(baseGroup,"lastTimeIndex",lastTimeIndex, true);
 
 				vcellH5::SeqFacade<std::vector<double> > gt(genTime);
-				vcellH5::facadeWriteAttribute(dataset,"generationTimes",gt);
+				vcellH5::facadeWriteAttribute(baseGroup,"generationTimes",gt);
 			}
 			catch (H5::Exception &e) {
 				std::cerr << e.getDetailMsg( ) << std::endl;
@@ -457,8 +503,11 @@ namespace spatial {
 		std::vector<double> genTime;
 		const double timeStep;
 		vcellH5::Flex2<typename SOLUTION::DataType> buffer;
-		H5::DataSet dataset;
+		H5::Group baseGroup; 
+		H5::DataSet elementDataset;
+		H5::DataSet boundaryDataset;
 		hsize_t worldDim[3];
+		hsize_t boundaryDim[1];
 		const unsigned int reportStep;
 		unsigned int reportCounter;
 		bool reportBegan;

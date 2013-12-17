@@ -572,8 +572,11 @@ TEST(hdf5,compoundWithVar) {
 			data.push_back(i*i);
 		}
 		dp.varData = vlen.adapt(data);
-		DataSet dataset = file.createDataSet( "blob", demoType, dataspace );
+		Group group = file.createGroup("mydata");
+		DataSet dataset = group.createDataSet( "blob", demoType, dataspace );
 		dataset.write(&dp,demoType); 
+		DataSet dataset2 = group.createDataSet( "blob2", demoType, dataspace );
+		dataset2.write(&dp,demoType); 
 	}
 	catch (H5::Exception &e) {
 		std::cerr << e.getDetailMsg( ) << std::endl;

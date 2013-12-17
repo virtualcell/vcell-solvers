@@ -1,7 +1,5 @@
 #include <boundaryProviders.h>
 #include <vcellxml.h>
-#include <fstream> //temp
-#include <iomanip> //temp
 
 namespace { 
 	const double Pi = 3.14159265358979323846264338327950288419716939937;
@@ -75,12 +73,6 @@ namespace {
 		}
 
 		std::string describe( ) const {
-			//temporary supplemental info
-			std::ofstream pointsfile("circle.txt");
-			for (std::vector<spatial::Point2D>::const_iterator iter = baseFront.begin( ); iter != baseFront.end( ); ++iter) {
-				pointsfile << std::setprecision(40) << iter->get(spatial::cX) << ',' << std::setprecision(40) << iter->get(spatial::cY) << std::endl;
-			}
-
 			std::ostringstream os;
 			os << "Circle at " << x << ',' << y << " of radius " << r << " theta step " << s << " with " 
 				 << baseFront.size( ) << " points and x velocity " << xVel << std::endl;
