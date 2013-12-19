@@ -49,7 +49,7 @@ namespace {
 
 		ConcentrationExpression(VCell::Expression &e) 
 			:exp(e) {
-			VCELL_KEY_LOG(debug,"concentrationExpression", "expression: " << exp.infix( ));
+				VCELL_KEY_LOG(debug,"concentrationExpression", "expression: " << exp.infix( ));
 		}
 
 		virtual double conc(double x, double y) {
@@ -606,11 +606,11 @@ namespace spatial {
 				/*
 				VCellFront *vcp = dynamic_cast<VCellFront *>(vcFront);
 				if (vcp != nullptr) {
-					Front * checkpoint = copy_front(vcp->c_ptr( ));
-					FT_Save(checkpoint, "testsave.txt");
+				Front * checkpoint = copy_front(vcp->c_ptr( ));
+				FT_Save(checkpoint, "testsave.txt");
 				}
 				*/
-				
+
 				currentFront = vcFront->retrieveFront( );
 				voronoiMesh.setFront(currentFront);
 
@@ -647,10 +647,16 @@ namespace spatial {
 #endif
 				primaryMesh.diffuseAdvectCache( ).clearDiffuseAdvectCache( );
 				bool tooBig = false;
-				std::for_each(primaryMesh.begin( ),primaryMesh.end( ), 
-					DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),diffusionConstant, timeIncr, tooBig));
-				if (tooBig) {
-					throw TimeStepTooBig("time step makes mass go negative");
+				try {
+					std::for_each(primaryMesh.begin( ),primaryMesh.end( ), 
+						DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),diffusionConstant, timeIncr, tooBig));
+					if (tooBig) {
+						throw TimeStepTooBig("time step makes mass go negative");
+					}
+				} catch (ReverseLengthException<double,1> &rle) {
+					std::ofstream s("rle.m");
+					rle.aElement.writeMatlab(s);
+					rle.bElement.writeMatlab(s);
 				}
 				primaryMesh.diffuseAdvectCache( ).checkDiffuseAdvectCache( );
 
