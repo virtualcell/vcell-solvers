@@ -88,10 +88,12 @@ namespace {
 		spatial::MovingBoundarySetup mbSetup; 
 		const XMLElement & prob = vcell_xml::get(root,"problem");
 
+		std::array<spatial::GeoLimit,2> limits;
 		const tinyxml2::XMLElement & xlimits = vcell_xml::get(prob,"xLimits"); 
-		readLimits(xlimits,mbSetup.xLimits);
+		readLimits(xlimits,limits[0]);
 		const tinyxml2::XMLElement & ylimits = vcell_xml::get(prob,"yLimits"); 
-		readLimits(ylimits,mbSetup.yLimits);
+		readLimits(ylimits,limits[1]);
+		spatial::World<double,2>::get( ).init(limits,true);
 
 		using vcell_xml::convertChildElement;
 

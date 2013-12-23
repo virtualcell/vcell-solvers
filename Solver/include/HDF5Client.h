@@ -409,10 +409,6 @@ namespace spatial {
 		virtual void iterationComplete( ) {
 			if (reportActive) {
 				VCELL_LOG(info,"Time " << currentTime << " total mass " << totalStuff); 
-				if (oldStuff != 0 && !spatial::nearlyEqual(oldStuff,totalStuff,1e-3)) {
-					VCELL_EXCEPTION(logic_error, "mass not conserved old"<< oldStuff << " , new " << totalStuff);
-				}
-				oldStuff = totalStuff;
 
 				try {
 					//determine size of buffer needed for current generation
@@ -469,6 +465,12 @@ namespace spatial {
 				theProblem.plotAreas(fa);
 				theProblem.plotPolygons(fp);
 				*/
+				if (oldStuff != 0 && !spatial::nearlyEqual(oldStuff,totalStuff,1e-3)) {
+					simulationComplete( ); //write out final info
+					VCELL_EXCEPTION(logic_error, "mass not conserved old"<< oldStuff << " , new " << totalStuff
+						<< ", gain(+)/loss(-) " << (totalStuff - oldStuff));
+				}
+				oldStuff = totalStuff;
 			}
 		}
 

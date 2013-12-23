@@ -26,7 +26,7 @@ namespace {
 	/**
 	* edge lengths calculated between cells should be this close
 	*/
-	const double toleranceEdgeLengthException = 1e-10;
+	const double toleranceEdgeLengthException = 1e-8;
 	/**
 	* diffusion to and from cells must be within this amount
 	*/
@@ -243,7 +243,9 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::processBoundaryNeighbors(const Vor
 		VoronoiResult vResult;
 		std::vector<GhostPoint<REAL,2> > &voronoiVertices = vResult.vertices;
 		assert(voronoiVertices.empty( ));
-
+		if (matches(22,9)) {
+			debugAid++;
+		}
 		vm.getResult(vResult,*this);
 
 		typedef TPoint<REAL,2> VPointType;
@@ -300,6 +302,9 @@ template<class REAL, int NUM_S>
 void spatial::MeshElementSpecies<REAL,NUM_S>::formBoundaryPolygon( const MeshDef<REAL,2> & mesh, const std::vector<TPoint<REAL,2> > & front) {
 	static std::ofstream ef("edgefind.m");
 	MatLabDebug::setDebug(ef);
+	bool writeTrace = matches(22,9); 
+	MatLabDebug::activate("edgefind",writeTrace);
+
 	assert(!voronoiVolume.empty( ));
 	//VoronoiResult &vResult = *pVoronoiResult;
 	VCELL_LOG(debug,this->indexInfo( ) << " formBoundaryPolygon old volume " << vol.volume( ));
@@ -316,7 +321,7 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::formBoundaryPolygon( const MeshDef
 		throw std::logic_error("empty boundary front");
 	}
 	VCELL_LOG(debug,this->indexInfo( ) << " new volume " << vol.volume( )) ;
-	if (MatLabDebug::on("meshvoronoi")) { 
+	if (MatLabDebug::on("edgefind")) { 
 		matlabBridge::Polygons pPolys("k",3);
 		frontTierAdapt::copyVectorsInto(pPolys,vol.points( ));
 		matlabBridge::Polygons vs("-r",1);
@@ -335,9 +340,6 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::formBoundaryPolygon( const MeshDef
 	*/
 	matlabBridge::Polygon trace(":+g");
 	matlabBridge::Polygon pedge("-+r",2);
-	bool writeTrace = matches(7,8) || matches(8,7);
-	//bool writeTrace = false; 
-	MatLabDebug::activate("edgefind",writeTrace);
 
 	//REAL minimumSegSquared = mesh.minimumInterval( ) * toleranceMinimumSegmentSquared;
 	typedef TPoint<REAL,2> MeshPointType;
@@ -457,25 +459,34 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::updateBoundaryNeighbors(const Voro
 }
 
 template <class REAL, int NUM_S>
-void MeshElementSpecies<REAL,NUM_S>::writeMatlab(std::ostream  &os ) const {
+void MeshElementSpecies<REAL,NUM_S>::writeMatlab(std::ostream  &os , bool noPoly, int precision) const {
 	if (!vol.empty( )) {
 		if (!voronoiVolume.empty( )) {
 			matlabBridge::Polygons pVoro("r",1);
+			if (precision != 0) {
+				pVoro.setPrecision(precision);
+			}
 			frontTierAdapt::copyVectorsInto(pVoro,voronoiVolume.points( ));
 			os << pVoro; 
 		}
 		matlabBridge::Scatter scatter('g',30,true);
 		frontTierAdapt::copyPointInto(scatter,*this);
-		matlabBridge::Polygon pPoly("k",3);
-		typename Volume<REAL,2>::VectorOfVectors vOfV = vol.points( );
-		for (typename Volume<REAL,2>::VectorOfVectors::const_iterator vvIter = vOfV.begin( ); vvIter != vOfV.end( );++vvIter) {
-			matlabBridge::Polygon pPoly("k",3);
-			frontTierAdapt::copyVectorInto(pPoly,*vvIter);
-			os << pPoly; 
-		}
 		std::stringstream ss;
 		ss << this->index[cX] << ',' << this->index[cY];
-		os << scatter << pPoly << matlabBridge::Text(this->coord[cX],this->coord[cY],ss.str( ).c_str( ));
+		os << scatter << matlabBridge::Text(this->coord[cX],this->coord[cY],ss.str( ).c_str( ));
+		if (!noPoly) {
+			matlabBridge::Polygon pPoly("k",3);
+			typename Volume<REAL,2>::VectorOfVectors vOfV = vol.points( );
+			for (typename Volume<REAL,2>::VectorOfVectors::const_iterator vvIter = vOfV.begin( ); vvIter != vOfV.end( );++vvIter) {
+				matlabBridge::Polygon pPoly("k",3);
+				if (precision != 0) {
+					pPoly.setPrecision(precision);
+				}
+				frontTierAdapt::copyVectorInto(pPoly,*vvIter);
+				os << pPoly; 
+			}
+			os << pPoly; 
+		}
 	}
 }
 
@@ -560,6 +571,10 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::distributeMassToNeighbors(const Me
 		throw std::logic_error("volume !=");
 	}
 	bool distributed = false;
+	if (matches(6,19)) {
+		std::cout << "debugaid " << debugAid << std::endl;
+	}
+	REAL massSentinel = amtMassTransient[0];
 	for (int i = 0; i < nN; i++) {
 		assert(neighbors[i].element != nullptr);
 		OurType & nb = *neighbors[i].element;
@@ -576,12 +591,22 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::distributeMassToNeighbors(const Me
 					VCELL_COND_LOG(debug, s == 0 , " " << this->indexInfo( ) << " giving " <<nb.indexInfo( ) << " mass " << m 
 						<< " has vol " << nbVol << " existing mass " << nb.amtMassTransient[0] );
 					nb.amtMassTransient[s] += m; 
+					massSentinel -= m;
 					VCELL_COND_LOG(debug, s == 0 , "  " << nb.indexInfo( ) << " new mass " << nb.amtMassTransient[0] );
 				}
 			}
 		}
 	}
 	// mass is gone
+	if (massSentinel > 0.001) {
+		std::ofstream script("massLost.m");
+		script << matlabBridge::FigureName("lost mass");
+		writeMatlab(script);
+		for (int i = 0; i < nN; i++) {
+			script << matlabBridge::pause << matlabBridge::clearFigure;
+			neighbors[i].element->writeMatlab(script);
+		}
+	}
 	for (size_t s = 0; s < NUM_S; s++) {
 		amtMass[s] = 0;
 	}

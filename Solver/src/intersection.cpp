@@ -3,7 +3,11 @@
 #include <fstream>
 #include "intersection.h"
 #include <TPoint.h>
+#include <World.h>
+#include <Logger.h>
 #include <stack_container.h>
+#include <MBridge/MBPolygon.h>
+#include <MBridge/FronTierAdapt.h>
 //temp
 #include <iomanip>
 
@@ -14,6 +18,9 @@
 #include <windows.h>
 #undef max
 #endif
+namespace ClipperLib {
+  static cInt const hiRange = 0x3FFFFFFFFFFFFFFFLL;
+}
 namespace {
 	using spatial::TPoint;
 	using spatial::Volume;
@@ -21,7 +28,6 @@ namespace {
 	using spatial::cX;
 	using spatial::cY;
 	
-	const int CLIPPER_INTERSECTION_MARGIN = 1000;
 	/**
 	* functor object for for_each; must use reference instead of contained value because
 	* Func is passed by value in for_each
@@ -47,12 +53,14 @@ namespace {
 	* scale vcell to clipper 
 	*/
 	struct VtoCScaler {
-		const double scale;
-		VtoCScaler(double scale_):scale(scale_){}
+		typedef ClipperLib::cInt cInt;
+		typedef ClipperLib::cUInt cUInt;
+		const cUInt scale;
+		VtoCScaler(cUInt scale_):scale(scale_){}
 		template <class T>
 		ClipperLib::IntPoint operator( )(const TPoint<T,2> &point) {
-			ClipperLib::long64 x = static_cast<long long>(point(cX) * scale);
-			ClipperLib::long64 y = static_cast<long long>(point(cY) * scale);
+			cInt x = static_cast<cInt>(point(cX) * scale);
+			cInt y = static_cast<cInt>(point(cY) * scale);
 			return ClipperLib::IntPoint(x,y);
 		}
 	};
@@ -79,7 +87,7 @@ namespace {
 	* @param inverseScale clipper to problem domain scale factor 
 	*/
 	template <class REAL>
-	void transformClipperResults(Volume<REAL,2> &result, ClipperLib::Polygons & results, double inverseScale) { 
+	void transformClipperResults(Volume<REAL,2> &result, ClipperLib::Paths & results, double inverseScale) { 
 		typedef TPoint<REAL,2> POINT;
 		switch (results.size( )){
 		case 0:
@@ -90,7 +98,7 @@ namespace {
 
 		case 1:
 			{
-				ClipperLib::Polygon interSect =  results.front( );
+				ClipperLib::Path interSect =  results.front( );
 				CtoVScaler<double> inverseScaler(inverseScale);
 				std::transform(interSect.begin( ),interSect.end( ),result.fillingIterator(interSect.size( )),inverseScaler);
 				result.close( );
@@ -100,8 +108,8 @@ namespace {
 		default:
 			std::vector<std::vector<POINT> > data;
 			CtoVScaler<double> inverseScaler(inverseScale);
-			for (ClipperLib::Polygons::iterator iter = results.begin( ); iter != results.end( );++iter) {
-				ClipperLib::Polygon interSect = *iter;
+			for (ClipperLib::Paths::iterator iter = results.begin( ); iter != results.end( );++iter) {
+				ClipperLib::Path interSect = *iter;
 				result.nextSection( );
 				std::vector<POINT> chunk;
 				size_t expected = interSect.size( );
@@ -113,18 +121,39 @@ namespace {
 	/**
 	* debug
 	*/
-	void dump(std::ostream &sink, const char *var, ClipperLib::Polygon &p) {
-		for (ClipperLib::Polygon::const_iterator iter = p.begin( );iter != p.end( ); ++iter) {
+	void dump(std::ostream &sink, const char *var, ClipperLib::Path &p) {
+		for (ClipperLib::Path::const_iterator iter = p.begin( );iter != p.end( ); ++iter) {
 			sink << '\t' << var << ".push_back(IntPoint(" << iter->X << ',' << iter->Y << "));" << std::endl; 
 		}
 	}
 
-	//temp
-	struct LogItForMe {
-		LogItForMe(double scale,double iscale) {
-			std::cout << "scale " << std::setprecision(20) << scale << " iscale " << std::setprecision(20) << iscale << std::endl;
+	template <class WORLD_TYPE> 
+	ClipperLib::cInt calculateWorldScale( ) {
+		const spatial::World<WORLD_TYPE,2> & world = spatial::World<WORLD_TYPE,2>::get( );
+		ClipperLib::cInt ws = world.scaleFactorFor(ClipperLib::hiRange);
+		VCELL_LOG(info,"intersection scaling " << ws);
+		//return ws/8; //just because ...
+		return ws; 
+	}
+	template <class WORLD_TYPE> 
+	ClipperLib::cInt getWorldScale( ) {
+		static ClipperLib::cInt ws = calculateWorldScale<WORLD_TYPE>( ); 
+		return ws;
+	}
+
+	void copyInto(const ClipperLib::Path &source,matlabBridge::Polygon & dest) {
+		for (ClipperLib::Path::const_iterator iter = source.begin( ); iter != source.end( ); ++iter) {
+			dest.add(static_cast<double>(iter->X),static_cast<double>(iter->Y));
 		}
-	};
+	}
+
+	void AddPath(ClipperLib::Clipper &c, ClipperLib::Path &path, ClipperLib::PolyType pt) {
+		const bool r = c.AddPath(path,pt,true);
+		if (r) {
+			return;
+		}
+		VCELL_EXCEPTION(logic_error,"bad clipper add");
+	}
 }
 
 namespace spatial {
@@ -136,27 +165,29 @@ namespace spatial {
 	*/
 	template <class REAL,class VECTORA, class VECTORB>
 	void intersections(Volume<REAL,2> &result, const VECTORA &a,const VECTORB &b) {
-		typedef TPoint<REAL,2> POINT;
+		static ClipperLib::cInt scale = getWorldScale<REAL>( );
+		static long double inverseScale = 1.0L/scale; 
 
-		double maxVal = 0;
-		MaxValue<double> mv(maxVal);
-		std::for_each(a.begin( ),a.end( ),mv);
-		std::for_each(b.begin( ),b.end( ),mv);
-		ClipperLib::Polygon clipperA(a.size( ));
-		ClipperLib::Polygon clipperB(b.size());
-		mv.max *= CLIPPER_INTERSECTION_MARGIN;
-		const double scale = std::numeric_limits<ClipperLib::long64>::max( ) / mv.max;
-		const double inverseScale = mv.max / std::numeric_limits<ClipperLib::long64>::max( );
-		static LogItForMe lifm(scale,inverseScale);
-
+		ClipperLib::Path clipperA(a.size( ));
+		ClipperLib::Path clipperB(b.size());
 		VtoCScaler scaler(scale);
 		std::transform(a.begin( ),a.end( ),clipperA.begin( ),scaler);
 		std::transform(b.begin( ),b.end( ),clipperB.begin( ),scaler);
+		matlabBridge::Polygon pa("-g",2);
+		copyInto(clipperA,pa);
+		matlabBridge::Polygon pb("-b",2);
+		copyInto(clipperB,pb);
+		std::ofstream id("idebug.m");
+		id << pa << pb;
+		std::ofstream code("frag.txt");
+		dump(code,"polyA",clipperA);
+		dump(code,"polyB",clipperB);
+		
 
 		ClipperLib::Clipper c;
-		c.AddPolygon(clipperA,ClipperLib::ptSubject);
-		c.AddPolygon(clipperB,ClipperLib::ptClip);
-		ClipperLib::Polygons results;
+		AddPath(c,clipperA,ClipperLib::ptSubject);
+		AddPath(c,clipperB,ClipperLib::ptClip);
+		ClipperLib::Paths results;
 #ifdef TIMEIT
 		LARGE_INTEGER start;
 		LARGE_INTEGER stop;
@@ -181,73 +212,53 @@ namespace spatial {
 
 	template <class REAL,class VVA, class VECTORB>
 	void intersectionsManySingle(Volume<REAL,2> &result, const VVA &vOfVa,const VECTORB &b) {
-		typedef TPoint<REAL,2> POINT;
-
-		double maxVal;
-		MaxValue<double> mv(maxVal);
-		for (typename VVA::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
-			std::for_each(iter->begin( ),iter->end( ),mv);
-		}
-		std::for_each(b.begin( ),b.end( ),mv);
-
-		mv.max *= CLIPPER_INTERSECTION_MARGIN;
-		const double scale = std::numeric_limits<ClipperLib::long64>::max( ) / mv.max;
-		const double inverseScale = mv.max / std::numeric_limits<ClipperLib::long64>::max( );
+		static ClipperLib::cInt scale = getWorldScale<REAL>( );
+		static long double inverseScale = 1.0L/scale; 
 		VtoCScaler scaler(scale);
 
 		ClipperLib::Clipper c;
 		for (typename VVA::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
 			const typename VVA::value_type & vectorA = *iter;
-			ClipperLib::Polygon clipperA(vectorA.size( ));
+			ClipperLib::Path clipperA(vectorA.size( ));
 			std::transform(vectorA.begin( ),vectorA.end( ),clipperA.begin( ),scaler);
-			c.AddPolygon(clipperA,ClipperLib::ptSubject);
+			AddPath(c,clipperA,ClipperLib::ptSubject);
 		}
 
-		ClipperLib::Polygon clipperB(b.size());
+		ClipperLib::Path clipperB(b.size());
 
 		std::transform(b.begin( ),b.end( ),clipperB.begin( ),scaler);
 
-		c.AddPolygon(clipperB,ClipperLib::ptClip);
-		ClipperLib::Polygons results;
+		AddPath(c,clipperB,ClipperLib::ptClip);
+		ClipperLib::Paths results;
 		c.Execute(ClipperLib::ctIntersection,results,ClipperLib::pftEvenOdd,ClipperLib::pftEvenOdd);
 		transformClipperResults(result,results,inverseScale);
 	}
 
 	template <class REAL,class VVA, class VVB>
 	void intersectionsManyMany(Volume<REAL,2> &result, const VVA &vOfVa,const VVB &vOfVb) {
-		typedef TPoint<REAL,2> POINT;
+		static ClipperLib::cInt scale = getWorldScale<REAL>( );
+		static long double inverseScale = 1.0L/scale; 
+		//typedef TPoint<REAL,2> POINT;
 
-		double maxVal;
-		MaxValue<double> mv(maxVal);
-		for (typename VVA::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
-			std::for_each(iter->begin( ),iter->end( ),mv);
-		}
-		for (typename VVB::const_iterator iter = vOfVb.begin( ); iter != vOfVb.end( ); ++iter) {
-			std::for_each(iter->begin( ),iter->end( ),mv);
-		}
-
-		mv.max *= CLIPPER_INTERSECTION_MARGIN;
-		const double scale = std::numeric_limits<ClipperLib::long64>::max( ) / mv.max;
-		const double inverseScale = mv.max / std::numeric_limits<ClipperLib::long64>::max( );
 		VtoCScaler scaler(scale);
 
 		ClipperLib::Clipper c;
 
 		for (typename VVA::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
 			const typename VVA::value_type & vectorA = *iter;
-			ClipperLib::Polygon clipperA(vectorA.size( ));
+			ClipperLib::Path clipperA(vectorA.size( ));
 			std::transform(vectorA.begin( ),vectorA.end( ),clipperA.begin( ),scaler);
-			c.AddPolygon(clipperA,ClipperLib::ptSubject);
+			AddPath(c,clipperA,ClipperLib::ptSubject);
 		}
 
 		for (typename VVB::const_iterator iter = vOfVb.begin( ); iter != vOfVb.end( ); ++iter) {
 			const typename VVB::value_type & vectorB = *iter;
-			ClipperLib::Polygon clipperB(vectorB.size( ));
+			ClipperLib::Path clipperB(vectorB.size( ));
 			std::transform(vectorB.begin( ),vectorB.end( ),clipperB.begin( ),scaler);
-			c.AddPolygon(clipperB,ClipperLib::ptSubject);
+			AddPath(c,clipperB,ClipperLib::ptSubject);
 		}
 
-		ClipperLib::Polygons results;
+		ClipperLib::Paths results;
 		c.Execute(ClipperLib::ctIntersection,results,ClipperLib::pftEvenOdd,ClipperLib::pftEvenOdd);
 		transformClipperResults(result,results,inverseScale);
 	}

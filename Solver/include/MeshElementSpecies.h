@@ -456,8 +456,11 @@ namespace spatial {
 
 		/**
 		* debug dump polygon && voronoi
+		* @param os destination
+		* @param noPoly if true, don't write polygon out
+		* @param precision std::setprecision( ), 0 uses a default
 		*/
-		void writeMatlab(std::ostream &) const;
+		void writeMatlab(std::ostream & os , bool noPoly = false, int precision = 0) const;
 
 		/**
 		* debug support

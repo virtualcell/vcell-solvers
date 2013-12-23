@@ -1,5 +1,6 @@
 //#pragma warning ( disable: 4996 )
 #include <MPoint.h>
+#include <World.h>
 #include <VoronoiMesh.h>
 #include <sstream>
 #include <iomanip>
@@ -75,8 +76,6 @@ namespace {
 #define CHECK(X) checkSet(badset,X, #X);  
 #define CHECK2(X,Y) checkSet(badset,X, Y,#X);  
 
-				CHECK(mbs.xLimits.high - mbs.xLimits.low);
-				CHECK(mbs.yLimits.high - mbs.yLimits.low);
 				CHECK(mbs.numNodesY);
 				CHECK(mbs.numNodesY);
 				CHECK(mbs.maxTime);
@@ -300,9 +299,9 @@ namespace spatial {
 		*/
 		static FrontProvider *initFront(const ValidationBase & base,const spatial::MovingBoundarySetup &mbs)  {
 			if (mbs.alternateFrontProvider == nullptr) {
-				std::vector<GeoLimit> limits;
-				limits.push_back(mbs.xLimits);
-				limits.push_back(mbs.yLimits);
+				const std::array<GeoLimit,2> & inputLimits = spatial::World<double,2>::get( ).limits( );
+				std::vector<GeoLimit> limits(inputLimits.size( ));
+				std::copy(inputLimits.begin( ),inputLimits.end( ),limits.begin( ));
 				int mnode = std::max(mbs.numNodesX,mbs.numNodesY);
 				int numFrontRegions = mnode * mbs.frontToNodeRatio;
 				if (base.nFunctionPointers == 0) {
@@ -323,8 +322,9 @@ namespace spatial {
 		*/
 		static MBMeshDef createMeshDef(const spatial::MovingBoundarySetup &mbs)  {
 			using vcell_util::arrayInit;
-			std::array<double,2> origin = arrayInit(mbs.xLimits.low, mbs.yLimits.low);
-			std::array<double,2> c = arrayInit(mbs.xLimits.high -mbs.xLimits.low, mbs.yLimits.high -mbs.yLimits.low);
+			const std::array<GeoLimit,2> & inputLimits = spatial::World<double,2>::get( ).limits( );
+			std::array<double,2> origin = arrayInit(inputLimits[0].low,inputLimits[1].low);
+			std::array<double,2> c = arrayInit(inputLimits[0].span( ),inputLimits[1].span( ));
 			std::array<size_t,2> p = arrayInit<size_t>( mbs.numNodesX, mbs.numNodesY);
 			return MBMeshDef(origin,c,p);
 		}
@@ -655,8 +655,9 @@ namespace spatial {
 					}
 				} catch (ReverseLengthException<double,1> &rle) {
 					std::ofstream s("rle.m");
-					rle.aElement.writeMatlab(s);
-					rle.bElement.writeMatlab(s);
+					rle.aElement.writeMatlab(s, true, 20);
+					rle.bElement.writeMatlab(s, true, 20);
+					throw rle;
 				}
 				primaryMesh.diffuseAdvectCache( ).checkDiffuseAdvectCache( );
 
