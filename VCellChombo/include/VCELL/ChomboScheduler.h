@@ -131,7 +131,10 @@ protected:
 	Vector< map<int, int> > irregVolumeMembraneMap;
 
 	int findNeighborMembraneIndex2D(int iphase, int ilev, const IntVect& gridIndex, int iedge, 
-		const RealVect& normalizedCrossPoint, const RealVect& crossPointRealCoords, int& neighborEdge);
+	const RealVect& normalizedCrossPoint, const RealVect& crossPointRealCoords, int& neighborEdge);
+
+	static const int phase0;
+	static const int phase1;
 };
 
 #endif

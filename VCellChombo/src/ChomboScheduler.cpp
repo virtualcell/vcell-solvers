@@ -46,9 +46,6 @@
 #endif
 #define HOFFSET(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 
-//#define EDGE_CROSS_POINTS_FILE_EXT ".crspts"
-//#define CHOMBO_MEMBRANE_METRICS_FILE_EXT ".chombo.memmetrics"
-//#define MEMBRANE_SLICE_CROSS_FILE_EXT ".slccrs"
 #define HDF5_FILE_EXT ".hdf5"
 #define MESH_HDF5_FILE_EXT ".mesh.hdf5"
 
@@ -58,6 +55,9 @@ static const int maxCoarsen = -1;
 static const int numPreCondIters = 4;
 static const int relaxType = 2;
 static const int numGhostEBISLayout = 4;
+
+const int ChomboScheduler::phase0 = 0;
+const int ChomboScheduler::phase1 = 1;
 
 enum MembraneInvalidNeighborIndex
 {
@@ -219,15 +219,15 @@ void ChomboScheduler::initializeGrids() {
 			phase0List.push_back(chomboIF);
 		}
 	}
-	geoIfs[0] = new UnionIF(phase0List);
-	GeometryShop *workshop0 = new GeometryShop(*(geoIfs[0]), 0, fineDx);
-	workshop0->m_phase = 0;
-	geometries[0] = workshop0;
+	geoIfs[phase0] = new UnionIF(phase0List);
+	GeometryShop *workshop = new GeometryShop(*(geoIfs[phase0]), 0, fineDx);
+	workshop->m_phase = 0;
+	geometries[0] = workshop;
 
-	geoIfs[1] = new ComplementIF(*(geoIfs[0]));
-	workshop0 = new GeometryShop(*(geoIfs[1]), 0, fineDx);
-	workshop0->m_phase = 1;
-	geometries[1] = workshop0;
+	geoIfs[phase1] = new ComplementIF(*(geoIfs[phase0]));
+	workshop = new GeometryShop(*(geoIfs[phase1]), 0, fineDx);
+	workshop->m_phase = 1;
+	geometries[1] = workshop;
 
 	const RealVect& domainOrigin = chomboGeometry->getDomainOrigin();
 	MFIndexSpace mfIndexSpace;
@@ -325,11 +325,11 @@ void ChomboScheduler::initializeGrids() {
 	vectGrids[0] = DisjointBoxLayout(coarsestBoxes, coarsestProcs, coarsestDomain);
 
 	vectEbis.resize(NUM_PHASES);
-	for(int phase0 = 0; phase0 < NUM_PHASES; phase0 ++) {
-    vectEbis[phase0].resize(phaseVolumeList[phase0].size());
-		for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++) {
-			vectEbis[phase0][ivol].resize(numLevels);
-			phaseVolumeList[phase0][ivol]->volume->fillEBISLayout(vectEbis[phase0][ivol][0],
+	for(int iphase = 0; iphase < NUM_PHASES; iphase ++) {
+    vectEbis[iphase].resize(phaseVolumeList[iphase].size());
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
+			vectEbis[iphase][ivol].resize(numLevels);
+			phaseVolumeList[iphase][ivol]->volume->fillEBISLayout(vectEbis[iphase][ivol][0],
 									  vectGrids[0],
 									  coarsestDomain,
 									  numGhostEBISLayout);
@@ -353,12 +353,12 @@ void ChomboScheduler::initializeGrids() {
 		bool bCellsTagged = false;
 		if (refinementRoiExps == NULL) {
 			int tagLevel = numLevels - 2;
-			for (int phase0 = 0; phase0 < NUM_PHASES; phase0 ++) {
-				for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++) {
+			for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
+				for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 					// Get the depth of the second to finest level
-					int depth = phaseVolumeList[phase0][ivol]->volume->getLevel(vectDomains[tagLevel]);
+					int depth = phaseVolumeList[iphase][ivol]->volume->getLevel(vectDomains[tagLevel]);
 
-					IntVectSet tagsVol = phaseVolumeList[phase0][ivol]->volume->irregCells(depth);
+					IntVectSet tagsVol = phaseVolumeList[iphase][ivol]->volume->irregCells(depth);
 					tagsVol.grow(2);
 					tags[tagLevel] |= tagsVol;
 				}
@@ -374,14 +374,14 @@ void ChomboScheduler::initializeGrids() {
 				{
 					continue;
 				}
-				for (int phase0 = 0; phase0 < NUM_PHASES; phase0 ++)
+				for (int iphase = 0; iphase < NUM_PHASES; iphase ++)
 				{
-					for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++)
+					for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++)
 					{
 						// for next level
-						int depth = phaseVolumeList[phase0][ivol]->volume->getLevel(vectDomains[ilev]);
+						int depth = phaseVolumeList[iphase][ivol]->volume->getLevel(vectDomains[ilev]);
 
-						IntVectSet tagsVol = phaseVolumeList[phase0][ivol]->volume->irregCells(depth);
+						IntVectSet tagsVol = phaseVolumeList[iphase][ivol]->volume->irregCells(depth);
 						Vector<Box> boxes = tagsVol.boxes();
 						for (int b = 0; b < boxes.size(); ++ b)
 						{
@@ -437,10 +437,10 @@ void ChomboScheduler::initializeGrids() {
 
 			vectGrids[ilev] = DisjointBoxLayout(newBoxes[ilev], newProcs, domainLev);
 		  //generate ebislayout
-		  for(int phase0 = 0; phase0 < NUM_PHASES; phase0 ++) {
-				for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++) {
-					vectEbis[phase0][ivol].resize(numLevels);
-					phaseVolumeList[phase0][ivol]->volume->fillEBISLayout(vectEbis[phase0][ivol][ilev],
+		  for(int iphase = 0; iphase < NUM_PHASES; iphase ++) {
+				for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
+					vectEbis[iphase][ivol].resize(numLevels);
+					phaseVolumeList[iphase][ivol]->volume->fillEBISLayout(vectEbis[iphase][ivol][ilev],
 											  vectGrids[ilev],
 											  domainLev,
 											  numGhostEBISLayout);
@@ -487,8 +487,6 @@ void ChomboScheduler::initializeGrids() {
 			}
 		}
 
-		int phase0 = 0;
-		int phase1 = 1;
 		int totalVolumes = phaseVolumeList[phase0].size() + phaseVolumeList[phase1].size();
 		bool* bAdjacent = new bool[phaseVolumeList[phase1].size()];
 		numMembranePoints = 0;
@@ -667,9 +665,9 @@ void ChomboScheduler::initializeGrids() {
 	} // compute size
 
 	// print summary
-	for(int phase0 = 0; phase0 < NUM_PHASES; phase0 ++) {
-		for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++) {
-			Feature* feature = phaseVolumeList[phase0][ivol]->feature;
+	for(int iphase = 0; iphase < NUM_PHASES; iphase ++) {
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
+			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
 			for(int ilev = 0; ilev < numLevels; ilev++) {
 				long totalIrregLevel   = 0.0;
 				long totalPtsLevel   = 0.0;
@@ -677,9 +675,9 @@ void ChomboScheduler::initializeGrids() {
 				for (DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit) {
 					const Box&  currBox      = vectGrids[ilev][dit()];
 
-					const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
+					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
 					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
-					pout() << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev << ":" << " Box " << currBox << endl;
+					pout() << "phase " << iphase << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev << ":" << " Box " << currBox << endl;
 					totalPtsLevel += currBox.numPts();
 					totalIrregLevel += irregCells.numPts();
 				}
@@ -688,7 +686,7 @@ void ChomboScheduler::initializeGrids() {
 				int origWidth = cout.width();
 				int origPrecision = cout.precision();
 
-				pout() << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev << ":" << endl;
+				pout() << "phase " << iphase << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev << ":" << endl;
 				pout() << setiosflags(ios::right);
 				pout() << "  Total computation cells: " << setw(10) << totalPtsLevel << endl;
 				pout() << "  Total irregular cells:   " << setw(10) << totalIrregLevel << endl;
@@ -1411,14 +1409,13 @@ void ChomboScheduler::writeMembraneFiles()
 	SliceView* sliceViewData = new SliceView[numMembranePoints];
 #endif
 
-	int iphase = 0;
 	MeshMetrics* metricsData = new MeshMetrics[numMembranePoints];
 #if CH_SPACEDIM == 2
 	Segment* segmentList = new Segment[numMembranePoints];
 	int* edgeVertices = new int[numMembranePoints * 4];
 	std::fill(edgeVertices, edgeVertices + numMembranePoints * 4, -1);
 
-	double coeff = 0.1;
+	double coeff = 1.0/std::max(vectNxes[numLevels - 1][0], vectNxes[numLevels - 1][1]);
 #else
 	int triangleCount = 0;
 	Triangle* surfaceData = new Triangle[numMembranePoints*6];
@@ -1426,11 +1423,12 @@ void ChomboScheduler::writeMembraneFiles()
 	int vertexCount = 0;
 	Vertex* vertexList = new Vertex[numMembranePoints * 2];
 
-	for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol)
+	// only look at phase 0 for membranes
+	for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ++ ivol)
 	{
 		for (int ilev = 0; ilev < numLevels; ++ ilev)
 		{
-			ChomboGeometryShop chomboGeoShop(geoIfs[iphase], vectDxes[ilev]);
+			ChomboGeometryShop chomboGeoShop(geoIfs[phase0], vectDxes[ilev]);
 #if CH_SPACEDIM == 2
 			RealVect edgePointOffset[4] =
 			{
@@ -1443,7 +1441,7 @@ void ChomboScheduler::writeMembraneFiles()
 			DisjointBoxLayout& currGrids = vectGrids[ilev];
 
 			for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++ dit)	{
-				const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
+				const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
 				const Box& currBox = vectGrids[ilev][dit()];
 
 				const EBGraph& currEBGraph = currEBISBox.getEBGraph();
@@ -1468,7 +1466,7 @@ void ChomboScheduler::writeMembraneFiles()
 
 					metricsData[memIndex].index = memIndex;
 					metricsData[memIndex].level = ilev;
-					metricsData[memIndex].membraneId = (*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()](vof, 0);;
+					metricsData[memIndex].membraneId = (*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0);;
 					metricsData[memIndex].gridIndex = gridIndex;
 					metricsData[memIndex].coord = mem_point;
 					metricsData[memIndex].normal = currEBISBox.normal(vof);
@@ -1503,7 +1501,7 @@ void ChomboScheduler::writeMembraneFiles()
 							for (int i = 0; i < 2 ; ++ i)
 							{
 								P[0] = vol_point[0] + dP[i][0];
-								if (geoIfs[0]->value(P) > 0)
+								if (geoIfs[phase0]->value(P) > 0)
 								{
 									metricsData[memIndex].cornerPhaseMask |= (0x1 << cindex);
 								}
@@ -1556,7 +1554,7 @@ void ChomboScheduler::writeMembraneFiles()
 									cross_point += vol_point;
 
 									int neighborEdge = (iedge ^ 1);
-									int nidx  = findNeighborMembraneIndex2D(iphase, ilev, gridIndex, iedge, cp, cross_point, neighborEdge);
+									int nidx  = findNeighborMembraneIndex2D(phase0, ilev, gridIndex, iedge, cp, cross_point, neighborEdge);
 									if (nidx == MEMBRANE_NEIGHBOR_UNKNOWN)
 									{
 	//									stringstream ss;
@@ -1569,10 +1567,11 @@ void ChomboScheduler::writeMembraneFiles()
 										// determine if vertex is first or second
 										// compute Q (as membrane enters the volume element from outside
 										// find a point to the right of cross point, and compute fQ=implF(Q);
+										Real funcXP = geoIfs[phase0]->value(cross_point);
 										RealVect Q = cross_point + edgePointOffset[iedge];
-										Real funcQ = geoIfs[iphase]->value(Q);
+										Real funcQ = geoIfs[phase0]->value(Q);
 										int orderV, orderN;
-										if (funcQ < 0)
+										if (funcQ < funcXP)
 										{
 											orderV = 0;
 											orderN = 1;
