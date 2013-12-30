@@ -1567,11 +1567,12 @@ void ChomboScheduler::writeMembraneFiles()
 										// determine if vertex is first or second
 										// compute Q (as membrane enters the volume element from outside
 										// find a point to the right of cross point, and compute fQ=implF(Q);
-										Real funcXP = geoIfs[phase0]->value(cross_point);
-										RealVect Q = cross_point + edgePointOffset[iedge];
-										Real funcQ = geoIfs[phase0]->value(Q);
+										RealVect Qp = cross_point + edgePointOffset[iedge];
+										RealVect Qm = cross_point - edgePointOffset[iedge];
+										Real funcQp = geoIfs[phase0]->value(Qp);
+										Real funcQm = geoIfs[phase0]->value(Qm);
 										int orderV, orderN;
-										if (funcQ < funcXP)
+										if (funcQp < funcQm)
 										{
 											orderV = 0;
 											orderN = 1;
@@ -1580,15 +1581,33 @@ void ChomboScheduler::writeMembraneFiles()
 										{
 											orderV = 1;
 											orderN = 0;
-										 }
+										}
 
 										// set neighbor vertex and neighbor
 										// valid neighbor
+										if (segmentList[memIndex].neighborIndexes[orderV] != MEMBRANE_NEIGHBOR_UNKNOWN)
+										{
+											// already assigned value before, out of order
+											stringstream ss;
+											ss << "membrane neighbor is out of order, membrane index is " << memIndex
+												<< ", previously assigned " << (orderV == 0 ? "previous" : "next") <<  " neighbor is " << segmentList[memIndex].neighborIndexes[orderV]
+												<< ", currently computed " << (orderV == 0 ? "previous" : "next") << " neighbor is " << nidx;
+											throw ss.str();
+										}
 										segmentList[memIndex].vertexIndexes[orderV] = vertexCount;
 										segmentList[memIndex].neighborIndexes[orderV] = nidx;
 										edgeVertices[memIndex * 4 + iedge] = vertexCount;
 										if (nidx != MEMBRANE_NEIGHBOR_NEXT_TO_WALL)
 										{
+											if (segmentList[nidx].neighborIndexes[orderN] != MEMBRANE_NEIGHBOR_UNKNOWN)
+											{
+												// already assigned value before, out of order
+												stringstream ss;
+												ss << "membrane neighbor is out of order, membrane index is " << memIndex
+													<< ", previously assigned " << (orderN == 0 ? "previous" : "next") <<  " neighbor is " << segmentList[nidx].neighborIndexes[orderN]
+													<< ", currently computed " << (orderN == 0 ? "previous" : "next") << " neighbor is " << memIndex;
+												throw ss.str();
+											}
 											segmentList[nidx].vertexIndexes[orderN] = vertexCount;
 											segmentList[nidx].neighborIndexes[orderN] = memIndex;
 											edgeVertices[nidx * 4 + neighborEdge] = vertexCount;
