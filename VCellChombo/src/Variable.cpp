@@ -66,10 +66,6 @@ void Variable::addL2Exact(double d)
 {
 	l2Exact += d;
 }
-void Variable::addMean(double d)
-{
-	mean += d;
-}
 void Variable::addTotal(double d)
 {
 	total += d;
@@ -81,7 +77,7 @@ void Variable::updateMaxError(double d)
 
 void Variable::computeFinalStatistics()
 {
-	mean /= structure->getSizeFrac();
+	mean = total / structure->getSize();
 	if (getVarType() == VAR_VOLUME || getVarType() == VAR_VOLUME_REGION)
 	{
 		total *= 620;

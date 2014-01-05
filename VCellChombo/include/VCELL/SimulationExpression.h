@@ -49,8 +49,6 @@ public:
 		_dT_sec = dT; 
 	}
 
-	virtual void readData(char *filename);
-
 	Variable* getVariable(int index);
 
 	Variable *getVariableFromName(string& name);

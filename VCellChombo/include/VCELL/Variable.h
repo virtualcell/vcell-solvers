@@ -81,7 +81,6 @@ public:
 
 	void addL2Error(double d);
 	void addL2Exact(double d);
-	void addMean(double d);
 	void addTotal(double d);
 	void computeFinalStatistics();
 	

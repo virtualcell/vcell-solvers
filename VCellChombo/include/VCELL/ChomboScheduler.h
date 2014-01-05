@@ -123,7 +123,8 @@ protected:
 	static void populateBoxDataType(hid_t& boxType);
 	static void populateRealVectDataType(hid_t& realVectType);
 	static void populateIntVectDataType(hid_t& intVectType);
-	static void populateMetricsDataType(hid_t& metricsType);
+	static void populateMembraneElementMetricsDataType(hid_t& metricsType);
+	static void populateStructureMetricsDataType(hid_t& metricsType);
 	static void populateVertexDataType(hid_t& metricsType);
 	static void populateSegmentDataType(hid_t& triangleType);
 	static void populateSliceViewDataType(hid_t& sliceViewType);

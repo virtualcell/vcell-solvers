@@ -102,11 +102,6 @@ Variable *SimulationExpression::getVariableFromName(char* varName)
 	return getVariableFromName(vn);
 }
 
-void SimulationExpression::readData(char *filename)
-{
-	DataSet::read(filename, this);
-}
-
 void SimulationExpression::initSimulation()
 {
 	if (symbolTable == 0)

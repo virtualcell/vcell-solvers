@@ -48,6 +48,7 @@
 
 #define HDF5_FILE_EXT ".hdf5"
 #define MESH_HDF5_FILE_EXT ".mesh.hdf5"
+#define IF_VAR_NAME_PREFIX "zzz_IF_"
 
 static const int blockFactor = 8;  // smallest box, 8 is recommended.
 static const int nestingRadius  = 2; //ghostPhi[0];  // should be the same as ghost phi size, but Terry used 2
@@ -487,7 +488,7 @@ void ChomboScheduler::initializeGrids() {
 			}
 		}
 
-		int totalVolumes = phaseVolumeList[phase0].size() + phaseVolumeList[phase1].size();
+		int totalNumVolumes = phaseVolumeList[phase0].size() + phaseVolumeList[phase1].size();
 		bool* bAdjacent = new bool[phaseVolumeList[phase1].size()];
 		numMembranePoints = 0;
 		irregVolumeMembraneMap.resize(numLevels);
@@ -509,7 +510,7 @@ void ChomboScheduler::initializeGrids() {
 						for (int jvol = 0; jvol < phaseVolumeList[phase1].size(); jvol ++) {
 							const IntVectSet& ivs = vectEbis[phase1][jvol][ilev][dit()].getIrregIVS(currBox);
 							if (ivs.contains(gridIndex)) {
-								membraneID = ivol * totalVolumes + jvol;
+								membraneID = ivol * totalNumVolumes + jvol;
 								(*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0) = membraneID;
 								(*irregularPointMembraneIDs[phase1][jvol][ilev])[dit()](vof, 0) = membraneID;
 								bAdjacent[jvol] = true;
@@ -562,22 +563,22 @@ void ChomboScheduler::initializeGrids() {
 		delete[] bAdjacent;
 	}
 
-	// compute size of each connected component
-	// this part does not seem right
+	// compute size of each structure and number of points in structure
 	{
 		int cfRefRatio = 1;
 		for(int ilev = 0; ilev < numLevels - 1; ++ ilev)
 		{
 			cfRefRatio *= vectRefRatios[ilev];
 		}
-		double unitV = vectDxes[numLevels - 1].product();
+		double finestLevelUnitV = vectDxes[numLevels - 1].product();
 		for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
 		{
 			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol)
 			{
 				double sumVolFrac = 0;
 				int refratio = cfRefRatio;
-
+				int numPoints = 0;
+				
 				for(int ilev = 0; ilev < numLevels; ++ ilev)
 				{
 					int numRepeats = pow(refratio,SpaceDim);
@@ -599,7 +600,13 @@ void ChomboScheduler::initializeGrids() {
 								for (int i = smallEnd[0]; i <= bigEnd[0]; ++ i)
 								{
 									IntVect gridIndex(D_DECL(i, j, k));
-									if (currEBISBox.isCovered(gridIndex) || isInNextFinerLevel(ilev, gridIndex))
+									if (currEBISBox.isCovered(gridIndex))
+									{
+										continue;
+									}
+									++ numPoints;
+									
+									if (isInNextFinerLevel(ilev, gridIndex))
 									{
 										continue;
 									}
@@ -616,9 +623,16 @@ void ChomboScheduler::initializeGrids() {
 #if CH_SPACEDIM==3
 						} // k
 #endif
-						if (iphase == 0)
+						if (iphase == phase0)
 						{
-							int totalVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
+							//this is used for scaling boundary area
+							Real maxDxComponent = vectDxes[ilev][0];
+							for(int idir = 1; idir < SpaceDim; idir ++) {
+								maxDxComponent = max(maxDxComponent, vectDxes[ilev][idir]);
+							}
+							double levelUnitS = pow(maxDxComponent,SpaceDim -1);
+							
+							int totalNumVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
 							Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
 							const EBGraph& currEBGraph = currEBISBox.getEBGraph();
 							IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
@@ -629,37 +643,37 @@ void ChomboScheduler::initializeGrids() {
 								int jphase = adjacentVolumes[j]->phase;
 								int jvol = adjacentVolumes[j]->volumeIndexInPhase;
 
-								int currentMembraneID = ivol * totalVolumes + jvol;
+								int currentMembraneID = ivol * totalNumVolumes + jvol;
 								Feature* jFeature = phaseVolumeList[jphase][jvol]->feature;
 								Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(iFeature, jFeature);
 								for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
 								{
 									const VolIndex& vof = vofit();
+									int membraneID = (*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()](vof, 0);
+									if (membraneID != currentMembraneID)
+									{
+										continue;
+									}
 									const IntVect& gridIndex = vof.gridIndex();
 									int volIndex = getChomboBoxLocalIndex(vectNxes[ilev], 0, gridIndex);
 									map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(volIndex);
 									if (iter == irregVolumeMembraneMap[ilev].end() || iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
 									{
 										continue;
-									}
-									int membraneID = (*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()](vof, 0);
-									if (membraneID != currentMembraneID)
-									{
-										continue;
-									}
+									}									
 									double areaFrac = currEBISBox.bndryArea(vof);
-									membrane->addSize(areaFrac * unitV);
-									membrane->addSizeFrac(areaFrac);
+									membrane->addSize(areaFrac * levelUnitS);
+									membrane->addNumPoints(1);
 								}
 							}
 						}
 					} // dit
 					refratio /= vectRefRatios[ilev];
 				} // level
-				double s = sumVolFrac * unitV;
+				double s = sumVolFrac * finestLevelUnitV;
 				phaseVolumeList[iphase][ivol]->size = s;
 				phaseVolumeList[iphase][ivol]->feature->addSize(s);
-				phaseVolumeList[iphase][ivol]->feature->addSizeFrac(sumVolFrac);
+				phaseVolumeList[iphase][ivol]->feature->addNumPoints(numPoints);
 			} // vol
 		} // phase
 	} // compute size
@@ -716,7 +730,7 @@ void ChomboScheduler::updateSolution() {
 	}
 
 	double smallVolFrac = 1e-3;
-	double unitV = vectDxes[viewLevel].product();
+	double viewLevelUnitV = vectDxes[viewLevel].product();
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
@@ -781,9 +795,7 @@ void ChomboScheduler::updateSolution() {
 									}
 									volFrac *= numRepeats;
 									double sol = solnDataPtr[getChomboBoxLocalIndex(solnSize, ivar, D_DECL(i, j, k))];
-									double mean = sol * volFrac;
-									var->addMean(mean);
-									var->addTotal(mean * unitV);
+									var->addTotal(sol * volFrac * viewLevelUnitV);
 									double error = 0;
 									double relErr = 0;
 									if (bComputeError)
@@ -844,22 +856,24 @@ void ChomboScheduler::updateSolution() {
 	}
 
 	// membrane variables
-	int totalVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
+	int totalNumVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
 	int numMembraneVars = simulation->getNumMemVariables();
 
-	int iphase = 0;
-	int jphase = 1;
-	for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
-		Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
+	for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++) {
+		Feature* iFeature = phaseVolumeList[phase0][ivol]->feature;
 
 		for (int ilev = 0; ilev < numLevels; ++ ilev)
 		{
-			// unit volume in this level
-			unitV = vectDxes[ilev].product();
+			// unit surface area in this level
+			Real maxDxComponent = vectDxes[ilev][0];
+			for(int idir = 1; idir < SpaceDim; idir ++) {
+				maxDxComponent = max(maxDxComponent, vectDxes[ilev][idir]);
+			}
+			double levelUnitS = pow(maxDxComponent,SpaceDim -1);
 			
 			DisjointBoxLayout& currGrids = vectGrids[ilev];
 			for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++dit)	{
-				const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
+				const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
 				const Box& currBox = vectGrids[ilev][dit()];
 
 				const EBGraph& currEBGraph = currEBISBox.getEBGraph();
@@ -875,15 +889,15 @@ void ChomboScheduler::updateSolution() {
 						continue;
 					}
 					int memIndex = iter->second;
-					int membraneID = (*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()](vof, 0);
+					int membraneID = (*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0);
 					if (membraneID < 0)
 					{
 						continue;
 					}
-					int jvol = membraneID % totalVolumes;
+					int jvol = membraneID % totalNumVolumes;
 
 					double areaFrac = currEBISBox.bndryArea(vof);
-					Feature* jFeature = phaseVolumeList[jphase][jvol]->feature;
+					Feature* jFeature = phaseVolumeList[phase1][jvol]->feature;
 					Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(iFeature, jFeature);
 					for (int memVarIdx = 0; memVarIdx < numMembraneVars; ++ memVarIdx)
 					{
@@ -897,9 +911,7 @@ void ChomboScheduler::updateSolution() {
 								{
 									double* varCurr = var->getCurr();
 									double sol = (*memSoln[ivol][ilev])[dit()](vof, ivar);
-									double mean = sol * areaFrac;
-									var->addTotal(mean * unitV);
-									var->addMean(mean);
+									var->addTotal(sol * areaFrac * levelUnitS);
 
 									varCurr[memIndex] = sol;
 									Variable* errorVar = var->getExactErrorVariable();
@@ -958,8 +970,8 @@ void ChomboScheduler::updateSolution() {
 			VolumeVariable* var = feature->getIFVariable();
 			if (var == NULL)
 			{
-				string varname = string("IF_") + feature->getName();
-				var = new VolumeVariable(varname, feature, vectNxes[viewLevel].product());
+				string varname = string(IF_VAR_NAME_PREFIX) + feature->getName();
+				var = new VolumeVariable(varname, NULL, vectNxes[viewLevel].product());
 				feature->setIFVariable(var);
 			}
 		}
@@ -1035,8 +1047,10 @@ void ChomboScheduler::writeData(char* filename) {
 #define MESH_ATTR_EXTENT "extent"
 #define MESH_ATTR_NX "Nx"
 #define MESH_ATTR_DX "Dx"
-#define BOXES_DATASET MESH_GROUP"/boxes"
-#define METRICS_DATASET MESH_GROUP"/metrics"
+#define BOXES_GROUP MESH_GROUP"/boxes"
+#define BOXES_LEVEL_DATASET_PREFIX BOXES_GROUP"/level_"
+#define MEMBRANE_ELEMENTS_DATASET MESH_GROUP"/membrane elements"
+#define STRUCTURES_DATASET MESH_GROUP"/structures"
 #define VERTICES_DATASET MESH_GROUP"/vertices"
 #if CH_SPACEDIM == 2
 #define SEGMENTS_DATASET MESH_GROUP"/segments"
@@ -1074,7 +1088,7 @@ void ChomboScheduler::populateBoxDataType(hid_t& boxType)
 				 H5Tinsert(boxType, "hi_k", HOFFSET(MeshBox, hi[2]), H5T_NATIVE_INT);)
 }
 
-struct MeshMetrics
+struct MembraneElementMetrics
 {
 	int index;
 	int level;
@@ -1085,23 +1099,41 @@ struct MeshMetrics
 	unsigned short cornerPhaseMask;
 };
 
-void ChomboScheduler::populateMetricsDataType(hid_t& metricsType)
+void ChomboScheduler::populateMembraneElementMetricsDataType(hid_t& metricsType)
 {
-	H5Tinsert(metricsType, "index", HOFFSET(MeshMetrics, index), H5T_NATIVE_INT);
-	H5Tinsert(metricsType, "level", HOFFSET(MeshMetrics, level), H5T_NATIVE_INT);
-	D_TERM(H5Tinsert(metricsType, "i", HOFFSET(MeshMetrics, gridIndex[0]), H5T_NATIVE_INT);,
-				 H5Tinsert(metricsType, "j", HOFFSET(MeshMetrics, gridIndex[1]), H5T_NATIVE_INT);,
-				 H5Tinsert(metricsType, "k", HOFFSET(MeshMetrics, gridIndex[2]), H5T_NATIVE_INT);)
-	D_TERM(H5Tinsert(metricsType, "x", HOFFSET(MeshMetrics, coord[0]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(metricsType, "y", HOFFSET(MeshMetrics, coord[1]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(metricsType, "z", HOFFSET(MeshMetrics, coord[2]), H5T_NATIVE_DOUBLE);)
-	D_TERM(H5Tinsert(metricsType, "normalX", HOFFSET(MeshMetrics, normal[0]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(metricsType, "normalY", HOFFSET(MeshMetrics, normal[1]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(metricsType, "normalZ", HOFFSET(MeshMetrics, normal[2]), H5T_NATIVE_DOUBLE);)
-	H5Tinsert(metricsType, "volumeFraction", HOFFSET(MeshMetrics, volumeFraction), H5T_NATIVE_DOUBLE);
-	H5Tinsert(metricsType, "areaFraction", HOFFSET(MeshMetrics, areaFraction), H5T_NATIVE_DOUBLE);
-	H5Tinsert(metricsType, "membraneId", HOFFSET(MeshMetrics, membraneId), H5T_NATIVE_INT);
-	H5Tinsert(metricsType, "cornerPhaseMask", HOFFSET(MeshMetrics, cornerPhaseMask), H5T_NATIVE_USHORT);
+	H5Tinsert(metricsType, "index", HOFFSET(MembraneElementMetrics, index), H5T_NATIVE_INT);
+	H5Tinsert(metricsType, "level", HOFFSET(MembraneElementMetrics, level), H5T_NATIVE_INT);
+	D_TERM(H5Tinsert(metricsType, "i", HOFFSET(MembraneElementMetrics, gridIndex[0]), H5T_NATIVE_INT);,
+				 H5Tinsert(metricsType, "j", HOFFSET(MembraneElementMetrics, gridIndex[1]), H5T_NATIVE_INT);,
+				 H5Tinsert(metricsType, "k", HOFFSET(MembraneElementMetrics, gridIndex[2]), H5T_NATIVE_INT);)
+	D_TERM(H5Tinsert(metricsType, "x", HOFFSET(MembraneElementMetrics, coord[0]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(metricsType, "y", HOFFSET(MembraneElementMetrics, coord[1]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(metricsType, "z", HOFFSET(MembraneElementMetrics, coord[2]), H5T_NATIVE_DOUBLE);)
+	D_TERM(H5Tinsert(metricsType, "normalX", HOFFSET(MembraneElementMetrics, normal[0]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(metricsType, "normalY", HOFFSET(MembraneElementMetrics, normal[1]), H5T_NATIVE_DOUBLE);,
+				 H5Tinsert(metricsType, "normalZ", HOFFSET(MembraneElementMetrics, normal[2]), H5T_NATIVE_DOUBLE);)
+	H5Tinsert(metricsType, "volumeFraction", HOFFSET(MembraneElementMetrics, volumeFraction), H5T_NATIVE_DOUBLE);
+	H5Tinsert(metricsType, "areaFraction", HOFFSET(MembraneElementMetrics, areaFraction), H5T_NATIVE_DOUBLE);
+	H5Tinsert(metricsType, "membraneId", HOFFSET(MembraneElementMetrics, membraneId), H5T_NATIVE_INT);
+	H5Tinsert(metricsType, "cornerPhaseMask", HOFFSET(MembraneElementMetrics, cornerPhaseMask), H5T_NATIVE_USHORT);
+}
+
+struct StructureMetrics
+{
+	char name[128];
+	char type[128];
+	double size;
+	int numPoints;
+};
+
+void ChomboScheduler::populateStructureMetricsDataType(hid_t& metricsType)
+{
+	hid_t strType = H5Tcreate(H5T_STRING, sizeof(char) * 128);
+	H5Tinsert(metricsType, "name", HOFFSET(StructureMetrics, name), strType);
+	H5Tinsert(metricsType, "type", HOFFSET(StructureMetrics, type), strType);
+	H5Tinsert(metricsType, "size", HOFFSET(StructureMetrics, size), H5T_NATIVE_DOUBLE);
+	H5Tinsert(metricsType, "numPoints", HOFFSET(StructureMetrics, numPoints), H5T_NATIVE_INT);
+	H5Tclose(strType);
 }
 
 struct Vertex
@@ -1409,13 +1441,11 @@ void ChomboScheduler::writeMembraneFiles()
 	SliceView* sliceViewData = new SliceView[numMembranePoints];
 #endif
 
-	MeshMetrics* metricsData = new MeshMetrics[numMembranePoints];
+	MembraneElementMetrics* metricsData = new MembraneElementMetrics[numMembranePoints];
 #if CH_SPACEDIM == 2
 	Segment* segmentList = new Segment[numMembranePoints];
 	int* edgeVertices = new int[numMembranePoints * 4];
 	std::fill(edgeVertices, edgeVertices + numMembranePoints * 4, -1);
-
-	double coeff = 1.0/std::max(vectNxes[numLevels - 1][0], vectNxes[numLevels - 1][1]);
 #else
 	int triangleCount = 0;
 	Triangle* surfaceData = new Triangle[numMembranePoints*6];
@@ -1429,15 +1459,7 @@ void ChomboScheduler::writeMembraneFiles()
 		for (int ilev = 0; ilev < numLevels; ++ ilev)
 		{
 			ChomboGeometryShop chomboGeoShop(geoIfs[phase0], vectDxes[ilev]);
-#if CH_SPACEDIM == 2
-			RealVect edgePointOffset[4] =
-			{
-				RealVect(0, -vectDxes[ilev][1]*coeff),
-				RealVect(0, vectDxes[ilev][1]*coeff),
-				RealVect(vectDxes[ilev][0]*coeff, 0),
-				RealVect(-vectDxes[ilev][0]*coeff, 0)
-			};
-#endif
+
 			DisjointBoxLayout& currGrids = vectGrids[ilev];
 
 			for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++ dit)	{
@@ -1475,16 +1497,14 @@ void ChomboScheduler::writeMembraneFiles()
 					metricsData[memIndex].cornerPhaseMask = 0;
 
 					// correct normal signs (direction), we want normals pointing from phase 1 to phase 0
-#if CH_SPACEDIM == 3
 					double alpha = 0.25;
 					RealVect offset = alpha * vectDxes[ilev] * metricsData[memIndex].normal;
-					double Fp = geoIfs[0]->value(mem_point + offset);
-					double Fm = geoIfs[0]->value(mem_point - offset);
-					if ( Fp > Fm )
+					double Fp = geoIfs[phase0]->value(mem_point + offset);
+					double Fm = geoIfs[phase0]->value(mem_point - offset);
+					if (Fp * Fm < 0 && Fp > 0) // Fp and Fm are different sign, Fp > 0 and Fm < 0
 					{
 						metricsData[memIndex].normal = - metricsData[memIndex].normal;
 					}
-#endif
 					// compute corner phase mask
 					RealVect dP[2] = {-0.5 * vectDxes[ilev], 0.5 * vectDxes[ilev]};
 					RealVect P = vol_point;
@@ -1548,72 +1568,71 @@ void ChomboScheduler::writeMembraneFiles()
 								++ crossedEdgeCount;
 								if (crossedEdgeCount < 2)
 								{
-									RealVect cp = (edges[iedge].getIntersectLo()) ? edges[iedge].getLo() : edges[iedge].getHi();
-									RealVect cross_point = cp;
-									cross_point *= vectDxes[ilev];
-									cross_point += vol_point;
+									if (Fm * Fp < 0)
+									{
+										RealVect cp = (edges[iedge].getIntersectLo()) ? edges[iedge].getLo() : edges[iedge].getHi();
+										RealVect cross_point = cp;
+										cross_point *= vectDxes[ilev];
+										cross_point += vol_point;
 
-									int neighborEdge = (iedge ^ 1);
-									int nidx  = findNeighborMembraneIndex2D(phase0, ilev, gridIndex, iedge, cp, cross_point, neighborEdge);
-									if (nidx == MEMBRANE_NEIGHBOR_UNKNOWN)
-									{
-	//									stringstream ss;
-	//									ss << "failed to set a neighbor for membrane " << memIndex;
-	//									throw ss.str();
-										cout << "did not find one of the neighbors for membrane point (not next to wall) " << memIndex;
-									}
-									else
-									{
-										// determine if vertex is first or second
-										// compute Q (as membrane enters the volume element from outside
-										// find a point to the right of cross point, and compute fQ=implF(Q);
-										RealVect Qp = cross_point + edgePointOffset[iedge];
-										RealVect Qm = cross_point - edgePointOffset[iedge];
-										Real funcQp = geoIfs[phase0]->value(Qp);
-										Real funcQm = geoIfs[phase0]->value(Qm);
-										int orderV, orderN;
-										if (funcQp < funcQm)
+										int neighborEdge = (iedge ^ 1);
+										int nidx  = findNeighborMembraneIndex2D(phase0, ilev, gridIndex, iedge, cp, cross_point, neighborEdge);
+										if (nidx == MEMBRANE_NEIGHBOR_UNKNOWN)
 										{
-											orderV = 0;
-											orderN = 1;
+											cout << "did not find neighbor at edge " << neighborEdge << " for membrane point (not next to wall) " << memIndex << gridIndex;
 										}
 										else
 										{
-											orderV = 1;
-											orderN = 0;
-										}
-
-										// set neighbor vertex and neighbor
-										// valid neighbor
-										if (segmentList[memIndex].neighborIndexes[orderV] != MEMBRANE_NEIGHBOR_UNKNOWN)
-										{
-											// already assigned value before, out of order
-											stringstream ss;
-											ss << "membrane neighbor is out of order, membrane index is " << memIndex
-												<< ", previously assigned " << (orderV == 0 ? "previous" : "next") <<  " neighbor is " << segmentList[memIndex].neighborIndexes[orderV]
-												<< ", currently computed " << (orderV == 0 ? "previous" : "next") << " neighbor is " << nidx;
-											throw ss.str();
-										}
-										segmentList[memIndex].vertexIndexes[orderV] = vertexCount;
-										segmentList[memIndex].neighborIndexes[orderV] = nidx;
-										edgeVertices[memIndex * 4 + iedge] = vertexCount;
-										if (nidx != MEMBRANE_NEIGHBOR_NEXT_TO_WALL)
-										{
-											if (segmentList[nidx].neighborIndexes[orderN] != MEMBRANE_NEIGHBOR_UNKNOWN)
+											// determine if vertex is first or second
+											// compute Q (as membrane enters the volume element from outside
+											// find a point to the right of cross point, and compute fQ=implF(Q);
+											RealVect Vp = mem_point - cross_point;
+											RealVect Vtan(-metricsData[memIndex].normal[1], metricsData[memIndex].normal[0]);
+											double Dtest = Vp.dotProduct(Vtan);
+											int orderV, orderN;
+											if (Dtest > 0)
 											{
-												// already assigned value before, out of order
-												stringstream ss;
-												ss << "membrane neighbor is out of order, membrane index is " << memIndex
-													<< ", previously assigned " << (orderN == 0 ? "previous" : "next") <<  " neighbor is " << segmentList[nidx].neighborIndexes[orderN]
-													<< ", currently computed " << (orderN == 0 ? "previous" : "next") << " neighbor is " << memIndex;
-												throw ss.str();
+												orderV = 0;
+												orderN = 1;
 											}
-											segmentList[nidx].vertexIndexes[orderN] = vertexCount;
-											segmentList[nidx].neighborIndexes[orderN] = memIndex;
-											edgeVertices[nidx * 4 + neighborEdge] = vertexCount;
+											else
+											{
+												orderV = 1;
+												orderN = 0;
+											}
+
+											// set neighbor vertex and neighbor
+											// valid neighbor
+//											if (segmentList[memIndex].neighborIndexes[orderV] != MEMBRANE_NEIGHBOR_UNKNOWN)
+//											{
+//												// already assigned value before, out of order
+//												stringstream ss;
+//												ss << "membrane neighbor is out of order, membrane index is " << memIndex << gridIndex
+//													<< ", previously assigned " << (orderV == 0 ? "previous" : "next") <<  " neighbor is " << segmentList[memIndex].neighborIndexes[orderV]
+//													<< ", currently computed " << (orderV == 0 ? "previous" : "next") << " neighbor is " << nidx;
+//												throw ss.str();
+//											}
+											segmentList[memIndex].vertexIndexes[orderV] = vertexCount;
+											segmentList[memIndex].neighborIndexes[orderV] = nidx;
+											edgeVertices[memIndex * 4 + iedge] = vertexCount;
+											if (nidx != MEMBRANE_NEIGHBOR_NEXT_TO_WALL)
+											{
+//												if (segmentList[nidx].neighborIndexes[orderN] != MEMBRANE_NEIGHBOR_UNKNOWN)
+//												{
+//													// already assigned value before, out of order
+//													stringstream ss;
+//													ss << "membrane neighbor is out of order, membrane index is " << memIndex
+//														<< ", previously assigned " << (orderN == 0 ? "previous" : "next") <<  " neighbor is " << segmentList[nidx].neighborIndexes[orderN]
+//														<< ", currently computed " << (orderN == 0 ? "previous" : "next") << " neighbor is " << memIndex;
+//													throw ss.str();
+//												}
+												segmentList[nidx].vertexIndexes[orderN] = vertexCount;
+												segmentList[nidx].neighborIndexes[orderN] = memIndex;
+												edgeVertices[nidx * 4 + neighborEdge] = vertexCount;
+											}
+											vertexList[vertexCount].coords = cross_point;
+											++ vertexCount;
 										}
-										vertexList[vertexCount].coords = cross_point;
-										++ vertexCount;
 									}
 								}
 								else
@@ -1715,8 +1734,6 @@ void ChomboScheduler::writeMembraneFiles()
 	delete[] edgeVertices;
 #endif
 
-
-	int finestLevel = numLevels - 1;
 	int viewLevel = chomboSpec->getViewLevel();
 	// now start writing we have computed so far
 	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MESH_HDF5_FILE_EXT);
@@ -1756,7 +1773,7 @@ void ChomboScheduler::writeMembraneFiles()
 
 	// grid size
 	attribute = H5Acreate(meshGroup, MESH_ATTR_DX, realVectType, scalarDataSpace, H5P_DEFAULT);
-	H5Awrite(attribute, realVectType, vectDxes[finestLevel].dataPtr());
+	H5Awrite(attribute, realVectType, vectDxes[viewLevel].dataPtr());
 	H5Aclose(attribute);
 
 	// number of levels
@@ -1788,35 +1805,79 @@ void ChomboScheduler::writeMembraneFiles()
 
 	// boxes
 	{
+	hid_t boxesGroup = H5Gcreate(h5MeshFile, BOXES_GROUP, H5P_DEFAULT);
 	hid_t boxType = H5Tcreate(H5T_COMPOUND, sizeof(MeshBox));
 	populateBoxDataType(boxType);
-	Vector<Box> vectBoxes = vectGrids[finestLevel].boxArray();
-	int numBoxes = vectBoxes.size();
-	MeshBox* boxData = new MeshBox[numBoxes];
-	for (int i = 0; i < numBoxes; ++ i)
-	{
-		boxData[i].lo = vectBoxes[i].smallEnd();
-		boxData[i].hi = vectBoxes[i].bigEnd();
-	}
-	hsize_t dim[] = {numBoxes};   /* Dataspace dimensions */
 	int rank = 1;
-	hid_t space = H5Screate_simple (rank, dim, NULL);
-	hid_t boxDataSet = H5Dcreate (h5MeshFile, BOXES_DATASET, boxType, space, H5P_DEFAULT);
-	H5Dwrite(boxDataSet, boxType, H5S_ALL, H5S_ALL, H5P_DEFAULT, boxData);
-	H5Dclose(boxDataSet);
-	H5Sclose(space);
+	for (int ilev = 0; ilev < numLevels; ++ ilev)
+	{
+		Vector<Box> vectBoxes = vectGrids[ilev].boxArray();
+		int numBoxes = vectBoxes.size();
+		MeshBox* levelBoxData = new MeshBox[numBoxes];
+		for (int i = 0; i < numBoxes; ++ i)
+		{
+			levelBoxData[i].lo = vectBoxes[i].smallEnd();
+			levelBoxData[i].hi = vectBoxes[i].bigEnd();
+		}
+		hsize_t dim[] = {numBoxes};   /* Dataspace dimensions */
+		hid_t space = H5Screate_simple (rank, dim, NULL);
+		char levelBoxDataSetName[20];
+		sprintf(levelBoxDataSetName, "%s%d", BOXES_LEVEL_DATASET_PREFIX, ilev);
+		hid_t levelBoxDataSet = H5Dcreate (h5MeshFile, levelBoxDataSetName, boxType, space, H5P_DEFAULT);
+		H5Dwrite(levelBoxDataSet, boxType, H5S_ALL, H5S_ALL, H5P_DEFAULT, levelBoxData);
+		H5Dclose(levelBoxDataSet);
+		H5Sclose(space);
+		delete[] levelBoxData;
+	}
 	H5Tclose(boxType);
-	delete[] boxData;
+	H5Gclose(boxesGroup);
 	}
 
-	// metrics
+	// structures
 	{
-	hid_t metricsType = H5Tcreate(H5T_COMPOUND, sizeof(MeshMetrics));
-	populateMetricsDataType(metricsType);
+	hid_t sType = H5Tcreate(H5T_COMPOUND, sizeof(StructureMetrics));
+	populateStructureMetricsDataType(sType);
+	VCellModel* model = SimTool::getInstance()->getModel();
+	int numStructures = model->getNumFeatures() + model->getNumMembranes();
+	StructureMetrics* structureData = new StructureMetrics[numStructures];
+	int cnt = 0;
+	for (int i = 0; i < model->getNumFeatures(); ++ i)
+	{
+		Feature* f = model->getFeatureFromIndex(i);
+		strcpy(structureData[cnt].name, f->getName().c_str());
+		strcpy(structureData[cnt].type, "feature");
+		structureData[cnt].size = f->getSize();
+		structureData[cnt].numPoints = f->getNumPoints();
+		++ cnt;
+	}
+	for (int i = 0; i < model->getNumMembranes(); ++ i)
+	{
+		Membrane* m = model->getMembraneFromIndex(i);
+		strcpy(structureData[cnt].name, m->getName().c_str());
+		strcpy(structureData[cnt].type, "membrane");
+		structureData[cnt].size = m->getSize();
+		structureData[cnt].numPoints = m->getNumPoints();
+		++ cnt;
+	}
+	hsize_t dim[] = {numStructures};   /* Dataspace dimensions */
+	int rank = 1;  // number of dimensions
+	hid_t space = H5Screate_simple (rank, dim, NULL);
+	hid_t structureDataset = H5Dcreate (h5MeshFile, STRUCTURES_DATASET, sType, space, H5P_DEFAULT);
+	H5Dwrite(structureDataset, sType, H5S_ALL, H5S_ALL, H5P_DEFAULT, structureData);
+	H5Dclose(structureDataset);
+	H5Sclose(space);
+	H5Tclose(sType);
+	delete[] structureData;
+	}
+	
+	// membrane metrics
+	{
+	hid_t metricsType = H5Tcreate(H5T_COMPOUND, sizeof(MembraneElementMetrics));
+	populateMembraneElementMetricsDataType(metricsType);
 	hsize_t dim[] = {numMembranePoints};   /* Dataspace dimensions */
 	int rank = 1;
 	hid_t space = H5Screate_simple (rank, dim, NULL);
-	hid_t metricsDataset = H5Dcreate (h5MeshFile, METRICS_DATASET, metricsType, space, H5P_DEFAULT);
+	hid_t metricsDataset = H5Dcreate (h5MeshFile, MEMBRANE_ELEMENTS_DATASET, metricsType, space, H5P_DEFAULT);
 	H5Dwrite(metricsDataset, metricsType, H5S_ALL, H5S_ALL, H5P_DEFAULT, metricsData);
 	H5Dclose(metricsDataset);
 	H5Sclose(space);

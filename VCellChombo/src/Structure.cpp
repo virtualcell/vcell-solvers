@@ -2,11 +2,11 @@
 #include <VCELL/Variable.h>
 #include <VCELL/VarContext.h>
 
-Structure::Structure(string& Aname) {
+Structure::Structure(string& Aname)
+{
 	name = Aname;
 	size = 0;
-//	odeVarCount = 0;
-//	pdeVarCount = 0;
+	numPoints = 0;
 
 	for (int i = 0; i < 6; i ++)
 	{
@@ -20,14 +20,6 @@ Structure::~Structure(void)
 
 void Structure::addDefinedVariable(Variable* var) {
 	definedVariableList.push_back(var);
-//	if (var->isDiffusing())
-//	{
-//		++ pdeVarCount;
-//	}
-//	else
-//	{
-//		++ odeVarCount;
-//	}
 }
 
 bool Structure::isVariableDefined(Variable* var){

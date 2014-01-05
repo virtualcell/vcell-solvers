@@ -59,30 +59,26 @@ public:
 	{
 		return size;
 	}
-	double getSizeFrac()
-	{
-		return sizeFrac;
-	}
 	void addSize(double s)
 	{
 		size += s;
 	}
-	void addSizeFrac(double f)
+	void addNumPoints(int np)
 	{
-		sizeFrac += f;
+		numPoints += np;
 	}
-//	int getPdeVarCount()
-//	{
-//		return pdeVarCount;
-//	}
+	int getNumPoints()
+	{
+		return numPoints;
+	}
+
 protected:
 	string  name;
 	vector<Variable*> definedVariableList;
-//	int odeVarCount;
-//	int pdeVarCount;
 	BoundaryType boundaryType[6];
 	double size;
 	double sizeFrac;
+	int numPoints;
 };
 
 #endif
