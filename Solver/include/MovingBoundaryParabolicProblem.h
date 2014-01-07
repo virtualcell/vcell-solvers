@@ -2,14 +2,15 @@
 #define MovingBoundaryParabolicProblem_h
 #include <stdexcept>
 #include <iostream>
-#include <VCellFront.h> //split GeoLimits out maybe?
-#include <Volume.h> //split GeoLimits out maybe?
+#include <MovingBoundaryTypes.h>
+#include <VCellFront.h> 
 
 namespace spatial {
-	template<class REAL, int NUM_S>
-	struct MeshElementSpecies; 
-	template<class REAL, int NUM_S>
+	template<class REAL, int N>
 	struct MeshDef;
+}
+namespace moving_boundary {
+	struct MeshElementSpecies; 
 
 	typedef double (*ConcentrationFunction)(double x, double y);
 
@@ -22,11 +23,11 @@ namespace spatial {
 		/**
 		* if zero, #levelFunctionStr function is in levelFunctionStr
 		*/
-		FronTierLevelFunction levelFunction;
+		spatial::FronTierLevelFunction levelFunction;
 		/**
 		* if zero, #levelFunctionStr function is in advectVelocityFunctionStrX, Y
 		*/
-		FronTierVelocityFunction velocityFunction;
+		spatial::FronTierVelocityFunction velocityFunction;
 		/**
 		* if zero, #levelFunctionStr function is in concentrationFunctionStr
 		*/
@@ -56,7 +57,7 @@ namespace spatial {
 		* provide alternate to frontier; for testing / validation
 		* Must be heap allocated; will be deleted upon simulation completion
 		*/
-		FrontProvider *alternateFrontProvider;
+		spatial::FrontProvider *alternateFrontProvider;
 
 		MovingBoundarySetup( ) 
 			:
@@ -83,13 +84,13 @@ namespace spatial {
 	*/
 	template <class T>
 	struct GeometryInfo {
-		GeometryInfo(const std::vector<TPoint<T,2> > & boundary)
+		GeometryInfo(const std::vector<spatial::TPoint<T,2> > & boundary)
 			:boundary(boundary) {};
 
 		/**
 		* current control front
 		*/
-		const std::vector<TPoint<T,2> > & boundary;
+		const std::vector<spatial::TPoint<T,2> > & boundary;
 	};
 
 	struct MovingBoundaryClient {
@@ -101,11 +102,11 @@ namespace spatial {
 		* @param last is this last time increment of sim?
 		* @param geometryInfo current geometry information. Reference is not valid after return of function call.
 		*/
-		virtual void time(double t, bool last, const GeometryInfo<double> & geometryInfo) = 0; 
+		virtual void time(double t, bool last, const GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) = 0; 
 		/**
 		* state of inside / boundary nodes
 		*/
-		virtual void element(const MeshElementSpecies<double,1> &e) = 0;
+		virtual void element(const MeshElementSpecies &e) = 0;
 		/**
 		* notify client they've received all elements
 		*/
@@ -155,7 +156,7 @@ namespace spatial {
 		void run(MovingBoundaryClient &client);
 		void plotPolygons(std::ostream &os) const ;
 		void plotAreas(std::ostream &os) const;
-		const spatial::MeshDef<double,2> & meshDef( ) const;
+		const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDef( ) const;
 		double baseTimeStep( ) const;
 		unsigned int numberTimeSteps( ) const; 
 		double endTime( ) const;

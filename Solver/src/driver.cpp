@@ -9,13 +9,14 @@
 using tinyxml2::XMLElement;
 
 namespace {
+	typedef int WorldCoordType;
 	const char * const XML_ROOT_NAME = "vcellfrontiersetup";
 
 	typedef std::pair<int,H5::H5File> PReturn; 
-	spatial::MovingBoundarySetup setupProblem(const XMLElement &root); 
+	moving_boundary::MovingBoundarySetup setupProblem(const XMLElement &root); 
 	void setupTrace(const XMLElement &root); 
-	spatial::MovingBoundaryClient *setupClient(const XMLElement &root, const char *filename, spatial::MovingBoundaryParabolicProblem &mbpp,
-		const spatial::MovingBoundarySetup &); 
+	moving_boundary::MovingBoundaryClient *setupClient(const XMLElement &root, const char *filename, moving_boundary::MovingBoundaryParabolicProblem &mbpp,
+		const moving_boundary::MovingBoundarySetup &); 
 	void runSimulation(H5::H5File & output);
 
 	std::auto_ptr<vcell_util::FileDest> traceFileDestination; 
@@ -37,8 +38,8 @@ int main(int argc, char *argv[])
 		std::cerr << "Usage: " << argv[0] << " [xml input file] <hdf5 output file name> " << std::endl; 
 		return 1; 
 	}
-	spatial::MovingBoundaryParabolicProblem mbpp;
-	std::auto_ptr<spatial::MovingBoundaryClient> client;
+	moving_boundary::MovingBoundaryParabolicProblem mbpp;
+	std::auto_ptr<moving_boundary::MovingBoundaryClient> client;
 	const char * const filename = argv[1];
 	try {
 		tinyxml2::XMLDocument doc;
@@ -54,9 +55,9 @@ int main(int argc, char *argv[])
 		}
 		setupTrace(root);
 
-		spatial::MovingBoundarySetup mbs = setupProblem(root);
-		mbpp = spatial::MovingBoundaryParabolicProblem(mbs);
-		client = std::auto_ptr<spatial::MovingBoundaryClient>( setupClient(root, argv[2], mbpp, mbs) ); 
+		moving_boundary::MovingBoundarySetup mbs = setupProblem(root);
+		mbpp = moving_boundary::MovingBoundaryParabolicProblem(mbs);
+		client = std::auto_ptr<moving_boundary::MovingBoundaryClient>( setupClient(root, argv[2], mbpp, mbs) ); 
 	}
 	catch (std::exception & e) {
 		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << filename << std::endl; 
@@ -81,11 +82,12 @@ int main(int argc, char *argv[])
 namespace {
 
 	void readLimits(const tinyxml2::XMLElement &element, spatial::GeoLimit & limits) {
-		limits.low = vcell_xml::convertChildElement<double>(element,"low");
-		limits.high = vcell_xml::convertChildElement<double>(element,"high");
+		double low = vcell_xml::convertChildElement<double>(element,"low");
+		double high = vcell_xml::convertChildElement<double>(element,"high");
+		limits = spatial::GeoLimit(low,high);
 	}
-	spatial::MovingBoundarySetup setupProblem(const XMLElement &root) {
-		spatial::MovingBoundarySetup mbSetup; 
+	moving_boundary::MovingBoundarySetup setupProblem(const XMLElement &root) {
+		moving_boundary::MovingBoundarySetup mbSetup; 
 		const XMLElement & prob = vcell_xml::get(root,"problem");
 
 		std::array<spatial::GeoLimit,2> limits;
@@ -93,7 +95,7 @@ namespace {
 		readLimits(xlimits,limits[0]);
 		const tinyxml2::XMLElement & ylimits = vcell_xml::get(prob,"yLimits"); 
 		readLimits(ylimits,limits[1]);
-		spatial::World<double,2>::get( ).init(limits,true);
+		moving_boundary::Universe<2>::get( ).init(limits,true);
 
 		using vcell_xml::convertChildElement;
 
@@ -125,8 +127,8 @@ namespace {
 		return mbSetup; 
 	}
 
-	spatial::MovingBoundaryClient *setupClient(const XMLElement &root, const char *filename, spatial::MovingBoundaryParabolicProblem &mbpp,
-		const spatial::MovingBoundarySetup & mbs) {
+	moving_boundary::MovingBoundaryClient *setupClient(const XMLElement &root, const char *filename, moving_boundary::MovingBoundaryParabolicProblem &mbpp,
+		const moving_boundary::MovingBoundarySetup & mbs) {
 		try {
 			const XMLElement & report = vcell_xml::get(root,"report");
 			unsigned int numberReports = vcell_xml::convertChildElement<unsigned int>(report,"numberReports");
@@ -149,7 +151,7 @@ namespace {
 			}
 			const double startTime = vcell_xml::convertChildElementWithDefault<double>(report,"startTime",0);
 
-			spatial::NHDF5Client<> *client =  new spatial::NHDF5Client< >(output,mbpp,numberReports, datasetName, startTime);
+			moving_boundary::NHDF5Client<> *client =  new moving_boundary::NHDF5Client<>(output,mbpp,numberReports, datasetName, startTime);
 			client->addInitial(mbs);
 			const XMLElement * const annotateSection = report.FirstChildElement("annotation"); 
 			if (annotateSection != nullptr) {
@@ -197,7 +199,7 @@ namespace {
 	}
 	/*
 	void runSimulation(H5::H5File & output) {
-	spatial::MovingBoundaryParabolicProblem mbpp(mbSetup);
+	moving_boundary::MovingBoundaryParabolicProblem mbpp(mbSetup);
 	mbpp.run(client);
 	}
 	*/

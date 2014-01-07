@@ -77,11 +77,11 @@ namespace spatial {
 
 	class VCellFront : public FrontProvider {
 	public:
-		VCellFront(std::vector<GeoLimit> & xlimits, int N, double tmax,
+		VCellFront(std::vector<const GeoLimit> & xlimits, int N, double tmax,
 			FronTierLevelFunction levelFunction,
 			FronTierVelocityFunction velocityFunction);
 
-		VCellFront(std::vector<GeoLimit> & xlimits, int N, double tmax,
+		VCellFront(std::vector<const GeoLimit> & xlimits, int N, double tmax,
 			const FronTierLevel & level,
 			const FronTierVelocity &vel);
 
@@ -105,7 +105,7 @@ namespace spatial {
 		Frontier::Front* const c_ptr( ) { return &front; }
 
 	private:
-		void init(std::vector<GeoLimit> & xlimits, int N, double tmax,
+		void init(std::vector<const GeoLimit> & xlimits, int N, double tmax,
 			FronTierLevelFunction levelFunction,
 			FronTierVelocityFunction velocityFunction,
 			bool isAdapter);

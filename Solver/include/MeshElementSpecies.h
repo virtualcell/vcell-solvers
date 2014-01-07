@@ -1,34 +1,51 @@
 #ifndef MeshElementSpecies_h
 #define MeshElementSpecies_h
+#include <MPoint.h>
 #include <fstream>
 #include <vector>
 #include <cmath>
-#include <MPoint.h>
+#include <MovingBoundaryCollections.h>
 #include <Allocator.h>
 #include <Volume.h>
 #include <SVector.h>
-#include <VoronoiMesh.h>
+//#include <VoronoiMesh.h>
 #include <VCellException.h>
 #include <Logger.h>
 #include <DiffuseAdvectCache.h>
 #include <portability.h>
 #include <math.h>
 
+//forward definitions
 namespace spatial {
+	template<class COORD_TYPE, int N> struct MeshDef; 
+	template<class COORD_TYPE, int N, class TELEMENT> struct Mesh; 
 	struct VoronoiResult;
+}
 
-	//forward definitions
-	template<class REAL, int N> struct MeshDef; 
-	template<class REAL, int N, class TELEMENT> struct Mesh; 
-	template <class REAL, int NUM_S> struct VoronoiMesh;
-	template<class REAL, int NUM_S> struct MeshElementSpecies;
-	template <class REAL, int NUM_S>
+namespace moving_boundary {
+	//placeholder until we convert fixed std::array to dynamic storage
+	const size_t nOfS = 1;
+	struct VoronoiMesh;
+	struct MeshElementSpecies;
 	struct MeshElementSpeciesIdent;
+	/**
+	* proxy object to stream identifying information about MeshElementSpecies
+	*/
+	struct MeshElementSpeciesIdent {
+		const MeshElementSpecies &mes;
+		MeshElementSpeciesIdent(const MeshElementSpecies &m)
+			:mes(m) {}
+		void write(std::ostream &os) const; 
+	};
+
+	inline std::ostream & operator<<(std::ostream & os,const MeshElementSpeciesIdent& mesi) {
+		mesi.write(os);
+		return os;
+	}
 
 	/**
 	* used by #MeshElementSpecies to store information about neighbors
 	*/
-	template<class REAL, int NUM_S>
 	struct MeshElementNeighbor {
 		MeshElementNeighbor( )
 			:element(nullptr),
@@ -36,50 +53,14 @@ namespace spatial {
 			edgeLength( )
 			//daAmount(unset)
 		{}
-		MeshElementNeighbor(MeshElementSpecies<REAL,NUM_S> *e)
+		MeshElementNeighbor(MeshElementSpecies *e)
 			:element(e),
 			distanceTo( ),
 			edgeLength( ) 
 		{}
-		MeshElementSpecies<REAL,NUM_S> *element; 
-		REAL distanceTo;
-		REAL edgeLength;
-#if PROB_NOT_USE
-		/**
-		* check to see if diffuse-advect amount value set
-		*/
-		bool daSet( ) const {
-			return daAmount != unset;
-		}
-		/**
-		* reset diffuse-advect amount to "unset"
-		*/
-		void clearDa( ) {
-			daAmount = unset;
-		}
-		/**
-		* set diffuse-advect amount 
-		*/
-		void setDa(REAL v) {
-			daAmount = v;
-		}
-		/**
-		* get diffuse-advect amount 
-		* @throws std::domain_error if unset
-		*/
-		REAL da( ) {
-			if (daAmount != unset) {
-				return daAmount;
-			}
-			VCELL_EXCEPTION(domain_error,"attempting to access unset da( ) for " << element ? element.indexInfo( ) : "unset element")
-		}
-	private:
-		const static int unset = -99;
-		/**
-		* amount to diffuse-advect with this neighbor
-		*/
-		REAL daAmount;
-#endif
+		MeshElementSpecies *element; 
+		moving_boundary::DistanceType distanceTo;
+		moving_boundary::DistanceType edgeLength;
 	};
 
 	namespace MeshElementStateful {
@@ -178,17 +159,16 @@ namespace spatial {
 	* </ul> 
 	*/
 
-	template<class REAL, int NUM_S>
-	struct MeshElementSpecies : public MeshElement<REAL,2> {
-		typedef MeshElement<REAL,2> base;
-		typedef MeshElementSpecies<REAL,NUM_S> OurType;
-		typedef MeshElementNeighbor<REAL,NUM_S> NeighborType;
+	struct MeshElementSpecies : public spatial::MeshElement<moving_boundary::CoordinateType,2> {
+		typedef spatial::MeshElement<moving_boundary::CoordinateType,2> base;
+		typedef MeshElementSpecies OurType;
+		typedef MeshElementNeighbor NeighborType;
 		typedef MeshElementStateful::State State;
-		typedef TDiffuseAdvectCache<REAL,2,NUM_S> DiffuseAdvectCache; 
-		static DiffuseAdvectCache *createCache(REAL smallestMeshInterval); 
-		static const int numSpecies = NUM_S; 
 
-		MeshElementSpecies(const size_t *n, const REAL *values) 
+		static spatial::DiffuseAdvectCache *createCache(moving_boundary::DistanceType smallestMeshInterval); 
+		static const int numSpecies = nOfS; 
+
+		MeshElementSpecies(const size_t *n, const moving_boundary::CoordinateType *values) 
 			:base(n,values),
 			stateVar(State::initial),
 			interiorVolume(-1),
@@ -202,21 +182,21 @@ namespace spatial {
 			nOutside(0),
 			velocity(0,0)
 		{
-			VCELL_LOG(trace, "creation " << this->indexInfo( ) << " (" << this->get(cX) << ',' << this->get(cY) << ')');
+			VCELL_LOG(trace, "creation " << this->indexInfo( ) << " (" << this->get(spatial::cX) << ',' << this->get(spatial::cY) << ')');
 		}
 
 
 		/**
 		* return proxy object identifying this for streaming to an ostream
 		*/
-		MeshElementSpeciesIdent<REAL,NUM_S> ident( ) const {
-			return MeshElementSpeciesIdent<REAL,NUM_S>(*this);
+		MeshElementSpeciesIdent ident( ) const {
+			return MeshElementSpeciesIdent(*this);
 		};
 
 		/**
 		* set initial concentration 
 		*/
-		void setConcentration(size_t i, REAL c) {
+		void setConcentration(size_t i, moving_boundary::BioQuanType c) {
 			using namespace MeshElementStateful;
 			if (state( ) != initial) {
 				throw std::domain_error("setConcentration");
@@ -225,7 +205,7 @@ namespace spatial {
 				throw std::invalid_argument("setConcentration not a number");
 				std::cout << "nan" << std::endl;
 			}
-			assert (i < NUM_S);
+			assert (i < nOfS);
 			assert ( c >= 0);
 			if (c > 0) {
 				amtMass[i] = c * volume( );
@@ -238,8 +218,8 @@ namespace spatial {
 		* does not necessarily equal value of last call
 		* to #setConcentration
 		*/
-		REAL concentration(size_t i) const { 
-			assert (i < NUM_S);
+		moving_boundary::BioQuanType concentration(size_t i) const { 
+			assert (i < nOfS);
 			if (amtMass[i] > 0) {
 				return amtMass[i] / volume( ); 
 			}
@@ -250,19 +230,19 @@ namespace spatial {
 		/**
 		* see #concentration
 		*/
-		REAL mass(size_t i) const { 
-			assert (i < NUM_S);
+		moving_boundary::BioQuanType mass(size_t i) const { 
+			assert (i < nOfS);
 			return amtMass[i];
 		}
 
 		/**
 		* set position. See sequence diagram and state transition table
 		*/
-		void setPos(SurfacePosition m) ; 
+		void setPos(spatial::SurfacePosition m) ; 
 		/**
 		* set initial position
 		*/
-		void setInitialPos(SurfacePosition m) {
+		void setInitialPos(spatial::SurfacePosition m) {
 			using namespace MeshElementStateful;
 			if (state( )!=initial) {
 				throw std::domain_error("setInitialPos");
@@ -283,10 +263,10 @@ namespace spatial {
 		* transfer interior neighbor edge length, distance and coordinate info to doppelganger
 		*/
 
-		void setInsideNeighbor(OurType & other, REAL dist, REAL length) {
+		void setInsideNeighbor(OurType & other, moving_boundary::DistanceType dist, moving_boundary::DistanceType length) {
 			//scan inside neighbor storage, find first empty
 			for (int i = 0; i < 4; i++) {
-				MeshElementNeighbor<REAL,NUM_S> & iNbhr = interiorNeighbors[i]; 
+				MeshElementNeighbor & iNbhr = interiorNeighbors[i]; 
 				if (iNbhr.element == nullptr) {
 					iNbhr.element = &other; 
 					iNbhr.distanceTo = dist;
@@ -305,12 +285,11 @@ namespace spatial {
 		* @param front of interest
 		*/
 		void setBoundaryNeighbors(
-			const VoronoiMesh<REAL,NUM_S> &vm,
-			//const MeshDef<REAL,2> & mesh, 
+			const VoronoiMesh &vm,
 			std::vector<OurType *>  & bn, 
-			const std::vector<TPoint<REAL,2> > & front) {
+			const FrontType & front) {
 				updateBoundaryNeighbors(vm,bn);
-				formBoundaryPolygon(vm.mesh( ),front);
+				formBoundaryPolygonVM(vm,front);
 		}
 
 		/**
@@ -320,7 +299,7 @@ namespace spatial {
 		* @mesh our mesh
 		* @param front moved front
 		*/
-		void moveFront( const MeshDef<REAL,2> & mesh, const std::vector<TPoint<REAL,2> > & front); 
+		void moveFront( const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front); 
 
 		/**
 		* update volume to new front. 
@@ -328,7 +307,7 @@ namespace spatial {
 		* @param front moved front
 		* @param interiorVolume volume if node entirely interior 
 		*/
-		void applyFront( const MeshDef<REAL,2> & mesh, const std::vector<TPoint<REAL,2> > & front, REAL interiorVolume) {
+		void applyFront( const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front, moving_boundary::CoordinateProductType interiorVolume) {
 			using namespace MeshElementStateful;
 			switch (state( )) {
 			case legacyVoronoiSet:
@@ -363,24 +342,23 @@ namespace spatial {
 		* @param bn boundary neighbors inside front
 		* @param front of interest
 		*/
-		void updateBoundaryNeighbors( //const MeshDef<REAL,2> & mesh, 
-			const VoronoiMesh<REAL,NUM_S> &vm,
+		void updateBoundaryNeighbors( 
+			const VoronoiMesh &vm,
 			std::vector<OurType *>  & bn) ;
-		//const std::vector<TPoint<REAL,2> > & front); 
 		/**
 		* indicate diffusion-advection processing complete; swap concentration pointers, check interior deepness
 		*/
 		void endOfCycle( );  
 
-		REAL volume(  ) const {
+		moving_boundary::CoordinateProductType volume(  ) const {
 			using MeshElementStateful::State;
 			switch(this->state( ) ) {
 			case State::initial:
 			case State::stable: 
 			case State:: stableUpdated:
 				switch (this->mPos( )) {
-				case interiorSurface:
-				case deepInteriorSurface: 
+				case spatial::interiorSurface:
+				case spatial::deepInteriorSurface: 
 					assert(interiorVolume > 0); //should be set externally 
 					return interiorVolume;
 				}
@@ -404,7 +382,7 @@ namespace spatial {
 			}
 		}
 
-		void setInteriorVolume(REAL v) {
+		void setInteriorVolume(moving_boundary::CoordinateProductType v) {
 			interiorVolume = v;
 		}
 
@@ -412,19 +390,19 @@ namespace spatial {
 		* boundary element whose voronoi doesn't intersect front
 		*/
 		bool isBoundaryElementWithInsideNeighbors( ) const {
-			return this->mPos( ) == boundarySurface && neighbors == interiorNeighbors;
+			return this->mPos( ) == spatial::boundarySurface && neighbors == interiorNeighbors;
 		}
 
 		/**
 		* distribute mass to neighbors 
 		* (implies this element is being lost)
 		*/
-		void distributeMassToNeighbors(const MeshDef<REAL,2> & mesh); 
+		void distributeMassToNeighbors(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh); 
 
 		/**
 		* collect mass from neighbors , if applicable
 		*/
-		void collectMass(const MeshDef<REAL,2> & mesh, const std::vector<TPoint<REAL,2> > & front) {
+		void collectMass(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front) {
 			using namespace MeshElementStateful;
 			if (state( ) == gainedEmpty) {
 				collectMassFromNeighbors(mesh, front);
@@ -435,13 +413,13 @@ namespace spatial {
 		* return control volume for this -- expensive for inside polygons as
 		* will cause internal polygons to be constructed (if not already done)
 		*/
-		const Volume<REAL,2> & getControlVolume(const MeshDef<REAL,2> & mesh) const;
+		const Volume2DClass & getControlVolume(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh) const;
 
-		const SVector<REAL,2> & getVelocity( ) const {
+		const spatial::SVector<moving_boundary::VelocityType,2> & getVelocity( ) const {
 			return velocity;
 		}
 
-		void setVelocity(const SVector<REAL,2> & rhs) {
+		void setVelocity(const spatial::SVector<moving_boundary::VelocityType,2> & rhs) {
 			velocity = rhs;
 		}
 
@@ -452,7 +430,7 @@ namespace spatial {
 		* @param timeStep time step 
 		* @param negativeMassError set if mass goes negative 
 		*/
-		void diffuseAdvect(DiffuseAdvectCache & daCache,REAL coefficient, REAL timeStep, bool & negativeMassError); 
+		void diffuseAdvect(spatial::DiffuseAdvectCache & daCache,moving_boundary::BioQuanType coefficient, moving_boundary::TimeType timeStep, bool & negativeMassError); 
 
 		/**
 		* debug dump polygon && voronoi
@@ -466,7 +444,7 @@ namespace spatial {
 		* debug support
 		*/
 		bool matches (size_t xIndex, size_t yIndex, MeshElementStateful::State  particularState = static_cast<State>(-1)) const {
-			if (! (this->index[cX] == xIndex && this->index[cY] == yIndex) ) {
+			if (! (this->index[spatial::cX] == xIndex && this->index[spatial::cY] == yIndex) ) {
 				return false;
 			}
 			if (particularState != -1 && stateVar != particularState) {
@@ -475,29 +453,27 @@ namespace spatial {
 			return true;
 		}
 
-		/*
-		void clearDiffuseAdvectAmounts( ) {
-		for (size_t i = 0; i < numNeighbors( ); i++) {
-		neighbors[i].clearDa( );
-		}
-		}
-
-		static void clearDiffuseAdvectCache( );
-		static void checkDiffuseAdvectCache( );
-		*/
-
-
 	protected:
+		/**
+		* convert point from moving_boundary::CoordinateType to moving_boundary::CoordinateProductType without scaling
+		*/
+		/*
+		static spatial::TPoint<moving_boundary::CoordinateProductType,2> coordinateToVolume(const spatial::TPoint<moving_boundary::CoordinateType,2> &in) { 
+			typedef spatial::TPoint<moving_boundary::CoordinateType,2> IN;
+			typedef spatial::TPoint<moving_boundary::CoordinateProductType,2>  OUT;
+			return spatial::convert<IN,OUT>(in);
+		}
+		*/
 		/**
 		* @mesh our mesh
 		* @param front moved front
 		*/
-		void applyFrontLegacyVoronoiSet(const MeshDef<REAL,2> & mesh, const std::vector<TPoint<REAL,2> > & front);
+		void applyFrontLegacyVoronoiSet(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front);
 		/**
 		* collect mass to from neighbors 
 		* (implies this element is new for this generation 
 		*/
-		void collectMassFromNeighbors(const MeshDef<REAL,2> & mesh, const std::vector<TPoint<REAL,2> > & front); 
+		void collectMassFromNeighbors(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front); 
 
 #		ifdef _MSC_VER	//a define in the frontier lib interferes with MSC's macro definition 
 #		define isnan _isnan 
@@ -507,8 +483,8 @@ namespace spatial {
 		* @param i index
 		* @param mass value
 		*/
-		void setMass(std::array<REAL,NUM_S> & store, size_t i, REAL mass) {
-			assert (i < NUM_S);
+		void setMass(std::array<moving_boundary::BioQuanType,nOfS> & store, size_t i, moving_boundary::BioQuanType mass) {
+			assert (i < nOfS);
 			store[i] = mass;
 			if (isnan(store[i])) {
 				throw std::logic_error("setMass");
@@ -521,14 +497,14 @@ namespace spatial {
 		* @param vm  
 		* @param bn boundary neighbors inside front
 		*/
-		void processBoundaryNeighbors(const VoronoiMesh<REAL,NUM_S> & vm, std::vector<OurType *>  & bn);
+		void processBoundaryNeighbors(const VoronoiMesh & vm, std::vector<OurType *>  & bn);
 		/**
 		* return amount of overlap betwen current voronoi region and
 		* specified previous volume
 		* @param oldVolume volume to find overlap of
 		* @return volume of overlap
 		*/
-		REAL voronoiOverlap(const Volume<REAL,2> &oldVolume); 
+		moving_boundary::CoordinateProductType voronoiOverlap(const Volume2DClass& oldVolume); 
 
 		/**
 		* return number of neighbors
@@ -545,15 +521,21 @@ namespace spatial {
 		* return is stored in vol
 		* @param mesh mesh of simulation
 		*/
-		Volume<REAL,2> createInsidePolygon(const MeshDef<REAL,2> & mesh);
+		Volume2DClass createInsidePolygon(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh);
 
 		/**
 		* form polygon from intersection of voronoi result and front, and 
 		* calculate distances and edge lengths to neighbors
-		* @param ourMesh
+		* @param mesh ourMesh
 		* @param front the front
 		*/
-		void formBoundaryPolygon( const MeshDef<REAL,2> & mesh, const std::vector<TPoint<REAL,2> > & front);
+		void formBoundaryPolygon(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front); 
+		/**
+		* overload of #formBoundaryPolgon to avoid compile dependency
+		* @param vm to get meshDef from
+		* @param front
+		*/
+		void formBoundaryPolygonVM( const VoronoiMesh & vm, const FrontType & front);
 
 		/**
 		* find neighbor's record of us, if it exists
@@ -570,20 +552,12 @@ namespace spatial {
 		/**
 		* return distance to neighbor, if it's been calculated; otherwise return 0
 		*/
-		double distanceToNeighbor(OurType &us) const {
+		moving_boundary::DistanceType distanceToNeighbor(OurType &us) const {
 			const NeighborType * nt = findUs(us);
 			if (nt != nullptr) {
 				return nt->distanceTo;
 			}
 			return 0;
-			/*
-			for (std::vector<NeighborType>::const_iterator iter =  boundaryNeighbors.begin( ); iter != boundaryNeighbors.end( ); ++iter) {
-			if (iter->element == &us) {
-			return iter->distanceTo;
-			}
-			}
-			return 0;
-			*/
 		}
 
 		void setCollected( ) {
@@ -607,22 +581,19 @@ namespace spatial {
 		/**
 		* volume if this is an inside element -- otherwise volume comes from vol object
 		*/
-		REAL interiorVolume;
-		Volume<REAL,2> vol;
-		//REAL mu[NUM_S]; //species concentration
-		//REAL muTransient[NUM_S]; //species concentration after advection
-		std::array<REAL,NUM_S> amtMass; //amount of mass
-		std::array<REAL,NUM_S> amtMassTransient; //amount of mass, working copy
-		std::array<REAL,NUM_S> concValue; //concentration at beginning of cycle
+		moving_boundary::CoordinateProductType interiorVolume;
+		Volume2DClass vol;
+		std::array<moving_boundary::BioQuanType,nOfS> amtMass; //amount of mass
+		std::array<moving_boundary::BioQuanType,nOfS> amtMassTransient; //amount of mass, working copy
+		std::array<moving_boundary::BioQuanType,nOfS> concValue; //concentration at beginning of cycle
 
 		const static int NUM_INSIDE = 4;
 		NeighborType interiorNeighbors[NUM_INSIDE]; 
 		NeighborType * neighbors;
 		std::vector<NeighborType> boundaryNeighbors;
-		Volume<REAL,2> voronoiVolume;
+		Volume2DClass voronoiVolume;
 		int nOutside;
-		SVector<REAL,2> velocity; 
-
+		spatial::SVector<moving_boundary::VelocityType,2> velocity; 
 
 		/**
 		* boundary neighbor functor
@@ -634,42 +605,25 @@ namespace spatial {
 		* not implemented
 		*/
 		MeshElementSpecies & operator=(const MeshElementSpecies &rhs);
-		friend struct MeshElementSpeciesIdent<REAL,NUM_S>;
-	};
-
-	/**
-	* proxy object to stream identifying information about MeshElementSpecies
-	*/
-	template <class REAL, int NUM_S>
-	struct MeshElementSpeciesIdent {
-		const MeshElementSpecies<REAL,NUM_S> &mes;
-		MeshElementSpeciesIdent(const MeshElementSpecies<REAL,NUM_S> &m)
-			:mes(m) {}
-		void write(std::ostream &os) const {
-			os << mes.indexInfo( ) << ' ' << mes.mPos( ) << ' ' << mes.state( );
-		}
+		friend struct MeshElementSpeciesIdent;
 	};
 
 	/**
 	* exception when reverse lengths don't match
 	*/
-	template <class REAL, int NUM_S>
 	struct ReverseLengthException : public std::logic_error {
-		typedef MeshElementSpecies<REAL,NUM_S> Mes;
-		ReverseLengthException(const std::string & msg, Mes &a, const Mes &b) 
+		ReverseLengthException(const std::string & msg, MeshElementSpecies &a, const MeshElementSpecies &b) 
 			:std::logic_error(msg),
 			aElement(a),
 			bElement(b) {}
-		const Mes &aElement;
-		const Mes &bElement;
+		const MeshElementSpecies &aElement;
+		const MeshElementSpecies &bElement;
 	};
 
-	template <class REAL, int NUM_S>
-	inline std::ostream & operator<<(std::ostream & os,const MeshElementSpeciesIdent<REAL,NUM_S> & mesi) {
-		mesi.write(os);
-		return os;
-	}
 
+	inline void MeshElementSpeciesIdent::write(std::ostream &os) const {
+		os << mes.indexInfo( ) << ' ' << mes.mPos( ) << ' ' << mes.state( ); 
+	}
 	std::ostream & operator<<(std::ostream &,MeshElementStateful::State);
 }
 #endif

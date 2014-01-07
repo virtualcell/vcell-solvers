@@ -12,7 +12,7 @@ namespace {
 }
 using boost::polygon::voronoi_diagram;
 using namespace spatial;
-typedef SVector<double,2> DVector;
+typedef SVector<VoronoiType,2> DVector;
 
 template <class T>
 std::ostream &operator<<(std::ostream & os, const boost::polygon::voronoi_vertex<T> &vertex) {
@@ -29,6 +29,7 @@ std::ostream &operator<<(std::ostream & os, const boost::polygon::voronoi_vertex
 	return os;
 }
 
+
 void Voronoi2D::getDoubleInfinite(VoronoiResult & result,size_t cellIndex ) const{
 	result.type = VoronoiResult::straightLine;
 	assert(result.vertices.size( ) == 0);
@@ -40,57 +41,53 @@ void Voronoi2D::getDoubleInfinite(VoronoiResult & result,size_t cellIndex ) cons
 	const EdgeType * const edge =  cell.incident_edge( );
 	const size_t srcIdx = edge->cell( )->source_index( );
 	const size_t otherIdx = edge->twin( )->cell( )->source_index( );
-	const Ghost2D & cellPoint = points[srcIdx]; 
-	const Ghost2D & otherCellPoint = points[otherIdx]; 
+	const VoronoiGhostPoint & cellPoint = points[srcIdx]; 
+	const VoronoiGhostPoint & otherCellPoint = points[otherIdx]; 
 	const DVector direction(cellPoint,otherCellPoint);
 	DVector perpendicular = direction.perpendicular( ); 
-	Ghost2D center = midPoint(cellPoint,otherCellPoint);
-	Ghost2D ghost1 = pointThrough<double,2>(center,perpendicular,ghostDistance);
+	VoronoiGhostPoint center = midPoint(cellPoint,otherCellPoint);
+	VoronoiGhostPoint ghost1 = pointThrough<VoronoiType,2>(center,perpendicular,ghostDistance);
 	ghost1.setGhost(true);
 	result.vertices.push_back(ghost1);
 	result.vertices.push_back(center);
 
 	perpendicular.reverse( );
-	Ghost2D ghost2 = pointThrough<double,2>(center,perpendicular,ghostDistance);
+	VoronoiGhostPoint ghost2 = pointThrough<VoronoiType,2>(center,perpendicular,ghostDistance);
 	ghost2.setGhost(true);
 	result.vertices.push_back(ghost2);
 }
 
 #pragma warning ( disable : 4244 ) //converting doubles to long
-VoronoiResult::Type Voronoi2D::extractPoint(std::vector<Voronoi2D::Ghost2D> &results,const EdgeType & edge, const Vertex * const anchor, const Vertex * const otherVertex, bool reverse) const {
+VoronoiResult::Type Voronoi2D::extractPoint(std::vector<VoronoiGhostPoint> &results,const EdgeType & edge, const Vertex * const anchor, const Vertex * const otherVertex, bool reverse) const {
 	assert(!dirty);
 	static VoronoiType debugLimit = 100; 
-	const double invScale = 1.0 / scale;
 	if (anchor != nullptr) {
-		Ghost2D t(anchor->x( ),anchor->y( ), invScale,false);
-		if (t(cX) *invScale > debugLimit) {
-			std::cout << "debug limit" << std::endl;
-		}
+		VoronoiGhostPoint t(anchor->x( ),anchor->y( ));
 		results.push_back(t);
 		return VoronoiResult::closed;
 	}
 	else  { //infinite point, make ghost point
 		const size_t srcIdx = edge.cell( )->source_index( );
 		const size_t otherIdx = edge.twin( )->cell( )->source_index( );
-		const Ghost2D & gridPoint = points[srcIdx]; 
-		const Ghost2D & otherGridPoint = points[otherIdx]; 
+		const VoronoiGhostPoint & gridPoint = points[srcIdx]; 
+		const VoronoiGhostPoint & otherGridPoint = points[otherIdx]; 
 		const DVector direction(gridPoint,otherGridPoint);
-		const Point2D mid = spatial::midPoint(gridPoint,otherGridPoint);
+		const VoronoiPoint mid = spatial::midPoint(gridPoint,otherGridPoint);
 		DVector perpendicular = direction.perpendicular( ); 
-		const Point2D center = midPoint(gridPoint,otherGridPoint);
+		const VoronoiPoint center = midPoint(gridPoint,otherGridPoint);
 		if (otherVertex != nullptr) { //single ghost, anchored at real point
-			Ghost2D vertexPoint(otherVertex->x( ),otherVertex->y( ), invScale,false);
+			VoronoiGhostPoint vertexPoint(otherVertex->x( ),otherVertex->y( ));
 			if (reverse) {
 				perpendicular.reverse( );
 			}
-			Ghost2D ghost = pointThrough<double,2>(center,perpendicular,ghostDistance);
+			VoronoiGhostPoint ghost = pointThrough<VoronoiType,2>(center,perpendicular,ghostDistance);
 			ghost.setGhost(true);
 			results.push_back(ghost);
 			return VoronoiResult::singleOpen; 
 		}
 		else { //double ghost
-			Ghost2D ghost1 = pointThrough<double,2>(center,perpendicular,ghostDistance);
-			Ghost2D ghost2 = pointThrough<double,2>(center,perpendicular,-ghostDistance);
+			VoronoiGhostPoint ghost1 = pointThrough<VoronoiType,2>(center,perpendicular,ghostDistance);
+			VoronoiGhostPoint ghost2 = pointThrough<VoronoiType,2>(center,perpendicular,-ghostDistance);
 			ghost1.setGhost(true);
 			ghost2.setGhost(true);
 			results.push_back(ghost1);
@@ -182,13 +179,8 @@ void Voronoi2D::getVertices(VoronoiResult & result, size_t cellIndex ) const{
 void  Voronoi2D::calculate( ) {
 	assert(dirty);
 
-	scaledPoints.clear( );
-	scaledPoints.reserve(points.size( ));
-	for (std::vector<Point2D>::iterator iter = points.begin( ); iter != points.end( );++iter) {
-		scaledPoints.push_back(VoronoiPoint(*iter,scale));
-	}
 	vd.clear( );
-	boost::polygon::construct_voronoi(scaledPoints.begin( ),scaledPoints.end( ),&vd);
+	boost::polygon::construct_voronoi(points.begin( ),points.end( ),&vd);
 	dirty = false;
 	const bool dumpDebugOutput = true;
 	if (!dumpDebugOutput) {
@@ -197,13 +189,13 @@ void  Voronoi2D::calculate( ) {
 
 	{
 		std::ofstream dump("vpoint.txt");
-		for (std::vector<VoronoiPoint>::iterator iter = scaledPoints.begin( ); iter != scaledPoints.end( );++iter) {
+		for (std::vector<VoronoiPoint>::iterator iter = points.begin( ); iter != points.end( );++iter) {
 			dump <<  iter->get(spatial::cX) << ',' << iter->get(spatial::cY) << std::endl;
 		}
 	}
 
 	{
-		typedef boost::polygon::voronoi_diagram<double>::vertex_container_type VCT;
+		typedef boost::polygon::voronoi_diagram<ImplementationType>::vertex_container_type VCT;
 		std::ofstream dump("vdpoint.txt");
 		for (VCT::const_iterator iter = vd.vertices( ).begin( ); iter != vd.vertices( ).end( ); ++iter) {
 			dump << iter->x( ) << ',' << iter->y( ) << ',' << iter->is_degenerate( ) << std::endl;
@@ -211,7 +203,7 @@ void  Voronoi2D::calculate( ) {
 	}
 
 	{
-		typedef boost::polygon::voronoi_diagram<double>::cell_container_type CCT;
+		typedef boost::polygon::voronoi_diagram<ImplementationType>::cell_container_type CCT;
 		std::ofstream dump("cell.txt");
 		for (CCT::const_iterator iter = vd.cells( ).begin( ); iter != vd.cells( ).end( ); ++iter) {
 			dump << iter->source_index( )  << ',' << iter->contains_point( ) << ',' << iter->contains_segment( )
@@ -220,7 +212,7 @@ void  Voronoi2D::calculate( ) {
 	}
 
 	{
-		typedef boost::polygon::voronoi_diagram<double>::edge_container_type ECT;
+		typedef boost::polygon::voronoi_diagram<ImplementationType>::edge_container_type ECT;
 		std::ofstream dump("edge.txt");
 		for (ECT::const_iterator iter = vd.edges( ).begin( ); iter != vd.edges( ).end( ); ++iter) {
 			const Vertex *v0 = iter->vertex0( );

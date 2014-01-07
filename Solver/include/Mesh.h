@@ -77,7 +77,7 @@ namespace spatial {
 			nPoints(nPoints_), 
 			minInterval(std::numeric_limits<REAL>::max( )) {
 				for (int i = 0; i < N; i++) {
-					intervals[i] = sizes_[i]/nPoints[i];
+					intervals[i] = static_cast<REAL>(sizes_[i]/nPoints[i]);
 					minInterval = std::min(minInterval,intervals[i]);
 				}
 		}
@@ -92,7 +92,7 @@ namespace spatial {
 			nPoints(nPoints_), 
 			minInterval(std::numeric_limits<REAL>::max( )) {
 				for (int i = 0; i < N; i++) {
-					intervals[i] = sizes_[i]/nPoints[i];
+					intervals[i] = static_cast<REAL>(sizes_[i]/nPoints[i]);
 					minInterval = std::min(minInterval,intervals[i]);
 				}
 		}
@@ -115,7 +115,7 @@ namespace spatial {
 		}
 
 		REAL size(Axis a) const {
-			return intervals[a] * nPoints[a];
+			return static_cast<REAL>(intervals[a] * nPoints[a]);
 		}
 
 		size_t numCells(Axis a ) const {
@@ -167,7 +167,6 @@ namespace spatial {
 
 	template<class REAL, int N, class TELEMENT>
 	struct Mesh : public MeshDef<REAL,N> {
-		typedef TDiffuseAdvectCache<REAL,N,TELEMENT::numSpecies> DiffuseAdvectCache; 
 		Mesh(const MeshDef<REAL,N> &definition) 
 			:MeshDef<REAL,N>(definition),
 			storage(0),
@@ -184,7 +183,7 @@ namespace spatial {
 			do {
 				std::array<REAL,N> values;
 				for (int d = 0; d < N; d++) {
-					values[d] = loop[d] * this->intervals[d] + startPoint[d];
+					values[d] = static_cast<REAL>(loop[d] * this->intervals[d] + startPoint[d]);
 				}
 				size_t idx = index<N-1>(loop);
 				void * addr = &storage[idx];
@@ -390,11 +389,5 @@ namespace spatial {
 
 	};
 
-	template<class MPOINT >
-	struct Positions {
-		std::vector<MPOINT *> inside;
-		std::vector<MPOINT *> outside;
-		std::vector<MPOINT *> boundary;
-	}; 
 }
 #endif

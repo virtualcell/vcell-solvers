@@ -2,12 +2,14 @@
 #include <sstream>
 #include <exception>
 #include <algorithm>
+#include <MeshElementSpecies.h>
 #include <VCellFront.h>
+#include <VoronoiResult.h>
+#include <VoronoiMesh.h>
 #include <Mesh.h>
 #include <algo.h>
 #include <intersection.h>
 #include <MovingBoundaryParabolicProblem.h>
-#include <MeshElementSpecies.h>
 #include <SegmentIterator.h>
 #include <LoopIterator.h>
 #include <create.h>
@@ -20,7 +22,6 @@
 #include <MBridge/FronTierAdapt.h>
 #include <MBridge/Figure.h>
 #include <MBridge/MatlabDebug.h>
-
 //tolerances
 namespace {
 	/**
@@ -41,6 +42,27 @@ namespace {
 	*/
 	const double tolerancePerpendicularSegmentDistanceSquared = 1e-3;
 }
+
+using spatial::cX;
+using spatial::cY;
+using spatial::TPoint;
+using spatial::EdgeFindResult;
+using spatial::EdgeStateful;
+using namespace moving_boundary::MeshElementStateful;
+using matlabBridge::MatLabDebug;
+using  moving_boundary::MeshElementSpecies;
+using  moving_boundary::VoronoiMesh;
+using  moving_boundary::FrontType;
+
+using spatial::SurfacePosition;
+using spatial::deepInteriorSurface;
+using spatial::interiorSurface;
+using spatial::boundarySurface;
+using spatial::outsideSurface;
+using spatial::deepOutsideSurface;
+using spatial::unset;
+
+using spatial::MeshDef;
 
 
 //local definitions
@@ -63,13 +85,11 @@ namespace {
 	};
 
 
-	template<class REAL, int NUM_S>
-	struct DaCache : public spatial::TDiffuseAdvectCache<REAL,2,NUM_S> { 
-		typedef spatial::MeshElementSpecies<REAL,NUM_S> MES;
-		typedef std::pair<const MES * ,const MES *> MesPair;
+	struct DaCache : public spatial::DiffuseAdvectCache { 
+		typedef std::pair<const MeshElementSpecies * ,const MeshElementSpecies *> MesPair;
 		typedef std::map<MesPair,CheckValue> Map;
-		DaCache<REAL,NUM_S>(REAL minimumMeshInterval) 
-			:edgeLengthTolerance(minimumMeshInterval * toleranceEdgeLengthException) {
+		DaCache(moving_boundary::CoordinateType minimumMeshInterval) 
+			:edgeLengthTolerance(static_cast<moving_boundary::CoordinateType>(minimumMeshInterval * toleranceEdgeLengthException) ) {
 		}
 
 		virtual void clearDiffuseAdvectCache( ) {
@@ -77,7 +97,7 @@ namespace {
 		}
 
 		virtual void checkDiffuseAdvectCache( ) {
-			typename std::map<MesPair,CheckValue>::const_iterator iter = diffuseAdvectMap.begin( ); 
+			std::map<MesPair,CheckValue>::const_iterator iter = diffuseAdvectMap.begin( ); 
 			for (;iter != diffuseAdvectMap.end( ); ++iter) {
 				const CheckValue & cv = iter->second;
 				if (!cv.reversed && cv.value != 0) {
@@ -95,25 +115,15 @@ namespace {
 		}
 
 		Map diffuseAdvectMap;
-		const REAL edgeLengthTolerance; 
+		const moving_boundary::CoordinateType edgeLengthTolerance; 
 	};
 }
 
-using spatial::MeshElementSpecies;
-using spatial::cX;
-using spatial::cY;
-using spatial::TPoint;
-using spatial::EdgeFindResult;
-using spatial::EdgeStateful;
-using namespace spatial::MeshElementStateful;
-using matlabBridge::MatLabDebug;
-template<class REAL, int NUM_S>
-spatial::TDiffuseAdvectCache<REAL,2,NUM_S> * spatial::MeshElementSpecies<REAL,NUM_S>::createCache(REAL minMeshInterval) {
-	return new DaCache<REAL,NUM_S>(minMeshInterval);
+spatial::DiffuseAdvectCache * MeshElementSpecies::createCache(moving_boundary::CoordinateType minMeshInterval) {
+	return new DaCache(minMeshInterval);
 }
 
-template<class REAL, int NUM_S>
-void spatial::MeshElementSpecies<REAL,NUM_S>::setPos(SurfacePosition m)  {
+void MeshElementSpecies::setPos(SurfacePosition m)  {
 	if (m == this->mPos( ) || (m == spatial::interiorSurface && this->mPos( ) == spatial::deepInteriorSurface) ){
 		return;
 	}
@@ -212,8 +222,7 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::setPos(SurfacePosition m)  {
 	}
 }
 
-template<class REAL, int NUM_S>
-struct spatial::MeshElementSpecies<REAL,NUM_S>::SetupBoundaryNeighbor : public std::unary_function<OurType *,NeighborType> {
+struct MeshElementSpecies::SetupBoundaryNeighbor : public std::unary_function<OurType *,NeighborType> {
 	OurType &clientElement;
 	SetupBoundaryNeighbor(OurType &client)
 		:clientElement(client) {}
@@ -222,48 +231,43 @@ struct spatial::MeshElementSpecies<REAL,NUM_S>::SetupBoundaryNeighbor : public s
 		NeighborType rval;
 		rval.element = nb;
 
-		const double existing = nb->distanceToNeighbor(clientElement);
+		const moving_boundary::DistanceType existing = nb->distanceToNeighbor(clientElement);
 		if (existing > 0) {
 			rval.distanceTo = existing; 
-			assert(spatial::nearlyEqual(existing,spatial::distance(*nb,clientElement), toleranceNeighborDistancesAssert) );
+			assert(spatial::nearlyEqual(existing,spatial::distanceApproximate(*nb,clientElement), toleranceNeighborDistancesAssert) );
 		}
 		else {
-			rval.distanceTo = spatial::distance(*nb,clientElement);
+			rval.distanceTo = spatial::distanceApproximate(*nb,clientElement);
 		}
 
 		return rval;
 	};
 };
 
-template<class REAL, int NUM_S>
-void spatial::MeshElementSpecies<REAL,NUM_S>::processBoundaryNeighbors(const VoronoiMesh<REAL,NUM_S> & vm, std::vector<OurType *>  & bn) {
+void MeshElementSpecies::processBoundaryNeighbors(const VoronoiMesh & vm, std::vector<OurType *>  & bn) {
 	VCELL_LOG(trace,this->indexInfo( ) << " processBoundaryNeighors " << state( ) << ' ' << this->mPos( ));
 	//getting vornoi volume and setting up boundary neighbors in same function due to legacy reasons ...
 	{ //clarity scope, building voronoiVolume
-		VoronoiResult vResult;
-		std::vector<GhostPoint<REAL,2> > &voronoiVertices = vResult.vertices;
+		spatial::VoronoiResult vResult;
+		std::vector<spatial::GhostPoint<moving_boundary::CoordinateType,2> > &voronoiVertices = vResult.vertices;
 		assert(voronoiVertices.empty( ));
-		if (matches(22,9)) {
-			debugAid++;
-		}
 		vm.getResult(vResult,*this);
 
-		typedef TPoint<REAL,2> VPointType;
-		typedef TPoint<REAL,2> MeshPointType;
 
 		voronoiVolume.clear( );
-		typename std::vector<TPoint<REAL,2> >::iterator fIter = voronoiVolume.fillingIterator(voronoiVertices.size());
+		Volume2DClass::fillingIteratorType fIter = voronoiVolume.fillingIterator(voronoiVertices.size());
+		//std::transform(voronoiVertices.begin( ),voronoiVertices.end( ),fIter, coordinateToVolume);
 		std::copy(voronoiVertices.begin( ),voronoiVertices.end( ),fIter);
 
 		//check for single open line
-		if (vResult.type == VoronoiResult::straightLine) { 
+		if (vResult.type == spatial::VoronoiResult::straightLine) { 
 			assert(voronoiVertices.size( ) == 3);
-			SVector<REAL,2> delta(*this,voronoiVertices[1]);
+			spatial::SVector<moving_boundary::CoordinateType,2> delta(*this,voronoiVertices[1]);
 			delta *= -3;
 			//go other direction to build box
 			//delta.reverse( );
-			VPointType add1 = spatial::displacement(voronoiVertices[2],delta);
-			VPointType add2 = spatial::displacement(voronoiVertices[0],delta);
+			FrontPointType add1 = spatial::displacement(voronoiVertices[2],delta);
+			FrontPointType add2 = spatial::displacement(voronoiVertices[0],delta);
 			voronoiVolume.add(add1);
 			voronoiVolume.add(add2);
 		}
@@ -275,14 +279,13 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::processBoundaryNeighbors(const Vor
 	neighbors = boundaryNeighbors.data( );
 }
 
-template<class REAL, int NUM_S>
-void spatial::MeshElementSpecies<REAL,NUM_S>::moveFront( const MeshDef<REAL,2> & mesh, const std::vector<TPoint<REAL,2> > & front) {
+void MeshElementSpecies::moveFront( const MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front) {
 	using namespace MeshElementStateful;
 	if (this->isInside( )) {
 		if (state( ) != stable) {
 			throw std::domain_error("moveFront not stable");
 		}
-		const REAL oldVolume = vol.volume( );
+		const moving_boundary::CoordinateProductType oldVolume = vol.volume( );
 		formBoundaryPolygon(mesh,front);
 		setState(legacyVolume);
 	}
@@ -290,16 +293,15 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::moveFront( const MeshDef<REAL,2> &
 
 
 //this should be combined with moveFront, above
-template<class REAL, int NUM_S>
-void spatial::MeshElementSpecies<REAL,NUM_S>::applyFrontLegacyVoronoiSet( const MeshDef<REAL,2> & mesh, const std::vector<TPoint<REAL,2> > & front) {
+void MeshElementSpecies::applyFrontLegacyVoronoiSet( const MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front) {
 	assert(!voronoiVolume.empty( ));
 	assert(state( ) == legacyVoronoiSet || state( ) == legacyVoronoiSetCollected); 
 	formBoundaryPolygon(mesh,front);
 	setState(stableUpdated);
 }
 
-template<class REAL, int NUM_S>
-void spatial::MeshElementSpecies<REAL,NUM_S>::formBoundaryPolygon( const MeshDef<REAL,2> & mesh, const std::vector<TPoint<REAL,2> > & front) {
+void MeshElementSpecies::formBoundaryPolygon( const MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front) {
+	using spatial::Edge;
 	static std::ofstream ef("edgefind.m");
 	MatLabDebug::setDebug(ef);
 	bool writeTrace = matches(22,9); 
@@ -328,11 +330,11 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::formBoundaryPolygon( const MeshDef
 		frontTierAdapt::copyVectorsInto(vs,voronoiVolume.points( ));
 		MatLabDebug::stream() << pPolys << vs << matlabBridge::pause << matlabBridge::clearFigure;
 	}
-	std::vector<Edge<REAL,2> > neighborEdges(boundaryNeighbors.size( ));
+	std::vector<Edge<moving_boundary::CoordinateType,2> > neighborEdges(boundaryNeighbors.size( ));
 	for (size_t i = 0; i < boundaryNeighbors.size( ); i++) {
 		//assert(boundaryNeighbors[i].edgeLength == 0);
 		boundaryNeighbors[i].edgeLength = 0;
-		neighborEdges[i] = Edge<REAL,2>(*this,*boundaryNeighbors[i].element);
+		neighborEdges[i] = Edge<moving_boundary::CoordinateType,2>(*this,*boundaryNeighbors[i].element);
 	}
 
 	/**
@@ -342,11 +344,11 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::formBoundaryPolygon( const MeshDef
 	matlabBridge::Polygon pedge("-+r",2);
 
 	//REAL minimumSegSquared = mesh.minimumInterval( ) * toleranceMinimumSegmentSquared;
-	typedef TPoint<REAL,2> MeshPointType;
-	spatial::EdgeAccessor<REAL,2> accsr = vol.accessor( );
+	typedef TPoint<moving_boundary::CoordinateType,2> MeshPointType;
+	spatial::EdgeAccessor<moving_boundary::CoordinateType,moving_boundary::CoordinateProductType,2> accsr = vol.accessor( );
 	for (;accsr.hasNext( );accsr.next( )) {
 		debugAid++;
-		Edge<REAL,2> edge = accsr.get( );
+		Edge<moving_boundary::CoordinateType,2> edge = accsr.get( );
 		/*
 		if (edge.edgeVector( ).magnitudeSquared( ) < minimumSegSquared) {
 		VCELL_LOG(debug,indexInfo( ) << " skipping short segment " << edge.origin( ) << " to " << edge.tail( )
@@ -354,18 +356,21 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::formBoundaryPolygon( const MeshDef
 		continue;
 		}
 		*/
-		REAL hDistSquare = spatial::distanceSquared(*this,edge.origin( ));
+		moving_boundary::CoordinateProductType hDistSquare = spatial::distanceSquared(*this,edge.origin( ));
 		const MeshPointType & tail = edge.tail( );
-		REAL tDistSquare = spatial::distanceSquared(*this,tail);
+		moving_boundary::CoordinateProductType tDistSquare = spatial::distanceSquared(*this,tail);
 
+		using spatial::smallRelativeDifference;
+		const moving_boundary::CoordinateProductType meshMin = mesh.minimumInterval( ); 
 		for (size_t i = 0; i < boundaryNeighbors.size( ); i++) {
 			const OurType & nb = *boundaryNeighbors[i].element;
 			debugAid++;
-			REAL nbHDistSquare = spatial::distanceSquared(nb,edge.origin( ));
-			if (smallRelativeDifference(hDistSquare - nbHDistSquare,mesh.minimumInterval( ),tolerancePerpendicularSegmentDistanceSquared)) {
-				REAL nbTDistSquare = spatial::distanceSquared(nb,tail);
-				if (smallRelativeDifference(tDistSquare - nbTDistSquare, mesh.minimumInterval( ),tolerancePerpendicularSegmentDistanceSquared)) {
-					const REAL length = edge.edgeVector( ).magnitude( );
+			moving_boundary::CoordinateProductType nbHDistSquare = spatial::distanceSquared(nb,edge.origin( ));
+			if (smallRelativeDifference(hDistSquare - nbHDistSquare,meshMin,tolerancePerpendicularSegmentDistanceSquared)) {
+				moving_boundary::CoordinateProductType nbTDistSquare = spatial::distanceSquared(nb,tail);
+				if (smallRelativeDifference(tDistSquare - nbTDistSquare, meshMin,tolerancePerpendicularSegmentDistanceSquared)) {
+					const double mag = edge.edgeVector( ).magnitude( );
+					const moving_boundary::DistanceType length = static_cast<moving_boundary::DistanceType>(mag);
 					VCELL_KEY_LOG(debug,"MeshElementSpecies.formBoundaryPolygon",this->indexInfo( ) << " between " << nb.indexInfo( ) << " vector " << edge.edgeVector( ) << " length " 
 						<< std::setprecision(12) << length << " <" <<  std::setprecision(12) << edge.origin( ) << " : " 
 						<< std::setprecision(12) << tail << " >");
@@ -408,10 +413,11 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::formBoundaryPolygon( const MeshDef
 			<< matlabBridge::pause << matlabBridge::clearFigure;
 	}
 }
+void MeshElementSpecies::formBoundaryPolygonVM( const VoronoiMesh & vm, const FrontType & front) {
+	formBoundaryPolygon(vm.mesh( ), front);
+}
 
-template<class REAL, int NUM_S>
-void spatial::MeshElementSpecies<REAL,NUM_S>::updateBoundaryNeighbors(const VoronoiMesh<REAL,NUM_S> & vm, std::vector<OurType *>  & bn) {
-	bool dbg = matches(26,14);
+void MeshElementSpecies::updateBoundaryNeighbors(const VoronoiMesh & vm, std::vector<OurType *>  & bn) {
 	if (bn.size( ) == 0) {
 		throw std::logic_error("implement isolated point");
 	}
@@ -458,8 +464,7 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::updateBoundaryNeighbors(const Voro
 	}
 }
 
-template <class REAL, int NUM_S>
-void MeshElementSpecies<REAL,NUM_S>::writeMatlab(std::ostream  &os , bool noPoly, int precision) const {
+void MeshElementSpecies::writeMatlab(std::ostream  &os , bool noPoly, int precision) const {
 	if (!vol.empty( )) {
 		if (!voronoiVolume.empty( )) {
 			matlabBridge::Polygons pVoro("r",1);
@@ -476,8 +481,8 @@ void MeshElementSpecies<REAL,NUM_S>::writeMatlab(std::ostream  &os , bool noPoly
 		os << scatter << matlabBridge::Text(this->coord[cX],this->coord[cY],ss.str( ).c_str( ));
 		if (!noPoly) {
 			matlabBridge::Polygon pPoly("k",3);
-			typename Volume<REAL,2>::VectorOfVectors vOfV = vol.points( );
-			for (typename Volume<REAL,2>::VectorOfVectors::const_iterator vvIter = vOfV.begin( ); vvIter != vOfV.end( );++vvIter) {
+			Volume2DClass::VectorOfVectors vOfV = vol.points( );
+			for (Volume2DClass::VectorOfVectors::const_iterator vvIter = vOfV.begin( ); vvIter != vOfV.end( );++vvIter) {
 				matlabBridge::Polygon pPoly("k",3);
 				if (precision != 0) {
 					pPoly.setPrecision(precision);
@@ -490,15 +495,14 @@ void MeshElementSpecies<REAL,NUM_S>::writeMatlab(std::ostream  &os , bool noPoly
 	}
 }
 
-template <class REAL, int NUM_S>
-spatial::Volume<REAL,2> spatial::MeshElementSpecies<REAL,NUM_S>::createInsidePolygon(const MeshDef<REAL,2> & mesh) {
-	Volume<REAL,2> rval(1);
-	const double width = mesh.interval(cX);
-	const double height = mesh.interval(cY);
+moving_boundary::Volume2DClass MeshElementSpecies::createInsidePolygon(const MeshDef<moving_boundary::CoordinateType,2> & mesh) {
+	Volume2DClass rval(1);
+	const moving_boundary::CoordinateType width = mesh.interval(cX);
+	const moving_boundary::CoordinateType height = mesh.interval(cY);
 
-	REAL x = this->coord[cX] - width / 2;
-	REAL y = this->coord[cY] - height  / 2;
-	std::array<REAL,2> origin = { x, y};
+	moving_boundary::CoordinateType x = this->coord[cX] - width / 2;
+	moving_boundary::CoordinateType y = this->coord[cY] - height  / 2;
+	std::array<moving_boundary::CoordinateType,2> origin = { x, y};
 	rval.add(origin);
 	origin[cX] += width;
 	rval.add(origin);
@@ -511,13 +515,12 @@ spatial::Volume<REAL,2> spatial::MeshElementSpecies<REAL,NUM_S>::createInsidePol
 	return rval; 
 }
 
-template<class REAL, int NUM_S>
-const spatial::Volume<REAL,2> & spatial::MeshElementSpecies<REAL,NUM_S>::getControlVolume(const MeshDef<REAL,2> & mesh) const {
+const moving_boundary::Volume2DClass & MeshElementSpecies::getControlVolume(const MeshDef<moving_boundary::CoordinateType,2> & mesh) const {
 	if (!vol.empty( )) {
 		return vol;
 	}
 	OurType & us = const_cast<OurType &>(*this);
-	typedef TPoint<REAL, 2> MeshPointType;
+	typedef TPoint<moving_boundary::CoordinateType, 2> MeshPointType;
 	switch (this->mp) {
 	case deepInteriorSurface: 
 	case interiorSurface:
@@ -540,33 +543,33 @@ const spatial::Volume<REAL,2> & spatial::MeshElementSpecies<REAL,NUM_S>::getCont
 	return vol;
 }
 
+/*
 namespace {
-	template <class REAL, int NUM_S>
+	template <class COORD_TYPE, class REAL>
 	struct VolRecord {
 		VolRecord( )
 			:neighbor(nullptr),
 			vol(0) {}
-		spatial::MeshElementSpecies<REAL,NUM_S> *neighbor;
+		MeshElementSpecies *neighbor;
 		REAL vol;
 	};
 }
+*/
 
-template<class REAL, int NUM_S>
-REAL spatial::MeshElementSpecies<REAL,NUM_S>::voronoiOverlap(const Volume<REAL,2> &oldVolume) {
-	Volume<REAL,2> intersection = voronoiVolume.intersection(oldVolume);
+inline moving_boundary::CoordinateProductType MeshElementSpecies::voronoiOverlap(const moving_boundary::Volume2DClass &oldVolume) {
+	Volume2DClass intersection = voronoiVolume.intersection(oldVolume);
 	return intersection.volume( ); 
 }
 
-template<class REAL, int NUM_S>
-void spatial::MeshElementSpecies<REAL,NUM_S>::distributeMassToNeighbors(const MeshDef<REAL,2> & meshDef) {
+void MeshElementSpecies::distributeMassToNeighbors(const MeshDef<moving_boundary::CoordinateType,2> & meshDef) {
 	if (state( ) != lost) {
 		return;
 	}
-	const Volume<REAL,2> & ourVolume = getControlVolume(meshDef);
+	const Volume2DClass & ourVolume = getControlVolume(meshDef);
 	VCELL_LOG(debug,this->indexInfo( ) << " dMtoN mass " << amtMassTransient[0] << " vol " << ourVolume.volume( ));
 
 	const size_t nN = numNeighbors( );
-	const REAL volumeValue = volume( );
+	const moving_boundary::CoordinateProductType volumeValue = volume( );
 	if (volumeValue != ourVolume.volume( )) {
 		throw std::logic_error("volume !=");
 	}
@@ -574,20 +577,20 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::distributeMassToNeighbors(const Me
 	if (matches(6,19)) {
 		std::cout << "debugaid " << debugAid << std::endl;
 	}
-	REAL massSentinel = amtMassTransient[0];
+	moving_boundary::BioQuanType massSentinel = amtMassTransient[0];
 	for (int i = 0; i < nN; i++) {
 		assert(neighbors[i].element != nullptr);
 		OurType & nb = *neighbors[i].element;
 		if (nb.state( ) == stableUpdated) {
 			debugAid++;
-			Volume<REAL,2> intersection = ourVolume.intersection(nb.getControlVolume(meshDef));
-			REAL iVol = intersection.volume( );
+			Volume2DClass intersection = ourVolume.intersection(nb.getControlVolume(meshDef));
+			moving_boundary::CoordinateProductType iVol = intersection.volume( );
 			assert(iVol>=0);
 			if (iVol > 0) {
 				distributed = true;
-				REAL nbVol = nb.volume( );
-				for (size_t s = 0; s < NUM_S; s++) {
-					REAL m = iVol * amtMassTransient[s] / volumeValue; 
+				moving_boundary::CoordinateProductType nbVol = nb.volume( );
+				for (size_t s = 0; s < nOfS; s++) {
+					moving_boundary::BioQuanType m = iVol * amtMassTransient[s] / volumeValue; 
 					VCELL_COND_LOG(debug, s == 0 , " " << this->indexInfo( ) << " giving " <<nb.indexInfo( ) << " mass " << m 
 						<< " has vol " << nbVol << " existing mass " << nb.amtMassTransient[0] );
 					nb.amtMassTransient[s] += m; 
@@ -607,7 +610,7 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::distributeMassToNeighbors(const Me
 			neighbors[i].element->writeMatlab(script);
 		}
 	}
-	for (size_t s = 0; s < NUM_S; s++) {
+	for (size_t s = 0; s < nOfS; s++) {
 		amtMass[s] = 0;
 	}
 	setState(stable);
@@ -617,8 +620,7 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::distributeMassToNeighbors(const Me
 	}
 }
 
-template<class REAL, int NUM_S>
-void spatial::MeshElementSpecies<REAL,NUM_S>::collectMassFromNeighbors(const MeshDef<REAL,2> & meshDef, const std::vector<TPoint<REAL,2> > & front) {
+void MeshElementSpecies::collectMassFromNeighbors(const MeshDef<moving_boundary::CoordinateType,2> & meshDef, const FrontType & front) {
 	if (state( ) != gainedEmpty) {
 		throw std::domain_error("collectMassFromNeighbors");
 	}
@@ -627,10 +629,10 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::collectMassFromNeighbors(const Mes
 	}
 	VCELL_LOG(debug,this->indexInfo( ) << "collecting Mass");
 	formBoundaryPolygon(meshDef,front);
-	const Volume<REAL,2> & ourVolume = getControlVolume(meshDef);
+	const Volume2DClass & ourVolume = getControlVolume(meshDef);
 	VCELL_LOG(debug,this->indexInfo( ) << " collecting with volume " << ourVolume.volume( ));
 	const size_t nN = numNeighbors( );
-	REAL totalVolume = 0;
+	moving_boundary::CoordinateProductType totalVolume = 0;
 	for (int i = 0; i < nN; i++) {
 		assert(neighbors[i].element != nullptr);
 		OurType & nb = *neighbors[i].element;
@@ -644,19 +646,16 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::collectMassFromNeighbors(const Mes
 
 		const MeshElementStateful::State nbState = nb.state( );
 		if (nbState == legacyVoronoiSetCollected || nbState == legacyInteriorSetCollected) {
-			Volume<REAL,2> intersection = ourVolume.intersection(nb.getControlVolume(meshDef));
-			if (nbState == legacyInteriorSet) {
-				std::cout << "lis" << std::endl;
-			}
-			REAL intersectVolume = intersection.volume( );
+			Volume2DClass intersection = ourVolume.intersection(nb.getControlVolume(meshDef));
+			moving_boundary::CoordinateProductType intersectVolume = intersection.volume( );
 			VCELL_LOG(debug, this->indexInfo( ) << " overlap volume with " <<nb.indexInfo( ) << " is " << intersectVolume);
 			assert(intersectVolume>=0);
 			if (intersectVolume > 0) {
-				REAL donorVolume = nb.volume( );
-				for (size_t s = 0; s < NUM_S; s++) {
-					const REAL mu = nb.amtMass[s] / donorVolume; 
+				moving_boundary::CoordinateProductType donorVolume = nb.volume( );
+				for (size_t s = 0; s < nOfS; s++) {
+					const moving_boundary::BioQuanType mu = nb.amtMass[s] / donorVolume; 
 					VCELL_LOG(verbose,this->indexInfo( ) << ':' << nb.indexInfo( ) << " volume " << nb.volume( ) << " conc " << mu); 
-					REAL m =  mu * intersectVolume; 
+					moving_boundary::BioQuanType m =  mu * intersectVolume; 
 					amtMass[s] += m;
 					nb.amtMassTransient[s] -= m;
 					VCELL_COND_LOG(debug, s == 0, this->indexInfo( ) << " adding mass " <<  m  << " from " <<nb.indexInfo( ) << ' ' << nb.state( ));
@@ -672,8 +671,7 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::collectMassFromNeighbors(const Mes
 	setState(gained); 
 }
 
-template<class REAL, int NUM_S>
-void spatial::MeshElementSpecies<REAL,NUM_S>::endOfCycle( ) {
+void MeshElementSpecies::endOfCycle( ) {
 	switch (state( )) {
 	case stable:
 		if (this->isInside( )) {
@@ -714,7 +712,7 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::endOfCycle( ) {
 		VCELL_LOG(verbose,this->ident( ) << " eoc prior copy " << amtMassTransient[0] << " mass " << amtMass[0]);
 		std::copy(amtMassTransient.begin( ), amtMassTransient.end( ), amtMass.begin( ));
 		/* REVIEW -- check for negative
-		for (int s = 0; s < NUM_S; s++) {
+		for (int s = 0; s < nOfS; s++) {
 		if (amtMassTransient[s] < 0) {
 		VCELL_EXCEPTION(logic_error, ident() << " has gone negative") ;
 		}
@@ -762,24 +760,25 @@ void spatial::MeshElementSpecies<REAL,NUM_S>::endOfCycle( ) {
 		throw std::logic_error("illegal endOfCycle state");
 	}
 	//temporary? store concentration
-	REAL vol = this->volume( );
+	moving_boundary::CoordinateProductType vol = this->volume( );
 	if (vol > 0) {
-		for (int i = 0; i < NUM_S; i++) {
+		for (int i = 0; i < nOfS; i++) {
 			concValue[i] = amtMass[i] / vol;
 		}
 	}
 	else {
-		for (int i = 0; i < NUM_S; i++) {
+		for (int i = 0; i < nOfS; i++) {
 			concValue[i] = 0; 
 		}
 	}
 	VCELL_LOG(verbose,this->ident( ) << " eoc end mass " << this->mass(0) << " vol " << volume(  ) << " conc " << concentration(0));
 }
 
-template<class REAL, int NUM_S>
-void spatial::MeshElementSpecies<REAL,NUM_S>
-	::diffuseAdvect(DiffuseAdvectCache & daCache, REAL diffusionConstant, REAL timeStep, bool & negativeMassError) {
-		DaCache<REAL,NUM_S> & ourCache = static_cast<DaCache<REAL,NUM_S> &>(daCache);
+void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, 
+			moving_boundary::BioQuanType diffusionConstant, 
+			moving_boundary::TimeType timeStep, 
+			bool & negativeMassError) {
+		DaCache & ourCache = static_cast<DaCache &>(daCache);
 		switch (state( )) {
 		case stable:
 		case stableUpdated:
@@ -798,7 +797,7 @@ void spatial::MeshElementSpecies<REAL,NUM_S>
 		}
 
 		if (this->isInside( )) {
-			typename DaCache<REAL,NUM_S>::Map & diffuseAdvectMap = ourCache.diffuseAdvectMap; 
+			DaCache::Map & diffuseAdvectMap = ourCache.diffuseAdvectMap; 
 			std::copy(amtMass.begin( ), amtMass.end( ), amtMassTransient.begin( ));
 
 			//turn off to dcheck
@@ -810,7 +809,7 @@ void spatial::MeshElementSpecies<REAL,NUM_S>
 				}
 				const OurType & nb = *neighbors[i].element;
 
-				const REAL edgeLengthTo = neighbors[i].edgeLength; 
+				const moving_boundary::DistanceType edgeLengthTo = neighbors[i].edgeLength; 
 				if (edgeLengthTo == 0) { //if no edge, don't bother
 					continue;
 				}
@@ -819,31 +818,31 @@ void spatial::MeshElementSpecies<REAL,NUM_S>
 				if (usToThem == nullptr) {
 					VCELL_EXCEPTION(logic_error, this->indexInfo( ) << " neighbor " << nb.indexInfo( ) << " has no record of 'this'"); 
 				}
-				const REAL edgeLengthFrom = usToThem->edgeLength;
+				const moving_boundary::DistanceType edgeLengthFrom = usToThem->edgeLength;
 				if ( this->mPos( ) == nb.mPos( ) && !spatial::differenceLessThan(edgeLengthTo,edgeLengthFrom,ourCache.edgeLengthTolerance) ) {
 					std::ostringstream oss;
 					oss << this->ident( ) << " to " << nb.ident( ) << " length " << edgeLengthTo 
 						<< " different from reverse length " << edgeLengthFrom << " difference " 
 						<< std::abs(edgeLengthTo - edgeLengthFrom) << " greater than tolerance "
 						<< ourCache.edgeLengthTolerance; 
-					throw  ReverseLengthException<REAL,NUM_S>(oss.str( ),*this,nb); 
+					throw  ReverseLengthException(oss.str( ),*this,nb); 
 				}
-				const REAL edgeLength = (edgeLengthTo + edgeLengthFrom) * 0.5;
+				const moving_boundary::DistanceType edgeLength = (edgeLengthTo + edgeLengthFrom) /2;
 
-				SVector<REAL,2> averageVelocity = (getVelocity( ) +  nb.getVelocity( )) / 2; 
-				NormVector<REAL,2> normalVector(nb,*this); 
-				REAL advectCoeff = dot(averageVelocity,normalVector);
-				for (size_t s = 0; s < NUM_S;s++) {
-					//REAL cUs = concentration(s); EVAL using concentration
-					//REAL cOther = nb.concentration(s);
-					REAL cUs = concValue[s]; 
-					REAL cOther = nb.concValue[s];
-					REAL diffusionTerm = diffusionConstant * (cOther - cUs) / neighbors[i].distanceTo;
-					REAL averageConcentration = (cUs + cOther) / 2;
-					REAL advectTerm = advectCoeff * averageConcentration;
-					REAL sum = (diffusionTerm + advectTerm); 
-					//REAL transferAmount = (diffusionTerm + advectTerm) * edgeLength * timeStep;
-					REAL transferAmount = sum * edgeLength * timeStep;
+				spatial::SVector<moving_boundary::VelocityType,2> averageVelocity = (getVelocity( ) +  nb.getVelocity( )) / 2; 
+				spatial::NormVector<moving_boundary::CoordinateType,2> normalVector(nb,*this); 
+				moving_boundary::BioQuanType advectCoeff = dot(averageVelocity,normalVector);
+				for (size_t s = 0; s < nOfS;s++) {
+					//moving_boundary::BioQuanType cUs = concentration(s); EVAL using concentration
+					//moving_boundary::BioQuanType cOther = nb.concentration(s);
+					moving_boundary::BioQuanType cUs = concValue[s]; 
+					moving_boundary::BioQuanType cOther = nb.concValue[s];
+					moving_boundary::BioQuanType diffusionTerm = diffusionConstant * (cOther - cUs) / neighbors[i].distanceTo;
+					moving_boundary::BioQuanType averageConcentration = (cUs + cOther) / 2;
+					moving_boundary::BioQuanType advectTerm = advectCoeff * averageConcentration;
+					moving_boundary::BioQuanType sum = (diffusionTerm + advectTerm); 
+					//moving_boundary::BioQuanType transferAmount = (diffusionTerm + advectTerm) * edgeLength * timeStep;
+					moving_boundary::BioQuanType transferAmount = sum * edgeLength * timeStep;
 					amtMassTransient[s] += transferAmount; 
 					VCELL_COND_LOG(debug, s == 0, this->indexInfo( ) << " da " << transferAmount << " from " << nb.indexInfo( ) 
 						<< " u(i) = " << cUs << " u(j) " << cOther << " distance " << neighbors[i].distanceTo 
@@ -857,7 +856,7 @@ void spatial::MeshElementSpecies<REAL,NUM_S>
 						if (diffuseAdvectMap[inv].reversed) {
 							VCELL_EXCEPTION(logic_error, this->indexInfo( ) << " to " << nb.indexInfo( ) << " already transferred or reversed?") ;
 						}
-						REAL prevAmount = diffuseAdvectMap[inv].value; 
+						moving_boundary::BioQuanType prevAmount = diffuseAdvectMap[inv].value; 
 						if ( !spatial::nearlyEqual(-1 * prevAmount,transferAmount,toleranceDiffuseAdvectException) ) {
 							VCELL_EXCEPTION(logic_error, this->indexInfo( ) << " to " << nb.indexInfo( ) << " amt " << transferAmount
 								<< " differs from inverse " << prevAmount << " relative diff " 
@@ -877,7 +876,7 @@ void spatial::MeshElementSpecies<REAL,NUM_S>
 					}
 				} //species loop
 			} //neighbor loop
-			for (size_t s = 0; s < NUM_S;s++) {
+			for (size_t s = 0; s < nOfS;s++) {
 				if (amtMassTransient[s] < 0) {
 					negativeMassError = true;
 					return;
@@ -885,7 +884,8 @@ void spatial::MeshElementSpecies<REAL,NUM_S>
 			}
 		} //isInside
 }
-std::ostream & spatial::operator<<(std::ostream &os ,spatial::MeshElementStateful::State state) {
+
+std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::MeshElementStateful::State state) {
 #define CASE(x) case x: os << #x; break;
 	switch (state) {
 		CASE(initial);
@@ -909,4 +909,3 @@ std::ostream & spatial::operator<<(std::ostream &os ,spatial::MeshElementStatefu
 }
 
 MatLabDebug MatLabDebug::instance;
-template struct spatial::MeshElementSpecies<double,1>; 

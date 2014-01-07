@@ -1,6 +1,6 @@
 #ifndef HDF5Client_h
 #define HDF5Client_h
-#include <TPoint.h>
+#include <MPoint.h>
 #include <map>
 #include <iomanip>
 #include <algo.h>
@@ -17,7 +17,7 @@
 #include <vhdf5/file.h>
 #include <vhdf5/vlen.h>
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
-namespace spatial {
+namespace moving_boundary {
 
 	/**
 	* Plain old data point type
@@ -148,7 +148,7 @@ namespace spatial {
 	};
 
 	template <class SOLUTION = NoSolution> 
-	struct NHDF5Client :public spatial::MovingBoundaryClient {
+	struct NHDF5Client :public moving_boundary::MovingBoundaryClient {
 		/**
 		* HDF5 spatial chunk size (x and y dimensions)
 		*/
@@ -173,7 +173,7 @@ namespace spatial {
 		*/
 		static const size_t yArrayIndex = 2; 
 
-		static unsigned int calcReportStep(const spatial::MovingBoundaryParabolicProblem &mbpp, 
+		static unsigned int calcReportStep(const moving_boundary::MovingBoundaryParabolicProblem &mbpp, 
 			double startTime,
 			unsigned int numberReports) {
 				unsigned int nts = mbpp.numberTimeSteps( );
@@ -197,7 +197,7 @@ namespace spatial {
 		* @param startTime_ when to start recording (time 0 always recorded)
 		*/
 		NHDF5Client(H5::H5File &f, 
-			const spatial::MovingBoundaryParabolicProblem &mbpp, 
+			const moving_boundary::MovingBoundaryParabolicProblem &mbpp, 
 			unsigned int numberReports,
 			const char *baseName = nullptr,
 			const double startTime_ = 0) 
@@ -221,6 +221,8 @@ namespace spatial {
 			generationCounter(0),
 			reportActive(true)
 		{
+			using spatial::cX;
+			using spatial::cY;
 			int numberGenerations = mbpp.numberTimeSteps( );
 			timer.start( );
 			{ //create group
@@ -249,8 +251,6 @@ namespace spatial {
 
 
 			{ //create element dataset
-				using spatial::cX;
-				using spatial::cY;
 				const size_t xSize = meshDef.numCells(cX);
 				const size_t ySize = meshDef.numCells(cY);
 				worldDim[timeArrayIndex] = timeChunkSize;
@@ -277,11 +277,11 @@ namespace spatial {
 				vcellH5::writeAttribute(elementDataset,"hy",hy);
 				const std::string layout("time x X x Y (transposed in MATLAB)");
 				vcellH5::writeAttribute(elementDataset,"layout",layout);
-				std::vector<double> xvalues = meshDef.coordinateValues(spatial::cX);
-				std::vector<double> yvalues = meshDef.coordinateValues(spatial::cY);
-				vcellH5::SeqFacade<std::vector<double> > xv(xvalues); 
+				std::vector<moving_boundary::CoordinateType> xvalues = meshDef.coordinateValues(spatial::cX);
+				std::vector<moving_boundary::CoordinateType> yvalues = meshDef.coordinateValues(spatial::cY);
+				vcellH5::SeqFacade<std::vector<moving_boundary::CoordinateType> > xv(xvalues); 
 				vcellH5::facadeWriteAttribute(elementDataset,"xvalues",xv);
-				vcellH5::SeqFacade<std::vector<double> > yv(yvalues); 
+				vcellH5::SeqFacade<std::vector<moving_boundary::CoordinateType> > yv(yvalues); 
 				vcellH5::facadeWriteAttribute(elementDataset,"yvalues",yv);
 			} //create element dataset
 
@@ -302,7 +302,7 @@ namespace spatial {
 		/**
 		* add information from MovingBoundarySetup; currently just the concentration string
 		*/
-		void addInitial(const spatial::MovingBoundarySetup & mbs) {
+		void addInitial(const moving_boundary::MovingBoundarySetup & mbs) {
 			const std::string s = mbs.concentrationFunctionStr; 
 			vcellH5::writeAttribute(baseGroup,"concentrationFunction",s);
 		}
@@ -315,7 +315,7 @@ namespace spatial {
 			vcellH5::writeAttribute(elementDataset,attributeName,value);
 		}
 
-		virtual void time(double t, bool last, const GeometryInfo<double> & geometryInfo) { 
+		virtual void time(double t, bool last, const moving_boundary::GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) { 
 			reportActive = false;
 			if (t == 0 || last|| t > startTime) {
 				if (!reportBegan && t > 0) {
@@ -338,7 +338,7 @@ namespace spatial {
 			generationCounter++;
 		}
 
-		void writeBoundary(hsize_t timeIndex, const std::vector<TPoint<double,2> > & boundary) {
+		void writeBoundary(hsize_t timeIndex, const std::vector<spatial::TPoint<moving_boundary::CoordinateType,2> > & boundary) {
 			try {
 				std::vector<PODPoint<double> > outVector(boundary.size( ));
 				std::transform(boundary.begin( ),boundary.end( ),outVector.begin( ),convertFrontToPOD);
@@ -367,8 +367,9 @@ namespace spatial {
 		}
 
 
-		static PODPoint<double> convertFrontToPOD(const TPoint<double,2> &in) {
-			PODPoint<double> p(in(cX),in(cY));
+		static PODPoint<double> convertFrontToPOD(const spatial::TPoint<moving_boundary::CoordinateType,2> &in) {
+			PODPoint<double> p(in(spatial::cX),in(spatial::cY));
+			//SCALE SCALE
 			return p;
 		};
 
@@ -376,7 +377,7 @@ namespace spatial {
 		/**
 		* state of inside / boundary nodes
 		*/
-		virtual void element(const spatial::MeshElementSpecies<double,1> &e) {
+		virtual void element(const moving_boundary::MeshElementSpecies &e) {
 			if (reportActive) {
 				using spatial::cX;
 				using spatial::cY;
@@ -392,11 +393,11 @@ namespace spatial {
 				er.mass = m;
 				er.concentration = c;
 				er.volume = v;
-				Volume<double,2>::VectorOfVectors vOfv = e.getControlVolume(meshDef).points( );
+				Volume2DClass::VectorOfVectors vOfv = e.getControlVolume(meshDef).points( );
 				if (vOfv.size( ) > 1) {
 					throw std::domain_error("multi region control volumes not supported yet");
 				}
-				Volume<double,2>::PointVector & pVec = vOfv.front( );
+				Volume2DClass::PointVector & pVec = vOfv.front( );
 				er.controlVolume.resize(pVec.size( ));
 				std::transform(pVec.begin( ),pVec.end( ),er.controlVolume.begin( ),convertFrontToPOD);
 
@@ -492,14 +493,14 @@ namespace spatial {
 		}
 
 	private:
-		const spatial::MovingBoundaryParabolicProblem &theProblem;
+		const moving_boundary::MovingBoundaryParabolicProblem &theProblem;
 
 		H5::H5File & file;
 		double startTime;
 		double currentTime; 
 		double totalStuff;
 		double oldStuff;
-		const spatial::MeshDef<double,2> meshDef;
+		const spatial::MeshDef<moving_boundary::CoordinateType,2> meshDef;
 		typedef std::map<spatial::TPoint<size_t,2>, HElementRecord> RecordMap; 
 		RecordMap eRecords;
 		std::vector<double> genTime;

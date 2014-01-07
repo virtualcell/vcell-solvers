@@ -11,6 +11,11 @@ namespace spatial {
 	*/
 	enum Axis {cX=0,cY=1,cZ=2};
 
+	inline Axis & operator++(Axis &a) {
+		a = static_cast<Axis>(a + 1);
+		return a;
+	}
+
 #   pragma warning ( disable : 4351 )
 	/**
 	* basic point definition
@@ -22,9 +27,11 @@ namespace spatial {
 	protected:
 		std::array<T,N> coord; 
 	public:
+		//deprecated
 		typedef T realType;
-			TPoint(const std::array<T,N> &val)  
-				:coord(val) {}
+		typedef T value_type; 
+		TPoint(const std::array<T,N> &val)  
+			:coord(val) {}
 		TPoint(T val)  {
 			static_assert(N==1,  "N arg required");
 			coord[0] = val;
@@ -79,8 +86,8 @@ namespace spatial {
 		/*
 		TPoint(T x, T y, double scale) 
 		{
-			coord[cX] = x * scale;
-			coord[cY] = y * scale;
+		coord[cX] = x * scale;
+		coord[cY] = y * scale;
 		}
 		*/
 
@@ -146,9 +153,9 @@ namespace spatial {
 
 		/*
 		GhostPoint(const Array &a) 
-			:base(a),
-			ghost(false) {}
-			*/
+		:base(a),
+		ghost(false) {}
+		*/
 
 		/**
 		* zero, non-ghost point
@@ -235,6 +242,14 @@ namespace spatial {
 		return sqrt(distanceSquared(lhs,rhs));
 	}
 
+	/**
+	* distance between, cast (truncated) to input type
+	*/
+	template <class T, int N>
+	inline T distanceApproximate(const spatial::TPoint<T,N> & lhs, const spatial::TPoint<T,N> & rhs ) {
+		return static_cast<T>(sqrt(distanceSquared(lhs,rhs)));
+	}
+
 	template <class T, int N>
 	inline std::ostream &operator<<(std::ostream & os, const spatial::TPoint<T,N> & point) {
 		os << point(static_cast<Axis>(0)); 
@@ -261,29 +276,29 @@ namespace spatial {
 
 /*
 namespace boost {
-	namespace polygon {
-	template<>
-	struct geometry_concept<spatial::Point2D> { typedef point_concept type; };
+namespace polygon {
+template<>
+struct geometry_concept<spatial::Point2D> { typedef point_concept type; };
 
-	template<>
-	struct point_traits<spatial::Point2D> {
-		typedef double coordinate_type;
-		static inline coordinate_type get(const spatial::Point2D& point, orientation_2d orient) {
-				return (orient == HORIZONTAL) ? point.get(spatial::cX) : point.get(spatial::cY);
-			}
-		};
+template<>
+struct point_traits<spatial::Point2D> {
+typedef double coordinate_type;
+static inline coordinate_type get(const spatial::Point2D& point, orientation_2d orient) {
+return (orient == HORIZONTAL) ? point.get(spatial::cX) : point.get(spatial::cY);
+}
+};
 
-	template<>
-	struct geometry_concept<spatial::GhostPoint<double,2> > { typedef point_concept type; };
+template<>
+struct geometry_concept<spatial::GhostPoint<double,2> > { typedef point_concept type; };
 
-	template<>
-	struct point_traits<spatial::GhostPoint<double,2> > {
-		typedef double coordinate_type;
-		static inline coordinate_type get(const spatial::GhostPoint<double,2> & point, orientation_2d orient) {
-				return (orient == HORIZONTAL) ? point.get(spatial::cX) : point.get(spatial::cY);
-			}
-		};
-	}
+template<>
+struct point_traits<spatial::GhostPoint<double,2> > {
+typedef double coordinate_type;
+static inline coordinate_type get(const spatial::GhostPoint<double,2> & point, orientation_2d orient) {
+return (orient == HORIZONTAL) ? point.get(spatial::cX) : point.get(spatial::cY);
+}
+};
+}
 }
 */
 #endif

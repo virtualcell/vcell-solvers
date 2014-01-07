@@ -3,31 +3,31 @@
 #include "intersection.h"
 namespace spatial {
 	//forward
-	template <class REAL>
+	template <class COORD_TYPE,class VALUE_TYPE>
 	struct Polygon; 
 
-	template <class REAL>
+	template <class COORD_TYPE,class VALUE_TYPE>
 	struct Polygons; 
 
 	/**
 	* support double dispatch virtual functions
 	*/
-	template <class REAL>
-	struct VolumeImplDoubleDispatch : public VolumeImpl<REAL,2> {
-		virtual Volume<REAL, 2> intersectionSingle(const Polygon<REAL> &rhs) const = 0; 
-		virtual Volume<REAL, 2> intersectionMany(const Polygons<REAL> &rhs) const = 0; 
+	template <class COORD_TYPE,class VALUE_TYPE>
+	struct VolumeImplDoubleDispatch : public VolumeImpl<COORD_TYPE,VALUE_TYPE,2> {
+		virtual Volume<COORD_TYPE,VALUE_TYPE,2> intersectionSingle(const Polygon<COORD_TYPE,VALUE_TYPE> &rhs) const = 0; 
+		virtual Volume<COORD_TYPE,VALUE_TYPE,2> intersectionMany(const Polygons<COORD_TYPE,VALUE_TYPE> &rhs) const = 0; 
 	};
 
 
-	template <class REAL>
-	struct EmptyVolume2 : public VolumeImplDoubleDispatch<REAL> {
-		typedef typename VolumeImpl<REAL,2>::PointVector PointVector; 
-		typedef typename VolumeImpl<REAL,2>::VectorOfVectors VectorOfVectors;
+	template <class COORD_TYPE,class VALUE_TYPE>
+	struct EmptyVolume2 : public VolumeImplDoubleDispatch<COORD_TYPE,VALUE_TYPE> {
+		typedef typename VolumeImpl<COORD_TYPE,VALUE_TYPE,2>::PointVector PointVector; 
+		typedef typename VolumeImpl<COORD_TYPE,VALUE_TYPE,2>::VectorOfVectors VectorOfVectors;
 
-		static EmptyVolume2<REAL> *getSingleton( ) {
+		static EmptyVolume2<COORD_TYPE,VALUE_TYPE> *getSingleton( ) {
 			return &instance;
 		}
-		REAL volume() const {
+		VALUE_TYPE volume() const {
 			return 0;
 		}
 		bool empty( ) const {
@@ -40,51 +40,51 @@ namespace spatial {
 		bool more(size_t index) const {
 			return false;
 		}
-		Edge<REAL,2> get(size_t index) const {
+		Edge<COORD_TYPE,2> get(size_t index) const {
 			throw std::invalid_argument("Invalid index");
 		}
 		virtual void close( ) {} 
 
-		virtual bool inside(const TPoint<REAL,2> &point) const {
+		virtual bool inside(const TPoint<COORD_TYPE,2> &point) const {
 			return false;
 		}
 		/**
 		* EmptyVolume doesn't exist if point has been added, so
 		* logically we're still on the first section
 		*/
-		VolumeImpl<REAL,2> *nextSection( ) {
+		VolumeImpl<COORD_TYPE,VALUE_TYPE,2> *nextSection( ) {
 			return this;	
 		}
 
-		virtual VolumeImpl <REAL,2> *add(const TPoint<REAL,2> & point) {
-			Polygon<REAL> *poly = new Polygon<REAL>( );
+		virtual VolumeImpl <COORD_TYPE,VALUE_TYPE,2> *add(const TPoint<COORD_TYPE,2> & point) {
+			Polygon<COORD_TYPE,VALUE_TYPE> *poly = new Polygon<COORD_TYPE,VALUE_TYPE>( );
 			poly->add(point);
 			return poly;
 		}
 
-		virtual VolumeImpl<REAL,2>* prep(typename VolumeImpl<REAL,2>::Operation op) {
-		        void * ptr = VolumeImpl<REAL,2>::prep(op);
-			assert ((op == VolumeImpl< REAL,2>::opFillingIterator));
-			return new Polygon<REAL>( ); 
+		virtual VolumeImpl<COORD_TYPE,VALUE_TYPE,2>* prep(typename VolumeImpl<COORD_TYPE,VALUE_TYPE,2>::Operation op) {
+		        void * ptr = VolumeImpl<COORD_TYPE,VALUE_TYPE,2>::prep(op);
+			assert ((op == VolumeImpl< COORD_TYPE,VALUE_TYPE,2>::opFillingIterator));
+			return new Polygon<COORD_TYPE,VALUE_TYPE>( ); 
 		}
 		/**
 		* should never be called, as #prep should replace this with 
 		* implementation that supports call
 		*/
-		virtual typename std::vector<TPoint<REAL,2> >::iterator fillingIterator(size_t n) { 
+		virtual typename std::vector<TPoint<COORD_TYPE,2> >::iterator fillingIterator(size_t n) { 
 			throw std::domain_error("fillingIterator call on EmptyVolume");
 		}
-		virtual Volume<REAL, 2> intersection(const std::vector<TPoint<REAL,2> > &rhs) const {
-			return Volume<REAL,2>(0); 
+		virtual Volume<COORD_TYPE,VALUE_TYPE,2> intersection(const std::vector<TPoint<COORD_TYPE,2> > &rhs) const {
+			return Volume<COORD_TYPE,VALUE_TYPE,2>(0); 
 		}
-		virtual Volume<REAL, 2> intersection(const Volume<REAL,2> &rhs) const {
-			return Volume<REAL,2>(0); 
+		virtual Volume<COORD_TYPE,VALUE_TYPE,2> intersection(const Volume<COORD_TYPE,VALUE_TYPE,2> &rhs) const {
+			return Volume<COORD_TYPE,VALUE_TYPE,2>(0); 
 		}
-		virtual Volume<REAL, 2> intersectionSingle(const Polygon<REAL> &rhs) const { 
-			return Volume<REAL,2>(0); 
+		virtual Volume<COORD_TYPE,VALUE_TYPE,2> intersectionSingle(const Polygon<COORD_TYPE,VALUE_TYPE> &rhs) const { 
+			return Volume<COORD_TYPE,VALUE_TYPE,2>(0); 
 		}
-		virtual Volume<REAL, 2> intersectionMany(const Polygons<REAL> &rhs) const {
-			return Volume<REAL,2>(0); 
+		virtual Volume<COORD_TYPE,VALUE_TYPE,2> intersectionMany(const Polygons<COORD_TYPE,VALUE_TYPE> &rhs) const {
+			return Volume<COORD_TYPE,VALUE_TYPE,2>(0); 
 		}
 		/**
 		* don't delete this object
@@ -102,17 +102,17 @@ namespace spatial {
 		* empty volumes are equivalent
 		*/
 		void *operator new(size_t s); 
-		static EmptyVolume2<REAL> instance;
+		static EmptyVolume2<COORD_TYPE,VALUE_TYPE> instance;
 	};
 
-	template <class REAL>
-	EmptyVolume2<REAL> EmptyVolume2<REAL>::instance;
+	template <class COORD_TYPE,class VALUE_TYPE>
+	EmptyVolume2<COORD_TYPE,VALUE_TYPE> EmptyVolume2<COORD_TYPE,VALUE_TYPE>::instance;
 
-	template <class REAL>
-	struct Polygon : public VolumeImplDoubleDispatch <REAL> {
-		typedef typename VolumeImpl<REAL,2>::PointVector PointVector; 
-		typedef typename VolumeImpl<REAL,2>::VectorOfVectors VectorOfVectors;
-		typedef TPoint<REAL,2> Point;
+	template <class COORD_TYPE,class VALUE_TYPE>
+	struct Polygon : public VolumeImplDoubleDispatch <COORD_TYPE,VALUE_TYPE> {
+		typedef typename VolumeImpl<COORD_TYPE,VALUE_TYPE,2>::PointVector PointVector; 
+		typedef typename VolumeImpl<COORD_TYPE,VALUE_TYPE,2>::VectorOfVectors VectorOfVectors;
+		typedef TPoint<COORD_TYPE,2> Point;
 		Polygon( )
 			:pointStorage( ),
 			dirty(true),
@@ -126,12 +126,12 @@ namespace spatial {
 		/**
 		* construct rectangular Polygon
 		*/
-		Polygon(const std::array<REAL,2> &origin, const std::array<REAL,2> & lengths)
+		Polygon(const std::array<COORD_TYPE,2> &origin, const std::array<COORD_TYPE,2> & lengths)
 			:pointStorage(),
 			dirty(false),
 			vol(lengths[cX] * lengths[cY]) 
 		{
-			std::array<REAL,2> working(origin);
+			std::array<COORD_TYPE,2> working(origin);
 			pointStorage.push_back(working); //top left
 			working[cX] += lengths[cX];
 			pointStorage.push_back(working); //top right 
@@ -145,13 +145,13 @@ namespace spatial {
 		/**
 		* add point to current polygon; 
 		*/
-		Polygon<REAL> *add(const Point &p) {
+		Polygon<COORD_TYPE,VALUE_TYPE> *add(const Point &p) {
 			pointStorage.push_back(p);
 			dirty = true;
 			return this;
 		}
 
-		void add(double x, double y) {
+		void add(COORD_TYPE x, COORD_TYPE y) {
 			add(Point(x,y));
 		}
 
@@ -162,7 +162,7 @@ namespace spatial {
 			return false;
 		}
 
-		virtual bool inside(const TPoint<REAL,2> &point) const {
+		virtual bool inside(const TPoint<COORD_TYPE,2> &point) const {
 			return spatial::inside(pointStorage,point);
 		}
 
@@ -183,7 +183,7 @@ namespace spatial {
 		/**
 		* set internal vector to have n points and return iterator 
 		*/
-		virtual typename std::vector<TPoint<REAL,2> >::iterator fillingIterator(size_t n) { 
+		virtual typename std::vector<TPoint<COORD_TYPE,2> >::iterator fillingIterator(size_t n) { 
 			dirty = true;
 			pointStorage.reserve(n + 1); //allow extra for closing polygon
 			pointStorage.resize(n);
@@ -198,12 +198,12 @@ namespace spatial {
 			pointStorage.clear( );
 		}
 
-		VolumeImpl<REAL,2> *nextSection( ) {
+		VolumeImpl<COORD_TYPE,VALUE_TYPE,2> *nextSection( ) {
 			if (pointStorage.empty( )) {
 				return this;
 			}
 			assert(pointStorage.size( ) >= 3); //should be at least three points in polygon
-			Polygons<REAL> *polys = new Polygons<REAL>(pointStorage);
+			Polygons<COORD_TYPE,VALUE_TYPE> *polys = new Polygons<COORD_TYPE,VALUE_TYPE>(pointStorage);
 			delete this;
 			return polys->nextSection( );
 		}
@@ -219,7 +219,7 @@ namespace spatial {
 		* evaluated lazily 
 		* @throws std::invalid_argument if polygon not closed 
 		*/
-		REAL volume( ) const {
+		VALUE_TYPE volume( ) const {
 			if (!closed( )) {
 				throw std::invalid_argument("volume call on open polygon");
 			}
@@ -237,23 +237,23 @@ namespace spatial {
 		bool empty( )  const {
 			return pointStorage.empty( );
 		}
-		virtual Volume<REAL, 2> intersection(const Volume<REAL,2> &rhs) const {
-			const VolumeImplDoubleDispatch<REAL> & rhsDD = static_cast<const VolumeImplDoubleDispatch<REAL> &>(this->pal(rhs));
+		virtual Volume<COORD_TYPE,VALUE_TYPE,2> intersection(const Volume<COORD_TYPE,VALUE_TYPE,2> &rhs) const {
+			const VolumeImplDoubleDispatch<COORD_TYPE,VALUE_TYPE> & rhsDD = static_cast<const VolumeImplDoubleDispatch<COORD_TYPE,VALUE_TYPE> &>(this->pal(rhs));
 			return rhsDD.intersectionSingle(*this); 
 		}
-		virtual Volume<REAL, 2> intersection(const std::vector<TPoint<REAL,2> > &rhs) const {
-			Volume<REAL,2> rval;
+		virtual Volume<COORD_TYPE,VALUE_TYPE,2> intersection(const std::vector<TPoint<COORD_TYPE,2> > &rhs) const {
+			Volume<COORD_TYPE,VALUE_TYPE,2> rval;
 			spatial::intersections(rval,pointStorage,rhs);
 			return rval;
 		}
 
-		virtual Volume<REAL, 2> intersectionSingle(const Polygon<REAL> &rhs) const { 
-			Volume<REAL,2> rval;
+		virtual Volume<COORD_TYPE,VALUE_TYPE,2> intersectionSingle(const Polygon<COORD_TYPE,VALUE_TYPE> &rhs) const { 
+			Volume<COORD_TYPE,VALUE_TYPE,2> rval;
 			spatial::intersections(rval,pointStorage,rhs.pointStorage);
 			return rval;
 		}
-		virtual Volume<REAL, 2> intersectionMany(const Polygons<REAL> &rhs) const {
-			Volume<REAL,2> rval;
+		virtual Volume<COORD_TYPE,VALUE_TYPE,2> intersectionMany(const Polygons<COORD_TYPE,VALUE_TYPE> &rhs) const {
+			Volume<COORD_TYPE,VALUE_TYPE,2> rval;
 			spatial::intersectionsManySingle(rval,rhs.storage( ), pointStorage);
 			return rval;
 		}
@@ -261,8 +261,8 @@ namespace spatial {
 		bool more(size_t index) const {
 			return index < pointStorage.size( ) - 1;
 		}
-		Edge<REAL,2> get(size_t index) const {
-			return Edge<REAL,2>(pointStorage[index],pointStorage[index+1]);
+		Edge<COORD_TYPE,2> get(size_t index) const {
+			return Edge<COORD_TYPE,2>(pointStorage[index],pointStorage[index+1]);
 		}
 
 	private:
@@ -283,14 +283,14 @@ namespace spatial {
 		}
 		std::vector<Point> pointStorage;
 		bool dirty;
-		REAL vol;
+		VALUE_TYPE vol;
 	};
 
-	template <class REAL>
-	struct Polygons : public VolumeImplDoubleDispatch<REAL> {
-		typedef typename VolumeImpl<REAL,2>::PointVector PointVector; 
-		typedef typename VolumeImpl<REAL,2>::VectorOfVectors VectorOfVectors;
-		typedef TPoint<REAL,2> Point;
+	template <class COORD_TYPE,class VALUE_TYPE>
+	struct Polygons : public VolumeImplDoubleDispatch<COORD_TYPE,VALUE_TYPE> {
+		typedef typename VolumeImpl<COORD_TYPE,VALUE_TYPE,2>::PointVector PointVector; 
+		typedef typename VolumeImpl<COORD_TYPE,VALUE_TYPE,2>::VectorOfVectors VectorOfVectors;
+		typedef TPoint<COORD_TYPE,2> Point;
 
 		Polygons( )
 			:polys(),
@@ -337,7 +337,7 @@ namespace spatial {
 			return current->front( ) == current->back( );
 		}
 
-		virtual bool inside(const TPoint<REAL,2> &point) const {
+		virtual bool inside(const TPoint<COORD_TYPE,2> &point) const {
 			for (typename VectorOfVectors::const_iterator iter = polys.begin( ); iter != polys.end( ); ++iter) {
 				const PointVector &pv = *iter;
 				bool in = spatial::inside(pv,point);
@@ -350,7 +350,7 @@ namespace spatial {
 		/**
 		* move to next polygon (if current has points)
 		*/
-		Polygons<REAL> *nextSection( ) {
+		Polygons<COORD_TYPE,VALUE_TYPE> *nextSection( ) {
 			assert(empty( ) || current->size( ) >= 3); //should be at least three points in polygon
 			if (empty( )) {
 				return this;
@@ -363,7 +363,7 @@ namespace spatial {
 		/**
 		* add point to current polygon; 
 		*/
-		Polygons<REAL> * add(const TPoint<REAL,2> & point) {
+		Polygons<COORD_TYPE,VALUE_TYPE> * add(const TPoint<COORD_TYPE,2> & point) {
 			if (current) {
 				current->push_back(point);
 				return this;
@@ -374,7 +374,7 @@ namespace spatial {
 			return this;
 		}
 
-		virtual typename std::vector<TPoint<REAL,2> >::iterator fillingIterator(size_t n) { 
+		virtual typename std::vector<TPoint<COORD_TYPE,2> >::iterator fillingIterator(size_t n) { 
 			current->reserve(n + 1); //allow extra for closing polygon
 			current->resize(n);
 			return current->begin( );
@@ -389,29 +389,29 @@ namespace spatial {
 		* evaluated lazily 
 		* @throws std::invalid_argument if polygon not closed 
 		*/
-		REAL volume( ) const {
+		VALUE_TYPE volume( ) const {
 			if (dirty) { 
 				Polygons & us = const_cast<Polygons &>(*this); //"logically" const
 				us.calculateVolume( );
 			}
 			return vol;
 		}
-		virtual Volume<REAL, 2> intersection(const Volume<REAL,2> &rhs) const {
-			const VolumeImplDoubleDispatch<REAL> & rhsDD = static_cast<const VolumeImplDoubleDispatch<REAL> &>(this->pal(rhs));
+		virtual Volume<COORD_TYPE,VALUE_TYPE,2> intersection(const Volume<COORD_TYPE,VALUE_TYPE,2> &rhs) const {
+			const VolumeImplDoubleDispatch<COORD_TYPE,VALUE_TYPE> & rhsDD = static_cast<const VolumeImplDoubleDispatch<COORD_TYPE,VALUE_TYPE> &>(this->pal(rhs));
 			return rhsDD.intersectionMany(*this); 
 		}
-		virtual Volume<REAL, 2> intersection(const std::vector<TPoint<REAL,2> > &rhs) const {
-			Volume<REAL,2> rval;
+		virtual Volume<COORD_TYPE,VALUE_TYPE,2> intersection(const std::vector<TPoint<COORD_TYPE,2> > &rhs) const {
+			Volume<COORD_TYPE,VALUE_TYPE,2> rval;
 			spatial::intersectionsManySingle(rval,polys,rhs);
 			return rval;
 		}
-		virtual Volume<REAL, 2> intersectionSingle(const Polygon<REAL> &rhs) const { 
-			Volume<REAL,2> rval;
+		virtual Volume<COORD_TYPE,VALUE_TYPE,2> intersectionSingle(const Polygon<COORD_TYPE,VALUE_TYPE> &rhs) const { 
+			Volume<COORD_TYPE,VALUE_TYPE,2> rval;
 			spatial::intersectionsManySingle(rval,polys,rhs.vertices( ));
 			return rval;
 		}
-		virtual Volume<REAL, 2> intersectionMany(const Polygons<REAL> &rhs) const {
-			Volume<REAL,2> rval;
+		virtual Volume<COORD_TYPE,VALUE_TYPE,2> intersectionMany(const Polygons<COORD_TYPE,VALUE_TYPE> &rhs) const {
+			Volume<COORD_TYPE,VALUE_TYPE,2> rval;
 			spatial::intersectionsManyMany(rval,polys,rhs.polys);
 			return rval;
 		}
@@ -440,18 +440,18 @@ namespace spatial {
 			}
 			return false;
 		}
-		Edge<REAL,2> get(size_t index) const {
+		Edge<COORD_TYPE,2> get(size_t index) const {
 			if (index >= referenceIndex)  {
 				const size_t adjusted = index - referenceIndex;
 				if (adjusted < getVector->size( ) - 1) {
 					const PointVector & pv = *getVector;
-					return Edge<REAL,2>(pv[adjusted],pv[adjusted+1]);
+					return Edge<COORD_TYPE,2>(pv[adjusted],pv[adjusted+1]);
 				}
 			}
 			size_t adjusted = index;
 			for (size_t pIndex = 0; pIndex < polys.size( ); ++pIndex) {
 				if (adjusted < polys[pIndex].size( ) - 1) {
-					return Edge<REAL,2>(polys[pIndex][adjusted],polys[pIndex][adjusted+1]);
+					return Edge<COORD_TYPE,2>(polys[pIndex][adjusted],polys[pIndex][adjusted+1]);
 				}
 			}
 			throw std::invalid_argument("invalid call to get");
@@ -464,7 +464,7 @@ namespace spatial {
 			vol = 0;
 			typename std::vector<std::vector<Point> >::const_iterator iter = polys.begin( );
 			for (;iter != polys.end( );++iter) {
-				spatial::Polygon<REAL> p(*iter);
+				spatial::Polygon<COORD_TYPE,VALUE_TYPE> p(*iter);
 				vol += p.volume( );
 			}
 
@@ -476,7 +476,7 @@ namespace spatial {
 		*/
 		PointVector * current; 
 		bool dirty;
-		REAL vol;
+		VALUE_TYPE vol;
 		/**
 		* more and get support
 		* base index of #getVector
@@ -488,28 +488,28 @@ namespace spatial {
 		mutable const PointVector *getVector;
 	};
 
-	template <class REAL, int N>
-	Volume<REAL, N>::Volume(size_t nPolygons)
+	template <class COORD_TYPE,class VALUE_TYPE,int N>
+	Volume<COORD_TYPE,VALUE_TYPE, N>::Volume(size_t nPolygons)
 		:state(nullptr) {
 			if (N == 2) {
 				switch (nPolygons) {
 				case 0:
-					state = EmptyVolume2<REAL>::getSingleton( );
+					state = EmptyVolume2<COORD_TYPE,VALUE_TYPE>::getSingleton( );
 					break;
 				case 1:
-					state = new Polygon<REAL>( );
+					state = new Polygon<COORD_TYPE,VALUE_TYPE>( );
 					break;
 				default:
-					state = new Polygons<REAL>( );
+					state = new Polygons<COORD_TYPE,VALUE_TYPE>( );
 					break;
 				}
 			}
 	}
-	template <class REAL, int N>
-	Volume<REAL,N>::Volume(const std::array<REAL,N> &origin, const std::array<REAL,N> & lengths)
+	template <class COORD_TYPE,class VALUE_TYPE,int N>
+	Volume<COORD_TYPE,VALUE_TYPE,N>::Volume(const std::array<COORD_TYPE,N> &origin, const std::array<COORD_TYPE,N> & lengths)
 		:state(nullptr) {
 			if (N == 2) {
-				state = new Polygon<REAL>(origin,lengths);
+				state = new Polygon<COORD_TYPE,VALUE_TYPE>(origin,lengths);
 			}
 	}
 
@@ -520,7 +520,8 @@ namespace spatial {
 	*/
 }
 
-template struct spatial::Polygon<double>;
-template struct spatial::Polygons<double>;
+template struct spatial::Polygon<int,double>;
+template struct spatial::Polygons<int,double>;
 //template spatial::EmptyVolume2<double>;
-template struct spatial::Volume<double,2>;
+template struct spatial::Volume<double,double,2>;
+template struct spatial::Volume<int,double,2>;

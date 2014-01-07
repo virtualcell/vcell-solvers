@@ -2,6 +2,7 @@
 #include <World.h>
 #include <VoronoiMesh.h>
 #include <Voronoi.h>
+#include <MeshElementSpecies.h>
 #include <algo.h>
 
 #include <MBridge/Scatter.h>
@@ -11,28 +12,29 @@
 
 using spatial::cX;
 using spatial::cY;
-using spatial::VoronoiMesh;
 using spatial::VoronoiResult;
+using spatial::Voronoi2D;
+using spatial::VoronoiType;
 using spatial::cX; 
 using spatial::cY; 
+using moving_boundary::VoronoiMesh;
+using moving_boundary::FrontType;
 
-template <class REAL, int NUM_S>
-struct VoronoiMesh<REAL,NUM_S>::VoronoiMeshImpl {
-	Voronoi2D vprocessor;
+struct VoronoiMesh::VoronoiMeshImpl {
 	typedef std::map<const Element *,int> Map; 
+	Voronoi2D vprocessor;
 	Map locations;
-	VoronoiMeshImpl(double ghostDistance, const VoronoiType &sf)
-		:vprocessor(ghostDistance,sf),
+	VoronoiMeshImpl(double ghostDistance)
+		:vprocessor(ghostDistance),
 		locations( ) {}
 
 	void setFront(const MBMesh & mesh, const FrontType &front) {
-		typedef typename MBMesh::iterator MeshIterator;
 		locations.clear( );
 		int voronoiIndex = 0;
 		vprocessor.clear( );
-		for (MeshIterator iter = mesh.begin( ); iter != mesh.end( ); ++iter) {
+		for (MBMesh::iterator iter = mesh.begin( ); iter != mesh.end( ); ++iter) {
 			Element & e= *iter;
-			if (inside<PointType>(front,e)) {
+			if (spatial::inside<FrontPointType>(front,e)) {
 				vprocessor.add(e(cX),e(cY));
 				locations[&e] = voronoiIndex++;
 			}
@@ -50,7 +52,7 @@ struct VoronoiMesh<REAL,NUM_S>::VoronoiMeshImpl {
 	}
 
 	void getResult(VoronoiResult & voronoiResult, const MBMesh & mesh, const Element & element) const{
-		typename Map::const_iterator iter = locations.find(&element);
+		Map::const_iterator iter = locations.find(&element);
 		if (iter == locations.end( )) {
 			VCELL_EXCEPTION(invalid_argument, "element " << element.indexInfo( ) << " " << element.mPos( ) 
 				<< " not in VoronoiMesh map")
@@ -85,7 +87,7 @@ struct VoronoiMesh<REAL,NUM_S>::VoronoiMeshImpl {
 	void matlabPlot(std::ostream &os,const MBMesh & mesh, const FrontType *pFront) {
 		matlabBridge::Scatter scatter('b',5,true);
 		VoronoiResult vr;
-		for (typename Map::const_iterator iter = locations.begin( ); iter != locations.end( ); ++iter) {
+		for (Map::const_iterator iter = locations.begin( ); iter != locations.end( ); ++iter) {
 			const Element & e  = *(iter->first);
 			std::ostringstream ss;
 			ss << e.indexInfo( );
@@ -110,38 +112,32 @@ struct VoronoiMesh<REAL,NUM_S>::VoronoiMeshImpl {
 
 };
 
-template <class REAL, int NUM_S>
-VoronoiMesh<REAL,NUM_S>::VoronoiMesh(MBMesh &m)
+VoronoiMesh::VoronoiMesh(MBMesh &m)
 	:mesh_(m),
 	impl(nullptr) 
 {
-	const spatial::World<double,2> & world = 	spatial::World<double,2>::get( );
-	if (world.locked( )) {
-		double ghostDist = world.diagonal( );
-		const VoronoiType sf = world.scaleFactor<VoronoiType>( )/32;
-		impl = new VoronoiMeshImpl(ghostDist,sf);
+	if (moving_boundary::Universe<2>::get( ).locked( )) {
+		typedef moving_boundary::World<2,moving_boundary::CoordinateType> WorldType; 
+		WorldType & world = WorldType::get( );
+		impl = new VoronoiMeshImpl(world.diagonal( ));
 	}
 	else {
 		throw std::logic_error("VoronoiMesh created with unlocked world");
 	}
 }
 
-template <class REAL, int NUM_S>
-VoronoiMesh<REAL,NUM_S>::~VoronoiMesh( ) {
+VoronoiMesh::~VoronoiMesh( ) {
 	delete impl;
 }
 
-template <class REAL, int NUM_S>
-void VoronoiMesh<REAL,NUM_S>::setFront(const FrontType &front) {
+void VoronoiMesh::setFront(const FrontType &front) {
 	impl->setFront(mesh( ),front);
 }
 
-template <class REAL, int NUM_S>
-void VoronoiMesh<REAL,NUM_S>::getResult(VoronoiResult & vr, const Element & e) const{
+void VoronoiMesh::getResult(spatial::VoronoiResult & vr, const Element & e) const{
 	impl->getResult(vr,mesh( ),e);
 }
-template <class REAL, int NUM_S>
-void VoronoiMesh<REAL,NUM_S>::matlabPlot(std::ostream &os, const FrontType *pFront) {
+void VoronoiMesh::matlabPlot(std::ostream &os, const FrontType *pFront) {
 	impl->matlabPlot(os,mesh( ), pFront);
 }
 
@@ -357,9 +353,8 @@ namespace {
 		}
 	public:
 
-		template<class INPOINT>
-		spatial::Positions<typename MESH::elementType> initialClassification(const std::vector<INPOINT> & polygon) {
-			spatial::Positions<EType> rval; 
+		moving_boundary::Positions<typename MESH::elementType> initialClassification(const FrontType & polygon) {
+			moving_boundary::Positions<EType> rval; 
 			//first pass - inside / outside
 			bool first = true;
 			const MESH & mesh = vmesh.mesh( );
@@ -368,7 +363,7 @@ namespace {
 				setInside(point);
 
 				using spatial::inside;
-				spatial::SurfacePosition pos = inside<INPOINT>(polygon,point) ? spatial::interiorSurface : spatial::outsideSurface;
+				spatial::SurfacePosition pos = spatial::inside<moving_boundary::CoordinatePoint>(polygon,point) ? spatial::interiorSurface : spatial::outsideSurface;
 				point.setInitialPos(pos);
 			}
 			//second pass, find boundaries
@@ -400,7 +395,6 @@ namespace {
 		template<class INPOINT, class STL_C>
 		bool updateClassification(const std::vector<INPOINT> & polygon, STL_C &container) {
 			const MESH & mesh = vmesh.mesh( );
-			spatial::Positions<EType> rval; 
 			//first pass - inside / outside
 			bool changed = false;
 			for (typename MESH::iterator iter = mesh.begin( ); iter != mesh.end( ); ++iter) {
@@ -446,17 +440,14 @@ namespace {
 //END of classification implementation space
 
 
-template <class REAL, int NUM_S>
-template<class INPOINT> 
-spatial::Positions<typename VoronoiMesh<REAL,NUM_S>::Element> VoronoiMesh<REAL,NUM_S>::classify2(const std::vector<INPOINT> & polygon) {
-	Classifier<VoronoiMesh<REAL,NUM_S> > classifier(*this);
+moving_boundary::Positions<typename VoronoiMesh::Element> VoronoiMesh::classify2(const FrontType & polygon) {
+	Classifier<VoronoiMesh> classifier(*this);
 	return classifier.initialClassification(polygon);
 }
 
-template <class REAL, int NUM_S>
-template<class INPOINT, class STL_CONTAINER>
-bool VoronoiMesh<REAL,NUM_S>::adjustNodes(STL_CONTAINER & boundaryContainer, const std::vector<INPOINT> & front) {
-	Classifier<VoronoiMesh<REAL,NUM_S> > classifier(*this);
+template<class STL_CONTAINER>
+bool VoronoiMesh::adjustNodes(STL_CONTAINER & boundaryContainer, const FrontType & front) {
+	Classifier<VoronoiMesh> classifier(*this);
 	const bool changed = classifier.updateClassification(front, boundaryContainer);
 	return changed ; 
 }
@@ -464,10 +455,7 @@ bool VoronoiMesh<REAL,NUM_S>::adjustNodes(STL_CONTAINER & boundaryContainer, con
 /**
 * template instantiation
 */
-namespace spatial {
-	typedef struct VoronoiMesh<double,1> VMI;
-	template struct VoronoiMesh<double,1>; 
-
-	template Positions<VMI::Element> VMI::classify2(const VMI::FrontType &);
-	template bool VMI::adjustNodes(std::vector<VMI::Element *> &, const VMI::FrontType &);
+namespace moving_boundary {
+	typedef std::vector<MeshElementSpecies *> BoundaryContainer; 
+	template bool VoronoiMesh::adjustNodes(BoundaryContainer &, const FrontType &);
 }
