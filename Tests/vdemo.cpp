@@ -18,10 +18,6 @@
 #	define WIN32_LEAN_AND_MEAN
 #	include <Windows.h>
 #endif
-namespace {
-	spatial::VoronoiType defaultScale = 4503599627370496ULL;	
-}
-
 namespace X {
 	enum Validity {good = 0, wall = -2, branching = -3} ;
 }
@@ -143,7 +139,7 @@ void ntest( ) {
 }
 
 void show(const spatial::Voronoi2D &v) {
-	typedef spatial::GhostPoint<double,2> VPoint;
+	typedef spatial::VoronoiGhostPoint VPoint;
 	using spatial::cX;
 	using spatial::cY;
 	spatial::VoronoiResult result;
@@ -163,7 +159,7 @@ void show(const spatial::Voronoi2D &v) {
 TEST(voronoi, basic) {
 	//ntest( );
 	//using spatial::Point;
-	spatial::Voronoi2D v(1000,100); //second arg means use default
+	spatial::Voronoi2D v(1000); //second arg means use default
 	v.add(0,0);
 	v.add(0,1);
 	v.add(0,2);
@@ -195,8 +191,11 @@ namespace {
 	}
 
 	void loadVoronoi(spatial::Voronoi2D & v, const Polygon2D & in) {
+		using spatial::VoronoiType;
 		for (Polygon2D::const_iterator iter = in.begin( ) ; iter != in.end( ); ++iter) {
-			v.add(*iter);
+			VoronoiType x = iter->get(spatial::cX);
+			VoronoiType y = iter->get(spatial::cY);
+			v.add(x,y);
 		}
 
 	}
@@ -234,7 +233,7 @@ TEST(voronoi, particular) {
 		2,0
 	};
 	Polygon2D input = createPoly(field,sizeof(field)/sizeof(field[0]));
-	spatial::Voronoi2D v(1000, defaultScale);
+	spatial::Voronoi2D v(1000);
 	spatial::VoronoiResult result;
 	loadVoronoi(v,input);
 	v.getVertices(result,0);
@@ -259,7 +258,7 @@ TEST(voronoi, threerow) {
 		3,1
 	};
 	Polygon2D input = createPoly(field,sizeof(field)/sizeof(field[0]));
-	spatial::Voronoi2D v(1000,defaultScale);
+	spatial::Voronoi2D v(1000);
 	spatial::VoronoiResult result;
 	loadVoronoi(v,input);
 	v.getVertices(result,0);
@@ -295,7 +294,7 @@ TEST(voronoi, timing) {
 #ifdef TIMEVORONOI  //only going to work on windows
 	for (int i = 3; i < 100; i++) {
 		Polygon2D input = buildPoly(i);
-	spatial::Voronoi2D v(1000,defaultScale);
+	spatial::Voronoi2D v(1000);
 		spatial::VoronoiResult result;
 		loadVoronoi(v,input);
 		LARGE_INTEGER start;
@@ -329,7 +328,7 @@ namespace {
 
 	struct DefaultedVoronoi : public spatial::Voronoi2D {
 		DefaultedVoronoi( )
-			:spatial::Voronoi2D(1000,defaultScale) {}
+			:spatial::Voronoi2D(1000) {}
 	};
 }
 
