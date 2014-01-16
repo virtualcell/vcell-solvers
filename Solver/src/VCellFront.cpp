@@ -14,7 +14,8 @@ namespace {
 	}
 }
 
-VCellFront::VCellFront(std::vector<const GeoLimit> & limits, int N, double tmax,
+template <typename FCT>
+VCellFront<FCT>::VCellFront(std::vector<const GeoLimit> & limits, int N, double tmax,
 					   FronTierLevelFunction levelFunction,
 					   FronTierVelocityFunction velocityFunction) 
 					   :front( ),
@@ -27,7 +28,8 @@ VCellFront::VCellFront(std::vector<const GeoLimit> & limits, int N, double tmax,
 	init(limits,N,tmax,levelFunction,velocityFunction, false);
 }
 
-VCellFront::VCellFront(std::vector<const GeoLimit> & limits, int N, double tmax,
+template <typename FCT>
+VCellFront<FCT>::VCellFront(std::vector<const GeoLimit> & limits, int N, double tmax,
 					   const FronTierLevel & level,
 					   const FronTierVelocity &vel) 
 					   :front( ),
@@ -40,7 +42,8 @@ VCellFront::VCellFront(std::vector<const GeoLimit> & limits, int N, double tmax,
 	init(limits,N,tmax,levelAdapter,velocityAdapter, true);
 }
 
-void VCellFront::init(std::vector<const GeoLimit> & limits, int N, double tmax,
+template <typename FCT>
+void VCellFront<FCT>::init(std::vector<const GeoLimit> & limits, int N, double tmax,
 					  FronTierLevelFunction levelFunction,
 					  FronTierVelocityFunction velocityFunction, 
 					  bool isAdapter) {
@@ -166,7 +169,8 @@ static void retrievePoints_2d(Frontier::Front* front, std::vector<Frontier::POIN
 	//mexPrintf("# interior curves = %d\n", numCurves);
 }
 
-bool VCellFront::propagateTo(double time) {
+template <typename FCT>
+bool VCellFront<FCT>::propagateTo(double time) {
 	if (time > front.time) { 
 		front.max_time = time;
 		bool first = true; //always run at least once
@@ -182,14 +186,16 @@ bool VCellFront::propagateTo(double time) {
 	return false;
 }
 
-double VCellFront::levelAdapter(Frontier::POINTER us, double *in) {
+template <typename FCT>
+double VCellFront<FCT>::levelAdapter(Frontier::POINTER us, double *in) {
 	assert(us != 0);
 	VCellFront * vcf = static_cast<VCellFront *>(us); 
 	assert(vcf->levelObj != 0);
 	return vcf->levelObj->level(in);
 }
 
-int VCellFront::velocityAdapter(Frontier::POINTER us,Frontier::Front *ft,Frontier::POINT *pt,
+template <typename FCT>
+int VCellFront<FCT>::velocityAdapter(Frontier::POINTER us,Frontier::Front *ft,Frontier::POINT *pt,
 								Frontier::HYPER_SURF_ELEMENT *hsf, Frontier::HYPER_SURF *hs, double *in) {
 									assert(us != 0);
 									VCellFront * vcf = static_cast<VCellFront *>(us); 
@@ -197,17 +203,18 @@ int VCellFront::velocityAdapter(Frontier::POINTER us,Frontier::Front *ft,Frontie
 									return vcf->velObj->velocity(ft,pt,hsf,hs,in);
 }
 
-std::vector<spatial::Point2D> VCellFront::retrieveFront( ) {
-	return retrieveSurf<Point2D>( );
+template <typename FCT>
+std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveFront( ) {
+	return retrieveSurf( );
 }
 
-template <class P>
-std::vector<P> VCellFront::retrieveSurf( ) {
+template <typename FCT>
+std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveSurf( ) {
 	using Frontier::CURVE;
 	using Frontier::BOND;
 	using Frontier::POINT;
 	//using Frontier::BDRY_MASK;
-	std::vector<P> rval;
+	std::vector<VCFPointType> rval;
 	CURVE** curves = front.interf->curves;
 	if (curves == NULL) 
 	{
@@ -244,7 +251,7 @@ std::vector<P> VCellFront::retrieveSurf( ) {
 		for (BOND* bond = curve->first; bond != NULL; bond = bond->next) {
 			Frontier::POINT* p = bond->start;
 			if (p != NULL) {
-				P vcPoint(convertFrontier<P::value_type>(p->_coords));
+				VCFPointType vcPoint(convertFrontier<FCT>(p->_coords));
 				rval.push_back(vcPoint);
 			}
 		}
@@ -252,7 +259,7 @@ std::vector<P> VCellFront::retrieveSurf( ) {
 		if (curve->last != nullptr && curve->last->end != nullptr)
 		{
 			Frontier::POINT & fPoint = *(curve->last->end);
-			P vcPoint(convertFrontier<P::value_type>(fPoint._coords));
+			VCFPointType vcPoint(convertFrontier<FCT>(fPoint._coords));
 			rval.push_back(vcPoint);
 		}
 		numCurves++;
@@ -266,13 +273,14 @@ std::vector<P> VCellFront::retrieveSurf( ) {
 
 	return rval; 
 }
-template <class P>
-std::vector<std::vector<P> >VCellFront::retrieveCurves( ) {
+
+template <typename FCT>
+std::vector<std::vector<spatial::TPoint<FCT,2> > > VCellFront<FCT>::retrieveCurves( ) {
 	using Frontier::CURVE;
 	using Frontier::BOND;
 	using Frontier::POINT;
 	//using Frontier::BDRY_MASK;
-	std::vector<std::vector<P> >rval;
+	std::vector<std::vector<VCFPointType> >rval;
 
 	int numCurves = 0;
 	CURVE** curves = front.interf->curves;
@@ -280,11 +288,11 @@ std::vector<std::vector<P> >VCellFront::retrieveCurves( ) {
 		if (is_bdry(curve)) {
 			continue;
 		}
-		std::vector<P> cv;
+		std::vector<VCFPointType> cv;
 		for (BOND* bond = curve->first; bond != NULL; bond = bond->next) {
 			Frontier::POINT* p = bond->start;
 			if (p != NULL) {
-				P vcPoint(convertFrontier<P::value_type>(p->_coords));
+				VCFPointType vcPoint(convertFrontier<FCT>(p->_coords));
 				cv.push_back(vcPoint);
 			}
 		}
@@ -292,7 +300,7 @@ std::vector<std::vector<P> >VCellFront::retrieveCurves( ) {
 		if (curve->last != nullptr && curve->last->end != nullptr)
 		{
 			Frontier::POINT & fPoint = *(curve->last->end);
-			P vcPoint(convertFrontier<P::value_type>(fPoint._coords));
+			VCFPointType vcPoint(convertFrontier<FCT>(fPoint._coords));
 			cv.push_back(vcPoint);
 		}
 		numCurves++;
@@ -304,14 +312,6 @@ std::vector<std::vector<P> >VCellFront::retrieveCurves( ) {
 	return rval; 
 }
 
-template 
-	std::vector<TPoint<double,2> > VCellFront::retrieveSurf( );
-
-template 
-	std::vector<std::vector<TPoint<double,2> > >VCellFront::retrieveCurves( );
-
-template 
-	std::vector<TPoint<int,2> > VCellFront::retrieveSurf( );
-
-template 
-	std::vector<std::vector<TPoint<int,2> > >VCellFront::retrieveCurves( );
+template VCellFront<double>;
+template VCellFront<int>;
+template VCellFront<long>;

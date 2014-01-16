@@ -5,6 +5,9 @@
 namespace spatial {
 	/**
 	* an immutable, normalized vector
+	* @tparam T implementing type (floating point)
+	* @tparam N number of dimesions 
+	* @tparam MAG_TYPE type used for magnitued et. al. 
 	*/
 	template <class T, int N>
 	class NormVector : private SVector<T,N> {
@@ -35,6 +38,10 @@ namespace spatial {
 		double magnitude( ) const {
 			return base::magnitude( );
 		}
+	};
+
+	template <int N>
+	class NormVector<long,N> {
 	};
 
 	template <class T, class U, int N>

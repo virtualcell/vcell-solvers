@@ -208,7 +208,7 @@ namespace moving_boundary {
 			assert (i < nOfS);
 			assert ( c >= 0);
 			if (c > 0) {
-				amtMass[i] = c * volume( );
+				amtMass[i] = c * volumePD( );
 				concValue[i] = c;
 			}
 		}
@@ -221,7 +221,7 @@ namespace moving_boundary {
 		moving_boundary::BioQuanType concentration(size_t i) const { 
 			assert (i < nOfS);
 			if (amtMass[i] > 0) {
-				return amtMass[i] / volume( ); 
+				return amtMass[i] / volumePD( ); 
 			}
 			return 0;
 		}
@@ -350,7 +350,10 @@ namespace moving_boundary {
 		*/
 		void endOfCycle( );  
 
-		moving_boundary::CoordinateProductType volume(  ) const {
+		/**
+		* volume, in problem domain units
+		*/
+		moving_boundary::CoordinateProductType volumePD(  ) const {
 			using MeshElementStateful::State;
 			switch(this->state( ) ) {
 			case State::initial:
@@ -362,7 +365,7 @@ namespace moving_boundary {
 					assert(interiorVolume > 0); //should be set externally 
 					return interiorVolume;
 				}
-				return vol.volume( ); 
+				return vol.volume( ) /distanceScaledSquared; 
 				break;
 			case State::lost: 
 			case State::awaitingNb:
@@ -375,7 +378,7 @@ namespace moving_boundary {
 			case State::legacyVoronoiSetCollected:
 			case State::legacyInteriorSet:
 			case State::legacyInteriorSetCollected:
-				return vol.volume( ); 
+				return vol.volume( ) /distanceScaledSquared; 
 			case State::transient:
 			default:
 				VCELL_EXCEPTION(domain_error,"volume( ) called on " << ident( ));
@@ -410,8 +413,9 @@ namespace moving_boundary {
 		}
 
 		/**
-		* return control volume for this -- expensive for inside polygons as
+		* return control volume for this -- possibly "expensive" for inside polygons as
 		* will cause internal polygons to be constructed (if not already done)
+		* @param mesh owning mesh
 		*/
 		const Volume2DClass & getControlVolume(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh) const;
 
@@ -441,6 +445,15 @@ namespace moving_boundary {
 		void writeMatlab(std::ostream & os , bool noPoly = false, int precision = 0) const;
 
 		/**
+		* set scale used to convert distances from problem domain to world coordinates;
+		* used in DiffuseAdvect
+		* @param pToW problem to world factor 
+		*/
+		static void setProblemToWorldDistanceScale(moving_boundary::BioQuanType pToW) {
+			 distanceScaledSquared = pToW * pToW;
+		}
+
+		/**
 		* debug support
 		*/
 		bool matches (size_t xIndex, size_t yIndex, MeshElementStateful::State  particularState = static_cast<State>(-1)) const {
@@ -452,6 +465,13 @@ namespace moving_boundary {
 			}
 			return true;
 		}
+
+		/**
+		* write coordinates of boundary in text format 
+		* @param dest 
+		* @param mesh 
+		*/
+		void listBoundary(std::ostream & os,const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh) const; 
 
 	protected:
 		/**
@@ -595,10 +615,13 @@ namespace moving_boundary {
 		int nOutside;
 		spatial::SVector<moving_boundary::VelocityType,2> velocity; 
 
+		static moving_boundary::BioQuanType distanceScaledSquared;
+
 		/**
-		* boundary neighbor functor
+		* boundary neighbor functor; declared as part of class to give acccess to typedefs
 		*/
 		struct SetupBoundaryNeighbor;
+
 
 	private:
 		/**
@@ -621,9 +644,10 @@ namespace moving_boundary {
 	};
 
 
+	std::ostream & operator<<(std::ostream &,MeshElementStateful::State);
+
 	inline void MeshElementSpeciesIdent::write(std::ostream &os) const {
 		os << mes.indexInfo( ) << ' ' << mes.mPos( ) << ' ' << mes.state( ); 
 	}
-	std::ostream & operator<<(std::ostream &,MeshElementStateful::State);
 }
 #endif

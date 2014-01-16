@@ -520,6 +520,8 @@ namespace spatial {
 	*/
 }
 
+template struct spatial::Polygon<long,double>;
+template struct spatial::Polygons<long,double>;
 template struct spatial::Polygon<int,double>;
 template struct spatial::Polygons<int,double>;
 //template spatial::EmptyVolume2<double>;

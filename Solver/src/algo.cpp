@@ -13,18 +13,18 @@ using std::cout;
 using std::endl;
 
 template <class T,int N>
-TPoint<T,N> spatial::pointThrough(const spatial::TPoint<T,N> & origin, const spatial::NormVector<T,N> & direction, T distance) {
+TPoint<T,N> spatial::pointThrough(const spatial::TPoint<T,N> & origin, const spatial::NormVector<double,N> & direction, T distance) {
 	std::array<T,N> coords;
 	for (size_t i = 0; i < N; i++) {
 		const Axis a = static_cast<Axis>(i);
-		coords[i] = origin(a) + direction(a) * distance;
+		coords[i] = origin(a) + static_cast<T>(direction(a) * distance);
 	}
 	return TPoint<T,N>(coords);
 }
 
 template <class T,int N>
 TPoint<T,N> spatial::pointThrough(const spatial::TPoint<T,N> & origin, const spatial::SVector<T,N> & direction, T distance) {
-	NormVector<T,N> norm(direction);
+	NormVector<double,N> norm(direction.convert<double>( ));
 	return spatial::pointThrough(origin,norm,distance);
 }
 
@@ -119,6 +119,13 @@ namespace I1{
 }
 
 namespace I2{
+	typedef long IType; //"instantiation type"
+	typedef spatial::TPoint<IType,2> PType;
+	template bool spatial::below(const spatial::TPoint<IType,2> &, const spatial::TPoint<IType,2> &, const spatial::TPoint<IType,2> &);
+	template bool spatial::inside(const std::vector<TPoint<IType,2> > &  polygon, const TPoint<IType,2> & point);
+	template PType spatial::pointThrough(const PType & origin, const spatial::SVector<IType,2> & direction, IType distance); 
+}
+namespace I3{
 	typedef int IType; //"instantiation type"
 	typedef spatial::TPoint<IType,2> PType;
 	template bool spatial::below(const spatial::TPoint<IType,2> &, const spatial::TPoint<IType,2> &, const spatial::TPoint<IType,2> &);

@@ -19,6 +19,7 @@
 #include <VCellFront.h>
 #include <Logger.h>
 #include <Timer.h>
+#include <Modulo.h>
 #include <MovingBoundaryParabolicProblem.h>
 #include <MBridge/Scatter.h>
 #include <MBridge/Figure.h>
@@ -138,7 +139,7 @@ TEST(frontier,repro) {
 	std::vector<const GeoLimit> limits;
 	limits.push_back(GeoLimit(0,5));
 	limits.push_back(GeoLimit(0,2));
-	spatial::VCellFront front(limits, 175,0, levelFunc,velFunction);
+	spatial::VCellFront<double> front(limits, 175,0, levelFunc,velFunction);
 }
 
 TEST(frontier,obj) {
@@ -149,12 +150,12 @@ TEST(frontier,obj) {
 	limits.push_back(GeoLimit(0,2));
 	mylevel lv;
 	myvel vel;
-	spatial::VCellFront front(limits, 175,0, lv,vel); 
+	spatial::VCellFront<double> front(limits, 175,0, lv,vel); 
 	using spatial::Point2D; 
 	using spatial::cX; 
 	using spatial::cY; 
 	using std::vector; 
-	vector<Point2D> points = front.retrieveSurf<Point2D>( );
+	vector<Point2D> points = front.retrieveSurf( );
 
 	for (vector<Point2D>::const_iterator iter = points.begin( );iter != points.end( );++iter) {
 		//cout << iter->get(cX) << ',' << iter->get(cY) << endl;
@@ -188,7 +189,7 @@ TEST(frontier,classify) {
 	limits.push_back(GeoLimit(0,3));
 	mylevel lv;
 	myvel vel;
-	spatial::VCellFront front(limits, 175,1.5, lv,vel); 
+	spatial::VCellFront<moving_boundary::CoordinateType> front(limits, 175,1.5, lv,vel); 
 	using spatial::Point2D; 
 	using spatial::cX; 
 	using spatial::cY; 
@@ -196,7 +197,7 @@ TEST(frontier,classify) {
 	using spatial::MeshElement;
 	using vcell_util::arrayInit;
 	using std::vector; 
-	vector<FrontPointType> points = front.retrieveSurf<FrontPointType>( );
+	vector<FrontPointType> points = front.retrieveSurf( );
 	matlabBridge::Polygon pgon("k");
 	for (vector<FrontPointType>::const_iterator iter = points.begin( );iter != points.end( );++iter) {
 		const FrontPointType & p = *iter;
@@ -232,34 +233,35 @@ TEST(frontier,classify) {
 }
 TEST(frontier,fronttest) {
 	using spatial::GeoLimit;
-	using moving_boundary::FrontPointType; 
+	using spatial::Point2D;
+	using spatial::TPoint;
 	spatial::FronTierVelocityFunction vf = velFunction;
 	std::vector<const GeoLimit> limits;
 	limits.push_back(GeoLimit(0,5));
 	limits.push_back(GeoLimit(0,3));
 	mylevel lv;
 	myvel vel;
-	//spatial::VCellFront front(limits, 175,1.5, lv,vel); 
-	//spatial::VCellFront front(limits, 175,1.5, levelFuncFingers,vf );
-	spatial::VCellFront front(limits, 175,1.5, levelFunc,vf );
+	//spatial::VCellFront<double> front(limits, 175,1.5, lv,vel); 
+	//spatial::VCellFront<double> front(limits, 175,1.5, levelFuncFingers,vf );
+	spatial::VCellFront<double> front(limits, 175,1.5, levelFunc,vf );
 	using spatial::cX; 
 	using spatial::cY; 
 	using spatial::Mesh;
 	using spatial::MeshElement;
-	typedef std::vector<moving_boundary::FrontType> vectorVector; 
+	typedef std::vector<TPoint<double,2> > DVector; 
+	typedef std::vector<DVector> vectorVector; 
 	std::ofstream matlabScript("polys.m");
 	matlabScript << matlabBridge::FigureName("curves") << matlabBridge::clearFigure;
-	vectorVector curves = front.retrieveCurves<FrontPointType>( );
+	vectorVector curves = front.retrieveCurves( );
 	const char *colors[] = {"k","r","g","b","y"};
 	int c = 0;
 	for (vectorVector::iterator iter = curves.begin( ); iter != curves.end( );++iter) {
 
 		matlabBridge::Polygon pgon(colors[c++]);
 		assert (c <= sizeof(colors)/sizeof(colors[0]) );
-			moving_boundary::FrontType &points = *iter;
 
-		for (moving_boundary::FrontType::iterator piter = points.begin( );piter != points.end( );++piter) {
-			const FrontPointType & p = *piter;
+		for (DVector::iterator piter = iter->begin( );piter != iter->end( );++piter) {
+			const Point2D & p = *piter;
 			pgon.add(p(cX),p(cY));
 		}
 		matlabScript << pgon; 
@@ -274,7 +276,7 @@ TEST(frontier,propagate) {
 	std::vector<const GeoLimit> limits;
 	limits.push_back(GeoLimit(0,5));
 	limits.push_back(GeoLimit(0,3));
-	spatial::VCellFront front(limits, 175,1.5, levelFunc,vf );
+	spatial::VCellFront<double> front(limits, 175,1.5, levelFunc,vf );
 	using spatial::cX; 
 	using spatial::cY; 
 	using spatial::Mesh;
@@ -282,9 +284,9 @@ TEST(frontier,propagate) {
 	typedef std::vector<std::vector<Point2D> > vectorVector; 
 	std::ofstream matlabScript("propagate.m");
 	matlabScript << matlabBridge::FigureName("curves") << matlabBridge::clearFigure;
-	vectorVector curves = front.retrieveCurves<Point2D>( );
+	vectorVector curves = front.retrieveCurves( );
 	const char *colors[] = {"k","r","g","b","y"};
-	int c = 0;
+	vcell_util::Modulo<int> c(0,sizeof(colors));
 	for (vectorVector::iterator iter = curves.begin( ); iter != curves.end( );++iter) {
 
 		matlabBridge::Polygon pgon(colors[c++]);
@@ -300,10 +302,10 @@ TEST(frontier,propagate) {
 	for (int tstep  = 0; tstep < NUMBER_STEPS; ++tstep) {
 		matlabScript << matlabBridge::pause; 
 		front.propagateTo(tstep * TIME_INCREMENT);
-		curves = front.retrieveCurves<Point2D>( );
+		curves = front.retrieveCurves( );
 		for (vectorVector::iterator iter = curves.begin( ); iter != curves.end( );++iter) {
 
-			matlabBridge::Polygon pgon(colors[c++]);
+			matlabBridge::Polygon pgon(colors[++c]);
 			assert (c <= sizeof(colors)/sizeof(colors[0]) );
 			std::vector<Point2D> points = *iter;
 

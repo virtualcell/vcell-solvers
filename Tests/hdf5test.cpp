@@ -438,7 +438,7 @@ TEST(hdf5,extendCompound) {
 }
 
 TEST(hdf5,static3D) {
-	const int N = 5000;
+	const int N = 2;
 	struct Data {
 		double x;
 		double y;

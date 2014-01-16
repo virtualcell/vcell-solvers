@@ -15,20 +15,11 @@
 #include <MBridge/Scatter.h>
 #include <MBridge/FronTierAdapt.h>
 #include <Modulo.h>
+#include <boost/math/common_factor.hpp>
 using std::cout;
 using std::endl;
 using namespace spatial;
 
-TEST(algo,firstIsCloser) {
-	Point2D origin(5,5);
-	Point2D close(6,6); 
-	Point2D far(7,7); 
-	ASSERT_TRUE( firstIsCloser(origin,close,far)); 
-	ASSERT_FALSE( firstIsCloser(origin,far,close)); 
-	ASSERT_FALSE( firstIsCloser(origin,far,far)); 
-	ASSERT_FALSE( firstIsCloser(origin,close,close)); 
-
-}
 TEST(algo,below) {
 	Point2D left(0,0);
 	Point2D right(2,2);

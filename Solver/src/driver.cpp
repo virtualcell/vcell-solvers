@@ -6,19 +6,32 @@
 #include <HDF5Client.h>
 #include <Logger.h>
 #include <boundaryProviders.h>
+#include <MBridge/MatlabDebug.h>
 using tinyxml2::XMLElement;
 
 namespace {
-	typedef int WorldCoordType;
+	/**
+	* constants
+	*/
 	const char * const XML_ROOT_NAME = "vcellfrontiersetup";
+	/**
+	* usings and typedefs
+	*/
+	using moving_boundary::MovingBoundaryClient;
+	using moving_boundary::MovingBoundarySetup;
+	using moving_boundary::MovingBoundaryParabolicProblem;
 
-	typedef std::pair<int,H5::H5File> PReturn; 
-	moving_boundary::MovingBoundarySetup setupProblem(const XMLElement &root); 
+	/**
+	* forward declarations of functions in file
+	*/
+	MovingBoundarySetup setupProblem(const XMLElement &root); 
 	void setupTrace(const XMLElement &root); 
-	moving_boundary::MovingBoundaryClient *setupClient(const XMLElement &root, const char *filename, moving_boundary::MovingBoundaryParabolicProblem &mbpp,
-		const moving_boundary::MovingBoundarySetup &); 
-	void runSimulation(H5::H5File & output);
+	MovingBoundaryClient *setupClient(const XMLElement &root, const char *filename, MovingBoundaryParabolicProblem &mbpp, const moving_boundary::MovingBoundarySetup &); 
+	void setupMatlabDebug(const XMLElement &root); 
 
+	/**
+	* shared variables 
+	*/
 	std::auto_ptr<vcell_util::FileDest> traceFileDestination; 
 }
 
@@ -54,6 +67,7 @@ int main(int argc, char *argv[])
 			return 3; 
 		}
 		setupTrace(root);
+		setupMatlabDebug(root);
 
 		moving_boundary::MovingBoundarySetup mbs = setupProblem(root);
 		mbpp = moving_boundary::MovingBoundaryParabolicProblem(mbs);
@@ -87,6 +101,8 @@ namespace {
 		limits = spatial::GeoLimit(low,high);
 	}
 	moving_boundary::MovingBoundarySetup setupProblem(const XMLElement &root) {
+		using vcell_xml::convertChildElement;
+
 		moving_boundary::MovingBoundarySetup mbSetup; 
 		const XMLElement & prob = vcell_xml::get(root,"problem");
 
@@ -95,12 +111,13 @@ namespace {
 		readLimits(xlimits,limits[0]);
 		const tinyxml2::XMLElement & ylimits = vcell_xml::get(prob,"yLimits"); 
 		readLimits(ylimits,limits[1]);
-		moving_boundary::Universe<2>::get( ).init(limits,true);
+		std::array<unsigned short,2> numNodes;
+		numNodes[0]  = convertChildElement<unsigned short>(prob,"numNodesX");
+		numNodes[1]  = convertChildElement<unsigned short>(prob,"numNodesY");
 
-		using vcell_xml::convertChildElement;
+		moving_boundary::Universe<2>::get( ).init(limits,numNodes, true);
 
-		mbSetup.numNodesX = convertChildElement<unsigned int>(prob,"numNodesX");
-		mbSetup.numNodesY = convertChildElement<unsigned int>(prob,"numNodesY");
+
 		mbSetup.frontToNodeRatio = convertChildElement<unsigned int>(prob,"frontToNodeRatio");
 		mbSetup.maxTime = convertChildElement<double>(prob,"maxTime");
 		mbSetup.numberTimeSteps = convertChildElement<unsigned int>(prob,"numberTimeSteps");
@@ -121,7 +138,7 @@ namespace {
 		}
 		const tinyxml2::XMLElement *altFront = prob.FirstChildElement("specialFront");
 		if (altFront != nullptr) {
-			mbSetup.alternateFrontProvider = spatial::frontFromXML(*altFront);
+			mbSetup.alternateFrontProvider = moving_boundary::frontFromXML(*altFront);
 			std::cout << mbSetup.alternateFrontProvider->describe( ) << std::endl;
 		}
 		return mbSetup; 
@@ -186,21 +203,30 @@ namespace {
 			Logger::Level level = Logger::read(levelStr.c_str( ));
 			logger.set(level);
 			//set specific level keys
-			const tinyxml2::XMLElement *keySet = trace->FirstChildElement("keyset");
+			const char * const KEYSET = "keyset";
+			const tinyxml2::XMLElement *keySet = trace->FirstChildElement(KEYSET);
 			while (keySet != nullptr) {
 				using vcell_xml::convertChildElement;
 				levelStr = convertChildElement<std::string>(*keySet,"level");
 				level = Logger::read(levelStr.c_str( ));
 				std::string key = convertChildElement<std::string>(*keySet,"key");
 				logger.set(level,key.c_str( ));
-				keySet = keySet->NextSiblingElement("keyset");
+				keySet = keySet->NextSiblingElement(KEYSET);
 			}
 		}
 	}
-	/*
-	void runSimulation(H5::H5File & output) {
-	moving_boundary::MovingBoundaryParabolicProblem mbpp(mbSetup);
-	mbpp.run(client);
+
+	void setupMatlabDebug(const XMLElement &root) {
+		const tinyxml2::XMLElement *trace = root.FirstChildElement("matlabDebug");
+		if (trace != nullptr) {
+			const char * const TOKEN = "token";
+			const tinyxml2::XMLElement *token = trace->FirstChildElement(TOKEN);
+			while (token != nullptr) {
+				using vcell_xml::convertChildElement;
+				const std::string spec = vcell_xml::convertElement<std::string>(*token);
+				matlabBridge::MatLabDebug::activate(spec);
+				token = token->NextSiblingElement(TOKEN);
+			}
+		}
 	}
-	*/
 }

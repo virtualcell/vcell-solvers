@@ -31,7 +31,7 @@ ClipperLib::Path build(int count, long long *x,long long *y) {
 	for (int i = 0; i < count; i++) {
 		rval.push_back(ClipperLib::IntPoint(x[i],y[i]));
 	}
-	//rval.push_back(ClipperLib::IntPoint(x[0],y[0]));
+	rval.push_back(ClipperLib::IntPoint(x[0],y[0]));
 	return rval;
 }
 
@@ -59,8 +59,8 @@ TEST(clipper,largenum){
 	CleanPolygon(p2,p2);
 
 	Clipper c;
-	c.AddPath(p1,ptSubject,false);
-	c.AddPath(p2,ptClip,false);
+	c.AddPath(p1,ptSubject,true);
+	c.AddPath(p2,ptClip,true);
 	Paths results;
 	/*
 	PolyFillType types[] = {pftPositive,pftNegative,pftNegative,pftEvenOdd};
@@ -115,8 +115,8 @@ TEST(clipper,small){
 	ClipperLib::Path p2 = build(sizeof(x2)/sizeof(x2[0]),x2,y2);
 
 	Clipper c;
-	c.AddPath(p1,ptSubject,false);
-	c.AddPath(p2,ptClip,false);
+	c.AddPath(p1,ptSubject,true);
+	c.AddPath(p2,ptClip,true);
 	Polygons results;
 	ClipperLib::Path answer;
 	PolyFillType types[] = {pftPositive,pftNegative,pftNegative,pftEvenOdd};
@@ -150,8 +150,8 @@ TEST(clipper,request){
 	ClipperLib::Path p2 = build(sizeof(x2)/sizeof(x2[0]),x2,y2);
 
 	Clipper c;
-	c.AddPath(p1,ptSubject,false);
-	c.AddPath(p2,ptClip,false);
+	c.AddPath(p1,ptSubject,true);
+	c.AddPath(p2,ptClip,true);
 	Polygons results;
 	ClipperLib::Path answer;
 	PolyFillType types[] = {pftPositive,pftNegative,pftNegative,pftEvenOdd};
@@ -190,8 +190,8 @@ TEST(clipper,miss){
 	Clipper c;
 
 
-	c.AddPath(p1,ptSubject,false);
-	c.AddPath(p2,ptClip,false);
+	c.AddPath(p1,ptSubject,true);
+	c.AddPath(p2,ptClip,true);
 	Polygons results;
 	ClipperLib::Path answer;
 	PolyFillType types[] = {pftPositive,pftNegative,pftNegative,pftEvenOdd};
@@ -206,7 +206,7 @@ TEST(clipper,miss){
 			}
 		}
 	}
-	std::ofstream script("clippersmall.m");
+	std::ofstream script("clippermiss.m");
 	matlabBridge::TPolygon<long long> b1("g");
 	matlabBridge::TPolygon<long long> b2("b");
 	matlabBridge::TPolygon<long long> a("r+");
@@ -288,6 +288,8 @@ TEST(clipper,example){
 	a.push_back(IntPoint(8746542643914421,3787478073965549));
 	a.push_back(IntPoint(9043878658276244,3593034637283243));
 	a.push_back(IntPoint(9081931755000444,3852088701037340));
+	a.push_back(IntPoint(9081931755000444,3852088701037340));
+
 	b.push_back(IntPoint(6410775356470902,2942958277678163));
 	b.push_back(IntPoint(6286170965356830,7405526866037764));
 	b.push_back(IntPoint(1298773977681875,9202139602414040));
@@ -296,10 +298,11 @@ TEST(clipper,example){
 	b.push_back(IntPoint(1159040607476757,-3928434943053781));
 	b.push_back(IntPoint(6771193485403109,-2127809313692678));
 	b.push_back(IntPoint(6410775356470902,2942958277678163));	
+	b.push_back(IntPoint(6410775356470902,2942958277678163));
 
 	Clipper c;
-	c.AddPath(a,ptSubject,false);
-	c.AddPath(b,ptClip,false);
+	c.AddPath(a,ptSubject,true);
+	c.AddPath(b,ptClip,true);
 	Polygons results;
 	const bool r = c.Execute(ctIntersection ,results,pftEvenOdd,pftEvenOdd);
 	assert(r);

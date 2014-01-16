@@ -13,7 +13,7 @@ namespace spatial {
 	TPoint<T,N> pointThrough(const TPoint<T,N> & origin, const SVector<T,N> & direction, T distance);
 
 	template <class T,int N>
-	TPoint<T,N> pointThrough(const TPoint<T,N> & origin, const NormVector<T,N> & direction, T distance);
+	TPoint<T,N> pointThrough(const TPoint<T,N> & origin, const NormVector<double,N> & direction, T distance);
 
 	template <class T>
 	bool below(const TPoint<T,2> & point, const TPoint<T,2> & lhs, const TPoint<T,2> & rhs); 
@@ -31,14 +31,45 @@ namespace spatial {
 		return rval;
 	}
 
-	/**
-	* is first point closer to origin than second point?
-	*/
 	template <class T, int N>
-	bool firstIsCloser(const TPoint<T,N> & origin, const TPoint<T,N> & first, const TPoint<T,N> & second) {
-		T firstDistance = distanceSquared(origin,first);
-		T secondDistance = distanceSquared(origin,second);
-		return firstDistance < secondDistance;
+	inline TPoint<T,N> midPoint(const spatial::TPoint<T,N> & lhs, const spatial::TPoint<T,N> & rhs ) {
+		std::array<T,N> values;
+		for (int i = 0; i < N ;i++) {
+			const Axis a = static_cast<Axis>(i);
+			values[i] = ( lhs(a) + rhs(a) )/ 2;
+		}
+		return  TPoint<T,N>(values);
+	}
+
+	template <class T, int N>
+	inline TPoint<T,N> integerMidPoint(const spatial::TPoint<T,N> & lhs, const spatial::TPoint<T,N> & rhs ) {
+		std::array<T,N> values;
+		for (int i = 0; i < N ;i++) {
+			const Axis a = static_cast<Axis>(i);
+			values[i] = lhs(a) / 2 + rhs(a) / 2; //divide before add to avoid overflow
+		}
+		return  TPoint<T,N>(values);
+	}
+
+	template <int N>
+	inline TPoint<char,N> midPoint(const spatial::TPoint<char,N> & lhs, const spatial::TPoint<char,N> & rhs ) {
+		return integerMidPoint(lhs,rhs);
+	}
+	template <int N>
+	inline TPoint<int,N> midPoint(const spatial::TPoint<int,N> & lhs, const spatial::TPoint<int,N> & rhs ) {
+		return integerMidPoint(lhs,rhs);
+	}
+	template <int N>
+	inline TPoint<short,N> midPoint(const spatial::TPoint<short,N> & lhs, const spatial::TPoint<short,N> & rhs ) {
+		return integerMidPoint(lhs,rhs);
+	}
+	template <int N>
+	inline TPoint<long,N> midPoint(const spatial::TPoint<long,N> & lhs, const spatial::TPoint<long,N> & rhs ) {
+		return integerMidPoint(lhs,rhs);
+	}
+	template <int N>
+	inline TPoint<long long,N> midPoint(const spatial::TPoint<long long,N> & lhs, const spatial::TPoint<long long,N> & rhs ) {
+		return integerMidPoint(lhs,rhs);
 	}
 
 	/**

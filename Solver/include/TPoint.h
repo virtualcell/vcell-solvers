@@ -6,15 +6,21 @@
 #include <cmath>
 namespace spatial {
 
+
 	/**
 	* use symbols for axes to avoid confusion with array locations
 	*/
-	enum Axis {cX=0,cY=1,cZ=2};
+	enum Axis {cX=0,cY=1,cZ=2, 
+		/**
+		* conceptual alias for cX
+		*/
+		axisInitial=0};
 
 	inline Axis & operator++(Axis &a) {
 		a = static_cast<Axis>(a + 1);
 		return a;
 	}
+
 
 #   pragma warning ( disable : 4351 )
 	/**
@@ -76,6 +82,17 @@ namespace spatial {
 		TPoint(const TPoint<U,N> & rhs, T scale) { 
 			for (int i = 0; i < N; i++ ) {
 				coord[i] = static_cast<T>(rhs(static_cast<Axis>(i)) * scale);
+			}
+		}
+
+		/**
+		* type converting constructor
+		* @tparam U point type to convert from
+		*/
+		template <class U>
+		explicit TPoint(const TPoint<U,N> & rhs) { 
+			for (int i = 0; i < N; i++ ) {
+				coord[i] = static_cast<T>(rhs(static_cast<Axis>(i)));
 			}
 		}
 		/**
@@ -142,6 +159,9 @@ namespace spatial {
 		explicit GhostPoint(T a, T b)
 			:base(a,b),
 			ghost(false)  {}
+		explicit GhostPoint(T a, T b, bool isGhost)
+			:base(a,b),
+			ghost(isGhost)  {}
 
 		explicit GhostPoint(T a, T b, T c)
 			:base(a,b,c),
@@ -210,6 +230,7 @@ namespace spatial {
 		return ! (lhs == rhs);
 	}
 
+#if 0 // to algo
 	template <class T, int N>
 	inline TPoint<T,N> midPoint(const spatial::TPoint<T,N> & lhs, const spatial::TPoint<T,N> & rhs ) {
 		std::array<T,N> values;
@@ -220,35 +241,21 @@ namespace spatial {
 		return  TPoint<T,N>(values);
 	}
 
-	/**
-	* distance squared; runtime cheaper than distance
-	*/
 	template <class T, int N>
-	inline T distanceSquared(const spatial::TPoint<T,N> & lhs, const spatial::TPoint<T,N> & rhs ) {
-		T dSquared = 0;
+	inline TPoint<T,N> integerMidPoint(const spatial::TPoint<T,N> & lhs, const spatial::TPoint<T,N> & rhs ) {
+		std::array<T,N> values;
 		for (int i = 0; i < N ;i++) {
 			const Axis a = static_cast<Axis>(i);
-			const T delta = lhs(a) - rhs(a);
-			dSquared += delta * delta;
+			values[i] = lhs(a) / 2 + rhs(a) / 2; //divide before add to avoid overflow
 		}
-		return dSquared;
+		return  TPoint<T,N>(values);
 	}
 
-	/**
-	* distance between
-	*/
-	template <class T, int N>
-	inline double distance(const spatial::TPoint<T,N> & lhs, const spatial::TPoint<T,N> & rhs ) {
-		return sqrt(distanceSquared(lhs,rhs));
+	template <int N>
+	inline TPoint<long,N> midPoint(const spatial::TPoint<long,N> & lhs, const spatial::TPoint<long,N> & rhs ) {
+		return integerMidPoint(lhs,rhs);
 	}
-
-	/**
-	* distance between, cast (truncated) to input type
-	*/
-	template <class T, int N>
-	inline T distanceApproximate(const spatial::TPoint<T,N> & lhs, const spatial::TPoint<T,N> & rhs ) {
-		return static_cast<T>(sqrt(distanceSquared(lhs,rhs)));
-	}
+#endif
 
 	template <class T, int N>
 	inline std::ostream &operator<<(std::ostream & os, const spatial::TPoint<T,N> & point) {

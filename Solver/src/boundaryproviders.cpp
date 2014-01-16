@@ -1,16 +1,24 @@
 #include <boundaryProviders.h>
+#include <MovingBoundaryCollections.h>
 #include <vcellxml.h>
+#include <World.h>
 
 namespace { 
 	const double Pi = 3.14159265358979323846264338327950288419716939937;
-	class FixedBoundary : public spatial::FrontProvider {
+	class FixedBoundary : public spatial::FrontProvider<moving_boundary::CoordinateType> {
+		typedef spatial::TPoint<moving_boundary::CoordinateType,2> FixedBoundaryPoint;
+		typedef moving_boundary::World<moving_boundary::CoordinateType,2> WorldType; 
 	protected:
+		const WorldType & world;
 		const double xVel;
 		double time;
-		std::vector<spatial::Point2D> baseFront; 
+		moving_boundary::FrontType baseFront;
 		FixedBoundary(double xvelocity) 
-			:xVel(xvelocity),
-			time(0) {}
+			:world(WorldType::get( )),
+			xVel(xvelocity),
+			time(0) { }
+
+
 	public:
 
 		virtual bool propagateTo(double time_) {
@@ -20,8 +28,8 @@ namespace {
 		/**
 		* get current front 
 		*/
-		virtual std::vector<spatial::Point2D> retrieveFront( ) {
-			std::vector<spatial::Point2D> rval(baseFront.size( ));
+		virtual std::vector<FixedBoundaryPoint> retrieveFront( ) {
+			std::vector<FixedBoundaryPoint> rval(baseFront.size( ));
 			std::transform(baseFront.begin( ),baseFront.end( ),rval.begin( ),*this);
 			return rval;
 		}
@@ -29,11 +37,12 @@ namespace {
 		/**
 		* make self a transform operator
 		*/
-		spatial::Point2D operator( )(spatial::Point2D & in) {
-			spatial::Point2D rval(in);
-			rval(spatial::cX) += xVel *time;
+		moving_boundary::FrontPointType operator( )(moving_boundary::FrontPointType & in) {
+			moving_boundary::FrontPointType rval(in);
+			rval(spatial::cX) += static_cast<moving_boundary::CoordinateType>(xVel *time + 0.5);
 			return rval;
 		}
+
 		std::string describe( ) const {
 			std::ostringstream os;
 			os << "Fixed boundary front with " << baseFront.size( ) << " points and x velocity " << xVel << std::ends;
@@ -65,17 +74,18 @@ namespace {
 			r(radius),
 			s(step)
 		{
-				for (double theta = 0; theta < 2 *Pi ; theta += step) {
-					spatial::Point2D t(originx + radius * cos(theta), originy + radius * sin(theta) );
-					baseFront.push_back(t);
-				}
-				close( );
+			for (double theta = 0; theta < 2 *Pi ; theta += step) {
+				spatial::Point2D t(originx + radius * cos(theta), originy + radius * sin(theta) );
+				moving_boundary::FrontPointType fP = world.toWorld(t);
+				baseFront.push_back(fP);
+			}
+			close( );
 		}
 
 		std::string describe( ) const {
 			std::ostringstream os;
 			os << "Circle at " << x << ',' << y << " of radius " << r << " theta step " << s << " with " 
-				 << baseFront.size( ) << " points and x velocity " << xVel << std::endl;
+				<< baseFront.size( ) << " points and x velocity " << xVel << std::endl;
 			return os.str( ); 
 			return std::string( );
 		}
@@ -89,7 +99,7 @@ namespace {
 		const double s; 
 	};
 
-	spatial::FrontProvider *frontFromXMLCircle(const tinyxml2::XMLElement &node) {
+	spatial::FrontProvider<moving_boundary::CoordinateType> *frontFromXMLCircle(const tinyxml2::XMLElement &node) {
 		double theta = vcell_xml::convertChildElement<double>(node,"thetaIncrement");
 		double vx = vcell_xml::convertChildElement<double>(node,"velocityx");
 
@@ -98,7 +108,7 @@ namespace {
 		double radius = vcell_xml::convertChildElementWithDefault<double>(node,"radius",1);
 		return new Circle(x,y,radius,theta,vx);
 	}
-	
+
 }
 
 /**
@@ -108,15 +118,13 @@ namespace {
 * @param step (degrees to step to create circle)
 * @param velocityx 
 */
-spatial::FrontProvider *spatial::circleFront(double originx, double originy, double radius, double step, double velocityx) {
+spatial::FrontProvider<moving_boundary::CoordinateType> * moving_boundary::circleFront(double originx, double originy, double radius, double step, double velocityx) {
 	return new Circle(originx,originy,radius,step,velocityx);
 }
-spatial::FrontProvider *spatial::frontFromXML(const tinyxml2::XMLElement &node) {
+spatial::FrontProvider<moving_boundary::CoordinateType> * moving_boundary::frontFromXML(const tinyxml2::XMLElement &node) {
 	const tinyxml2::XMLElement *c = node.FirstChildElement("circle");
 	if (c != nullptr) {
 		return frontFromXMLCircle(*c);
 	}
-
-
 	throw std::invalid_argument("unrecognized XML");
 }

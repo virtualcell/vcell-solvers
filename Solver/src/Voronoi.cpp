@@ -46,13 +46,13 @@ void Voronoi2D::getDoubleInfinite(VoronoiResult & result,size_t cellIndex ) cons
 	const DVector direction(cellPoint,otherCellPoint);
 	DVector perpendicular = direction.perpendicular( ); 
 	VoronoiGhostPoint center = midPoint(cellPoint,otherCellPoint);
-	VoronoiGhostPoint ghost1 = pointThrough<VoronoiType,2>(center,perpendicular,ghostDistance);
+	VoronoiGhostPoint ghost1 = ghostTo(center,perpendicular);
 	ghost1.setGhost(true);
 	result.vertices.push_back(ghost1);
 	result.vertices.push_back(center);
 
 	perpendicular.reverse( );
-	VoronoiGhostPoint ghost2 = pointThrough<VoronoiType,2>(center,perpendicular,ghostDistance);
+	VoronoiGhostPoint ghost2 = ghostTo(center,perpendicular);
 	ghost2.setGhost(true);
 	result.vertices.push_back(ghost2);
 }
@@ -72,7 +72,7 @@ VoronoiResult::Type Voronoi2D::extractPoint(std::vector<VoronoiGhostPoint> &resu
 		const VoronoiGhostPoint & gridPoint = points[srcIdx]; 
 		const VoronoiGhostPoint & otherGridPoint = points[otherIdx]; 
 		const DVector direction(gridPoint,otherGridPoint);
-		const VoronoiPoint mid = spatial::midPoint(gridPoint,otherGridPoint);
+		//const VoronoiPoint mid = spatial::midPoint(gridPoint,otherGridPoint);
 		DVector perpendicular = direction.perpendicular( ); 
 		const VoronoiPoint center = midPoint(gridPoint,otherGridPoint);
 		if (otherVertex != nullptr) { //single ghost, anchored at real point
@@ -80,14 +80,14 @@ VoronoiResult::Type Voronoi2D::extractPoint(std::vector<VoronoiGhostPoint> &resu
 			if (reverse) {
 				perpendicular.reverse( );
 			}
-			VoronoiGhostPoint ghost = pointThrough<VoronoiType,2>(center,perpendicular,ghostDistance);
+			VoronoiGhostPoint ghost = ghostTo(center,perpendicular);
 			ghost.setGhost(true);
 			results.push_back(ghost);
 			return VoronoiResult::singleOpen; 
 		}
 		else { //double ghost
-			VoronoiGhostPoint ghost1 = pointThrough<VoronoiType,2>(center,perpendicular,ghostDistance);
-			VoronoiGhostPoint ghost2 = pointThrough<VoronoiType,2>(center,perpendicular,-ghostDistance);
+			VoronoiGhostPoint ghost1 = ghostTo(center,perpendicular);
+			VoronoiGhostPoint ghost2 = ghostTo(center,perpendicular.reverse( ));
 			ghost1.setGhost(true);
 			ghost2.setGhost(true);
 			results.push_back(ghost1);
@@ -222,4 +222,21 @@ void  Voronoi2D::calculate( ) {
 			}
 		}
 	}
+}
+
+double Voronoi2D::toWall(const VoronoiPoint & origin, const NormVector<double,2> norm, const Axis a) const { 
+	VoronoiType wall = (norm(a) < 0) ? limits[a].low( ) : limits[a].high( );
+	const double toWallDist = (wall - origin(a) ) / norm(a);
+	return toWallDist;
+}
+
+VoronoiGhostPoint Voronoi2D::ghostTo(const VoronoiPoint & origin, const spatial::SVector<VoronoiType,2> & direction) const {
+	NormVector<double,2> norm(direction.convert<double>( ));
+	double length = toWall(origin,norm,cX); 
+	double ylength = toWall(origin,norm,cY); 
+	length = std::min(length,ylength);
+
+	VoronoiType x = origin(cX) + static_cast<VoronoiType>(norm(cX) * length); 
+	VoronoiType y = origin(cY) + static_cast<VoronoiType>(norm(cY) * length); 
+	return VoronoiGhostPoint(x,y,true);
 }

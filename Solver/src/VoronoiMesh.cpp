@@ -21,11 +21,12 @@ using moving_boundary::VoronoiMesh;
 using moving_boundary::FrontType;
 
 struct VoronoiMesh::VoronoiMeshImpl {
+	typedef moving_boundary::World<moving_boundary::CoordinateType,2> WorldType; 
 	typedef std::map<const Element *,int> Map; 
 	Voronoi2D vprocessor;
 	Map locations;
-	VoronoiMeshImpl(double ghostDistance)
-		:vprocessor(ghostDistance),
+	VoronoiMeshImpl(WorldType &wt)
+		:vprocessor(wt.limits( )),
 		locations( ) {}
 
 	void setFront(const MBMesh & mesh, const FrontType &front) {
@@ -117,9 +118,9 @@ VoronoiMesh::VoronoiMesh(MBMesh &m)
 	impl(nullptr) 
 {
 	if (moving_boundary::Universe<2>::get( ).locked( )) {
-		typedef moving_boundary::World<2,moving_boundary::CoordinateType> WorldType; 
+		typedef moving_boundary::World<moving_boundary::CoordinateType,2> WorldType; 
 		WorldType & world = WorldType::get( );
-		impl = new VoronoiMeshImpl(world.diagonal( ));
+		impl = new VoronoiMeshImpl(world);
 	}
 	else {
 		throw std::logic_error("VoronoiMesh created with unlocked world");

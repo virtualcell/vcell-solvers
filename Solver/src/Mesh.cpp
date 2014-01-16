@@ -20,5 +20,6 @@ std::vector<REAL> spatial::MeshDef<REAL,N>::coordinateValues(spatial::Axis a) co
 */
 namespace spatial {
 	template struct MeshDef<double,2>; 
+	template struct MeshDef<long,2>; 
 	template struct MeshDef<int,2>; 
 }

@@ -15,8 +15,6 @@ namespace moving_boundary {
 	typedef double (*ConcentrationFunction)(double x, double y);
 
 	struct MovingBoundarySetup {
-		unsigned int numNodesX;
-		unsigned int numNodesY;
 		unsigned int frontToNodeRatio;
 		double maxTime;
 		unsigned int numberTimeSteps;
@@ -57,12 +55,10 @@ namespace moving_boundary {
 		* provide alternate to frontier; for testing / validation
 		* Must be heap allocated; will be deleted upon simulation completion
 		*/
-		spatial::FrontProvider *alternateFrontProvider;
+		spatial::FrontProvider<moving_boundary::CoordinateType> *alternateFrontProvider;
 
 		MovingBoundarySetup( ) 
 			:
-			numNodesX( ),
-			numNodesY( ),
 			frontToNodeRatio(5),
 			maxTime( ),
 			numberTimeSteps( ),

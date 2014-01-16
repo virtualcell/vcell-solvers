@@ -389,13 +389,14 @@ namespace moving_boundary {
 				HElementRecord & er = eRecords[key];
 				double m = e.mass(0);
 				double c = e.concentration(0);
-				double v = e.volume( );
+				double v = e.volumePD( );
 				er.mass = m;
 				er.concentration = c;
 				er.volume = v;
 				Volume2DClass::VectorOfVectors vOfv = e.getControlVolume(meshDef).points( );
 				if (vOfv.size( ) > 1) {
-					throw std::domain_error("multi region control volumes not supported yet");
+					//throw std::domain_error("multi region control volumes not supported yet");
+					std::cerr << "multi region warning" << std::endl;
 				}
 				Volume2DClass::PointVector & pVec = vOfv.front( );
 				er.controlVolume.resize(pVec.size( ));

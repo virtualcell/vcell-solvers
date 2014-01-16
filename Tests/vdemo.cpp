@@ -8,6 +8,7 @@
 #include "algo.h"
 #include "gtest/gtest.h"
 #include "Mesh.h"
+#include <World.h>
 #include <MBridge/Figure.h>
 #include <MBridge/MBPolygon.h>
 #include <MBridge/Scatter.h>
@@ -138,6 +139,13 @@ void ntest( ) {
 
 }
 
+namespace {
+	std::array<spatial::TGeoLimit<spatial::VoronoiType>, 2> vlimits( ) {
+		typedef moving_boundary::World<spatial::VoronoiType,2>  WType; 
+		return WType::get( ).limits( );
+	}
+}
+
 void show(const spatial::Voronoi2D &v) {
 	typedef spatial::VoronoiGhostPoint VPoint;
 	using spatial::cX;
@@ -159,7 +167,7 @@ void show(const spatial::Voronoi2D &v) {
 TEST(voronoi, basic) {
 	//ntest( );
 	//using spatial::Point;
-	spatial::Voronoi2D v(1000); //second arg means use default
+	spatial::Voronoi2D v(vlimits( ));
 	v.add(0,0);
 	v.add(0,1);
 	v.add(0,2);
@@ -233,7 +241,7 @@ TEST(voronoi, particular) {
 		2,0
 	};
 	Polygon2D input = createPoly(field,sizeof(field)/sizeof(field[0]));
-	spatial::Voronoi2D v(1000);
+	spatial::Voronoi2D v(vlimits( ));
 	spatial::VoronoiResult result;
 	loadVoronoi(v,input);
 	v.getVertices(result,0);
@@ -258,7 +266,7 @@ TEST(voronoi, threerow) {
 		3,1
 	};
 	Polygon2D input = createPoly(field,sizeof(field)/sizeof(field[0]));
-	spatial::Voronoi2D v(1000);
+	spatial::Voronoi2D v(vlimits( ));
 	spatial::VoronoiResult result;
 	loadVoronoi(v,input);
 	v.getVertices(result,0);
@@ -294,7 +302,7 @@ TEST(voronoi, timing) {
 #ifdef TIMEVORONOI  //only going to work on windows
 	for (int i = 3; i < 100; i++) {
 		Polygon2D input = buildPoly(i);
-	spatial::Voronoi2D v(1000);
+	spatial::Voronoi2D v(vlimits( ));
 		spatial::VoronoiResult result;
 		loadVoronoi(v,input);
 		LARGE_INTEGER start;
@@ -328,7 +336,7 @@ namespace {
 
 	struct DefaultedVoronoi : public spatial::Voronoi2D {
 		DefaultedVoronoi( )
-			:spatial::Voronoi2D(1000) {}
+			:spatial::Voronoi2D(vlimits( )) {}
 	};
 }
 

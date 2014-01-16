@@ -4,26 +4,16 @@
 #include <stdexcept>
 #include <VCellException.h>
 #include <tinyxml2.h>
-#include <boost/lexical_cast.hpp>
+#include <vcellconvert.h>
 namespace vcell_xml {
+	using vcell_util::convertType;
 
 	/**
-	* convenience method to convert const char * to specified type
-	* @throws boost std::exception subclass if string not parseable / convertible
+	* convenience method to extract text from specified XML element and convert to specified type
+	* @tparam T type to convert to
+	* @param element  
+	* @throw std::domain_error if element not present or not parseable as specified type
 	*/
-	template <class T>
-	T convertType(const char *v) {
-		return boost::lexical_cast<T>(v);
-	}
-
-	/**
-	* specialize template; boost does not handle std::string conversion
-	*/
-	template <>
-	inline std::string convertType<std::string>(const char *v) {
-		return std::string(v); 
-	}
-
 	template <class T>
 	T convertElement(const tinyxml2::XMLElement &element) {
 		try {
@@ -43,6 +33,7 @@ namespace vcell_xml {
 	}
 	/**
 	* convenience method to extract text from specified XML element child node and convert to specified type
+	* @tparam T type to convert to
 	* @param node place to extract from
 	* @param name element name to get
 	* @throw st::domain_error if element not present or not parseable as specified type
@@ -56,16 +47,11 @@ namespace vcell_xml {
 		return convertElement<T>(*e);
 	}
 	/**
-	* convenience method to extract text from specified XML element child node and convert to specified type
-	* @param node place to extract from
-	* @throw st::domain_error if element not present or not parseable as specified type
-	*/
-
-	/**
 	* convenience method to extract optional text from given XML element and convert to specified type
+	* @tparam T type to convert to
 	* @param node place to extract from
 	* @param name element name to get
-	* @throw st::domain_error if element present but not parseable as specified type
+	* @throw std::domain_error if element present but not parseable as specified type
 	* @return std::pair<bool (success>, T> 
 	*/
 	template <class T>
@@ -91,10 +77,11 @@ namespace vcell_xml {
 	}
 	/**
 	* convenience method to extract text from given XML element and convert to specified type if present or return default value
+	* @tparam T type to convert to
 	* @param node place to extract from
 	* @param name element name to get
 	* @param defaultValue what you expect 
-	* @throw st::domain_error if element present but not parseable as specified type
+	* @throw std::domain_error if element present but not parseable as specified type
 	* @return value from XML or default if not present in XML
 	*/
 	template <class T>

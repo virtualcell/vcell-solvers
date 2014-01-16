@@ -88,11 +88,17 @@ namespace spatial {
 			return RadAngle(atan2(component[cY] , component[cX]));
 		}
 
+		/**
+		* return new vector perpendicular to *this
+		*/
 		SVector<T,2> perpendicular( ) const {
 			static_assert(N==2, "need 2");
 			return SVector(component[cY],-component[cX]);
 		}
 
+		/**
+		* reverse existing vector
+		*/
 		SVector & reverse( ) {
 			operator*=(-1);
 			return *this;
@@ -151,6 +157,22 @@ namespace spatial {
 			static_assert(N>=3,"3D"); 
 			return component[cY]; 
 		}
+		/**
+		* convert to new vector of different type by static_casting each component
+		* @tparam U type of vector to convert to
+		*/
+		template <typename U>
+		SVector<U,N> convert( ) const {
+			SVector<U,N> other;
+			for (Axis a = axisInitial; a < N; ++a) {
+				other(a) = static_cast<U>(component[a]);
+			}
+			return other;
+		}
+		template <>
+		SVector<T,N>  convert<T>( ) const {
+			return *this;
+		}
 	private:
 		void check( )  {} //obsolete
 	};
@@ -160,7 +182,9 @@ namespace spatial {
 		double rval = 0;
 		for (int i = 0 ; i < N; i++) {
 			const Axis a = static_cast<Axis>(i);
-			rval += lhs(a) * rhs(a);
+			const double left = lhs(a);
+			const double right = rhs(a);
+			rval += left * right; 
 		}
 		return rval;
 	}

@@ -1,7 +1,9 @@
 #ifndef Voronoi_h
 #define Voronoi_h
-#include "TPoint.h"
-#include "VoronoiResult.h"
+#include <TPoint.h>
+#include <VoronoiResult.h>
+#include <GeoLimit.h>
+#include <SVector.h>
 #pragma warning ( disable : 4267 4244 )
 #include <boost/polygon/voronoi.hpp>
 #pragma warning ( default : 4267 )
@@ -40,51 +42,17 @@ namespace spatial {
 
 	template <class T, int N>
 	class Voronoi {
-#ifdef NOT_USED 
-		//const static int DEFAULT_N_POINTS = 10;
-		const static int DEFAULT_GHOST_DIST = 1000;
-	public:
-		Voronoi(long ghost_distance_ = DEFAULT_GHOST_DIST)
-			:impl(ghost_distance) {}
-
-		void add(const TPoint<T,N> &p) {
-			impl.add(p);
-		}
-
-		/**
-		* remove all points
-		*/
-		void clear( ) {
-			impl.clear( );
-		}
-
-		const TPoint<T,N> & cell(size_t index) const {
-			return impl.cell(index); 
-		}
-
-		size_t numberPoints( ) const {
-			return impl.numberPoints( ); 
-		}
-
-		size_t numberCells( ) const {
-			return impl.numberCells( ); 
-		}
-
-		std::vector<TPoint<T,N> > getVertices(size_t cellIndex) const {
-			return impl.getVertices( );
-		}
-#endif
 	};
 
 
 	class Voronoi2D {
 	public:
 		typedef TPoint<VoronoiType, 2> VoronoiPoint;
-		Voronoi2D(VoronoiType ghost_distance_)
+		Voronoi2D(const std::array<TGeoLimit<VoronoiType> ,2> & limits_)
 			:points(),
 			dirty(true),
 			vd( ),
-			ghostDistance(ghost_distance_) {
+			limits(limits_) {
 		}
 
 		void add(const VoronoiPoint &p) {
@@ -94,14 +62,6 @@ namespace spatial {
 		void add(VoronoiType x, VoronoiType y) {
 			points.push_back(VoronoiPoint(x,y) );
 			dirty = true;
-		}
-
-		/**
-		* set ghost distance 
-		*/
-		void setGhostDistance(VoronoiType gd) {
-			assert(gd > 0);
-			ghostDistance = gd;
 		}
 
 		/**
@@ -143,7 +103,7 @@ private:
 	std::vector<VoronoiPoint> points;
 	mutable bool dirty;
 	mutable boost::polygon::voronoi_diagram<ImplementationType> vd;
-	VoronoiType ghostDistance;
+	const std::array<TGeoLimit<VoronoiType> ,2> limits;
 
 	/**
 	* do actual calculation. set dirty to false
@@ -175,6 +135,18 @@ private:
 	* return infinite edge, ghosted. numberCells must be 2 
 	*/
 	void getDoubleInfinite(VoronoiResult & result, size_t cellIndex) const;
+
+	/**
+	* return ghost point going to edge of limits
+	*/
+	VoronoiGhostPoint ghostTo(const VoronoiPoint & origin, const spatial::SVector<VoronoiType,2> & direction) const; 
+	/**
+	* distance to wall
+	* @param origin starting point 
+	* @param norm direction  
+	* @param a axis  
+	*/
+	double toWall(const VoronoiPoint & origin, const NormVector<double,2> norm, const Axis a) const; 
 	};
 
 }

@@ -28,8 +28,8 @@ using spatial::cX;
 using spatial::cY;
 
 namespace {
-	std::ofstream fspy("fcalls.txt"); //temp, frontier spy
-	std::ofstream lspy("levelcalls.txt"); //temp, frontier spy
+	//std::ofstream fspy("fcalls.txt"); //temp, frontier spy
+	//std::ofstream lspy("levelcalls.txt"); //temp, frontier spy
 	//concentration function implement -- use either function pointer or expression parser
 	struct ConcentrationProvider {
 		virtual double conc(double x, double y) = 0;
@@ -83,8 +83,6 @@ namespace {
 #define CHECK(X) checkSet(badset,X, #X);  
 #define CHECK2(X,Y) checkSet(badset,X, Y,#X);  
 
-				CHECK(mbs.numNodesY);
-				CHECK(mbs.numNodesY);
 				CHECK(mbs.maxTime);
 				CHECK(mbs.numberTimeSteps);
 				CHECK2(reinterpret_cast<void *>(mbs.concentrationFunction),mbs.concentrationFunctionStr);
@@ -164,14 +162,18 @@ namespace moving_boundary {
 		typedef VrnMesh::MBMesh MBMesh;
 		//typedef VrnMesh::FrontType FrontType;
 		typedef std::vector<spatial::TPoint<moving_boundary::CoordinateType,2> > FrontType;
-		typedef World<2,moving_boundary::CoordinateType> WorldType;
+		typedef World<moving_boundary::CoordinateType,2> WorldType;
 		typedef spatial::TPoint<moving_boundary::CoordinateType,2> WorldPoint;
 		typedef spatial::TPoint<double,2> ProblemDomainPoint; 
 
 
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs) 
 			:ValidationBase(mbs),
+			world(WorldType::get( )),
 			diffusionConstant(mbs.diffusionConstant),
+			currentTime(0),
+			maxTime(mbs.maxTime),
+			timeStep(maxTime/mbs.numberTimeSteps),
 			symTable(buildSymTable( )),
 			levelExp(mbs.levelFunctionStr,symTable), 
 			advectVelocityExpX(mbs.advectVelocityFunctionStrX,symTable), 
@@ -179,20 +181,15 @@ namespace moving_boundary {
 			frontVelocityExpX(mbs.frontVelocityFunctionStrX,symTable), 
 			frontVelocityExpY(mbs.frontVelocityFunctionStrY,symTable), 
 			concentrationExp(mbs.concentrationFunctionStr,symTable), 
-			vcFront(initFront(*this,mbs)),
-			meshDefinition(createMeshDef(mbs)),
-			interiorVolume(meshDefinition.interval(cX) * meshDefinition.interval(cY) ),
+			meshDefinition(createMeshDef(world, mbs)),
+			interiorVolume(calculateInteriorVolume(world, meshDefinition)),
 			primaryMesh(meshDefinition),
 			voronoiMesh(primaryMesh),
 			//alloc( ),
-			currentTime(0),
-			maxTime(mbs.maxTime),
-			timeStep(maxTime/mbs.numberTimeSteps),
 			lostElements( ),
 			gainedElements(  ),
-			world(WorldType::get( ))
+			vcFront(initFront(world, *this,mbs))
 		{  
-			using matlabBridge::MatLabDebug;
 
 			//init using either function pointer or string
 			if (nFunctionPointers == 0) {
@@ -214,6 +211,8 @@ namespace moving_boundary {
 				timeStep = (maxTime / newNumberSteps) * (1 + 1e-13); //exact factor to overcome precision lost to addition
 			}
 
+
+			using matlabBridge::MatLabDebug;
 			if (MatLabDebug::on("tiling")) {
 				std::ofstream master("tilingMaster.m");
 				matlabBridge::Polygon pFront("b");
@@ -231,8 +230,8 @@ namespace moving_boundary {
 						std::ofstream os(filestr.str( ));
 
 						master << command.str( ) << std::endl;
-						master << matlabBridge::pause << std::endl;
-						os << matlabBridge::FigureName(command.str( ).c_str( ));
+						master << matlabBridge::PauseSeconds(0.5) << std::endl;
+						//os << matlabBridge::FigureName(command.str( ).c_str( ));
 						os << matlabBridge::clearFigure << pFront;
 						e.writeMatlab(os);
 					}
@@ -256,6 +255,11 @@ namespace moving_boundary {
 				}
 				movie.play( );
 			}
+			std::ofstream bp("bp.txt");
+			for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
+				iter->listBoundary(bp,primaryMesh);
+			}
+
 		}
 		~MovingBoundaryParabolicProblemImpl( ) {
 			delete vcFront;
@@ -270,7 +274,7 @@ namespace moving_boundary {
 			for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
 				iter->setInteriorVolume(interiorVolume);
 			}
-			//SCALE SCALE currentFront = vcFront->retrieveFront( );
+			currentFront = vcFront->retrieveFront( );
 			if (currentFront.empty( )) {
 				throw std::invalid_argument("empty front");
 			}
@@ -305,17 +309,17 @@ namespace moving_boundary {
 		/**
 		* constructor support; front initialization
 		*/
-		static spatial::FrontProvider *initFront(const ValidationBase & base,const moving_boundary::MovingBoundarySetup &mbs)  {
+		static spatial::FrontProvider<moving_boundary::CoordinateType> *initFront(const WorldType & world, const ValidationBase & base,const moving_boundary::MovingBoundarySetup &mbs)  {
 			if (mbs.alternateFrontProvider == nullptr) {
-				typedef moving_boundary::World<2,moving_boundary::CoordinateType> WorldType;
 				typedef spatial::TGeoLimit<moving_boundary::CoordinateType> LimitType;
-				const std::array<LimitType,2> & worldLimits = WorldType::get( ).limits( );
+				const std::array<LimitType,2> & worldLimits = world.limits( );
 				std::vector<const spatial::GeoLimit> limits(worldLimits.size( ));
 				std::transform(worldLimits.begin( ),worldLimits.end( ),limits.begin( ),spatial::GeoLimitConvert<moving_boundary::CoordinateType,double>( ) );
-				int mnode = std::max(mbs.numNodesX,mbs.numNodesY);
+				const std::array<Universe<2>::CountType,2> & nodes = world.universe( ).numNodes( ); 
+				int mnode = *std::max_element(nodes.begin( ),nodes.end( ));
 				int numFrontRegions = mnode * mbs.frontToNodeRatio;
 				if (base.nFunctionPointers == 0) {
-					return new spatial::VCellFront(limits,numFrontRegions,mbs.maxTime,base,base);
+					return new spatial::VCellFront<moving_boundary::CoordinateType>(limits,numFrontRegions,mbs.maxTime,base,base);
 				}  
 				/* else */
 				throw std::domain_error("function pointers no longer supported");
@@ -330,17 +334,31 @@ namespace moving_boundary {
 		/**
 		* constructor support; mesh initialization
 		*/
-		static MBMeshDef createMeshDef(const moving_boundary::MovingBoundarySetup &mbs)  {
-			typedef moving_boundary::World<2,moving_boundary::CoordinateType> WorldType;
+		static MBMeshDef createMeshDef(const WorldType & world, const moving_boundary::MovingBoundarySetup &mbs)  {
+
+			MeshElementSpecies::setProblemToWorldDistanceScale(world.theScale( ));
+
 			typedef spatial::TGeoLimit<moving_boundary::CoordinateType> LimitType;
 			using vcell_util::arrayInit;
-			WorldType & world = WorldType::get( );
 			const std::array<LimitType,2> & worldLimits = world.limits( );
 			std::array<moving_boundary::CoordinateType,2> origin;
 			std::array<moving_boundary::CoordinateType,2> c = arrayInit<moving_boundary::CoordinateType>(worldLimits[0].span( ),worldLimits[1].span( ) );
-			std::array<size_t,2> p = arrayInit<size_t>( mbs.numNodesX, mbs.numNodesY);
+			const Universe<2> & universe = world.universe( );
+			std::array<size_t,2> p = { universe.numNodes( )[0], universe.numNodes( )[1] };
 			return MBMeshDef(origin,c,p);
 		}
+
+		/**
+		* constructor support; calculate interior volume 
+		*/
+		static moving_boundary::VolumeType calculateInteriorVolume(const WorldType & world, const MBMeshDef & meshDefinition) {
+			//direct multiplication may not work due to type overflow -- assign to VolumeType for type conversion
+			moving_boundary::VolumeType rval = meshDefinition.interval(spatial::cX);
+			rval *= meshDefinition.interval(spatial::cY);
+			rval /= world.theScale( ) * world.theScale( );
+			return rval;
+		}
+
 		/**
 		* constructor support; build SymbolTable 
 		*/
@@ -350,7 +368,7 @@ namespace moving_boundary {
 		}
 
 		virtual double level(double *in) const {
-			lspy << in[0] << ',' << in[1] << std::endl; 
+			//lspy << in[0] << ',' << in[1] << std::endl; 
 			double problemDomainValues[2];
 			world.toProblemDomain(in,problemDomainValues);
 			double r = levelExp.evaluateVector(problemDomainValues);
@@ -358,7 +376,7 @@ namespace moving_boundary {
 		}
 
 		spatial::SVector<moving_boundary::VelocityType,2> frontVelocity(double x, double y) const {
-			fspy << x << ',' << y << ',' << currentTime << std::endl;
+			//fspy << x << ',' << y << ',' << currentTime << std::endl;
 			double worldValues[2] = {x,y};
 			enum {ex = 0, ey = 1, et = 2};
 			double syms[3];
@@ -400,7 +418,12 @@ namespace moving_boundary {
 		}
 
 		void debugDump(bool first) {
-			std::ofstream dump("frontmove.m");
+			static std::ofstream dump("frontmove.m");
+			{
+				std::ostringstream mbuf;
+				mbuf << "Time " << currentTime;
+				dump << matlabBridge::ConsoleMessage(mbuf.str());
+			}
 			if (first) {
 				matlabBridge::Scatter nbplot('b',2);
 				for (MBMesh::const_iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
@@ -624,7 +647,7 @@ namespace moving_boundary {
 				}
 				*/
 
-				//SCALE SCALE currentFront = vcFront->retrieveFront( );
+				currentFront = vcFront->retrieveFront( );
 				voronoiMesh.setFront(currentFront);
 
 				{
@@ -658,7 +681,7 @@ namespace moving_boundary {
 					}
 				} while (tooBig);
 #endif
-				primaryMesh.diffuseAdvectCache( ).clearDiffuseAdvectCache( );
+				primaryMesh.diffuseAdvectCache( ).start( );
 				bool tooBig = false;
 				try {
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ), 
@@ -672,7 +695,7 @@ namespace moving_boundary {
 					rle.bElement.writeMatlab(s, true, 20);
 					throw rle;
 				}
-				primaryMesh.diffuseAdvectCache( ).checkDiffuseAdvectCache( );
+				primaryMesh.diffuseAdvectCache( ).finish( );
 
 				//adjustNodes calls MeshElementSpecies.updateBoundaryNeighbors
 				boundaryElements.erase(boundaryElements.begin( ),boundaryElements.end( ));
@@ -748,7 +771,14 @@ namespace moving_boundary {
 			return static_cast<unsigned int>(maxTime / timeStep);
 		}
 
+		WorldType & world;
 		const double diffusionConstant;
+		/**
+		* currentTime must be set before #vcFront initialized
+		*/
+		double currentTime;
+		double maxTime;
+		double timeStep; 
 		/**
 		* symbol table for expressions, must be initialized prior to xxExp
 		*/
@@ -765,7 +795,7 @@ namespace moving_boundary {
 		/**
 		* FronTier integration
 		*/
-		spatial::FrontProvider * vcFront;
+		spatial::FrontProvider<moving_boundary::CoordinateType> * vcFront;
 		FrontType currentFront;
 		MBMeshDef meshDefinition;
 
@@ -776,9 +806,6 @@ namespace moving_boundary {
 		MBMesh primaryMesh;
 		VrnMesh voronoiMesh;
 		//		vcell_util::ChunkAllocator<VoronoiResult,60> alloc;
-		double currentTime;
-		double maxTime;
-		double timeStep; 
 		/**
 		* current boundary elements
 		*/
@@ -794,7 +821,6 @@ namespace moving_boundary {
 		* point to next generation 
 		*/
 		std::vector<Element *> gainedElements;
-		WorldType & world;
 	};
 
 
@@ -840,7 +866,7 @@ namespace moving_boundary {
 
 		struct VolumeEval : public Evaluator {
 			virtual double evaluate(MovingBoundaryParabolicProblemImpl::Element & mes) const { 
-				double v = mes.volume( );
+				double v = mes.volumePD( );
 				return v;
 			}
 			virtual const char * const label( ) const {

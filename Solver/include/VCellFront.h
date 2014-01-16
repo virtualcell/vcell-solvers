@@ -58,6 +58,7 @@ namespace spatial {
 		virtual int velocity(Frontier::Front*,Frontier::POINT*,HYPER_SURF_ELEMENT*, HYPER_SURF*,double*) const = 0;
 	};
 
+	template <typename T>
 	struct FrontProvider {
 		virtual ~FrontProvider( ) {}
 		/**
@@ -68,14 +69,18 @@ namespace spatial {
 		/**
 		* get current front 
 		*/
-		virtual std::vector<spatial::Point2D> retrieveFront( ) = 0;
+		virtual std::vector<spatial::TPoint<T,2> > retrieveFront( ) = 0;
 		/**
 		* provide description of front
 		*/
 		virtual std::string describe( ) const = 0;
 	};
 
-	class VCellFront : public FrontProvider {
+	/**
+	* @tparam FCT front coordinate type
+	*/
+	template <typename FCT>
+	class VCellFront : public FrontProvider<FCT> {
 	public:
 		VCellFront(std::vector<const GeoLimit> & xlimits, int N, double tmax,
 			FronTierLevelFunction levelFunction,
@@ -94,17 +99,16 @@ namespace spatial {
 			return std::string("Frontier provided front");
 		}
 
-		template <class P>
-		std::vector<P> retrieveSurf( );
+		std::vector<spatial::TPoint<FCT,2> > retrieveSurf( );
 
-		virtual std::vector<spatial::Point2D> retrieveFront( ); 
+		virtual std::vector<spatial::TPoint<FCT,2> > retrieveFront( );
 
-		template <class P>
-		std::vector<std::vector<P> > retrieveCurves( );
+		std::vector<std::vector<spatial::TPoint<FCT,2> > > retrieveCurves( );
 
 		Frontier::Front* const c_ptr( ) { return &front; }
 
 	private:
+		typedef spatial::TPoint<FCT,2> VCFPointType; 
 		void init(std::vector<const GeoLimit> & xlimits, int N, double tmax,
 			FronTierLevelFunction levelFunction,
 			FronTierVelocityFunction velocityFunction,
