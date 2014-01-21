@@ -176,7 +176,7 @@ namespace spatial {
 			std::array<REAL,N> startPoint; 
 			for (int i =0; i < N; i++) {
 				loop[i] = 0; 
-				startPoint[i] = this->origin[i] + this->intervals[i] / 2.0;
+				startPoint[i] = this->origin[i] + this->intervals[i] / 2;
 			}
 			const size_t needed =  this->numCells( ) * sizeof(TELEMENT);
 			storage = static_cast<TELEMENT *>(malloc(needed));

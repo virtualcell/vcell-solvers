@@ -6,7 +6,7 @@
 #include <SVector.h>
 #pragma warning ( disable : 4267 4244 )
 #include <boost/polygon/voronoi.hpp>
-#pragma warning ( default : 4267 )
+#pragma warning ( default : 4267 4244)
 namespace spatial {
 	typedef TPoint<VoronoiType,2> VoronoiPoint;
 }
@@ -92,8 +92,8 @@ namespace spatial {
 		void getVertices(VoronoiResult & result, size_t cellIndex) const;
 
 
-private:
 	typedef double ImplementationType;
+private:
 	typedef Voronoi2D OurType;
 	//convenience typedefs
 	typedef boost::polygon::voronoi_diagram<ImplementationType>::edge_type EdgeType;

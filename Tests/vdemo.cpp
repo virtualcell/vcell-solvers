@@ -201,8 +201,8 @@ namespace {
 	void loadVoronoi(spatial::Voronoi2D & v, const Polygon2D & in) {
 		using spatial::VoronoiType;
 		for (Polygon2D::const_iterator iter = in.begin( ) ; iter != in.end( ); ++iter) {
-			VoronoiType x = iter->get(spatial::cX);
-			VoronoiType y = iter->get(spatial::cY);
+			VoronoiType x = static_cast<VoronoiType>(iter->get(spatial::cX));
+			VoronoiType y = static_cast<VoronoiType>(iter->get(spatial::cY));
 			v.add(x,y);
 		}
 
@@ -287,7 +287,7 @@ namespace {
 	Polygon2D buildPoly(int nPoints) {
 		Polygon2D rval;
 		double root = sqrt(static_cast<double>(nPoints)); //cast to resolve VC2010 overload ambiguity
-		int limit = ceil(root);
+		int limit = static_cast<int>(ceil(root));
 		for (int i = 0; i < nPoints; i++) {
 			int x = i%limit;
 			int y = i/limit;
@@ -341,14 +341,16 @@ namespace {
 }
 
 TEST(voronoi,time) {
+	//probably out of date
 	const int NSUBS = 200;
-	const double spacing = 0.2; 
 	using spatial::Voronoi2D;
+	using spatial::VoronoiType;
+	const VoronoiType spacing = 2; 
 	DefaultedVoronoi mainV;
 	std::array<DefaultedVoronoi, NSUBS> subs;
 	size_t subIndex = 0;
-	for (double i = 0; i < 20; i+=spacing) 
-		for (double j = 0; j < 20; j+=spacing)  {
+	for (VoronoiType i = 0; i < 20; i+=spacing) 
+		for (VoronoiType j = 0; j < 20; j+=spacing)  {
 			if (insideEllipse(i,j)) {
 				mainV.add(i,j);
 				if (subIndex >= NSUBS) {
@@ -361,8 +363,8 @@ TEST(voronoi,time) {
 						if (xscan == 0 && yscan == 0) {
 							continue;
 						}
-						double subI = i + xscan * spacing;
-						double subJ = j + yscan * spacing;
+						VoronoiType subI = i + xscan * spacing;
+						VoronoiType subJ = j + yscan * spacing;
 						if (insideEllipse(subI,subJ) ) {
 							subV.add(subI,subJ);
 						}

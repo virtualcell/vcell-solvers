@@ -1,6 +1,8 @@
 #include <Volume.h>
 #include <Edge.h>
-#include "intersection.h"
+#include <Segment.h>
+#include <intersection.h>
+#include <VCellException.h>
 namespace spatial {
 	//forward
 	template <class COORD_TYPE,class VALUE_TYPE>
@@ -40,7 +42,10 @@ namespace spatial {
 		bool more(size_t index) const {
 			return false;
 		}
-		Edge<COORD_TYPE,2> get(size_t index) const {
+		Edge<COORD_TYPE,2> getEdge(size_t index) const {
+			throw std::invalid_argument("Invalid index");
+		}
+		Segment<COORD_TYPE,2> getSegment(size_t index) const {
 			throw std::invalid_argument("Invalid index");
 		}
 		virtual void close( ) {} 
@@ -261,8 +266,11 @@ namespace spatial {
 		bool more(size_t index) const {
 			return index < pointStorage.size( ) - 1;
 		}
-		Edge<COORD_TYPE,2> get(size_t index) const {
+		Edge<COORD_TYPE,2> getEdge(size_t index) const {
 			return Edge<COORD_TYPE,2>(pointStorage[index],pointStorage[index+1]);
+		}
+		Segment<COORD_TYPE,2> getSegment(size_t index) const {
+			return Segment<COORD_TYPE,2>(pointStorage[index],pointStorage[index+1]);
 		}
 
 	private:
@@ -440,21 +448,31 @@ namespace spatial {
 			}
 			return false;
 		}
-		Edge<COORD_TYPE,2> get(size_t index) const {
+		/**
+		* @tparam BCT type with ctor than takes two adjacent points "binary container type"
+		*/
+		template <class BCT>
+		BCT getBCT(size_t index) const {
 			if (index >= referenceIndex)  {
 				const size_t adjusted = index - referenceIndex;
 				if (adjusted < getVector->size( ) - 1) {
 					const PointVector & pv = *getVector;
-					return Edge<COORD_TYPE,2>(pv[adjusted],pv[adjusted+1]);
+					return BCT(pv[adjusted],pv[adjusted+1]);
 				}
 			}
 			size_t adjusted = index;
 			for (size_t pIndex = 0; pIndex < polys.size( ); ++pIndex) {
 				if (adjusted < polys[pIndex].size( ) - 1) {
-					return Edge<COORD_TYPE,2>(polys[pIndex][adjusted],polys[pIndex][adjusted+1]);
+					return BCT(polys[pIndex][adjusted],polys[pIndex][adjusted+1]);
 				}
 			}
-			throw std::invalid_argument("invalid call to get");
+			VCELL_EXCEPTION(invalid_argument, "invalid call to get, index = " << index);
+		}
+		Edge<COORD_TYPE,2> getEdge(size_t index) const {
+			return getBCT<Edge<COORD_TYPE, 2> >(index);
+		}
+		Segment<COORD_TYPE,2> getSegment(size_t index) const {
+			return getBCT<Segment<COORD_TYPE, 2> >(index);
 		}
 
 

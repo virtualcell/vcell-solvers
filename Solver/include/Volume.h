@@ -9,6 +9,9 @@ namespace spatial {
 	class TPoint;
 
 	template<class T, int N>
+	struct Segment;
+
+	template<class T, int N>
 	class Edge;
 
 	template<class C, class V,int N>
@@ -18,19 +21,19 @@ namespace spatial {
 	* external accessor to get edges from Volume
 	*/
 	template <class COORD_TYPE, class VALUE_TYPE,int N>
-	struct EdgeAccessor {
-		EdgeAccessor(const Volume<COORD_TYPE,VALUE_TYPE,N> &volume)
+	struct SegmentAccessor {
+		SegmentAccessor(const Volume<COORD_TYPE,VALUE_TYPE,N> &volume)
 		 :vol(volume),
 		 index(0) {}
 
 		bool hasNext( ) const {
 			return vol.more(index);
 		}
-		void next( ) {
-			++index;
-		}
-		const Edge<COORD_TYPE,N> get( ) const {
-			return vol.get(index);
+		/**
+		* get segment, advance index
+		*/
+		const Segment<COORD_TYPE,N> getAndAdvance( ) {
+			return vol.getSegment(index++);
 		}
 	private:
 		const Volume<COORD_TYPE,VALUE_TYPE,N> &vol;
@@ -58,6 +61,8 @@ namespace spatial {
 	*/
 	template <class COORD_TYPE, class VALUE_TYPE, int N>
 	struct Volume {
+		typedef SegmentAccessor<COORD_TYPE,VALUE_TYPE,N> SegmentAccessor;
+	
 		Volume(size_t nConstructs = 0 );
 		
 		/**
@@ -130,8 +135,8 @@ namespace spatial {
 			return state->points( );
 		}; 
 
-		EdgeAccessor<COORD_TYPE,VALUE_TYPE,N> accessor( ) const {
-			return EdgeAccessor<COORD_TYPE,VALUE_TYPE,N>(*this);
+		SegmentAccessor accessor( ) const {
+			return SegmentAccessor(*this);
 		}
 		/**
 		* move to next section for "add";  close polygon if necessary
@@ -143,12 +148,12 @@ namespace spatial {
 		/**
 		* return value for #fillingIterator
 		*/
-		typedef typename std::vector<TPoint<COORD_TYPE,N> >::iterator fillingIteratorType;
+		typedef typename std::vector<TPoint<COORD_TYPE,N> >::iterator FillingIteratorType;
 		/**
 		* return iterator to fill current polygon 
 		* @param n expected size of polygon, if known
 		*/
-		fillingIteratorType fillingIterator(size_t n) {
+		FillingIteratorType fillingIterator(size_t n) {
 			state = state->prep(VolumeImpl<COORD_TYPE,VALUE_TYPE,N>::opFillingIterator);
 			return state->fillingIterator(n);
 		}
@@ -164,6 +169,7 @@ namespace spatial {
 		Volume<COORD_TYPE, VALUE_TYPE,N> intersection(const std::vector<TPoint<COORD_TYPE,N> > &rhs) const {
 			return state->intersection(rhs);
 		}
+
 	protected:
 		void releaseExisting( ) {
 			if (state && !state->singleton( )) {
@@ -173,14 +179,14 @@ namespace spatial {
 		bool more(size_t index) const {
 			return state->more(index);
 		};
-		Edge<COORD_TYPE,N> get(size_t index) const {
-			return state->get(index);
+		Segment<COORD_TYPE,N> getSegment(size_t index) const {
+			return state->getSegment(index);
 		}
-		friend struct EdgeAccessor<COORD_TYPE,VALUE_TYPE,N>;
+		friend struct SegmentAccessor;
 
 		VolumeImpl<COORD_TYPE,VALUE_TYPE,N> *state;
 		/**
-		* allow implement classes direct access to stateo
+		* allow implement classes direct access to state
 		*/
 		friend struct VolumeImpl<COORD_TYPE,VALUE_TYPE,N>;
 	};
@@ -215,9 +221,11 @@ namespace spatial {
 		virtual VolumeImpl<COORD_TYPE,VALUE_TYPE,N> * add(const TPoint<COORD_TYPE,N> & point) = 0;
 		virtual Volume<COORD_TYPE, VALUE_TYPE,N> intersection(const Volume<COORD_TYPE,VALUE_TYPE,N> &rhs) const = 0;
 		virtual Volume<COORD_TYPE, VALUE_TYPE,N> intersection(const std::vector<TPoint<COORD_TYPE,N> > &rhs) const = 0; 
+
 		virtual bool more(size_t index) const = 0; 
 		virtual bool inside(const TPoint<COORD_TYPE,N> &point) const=0; 
-		virtual Edge<COORD_TYPE,N> get(size_t index) const = 0; 
+		virtual Edge<COORD_TYPE,N> getEdge(size_t index) const = 0; 
+		virtual Segment<COORD_TYPE,N> getSegment(size_t index) const = 0; 
 		virtual typename std::vector<TPoint<COORD_TYPE,N> >::iterator fillingIterator(size_t n) = 0; 
 		virtual bool singleton( ) {
 			return false;

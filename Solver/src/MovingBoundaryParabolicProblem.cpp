@@ -473,6 +473,17 @@ namespace moving_boundary {
 					}
 			}
 		};
+		/**
+		* Functor
+		* FindNeighborEdges 
+		*/
+		struct FindNeighborEdges {
+			void operator( )(Element * p) {
+				if (p->isInside( ) ) {
+					p->findNeighborEdges( );
+				}
+			}
+		};
 #ifdef HOLD
 #error should use front velocity, not elements
 		/**
@@ -655,6 +666,7 @@ namespace moving_boundary {
 					//					voronoiMesh.matlabPlot(f, &currentFront);
 				}
 				std::for_each(boundaryElements.begin( ),boundaryElements.end( ),FrontMove(*this));
+				std::for_each(boundaryElements.begin( ),boundaryElements.end( ),FindNeighborEdges( ));
 
 				if (matlabBridge::MatLabDebug::on("frontmove")) {
 					debugDump(false);

@@ -10,7 +10,8 @@
 #include <algo.h>
 #include <intersection.h>
 #include <MovingBoundaryParabolicProblem.h>
-#include <SegmentIterator.h>
+#include <Edge.h>
+//#include <SegmentIterator.h>
 #include <LoopIterator.h>
 #include <create.h>
 #include <stack_container.h>
@@ -128,7 +129,7 @@ namespace {
 		}
 
 		Map diffuseAdvectMap;
-		const moving_boundary::CoordinateType edgeLengthTolerance; 
+		const moving_boundary::DistanceType edgeLengthTolerance; 
 	};
 }
 
@@ -270,6 +271,10 @@ void MeshElementSpecies::processBoundaryNeighbors(const VoronoiMesh & vm, std::v
 		spatial::VoronoiResult vResult;
 		std::vector<spatial::VoronoiGhostPoint> &voronoiVertices = vResult.vertices;
 		assert(voronoiVertices.empty( ));
+		if (matches(17,12)) {
+			std::cout << indexInfo( ) << ", " << *this << std::endl;
+
+		}
 		vm.getResult(vResult,*this);
 		{
 			std::ofstream vp("voronoiPoly.m");
@@ -280,7 +285,7 @@ void MeshElementSpecies::processBoundaryNeighbors(const VoronoiMesh & vm, std::v
 		}
 
 		voronoiVolume.clear( );
-		Volume2DClass::fillingIteratorType fIter = voronoiVolume.fillingIterator(voronoiVertices.size());
+		Volume2DClass::FillingIteratorType fIter = voronoiVolume.fillingIterator(voronoiVertices.size());
 		//std::transform(voronoiVertices.begin( ),voronoiVertices.end( ),fIter, coordinateToVolume);
 		std::copy(voronoiVertices.begin( ),voronoiVertices.end( ),fIter);
 
@@ -334,6 +339,10 @@ void MeshElementSpecies::formBoundaryPolygon( const MeshDef<moving_boundary::Coo
 	//VoronoiResult &vResult = *pVoronoiResult;
 	VCELL_LOG(debug,this->indexInfo( ) << " formBoundaryPolygon old volume " << vol.volume( ));
 	vol = voronoiVolume.intersection(front); 
+	volumeToSegments( );
+	if (state( ) == initial) {
+		return;
+	}
 	if (vol.empty( )) {
 		matlabBridge::Polygon pFront("r",1);
 		frontTierAdapt::copyVectorInto(pFront,front);
@@ -346,46 +355,57 @@ void MeshElementSpecies::formBoundaryPolygon( const MeshDef<moving_boundary::Coo
 		throw std::logic_error("empty boundary front");
 	}
 	VCELL_LOG(debug,this->indexInfo( ) << " new volume " << vol.volume( )) ;
-	if (MatLabDebug::on("edgefind")) { 
-		matlabBridge::Polygons pPolys("k",3);
-		frontTierAdapt::copyVectorsInto(pPolys,vol.points( ));
-		matlabBridge::Polygons vs("-r",1);
-		frontTierAdapt::copyVectorsInto(vs,voronoiVolume.points( ));
-		MatLabDebug::stream() << pPolys << vs << matlabBridge::pause << matlabBridge::clearFigure;
-	}
-	std::vector<Edge<moving_boundary::CoordinateType,2> > neighborEdges(boundaryNeighbors.size( ));
-	for (size_t i = 0; i < boundaryNeighbors.size( ); i++) {
-		//assert(boundaryNeighbors[i].edgeLength == 0);
-		boundaryNeighbors[i].edgeLength = 0;
-		neighborEdges[i] = Edge<moving_boundary::CoordinateType,2>(*this,*boundaryNeighbors[i].element);
-	}
+}
+#ifdef OLD_STUFF
+if (MatLabDebug::on("edgefind")) { 
+	matlabBridge::Polygons pPolys("k",3);
+	frontTierAdapt::copyVectorsInto(pPolys,vol.points( ));
+	matlabBridge::Polygons vs("-r",1);
+	frontTierAdapt::copyVectorsInto(vs,voronoiVolume.points( ));
+	MatLabDebug::stream() << pPolys << vs << matlabBridge::pause << matlabBridge::clearFigure;
+}
 
-	/**
-	* search for segments whose end points are equidistant between us and neighbor
-	*/
-	matlabBridge::Polygon trace(":+g");
-	matlabBridge::Polygon pedge("-+r",2);
+matlabBridge::Polygon trace(":+g");
+matlabBridge::Polygon pedge("-+r",2);
+#endif
 
-	//REAL minimumSegSquared = mesh.minimumInterval( ) * toleranceMinimumSegmentSquared;
+void MeshElementSpecies::findNeighborEdges( ) {
+
 	typedef TPoint<moving_boundary::CoordinateType,2> MeshPointType;
+	bool foundANeighbor = false;
+	for (size_t i = 0; i < boundaryNeighbors.size( ); i++) {
+		const OurType & nb = *boundaryNeighbors[i].element;
+		std::array<SegmentType,4> segs;
+		std::set_intersection(segments( ).begin( ), segments( ).end( ), nb.segments( ).begin( ), nb.segments( ).end( ), segs.begin( ));
+		for (int s = 0; s< segs.size( ); ++s) {
+			if (segs[s].singular( )) {
+				if (s == 0 && spatial::taxicabDistance<int>(indexPoint( ), nb.indexPoint( ) ) == 1) {
+					VCELL_LOG(verbose,ident( ) << ',' << nb.ident( ) << " neighbor edge miss");
+					/*
+					if (MatLabDebug::on("edgefind")) { 
+					matlabBridge::Polygons nPolys("g",3);
+					frontTierAdapt::copyVectorsInto(nPolys,nb.vol.points( ));
+					MatLabDebug::stream() << nPolys; 
+					}
+					*/
+					std::ostream_iterator<SegmentType> oi(std::cout,",");
+					std::cout << ident( ) << " segments" << std::endl; 
+					std::copy(segments( ).begin( ), segments( ).end( ), oi); 
+					std::cout << nb.ident( ) << " segments" << std::endl; 
+					std::copy( nb.segments( ).begin( ), nb.segments( ).end( ), oi); 
+				}
+				break;
+			}
+			foundANeighbor = true;
+			boundaryNeighbors[i].edgeLength = segs[s].magnitude<DistanceType>( ); 
+			VCELL_LOG(verbose,ident( ) << ',' << nb.ident( ) << " neighbor edge hit");
+		}
+	}
+#ifdef NOT_YET_NOT_YET 
 	spatial::EdgeAccessor<moving_boundary::CoordinateType,moving_boundary::CoordinateProductType,2> accsr = vol.accessor( );
 	for (;accsr.hasNext( );accsr.next( )) {
 		debugAid++;
 		Edge<moving_boundary::CoordinateType,2> edge = accsr.get( );
-		/*
-		if (edge.edgeVector( ).magnitudeSquared( ) < minimumSegSquared) {
-		VCELL_LOG(debug,indexInfo( ) << " skipping short segment " << edge.origin( ) << " to " << edge.tail( )
-		<< ' ' << std::setprecision(12) << edge.edgeVector( ).magnitude( ));
-		continue;
-		}
-		*/
-		typedef MesDistance::DistanceSquaredType SquaredType; 
-		const SquaredType hDistSquare = MesDistance::squared(*this,edge.origin( ));
-		const MeshPointType & tail = edge.tail( );
-		const SquaredType tDistSquare = MesDistance::squared(*this,tail);
-
-		using spatial::smallRelativeDifference;
-		const SquaredType meshMin = mesh.minimumInterval( ); 
 		for (size_t i = 0; i < boundaryNeighbors.size( ); i++) {
 			const OurType & nb = *boundaryNeighbors[i].element;
 			debugAid++;
@@ -407,22 +427,16 @@ void MeshElementSpecies::formBoundaryPolygon( const MeshDef<moving_boundary::Coo
 						pedge.clear( );
 					}
 				}
-				else {
-					VCELL_KEY_LOG(verbose,"edgeTrace",this->ident( ) << " and " << nb.ident( ) << " edge " << edge
-						<< " tail rejected, this is " << tDistSquare  
-						<< " and neighbor is " << nbTDistSquare);
-				}
-			}
-			else {
-				VCELL_KEY_LOG(verbose,"edgeTrace",this->ident( ) << " and " << nb.ident( ) << " edge " <<  edge
-					<< " head rejected, this is " << hDistSquare  
-					<< " and neighbor is " << nbHDistSquare 
-					<< " diff " << (hDistSquare - nbHDistSquare) );
 			}
 		}
 		if (MatLabDebug::on("edgefind")) {
 			frontTierAdapt::copyPointInto(trace,edge.origin( ));
 		}
+
+	}
+#endif
+	if (!foundANeighbor) {
+		std::cout << ident( ) << " is lonely " << std::endl;
 	}
 	if (MatLabDebug::on("edgefind")) {
 		matlabBridge::Scatter nbplot('b',2);
@@ -434,7 +448,7 @@ void MeshElementSpecies::formBoundaryPolygon( const MeshDef<moving_boundary::Coo
 		std::ostream & os = MatLabDebug::stream( );
 		std::stringstream ss;
 		ss << this->index[cX] << ',' << this->index[cY];
-		os << trace << nbplot << matlabBridge::Text(this->coord[cX],this->coord[cY],ss.str( ).c_str( )) 
+		os <<  nbplot << matlabBridge::Text(this->coord[cX],this->coord[cY],ss.str( ).c_str( )) 
 			<< matlabBridge::pause << matlabBridge::clearFigure;
 	}
 }
@@ -540,9 +554,21 @@ moving_boundary::Volume2DClass MeshElementSpecies::createInsidePolygon(const Mes
 	return rval; 
 }
 
+void MeshElementSpecies::volumeToSegments( ) {
+	Volume2DClass::SegmentAccessor sa = vol.accessor( );
+	segments_.clear( );
+	while (sa.hasNext( )) {
+		segments_.push_back(sa.getAndAdvance( ));
+	}
+	std::sort(segments_.begin( ), segments_.end( ));
+}
+
 const moving_boundary::Volume2DClass & MeshElementSpecies::getControlVolume(const MeshDef<moving_boundary::CoordinateType,2> & mesh) const {
 	if (!vol.empty( )) {
 		return vol;
+	}
+	if (matches(15,14)) {
+		std::cout << 2;
 	}
 	OurType & us = const_cast<OurType &>(*this);
 	typedef TPoint<moving_boundary::CoordinateType, 2> MeshPointType;
@@ -565,6 +591,7 @@ const moving_boundary::Volume2DClass & MeshElementSpecies::getControlVolume(cons
 	default:
 		throw std::logic_error("unknown case");
 	}
+	us.volumeToSegments( );
 	return vol;
 }
 

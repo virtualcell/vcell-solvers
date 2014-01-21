@@ -17,7 +17,7 @@ namespace moving_boundary {
 	/**
 	* type used for distances of problem implementation
 	*/
-	typedef CoordinateType DistanceType; 
+	typedef double DistanceType; 
 	/**
 	* type used for products/powers of #CoordinateType 
 	* necessary to prevent overranging limited value CoordinateTypes

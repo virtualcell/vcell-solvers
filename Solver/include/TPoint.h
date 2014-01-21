@@ -145,7 +145,7 @@ namespace spatial {
 
 	};
 
-#pragma warning ( disable : 4351 )
+//#pragma warning ( disable : 4351 )
 	template<class T, int N>
 	class GhostPoint :public TPoint<T,N> {
 		typedef TPoint<T,N> base;
@@ -279,33 +279,56 @@ namespace spatial {
 		}
 		return rval;
 	}
-}
+	/**
+	* Euclidean distance between points squared
+	* @tparam M calculation / return type of magnitude. Must be selected to prevent overflow of integral types
+	* @tparam T point coordinate type 
+	* @tparam N number of dimensions 
+	* @return Euclidean distance squared
+	*/
+	template <typename M, typename T, int N>
+	M magnitudeSquared(const TPoint<T,N> &p1,const TPoint<T,N> &p2) { 
+		M m = 0;
+		for (Axis a = axisInitial; a < N; ++a) {
+			M e1 = static_cast<M>(p1(a));
+			M e2 = static_cast<M>(p2(a));
+			M diff = e1 - e2; 
+			m += diff*diff;
+		}
+		return m;
+	}
 
-/*
-namespace boost {
-namespace polygon {
-template<>
-struct geometry_concept<spatial::Point2D> { typedef point_concept type; };
-
-template<>
-struct point_traits<spatial::Point2D> {
-typedef double coordinate_type;
-static inline coordinate_type get(const spatial::Point2D& point, orientation_2d orient) {
-return (orient == HORIZONTAL) ? point.get(spatial::cX) : point.get(spatial::cY);
+	/**
+	* Euclidean distance between points 
+	* @tparam M calculation / return type of magnitude. Must be selected to prevent overflow of integral types
+	* @tparam T point coordinate type 
+	* @tparam N number of dimensions 
+	* @return Euclidean distance 
+	*/
+	template <typename M, typename T, int N>
+	M magnitude(const TPoint<T,N> &p1,const TPoint<T,N> &p2) { 
+		return static_cast<M>(std::sqrt(magnitudeSquared<M>(p1,p2)) );
+	}
+	/**
+	* taxicab / L1Norm / Manhattan distance between points  <a href="http://en.wikipedia.org/wiki/Taxicab_geometry" Taxicab Geometry>
+	* @tparam M calculation / return type of magnitude. Must be selected to prevent overflow of integral types
+	* @tparam T point coordinate type 
+	* @tparam N number of dimensions 
+	* @return taxicab distance 
+	*/
+	template <typename M, typename T, int N>
+	M taxicabDistance(const TPoint<T,N> &p1,const TPoint<T,N> &p2) { 
+		M m = 0;
+		for (Axis a = axisInitial; a < N; ++a) {
+			//std::abs not overloaded for all types, so  ...
+			if (p1(a) > p2(a) ) {
+				m += static_cast<M>(p1(a) - p2(a)); 
+			}
+			else {
+				m += static_cast<M>(p2(a) - p1(a)); 
+			}
+		}
+		return m;
+	}
 }
-};
-
-template<>
-struct geometry_concept<spatial::GhostPoint<double,2> > { typedef point_concept type; };
-
-template<>
-struct point_traits<spatial::GhostPoint<double,2> > {
-typedef double coordinate_type;
-static inline coordinate_type get(const spatial::GhostPoint<double,2> & point, orientation_2d orient) {
-return (orient == HORIZONTAL) ? point.get(spatial::cX) : point.get(spatial::cY);
-}
-};
-}
-}
-*/
 #endif

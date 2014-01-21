@@ -8,6 +8,7 @@
 #include <Allocator.h>
 #include <Volume.h>
 #include <SVector.h>
+#include <Segment.h>
 //#include <VoronoiMesh.h>
 #include <VCellException.h>
 #include <Logger.h>
@@ -164,8 +165,9 @@ namespace moving_boundary {
 		typedef MeshElementSpecies OurType;
 		typedef MeshElementNeighbor NeighborType;
 		typedef MeshElementStateful::State State;
+		typedef spatial::Segment<moving_boundary::CoordinateType,2> SegmentType; 
 
-		static spatial::DiffuseAdvectCache *createCache(moving_boundary::DistanceType smallestMeshInterval); 
+		static spatial::DiffuseAdvectCache *createCache(moving_boundary::CoordinateType smallestMeshInterval); 
 		static const int numSpecies = nOfS; 
 
 		MeshElementSpecies(const size_t *n, const moving_boundary::CoordinateType *values) 
@@ -173,6 +175,7 @@ namespace moving_boundary {
 			stateVar(State::initial),
 			interiorVolume(-1),
 			vol( ),
+			segments_( ),
 			amtMass( ),
 			amtMassTransient( ),
 			interiorNeighbors( ),
@@ -473,17 +476,24 @@ namespace moving_boundary {
 		*/
 		void listBoundary(std::ostream & os,const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh) const; 
 
+		void findNeighborEdges( ); 
 	protected:
 		/**
-		* convert point from moving_boundary::CoordinateType to moving_boundary::CoordinateProductType without scaling
+		* rebuild and sort #segments from volume
 		*/
-		/*
-		static spatial::TPoint<moving_boundary::CoordinateProductType,2> coordinateToVolume(const spatial::TPoint<moving_boundary::CoordinateType,2> &in) { 
-			typedef spatial::TPoint<moving_boundary::CoordinateType,2> IN;
-			typedef spatial::TPoint<moving_boundary::CoordinateProductType,2>  OUT;
-			return spatial::convert<IN,OUT>(in);
+		void volumeToSegments( );
+		/**
+		* access #segments_; use function in case we want to optimize in future
+		*/
+		std::vector<SegmentType> & segments( ) {
+			return segments_;
 		}
+		/**
+		* const access #segments_; use function in case we want to optimize in future
 		*/
+		const std::vector<SegmentType> & segments( ) const {
+			return segments_;
+		}
 		/**
 		* @mesh our mesh
 		* @param front moved front
@@ -597,12 +607,17 @@ namespace moving_boundary {
 		}
 
 
+
 		MeshElementStateful::State stateVar;
 		/**
 		* volume if this is an inside element -- otherwise volume comes from vol object
 		*/
 		moving_boundary::CoordinateProductType interiorVolume;
+		/**
+		* our control volume
+		*/
 		Volume2DClass vol;
+		std::vector<SegmentType> segments_;
 		std::array<moving_boundary::BioQuanType,nOfS> amtMass; //amount of mass
 		std::array<moving_boundary::BioQuanType,nOfS> amtMassTransient; //amount of mass, working copy
 		std::array<moving_boundary::BioQuanType,nOfS> concValue; //concentration at beginning of cycle

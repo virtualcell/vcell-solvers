@@ -26,6 +26,15 @@ namespace {
 	};
 }
 using vcell_util::arrayInit; 
+TEST(mpoint,indexpoint) {
+	size_t a[] = {3,4};
+	double v[] = {6.2,8,4};
+	spatial::MPoint<double,2> mp(a,v);
+	spatial::TPoint<size_t,2> ip = mp.indexPoint( );
+	ASSERT_TRUE(ip(spatial::cX) == 3);
+	ASSERT_TRUE(ip(spatial::cY) == 4);
+
+}
 TEST(mesh, construct) {
 	using spatial::Mesh;
 	using spatial::MPoint;

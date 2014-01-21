@@ -36,6 +36,16 @@ namespace spatial {
 			return !(*this == rhs);
 		}
 
+		bool equalOpposite(const Edge &rhs) const {
+			for (Axis a = axisInitial; a < N; ++a) {
+				REAL otherOrig = orig(a) + vec(a); 
+				if (rhs.origin( )(a) != otherOrig) {
+					return false;
+				}
+			}
+			return true;
+		}
+
 		const Point & origin( ) const {
 			return orig;
 		}

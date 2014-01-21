@@ -7,12 +7,29 @@
 #include "Voronoi.h"
 #include "SVector.h"
 #include "algo.h"
-namespace {
-	const int SCALE_MARGIN = 100000; 
-}
 using boost::polygon::voronoi_diagram;
 using namespace spatial;
 typedef SVector<VoronoiType,2> DVector;
+
+namespace {
+	const int SCALE_MARGIN = 100000; 
+	typedef Voronoi2D::ImplementationType vdVertexType;
+	const vdVertexType epilson = 0.001;
+	inline VoronoiType fixDriftFromInt( vdVertexType in) {
+		double junk;
+		if (std::modf(in,&junk) == 0) { //no fractional part
+			return static_cast<VoronoiType>(in);
+		}
+		if (in > 0) {
+			return static_cast<VoronoiType>(in + epilson);
+		}
+		return static_cast<VoronoiType>(in - epilson);
+	}
+	struct ConvertingGhostPoint : public VoronoiGhostPoint {
+		ConvertingGhostPoint(vdVertexType x, vdVertexType y, bool isGhost = false) 
+			:VoronoiGhostPoint(fixDriftFromInt(x), fixDriftFromInt(y),isGhost) {}
+	};
+}
 
 template <class T>
 std::ostream &operator<<(std::ostream & os, const boost::polygon::voronoi_vertex<T> &vertex) {
@@ -41,8 +58,8 @@ void Voronoi2D::getDoubleInfinite(VoronoiResult & result,size_t cellIndex ) cons
 	const EdgeType * const edge =  cell.incident_edge( );
 	const size_t srcIdx = edge->cell( )->source_index( );
 	const size_t otherIdx = edge->twin( )->cell( )->source_index( );
-	const VoronoiGhostPoint & cellPoint = points[srcIdx]; 
-	const VoronoiGhostPoint & otherCellPoint = points[otherIdx]; 
+	const VoronoiPoint & cellPoint = points[srcIdx]; 
+	const VoronoiPoint & otherCellPoint = points[otherIdx]; 
 	const DVector direction(cellPoint,otherCellPoint);
 	DVector perpendicular = direction.perpendicular( ); 
 	VoronoiGhostPoint center = midPoint(cellPoint,otherCellPoint);
@@ -62,21 +79,21 @@ VoronoiResult::Type Voronoi2D::extractPoint(std::vector<VoronoiGhostPoint> &resu
 	assert(!dirty);
 	static VoronoiType debugLimit = 100; 
 	if (anchor != nullptr) {
-		VoronoiGhostPoint t(anchor->x( ),anchor->y( ));
+		ConvertingGhostPoint t(anchor->x( ),anchor->y( ));
 		results.push_back(t);
 		return VoronoiResult::closed;
 	}
 	else  { //infinite point, make ghost point
 		const size_t srcIdx = edge.cell( )->source_index( );
 		const size_t otherIdx = edge.twin( )->cell( )->source_index( );
-		const VoronoiGhostPoint & gridPoint = points[srcIdx]; 
-		const VoronoiGhostPoint & otherGridPoint = points[otherIdx]; 
+		const VoronoiPoint & gridPoint = this->points[srcIdx]; 
+		const VoronoiPoint & otherGridPoint = points[otherIdx]; 
 		const DVector direction(gridPoint,otherGridPoint);
 		//const VoronoiPoint mid = spatial::midPoint(gridPoint,otherGridPoint);
 		DVector perpendicular = direction.perpendicular( ); 
 		const VoronoiPoint center = midPoint(gridPoint,otherGridPoint);
 		if (otherVertex != nullptr) { //single ghost, anchored at real point
-			VoronoiGhostPoint vertexPoint(otherVertex->x( ),otherVertex->y( ));
+			ConvertingGhostPoint vertexPoint(otherVertex->x( ),otherVertex->y( ));
 			if (reverse) {
 				perpendicular.reverse( );
 			}

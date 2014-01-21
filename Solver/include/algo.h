@@ -113,14 +113,14 @@ namespace spatial {
 	@ return bool (true, intersection point) or false, default
 	*/
 	template <class T>
-	std::pair<bool, TPoint<T,2> > intersectionLineSegment(const TPoint<T,2> & a, const SVector<T,2> & line , const TPoint<T,2> & c, const SVector<T,2> & segment)  {
+	std::pair<bool, TPoint<T,2> > intersectionLineSegment(const TPoint<T,2> & a, const SVector<T,2> & line , const TPoint<T,2> & c, const SVector<T,2> & segVec)  {
 		using spatial::cX;
 		using spatial::cY;
 		using std::pair;
-		pair<bool,T> w = intersectParameter(a,line,c,segment);
+		pair<bool,T> w = intersectParameter(a,line,c,segVec);
 		if (w.first && (w.second >= 0 && w.second <= 1) ) {
-			T x = c(cX) + w.second * segment(cX); 
-			T y = c(cY) + w.second * segment(cY); 
+			T x = c(cX) + w.second * segVec(cX); 
+			T y = c(cY) + w.second * segVec(cY); 
 			return pair<bool,TPoint<T,2> >(true,TPoint<T,2>(x,y));
 		}
 		return pair<bool,TPoint<T,2> >(false,TPoint<T,2>());
@@ -133,19 +133,19 @@ namespace spatial {
 	template <class T>
 	std::pair<bool, TPoint<T,2> > intersectionRaySegment(
 			const TPoint<T,2> & rayStart, const SVector<T,2> & rayVector , 
-			const TPoint<T,2> & c, const SVector<T,2> & segment)  {
+			const TPoint<T,2> & c, const SVector<T,2> & segVec)  {
 
 		using spatial::cX;
 		using spatial::cY;
 		using std::pair;
-		pair<bool,T> w = intersectParameter(rayStart,rayVector,c,segment);
+		pair<bool,T> w = intersectParameter(rayStart,rayVector,c,segVec);
 		if (w.first && (w.second >= 0 && w.second <= 1) ) {
 			//make sure in intersection is not behind the ray origin
-			pair<bool,T> r = intersectParameter(c,segment,rayStart,rayVector);
+			pair<bool,T> r = intersectParameter(c,segVec,rayStart,rayVector);
 			assert (r.first);
 			if (r.second >=0) {
-				T x = c(cX) + w.second * segment(cX); 
-				T y = c(cY) + w.second * segment(cY); 
+				T x = c(cX) + w.second * segVec(cX); 
+				T y = c(cY) + w.second * segVec(cY); 
 				return pair<bool,TPoint<T,2> >(true,TPoint<T,2>(x,y));
 			}
 		}
@@ -158,8 +158,8 @@ namespace spatial {
 	template <class T>
 	std::pair<bool, TPoint<T,2> > intersectionRaySegment(
 			const TPoint<T,2> & rayStart, const SVector<T,2> & rayVector , 
-			const Edge<T,2> &segment) {
-		return intersectionRaySegment(rayStart,rayVector,segment.origin( ),segment.edgeVector( ));
+			const Edge<T,2> &segVec) {
+		return intersectionRaySegment(rayStart,rayVector,segVec.origin( ),segVec.edgeVector( ));
 	}
 
 	/**
@@ -168,19 +168,19 @@ namespace spatial {
 	*/
 	template <class T>
 	std::pair<bool, TPoint<T,2> > intersectionSegments(
-			const TPoint<T,2> & a, const SVector<T,2> & segmentA , 
-			const TPoint<T,2> & b, const SVector<T,2> & segmentB )  {
+			const TPoint<T,2> & a, const SVector<T,2> & segVecA , 
+			const TPoint<T,2> & b, const SVector<T,2> & segVecB )  {
 
 		using spatial::cX;
 		using spatial::cY;
 		using std::pair;
-		pair<bool,T> w = intersectParameter(a,segmentA,b,segmentB);
+		pair<bool,T> w = intersectParameter(a,segVecA,b,segVecB);
 		if (w.first && (w.second >= 0 && w.second <= 1) ) {
-			pair<bool,T> r = intersectParameter(b,segmentB,a,segmentA);
+			pair<bool,T> r = intersectParameter(b,segVecB,a,segVecA);
 			assert (r.first);
 			if (r.second >=0 && r.second <= 1) {
-				T x = b(cX) + w.second * segmentB(cX); 
-				T y = b(cY) + w.second * segmentB(cY); 
+				T x = b(cX) + w.second * segVecB(cX); 
+				T y = b(cY) + w.second * segVecB(cY); 
 				return pair<bool,TPoint<T,2> >(true,TPoint<T,2>(x,y));
 			}
 		}
@@ -200,15 +200,15 @@ namespace spatial {
 	*/
 	template <class T>
 	bool intersectionSegmentsQuery(
-			const TPoint<T,2> & a, const SVector<T,2> & segmentA , 
-			const TPoint<T,2> & b, const SVector<T,2> & segmentB )  {
+			const TPoint<T,2> & a, const SVector<T,2> & segVecA , 
+			const TPoint<T,2> & b, const SVector<T,2> & segVecB )  {
 
 		using spatial::cX;
 		using spatial::cY;
 		using std::pair;
-		pair<bool,T> w = intersectParameter(a,segmentA,b,segmentB);
+		pair<bool,T> w = intersectParameter(a,segVecA,b,segVecB);
 		if (w.first && (w.second >= 0 && w.second <= 1) ) {
-			pair<bool,T> r = intersectParameter(b,segmentB,a,segmentA);
+			pair<bool,T> r = intersectParameter(b,segVecB,a,segVecA);
 			assert (r.first);
 			if (r.second >=0 && r.second <= 1) {
 				return true;
@@ -393,8 +393,8 @@ namespace spatial {
 	*/
 	template <class T>
 	void closerEnd(spatial::EndFindResult<T> & result,const spatial::TPoint<T,2> &intersection, const spatial::TPoint<T,2> & origin,
-		const Edge<T,2> &ray, const Edge<T,2> &segment) {
-			closerEnd(result,intersection,origin,ray.origin( ), ray.edgeVector( ),segment.origin( ), segment.edgeVector( ));
+		const Edge<T,2> &ray, const Edge<T,2> &edge) {
+			closerEnd(result,intersection,origin,ray.origin( ), ray.edgeVector( ),edge.origin( ), edge.edgeVector( ));
 	}
 	/**
 	* given a ray and a segment, find if they intersect and which end of segment
@@ -433,8 +433,8 @@ namespace spatial {
 	};
 	template <class T>
 	void insideCrossingFind(InsideCrossResult<T> & result, const spatial::TPoint<T,2> & origin,
-		const spatial::TPoint<T,2> & segmentA, const spatial::SVector<T,2> & aVector,
-		const spatial::TPoint<T,2> &segmentB, const spatial::SVector<T,2> & bVector) {
+		const spatial::TPoint<T,2> & segVecA, const spatial::SVector<T,2> & aVector,
+		const spatial::TPoint<T,2> &segVecB, const spatial::SVector<T,2> & bVector) {
 		using spatial::cX;
 		using spatial::cY;
 		using spatial::Axis;
@@ -442,7 +442,7 @@ namespace spatial {
 		typedef spatial::SVector<T,2> VectorType;
 		typedef spatial::TPoint<T,2> PointType;
 
-		std::pair<bool,PointType> lineSeg = intersectionSegments(segmentA,aVector,segmentB,bVector);
+		std::pair<bool,PointType> lineSeg = intersectionSegments(segVecA,aVector,segVecB,bVector);
 		if (!lineSeg.first) {
 			result.found = false;
 			return;
@@ -456,13 +456,13 @@ namespace spatial {
 		PointType aProj = spatial::displacement(iSect,aVector);
 		VectorType aProjVector = VectorType(origin,aProj);  
 		//see if segment from origin projection crosses other line
-		std::pair<bool,PointType> projIntersectionA = intersectionLineSegment(segmentB,bVector,origin,aProjVector);
+		std::pair<bool,PointType> projIntersectionA = intersectionLineSegment(segVecB,bVector,origin,aProjVector);
 
 		//repeat for b
 		PointType bProj = spatial::displacement(iSect,bVector);
 		VectorType bProjVector = VectorType(origin,bProj);  
 		//see if segment from origin projection crosses other line
-		std::pair<bool,PointType> projIntersectionB = intersectionLineSegment(segmentA,aVector,origin,bProjVector);
+		std::pair<bool,PointType> projIntersectionB = intersectionLineSegment(segVecA,aVector,origin,bProjVector);
 		//if there's an intersection, projection was away from origin point
 		result.aBeginIsInside = projIntersectionA.first; 
 		result.bBeginIsInside = projIntersectionB.first; 

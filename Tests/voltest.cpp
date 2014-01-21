@@ -8,7 +8,7 @@
 #include <random>
 #include "MPoint.h"
 #include "Volume.h"
-#include "SegmentIterator.h"
+//#include "SegmentIterator.h"
 #include "gtest/gtest.h"
 #include "MBridge/MBPolygon.h"
 #include "MBridge/Figure.h"
