@@ -37,7 +37,9 @@ ClipperLib::Path build(int count, long long *x,long long *y) {
 
 TEST(clipper,largenum){
 	using namespace ClipperLib;
-	using ClipperLib::Path;
+	cInt hiRange = 0x3FFFFFFFFFFFFFFFLL;
+	cInt maxLong  = std::numeric_limits<cInt>::max( );
+	std::cout << hiRange << ' ' << maxLong << ' ' << (hiRange == maxLong) << std::endl;
 	std::cout << "max value is " << std::numeric_limits<long long>::max( ) << std::endl;
 	/*
 	Polygon1.x = [4387414506071, 4157630003224, 3891577094948, 3591914093955, 3261635133897, -3870280929772]
@@ -59,8 +61,10 @@ TEST(clipper,largenum){
 	CleanPolygon(p2,p2);
 
 	Clipper c;
-	c.AddPath(p1,ptSubject,true);
-	c.AddPath(p2,ptClip,true);
+	bool ap = c.AddPath(p1,ptSubject,true);
+	ASSERT_TRUE(ap);
+	ap = c.AddPath(p2,ptClip,true);
+	ASSERT_TRUE(ap);
 	Paths results;
 	/*
 	PolyFillType types[] = {pftPositive,pftNegative,pftNegative,pftEvenOdd};

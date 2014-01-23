@@ -21,6 +21,33 @@ namespace spatial {
 	template <class TPOINT>
 	bool inside(const std::vector<TPOINT> &  polygon, const TPOINT & point); 
 
+	/**
+	* @return true if and only if lhs and rhs have same y value
+	*/
+	template <class T>
+	bool horizontal(const TPoint<T,2> & lhs, const TPoint<T,2> & rhs) {
+		return lhs(cY) == rhs(cY); 
+	}
+
+	/**
+	* @return true if and only if lhs and rhs have same x value
+	*/
+	template <class T>
+	bool vertical(const TPoint<T,2> & lhs, const TPoint<T,2> & rhs) {
+		return lhs(cX) == rhs(cX); 
+	}
+
+	/**
+	* return distance along specified axis
+	*/
+	template <class T, int N>
+	T axialDistance(const TPoint<T,N> & lhs, const TPoint<T,N> & rhs, Axis a) {
+		assert (a < N);
+		T lc = lhs(a);
+		T rc = rhs(a);
+		return rc > lc ? rc -lc : lc - rc;
+	}
+
 	template <class T, int N>
 	TPoint<T,N> displacement(const TPoint<T,N> & origin, const SVector<T,N> & disp) {
 		TPoint<T,N> rval(origin); 

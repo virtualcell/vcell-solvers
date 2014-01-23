@@ -28,7 +28,8 @@ namespace spatial {
 			:type(t) {}
 		Type type;
 		//OPT: include space for allocation in structure
-		std::vector<VoronoiGhostPoint> vertices; 
+		typedef std::vector<VoronoiGhostPoint> GhostVector; 
+		GhostVector vertices; 
 	};
 }
 

@@ -56,14 +56,14 @@ namespace spatial {
 	struct VoronoiResult;
 
 	//forward
-	template<class REAL, int N, class TELEMENT> struct Mesh;
+	template<class CT, int N, class TELEMENT> struct Mesh;
 
 	/**
 	* definition of mesh geometry
 	*/
-	template<class REAL, int N>
+	template<class CT, int N>
 	struct MeshDef {
-		typedef REAL realType;
+		typedef CT realType;
 		static int numDim( ) { return N; }
 
 		/**
@@ -71,13 +71,13 @@ namespace spatial {
 		* @param sizes_ sizes of sides
 		* @param nPoints_ how many points in each region
 		*/
-		MeshDef(const std::array<REAL,N> & origin_, const std::array<REAL,N> & sizes_, const std::array<size_t,N> & nPoints_)
+		MeshDef(const std::array<CT,N> & origin_, const std::array<CT,N> & sizes_, const std::array<size_t,N> & nPoints_)
 			:origin(origin_),
 			intervals( ),
 			nPoints(nPoints_), 
-			minInterval(std::numeric_limits<REAL>::max( )) {
+			minInterval(std::numeric_limits<CT>::max( )) {
 				for (int i = 0; i < N; i++) {
-					intervals[i] = static_cast<REAL>(sizes_[i]/nPoints[i]);
+					intervals[i] = static_cast<CT>(sizes_[i]/nPoints[i]);
 					minInterval = std::min(minInterval,intervals[i]);
 				}
 		}
@@ -86,13 +86,13 @@ namespace spatial {
 		* @param sizes_ sizes of sides
 		* @param nPoints_ how many points in each region
 		*/
-		MeshDef(const std::array<REAL,N> & sizes_, const std::array<size_t,N> & nPoints_)
+		MeshDef(const std::array<CT,N> & sizes_, const std::array<size_t,N> & nPoints_)
 			:origin( ),
 			intervals( ),
 			nPoints(nPoints_), 
-			minInterval(std::numeric_limits<REAL>::max( )) {
+			minInterval(std::numeric_limits<CT>::max( )) {
 				for (int i = 0; i < N; i++) {
-					intervals[i] = static_cast<REAL>(sizes_[i]/nPoints[i]);
+					intervals[i] = static_cast<CT>(sizes_[i]/nPoints[i]);
 					minInterval = std::min(minInterval,intervals[i]);
 				}
 		}
@@ -106,16 +106,16 @@ namespace spatial {
 			nPoints(rhs.nPoints),
 			minInterval(rhs.minInterval) {}
 
-		REAL startCorner(Axis a) const {
+		CT startCorner(Axis a) const {
 			return origin[a];
 		}
 
-		REAL interval(Axis a) const {
+		CT interval(Axis a) const {
 			return intervals[a];
 		}
 
-		REAL size(Axis a) const {
-			return static_cast<REAL>(intervals[a] * nPoints[a]);
+		CT size(Axis a) const {
+			return static_cast<CT>(intervals[a] * nPoints[a]);
 		}
 
 		size_t numCells(Axis a ) const {
@@ -130,15 +130,15 @@ namespace spatial {
 			return s;
 		}
 
-		REAL minimumInterval( ) const {
+		CT minimumInterval( ) const {
 			return minInterval;
 		}
 		/**
 		* translate point from grid coordinates to scaled
 		*/
 		template <class IN_TYPE>
-		TPoint<REAL,N> gridToSpatial(const TPoint<IN_TYPE,N> & gridReferencedPoint) const {
-			TPoint<REAL,N> rval; 
+		TPoint<CT,N> gridToSpatial(const TPoint<IN_TYPE,N> & gridReferencedPoint) const {
+			TPoint<CT,N> rval; 
 			for (int d = 0 ; d < N; d++ ) {
 				Axis a = static_cast<Axis>(d);
 				rval(a) = origin[d] + (gridReferencedPoint(a) + 0.5) * intervals[d];
@@ -149,31 +149,58 @@ namespace spatial {
 		/**
 		* return vector of indexes for specified dimension
 		*/
-		std::vector<REAL> coordinateValues(spatial::Axis a) const;
+		std::vector<CT> coordinateValues(spatial::Axis a) const;
+
+		/**
+		* return coordinate on grid > value in dimension 
+		* @value to get >
+		* @dimension of interest
+		*/
+		CT greaterGridPoint(CT value, Axis dimension) const {
+			CT offset = value - origin[dimension];
+			size_t count = static_cast<size_t>(offset / intervals[dimension] );
+			CT rval = static_cast<CT>(origin[dimension] + (count + 1) * intervals[dimension]); 
+			return rval;
+		}
+
+		/**
+		* return coordinate on grid <= value in dimension 
+		* @value to get <=
+		* @dimension of interest
+		*/
+		CT lesserGridPoint(CT value, Axis dimension) const {
+			CT offset = value - origin[dimension];
+			size_t count = static_cast<size_t>(offset / intervals[dimension] );
+			CT rval = static_cast<CT>(origin[dimension] + count  * intervals[dimension]); 
+			if (rval < value) {
+				return rval;
+			}
+			return rval - intervals[dimension];
+		}
 
 	protected:
 
-		std::array<REAL,N> origin; 
+		std::array<CT,N> origin; 
 		/**
 		* distance between adjacent points 
 		*/
-		std::array<REAL,N> intervals; 
+		std::array<CT,N> intervals; 
 		/**
 		* number nodes in one dimension
 		*/
 		std::array<size_t,N> nPoints; 
-		REAL minInterval;
+		CT minInterval;
 	};
 
-	template<class REAL, int N, class TELEMENT>
-	struct Mesh : public MeshDef<REAL,N> {
-		Mesh(const MeshDef<REAL,N> &definition) 
-			:MeshDef<REAL,N>(definition),
+	template<class CT, int N, class TELEMENT>
+	struct Mesh : public MeshDef<CT,N> {
+		Mesh(const MeshDef<CT,N> &definition) 
+			:MeshDef<CT,N>(definition),
 			storage(0),
 			daCache(TELEMENT::createCache(definition.minimumInterval( ) ))
 		{
 			std::array<size_t,N> loop;
-			std::array<REAL,N> startPoint; 
+			std::array<CT,N> startPoint; 
 			for (int i =0; i < N; i++) {
 				loop[i] = 0; 
 				startPoint[i] = this->origin[i] + this->intervals[i] / 2;
@@ -181,9 +208,9 @@ namespace spatial {
 			const size_t needed =  this->numCells( ) * sizeof(TELEMENT);
 			storage = static_cast<TELEMENT *>(malloc(needed));
 			do {
-				std::array<REAL,N> values;
+				std::array<CT,N> values;
 				for (int d = 0; d < N; d++) {
-					values[d] = static_cast<REAL>(loop[d] * this->intervals[d] + startPoint[d]);
+					values[d] = static_cast<CT>(loop[d] * this->intervals[d] + startPoint[d]);
 				}
 				size_t idx = index<N-1>(loop);
 				void * addr = &storage[idx];
@@ -285,7 +312,7 @@ namespace spatial {
 		template<class ETYPE> 
 		class ibase : public boost::iterator_facade<ibase<ETYPE>, ETYPE,std::forward_iterator_tag> {
 		public:
-			typedef const Mesh<REAL,N,TELEMENT> OwnerType; 
+			typedef const Mesh<CT,N,TELEMENT> OwnerType; 
 			OwnerType & owner;
 		private:
 			std::array<size_t,N> position;

@@ -131,12 +131,35 @@ namespace {
 		Map diffuseAdvectMap;
 		const moving_boundary::DistanceType edgeLengthTolerance; 
 	};
+
+	struct InsertCounter {
+		InsertCounter( ) 
+			:count(0) {}
+		~InsertCounter( ) {
+			std::cout << count << " total inserts " << std::endl;
+		}
+		InsertCounter & operator++( ) {
+			++count;
+			return *this;
+		}
+
+		size_t count;
+	};
+
+	InsertCounter iCounter;
+
 }
 
 spatial::DiffuseAdvectCache * MeshElementSpecies::createCache(moving_boundary::CoordinateType minMeshInterval) {
 	return new DaCache(minMeshInterval);
 }
 
+bool MeshElementSpecies::debugSetState( ) {
+	if (matches(14,7,legacyUpdated)) {
+		//std::cout << ident( ) << " set s" << std::endl;
+	}
+	return true;
+}
 void MeshElementSpecies::setPos(SurfacePosition m)  {
 	if (m == this->mPos( ) || (m == spatial::interiorSurface && this->mPos( ) == spatial::deepInteriorSurface) ){
 		return;
@@ -179,17 +202,21 @@ void MeshElementSpecies::setPos(SurfacePosition m)  {
 			throw std::domain_error("stable -> ext");
 		}
 		break;
-	case legacyInteriorSet:
+		/*
+		case legacyInteriorSet:
 		//this occurs during reclassification B->I->B
 		if (m  != boundarySurface) {
-			throw std::domain_error("lis not boundary");
+		throw std::domain_error("lis not boundary");
 		}
 		setState(legacyUpdated); //set back to what it was
 		break;
+		*/
 	case legacyUpdated: 
 		switch (m) {
 		case interiorSurface:
-			setState(legacyInteriorSet); 
+			setState(stableUpdated); 
+			neighbors = interiorNeighbors; 
+			vol.clear( );
 			break;
 		case outsideSurface:
 			//not deepOutside -- too far
@@ -251,7 +278,8 @@ struct MeshElementSpecies::SetupBoundaryNeighbor : public std::unary_function<Ou
 			//assert(spatial::nearlyEqual(existing,MesDistance::approximate(*nb,clientElement), toleranceNeighborDistancesAssert) );
 			//
 			moving_boundary::DistanceType  da = MesDistance::approximate(*nb,clientElement);
-			if (!spatial::nearlyEqual(existing,da,toleranceNeighborDistancesAssert) ) {
+			//	if (!spatial::nearlyEqual(existing,da,toleranceNeighborDistancesAssert) ) {
+			if (existing != da) {
 				std::cout << "oops " << da << std::endl;
 			}
 			//
@@ -268,29 +296,62 @@ void MeshElementSpecies::processBoundaryNeighbors(const VoronoiMesh & vm, std::v
 	VCELL_LOG(trace,this->indexInfo( ) << " processBoundaryNeighors " << state( ) << ' ' << this->mPos( ));
 	//getting vornoi volume and setting up boundary neighbors in same function due to legacy reasons ...
 	{ //clarity scope, building voronoiVolume
-		spatial::VoronoiResult vResult;
-		std::vector<spatial::VoronoiGhostPoint> &voronoiVertices = vResult.vertices;
+		using spatial::VoronoiResult; 
+		VoronoiResult vResult;
+		VoronoiResult::GhostVector & voronoiVertices = vResult.vertices;
 		assert(voronoiVertices.empty( ));
-		if (matches(17,12)) {
-			std::cout << indexInfo( ) << ", " << *this << std::endl;
-
-		}
 		vm.getResult(vResult,*this);
 		{
+			/*
 			std::ofstream vp("voronoiPoly.m");
 			vp << "% " << vResult.type << std::endl;
 			matlabBridge::Polygon p("r-+");
 			frontTierAdapt::copyVectorInto(p,vResult.vertices);
 			vp << p;
+			*/
 		}
 
 		voronoiVolume.clear( );
-		Volume2DClass::FillingIteratorType fIter = voronoiVolume.fillingIterator(voronoiVertices.size());
+		//Volume2DClass::FillingIteratorType fIter = voronoiVolume.fillingIterator(voronoiVertices.size());
 		//std::transform(voronoiVertices.begin( ),voronoiVertices.end( ),fIter, coordinateToVolume);
-		std::copy(voronoiVertices.begin( ),voronoiVertices.end( ),fIter);
+		//std::copy(voronoiVertices.begin( ),voronoiVertices.end( ),fIter);
+		assert (voronoiVertices.size( ) > 1);
+		VoronoiResult::GhostVector::const_iterator iter = voronoiVertices.begin( ); 
+		FrontPointType lastPoint = *iter; 
+		voronoiVolume.add(lastPoint);
+		++iter;
+		for (; iter != voronoiVertices.end( ); ++iter) {
+			using spatial::horizontal;
+			using spatial::vertical;
+			using spatial::axialDistance;
+
+			FrontPointType point = *iter; 
+			if (horizontal(lastPoint,point) && axialDistance(lastPoint,point,cX) > vm.mesh( ).interval(cX) ) {
+				if (lastPoint(cX) < point(cX) ) {
+					while (axialDistance(lastPoint,point,cX) > vm.mesh( ).interval(cX) ) {
+						CoordinateType x = vm.mesh( ).greaterGridPoint( lastPoint(cX), cX); 
+						lastPoint(cX) = x;
+						voronoiVolume.add(lastPoint);
+						++iCounter;
+					}
+				}
+				else {
+					while (axialDistance(lastPoint,point,cX) > vm.mesh( ).interval(cX) ) {
+						CoordinateType x = vm.mesh( ).lesserGridPoint( lastPoint(cX), cX); 
+						lastPoint(cX) = x;
+						voronoiVolume.add(lastPoint);
+						++iCounter;
+					}
+				}
+			}
+			voronoiVolume.add(point);
+			lastPoint = point;
+		}
+
 
 		//check for single open line
 		if (vResult.type == spatial::VoronoiResult::straightLine) { 
+			VCELL_EXCEPTION(logic_error,"straightLine not implemented");
 			assert(voronoiVertices.size( ) == 3);
 			spatial::SVector<moving_boundary::CoordinateType,2> delta(*this,voronoiVertices[1]);
 			delta *= -3;
@@ -315,7 +376,7 @@ void MeshElementSpecies::moveFront( const MeshDef<moving_boundary::CoordinateTyp
 		if (state( ) != stable) {
 			throw std::domain_error("moveFront not stable");
 		}
-		const moving_boundary::CoordinateProductType oldVolume = vol.volume( );
+		//const moving_boundary::CoordinateProductType oldVolume = vol.volume( );
 		formBoundaryPolygon(mesh,front);
 		setState(legacyVolume);
 	}
@@ -370,10 +431,12 @@ matlabBridge::Polygon pedge("-+r",2);
 #endif
 
 void MeshElementSpecies::findNeighborEdges( ) {
+	VCELL_LOG(verbose,ident( ) << " findNeighborEdges");
 
 	typedef TPoint<moving_boundary::CoordinateType,2> MeshPointType;
 	bool foundANeighbor = false;
 	for (size_t i = 0; i < boundaryNeighbors.size( ); i++) {
+		DistanceType edgeLength = 0;
 		const OurType & nb = *boundaryNeighbors[i].element;
 		std::array<SegmentType,4> segs;
 		std::set_intersection(segments( ).begin( ), segments( ).end( ), nb.segments( ).begin( ), nb.segments( ).end( ), segs.begin( ));
@@ -381,13 +444,16 @@ void MeshElementSpecies::findNeighborEdges( ) {
 			if (segs[s].singular( )) {
 				if (s == 0 && spatial::taxicabDistance<int>(indexPoint( ), nb.indexPoint( ) ) == 1) {
 					VCELL_LOG(verbose,ident( ) << ',' << nb.ident( ) << " neighbor edge miss");
-					/*
-					if (MatLabDebug::on("edgefind")) { 
-					matlabBridge::Polygons nPolys("g",3);
-					frontTierAdapt::copyVectorsInto(nPolys,nb.vol.points( ));
-					MatLabDebug::stream() << nPolys; 
+					std::ofstream m("miss.m");
+
+					{
+						matlabBridge::Polygons nPolys("g",3);
+						frontTierAdapt::copyVectorsInto(nPolys,nb.vol.points( ));
+						m << nPolys; 
+						matlabBridge::Polygons oPolys("b",3);
+						frontTierAdapt::copyVectorsInto(oPolys,vol.points( ));
+						m << oPolys; 
 					}
-					*/
 					std::ostream_iterator<SegmentType> oi(std::cout,",");
 					std::cout << ident( ) << " segments" << std::endl; 
 					std::copy(segments( ).begin( ), segments( ).end( ), oi); 
@@ -397,9 +463,10 @@ void MeshElementSpecies::findNeighborEdges( ) {
 				break;
 			}
 			foundANeighbor = true;
-			boundaryNeighbors[i].edgeLength = segs[s].magnitude<DistanceType>( ); 
+			edgeLength += segs[s].magnitude<DistanceType>( ); 
 			VCELL_LOG(verbose,ident( ) << ',' << nb.ident( ) << " neighbor edge hit");
 		}
+		boundaryNeighbors[i].edgeLength = edgeLength; 
 	}
 #ifdef NOT_YET_NOT_YET 
 	spatial::EdgeAccessor<moving_boundary::CoordinateType,moving_boundary::CoordinateProductType,2> accsr = vol.accessor( );
@@ -567,9 +634,6 @@ const moving_boundary::Volume2DClass & MeshElementSpecies::getControlVolume(cons
 	if (!vol.empty( )) {
 		return vol;
 	}
-	if (matches(15,14)) {
-		std::cout << 2;
-	}
 	OurType & us = const_cast<OurType &>(*this);
 	typedef TPoint<moving_boundary::CoordinateType, 2> MeshPointType;
 	switch (this->mp) {
@@ -684,7 +748,8 @@ void MeshElementSpecies::collectMassFromNeighbors(const MeshDef<moving_boundary:
 		assert(neighbors[i].element != nullptr);
 		OurType & nb = *neighbors[i].element;
 		VCELL_COND_LOG(debug, nb.state( ) == legacyVoronoiSetCollected, nb.indexInfo ( ) << " collected again ") ;
-		if (nb.state( ) == legacyVoronoiSet || nb.state( ) == legacyInteriorSet ) {
+		//if (nb.state( ) == legacyVoronoiSet || nb.state( ) == legacyInteriorSet ) {
+		if (nb.state( ) == legacyVoronoiSet) { 
 			//here we copy the transient mass to the base -- at this point in the cycle we don't need the original any more
 			//this allows us to use original as basis for pre-collection concentration 
 			std::copy(nb.amtMassTransient.begin ( ), nb.amtMassTransient.end( ), nb.amtMass.begin( ));
@@ -692,7 +757,8 @@ void MeshElementSpecies::collectMassFromNeighbors(const MeshDef<moving_boundary:
 		}
 
 		const MeshElementStateful::State nbState = nb.state( );
-		if (nbState == legacyVoronoiSetCollected || nbState == legacyInteriorSetCollected) {
+		//if (nbState == legacyVoronoiSetCollected || nbState == legacyInteriorSetCollected) {
+		if (nbState == legacyVoronoiSetCollected ) {
 			Volume2DClass intersection = ourVolume.intersection(nb.getControlVolume(meshDef));
 			CoordinateProductType intersectVolume = intersection.volume( );
 			intersectVolume /= distanceScaledSquared;  //World -> pd conversion
@@ -830,7 +896,7 @@ void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, Bi
 	case stable:
 	case stableUpdated:
 		if (this->mPos( ) != interiorSurface && this->mPos( ) != deepInteriorSurface) {
-			throw std::domain_error("diffuseAdvect");
+			VCELL_EXCEPTION(domain_error,ident( ) << " diffuseAdvect");
 		}
 		setState(stableUpdated);
 		break;
@@ -856,25 +922,22 @@ void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, Bi
 			}
 			const OurType & nb = *neighbors[i].element;
 
-			const moving_boundary::DistanceType edgeLengthTo = neighbors[i].edgeLength; 
-			if (edgeLengthTo == 0) { //if no edge, don't bother
+			const moving_boundary::DistanceType edgeLength = neighbors[i].edgeLength; 
+			if (edgeLength == 0) { //if no edge, don't bother
 				continue;
 			}
-			//find average edgelength, but check to make sure not too different
 			const NeighborType * usToThem = nb.findUs(*this);
 			if (usToThem == nullptr) {
 				VCELL_EXCEPTION(logic_error, this->indexInfo( ) << " neighbor " << nb.indexInfo( ) << " has no record of 'this'"); 
 			}
 			const moving_boundary::DistanceType edgeLengthFrom = usToThem->edgeLength;
-			if ( this->mPos( ) == nb.mPos( ) && !spatial::differenceLessThan(edgeLengthTo,edgeLengthFrom,ourCache.edgeLengthTolerance) ) {
+			if (edgeLengthFrom != edgeLength) {
 				std::ostringstream oss;
-				oss << this->ident( ) << " to " << nb.ident( ) << " length " << edgeLengthTo 
-					<< " different from reverse length " << edgeLengthFrom << " difference " 
-					<< std::abs(edgeLengthTo - edgeLengthFrom) << " greater than tolerance "
-					<< ourCache.edgeLengthTolerance; 
+				oss << this->ident( ) << " to " << nb.ident( ) << " length " << edgeLength
+					<< " different from reverse length " << edgeLengthFrom; 
 				throw  ReverseLengthException(oss.str( ),*this,nb); 
+
 			}
-			const moving_boundary::DistanceType edgeLength = (edgeLengthTo + edgeLengthFrom) /2;
 
 			spatial::SVector<moving_boundary::VelocityType,2> averageVelocity = (getVelocity( ) +  nb.getVelocity( )) / 2; 
 			spatial::NormVector<double,2> normalVector(spatial::Point2D(nb),spatial::Point2D(*this) ); 
@@ -977,8 +1040,8 @@ std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::Me
 		CASE(legacyUpdated);
 		CASE(legacyVoronoiSet);
 		CASE(legacyVoronoiSetCollected);
-		CASE(legacyInteriorSet);
-		CASE(legacyInteriorSetCollected);
+		//CASE(legacyInteriorSet);
+		//CASE(legacyInteriorSetCollected);
 		CASE(transient);
 	}
 #undef CASE

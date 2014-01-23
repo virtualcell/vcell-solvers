@@ -118,11 +118,11 @@ namespace moving_boundary {
 			* must be one more than #legacySetCollected
 			* interior volume is set, from #setPos, (last state #legacyUpdated)
 			*/
-			legacyInteriorSet,
+			//legacyInteriorSet,
 			/**
 			* interior volume and some mass has been collected (last state #legacyInteriorSet)
 			*/
-			legacyInteriorSetCollected,
+			//legacyInteriorSetCollected,
 			/** 
 			* must be one more than #legacyInteriorSet
 			* psuedo-state which may occur during reclassification
@@ -319,11 +319,26 @@ namespace moving_boundary {
 				//setState(stableUpdated);
 				applyFrontLegacyVoronoiSet(mesh,front);
 				break;
+			case legacyUpdated:
+				if (mPos( ) == spatial::interiorSurface) { 
+					setState(stableUpdated);
+					setInteriorVolume(interiorVolume);
+					neighbors = interiorNeighbors;
+					vol.clear( );
+				}
+				else {
+					assert(mPos( ) == spatial::boundarySurface);
+					setState(legacyVoronoiSet);
+					applyFrontLegacyVoronoiSet(mesh,front);
+				}
+				break;
+				/*
 			case legacyInteriorSet:
 			case legacyInteriorSetCollected:
 				setInteriorVolume(interiorVolume);
 				setState(stableUpdated);
 				break;
+				*/
 			case lost:
 			case stable:
 				assert(this->isOutside( ));
@@ -333,8 +348,7 @@ namespace moving_boundary {
 				assert(this->isInside( ));
 				break;
 			default:
-				VCELL_EXCEPTION(domain_error, "apply front " << this->indexInfo( ) << ' ' << state( ) << ' ' << this->mPos( ));
-				//std::cout << "apply front " << this->indexInfo( ) << ' ' << state( ) << ' ' << this->mPos( )<< std::endl;
+				VCELL_EXCEPTION(domain_error, "apply front " << ident( )); 
 			}
 		}
 
@@ -379,8 +393,8 @@ namespace moving_boundary {
 			case State::legacyUpdated:
 			case State::legacyVoronoiSet:
 			case State::legacyVoronoiSetCollected:
-			case State::legacyInteriorSet:
-			case State::legacyInteriorSetCollected:
+			//case State::legacyInteriorSet:
+			//case State::legacyInteriorSetCollected:
 				return vol.volume( ) /distanceScaledSquared; 
 			case State::transient:
 			default:
@@ -591,7 +605,7 @@ namespace moving_boundary {
 		}
 
 		void setCollected( ) {
-			static_assert(State::legacyInteriorSetCollected == State::legacyInteriorSet + 1,"collected not set up correctly");
+			//static_assert(State::legacyInteriorSetCollected == State::legacyInteriorSet + 1,"collected not set up correctly");
 			static_assert(State::legacyVoronoiSetCollected == State::legacyVoronoiSet + 1,"collected not set up correctly");
 			setState(static_cast<State>(stateVar + 1) );
 		}
@@ -600,12 +614,18 @@ namespace moving_boundary {
 			using namespace MeshElementStateful;
 			stateVar = s;
 			VCELL_LOG(trace, ident( ) << " new state" ); 
+			assert(debugSetState( ));
 		}
+
+		/*
+		* hook to allow setting specific break /log conditions in *cpp 
+		* @returns true
+		*/
+		bool debugSetState( );
 
 		MeshElementStateful::State state( ) const {
 			return stateVar;
 		}
-
 
 
 		MeshElementStateful::State stateVar;

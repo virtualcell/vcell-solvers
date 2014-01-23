@@ -284,7 +284,12 @@ namespace spatial {
 			typename std::vector<Point>::const_iterator next(iter); 
 			++next; //initialize to following point
 			for (;next!=pointStorage.end( );++iter,++next) {
-				vol += iter->get(cX) * next->get(cY) - iter->get(cY) * next->get(cX);
+				//force type conversions first, then multiply
+				const VALUE_TYPE lwX = static_cast<VALUE_TYPE>(iter->get(cX));
+				const VALUE_TYPE lwY = static_cast<VALUE_TYPE>(iter->get(cY));
+				const VALUE_TYPE hX = static_cast<VALUE_TYPE>(next->get(cX));
+				const VALUE_TYPE hY = static_cast<VALUE_TYPE>(next->get(cY));
+				vol += lwX * hY - lwY * hX;
 			}
 			vol = std::abs(vol/2);
 			dirty = false;

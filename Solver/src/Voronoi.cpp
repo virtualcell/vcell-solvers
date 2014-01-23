@@ -77,7 +77,7 @@ void Voronoi2D::getDoubleInfinite(VoronoiResult & result,size_t cellIndex ) cons
 #pragma warning ( disable : 4244 ) //converting doubles to long
 VoronoiResult::Type Voronoi2D::extractPoint(std::vector<VoronoiGhostPoint> &results,const EdgeType & edge, const Vertex * const anchor, const Vertex * const otherVertex, bool reverse) const {
 	assert(!dirty);
-	static VoronoiType debugLimit = 100; 
+	//static VoronoiType debugLimit = 100; 
 	if (anchor != nullptr) {
 		ConvertingGhostPoint t(anchor->x( ),anchor->y( ));
 		results.push_back(t);
@@ -199,7 +199,8 @@ void  Voronoi2D::calculate( ) {
 	vd.clear( );
 	boost::polygon::construct_voronoi(points.begin( ),points.end( ),&vd);
 	dirty = false;
-	const bool dumpDebugOutput = true;
+	//CLEANUP
+	const bool dumpDebugOutput = false;
 	if (!dumpDebugOutput) {
 		return;
 	}

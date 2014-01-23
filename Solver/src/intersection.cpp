@@ -239,6 +239,7 @@ namespace {
 			VtoCScaler scaler(scale);
 			std::transform(a.begin( ),a.end( ),clipperA.begin( ),scaler);
 			std::transform(b.begin( ),b.end( ),clipperB.begin( ),scaler);
+#ifdef CLEANUP
 			matlabBridge::Polygon pa("-g",2);
 			copyInto(clipperA,pa);
 			matlabBridge::Polygon pb("-b",2);
@@ -248,7 +249,7 @@ namespace {
 			std::ofstream code("frag.txt");
 			dump(code,"polyA",clipperA);
 			dump(code,"polyB",clipperB);
-
+#endif
 
 			ClipperLib::Clipper c;
 			AddPath(c,clipperA,ClipperLib::ptSubject);
@@ -359,6 +360,8 @@ namespace {
 			VtoCBridge<int> bridge;
 			std::transform(a.begin( ),a.end( ),clipperA.begin( ),bridge);
 			std::transform(b.begin( ),b.end( ),clipperB.begin( ),bridge);
+
+#ifdef CLEANUP
 			matlabBridge::Polygon pa("-g",2);
 			copyInto(clipperA,pa);
 			matlabBridge::Polygon pb("-b",2);
@@ -368,7 +371,7 @@ namespace {
 			std::ofstream code("frag.txt");
 			dump(code,"polyA",clipperA);
 			dump(code,"polyB",clipperB);
-
+#endif
 
 			ClipperLib::Clipper c;
 			AddPath(c,clipperA,ClipperLib::ptSubject);
@@ -442,6 +445,8 @@ namespace {
 			VtoCBridge<long> bridge;
 			std::transform(a.begin( ),a.end( ),clipperA.begin( ),bridge);
 			std::transform(b.begin( ),b.end( ),clipperB.begin( ),bridge);
+
+#ifdef CLEANUP
 			matlabBridge::Polygon pa("-g",2);
 			copyInto(clipperA,pa);
 			matlabBridge::Polygon pb("-b",2);
@@ -451,7 +456,7 @@ namespace {
 			std::ofstream code("frag.txt");
 			dump(code,"polyA",clipperA);
 			dump(code,"polyB",clipperB);
-
+#endif
 
 			ClipperLib::Clipper c;
 			AddPath(c,clipperA,ClipperLib::ptSubject);
@@ -463,6 +468,7 @@ namespace {
 			QueryPerformanceCounter(&start);
 #endif
 			c.Execute(ClipperLib::ctIntersection,results,ClipperLib::pftEvenOdd,ClipperLib::pftEvenOdd);
+#ifdef CLEANUP
 			if (results.size( ) > 0) {
 				matlabBridge::Polygon pr("-k",1);
 				copyInto(results.front( ),pr);
@@ -471,6 +477,8 @@ namespace {
 			else {
 				id << matlabBridge::ConsoleMessage("empty results");
 			}
+#endif
+
 #ifdef TIMEIT
 			QueryPerformanceCounter(&stop);
 			std::cout << clipperA.size( ) << " by " << clipperB.size( ) << " ticks " << (stop.QuadPart - start.QuadPart) << std::endl;

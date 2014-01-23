@@ -11,7 +11,14 @@
 #include "MeshElementSpecies.h"
 #include "algo.h"
 #include <cassert>
+using namespace spatial;
 namespace {
+	struct IntMockPoint : spatial::MPoint<int,2> {
+		IntMockPoint(const size_t *n, const int *values)
+			:spatial::MPoint<int,2>(n,values) {} 
+		const static int numSpecies=5;
+		static spatial::DiffuseAdvectCache * createCache(double) { return 0; }
+	};
 	struct MockPoint : spatial::MPoint<double,2> {
 		MockPoint(const size_t *n, const double *values)
 			:spatial::MPoint<double,2>(n,values) {} 
@@ -26,6 +33,43 @@ namespace {
 	};
 }
 using vcell_util::arrayInit; 
+TEST(mesh,gridfunctions) {
+	{
+		const std::array<int,2> orig = {0,0};
+		const std::array<int,2> values = {30,40};
+		const std::array<size_t,2> s = {3,8};
+		MeshDef<int,2> mesh(orig,values,s);
+		int x = mesh.greaterGridPoint(1,cX);
+		int y = mesh.greaterGridPoint(1,cY);
+		ASSERT_TRUE(x == 10);
+		ASSERT_TRUE(y == 5);
+		x = mesh.greaterGridPoint(10,cX);
+		ASSERT_TRUE(x == 20);
+		x = mesh.lesserGridPoint(17,cX);
+		y = mesh.lesserGridPoint(17,cY);
+		ASSERT_TRUE(x == 10);
+		ASSERT_TRUE(y == 15);
+		y = mesh.lesserGridPoint(15,cY);
+		ASSERT_TRUE(y == 10);
+	}
+
+	{
+		const std::array<int,2> orig = {1,-2};
+		const std::array<int,2> values = {30,40};
+		const std::array<size_t,2> s = {3,8};
+		MeshDef<int,2> mesh(orig,values,s);
+		int x = mesh.greaterGridPoint(1,cX);
+		int y = mesh.greaterGridPoint(1,cY);
+		ASSERT_TRUE(x == 11);
+		ASSERT_TRUE(y == 3);
+		x = mesh.lesserGridPoint(17,cX);
+		y = mesh.lesserGridPoint(17,cY);
+		ASSERT_TRUE(x == 11);
+		ASSERT_TRUE(y == 13);
+	}
+
+}
+
 TEST(mpoint,indexpoint) {
 	size_t a[] = {3,4};
 	double v[] = {6.2,8,4};
@@ -129,7 +173,7 @@ TEST(mesh, translate) {
 		spatial::TPoint<double,2> out = snap.gridToSpatial(in); 
 		/*
 		if (out(cX) != mp(cX)) {
-			std::cout << out(cX) << " - " << mp(cX) << " = " << (out(cX) - mp(cX) ) << std::endl;
+		std::cout << out(cX) << " - " << mp(cX) << " = " << (out(cX) - mp(cX) ) << std::endl;
 		}
 		*/
 		ASSERT_TRUE( spatial::nearlyEqual<double>(out(cX),(cX), 1e-15) );
@@ -150,8 +194,8 @@ TEST(mesh, construct3) {
 	for (xy[0] = 0; xy[0] < 3; xy[0]++) {
 		for (xy[1] = 0; xy[1] < 3; xy[1]++) {
 			for (xy[2] = 0; xy[2] < 3; xy[2]++) {
-			MPoint<double,3> p = snap.get(xy);
-			std::cout << p << std::endl; 
+				MPoint<double,3> p = snap.get(xy);
+				std::cout << p << std::endl; 
 			}
 		}
 	}
@@ -166,7 +210,7 @@ namespace {
 		}
 		Tracker(const Tracker & rhs) 
 			:value(rhs.value) {
-			total++;
+				total++;
 		}
 		~Tracker( ) {
 			assert(total >= 0);

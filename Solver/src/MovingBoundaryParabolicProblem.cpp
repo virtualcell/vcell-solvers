@@ -255,10 +255,12 @@ namespace moving_boundary {
 				}
 				movie.play( );
 			}
+#ifndef CLEANUP
 			std::ofstream bp("bp.txt");
 			for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
 				iter->listBoundary(bp,primaryMesh);
 			}
+#endif
 
 		}
 		~MovingBoundaryParabolicProblemImpl( ) {
@@ -275,6 +277,7 @@ namespace moving_boundary {
 				iter->setInteriorVolume(interiorVolume);
 			}
 			currentFront = vcFront->retrieveFront( );
+			std::cout << "front size " << currentFront.size( ) << std::endl;
 			if (currentFront.empty( )) {
 				throw std::invalid_argument("empty front");
 			}
@@ -410,6 +413,7 @@ namespace moving_boundary {
 			GeometryInfo<moving_boundary::CoordinateType> gi(currentFront);
 			client.time(currentTime, currentTime == maxTime, gi);
 			for (MBMesh::const_iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
+				std::cout << iter->ident( ) << std::endl;
 				if (iter->isInside( )) {
 					client.element(*iter);
 				}
@@ -710,7 +714,7 @@ namespace moving_boundary {
 				primaryMesh.diffuseAdvectCache( ).finish( );
 
 				//adjustNodes calls MeshElementSpecies.updateBoundaryNeighbors
-				boundaryElements.erase(boundaryElements.begin( ),boundaryElements.end( ));
+				//boundaryElements.erase(boundaryElements.begin( ),boundaryElements.end( ));
 				voronoiMesh.adjustNodes(boundaryElements,currentFront);
 				//spatial::adjustNodes(boundaryElements,voronoiMesh,currentFront);
 				//TODO: nochange

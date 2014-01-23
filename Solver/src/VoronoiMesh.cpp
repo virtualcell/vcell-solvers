@@ -300,8 +300,8 @@ namespace {
 					} 
 					else {
 						if (d == 1) {
-							VCELL_EXCEPTION(overflow_error,
-								"element at " << in(spatial::cX) << ',' << in(spatial::cY) << " hit boundary" );
+							VCELL_EXCEPTION(overflow_error, "ip " << ip << 
+								" element " << in.ident() << " at " << in(spatial::cX) << ',' << in(spatial::cY) << " hit boundary" );
 						}
 						cardinalFoundOrEdgeHit = true;
 						continue;
@@ -395,6 +395,9 @@ namespace {
 		*/
 		template<class INPOINT, class STL_C>
 		bool updateClassification(const std::vector<INPOINT> & polygon, STL_C &container) {
+			using spatial::interiorSurface;
+			using spatial::outsideSurface;
+			using spatial::boundarySurface;
 			const MESH & mesh = vmesh.mesh( );
 			//first pass - inside / outside
 			bool changed = false;
@@ -402,24 +405,38 @@ namespace {
 				EType & point = *iter;
 
 				using spatial::inside;
+				if (point.matches(14,7)) {
+					static int debugAid = 0;
+					++debugAid;
+				}
 				if (point.isDeep( )) { //too far from boundary to change
 					continue;
 				}
 				spatial::SurfacePosition oldPosition = point.mPos( ); 
-				spatial::SurfacePosition pos = inside<INPOINT>(polygon,point) ? spatial::interiorSurface : spatial::outsideSurface;
+				spatial::SurfacePosition pos = inside<INPOINT>(polygon,point) ? interiorSurface : outsideSurface;
 				if (pos == oldPosition) { 
 					continue;
 				}
-				point.setPos(pos);
-				changed = true;
+				if (pos == outsideSurface || oldPosition == outsideSurface) { 
+					point.setPos(pos);
+					changed = true;
+				}
+				else {
+					VCELL_LOG(trace,"pchange skip " << pos << ',' << oldPosition);
+				}
 			}
 			if (!changed) {
 				return false;
 			}
+			container.erase(container.begin( ),container.end( ) );
 
 			//second pass, find boundaries
 			for (typename MESH::iterator iter = mesh.begin( ); iter != mesh.end( ); ++iter) {
 				EType & point = *iter;
+				if (point.matches(14,7)) {
+					static int debugAid = 0;
+					++debugAid;
+				}
 				size_t i = point.indexOf(cX);
 				size_t j = point.indexOf(cY);
 				if (point.isOutside( )) {
@@ -427,14 +444,19 @@ namespace {
 				}
 				analyzeNeighbors(point); 
 				if (neighborIsOutside) {
-					point.setPos(spatial::boundarySurface);
+					if (point.mPos( ) != boundarySurface) {
+						point.setPos(spatial::boundarySurface);
+					}
 					point.updateBoundaryNeighbors(vmesh,workBuffer);
 					container.push_back(&point);
 				}
-				//something here for "transient"
-
+				else {
+					if (point.mPos( ) == boundarySurface) {
+						point.setPos(interiorSurface);
+					}
+				}
 			}
-			return true;
+				return true;
 		}
 	};
 }
