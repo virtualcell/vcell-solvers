@@ -82,8 +82,8 @@ TEST(segment,sort) {
 	ASSERT_TRUE(yin == yang);
 	ASSERT_TRUE(yin == zen);
 	ASSERT_TRUE(yang == zen);
-
 }
+
 TEST(segment,taxicab) {
 	TPoint<long,2> b(3,3); 
 	TPoint<long,2> c(4,3); 
@@ -112,9 +112,36 @@ TEST(segment,magnitude) {
 	double mag = five.magnitude<double>( ); 
 	ASSERT_TRUE(mag == 5);
 }
+
 TEST(segment,output) {
 	TPoint<short,2> b(3,2); 
 	TPoint<short,2> c(7,-1); 
 	const Segment<short,2> five(b,c); //3 -4 -5 triangle
 	std::cout << five << std::endl;
+}
+
+TEST(segment,handv) {
+	//horizontal and vertical
+	TPoint<short,2> a(3,2); 
+	TPoint<short,2> b(5,2); 
+	TPoint<short,2> c(5,10); 
+	const Segment<short,2> one(a,b); 
+	const Segment<short,2> two(c,b); 
+	const Segment<short,2> three(c,a); 
+	ASSERT_TRUE(one.horizontal( ));
+	ASSERT_FALSE(two.horizontal( ));
+	ASSERT_TRUE(two.vertical( ));
+	ASSERT_FALSE(one.vertical( ));
+	ASSERT_FALSE(three.vertical( ));
+	ASSERT_FALSE(three.horizontal( ));
+
+	ASSERT_TRUE(one.axialDistance(cX) == 2);
+	ASSERT_TRUE(one.axialDistance(cY) == 0);
+	ASSERT_TRUE(two.axialDistance(cX) == 0);
+	ASSERT_TRUE(two.axialDistance(cY) == 8);
+	ASSERT_TRUE(three.axialDistance(cX) == 2);
+	ASSERT_TRUE(three.axialDistance(cY) == 8);
+
+
+
 }

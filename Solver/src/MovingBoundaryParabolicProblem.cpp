@@ -413,7 +413,7 @@ namespace moving_boundary {
 			GeometryInfo<moving_boundary::CoordinateType> gi(currentFront);
 			client.time(currentTime, currentTime == maxTime, gi);
 			for (MBMesh::const_iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
-				std::cout << iter->ident( ) << std::endl;
+				//std::cout << iter->ident( ) << std::endl;
 				if (iter->isInside( )) {
 					client.element(*iter);
 				}

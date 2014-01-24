@@ -11,7 +11,6 @@
 #include <intersection.h>
 #include <MovingBoundaryParabolicProblem.h>
 #include <Edge.h>
-//#include <SegmentIterator.h>
 #include <LoopIterator.h>
 #include <create.h>
 #include <stack_container.h>
@@ -312,46 +311,46 @@ void MeshElementSpecies::processBoundaryNeighbors(const VoronoiMesh & vm, std::v
 		}
 
 		voronoiVolume.clear( );
-		//Volume2DClass::FillingIteratorType fIter = voronoiVolume.fillingIterator(voronoiVertices.size());
+		Volume2DClass::FillingIteratorType fIter = voronoiVolume.fillingIterator(voronoiVertices.size());
 		//std::transform(voronoiVertices.begin( ),voronoiVertices.end( ),fIter, coordinateToVolume);
-		//std::copy(voronoiVertices.begin( ),voronoiVertices.end( ),fIter);
+		std::copy(voronoiVertices.begin( ),voronoiVertices.end( ),fIter);
+		/*
 		assert (voronoiVertices.size( ) > 1);
 		VoronoiResult::GhostVector::const_iterator iter = voronoiVertices.begin( ); 
 		FrontPointType lastPoint = *iter; 
 		voronoiVolume.add(lastPoint);
 		++iter;
 		for (; iter != voronoiVertices.end( ); ++iter) {
-			using spatial::horizontal;
-			using spatial::vertical;
-			using spatial::axialDistance;
+		using spatial::horizontal;
+		using spatial::vertical;
+		using spatial::axialDistance;
 
-			FrontPointType point = *iter; 
-			if (horizontal(lastPoint,point) && axialDistance(lastPoint,point,cX) > vm.mesh( ).interval(cX) ) {
-				if (lastPoint(cX) < point(cX) ) {
-					while (axialDistance(lastPoint,point,cX) > vm.mesh( ).interval(cX) ) {
-						CoordinateType x = vm.mesh( ).greaterGridPoint( lastPoint(cX), cX); 
-						lastPoint(cX) = x;
-						voronoiVolume.add(lastPoint);
-						++iCounter;
-					}
-				}
-				else {
-					while (axialDistance(lastPoint,point,cX) > vm.mesh( ).interval(cX) ) {
-						CoordinateType x = vm.mesh( ).lesserGridPoint( lastPoint(cX), cX); 
-						lastPoint(cX) = x;
-						voronoiVolume.add(lastPoint);
-						++iCounter;
-					}
-				}
-			}
-			voronoiVolume.add(point);
-			lastPoint = point;
+		FrontPointType point = *iter; 
+		if (horizontal(lastPoint,point) && axialDistance(lastPoint,point,cX) > vm.mesh( ).interval(cX) ) {
+		if (lastPoint(cX) < point(cX) ) {
+		while (axialDistance(lastPoint,point,cX) > vm.mesh( ).interval(cX) ) {
+		CoordinateType x = vm.mesh( ).greaterGridPoint( lastPoint(cX), cX); 
+		lastPoint(cX) = x;
+		voronoiVolume.add(lastPoint);
+		++iCounter;
 		}
-
+		}
+		else {
+		while (axialDistance(lastPoint,point,cX) > vm.mesh( ).interval(cX) ) {
+		CoordinateType x = vm.mesh( ).lesserGridPoint( lastPoint(cX), cX); 
+		lastPoint(cX) = x;
+		voronoiVolume.add(lastPoint);
+		++iCounter;
+		}
+		}
+		}
+		voronoiVolume.add(point);
+		lastPoint = point;
+		}
+		*/
 
 		//check for single open line
 		if (vResult.type == spatial::VoronoiResult::straightLine) { 
-			VCELL_EXCEPTION(logic_error,"straightLine not implemented");
 			assert(voronoiVertices.size( ) == 3);
 			spatial::SVector<moving_boundary::CoordinateType,2> delta(*this,voronoiVertices[1]);
 			delta *= -3;
@@ -400,7 +399,7 @@ void MeshElementSpecies::formBoundaryPolygon( const MeshDef<moving_boundary::Coo
 	//VoronoiResult &vResult = *pVoronoiResult;
 	VCELL_LOG(debug,this->indexInfo( ) << " formBoundaryPolygon old volume " << vol.volume( ));
 	vol = voronoiVolume.intersection(front); 
-	volumeToSegments( );
+	volumeToSegments(mesh);
 	if (state( ) == initial) {
 		return;
 	}
@@ -621,11 +620,52 @@ moving_boundary::Volume2DClass MeshElementSpecies::createInsidePolygon(const Mes
 	return rval; 
 }
 
-void MeshElementSpecies::volumeToSegments( ) {
+void MeshElementSpecies::volumeToSegments(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh) {
 	Volume2DClass::SegmentAccessor sa = vol.accessor( );
 	segments_.clear( );
 	while (sa.hasNext( )) {
-		segments_.push_back(sa.getAndAdvance( ));
+		const SegmentType & st = sa.getAndAdvance( );
+		if (st.horizontal( ) &&  ( st.axialDistance(cX) > mesh.interval(cX) ) ) {
+			const CoordinateType & y = st.a( )(cY); 
+			CoordinateType left = st.a( )(cX); 
+			CoordinateType right = st.b( )(cX); 
+			assert (left < right);
+
+			CoordinateType cut = 0;
+			while (right - left > mesh.interval(cX)) {
+				++iCounter;
+				cut = mesh.greaterGridPoint(left,cX); 
+				assert(cut < right);
+				segments_.push_back(SegmentType(CoordinatePoint(left,y), CoordinatePoint(cut,y)) );
+				left = cut;
+			}
+			if (cut != right) {
+				segments_.push_back(SegmentType(CoordinatePoint(cut,y), CoordinatePoint(right,y)) );
+			}
+		}
+		else if (st.vertical( ) && st.axialDistance(cY) > mesh.interval(cY)) {
+			const CoordinateType & x = st.a( )(cX); 
+			const CoordinateType & a = st.a( )(cY); 
+			const CoordinateType & b = st.b( )(cY); 
+			CoordinateType down = a < b ? a : b; 
+			CoordinateType up = b > a ? b: a; 
+			assert (down < up);
+
+			CoordinateType cut = 0;
+			while (up - down > mesh.interval(cY)) {
+				++iCounter;
+				cut = mesh.greaterGridPoint(down,cY); 
+				assert(cut < up);
+				segments_.push_back(SegmentType(CoordinatePoint(x,down), CoordinatePoint(x,cut)) );
+				down = cut;
+			}
+			if (cut != up) {
+				segments_.push_back(SegmentType(CoordinatePoint(x,cut), CoordinatePoint(x,up)) );
+			}
+		}
+		else {
+			segments_.push_back(st);
+		}
 	}
 	std::sort(segments_.begin( ), segments_.end( ));
 }
@@ -655,7 +695,7 @@ const moving_boundary::Volume2DClass & MeshElementSpecies::getControlVolume(cons
 	default:
 		throw std::logic_error("unknown case");
 	}
-	us.volumeToSegments( );
+	us.volumeToSegments(mesh);
 	return vol;
 }
 

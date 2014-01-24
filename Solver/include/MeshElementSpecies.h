@@ -495,7 +495,7 @@ namespace moving_boundary {
 		/**
 		* rebuild and sort #segments from volume
 		*/
-		void volumeToSegments( );
+		void volumeToSegments(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh);
 		/**
 		* access #segments_; use function in case we want to optimize in future
 		*/
