@@ -27,9 +27,6 @@ WorldMax<COORD_TYPE>::WorldMax(COORD_TYPE maxValue) {
 /********************************************************************
 * Universe 
 ********************************************************************/
-namespace moving_boundary {
-	enum UniverseLock {unset, set, lockedUniverse};
-}
 template <int N>
 Universe<N>::Universe( )
 	:inputLimits( ),
@@ -184,7 +181,7 @@ World<WORLD_COORD,N>::World( )
 	limitsWorldSystem( ),
 	scale( )
 { 
-	nextWorld = univ.worlds;
+	WorldBase<N>::nextWorld = univ.worlds;
 	univ.worlds = this;
 	init( ); 
 }
@@ -192,7 +189,7 @@ World<WORLD_COORD,N>::World( )
 template <typename WORLD_COORD, int N>
 void World<WORLD_COORD,N>::init( ) {
 	WorldInit<WORLD_COORD,N> helper;
-	helper.init(univ,maxSupported);
+	helper.init(univ,WorldTypeBase<WORLD_COORD>::maxSupported);
 	scale = helper.scale;
 	diagV = helper.diagV;
 	limitsWorldSystem = helper.limitsWorldSystem;

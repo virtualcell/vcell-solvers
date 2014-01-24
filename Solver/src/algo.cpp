@@ -112,26 +112,18 @@ bool spatial::between(const TPoint<T,2> & origin, const SVector<T,2> & direction
 }
 
 
-namespace I1{
-	typedef double IType; //"instantiation type"
-	template bool spatial::below(const spatial::TPoint<IType,2> &, const spatial::TPoint<IType,2> &, const spatial::TPoint<IType,2> &);
-	template bool spatial::inside(const std::vector<TPoint<IType,2> > &  polygon, const TPoint<IType,2> & point);
-}
+	template bool spatial::below(const spatial::TPoint<double,2> &, const spatial::TPoint<double,2> &, const spatial::TPoint<double,2> &);
+	template bool spatial::inside(const std::vector<TPoint<double,2> > &  polygon, const TPoint<double,2> & point);
 
-namespace I2{
-	typedef long IType; //"instantiation type"
-	typedef spatial::TPoint<IType,2> PType;
-	template bool spatial::below(const spatial::TPoint<IType,2> &, const spatial::TPoint<IType,2> &, const spatial::TPoint<IType,2> &);
-	template bool spatial::inside(const std::vector<TPoint<IType,2> > &  polygon, const TPoint<IType,2> & point);
-	template PType spatial::pointThrough(const PType & origin, const spatial::SVector<IType,2> & direction, IType distance); 
-}
-namespace I3{
-	typedef int IType; //"instantiation type"
-	typedef spatial::TPoint<IType,2> PType;
-	template bool spatial::below(const spatial::TPoint<IType,2> &, const spatial::TPoint<IType,2> &, const spatial::TPoint<IType,2> &);
-	template bool spatial::inside(const std::vector<TPoint<IType,2> > &  polygon, const TPoint<IType,2> & point);
-	template PType spatial::pointThrough(const PType & origin, const spatial::SVector<IType,2> & direction, IType distance); 
-}
+	typedef spatial::TPoint<long,2> LPType;
+	template bool spatial::below(const spatial::TPoint<long,2> &, const spatial::TPoint<long,2> &, const spatial::TPoint<long,2> &);
+	template bool spatial::inside(const std::vector<TPoint<long,2> > &  polygon, const TPoint<long,2> & point);
+	template LPType spatial::pointThrough(const LPType & origin, const spatial::SVector<long,2> & direction, long distance); 
+	
+	typedef spatial::TPoint<int,2> IPType;
+	template bool spatial::below(const spatial::TPoint<int,2> &, const spatial::TPoint<int,2> &, const spatial::TPoint<int,2> &);
+	template bool spatial::inside(const std::vector<TPoint<int,2> > &  polygon, const TPoint<int,2> & point);
+	template IPType spatial::pointThrough(const IPType & origin, const spatial::SVector<int,2> & direction, int distance); 
 
 typedef spatial::TPoint<double,2> LPoint;
 template LPoint spatial::pointThrough(const LPoint & origin, const spatial::SVector<double,2> & direction, double distance); 

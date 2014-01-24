@@ -112,8 +112,8 @@ TEST(universe, lock) {
 TEST(universe, intervals) { 
 	std::default_random_engine gen;
 	std::uniform_int_distribution<int> rdims(3, 90);
-	int nx = rdims(gen); 
-	int ny = rdims(gen); 
+	short nx = static_cast<short>(rdims(gen)); 
+	short ny =  static_cast<short>(rdims(gen)); 
 	for (int c = 0 ; c < 100; ++c) {
 		Universe<2> &universe = Universe<2>::get( );
 		universe.destroy( ); //for testing

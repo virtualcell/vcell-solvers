@@ -169,13 +169,16 @@ namespace spatial {
 			}
 			return other;
 		}
-		template <>
-		SVector<T,N>  convert<T>( ) const {
-			return *this;
-		}
 	private:
 		void check( )  {} //obsolete
 	};
+	
+	/*
+		template <class T, int N>
+		SVector<T,N>  SVector<T,N>::convert<T>( ) const {
+			return *this;
+		}
+		*/
 
 	template <class T, int N>
 	inline double dot(const spatial::SVector<T,N> & lhs, const spatial::SVector<T,N> & rhs) {

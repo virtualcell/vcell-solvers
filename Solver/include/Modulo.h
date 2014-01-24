@@ -11,7 +11,7 @@ namespace vcell_util {
 	*/
 	template <class INTERFACE_TYPE, class IMPL_TYPE = INTERFACE_TYPE>
 	struct Modulo {
-		typedef typename Modulo<INTERFACE_TYPE,IMPL_TYPE> OurType;
+		typedef struct Modulo<INTERFACE_TYPE,IMPL_TYPE> OurType;
 		static_assert(std::numeric_limits<INTERFACE_TYPE>::is_integer, "must use integer interface type");
 		static_assert(std::numeric_limits<IMPL_TYPE>::is_signed, "must use unsigned implementation type");
 		static_assert(std::numeric_limits<IMPL_TYPE>::is_integer, "must use integer implementation type");

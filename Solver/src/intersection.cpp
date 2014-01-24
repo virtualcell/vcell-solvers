@@ -280,7 +280,7 @@ namespace {
 		static void intersectionsManySingle(Volume<COORD_TYPE,VALUE_TYPE,2> &result, const VectorOfVector & vOfVa,const PVector &b) {
 			COORD_TYPE maxValue = std::numeric_limits<COORD_TYPE>::min( );
 			MaxValue<COORD_TYPE> mvFunctor(maxValue);
-			for (VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
+			for (typename VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
 				std::for_each(iter->begin( ), iter->end( ),mvFunctor);
 			}
 			std::for_each(b.begin( ), b.end( ),mvFunctor);
@@ -292,7 +292,7 @@ namespace {
 			VtoCScaler scaler(scale);
 
 			ClipperLib::Clipper c;
-			for (VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
+			for (typename VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
 				const PVector & vectorA = *iter;
 				ClipperLib::Path clipperA(vectorA.size( ));
 				std::transform(vectorA.begin( ),vectorA.end( ),clipperA.begin( ),scaler);
@@ -312,10 +312,10 @@ namespace {
 		static void intersectionsManyMany(Volume<COORD_TYPE,VALUE_TYPE,2> &result, const VectorOfVector & vOfVa,const VectorOfVector & vOfVb) {
 			COORD_TYPE maxValue = std::numeric_limits<COORD_TYPE>::min( );
 			MaxValue<COORD_TYPE> mvFunctor(maxValue);
-			for (VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
+			for (typename VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
 				std::for_each(iter->begin( ), iter->end( ),mvFunctor);
 			}
-			for (VectorOfVector::const_iterator iter = vOfVb.begin( ); iter != vOfVb.end( ); ++iter) {
+			for (typename VectorOfVector::const_iterator iter = vOfVb.begin( ); iter != vOfVb.end( ); ++iter) {
 				std::for_each(iter->begin( ), iter->end( ),mvFunctor);
 			}
 			assert(maxValue >= 0);
@@ -327,14 +327,14 @@ namespace {
 
 			ClipperLib::Clipper c;
 
-			for (VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
+			for (typename VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
 				const PVector & vectorA = *iter;
 				ClipperLib::Path clipperA(vectorA.size( ));
 				std::transform(vectorA.begin( ),vectorA.end( ),clipperA.begin( ),scaler);
 				AddPath(c,clipperA,ClipperLib::ptSubject);
 			}
 
-			for (VectorOfVector::const_iterator iter = vOfVb.begin( ); iter != vOfVb.end( ); ++iter) {
+			for (typename VectorOfVector::const_iterator iter = vOfVb.begin( ); iter != vOfVb.end( ); ++iter) {
 				const PVector & vectorB = *iter;
 				ClipperLib::Path clipperB(vectorB.size( ));
 				std::transform(vectorB.begin( ),vectorB.end( ),clipperB.begin( ),scaler);
@@ -393,7 +393,7 @@ namespace {
 		static void intersectionsManySingle(Volume<int,VALUE_TYPE,2> &result, const VectorOfVector & vOfVa,const PVector &b) {
 			ClipperLib::Clipper c;
 			VtoCBridge<int> bridge;
-			for (VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
+			for (typename VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
 				const PVector & vectorA = *iter;
 				ClipperLib::Path clipperA(vectorA.size( ));
 				std::transform(vectorA.begin( ),vectorA.end( ),clipperA.begin( ),bridge);
@@ -413,14 +413,14 @@ namespace {
 			ClipperLib::Clipper c;
 			VtoCBridge<int> bridge;
 
-			for (VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
+			for (typename VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
 				const PVector & vectorA = *iter;
 				ClipperLib::Path clipperA(vectorA.size( ));
 				std::transform(vectorA.begin( ),vectorA.end( ),clipperA.begin( ),bridge);
 				AddPath(c,clipperA,ClipperLib::ptSubject);
 			}
 
-			for (VectorOfVector::const_iterator iter = vOfVb.begin( ); iter != vOfVb.end( ); ++iter) {
+			for (typename VectorOfVector::const_iterator iter = vOfVb.begin( ); iter != vOfVb.end( ); ++iter) {
 				const PVector & vectorB = *iter;
 				ClipperLib::Path clipperB(vectorB.size( ));
 				std::transform(vectorB.begin( ),vectorB.end( ),clipperB.begin( ),bridge);
@@ -489,7 +489,7 @@ namespace {
 		static void intersectionsManySingle(Volume<long,VALUE_TYPE,2> &result, const VectorOfVector & vOfVa,const PVector &b) {
 			ClipperLib::Clipper c;
 			VtoCBridge<long> bridge;
-			for (VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
+			for (typename VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
 				const PVector & vectorA = *iter;
 				ClipperLib::Path clipperA(vectorA.size( ));
 				std::transform(vectorA.begin( ),vectorA.end( ),clipperA.begin( ),bridge);
@@ -509,14 +509,14 @@ namespace {
 			ClipperLib::Clipper c;
 			VtoCBridge<long> bridge;
 
-			for (VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
+			for (typename VectorOfVector::const_iterator iter = vOfVa.begin( ); iter != vOfVa.end( ); ++iter) {
 				const PVector & vectorA = *iter;
 				ClipperLib::Path clipperA(vectorA.size( ));
 				std::transform(vectorA.begin( ),vectorA.end( ),clipperA.begin( ),bridge);
 				AddPath(c,clipperA,ClipperLib::ptSubject);
 			}
 
-			for (VectorOfVector::const_iterator iter = vOfVb.begin( ); iter != vOfVb.end( ); ++iter) {
+			for (typename VectorOfVector::const_iterator iter = vOfVb.begin( ); iter != vOfVb.end( ); ++iter) {
 				const PVector & vectorB = *iter;
 				ClipperLib::Path clipperB(vectorB.size( ));
 				std::transform(vectorB.begin( ),vectorB.end( ),clipperB.begin( ),bridge);
@@ -547,33 +547,27 @@ namespace spatial {
 	}
 }
 
-namespace T1 {
-	typedef std::vector <spatial::TPoint<double,2> > PointVector; 
-	template void spatial::intersections(spatial::Volume<double,double,2> &result, const PointVector &,const PointVector &) ;
+	typedef std::vector <spatial::TPoint<double,2> > DPointVector; 
+	template void spatial::intersections(spatial::Volume<double,double,2> &result, const DPointVector &,const DPointVector &) ;
 
 
 
-	typedef std::vector <PointVector> VectorOfVectors;
-	template void spatial::intersectionsManySingle(spatial::Volume<double,double,2> &result, const VectorOfVectors &,const PointVector &) ;
+	typedef std::vector <DPointVector> DVectorOfVectors;
+	template void spatial::intersectionsManySingle(spatial::Volume<double,double,2> &result, const DVectorOfVectors &,const DPointVector &) ;
 
-	template void spatial::intersectionsManyMany(spatial::Volume<double,double,2> &result, const VectorOfVectors &,const VectorOfVectors &) ;
-}
+	template void spatial::intersectionsManyMany(spatial::Volume<double,double,2> &result, const DVectorOfVectors &,const DVectorOfVectors &) ;
 
-namespace T2 {
-	typedef std::vector <spatial::TPoint<long,2> > PointVector; 
-	template void spatial::intersections(spatial::Volume<long,double,2> &result, const PointVector &,const PointVector &) ;
+	typedef std::vector <spatial::TPoint<long,2> > LPointVector; 
+	template void spatial::intersections(spatial::Volume<long,double,2> &result, const LPointVector &,const LPointVector &) ;
 
-	typedef std::vector <PointVector> VectorOfVectors;
-	template void spatial::intersectionsManySingle(spatial::Volume<long,double,2> &result, const VectorOfVectors &,const PointVector &) ;
+	typedef std::vector <LPointVector> LVectorOfVectors;
+	template void spatial::intersectionsManySingle(spatial::Volume<long,double,2> &result, const LVectorOfVectors &,const LPointVector &) ;
 
-	template void spatial::intersectionsManyMany(spatial::Volume<long,double,2> &result, const VectorOfVectors &,const VectorOfVectors &) ;
-}
-namespace T3 {
-	typedef std::vector <spatial::TPoint<int,2> > PointVector; 
-	template void spatial::intersections(spatial::Volume<int,double,2> &result, const PointVector &,const PointVector &) ;
+	template void spatial::intersectionsManyMany(spatial::Volume<long,double,2> &result, const LVectorOfVectors &,const LVectorOfVectors &) ;
+	typedef std::vector <spatial::TPoint<int,2> > IPointVector; 
+	template void spatial::intersections(spatial::Volume<int,double,2> &result, const IPointVector &,const IPointVector &) ;
 
-	typedef std::vector <PointVector> VectorOfVectors;
-	template void spatial::intersectionsManySingle(spatial::Volume<int,double,2> &result, const VectorOfVectors &,const PointVector &) ;
+	typedef std::vector <IPointVector> IVectorOfVectors;
+	template void spatial::intersectionsManySingle(spatial::Volume<int,double,2> &result, const IVectorOfVectors &,const IPointVector &) ;
 
-	template void spatial::intersectionsManyMany(spatial::Volume<int,double,2> &result, const VectorOfVectors &,const VectorOfVectors &) ;
-}
+	template void spatial::intersectionsManyMany(spatial::Volume<int,double,2> &result, const IVectorOfVectors &,const IVectorOfVectors &) ;

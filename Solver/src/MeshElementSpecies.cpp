@@ -621,7 +621,7 @@ moving_boundary::Volume2DClass MeshElementSpecies::createInsidePolygon(const Mes
 }
 
 void MeshElementSpecies::volumeToSegments(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh) {
-	Volume2DClass::SegmentAccessor sa = vol.accessor( );
+	Volume2DClass::SegAccessor sa = vol.accessor( );
 	segments_.clear( );
 	while (sa.hasNext( )) {
 		const SegmentType & st = sa.getAndAdvance( );

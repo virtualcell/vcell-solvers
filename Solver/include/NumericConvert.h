@@ -1,6 +1,7 @@
 #ifndef NumericConvert_h
 #define NumericConvert_h
 #include <cmath>
+#include <limits>
 namespace vcell_util {
 	/**
 	* @tparam IN input type

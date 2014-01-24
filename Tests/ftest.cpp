@@ -136,7 +136,7 @@ TEST(frontier,level) {
 TEST(frontier,repro) {
 	spatial::FronTierVelocityFunction vf = velFunction;
 	using spatial::GeoLimit;
-	std::vector<const GeoLimit> limits;
+	std::vector<GeoLimit> limits;
 	limits.push_back(GeoLimit(0,5));
 	limits.push_back(GeoLimit(0,2));
 	spatial::VCellFront<double> front(limits, 175,0, levelFunc,velFunction);
@@ -145,7 +145,7 @@ TEST(frontier,repro) {
 TEST(frontier,obj) {
 	spatial::FronTierVelocityFunction vf = velFunction;
 	using spatial::GeoLimit;
-	std::vector<const GeoLimit> limits;
+	std::vector<GeoLimit> limits;
 	limits.push_back(GeoLimit(0,5));
 	limits.push_back(GeoLimit(0,2));
 	mylevel lv;
@@ -184,7 +184,7 @@ TEST(frontier,classify) {
 	using moving_boundary::FrontPointType;
 	spatial::FronTierVelocityFunction vf = velFunction;
 	using spatial::GeoLimit;
-	std::vector<const GeoLimit> limits;
+	std::vector<GeoLimit> limits;
 	limits.push_back(GeoLimit(0,5));
 	limits.push_back(GeoLimit(0,3));
 	mylevel lv;
@@ -236,7 +236,7 @@ TEST(frontier,fronttest) {
 	using spatial::Point2D;
 	using spatial::TPoint;
 	spatial::FronTierVelocityFunction vf = velFunction;
-	std::vector<const GeoLimit> limits;
+	std::vector<GeoLimit> limits;
 	limits.push_back(GeoLimit(0,5));
 	limits.push_back(GeoLimit(0,3));
 	mylevel lv;
@@ -273,7 +273,7 @@ TEST(frontier,propagate) {
 	using spatial::Point2D; 
 	spatial::FronTierVelocityFunction vf = velFunction;
 	using spatial::GeoLimit;
-	std::vector<const GeoLimit> limits;
+	std::vector<GeoLimit> limits;
 	limits.push_back(GeoLimit(0,5));
 	limits.push_back(GeoLimit(0,3));
 	spatial::VCellFront<double> front(limits, 175,1.5, levelFunc,vf );

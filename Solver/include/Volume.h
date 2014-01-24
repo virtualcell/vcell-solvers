@@ -61,7 +61,7 @@ namespace spatial {
 	*/
 	template <class COORD_TYPE, class VALUE_TYPE, int N>
 	struct Volume {
-		typedef SegmentAccessor<COORD_TYPE,VALUE_TYPE,N> SegmentAccessor;
+		typedef SegmentAccessor<COORD_TYPE,VALUE_TYPE,N> SegAccessor;
 	
 		Volume(size_t nConstructs = 0 );
 		
@@ -135,8 +135,8 @@ namespace spatial {
 			return state->points( );
 		}; 
 
-		SegmentAccessor accessor( ) const {
-			return SegmentAccessor(*this);
+		SegAccessor accessor( ) const {
+			return SegAccessor(*this);
 		}
 		/**
 		* move to next section for "add";  close polygon if necessary
@@ -182,7 +182,7 @@ namespace spatial {
 		Segment<COORD_TYPE,N> getSegment(size_t index) const {
 			return state->getSegment(index);
 		}
-		friend struct SegmentAccessor;
+		friend SegAccessor;
 
 		VolumeImpl<COORD_TYPE,VALUE_TYPE,N> *state;
 		/**

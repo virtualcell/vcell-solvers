@@ -316,7 +316,7 @@ namespace moving_boundary {
 			if (mbs.alternateFrontProvider == nullptr) {
 				typedef spatial::TGeoLimit<moving_boundary::CoordinateType> LimitType;
 				const std::array<LimitType,2> & worldLimits = world.limits( );
-				std::vector<const spatial::GeoLimit> limits(worldLimits.size( ));
+				std::vector<spatial::GeoLimit> limits(worldLimits.size( ));
 				std::transform(worldLimits.begin( ),worldLimits.end( ),limits.begin( ),spatial::GeoLimitConvert<moving_boundary::CoordinateType,double>( ) );
 				const std::array<Universe<2>::CountType,2> & nodes = world.universe( ).numNodes( ); 
 				int mnode = *std::max_element(nodes.begin( ),nodes.end( ));

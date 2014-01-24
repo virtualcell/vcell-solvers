@@ -15,7 +15,7 @@ namespace {
 }
 
 template <typename FCT>
-VCellFront<FCT>::VCellFront(std::vector<const GeoLimit> & limits, int N, double tmax,
+VCellFront<FCT>::VCellFront(std::vector<GeoLimit> & limits, int N, double tmax,
 					   FronTierLevelFunction levelFunction,
 					   FronTierVelocityFunction velocityFunction) 
 					   :front( ),
@@ -29,7 +29,7 @@ VCellFront<FCT>::VCellFront(std::vector<const GeoLimit> & limits, int N, double 
 }
 
 template <typename FCT>
-VCellFront<FCT>::VCellFront(std::vector<const GeoLimit> & limits, int N, double tmax,
+VCellFront<FCT>::VCellFront(std::vector<GeoLimit> & limits, int N, double tmax,
 					   const FronTierLevel & level,
 					   const FronTierVelocity &vel) 
 					   :front( ),
@@ -43,7 +43,7 @@ VCellFront<FCT>::VCellFront(std::vector<const GeoLimit> & limits, int N, double 
 }
 
 template <typename FCT>
-void VCellFront<FCT>::init(std::vector<const GeoLimit> & limits, int N, double tmax,
+void VCellFront<FCT>::init(std::vector<GeoLimit> & limits, int N, double tmax,
 					  FronTierLevelFunction levelFunction,
 					  FronTierVelocityFunction velocityFunction, 
 					  bool isAdapter) {
@@ -312,6 +312,6 @@ std::vector<std::vector<spatial::TPoint<FCT,2> > > VCellFront<FCT>::retrieveCurv
 	return rval; 
 }
 
-template VCellFront<double>;
-template VCellFront<int>;
-template VCellFront<long>;
+template class VCellFront<double>;
+template class VCellFront<int>;
+template class VCellFront<long>;

@@ -9,7 +9,8 @@
 namespace moving_boundary {
 
 	//forward
-	enum UniverseLock;
+	//enum UniverseLock;
+	enum UniverseLock {unset, set, lockedUniverse};
 	template <int NUM_DIM>
 	struct Universe; 
 
@@ -121,7 +122,7 @@ namespace moving_boundary {
 		double diagonal_;
 		UniverseLock lockState;
 		WorldBase<NUM_DIM> *worlds;
-		template <typename COORD_TYPE, int NUM_DIM> friend struct World;
+		template <typename COORD_TYPE, int> friend struct World;
 	};
 
 	/**
