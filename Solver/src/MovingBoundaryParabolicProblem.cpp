@@ -344,7 +344,7 @@ namespace moving_boundary {
 			typedef spatial::TGeoLimit<moving_boundary::CoordinateType> LimitType;
 			using vcell_util::arrayInit;
 			const std::array<LimitType,2> & worldLimits = world.limits( );
-			std::array<moving_boundary::CoordinateType,2> origin;
+			std::array<moving_boundary::CoordinateType,2> origin= arrayInit<moving_boundary::CoordinateType>(worldLimits[0].low( ),worldLimits[1].low( ) );
 			std::array<moving_boundary::CoordinateType,2> c = arrayInit<moving_boundary::CoordinateType>(worldLimits[0].span( ),worldLimits[1].span( ) );
 			const Universe<2> & universe = world.universe( );
 			std::array<size_t,2> p = { universe.numNodes( )[0], universe.numNodes( )[1] };
