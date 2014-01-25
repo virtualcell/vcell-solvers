@@ -2,17 +2,16 @@
 #define World_h
 #include <MovingBoundaryTypes.h>
 #include <TPoint.h>
+#include <Universe.h>
 #include <SVector.h>
-#include <VCellException.h>
-#include <GeoLimit.h>
 
 namespace moving_boundary {
-
 	//forward
-	//enum UniverseLock;
-	enum UniverseLock {unset, set, lockedUniverse};
-	template <int NUM_DIM>
-	struct Universe; 
+	template <typename COORD_TYPE,int NUM_DIM, int A>
+	struct WorldToPDCoordinateConverter;
+
+	template <typename COORD_TYPE,int NUM_DIM>
+	struct WorldToPDPointConverter;
 
 	/**
 	* if a subsytem cannot handle std::numeric_limits<COORD_TYPE>::max( ),
@@ -25,6 +24,10 @@ namespace moving_boundary {
 		WorldMax(COORD_TYPE maxValue); 
 	};
 
+	/*****
+	* world base clase, for dimensions
+	* @ tparam N number of dimensions
+	*/
 	template<int N>
 	struct WorldBase {
 		/**
@@ -42,92 +45,11 @@ namespace moving_boundary {
 			:nextWorld(nullptr) {}
 	};
 
-	template <int NUM_DIM>
-	struct Universe {
-		/**
-		* type used for number of nodes in a dimension
-		*/
-		typedef unsigned short CountType;
-		/**
-		* return singleton instance
-		*/
-		static Universe<NUM_DIM> & get( );
-
-		/**
-		* initialize the world. std::logic_error
-		* @param limits to use
-		* @param numNodes in a dimension 
-		* @param lock if true, prevents destory from being used
-		* @throws std::logic_error if called more than once without #destroy call
-		* @throws std::domain_error if low values not less than high values
-		*/
-		void init(std::array<spatial::GeoLimit, NUM_DIM> & limits, std::array<CountType,NUM_DIM> numNodes= std::array<CountType,NUM_DIM>( ),
-			bool lock = false);
-
-		/**
-		* return limit for specific dimension
-		* @param i
-		* @throws std::domain_error if i < 0 or >= NUM_DIM
-		*/
-		spatial::GeoLimit limitFor(unsigned int i) const {
-			if (i < NUM_DIM) {
-				return inputLimits[i];
-			}
-			VCELL_EXCEPTION(domain_error,"Invalid index " << i << " for " << NUM_DIM << " dimensional world")
-		}
-
-		/**
-		* return limit for specific dimension
-		* @param a 
-		* @throws std::domain_error if a out of range for NUM_DIM 
-		*/
-		spatial::GeoLimit limitFor(spatial::Axis a) const {
-			return limitFor(static_cast<unsigned int>(a));
-		}
-
-		/**
-		* @return reference to complete set of limits
-		*/
-		const std::array<spatial::GeoLimit,NUM_DIM> & limits( ) const {
-			return inputLimits;
-		}
-		const std::array<double,NUM_DIM> & zeros ( ) const {
-			return inputZeroPoint;
-		}
-
-		/**
-		* reset the world to the unset state. Intended for testing only
-		* @throws std::domain_error if locked
-		*/
-		void destroy( );
-
-		/**
-		* @return true if Universe locked from further initialization
-		*/
-		bool locked( ) const;
-
-		const std::array<CountType,NUM_DIM> & numNodes( ) const {
-			return nodeNumbers; 
-		}
-
-		double diagonal( ) const {
-			return diagonal_;
-		}
-
-	private:
-		Universe( );
-		std::array<spatial::GeoLimit,NUM_DIM> inputLimits;
-		std::array<CountType,NUM_DIM> nodeNumbers;
-		std::array<double,NUM_DIM> inputZeroPoint;
-		double diagonal_;
-		UniverseLock lockState;
-		WorldBase<NUM_DIM> *worlds;
-		template <typename COORD_TYPE, int> friend struct World;
-	};
-
 	/**
+	* world base clase, for dimensions. 
 	* class to store maximum supported value for a type independent of number
 	* of dimensions
+	* @tparam COORD_TYPE coordinate type
 	*/
 	template <typename COORD_TYPE>
 	struct WorldTypeBase {
@@ -140,6 +62,7 @@ namespace moving_boundary {
 	};
 
 	/**
+	* Problem domain values converted to a particular coordinate type
 	* @tparam NUM_DIM number of dimensions supported
 	* @tparam COORD_TYPE type needed for modeling or API
 	*/
@@ -164,16 +87,25 @@ namespace moving_boundary {
 		}
 
 		/**
+		* convert from World coordinate to problem domain
+		* @param cooord to convert
+		* @a axis coordinates is on
+		*/
+		double toProblemDomain(COORD_TYPE coord, spatial::Axis a) const {
+			return coord / scale + Universe<NUM_DIM>::get( ).inputZeroPoint[a];
+		}
+
+		/**
 		* convert from World coordinates to problem domain
 		*/
 		spatial::TPoint<double,NUM_DIM> toProblemDomain(const spatial::TPoint<COORD_TYPE,NUM_DIM> & worldPoint) const {
 			spatial::TPoint<double,NUM_DIM> rval; 
 			for (spatial::Axis a = spatial::axisInitial; a < NUM_DIM; ++a) {
-				 rval(a) = worldPoint(a) / scale + Universe<NUM_DIM>::get( ).inputZeroPoint[a];
+				//rval(a) = worldPoint(a) / scale + Universe<NUM_DIM>::get( ).inputZeroPoint[a];
+				rval(a) = toProblemDomain(worldPoint(a),a);
 			}
 			return rval;
 		}
-
 		/**
 		* convert from World coordinates *to problem domain
 		* @param source input values in World equivalent, array length #NUM_DIM
@@ -181,7 +113,7 @@ namespace moving_boundary {
 		*/
 		void toProblemDomain(const double *source, double * destination) const {
 			for (spatial::Axis a = spatial::axisInitial; a < NUM_DIM; ++a) {
-				 destination[a] = source[a] / scale + Universe<NUM_DIM>::get( ).inputZeroPoint[a];
+				destination[a] = source[a] / scale + Universe<NUM_DIM>::get( ).inputZeroPoint[a];
 			}
 		}
 
@@ -207,7 +139,7 @@ namespace moving_boundary {
 			using spatial::Axis;
 			spatial::TPoint<OTHER_TYPE,NUM_DIM> rval; 
 			for (Axis a; a < NUM_DIM; ++a) {
-				 rval(a) = cFactor * ourPoint(a); 
+				rval(a) = cFactor * ourPoint(a); 
 			}
 			return rval;
 		}
@@ -234,6 +166,24 @@ namespace moving_boundary {
 			return univ;
 		}
 
+		WorldToPDPointConverter<COORD_TYPE,NUM_DIM> pointConverter( ) const {
+			return WorldToPDPointConverter<COORD_TYPE,NUM_DIM>(*this); 
+		}
+
+		/**
+		* @tparam A axis to convert
+		*/
+		template <int A>
+		WorldToPDCoordinateConverter<COORD_TYPE,NUM_DIM,A> coordConverter( ) const {
+			return WorldToPDCoordinateConverter<COORD_TYPE,NUM_DIM,A>(*this);
+		}
+		//convenience typedefs
+		typedef WorldToPDCoordinateConverter<COORD_TYPE,NUM_DIM,spatial::cX> XConverter; 
+		typedef WorldToPDCoordinateConverter<COORD_TYPE,NUM_DIM,spatial::cY> YConverter; 
+		typedef WorldToPDCoordinateConverter<COORD_TYPE,NUM_DIM,spatial::cZ> ZConverter; 
+		typedef WorldToPDPointConverter<COORD_TYPE,NUM_DIM> PointConverter;
+
+
 	private:
 
 		World( );
@@ -249,6 +199,38 @@ namespace moving_boundary {
 		* double to #COORD_TYPE factor
 		*/
 		double scale;
+	};
+
+	/**
+	* Functor to convert x coordinates converted to problem domain 
+	* @tparam NUM_DIM number of dimensions supported
+	* @tparam COORD_TYPE type needed for modeling or API
+	* @tparam A axis converted 
+	*/
+	template <typename COORD_TYPE,int NUM_DIM, int A>
+	struct WorldToPDCoordinateConverter{
+		static_assert(A<NUM_DIM, "unsupported dimension");
+		WorldToPDCoordinateConverter(const World<COORD_TYPE,NUM_DIM> & w)
+			:world(w) {}
+		double operator( )(COORD_TYPE x) const {
+			return world.toProblemDomain(x,static_cast<spatial::Axis>(A) );
+		}
+		const World<COORD_TYPE,NUM_DIM> & world;
+	};
+
+	/**
+	* Functor to convert point to problem domain 
+	* @tparam NUM_DIM number of dimensions supported
+	* @tparam COORD_TYPE type needed for modeling or API
+	*/
+	template <typename COORD_TYPE,int NUM_DIM>
+	struct WorldToPDPointConverter{
+		WorldToPDPointConverter(const World<COORD_TYPE,NUM_DIM> & w)
+			:world(w) {}
+		spatial::TPoint<double,NUM_DIM> operator( )(spatial::TPoint<COORD_TYPE,NUM_DIM> &pt) const { 
+			return world.toProblemDomain(pt);
+		}
+		const World<COORD_TYPE,NUM_DIM> & world;
 	};
 }
 #endif

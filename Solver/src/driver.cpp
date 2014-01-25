@@ -168,7 +168,8 @@ namespace {
 			}
 			const double startTime = vcell_xml::convertChildElementWithDefault<double>(report,"startTime",0);
 
-			moving_boundary::NHDF5Client<> *client =  new moving_boundary::NHDF5Client<>(output,mbpp,numberReports, datasetName, startTime);
+			moving_boundary::World<moving_boundary::CoordinateType,2> &world = moving_boundary::World<moving_boundary::CoordinateType,2>::get( );
+			moving_boundary::NHDF5Client<> *client =  new moving_boundary::NHDF5Client<>(output,world,mbpp,numberReports, datasetName, startTime);
 			client->addInitial(mbs);
 			const XMLElement * const annotateSection = report.FirstChildElement("annotation"); 
 			if (annotateSection != nullptr) {

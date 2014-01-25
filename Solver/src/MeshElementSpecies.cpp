@@ -130,6 +130,8 @@ namespace {
 		Map diffuseAdvectMap;
 		const moving_boundary::DistanceType edgeLengthTolerance; 
 	};
+#ifdef COUNT_INSERTS
+#define COUNT_INSERT ++iCounter
 
 	struct InsertCounter {
 		InsertCounter( ) 
@@ -146,6 +148,9 @@ namespace {
 	};
 
 	InsertCounter iCounter;
+#else
+#define COUNT_INSERT 
+#endif
 
 }
 
@@ -392,8 +397,6 @@ void MeshElementSpecies::applyFrontLegacyVoronoiSet( const MeshDef<moving_bounda
 
 void MeshElementSpecies::formBoundaryPolygon( const MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front) {
 	using spatial::Edge;
-	static std::ofstream ef("edgefind.m");
-	MatLabDebug::setDebug(ef);
 
 	assert(!voronoiVolume.empty( ));
 	//VoronoiResult &vResult = *pVoronoiResult;
@@ -633,7 +636,8 @@ void MeshElementSpecies::volumeToSegments(const spatial::MeshDef<moving_boundary
 
 			CoordinateType cut = 0;
 			while (right - left > mesh.interval(cX)) {
-				++iCounter;
+				COUNT_INSERT
+			 	
 				cut = mesh.greaterGridPoint(left,cX); 
 				assert(cut < right);
 				segments_.push_back(SegmentType(CoordinatePoint(left,y), CoordinatePoint(cut,y)) );
@@ -653,7 +657,8 @@ void MeshElementSpecies::volumeToSegments(const spatial::MeshDef<moving_boundary
 
 			CoordinateType cut = 0;
 			while (up - down > mesh.interval(cY)) {
-				++iCounter;
+				COUNT_INSERT
+
 				cut = mesh.greaterGridPoint(down,cY); 
 				assert(cut < up);
 				segments_.push_back(SegmentType(CoordinatePoint(x,down), CoordinatePoint(x,cut)) );

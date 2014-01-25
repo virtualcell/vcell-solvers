@@ -255,7 +255,7 @@ namespace moving_boundary {
 				}
 				movie.play( );
 			}
-#ifndef CLEANUP
+#ifdef TEST_DUMP 
 			std::ofstream bp("bp.txt");
 			for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
 				iter->listBoundary(bp,primaryMesh);

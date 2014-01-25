@@ -17,7 +17,8 @@
 //#include <cmath>
 //#include <vcellxml.h>
 //#include <Volume.h>
-#include <Segment.h>
+//#include <Segment.h>
+#include <World.h>
 
 /*
 void a(moving_boundary::MeshElementSpecies & mes) {
@@ -25,7 +26,9 @@ void a(moving_boundary::MeshElementSpecies & mes) {
 */
 
 using namespace spatial;
+using namespace moving_boundary; 
 void b() {
-	double z = Segment<char,2>( ).magnitude<double>( );
+	Universe<2> *p;
+	World<long,2> *w;
 
 }

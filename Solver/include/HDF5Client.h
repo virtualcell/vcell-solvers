@@ -9,6 +9,7 @@
 #include <Logger.h>
 #include <Timer.h>
 #include <MovingBoundaryParabolicProblem.h>
+#include <World.h>
 #include <vhdf5/dataset.h>
 #include <vhdf5/attribute.h>
 #include <vhdf5/suppressor.h>
@@ -149,6 +150,7 @@ namespace moving_boundary {
 
 	template <class SOLUTION = NoSolution> 
 	struct NHDF5Client :public moving_boundary::MovingBoundaryClient {
+		typedef World<CoordinateType,2> WorldType;
 		/**
 		* HDF5 spatial chunk size (x and y dimensions)
 		*/
@@ -197,6 +199,7 @@ namespace moving_boundary {
 		* @param startTime_ when to start recording (time 0 always recorded)
 		*/
 		NHDF5Client(H5::H5File &f, 
+			WorldType & world,
 			const moving_boundary::MovingBoundaryParabolicProblem &mbpp, 
 			unsigned int numberReports,
 			const char *baseName = nullptr,
@@ -219,7 +222,11 @@ namespace moving_boundary {
 			reportCounter(0),
 			reportBegan(startTime_ == 0), //if beginning at zero, we've "begun" at the start
 			generationCounter(0),
-			reportActive(true)
+			reportActive(true),
+			timer( ),
+			xconverter(world),
+			yconverter(world),
+			pointconverter(world) 
 		{
 			using spatial::cX;
 			using spatial::cY;
@@ -265,10 +272,10 @@ namespace moving_boundary {
 				H5::CompType dataType = SOLUTION::DataType::getType( ); 
 
 				elementDataset = baseGroup.createDataSet( "elements", dataType, dataspace ,prop);
-				const double startx = meshDef.startCorner(spatial::cX);
-				const double starty = meshDef.startCorner(spatial::cY);
-				const double hx = meshDef.interval(spatial::cX);
-				const double hy = meshDef.interval(spatial::cY);
+				const double startx = xconverter( meshDef.startCorner(spatial::cX) );
+				const double starty = yconverter( meshDef.startCorner(spatial::cY) );
+				const double hx = xconverter( meshDef.interval(spatial::cX) );
+				const double hy = yconverter( meshDef.interval(spatial::cY) );
 				vcellH5::writeAttribute(elementDataset,"startX",startx);
 				vcellH5::writeAttribute(elementDataset,"startY",starty);
 				vcellH5::writeAttribute(elementDataset,"numX",xSize);
@@ -277,12 +284,17 @@ namespace moving_boundary {
 				vcellH5::writeAttribute(elementDataset,"hy",hy);
 				const std::string layout("time x X x Y (transposed in MATLAB)");
 				vcellH5::writeAttribute(elementDataset,"layout",layout);
+
 				std::vector<moving_boundary::CoordinateType> xvalues = meshDef.coordinateValues(spatial::cX);
+				std::vector<double> dv(xvalues.size( ));
+				std::transform(xvalues.begin( ),xvalues.end( ),dv.begin( ),xconverter);
+				vcellH5::SeqFacade<std::vector<double> > axisSF(dv); 
+				vcellH5::facadeWriteAttribute(elementDataset,"xvalues",axisSF);
+
 				std::vector<moving_boundary::CoordinateType> yvalues = meshDef.coordinateValues(spatial::cY);
-				vcellH5::SeqFacade<std::vector<moving_boundary::CoordinateType> > xv(xvalues); 
-				vcellH5::facadeWriteAttribute(elementDataset,"xvalues",xv);
-				vcellH5::SeqFacade<std::vector<moving_boundary::CoordinateType> > yv(yvalues); 
-				vcellH5::facadeWriteAttribute(elementDataset,"yvalues",yv);
+				dv.resize(yvalues.size( )); 
+				std::transform(yvalues.begin( ),yvalues.end( ),dv.begin( ),yconverter);
+				vcellH5::facadeWriteAttribute(elementDataset,"yvalues",axisSF);
 			} //create element dataset
 
 			{ //create boundary dataset
@@ -400,7 +412,7 @@ namespace moving_boundary {
 				}
 				Volume2DClass::PointVector & pVec = vOfv.front( );
 				er.controlVolume.resize(pVec.size( ));
-				std::transform(pVec.begin( ),pVec.end( ),er.controlVolume.begin( ),convertFrontToPOD);
+				std::transform(pVec.begin( ),pVec.end( ),er.controlVolume.begin( ),pointconverter);
 
 				totalStuff += m;
 			}
@@ -518,6 +530,20 @@ namespace moving_boundary {
 		unsigned int generationCounter;
 		bool reportActive;
 		vcell_util::Timer timer;
+		WorldType::XConverter xconverter;
+		WorldType::YConverter yconverter;
+		struct WorldToPODPointConverter{
+			WorldToPODPointConverter(const World<CoordinateType,2> & w)
+				:world(w) {}
+			PODPoint<double> operator( )(spatial::TPoint<CoordinateType,2> &pt) const { 
+				using spatial::cX;
+				using spatial::cY;
+				double x = world.toProblemDomain(pt(cX),cX);
+				double y = world.toProblemDomain(pt(cY),cY);
+				return PODPoint<double>(x,y);
+			}
+			const World<CoordinateType,2> & world;
+		} pointconverter;
 	};
 }
 

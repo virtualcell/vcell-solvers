@@ -89,10 +89,24 @@ TEST(universe, diag) {
 
 	const double zeroPoint = (xlow + xhigh)/2.0;
 	const double testx = 1;
-	const double expected =  shortMax * (testx - zeroPoint) / maxInWorld;
+	const short expected =  static_cast<short>(shortMax * (testx - zeroPoint) / maxInWorld );
 	spatial::TPoint<double,2> ref(testx,0);
 	spatial::TPoint<short,2> spoint = sworld.toWorld(ref);
 	ASSERT_TRUE(spoint(spatial::cX) == expected);
+	spatial::TPoint<double,2> back = sworld.toProblemDomain(spoint);
+	ASSERT_TRUE(ref == back);
+	moving_boundary::WorldToPDPointConverter<short,2> pconv = sworld.pointConverter( );
+	spatial::TPoint<double,2> back2 = pconv(spoint);
+	ASSERT_TRUE(ref == back2);
+
+	//moving_boundary::XtoPDConverter<short,2> xconv1 =  sworld.xconverter( );
+	moving_boundary::WorldToPDCoordinateConverter<short,2,spatial::cX> xconv1 = sworld.coordConverter<spatial::cX>( );
+	World<short,2>::XConverter xconv = sworld.coordConverter<spatial::cX>( );
+	double xPD = xconv(expected);
+	ASSERT_TRUE(xPD == testx);
+
+	//should not compile
+	//World<short,2>::ZConverter zconv = sworld.coordConverter<spatial::cZ>( );
 }
 
 #ifdef SPECIAL_TEST
