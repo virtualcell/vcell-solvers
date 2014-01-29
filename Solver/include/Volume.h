@@ -50,6 +50,9 @@ namespace spatial {
 
 	template <class COORD_TYPE, class VALUE_TYPE, int N>
 	struct VolumeImpl; 
+	
+	template <class COORD_TYPE, class VALUE_TYPE, int N>
+	struct VolumeImplCreator;
 
 	/**
 	* volume without regard to geometry of sources
@@ -199,7 +202,8 @@ namespace spatial {
 		Segment<COORD_TYPE,N> getSegment(size_t index) const {
 			return state->getSegment(index);
 		}
-		friend SegAccessor;
+		//g++ doesn't accept typdef
+		friend struct SegmentAccessor<COORD_TYPE,VALUE_TYPE,N>;
 
 		void notifyMonitor( ) {
 			if (monitor != nullptr) {

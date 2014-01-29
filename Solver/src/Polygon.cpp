@@ -550,3 +550,6 @@ template struct spatial::Polygons<int,double>;
 template struct spatial::Volume<double,double,2>;
 template struct spatial::Volume<int,double,2>;
 template struct spatial::Volume<long,double,2>;
+template struct spatial::VolumeImplCreator<double,double,2>;
+template struct spatial::VolumeImplCreator<int,double,2>;
+template struct spatial::VolumeImplCreator<long,double,2>;

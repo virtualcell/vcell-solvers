@@ -709,6 +709,7 @@ namespace moving_boundary {
 				oss << "Skipped Boundary " << mes.ident( ) << " to " << newPosition << std::ends;
 				str = oss.str( );
 		}
+		virtual ~SkipsBoundary( ) throw( ) {}
 		virtual const char* what() const throw() {
 			return str.c_str( );
 		}

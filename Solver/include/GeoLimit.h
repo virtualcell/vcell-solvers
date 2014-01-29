@@ -1,6 +1,7 @@
 #ifndef GeoLimit_h
 #define GeoLimit_h
 #include <VCellException.h>
+#include <stdexcept>
 namespace spatial {
 	/**
 	* specify limits of a single dimension of a problem

@@ -58,7 +58,7 @@ namespace moving_boundary {
 		*/
 	protected:
 		static COORD_TYPE maxSupported;
-		friend WorldMax<COORD_TYPE>;
+		friend struct WorldMax<COORD_TYPE>;
 	};
 
 	/**

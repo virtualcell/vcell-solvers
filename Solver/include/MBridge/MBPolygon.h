@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <iomanip>
 #include <MBridge/MBMatlabGenerator.h>
 namespace matlabBridge {

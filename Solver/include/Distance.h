@@ -3,6 +3,7 @@
 #include <cmath>
 #include <TPoint.h>
 #include <cassert>
+#include <stdexcept>
 #include <VCellException.h>
 
 namespace spatial {
