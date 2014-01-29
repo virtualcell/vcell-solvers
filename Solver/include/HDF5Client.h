@@ -221,7 +221,7 @@ namespace moving_boundary {
 			reportStep(calcReportStep(mbpp,startTime_,numberReports)),
 			reportCounter(0),
 			reportBegan(startTime_ == 0), //if beginning at zero, we've "begun" at the start
-			generationCounter(0),
+			//generationCounter(0),
 			reportActive(true),
 			timer( ),
 			xconverter(world),
@@ -328,7 +328,7 @@ namespace moving_boundary {
 			vcellH5::writeAttribute(elementDataset,attributeName,value);
 		}
 
-		virtual void time(double t, bool last, const moving_boundary::GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) { 
+		virtual void time(double t, unsigned int generationCounter, bool last, const moving_boundary::GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) { 
 			reportActive = false;
 			if (t == 0 || last|| t > startTime) {
 				if (!reportBegan && t > 0) {
@@ -348,7 +348,7 @@ namespace moving_boundary {
 			else {
 				std::cout << '.';
 			}
-			generationCounter++;
+			//generationCounter++;
 		}
 
 		void writeBoundary(hsize_t timeIndex, const std::vector<spatial::TPoint<moving_boundary::CoordinateType,2> > & boundary) {
@@ -528,7 +528,7 @@ namespace moving_boundary {
 		const unsigned int reportStep;
 		unsigned int reportCounter;
 		bool reportBegan;
-		unsigned int generationCounter;
+		//unsigned int generationCounter;
 		bool reportActive;
 		vcell_util::Timer timer;
 		WorldType::XConverter xconverter;

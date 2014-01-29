@@ -95,10 +95,11 @@ namespace moving_boundary {
 		/**
 		* time of simulation
 		* @param t current time
+		* @param generationCount count of generations
 		* @param last is this last time increment of sim?
 		* @param geometryInfo current geometry information. Reference is not valid after return of function call.
 		*/
-		virtual void time(double t, bool last, const GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) = 0; 
+		virtual void time(double t, unsigned int generationCoount, bool last, const GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) = 0; 
 		/**
 		* state of inside / boundary nodes
 		*/

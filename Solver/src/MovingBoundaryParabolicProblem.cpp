@@ -174,6 +174,7 @@ namespace moving_boundary {
 			currentTime(0),
 			maxTime(mbs.maxTime),
 			timeStep(maxTime/mbs.numberTimeSteps),
+			minimimMeshInterval(0),
 			symTable(buildSymTable( )),
 			levelExp(mbs.levelFunctionStr,symTable), 
 			advectVelocityExpX(mbs.advectVelocityFunctionStrX,symTable), 
@@ -204,8 +205,8 @@ namespace moving_boundary {
 
 			//check time step
 			CoordinateType cMin = std::min(meshDefinition.interval(spatial::cX),meshDefinition.interval(spatial::cY));
-			double hMin = world.distanceToProblemDomain(cMin); 
-			double maxStep = hMin*hMin/(4 * diffusionConstant);
+			minimimMeshInterval = world.distanceToProblemDomain(cMin); 
+			double maxStep = minimimMeshInterval * minimimMeshInterval/(4 * diffusionConstant);
 			if (maxStep < timeStep) {
 				//use floor to make newNumberSteps lower and timeStep bigger to avoid very short last step
 				int newNumberSteps = static_cast<int>(maxTime/maxStep);
@@ -437,16 +438,16 @@ namespace moving_boundary {
 			return 0; //return value not used by frontier
 		}
 
-		void giveElementsToClient(MovingBoundaryClient & client) {
+		void giveElementsToClient(MovingBoundaryClient & client, size_t generationCount) {
 			GeometryInfo<moving_boundary::CoordinateType> gi(currentFront);
-			client.time(currentTime, currentTime == maxTime, gi);
+			client.time(currentTime, generationCount, currentTime == maxTime, gi);
 			for (MBMesh::const_iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
 				//std::cout << iter->ident( ) << std::endl;
 				if (iter->isInside( )) {
 					client.element(*iter);
 				}
 			}
-			client.iterationComplete( );
+			client.iterationComplete();
 		}
 
 		void debugDump(bool first) {
@@ -648,166 +649,183 @@ namespace moving_boundary {
 
 		void run(MovingBoundaryClient & client) {
 			VCELL_LOG(trace,"commence simulation");
-			std::for_each(primaryMesh.begin( ),primaryMesh.end( ),commenceSimulation);
-			giveElementsToClient(client);
-			if (matlabBridge::MatLabDebug::on("frontmove")) {
-				debugDump(true);
-			}
-
-			while (currentTime < maxTime) {
-				double timeIncr = timeStep;
-
-				currentTime += timeIncr;
-				//make last step end exactly on limit to simplify comparisions betweens different simulations
-				if (currentTime > maxTime) {
-					currentTime = maxTime;
+			size_t generationCount = 0;
+			try { 
+				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),commenceSimulation);
+				giveElementsToClient(client,generationCount);
+				if (matlabBridge::MatLabDebug::on("frontmove")) {
+					debugDump(true);
 				}
-				bool goodStep = false;
-				while (!goodStep) {
+
+				while (currentTime < maxTime) {
+					double timeIncr = timeStep;
+
+					currentTime += timeIncr;
+					//make last step end exactly on limit to simplify comparisions betweens different simulations
+					if (currentTime > maxTime) {
+						currentTime = maxTime;
+					}
+					bool goodStep = false;
+					while (!goodStep) {
+						ApplyVelocity mv(*this);
+						std::for_each(primaryMesh.begin( ),primaryMesh.end( ),mv);
+						double maxTime = minimimMeshInterval / (2 * mv.maxVel);
+						maxTime = meshDef( ).minimumInterval( ) / (2);
+						if (timeIncr <= maxTime) {
+							goodStep = true;
+						}
+						else {
+							currentTime -= timeIncr;
+							timeIncr = maxTime; 
+							currentTime += timeIncr;
+							VCELL_LOG(debug, "reduced time step to " << timeIncr)
+						}
+					}
+#if PENDING_DISCUSSION_OF_WHERE_TO_CHECK
 					ApplyVelocity mv(*this);
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),mv);
-					double maxTime = meshDef( ).minimumInterval( ) / (2 * mv.maxVel);
-					maxTime = meshDef( ).minimumInterval( ) / (2);
-					if (timeIncr <= maxTime) {
-						goodStep = true;
-					}
-					else {
-						currentTime -= timeIncr;
-						timeIncr = maxTime; 
-						currentTime += timeIncr;
-						VCELL_LOG(debug, "reduced time step to " << timeIncr)
-					}
-				}
-#if PENDING_DISCUSSION_OF_WHERE_TO_CHECK
-				ApplyVelocity mv(*this);
-				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),mv);
 #endif //PENDING_DISCUSSION_OF_WHERE_TO_CHECK
 
-				VCELL_LOG(debug, "moved from to time");
-				vcFront->propagateTo(currentTime); 
-				/*
-				VCellFront *vcp = dynamic_cast<VCellFront *>(vcFront);
-				if (vcp != nullptr) {
-				Front * checkpoint = copy_front(vcp->c_ptr( ));
-				FT_Save(checkpoint, "testsave.txt");
-				}
-				*/
+					VCELL_LOG(debug, "moved from to time");
+					vcFront->propagateTo(currentTime); 
+					/*
+					VCellFront *vcp = dynamic_cast<VCellFront *>(vcFront);
+					if (vcp != nullptr) {
+					Front * checkpoint = copy_front(vcp->c_ptr( ));
+					FT_Save(checkpoint, "testsave.txt");
+					}
+					*/
 
-				currentFront = vcFront->retrieveFront( );
-				voronoiMesh.setFront(currentFront);
+					FrontType oldFront(currentFront); //for debugging
+					currentFront = vcFront->retrieveFront( );
+					voronoiMesh.setFront(currentFront);
 
-				{
-					//					std::ofstream f("fullvdump.m");
-					//					voronoiMesh.matlabPlot(f, &currentFront);
-				}
-				std::for_each(boundaryElements.begin( ),boundaryElements.end( ),MoveFront(*this));
-				//std::for_each(boundaryElements.begin( ),boundaryElements.end( ),FindNeighborEdges( );
+					{
+						//					std::ofstream f("fullvdump.m");
+						//					voronoiMesh.matlabPlot(f, &currentFront);
+					}
+					std::for_each(boundaryElements.begin( ),boundaryElements.end( ),MoveFront(*this));
+					//std::for_each(boundaryElements.begin( ),boundaryElements.end( ),FindNeighborEdges( );
 
-				if (matlabBridge::MatLabDebug::on("frontmove")) {
-					debugDump(false);
-				}
+					if (matlabBridge::MatLabDebug::on("frontmove")) {
+						debugDump(false);
+					}
 
 #ifdef HOLD_FOR_POSSIBLE_IMPLEMENTATION_LATER
-				double diffuseAdvectStep = timeIncr;
-				double totalStepped = 0;
-				int numberDASteps = 1;
-				bool tooBig = false;
-				do {	
-					tooBig = false;
-					for (int step = 0 ; step < numberDASteps; ++step ) {
-						primaryMesh.diffuseAdvectCache( ).clearDiffuseAdvectCache( );
+					double diffuseAdvectStep = timeIncr;
+					double totalStepped = 0;
+					int numberDASteps = 1;
+					bool tooBig = false;
+					do {	
+						tooBig = false;
+						for (int step = 0 ; step < numberDASteps; ++step ) {
+							primaryMesh.diffuseAdvectCache( ).clearDiffuseAdvectCache( );
+							std::for_each(primaryMesh.begin( ),primaryMesh.end( ), 
+								DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),diffusionConstant, diffuseAdvectStep, tooBig));
+							if (tooBig) {
+								diffuseAdvectStep /= 2;
+								numberDASteps *= 2; 
+								VCELL_LOG(debug,"Reducing da time step to " << diffuseAdvectStep <<  ", steps = " << numberDASteps);
+								break;
+							}
+							primaryMesh.diffuseAdvectCache( ).checkDiffuseAdvectCache( );
+						}
+					} while (tooBig);
+#endif
+					primaryMesh.diffuseAdvectCache( ).start( );
+					bool tooBig = false;
+					try {
 						std::for_each(primaryMesh.begin( ),primaryMesh.end( ), 
-							DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),diffusionConstant, diffuseAdvectStep, tooBig));
+							DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),diffusionConstant, timeIncr, tooBig));
 						if (tooBig) {
-							diffuseAdvectStep /= 2;
-							numberDASteps *= 2; 
-							VCELL_LOG(debug,"Reducing da time step to " << diffuseAdvectStep <<  ", steps = " << numberDASteps);
+							throw TimeStepTooBig("time step makes mass go negative");
+						}
+					} catch (ReverseLengthException &rle) {
+						std::ofstream s("rle.m");
+						rle.aElement.writeMatlab(s, true, 20);
+						rle.bElement.writeMatlab(s, true, 20);
+						throw rle;
+					}
+					primaryMesh.diffuseAdvectCache( ).finish( );
+
+					//adjustNodes calls MeshElementSpecies.updateBoundaryNeighbors
+					try {
+					voronoiMesh.adjustNodes(boundaryElements,currentFront);
+					} catch (SkipsBoundary & skips) {
+						std::ofstream sb("sb.txt");
+						matlabBridge::TPolygon<long long> oldPoly("k",1);
+						frontTierAdapt::copyVectorInto(oldPoly,oldFront);
+						matlabBridge::TPolygon<long long> newPoly("r",1);
+						frontTierAdapt::copyVectorInto(newPoly,currentFront);
+						matlabBridge::Scatter scatter('b',2,true);
+						scatter.add(skips.mes(cX),skips.mes(cY));
+						sb << '%' << skips.mes.ident( ) << std::endl;
+						sb << oldPoly << newPoly << scatter;
+					}
+					//TODO: nochange
+
+					std::for_each(boundaryElements.begin( ),boundaryElements.end( ),CollectMass(*this));
+
+					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),ApplyFront(*this));
+
+					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),DistributeLost());
+
+					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),EndCycle(*this));
+
+					//tell the client about it
+					giveElementsToClient(client,++generationCount);
+#ifdef OLD				
+					lostElements.clear( );
+					gainedElements.clear( );
+					for (MBMesh::const_iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
+
+						const Element &previous = *iter;
+						Element &next = previous.doppelganger( );
+						if (next.isInside( )) {
+							next.setVelocity(velocity(next(cX),next(cY)) );
+						}
+						Element::Transition tns = previous.stateChange( );
+						switch (tns) {
+						case Element::same:
+							for (size_t s = 0; s < NUM_S;s++) {
+								const REAL mass = previous.mass(s);
+								next.setMass(s,mass);
+							}
+							break;
+						case Element::lost:
+							assert(previous.mPos( ) == boundarySurface);
+							boundaryElements.remove(const_cast<Element *>(&previous));
+							lostElements.push_back(&previous);
+							break;
+						case Element::gained:
+							assert(next.mPos( ) == boundarySurface);
+							boundaryElements.emplace_front(const_cast<Element *>(&previous));
+							gainedElements.push_back(&next);
 							break;
 						}
-						primaryMesh.diffuseAdvectCache( ).checkDiffuseAdvectCache( );
 					}
-				} while (tooBig);
-#endif
-				primaryMesh.diffuseAdvectCache( ).start( );
-				bool tooBig = false;
-				try {
-					std::for_each(primaryMesh.begin( ),primaryMesh.end( ), 
-						DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),diffusionConstant, timeIncr, tooBig));
-					if (tooBig) {
-						throw TimeStepTooBig("time step makes mass go negative");
+					for (std::vector<const Element *>::const_iterator iter = lostElements.begin( );iter != lostElements.end( );++iter) {
+						const Element * e = (*iter);
+						size_t x = e->indexOf(0);
+						size_t y = e->indexOf(1);
+						e->distributeMassToNeighbors(meshDefinition);
 					}
-				} catch (ReverseLengthException &rle) {
-					std::ofstream s("rle.m");
-					rle.aElement.writeMatlab(s, true, 20);
-					rle.bElement.writeMatlab(s, true, 20);
-					throw rle;
-				}
-				primaryMesh.diffuseAdvectCache( ).finish( );
-
-				//adjustNodes calls MeshElementSpecies.updateBoundaryNeighbors
-				//boundaryElements.erase(boundaryElements.begin( ),boundaryElements.end( ));
-				voronoiMesh.adjustNodes(boundaryElements,currentFront);
-				//spatial::adjustNodes(boundaryElements,voronoiMesh,currentFront);
-				//TODO: nochange
-
-				std::for_each(boundaryElements.begin( ),boundaryElements.end( ),CollectMass(*this));
-
-				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),ApplyFront(*this));
-
-				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),DistributeLost());
-
-				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),EndCycle(*this));
-
-				//tell the client about it
-				giveElementsToClient(client);
-#ifdef OLD				
-				lostElements.clear( );
-				gainedElements.clear( );
-				for (MBMesh::const_iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
-
-					const Element &previous = *iter;
-					Element &next = previous.doppelganger( );
-					if (next.isInside( )) {
-						next.setVelocity(velocity(next(cX),next(cY)) );
+					for (std::vector<Element *>::iterator iter = gainedElements.begin( );iter != gainedElements.end( );++iter) {
+						Element * e = (*iter);
+						e->collectMassFromNeighbors(meshDefinition);
 					}
-					Element::Transition tns = previous.stateChange( );
-					switch (tns) {
-					case Element::same:
-						for (size_t s = 0; s < NUM_S;s++) {
-							const REAL mass = previous.mass(s);
-							next.setMass(s,mass);
-						}
-						break;
-					case Element::lost:
-						assert(previous.mPos( ) == boundarySurface);
-						boundaryElements.remove(const_cast<Element *>(&previous));
-						lostElements.push_back(&previous);
-						break;
-					case Element::gained:
-						assert(next.mPos( ) == boundarySurface);
-						boundaryElements.emplace_front(const_cast<Element *>(&previous));
-						gainedElements.push_back(&next);
-						break;
-					}
-				}
-				for (std::vector<const Element *>::const_iterator iter = lostElements.begin( );iter != lostElements.end( );++iter) {
-					const Element * e = (*iter);
-					size_t x = e->indexOf(0);
-					size_t y = e->indexOf(1);
-					e->distributeMassToNeighbors(meshDefinition);
-				}
-				for (std::vector<Element *>::iterator iter = gainedElements.begin( );iter != gainedElements.end( );++iter) {
-					Element * e = (*iter);
-					e->collectMassFromNeighbors(meshDefinition);
-				}
 
-				//tell the client about it
-				giveElementsToClient(client);
+					//tell the client about it
+					giveElementsToClient(client);
 
 
 #endif
+				}
+				client.simulationComplete( );
+			} catch (std::exception &e) {
+				VCELL_LOG(fatal,"run( ) caught " << e.what( )  << " generation " << generationCount);
+				throw e;
 			}
-			client.simulationComplete( );
 		}
 
 		const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDef( ) const {
@@ -826,6 +844,11 @@ namespace moving_boundary {
 		double currentTime;
 		double maxTime;
 		double timeStep; 
+		/**
+		* in problem domain units
+		*/
+		double minimimMeshInterval;
+
 		/**
 		* symbol table for expressions, must be initialized prior to xxExp
 		*/

@@ -180,7 +180,7 @@ void MeshElementSpecies::setPos(SurfacePosition m)  {
 		case interiorSurface:
 		case outsideSurface:
 		case deepOutsideSurface:
-			VCELL_EXCEPTION(domain_error,this->indexInfo( ) << " position " << m << " from " << this->mPos( ));
+			throw new SkipsBoundary(*this,m);
 			break;
 		case boundarySurface:
 			setState(awaitingNb);

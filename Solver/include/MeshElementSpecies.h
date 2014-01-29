@@ -693,6 +693,26 @@ namespace moving_boundary {
 		const MeshElementSpecies &bElement;
 	};
 
+	/**
+	* when element skips boundary state
+	*/
+	struct SkipsBoundary : public std::exception {
+		MeshElementSpecies &mes;
+		const spatial::SurfacePosition newPosition;
+		std::string str;
+		SkipsBoundary(MeshElementSpecies &m, spatial::SurfacePosition np) 
+			:mes(m),
+			newPosition(np),
+			str( )
+		{
+				std::ostringstream oss;
+				oss << "Skipped Boundary " << mes.ident( ) << " to " << newPosition << std::ends;
+				str = oss.str( );
+		}
+		virtual const char* what() const throw() {
+			return str.c_str( );
+		}
+	};
 
 	std::ostream & operator<<(std::ostream &,MeshElementStateful::State);
 

@@ -20,7 +20,7 @@
 #include <windows.h>
 #undef max
 #endif
-	//temp for debugging
+//temp for debugging
 namespace ClipperLib {
 	static cInt const hiRange = 0x3FFFFFFFFFFFFFFFLL;
 }
@@ -548,27 +548,27 @@ namespace spatial {
 	}
 }
 
-	typedef std::vector <spatial::TPoint<double,2> > DPointVector; 
-	template void spatial::intersections(spatial::Volume<double,double,2> &result, const DPointVector &,const DPointVector &) ;
+typedef std::vector <spatial::TPoint<double,2> > DPointVector; 
+template void spatial::intersections(spatial::Volume<double,double,2> &result, const DPointVector &,const DPointVector &) ;
 
 
 
-	typedef std::vector <DPointVector> DVectorOfVectors;
-	template void spatial::intersectionsManySingle(spatial::Volume<double,double,2> &result, const DVectorOfVectors &,const DPointVector &) ;
+typedef std::vector <DPointVector> DVectorOfVectors;
+template void spatial::intersectionsManySingle(spatial::Volume<double,double,2> &result, const DVectorOfVectors &,const DPointVector &) ;
 
-	template void spatial::intersectionsManyMany(spatial::Volume<double,double,2> &result, const DVectorOfVectors &,const DVectorOfVectors &) ;
+template void spatial::intersectionsManyMany(spatial::Volume<double,double,2> &result, const DVectorOfVectors &,const DVectorOfVectors &) ;
 
-	typedef std::vector <spatial::TPoint<long,2> > LPointVector; 
-	template void spatial::intersections(spatial::Volume<long,double,2> &result, const LPointVector &,const LPointVector &) ;
+typedef std::vector <spatial::TPoint<long,2> > LPointVector; 
+template void spatial::intersections(spatial::Volume<long,double,2> &result, const LPointVector &,const LPointVector &) ;
 
-	typedef std::vector <LPointVector> LVectorOfVectors;
-	template void spatial::intersectionsManySingle(spatial::Volume<long,double,2> &result, const LVectorOfVectors &,const LPointVector &) ;
+typedef std::vector <LPointVector> LVectorOfVectors;
+template void spatial::intersectionsManySingle(spatial::Volume<long,double,2> &result, const LVectorOfVectors &,const LPointVector &) ;
 
-	template void spatial::intersectionsManyMany(spatial::Volume<long,double,2> &result, const LVectorOfVectors &,const LVectorOfVectors &) ;
-	typedef std::vector <spatial::TPoint<int,2> > IPointVector; 
-	template void spatial::intersections(spatial::Volume<int,double,2> &result, const IPointVector &,const IPointVector &) ;
+template void spatial::intersectionsManyMany(spatial::Volume<long,double,2> &result, const LVectorOfVectors &,const LVectorOfVectors &) ;
+typedef std::vector <spatial::TPoint<int,2> > IPointVector; 
+template void spatial::intersections(spatial::Volume<int,double,2> &result, const IPointVector &,const IPointVector &) ;
 
-	typedef std::vector <IPointVector> IVectorOfVectors;
-	template void spatial::intersectionsManySingle(spatial::Volume<int,double,2> &result, const IVectorOfVectors &,const IPointVector &) ;
+typedef std::vector <IPointVector> IVectorOfVectors;
+template void spatial::intersectionsManySingle(spatial::Volume<int,double,2> &result, const IVectorOfVectors &,const IPointVector &) ;
 
-	template void spatial::intersectionsManyMany(spatial::Volume<int,double,2> &result, const IVectorOfVectors &,const IVectorOfVectors &) ;
+template void spatial::intersectionsManyMany(spatial::Volume<int,double,2> &result, const IVectorOfVectors &,const IVectorOfVectors &) ;
