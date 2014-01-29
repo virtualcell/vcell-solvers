@@ -87,9 +87,11 @@ int main(int argc, char *argv[])
 	}
 	catch (std::exception & e) {
 		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << filename << std::endl; 
+		return 4;
 	}
 	catch (...) {
 		std::cerr <<  argv[0] << " caught unknown exception" << " reading " << filename << std::endl; 
+		return 4;
 	}
 }
 

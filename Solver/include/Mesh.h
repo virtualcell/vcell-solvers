@@ -114,7 +114,7 @@ namespace spatial {
 			return intervals[a];
 		}
 
-		CT size(Axis a) const {
+		CT totalDistance(Axis a) const {
 			return static_cast<CT>(intervals[a] * nPoints[a]);
 		}
 
@@ -197,7 +197,7 @@ namespace spatial {
 		Mesh(const MeshDef<CT,N> &definition) 
 			:MeshDef<CT,N>(definition),
 			storage(0),
-			daCache(TELEMENT::createCache(definition.minimumInterval( ) ))
+			daCache(TELEMENT::createCache(definition))
 		{
 			std::array<size_t,N> loop;
 			std::array<CT,N> startPoint; 
@@ -214,7 +214,7 @@ namespace spatial {
 				}
 				size_t idx = index<N-1>(loop);
 				void * addr = &storage[idx];
-				new (addr) TELEMENT(loop.data( ) ,values.data( )); //placement new
+				new (addr) TELEMENT(*this,loop.data( ) ,values.data( )); //placement new
 			}
 			while (increment(0,loop));
 		}

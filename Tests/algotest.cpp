@@ -20,6 +20,17 @@ using std::cout;
 using std::endl;
 using namespace spatial;
 
+TEST(algo,midpoint) {
+	TPoint<int,2> a(3,8);
+	TPoint<int,2> b(5,12);
+	TPoint<int,2> c(5,15);
+	TPoint<int,2> ab = spatial::midPoint(a,b);
+	ASSERT_TRUE(ab(cX) == 4);
+	ASSERT_TRUE(ab(cY) == 10);
+	TPoint<int,2> bc = spatial::midPoint(c,b);
+	ASSERT_TRUE(bc(cX) == 5);
+	ASSERT_TRUE(bc(cY) == 13);
+}
 TEST(algo,below) {
 	Point2D left(0,0);
 	Point2D right(2,2);

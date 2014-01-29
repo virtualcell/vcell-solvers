@@ -127,9 +127,30 @@ namespace spatial {
 
 	template <typename T, int N>
 	std::ostream & operator<<(std::ostream & os, const Segment<T,N> & seg) {
-		os << '{' << seg.a( ) << " : " << seg.b( ) << '}' << std::endl;
+		os << '{' << seg.a( ) << " : " << seg.b( ) << '}'; 
 		return os;
 	}
+
+	template <typename T, int N>
+	struct VerboseSegment {
+		VerboseSegment(const Segment<T,N> &s)
+			:seg(s) {}
+		const Segment<T,N> &seg;
+	};
+
+	template <typename T, int N>
+	std::ostream & operator<<(std::ostream & os, const VerboseSegment<T,N> & vs) {
+		os << vs.seg;
+		os << " h: " << vs.seg.axialDistance(spatial::cX) << " v: " << vs.seg.axialDistance(spatial::cY);
+		return os;
+	}
+
+	template <typename T, int N>
+	struct SegToVerbose {
+		VerboseSegment<T,N> operator( )(const Segment<T,N> &s) {
+			return VerboseSegment<T,N>(s);
+		}
+	};
 }
 
 #endif

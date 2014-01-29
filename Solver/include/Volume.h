@@ -23,8 +23,8 @@ namespace spatial {
 	template <class COORD_TYPE, class VALUE_TYPE,int N>
 	struct SegmentAccessor {
 		SegmentAccessor(const Volume<COORD_TYPE,VALUE_TYPE,N> &volume)
-		 :vol(volume),
-		 index(0) {}
+			:vol(volume),
+			index(0) {}
 
 		bool hasNext( ) const {
 			return vol.more(index);
@@ -41,13 +41,12 @@ namespace spatial {
 	};
 
 	/**
-	* specify volume behavior(s)
-	* see <a href="http://en.wikipedia.org/wiki/Decorator_pattern">Decorator pattern </a>
+	* class to be notified of changes to volume
 	*/
-	struct VolumeTraitsFast { 
-
+	struct VolumeMonitor {
+		virtual ~VolumeMonitor( ) {}
+		virtual void volumeChanged( ) = 0;
 	};
-
 
 	template <class COORD_TYPE, class VALUE_TYPE, int N>
 	struct VolumeImpl; 
@@ -61,13 +60,20 @@ namespace spatial {
 	*/
 	template <class COORD_TYPE, class VALUE_TYPE, int N>
 	struct Volume {
+		typedef COORD_TYPE CoordType;
+		typedef VALUE_TYPE ValueType;
+		const static int NumDim = N;
 		typedef SegmentAccessor<COORD_TYPE,VALUE_TYPE,N> SegAccessor;
-	
-		Volume(size_t nConstructs = 0 );
-		
+
+		Volume(size_t nConstructs = 0, VolumeMonitor *vm = nullptr)  
+			:monitor(vm),
+			state(VolumeImplCreator<COORD_TYPE,VALUE_TYPE,N>::create(nConstructs) ) {}
+
 		/**
 		*  assumes ownership of implementation
 		*/
+		// this constructor needs to exist to prevent the assigment operator from
+		// being used when creating new objects; this will result in runtime errors (corrupt state pointer)
 		Volume(const Volume &rhs) 
 			:state(rhs.state) {
 				Volume &r = const_cast<Volume &>(rhs);
@@ -76,18 +82,23 @@ namespace spatial {
 		/**
 		* assumes ownership of implementation
 		*/
-		Volume & operator=(const Volume &rhs) {
-			releaseExisting( );
-			state = rhs.state;
-			Volume &r = const_cast<Volume &>(rhs);
-			r.state = nullptr;
+		Volume & operator=(const Volume<COORD_TYPE,VALUE_TYPE,N> &rhs) {
+			if (this != &rhs) {
+				releaseExisting( );
+				state = rhs.state;
+				notifyMonitor( );
+
+				Volume &r = const_cast<Volume &>(rhs);
+				r.state = nullptr;
+			}
 			return *this;
 		}
 
 		/**
 		* construct rectangular construct (rectangle, rectangular prism, etc)
 		*/
-		Volume(const std::array<COORD_TYPE,N> &origin, const std::array<COORD_TYPE,N> & lengths);
+		Volume(const std::array<COORD_TYPE,N> &origin, const std::array<COORD_TYPE,N> & lengths)
+			:state(VolumeImplCreator<COORD_TYPE,VALUE_TYPE,N>::rectangle(origin,lengths) ) {}
 
 		~Volume( ) {
 			releaseExisting( );
@@ -107,6 +118,7 @@ namespace spatial {
 		*/
 		void clear( ) {
 			state->clear( );
+				notifyMonitor( );
 		}
 		/**
 		* close existing construct. It must contain at least
@@ -114,6 +126,7 @@ namespace spatial {
 		*/
 		void close( ) {
 			state->close( );
+				notifyMonitor( );
 		}
 
 		/**
@@ -143,6 +156,7 @@ namespace spatial {
 		*/
 		void nextSection( ) {
 			state = state->nextSection( );
+				notifyMonitor( );
 		};
 
 		/**
@@ -155,6 +169,7 @@ namespace spatial {
 		*/
 		FillingIteratorType fillingIterator(size_t n) {
 			state = state->prep(VolumeImpl<COORD_TYPE,VALUE_TYPE,N>::opFillingIterator);
+				notifyMonitor( );
 			return state->fillingIterator(n);
 		}
 		/**
@@ -162,6 +177,7 @@ namespace spatial {
 		*/
 		void add(const TPoint<COORD_TYPE,N> & point) {
 			state = state->add(point);
+				notifyMonitor( );
 		}
 		Volume<COORD_TYPE, VALUE_TYPE,N> intersection(const Volume<COORD_TYPE,VALUE_TYPE,N> &rhs) const {
 			return state->intersection(rhs);
@@ -174,6 +190,7 @@ namespace spatial {
 		void releaseExisting( ) {
 			if (state && !state->singleton( )) {
 				delete state;
+				state = nullptr;
 			}
 		}
 		bool more(size_t index) const {
@@ -184,9 +201,18 @@ namespace spatial {
 		}
 		friend SegAccessor;
 
+		void notifyMonitor( ) {
+			if (monitor != nullptr) {
+				monitor->volumeChanged( );
+			}
+		}
+		VolumeMonitor * monitor;
+
 		VolumeImpl<COORD_TYPE,VALUE_TYPE,N> *state;
+
+		
 		/**
-		* allow implement classes direct access to state
+		* allow DefaultVolumeDecoratorimplement classes direct access to state
 		*/
 		friend struct VolumeImpl<COORD_TYPE,VALUE_TYPE,N>;
 	};
@@ -234,6 +260,11 @@ namespace spatial {
 		const VolumeImpl<COORD_TYPE,VALUE_TYPE,N> & pal(const Volume<COORD_TYPE,VALUE_TYPE,N> &rhs) const {
 			return *rhs.state;
 		}
+	};
+	template <class COORD_TYPE, class VALUE_TYPE, int N>
+	struct VolumeImplCreator {
+		static VolumeImpl<COORD_TYPE,VALUE_TYPE,N> * create(size_t nPolygons);
+		static VolumeImpl<COORD_TYPE,VALUE_TYPE,N> * rectangle(const std::array<COORD_TYPE,N> &origin, const std::array<COORD_TYPE,N> & lengths);
 	};
 
 }

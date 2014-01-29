@@ -405,10 +405,6 @@ namespace {
 				EType & point = *iter;
 
 				using spatial::inside;
-				if (point.matches(14,7)) {
-					static int debugAid = 0;
-					++debugAid;
-				}
 				if (point.isDeep( )) { //too far from boundary to change
 					continue;
 				}
@@ -433,10 +429,6 @@ namespace {
 			//second pass, find boundaries
 			for (typename MESH::iterator iter = mesh.begin( ); iter != mesh.end( ); ++iter) {
 				EType & point = *iter;
-				if (point.matches(14,7)) {
-					static int debugAid = 0;
-					++debugAid;
-				}
 				size_t i = point.indexOf(cX);
 				size_t j = point.indexOf(cY);
 				if (point.isOutside( )) {

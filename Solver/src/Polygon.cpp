@@ -68,7 +68,7 @@ namespace spatial {
 		}
 
 		virtual VolumeImpl<COORD_TYPE,VALUE_TYPE,2>* prep(typename VolumeImpl<COORD_TYPE,VALUE_TYPE,2>::Operation op) {
-		        void * ptr = VolumeImpl<COORD_TYPE,VALUE_TYPE,2>::prep(op);
+			void * ptr = VolumeImpl<COORD_TYPE,VALUE_TYPE,2>::prep(op);
 			assert ((op == VolumeImpl< COORD_TYPE,VALUE_TYPE,2>::opFillingIterator));
 			return new Polygon<COORD_TYPE,VALUE_TYPE>( ); 
 		}
@@ -510,37 +510,36 @@ namespace spatial {
 		*/
 		mutable const PointVector *getVector;
 	};
-
 	template <class COORD_TYPE,class VALUE_TYPE,int N>
-	Volume<COORD_TYPE,VALUE_TYPE, N>::Volume(size_t nPolygons)
-		:state(nullptr) {
-			if (N == 2) {
-				switch (nPolygons) {
-				case 0:
-					state = EmptyVolume2<COORD_TYPE,VALUE_TYPE>::getSingleton( );
-					break;
-				case 1:
-					state = new Polygon<COORD_TYPE,VALUE_TYPE>( );
-					break;
-				default:
-					state = new Polygons<COORD_TYPE,VALUE_TYPE>( );
-					break;
-				}
+	VolumeImpl<COORD_TYPE,VALUE_TYPE,N> * VolumeImplCreator<COORD_TYPE,VALUE_TYPE,N>::create(size_t nPolygons) {
+		if (N == 2) {
+			switch (nPolygons) {
+			case 0:
+				return EmptyVolume2<COORD_TYPE,VALUE_TYPE>::getSingleton( );
+				break;
+			case 1:
+				return new Polygon<COORD_TYPE,VALUE_TYPE>( );
+				break;
+			default:
+				return new Polygons<COORD_TYPE,VALUE_TYPE>( );
+				break;
 			}
+		}
+		return 0;
 	}
 	template <class COORD_TYPE,class VALUE_TYPE,int N>
-	Volume<COORD_TYPE,VALUE_TYPE,N>::Volume(const std::array<COORD_TYPE,N> &origin, const std::array<COORD_TYPE,N> & lengths)
-		:state(nullptr) {
-			if (N == 2) {
-				state = new Polygon<COORD_TYPE,VALUE_TYPE>(origin,lengths);
-			}
-	}
+	VolumeImpl<COORD_TYPE,VALUE_TYPE,N> * VolumeImplCreator<COORD_TYPE,VALUE_TYPE,N>::rectangle(const std::array<COORD_TYPE,N> &origin, const std::array<COORD_TYPE,N> & lengths) {
+		if (N == 2) {
+			return  new Polygon<COORD_TYPE,VALUE_TYPE>(origin,lengths);
+		}
+		return 0;
+}
 
-	/*
-	template <class REAL, int N>
-	typename std::vector<TPoint<REAL,N> >::iterator fillingIterator(size_t n) {
-	}
-	*/
+/*
+template <class REAL, int N>
+typename std::vector<TPoint<REAL,N> >::iterator fillingIterator(size_t n) {
+}
+*/
 }
 
 template struct spatial::Polygon<long,double>;

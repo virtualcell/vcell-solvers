@@ -83,7 +83,7 @@ namespace {
 				iScale--;
 			}
 			if (iScale == 1) {
-				VCELL_EXCEPTION(logic_error, "unable to find decent scale for least common multipler of " << divider << " and scale " << scale 
+				VCELL_EXCEPTION(logic_error, "unable to find decent scale for least common multiplier of " << divider << " and scale " << scale 
 					<< ", max supported is " << maxSupported);
 			}
 
@@ -91,6 +91,12 @@ namespace {
 			for (int i = 0; i < N; i++) {
 				WORLD_COORD low  = vcell_util::ConvertDown<WORLD_COORD>(scale * (universe.limits( )[i].low( )  - universe.zeros( )[i]));
 				WORLD_COORD high = vcell_util::ConvertUp<WORLD_COORD>  (scale * (universe.limits( )[i].high( ) - universe.zeros( )[i]));
+				WORLD_COORD remainder = (high - low ) % divider;
+				high += (divider - remainder);
+				remainder = (high - low ) % divider;
+				if (remainder != 0) {
+					VCELL_EXCEPTION(logic_error, " world scale not to be evenly divisible by desired scale" << iScale);
+				}
 				limitsWorldSystem[i] = spatial::TGeoLimit<WORLD_COORD>(low,high);
 			}
 

@@ -94,6 +94,13 @@ namespace moving_boundary {
 		double toProblemDomain(COORD_TYPE coord, spatial::Axis a) const {
 			return coord / scale + Universe<NUM_DIM>::get( ).inputZeroPoint[a];
 		}
+		/**
+		* convert interval (distance) from World coordinate to problem domain
+		* @param distance  to convert
+		*/
+		double distanceToProblemDomain(COORD_TYPE coord) const {
+			return coord / scale;
+		}
 
 		/**
 		* convert from World coordinates to problem domain

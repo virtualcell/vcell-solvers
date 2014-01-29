@@ -203,12 +203,13 @@ namespace moving_boundary {
 			}
 
 			//check time step
-			double hMin = std::min(meshDefinition.interval(spatial::cX),meshDefinition.interval(spatial::cY));
+			CoordinateType cMin = std::min(meshDefinition.interval(spatial::cX),meshDefinition.interval(spatial::cY));
+			double hMin = world.distanceToProblemDomain(cMin); 
 			double maxStep = hMin*hMin/(4 * diffusionConstant);
 			if (maxStep < timeStep) {
 				//use floor to make newNumberSteps lower and timeStep bigger to avoid very short last step
 				int newNumberSteps = static_cast<int>(maxTime/maxStep);
-				timeStep = (maxTime / newNumberSteps) * (1 + 1e-13); //exact factor to overcome precision lost to addition
+				timeStep = (maxTime / newNumberSteps) * (1 + 1e-13); //add margin to overcome precision lost to addition
 			}
 
 
@@ -220,7 +221,7 @@ namespace moving_boundary {
 				int i = 0;
 				for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
 					Element &e = *iter;
-					const Volume2DClass & vol = e.getControlVolume(primaryMesh);
+					const Volume2DClass & vol = e.getControlVolume();
 					if (!vol.empty( )) {
 						std::stringstream command;
 						command << "tilingX" << e.indexOf(spatial::cX) << 'Y' << e.indexOf(spatial::cY) << std::ends;
@@ -246,7 +247,7 @@ namespace moving_boundary {
 				int i = 0;
 				for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
 					Element &e = *iter;
-					const Volume2DClass & vol = e.getControlVolume(primaryMesh);
+					const Volume2DClass & vol = e.getControlVolume();
 					if (!vol.empty( )) {
 						master << matlabBridge::clearFigure << pFront;
 						e.writeMatlab(master);
@@ -261,7 +262,32 @@ namespace moving_boundary {
 				iter->listBoundary(bp,primaryMesh);
 			}
 #endif
-
+			//validate grid 
+			CoordinateType hSpace = primaryMesh.interval(cX);
+			CoordinateType vSpace = primaryMesh.interval(cX);
+			if (hSpace%2 != 0 || vSpace%2 != 0) {
+				VCELL_EXCEPTION(logic_error,"spacings horiz " << hSpace << " and vert " << vSpace << " not even");
+			}
+			const size_t maxI =  primaryMesh.numCells(cX) - 1;
+			const size_t maxJ =  primaryMesh.numCells(cY) - 1;
+			for (int i = 0; i < maxI; i++) 
+				for (int j = 0; j < maxJ - 1; j++) 
+				{
+					std::array<size_t,2> p = {i    ,j};
+					std::array<size_t,2> r = {i + 1,j};
+					std::array<size_t,2> d = {i    ,j + 1};
+					Element &  e = primaryMesh.get(p);
+					Element & down = primaryMesh.get(d);
+					Element & right = primaryMesh.get(r);
+					CoordinateType hGap = right(cX) - e(cX); 
+					CoordinateType vGap = down(cY) - e(cY); 
+					if (hGap != hSpace) {
+						VCELL_EXCEPTION(logic_error, "bad h gap between " << e << " and " << right << ", " << hGap << " != expected " << hSpace);
+					}
+					if (vGap != vSpace) {
+						VCELL_EXCEPTION(logic_error, "bad v gap between " << e << " and " << down << ", " << vGap << " != expected " << vSpace);
+					}
+				}
 		}
 		~MovingBoundaryParabolicProblemImpl( ) {
 			delete vcFront;
@@ -291,6 +317,7 @@ namespace moving_boundary {
 				ProblemDomainPoint pdp = world.toProblemDomain(insideElement);
 				double mu = provider.conc(pdp(cX),pdp(cY));
 				insideElement.setConcentration(0,mu);
+				insideElement.getControlVolume();
 			}
 			for (vector<Element *>::iterator iter = positions.boundary.begin( ); iter != positions.boundary.end( ); ++iter) {
 				Element  & boundaryElement = **iter;
@@ -298,6 +325,7 @@ namespace moving_boundary {
 				double mu = provider.conc(pdp(cX),pdp(cY));
 				boundaryElement.setConcentration(0,mu);
 				boundaryElements.push_back(&boundaryElement);
+				boundaryElement.findNeighborEdges();
 			}
 			for (vector<Element *>::iterator iter = positions.outside.begin( ); iter != positions.outside.end( ); ++iter) {
 				Element  & boundaryElement = **iter;
@@ -463,17 +491,17 @@ namespace moving_boundary {
 		* Functor
 		* move front
 		*/
-		struct FrontMove : public FunctorBase {
-			FrontMove(Outer &o)
+		struct MoveFront : public FunctorBase {
+			MoveFront(Outer &o)
 				:FunctorBase(o){}
 			void operator( )(Element * p) {
 				assert(p != nullptr);
 				VCELL_LOG(trace,p->indexInfo( ) << " front move")
 					if (p->mPos() == spatial::boundarySurface) {
-						p->moveFront(this->outer.primaryMesh,this->outer.currentFront);
+						p->moveFront(this->outer.currentFront);
 					}
 					else {
-						throw std::domain_error("FrontMove");
+						throw std::domain_error("MoveFront");
 					}
 			}
 		};
@@ -481,7 +509,10 @@ namespace moving_boundary {
 		* Functor
 		* FindNeighborEdges 
 		*/
-		struct FindNeighborEdges {
+		struct FindNeighborEdges  : public FunctorBase {
+			FindNeighborEdges (Outer &o)
+				:FunctorBase(o) {}
+
 			void operator( )(Element * p) {
 				if (p->isInside( ) ) {
 					p->findNeighborEdges( );
@@ -516,12 +547,15 @@ namespace moving_boundary {
 		*/
 		struct ApplyVelocity : public FunctorBase {
 			ApplyVelocity (Outer &o)
-				:FunctorBase(o) {}
+				:FunctorBase(o),
+				maxVel(0){}
 			void operator( )(Element & e) {
 				VCELL_LOG(trace,e.indexInfo( ) << " set velocity");
 				spatial::SVector<moving_boundary::VelocityType,2> v = this->outer.advectionVelocity(e(cX),e(cY));
 				e.setVelocity(v);
+				maxVel = std::max(maxVel, std::max(v(cX),v(cY)));
 			}
+			moving_boundary::VelocityType maxVel;
 		};
 
 		/**
@@ -571,7 +605,7 @@ namespace moving_boundary {
 				:FunctorBase(o) {}
 			void operator( )(Element *p) {
 				VCELL_LOG(trace,p->indexInfo( ) << " collectMass")
-					p->collectMass(this->outer.primaryMesh,this->outer.currentFront);
+					p->collectMass(this->outer.currentFront);
 			}
 		};
 
@@ -584,7 +618,7 @@ namespace moving_boundary {
 				:FunctorBase(o) {}
 			void operator( )(Element &e) {
 				VCELL_LOG(trace,e.indexInfo( ) << " applyFront")
-					e.applyFront(this->outer.primaryMesh, this->outer.currentFront, this->outer.interiorVolume);
+					e.applyFront(this->outer.currentFront, this->outer.interiorVolume);
 			}
 		};
 
@@ -592,12 +626,10 @@ namespace moving_boundary {
 		* Functor
 		* distribute lost mass 
 		*/
-		struct DistributeLost : public FunctorBase {
-			DistributeLost(Outer &o)
-				:FunctorBase(o) {}
+		struct DistributeLost {
 			void operator( )(Element &e) {
 				VCELL_LOG(trace,e.indexInfo( ) << " distributeLost")
-					e.distributeMassToNeighbors(this->outer.primaryMesh);
+					e.distributeMassToNeighbors();
 			}
 		};
 
@@ -630,7 +662,6 @@ namespace moving_boundary {
 				if (currentTime > maxTime) {
 					currentTime = maxTime;
 				}
-#if PENDING_DISCUSSION_OF_WHERE_TO_CHECK
 				bool goodStep = false;
 				while (!goodStep) {
 					ApplyVelocity mv(*this);
@@ -647,7 +678,7 @@ namespace moving_boundary {
 						VCELL_LOG(debug, "reduced time step to " << timeIncr)
 					}
 				}
-#else
+#if PENDING_DISCUSSION_OF_WHERE_TO_CHECK
 				ApplyVelocity mv(*this);
 				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),mv);
 #endif //PENDING_DISCUSSION_OF_WHERE_TO_CHECK
@@ -669,8 +700,8 @@ namespace moving_boundary {
 					//					std::ofstream f("fullvdump.m");
 					//					voronoiMesh.matlabPlot(f, &currentFront);
 				}
-				std::for_each(boundaryElements.begin( ),boundaryElements.end( ),FrontMove(*this));
-				std::for_each(boundaryElements.begin( ),boundaryElements.end( ),FindNeighborEdges( ));
+				std::for_each(boundaryElements.begin( ),boundaryElements.end( ),MoveFront(*this));
+				//std::for_each(boundaryElements.begin( ),boundaryElements.end( ),FindNeighborEdges( );
 
 				if (matlabBridge::MatLabDebug::on("frontmove")) {
 					debugDump(false);
@@ -723,7 +754,7 @@ namespace moving_boundary {
 
 				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),ApplyFront(*this));
 
-				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),DistributeLost(*this));
+				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),DistributeLost());
 
 				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),EndCycle(*this));
 
@@ -917,7 +948,7 @@ namespace moving_boundary {
 				spec += colors[cIndex];
 				++cIndex;
 				matlabBridge::Polygon boundingPoly("k",2, seqNo);
-				const Volume2DClass & vol = mes.getControlVolume(impl.primaryMesh);
+				const Volume2DClass & vol = mes.getControlVolume();
 				if (vol.empty( )) {
 					empty.add(mes(cX),mes(cY));
 					ss << "empty";

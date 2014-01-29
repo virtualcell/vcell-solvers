@@ -249,6 +249,7 @@ namespace moving_boundary {
 				}
 				std::cerr << "creating " << groupName << std::endl;
 				baseGroup = file.createGroup(groupName);
+
 				vcellH5::writeAttribute(baseGroup,"timeStep",timeStep);
 				if (SOLUTION::validates) {
 					const std::string s = SOLUTION::expression( ); 
@@ -405,7 +406,7 @@ namespace moving_boundary {
 				er.mass = m;
 				er.concentration = c;
 				er.volume = v;
-				Volume2DClass::VectorOfVectors vOfv = e.getControlVolume(meshDef).points( );
+				Volume2DClass::VectorOfVectors vOfv = e.getControlVolume().points( );
 				if (vOfv.size( ) > 1) {
 					//throw std::domain_error("multi region control volumes not supported yet");
 					std::cerr << "multi region warning" << std::endl;
@@ -492,13 +493,13 @@ namespace moving_boundary {
 			try {
 				timer.stop( );
 				const double totalTime = timer.elapsed( );
-				vcellH5::writeAttribute(baseGroup,"endTime",currentTime, true);
-				vcellH5::writeAttribute(baseGroup,"runTime",totalTime, true);
+				vcellH5::primitiveWrite(baseGroup,"endTime",currentTime);
+				vcellH5::primitiveWrite(baseGroup,"runTime",totalTime);
 				unsigned int lastTimeIndex = static_cast<unsigned int>(genTime.size( ));
-				vcellH5::writeAttribute(baseGroup,"lastTimeIndex",lastTimeIndex, true);
+				vcellH5::primitiveWrite(baseGroup,"lastTimeIndex",lastTimeIndex); 
 
 				vcellH5::SeqFacade<std::vector<double> > gt(genTime);
-				vcellH5::facadeWriteAttribute(baseGroup,"generationTimes",gt);
+				vcellH5::facadeWrite(baseGroup,"generationTimes",gt);
 			}
 			catch (H5::Exception &e) {
 				std::cerr << e.getDetailMsg( ) << std::endl;

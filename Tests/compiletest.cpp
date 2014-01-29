@@ -16,9 +16,9 @@
 //#include <NormVector.h>
 //#include <cmath>
 //#include <vcellxml.h>
-//#include <Volume.h>
+#include <Volume.h>
 //#include <Segment.h>
-#include <World.h>
+//#include <World.h>
 
 /*
 void a(moving_boundary::MeshElementSpecies & mes) {
@@ -26,9 +26,9 @@ void a(moving_boundary::MeshElementSpecies & mes) {
 */
 
 using namespace spatial;
-using namespace moving_boundary; 
+//using namespace moving_boundary; 
 void b() {
-	Universe<2> *p;
-	World<long,2> *w;
+//	Universe<2> *p;
+//	World<long,2> *w;
 
 }

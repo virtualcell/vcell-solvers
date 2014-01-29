@@ -3,7 +3,6 @@
 namespace spatial {
 	template <class COORD_TYPE,class VALUE_TYPE,int N>
 	struct Volume;
-
 }
 /**
 * implementation type definition

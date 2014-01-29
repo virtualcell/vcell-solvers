@@ -20,6 +20,7 @@
 #include <windows.h>
 #undef max
 #endif
+	//temp for debugging
 namespace ClipperLib {
 	static cInt const hiRange = 0x3FFFFFFFFFFFFFFFLL;
 }

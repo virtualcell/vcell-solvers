@@ -99,11 +99,15 @@ namespace moving_boundary {
 			*/
 			gained, 
 			/**
-			* front moved but vornoi not applied 
+			* front moved but neighbor edges stale, voronoi not applied 
 			*/
 			legacyVolume,
 			/**
-			* diffusionAdvection applied (last state #legacyVolume)
+			* front moved, neighbor edges set, voronoi not applied 
+			*/
+			legacyVolumeNeighborSet,
+			/**
+			* diffusionAdvection applied (last state #legacyVolumeNeighborSet)
 			*/
 			legacyUpdated,
 			/**
@@ -160,21 +164,23 @@ namespace moving_boundary {
 	* </ul> 
 	*/
 
-	struct MeshElementSpecies : public spatial::MeshElement<moving_boundary::CoordinateType,2> {
+	struct MeshElementSpecies : public spatial::MeshElement<moving_boundary::CoordinateType,2> , public spatial::VolumeMonitor {
+		typedef spatial::MeshDef<moving_boundary::CoordinateType,2> MeshDefinition; 
 		typedef spatial::MeshElement<moving_boundary::CoordinateType,2> base;
 		typedef MeshElementSpecies OurType;
 		typedef MeshElementNeighbor NeighborType;
 		typedef MeshElementStateful::State State;
 		typedef spatial::Segment<moving_boundary::CoordinateType,2> SegmentType; 
 
-		static spatial::DiffuseAdvectCache *createCache(moving_boundary::CoordinateType smallestMeshInterval); 
+		static spatial::DiffuseAdvectCache *createCache(const MeshDefinition & meshDef);
 		static const int numSpecies = nOfS; 
 
-		MeshElementSpecies(const size_t *n, const moving_boundary::CoordinateType *values) 
+		MeshElementSpecies(const MeshDefinition &owner,const size_t *n, const moving_boundary::CoordinateType *values) 
 			:base(n,values),
+			mesh(owner),
 			stateVar(State::initial),
 			interiorVolume(-1),
-			vol( ),
+			vol(0,this),
 			segments_( ),
 			amtMass( ),
 			amtMassTransient( ),
@@ -292,7 +298,7 @@ namespace moving_boundary {
 			std::vector<OurType *>  & bn, 
 			const FrontType & front) {
 				updateBoundaryNeighbors(vm,bn);
-				formBoundaryPolygonVM(vm,front);
+				formBoundaryPolygon(front);
 		}
 
 		/**
@@ -302,7 +308,7 @@ namespace moving_boundary {
 		* @mesh our mesh
 		* @param front moved front
 		*/
-		void moveFront( const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front); 
+		void moveFront(const FrontType & front); 
 
 		/**
 		* update volume to new front. 
@@ -310,14 +316,14 @@ namespace moving_boundary {
 		* @param front moved front
 		* @param interiorVolume volume if node entirely interior 
 		*/
-		void applyFront( const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front, moving_boundary::CoordinateProductType interiorVolume) {
+		void applyFront( const FrontType & front, moving_boundary::CoordinateProductType interiorVolume) {
 			using namespace MeshElementStateful;
 			switch (state( )) {
 			case legacyVoronoiSet:
 			case legacyVoronoiSetCollected:
 				//formBoundaryPolygon(mesh,front);
 				//setState(stableUpdated);
-				applyFrontLegacyVoronoiSet(mesh,front);
+				applyFrontLegacyVoronoiSet(front);
 				break;
 			case legacyUpdated:
 				if (mPos( ) == spatial::interiorSurface) { 
@@ -329,7 +335,7 @@ namespace moving_boundary {
 				else {
 					assert(mPos( ) == spatial::boundarySurface);
 					setState(legacyVoronoiSet);
-					applyFrontLegacyVoronoiSet(mesh,front);
+					applyFrontLegacyVoronoiSet(front);
 				}
 				break;
 				/*
@@ -387,9 +393,10 @@ namespace moving_boundary {
 			case State::lost: 
 			case State::awaitingNb:
 			case State::gainedAwaitingNb:
-			case State::gainedEmpty:
+			case State::gainedEmpty: 
 			case State::gained: 
 			case State::legacyVolume:
+			case State::legacyVolumeNeighborSet:
 			case State::legacyUpdated:
 			case State::legacyVoronoiSet:
 			case State::legacyVoronoiSetCollected:
@@ -398,7 +405,7 @@ namespace moving_boundary {
 				return vol.volume( ) /distanceScaledSquared; 
 			case State::transient:
 			default:
-				VCELL_EXCEPTION(domain_error,"volume( ) called on " << ident( ));
+				VCELL_EXCEPTION(logic_error,"volume( ) called on " << ident( ));
 			}
 		}
 
@@ -417,15 +424,15 @@ namespace moving_boundary {
 		* distribute mass to neighbors 
 		* (implies this element is being lost)
 		*/
-		void distributeMassToNeighbors(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh); 
+		void distributeMassToNeighbors( ); 
 
 		/**
 		* collect mass from neighbors , if applicable
 		*/
-		void collectMass(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front) {
+		void collectMass(const FrontType & front) {
 			using namespace MeshElementStateful;
 			if (state( ) == gainedEmpty) {
-				collectMassFromNeighbors(mesh, front);
+				collectMassFromNeighbors(front);
 			}
 		}
 
@@ -434,7 +441,7 @@ namespace moving_boundary {
 		* will cause internal polygons to be constructed (if not already done)
 		* @param mesh owning mesh
 		*/
-		const Volume2DClass & getControlVolume(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh) const;
+		const Volume2DClass & getControlVolume( ) const;
 
 		const spatial::SVector<moving_boundary::VelocityType,2> & getVelocity( ) const {
 			return velocity;
@@ -486,20 +493,29 @@ namespace moving_boundary {
 		/**
 		* write coordinates of boundary in text format 
 		* @param dest 
-		* @param mesh 
 		*/
-		void listBoundary(std::ostream & os,const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh) const; 
+		void listBoundary(std::ostream & os) const; 
 
-		void findNeighborEdges( ); 
+		void findNeighborEdges(); 
+		/**
+		* clear segments
+		*/
+		virtual void volumeChanged( ) {
+			segments_.clear( );
+		}
 	protected:
 		/**
 		* rebuild and sort #segments from volume
 		*/
-		void volumeToSegments(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh);
+		void volumeToSegments();
 		/**
 		* access #segments_; use function in case we want to optimize in future
 		*/
 		std::vector<SegmentType> & segments( ) {
+			if (!segments_.empty( )) {
+				return segments_;
+			}
+			volumeToSegments( );
 			return segments_;
 		}
 		/**
@@ -512,12 +528,12 @@ namespace moving_boundary {
 		* @mesh our mesh
 		* @param front moved front
 		*/
-		void applyFrontLegacyVoronoiSet(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front);
+		void applyFrontLegacyVoronoiSet(const FrontType & front);
 		/**
 		* collect mass to from neighbors 
 		* (implies this element is new for this generation 
 		*/
-		void collectMassFromNeighbors(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front); 
+		void collectMassFromNeighbors(const FrontType & front); 
 
 #		ifdef _MSC_VER	//a define in the frontier lib interferes with MSC's macro definition 
 #		define isnan _isnan 
@@ -565,7 +581,7 @@ namespace moving_boundary {
 		* return is stored in vol
 		* @param mesh mesh of simulation
 		*/
-		Volume2DClass createInsidePolygon(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh);
+		Volume2DClass createInsidePolygon(); 
 
 		/**
 		* form polygon from intersection of voronoi result and front, and 
@@ -573,13 +589,7 @@ namespace moving_boundary {
 		* @param mesh ourMesh
 		* @param front the front
 		*/
-		void formBoundaryPolygon(const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh, const FrontType & front); 
-		/**
-		* overload of #formBoundaryPolgon to avoid compile dependency
-		* @param vm to get meshDef from
-		* @param front
-		*/
-		void formBoundaryPolygonVM( const VoronoiMesh & vm, const FrontType & front);
+		void formBoundaryPolygon(const FrontType & front); 
 
 		/**
 		* find neighbor's record of us, if it exists
@@ -627,7 +637,12 @@ namespace moving_boundary {
 			return stateVar;
 		}
 
+		const MeshDefinition &mesh;
 
+		struct Helper {
+			void setDirty( ) {};
+			void destroyed( ) {};
+		};
 		MeshElementStateful::State stateVar;
 		/**
 		* volume if this is an inside element -- otherwise volume comes from vol object

@@ -73,7 +73,10 @@ namespace spatial {
 		std::array<T,N> values;
 		for (int i = 0; i < N ;i++) {
 			const Axis a = static_cast<Axis>(i);
-			values[i] = lhs(a) / 2 + rhs(a) / 2; //divide before add to avoid overflow
+			T op1 = lhs(a);
+			T op2 = rhs(a);
+			//from stack overflow; prevent overflow, handle case where both values are odd
+			values[i] = (op1 >> 1) + (op2 >> 1) + (op1 & op2 & 0x1);
 		}
 		return  TPoint<T,N>(values);
 	}
