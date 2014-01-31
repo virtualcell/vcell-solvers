@@ -29,7 +29,7 @@ namespace matlabBridge {
 				os << "hold on;" << endl;
 				os << "clear " << variableName << ';' << endl; 
 				int i = 1;
-				for (PVector::const_iterator iter = points.begin( ); iter != points.end( );++iter) {
+				for (typename PVector::const_iterator iter = points.begin( ); iter != points.end( );++iter) {
 					os << variableName << '(' << i   << ",1) = " << iter->first  << ';' << endl; 
 					os << variableName << '(' << i++ << ",2) = " << iter->second << ';' << endl; 
 				}

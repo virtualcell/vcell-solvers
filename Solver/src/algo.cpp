@@ -85,8 +85,8 @@ return c;
 template <class TPOINT>
 bool spatial::inside(const std::vector<TPOINT> &  polygon, const TPOINT & point) {
 	typedef const TPOINT PT;
-	const TPOINT::value_type x = point(cX);
-	const TPOINT::value_type y = point(cY);
+	const typename TPOINT::value_type x = point(cX);
+	const typename TPOINT::value_type y = point(cY);
 	bool ins = false;
 	typename std::vector<TPOINT>::const_iterator iter = polygon.begin( );
 	typename std::vector<TPOINT>::const_iterator end = polygon.end( );
@@ -95,10 +95,10 @@ bool spatial::inside(const std::vector<TPOINT> &  polygon, const TPOINT & point)
 	++iter;
 	PT * j = &(*iter);
 	for (;;) {
-		const TPOINT::value_type ix =i->get(cX);
-		const TPOINT::value_type iy =i->get(cY);
-		const TPOINT::value_type jx =j->get(cX);
-		const TPOINT::value_type jy =j->get(cY);
+		const typename TPOINT::value_type ix =i->get(cX);
+		const typename TPOINT::value_type iy =i->get(cY);
+		const typename TPOINT::value_type jx =j->get(cX);
+		const typename TPOINT::value_type jy =j->get(cY);
 
 		if ( ((iy > y) != (jy > y)) && (x < (jx-ix) * (y-iy) / (jy-iy) + ix ) ) {
 			ins = !ins;
@@ -112,10 +112,10 @@ bool spatial::inside(const std::vector<TPOINT> &  polygon, const TPOINT & point)
 	}
 	{
 		j = &(polygon.front( ));
-		const TPOINT::value_type ix =i->get(cX);
-		const TPOINT::value_type iy =i->get(cY);
-		const TPOINT::value_type jx =j->get(cX);
-		const TPOINT::value_type jy =j->get(cY);
+		const typename TPOINT::value_type ix =i->get(cX);
+		const typename TPOINT::value_type iy =i->get(cY);
+		const typename TPOINT::value_type jx =j->get(cX);
+		const typename TPOINT::value_type jy =j->get(cY);
 
 		if ( ((iy > y) != (jy > y)) && (x < (jx-ix) * (y-iy) / (jy-iy) + ix ) ) {
 			ins = !ins;
