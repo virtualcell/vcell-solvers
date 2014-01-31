@@ -450,29 +450,54 @@ namespace moving_boundary {
 			client.iterationComplete();
 		}
 
-		void debugDump(bool first) {
-			static std::ofstream dump("frontmove.m");
+		void debugDump(size_t gc, char key) {
+			std::ostringstream oss;
+			oss << "frontmove"  << std::setfill('0') << std::setw(3) << gc << key << ".m" << std::ends;
+			std::ofstream dump(oss.str( ));
 			{
 				std::ostringstream mbuf;
 				mbuf << "Time " << currentTime;
 				dump << matlabBridge::ConsoleMessage(mbuf.str());
+				dump << matlabBridge::FigureName(oss.str( ).c_str( ));
 			}
-			if (first) {
-				matlabBridge::Scatter nbplot('b',2);
-				for (MBMesh::const_iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
-					frontTierAdapt::copyPointInto(nbplot,*iter);
-					double  x = iter->get(cX);
-					double  y = iter->get(cY);
-
-					std::stringstream ss;
-					ss << iter->indexOf(cX) << ',' << iter->indexOf(cY); 
-					dump << matlabBridge::Text(x,y, ss.str( ).c_str( ));
+			matlabBridge::TScatter<CoordinateType> deepInside('y',3,true,0);
+			matlabBridge::TScatter<CoordinateType> inside('b',2,true,1);
+			matlabBridge::TScatter<CoordinateType> boundary('g',2,true,2);
+			matlabBridge::TScatter<CoordinateType> outside('m',2,true,3);
+			matlabBridge::TScatter<CoordinateType> deepOutside('r',2,false,4);
+			for (MBMesh::const_iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
+				switch(iter->mPos( )) {
+				case spatial::deepInteriorSurface:
+					frontTierAdapt::copyPointInto(deepInside,*iter);
+					break;
+				case spatial::interiorSurface:
+					frontTierAdapt::copyPointInto(inside,*iter);
+					break;
+				case spatial::boundarySurface:
+					frontTierAdapt::copyPointInto(boundary,*iter);
+					break;
+				case spatial::outsideSurface:
+					frontTierAdapt::copyPointInto(outside,*iter);
+					break;
+				case spatial::deepOutsideSurface:
+					frontTierAdapt::copyPointInto(deepOutside,*iter);
+					break;
+				default:
+					VCELL_EXCEPTION(domain_error,"bad state " << static_cast<int>(iter->mPos( )) << iter->ident( )) ;
 				}
-				dump << nbplot;
+				/*
+				double  x = iter->get(cX);
+				double  y = iter->get(cY);
+
+				std::stringstream ss;
+				ss << iter->indexOf(cX) << ',' << iter->indexOf(cY); 
+				dump << matlabBridge::Text(x,y, ss.str( ).c_str( ));
+				*/
 			}
-			matlabBridge::Polygon pPoly("k",1);
+			dump << deepInside << inside << boundary << outside << deepOutside; 
+			matlabBridge::TPolygon<CoordinateType> pPoly("k",1);
 			frontTierAdapt::copyVectorInto(pPoly,currentFront);
-			dump << pPoly << matlabBridge::pause;
+			dump << pPoly; 
 		}
 
 		static void commenceSimulation(Element &e) {
@@ -654,7 +679,7 @@ namespace moving_boundary {
 				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),commenceSimulation);
 				giveElementsToClient(client,generationCount);
 				if (matlabBridge::MatLabDebug::on("frontmove")) {
-					debugDump(true);
+					debugDump(generationCount, 's');
 				}
 
 				while (currentTime < maxTime) {
@@ -686,7 +711,7 @@ namespace moving_boundary {
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),mv);
 #endif //PENDING_DISCUSSION_OF_WHERE_TO_CHECK
 
-					VCELL_LOG(debug, "moved from to time");
+					VCELL_LOG(debug, "moved to time " << currentTime << " generation " << generationCount);
 					vcFront->propagateTo(currentTime); 
 					/*
 					VCellFront *vcp = dynamic_cast<VCellFront *>(vcFront);
@@ -707,9 +732,6 @@ namespace moving_boundary {
 					std::for_each(boundaryElements.begin( ),boundaryElements.end( ),MoveFront(*this));
 					//std::for_each(boundaryElements.begin( ),boundaryElements.end( ),FindNeighborEdges( );
 
-					if (matlabBridge::MatLabDebug::on("frontmove")) {
-						debugDump(false);
-					}
 
 #ifdef HOLD_FOR_POSSIBLE_IMPLEMENTATION_LATER
 					double diffuseAdvectStep = timeIncr;
@@ -747,20 +769,29 @@ namespace moving_boundary {
 						throw rle;
 					}
 					primaryMesh.diffuseAdvectCache( ).finish( );
+					if (matlabBridge::MatLabDebug::on("frontmove")) {
+						debugDump(generationCount,'b');
+					}
 
 					//adjustNodes calls MeshElementSpecies.updateBoundaryNeighbors
 					try {
-					voronoiMesh.adjustNodes(boundaryElements,currentFront);
+						voronoiMesh.adjustNodes(boundaryElements,currentFront);
 					} catch (SkipsBoundary & skips) {
-						std::ofstream sb("sb.txt");
+						std::ofstream sb("sb.m");
 						matlabBridge::TPolygon<long long> oldPoly("k",1);
 						frontTierAdapt::copyVectorInto(oldPoly,oldFront);
 						matlabBridge::TPolygon<long long> newPoly("r",1);
 						frontTierAdapt::copyVectorInto(newPoly,currentFront);
-						matlabBridge::Scatter scatter('b',2,true);
+						matlabBridge::TScatter<long> scatter('b',2,true);
 						scatter.add(skips.mes(cX),skips.mes(cY));
 						sb << '%' << skips.mes.ident( ) << std::endl;
 						sb << oldPoly << newPoly << scatter;
+						std::cerr << "rethrowing skips" << std::endl;
+						debugDump(generationCount,'e');
+						throw skips;
+					}
+					if (matlabBridge::MatLabDebug::on("frontmove")) {
+						debugDump(generationCount,'a');
 					}
 					//TODO: nochange
 

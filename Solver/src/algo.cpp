@@ -63,44 +63,66 @@ bool spatial::below(const TPoint<T,2> & point, const TPoint<T,2> & a, const TPoi
 	return leftPointSlope < edgeSlope;
 }
 
+
+
+/*
+base algorithm for impelementation below
+int pnpoly(int nvert, float *vertx, float *verty, float testx, float testy)
+{
+int i, j, c = 0;
+for (i = 0, j = nvert-1; i < nvert; j = i++) {
+if ( ((verty[i]>testy) != (verty[j]>testy)) &&
+(testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
+c = !c;
+}
+return c;
+}`
+*/
+/**
+* right ray casting inside algorithm
+* @tparam TPOINT type of spatial::TPoint
+*/
 template <class TPOINT>
 bool spatial::inside(const std::vector<TPOINT> &  polygon, const TPOINT & point) {
 	typedef const TPOINT PT;
-	if (polygon.size( ) < 3) {
-		return false;
-	}
-	//static_assert(point.numDim( ) == 2,"for 2d only");
-	int below = 0;
+	const TPOINT::value_type x = point(cX);
+	const TPOINT::value_type y = point(cY);
+	bool ins = false;
 	typename std::vector<TPOINT>::const_iterator iter = polygon.begin( );
 	typename std::vector<TPOINT>::const_iterator end = polygon.end( );
-	PT * a = &(*iter);
+
+	PT * i = &(*iter);
 	++iter;
-	PT * b = &(*iter);
+	PT * j = &(*iter);
 	for (;;) {
-		if (spatial::below(point,*a,*b)) {
-			if ( !(point(cX) == a->get(cX) && point(cX) == b->get(cX) ) ) { //check for under vertical line
-				below++;
-			}
+		const TPOINT::value_type ix =i->get(cX);
+		const TPOINT::value_type iy =i->get(cY);
+		const TPOINT::value_type jx =j->get(cX);
+		const TPOINT::value_type jy =j->get(cY);
+
+		if ( ((iy > y) != (jy > y)) && (x < (jx-ix) * (y-iy) / (jy-iy) + ix ) ) {
+			ins = !ins;
 		}
-		a = b;
+		i = j ;
 		++iter;
 		if (iter == end) {
 			break;
 		}
-		b = &(*iter);
-	}; 
+		j = &(*iter);
+	}
+	{
+		j = &(polygon.front( ));
+		const TPOINT::value_type ix =i->get(cX);
+		const TPOINT::value_type iy =i->get(cY);
+		const TPOINT::value_type jx =j->get(cX);
+		const TPOINT::value_type jy =j->get(cY);
 
-	PT & first = polygon.front( );
-	if (spatial::below(point,*a,first)) {
-		if ( !(point(cX) == a->get(cX) && point(cX) == first(cX) ) ) { //check for under vertical line
-			below++;
+		if ( ((iy > y) != (jy > y)) && (x < (jx-ix) * (y-iy) / (jy-iy) + ix ) ) {
+			ins = !ins;
 		}
 	}
-	//point is inside if it's below an odd number of edges
-	return below%2 == 1;
+	return ins;
 }
-
-
 template <class T>
 bool spatial::between(const TPoint<T,2> & origin, const SVector<T,2> & direction,const TPoint<T,2> & vertex, const TPoint<T,2> & otherVertex) {
 	SVector<T,2>  vertexVector(vertex,otherVertex);

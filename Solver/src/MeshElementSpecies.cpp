@@ -180,7 +180,7 @@ void MeshElementSpecies::setPos(SurfacePosition m)  {
 		case interiorSurface:
 		case outsideSurface:
 		case deepOutsideSurface:
-			throw new SkipsBoundary(*this,m);
+			throw SkipsBoundary(*this,m);
 			break;
 		case boundarySurface:
 			setState(awaitingNb);
@@ -822,10 +822,11 @@ void MeshElementSpecies::collectMassFromNeighbors(const FrontType & front) {
 }
 
 void MeshElementSpecies::endOfCycle( ) {
+	VCELL_LOG(verbose,this->ident( ) << " begin eoc"); 
 	switch (state( )) {
 	case stable:
 		if (this->isInside( )) {
-			VCELL_EXCEPTION(domain_error,this->indexInfo( ) << ' ' << state( ) << ' ' << this->mPos( ) << " end of cycle");
+			VCELL_EXCEPTION(domain_error, ident( )  << " end of cycle");
 		}
 		{
 			bool deep = true;
