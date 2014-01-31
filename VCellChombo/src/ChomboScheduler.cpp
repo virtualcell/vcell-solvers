@@ -56,6 +56,7 @@ static const int maxCoarsen = -1;
 static const int numPreCondIters = 4;
 static const int relaxType = 2;
 static const int numGhostEBISLayout = 4;
+static const double smallVolFrac = 1e-3;
 
 const int ChomboScheduler::phase0 = 0;
 const int ChomboScheduler::phase1 = 1;
@@ -100,8 +101,8 @@ ChomboScheduler::ChomboScheduler(SimulationExpression* sim, ChomboSpec* chomboSp
 	}
 	hdf5FileCount = 0;
 	numGhostSoln = IntVect::Unit * 3;
-	cout << "maxBoxSiz=" << chomboSpec->getMaxBoxSize() << endl;
-	cout << "fillRatio=" << chomboSpec->getFillRatio() << endl;
+	pout() << "maxBoxSiz=" << chomboSpec->getMaxBoxSize() << endl;
+	pout() << "fillRatio=" << chomboSpec->getFillRatio() << endl;
 
 	H5dont_atexit();
 }
@@ -175,7 +176,7 @@ void ChomboScheduler::initializeGrids() {
 		throw ss.str();
 	}
 
-	cout << endl << "ChomboScheduler:: generating grids" << endl;
+	pout() << endl << "ChomboScheduler:: generating grids" << endl;
 	IntVect coarsestNx = chomboGeometry->getMeshSize();
 	RealVect coarsestDx = chomboGeometry->getDomainSize();
 
@@ -206,7 +207,7 @@ void ChomboScheduler::initializeGrids() {
 	}
 
     // Define Geometry
-	cout << "ChomboScheduler:: processing geometry" << endl;
+	pout() << "ChomboScheduler:: processing geometry" << endl;
 
 	int finestLevel = numLevels - 1;
 	ProblemDomain finestDomain = vectDomains[finestLevel];
@@ -243,30 +244,29 @@ void ChomboScheduler::initializeGrids() {
 		Vector<RefCountedPtr<EBIndexSpace> > volumes = ebisPtr->connectedComponents();
 		for (int ivol = 0; ivol < volumes.size(); ivol++) {
 			++ numConnectedComponents;
-			
-			// find the feature for this volume
+
 			RefCountedPtr<EBIndexSpace> volume = volumes[ivol];
 			int depth = volume->getLevel(finestDomain);
 			DisjointBoxLayout grids = volume->levelGrids(depth);
 			EBISLayout ebisLayout;
 			volume->fillEBISLayout(ebisLayout, grids, finestDomain, numGhostEBISLayout);
-			Feature* featureFoundRegular = NULL;
-			Feature* featureFoundIrregular = NULL;
 
-			for(DataIterator dit = grids.dataIterator(); dit.ok() && featureFoundRegular == NULL; ++dit) {
+			// To find the feature for this volume we first try to find a regular point and get feature from that point
+			Feature* thisFeature = NULL;
+			for(DataIterator dit = grids.dataIterator(); dit.ok() && thisFeature == NULL; ++dit) {
 				const Box& currBox = grids[dit()];
 				const EBISBox& currEBISBox = ebisLayout[dit()];
 				const IntVect& smallEnd = currBox.smallEnd();
 				const IntVect& boxSize = currBox.size();
 #if CH_SPACEDIM==3
-				for (int k = 0; k < boxSize[2] && featureFoundRegular == NULL; ++k) {
+				for (int k = 0; k < boxSize[2] && thisFeature == NULL; ++k) {
 #endif
-					for (int j = 0; j < boxSize[1] && featureFoundRegular == NULL; ++j) {
-						for (int i = 0; i < boxSize[0] && featureFoundRegular == NULL; ++i) {
+					for (int j = 0; j < boxSize[1] && thisFeature == NULL; ++j) {
+						for (int i = 0; i < boxSize[0] && thisFeature == NULL; ++i) {
 							IntVect gridIndex(D_DECL(i + smallEnd[0], j + smallEnd[1], k + smallEnd[2]));
 							if (currEBISBox.isRegular(gridIndex)) {
 								RealVect a_point = EBArith::getIVLocation(gridIndex, fineDx, chomboGeometry->getDomainOrigin());
-								featureFoundRegular = chomboGeometry->getFeature(a_point);
+								thisFeature = chomboGeometry->getFeature(a_point);
 								break;
 							}
 						} // end for i
@@ -274,44 +274,61 @@ void ChomboScheduler::initializeGrids() {
 #if CH_SPACEDIM==3
 				} // end for k
 #endif
-				if (featureFoundRegular == NULL) {
+			} // end for DataIterator
+
+			// if no regular point is found, use irregular points (centroids) to find feature, but this may not be as reliable
+			// so we will check the feature in all irregular points just in case
+			// here do we break?
+			if (thisFeature == NULL)
+			{
+				for(DataIterator dit = grids.dataIterator(); dit.ok(); ++ dit)
+				{
+					const Box& currBox = grids[dit()];
+					const EBISBox& currEBISBox = ebisLayout[dit()];
 					const EBGraph& currEBGraph = currEBISBox.getEBGraph();
 					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
-					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit) {
+					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++ vofit)
+					{
 						const VolIndex& vof = vofit();
-
 						const IntVect& gridIndex = vof.gridIndex();
 						RealVect a_point = EBArith::getIVLocation(gridIndex, fineDx, chomboGeometry->getDomainOrigin());
 						RealVect centroid = currEBISBox.centroid(vof);
 						centroid *= fineDx;
 						a_point += centroid;
 						Feature* fi = chomboGeometry->getFeature(a_point);
-						if (featureFoundIrregular == NULL) {
-							featureFoundIrregular = fi;
-						} else if (featureFoundIrregular != fi) {
-							stringstream ss;
-							ss << "Irregular point is in different feature than regular point in volume " << ivol << " in phase " << iphase << ". Mesh is too coarse!";
-							throw ss.str();
+						if (thisFeature == NULL)
+						{
+							thisFeature = fi;
+						}
+						else if (thisFeature != fi)
+						{
+							double volfrac = currEBISBox.volFrac(vof);
+							// find volume fraction for this vof, if too small then ignore
+							if (volfrac > smallVolFrac)
+							{
+							   stringstream ss;
+							   ss << "Found inconsistent features for two irregular vof. Try refining mesh around " << a_point;
+							   throw ss.str();
+							}
 						}
 					}
 				}
-			} // end for DataIterator
-
-			if (featureFoundRegular == NULL && featureFoundIrregular == NULL) {
+			}
+			if (thisFeature == NULL)
+			{
 				stringstream ss;
-				ss << "Didn't find feature for volume " << ivol << " in phase " << iphase << ". Mesh is too coarse!";
+				ss << "Didn't find feature for volume " << ivol << " in phase " << iphase << ". Mesh is too coarse.";
 				throw ss.str();
 			}
-			Feature* finalFeature = featureFoundRegular != NULL ? featureFoundRegular : featureFoundIrregular;
 			ConnectedComponent* cc = new ConnectedComponent;
-			cc->feature = finalFeature;
-			cout << "Phase " << iphase << ", Volume " << ivol << ", Feature " << finalFeature->getName() << endl;
+			cc->feature = thisFeature;
+			pout() << "Phase " << iphase << ", Volume " << ivol << ", Feature " << thisFeature->getName() << endl;
 			cc->phase = iphase;
 			cc->volumeIndexInPhase = ivol;
 			cc->volume = volume;
 			phaseVolumeList[iphase].push_back(cc);
-			finalFeature->setPhase(iphase);
-		} // end for comp
+			thisFeature->setPhase(iphase);
+		} // end for ivol
 	}// end for phase
 
 	// define grids for each level
@@ -350,7 +367,7 @@ void ChomboScheduler::initializeGrids() {
 		} else {
 			pout() << "ChomboScheduler:: tag user defined cells" << endl;
 		}
-		
+
 		bool bCellsTagged = false;
 		if (refinementRoiExps == NULL) {
 			int tagLevel = numLevels - 2;
@@ -401,7 +418,7 @@ void ChomboScheduler::initializeGrids() {
 										RealVect vol_point = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
 										if (refinementRoiExps[ilev]->evaluateVector(vol_point.dataPtr()))
 										{
-											cout << "tagging point " << gridIndex << " at level " << ilev << endl;
+											pout() << "tagging point " << gridIndex << " at level " << ilev << endl;
 											tags[ilev] |= gridIndex;
 										}
 									}
@@ -521,10 +538,8 @@ void ChomboScheduler::initializeGrids() {
 						{ // membrane not found
 							Feature* feature = phaseVolumeList[phase0][ivol]->feature;
 							RealVect vol_point = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-							stringstream ss;
-							ss << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev
-									<< ": no membrane id for point " << vof.gridIndex() << " at "  << vol_point << ".";
-							cout << ss.str() << endl;
+							pout() << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev
+									<< ": no membrane id for point " << vof.gridIndex() << " at "  << vol_point << "." << endl;
 							(*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0) = -1;
 						}
 						else
@@ -542,7 +557,7 @@ void ChomboScheduler::initializeGrids() {
 									Feature* feature = phaseVolumeList[phase0][ivol]->feature;
 									RealVect vol_point = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
 									stringstream ss;
-									ss << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev 
+									ss << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev
 											<< ", Point " << gridIndex << " at "  << vol_point << " is multi-valued point."
 											<< "Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
 									throw ss.str();
@@ -578,7 +593,7 @@ void ChomboScheduler::initializeGrids() {
 				double sumVolFrac = 0;
 				int refratio = cfRefRatio;
 				int numPoints = 0;
-				
+
 				for(int ilev = 0; ilev < numLevels; ++ ilev)
 				{
 					int numRepeats = pow(refratio,SpaceDim);
@@ -605,7 +620,7 @@ void ChomboScheduler::initializeGrids() {
 										continue;
 									}
 									++ numPoints;
-									
+
 									if (isInNextFinerLevel(ilev, gridIndex))
 									{
 										continue;
@@ -631,7 +646,7 @@ void ChomboScheduler::initializeGrids() {
 								maxDxComponent = max(maxDxComponent, vectDxes[ilev][idir]);
 							}
 							double levelUnitS = pow(maxDxComponent,SpaceDim -1);
-							
+
 							int totalNumVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
 							Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
 							const EBGraph& currEBGraph = currEBISBox.getEBGraph();
@@ -660,7 +675,7 @@ void ChomboScheduler::initializeGrids() {
 									if (iter == irregVolumeMembraneMap[ilev].end() || iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
 									{
 										continue;
-									}									
+									}
 									double areaFrac = currEBISBox.bndryArea(vof);
 									membrane->addSize(areaFrac * levelUnitS);
 									membrane->addNumPoints(1);
@@ -715,7 +730,7 @@ void ChomboScheduler::initializeGrids() {
 }
 
 void ChomboScheduler::updateSolution() {
-	cout << endl << "ChomboScheduler:: updateSolution" << endl;
+	pout() << endl << "ChomboScheduler:: updateSolution" << endl;
 	// reset variables
 	int numVars = simulation->getNumVariables();
 	for(int v = 0; v < numVars; ++ v){
@@ -729,7 +744,6 @@ void ChomboScheduler::updateSolution() {
 		cfRefRatio *= vectRefRatios[ilev];
 	}
 
-	double smallVolFrac = 1e-3;
 	double viewLevelUnitV = vectDxes[viewLevel].product();
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
@@ -746,7 +760,7 @@ void ChomboScheduler::updateSolution() {
 					vectDomains[coarseLevel], vectRefRatios[coarseLevel], numDefinedVolVars, (const EBIndexSpace *)phaseVolumeList[iphase][ivol]->volume);
 				averageOp.average(*volSoln[iphase][ivol][coarseLevel], *volSoln[iphase][ivol][ilev], interv);
 			}
-			
+
 			for (int ivar = 0; ivar < numDefinedVolVars; ivar ++) {
 				Variable* var = feature->getDefinedVariable(ivar);
 				double* varCurr = var->getCurr();
@@ -870,7 +884,7 @@ void ChomboScheduler::updateSolution() {
 				maxDxComponent = max(maxDxComponent, vectDxes[ilev][idir]);
 			}
 			double levelUnitS = pow(maxDxComponent,SpaceDim -1);
-			
+
 			DisjointBoxLayout& currGrids = vectGrids[ilev];
 			for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++dit)	{
 				const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
@@ -1266,8 +1280,12 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 			}
 			if (F[0] == F[2])
 			{
-				throw "cross-point calculation: membrane is tangent to an element face. "
-								"It may help if domain origin is shifted by a small number";
+				stringstream ss;
+				ss << "cross-point calculation: membrane is tangent to an element face. "
+								"It may help if domain origin is shifted by a small number. F=["
+					<< F[0] << "," << F[1] << "," << F[2] << "," << F[3] << "], [cp, cpcoords]=["
+					<< cp << "," << cpcoords << "]";
+				throw ss.str();
 			}
 			else if ((F[1] == F[2]) && (F[0] == F[3]))
 			{
@@ -1334,7 +1352,6 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 		{
 			stringstream ss;
 			ss << "Volume element " << vi << " is not an irregular point";
-			//cout << ss.str() << endl;
 			throw ss.str();
 		}
 		else if (iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
@@ -1496,15 +1513,6 @@ void ChomboScheduler::writeMembraneFiles()
 					metricsData[memIndex].volumeFraction = currEBISBox.volFrac(vof);
 					metricsData[memIndex].cornerPhaseMask = 0;
 
-					// correct normal signs (direction), we want normals pointing from phase 1 to phase 0
-					double alpha = 0.25;
-					RealVect offset = alpha * vectDxes[ilev] * metricsData[memIndex].normal;
-					double Fp = geoIfs[phase0]->value(mem_point + offset);
-					double Fm = geoIfs[phase0]->value(mem_point - offset);
-					if (Fp * Fm < 0 && Fp > 0) // Fp and Fm are different sign, Fp > 0 and Fm < 0
-					{
-						metricsData[memIndex].normal = - metricsData[memIndex].normal;
-					}
 					// compute corner phase mask
 					RealVect dP[2] = {-0.5 * vectDxes[ilev], 0.5 * vectDxes[ilev]};
 					RealVect P = vol_point;
@@ -1568,79 +1576,50 @@ void ChomboScheduler::writeMembraneFiles()
 								++ crossedEdgeCount;
 								if (crossedEdgeCount < 2)
 								{
-									if (Fm * Fp < 0)
-									{
-										RealVect cp = (edges[iedge].getIntersectLo()) ? edges[iedge].getLo() : edges[iedge].getHi();
-										RealVect cross_point = cp;
-										cross_point *= vectDxes[ilev];
-										cross_point += vol_point;
+									RealVect cp = (edges[iedge].getIntersectLo()) ? edges[iedge].getLo() : edges[iedge].getHi();
+									RealVect cross_point = cp;
+									cross_point *= vectDxes[ilev];
+									cross_point += vol_point;
 
-										int neighborEdge = (iedge ^ 1);
-										int nidx  = findNeighborMembraneIndex2D(phase0, ilev, gridIndex, iedge, cp, cross_point, neighborEdge);
-										if (nidx == MEMBRANE_NEIGHBOR_UNKNOWN)
+									int neighborEdge = (iedge ^ 1);
+									int nidx  = findNeighborMembraneIndex2D(phase0, ilev, gridIndex, iedge, cp, cross_point, neighborEdge);
+									if (nidx == MEMBRANE_NEIGHBOR_UNKNOWN)
+									{
+										pout() << "did not find neighbor at edge " << neighborEdge << " for membrane point (not next to wall) " << memIndex << gridIndex;
+									}
+									else
+									{
+										// determine if vertex is first or second
+										// compute Q (as membrane enters the volume element from outside
+										// find a point to the right of cross point, and compute fQ=implF(Q);
+										RealVect Vp = mem_point - cross_point;
+										RealVect Vtan(-metricsData[memIndex].normal[1], metricsData[memIndex].normal[0]);
+										double Dtest = Vp.dotProduct(Vtan);
+										int orderV, orderN;
+										if (Dtest > 0)
 										{
-											cout << "did not find neighbor at edge " << neighborEdge << " for membrane point (not next to wall) " << memIndex << gridIndex;
+											orderV = 0;
+											orderN = 1;
 										}
 										else
 										{
-											// determine if vertex is first or second
-											// compute Q (as membrane enters the volume element from outside
-											// find a point to the right of cross point, and compute fQ=implF(Q);
-											RealVect Vp = mem_point - cross_point;
-											RealVect Vtan(-metricsData[memIndex].normal[1], metricsData[memIndex].normal[0]);
-											double Dtest = Vp.dotProduct(Vtan);
-											int orderV, orderN;
-											if (Dtest > 0)
-											{
-												orderV = 0;
-												orderN = 1;
-											}
-											else
-											{
-												orderV = 1;
-												orderN = 0;
-											}
-
-											// set neighbor vertex and neighbor
-											// valid neighbor
-//											if (segmentList[memIndex].neighborIndexes[orderV] != MEMBRANE_NEIGHBOR_UNKNOWN)
-//											{
-//												// already assigned value before, out of order
-//												stringstream ss;
-//												ss << "membrane neighbor is out of order, membrane index is " << memIndex << gridIndex
-//													<< ", previously assigned " << (orderV == 0 ? "previous" : "next") <<  " neighbor is " << segmentList[memIndex].neighborIndexes[orderV]
-//													<< ", currently computed " << (orderV == 0 ? "previous" : "next") << " neighbor is " << nidx;
-//												throw ss.str();
-//											}
-											segmentList[memIndex].vertexIndexes[orderV] = vertexCount;
-											segmentList[memIndex].neighborIndexes[orderV] = nidx;
-											edgeVertices[memIndex * 4 + iedge] = vertexCount;
-											if (nidx != MEMBRANE_NEIGHBOR_NEXT_TO_WALL)
-											{
-//												if (segmentList[nidx].neighborIndexes[orderN] != MEMBRANE_NEIGHBOR_UNKNOWN)
-//												{
-//													// already assigned value before, out of order
-//													stringstream ss;
-//													ss << "membrane neighbor is out of order, membrane index is " << memIndex
-//														<< ", previously assigned " << (orderN == 0 ? "previous" : "next") <<  " neighbor is " << segmentList[nidx].neighborIndexes[orderN]
-//														<< ", currently computed " << (orderN == 0 ? "previous" : "next") << " neighbor is " << memIndex;
-//													throw ss.str();
-//												}
-												segmentList[nidx].vertexIndexes[orderN] = vertexCount;
-												segmentList[nidx].neighborIndexes[orderN] = memIndex;
-												edgeVertices[nidx * 4 + neighborEdge] = vertexCount;
-											}
-											vertexList[vertexCount].coords = cross_point;
-											++ vertexCount;
+											orderV = 1;
+											orderN = 0;
 										}
+
+										// set neighbor vertex and neighbor
+										segmentList[memIndex].vertexIndexes[orderV] = vertexCount;
+										segmentList[memIndex].neighborIndexes[orderV] = nidx;
+										edgeVertices[memIndex * 4 + iedge] = vertexCount;
+										if (nidx != MEMBRANE_NEIGHBOR_NEXT_TO_WALL)
+										{
+											segmentList[nidx].vertexIndexes[orderN] = vertexCount;
+											segmentList[nidx].neighborIndexes[orderN] = memIndex;
+											edgeVertices[nidx * 4 + neighborEdge] = vertexCount;
+										}
+										vertexList[vertexCount].coords = cross_point;
+										++ vertexCount;
 									}
-								}
-								else
-								{
-									stringstream ss;
-									ss << "Point " << gridIndex << " has " << crossedEdgeCount << " cross edge points, is multi-valued point."
-													<< "Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
-									throw ss.str();
 								}
 							}
 						}
@@ -1869,7 +1848,7 @@ void ChomboScheduler::writeMembraneFiles()
 	H5Tclose(sType);
 	delete[] structureData;
 	}
-	
+
 	// membrane metrics
 	{
 	hid_t metricsType = H5Tcreate(H5T_COMPOUND, sizeof(MembraneElementMetrics));

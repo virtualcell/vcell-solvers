@@ -23,7 +23,6 @@
 #include <sstream>
 #include <fstream>
 #include <string.h>
-using namespace std;
 using std::stringstream;
 
 static int numSmooth = 3;
@@ -38,7 +37,7 @@ static int relaxType = 2;
 
 ChomboSemiImplicitScheduler::ChomboSemiImplicitScheduler(SimulationExpression* sim, ChomboSpec* chomboSpec)
 	: ChomboScheduler(sim, chomboSpec) {
-	cout << "************* Using Chombo SemiImplicit *****************" << endl;
+	pout() << "************* Using Chombo SemiImplicit *****************" << endl;
 	numGhostSource = IntVect::Zero;
 }
 
@@ -197,7 +196,7 @@ void ChomboSemiImplicitScheduler::iterate() {
 }
 
 void ChomboSemiImplicitScheduler::setInitialConditions() {
-	cout << "ChomboSemiImplicitScheduler:: setInitialConditions" << endl;
+	pout() << "ChomboSemiImplicitScheduler:: setInitialConditions" << endl;
 
 	// t, x, y, z, VAR, VAR_INSIDE, VAR_OUTSIDE, field data, parameters
 	numSymbols = simulation->getNumSymbols();
@@ -484,7 +483,7 @@ void ChomboSemiImplicitScheduler::createConstantCoeffOpFactory(RefCountedPtr<EBA
 
 void ChomboSemiImplicitScheduler::defineSolver()
 {
-	cout << "ChomboSemiImplicitScheduler::defineSolver" << endl;
+	pout() << "ChomboSemiImplicitScheduler::defineSolver" << endl;
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
@@ -566,12 +565,6 @@ void ChomboSemiImplicitScheduler::getExtrapStencils(Vector<RefCountedPtr<BaseInd
 		                vofs[ivof], ebisBox, -1, &cfivs, 0);
 		a_destVoFs[ivof] = RefCountedPtr<BaseIndex  >(new   VolIndex(volIndex));
 		a_stencils[ivof] = RefCountedPtr<BaseStencil>(new VoFStencil(extrapStenc));
-//		if (gridIndex[0] == 116 && gridIndex[1] == 40) {
-//			for (int i = 0; i < extrapStenc.size(); i ++) {
-//				cout << gridIndex << " " << extrapStenc.vof(i).gridIndex() << endl;
-//			}
-//
-//		}
 	}
 }
 
@@ -657,7 +650,7 @@ void ChomboSemiImplicitScheduler::extrapolateDataToBoundary() {
 }
 
 void ChomboSemiImplicitScheduler::updateSource() {
-	cout << "ChomboSemiImplicitScheduler::updateSource" << endl;
+	pout() << "ChomboSemiImplicitScheduler::updateSource" << endl;
 	extrapolateDataToBoundary();
 
 	int volSymbolOffset = 4;
