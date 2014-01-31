@@ -101,6 +101,8 @@ namespace {
 			}
 
 			diagV = vcell_util::ConvertUp<WORLD_COORD>(scale * universe.diagonal( ));
+			static_assert(std::numeric_limits<WORLD_COORD>::is_integer,"non-integer type"); 
+			VCELL_LOG(info,"World type is " <<  std::numeric_limits<WORLD_COORD>::digits << " digits, scale is " << iScale);
 		}
 		double scale;
 		WORLD_COORD diagV;
