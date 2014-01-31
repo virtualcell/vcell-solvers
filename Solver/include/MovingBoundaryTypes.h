@@ -1,5 +1,6 @@
 #ifndef MovingBoundaryTypes_h
 #define MovingBoundaryTypes_h
+#include <cstdint>
 namespace spatial {
 	template <class COORD_TYPE,class VALUE_TYPE,int N>
 	struct Volume;
@@ -12,7 +13,7 @@ namespace moving_boundary {
 	/**
 	* type used for coordinate system of problem implementation
 	*/
-	typedef long CoordinateType;
+	typedef int32_t CoordinateType;
 	/**
 	* type used for distances of problem implementation
 	*/

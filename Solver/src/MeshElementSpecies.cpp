@@ -44,7 +44,7 @@ namespace {
 	const double tolerancePerpendicularSegmentDistanceSquared = 1e-3;
 	struct MesDistancePolicy {
 		typedef long long DistanceSquaredType;
-		typedef long DistanceType;
+		typedef int32_t DistanceType;
 		static void check(long) {}
 		template <typename U>
 		static DistanceType convert(U u) {

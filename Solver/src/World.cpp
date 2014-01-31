@@ -116,6 +116,9 @@ namespace {
 	template <int N>
 	struct WorldInit<short,N> : public WorldInitInteger<short,N> {
 	};
+	template <int N>
+	struct WorldInit<int32_t,N> : public WorldInitInteger<int32_t,N> {
+	};
 }
 
 template <typename WORLD_COORD, int N>
@@ -158,6 +161,7 @@ COORD_TYPE WorldTypeBase<COORD_TYPE>::maxSupported;
 * instantations
 ********************************************************************/
 template struct World<moving_boundary::CoordinateType,2>;
+template struct World<long,2>;
 template struct World<double,2>;
 
 template struct World<short,2>;

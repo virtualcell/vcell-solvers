@@ -3,11 +3,12 @@
 #include <vector>
 #include <MovingBoundaryTypes.h>
 #include <TPoint.h>
+#include <cstdint>
 namespace spatial {
 	/**
 	* implementation type for boost::polygon::voronoi routines
 	*/
-	typedef signed long VoronoiType;
+	typedef int32_t VoronoiType;
 
 	typedef GhostPoint<VoronoiType,2> VoronoiGhostPoint;
 
