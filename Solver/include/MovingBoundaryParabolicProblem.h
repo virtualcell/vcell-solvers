@@ -147,6 +147,13 @@ namespace moving_boundary {
 		}
 
 		/**
+		* set heartbeat output to std::cout
+		* @param numGen output after every numGen generations
+		* @param symbol symbol to output (newline not implied)
+		* default is no heartbeart
+		*/
+		void setHeartbeat(size_t numGen, const std::string &symbol);
+		/**
 		* run the simulation
 		* @throws #TimeStepTooBig
 		*/

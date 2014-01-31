@@ -175,6 +175,7 @@ namespace moving_boundary {
 			maxTime(mbs.maxTime),
 			timeStep(maxTime/mbs.numberTimeSteps),
 			minimimMeshInterval(0),
+
 			symTable(buildSymTable( )),
 			levelExp(mbs.levelFunctionStr,symTable), 
 			advectVelocityExpX(mbs.advectVelocityFunctionStrX,symTable), 
@@ -182,14 +183,19 @@ namespace moving_boundary {
 			frontVelocityExpX(mbs.frontVelocityFunctionStrX,symTable), 
 			frontVelocityExpY(mbs.frontVelocityFunctionStrY,symTable), 
 			concentrationExp(mbs.concentrationFunctionStr,symTable), 
+
+			vcFront(initFront(world, *this,mbs)),
+			currentFront( ),
 			meshDefinition(createMeshDef(world, mbs)),
 			interiorVolume(calculateInteriorVolume(world, meshDefinition)),
 			primaryMesh(meshDefinition),
 			voronoiMesh(primaryMesh),
 			//alloc( ),
+			boundaryElements( ),
 			lostElements( ),
 			gainedElements(  ),
-			vcFront(initFront(world, *this,mbs))
+			heartbeat(0),
+			heartbeatSymbol( )
 		{  
 
 			//init using either function pointer or string
@@ -673,7 +679,10 @@ namespace moving_boundary {
 		};
 
 		void run(MovingBoundaryClient & client) {
-			VCELL_LOG(trace,"commence simulation");
+			VCELL_LOG(info,"commence simulation");
+			const bool frontMoveTrace = matlabBridge::MatLabDebug::on("frontmove");
+			FrontType oldFront; //for debugging
+
 			size_t generationCount = 0;
 			try { 
 				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),commenceSimulation);
@@ -721,7 +730,10 @@ namespace moving_boundary {
 					}
 					*/
 
-					FrontType oldFront(currentFront); //for debugging
+
+					if (frontMoveTrace) {
+						oldFront = currentFront; //for debugging
+					}
 					currentFront = vcFront->retrieveFront( );
 					voronoiMesh.setFront(currentFront);
 
@@ -769,7 +781,7 @@ namespace moving_boundary {
 						throw rle;
 					}
 					primaryMesh.diffuseAdvectCache( ).finish( );
-					if (matlabBridge::MatLabDebug::on("frontmove")) {
+					if (frontMoveTrace) {
 						debugDump(generationCount,'b');
 					}
 
@@ -790,7 +802,7 @@ namespace moving_boundary {
 						debugDump(generationCount,'e');
 						throw skips;
 					}
-					if (matlabBridge::MatLabDebug::on("frontmove")) {
+					if (frontMoveTrace) {
 						debugDump(generationCount,'a');
 					}
 					//TODO: nochange
@@ -805,6 +817,9 @@ namespace moving_boundary {
 
 					//tell the client about it
 					giveElementsToClient(client,++generationCount);
+					if (heartbeat && generationCount%heartbeat == 0) {
+						std::cout << heartbeatSymbol;
+					}
 #ifdef OLD				
 					lostElements.clear( );
 					gainedElements.clear( );
@@ -866,6 +881,10 @@ namespace moving_boundary {
 		unsigned int numberTimeSteps( ) const {
 			return static_cast<unsigned int>(maxTime / timeStep);
 		}
+		void setHeartbeat(size_t numGen, const std::string &symbol)  {
+			heartbeat = numGen;
+			heartbeatSymbol = symbol;
+		}
 
 		WorldType & world;
 		const double diffusionConstant;
@@ -922,6 +941,9 @@ namespace moving_boundary {
 		* point to next generation 
 		*/
 		std::vector<Element *> gainedElements;
+		size_t heartbeat;
+		std::string heartbeatSymbol;
+
 	};
 
 
@@ -1026,6 +1048,9 @@ namespace moving_boundary {
 			patch.setScale(os);
 			os << scatter << empty;
 		}
+	}
+	void MovingBoundaryParabolicProblem::setHeartbeat(size_t numGen, const std::string &symbol) {
+		impl->setHeartbeat(numGen,symbol);
 	}
 	void MovingBoundaryParabolicProblem::run(moving_boundary::MovingBoundaryClient & client) {
 		impl->run(client);

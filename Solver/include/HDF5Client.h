@@ -255,6 +255,8 @@ namespace moving_boundary {
 					const std::string s = SOLUTION::expression( ); 
 					vcellH5::writeAttribute(baseGroup,"expression",s);
 				}
+				double scaleFactor = world.theScale( );
+				vcellH5::writeAttribute(baseGroup,"scaleFactor",scaleFactor);
 			} //create group
 
 

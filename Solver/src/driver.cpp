@@ -28,6 +28,7 @@ namespace {
 	void setupTrace(const XMLElement &root); 
 	MovingBoundaryClient *setupClient(const XMLElement &root, const char *filename, MovingBoundaryParabolicProblem &mbpp, const moving_boundary::MovingBoundarySetup &); 
 	void setupMatlabDebug(const XMLElement &root); 
+	void setupHeartbeat(const XMLElement &root,moving_boundary::MovingBoundaryParabolicProblem & mbpp);
 
 	/**
 	* shared variables 
@@ -72,6 +73,7 @@ int main(int argc, char *argv[])
 		moving_boundary::MovingBoundarySetup mbs = setupProblem(root);
 		mbpp = moving_boundary::MovingBoundaryParabolicProblem(mbs);
 		client = std::auto_ptr<moving_boundary::MovingBoundaryClient>( setupClient(root, argv[2], mbpp, mbs) ); 
+		setupHeartbeat(root,mbpp);
 	}
 	catch (std::exception & e) {
 		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << filename << std::endl; 
@@ -230,6 +232,15 @@ namespace {
 				matlabBridge::MatLabDebug::activate(spec);
 				token = token->NextSiblingElement(TOKEN);
 			}
+		}
+	}
+	void setupHeartbeat(const XMLElement &root,moving_boundary::MovingBoundaryParabolicProblem & mbpp) {
+		const tinyxml2::XMLElement *hb = root.FirstChildElement("heartbeat");
+		if (hb != nullptr) {
+			using vcell_xml::convertChildElementWithDefault;
+			size_t heartbeat = convertChildElementWithDefault<size_t>(*hb,"generations",0);
+			std::string symbol = convertChildElementWithDefault<std::string>(*hb,"symbol",".");
+			mbpp.setHeartbeat(heartbeat,symbol);
 		}
 	}
 }
