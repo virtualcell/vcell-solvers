@@ -8,7 +8,7 @@ namespace vcellH5 {
 		Exception(H5::Exception &e)
 			:h5e(e) {}
 
-		virtual const char *what() const {
+		virtual const char *what() const throw( ) {
 			return h5e.getCDetailMsg( );
 		}
 		const H5::Exception &h5e;
