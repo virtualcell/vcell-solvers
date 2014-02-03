@@ -11,7 +11,9 @@ namespace vcell_util {
 	* e.g. ConvertUp<int>(-4.5) is -4 
 	*/
 	template <class OUT, class IN>
-	OUT ConvertUp(IN in);
+	OUT ConvertUp(IN in) {
+		static_assert(false,"template not specialized");
+	}
 
 	/**
 	* @tparam IN input type
@@ -20,21 +22,23 @@ namespace vcell_util {
 	* e.g. ConverDown<int>(-4.5) is -5 
 	*/
 	template <class OUT, class IN>
-	OUT ConvertDown(IN in);
-
-	template <>
-	inline int ConvertDown(double in) {
-		if (in >= 0) {
-			return static_cast<int>(in);
-		}
-		//implicit else 
-		return static_cast<int>(floor(in)); 
+	OUT ConvertDown(IN in) {
+		static_assert(false,"template not specialized");
 	}
 
 	template <>
-	inline int ConvertUp(double in) {
+	inline int32_t ConvertDown(double in) {
+		if (in >= 0) {
+			return static_cast<int32_t>(in);
+		}
+		//implicit else 
+		return static_cast<int32_t>(floor(in)); 
+	}
+
+	template <>
+	inline int32_t ConvertUp(double in) {
 		const double c = ceil(in);
-		return static_cast<int>(c);
+		return static_cast<int32_t>(c);
 	}
 
 	template <>
@@ -50,18 +54,6 @@ namespace vcell_util {
 			return static_cast<int64_t>(ceil(in));
 	}
 
-	template <>
-	inline long ConvertDown(double in) {
-		if (in >= 0) {
-			return static_cast<long>(in);
-		}
-		return static_cast<long>(floor(in)); 
-	}
-
-	template <>
-	inline long ConvertUp(double in) {
-			return static_cast<long>(ceil(in));
-	}
 
 	template <>
 	inline short ConvertDown(double in) {
@@ -93,5 +85,20 @@ namespace vcell_util {
 	bool validMultiply(T a, T b) {
 		return std::numeric_limits<T>::max( ) / std::abs(a) >= std::abs(b);
 	}
+#ifdef _MSC_VER
+//MSVC doesn't define long as one of the cstdint types
+	template <>
+	inline long ConvertDown(double in) {
+		if (in >= 0) {
+			return static_cast<long>(in);
+		}
+		return static_cast<long>(floor(in)); 
+	}
+
+	template <>
+	inline long ConvertUp(double in) {
+			return static_cast<long>(ceil(in));
+	}
+#endif
 }
 #endif
