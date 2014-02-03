@@ -18,7 +18,7 @@ namespace moving_boundary {
 		/**
 		* type used for number of nodes in a dimension
 		*/
-		typedef unsigned short CountType;
+		typedef uint16_t CountType;
 		/**
 		* return singleton instance
 		*/

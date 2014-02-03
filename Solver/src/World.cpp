@@ -110,7 +110,7 @@ namespace {
 	};
 
 	template <int N>
-	struct WorldInit<short,N> : public WorldInitInteger<short,N> {
+	struct WorldInit<int16_t,N> : public WorldInitInteger<int16_t,N> {
 	};
 	template <int N>
 	struct WorldInit<int32_t,N> : public WorldInitInteger<int32_t,N> {
@@ -118,11 +118,6 @@ namespace {
 	template <int N>
 	struct WorldInit<int64_t,N> : public WorldInitInteger<int64_t,N> {
 	};
-#ifdef _MSC_VER
-	template <int N>
-	struct WorldInit<long,N> : public WorldInitInteger<long,N> {
-	};
-#endif
 }
 
 template <typename WORLD_COORD, int N>
@@ -167,12 +162,11 @@ COORD_TYPE WorldTypeBase<COORD_TYPE>::maxSupported;
 template struct World<moving_boundary::CoordinateType,2>;
 template struct World<double,2>;
 
-template struct World<short,2>;
+template struct World<int16_t,2>;
+template struct World<int32_t,2>;
+template struct World<int64_t,2>;
 template struct WorldMax<short>;
 
-template struct WorldMax<moving_boundary::CoordinateType>;
-template struct WorldMax<long long>;
-
-#ifdef _MSC_VER
-template struct World<long,2>;
-#endif
+template struct WorldMax<int16_t>;
+template struct WorldMax<int32_t>;
+template struct WorldMax<int64_t>;
