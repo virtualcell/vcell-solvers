@@ -1,5 +1,5 @@
-#ifndef dataset_h
-#define dataset_h
+#ifndef vhd5_dataset_h
+#define vhd5_dataset_h
 #include <vhdf5/types.h>
 #include <vhdf5/vlen.h>
 namespace vcellH5 {

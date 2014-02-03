@@ -1,5 +1,5 @@
-#ifndef flex_h
-#define flex_h
+#ifndef vhd5_flex_h
+#define vhd5_flex_h
 #include <cassert>
 #include <vhdf5/vH5cpp.h>
 namespace vcellH5 {

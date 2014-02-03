@@ -1,5 +1,5 @@
-#ifndef vlen_h
-#define vlen_h
+#ifndef vhd5_vlen_h
+#define vhd5_vlen_h
 #include <vhdf5/types.h>
 #include <vhdf5/vH5cpp.h>
 namespace vcellH5 {

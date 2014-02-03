@@ -17,6 +17,7 @@
 #include <vhdf5/flex.h>
 #include <vhdf5/file.h>
 #include <vhdf5/vlen.h>
+#include <vhdf5/exception.h>
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
 namespace moving_boundary {
 
@@ -377,7 +378,7 @@ namespace moving_boundary {
 
 				boundaryDataset.write(&variableBoundaryData,vtype.getType( ),memoryspace,dataspace);
 			} catch (H5::Exception & e) {
-				std::cerr << e.getDetailMsg( ) << std::endl;
+				throw vcellH5::Exception(e);
 			}
 		}
 
@@ -426,55 +427,57 @@ namespace moving_boundary {
 		virtual void iterationComplete( ) {
 			if (reportActive) {
 				VCELL_LOG(info,"Time " << currentTime << " total mass " << totalStuff); 
+				if (eRecords.size( ) > 0) {
 
-				try {
-					//determine size of buffer needed for current generation
-					size_t minI, maxI, minJ, maxJ;
-					minI = minJ = std::numeric_limits<size_t>::max( );
-					maxI = maxJ = std::numeric_limits<size_t>::min( );
-					for (RecordMap::const_iterator iter = eRecords.begin( ); iter != eRecords.end( ); ++iter) {
-						size_t i = iter->first(spatial::cX);
-						size_t j = iter->first(spatial::cY);
-						minI = std::min(minI,i);
-						minJ = std::min(minJ,j);
-						maxI = std::max(maxI,i);
-						maxJ = std::max(maxJ,j);
+					try {
+						//determine size of buffer needed for current generation
+						size_t minI, maxI, minJ, maxJ;
+						minI = minJ = std::numeric_limits<size_t>::max( );
+						maxI = maxJ = std::numeric_limits<size_t>::min( );
+						for (RecordMap::const_iterator iter = eRecords.begin( ); iter != eRecords.end( ); ++iter) {
+							size_t i = iter->first(spatial::cX);
+							size_t j = iter->first(spatial::cY);
+							minI = std::min(minI,i);
+							minJ = std::min(minJ,j);
+							maxI = std::max(maxI,i);
+							maxJ = std::max(maxJ,j);
 
+						}
+						const size_t iSpan = maxI - minI + 1;
+						const size_t jSpan = maxJ - minJ + 1;
+						buffer.reindex(iSpan,jSpan);
+
+						size_t timeIndex = genTime.size( ) - 1;
+
+						for (RecordMap::iterator iter = eRecords.begin( ); iter != eRecords.end( ); ++iter) {
+							HElementRecord & er = iter->second;
+							const spatial::TPoint<size_t,2> & index = iter->first;
+							hsize_t i = index(spatial::cX);
+							hsize_t j = index(spatial::cY); 
+							buffer[i - minI][j - minJ].set(index,er,currentTime);
+							er.clear( );
+						}
+						const size_t singleTimeSlice = 1;
+						hsize_t  bufferDim[3] = {singleTimeSlice,iSpan, jSpan}; 
+						H5::DataSpace memoryspace(3,bufferDim); 
+
+						//is dataset big enough in time dimension?
+						if (timeIndex >= worldDim[timeArrayIndex]) {
+							worldDim[timeArrayIndex] += timeChunkSize;
+							elementDataset.extend(worldDim);
+						}
+
+						hsize_t offset[3] = {timeIndex ,minI,minJ};
+						H5::DataSpace dataspace = elementDataset.getSpace( );
+						dataspace.selectHyperslab(H5S_SELECT_SET,bufferDim,offset);
+
+						H5::CompType dataType = SOLUTION::DataType::getType( ); 
+						elementDataset.write(buffer.ptr( ),dataType,memoryspace,dataspace);
 					}
-					const size_t iSpan = maxI - minI + 1;
-					const size_t jSpan = maxJ - minJ + 1;
-					buffer.reindex(iSpan,jSpan);
 
-					size_t timeIndex = genTime.size( ) - 1;
-
-					for (RecordMap::iterator iter = eRecords.begin( ); iter != eRecords.end( ); ++iter) {
-						HElementRecord & er = iter->second;
-						const spatial::TPoint<size_t,2> & index = iter->first;
-						hsize_t i = index(spatial::cX);
-						hsize_t j = index(spatial::cY); 
-						buffer[i - minI][j - minJ].set(index,er,currentTime);
-						er.clear( );
+					catch (H5::Exception &e) {
+						throw vcellH5::Exception(e);
 					}
-					const size_t singleTimeSlice = 1;
-					hsize_t  bufferDim[3] = {singleTimeSlice,iSpan, jSpan}; 
-					H5::DataSpace memoryspace(3,bufferDim); 
-
-					//is dataset big enough in time dimension?
-					if (timeIndex >= worldDim[timeArrayIndex]) {
-						worldDim[timeArrayIndex] += timeChunkSize;
-						elementDataset.extend(worldDim);
-					}
-
-					hsize_t offset[3] = {timeIndex ,minI,minJ};
-					H5::DataSpace dataspace = elementDataset.getSpace( );
-					dataspace.selectHyperslab(H5S_SELECT_SET,bufferDim,offset);
-
-					H5::CompType dataType = SOLUTION::DataType::getType( ); 
-					elementDataset.write(buffer.ptr( ),dataType,memoryspace,dataspace);
-				}
-
-				catch (H5::Exception &e) {
-					std::cerr << e.getDetailMsg( ) << std::endl;
 				}
 				/*
 				std::ofstream fa("finalareas.m");
@@ -504,7 +507,7 @@ namespace moving_boundary {
 				vcellH5::facadeWrite(baseGroup,"generationTimes",gt);
 			}
 			catch (H5::Exception &e) {
-				std::cerr << e.getDetailMsg( ) << std::endl;
+				throw vcellH5::Exception(e);
 			}
 		}
 
