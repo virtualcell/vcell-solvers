@@ -3,6 +3,7 @@
 #include <Segment.h>
 #include <intersection.h>
 #include <VCellException.h>
+#include <cstdint>
 namespace spatial {
 	//forward
 	template <class COORD_TYPE,class VALUE_TYPE>
@@ -550,6 +551,8 @@ template struct spatial::Polygons<int,double>;
 template struct spatial::Volume<double,double,2>;
 template struct spatial::Volume<int,double,2>;
 template struct spatial::Volume<long,double,2>;
+template struct spatial::Volume<int64_t,double,2>;
 template struct spatial::VolumeImplCreator<double,double,2>;
 template struct spatial::VolumeImplCreator<int,double,2>;
 template struct spatial::VolumeImplCreator<long,double,2>;
+template struct spatial::VolumeImplCreator<int64_t,double,2>;

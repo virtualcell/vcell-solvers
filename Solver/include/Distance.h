@@ -4,6 +4,7 @@
 #include <TPoint.h>
 #include <cassert>
 #include <stdexcept>
+#include <cstdint>
 #include <VCellException.h>
 
 namespace spatial {
@@ -33,6 +34,22 @@ namespace spatial {
 		typedef long long DistanceSquaredType;
 		typedef long DistanceType;
 		static void check(long) {}
+		template <typename U>
+		static DistanceType convert(U u) {
+			if (u > std::numeric_limits<long>::max( )) {
+				VCELL_EXCEPTION(domain_error, u << " too big to be long" );
+			}
+			return static_cast<long>(u);
+		}
+	};
+	/**
+	* a int64_t policy
+	*/
+	template <> 
+	struct DefaultDistancePolicy<int64_t>{
+		typedef long long DistanceSquaredType;
+		typedef long DistanceType;
+		static void check(int64_t) {}
 		template <typename U>
 		static DistanceType convert(U u) {
 			if (u > std::numeric_limits<long>::max( )) {

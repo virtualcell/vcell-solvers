@@ -2,6 +2,7 @@
 #define NumericConvert_h
 #include <cmath>
 #include <limits>
+#include <cstdint>
 namespace vcell_util {
 	/**
 	* @tparam IN input type
@@ -34,6 +35,19 @@ namespace vcell_util {
 	inline int ConvertUp(double in) {
 		const double c = ceil(in);
 		return static_cast<int>(c);
+	}
+
+	template <>
+	inline int64_t ConvertDown(double in) {
+		if (in >= 0) {
+			return static_cast<int64_t>(in);
+		}
+		return static_cast<int64_t>(floor(in)); 
+	}
+
+	template <>
+	inline int64_t ConvertUp(double in) {
+			return static_cast<int64_t>(ceil(in));
 	}
 
 	template <>

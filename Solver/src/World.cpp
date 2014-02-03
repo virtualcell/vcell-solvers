@@ -119,6 +119,9 @@ namespace {
 	template <int N>
 	struct WorldInit<int32_t,N> : public WorldInitInteger<int32_t,N> {
 	};
+	template <int N>
+	struct WorldInit<int64_t,N> : public WorldInitInteger<int64_t,N> {
+	};
 }
 
 template <typename WORLD_COORD, int N>

@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <Mesh.h>
 
 //using namespace spatial;
@@ -22,4 +23,5 @@ namespace spatial {
 	template struct MeshDef<double,2>; 
 	template struct MeshDef<long,2>; 
 	template struct MeshDef<int,2>; 
+	template struct MeshDef<int64_t,2>; 
 }

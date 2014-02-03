@@ -565,10 +565,15 @@ typedef std::vector <LPointVector> LVectorOfVectors;
 template void spatial::intersectionsManySingle(spatial::Volume<long,double,2> &result, const LVectorOfVectors &,const LPointVector &) ;
 
 template void spatial::intersectionsManyMany(spatial::Volume<long,double,2> &result, const LVectorOfVectors &,const LVectorOfVectors &) ;
+
 typedef std::vector <spatial::TPoint<int,2> > IPointVector; 
 template void spatial::intersections(spatial::Volume<int,double,2> &result, const IPointVector &,const IPointVector &) ;
-
 typedef std::vector <IPointVector> IVectorOfVectors;
 template void spatial::intersectionsManySingle(spatial::Volume<int,double,2> &result, const IVectorOfVectors &,const IPointVector &) ;
-
 template void spatial::intersectionsManyMany(spatial::Volume<int,double,2> &result, const IVectorOfVectors &,const IVectorOfVectors &) ;
+
+typedef std::vector <spatial::TPoint<int64_t,2> > I64PointVector; 
+template void spatial::intersections(spatial::Volume<int64_t,double,2> &result, const I64PointVector &,const I64PointVector &) ;
+typedef std::vector <I64PointVector> I64VectorOfVectors;
+template void spatial::intersectionsManySingle(spatial::Volume<int64_t,double,2> &result, const I64VectorOfVectors &,const I64PointVector &) ;
+template void spatial::intersectionsManyMany(spatial::Volume<int64_t,double,2> &result, const I64VectorOfVectors &,const I64VectorOfVectors &) ;

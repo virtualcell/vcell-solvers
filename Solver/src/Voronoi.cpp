@@ -12,7 +12,6 @@ using namespace spatial;
 typedef SVector<VoronoiType,2> DVector;
 
 namespace {
-	const int SCALE_MARGIN = 100000; 
 	typedef Voronoi2D::ImplementationType vdVertexType;
 	const vdVertexType epilson = 0.001;
 	inline VoronoiType fixDriftFromInt( vdVertexType in) {

@@ -315,3 +315,4 @@ std::vector<std::vector<spatial::TPoint<FCT,2> > > VCellFront<FCT>::retrieveCurv
 template class VCellFront<double>;
 template class VCellFront<int>;
 template class VCellFront<long>;
+template class VCellFront<int64_t>;
