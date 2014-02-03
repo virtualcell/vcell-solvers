@@ -543,16 +543,20 @@ typename std::vector<TPoint<REAL,N> >::iterator fillingIterator(size_t n) {
 */
 }
 
-template struct spatial::Polygon<long,double>;
-template struct spatial::Polygons<long,double>;
-template struct spatial::Polygon<int,double>;
-template struct spatial::Polygons<int,double>;
-//template spatial::EmptyVolume2<double>;
 template struct spatial::Volume<double,double,2>;
-template struct spatial::Volume<int,double,2>;
-template struct spatial::Volume<long,double,2>;
-template struct spatial::Volume<int64_t,double,2>;
 template struct spatial::VolumeImplCreator<double,double,2>;
-template struct spatial::VolumeImplCreator<int,double,2>;
-template struct spatial::VolumeImplCreator<long,double,2>;
+
+template struct spatial::Polygon<int16_t,double>;
+template struct spatial::Polygons<int16_t,double>;
+template struct spatial::Volume<int16_t,double,2>;
+template struct spatial::VolumeImplCreator<int16_t,double,2>;
+
+template struct spatial::Polygon<int32_t,double>;
+template struct spatial::Polygons<int32_t,double>;
+template struct spatial::Volume<int32_t,double,2>;
+template struct spatial::VolumeImplCreator<int32_t,double,2>;
+
+template struct spatial::Polygon<int64_t,double>;
+template struct spatial::Polygons<int64_t,double>;
+template struct spatial::Volume<int64_t,double,2>;
 template struct spatial::VolumeImplCreator<int64_t,double,2>;
