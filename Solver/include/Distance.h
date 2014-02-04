@@ -52,9 +52,12 @@ namespace spatial {
 	template <> 
 	struct DefaultDistancePolicy<int>{
 	};
+#ifdef _MSC_VER
+// long == int64_t on 64 bit linux
 	template <> 
 	struct DefaultDistancePolicy<long>{
 	};
+#endif
 
 
 	/**

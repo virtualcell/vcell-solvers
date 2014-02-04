@@ -277,8 +277,8 @@ namespace moving_boundary {
 			}
 			const size_t maxI =  primaryMesh.numCells(cX) - 1;
 			const size_t maxJ =  primaryMesh.numCells(cY) - 1;
-			for (int i = 0; i < maxI; i++) 
-				for (int j = 0; j < maxJ - 1; j++) 
+			for (size_t i = 0; i < maxI; i++) 
+				for (size_t j = 0; j < maxJ - 1; j++) 
 				{
 					std::array<size_t,2> p = {i    ,j};
 					std::array<size_t,2> r = {i + 1,j};
