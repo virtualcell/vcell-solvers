@@ -5,10 +5,10 @@ using std::endl;
 using namespace spatial;
 
 TEST(distance,basic) {
-	long long biggest = std::numeric_limits<long>::max( );
-	long okay = DefaultDistancePolicy<long>::convert(biggest);
+	int64_t biggest = std::numeric_limits<int64_t>::max( );
+	int64_t okay = DefaultDistancePolicy<int64_t>::convert(biggest);
 	ASSERT_TRUE(okay == biggest);
-	long long tooBig = biggest + 1;
-	ASSERT_THROW(DefaultDistancePolicy<long>::convert(tooBig),std::domain_error);
+	double tooBig = static_cast<double>(biggest) + 1;
+	ASSERT_THROW(DefaultDistancePolicy<int64_t>::convert(tooBig),std::domain_error);
 	cout << okay << endl;
 }

@@ -1,6 +1,48 @@
 #include <random>
 #include "gtest/gtest.h"
+#include <vcellconvert.h>
 #include <World.h> 
+	template <typename S, typename D>
+	struct MaxConvert {
+		MaxConvert( )
+			:maxSafeV(0) {}
+		S maxNum( ) const {
+			return std::numeric_limits<S>::max( );
+		}
+		S maxSafe( ) {
+			if (maxSafeV > 0)  {
+				return maxSafeV;
+			}
+			for (S s = upper( ); s <std::numeric_limits<S>::max( ) ; ++s) {
+				D temp = static_cast<D>(s);
+				S back = static_cast<S>(temp);
+				if (s != back) {
+					return maxSafeV;
+				}
+				maxSafeV = s;
+			}
+			return maxSafeV = maxNum( );
+		}
+		double proportion( ) {
+			double n = static_cast<double>(maxSafe( ));
+			double d =  static_cast<double>(maxNum( ));
+			return n / d;
+		}
+	private:
+		S upper( ) {
+			S lastGood = 0;
+			for (S s = 255; s < std::numeric_limits<S>::max( ) && s> 0;  s = static_cast<S>(s * 1.1) ) {
+				D temp = static_cast<D>(s);
+				S back = static_cast<S>(temp);
+				if (s != back) {
+					return lastGood;
+				}
+				lastGood = s;
+			}
+			return lastGood;
+		}
+		S maxSafeV;
+	};
 
 using moving_boundary::Universe;
 using moving_boundary::World;
@@ -70,6 +112,62 @@ namespace {
 	moving_boundary::WorldMax<int16_t> ms(int16_tMax);
 }
 
+
+TEST(universe, cvt3) { 
+	{
+	MaxConvert<int64_t, double> mc;
+	std::cout << "int64, mc " << mc.maxNum( ) << ", " << mc.maxSafe( ) <<", " << mc.proportion( ) << std::endl;
+	}
+	{
+	MaxConvert<int64_t, long double> mc;
+	std::cout << "int64, long double " << mc.maxNum( ) << ", " << mc.maxSafe( ) <<", " << mc.proportion( ) << std::endl;
+	}
+	{
+	MaxConvert<int32_t, double> mc;
+	std::cout << "int32, mc " << mc.maxNum( ) << ", " << mc.maxSafe( ) <<", " << mc.proportion( ) << std::endl;
+	}
+}
+TEST(universe, cvt1) { 
+		std::cout << std::numeric_limits<int64_t>::max( ) << std::endl; 
+		vcell_util::LossyConvert<int64_t,double> lossy;
+	for (int64_t probe = 1;probe < std::numeric_limits<int64_t>::max( ) && probe > 0 ;probe*=7) {
+		double temp = lossy(probe);
+		int64_t back = lossy(temp); 
+		if (probe!= back) {
+
+		std::cout << probe << " back converts to " << back << std::endl;
+			ASSERT_TRUE(probe== back);
+		}
+	}
+	int i = 0;
+	for (int64_t probe = std::numeric_limits<int64_t>::max( );i<100;i++, --probe) {
+		double temp = lossy(probe);
+		int64_t back = lossy(temp); 
+		ASSERT_TRUE(probe== back);
+		std::cout << probe << std::endl;
+	}
+}
+TEST(universe, cvt2) { 
+		std::cout << std::numeric_limits<int64_t>::max( ) << std::endl; 
+		vcell_util::LossyConvert<int64_t,long double> lossy;
+	for (int64_t probe = 1;probe < std::numeric_limits<int64_t>::max( ) && probe > 0 ;probe*=7) {
+		long double temp = lossy(probe);
+		int64_t back = lossy(temp); 
+		if (probe!= back) {
+
+			std::cout << "long double " << std::endl;
+			std::cout << probe << " back converts to " << back << std::endl;
+			ASSERT_TRUE(probe== back);
+		}
+	}
+	int i = 0;
+	for (int64_t probe = std::numeric_limits<int64_t>::max( );i<100;i++, --probe) {
+		long double temp = lossy(probe);
+		int64_t back = lossy(temp); 
+		ASSERT_TRUE(probe== back);
+		std::cout << probe << std::endl;
+	}
+}
 TEST(universe, diag) { 
 	Universe<2> &universe = Universe<2>::get( );
 	universe.destroy( ); //for testing

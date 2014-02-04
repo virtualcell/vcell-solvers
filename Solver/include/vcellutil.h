@@ -36,6 +36,5 @@ namespace vcell_util {
 		return ary;
 	}
 
-
 }
 #endif

@@ -31,8 +31,8 @@ namespace spatial {
 	*/
 	template <> 
 	struct DefaultDistancePolicy<int64_t>{
-		typedef long long DistanceSquaredType;
-		typedef long DistanceType;
+		typedef double DistanceSquaredType;
+		typedef int64_t DistanceType;
 		static void check(int64_t) {}
 		template <typename U>
 		static DistanceType convert(U u) {
@@ -47,7 +47,13 @@ namespace spatial {
 	* provide default policy
 	*/
 	template <> 
+	struct DefaultDistancePolicy<short>{
+	};
+	template <> 
 	struct DefaultDistancePolicy<int>{
+	};
+	template <> 
+	struct DefaultDistancePolicy<long>{
 	};
 
 

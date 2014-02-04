@@ -16,9 +16,10 @@
 //#include <NormVector.h>
 //#include <cmath>
 //#include <vcellxml.h>
-#include <Volume.h>
+//#include <Volume.h>
 //#include <Segment.h>
 //#include <World.h>
+#include <algo.h>
 
 /*
 void a(moving_boundary::MeshElementSpecies & mes) {

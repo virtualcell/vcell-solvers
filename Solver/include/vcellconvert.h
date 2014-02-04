@@ -41,5 +41,21 @@ namespace vcell_util {
 		return CharPointerConvert<TARGET>( )(v); 
 	}
 
+	/**
+	* intentional convert types with possible loss of data / truncation
+	* i.e. static_cast
+	* @tparam A one type 
+	* @tparam B other type 
+	*/
+	template <typename A, typename B>
+	struct LossyConvert {
+		B operator( )(A s) {
+			return static_cast<B>(s);
+		}
+		A operator( )(B s) {
+			return static_cast<A>(s);
+		}
+	};
+
 }
 #endif

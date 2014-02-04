@@ -556,7 +556,9 @@ template struct spatial::Polygons<int32_t,double>;
 template struct spatial::Volume<int32_t,double,2>;
 template struct spatial::VolumeImplCreator<int32_t,double,2>;
 
+#ifdef COMPILE_64
 template struct spatial::Polygon<int64_t,double>;
 template struct spatial::Polygons<int64_t,double>;
 template struct spatial::Volume<int64_t,double,2>;
 template struct spatial::VolumeImplCreator<int64_t,double,2>;
+#endif
