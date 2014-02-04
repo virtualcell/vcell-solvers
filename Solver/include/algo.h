@@ -21,9 +21,11 @@ namespace spatial {
 	template <class TPOINT>
 	bool inside(const std::vector<TPOINT> &  polygon, const TPOINT & point); 
 
+	/*
 	template<> inline bool inside(const std::vector<TPoint<short,2> > &  polygon, const spatial::TPoint<short,2> & point) {
 		throw std::domain_error("not supported");
 	}
+	*/
 
 	/**
 	* @return true if and only if lhs and rhs have same y value
