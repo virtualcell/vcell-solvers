@@ -9,7 +9,7 @@ namespace moving_boundary {
 
 	//forward
 	//enum UniverseLock;
-	enum UniverseLock {unset, set, lockedUniverse};
+	enum UniverseLock {unsetUniverse, set, lockedUniverse};
 	template<int N>
 	struct WorldBase; 
 

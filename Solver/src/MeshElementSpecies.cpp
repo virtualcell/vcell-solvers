@@ -72,7 +72,7 @@ using spatial::interiorSurface;
 using spatial::boundarySurface;
 using spatial::outsideSurface;
 using spatial::deepOutsideSurface;
-using spatial::unset;
+using spatial::unsetPosition;
 
 using spatial::MeshDef;
 
@@ -169,7 +169,7 @@ void MeshElementSpecies::setPos(SurfacePosition m)  {
 	VCELL_KEY_LOG(fatal,"setPos",this->indexInfo( ) << " position " << m << " from " << this->mPos( ));
 	switch (state( )) {
 	case initial:
-		if (this->mPos( ) != unset) {
+		if (this->mPos( ) != unsetPosition) {
 			throw std::domain_error("initial not unset");
 		}
 		setState(stable);

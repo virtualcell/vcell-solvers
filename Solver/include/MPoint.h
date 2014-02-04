@@ -50,14 +50,14 @@ namespace spatial {
 		std::array<size_t,N> index;
 	};
 
-	enum SurfacePosition { unset = -1, deepInteriorSurface, interiorSurface, boundarySurface,outsideSurface, deepOutsideSurface };
+	enum SurfacePosition { unsetPosition = -1, deepInteriorSurface, interiorSurface, boundarySurface,outsideSurface, deepOutsideSurface };
 
 	template<class REAL, int N>
 	struct MeshElement : public MPoint<REAL,N> {
 		typedef MPoint<REAL,N> base;
 		MeshElement(const size_t *n, const REAL *values) 
 			:base(n,values),
-			mp(unset)
+			mp(unsetPosition)
 		{ }
 
 		SurfacePosition mPos( ) const {

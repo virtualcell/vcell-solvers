@@ -8,7 +8,7 @@ template <int N>
 Universe<N>::Universe( )
 	:inputLimits( ),
 	diagonal_( ),
-	lockState(unset) {}
+	lockState(unsetUniverse) {}
 
 template <int N>
 Universe<N> & Universe<N>::get( ) {
@@ -21,7 +21,7 @@ void Universe<N>::init(std::array<GeoLimit,N> &iValues, std::array<CountType, N>
 	nodeNumbers = numNodes;
 	typedef moving_boundary::CoordinateType CoordType;
 	//validate state 
-	if (lockState != unset) {
+	if (lockState != unsetUniverse) {
 		VCELL_EXCEPTION(logic_error, "Universe<REAL, " << N << "> already initialized");
 	}
 	double diagonalScratch = 0; 
@@ -51,7 +51,7 @@ void Universe<N>::destroy( ) {
 	for (int i = 0; i < N; i++) {
 		inputLimits[i] = GeoLimit(0,0);
 	}
-	lockState = unset;
+	lockState = unsetUniverse;
 	WorldBase<N> *wb = worlds;
 	while (wb != nullptr) {
 		wb->destroy( );
