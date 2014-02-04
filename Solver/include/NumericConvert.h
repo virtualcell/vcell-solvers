@@ -12,7 +12,8 @@ namespace vcell_util {
 	*/
 	template <class OUT, class IN>
 	OUT ConvertUp(IN in) {
-		static_assert(false,"template not specialized");
+		const IN x =in;
+		x++;
 	}
 
 	/**
@@ -23,7 +24,8 @@ namespace vcell_util {
 	*/
 	template <class OUT, class IN>
 	OUT ConvertDown(IN in) {
-		static_assert(false,"template not specialized");
+		const IN x =in;
+		x++;
 	}
 
 	template <>
@@ -56,16 +58,16 @@ namespace vcell_util {
 
 
 	template <>
-	inline short ConvertDown(double in) {
+	inline int16_t ConvertDown(double in) {
 		if (in >= 0) {
-			return static_cast<short>(in);
+			return static_cast<int16_t>(in);
 		}
-		return static_cast<short>(floor(in)); 
+		return static_cast<int16_t>(floor(in)); 
 	}
 
 	template <>
-	inline short ConvertUp(double in) {
-			return static_cast<short>(ceil(in));
+	inline int16_t ConvertUp(double in) {
+			return static_cast<int16_t>(ceil(in));
 	}
 
 	template <>

@@ -159,14 +159,14 @@ COORD_TYPE WorldTypeBase<COORD_TYPE>::maxSupported;
 /********************************************************************
 * instantations
 ********************************************************************/
-template struct World<moving_boundary::CoordinateType,2>;
+//template struct World<moving_boundary::CoordinateType,2>;
 template struct World<double,2>;
 
 template struct World<int16_t,2>;
 template struct World<int32_t,2>;
 template struct World<int64_t,2>;
-template struct WorldMax<short>;
 
 template struct WorldMax<int16_t>;
 template struct WorldMax<int32_t>;
 template struct WorldMax<int64_t>;
+template struct WorldMax<long long>;
