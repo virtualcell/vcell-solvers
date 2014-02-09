@@ -10,7 +10,7 @@ class ChomboSpec
 {
 public:
 	ChomboSpec();
-	ChomboSpec(ChomboGeometry* cg, int numLevels, int boxsize, double fillRatio, int viewLevel, bool bSaveVCellOutput, bool bSaveChomboOutput, string* roi, int* ratios);
+	ChomboSpec(ChomboGeometry* cg, int numLevels, double rel_tol, int boxsize, double fillRatio, int viewLevel, bool bSaveVCellOutput, bool bSaveChomboOutput, string* roi, int* ratios);
 	virtual ~ChomboSpec();
 
 	int getNumLevels() {
@@ -59,10 +59,15 @@ public:
 	{
 		return bSaveChomboOutput;
 	}
+	double getRelativeTolerance()
+	{
+		return relTol;
+	}
 private:
 	ChomboGeometry* chomboGeometry;
 	int numLevels;
 	int* refRatios;
+	double relTol;
 	int maxBoxSize;
 	double fillRatio;
 	int viewLevel;

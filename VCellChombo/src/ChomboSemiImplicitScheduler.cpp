@@ -28,7 +28,7 @@ using std::stringstream;
 static int numSmooth = 3;
 static int numMGCycles = 1;
 static int maxIter = 400;
-static Real tolerance = 1.0e-9;
+//static Real tolerance = 1.0e-9;
 static Real hang = 1.0e-15;
 static Real normThresh = 1.0e-30;
 static int maxCoarsen = -1;
@@ -36,13 +36,16 @@ static int numPreCondIters = 4;
 static int relaxType = 2;
 
 ChomboSemiImplicitScheduler::ChomboSemiImplicitScheduler(SimulationExpression* sim, ChomboSpec* chomboSpec)
-	: ChomboScheduler(sim, chomboSpec) {
+	: ChomboScheduler(sim, chomboSpec)
+{
 	pout() << "************* Using Chombo SemiImplicit *****************" << endl;
 	numGhostSource = IntVect::Zero;
 }
 
-ChomboSemiImplicitScheduler::~ChomboSemiImplicitScheduler() {
-	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
+ChomboSemiImplicitScheduler::~ChomboSemiImplicitScheduler()
+{
+	for (int iphase = 0; iphase < NUM_PHASES; iphase ++)
+	{
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol++)	{
 			for (int ilev = 0; ilev < numLevels; ilev++) {
 				delete volSoln[iphase][ivol][ilev];
@@ -518,7 +521,7 @@ void ChomboSemiImplicitScheduler::defineSolver()
 				ebMlgSolver[iphase][ivol][ivar]->define(vectDomains[0], *operatorFactory, bottomSolver, numLevels);
 
 				ebMlgSolver[iphase][ivol][ivar]->setSolverParameters(numSmooth, numSmooth, numSmooth,
-				                      numMGCycles, maxIter, tolerance, hang, normThresh);
+				                      numMGCycles, maxIter, chomboSpec->getRelativeTolerance(), hang, normThresh);
 
 				ebMlgSolver[iphase][ivol][ivar]->m_verbosity = 3;
 				ebMlgSolver[iphase][ivol][ivar]->init(volSolnOldWorkspace[iphase][ivol], volSourceWorkspace[iphase][ivol], numLevels - 1, 0);

@@ -1280,12 +1280,13 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 			}
 			if (F[0] == F[2])
 			{
-				stringstream ss;
-				ss << "cross-point calculation: membrane is tangent to an element face. "
-								"It may help if domain origin is shifted by a small number. F=["
-					<< F[0] << "," << F[1] << "," << F[2] << "," << F[3] << "], [cp, cpcoords]=["
-					<< cp << "," << cpcoords << "]";
-				throw ss.str();
+				bHasNeighbor = false;
+//				stringstream ss;
+//				ss << "cross-point calculation: membrane is tangent to an element face. "
+//								"It may help if domain origin is shifted by a small number. F=["
+//					<< F[0] << "," << F[1] << "," << F[2] << "," << F[3] << "], [cp, cpcoords]=["
+//					<< cp << "," << cpcoords << "]";
+//				throw ss.str();
 			}
 			else if ((F[1] == F[2]) && (F[0] == F[3]))
 			{
