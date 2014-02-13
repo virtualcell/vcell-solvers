@@ -33,6 +33,59 @@
 #include <vhdf5/facade.h>
 using std::cout;
 using std::endl;
+/*********************************************
+* Frontier library evaluation 
+*********************************************/
+namespace {
+	double evalLevelFunc(POINTER unused, double *in) { 
+		double x = in[0];
+		double y = in[1];
+		double dx = x - 1.1;
+		double dy = y - 1.112857;
+		double v = dx*dx + dy*dy - 0.25; 
+		return v;
+	}
+	int evalVelocityFunction(POINTER userdata,Front* f,POINT* p,HYPER_SURF_ELEMENT*hse, HYPER_SURF*hs,double *in) {
+		double inputX = p->_coords[0];
+		double inputY = p->_coords[1];
+		double velocityX = 1;
+		double velocityY = 1;
+		in[0] = velocityX; 
+		in[1] = velocityY; 
+		return 0; 
+	}
+}
+TEST(frontier,direct) {
+	//run to
+	const double END_TIME = 0.5; 
+	//boundary box of problem
+	double xStart = 0;
+	double xEnd= 5;
+	double yStart = 0;
+	double yEnd= 3;
+	//CSV file name
+	const char * const filename = "curveinfo.csv";
+
+
+
+	using spatial::Point2D; 
+	using spatial::GeoLimit;
+	std::vector<GeoLimit> limits;
+	limits.push_back(GeoLimit(xStart,xEnd));
+	limits.push_back(GeoLimit(yStart,yEnd));
+	spatial::VCellFront<double> front(limits, 175,1.5, evalLevelFunc,evalVelocityFunction);
+	std::ofstream csv(filename);
+
+	front.retrieveFront(csv);
+	front.propagateTo(END_TIME, csv);
+}
+
+
+
+
+/*********************************************
+* C++ devel testing
+*********************************************/
 using vcell_util::Logger;
 using vcell_util::FileDest;
 typedef double TestWorldType;

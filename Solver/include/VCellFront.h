@@ -95,6 +95,13 @@ namespace spatial {
 		* @return false if time <= current max_time
 		*/
 		bool propagateTo(double time);
+		/**
+		* advance front to specified time
+		* @param csv stream to log intermediate outputs to
+		* @return false if time <= current max_time
+		*/
+		bool propagateTo(double time, std::ostream  &csv);
+
 		virtual std::string describe( ) const {
 			return std::string("Frontier provided front");
 		}
@@ -102,6 +109,11 @@ namespace spatial {
 		std::vector<spatial::TPoint<FCT,2> > retrieveSurf( );
 
 		virtual std::vector<spatial::TPoint<FCT,2> > retrieveFront( );
+
+		/**
+		* retrieve front while logging points to csv file
+		*/
+		virtual std::vector<spatial::TPoint<FCT,2> > retrieveFront(std::ostream &csv );
 
 		std::vector<std::vector<spatial::TPoint<FCT,2> > > retrieveCurves( );
 

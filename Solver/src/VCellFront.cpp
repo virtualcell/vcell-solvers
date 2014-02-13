@@ -170,6 +170,22 @@ static void retrievePoints_2d(Frontier::Front* front, std::vector<Frontier::POIN
 }
 
 template <typename FCT>
+bool VCellFront<FCT>::propagateTo(double time, std::ostream & os) {
+	if (time > front.time) { 
+		front.max_time = time;
+		while (!FT_TimeLimitReached(&front)) {
+			FT_TimeControlFilter(&front);
+			FT_Propagate(&front);
+			retrieveFront(os); //log points
+			FT_AddTimeStepToCounter(&front);
+			FT_SetTimeStep(&front);
+		}
+		return true;
+	}
+	return false;
+}
+
+template <typename FCT>
 bool VCellFront<FCT>::propagateTo(double time) {
 	if (time > front.time) { 
 		front.max_time = time;
@@ -206,6 +222,18 @@ int VCellFront<FCT>::velocityAdapter(Frontier::POINTER us,Frontier::Front *ft,Fr
 template <typename FCT>
 std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveFront( ) {
 	return retrieveSurf( );
+}
+template <typename FCT>
+std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveFront(std::ostream & csv ) {
+	typedef std::vector<spatial::TPoint<FCT,2> >::const_iterator Iterator;
+	const char comma = ',';
+
+	std::vector<spatial::TPoint<FCT,2> > rval = retrieveFront( ); 
+	for (Iterator iter = rval.begin( );iter != rval.end( );++iter) {
+		csv << front.step << comma << front.time << comma 
+			<< iter->get(cX) << comma << iter->get(cY) << std::endl;
+	}
+	return rval;
 }
 
 template <typename FCT>
