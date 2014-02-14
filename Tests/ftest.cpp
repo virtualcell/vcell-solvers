@@ -40,16 +40,17 @@ namespace {
 	double evalLevelFunc(POINTER unused, double *in) { 
 		double x = in[0];
 		double y = in[1];
-		double dx = x - 1.1;
-		double dy = y - 1.112857;
-		double v = dx*dx + dy*dy - 0.25; 
+		double dx = x;
+		double dy = y;
+		double v = dx*dx + dy*dy - 1; 
 		return v;
 	}
 	int evalVelocityFunction(POINTER userdata,Front* f,POINT* p,HYPER_SURF_ELEMENT*hse, HYPER_SURF*hs,double *in) {
 		double inputX = p->_coords[0];
 		double inputY = p->_coords[1];
-		double velocityX = 1;
-		double velocityY = 1;
+		double R = sqrt(inputX*inputX+inputY*inputY);
+		double velocityX = -0.1*sin(f->time)*inputX/R;
+		double velocityY = -0.1*sin(f->time)*inputY/R;
 		in[0] = velocityX; 
 		in[1] = velocityY; 
 		return 0; 
@@ -59,10 +60,10 @@ TEST(frontier,direct) {
 	//run to
 	const double END_TIME = 0.5; 
 	//boundary box of problem
-	double xStart = 0;
-	double xEnd= 5;
-	double yStart = 0;
-	double yEnd= 3;
+	double xStart = -2.5;
+	double xEnd= 2.5;
+	double yStart = -2.5;
+	double yEnd= 2.5;
 	//CSV file name
 	const char * const filename = "curveinfo.csv";
 
@@ -321,8 +322,9 @@ TEST(frontier,fronttest) {
 	}
 }
 TEST(frontier,propagate) {
-	const int NUMBER_STEPS = 5;
-	const double TIME_INCREMENT = 0.1;
+	//const int NUMBER_STEPS = 1;
+	//const double TIME_INCREMENT = 0.1;
+	const double END_TIME = 0.5;
 	using spatial::Point2D; 
 	spatial::FronTierVelocityFunction vf = velFunction;
 	using spatial::GeoLimit;
@@ -352,9 +354,9 @@ TEST(frontier,propagate) {
 		}
 		matlabScript << pgon; 
 	}
-	for (int tstep  = 0; tstep < NUMBER_STEPS; ++tstep) {
+	 {
 		matlabScript << matlabBridge::pause; 
-		front.propagateTo(tstep * TIME_INCREMENT);
+		front.propagateTo(END_TIME);
 		curves = front.retrieveCurves( );
 		for (vectorVector::iterator iter = curves.begin( ); iter != curves.end( );++iter) {
 
