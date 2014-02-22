@@ -463,11 +463,11 @@ void ChomboSemiImplicitScheduler::createConstantCoeffOpFactory(RefCountedPtr<EBA
 
 	RefCountedPtr<ChomboDomainBCFactory> domainBCPtr(new ChomboDomainBCFactory(this, iphase, ivol, feature, var));
 	
-  RefCountedPtr<NeumannPoissonEBBCFactory> ebBCPtr(new NeumannPoissonEBBCFactory());
-  ebBCPtr->setValue(0.0);
+	RefCountedPtr<NeumannPoissonEBBCFactory> ebBCPtr(new NeumannPoissonEBBCFactory());
+	ebBCPtr->setValue(0.0);
 //	RefCountedPtr<DirichletPoissonEBBCFactory> ebBCPtr(new DirichletPoissonEBBCFactory());
 //  ebBCPtr->setValue(1.0);
-  if (SimTool::getInstance()->getModel()->getNumMembranes() > 0)
+	if (SimTool::getInstance()->getModel()->getNumMembranes() > 0)
 	{
 		ebBCPtr = RefCountedPtr<ChomboEBBCFactory>(new ChomboEBBCFactory(this, iphase, ivol, feature, ivar));
 	}
