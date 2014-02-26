@@ -248,18 +248,22 @@ FILE* SimTool::lockForReadWrite() {
 
 void SimTool::writeData(double progress, double time, int iteration)
 {
+#ifndef CH_MPI
 	FILE *logFP;
-	char hdf5SimFileName[128];
 	char logFileName[128];
 	char zipHdf5FileName[128];
 
+	FILE* tidFP = lockForReadWrite();
+#endif
+
 	bool bSuccess = true;
 	char errmsg[512];
-	FILE* tidFP = lockForReadWrite();
-
+	char hdf5SimFileName[128];
 	sprintf(hdf5SimFileName,"%s%.4d%s",baseSimName, simFileCount, SIM_HDF5_FILE_EXT);
+	// write VCell and/or Chombo output
 	simulation->writeData(hdf5SimFileName);
 
+#ifndef CH_MPI
 	if (chomboSpec->isSaveVCellOutput())
 	{
 		sprintf(logFileName,"%s%s",baseFileName, LOG_FILE_EXT);
@@ -300,6 +304,7 @@ void SimTool::writeData(double progress, double time, int iteration)
 			fclose(tidFP);
 		}
 	}
+#endif
 	
 	if (bSuccess) {
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
@@ -341,12 +346,15 @@ void SimTool::setSolver(string& s) {
 
 void SimTool::start()
 {
+#ifndef CH_MPI
 	if (simulation->getPostProcessingBlock() != NULL)
 	{
 		char h5PPFileName[128];
 		sprintf(h5PPFileName, "%s%s", baseFileName, PP_HDF5_FILE_EXT);
 		postProcessingHdf5Writer = new PostProcessingHdf5Writer(h5PPFileName, simulation->getPostProcessingBlock());
 	}
+#endif
+	
 	simulation->initSimulation();	
 	// clean up last run results
 	cleanupLastRun();

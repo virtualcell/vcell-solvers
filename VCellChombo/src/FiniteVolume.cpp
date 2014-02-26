@@ -1,5 +1,10 @@
+#ifdef CH_CYGWIN
+#include <CH_Timer.H>
+#endif
+#include <parstream.H>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 using namespace std;
 
@@ -34,9 +39,9 @@ void vcellExit(int returnCode, string& errorMsg) {
 
 void printUsage() {
 #ifdef USE_MESSAGING
-	cout << "Arguments : [-d output] [-nz] [-tid taskID] fvInputFile" <<  endl;
+	pout() << "Arguments : [-d output] [-nz] [-tid taskID] fvInputFile" <<  endl;
 #else
-	cout << "Arguments : [-d output] [-nz] fvInputFile" <<  endl;
+	pout() << "Arguments : [-d output] [-nz] fvInputFile" <<  endl;
 #endif
 }
 
@@ -67,10 +72,16 @@ void onExit()
 
 int main(int argc, char *argv[])
 {
-    	std::cout 
-	    << "Chombo solver "VCELLSVNQUOTE(CH_SPACEDIM)"D version $URL: svn://code.vcell.uchc.edu/vcell/trunk/numerics/VCell/src/FiniteVolume.cpp $"VCELLSVNQUOTE(SVNVERSION) 
-	    << std::endl; 
+#ifdef CH_MPI
+  MPI_Init(&argc, &argv);
+#endif
 
+    	pout()
+	    << "Chombo solver "VCELLSVNQUOTE(CH_SPACEDIM)"D version $URL$"VCELLSVNQUOTE(SVNVERSION)
+	    << std::endl;
+
+			char* timerEnv = getenv("CH_TIMER");
+			pout() << "********** CH_TIMER is " << (timerEnv == NULL ? "off" : "on") << " **********" << endl;
 
 #ifdef CH_MPI
   MPI_Init(&argc, &argv);
@@ -80,27 +91,36 @@ int main(int argc, char *argv[])
 
 	char* fvInputFile = 0;
 	ifstream ifsInput;
+	bool bContinue = true;
 	try {
 		int taskID = -1;
 		if (argc < 2) {
-			cout << "Missing arguments!" << endl;
+			errorMsg = "Missing arguments";
+			pout() << errorMsg << endl;
 			printUsage();
-			exit(1);
+			returnCode = 1;
+			bContinue = false;
 		}
 		for (int i = 1; i < argc; i ++) {
 			if (!strcmp(argv[i], "-tid")) {
 #ifdef USE_MESSAGING
 				i ++;
 				if (i >= argc) {
-					cout << "Missing taskID!" << endl;
+					errorMsg =  "Missing taskID!";
+					pout() << errorMsg << endl;
 					printUsage();
-					exit(1);
+					returnCode = 1;
+					bContinue = false;
 				}
 				for (int j = 0; j < (int)strlen(argv[i]); j ++) {
 					if (argv[i][j] < '0' || argv[i][j] > '9') {
-						cout << "Wrong argument : " << argv[i] << ", taskID must be an integer!" << endl;
+						stringstream ss;
+						ss << "Wrong argument : " << argv[i] << ", taskID must be an integer!" << endl;
+						errorMsg =  ss.str();
+						pout() << errorMsg;
 						printUsage();
-						exit(1);
+						returnCode = 1;
+						bContinue = false;
 					}
 				}
 				taskID = atoi(argv[i]);
@@ -109,37 +129,49 @@ int main(int argc, char *argv[])
 					bConsoleOutput = false;
 				}
 #else
-				cout << "Wrong argument : " << argv[i] << endl;
+				stringstream ss;
+				ss << "Wrong argument : " << argv[i] << endl;
+				errorMsg =  ss.str();
+				pout() << errorMsg;
 				printUsage();
-				exit(1);
+				returnCode = 1;
+				bContinue = false;
 #endif
 			} else {
 				fvInputFile = argv[i];
 			}
 		}
-		
-    atexit(onExit);
-		// redirect std::cerr because Chombo would write out to std::cerr and exit.
-		//std::cerr.rdbuf(stdErrBuffer.rdbuf());
-		stdErrBuffer[0] = '\0';
-		setvbuf (stderr , stdErrBuffer , _IOFBF , 1024 );
-		// strip " in case that file name has " around
-		int fl = strlen(fvInputFile);
-		if (fvInputFile[0] == '"' && fvInputFile[fl-1] == '"') {
-						fvInputFile[fl-1] = 0;
-						fvInputFile ++;
+		if (bContinue)
+		{
+			atexit(onExit);
+			// redirect std::cerr because Chombo would write out to std::cerr and exit.
+			//std::cerr.rdbuf(stdErrBuffer.rdbuf());
+			stdErrBuffer[0] = '\0';
+			setvbuf (stderr , stdErrBuffer , _IOFBF , 1024 );
+			// strip " in case that file name has " around
+			int fl = strlen(fvInputFile);
+			if (fvInputFile[0] == '"' && fvInputFile[fl-1] == '"') {
+							fvInputFile[fl-1] = 0;
+							fvInputFile ++;
+			}
+			ifsInput.open(fvInputFile);
+			if (!ifsInput.is_open()) {
+				stringstream ss;
+				ss << "Solver input file fvinput doesn't exist: " << fvInputFile << endl;
+				errorMsg =  ss.str();
+				pout() << errorMsg;
+				returnCode = 102;
+				bContinue = false;
+			}
+
+			if (bContinue)
+			{
+				FVSolver* fvSolver = new FVSolver(ifsInput, taskID);
+				ifsInput.close();
+
+				fvSolver->solve();
+			}
 		}
-		ifsInput.open(fvInputFile);
-		if (!ifsInput.is_open()) {
-			cout << "File doesn't exist: " << fvInputFile << endl;
-			exit(102);
-		}
-
-		FVSolver* fvSolver = new FVSolver(ifsInput, taskID);
-		ifsInput.close();
-
-		fvSolver->solve();
-
 	} catch (const char *exStr){
 		errorMsg += exStr;
 		returnCode = 1;
@@ -159,6 +191,11 @@ int main(int argc, char *argv[])
 	}
 
 	vcellExit(returnCode, errorMsg);
+
+#ifdef CH_CYGWIN
+		CH_TIMER_REPORT();
+#endif
+
 #ifdef CH_MPI
   MPI_Finalize();
 #endif

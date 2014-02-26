@@ -1,8 +1,8 @@
 #include <VCELL/SimulationMessaging.h>
 #include <utility>
 #include <iostream>
+#include <parstream.H>
 using std::cerr;
-using std::cout;
 using std::endl;
 
 #include <stdio.h>
@@ -80,7 +80,7 @@ SimulationMessaging::SimulationMessaging(char* broker, char* smqusername, char* 
 		WSAStartup( wVersionRequested, &wsaData );			
 #endif
 		gethostname(m_hostname, 256);
-		//cout << "hostname is " << m_hostname << endl;		
+		//pout() << "hostname is " << m_hostname << endl;
 	}
 
 	time(&lastSentEventTime);
@@ -146,15 +146,13 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
 		switch (workerEvent->status) {
 		case JOB_DATA:
-			printf("[[[data:%lg]]]", workerEvent->timepoint);
-			fflush(stdout);
+			pout() << "[[[data:" << workerEvent->timepoint << "]]]";
 			break;
 		case JOB_PROGRESS:
-			printf("[[[progress:%lg%%]]]", workerEvent->progress * 100.0);
-			fflush(stdout);
+			pout() << "[[[progress:" << workerEvent->progress * 100.0 << "%]]]";
 			break;
 		case JOB_STARTING:
-			cout << workerEvent->eventMessage << endl;
+			pout() << workerEvent->eventMessage << endl;
 			break;
 		case JOB_COMPLETED:
 			cerr << "Simulation Complete in Main() ... " << endl;
@@ -203,14 +201,14 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 		//timePoint
 		msg->setDoubleProperty(WORKEREVENT_TIMEPOINT, newWorkerEvent->timepoint);		
 
-		cout << "!!!SimulationMessaging::sendStatus [" << (long)m_simKey << ":" << getStatusString(newWorkerEvent->status);
+		pout() << "!!!SimulationMessaging::sendStatus [" << (long)m_simKey << ":" << getStatusString(newWorkerEvent->status);
 		if (revisedMsg != NULL) {
-			cout << ":" << revisedMsg;
+			pout() << ":" << revisedMsg;
 		} else {
-			cout << ":" << newWorkerEvent->progress << ":" << newWorkerEvent->timepoint;
+			pout() << ":" << newWorkerEvent->progress << ":" << newWorkerEvent->timepoint;
 		}
 
-		cout << "]" << endl;
+		pout() << "]" << endl;
 		//send
 		try {
 			int timeToLive = m_ttl_highPriority;
@@ -233,7 +231,7 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 			}
 			qProducer->send(msg, DeliveryMode::PERSISTENT, DEFAULT_PRIORITY, timeToLive);
 		} catch (CMSException& e) {
-			cout << "!!!SimulationMessaging::sendStatus [" << e.getMessage() << "]" << endl;
+			pout() << "!!!SimulationMessaging::sendStatus [" << e.getMessage() << "]" << endl;
 		}
 
 		time(&lastSentEventTime);
@@ -241,7 +239,7 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 #if ( defined(WIN32) || defined(WIN64) )
 			SetEvent(hMessagingThreadEndEvent);
 #else // UNIX
-			cout <<  "!!!thread exiting" << endl;
+			pout() <<  "!!!thread exiting" << endl;
 			pthread_exit(NULL);
 #endif
 		}
@@ -425,13 +423,13 @@ void SimulationMessaging::onMessage(const Message* message) throw()
     {
 		vector<string> pNames = message->getPropertyNames();
 		for(int i=0; i<pNames.size(); i++){
-			cout << pNames.at(i) << endl;
+			pout() << pNames.at(i) << endl;
 			if(pNames.at(i).compare(SIMKEY_PROPERTY) == 0){
 				long simKey = message->getLongProperty(SIMKEY_PROPERTY);
-				cout << "simKey:" <<simKey << endl;
+				pout() << "simKey:" <<simKey << endl;
 			}else if(pNames.at(i).compare(MESSAGE_TYPE_PROPERTY) == 0){
 				string msgType = message->getStringProperty(MESSAGE_TYPE_PROPERTY);
-				cout << "messageType:" << msgType << endl;
+				pout() << "messageType:" << msgType << endl;
 			}
 		}
 
@@ -443,7 +441,7 @@ void SimulationMessaging::onMessage(const Message* message) throw()
 		long key = message->getLongProperty(SIMKEY_PROPERTY);
 
 		if (msgType.compare(MESSAGE_TYPE_STOPSIMULATION_VALUE) == 0 && key==m_simKey) {	
-			cout << "Stopped by user" << endl;
+			pout() << "Stopped by user" << endl;
 			bStopRequested = true;
 		}
 
@@ -458,13 +456,13 @@ void SimulationMessaging::onMessage(const Message* message) throw()
  */
 void SimulationMessaging::onException(const CMSException& ex AMQCPP_UNUSED)
 {
-	cout << "!!!CMSException: " << ex.getMessage() << endl;
+	pout() << "!!!CMSException: " << ex.getMessage() << endl;
 	/*int dropCode = ErrorCodes_ERR_CONNECTION_DROPPED;
 	if (ErrorCodes::testException(e, dropCode)) {
 		m_connActive = false;
 		setupConnection();
 		m_connActive = true;
-		cout << "Connection restored.  Messages will now be accepted again" << endl;
+		pout() << "Connection restored.  Messages will now be accepted again" << endl;
 	}*/
 }
 
@@ -475,7 +473,7 @@ bool SimulationMessaging::lockMessaging()
 	return true;
 #else // UNIX
     if (pthread_mutex_lock(&mutex_messaging)) {
-        cout << "Cannot acquire mutex, fatal error." << endl;
+        pout() << "Cannot acquire mutex, fatal error." << endl;
         exit(1);
     }
 #endif
@@ -634,11 +632,11 @@ void SimulationMessaging::waitUntilFinished() {
 		break; 
 
 	default:
-		cout << "Wait error: " << GetLastError() << endl;
+		pout() << "Wait error: " << GetLastError() << endl;
 		break;
 	}
 #else
-	cout << "!!!waiting for thread to exit" << endl;
+	pout() << "!!!waiting for thread to exit" << endl;
 	pthread_join(newWorkerEventThread, NULL);
 #endif
 }
@@ -746,7 +744,7 @@ void* startMessagingThread(void* lpParam){
 			break; 
 
 		default:
-			cout << "Wait error: " << GetLastError() << endl; 
+			pout() << "Wait error: " << GetLastError() << endl;
 			break;
 		}
 	}
@@ -795,7 +793,7 @@ void* startMessagingThread(void* lpParam){
 				break; 
 
 			default:
-				cout << "Wait error: " << waitReturn << endl; 
+				pout() << "Wait error: " << waitReturn << endl;
 				break;
 		}
 	}

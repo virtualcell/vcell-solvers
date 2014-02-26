@@ -84,7 +84,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L../Chombo/lib -L../numerics/cmake-build-cygwin/bin -L../numerics/cmake-build-cygwin/lib -lmftools3d.CYGWIN.64.g++.gfortran.OPT.PROF -lebamrelliptic3d.CYGWIN.64.g++.gfortran.OPT.PROF -lebamrtools3d.CYGWIN.64.g++.gfortran.OPT.PROF -lebtools3d.CYGWIN.64.g++.gfortran.OPT.PROF -lamrelliptic3d.CYGWIN.64.g++.gfortran.OPT.PROF -lamrtools3d.CYGWIN.64.g++.gfortran.OPT.PROF -lworkshop3d.CYGWIN.64.g++.gfortran.OPT.PROF -lboxtools3d.CYGWIN.64.g++.gfortran.OPT.PROF -lbasetools3d.CYGWIN.64.g++.gfortran.OPT.PROF -lhdf5_cpp -lhdf5 -lExpressionParser -lunzip -lzip
+LDLIBSOPTIONS=-L../Chombo/lib -L../numerics/cmake-build-cygwin/bin -L../numerics/cmake-build-cygwin/lib -lmftools3d.CYGWIN.64.g++.gfortran.OPT -lebamrelliptic3d.CYGWIN.64.g++.gfortran.OPT -lebamrtools3d.CYGWIN.64.g++.gfortran.OPT -lebtools3d.CYGWIN.64.g++.gfortran.OPT -lamrelliptic3d.CYGWIN.64.g++.gfortran.OPT -lamrtools3d.CYGWIN.64.g++.gfortran.OPT -lworkshop3d.CYGWIN.64.g++.gfortran.OPT -lboxtools3d.CYGWIN.64.g++.gfortran.OPT -lbasetools3d.CYGWIN.64.g++.gfortran.OPT -lhdf5_cpp -lhdf5 -lExpressionParser -lunzip -lzip
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}

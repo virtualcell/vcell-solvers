@@ -29,8 +29,14 @@ PostProcessingHdf5Writer::PostProcessingHdf5Writer(char* fileName, PostProcessin
 
 PostProcessingHdf5Writer::~PostProcessingHdf5Writer()
 {
-	H5Dclose(timesDataSet);
-	H5Fclose(h5PPFile);
+	if (timesDataSet != H5I_INVALID_HID)
+	{
+		H5Dclose(timesDataSet);
+	}
+	if (h5PPFile != H5I_INVALID_HID)
+	{
+		H5Fclose(h5PPFile);
+	}
 }
 
 void PostProcessingHdf5Writer::createGroups()

@@ -1679,7 +1679,7 @@ void ChomboScheduler::writeMembraneFiles()
 										stringstream ss;
 										ss << "Point " << gridIndex << " has " << crossedEdgeCount << " cross edge points, is multi-valued point."
 														<< "Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
-										throw ss.str();
+										pout() << ss.str() << endl;
 									}
 								}
 							}

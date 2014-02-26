@@ -24,8 +24,6 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_77764707_0_.fvinput</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85671240_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85662341_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85682594_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85687152_0_.fvinput</runcommandpicklistitem>
@@ -34,8 +32,10 @@
           <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85689545_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85705703_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85705538_0_.fvinput</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_86157453_0_.fvinput</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_86230309_0_.fvinput</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85705538_0_.fvinput</runcommand>
+        <runcommand>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_86230309_0_.fvinput</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>
@@ -119,6 +119,72 @@
       </runprofile>
     </conf>
     <conf name="Release_3D" type="1">
+      <toolsSet>
+        <developmentServer>localhost</developmentServer>
+        <platform>3</platform>
+      </toolsSet>
+      <dbx_gdbdebugger version="1">
+        <gdb_pathmaps>
+        </gdb_pathmaps>
+        <gdb_interceptlist>
+          <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
+        </gdb_interceptlist>
+        <gdb_options>
+          <DebugOptions>
+          </DebugOptions>
+        </gdb_options>
+        <gdb_buildfirst gdb_buildfirst_overriden="false" gdb_buildfirst_old="false"/>
+      </dbx_gdbdebugger>
+      <nativedebugger version="1">
+        <engine>gdb</engine>
+      </nativedebugger>
+      <runprofile version="9">
+        <runcommandpicklist>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
+        </runcommandpicklist>
+        <runcommand>"${OUTPUT_PATH}"</runcommand>
+        <rundir></rundir>
+        <buildfirst>true</buildfirst>
+        <terminal-type>0</terminal-type>
+        <remove-instrumentation>0</remove-instrumentation>
+        <environment>
+        </environment>
+      </runprofile>
+    </conf>
+    <conf name="Debug_MPI_2D" type="1">
+      <toolsSet>
+        <developmentServer>localhost</developmentServer>
+        <platform>3</platform>
+      </toolsSet>
+      <dbx_gdbdebugger version="1">
+        <gdb_pathmaps>
+        </gdb_pathmaps>
+        <gdb_interceptlist>
+          <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
+        </gdb_interceptlist>
+        <gdb_options>
+          <DebugOptions>
+          </DebugOptions>
+        </gdb_options>
+        <gdb_buildfirst gdb_buildfirst_overriden="false" gdb_buildfirst_old="false"/>
+      </dbx_gdbdebugger>
+      <nativedebugger version="1">
+        <engine>gdb</engine>
+      </nativedebugger>
+      <runprofile version="9">
+        <runcommandpicklist>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
+        </runcommandpicklist>
+        <runcommand>"${OUTPUT_PATH}"</runcommand>
+        <rundir></rundir>
+        <buildfirst>true</buildfirst>
+        <terminal-type>0</terminal-type>
+        <remove-instrumentation>0</remove-instrumentation>
+        <environment>
+        </environment>
+      </runprofile>
+    </conf>
+    <conf name="Release_Profile_3D" type="1">
       <toolsSet>
         <developmentServer>localhost</developmentServer>
         <platform>3</platform>

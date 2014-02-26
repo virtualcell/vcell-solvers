@@ -5,11 +5,11 @@
 #include <VCELL/Feature.h>
 #include <VCELL/Membrane.h>
 #include <VCELL/VolumeVariable.h>
+#include <parstream.H>
 #include <assert.h>
 #include <iostream>
 #include <sstream>
 using std::stringstream;
-using std::cout;
 using std::endl;
 
 Feature::Feature(string& name, unsigned char findex) : Structure(name)
@@ -42,11 +42,12 @@ void Feature::resolveReferences(SimulationExpression *sim)
 }
 
 void Feature::setEbBcType(Membrane* mem, BoundaryType bcType)
-	{
-		cout << "Feature " << name << ", Membrane " << mem->getName() << ", bcType="
-					<< (bcType == BOUNDARY_VALUE ? "Dirichlet" : "Neumann") << endl;
-		ebBcTypeMap[mem] = bcType;
-	}
+{
+	pout() << "Feature " << name << ", Membrane " << mem->getName() << ", bcType="
+				<< (bcType == BOUNDARY_VALUE ? "Dirichlet" : "Neumann") << endl;
+	ebBcTypeMap[mem] = bcType;
+}
+
 BoundaryType Feature::getEbBcType(Membrane* mem)
 {
 	map<Membrane*, BoundaryType>::iterator iter = ebBcTypeMap.find(mem);
