@@ -139,15 +139,18 @@ namespace spatial {
 	template<int N>
 	class IndexInfo {
 		const std::array<size_t,N> & index;
+		mutable std::string str_; //lazily evaluated
 	public:
 		IndexInfo(const std::array<size_t,N> & i)
-			:index(i) {}
+			:index(i),
+			str_() {}
 		void write(std::ostream &os) {
 			os << '[';
 			std::copy(index.begin( ), index.end( ),
 				infix_ostream_iterator<size_t>(os,",") );
 			os << ']';
 		}
+		const std::string &str( ) const;
 	};
 
 	template<int N>

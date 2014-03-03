@@ -84,7 +84,8 @@ namespace matlabBridge {
 			points( ),
 			lineSpec(lineSpec_),
 			lineWidth(lineWidth_),
-			precision(6)
+			precision(6),
+			polyAreaName( )
 		{}
 
 		void add(T x, T y) {
@@ -102,6 +103,7 @@ namespace matlabBridge {
 
 		void write(std::ostream &os) const {
 			using std::endl;
+			int areaCount = 0;
 			if (!points.empty( )) {
 				const_cast<TPolygons<T> *>(this)->nextPolygon( );
 			}
@@ -130,6 +132,9 @@ namespace matlabBridge {
 				}
 				
 				os << ");"<< endl;
+				if (polyAreaName.length( ) > 0) {
+					os << polyAreaName << areaCount << " = polyarea(" << variableName<< "(:,1)," << variableName << "(:,2));" << std::endl;
+				}
 			}
 		}
 
@@ -138,6 +143,14 @@ namespace matlabBridge {
 		*/
 		void setPrecision(int p) {
 			precision = p;
+		}
+
+
+		/**
+		* set variable name so that command to calculate area of poly is generated in #write
+		*/
+		void setPolyAreaName(const char *n) {
+			polyAreaName = n;
 		}
 
 	private:
@@ -154,6 +167,7 @@ namespace matlabBridge {
 		const char * const lineSpec;
 		const int lineWidth;
 		int precision;
+		std::string polyAreaName;
 	};
 
 
@@ -169,6 +183,7 @@ namespace matlabBridge {
 	};
 
 
+
 	template <class T>
 	inline std::ostream & operator<<(std::ostream & in, const TPolygon<T> & pgon) {
 		pgon.write(in);
@@ -180,5 +195,7 @@ namespace matlabBridge {
 		pgon.write(in);
 		return in;
 	}
+
+
 }
 #endif

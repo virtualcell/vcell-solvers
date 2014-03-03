@@ -2,6 +2,7 @@
 #include <sstream>
 #include <exception>
 #include <algorithm>
+#include <iomanip>
 #include <MeshElementSpecies.h>
 #include <VCellFront.h>
 #include <VoronoiResult.h>
@@ -809,6 +810,38 @@ void MeshElementSpecies::collectMassFromNeighbors(const FrontType & front) {
 					amtMass[s] += m;
 					nb.amtMassTransient[s] -= m;
 					VCELL_COND_LOG(debug, s == 0, this->indexInfo( ) << " adding mass " <<  m  << " from " <<nb.indexInfo( ) << ' ' << nb.state( ));
+					if (s== 0 && matlabBridge::MatLabDebug::on("collectmass")) {
+						const char semi = ';';
+						static int collectCounter = 1;
+						std::ostringstream oss;
+						oss << "collection" << std::setfill('0') << std::setw(2) <<collectCounter++ << ".m";
+						std::ofstream mlScript(oss.str( ));
+
+						matlabBridge::TPolygons<CoordinateType> nbpolys(":+b",2);
+						frontTierAdapt::copyVectorsInto(nbpolys,nb.getControlVolume( ).points( ));
+						nbpolys.setPolyAreaName("neighborArea");
+
+						matlabBridge::TPolygons<CoordinateType> mepolys(":xg",2);
+						frontTierAdapt::copyVectorsInto(mepolys,ourVolume.points( ));
+						mepolys.setPolyAreaName("nodeArea");
+
+						matlabBridge::TPolygons<CoordinateType> ipolys("-+r",1);
+						frontTierAdapt::copyVectorsInto(ipolys,intersection.points( ));
+						ipolys.setPolyAreaName("intersectArea");
+
+						mlScript << nbpolys << mepolys << ipolys;
+						mlScript << matlabBridge::Text(get(cX),get(cY),indexInfo( ).str( ).c_str( ));
+						mlScript << matlabBridge::Text(nb(cX),nb(cY),nb.indexInfo( ).str( ).c_str( ));
+						using std::endl;
+						mlScript << "nodevol = " <<std::setprecision(20) << ourVolume.volume( ) <<  semi << endl;
+						mlScript << "nbvol = " << std::setprecision(20) << nb.getControlVolume( ).volume( ) <<  semi << endl;
+						mlScript << "ivol = " << std::setprecision(20) << intersection.volume( ) <<  semi << endl;
+						mlScript << "sourcemass = " << nb.amtMass[s] << semi << endl;
+						mlScript << "transfermass = " << m << semi << endl;
+						mlScript << "%gained " << indexInfo( ).str( ) << " vol " << std::setprecision(20) << ourVolume.volume( ) << endl;
+						mlScript << "%neighbor " << nb.indexInfo( ).str( ) << " vol " << std::setprecision(20) << nb.getControlVolume( ).volume( ) << endl;
+						mlScript << "%intersection vol " << std::setprecision(20) << intersection.volume( ) << endl;
+					}
 				}
 			}
 		}
