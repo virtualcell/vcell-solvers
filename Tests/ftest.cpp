@@ -176,11 +176,6 @@ namespace {
 	};
 }
 
-namespace {
-	double evalLevelFunc(POINTER unused, double *in) { 
-		return 0;
-	}
-	}
 TEST(frontier,level) {
 	mylevel lvl;
 	double xy[2];

@@ -225,7 +225,7 @@ std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveFront( ) {
 }
 template <typename FCT>
 std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveFront(std::ostream & csv ) {
-	typedef std::vector<spatial::TPoint<FCT,2> >::const_iterator Iterator;
+	typedef typename std::vector<spatial::TPoint<FCT,2> >::const_iterator Iterator;
 	const char comma = ',';
 
 	std::vector<spatial::TPoint<FCT,2> > rval = retrieveFront( ); 
