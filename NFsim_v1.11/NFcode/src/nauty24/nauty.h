@@ -100,7 +100,7 @@ it is necessary to check they are correct.
 *                   - added validity check for WORDSIZE                      *
 *                   - added new fields to optionblk structure                *
 *                   - updated DEFAULTOPTIONS to add invariants fields        *
-*                   - added (set*) cast to definition of GRAPHROW            *
+*                   - added (setword*) cast to definition of GRAPHROW            *
 *                   - added definition of ALLOCS and FREES                   *
 *       25-Mar-89 : - added declaration of new function doref()              *
 *                   - added UNION macro                                      *
@@ -442,7 +442,7 @@ typedef unsigned long nauty_counter;
 #define FLIPELEMENT1(setadd,pos) (*(setadd) ^= BITT[pos])
 #define ISELEMENT1(setadd,pos)   ((*(setadd) & BITT[pos]) != 0)
 #define EMPTYSET1(setadd,m)   *(setadd) = 0;
-#define GRAPHROW1(g,v,m) ((set*)(g) + (v))
+#define GRAPHROW1(g,v,m) ((setword*)(g) + (v))
 
 #define ADDELEMENT0(setadd,pos)  ((setadd)[SETWD(pos)] |= BITT[SETBT(pos)])
 #define DELELEMENT0(setadd,pos)  ((setadd)[SETWD(pos)] &= ~BITT[SETBT(pos)])
@@ -451,7 +451,7 @@ typedef unsigned long nauty_counter;
 #define EMPTYSET0(setadd,m) \
     {setword *es; \
     for (es = (setword*)(setadd)+(m); --es >= (setword*)(setadd);) *es=0;}
-#define GRAPHROW0(g,v,m) ((set*)(g) + (long)(v)*(long)(m))
+#define GRAPHROW0(g,v,m) ((setword*)(g) + (long)(v)*(long)(m))
 
 #if  (MAXM==1) && defined(ONE_WORD_SETS)
 #define ADDELEMENT ADDELEMENT1
@@ -733,9 +733,9 @@ typedef struct
     void    (*updatecan)      /* update canonical object */
             (graph*,graph*,permutation*,int,int,int);
     void    (*refine)         /* refine partition */
-            (graph*,int*,int*,int,int*,permutation*,set*,int*,int,int);
+            (graph*,int*,int*,int,int*,permutation*,setword*,int*,int,int);
     void    (*refine1)        /* refine partition, MAXM==1 */
-            (graph*,int*,int*,int,int*,permutation*,set*,int*,int,int);
+            (graph*,int*,int*,int,int*,permutation*,setword*,int*,int,int);
     boolean (*cheapautom)     /* test for easy automorphism */
             (int*,int,boolean,int);
     int     (*targetcell)     /* decide which cell to split */
@@ -743,7 +743,7 @@ typedef struct
     void    (*freedyn)(void); /* free dynamic memory */
     void    (*check)          /* check compilation parameters */
             (int,int,int,int);
-    void    (*init)(graph*,graph**,graph*,graph**,int*,int*,set*,
+    void    (*init)(graph*,graph**,graph*,graph**,int*,int*,setword*,
                    struct optionstruct*,int*,int,int);
     void    (*cleanup)(graph*,graph**,graph*,graph**,int*,int*,
                       struct optionstruct*,statsblk*,int,int);
@@ -761,7 +761,7 @@ typedef struct optionstruct
     int linelength;           /* max chars/line (excl. '\n') for output */
     FILE *outfile;            /* file for output, if any */
     void (*userrefproc)       /* replacement for usual refine procedure */
-         (graph*,int*,int*,int,int*,permutation*,set*,int*,int,int);
+         (graph*,int*,int*,int,int*,permutation*,setword*,int*,int,int);
     void (*userautomproc)     /* procedure called for each automorphism */
          (int,permutation*,int*,int,int,int);
     void (*userlevelproc)     /* procedure called for each level */
@@ -791,7 +791,7 @@ typedef struct optionstruct
 
 /* The following are obsolete.  Just use NULL. */
 #define NILFUNCTION ((void(*)())NULL)      /* nil pointer to user-function */
-#define NILSET      ((set*)NULL)           /* nil pointer to set */
+#define NILSET      ((setword*)NULL)           /* nil pointer to set */
 #define NILGRAPH    ((graph*)NULL)         /* nil pointer to graph */
 
 #define DEFAULTOPTIONS_GRAPH(options) optionblk options = \
@@ -1029,10 +1029,10 @@ extern "C" {
 #endif
 
 extern void alloc_error(char*);
-extern void breakout(int*,int*,int,int,int,set*,int);
+extern void breakout(int*,int*,int,int,int,setword*,int);
 extern boolean cheapautom(int*,int,boolean,int);
-extern void doref(graph*,int*,int*,int,int*,int*,permutation*,set*,int*,
-  void(*)(graph*,int*,int*,int,int*,permutation*,set*,int*,int,int),
+extern void doref(graph*,int*,int*,int,int*,int*,permutation*,setword*,int*,
+  void(*)(graph*,int*,int*,int,int*,permutation*,setword*,int*,int,int),
   void(*)(graph*,int*,int*,int,int,int,permutation*,int,boolean,int,int),
   int,int,int,boolean,int,int);
 extern void extra_autom(permutation*,int);
@@ -1040,20 +1040,20 @@ extern void extra_level(int,int*,int*,int,int,int,int,int,int);
 extern boolean isautom(graph*,permutation*,boolean,int,int);
 extern dispatchvec dispatch_graph;
 extern int itos(int,char*);
-extern void fmperm(permutation*,set*,set*,int,int);
-extern void fmptn(int*,int*,int,set*,set*,int,int);
-extern void longprune(set*,set*,set*,set*,int);
-extern void nauty(graph*,int*,int*,set*,int*,optionblk*,
-                  statsblk*,set*,int,int,int,graph*);
-extern void maketargetcell(graph*,int*,int*,int,set*,int*,int*,int,boolean,
+extern void fmperm(permutation*,setword*,setword*,int,int);
+extern void fmptn(int*,int*,int,setword*,setword*,int,int);
+extern void longprune(setword*,setword*,setword*,setword*,int);
+extern void nauty(graph*,int*,int*,setword*,int*,optionblk*,
+                  statsblk*,setword*,int,int,int,graph*);
+extern void maketargetcell(graph*,int*,int*,int,setword*,int*,int*,int,boolean,
            int,int (*)(graph*,int*,int*,int,int,boolean,int,int,int),int,int);
-extern int nextelement(set*,int,int);
+extern int nextelement(setword*,int,int);
 extern int orbjoin(int*,permutation*,int);
-extern void permset(set*,set*,int,permutation*);
+extern void permsetword(setword*,setword*,int,permutation*);
 extern void putstring(FILE*,char*);
-extern void refine(graph*,int*,int*,int,int*,permutation*,set*,int*,int,int);
-extern void refine1(graph*,int*,int*,int,int*,permutation*,set*,int*,int,int);
-extern void shortprune(set*,set*,int);
+extern void refine(graph*,int*,int*,int,int*,permutation*,setword*,int*,int,int);
+extern void refine1(graph*,int*,int*,int,int*,permutation*,setword*,int*,int,int);
+extern void shortprune(setword*,setword*,int);
 extern int targetcell(graph*,int*,int*,int,int,boolean,int,int,int);
 extern int testcanlab(graph*,graph*,int*,int*,int,int);
 extern void updatecan(graph*,graph*,permutation*,int,int,int);
