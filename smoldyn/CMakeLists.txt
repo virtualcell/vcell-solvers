@@ -335,7 +335,7 @@ endif()
 
 ########## install ###########
 
-install(TARGETS ${EXE_FILE} RUNTIME DESTINATION bin)
+install(TARGETS ${EXE_FILE} RUNTIME DESTINATION ${OPTION_EXE_DIRECTORY})
 
 ########## configure specific configurations  #########
 # set variable for smoldynconfigure.h directory, config file, add to EXE include directories

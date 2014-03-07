@@ -40,6 +40,6 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	target_link_libraries(${EXE_FILE} ${DEP_LIBS})
 	add_dependencies(${EXE_FILE} ExpressionParser IDAWin sundials sundials_nvecserial sundials_cvode sundials_ida)
 	
-	install(TARGETS ${EXE_FILE} RUNTIME DESTINATION bin)
+	install(TARGETS ${EXE_FILE} RUNTIME DESTINATION ${OPTION_EXE_DIRECTORY})
 endif()
 install(TARGETS IDAWin ARCHIVE DESTINATION bin)

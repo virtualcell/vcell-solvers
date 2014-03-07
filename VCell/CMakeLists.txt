@@ -248,6 +248,6 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	target_link_libraries(${EXE_FILE} ${DEP_LIBS})
 	add_dependencies(${EXE_FILE} vcell pcgwrapper ExpressionParser IDAWin qhull sundials sundials_nvecserial sundials_cvode sundials_ida zip unzip)
 	install(TARGETS ${EXE_FILE} 
-            RUNTIME DESTINATION bin)
+            RUNTIME DESTINATION ${OPTION_EXE_DIRECTORY})
 	
 endif()

@@ -89,4 +89,4 @@ if (ARCH_64bit)
 endif (ARCH_64bit) 
 add_executable(${exe_target} ${SRC_FILES})
 
-install(TARGETS ${exe_target} RUNTIME DESTINATION bin)
+install(TARGETS ${exe_target} RUNTIME DESTINATION ${OPTION_EXE_DIRECTORY})

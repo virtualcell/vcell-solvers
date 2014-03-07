@@ -111,6 +111,12 @@ if (MSVC)
 endif()
     
 #############################################
+# installation directory
+#############################################
+set(OPTION_EXE_DIRECTORY "bin" CACHE PATH "installation directory")
+
+
+#############################################
 #
 #  Options, check one and only one is selected
 #  1. server side solvers with messaging
