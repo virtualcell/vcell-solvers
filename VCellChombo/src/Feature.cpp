@@ -12,7 +12,7 @@
 using std::stringstream;
 using std::endl;
 
-Feature::Feature(string& name, unsigned char findex) : Structure(name)
+Feature::Feature(string& name, unsigned int findex) : Structure(name)
 {
 	index = findex;
 	ifVar = NULL;

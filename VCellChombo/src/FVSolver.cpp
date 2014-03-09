@@ -959,6 +959,7 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 	int numLevels = 1;
 	int* refineratios = 0;
 	int maxBoxSize = 64;
+	int* tagsGrow = NULL;
 	int viewLevel = -1;
 	double fillRatio = 0.9;
 	double rel_tol = 1e-9;
@@ -1034,8 +1035,11 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 		} else if (nextToken == "REFINEMENTS") {
 			lineInput >> numLevels;
 			refineratios = new int[numLevels];
+			tagsGrow = new int[numLevels];
 			rois = new string[numLevels];
 			for (int i = 0; i < numLevels; i ++) {
+				tagsGrow[i] = ChomboSpec::defaultTagsGrow;
+				
 				getline(ifsInput, line);
 				istringstream lineInput0(line);
 				lineInput0 >> refineratios[i];
@@ -1045,6 +1049,11 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 			}
 		} else if (nextToken == "MAX_BOX_SIZE") {
 			lineInput >> maxBoxSize;
+		} else if (nextToken == "TAGS_GROW") {
+			for (int i = 0; i < numLevels; ++ i)
+			{
+				lineInput >> tagsGrow[i];
+			}
 		} else if (nextToken == "RELATIVE_TOLERANCE") {
 			lineInput >> rel_tol;
 		} else if (nextToken == "VIEW_LEVEL") {
@@ -1064,7 +1073,7 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 	{
 		viewLevel = numLevels - 1; // finest level
 	}
-	chomboSpec = new ChomboSpec(chomboGeometry, numLevels, rel_tol, maxBoxSize, fillRatio, viewLevel, bSaveVCellOutput, bSaveChomboOutput, rois, refineratios);
+	chomboSpec = new ChomboSpec(chomboGeometry, numLevels, rel_tol, maxBoxSize, tagsGrow, fillRatio, viewLevel, bSaveVCellOutput, bSaveChomboOutput, rois, refineratios);
 	simTool->setChomboSpec(chomboSpec);
 }
 

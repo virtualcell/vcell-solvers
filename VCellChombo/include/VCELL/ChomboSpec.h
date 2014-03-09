@@ -10,9 +10,11 @@ class ChomboSpec
 {
 public:
 	ChomboSpec();
-	ChomboSpec(ChomboGeometry* cg, int numLevels, double rel_tol, int boxsize, double fillRatio, int viewLevel, bool bSaveVCellOutput, bool bSaveChomboOutput, string* roi, int* ratios);
+	ChomboSpec(ChomboGeometry* cg, int numLevels, double rel_tol, int boxsize, int* tagsGrowSize, double fillRatio, int viewLevel, bool bSaveVCellOutput, bool bSaveChomboOutput, string* roi, int* ratios);
 	virtual ~ChomboSpec();
 
+	static int defaultTagsGrow;
+	
 	int getNumLevels() {
 		return numLevels;
 	}
@@ -63,6 +65,11 @@ public:
 	{
 		return relTol;
 	}
+	
+	const int* getTagsGrow()
+	{
+		return tagsGrow;
+	}
 private:
 	ChomboGeometry* chomboGeometry;
 	int numLevels;
@@ -74,6 +81,7 @@ private:
 	string* refinementRois;
 	bool bSaveVCellOutput;
 	bool bSaveChomboOutput;
+	int* tagsGrow;
 };
 
 #endif /*CHOMBOSPEC_H_*/

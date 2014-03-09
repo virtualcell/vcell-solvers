@@ -41,7 +41,7 @@ using std::endl;
 int zip32(int filecnt, char* zipfile, ...);
 int unzip32(char* zipfile, char* file, char* exdir);
 
-SimTool* SimTool::instance = 0;
+SimTool* SimTool::instance = NULL;
 
 static int NUM_TOKENS_PER_LINE = 4;
 static const int numRetries = 2;
@@ -116,9 +116,6 @@ void SimTool::create() {
 }
 
 SimTool* SimTool::getInstance() {
-	if (instance == 0) {
-		throw "SimTool (singleton) has not been created";
-	}
 	return instance;
 }
 

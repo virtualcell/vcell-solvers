@@ -84,25 +84,40 @@ ChomboSemiImplicitScheduler::~ChomboSemiImplicitScheduler()
 	memSolnOld.clear();
 }
 
-void ChomboSemiImplicitScheduler::initValues() {
+void ChomboSemiImplicitScheduler::initValues()
+{
+	const char* methodName = "(ChomboSemiImplicitScheduler::initValues())";
+	pout() << "Entry " << methodName << endl;
 	setInitialConditions();
 
+	pout() << "Initializing integrators and solvers" << endl;
 	ebBEIntegratorList.resize(NUM_PHASES);
 	ebMlgSolver.resize(NUM_PHASES);
-	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
+	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
 		ebBEIntegratorList[iphase].resize(phaseVolumeList[iphase].size());
 		ebMlgSolver[iphase].resize(phaseVolumeList[iphase].size());
-		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol)
+		{
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+#ifdef CH_MPI
+			if (feature == NULL)
+			{
+				continue;
+			}
+#endif
 			int numDefinedVars = feature->getNumDefinedVariables();
 			ebBEIntegratorList[iphase][ivol].resize(numDefinedVars);
 			ebMlgSolver[iphase][ivol].resize(numDefinedVars);
 		}
 	}
 	initStencils();
+	pout() << "Exit " << methodName << endl;
 }
 
 void ChomboSemiImplicitScheduler::iterate() {
+	const char* methodName = "(ChomboSemiImplicitScheduler::iterate)";
+	pout() << "Entry " << methodName << endl;
+
 	static bool bFirstTime = true;
 	pout()  << endl << "time = " << simulation->getTime_sec() << endl;
 	EBAMRPoissonOp::setOperatorTime(simulation->getTime_sec());
@@ -111,12 +126,20 @@ void ChomboSemiImplicitScheduler::iterate() {
 	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-			if (feature->getNumDefinedVariables() > 0) {
+#ifdef CH_MPI
+			if (feature == NULL)
+			{
+				continue;
+			}
+#endif
+			if (feature->getNumDefinedVariables() > 0)
+			{
 				EBAMRDataOps::assign(volSolnOld[iphase][ivol], volSoln[iphase][ivol]);
 			}
 			
 			if (iphase == phase0 && feature->getMemVarIndexesInAdjacentMembranes().size() > 0) {
-				for(int ilev = 0; ilev < numLevels; ++ ilev) {
+				for(int ilev = 0; ilev < numLevels; ++ ilev)
+				{
 					memSoln[ivol][ilev]->copyTo(*memSolnOld[ivol][ilev]);
 				}
 			}
@@ -133,9 +156,16 @@ void ChomboSemiImplicitScheduler::iterate() {
 	// loop for elliptic variables
 	if (simulation->hasElliptic())
 	{
+		pout() << "Solving elliptic variables starting" << endl;
 		for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
 			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+#ifdef CH_MPI
+				if (feature == NULL)
+				{
+					continue;
+				}
+#endif
 				int numDefinedVars = feature->getNumDefinedVariables();
 
 				for(int ivar = 0; ivar < numDefinedVars; ++ ivar) {
@@ -160,14 +190,22 @@ void ChomboSemiImplicitScheduler::iterate() {
 				}
 			}
 		}
+		pout() << "Solving elliptic variables complete" << endl;
 	}
 
 	if (simulation->hasParabolic())
 	{
+		pout() << "Solving parabolic variables starting" << endl;
 		bool zeroPhi = true;
 		for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
 			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+#ifdef CH_MPI
+				if (feature == NULL)
+				{
+					continue;
+				}
+#endif
 				int numDefinedVars = feature->getNumDefinedVariables();
 
 				for(int ivar = 0; ivar < numDefinedVars; ++ ivar) {
@@ -194,12 +232,15 @@ void ChomboSemiImplicitScheduler::iterate() {
 				}
 			}
 		}
+		pout() << "Solving parabolic variables complete" << endl;
 	}
 	bFirstTime = false;
+	pout() << "Exit " << methodName << endl;
 }
 
 void ChomboSemiImplicitScheduler::setInitialConditions() {
-	pout() << "ChomboSemiImplicitScheduler:: setInitialConditions" << endl;
+	const char* methodName = "(ChomboSemiImplicitScheduler:: setInitialConditions)";
+	pout() << "Entry " << methodName << endl;
 
 	// t, x, y, z, VAR, VAR_INSIDE, VAR_OUTSIDE, field data, parameters
 	numSymbols = simulation->getNumSymbols();
@@ -233,13 +274,23 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 			memSolnOld.resize(numVols);
 		}
 		
-		for (int ivol = 0; ivol < numVols; ivol++) {
+		for (int ivol = 0; ivol < numVols; ivol++)
+		{
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-			int numDefinedVolVars = feature->getNumDefinedVariables();
-			int numDefinedMemVars = feature->getMemVarIndexesInAdjacentMembranes().size();
-			if (numDefinedVolVars  == 0 && numDefinedMemVars == 0) {
+#ifdef CH_MPI
+			if (feature == NULL)
+			{
 				continue;
 			}
+#endif
+			int numDefinedVolVars = feature->getNumDefinedVariables();
+			int numDefinedMemVars = feature->getMemVarIndexesInAdjacentMembranes().size();
+			if (numDefinedVolVars  == 0 && numDefinedMemVars == 0)
+			{
+				continue;
+			}
+
+			pout() << "iphase:" << iphase << ", ivol:" << ivol << ", initializing volume solution level data" << endl;
 
 			if (numDefinedVolVars > 0) {
 				volSoln[iphase][ivol].resize(numLevels);
@@ -270,7 +321,7 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 				}
 				
 				// set up initial condition
-				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit) {
+				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit) {
 					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
 
 					if (numDefinedVolVars > 0) {
@@ -329,6 +380,7 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 					continue;
 				}
 
+				pout() << "iphase:" << iphase << ", ivol:" << ivol << ", initializing membrane solution level data" << endl;
 				memSoln[ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<Real> > >(new LevelData< BaseIVFAB<Real> >(vectGrids[ilev], numDefinedMemVars, IntVect::Zero, bivfabFactory));
 				memSolnOld[ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<Real> > >(new LevelData< BaseIVFAB<Real> >(vectGrids[ilev], numDefinedMemVars, IntVect::Zero, bivfabFactory));
 				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit) {
@@ -373,7 +425,8 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 				} // end for DataIterator
 			} // end for ilev
 		} // end for ivol
-	} // end for ifeature
+	} // end for iphase
+	pout() << "Exit " << methodName << endl;
 }
 
 //void ChomboSemiImplicitScheduler::createVariableCoeffOpFactory(RefCountedPtr<EBConductivityOpFactory>& a_factory, int a_ivol, int a_ivar)
@@ -434,10 +487,8 @@ void ChomboSemiImplicitScheduler::getEBLGAndQuadCFI(Vector<EBLevelGrid>  & ebLev
 	ebLevelGrids.resize(numLevels);
 	quadCFInterp.resize(numLevels);
 
-//	Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-
   // Define the data holders and interpolators
-	for (int ilev = 0; ilev < numLevels; ilev++) {
+	for (int ilev = 0; ilev < numLevels; ++ ilev) {
 		ebLevelGrids[ilev].define(vectGrids[ilev], vectEbis[iphase][ivol][ilev], vectDomains[ilev]);
 
 		if (ilev > 0) {
@@ -493,10 +544,17 @@ void ChomboSemiImplicitScheduler::createConstantCoeffOpFactory(RefCountedPtr<EBA
 
 void ChomboSemiImplicitScheduler::defineSolver()
 {
-	pout() << "ChomboSemiImplicitScheduler::defineSolver" << endl;
+	const char* methodName = "(ChomboSemiImplicitScheduler::defineSolver())";
+	pout() << "Entry " << methodName << endl;
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+#ifdef CH_MPI
+			if (feature == NULL)
+			{
+				continue;
+			}
+#endif
 			int numDefinedVars = feature->getNumDefinedVariables();
 
 			for(int ivar = 0; ivar < numDefinedVars; ivar++) {
@@ -544,6 +602,7 @@ void ChomboSemiImplicitScheduler::defineSolver()
 			}
 		}
 	}
+	pout() << "Exit " << methodName << endl;
 }
 
 void ChomboSemiImplicitScheduler::getExtrapStencils(Vector<RefCountedPtr<BaseIndex  > >& a_destVoFs,
@@ -580,6 +639,8 @@ void ChomboSemiImplicitScheduler::getExtrapStencils(Vector<RefCountedPtr<BaseInd
 
 void ChomboSemiImplicitScheduler::initStencils()
 {
+	const char* methodName = "(ChomboSemiImplicitScheduler::initStencils())";
+	pout() << "Entry " << methodName << endl;
 	extrapStencils.resize(NUM_PHASES);
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		int numVols = phaseVolumeList[iphase].size();
@@ -588,15 +649,21 @@ void ChomboSemiImplicitScheduler::initStencils()
 			extrapStencils[iphase][ivol].resize(numLevels);
 
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+#ifdef CH_MPI
+			if (feature == NULL)
+			{
+				continue;
+			}
+#endif
 			int numDefinedVariables = feature->getNumDefinedVariables();
 			if (numDefinedVariables == 0) {
 				continue;
 			}
 
-		    Vector<EBLevelGrid>  eblg;
-		    Vector<RefCountedPtr<EBQuadCFInterp> > quadCFI;
-		    int inco = numDefinedVariables;
-		    getEBLGAndQuadCFI(eblg, quadCFI, iphase, ivol, inco);
+			Vector<EBLevelGrid>  eblg;
+			Vector<RefCountedPtr<EBQuadCFInterp> > quadCFI;
+			int inco = numDefinedVariables;
+			getEBLGAndQuadCFI(eblg, quadCFI, iphase, ivol, inco);
 
 			Real dxlev = vectDxes[0][0];
 			for(int ilev = 0; ilev < numLevels; ilev++) {
@@ -620,47 +687,57 @@ void ChomboSemiImplicitScheduler::initStencils()
 			}
 		}
 	}
+	pout() << "Exit " << methodName << endl;
 }
 
 void ChomboSemiImplicitScheduler::extrapolateDataToBoundary() {
-  CH_TIME("extrapolate_data_to_irreg_boundary");
+  const char* methodName = "(ChomboSemiImplicitScheduler::extrapolateDataToBoundary())";
+	pout() << "Entry " << methodName << endl;
   for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
-  		int numVols = phaseVolumeList[iphase].size();
-  		for (int ivol = 0; ivol < numVols; ivol ++) {
-  	  		Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-  	  		int numDefinedVars = feature->getNumDefinedVariables();
-					if (numDefinedVars == 0) {
-						continue;
-					}
-  	  		int isrc = 0;
-  	  		int idst = 0;
-  	  		int inco = numDefinedVars;
-					Vector<EBLevelGrid> eblg;
-					Vector<RefCountedPtr<EBQuadCFInterp> > quadCFI;
-					getEBLGAndQuadCFI(eblg, quadCFI, iphase, ivol, inco);
-
-					for(int ilev = 0; ilev < numLevels; ilev++) {
-						DisjointBoxLayout& currGrids = vectGrids[ilev];
-
-						if (ilev > 0) {
-							Interval interv(0, inco-1);
-							quadCFI[ilev]->interpolate((*volSolnOld[iphase][ivol][ilev]), (*volSolnOld[iphase][ivol][ilev-1]), interv);
-						}
-						(*volSolnOld[iphase][ivol][ilev]).exchange();
-						for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++dit)	{
-						//the last arguments say to loop over  all the variables with the stencil
-						//and the false is not just increment the solution but replace the value there.
-						(*extrapStencils[iphase][ivol][ilev])[dit()]->apply((*extrapValues[iphase][ivol][ilev])[dit()],
-																 (*volSolnOld[iphase][ivol][ilev])[dit()],
-															 isrc, idst, inco, false);
-					}
+		int numVols = phaseVolumeList[iphase].size();
+		for (int ivol = 0; ivol < numVols; ivol ++) {
+				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+#ifdef CH_MPI
+				if (feature == NULL)
+				{
+					continue;
 				}
-  		}
-    }
+#endif
+				int numDefinedVars = feature->getNumDefinedVariables();
+				if (numDefinedVars == 0) {
+					continue;
+				}
+				int isrc = 0;
+				int idst = 0;
+				int inco = numDefinedVars;
+				Vector<EBLevelGrid> eblg;
+				Vector<RefCountedPtr<EBQuadCFInterp> > quadCFI;
+				getEBLGAndQuadCFI(eblg, quadCFI, iphase, ivol, inco);
+
+				for(int ilev = 0; ilev < numLevels; ilev++) {
+					DisjointBoxLayout& currGrids = vectGrids[ilev];
+
+					if (ilev > 0) {
+						Interval interv(0, inco-1);
+						quadCFI[ilev]->interpolate((*volSolnOld[iphase][ivol][ilev]), (*volSolnOld[iphase][ivol][ilev-1]), interv);
+					}
+					(*volSolnOld[iphase][ivol][ilev]).exchange();
+					for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++dit)	{
+					//the last arguments say to loop over  all the variables with the stencil
+					//and the false is not just increment the solution but replace the value there.
+					(*extrapStencils[iphase][ivol][ilev])[dit()]->apply((*extrapValues[iphase][ivol][ilev])[dit()],
+															 (*volSolnOld[iphase][ivol][ilev])[dit()],
+														 isrc, idst, inco, false);
+				}
+			}
+		}
+	}
+	pout() << "Exit " << methodName << endl;
 }
 
 void ChomboSemiImplicitScheduler::updateSource() {
-	pout() << "ChomboSemiImplicitScheduler::updateSource" << endl;
+	const char* methodName = "(ChomboSemiImplicitScheduler::updateSource)";
+	pout() << "Entry " << methodName << endl;
 	extrapolateDataToBoundary();
 
 	int volSymbolOffset = 4;
@@ -673,6 +750,12 @@ void ChomboSemiImplicitScheduler::updateSource() {
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 			Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
+#ifdef CH_MPI
+			if (iFeature == NULL)
+			{
+				continue;
+			}
+#endif
 			int numDefinedVolVars = iFeature->getNumDefinedVariables();
 			int numDefinedMemVars = iphase == phase0 ? iFeature->getMemVarIndexesInAdjacentMembranes().size() : 0;
 			if (numDefinedVolVars == 0 && numDefinedMemVars == 0) {
@@ -880,4 +963,5 @@ void ChomboSemiImplicitScheduler::updateSource() {
 			} // end ilev
 		} // end ivol
 	} // end iphase
+	pout() << "Exit " << methodName << endl;
 }

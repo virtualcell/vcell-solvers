@@ -10,7 +10,6 @@ using namespace std;
 #include <Vector.H>
 #include <RealVect.H>
 #include <IntVect.H>
-#include <EBIndexSpace.H>
 #include <BaseIF.H>
 #include <Expression.h>
 #include <VCELL/ChomboSpec.h>
@@ -30,7 +29,6 @@ template <class> class LevelData;
 class Box;
 class EBAMRPoissonOpFactory;
 class DisjointBoxLayout;
-class EBIndexSpace;
 template <class> class BaseIVFAB;
 
 #define NUM_PHASES 2
@@ -133,7 +131,7 @@ protected:
 
 	int findNeighborMembraneIndex2D(int iphase, int ilev, const IntVect& gridIndex, int iedge, 
 	const RealVect& normalizedCrossPoint, const RealVect& crossPointRealCoords, int& neighborEdge);
-
+	
 	static const int phase0;
 	static const int phase1;
 };

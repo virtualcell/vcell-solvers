@@ -24,8 +24,6 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85662341_0_.fvinput</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85682594_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85687152_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85689232_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85689526_0_.fvinput</runcommandpicklistitem>
@@ -34,8 +32,10 @@
           <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85705538_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_86157453_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_86230309_0_.fvinput</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_85989528_0_.fvinput</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_86573441_0_.fvinput</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_86230309_0_.fvinput</runcommand>
+        <runcommand>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_86573441_0_.fvinput</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>
@@ -173,6 +173,8 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  C:/chombo/data/users/fgao1/SimID_86316079_0_.fvinput</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  </runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
         </runcommandpicklist>
         <runcommand>"${OUTPUT_PATH}"</runcommand>

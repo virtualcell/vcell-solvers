@@ -16,10 +16,10 @@ class VolumeVariable;
 class Feature : public Structure
 {
 public:
-	Feature(string& name, unsigned char findex);
+	Feature(string& name, unsigned int findex);
 	~Feature();
 
-	unsigned char getIndex() {
+	unsigned int getIndex() {
 		return index;
 	}
 	virtual void resolveReferences(SimulationExpression *sim);
@@ -55,7 +55,7 @@ public:
 		ifVar = var;
 	}
 private:
-	unsigned char index;	
+	unsigned int index;
 	vector<int> memVarIndexesInAdjacentMembranes;
 
 	int phase;
