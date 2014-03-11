@@ -111,9 +111,10 @@ if (MSVC)
 endif()
     
 #############################################
-# installation directory
+# installation directories
 #############################################
 set(OPTION_EXE_DIRECTORY "bin" CACHE PATH "installation directory")
+set(OPTION_LIB_DIRECTORY "lib" CACHE PATH "library directory")
 
 
 #############################################
