@@ -18,10 +18,6 @@ public:
 	VariableType getVarType() { return VAR_MEMBRANE; }
 
 	void createErrorVariables();
-
-protected:
-	MembraneVariable* clone(string& varName);
-
 };
 
 #endif

@@ -19,6 +19,8 @@ using std::string;
 #include <hdf5.h>
 #include <H5Tpublic.h>
 
+#include "VCELL/VCellModel.h"
+
 /*
  * Little-endian operating systems:
  * Linux on x86, x64, MIPSEL, Alpha and Itanium
@@ -118,11 +120,13 @@ void DataSet::write(SimulationExpression *sim, char* filename)
 	static const char* SOLUTION_ATTR_VARIABLE_TYPES = "variable types";
 	
 	static const char* SOLUTION_DATASET_ATTR_DOMAIN = "domain";
-	static const char* SOLUTION_DATASET_ATTR_VARIABLE_TYPE = "variable type";
+	static const char* DATASET_ATTR_VARIABLE_TYPE = "variable type";
 	static const char* SOLUTION_DATASET_ATTR_MEAN = "mean";
 	static const char* SOLUTION_DATASET_ATTR_SUM_VOLFRAC = "sum of volume fraction";
 	static const char* SOLUTION_DATASET_ATTR_RELATIVE_L2ERROR = "relative L2 error";
 	static const char* SOLUTION_DATASET_ATTR_MAX_ERROR = "max error";
+
+	static const char* EXTRAPOLATED_VOLUMES_GROUP = "/extrapolated_volumes";
 
 	hid_t h5SimFile = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	hid_t solGroup = H5Gcreate(h5SimFile, SOLUTION_GROUP, H5P_DEFAULT);
@@ -176,7 +180,7 @@ void DataSet::write(SimulationExpression *sim, char* filename)
 		}
 		
 		// attribute: variable type
-		attribute = H5Acreate(varDataset, SOLUTION_DATASET_ATTR_VARIABLE_TYPE, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
+		attribute = H5Acreate(varDataset, DATASET_ATTR_VARIABLE_TYPE, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
 		VariableType varType = var->getVarType();
 		H5Awrite(attribute, H5T_NATIVE_INT, &varType);
 		H5Aclose(attribute);
@@ -216,7 +220,7 @@ void DataSet::write(SimulationExpression *sim, char* filename)
 			}
 			
 			// attribute: variable type
-			attribute = H5Acreate(errorVarDataSet, SOLUTION_DATASET_ATTR_VARIABLE_TYPE, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
+			attribute = H5Acreate(errorVarDataSet, DATASET_ATTR_VARIABLE_TYPE, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
 			H5Awrite(attribute, H5T_NATIVE_INT, &varType);
 			H5Aclose(attribute);
 
@@ -237,7 +241,7 @@ void DataSet::write(SimulationExpression *sim, char* filename)
 			}
 
 			// attribute: variable type
-			attribute = H5Acreate(errorVarDataSet, SOLUTION_DATASET_ATTR_VARIABLE_TYPE, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
+			attribute = H5Acreate(errorVarDataSet, DATASET_ATTR_VARIABLE_TYPE, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
 			H5Awrite(attribute, H5T_NATIVE_INT, &varType);
 			H5Aclose(attribute);
 
@@ -245,10 +249,40 @@ void DataSet::write(SimulationExpression *sim, char* filename)
 		}
 		H5Dclose(varDataset);
 		H5Tclose(strtype);
+		H5Sclose(space);
 	}
-	H5Sclose(space);
-	H5Sclose(scalarDataSpace);
 	H5Gclose(solGroup);
+	
+	if (SimTool::getInstance()->getModel()->getNumMembranes() > 0)
+	{
+		hid_t extrapolatedVolumesGroup = H5Gcreate(h5SimFile, EXTRAPOLATED_VOLUMES_GROUP, H5P_DEFAULT);
+		int numVolVar = sim->getNumVolVariables();
+		for (int i = 0; i < numVolVar; i ++)
+		{
+			VolumeVariable* volVar = sim->getVolVariable(i);
+			dim[0] = volVar->getExtrapolatedSize();
+			if (dim[0] > 0)
+			{
+				space = H5Screate_simple(rank, dim, NULL);
+				char dsName[128];
+				sprintf(dsName, "%s/__%s_extrapolated__", EXTRAPOLATED_VOLUMES_GROUP, volVar->getName().c_str());
+				hid_t varDataset = H5Dcreate (h5SimFile, dsName, H5T_NATIVE_DOUBLE, space, H5P_DEFAULT);
+				H5Dwrite(varDataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, volVar->getExtrapolated());
+
+				// attribute: variable type
+				attribute = H5Acreate(varDataset, DATASET_ATTR_VARIABLE_TYPE, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
+				VariableType varType = VAR_MEMBRANE;
+				H5Awrite(attribute, H5T_NATIVE_INT, &varType);
+				H5Aclose(attribute);
+
+				H5Dclose(varDataset);
+				H5Sclose(space);
+			}
+		}
+		H5Gclose(extrapolatedVolumesGroup);
+	}
+	
+	H5Sclose(scalarDataSpace);
 	H5Fclose(h5SimFile);
 }
 

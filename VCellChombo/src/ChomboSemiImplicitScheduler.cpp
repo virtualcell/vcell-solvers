@@ -111,6 +111,7 @@ void ChomboSemiImplicitScheduler::initValues()
 		}
 	}
 	initStencils();
+	extrapolateDataToBoundary();
 	pout() << "Exit " << methodName << endl;
 }
 

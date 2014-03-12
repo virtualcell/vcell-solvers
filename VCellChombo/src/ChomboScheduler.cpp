@@ -1045,7 +1045,7 @@ void ChomboScheduler::updateSolution()
 			if (var == NULL)
 			{
 				string varname = string(IF_VAR_NAME_PREFIX) + feature->getName();
-				var = new VolumeVariable(varname, NULL, vectNxes[viewLevel].product());
+				var = new VolumeVariable(varname, NULL, vectNxes[viewLevel].product(), 0);
 				feature->setIFVariable(var);
 			}
 		}
@@ -1074,6 +1074,53 @@ void ChomboScheduler::updateSolution()
 #endif
 		bIFVariableUpdated = true;
 	}
+
+	pout() << "populating extrapolated values" << endl;
+	for (int iphase = 0; iphase < NUM_PHASES; iphase ++)
+	{
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++)
+		{
+			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+			int numDefinedVolVars = feature->getNumDefinedVariables();
+			if (numDefinedVolVars == 0)
+			{
+				continue;
+			}
+			for (int ilev = 0; ilev < numLevels; ++ ilev)
+			{
+				DisjointBoxLayout& currGrids = vectGrids[ilev];
+				for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++dit)
+				{
+					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
+					const Box& currBox = vectGrids[ilev][dit()];
+
+					const EBGraph& currEBGraph = currEBISBox.getEBGraph();
+					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
+
+					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
+					{
+						const VolIndex& vof = vofit();
+						const IntVect& gridIndex = vof.gridIndex();
+						int volIndex = getChomboBoxLocalIndex(vectNxes[ilev], 0, gridIndex);
+						map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(volIndex);
+						if (iter == irregVolumeMembraneMap[ilev].end() || iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
+						{
+							continue;
+						}
+						
+						int memIndex = iter->second;
+						for (int iDefinedVar = 0; iDefinedVar < numDefinedVolVars; iDefinedVar ++)
+						{
+							VolumeVariable* var = (VolumeVariable*)feature->getDefinedVariable(iDefinedVar);
+							Real extrapVal = (*extrapValues[iphase][ivol][ilev])[dit()](vof, iDefinedVar);
+							var->getExtrapolated()[memIndex] = extrapVal;
+						}
+					}
+				} // end dit()
+			} // end ilev
+		} // end ivol
+	} // end iphase
+	
 	pout() << "Exit " << methodName << endl;
 }
 

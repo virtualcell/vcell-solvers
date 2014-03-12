@@ -13,20 +13,30 @@ class Feature;
 class VolumeVariable : public Variable
 {
 public:
-	VolumeVariable(string& nameStr, Feature* feature, long size);
-
+	VolumeVariable(string& nameStr, Feature* feature, long size, long extrapSize);
+	~VolumeVariable();
 	virtual VariableType	getVarType() {return VAR_VOLUME;}
 
 	bool isAdvecting()
 	{
 		return bAdvecting;
 	}
+	double *getExtrapolated() 
+	{
+		return extrapolated;
+	}
+	int getExtrapolatedSize()
+	{
+		return extrapolatedSize;
+	}
 
 	void createErrorVariables();
 	
 private:
-	VolumeVariable* clone(string& varName);
 	bool bAdvecting;
+	long extrapolatedSize;
+	double* extrapolated;
+
 };
 
 #endif

@@ -5,22 +5,29 @@
 #include <VCELL/VolumeVariable.h>
 #include <VCELL/Feature.h>
 #include <fstream>
+#include <REAL.H>
 using std::ofstream;
 using std::endl;
 
-VolumeVariable::VolumeVariable(string& nameStr, Feature* feature, long size)
-: Variable(nameStr, feature, size)
+VolumeVariable::VolumeVariable(string& nameStr, Feature* feature, long size, long extrapSize)
+:	Variable(nameStr, feature, size)
 {
 	bAdvecting = false;
+	extrapolatedSize = extrapSize;
+	extrapolated = NULL;
+	if (extrapolatedSize > 0)
+	{
+		extrapolated = new double[extrapolatedSize];
+		for (int i = 0; i < extrapolatedSize; ++ i)
+		{
+			extrapolated[i] = BASEFAB_REAL_SETVAL;
+		}
+	}
 }
 
-VolumeVariable* VolumeVariable::clone(string& varName)
+VolumeVariable::~VolumeVariable()
 {
-	VolumeVariable* newVar = new VolumeVariable(varName, (Feature*)structure, size);
-	newVar->bDiffusing = bDiffusing;
-	newVar->bElliptic = bElliptic;
-	newVar->bAdvecting = bAdvecting;
-	return newVar;
+	delete[] extrapolated;
 }
 
 void VolumeVariable::createErrorVariables()
@@ -28,8 +35,8 @@ void VolumeVariable::createErrorVariables()
 	if (exactErrorVar == NULL)
 	{
 		string errorVarName = name + ERROR_VAR_SUFFIX;
-		exactErrorVar = clone(errorVarName);
+		exactErrorVar = new VolumeVariable(errorVarName, (Feature*)structure, size, 0);
 		errorVarName = name + RELATIVE_ERROR_VAR_SUFFIX;
-		relativeErrorVar = clone(errorVarName);
+		relativeErrorVar = new VolumeVariable(errorVarName, (Feature*)structure, size, 0);
 	}
 }

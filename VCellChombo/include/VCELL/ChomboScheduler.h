@@ -96,6 +96,7 @@ protected:
 	Vector< Vector< Vector<LevelData<EBCellFAB>*> > > volSoln;
 	Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<Real> > > > > memSoln;
 	IntVect numGhostSoln;
+	Vector< Vector< Vector< RefCountedPtr< LevelData<BaseIVFAB<Real> > > > > > extrapValues;
 
 	Vector<EBAMRPoissonOpFactory *> opFactories;
 

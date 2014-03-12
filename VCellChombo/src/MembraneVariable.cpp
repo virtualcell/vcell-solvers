@@ -17,21 +17,13 @@ MembraneVariable::~MembraneVariable()
 {
 }
 
-MembraneVariable* MembraneVariable::clone(string& varName)
-{
-	MembraneVariable* newVar = new MembraneVariable(varName, (Membrane*)structure, size);
-	newVar->bDiffusing = bDiffusing;
-	newVar->bElliptic = bElliptic;
-	return newVar;
-}
-
 void MembraneVariable::createErrorVariables()
 {
 	if (exactErrorVar == NULL)
 	{
 		string errorVarName = name + ERROR_VAR_SUFFIX;
-		exactErrorVar = clone(errorVarName);
+		exactErrorVar = new MembraneVariable(errorVarName, (Membrane*)structure, size);
 		errorVarName = name + RELATIVE_ERROR_VAR_SUFFIX;
-		relativeErrorVar = clone(errorVarName);
+		relativeErrorVar = new MembraneVariable(errorVarName, (Membrane*)structure, size);
 	}
 }

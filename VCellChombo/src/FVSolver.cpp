@@ -273,7 +273,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			{
 				throw "gradient not supported yet";
 			}
-			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX*sizeY*sizeZ);
+			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX*sizeY*sizeZ, numMembranePoints);
 			volumeVar->setDiffusing();
 			if (nextToken == "VOLUME_PDE_STEADY")
 			{
@@ -294,7 +294,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				ss << "volume variable " << variable_name << " is not defined in any feature.";
 				throw ss.str();
 			}
-			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX*sizeY*sizeZ);
+			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX*sizeY*sizeZ, numMembranePoints);
 			feature->addDefinedVariable(volumeVar);
 			simulation->addVariable(volumeVar);
 		} 

@@ -37,8 +37,7 @@ private:
 
 	//this is the stencil that extrapolates data to the irregular boundary
 	Vector< Vector< Vector< LayoutData< RefCountedPtr< AggStencil< EBCellFAB, BaseIVFAB<Real> > > >* > > > extrapStencils;
-	Vector< Vector< Vector< RefCountedPtr< LevelData<BaseIVFAB<Real> > > > > > extrapValues;
-
+	
 	void updateSource();
 
 	IntVect numGhostSource;
