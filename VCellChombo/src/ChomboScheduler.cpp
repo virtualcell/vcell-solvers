@@ -328,8 +328,8 @@ void ChomboScheduler::initializeGrids()
 						for (ivsit.begin(); ivsit.ok(); ++ivsit)
 						{
 							IntVect gridIndex = ivsit();
-							RealVect vol_point = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-							if (refinementRoiExps[ilev]->evaluateVector(vol_point.dataPtr()))
+							RealVect vol_center = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+							if (refinementRoiExps[ilev]->evaluateVector(vol_center.dataPtr()))
 							{
 								pout() << "tagging point " << gridIndex << " at level " << ilev << endl;
 								tags[ilev] |= gridIndex;
@@ -580,9 +580,9 @@ void ChomboScheduler::initializeGrids()
 							// membrane not found
 							Feature* feature = phaseVolumeList[phase0][ivol]->feature;
 							assert(feature != NULL);
-							RealVect vol_point = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+							RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
 							pout() << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev
-									<< ": no membrane id for point " << vof.gridIndex() << " at "  << vol_point << "." << endl;
+									<< ": no membrane id for point " << vof.gridIndex() << " at "  << vol_center << "." << endl;
 							(*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0) = -1;
 						}
 #ifndef CH_MPI
@@ -599,10 +599,10 @@ void ChomboScheduler::initializeGrids()
 								if (iter != irregVolumeMembraneMap[ilev].end())
 								{
 									Feature* feature = phaseVolumeList[phase0][ivol]->feature;
-									RealVect vol_point = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+									RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
 									stringstream ss;
 									ss << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev
-											<< ", Point " << gridIndex << " at "  << vol_point << " is multi-valued point."
+											<< ", Point " << gridIndex << " at "  << vol_center << " is multi-valued point."
 											<< "Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
 									throw ss.str();
 								}
@@ -991,11 +991,11 @@ void ChomboScheduler::updateSolution()
 									Variable* errorVar = var->getExactErrorVariable();
 									if (errorVar != NULL)
 									{
-										RealVect vol_point = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+										RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
 										const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
 										RealVect coord = mem_centroid;
 										coord *= vectDxes[ilev];
-										coord += vol_point;
+										coord += vol_center;
 										memset(vectValues, 0, numSymbols * sizeof(double));
 										vectValues[0] = simulation->getTime_sec();
 										vectValues[1] = coord[0];
@@ -1615,11 +1615,11 @@ void ChomboScheduler::writeMembraneFiles()
 					}
 					int memIndex = iter->second;
 
-					RealVect vol_point = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+					RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
 					const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
 					RealVect mem_point = mem_centroid;
 					mem_point *= vectDxes[ilev];
-					mem_point += vol_point;
+					mem_point += vol_center;
 
 					metricsData[memIndex].index = memIndex;
 					metricsData[memIndex].level = ilev;
@@ -1633,20 +1633,20 @@ void ChomboScheduler::writeMembraneFiles()
 
 					// compute corner phase mask
 					RealVect dP[2] = {-0.5 * vectDxes[ilev], 0.5 * vectDxes[ilev]};
-					RealVect P = vol_point;
+					RealVect P = vol_center;
 
 					int cindex = 0;
 #if CH_SPACEDIM == 3
 					for (int k = 0; k < 2; ++ k)
 					{
-						P[2] = vol_point[2] + dP[k][2];
+						P[2] = vol_center[2] + dP[k][2];
 #endif
 						for (int j = 0; j < 2 ; ++ j)
 						{
-							P[1] = vol_point[1] + dP[j][1];
+							P[1] = vol_center[1] + dP[j][1];
 							for (int i = 0; i < 2 ; ++ i)
 							{
-								P[0] = vol_point[0] + dP[i][0];
+								P[0] = vol_center[0] + dP[i][0];
 								if (geoIfs[phase0]->value(P) > 0)
 								{
 									metricsData[memIndex].cornerPhaseMask |= (0x1 << cindex);
@@ -1697,7 +1697,7 @@ void ChomboScheduler::writeMembraneFiles()
 									RealVect cp = (edges[iedge].getIntersectLo()) ? edges[iedge].getLo() : edges[iedge].getHi();
 									RealVect cross_point = cp;
 									cross_point *= vectDxes[ilev];
-									cross_point += vol_point;
+									cross_point += vol_center;
 
 									int neighborEdge = (iedge ^ 1);
 									int nidx  = findNeighborMembraneIndex2D(phase0, ilev, gridIndex, iedge, cp, cross_point, neighborEdge);
@@ -1785,7 +1785,7 @@ void ChomboScheduler::writeMembraneFiles()
 									// get the real coordinate
 									RealVect cross_point = cp;
 									cross_point *= vectDxes[ilev];
-									cross_point += vol_point;
+									cross_point += vol_center;
 									crossedEdgeCount ++;
 									if (crossedEdgeCount < 3)
 									{
@@ -1808,7 +1808,7 @@ void ChomboScheduler::writeMembraneFiles()
 							{
 								RealVect crossPoint;
 								bool oneFaceCross = computeOneFaceCross(dir, face, hiLoFace == 0 ? -1 : 1, vectDxes[ilev],
-												vol_point, surfaceData[triangleCount].triVertices[1],
+												vol_center, surfaceData[triangleCount].triVertices[1],
 												surfaceData[triangleCount].triVertices[2], crossPoint);
 								if (oneFaceCross)
 								{

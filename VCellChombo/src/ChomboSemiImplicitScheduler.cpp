@@ -111,7 +111,6 @@ void ChomboSemiImplicitScheduler::initValues()
 		}
 	}
 	initStencils();
-	extrapolateDataToBoundary();
 	pout() << "Exit " << methodName << endl;
 }
 
@@ -122,30 +121,6 @@ void ChomboSemiImplicitScheduler::iterate() {
 	static bool bFirstTime = true;
 	pout()  << endl << "time = " << simulation->getTime_sec() << endl;
 	EBAMRPoissonOp::setOperatorTime(simulation->getTime_sec());
-
-	// copy new to old
-	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
-		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
-			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-#ifdef CH_MPI
-			if (feature == NULL)
-			{
-				continue;
-			}
-#endif
-			if (feature->getNumDefinedVariables() > 0)
-			{
-				EBAMRDataOps::assign(volSolnOld[iphase][ivol], volSoln[iphase][ivol]);
-			}
-			
-			if (iphase == phase0 && feature->getMemVarIndexesInAdjacentMembranes().size() > 0) {
-				for(int ilev = 0; ilev < numLevels; ++ ilev)
-				{
-					memSoln[ivol][ilev]->copyTo(*memSolnOld[ivol][ilev]);
-				}
-			}
-		}
-	}
 
 	if (bFirstTime  /*|| (!m_params.m_constCoeff)*/)
 	{
@@ -236,6 +211,32 @@ void ChomboSemiImplicitScheduler::iterate() {
 		pout() << "Solving parabolic variables complete" << endl;
 	}
 	bFirstTime = false;
+	
+	// extrapolate to get latest extrapolated values
+	// copy new to old
+	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
+			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+#ifdef CH_MPI
+			if (feature == NULL)
+			{
+				continue;
+			}
+#endif
+			if (feature->getNumDefinedVariables() > 0)
+			{
+				EBAMRDataOps::assign(volSolnOld[iphase][ivol], volSoln[iphase][ivol]);
+			}
+
+			if (iphase == phase0 && feature->getMemVarIndexesInAdjacentMembranes().size() > 0) {
+				for(int ilev = 0; ilev < numLevels; ++ ilev)
+				{
+					memSoln[ivol][ilev]->copyTo(*memSolnOld[ivol][ilev]);
+				}
+			}
+		}
+	}
+	extrapolateDataToBoundary();
 	pout() << "Exit " << methodName << endl;
 }
 
@@ -371,19 +372,23 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 					(*irrSet)[dit()] = currEBISBox.getIrregIVS(currBox);
 				} // end for DataIterator
 
+				// initialize extrapValues
 				BaseIVFactory<Real>  bivfabFactory(vectEbis[iphase][ivol][ilev], *irrSet);
 				if (numDefinedVolVars > 0) {
-					extrapValues[iphase][ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<Real> > >(new LevelData< BaseIVFAB<Real> >(vectGrids[ilev], numDefinedVolVars, IntVect::Zero, bivfabFactory));					
-				}
-				
-				// initialize membrane variable, only do it when phase=0
-				if (iphase == phase1 || numDefinedMemVars == 0) {
-					continue;
+					extrapValues[iphase][ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<Real> > >(new LevelData< BaseIVFAB<Real> >(vectGrids[ilev], numDefinedVolVars, IntVect::Zero, bivfabFactory));
 				}
 
-				pout() << "iphase:" << iphase << ", ivol:" << ivol << ", initializing membrane solution level data" << endl;
-				memSoln[ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<Real> > >(new LevelData< BaseIVFAB<Real> >(vectGrids[ilev], numDefinedMemVars, IntVect::Zero, bivfabFactory));
-				memSolnOld[ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<Real> > >(new LevelData< BaseIVFAB<Real> >(vectGrids[ilev], numDefinedMemVars, IntVect::Zero, bivfabFactory));
+				// initialize membrane variable, only do it when phase=0
+				if (iphase == phase0 && numDefinedMemVars > 0)
+				{
+					pout() << "iphase:" << iphase << ", ivol:" << ivol << ", initializing membrane solution level data" << endl;
+					memSoln[ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<Real> > >(new LevelData< BaseIVFAB<Real> >(vectGrids[ilev], numDefinedMemVars, IntVect::Zero, bivfabFactory));
+					memSolnOld[ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<Real> > >(new LevelData< BaseIVFAB<Real> >(vectGrids[ilev], numDefinedMemVars, IntVect::Zero, bivfabFactory));
+				}
+				else if (numDefinedVolVars == 0)
+				{
+					continue;
+				}
 				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit) {
 					const Box& currBox = vectGrids[ilev][dit()];
 					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
@@ -392,6 +397,36 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 
 					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit) {
 						const VolIndex& vof = vofit();
+						RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+						const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
+
+						// fill vectValues with membrane centroid
+						RealVect mem_coord = mem_centroid;
+						mem_coord *= vectDxes[ilev];
+						mem_coord += vol_center;
+						
+						memset(vectValues, 0, numSymbols * sizeof(double));
+						vectValues[0] = simulation->getTime_sec();
+						vectValues[1] = mem_coord[0];
+						vectValues[2] = mem_coord[1];
+						vectValues[3] = SpaceDim == 2 ? 0.5 : mem_coord[2];
+
+						if (numDefinedVolVars > 0)
+						{
+							for (int iDefinedVar = 0; iDefinedVar < numDefinedVolVars; iDefinedVar ++)
+							{
+								Variable* volVar = feature->getDefinedVariable(iDefinedVar);
+								VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)volVar->getVarContext();
+								double ic = varContextExp->evaluateExpression(INITIAL_VALUE_EXP, vectValues);
+								(*extrapValues[iphase][ivol][ilev])[dit()](vof, iDefinedVar) = ic;
+							}
+						}
+
+						if (iphase == phase1 || numDefinedMemVars == 0)
+						{
+							continue;
+						}
+
 						int membraneID = (*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()](vof, 0);
 						if (membraneID < 0) {
 							continue;
@@ -399,19 +434,6 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 						int	jvol = membraneID % totalNumVolumes;
 						Feature* jFeature = phaseVolumeList[phase1][jvol]->feature;
 						Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(feature, jFeature);
-						const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
-						RealVect vol_point = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-
-						// fill vectValues
-						RealVect mem_point = mem_centroid;
-						mem_point *= vectDxes[ilev];
-						mem_point += vol_point;
-
-						memset(vectValues, 0, numSymbols * sizeof(double));
-						vectValues[0] = simulation->getTime_sec();
-						vectValues[1] = mem_point[0];
-						vectValues[2] = mem_point[1];
-						vectValues[3] = SpaceDim == 2 ? 0.5 : mem_point[2];
 						for (int ivar = 0; ivar < numDefinedMemVars; ++ ivar) {
 							int varIndex = feature->getMemVarIndexesInAdjacentMembranes()[ivar];
 							Variable *memVar = (Variable*)simulation->getMemVariable(varIndex);
@@ -739,7 +761,6 @@ void ChomboSemiImplicitScheduler::extrapolateDataToBoundary() {
 void ChomboSemiImplicitScheduler::updateSource() {
 	const char* methodName = "(ChomboSemiImplicitScheduler::updateSource)";
 	pout() << "Entry " << methodName << endl;
-	extrapolateDataToBoundary();
 
 	int volSymbolOffset = 4;
 	int numVolVars = simulation->getNumVolVariables();
@@ -879,13 +900,12 @@ void ChomboSemiImplicitScheduler::updateSource() {
 							}
 							const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
 							Real mem_areaFrac = currEBISBox.bndryArea(vof);
-							Real volFrac = currEBISBox.volFrac(vof);
-							RealVect vol_point = EBArith::getVofLocation(vof,vectDxes[ilev], chomboGeometry->getDomainOrigin());
+							RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
 
 							// fill vectValues
 							RealVect mem_point = mem_centroid;
 							mem_point *= vectDxes[ilev];
-							mem_point += vol_point;
+							mem_point += vol_center;
 
 							memset(vectValues, 0, numSymbols * sizeof(double));
 							vectValues[0] = simulation->getTime_sec();
@@ -940,6 +960,7 @@ void ChomboSemiImplicitScheduler::updateSource() {
 									}
 									else
 									{
+										Real volFrac = currEBISBox.volFrac(vof);
 										double flux = Jval * mem_areaFrac/(volFrac * maxDxComponent);
 										sourceEBCellFAB(vof, ivar, vof.cellIndex()) += flux;
 									}
