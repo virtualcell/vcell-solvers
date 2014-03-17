@@ -21,7 +21,8 @@ namespace std {
 namespace vcellVoronoiImpl {
 	namespace bmulti = boost::multiprecision;
 	using bmulti::et_off;
-    typedef bmulti::number<bmulti::cpp_dec_float<80>,et_off> floatingType;
+    //typedef bmulti::number<bmulti::cpp_dec_float<80>,et_off> floatingType;
+    typedef long double floatingType;
 
     struct FloatingConverter {
         template <typename T>
