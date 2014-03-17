@@ -22,6 +22,12 @@ namespace vcellVoronoiImpl {
 		floatingType operator( )(const bpd::extended_int<D> & x)  const {
 			return x.d( );
         }
+		floatingType operator( )(const bpd::extended_int<5> & x)  const {
+			return x.d( );
+        }
+		floatingType operator( )(const bpd::extended_int<128> & x)  const {
+			return x.d( );
+        }
 		
     };
 
