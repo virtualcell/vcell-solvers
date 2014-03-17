@@ -3,7 +3,6 @@
 #include <cmath>
 #include <boost/multiprecision/cpp_int.hpp> 
 #include <boost/multiprecision/cpp_dec_float.hpp> 
-#include <boost/polygon/voronoi.hpp>
 
 #include <limits>
 #include <gtest/gtest.h>
@@ -17,6 +16,7 @@ namespace std {
 		return v.calculate_sqrt( );
 	}
 }
+#include <boost/polygon/voronoi.hpp>
 
 namespace vcellVoronoiImpl {
 	namespace bmulti = boost::multiprecision;
