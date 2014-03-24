@@ -111,7 +111,7 @@ OPT           = TRUE
 #PRECISION     =
 #PROFILE       =
 #CXX           =
-FC            = gfortran
+FC            = gfortran -cpp
 #MPI           =
 ## Note: don't set the MPICXX variable if you don't have MPI installed
 #MPICXX        =
@@ -144,7 +144,7 @@ HDFLIBFLAGS   = -L${CMAKE_BINARY_DIR}/${HDF_VERSION}/src -l${HDF_LIB} -lz
 #cxxdbgflags   =
 #cxxoptflags   =
 #cxxprofflags  =
-#fcppflags     =
+fcppflags     = -cpp
 #fdbgflags     =
 #foptflags     =
 #fprofflags    =
