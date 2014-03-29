@@ -173,6 +173,7 @@ void ChomboSemiImplicitScheduler::iterate() {
 	{
 		pout() << "Solving parabolic variables starting" << endl;
 		bool zeroPhi = true;
+		bool kappaWeighted = true;
 		for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
 			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
@@ -200,10 +201,25 @@ void ChomboSemiImplicitScheduler::iterate() {
 						volSolnOld[iphase][ivol][ilev]->copyTo(ivarint, *volSolnOldWorkspace[iphase][ivol][ilev], zeroint);
 						volSoln[iphase][ivol][ilev]->copyTo(ivarint, *volSolnWorkspace[iphase][ivol][ilev], zeroint);
 						volSource[iphase][ivol][ilev]->copyTo(ivarint, *volSourceWorkspace[iphase][ivol][ilev], zeroint);
-					}
 
+						for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit)
+						{
+							const Box& currBox = vectGrids[ilev][dit()];
+							const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
+							const EBGraph& currEBGraph = currEBISBox.getEBGraph();
+							IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
+
+							// kappa weight old solution, so that we don't have to divide volFrac in membrane flux
+							for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
+							{
+								const VolIndex& vof = vofit();
+								(*volSolnOldWorkspace[iphase][ivol][ilev])[dit()](vof, ivar) *= currEBISBox.volFrac(vof);
+							}
+						}
+					}
+					
 					ebBEIntegratorList[iphase][ivol][ivar]->oneStep(volSolnWorkspace[iphase][ivol], volSolnOldWorkspace[iphase][ivol],
-								volSourceWorkspace[iphase][ivol], dt, 0, numLevels - 1, zeroPhi);
+								volSourceWorkspace[iphase][ivol], dt, 0, numLevels - 1, zeroPhi, kappaWeighted);
 					EBAMRDataOps::assign(volSoln[iphase][ivol], volSolnWorkspace[iphase][ivol], ivarint, zeroint);
 				}
 			}
@@ -952,6 +968,11 @@ void ChomboSemiImplicitScheduler::updateSource() {
 									{
 										continue;
 									}
+
+									// kappa weight reaction, so that we don't have divide volFrac in membrane flux
+									Real volFrac = currEBISBox.volFrac(vof);
+									sourceEBCellFAB(vof, ivar, vof.cellIndex()) *= volFrac;
+									
 									VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)var->getVarContext();
 									double Jval = varContextExp->evaluateJumpCondition(membrane, vectValues);
 									if (iFeature->getEbBcType(membrane) == BOUNDARY_VALUE)
@@ -960,8 +981,7 @@ void ChomboSemiImplicitScheduler::updateSource() {
 									}
 									else
 									{
-										Real volFrac = currEBISBox.volFrac(vof);
-										double flux = Jval * mem_areaFrac/(volFrac * maxDxComponent);
+										double flux = Jval * mem_areaFrac/maxDxComponent;
 										sourceEBCellFAB(vof, ivar, vof.cellIndex()) += flux;
 									}
 								}
