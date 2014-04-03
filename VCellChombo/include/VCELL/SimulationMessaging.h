@@ -127,7 +127,7 @@ class SimulationMessaging
 #endif
 {
 public:
-    virtual ~SimulationMessaging() throw();
+  virtual ~SimulationMessaging() throw();
 	static SimulationMessaging* create();
 	static SimulationMessaging* getInstVar();
 	void start();
@@ -136,7 +136,7 @@ public:
 	bool isStopRequested() {
 		return bStopRequested;
 	}
-
+	
 	int getTaskID() {
 #ifdef USE_MESSAGING
 		return m_taskID;

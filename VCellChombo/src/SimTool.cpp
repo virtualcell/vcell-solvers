@@ -43,6 +43,11 @@ int unzip32(char* zipfile, char* file, char* exdir);
 
 SimTool* SimTool::instance = NULL;
 
+#ifdef CH_MPI
+int SimTool::rootRank = 0;
+extern bool bConsoleOutput;
+#endif
+
 static int NUM_TOKENS_PER_LINE = 4;
 static const int numRetries = 2;
 static const int retryWaitSeconds = 5;
@@ -64,7 +69,13 @@ SimTool::SimTool()
 	simStartTime = 0;
 	
 	postProcessingHdf5Writer = NULL;
-
+	
+	
+#ifdef CH_MPI
+	myRank = MPI::COMM_WORLD.Get_rank();
+	commSize = MPI::COMM_WORLD.Get_size();
+#endif
+	
 //	numDiscontinuityTimes = 0;
 //	discontinuityTimes = 0;
 //	sundialsRelTol = 1e-7;
@@ -245,6 +256,9 @@ FILE* SimTool::lockForReadWrite() {
 
 void SimTool::writeData(double progress, double time, int iteration)
 {
+	const char* methodName = "(SimTool::writeData)";
+	pout() << "Entry " << methodName << endl;	
+
 #ifndef CH_MPI
 	FILE *logFP;
 	char logFileName[128];
@@ -304,11 +318,17 @@ void SimTool::writeData(double progress, double time, int iteration)
 #endif
 	
 	if (bSuccess) {
-		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
+#ifdef CH_MPI
+		if (bConsoleOutput || isRootRank())
+#endif
+		{
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
+		}
 		simFileCount++;
 	} else {
 		throw errmsg;
 	}
+	pout() << "Exit " << methodName << endl;
 }
 
 void SimTool::cleanupLastRun()
@@ -370,7 +390,12 @@ void SimTool::start()
 
 	char message[256];
 	sprintf(message, "simulation [%s] started", baseSimName);
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, message));
+#ifdef CH_MPI
+	if (bConsoleOutput || isRootRank())
+#endif
+	{
+		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, message));
+	}
 
 	//
 	// destroy any partial results from unfinished iterations
@@ -384,14 +409,26 @@ void SimTool::start()
 	if (simulation->getCurrIteration()==0) {
 		// simulation starts from scratch
 		if (bStoreEnable){
+#ifndef CH_MPI
 			simulation->getScheduler()->writeMembraneFiles();
+#endif
 			writeData(0.0, 0.0, 0);
 		} else {
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, 0, 0));
+#ifdef CH_MPI
+			if (bConsoleOutput || isRootRank())
+#endif
+			{
+				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, 0, 0));
+			}
 		}
 	} else {
 		// simulation continues from existing results, send data message
-		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simStartTime));
+#ifdef CH_MPI
+		if (bConsoleOutput || isRootRank())
+#endif
+		{
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simStartTime));
+		}
 	}
 	//
 	// iterate up to but not including end time
@@ -407,6 +444,10 @@ void SimTool::start()
 			return;
 		}
 
+#ifdef CH_MPI
+		MPI::COMM_WORLD.Barrier();
+#endif
+		
 		simulation->iterate();
 
 		if (checkStopRequested()) {
@@ -420,7 +461,12 @@ void SimTool::start()
     }
 		percentile = (simulation->getTime_sec() - simStartTime)/(simEndTime - simStartTime);
 		if (percentile - lastSentPercentile >= increment) {
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec()));
+#ifdef CH_MPI
+			if (bConsoleOutput || isRootRank())
+#endif
+			{
+				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec()));
+			}
 			lastSentPercentile = percentile;
 		}
 	}
@@ -428,7 +474,11 @@ void SimTool::start()
 	if (checkStopRequested()) {
 		return;
 	} 
-	
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, 1.0, simulation->getTime_sec()));
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));	
+#ifdef CH_MPI
+	if (bConsoleOutput || isRootRank())
+#endif
+	{
+		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, 1.0, simulation->getTime_sec()));
+		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));
+	}
 }

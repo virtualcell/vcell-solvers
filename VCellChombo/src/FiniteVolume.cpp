@@ -20,7 +20,16 @@ using namespace std;
 
 static bool bNormalReturn = false;
 
-void vcellExit(int returnCode, string& errorMsg) {
+void printUsage() {
+	pout() << "Arguments : [-d output] [-nz]";
+#ifdef USE_MESSAGING
+	pout() << " [-tid taskID]";
+#endif
+	pout() << " fvInputFile" <<  endl;
+}
+
+void vcellExit(int returnCode, string& errorMsg)
+{
 	if (SimulationMessaging::getInstVar() == 0) {
 		if (returnCode != 0) {
 			cerr << errorMsg << endl;
@@ -35,14 +44,15 @@ void vcellExit(int returnCode, string& errorMsg) {
 	}
 	delete SimulationMessaging::getInstVar();
 	delete SimTool::getInstance();
-}
 
-void printUsage() {
-	pout() << "Arguments : [-d output] [-nz]";
-#ifdef USE_MESSAGING
-	pout() << " [-tid taskID]";
+#ifdef CH_MPI
+	if (returnCode != 0)
+	{
+		pout() << "MPI::Abort starting" << endl;
+		MPI::COMM_WORLD.Abort(returnCode);
+		pout() << "MPI::Abort complete" << endl;
+	}
 #endif
-	pout() << " fvInputFile" <<  endl;
 }
 
 bool bConsoleOutput = true;
@@ -64,6 +74,7 @@ void onExit()
 		vcellExit(1, errMsg);
 	}
 }
+
 #if !defined(SVNVERSION)
 #error SVNVERSION version not defined
 #endif
@@ -194,18 +205,12 @@ int main(int argc, char *argv[])
 
 	vcellExit(returnCode, errorMsg);
 
-#ifdef CH_CYGWIN
-	if (bContinue && timerEnv != NULL)
-	{
-		CH_TIMER_REPORT();
-	}
-#endif
-
 #ifdef CH_MPI
-	pout() << "MPI::Finalize starting" << endl;
-  MPI::Finalize();
+	pout() << endl << "MPI::Finalize starting" << endl;
+	MPI::Finalize();
 	pout() << "MPI::Finalize complete" << endl;
 #endif
+	
 	bNormalReturn = true;
 	return returnCode;
 }

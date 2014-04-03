@@ -29,6 +29,10 @@
 #include <string>
 using std::ifstream;
 
+#ifdef CH_MPI
+extern bool bConsoleOutput;
+#endif
+
 /*
 # JMS_Paramters
 JMS_PARAM_BEGIN
@@ -862,7 +866,6 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 	if (taskID < 0) { // no messaging
 		SimulationMessaging::create();
 	}
-	string meshfile;
 	string nextToken, line;
 
 	while (!ifsInput.eof()) {
@@ -880,7 +883,13 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 #ifdef USE_MESSAGING
 			SimulationMessaging::getInstVar()->start(); // start the thread
 #endif
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "preprocessing started"));
+
+#ifdef CH_MPI
+			if (bConsoleOutput || SimTool::getInstance()->isRootRank())
+#endif
+			{
+				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "preprocessing started"));
+			}
 		} else if (nextToken == "SIMULATION_PARAM_BEGIN") {
 			loadSimulationParameters(ifsInput);
 		} else if (nextToken == "MODEL_BEGIN") {
@@ -949,7 +958,12 @@ FVSolver::FVSolver(istream& fvinput, int taskID) {
 
 void FVSolver::solve()
 {
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "preprocessing finished"));
+#ifdef CH_MPI
+	if (bConsoleOutput || SimTool::getInstance()->isRootRank())
+#endif
+	{
+		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "preprocessing finished"));
+	}
 	simTool->start();
 }
 

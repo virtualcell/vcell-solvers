@@ -76,9 +76,6 @@ protected:
 	int numLevels;
 	int numUnknowns;
 	Vector<int>  vectRefRatios;
-	//ProblemDomain coarsestDomain;
-	//RealVect  coarsestDx;
-	//IntVect   coarsestNx;
 	Vector<Vector<Box> > vectRefBoxes;
 	
 	ChomboSpec* chomboSpec;
@@ -135,6 +132,14 @@ protected:
 	
 	static const int phase0;
 	static const int phase1;
+
+	void computeFeatures();
+	
+#ifdef CH_MPI
+	void exchangeFeatures();
+#else
+	void computeStructureSizes();
+#endif
 };
 
 #endif

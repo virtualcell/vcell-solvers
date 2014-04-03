@@ -63,7 +63,32 @@ public:
 	void setSolver(string& s);
 	bool isChomboSemiImplicitSolver();
 	bool isChomboSundialsSolver();
+	
+	void setChomboSpec(ChomboSpec* cs)
+	{
+		chomboSpec = cs;
+	}
 
+#ifdef CH_MPI
+	
+	static int rootRank;
+
+	int getMyRank()
+	{
+		return myRank;
+	}
+
+	bool isRootRank()
+	{
+		myRank == rootRank;
+	}
+
+	int getCommSize()
+	{
+		return commSize;
+	}
+#endif
+	
 //	void setKeepAtMost(int kam) { keepAtMost = kam; }
 //	void setDiscontinuityTimes(int num, double* times) {
 //		numDiscontinuityTimes = num;
@@ -85,10 +110,7 @@ public:
 //	double getSundialsAbsoluteTolerance() { return sundialsAbsTol; }
 //	double getSundialsMaxStep() { return sundialsMaxStep; }
 //
-	void setChomboSpec(ChomboSpec* cs)
-	{
-		chomboSpec = cs;
-	}
+	
 //	double getPCGRelativeErrorTolerance() {
 //		return pcgRelTol;
 //	}
@@ -104,7 +126,7 @@ private:
 	void cleanupLastRun();
 
 	static SimTool* instance;
-
+	
 	VCellModel* vcellModel;
 	SimulationExpression  *simulation;
 	ChomboSpec* chomboSpec;
@@ -120,6 +142,11 @@ private:
 	int zipFileCount;
 	string solver;
 
+#ifdef CH_MPI
+	int myRank;
+	int commSize;
+#endif
+
 	PostProcessingHdf5Writer* postProcessingHdf5Writer;
 
 //	double* discontinuityTimes;
@@ -128,6 +155,7 @@ private:
 //	double pcgRelTol;
 //	bool bSundialsOneStepOutput;
 //	int keepAtMost;
+
 };
 
 #endif

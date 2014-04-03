@@ -99,12 +99,7 @@ void ChomboSemiImplicitScheduler::initValues()
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol)
 		{
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-#ifdef CH_MPI
-			if (feature == NULL)
-			{
-				continue;
-			}
-#endif
+
 			int numDefinedVars = feature->getNumDefinedVariables();
 			ebBEIntegratorList[iphase][ivol].resize(numDefinedVars);
 			ebMlgSolver[iphase][ivol].resize(numDefinedVars);
@@ -136,12 +131,7 @@ void ChomboSemiImplicitScheduler::iterate() {
 		for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
 			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-#ifdef CH_MPI
-				if (feature == NULL)
-				{
-					continue;
-				}
-#endif
+
 				int numDefinedVars = feature->getNumDefinedVariables();
 
 				for(int ivar = 0; ivar < numDefinedVars; ++ ivar) {
@@ -177,12 +167,7 @@ void ChomboSemiImplicitScheduler::iterate() {
 		for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
 			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-#ifdef CH_MPI
-				if (feature == NULL)
-				{
-					continue;
-				}
-#endif
+
 				int numDefinedVars = feature->getNumDefinedVariables();
 
 				for(int ivar = 0; ivar < numDefinedVars; ++ ivar) {
@@ -233,12 +218,7 @@ void ChomboSemiImplicitScheduler::iterate() {
 	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-#ifdef CH_MPI
-			if (feature == NULL)
-			{
-				continue;
-			}
-#endif
+
 			if (feature->getNumDefinedVariables() > 0)
 			{
 				EBAMRDataOps::assign(volSolnOld[iphase][ivol], volSoln[iphase][ivol]);
@@ -275,7 +255,6 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 
 	extrapValues.resize(NUM_PHASES);
 
-	int totalNumVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		int numVols = phaseVolumeList[iphase].size();
 
@@ -295,12 +274,7 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 		for (int ivol = 0; ivol < numVols; ivol++)
 		{
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-#ifdef CH_MPI
-			if (feature == NULL)
-			{
-				continue;
-			}
-#endif
+
 			int numDefinedVolVars = feature->getNumDefinedVariables();
 			int numDefinedMemVars = feature->getMemVarIndexesInAdjacentMembranes().size();
 			if (numDefinedVolVars  == 0 && numDefinedMemVars == 0)
@@ -447,7 +421,7 @@ void ChomboSemiImplicitScheduler::setInitialConditions() {
 						if (membraneID < 0) {
 							continue;
 						}
-						int	jvol = membraneID % totalNumVolumes;
+						int	jvol = membraneID % numConnectedComponents;
 						Feature* jFeature = phaseVolumeList[phase1][jvol]->feature;
 						Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(feature, jFeature);
 						for (int ivar = 0; ivar < numDefinedMemVars; ++ ivar) {
@@ -588,12 +562,7 @@ void ChomboSemiImplicitScheduler::defineSolver()
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-#ifdef CH_MPI
-			if (feature == NULL)
-			{
-				continue;
-			}
-#endif
+
 			int numDefinedVars = feature->getNumDefinedVariables();
 
 			for(int ivar = 0; ivar < numDefinedVars; ivar++) {
@@ -688,12 +657,7 @@ void ChomboSemiImplicitScheduler::initStencils()
 			extrapStencils[iphase][ivol].resize(numLevels);
 
 			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-#ifdef CH_MPI
-			if (feature == NULL)
-			{
-				continue;
-			}
-#endif
+
 			int numDefinedVariables = feature->getNumDefinedVariables();
 			if (numDefinedVariables == 0) {
 				continue;
@@ -736,12 +700,7 @@ void ChomboSemiImplicitScheduler::extrapolateDataToBoundary() {
 		int numVols = phaseVolumeList[iphase].size();
 		for (int ivol = 0; ivol < numVols; ivol ++) {
 				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-#ifdef CH_MPI
-				if (feature == NULL)
-				{
-					continue;
-				}
-#endif
+
 				int numDefinedVars = feature->getNumDefinedVariables();
 				if (numDefinedVars == 0) {
 					continue;
@@ -784,16 +743,10 @@ void ChomboSemiImplicitScheduler::updateSource() {
 	int memSymbolOffset = volSymbolOffset + numSymbolsPerVolVar * numVolVars;
 	double deltaT = simulation->getDT_sec();
 	
-	int totalNumVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 			Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
-#ifdef CH_MPI
-			if (iFeature == NULL)
-			{
-				continue;
-			}
-#endif
+
 			int numDefinedVolVars = iFeature->getNumDefinedVariables();
 			int numDefinedMemVars = iphase == phase0 ? iFeature->getMemVarIndexesInAdjacentMembranes().size() : 0;
 			if (numDefinedVolVars == 0 && numDefinedMemVars == 0) {
@@ -894,9 +847,9 @@ void ChomboSemiImplicitScheduler::updateSource() {
 
 						int currentMembraneID = 0;
 						if (iphase == phase0) {
-							currentMembraneID = ivol * totalNumVolumes + jvol;
+							currentMembraneID = ivol * numConnectedComponents + jvol;
 						} else if (iphase == phase1) {
-							currentMembraneID = jvol * totalNumVolumes + ivol;
+							currentMembraneID = jvol * numConnectedComponents + ivol;
 						}
 
 						Feature* jFeature = adjacentVolumes[j]->feature;

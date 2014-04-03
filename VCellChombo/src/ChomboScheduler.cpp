@@ -164,6 +164,220 @@ int ChomboScheduler::getChomboBoxLocalIndex(const IntVect& size, int ivar, D_DEC
 #endif
 }
 
+#ifdef CH_MPI
+void ChomboScheduler::exchangeFeatures()
+{
+	const char* methodName = "(ChomboScheduler::exchangeFeatures)";
+	pout() << "Entry " << methodName << endl;
+
+	int* sendBuffer = new int[numConnectedComponents];
+	int numProcs = SimTool::getInstance()->getCommSize();
+	int receiveSize = numProcs * numConnectedComponents;
+	int *recvBuffer = NULL;
+	if (SimTool::getInstance()->isRootRank())
+	{
+		 recvBuffer = new int[receiveSize];
+	}
+
+	// collect feature indexes to send
+	int volCnt = 0;
+	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
+	{
+		// Select one index-space
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol, ++ volCnt)
+		{
+			ConnectedComponent* cc = phaseVolumeList[iphase][ivol];
+			sendBuffer[volCnt] = cc->feature == NULL ? -1 : cc->feature->getIndex();
+		}
+	}
+	
+	// each processor puts its sendBuffer in recvBuffer in the order or rank.
+	// so in recvBuffer, the data looks like
+	// ---sendBuffer of processor 1---sendBuffer of processor 2---
+	pout() << "gathering features " << endl;
+	MPI::COMM_WORLD.Gather(sendBuffer, numConnectedComponents, MPI_INT, recvBuffer, numConnectedComponents, MPI_INT, SimTool::rootRank);
+
+	if (SimTool::getInstance()->isRootRank())
+	{
+		pout() << "root rank collecting features" << endl;
+		for (volCnt = 0; volCnt < numConnectedComponents; ++ volCnt)
+		{
+			if (sendBuffer[volCnt] != -1)
+			{
+				continue;
+			}
+			for (int iproc = 0; iproc < numProcs; ++ iproc)
+			{
+				if (iproc == SimTool::getInstance()->getMyRank()) // skip my own data
+				{
+					continue;
+				}
+				int idx = iproc * numConnectedComponents + volCnt;
+				if (recvBuffer[idx] != -1)
+				{
+					sendBuffer[volCnt] = recvBuffer[idx];
+					break;
+				}
+			} // end iproc
+		} // end icc
+	}
+
+	pout() << "broadcasting features " << endl;
+	// broadcast
+	MPI::COMM_WORLD.Bcast(sendBuffer, numConnectedComponents, MPI_INT, SimTool::rootRank);
+
+	pout() << "populating features" << endl;
+	volCnt = 0;
+	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
+	{
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol, ++ volCnt)
+		{
+			ConnectedComponent* cc = phaseVolumeList[iphase][ivol];
+			if (cc->feature != NULL)
+			{
+				continue;
+			}
+
+			if (sendBuffer[volCnt] == -1)
+			{
+				stringstream ss;
+				ss << "iphase " << iphase << ", ivol " << ivol << ", feature not found.";
+				throw ss.str();
+			}
+			else
+			{
+				cc->feature = SimTool::getInstance()->getModel()->getFeatureFromIndex(sendBuffer[volCnt]);
+				cc->feature->setPhase(iphase);
+				pout() << "iphase " << iphase << ", ivol " << ivol << ", assign feature " << cc->feature->getName() << endl;
+			}
+		} // end ivol
+	}	// end iphase
+	delete[] sendBuffer;
+	delete[] recvBuffer;
+	pout() << "Exit " << methodName << endl;
+}
+#endif
+
+void ChomboScheduler::computeFeatures()
+{
+	const char* methodName = "(ChomboScheduler::computeFeatures)";
+	pout() << "Entry " << methodName << endl;
+	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
+	{
+		int numVols = phaseVolumeList[iphase].size();
+		for (int ivol = 0; ivol < numVols; ++ ivol)
+		{
+			ConnectedComponent* cc = phaseVolumeList[iphase][ivol];
+			bool bfoundMyFeature = false;
+			for (int ilev = 0; ilev < numLevels && !bfoundMyFeature; ++ ilev)
+			{
+				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok() && !bfoundMyFeature; ++ dit)
+				{
+					const Box& currBox = vectGrids[ilev][dit()];
+					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
+					const IntVect& smallEnd = currBox.smallEnd();
+					const IntVect& boxSize = currBox.size();
+					pout() << "Searching for feature (regular points), iphase: " << iphase << ", ivol: " << ivol
+										<< " , box smallEnd: " << smallEnd << " ; size: " << boxSize << endl;
+#if CH_SPACEDIM==3
+					for (int k = 0; k < boxSize[2] && !bfoundMyFeature; ++ k)
+					{
+#endif
+						for (int j = 0; j < boxSize[1] && !bfoundMyFeature; ++ j)
+						{
+							for (int i = 0; i < boxSize[0] && !bfoundMyFeature; ++ i)
+							{
+								IntVect gridIndex(D_DECL(i + smallEnd[0], j + smallEnd[1], k + smallEnd[2]));
+								if (!isInNextFinerLevel(ilev, gridIndex) && currEBISBox.isRegular(gridIndex))
+								{
+									RealVect a_point = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+									cc->feature = chomboGeometry->getFeature(a_point);
+									cc->feature->setPhase(iphase);
+									bfoundMyFeature = true;
+									pout() << "Found feature (regular) for iphase " << iphase << ", ivol " << ivol
+										<< ", Feature (name, index)=(" << cc->feature->getName() << "," << cc->feature->getIndex() << ")" << endl;
+								}
+							} // end for i
+						} // end for j
+#if CH_SPACEDIM==3
+					} // end for k
+#endif
+				} // end DataIterator
+			} // end ilev
+
+
+			// New way to find feature for each connected component (in parallel, this is computed only if it will be needed)
+			// search irregular points if needed
+			if (!bfoundMyFeature)
+			{
+				// if no regular point is found, use irregular points (centroids) to find feature,
+				// but this may not be as reliable
+				// so we will check the feature in all irregular points just in case
+				for (int ilev = 0; ilev < numLevels; ilev ++)
+				{
+					for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
+					{
+						const Box& currBox = vectGrids[ilev][dit()];
+						const IntVect& smallEnd = currBox.smallEnd();
+						const IntVect& boxSize = currBox.size();
+						pout() << "Searching for feature (irregular points) , iphase: " << iphase << ", ivol: " << ivol
+											<< " , box smallEnd: " << smallEnd << " ; size: " << boxSize << endl;
+
+						const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
+						IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
+						const EBGraph& currEBGraph = currEBISBox.getEBGraph();
+
+						for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++ vofit)
+						{
+							const VolIndex& vof = vofit();
+							const IntVect& gridIndex = vof.gridIndex();
+							// find volume fraction for this vof, if too small then ignore
+							double volfrac = currEBISBox.volFrac(vof);
+							if (!isInNextFinerLevel(ilev, gridIndex) && (volfrac > smallVolFrac))
+							{
+								RealVect a_point = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+								//RealVect a_point = EBArith::getIVLocation(gridIndex, fineDx, chomboGeometry->getDomainOrigin());
+								RealVect centroid = currEBISBox.centroid(vof);
+								centroid *= vectDxes[ilev];
+								a_point += centroid;
+								Feature* fi = chomboGeometry->getFeature(a_point);
+								if (cc->feature == NULL)
+								{
+									cc->feature = fi;
+									pout() << "Found feature (irregular) for iphase " << iphase << ", ivol " << ivol
+									<< ", Feature (name, index)=(" << cc->feature->getName() << "," << cc->feature->getIndex() << ")" << endl;
+									cc->feature->setPhase(iphase);
+									bfoundMyFeature = true;
+								}
+								else if (cc->feature != fi)
+								{
+									stringstream ss;
+									ss << "Found inconsistent features for two irregular vof. Try refining mesh around " << a_point;
+									throw ss.str();
+								}
+							}
+						}
+					} // end dit
+				} // end ilev
+			} // end if (!bfoundMyFeature)
+
+#ifndef CH_MPI
+			if (!bfoundMyFeature)
+			{
+				stringstream ss;
+				ss <<	"did not find feature for iphase " << iphase << ", ivol " << ivol;
+				throw ss.str();
+			}
+#endif
+		} // end for ivol
+	}// end for phase
+
+#ifdef CH_MPI
+	exchangeFeatures();
+#endif
+	pout() << "Exit " << methodName << endl;
+}
+
 double ChomboScheduler::getExpressionConstantValue(Variable* var, ExpressionIndex expIndex, Feature* feature) {
 	VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)var->getVarContext();
 	return varContextExp->evaluateConstantExpression(expIndex);
@@ -171,7 +385,8 @@ double ChomboScheduler::getExpressionConstantValue(Variable* var, ExpressionInde
 
 void ChomboScheduler::initializeGrids()
 {
-	if (SpaceDim != chomboGeometry->getDimension()) {
+	if (SpaceDim != chomboGeometry->getDimension())
+	{
 		stringstream ss;
 		ss << "Wrong executable (" << SpaceDim << "d) for this simulation (" << chomboGeometry->getDimension() << "d)" << endl;
 		throw ss.str();
@@ -238,17 +453,16 @@ void ChomboScheduler::initializeGrids()
 	mfIndexSpace.define(finestDomain.domainBox(), domainOrigin, fineDx[0], geometries, chomboSpec->getMaxBoxSize()/* ,maxCoarsenings */);
 
 	phaseVolumeList.resize(NUM_PHASES);
-	numConnectedComponents = 0;
 	
 	pout() << "Collecting Connected Components from MFIndexSpace" << endl;
-	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
+	for (int iphase = 0; iphase < NUM_PHASES; iphase ++)
+	{
 		// Select one index-space
 		Chombo_EBIS::alias((EBIndexSpace*) mfIndexSpace.EBIS(iphase));
 		EBIndexSpace* ebisPtr = Chombo_EBIS::instance();
 		Vector<RefCountedPtr<EBIndexSpace> > volumes = ebisPtr->connectedComponents();
-		for (int ivol = 0; ivol < volumes.size(); ivol++) {
-			++ numConnectedComponents;
-
+		for (int ivol = 0; ivol < volumes.size(); ++ ivol)
+		{
 			RefCountedPtr<EBIndexSpace> volume = volumes[ivol];
 			ConnectedComponent* cc = new ConnectedComponent;
 			cc->feature = NULL;
@@ -257,8 +471,9 @@ void ChomboScheduler::initializeGrids()
 			cc->volume = volume;
 			phaseVolumeList[iphase].push_back(cc);
 		} // end for ivol
-	}// end for phase
-	
+	}// end for iphase
+	numConnectedComponents = phaseVolumeList[phase0].size() + phaseVolumeList[phase1].size();
+
 	pout() << "Fill EBISLayout for coarsest level" << endl;
   Vector<int> coarsestProcs;
 	Vector<Box> coarsestBoxes;
@@ -359,7 +574,8 @@ void ChomboScheduler::initializeGrids()
 	 	meshRefine.regrid(newBoxes, tags, 0, numLevels - 1, oldBoxes);
 
 	  ProblemDomain domainLev = coarsestDomain;
-		for(int ilev = 1; ilev < numLevels; ilev++) {
+		for(int ilev = 1; ilev < numLevels; ++ ilev)
+		{
 			Vector<int> newProcs;
 			domainLev.refine(vectRefRatios[ilev-1]);
 			mortonOrdering(newBoxes[ilev]);
@@ -367,8 +583,8 @@ void ChomboScheduler::initializeGrids()
 
 			vectGrids[ilev] = DisjointBoxLayout(newBoxes[ilev], newProcs, domainLev);
 		  //generate ebislayout
-		  for(int iphase = 0; iphase < NUM_PHASES; iphase ++) {
-				for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
+		  for(int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
+				for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol) {
 					vectEbis[iphase][ivol].resize(numLevels);
 					phaseVolumeList[iphase][ivol]->volume->fillEBISLayout(vectEbis[iphase][ivol][ilev],
 											  vectGrids[ilev],
@@ -379,174 +595,48 @@ void ChomboScheduler::initializeGrids()
 		}
 	}
 
-	pout() << "Finding Features For Connected Components" << endl;
-	pout() << "Finding features for each connected component " << endl;
-	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
-	{
-		int numVols = phaseVolumeList[iphase].size();
-		for (int ivol = 0; ivol < numVols; ++ ivol)
-		{
-			//
-			// this ConnectedComponent
-			ConnectedComponent* cc = phaseVolumeList[iphase][ivol];
-			// cc->feature = NULL;
-			// cc->phase = iphase; should be set by now
-			// cc->volumeIndexInPhase = ivol; should be set by now
-			bool bfoundMyFeature = false;
-			// Feature* thisFeature = NULL;
-			for (int ilev = 0; ilev < numLevels && !bfoundMyFeature; ++ ilev)
-			{
-				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok() && !bfoundMyFeature; ++ dit)
-				{
-					const Box& currBox = vectGrids[ilev][dit()];
-					//const EBISBox& currEBISBox = ?;
-					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
-					const IntVect& smallEnd = currBox.smallEnd();
-					const IntVect& boxSize = currBox.size();
-					pout() << "Searching for feature (regular points), iphase: " << iphase << ", ivol: " << ivol
-										<< " , box smallEnd: " << smallEnd << " ; size: " << boxSize << endl;
-#if CH_SPACEDIM==3
-					for (int k = 0; k < boxSize[2] && !bfoundMyFeature; ++ k)
-					{
-#endif
-						for (int j = 0; j < boxSize[1] && !bfoundMyFeature; ++ j)
-						{
-							for (int i = 0; i < boxSize[0] && !bfoundMyFeature; ++ i)
-							{
-								IntVect gridIndex(D_DECL(i + smallEnd[0], j + smallEnd[1], k + smallEnd[2]));
-								if (!isInNextFinerLevel(ilev, gridIndex) && currEBISBox.isRegular(gridIndex))
-								{
-									RealVect a_point = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-									cc->feature = chomboGeometry->getFeature(a_point);
-									cc->feature->setPhase(iphase);
-									bfoundMyFeature = true;
-									pout() << "Found feature (regular) for iphase " << iphase << ", ivol " << ivol
-										<< ", Feature (name, index)=(" << cc->feature->getName() << "," << cc->feature->getIndex() << ")" << endl;
-								}
-							} // end for i
-						} // end for j
-#if CH_SPACEDIM==3
-					} // end for k
-#endif
-				} // end DataIterator
-			} // end ilev
-
-
-			// New way to find feature for each connected component (in parallel, this is computed only if it will be needed)
-			// search irregular points if needed
-			if (!bfoundMyFeature)
-			{
-				// if no regular point is found, use irregular points (centroids) to find feature,
-				// but this may not be as reliable
-				// so we will check the feature in all irregular points just in case
-				for (int ilev = 0; ilev < numLevels; ilev ++)
-				{
-					for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
-					{
-						const Box& currBox = vectGrids[ilev][dit()];
-						const IntVect& smallEnd = currBox.smallEnd();
-						const IntVect& boxSize = currBox.size();
-						pout() << "Searching for feature (irregular points) , iphase: " << iphase << ", ivol: " << ivol
-											<< " , box smallEnd: " << smallEnd << " ; size: " << boxSize << endl;
-
-						const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
-						IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
-						const EBGraph& currEBGraph = currEBISBox.getEBGraph();
-
-						for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++ vofit)
-						{
-							const VolIndex& vof = vofit();
-							const IntVect& gridIndex = vof.gridIndex();
-							// find volume fraction for this vof, if too small then ignore
-							double volfrac = currEBISBox.volFrac(vof);
-							if (!isInNextFinerLevel(ilev, gridIndex) && (volfrac > smallVolFrac))
-							{
-								RealVect a_point = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-								//RealVect a_point = EBArith::getIVLocation(gridIndex, fineDx, chomboGeometry->getDomainOrigin());
-								RealVect centroid = currEBISBox.centroid(vof);
-								centroid *= vectDxes[ilev];
-								a_point += centroid;
-								Feature* fi = chomboGeometry->getFeature(a_point);
-								if (cc->feature == NULL)
-								{
-									cc->feature = fi;
-									pout() << "Found feature (irregular) for iphase " << iphase << ", ivol " << ivol
-									<< ", Feature (name, index)=(" << cc->feature->getName() << "," << cc->feature->getIndex() << ")" << endl;
-									cc->feature->setPhase(iphase);
-																	bfoundMyFeature = true;
-								}
-								else if (cc->feature != fi)
-								{
-									stringstream ss;
-									ss << "Found inconsistent features for two irregular vof. Try refining mesh around " << a_point;
-									throw ss.str();
-								}
-							}
-						}
-					} // end dit
-				} // end ilev
-			} // end if (!bfoundMyFeature)
-
-			if (!bfoundMyFeature)
-			{
-				int myRank = 
-#ifdef CH_MPI
-				MPI::COMM_WORLD.Get_rank()
-#else
-				0
-#endif
-				;
-				pout() << "Processor " << myRank << " did not find feature for iphase " << iphase << ", ivol " << ivol << endl;
-			}
-		} // end for ivol
-	}// end for phase
-
-	// compute membrane id = ivol * 1000 + j
-	// allocate storage
+	computeFeatures();
+	
+	// compute membrane id
+	// allocate storage and initialize to -1
 	pout() << "Initializing membrane ID level data" << endl;
 	irregularPointMembraneIDs.resize(NUM_PHASES);
-	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
+	for (int iphase = 0; iphase < NUM_PHASES; iphase ++)
+	{
 		int numVols = phaseVolumeList[iphase].size();
 		irregularPointMembraneIDs[iphase].resize(numVols);
 		for (int ivol = 0; ivol < numVols; ++ ivol)
 		{
 			irregularPointMembraneIDs[iphase][ivol].resize(numLevels);
-			for (int ilev = 0; ilev < numLevels; ilev ++) {
+			for (int ilev = 0; ilev < numLevels; ilev ++)
+			{
 				RefCountedPtr< LayoutData<IntVectSet> > irrSet = RefCountedPtr<LayoutData<IntVectSet> >(new LayoutData<IntVectSet>(vectGrids[ilev]));
 
-				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit) {
+				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
+				{
 					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
 					(*irrSet)[dit()] = currEBISBox.getIrregIVS(vectGrids[ilev][dit()]);
 				} // end DataIterator
 				BaseIVFactory<int>  bivfabFactory(vectEbis[iphase][ivol][ilev], *irrSet);
 				irregularPointMembraneIDs[iphase][ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<int> > >(new LevelData< BaseIVFAB<int> >(vectGrids[ilev], 1, IntVect::Zero, bivfabFactory));
-			}
-		}
-	}
+				LevelData< BaseIVFAB<int> >& levelData = *irregularPointMembraneIDs[iphase][ivol][ilev];
+				for (DataIterator dit = levelData.dataIterator(); dit.ok(); ++ dit)
+				{
+					levelData[dit()].setVal(-1);
+				}
+			} // end ilev
+		} // end ivol
+	} // end iphase
 
 	// find membrane for each irregular point
 	{
-		pout() << "Computing membrane ID (id = ivol * 1000 + jvol) for each irregular point"
-						"\nand adjacent volumes for each volume"
+		pout() << "Computing membrane ID (id = ivol * numConnectedComponents + jvol) for each irregular point"
+						<< endl << "and adjacent volumes for each volume"
 #ifndef CH_MPI
-						"\nand create the map of irregular point (volIndex) to membrane index for each level"
+						<< endl << "and create the map of irregular point (volIndex) to membrane index for each level"
 #endif
 		<< endl;
-		// initialize all membrane IDs to -1 first
-		for (int iphase = 0; iphase < NUM_PHASES; ++ iphase) {
-			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
-				for(int ilev = 0; ilev < numLevels; ++ ilev) {
-					LevelData< BaseIVFAB<int> >& levelData = *irregularPointMembraneIDs[iphase][ivol][ilev];
-					for (DataIterator dit = levelData.dataIterator(); dit.ok(); ++ dit) {
-						DataIndex dataIndex = dit();
-						BaseIVFAB<int>& ivfab = levelData[dataIndex];
-						ivfab.setVal(-1);
-					}
-				}
-			}
-		}
-
-		int totalNumVolumes = phaseVolumeList[phase0].size() + phaseVolumeList[phase1].size();
+		
 		bool* bAdjacent = new bool[phaseVolumeList[phase1].size()];
 		numMembranePoints = 0;
 		irregVolumeMembraneMap.resize(numLevels);
@@ -568,7 +658,7 @@ void ChomboScheduler::initializeGrids()
 						for (int jvol = 0; jvol < phaseVolumeList[phase1].size(); jvol ++) {
 							const IntVectSet& ivs = vectEbis[phase1][jvol][ilev][dit()].getIrregIVS(currBox);
 							if (ivs.contains(gridIndex)) {
-								membraneID = ivol * totalNumVolumes + jvol;
+								membraneID = ivol * numConnectedComponents + jvol;
 								(*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0) = membraneID;
 								(*irregularPointMembraneIDs[phase1][jvol][ilev])[dit()](vof, 0) = membraneID;
 								bAdjacent[jvol] = true;
@@ -623,131 +713,8 @@ void ChomboScheduler::initializeGrids()
 		delete[] bAdjacent;
 	}
 
-	// compute size of each structure and number of points in structure
 #ifndef CH_MPI
-	{
-		pout() << "Computing size of each structure (features and membranes)" << endl;
-		int cfRefRatio = 1;
-		for(int ilev = 0; ilev < numLevels - 1; ++ ilev)
-		{
-			cfRefRatio *= vectRefRatios[ilev];
-		}
-		double finestLevelUnitV = vectDxes[numLevels - 1].product();
-		for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
-		{
-			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol)
-			{
-				double sumVolFrac = 0;
-				int refratio = cfRefRatio;
-				int numPoints = 0;
-
-				for(int ilev = 0; ilev < numLevels; ++ ilev)
-				{
-					int numRepeats = pow(refratio,SpaceDim);
-
-					for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
-					{
-						const Box& currBox = vectGrids[ilev][dit()];
-						const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
-
-						const IntVect& bigEnd = currBox.bigEnd();
-						const IntVect& smallEnd = currBox.smallEnd();
-
-#if CH_SPACEDIM==3
-						for (int k = smallEnd[2]; k <= bigEnd[2]; ++ k)
-						{
-#endif
-							for (int j = smallEnd[1]; j <= bigEnd[1]; ++ j)
-							{
-								for (int i = smallEnd[0]; i <= bigEnd[0]; ++ i)
-								{
-									IntVect gridIndex(D_DECL(i, j, k));
-									if (currEBISBox.isCovered(gridIndex))
-									{
-										continue;
-									}
-									++ numPoints;
-
-									if (isInNextFinerLevel(ilev, gridIndex))
-									{
-										continue;
-									}
-
-									double volFrac = 1.0;
-									if (currEBISBox.isIrregular(gridIndex))
-									{
-										volFrac = currEBISBox.volFrac(VolIndex(gridIndex, 0));
-									}
-									volFrac *= numRepeats;
-									sumVolFrac += volFrac;
-								} // i
-							} // j
-#if CH_SPACEDIM==3
-						} // k
-#endif
-						if (iphase == phase0)
-						{
-							//this is used for scaling boundary area
-							Real maxDxComponent = vectDxes[ilev][0];
-							for(int idir = 1; idir < SpaceDim; idir ++) {
-								maxDxComponent = max(maxDxComponent, vectDxes[ilev][idir]);
-							}
-							double levelUnitS = pow(maxDxComponent,SpaceDim -1);
-
-							int totalNumVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
-							Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
-							const EBGraph& currEBGraph = currEBISBox.getEBGraph();
-							IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
-							Vector<ConnectedComponent*>& adjacentVolumes = phaseVolumeList[iphase][ivol]->adjacentVolumes;
-
-							for (int j = 0; j < adjacentVolumes.size(); ++ j)
-							{
-								int jphase = adjacentVolumes[j]->phase;
-								int jvol = adjacentVolumes[j]->volumeIndexInPhase;
-
-								int currentMembraneID = ivol * totalNumVolumes + jvol;
-								Feature* jFeature = phaseVolumeList[jphase][jvol]->feature;
-								if (iFeature == jFeature)
-								{
-									stringstream ss;
-									ss << "2 adjacent volumes are in the same feature " << iFeature->getName()
-													<< ", [iphase=" << iphase << ", ivol=" << ivol << "]"
-													<< ",[jphase=" << jphase << ", jvol=" << jvol << "]. "
-													<< "Mesh is too coarse to resolve. Refine the mesh.";
-									throw ss.str();
-								}
-								Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(iFeature, jFeature);
-								for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
-								{
-									const VolIndex& vof = vofit();
-									int membraneID = (*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()](vof, 0);
-									if (membraneID != currentMembraneID)
-									{
-										continue;
-									}
-									const IntVect& gridIndex = vof.gridIndex();
-									int volIndex = getChomboBoxLocalIndex(vectNxes[ilev], 0, gridIndex);
-									map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(volIndex);
-									if (iter == irregVolumeMembraneMap[ilev].end() || iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
-									{
-										continue;
-									}
-									double areaFrac = currEBISBox.bndryArea(vof);
-									membrane->addSize(areaFrac * levelUnitS);
-									membrane->addNumPoints(1);
-								}
-							}
-						}
-					} // dit
-					refratio /= vectRefRatios[ilev];
-				} // level
-				double s = sumVolFrac * finestLevelUnitV;
-				phaseVolumeList[iphase][ivol]->size = s;
-				phaseVolumeList[iphase][ivol]->feature->addSize(s);
-				phaseVolumeList[iphase][ivol]->feature->addNumPoints(numPoints);
-			} // vol
-		} // phase
-	} // compute size
+	computeStructureSizes();
 #endif
 	
 	// print summary
@@ -786,6 +753,134 @@ void ChomboScheduler::initializeGrids()
   }
 	pout() << "Exit " << methodName << endl;
 }
+
+#ifndef CH_MPI
+void ChomboScheduler::computeStructureSizes()
+{
+	const char* methodName = "(ChomboScheduler::computeStructureSizes)";
+	pout() << "Entry " << methodName << endl;
+	int cfRefRatio = 1;
+	for(int ilev = 0; ilev < numLevels - 1; ++ ilev)
+	{
+		cfRefRatio *= vectRefRatios[ilev];
+	}
+	double finestLevelUnitV = vectDxes[numLevels - 1].product();
+	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
+	{
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol)
+		{
+			double sumVolFrac = 0;
+			int refratio = cfRefRatio;
+			int numPoints = 0;
+
+			for(int ilev = 0; ilev < numLevels; ++ ilev)
+			{
+				int numRepeats = pow(refratio,SpaceDim);
+
+				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
+				{
+					const Box& currBox = vectGrids[ilev][dit()];
+					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
+
+					const IntVect& bigEnd = currBox.bigEnd();
+					const IntVect& smallEnd = currBox.smallEnd();
+
+#if CH_SPACEDIM==3
+					for (int k = smallEnd[2]; k <= bigEnd[2]; ++ k)
+					{
+#endif
+						for (int j = smallEnd[1]; j <= bigEnd[1]; ++ j)
+						{
+							for (int i = smallEnd[0]; i <= bigEnd[0]; ++ i)
+							{
+								IntVect gridIndex(D_DECL(i, j, k));
+								if (currEBISBox.isCovered(gridIndex))
+								{
+									continue;
+								}
+								++ numPoints;
+
+								if (isInNextFinerLevel(ilev, gridIndex))
+								{
+									continue;
+								}
+
+								double volFrac = 1.0;
+								if (currEBISBox.isIrregular(gridIndex))
+								{
+									volFrac = currEBISBox.volFrac(VolIndex(gridIndex, 0));
+								}
+								volFrac *= numRepeats;
+								sumVolFrac += volFrac;
+							} // i
+						} // j
+#if CH_SPACEDIM==3
+					} // k
+#endif
+					if (iphase == phase0)
+					{
+						//this is used for scaling boundary area
+						Real maxDxComponent = vectDxes[ilev][0];
+						for(int idir = 1; idir < SpaceDim; idir ++) {
+							maxDxComponent = max(maxDxComponent, vectDxes[ilev][idir]);
+						}
+						double levelUnitS = pow(maxDxComponent,SpaceDim -1);
+
+						Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
+						const EBGraph& currEBGraph = currEBISBox.getEBGraph();
+						IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
+						Vector<ConnectedComponent*>& adjacentVolumes = phaseVolumeList[iphase][ivol]->adjacentVolumes;
+
+						for (int j = 0; j < adjacentVolumes.size(); ++ j)
+						{
+							int jphase = adjacentVolumes[j]->phase;
+							int jvol = adjacentVolumes[j]->volumeIndexInPhase;
+
+							int currentMembraneID = ivol * numConnectedComponents + jvol;
+							Feature* jFeature = phaseVolumeList[jphase][jvol]->feature;
+							if (iFeature == jFeature)
+							{
+								stringstream ss;
+								ss << "2 adjacent volumes are in the same feature " << iFeature->getName()
+												<< ", [iphase=" << iphase << ", ivol=" << ivol << "]"
+												<< ",[jphase=" << jphase << ", jvol=" << jvol << "]. "
+												<< "Mesh is too coarse to resolve. Refine the mesh.";
+								throw ss.str();
+							}
+							Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(iFeature, jFeature);
+							for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
+							{
+								const VolIndex& vof = vofit();
+								int membraneID = (*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()](vof, 0);
+								if (membraneID != currentMembraneID)
+								{
+									continue;
+								}
+								const IntVect& gridIndex = vof.gridIndex();
+								int volIndex = getChomboBoxLocalIndex(vectNxes[ilev], 0, gridIndex);
+								map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(volIndex);
+								if (iter == irregVolumeMembraneMap[ilev].end() || iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
+								{
+									continue;
+								}
+								double areaFrac = currEBISBox.bndryArea(vof);
+								membrane->addSize(areaFrac * levelUnitS);
+								membrane->addNumPoints(1);
+							}
+						}
+					}
+				} // dit
+				refratio /= vectRefRatios[ilev];
+			} // level
+			double s = sumVolFrac * finestLevelUnitV;
+			phaseVolumeList[iphase][ivol]->size = s;
+			phaseVolumeList[iphase][ivol]->feature->addSize(s);
+			phaseVolumeList[iphase][ivol]->feature->addNumPoints(numPoints);
+		} // ivol
+	} // iphase
+	pout() << "Exit " << methodName << endl;
+}
+#endif
 
 void ChomboScheduler::updateSolution()
 {
@@ -930,7 +1025,6 @@ void ChomboScheduler::updateSolution()
 	}
 
 	// membrane variables
-	int totalNumVolumes = phaseVolumeList[0].size() + phaseVolumeList[1].size();
 	int numMembraneVars = simulation->getNumMemVariables();
 
 	for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++) {
@@ -968,7 +1062,7 @@ void ChomboScheduler::updateSolution()
 					{
 						continue;
 					}
-					int jvol = membraneID % totalNumVolumes;
+					int jvol = membraneID % numConnectedComponents;
 
 					double areaFrac = currEBISBox.bndryArea(vof);
 					Feature* jFeature = phaseVolumeList[phase1][jvol]->feature;
@@ -1125,6 +1219,8 @@ void ChomboScheduler::updateSolution()
 }
 
 void ChomboScheduler::writeData(char* filename) {
+	const char* methodName = "(ChomboScheduler::writeData)";
+	pout() << "Entry " << methodName << endl;
 #ifndef CH_MPI
 	if (chomboSpec->isSaveVCellOutput())
 	{
@@ -1137,9 +1233,12 @@ void ChomboScheduler::writeData(char* filename) {
 		for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-				if (feature == NULL || feature->getNumDefinedVariables() == 0) {
+				if (feature == NULL || feature->getNumDefinedVariables() == 0) 
+				{
+					pout() << methodName << " feature not found or no variables defined in feature" << endl;
 					continue;
 				}
+				pout() << methodName << " writeEBHDF5, [iphase, ivol]=[" << iphase << "," << ivol << "]" << endl;
 				char hdf5FileName[128];
 				sprintf(hdf5FileName, "%s%06d.feature_%s.vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), ivol, HDF5_FILE_EXT);
 				Vector<string> names(feature->getNumDefinedVariables());
@@ -1162,6 +1261,7 @@ void ChomboScheduler::writeData(char* filename) {
 	}
 #endif
 	hdf5FileCount ++;
+	pout() << "Exit " << methodName << endl;
 }
 
 #define MESH_GROUP "/mesh"
@@ -1559,7 +1659,8 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 
 void ChomboScheduler::writeMembraneFiles()
 {
-	const char* methodName = "(ChomboScheduler::updateSolution)";
+#ifndef CH_MPI
+	const char* methodName = "(ChomboScheduler::writeMembraneFiles)";
 	pout() << "Entry " << methodName << endl;
 	
 	if (!chomboSpec->isSaveVCellOutput())
@@ -2047,6 +2148,7 @@ void ChomboScheduler::writeMembraneFiles()
 	H5Gclose(meshGroup);
 	H5Fclose(h5MeshFile);
 	pout() << "Exit " << methodName << endl;
+#endif
 }
 
 bool ChomboScheduler::computeOneFaceCross(int dir, int face, int hiLoFace, RealVect& H, RealVect& v0,
