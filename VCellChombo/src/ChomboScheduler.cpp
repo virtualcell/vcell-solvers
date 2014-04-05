@@ -561,7 +561,7 @@ void ChomboScheduler::initializeGrids()
 #ifndef CH_MPI
 		if (!bCellsTagged)
 		{
-			MayDay::Error("No cells tagged for refinement");
+			throw "No cells tagged for refinement";
 		}
 #endif
 		
