@@ -558,11 +558,13 @@ void ChomboScheduler::initializeGrids()
 			} // ilev
 		}
 
+#ifndef CH_MPI
 		if (!bCellsTagged)
 		{
 			MayDay::Error("No cells tagged for refinement");
 		}
-
+#endif
+		
 		pout() << "Re-griding and fill EBISLayout for each level" << endl;
 
 		Vector<Vector<Box> > oldBoxes(numLevels);
