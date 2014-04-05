@@ -742,6 +742,7 @@ void ChomboSemiImplicitScheduler::updateSource() {
 	int numSymbolsPerVolVar = 1 + chomboGeometry->getNumSubdomains();
 	int memSymbolOffset = volSymbolOffset + numSymbolsPerVolVar * numVolVars;
 	double deltaT = simulation->getDT_sec();
+	vectValues[0] = simulation->getTime_sec();
 	
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
@@ -753,6 +754,11 @@ void ChomboSemiImplicitScheduler::updateSource() {
 				continue;
 			}
 			
+			for (int i = 1; i < numSymbols; ++ i)
+			{
+				vectValues[i] = BASEFAB_REAL_SETVAL;
+			}
+
 			for(int ilev = 0; ilev < numLevels; ilev ++) {
 				DisjointBoxLayout& currGrids = vectGrids[ilev];
 
@@ -793,8 +799,7 @@ void ChomboSemiImplicitScheduler::updateSource() {
 										continue;
 									}
 									RealVect coord = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-									memset(vectValues, 0, numSymbols * sizeof(double));
-									vectValues[0] = simulation->getTime_sec();
+									
 									vectValues[1] = coord[0];
 									vectValues[2] = coord[1];
 									vectValues[3] = SpaceDim < 3 ? 0.5 : coord[2];
