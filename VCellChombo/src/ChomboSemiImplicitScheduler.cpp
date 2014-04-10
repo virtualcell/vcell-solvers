@@ -198,7 +198,7 @@ void ChomboSemiImplicitScheduler::iterate() {
 							for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
 							{
 								const VolIndex& vof = vofit();
-								(*volSolnOldWorkspace[iphase][ivol][ilev])[dit()](vof, ivar) *= currEBISBox.volFrac(vof);
+								(*volSolnOldWorkspace[iphase][ivol][ilev])[dit()](vof, 0) *= currEBISBox.volFrac(vof);
 							}
 						}
 					}
