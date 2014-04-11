@@ -23,7 +23,7 @@ using moving_boundary::FrontType;
 struct VoronoiMesh::VoronoiMeshImpl {
 	typedef moving_boundary::World<moving_boundary::CoordinateType,2> WorldType; 
 	typedef std::map<const Element *,int> Map; 
-	Voronoi2D vprocessor;
+	Voronoi2D<moving_boundary::CoordinateType> vprocessor;
 	Map locations;
 	VoronoiMeshImpl(WorldType &wt)
 		:vprocessor(wt.limits( )),

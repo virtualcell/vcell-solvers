@@ -53,7 +53,7 @@ namespace spatial {
 	};
 
 	//forward
-	struct VoronoiResult;
+	//struct VoronoiResult;
 
 	//forward
 	template<class CT, int N, class TELEMENT> struct Mesh;

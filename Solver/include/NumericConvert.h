@@ -80,6 +80,20 @@ namespace vcell_util {
 		return in;
 	}
 
+
+	template <>
+	inline int64_t ConvertDown(long double in) {
+		if (in >= 0) {
+			return static_cast<int64_t>(in);
+		}
+		return static_cast<int64_t>(floor(in)); 
+	}
+
+	template <>
+	inline int64_t ConvertUp(long double in) {
+		return static_cast<int64_t>(in);
+	}
+
 	//template long ConvertUp<long, double>(double); 
 	//template long ConvertDown<long, double>(double); 
 

@@ -8,7 +8,7 @@ namespace spatial {
 	/**
 	* implementation type for boost::polygon::voronoi routines
 	*/
-	typedef int32_t VoronoiType;
+	typedef int64_t VoronoiType;
 
 	typedef GhostPoint<VoronoiType,2> VoronoiGhostPoint;
 
@@ -23,15 +23,28 @@ namespace spatial {
 	* multiOpen - multiple segments with infinite edges; in vertices in sets of
 	*	three with midpoint non-ghost and ends ghost points
 	*/
-	struct VoronoiResult {
+	struct VoronoiBase {
 		enum Type {closed,straightLine,singleOpen, multiOpen};
-		VoronoiResult(Type t = closed)
+		VoronoiBase(Type t)
 			:type(t) {}
 		Type type;
+	};
+
+	
+	/**
+	* make template form to allow different integer size variants to compile
+	*/
+	template <typename T>
+	struct TVoronoiResult : public VoronoiBase {
+		TVoronoiResult(Type t = closed)
+			:VoronoiBase(t),
+			vertices( ) {}
 		//OPT: include space for allocation in structure
-		typedef std::vector<VoronoiGhostPoint> GhostVector; 
+		typedef std::vector<GhostPoint<T,2> > GhostVector; 
 		GhostVector vertices; 
 	};
+
+	typedef TVoronoiResult<VoronoiType> VoronoiResult; 
 }
 
 #endif

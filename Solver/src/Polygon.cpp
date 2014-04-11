@@ -4,6 +4,7 @@
 #include <intersection.h>
 #include <VCellException.h>
 #include <cstdint>
+#define COMPILE_64
 namespace spatial {
 	//forward
 	template <class COORD_TYPE,class VALUE_TYPE>
@@ -561,4 +562,8 @@ template struct spatial::Polygon<int64_t,double>;
 template struct spatial::Polygons<int64_t,double>;
 template struct spatial::Volume<int64_t,double,2>;
 template struct spatial::VolumeImplCreator<int64_t,double,2>;
+template struct spatial::Polygon<int64_t,long double>;
+template struct spatial::Polygons<int64_t,long double>;
+template struct spatial::Volume<int64_t,long double,2>;
+template struct spatial::VolumeImplCreator<int64_t,long double,2>;
 #endif

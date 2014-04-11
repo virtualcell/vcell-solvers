@@ -437,7 +437,7 @@ namespace moving_boundary {
 		}
 
 		virtual int velocity(Frontier::Front*,Frontier::POINT* fpoint,HYPER_SURF_ELEMENT*, HYPER_SURF*,double* out) const {
-			const spatial::SVector<double,2> & v = frontVelocity(fpoint->_coords[cX],fpoint->_coords[cY]);
+			const spatial::SVector<moving_boundary::VelocityType,2> & v = frontVelocity(fpoint->_coords[cX],fpoint->_coords[cY]);
 			out[cX] = v(cX); 
 			out[cY] = v(cY); 
 

@@ -1,6 +1,29 @@
 #ifndef MovingBoundaryTypes_h
 #define MovingBoundaryTypes_h
+#pragma warning ( disable : 4244)
 #include <cstdint>
+namespace vcell {
+	template<typename T>
+	struct Type{};
+
+	template<>
+	struct Type<int16_t> {
+		typedef double realType;
+	};
+
+	template<>
+	struct Type<int32_t> {
+		typedef double realType;
+	};
+
+	template<>
+	struct Type<int64_t> {
+		typedef long double realType;
+	};
+
+
+}
+//#define COMPILE_64
 namespace spatial {
 	template <class COORD_TYPE,class VALUE_TYPE,int N>
 	struct Volume;
@@ -13,20 +36,21 @@ namespace moving_boundary {
 	/**
 	* type used for coordinate system of problem implementation
 	*/
-	typedef int32_t CoordinateType;
+	typedef int64_t CoordinateType;
 	/**
 	* type used for distances of problem implementation
+	* use double for int32_t, long double for int64_t)
 	*/
-	typedef double DistanceType; 
+	typedef vcell::Type<CoordinateType>::realType DistanceType; 
 	/**
 	* type used for products/powers of #CoordinateType 
 	* necessary to prevent overranging limited value CoordinateTypes
 	*/
-	typedef double CoordinateProductType; 
+	typedef DistanceType CoordinateProductType; 
 	/**
 	* type used for #spatial::NormVector
 	*/
-	typedef double NormalComponent; 
+	typedef DistanceType NormalComponent; 
 	/**
 	* type used for areas/volumes, et. al in problem implementation
 	*/
@@ -34,15 +58,15 @@ namespace moving_boundary {
 	/**
 	* type used for masses, concentrations, diffusion constants et. al. in problem implementation
 	*/
-	typedef double BioQuanType;
+	typedef DistanceType BioQuanType;
 	/**
 	* type for times 
 	*/
-	typedef double TimeType;
+	typedef DistanceType TimeType;
 	/**
 	* type for velocities 
 	*/
-	typedef double VelocityType;
+	typedef DistanceType VelocityType;
 	//DERIVATIVE TYPES
 	/**
 	* typedef for object used to represent Volumes

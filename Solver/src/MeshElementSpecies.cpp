@@ -44,8 +44,8 @@ namespace {
 	*/
 	const double tolerancePerpendicularSegmentDistanceSquared = 1e-3;
 	struct MesDistancePolicy {
-		typedef double DistanceSquaredType;
-		typedef int32_t DistanceType;
+		typedef long double DistanceSquaredType;
+		typedef moving_boundary::CoordinateType DistanceType;
 		static void check(int32_t) {}
 		template <typename U>
 		static DistanceType convert(U u) {
@@ -323,6 +323,7 @@ void MeshElementSpecies::processBoundaryNeighbors(const VoronoiMesh & vm, std::v
 		//check for single open line
 		if (vResult.type == spatial::VoronoiResult::straightLine) { 
 			assert(voronoiVertices.size( ) == 3);
+			spatial::SVector<moving_boundary::CoordinateType,2> delta0(*this,*this);
 			spatial::SVector<moving_boundary::CoordinateType,2> delta(*this,voronoiVertices[1]);
 			delta *= -3;
 			//go other direction to build box

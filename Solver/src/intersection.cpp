@@ -576,3 +576,7 @@ typedef std::vector <I64PointVector> I64VectorOfVectors;
 template void spatial::intersectionsManySingle(spatial::Volume<int64_t,double,2> &result, const I64VectorOfVectors &,const I64PointVector &) ;
 template void spatial::intersectionsManyMany(spatial::Volume<int64_t,double,2> &result, const I64VectorOfVectors &,const I64VectorOfVectors &) ;
 
+template void spatial::intersections(spatial::Volume<int64_t,long double,2> &result, const I64PointVector &,const I64PointVector &) ;
+template void spatial::intersectionsManySingle(spatial::Volume<int64_t,long double,2> &result, const I64VectorOfVectors &,const I64PointVector &) ;
+template void spatial::intersectionsManyMany(spatial::Volume<int64_t,long double,2> &result, const I64VectorOfVectors &,const I64VectorOfVectors &) ;
+

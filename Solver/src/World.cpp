@@ -104,7 +104,7 @@ namespace {
 			static_assert(std::numeric_limits<WORLD_COORD>::is_integer,"non-integer type"); 
 			VCELL_LOG(info,"World type is " <<  std::numeric_limits<WORLD_COORD>::digits << " digits, scale is " << iScale);
 		}
-		double scale;
+		typename vcell::Type<WORLD_COORD>::realType scale;
 		WORLD_COORD diagV;
 		std::array<spatial::TGeoLimit<WORLD_COORD>,N> limitsWorldSystem;
 	};
@@ -164,6 +164,7 @@ template struct World<double,2>;
 
 template struct World<int16_t,2>;
 template struct World<int32_t,2>;
+template struct World<int64_t,2>;
 
 template struct WorldMax<int16_t>;
 template struct WorldMax<int32_t>;

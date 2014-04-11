@@ -3,12 +3,12 @@
 #include <cmath>
 #include <boost/multiprecision/cpp_int.hpp> 
 #include <boost/multiprecision/cpp_dec_float.hpp> 
+#include <boost/polygon/detail/voronoi_ctypes.hpp>
 
 #include <limits>
 #include <gtest/gtest.h>
 
 #include <iostream>
-using namespace boost::polygon;
 namespace std {
 	boost::multiprecision::number<boost::multiprecision::backends::cpp_dec_float<80> >
 	sqrt(const boost::multiprecision::number<boost::multiprecision::backends::cpp_dec_float<80> >& in) {
@@ -17,17 +17,26 @@ namespace std {
 	}
 }
 #include <boost/polygon/voronoi.hpp>
+using namespace boost::polygon;
 
 namespace vcellVoronoiImpl {
 	namespace bmulti = boost::multiprecision;
 	using bmulti::et_off;
-    //typedef bmulti::number<bmulti::cpp_dec_float<80>,et_off> floatingType;
-    typedef long double floatingType;
+    typedef bmulti::number<bmulti::cpp_dec_float<80>,et_off> floatingType;
+    //typedef long double floatingType;
 
     struct FloatingConverter {
         template <typename T>
-        floatingType operator( )(T x)  const {
-            return static_cast<floatingType>(x);
+        floatingType operator( )(const T & x)  const {
+			return static_cast<floatingType>(x); 
+        }
+
+        floatingType operator( )(const __int64 & in)  const {
+			long double d = in; 
+			return d;
+        }
+        floatingType operator( )(const long double & in)  const {
+			return in;
         }
     };
 
@@ -95,6 +104,9 @@ TEST(highv,build) {
 }
 TEST(highv,size) {
 	std::cout << std::numeric_limits<long double>::digits << std::endl;
+	std::cout << "digits " << std::numeric_limits<floatingType>::digits << std::endl;
+	std::cout << "digits10 " << std::numeric_limits<floatingType>::digits10 << std::endl;
+	std::cout << "radix " << std::numeric_limits<floatingType>::radix << std::endl;
 }
 
 

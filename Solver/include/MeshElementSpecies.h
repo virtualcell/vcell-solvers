@@ -20,7 +20,7 @@
 namespace spatial {
 	template<class COORD_TYPE, int N> struct MeshDef; 
 	template<class COORD_TYPE, int N, class TELEMENT> struct Mesh; 
-	struct VoronoiResult;
+	//struct VoronoiResult;
 }
 
 namespace moving_boundary {
