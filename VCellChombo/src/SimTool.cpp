@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 using std::stringstream;
 using std::cout;
 using std::endl;
@@ -72,8 +73,11 @@ SimTool::SimTool()
 	
 	
 #ifdef CH_MPI
-	myRank = MPI::COMM_WORLD.Get_rank();
-	commSize = MPI::COMM_WORLD.Get_size();
+	//myRank = MPI::COMM_WORLD.Get_rank();
+	MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
+	
+	//commSize = MPI::COMM_WORLD.Get_size();
+	MPI_Comm_size(MPI_COMM_WORLD,&commSize);
 #endif
 	
 //	numDiscontinuityTimes = 0;
@@ -445,7 +449,10 @@ void SimTool::start()
 		}
 
 #ifdef CH_MPI
-		MPI::COMM_WORLD.Barrier();
+		//MPI::COMM_WORLD.Barrier();
+		if (MPI_Barrier(MPI_COMM_WORLD) != MPI_SUCCESS) {
+			throw std::invalid_argument("barrier didn't accept MPI_COMM_WORLD"); 
+		}
 #endif
 		
 		simulation->iterate();

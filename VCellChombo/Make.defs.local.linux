@@ -112,9 +112,9 @@ OPT           = TRUE
 #PROFILE       =
 #CXX           =
 FC            = gfortran -cpp
-#MPI           =
+MPI           = TRUE 
 ## Note: don't set the MPICXX variable if you don't have MPI installed
-#MPICXX        =
+MPICXX        = mpic++
 #OBJMODEL      =
 #XTRACONFIG    =
 ## Optional features
@@ -122,13 +122,13 @@ FC            = gfortran -cpp
 #USE_COMPLEX   =
 #USE_EB        =
 #USE_CCSE      =
-#USE_HDF       =
+USE_HDF       = TRUE
 HDFINCFLAGS   = -DH5_USE_16_API -I${CMAKE_SOURCE_DIR}/${HDF_VERSION} -I${CMAKE_SOURCE_DIR}/${HDF_VERSION}/src 
 HDFLIBFLAGS   = -L${CMAKE_BINARY_DIR}/${HDF_VERSION}/src -l${HDF_LIB} -lz
 #-----------------------------------------------------
 ## Note: don't set the HDFMPI* variables if you don't have parallel HDF installed
-#HDFMPIINCFLAGS= -I<hdf_parallel_dir>/include
-#HDFMPILIBFLAGS= -L<hdf_parallel_dir>/lib -lhdf5 -lz
+HDFMPIINCFLAGS= -DH5_USE_16_API -I${CMAKE_SOURCE_DIR}/${HDF_VERSION} -I${CMAKE_SOURCE_DIR}/${HDF_VERSION}/src 
+HDFMPILIBFLAGS= -L${CMAKE_BINARY_DIR}/${HDF_VERSION}/src -l${HDF_LIB} -lz
 #USE_MF        =
 #USE_MT        =
 #USE_SETVAL    =

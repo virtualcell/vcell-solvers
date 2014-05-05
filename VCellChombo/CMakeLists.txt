@@ -10,6 +10,9 @@ endif (NOT DEFINED HDF_LIB)
 #if (CSH MATCHES CSH-NOTFOUND)
 #	message(FATAL_ERROR "${PROJECT_NAME} requires csh")
 #endif (CSH MATCHES CSH-NOTFOUND)
+INCLUDE (FindMPI)
+INCLUDE_DIRECTORIES (${MPI_C_INCLUDE_PATH})
+add_definitions(-DCH_MPI)
 OPTION(CHOMBO_3D "Compile VCellChombo 3d" ON)
 OPTION(CHOMBO_COMPILE_TEST "CHOMBO_COMPILE_TEST" OFF)
 
@@ -123,6 +126,8 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 # already exist.
 #
 ####################################################################################
+	set(COMP "mpic++")
+	set(MPITAG "MPI.")
 	if (ARCH_64bit) 
 		set(OPT64 "64.")
 		set(USE64 TRUE)
@@ -135,28 +140,28 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	endif (ARCH_64bit) 
 	set(CHOMBO_LIB_DIR ${CMAKE_SOURCE_DIR}/Chombo/lib)
 	set(CHOMBO_LIBS_2D 
-		${CHOMBO_LIB_DIR}/libmftools2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libebamrelliptic2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libebamrtools2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libebtools2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libamrelliptic2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libamrtools2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libworkshop2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libboxtools2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libbasetools2d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libmftools2d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libebamrelliptic2d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libebamrtools2d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libebtools2d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libamrelliptic2d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libamrtools2d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libworkshop2d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libboxtools2d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libbasetools2d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
 		)
 	set(DEP_LIBS_2D  ${CHOMBO_LIBS_2D} ${DEP_LIBS})
 
 	set(CHOMBO_LIBS_3D 
-		${CHOMBO_LIB_DIR}/libmftools3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libebamrelliptic3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libebamrtools3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libebtools3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libamrelliptic3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libamrtools3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libworkshop3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libboxtools3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
-		${CHOMBO_LIB_DIR}/libbasetools3d.${LIB_NAME_OS}.${OPT64}g++.gfortran.OPT.a
+		${CHOMBO_LIB_DIR}/libmftools3d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libebamrelliptic3d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libebamrtools3d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libebtools3d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libamrelliptic3d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libamrtools3d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libworkshop3d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libboxtools3d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
+		${CHOMBO_LIB_DIR}/libbasetools3d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
 		)
 	set(DEP_LIBS_3D  ${CHOMBO_LIBS_3D} ${DEP_LIBS})
 

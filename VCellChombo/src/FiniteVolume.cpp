@@ -49,7 +49,9 @@ void vcellExit(int returnCode, string& errorMsg)
 	if (returnCode != 0)
 	{
 		pout() << "MPI::Abort starting" << endl;
-		MPI::COMM_WORLD.Abort(returnCode);
+		//MPI::COMM_WORLD.Abort(returnCode);
+		MPI_Abort(MPI_COMM_WORLD,returnCode);
+		
 		pout() << "MPI::Abort complete" << endl;
 	}
 #endif
@@ -85,12 +87,16 @@ int main(int argc, char *argv[])
 {
 #ifdef CH_MPI
 	pout() << "MPI::Init starting" << endl;
-  MPI::Init(argc, argv);
+  //MPI::Init(argc, argv);
+  	MPI_Init(&argc, &argv);
 	pout() << "MPI::Init complete" << endl;
+	const char * const mpiStatus = "MPI ";
+#else
+	const char * const mpiStatus = "singleThread ";
 #endif
 
 	pout()
-	<< "Chombo solver "VCELLSVNQUOTE(CH_SPACEDIM)"D version $URL$"VCELLSVNQUOTE(SVNVERSION)
+	<< "Chombo solver " << mpiStatus << VCELLSVNQUOTE(CH_SPACEDIM)"D version $URL$"VCELLSVNQUOTE(SVNVERSION)
 	<< std::endl;
 
 	char* timerEnv = getenv("CH_TIMER");
@@ -207,7 +213,8 @@ int main(int argc, char *argv[])
 
 #ifdef CH_MPI
 	pout() << endl << "MPI::Finalize starting" << endl;
-	MPI::Finalize();
+	//MPI::Finalize();
+	MPI_Finalize();
 	pout() << "MPI::Finalize complete" << endl;
 #endif
 	

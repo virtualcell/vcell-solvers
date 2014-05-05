@@ -41,6 +41,10 @@
 #include <sstream>
 #include <hdf5.h>
 
+#ifdef CH_MPI
+#include <mpi.h>
+#endif
+
 #ifdef HOFFSET
    #undef HOFFSET
 #endif
@@ -174,7 +178,7 @@ void ChomboScheduler::exchangeFeatures()
 	int numProcs = SimTool::getInstance()->getCommSize();
 	int receiveSize = numProcs * numConnectedComponents;
 	int *recvBuffer = NULL;
-	if (SimTool::getInstance()->isRootRank())
+	//if (SimTool::getInstance()->isRootRank()) //gcw 5/5
 	{
 		 recvBuffer = new int[receiveSize];
 	}
@@ -195,7 +199,8 @@ void ChomboScheduler::exchangeFeatures()
 	// so in recvBuffer, the data looks like
 	// ---sendBuffer of processor 1---sendBuffer of processor 2---
 	pout() << "gathering features " << endl;
-	MPI::COMM_WORLD.Gather(sendBuffer, numConnectedComponents, MPI_INT, recvBuffer, numConnectedComponents, MPI_INT, SimTool::rootRank);
+	//MPI::COMM_WORLD.Gather(sendBuffer, numConnectedComponents, MPI_INT, recvBuffer, numConnectedComponents, MPI_INT, SimTool::rootRank);
+	MPI_Gather(sendBuffer, numConnectedComponents, MPI_INT, recvBuffer, numConnectedComponents, MPI_INT, SimTool::rootRank,MPI_COMM_WORLD);
 
 	if (SimTool::getInstance()->isRootRank())
 	{
@@ -224,7 +229,8 @@ void ChomboScheduler::exchangeFeatures()
 
 	pout() << "broadcasting features " << endl;
 	// broadcast
-	MPI::COMM_WORLD.Bcast(sendBuffer, numConnectedComponents, MPI_INT, SimTool::rootRank);
+	//MPI::COMM_WORLD.Bcast(sendBuffer, numConnectedComponents, MPI_INT, SimTool::rootRank);
+	MPI_Bcast(sendBuffer, numConnectedComponents, MPI_INT, SimTool::rootRank, MPI_COMM_WORLD);
 
 	pout() << "populating features" << endl;
 	volCnt = 0;
