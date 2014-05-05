@@ -80,7 +80,7 @@ public:
 
 	bool isRootRank()
 	{
-		myRank == rootRank;
+		return myRank == rootRank;
 	}
 
 	int getCommSize()

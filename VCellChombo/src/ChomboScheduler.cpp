@@ -178,7 +178,7 @@ void ChomboScheduler::exchangeFeatures()
 	int numProcs = SimTool::getInstance()->getCommSize();
 	int receiveSize = numProcs * numConnectedComponents;
 	int *recvBuffer = NULL;
-	//if (SimTool::getInstance()->isRootRank()) //gcw 5/5
+	if (SimTool::getInstance()->isRootRank())
 	{
 		 recvBuffer = new int[receiveSize];
 	}
