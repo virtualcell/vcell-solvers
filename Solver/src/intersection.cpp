@@ -240,7 +240,7 @@ namespace {
 			VtoCScaler scaler(scale);
 			std::transform(a.begin( ),a.end( ),clipperA.begin( ),scaler);
 			std::transform(b.begin( ),b.end( ),clipperB.begin( ),scaler);
-#ifdef CLEANUP
+//#ifdef CLEANUP
 			matlabBridge::Polygon pa("-g",2);
 			copyInto(clipperA,pa);
 			matlabBridge::Polygon pb("-b",2);
@@ -250,7 +250,7 @@ namespace {
 			std::ofstream code("frag.txt");
 			dump(code,"polyA",clipperA);
 			dump(code,"polyB",clipperB);
-#endif
+//#endif
 
 			ClipperLib::Clipper c;
 			AddPath(c,clipperA,ClipperLib::ptSubject);
@@ -579,4 +579,3 @@ template void spatial::intersectionsManyMany(spatial::Volume<int64_t,double,2> &
 template void spatial::intersections(spatial::Volume<int64_t,long double,2> &result, const I64PointVector &,const I64PointVector &) ;
 template void spatial::intersectionsManySingle(spatial::Volume<int64_t,long double,2> &result, const I64VectorOfVectors &,const I64PointVector &) ;
 template void spatial::intersectionsManyMany(spatial::Volume<int64_t,long double,2> &result, const I64VectorOfVectors &,const I64VectorOfVectors &) ;
-

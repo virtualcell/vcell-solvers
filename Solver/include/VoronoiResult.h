@@ -8,7 +8,7 @@ namespace spatial {
 	/**
 	* implementation type for boost::polygon::voronoi routines
 	*/
-	typedef int64_t VoronoiType;
+	typedef int32_t VoronoiType;
 
 	typedef GhostPoint<VoronoiType,2> VoronoiGhostPoint;
 

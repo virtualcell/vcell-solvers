@@ -36,7 +36,7 @@ namespace moving_boundary {
 	/**
 	* type used for coordinate system of problem implementation
 	*/
-	typedef int64_t CoordinateType;
+	typedef int32_t CoordinateType;
 	/**
 	* type used for distances of problem implementation
 	* use double for int32_t, long double for int64_t)

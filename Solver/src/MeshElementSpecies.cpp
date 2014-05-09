@@ -305,14 +305,12 @@ void MeshElementSpecies::processBoundaryNeighbors(const VoronoiMesh & vm, std::v
 		assert(voronoiVertices.empty( ));
 		vm.getResult(vResult,*this);
 		{
-			/*
 			std::ofstream vp("voronoiPoly.m");
 			vp << "% " << ident( ) << std::endl;
 			vp << "% " << vResult.type << std::endl;
 			matlabBridge::TPolygon<long long> p("r-+");
 			frontTierAdapt::copyVectorInto(p,vResult.vertices);
 			vp << p;
-			*/
 		}
 
 		voronoiVolume.clear( );

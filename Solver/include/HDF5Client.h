@@ -200,7 +200,7 @@ namespace moving_boundary {
 		* @param startTime_ when to start recording (time 0 always recorded)
 		*/
 		NHDF5Client(H5::H5File &f, 
-			WorldType & world,
+			WorldType & world_,
 			const moving_boundary::MovingBoundaryParabolicProblem &mbpp, 
 			unsigned int numberReports,
 			const char *baseName = nullptr,
@@ -225,9 +225,8 @@ namespace moving_boundary {
 			//generationCounter(0),
 			reportActive(true),
 			timer( ),
-			xconverter(world),
-			yconverter(world),
-			pointconverter(world) 
+			world(world_),
+			pointconverter(world)
 		{
 			using spatial::cX;
 			using spatial::cY;
@@ -276,10 +275,10 @@ namespace moving_boundary {
 				H5::CompType dataType = SOLUTION::DataType::getType( ); 
 
 				elementDataset = baseGroup.createDataSet( "elements", dataType, dataspace ,prop);
-				const double startx = xconverter( meshDef.startCorner(spatial::cX) );
-				const double starty = yconverter( meshDef.startCorner(spatial::cY) );
-				const double hx = xconverter( meshDef.interval(spatial::cX) );
-				const double hy = yconverter( meshDef.interval(spatial::cY) );
+				const double startx = world.toProblemDomain( meshDef.startCorner(spatial::cX), spatial::cX);
+				const double starty = world.toProblemDomain( meshDef.startCorner(spatial::cY), spatial::cY);
+				const double hx = world.distanceToProblemDomain( meshDef.interval(spatial::cX) );
+				const double hy = world.distanceToProblemDomain( meshDef.interval(spatial::cY) );
 				vcellH5::writeAttribute(elementDataset,"startX",startx);
 				vcellH5::writeAttribute(elementDataset,"startY",starty);
 				vcellH5::writeAttribute(elementDataset,"numX",xSize);
@@ -291,12 +290,14 @@ namespace moving_boundary {
 
 				std::vector<moving_boundary::CoordinateType> xvalues = meshDef.coordinateValues(spatial::cX);
 				std::vector<double> dv(xvalues.size( ));
+				WorldType::XConverter xconverter(world);
 				std::transform(xvalues.begin( ),xvalues.end( ),dv.begin( ),xconverter);
 				vcellH5::SeqFacade<std::vector<double> > axisSF(dv); 
 				vcellH5::facadeWriteAttribute(elementDataset,"xvalues",axisSF);
 
 				std::vector<moving_boundary::CoordinateType> yvalues = meshDef.coordinateValues(spatial::cY);
 				dv.resize(yvalues.size( )); 
+				WorldType::YConverter yconverter(world);
 				std::transform(yvalues.begin( ),yvalues.end( ),dv.begin( ),yconverter);
 				vcellH5::facadeWriteAttribute(elementDataset,"yvalues",axisSF);
 			} //create element dataset
@@ -536,8 +537,12 @@ namespace moving_boundary {
 		//unsigned int generationCounter;
 		bool reportActive;
 		vcell_util::Timer timer;
-		WorldType::XConverter xconverter;
-		WorldType::YConverter yconverter;
+		const World<CoordinateType,2> & world;
+
+		/**
+		* functor for std::transform
+		* Plan Ol' Double
+		*/
 		struct WorldToPODPointConverter{
 			WorldToPODPointConverter(const World<CoordinateType,2> & w)
 				:world(w) {}

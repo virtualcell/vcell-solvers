@@ -98,8 +98,8 @@ namespace moving_boundary {
 		* convert interval (distance) from World coordinate to problem domain
 		* @param distance  to convert
 		*/
-		double distanceToProblemDomain(COORD_TYPE coord) const {
-			return coord / scale;
+		double distanceToProblemDomain(COORD_TYPE distance) const {
+			return distance / scale;
 		}
 
 		/**

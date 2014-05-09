@@ -79,9 +79,9 @@ namespace {
 					divider = boost::math::lcm<WORLD_COORD>(divider,2*numNodes[i]);
 				}
 			}
-			while (iScale % divider != 0 && iScale > 1) {
-				iScale--;
-			}
+			WORLD_COORD multiplier = iScale / divider;  //truncation 
+			iScale = multiplier * divider;
+			assert(iScale % divider == 0);
 			if (iScale == 1) {
 				VCELL_EXCEPTION(logic_error, "unable to find decent scale for least common multiplier of " << divider << " and scale " << scale 
 					<< ", max supported is " << maxSupported);
