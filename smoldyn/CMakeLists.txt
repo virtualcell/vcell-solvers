@@ -307,15 +307,16 @@ endif(OPTION_USE_LIBMZR)
 
 
 ####### Targets ##########
-
 option(OPTION_TARGET_SMOLDYN "Create stand-alone Smoldyn program" ON)
 option(OPTION_TARGET_LIBSMOLDYN "Create LibSmoldyn library" ON)
 
-if (OPTION_TARGET_LIBSMOLYDN)
+if (OPTION_TARGET_LIBSMOLDYN)
 	message("smoldyn lib on")
 	add_library(${SMOLDYN_LOCAL_LIB} STATIC ${SRC_FILES} ${HEADER_FILES} ${HYBRID_SRC_FILES} ${HYBRID_HEADER_FILES})
 	set_property(TARGET ${SMOLDYN_LOCAL_LIB} PROPERTY COMPILE_FLAGS "-DVCELL_HYBRID")
-endif (OPTION_TARGET_LIBSMOLYDN)
+else (OPTION_TARGET_LIBSMOLDYN)
+	message("smoldyn lib off")
+endif (OPTION_TARGET_LIBSMOLDYN)
 if(OPTION_TARGET_SMOLDYN)
 	message("smoldyn exe on")
 	set(EXE_FILE smoldyn)
@@ -358,9 +359,9 @@ configure_file (
 	${CMAKE_CURRENT_SOURCE_DIR}/source/smoldynconfigureLib.h.in
 	${LIB_SPECIFIC_INCLUDE_DIR}/smoldynconfigure.h
 )
-if (OPTION_TARGET_LIBSMOLYDN)
+if (OPTION_TARGET_LIBSMOLDYN)
 	set_property(TARGET smoldynlib 
 		APPEND 
 		PROPERTY INCLUDE_DIRECTORIES ${LIB_SPECIFIC_INCLUDE_DIR})
-endif (OPTION_TARGET_LIBSMOLYDN)
+endif (OPTION_TARGET_LIBSMOLDYN)
 
