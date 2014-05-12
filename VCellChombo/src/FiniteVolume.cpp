@@ -86,10 +86,6 @@ void onExit()
 int main(int argc, char *argv[])
 {
 #ifdef CH_MPI
-	pout() << "MPI::Init starting" << endl;
-  //MPI::Init(argc, argv);
-  	MPI_Init(&argc, &argv);
-	pout() << "MPI::Init complete" << endl;
 	const char * const mpiStatus = "MPI ";
 #else
 	const char * const mpiStatus = "singleThread ";
@@ -98,6 +94,12 @@ int main(int argc, char *argv[])
 	pout()
 	<< "Chombo solver " << mpiStatus << VCELLSVNQUOTE(CH_SPACEDIM)"D version $URL$"VCELLSVNQUOTE(SVNVERSION)
 	<< std::endl;
+#ifdef CH_MPI
+	pout() << "MPI::Init starting" << endl;
+  //MPI::Init(argc, argv);
+  	MPI_Init(&argc, &argv);
+	pout() << "MPI::Init complete" << endl;
+#endif
 
 	char* timerEnv = getenv("CH_TIMER");
 	pout() << "********** CH_TIMER is " << (timerEnv == NULL ? "off" : "on") << " **********" << endl;
@@ -187,7 +189,9 @@ int main(int argc, char *argv[])
 					FVSolver* fvSolver = new FVSolver(ifsInput, taskID);
 					ifsInput.close();
 
+					pout( ) << "start solve" << endl;
 					fvSolver->solve();
+					pout( ) << "end solve" << endl;
 				}
 			}
 		}

@@ -486,6 +486,7 @@ INCLUDE_DIRECTORIES (${HDF5_BINARY_DIR} ${HDF5_SRC_DIR} ${CMAKE_RUNTIME_OUTPUT_D
 SET (CMAKE_MODULE_PATH ${HDF5_RESOURCES_DIR} ${CMAKE_MODULE_PATH})
 OPTION (HDF5_ENABLE_PARALLEL "Enable parallel build (requires MPI)" OFF)
 IF (HDF5_ENABLE_PARALLEL)
+	message("compiling hdf5 parallel")
   INCLUDE (FindMPI)
   INCLUDE_DIRECTORIES (${MPI_C_INCLUDE_PATH})
   IF (MPI_C_FOUND)
@@ -794,6 +795,7 @@ ENDIF (EXISTS "${HDF5_SOURCE_DIR}/examples" AND IS_DIRECTORY "${HDF5_SOURCE_DIR}
 IF (EXISTS "${HDF5_SOURCE_DIR}/c++" AND IS_DIRECTORY "${HDF5_SOURCE_DIR}/c++")
   OPTION (HDF5_BUILD_CPP_LIB  "Build HDF5 C++ Library" OFF)
   IF (HDF5_BUILD_CPP_LIB)
+  	message("building hdf5cpp")
     # check for unsupported options
     IF (HDF5_ENABLE_PARALLEL)
       MESSAGE (FATAL_ERROR " **** Parallel and C++ options are mutually exclusive **** ")

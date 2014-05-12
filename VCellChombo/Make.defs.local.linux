@@ -112,7 +112,7 @@ OPT           = TRUE
 #PROFILE       =
 #CXX           =
 FC            = gfortran -cpp
-MPI           = TRUE 
+#MPI           = TRUE 
 ## Note: don't set the MPICXX variable if you don't have MPI installed
 MPICXX        = mpic++
 #OBJMODEL      =
