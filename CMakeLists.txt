@@ -46,7 +46,7 @@ set(SUNDIALS_SOLVER on) #idawin
 set(HY3S_SOLVERS on) 
 
 if (${PARALLEL_CHOMBO_SOLVER})
-	message("parallel chombo solover")
+	message("parallel chombo solver")
 	set(FV_SOLVER off)
 	set(STOCHASTIC_SOLVER off)
 	set(NFSIM_EXE off)
@@ -257,11 +257,13 @@ endif()
 if (LINUX_32bit_BINARIES)
 	find_program(IFORT_EXECUTABLE ifort /opt/intel/fc/10.1.015/bin/)
 elseif (LINUX_64bit_BINARIES)
-	find_program(IFORT_EXECUTABLE ifort /opt/intel/fce/10.1.015/bin/ /cm/shared/apps/intel/fce/10.1.015/bin/)
+	#find_program(IFORT_EXECUTABLE ifort /opt/intel/fce/10.1.015/bin/ /cm/shared/apps/intel/fce/10.1.015/bin/)
+	find_program(IFORT_EXECUTABLE ifort /opt/intel/fce/10.1.015/bin/ )
 endif()
 
 if (IFORT_EXECUTABLE MATCHES IFORT_EXECUTABLE-NOTFOUND AND NOT CYGWIN)
-	message(FATAL_ERROR "intel fortran compiler (ifort) is required")
+	message("intel fortran compiler (ifort) not found")
+	set(HY3S_SOLVERS off) 
 endif()
 	
 ######################################

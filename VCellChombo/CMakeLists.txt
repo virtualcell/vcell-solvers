@@ -11,15 +11,19 @@ endif (NOT DEFINED HDF_LIB)
 #	message(FATAL_ERROR "${PROJECT_NAME} requires csh")
 #endif (CSH MATCHES CSH-NOTFOUND)
 if (${PARALLEL_CHOMBO_SOLVER})
+	set(CHOMBO_DIR ChomboParallel)
 	set(COMP "mpic++")
 	set(MPITAG "MPI.")
+	#A cmake-ism requires the arguments below to be separately enclosed in quotes
+	set(PARALLEL_SUPPLEMENT "MPI=TRUE" "MPICXX=mpic++")
 	INCLUDE (FindMPI)
 	INCLUDE_DIRECTORIES (${MPI_C_INCLUDE_PATH})
 	add_definitions(-DCH_MPI)
 else (${PARALLEL_CHOMBO_SOLVER})
+	set(CHOMBO_DIR Chombo)
 	set(COMP "g++")
 	set(MPITAG "")
-	INCLUDE (FindMPI)
+	set(PARALLEL_SUPPLEMENT "")
 endif (${PARALLEL_CHOMBO_SOLVER})
 OPTION(CHOMBO_3D "Compile VCellChombo 3d" ON)
 OPTION(CHOMBO_COMPILE_TEST "CHOMBO_COMPILE_TEST" OFF)
@@ -100,31 +104,31 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	add_definitions(-DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_USE_64 -DCH_USE_COMPLEX 
 		-DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API)
 	include_directories(
-		${CMAKE_SOURCE_DIR}/Chombo/lib/include 
+		${CMAKE_SOURCE_DIR}/${CHOMBO_DIR}/lib/include 
 		${CMAKE_SOURCE_DIR}/ExpressionParser 
 		${CMAKE_CURRENT_SOURCE_DIR}/include 
 	)
-	set(CHOMBO_DEFS_FILE ${CMAKE_SOURCE_DIR}/Chombo/lib/mk/Make.defs.local)
+	set(CHOMBO_DEFS_FILE ${CMAKE_SOURCE_DIR}/${CHOMBO_DIR}/lib/mk/Make.defs.local)
 	include_directories(${CMAKE_SOURCE_DIR}/${HDF_VERSION})
 	include_directories(${CMAKE_BINARY_DIR}/${HDF_VERSION})
 	include_directories(${CMAKE_SOURCE_DIR}/${HDF_VERSION}/src)
 	if (CYGWIN)
 		add_definitions(-DCH_CYGWIN)
 		set(LIB_NAME_OS CYGWIN)
-		file(COPY "Make.defs.local.cygwin" DESTINATION "${CMAKE_SOURCE_DIR}/Chombo/lib/mk") 
-		file(RENAME "${CMAKE_SOURCE_DIR}/Chombo/lib/mk/Make.defs.local.cygwin" ${CHOMBO_DEFS_FILE})
+		file(COPY "Make.defs.local.cygwin" DESTINATION "${CMAKE_SOURCE_DIR}/${CHOMBO_DIR}/lib/mk") 
+		file(RENAME "${CMAKE_SOURCE_DIR}/${CHOMBO_DIR}/lib/mk/Make.defs.local.cygwin" ${CHOMBO_DEFS_FILE})
 	elseif (LINUX OR APPLE)
 		add_definitions(-DCH_Linux)
 		set(LIB_NAME_OS Linux)
 		include_directories(${CMAKE_BINARY_DIR}/include)
-		file(COPY "Make.defs.local.linux" DESTINATION "${CMAKE_SOURCE_DIR}/Chombo/lib/mk") 
-		file(RENAME "${CMAKE_SOURCE_DIR}/Chombo/lib/mk/Make.defs.local.linux" ${CHOMBO_DEFS_FILE})
+		file(COPY "Make.defs.local.linux" DESTINATION "${CMAKE_SOURCE_DIR}/${CHOMBO_DIR}/lib/mk") 
+		file(RENAME "${CMAKE_SOURCE_DIR}/${CHOMBO_DIR}/lib/mk/Make.defs.local.linux" ${CHOMBO_DEFS_FILE})
 	endif()
 
 	include_directories(${JMS_INCS})
 	add_definitions(${JMS_DEFS})
 
-	link_directories(${CMAKE_SOURCE_DIR}/Chombo/lib)
+	link_directories(${CMAKE_SOURCE_DIR}/${CHOMBO_DIR}/lib)
 	set(DEP_LIBS hdf5 ${JMS_LIBS} ExpressionParser zip unzip gfortran)
 
 ####################################################################################
@@ -144,7 +148,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		set(USE64 FALSE)
 		set(CHOMBO_COMPILE_FLAGS "")
 	endif (ARCH_64bit) 
-	set(CHOMBO_LIB_DIR ${CMAKE_SOURCE_DIR}/Chombo/lib)
+	set(CHOMBO_LIB_DIR ${CMAKE_SOURCE_DIR}/${CHOMBO_DIR}/lib)
 	set(CHOMBO_LIBS_2D 
 		${CHOMBO_LIB_DIR}/libmftools2d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
 		${CHOMBO_LIB_DIR}/libebamrelliptic2d.${LIB_NAME_OS}.${OPT64}${COMP}.gfortran.OPT.${MPITAG}a
@@ -181,13 +185,13 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 
 	list(APPEND CHOMBO_COMPILE_FLAGS " -I${CMAKE_BINARY_DIR}/${HDF_VERSION}")
 	file(APPEND ${CHOMBO_DEFS_FILE} XTRACXXFLAGS=${CHOMBO_COMPILE_FLAGS}) 
-	set(CHOMBO_BUILD_CMD $(MAKE) -j1 lib CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}  HDF_VERSION=${HDF_VERSION} HDF_LIB=${HDF_LIB} CMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR} USE_EB=TRUE USE_MF=TRUE USE_64=${USE64})
+	set(CHOMBO_BUILD_CMD $(MAKE) -j1 lib CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}  HDF_VERSION=${HDF_VERSION} HDF_LIB=${HDF_LIB} CMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR} USE_EB=TRUE USE_MF=TRUE USE_64=${USE64} ${PARALLEL_SUPPLEMENT})
 	#message(${CHOMBO_BUILD_CMD})
 	add_custom_command(OUTPUT ${CHOMBO_LIBS_2D}
 		PRE_BUILD
 		COMMAND ${CHOMBO_BUILD_CMD} 
 		DEPENDS ${HDF5_LIB_TARGET} 
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/Chombo/lib
+		WORKING_DIRECTORY ${CHOMBO_LIB_DIR}
 	)
 	# include the Chombo libraries as "source" file to trigger building them via "add_custom_command"
 	# if they don't exist
@@ -206,7 +210,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		add_custom_command(OUTPUT ${CHOMBO_LIBS_3D}
 			PRE_BUILD
 			COMMAND ${CHOMBO_BUILD_CMD} DIM=3
-			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/Chombo/lib
+			WORKING_DIRECTORY ${CHOMBO_LIB_DIR}
 			VERBATIM
 		)
 		add_executable(${EXE_3D} ${CHOMBO_LIBS_3D} ${SRC_FILES})
