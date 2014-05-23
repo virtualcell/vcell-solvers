@@ -39,7 +39,10 @@ void vcellExit(int returnCode, string& errorMsg)
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_FAILURE, errorMsg.c_str()));
 		}
 #ifdef USE_MESSAGING
-		SimulationMessaging::getInstVar()->waitUntilFinished();
+		if (SimTool::getInstance()->isRootRank())
+		{
+			SimulationMessaging::getInstVar()->waitUntilFinished();
+		}
 #endif
 	}
 	delete SimulationMessaging::getInstVar();

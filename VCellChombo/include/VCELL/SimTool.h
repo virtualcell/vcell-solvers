@@ -73,19 +73,24 @@ public:
 	
 	static int rootRank;
 
-	int getMyRank()
+	inline int getMyRank()
 	{
 		return myRank;
 	}
 
-	bool isRootRank()
+	inline bool isRootRank()
 	{
 		return myRank == rootRank;
 	}
 
-	int getCommSize()
+	inline int getCommSize()
 	{
 		return commSize;
+	}
+#else
+	inline bool isRootRank()
+	{
+		return true;
 	}
 #endif
 	
