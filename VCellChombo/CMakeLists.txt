@@ -6,24 +6,31 @@ endif (NOT DEFINED HDF_VERSION)
 if (NOT DEFINED HDF_LIB) 
 	message(FATAL_ERROR "HDF_LIB not set")
 endif (NOT DEFINED HDF_LIB) 
+
 #find_file(CSH csh)
 #if (CSH MATCHES CSH-NOTFOUND)
 #	message(FATAL_ERROR "${PROJECT_NAME} requires csh")
 #endif (CSH MATCHES CSH-NOTFOUND)
+
+set(DEP_LIBS hdf5 ${JMS_LIBS} ExpressionParser zip unzip gfortran)
 if (${PARALLEL_CHOMBO_SOLVER})
+	find_package(MPI REQUIRED)
 	set(CHOMBO_DIR ChomboParallel)
 	set(COMP "mpic++")
 	set(MPITAG "MPI.")
+	set(PARA_EXT "p")
 	#A cmake-ism requires the arguments below to be separately enclosed in quotes
 	set(PARALLEL_SUPPLEMENT "MPI=TRUE" "MPICXX=mpic++")
 	INCLUDE (FindMPI)
 	INCLUDE_DIRECTORIES (${MPI_C_INCLUDE_PATH})
 	add_definitions(-DCH_MPI)
+#	LIST(APPEND DEP_LIBS mpich)
 else (${PARALLEL_CHOMBO_SOLVER})
 	set(CHOMBO_DIR Chombo)
 	set(COMP "g++")
 	set(MPITAG "")
 	set(PARALLEL_SUPPLEMENT "")
+	set(PARA_EXT "")
 endif (${PARALLEL_CHOMBO_SOLVER})
 OPTION(CHOMBO_3D "Compile VCellChombo 3d" ON)
 OPTION(CHOMBO_COMPILE_TEST "CHOMBO_COMPILE_TEST" OFF)
@@ -129,7 +136,6 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	add_definitions(${JMS_DEFS})
 
 	link_directories(${CMAKE_SOURCE_DIR}/${CHOMBO_DIR}/lib)
-	set(DEP_LIBS hdf5 ${JMS_LIBS} ExpressionParser zip unzip gfortran)
 
 ####################################################################################
 #
@@ -141,12 +147,14 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	if (ARCH_64bit) 
 		set(OPT64 "64.")
 		set(USE64 TRUE)
+		set(BIT_EXT "_x64")
 		#set(CHOMBO_COMPILE_FLAGS -m64 -mno-cygwin)
 		set(CHOMBO_COMPILE_FLAGS -m64)
 	else (ARCH_64bit) 
 		set(OPT64 "")
 		set(USE64 FALSE)
 		set(CHOMBO_COMPILE_FLAGS "")
+		set(BIT_EXT "")
 	endif (ARCH_64bit) 
 	set(CHOMBO_LIB_DIR ${CMAKE_SOURCE_DIR}/${CHOMBO_DIR}/lib)
 	set(CHOMBO_LIBS_2D 
@@ -175,10 +183,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		)
 	set(DEP_LIBS_3D  ${CHOMBO_LIBS_3D} ${DEP_LIBS})
 
-	set(EXE_2D VCellChombo2D)
-	if (ARCH_64bit) 
-		set(EXE_2D ${EXE_2D}_x64)
-	endif()
+	set(EXE_2D VCellChombo2D${BIT_EXT}${PARA_EXT})
 
 	#use the same command for 2d and 3d ; we'll just add DIM=3 to the 3d case
 	#Setting USE_MF in Chombo's Make.defs.local didn't seem to work, so set both USE_EB and USE_MF from command line
@@ -197,15 +202,13 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	# if they don't exist
 	add_executable(${EXE_2D} ${CHOMBO_LIBS_2D} ${SRC_FILES})
 	target_link_libraries(${EXE_2D} ${DEP_LIBS_2D})
-	add_dependencies(${EXE_2D} hdf5 hdf5_cpp ExpressionParser zip unzip ${DEP_LIBS}) 
+	add_custom_target(HDF5_DONE ALL DEPENDS hdf5)
+	add_dependencies(${EXE_2D} hdf5 hdf5_cpp ExpressionParser zip unzip ${DEP_LIBS} HDF5_DONE) 
 	set_property(TARGET ${EXE_2D} PROPERTY COMPILE_DEFINITIONS CH_SPACEDIM=2)
 	install(TARGETS ${EXE_2D} RUNTIME DESTINATION ${OPTION_EXE_DIRECTORY})
 
 	if (CHOMBO_3D)
-		set(EXE_3D VCellChombo3D)
-		if (ARCH_64bit) 
-			set(EXE_3D ${EXE_3D}_x64)
-		endif()
+		set(EXE_3D VCellChombo3D${BIT_EXT}${PARA_EXT})
 
 		add_custom_command(OUTPUT ${CHOMBO_LIBS_3D}
 			PRE_BUILD
@@ -233,4 +236,9 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	endif (CHOMBO_COMPILE_TEST)
 	
 	
+	if (${PARALLEL_CHOMBO_SOLVER})
+		target_link_libraries(${EXE_2D} ${MPI_CXX_LIBRARIES})
+		target_link_libraries(${EXE_3D} ${MPI_CXX_LIBRARIES})
+		link_directories(${MPI_CXX_LIBRARIES})
+	endif (${PARALLEL_CHOMBO_SOLVER})
 endif (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMBO_CYGWIN_BUILD)
