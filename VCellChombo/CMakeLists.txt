@@ -202,8 +202,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	# if they don't exist
 	add_executable(${EXE_2D} ${CHOMBO_LIBS_2D} ${SRC_FILES})
 	target_link_libraries(${EXE_2D} ${DEP_LIBS_2D})
-	add_custom_target(HDF5_DONE ALL DEPENDS hdf5)
-	add_dependencies(${EXE_2D} hdf5 hdf5_cpp ExpressionParser zip unzip ${DEP_LIBS} HDF5_DONE) 
+	add_dependencies(${EXE_2D} hdf5 hdf5_cpp ExpressionParser zip unzip ${DEP_LIBS} ) 
 	set_property(TARGET ${EXE_2D} PROPERTY COMPILE_DEFINITIONS CH_SPACEDIM=2)
 	install(TARGETS ${EXE_2D} RUNTIME DESTINATION ${OPTION_EXE_DIRECTORY})
 
