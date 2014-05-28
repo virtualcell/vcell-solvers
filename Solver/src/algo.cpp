@@ -79,6 +79,28 @@ c = !c;
 return c;
 }`
 */
+namespace {
+	/**
+	* return true if (x,y) is to the left of segment given by (ix,iy), (jx,jy)
+	* @param x point to test 
+	* @param y point to test 
+	* @param ix one x of segment
+	* @param iy one y of segment
+	* @param jx other x of segment
+	* @param jy other y of segment
+	*/
+	template <class TYPE>
+	inline bool leftOf(TYPE x, TYPE y, TYPE ix, TYPE iy, TYPE jx, TYPE jy) {
+		if ((iy > y) == (jy > y))   {
+			return false;
+		}
+		const double runRise = static_cast<double>(jx-ix) / (jy-iy);
+		const TYPE up = y - iy;
+		const TYPE xPointOnSegment = static_cast<TYPE>(up * runRise + ix); 
+		return x < xPointOnSegment;
+		return false;
+	}
+}
 /**
 * right ray casting inside algorithm
 * @tparam TPOINT type of spatial::TPoint
@@ -100,8 +122,7 @@ bool spatial::inside(const std::vector<TPOINT> &  polygon, const TPOINT & point)
 		const typename TPOINT::value_type iy =i->get(cY);
 		const typename TPOINT::value_type jx =j->get(cX);
 		const typename TPOINT::value_type jy =j->get(cY);
-
-		if ( ((iy > y) != (jy > y)) && (x < (jx-ix) * (y-iy) / (jy-iy) + ix ) ) {
+		if (leftOf(x,y, ix,iy,jx,jy)) {
 			ins = !ins;
 		}
 		i = j ;
@@ -117,8 +138,7 @@ bool spatial::inside(const std::vector<TPOINT> &  polygon, const TPOINT & point)
 		const typename TPOINT::value_type iy =i->get(cY);
 		const typename TPOINT::value_type jx =j->get(cX);
 		const typename TPOINT::value_type jy =j->get(cY);
-
-		if ( ((iy > y) != (jy > y)) && (x < (jx-ix) * (y-iy) / (jy-iy) + ix ) ) {
+		if (leftOf(x,y, ix,iy,jx,jy)) {
 			ins = !ins;
 		}
 	}
