@@ -80,8 +80,8 @@ void matlabClipper(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 			double *yout = mxGetPr(yML);
 			for (size_t i = 0; i < result.size( ); i++) {
 				const ClipperLib::IntPoint & point = result[i];
-				xout[i] = point.X; 
-				yout[i] = point.Y; 
+				xout[i] = static_cast<double>(point.X); 
+				yout[i] = static_cast<double>(point.Y); 
 			}
 			mxSetFieldByNumber(output,0,0,xML);
 			mxSetFieldByNumber(output,0,1,yML);
