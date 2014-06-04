@@ -59,8 +59,6 @@ namespace {
 using spatial::cX;
 using spatial::cY;
 using spatial::TPoint;
-using spatial::EdgeFindResult;
-using spatial::EdgeStateful;
 using namespace moving_boundary::MeshElementStateful;
 using matlabBridge::MatLabDebug;
 using  moving_boundary::MeshElementSpecies;
@@ -153,8 +151,23 @@ namespace {
 #endif
 
 }
+void MeshElementSpecies::logCreation( ) const {
+	using vcell_util::Logger;
+	Logger & logger = Logger::get( );
+	assert(logger.enabled(Logger::trace));
 
-//spatial::DiffuseAdvectCache * MeshElementSpecies::createCache(moving_boundary::CoordinateType minMeshInterval) {
+	World<moving_boundary::CoordinateType,2> & world = World<moving_boundary::CoordinateType,2>::get( );
+	moving_boundary::CoordinateType x = get(spatial::cX);
+	moving_boundary::CoordinateType y = get(spatial::cY);
+	double px = world.toProblemDomain(x,spatial::cX);
+	double py = world.toProblemDomain(y,spatial::cY);
+	
+	std::ostringstream oss;
+	oss << "creation " << this->indexInfo( ) << " (" << this->get(spatial::cX) << ',' << this->get(spatial::cY) << "), ("
+		<< px << ',' << py << ')';
+	logger.report(oss.str( ).c_str());
+}
+
 spatial::DiffuseAdvectCache * MeshElementSpecies::createCache(const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDef) {
 	return new DaCache(meshDef);
 }
@@ -278,14 +291,10 @@ struct MeshElementSpecies::SetupBoundaryNeighbor : public std::unary_function<Ou
 		const moving_boundary::DistanceType existing = nb->distanceToNeighbor(clientElement);
 		if (existing > 0) {
 			rval.distanceTo = existing; 
-			//assert(spatial::nearlyEqual(existing,MesDistance::approximate(*nb,clientElement), toleranceNeighborDistancesAssert) );
-			//
 			moving_boundary::DistanceType  da = MesDistance::approximate(*nb,clientElement);
-			//	if (!spatial::nearlyEqual(existing,da,toleranceNeighborDistancesAssert) ) {
 			if (existing != da) {
 				std::cout << "oops " << da << std::endl;
 			}
-			//
 		}
 		else {
 			rval.distanceTo = MesDistance::approximate(*nb,clientElement);
@@ -304,6 +313,7 @@ void MeshElementSpecies::processBoundaryNeighbors(const VoronoiMesh & vm, std::v
 		VoronoiResult::GhostVector & voronoiVertices = vResult.vertices;
 		assert(voronoiVertices.empty( ));
 		vm.getResult(vResult,*this);
+		/*
 		{
 			std::ofstream vp("voronoiPoly.m");
 			vp << "% " << ident( ) << std::endl;
@@ -312,10 +322,10 @@ void MeshElementSpecies::processBoundaryNeighbors(const VoronoiMesh & vm, std::v
 			frontTierAdapt::copyVectorInto(p,vResult.vertices);
 			vp << p;
 		}
+		*/
 
 		voronoiVolume.clear( );
 		Volume2DClass::FillingIteratorType fIter = voronoiVolume.fillingIterator(voronoiVertices.size());
-		//std::transform(voronoiVertices.begin( ),voronoiVertices.end( ),fIter, coordinateToVolume);
 		std::copy(voronoiVertices.begin( ),voronoiVertices.end( ),fIter);
 
 		//check for single open line
@@ -561,9 +571,12 @@ void MeshElementSpecies::updateBoundaryNeighbors(const VoronoiMesh & vm, std::ve
 }
 
 void MeshElementSpecies::writeMatlab(std::ostream  &os , bool noPoly, int precision) const {
+	World<moving_boundary::CoordinateType,2> & world = World<moving_boundary::CoordinateType,2>::get( );
+	World<moving_boundary::CoordinateType,2>::PointConverter pointconverter = world.pointConverter( );
+
 	if (!vol.empty( )) {
 		if (!voronoiVolume.empty( )) {
-			matlabBridge::Polygons pVoro("r",1);
+			matlabBridge::TPolygons<moving_boundary::CoordinateType> pVoro("r",1);
 			if (precision != 0) {
 				pVoro.setPrecision(precision);
 			}
@@ -576,17 +589,15 @@ void MeshElementSpecies::writeMatlab(std::ostream  &os , bool noPoly, int precis
 		ss << this->index[cX] << ',' << this->index[cY];
 		os << scatter << matlabBridge::Text(this->coord[cX],this->coord[cY],ss.str( ).c_str( ));
 		if (!noPoly) {
-			matlabBridge::Polygon pPoly("k",3);
 			Volume2DClass::VectorOfVectors vOfV = vol.points( );
 			for (Volume2DClass::VectorOfVectors::const_iterator vvIter = vOfV.begin( ); vvIter != vOfV.end( );++vvIter) {
-				matlabBridge::Polygon pPoly("k",3);
+				matlabBridge::TPolygon<moving_boundary::CoordinateType> pPoly("k",3);
 				if (precision != 0) {
 					pPoly.setPrecision(precision);
 				}
 				frontTierAdapt::copyVectorInto(pPoly,*vvIter);
 				os << pPoly; 
 			}
-			os << pPoly; 
 		}
 	}
 }
@@ -619,6 +630,7 @@ void MeshElementSpecies::volumeToSegments() {
 	}
 	while (sa.hasNext( )) {
 		const SegmentType & st = sa.getAndAdvance( );
+		//if horizontal segment longer than cell side, cut into pieces
 		if (st.horizontal( ) &&  ( st.axialDistance(cX) > mesh.interval(cX) ) ) {
 			const CoordinateType & y = st.a( )(cY); 
 			CoordinateType left = st.a( )(cX); 
@@ -638,6 +650,7 @@ void MeshElementSpecies::volumeToSegments() {
 				segments_.push_back(SegmentType(CoordinatePoint(cut,y), CoordinatePoint(right,y)) );
 			}
 		}
+		//if vertical segment longer than cell side, cut into pieces
 		else if (st.vertical( ) && st.axialDistance(cY) > mesh.interval(cY)) {
 			const CoordinateType & x = st.a( )(cX); 
 			const CoordinateType & a = st.a( )(cY); 
@@ -1101,6 +1114,7 @@ void MeshElementSpecies::listBoundary(std::ostream & os) const {
 	}
 }
 
+BioQuanType MeshElementSpecies::distanceScaled        = 1;
 BioQuanType MeshElementSpecies::distanceScaledSquared = 1;
 
 std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::MeshElementStateful::State state) {

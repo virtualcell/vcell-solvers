@@ -191,7 +191,9 @@ namespace moving_boundary {
 			nOutside(0),
 			velocity(0,0)
 		{
-			VCELL_LOG(trace, "creation " << this->indexInfo( ) << " (" << this->get(spatial::cX) << ',' << this->get(spatial::cY) << ')');
+			if (vcell_util::Logger::get( ).enabled(vcell_util::Logger::trace)) {
+				logCreation( );
+			}
 		}
 
 
@@ -474,6 +476,7 @@ namespace moving_boundary {
 		* @param pToW problem to world factor 
 		*/
 		static void setProblemToWorldDistanceScale(moving_boundary::BioQuanType pToW) {
+			 distanceScaled        = pToW;
 			 distanceScaledSquared = pToW * pToW;
 		}
 
@@ -503,7 +506,14 @@ namespace moving_boundary {
 		virtual void volumeChanged( ) {
 			segments_.clear( );
 		}
-	protected:
+	private:
+		/**
+		* log creation information to trace file
+		*/
+		void logCreation( ) const ;
+		/*
+		VCELL_LOG(trace, "creation " << this->indexInfo( ) << " (" << this->get(spatial::cX) << ',' << this->get(spatial::cY) << ')'
+		*/
 		/**
 		* rebuild and sort #segments from volume
 		*/
@@ -665,6 +675,13 @@ namespace moving_boundary {
 		int nOutside;
 		spatial::SVector<moving_boundary::VelocityType,2> velocity; 
 
+		/**
+		* problem domain to solution coordinates scaled
+		*/
+		static moving_boundary::BioQuanType distanceScaled;
+		/**
+		* problem domain to solution coordinates scale, squared
+		*/
 		static moving_boundary::BioQuanType distanceScaledSquared;
 
 		/**
