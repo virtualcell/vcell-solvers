@@ -37,6 +37,9 @@ namespace moving_boundary {
 			pointType.insertMember("y",HOFFSET(PODPoint,y),vcellH5::TPredType<T>::predType( ));
 			return pointType;
 		}
+		PODPoint(const spatial::TPoint<double,2> & in)
+			:x(in(spatial::cX)),
+			y(in(spatial::cY)) {}
 		/**
 		* singleton function for var len type; must be method due to static initialization
 		* dependencies
@@ -64,7 +67,6 @@ namespace moving_boundary {
 			volume = mass = concentration = 0;
 		}
 	};
-
 
 	/**
 	* aggregates results for Hdf5 writing
@@ -222,11 +224,10 @@ namespace moving_boundary {
 			reportStep(calcReportStep(mbpp,startTime_,numberReports)),
 			reportCounter(0),
 			reportBegan(startTime_ == 0), //if beginning at zero, we've "begun" at the start
-			//generationCounter(0),
 			reportActive(true),
 			timer( ),
 			world(world_),
-			pointconverter(world)
+			pointconverter(world.pointConverter( ))
 		{
 			using spatial::cX;
 			using spatial::cY;
@@ -255,8 +256,10 @@ namespace moving_boundary {
 					const std::string s = SOLUTION::expression( ); 
 					vcellH5::writeAttribute(baseGroup,"expression",s);
 				}
-				double scaleFactor = world.theScale( );
+				const double scaleFactor = world.theScale( );
 				vcellH5::writeAttribute(baseGroup,"scaleFactor",scaleFactor);
+				const double halfStep = world.distanceToProblemDomain(1) / 2.0;
+				vcellH5::writeAttribute(baseGroup,"precision",halfStep);
 			} //create group
 
 
@@ -352,13 +355,15 @@ namespace moving_boundary {
 			else {
 				std::cout << '.';
 			}
-			//generationCounter++;
 		}
 
 		void writeBoundary(hsize_t timeIndex, const std::vector<spatial::TPoint<moving_boundary::CoordinateType,2> > & boundary) {
 			try {
+				moving_boundary::WorldToPDPointConverter<moving_boundary::CoordinateType,2> converter = world.pointConverter( );
 				std::vector<PODPoint<double> > outVector(boundary.size( ));
+				//std::transform(boundary.begin( ),boundary.end( ),outVector.begin( ),converter);
 				std::transform(boundary.begin( ),boundary.end( ),outVector.begin( ),convertFrontToPOD);
+				
 				vcellH5::VarLen<PODPoint<double> > & vtype = PODPoint<double>::vectorType( );
 
 				hvl_t variableBoundaryData = vtype.adapt(outVector);
@@ -385,8 +390,9 @@ namespace moving_boundary {
 
 
 		static PODPoint<double> convertFrontToPOD(const spatial::TPoint<moving_boundary::CoordinateType,2> &in) {
-			PODPoint<double> p(in(spatial::cX),in(spatial::cY));
-			//SCALE SCALE
+			moving_boundary::World<moving_boundary::CoordinateType,2> world =  moving_boundary::World<moving_boundary::CoordinateType,2>::get( ); 
+			moving_boundary::WorldToPDPointConverter<moving_boundary::CoordinateType,2> converter = world.pointConverter( ); 
+			PODPoint<double> p = converter(in);
 			return p;
 		};
 
@@ -534,27 +540,11 @@ namespace moving_boundary {
 		const unsigned int reportStep;
 		unsigned int reportCounter;
 		bool reportBegan;
-		//unsigned int generationCounter;
 		bool reportActive;
 		vcell_util::Timer timer;
-		const World<CoordinateType,2> & world;
+		const WorldType & world;
 
-		/**
-		* functor for std::transform
-		* Plan Ol' Double
-		*/
-		struct WorldToPODPointConverter{
-			WorldToPODPointConverter(const World<CoordinateType,2> & w)
-				:world(w) {}
-			PODPoint<double> operator( )(spatial::TPoint<CoordinateType,2> &pt) const { 
-				using spatial::cX;
-				using spatial::cY;
-				double x = world.toProblemDomain(pt(cX),cX);
-				double y = world.toProblemDomain(pt(cY),cY);
-				return PODPoint<double>(x,y);
-			}
-			const World<CoordinateType,2> & world;
-		} pointconverter;
+		WorldType::PointConverter pointconverter;
 	};
 }
 
