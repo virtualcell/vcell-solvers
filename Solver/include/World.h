@@ -234,7 +234,7 @@ namespace moving_boundary {
 	struct WorldToPDPointConverter{
 		WorldToPDPointConverter(const World<COORD_TYPE,NUM_DIM> & w)
 			:world(w) {}
-		spatial::TPoint<double,NUM_DIM> operator( )(spatial::TPoint<COORD_TYPE,NUM_DIM> &pt) const { 
+		spatial::TPoint<double,NUM_DIM> operator( )(const spatial::TPoint<COORD_TYPE,NUM_DIM> &pt) const { 
 			return world.toProblemDomain(pt);
 		}
 		const World<COORD_TYPE,NUM_DIM> & world;
