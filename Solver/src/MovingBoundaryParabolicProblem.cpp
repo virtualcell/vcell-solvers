@@ -84,7 +84,7 @@ namespace {
 #define CHECK2(X,Y) checkSet(badset,X, Y,#X);  
 
 				CHECK(mbs.maxTime);
-				CHECK(mbs.numberTimeSteps);
+				CHECK2(mbs.numberTimeSteps, mbs.timeStep);
 				CHECK2(reinterpret_cast<void *>(mbs.concentrationFunction),mbs.concentrationFunctionStr);
 				CHECK2(reinterpret_cast<void*>(mbs.velocityFunction),mbs.advectVelocityFunctionStrX)
 					if (mbs.alternateFrontProvider == 0) {
@@ -123,6 +123,13 @@ namespace {
 				badset << "Unset value " << description << std::endl;  
 			}
 		}
+		/**
+		* check something set only one of two ways
+		* @param badset 
+		* @param value
+		* @param str
+		* put error message in badset if not exactly one of value, str, is set
+		*/
 		void checkSet(std::stringstream & badset, void * value, const std::string & str, const char * const description) {
 			int argCount = 0;
 			if (value != 0) {
@@ -140,6 +147,22 @@ namespace {
 				break;
 			default:
 				badset << description << " set more than once" << std::endl;  
+			}
+		}
+		/**
+		* check something set only one of two ways
+		* @param badset 
+		* @param one 
+		* @param other 
+		* put error message in badset if not exactly one of one, other is et 
+		*/
+		template<typename T, typename U>
+		void checkSet(std::stringstream & badset, T one, U other, const char * const description) {
+			if (one == 0 && other == 0) {
+				badset << "Unset value " << description << std::endl;  
+			}
+			if (one != 0 && other != 0) {
+				badset << description << " set twice " << std::endl; 
 			}
 		}
 
@@ -173,7 +196,7 @@ namespace moving_boundary {
 			diffusionConstant(mbs.diffusionConstant),
 			currentTime(0),
 			maxTime(mbs.maxTime),
-			timeStep(maxTime/mbs.numberTimeSteps),
+			timeStep(mbs.timeStep),
 			minimimMeshInterval(0),
 
 			symTable(buildSymTable( )),
@@ -210,10 +233,16 @@ namespace moving_boundary {
 			}
 
 			//check time step
+			if (timeStep == 0) {
+				timeStep = maxTime/mbs.numberTimeSteps;
+			}
 			CoordinateType cMin = std::min(meshDefinition.interval(spatial::cX),meshDefinition.interval(spatial::cY));
 			minimimMeshInterval = world.distanceToProblemDomain(cMin); 
 			double maxStep = minimimMeshInterval * minimimMeshInterval/(4 * diffusionConstant);
 			if (maxStep < timeStep) {
+				if (mbs.hardTime) {
+					VCELL_EXCEPTION(logic_error,"input time step " << timeStep << " greater than maximum allowed by problem (" << maxStep << ')');
+				}
 				//use floor to make newNumberSteps lower and timeStep bigger to avoid very short last step
 				int newNumberSteps = static_cast<int>(maxTime/maxStep);
 				timeStep = (maxTime / newNumberSteps) * (1 + 1e-13); //add margin to overcome precision lost to addition
@@ -223,7 +252,7 @@ namespace moving_boundary {
 			using matlabBridge::MatLabDebug;
 			if (MatLabDebug::on("tiling")) {
 				std::ofstream master("tilingMaster.m");
-				matlabBridge::Polygon pFront("b");
+				matlabBridge::TPolygon<moving_boundary::CoordinateType> pFront("b");
 				frontTierAdapt::copyVectorInto(pFront,currentFront);
 				int i = 0;
 				for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {

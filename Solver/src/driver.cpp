@@ -99,6 +99,18 @@ int main(int argc, char *argv[])
 
 namespace {
 
+	bool convertTrueOrFalse(const char *v) {
+		std::string in(v);
+		std::transform(in.begin( ),in.end( ),in.begin( ), ::tolower);
+		if (in.compare("true") == 0) {
+			return true;
+		}
+		if (in.compare("false") == 0) {
+			return false;
+		}
+		VCELL_EXCEPTION(domain_error,"invalid boolean string " << v << ", must be 'true' or 'false'");
+	}
+
 	void readLimits(const tinyxml2::XMLElement &element, spatial::GeoLimit & limits) {
 		double low = vcell_xml::convertChildElement<double>(element,"low");
 		double high = vcell_xml::convertChildElement<double>(element,"high");
@@ -124,11 +136,14 @@ namespace {
 
 		mbSetup.frontToNodeRatio = convertChildElement<unsigned int>(prob,"frontToNodeRatio");
 		mbSetup.maxTime = convertChildElement<double>(prob,"maxTime");
-		mbSetup.numberTimeSteps = convertChildElement<unsigned int>(prob,"numberTimeSteps");
 		mbSetup.diffusionConstant = convertChildElement<double>(prob,"diffusionConstant");
 		mbSetup.advectVelocityFunctionStrX = convertChildElement<std::string>(prob,"advectVelocityFunctionX");
 		mbSetup.advectVelocityFunctionStrY = convertChildElement<std::string>(prob,"advectVelocityFunctionY");
 		mbSetup.concentrationFunctionStr = convertChildElement<std::string>(prob,"concentrationFunction");
+
+		mbSetup.numberTimeSteps = vcell_xml::convertChildElementWithDefault<unsigned int>(prob,"numberTimeSteps",0);
+		mbSetup.timeStep = vcell_xml::convertChildElementWithDefault<double>(prob,"timeStep",0);
+		mbSetup.hardTime = convertTrueOrFalse(vcell_xml::convertChildElementWithDefault<const char *>(prob,"hardTime","false"));
 
 		using vcell_xml::convertChildElementWithDefault;
 		mbSetup.frontVelocityFunctionStrX = 

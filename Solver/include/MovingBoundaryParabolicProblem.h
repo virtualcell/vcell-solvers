@@ -17,7 +17,24 @@ namespace moving_boundary {
 	struct MovingBoundarySetup {
 		unsigned int frontToNodeRatio;
 		double maxTime;
+		/**
+		* set desired number of time steps
+		* set this or #timeStep
+		*/
 		unsigned int numberTimeSteps;
+
+		/**
+		* set time step increment
+		* set this or #numberTimeSteps;
+		*/
+		double timeStep;
+
+		/**
+		* if true, fail simluation if time set by #numberTimeSteps or #timeStep. If false, time
+		* step may be adjusted
+		*/
+		bool hardTime;
+
 		/**
 		* if zero, #levelFunctionStr function is in levelFunctionStr
 		*/
