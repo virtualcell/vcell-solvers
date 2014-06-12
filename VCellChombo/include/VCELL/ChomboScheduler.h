@@ -87,7 +87,8 @@ protected:
 	Vector<ProblemDomain>  vectDomains;
 	Vector<RealVect> vectDxes;
 	Vector<IntVect> vectNxes;
-	Vector< Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<int> > > > > > irregularPointMembraneIDs; // here it stores membrane index
+	Vector< Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<int> > > > > > irregularPointMembraneIDs; // here it stores membrane ID
+	Vector< Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<int> > > > > > irregularPointMembraneElementIndex; // here it stores membrane index
 	int findLevel(const ProblemDomain& domain);
 
 	Vector< Vector< Vector<LevelData<EBCellFAB>*> > > volSoln;
@@ -106,6 +107,7 @@ protected:
 
 	int getChomboBoxLocalIndex(const IntVect& size, int ivar, const IntVect& ijk);
 	int getChomboBoxLocalIndex(const IntVect& size, int ivar, D_DECL(int i, int j, int k));
+	int getVolumeIndex(const IntVect& size, const IntVect& ijk);
 
 	double getExpressionConstantValue(Variable* var, ExpressionIndex expIndex, Feature* feature);
 	
@@ -127,13 +129,18 @@ protected:
 	static void populateTriangleDataType(hid_t& triangleType);
 	Vector< map<int, int> > irregVolumeMembraneMap;
 
+#if CH_SPACEDIM == 2
 	int findNeighborMembraneIndex2D(int iphase, int ilev, const IntVect& gridIndex, int iedge, 
 	const RealVect& normalizedCrossPoint, const RealVect& crossPointRealCoords, int& neighborEdge);
+#endif
 	
 	static const int phase0;
 	static const int phase1;
 
+	void generatePhasesAndVolumes();
+	void generateMesh();
 	void computeFeatures();
+	void populateMembraneIndexData();
 	
 #ifdef CH_MPI
 	void exchangeFeatures();

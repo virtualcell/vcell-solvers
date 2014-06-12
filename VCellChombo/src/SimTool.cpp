@@ -46,8 +46,8 @@ SimTool* SimTool::instance = NULL;
 
 #ifdef CH_MPI
 int SimTool::rootRank = 0;
-extern bool bConsoleOutput;
 #endif
+extern bool bConsoleOutput;
 
 static int NUM_TOKENS_PER_LINE = 4;
 static const int numRetries = 2;
@@ -187,6 +187,9 @@ static FILE* openFileWithRetry(const char* fileName, const char* mode) {
 }
 
 static bool zipUnzipWithRetry(bool bZip, char* zipFileName, char* simFileName, char* errmsg) {
+	const char* methodName = "(zipUnzipWithRetry)";
+	pout() << "Entry " << methodName << endl;
+
 	bool bSuccess = true;
 	int retcode = 0;
 	for (int retry = 0; retry < numRetries; retry ++) {
@@ -200,22 +203,27 @@ static bool zipUnzipWithRetry(bool bZip, char* zipFileName, char* simFileName, c
 		} catch (const char* ziperr) {
 			sprintf(errmsg, "%s", ziperr);
 		} catch (...) {
-			sprintf(errmsg, "SimTool::updateLog(), adding .sim to .zip failed.");						
+			sprintf(errmsg, "%s, adding .sim to .zip failed.", methodName);
 		}
 		bSuccess = false;
 		if (retry < numRetries - 1) {
 			retryWait(retryWaitSeconds);
-			cout << "SimTool::updateLog(), adding .sim to .zip failed, trying again" << endl;
+			pout() << methodName << ", adding .sim to .zip failed, trying again" << endl;
 		}
 	}
 	if (bSuccess && retcode != 0) {
 		sprintf(errmsg, "Writing zip file <%s> failed, return code is %d", zipFileName, retcode);
 		bSuccess = false;
 	}
+	pout() << "Exist " << methodName << endl;
 	return bSuccess;
 }
 
-FILE* SimTool::lockForReadWrite() {
+FILE* SimTool::lockForReadWrite()
+{
+	const char* thisMethod = "(SimTool::lockForReadWrite)";
+	pout() << "Entry " << thisMethod << endl;
+	
 	int myTaskID = SimulationMessaging::getInstVar()->getTaskID();
 	if (myTaskID < 0) {
 		return 0;
@@ -235,7 +243,7 @@ FILE* SimTool::lockForReadWrite() {
 
 	if (fp == 0){
 		char errmsg[512];
-		sprintf(errmsg, "SimTool::lockForReadWrite() - error opening .tid file <%s>", tidFileName);
+		sprintf(errmsg, "%s - error opening .tid file <%s>", thisMethod, tidFileName);
 		throw errmsg;
 	}
 	if (bExist) {
@@ -255,6 +263,7 @@ FILE* SimTool::lockForReadWrite() {
 	fprintf(fp, "%5d", myTaskID);
 	fflush(fp);
 
+	pout() << "Exit " << thisMethod << endl;
 	return fp;
 }
 
@@ -268,9 +277,13 @@ void SimTool::writeData(double progress, double time, int iteration)
 	char logFileName[128];
 	char zipHdf5FileName[128];
 
-	FILE* tidFP = lockForReadWrite();
+	FILE* tidFP = NULL;
+	if (isRootRank())
+	{
+		tidFP = lockForReadWrite();
+	}
 #endif
-
+	
 	bool bSuccess = true;
 	char errmsg[512];
 	char hdf5SimFileName[128];
@@ -285,7 +298,7 @@ void SimTool::writeData(double progress, double time, int iteration)
 		logFP = openFileWithRetry(logFileName, "a");
 
 		if (logFP == 0) {
-			sprintf(errmsg, "SimTool::updateLog() - error opening log file <%s>", logFileName);
+			sprintf(errmsg, "%s - error opening log file <%s>", methodName, logFileName);
 			bSuccess = false;
 		} else {
 			sprintf(zipHdf5FileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_HDF5_FILE_EXT);
@@ -322,9 +335,7 @@ void SimTool::writeData(double progress, double time, int iteration)
 #endif
 	
 	if (bSuccess) {
-#ifdef CH_MPI
 		if (bConsoleOutput || isRootRank())
-#endif
 		{
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
 		}
@@ -341,7 +352,8 @@ void SimTool::cleanupLastRun()
 	simFileCount = 0;
 	zipFileCount = 0;
 
-	cout << "SimTool::cleanupLastRun(), removing log and zip files" << endl;
+	const char* thisMethod = "(cleanupLastRun)";
+	pout() << "Entry " << thisMethod << ", removing log and zip files" << endl;
 	char buffer[256];
 	sprintf(buffer,"%s%s",baseFileName, MESH_HDF5_FILE_EXT);
 	remove(buffer);
@@ -354,6 +366,7 @@ void SimTool::cleanupLastRun()
 	remove(buffer);
 	sprintf(buffer,"%s%s",baseFileName, PP_HDF5_FILE_EXT);
 	remove(buffer);
+	pout() << "Exit " << thisMethod << endl;
 }
 
 void SimTool::setSolver(string& s) {
@@ -394,9 +407,7 @@ void SimTool::start()
 
 	char message[256];
 	sprintf(message, "simulation [%s] started", baseSimName);
-#ifdef CH_MPI
 	if (bConsoleOutput || isRootRank())
-#endif
 	{
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, message));
 	}
@@ -410,26 +421,26 @@ void SimTool::start()
 	//
     // store initial log if enabled
     //
-	if (simulation->getCurrIteration()==0) {
+	if (simulation->getCurrIteration()==0)
+	{
 		// simulation starts from scratch
-		if (bStoreEnable){
+		if (bStoreEnable)
+		{
 #ifndef CH_MPI
 			simulation->getScheduler()->writeMembraneFiles();
 #endif
 			writeData(0.0, 0.0, 0);
-		} else {
-#ifdef CH_MPI
+		}
+		else
+		{
 			if (bConsoleOutput || isRootRank())
-#endif
 			{
 				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, 0, 0));
 			}
 		}
 	} else {
 		// simulation continues from existing results, send data message
-#ifdef CH_MPI
 		if (bConsoleOutput || isRootRank())
-#endif
 		{
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simStartTime));
 		}
@@ -468,9 +479,7 @@ void SimTool::start()
     }
 		percentile = (simulation->getTime_sec() - simStartTime)/(simEndTime - simStartTime);
 		if (percentile - lastSentPercentile >= increment) {
-#ifdef CH_MPI
 			if (bConsoleOutput || isRootRank())
-#endif
 			{
 				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec()));
 			}
@@ -481,9 +490,7 @@ void SimTool::start()
 	if (checkStopRequested()) {
 		return;
 	} 
-#ifdef CH_MPI
 	if (bConsoleOutput || isRootRank())
-#endif
 	{
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, 1.0, simulation->getTime_sec()));
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));

@@ -862,7 +862,7 @@ void ChomboSemiImplicitScheduler::updateSource() {
 						for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit) {
 							const VolIndex& vof = vofit();
 							const IntVect& gridIndex = vof.gridIndex();
-							int volIndex = getChomboBoxLocalIndex(vectNxes[ilev], 0, gridIndex);
+							int volIndex = getVolumeIndex(vectNxes[ilev], gridIndex);
 							map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(volIndex);
 							if (iter == irregVolumeMembraneMap[ilev].end() || iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
 							{
