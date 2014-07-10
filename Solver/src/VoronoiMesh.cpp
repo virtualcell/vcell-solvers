@@ -299,9 +299,13 @@ namespace {
 						}
 					} 
 					else {
-						if (d == 1) {
+		 				if (d == 1) {
+							typedef moving_boundary::World<moving_boundary::CoordinateType,2> WorldType;
+							WorldType & world = WorldType::get( );
+							spatial::TPoint<double,2> pd = world.toProblemDomain(in);
 							VCELL_EXCEPTION(overflow_error, "ip " << ip << 
-								" element " << in.ident() << " at " << in(spatial::cX) << ',' << in(spatial::cY) << " hit boundary" );
+								" element " << in.ident() << " at " << in(spatial::cX) << ',' << in(spatial::cY)  <<
+								"(" << pd << ") hit boundary" );
 						}
 						cardinalFoundOrEdgeHit = true;
 						continue;
