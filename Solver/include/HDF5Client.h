@@ -282,8 +282,21 @@ namespace moving_boundary {
 				const double starty = world.toProblemDomain( meshDef.startCorner(spatial::cY), spatial::cY);
 				const double hx = world.distanceToProblemDomain( meshDef.interval(spatial::cX) );
 				const double hy = world.distanceToProblemDomain( meshDef.interval(spatial::cY) );
+
+				spatial::TGeoLimit<moving_boundary::CoordinateType> limit =  world.limits( )[spatial::cX];
+				const double beginx = world.toProblemDomain (limit.low( ), spatial::cX); 
+				const double endx = world.toProblemDomain (limit.high( ), spatial::cX); 
+				assert(beginx == startx);
+
+				limit =  world.limits( )[spatial::cY];
+				const double beginy = world.toProblemDomain (limit.low( ), spatial::cY); 
+				const double endy = world.toProblemDomain (limit.high( ), spatial::cY); 
+				assert(beginy == starty);
+
 				vcellH5::writeAttribute(elementDataset,"startX",startx);
 				vcellH5::writeAttribute(elementDataset,"startY",starty);
+				vcellH5::writeAttribute(elementDataset,"endX",endx);
+				vcellH5::writeAttribute(elementDataset,"endY",endy);
 				vcellH5::writeAttribute(elementDataset,"numX",xSize);
 				vcellH5::writeAttribute(elementDataset,"numY",ySize);
 				vcellH5::writeAttribute(elementDataset,"hx",hx);
