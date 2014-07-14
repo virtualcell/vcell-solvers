@@ -305,7 +305,8 @@ namespace moving_boundary {
 				vcellH5::writeAttribute(elementDataset,"layout",layout);
 				const MovingBoundarySetup & setup = theProblem.setup( );
 				if (setup.alternateFrontProvider != nullptr) {
-					vcellH5::writeAttribute(elementDataset,"alternate front",setup.alternateFrontProvider->describe( ));
+					std::string desc = setup.alternateFrontProvider->describe( );
+					vcellH5::writeAttribute(elementDataset,"alternate front",desc);
 				}
 
 				std::vector<moving_boundary::CoordinateType> xvalues = meshDef.coordinateValues(spatial::cX);
