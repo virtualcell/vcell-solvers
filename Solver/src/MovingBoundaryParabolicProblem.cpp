@@ -193,6 +193,7 @@ namespace moving_boundary {
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs) 
 			:ValidationBase(mbs),
 			world(WorldType::get( )),
+			setup_(mbs),
 			diffusionConstant(mbs.diffusionConstant),
 			currentTime(0),
 			maxTime(mbs.maxTime),
@@ -915,7 +916,12 @@ namespace moving_boundary {
 			heartbeatSymbol = symbol;
 		}
 
+		const MovingBoundarySetup & setup( ) const {
+			return setup_;
+		}
+
 		WorldType & world;
+		const MovingBoundarySetup &setup_;
 		const double diffusionConstant;
 		/**
 		* currentTime must be set before #vcFront initialized
@@ -1094,5 +1100,9 @@ namespace moving_boundary {
 	double MovingBoundaryParabolicProblem::endTime( ) const {
 		return impl->maxTime;
 	}
+	const MovingBoundarySetup &MovingBoundaryParabolicProblem::setup( ) const {
+		return impl->setup( );
+	}
+
 
 }

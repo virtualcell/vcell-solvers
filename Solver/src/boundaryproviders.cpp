@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <boundaryProviders.h>
 #include <MovingBoundaryCollections.h>
 #include <vcellxml.h>
@@ -84,7 +85,7 @@ namespace {
 
 		std::string describe( ) const {
 			std::ostringstream os;
-			os << "Circle at " << x << ',' << y << " of radius " << r << " theta step " << s << " with " 
+			os << "Circle at " << x << ',' << y << " of radius " << r << " theta step " << std::setprecision(12) << s << " with " 
 				<< baseFront.size( ) << " points and x velocity " << xVel << std::endl;
 			return os.str( ); 
 			return std::string( );

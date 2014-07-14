@@ -209,7 +209,7 @@ namespace moving_boundary {
 			const double startTime_ = 0) 
 			:file(f),
 			startTime(startTime_),
-			theProblem(mbpp), //temp
+			theProblem(mbpp), 
 			currentTime(0),
 			totalStuff(0),
 			oldStuff(0),
@@ -303,6 +303,10 @@ namespace moving_boundary {
 				vcellH5::writeAttribute(elementDataset,"hy",hy);
 				const std::string layout("time x X x Y (transposed in MATLAB)");
 				vcellH5::writeAttribute(elementDataset,"layout",layout);
+				const MovingBoundarySetup & setup = theProblem.setup( );
+				if (setup.alternateFrontProvider != nullptr) {
+					vcellH5::writeAttribute(elementDataset,"alternate front",setup.alternateFrontProvider->describe( ));
+				}
 
 				std::vector<moving_boundary::CoordinateType> xvalues = meshDef.coordinateValues(spatial::cX);
 				std::vector<double> dv(xvalues.size( ));

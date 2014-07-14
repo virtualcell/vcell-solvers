@@ -181,6 +181,10 @@ namespace moving_boundary {
 		double baseTimeStep( ) const;
 		unsigned int numberTimeSteps( ) const; 
 		double endTime( ) const;
+		/**
+		* setup used for problem
+		*/
+		const MovingBoundarySetup &setup( ) const;
 
 	private:
 		MovingBoundaryParabolicProblemImpl *impl;
