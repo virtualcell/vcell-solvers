@@ -490,15 +490,15 @@ void ChomboScheduler::populateMembraneIndexData()
 						}
 						else
 						{
-							int memIndex = -1;
+							int localMemIndex = -1;
 							if (isInNextFinerLevel(ilev, gridIndex))
 							{
-								memIndex = MEMBRANE_INDEX_IN_FINER_LEVEL;
+								localMemIndex = MEMBRANE_INDEX_IN_FINER_LEVEL;
 							}
 							else
 							{
-								memIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
-								if (memIndex >= 0)
+								localMemIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
+								if (localMemIndex >= 0)
 								{
 									Feature* feature = phaseVolumeList[phase0][ivol]->feature;
 									RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
@@ -510,18 +510,14 @@ void ChomboScheduler::populateMembraneIndexData()
 								}
 								 // in parallel, these indexes are not unique from processor to processor
 								 // but it is probably not a problem as long as it is corrected by offset when needed
-								memIndex = numMembranePoints ++;
+								localMemIndex = numMembranePoints ++;
 							}
-							(*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0) = memIndex;
-							(*irregularPointMembraneElementIndex[phase1][jvol][ilev])[dit()](vof, 0) = memIndex;
+							(*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0) = localMemIndex;
+							(*irregularPointMembraneElementIndex[phase1][jvol][ilev])[dit()](vof, 0) = localMemIndex;
 						}
 					} // end of VoFIterator
 				}// end DataIterator
-
-				// at this point we could scatter gather numMembranePoints for all processors so we can compute offsets for membrane element indexes
-				// so they are unique (if necessary)
-
-				// populate the map of irregular point (volIndex) to membrane index base on membrane index level data
+				// populate the irregular point (volIndex) -> membrane index map , based on membrane index level data
 				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
 				{
 					const Box& currBox = vectGrids[ilev][dit()];
@@ -532,11 +528,10 @@ void ChomboScheduler::populateMembraneIndexData()
 					{
 						const VolIndex& vof = vofit();
 						const IntVect& gridIndex = vof.gridIndex();
-						// changing names because a few things are called volIndex
-						// compute global volume index for the (irregular volume) - (membrane element index) map
+						// compute map entry
 						int globalIndex = getVolumeIndex(vectNxes[ilev], gridIndex);
-						int memIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
-						irregVolumeMembraneMap[ilev][globalIndex] = memIndex;
+						int localMemIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
+						irregVolumeMembraneMap[ilev][globalIndex] = localMemIndex;
 					}
 				}
 			}// end ilev
@@ -1197,6 +1192,11 @@ void ChomboScheduler::updateSolution()
 	for (int i = 0; i < simulation->getNumMemVariables(); ++ i)
 	{
 		MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(i);
+		//////////////////////////////////////////////////////////////////////////////////////////////
+		////////  WARNING
+		////////  In parallel the L2 error and exact sums need to be gathered to compute the final sum
+		////////  computeFinalStatistics has to be re-written with this in mind
+		//////////////////////////////////////////////////////////////////////////////////////////////
 		var->computeFinalStatistics();
 	}
 
@@ -1493,10 +1493,39 @@ void ChomboScheduler::populateTriangleDataType(hid_t& triangleType)
 				 H5Tinsert(triangleType, "z2", HOFFSET(Triangle, triVertices[2][2]), H5T_NATIVE_DOUBLE);)
 }
 
+struct SurfaceTriangle
+{
+	int memElementIndex;
+	int volElementFace;
+	int neighborIndexes[3];
+	int triVertices[3];
+	bool oriented;
+	SurfaceTriangle()
+	{
+		triVertices[0] = triVertices[1] = triVertices[2] = -1;
+		neighborIndexes[0] = neighborIndexes[1] = neighborIndexes[2] = MEMBRANE_NEIGHBOR_UNKNOWN;
+		oriented = false;
+	}
+};
+
+void ChomboScheduler::populateSurfaceTriangleDataType(hid_t& triangleType)
+{
+	H5Tinsert(triangleType, "membrane index", HOFFSET(SurfaceTriangle, memElementIndex), H5T_NATIVE_INT);
+	H5Tinsert(triangleType, "face", HOFFSET(SurfaceTriangle, volElementFace), H5T_NATIVE_INT);
+	H5Tinsert(triangleType, "neighbor 0", HOFFSET(SurfaceTriangle, neighborIndexes[0]), H5T_NATIVE_INT);
+	H5Tinsert(triangleType, "neighbor 1", HOFFSET(SurfaceTriangle, neighborIndexes[1]), H5T_NATIVE_INT);
+	H5Tinsert(triangleType, "neighbor 2", HOFFSET(SurfaceTriangle, neighborIndexes[2]), H5T_NATIVE_INT);
+	H5Tinsert(triangleType, "vertex 0", HOFFSET(SurfaceTriangle, triVertices[0]), H5T_NATIVE_INT);
+	H5Tinsert(triangleType, "vertex 1", HOFFSET(SurfaceTriangle, triVertices[1]), H5T_NATIVE_INT);
+	H5Tinsert(triangleType, "vertex 2", HOFFSET(SurfaceTriangle, triVertices[2]), H5T_NATIVE_INT);
+	H5Tinsert(triangleType, "oriented", HOFFSET(SurfaceTriangle, oriented), H5T_NATIVE_HBOOL);
+}
+
 struct SliceView
 {
 	int index;
 	double crossPoints[3][4];
+	int vertices[3][2];
 };
 
 void ChomboScheduler::populateSliceViewDataType(hid_t& sliceViewType)
@@ -1514,6 +1543,12 @@ void ChomboScheduler::populateSliceViewDataType(hid_t& sliceViewType)
 	H5Tinsert(sliceViewType, "z_y1", HOFFSET(SliceView, crossPoints[2][1]), H5T_NATIVE_DOUBLE);
 	H5Tinsert(sliceViewType, "z_x2", HOFFSET(SliceView, crossPoints[2][2]), H5T_NATIVE_DOUBLE);
 	H5Tinsert(sliceViewType, "z_y2", HOFFSET(SliceView, crossPoints[2][3]), H5T_NATIVE_DOUBLE);
+	H5Tinsert(sliceViewType, "x_v1", HOFFSET(SliceView, vertices[0][0]), H5T_NATIVE_INT);
+	H5Tinsert(sliceViewType, "x_v2", HOFFSET(SliceView, vertices[0][1]), H5T_NATIVE_INT);
+	H5Tinsert(sliceViewType, "y_v1", HOFFSET(SliceView, vertices[1][0]), H5T_NATIVE_INT);
+	H5Tinsert(sliceViewType, "y_v2", HOFFSET(SliceView, vertices[1][1]), H5T_NATIVE_INT);
+	H5Tinsert(sliceViewType, "z_v1", HOFFSET(SliceView, vertices[2][0]), H5T_NATIVE_INT);
+	H5Tinsert(sliceViewType, "z_v2", HOFFSET(SliceView, vertices[2][1]), H5T_NATIVE_INT);
 }
 #endif
 
@@ -1730,6 +1765,56 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 	}
 	return nidx;
 }
+#else
+bool ChomboScheduler::assignEdgeVertArray(int ilev, IntVect& nGridIndex, bool isCorner, int otherEdge, int vertexIndex, int (*edgeVertArray)[21])
+{
+	bool bKeepGoing = true;
+	if ((nGridIndex[0] < vectNxes[ilev][0])&&(nGridIndex[1] < vectNxes[ilev][1])&&(nGridIndex[2] < vectNxes[ilev][2])) // if not  on wall
+	{
+		int globalIndex = getVolumeIndex(vectNxes[ilev], nGridIndex);
+		map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(globalIndex);
+		// check if neighbor has a valid membrane element index and fill vertex for neighbor
+		if (iter == irregVolumeMembraneMap[ilev].end())
+		{
+			// did not find membrane index; check if it is a corner point; if not, issue a warning message for now
+			if (!isCorner)
+			{
+				pout() << "globalIndex"<< globalIndex<<" in level"<< ilev << "should be irregular, should have a membrane element" << endl;
+				// keep going for now because there may be other reason why the index is not set
+			}
+		}
+		else
+		{
+			if  (iter->second != MEMBRANE_INDEX_IN_FINER_LEVEL)
+			{
+				int neighborMIndex = iter->second; // neighbor's membrane element index
+				edgeVertArray[neighborMIndex][otherEdge] = vertexIndex;
+			}
+			//bKeepGoing = false; // neighbor in finer level, continue
+		}
+	}
+	return bKeepGoing;
+}
+
+IntVect ChomboScheduler::orientVertices(RealVect* vertices, RealVect& outNormal)
+{
+	IntVect newOrder(0, 1, 2);
+	// check the orientation (later)
+	RealVect a = vertices[0]-vertices[2];
+	RealVect b = vertices[1]-vertices[2];
+	//compute cross product of a and b and make it unit size
+  RealVect newNormal = PolyGeom::cross(a, b);
+	newNormal /= newNormal.vectorLength(); // normalize
+
+	// compute dot product with normal to see if they are pointing in the same direction
+	double Dtest = newNormal.dotProduct(outNormal);
+    //	same as	double Dtest = norm(PolyGeom::dot(newNormal, outNormal));
+	if (Dtest<0) {
+		// if pointing different than the normal, we need to reorder the points
+		newOrder = IntVect(1, 0, 2);
+	}
+	return newOrder;
+}
 #endif
 
 void ChomboScheduler::writeMembraneFiles()
@@ -1743,25 +1828,51 @@ void ChomboScheduler::writeMembraneFiles()
 		return;
 	}
 
-	char fileName[128];
-#if (CH_SPACEDIM == 3)
-	const RealVect& origin = getChomboGeometry()->getDomainOrigin();
-	Real minOrigin = std::min<Real>(std::min<Real>(origin[0], origin[1]), origin[2]);
-	Real sliceCrossPointDefaultValue = minOrigin - 1;
-	SliceView* sliceViewData = new SliceView[numMembranePoints];
-#endif
-
 	MembraneElementMetrics* metricsData = new MembraneElementMetrics[numMembranePoints];
 #if CH_SPACEDIM == 2
 	Segment* segmentList = new Segment[numMembranePoints];
 	int* edgeVertices = new int[numMembranePoints * 4];
 	std::fill(edgeVertices, edgeVertices + numMembranePoints * 4, -1);
+	Vertex* vertexList = new Vertex[numMembranePoints * 2];
 #else
 	int triangleCount = 0;
+	// old triangles
 	Triangle* surfaceData = new Triangle[numMembranePoints*6];
+	// new triangles
+	Vertex* vertexList = new Vertex[numMembranePoints * 8];
+
+	SurfaceTriangle* membraneTriangles = new SurfaceTriangle[numMembranePoints * 6];
+	int triangleVertexCount = -1;
+	const RealVect& origin = getChomboGeometry()->getDomainOrigin();
+	Real minOrigin = std::min<Real>(std::min<Real>(origin[0], origin[1]), origin[2]);
+	Real sliceCrossPointDefaultValue = minOrigin - 1;
+	SliceView* sliceViewData = new SliceView[numMembranePoints];
+
+	// number all the edges in a cube from 0 to 11 (6 faces, 4 edges per face, each edge index is repeated twice)
+	// the order is not important as long as it is used consistently
+	int edgeIndex[6][4] = { {0, 2, 4, 8},  {1, 3, 5, 9} , {0, 1, 6, 10} , {2, 3, 7, 11} , {4, 5, 6, 7} , {8, 9, 10, 11} };
+	// array for cross point indexes - they become vertices of the surface triangles
+	// first 12 entries [0]:[11] are indexes for cross pts at edges of the volume element (for edges that have a cross point)
+	// entry 13 [12] is index for membrane centroid
+	// last 8 entries [13]:[21] are 0 or 1 - 1 if crosspoint is in a corner, 0 if not
+	int (*tempVertIndexesArray)[21] = new int[numMembranePoints][21];
+	int numEdges = 12;
+	int memCentroidOffset = numEdges;       // 12
+	int cornerOffset = memCentroidOffset+1; // 13 - make sure (length - cornerOffset) equals 8
+
+	for (int imem = 0; imem < numMembranePoints; ++ imem)
+	{
+		for (int j = 0; j < cornerOffset; ++ j)
+		{
+			tempVertIndexesArray[imem][j] = MEMBRANE_INDEX_INVALID;
+		}
+		for (int j = cornerOffset; j < 21; ++ j)
+		{
+			tempVertIndexesArray[imem][j] = 0;
+		}
+	}
 #endif
 	int vertexCount = 0;
-	Vertex* vertexList = new Vertex[numMembranePoints * 2];
 
 	// only look at phase 0 for membranes
 	pout() << methodName << " computing segments/triangles and vertices" << endl;
@@ -1773,7 +1884,8 @@ void ChomboScheduler::writeMembraneFiles()
 
 			DisjointBoxLayout& currGrids = vectGrids[ilev];
 
-			for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++ dit)	{
+			for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++ dit)
+			{
 				const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
 				const Box& currBox = vectGrids[ilev][dit()];
 
@@ -1783,13 +1895,7 @@ void ChomboScheduler::writeMembraneFiles()
 				{
 					const VolIndex& vof = vofit();
 					const IntVect& gridIndex = vof.gridIndex();
-					int volIndex = getChomboBoxLocalIndex(vectNxes[ilev], 0, gridIndex);
-					map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(volIndex);
-					if (iter == irregVolumeMembraneMap[ilev].end() || iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
-					{
-						continue;
-					}
-					int memIndex = iter->second;
+					int memIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
 
 					RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
 					const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
@@ -1929,7 +2035,19 @@ void ChomboScheduler::writeMembraneFiles()
 						{
 							sliceViewData[memIndex].crossPoints[dir][i] = sliceCrossPointDefaultValue;
 						}
+						for (int i = 0; i < 2; ++ i)
+						{
+							sliceViewData[memIndex].vertices[dir][i] = MEMBRANE_INDEX_INVALID;
+						}
 					}
+
+					/////////
+					// add membrane point (centroid) to the list of triangle vertices and set the entry for
+					// this vertex in the tempVertIndexesArray
+					triangleVertexCount ++;
+					vertexList[triangleVertexCount].coords = mem_point;
+					tempVertIndexesArray[memIndex][memCentroidOffset] = triangleVertexCount;
+
 					for (int face = 0; face < SpaceDim; ++ face)
 					{
 						for (int hiLoFace = 0; hiLoFace < Side::NUMSIDES; ++ hiLoFace)
@@ -1939,6 +2057,8 @@ void ChomboScheduler::writeMembraneFiles()
 							bool faceCovered;
 							bool faceRegular;
 							bool faceDontKnow;
+							bool isHiCorner;
+							bool isCorner;
 
 							chomboGeoShop.edgeData3D(edges,
 												 faceCovered,
@@ -1955,45 +2075,195 @@ void ChomboScheduler::writeMembraneFiles()
 							for (int iedge = 0; iedge < 4; ++ iedge)
 							{
 								bool irreg = edges[iedge].dontKnow();
-								if (irreg)
+								if (!irreg)
 								{
-									RealVect cp = (edges[iedge].getIntersectLo()) ? edges[iedge].getLo() : edges[iedge].getHi();
-									// get the real coordinate
-									RealVect cross_point = cp;
-									cross_point *= vectDxes[ilev];
-									cross_point += vol_center;
-									crossedEdgeCount ++;
-									if (crossedEdgeCount < 3)
-									{
-										surfaceData[triangleCount].triVertices[crossedEdgeCount] = cross_point;
-									}
-									else
-									{
-										stringstream ss;
-										ss << "Point " << gridIndex << " has " << crossedEdgeCount << " cross edge points, is multi-valued point."
-														<< "Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
-										pout() << ss.str() << endl;
-									}
+									continue;
 								}
-							}
-							surfaceData[triangleCount].index = memIndex;
-							surfaceData[triangleCount].face = faceCount;
-							surfaceData[triangleCount].triVertices[0] = mem_point;
+								crossedEdgeCount ++;
+								RealVect cp = (edges[iedge].getIntersectLo()) ? edges[iedge].getLo() : edges[iedge].getHi();
+								// get the real coordinate
+								RealVect cross_point = cp;
+								cross_point *= vectDxes[ilev];
+								cross_point += vol_center;
+								if (crossedEdgeCount < 3)
+								{
+									surfaceData[triangleCount].triVertices[crossedEdgeCount] = cross_point;
+								}
+								
+								// note, I will just store this crosspoint even if >= 3
 
-							for(int dir = 0; dir < SpaceDim; ++ dir)
-							{
-								RealVect crossPoint;
-								bool oneFaceCross = computeOneFaceCross(dir, face, hiLoFace == 0 ? -1 : 1, vectDxes[ilev],
-												vol_center, surfaceData[triangleCount].triVertices[1],
-												surfaceData[triangleCount].triVertices[2], crossPoint);
-								if (oneFaceCross)
+								//////////////////////////////////////////
+								//////////////////////////////////////////
+								// new code inside of edge loop
+								////////////////////////////////////////
+								////////////////////////////////////////
+								int edgeNumber = edgeIndex[faceCount][iedge]; // find the number for this edge in a cube
+								//  the crosspoint may have already been assigned by a neighbor (foundVert may be valid or invalid at this point)
+								int foundVert = tempVertIndexesArray[memIndex][edgeNumber];
+								if (foundVert != MEMBRANE_INDEX_INVALID)  // vertex already set, continue;
 								{
-									sliceViewData[memIndex].crossPoints[dir][sliceCrossPointCount[dir] * 2] = crossPoint[0];
-									sliceViewData[memIndex].crossPoints[dir][sliceCrossPointCount[dir] * 2 + 1] = crossPoint[1];
-									++ sliceCrossPointCount[dir];
+									continue;
 								}
+								//
+								// Note to Fei:
+								// replace the following 19 lines with a (boolean) function:
+								// isCorner = determineCornerStatus(cp,isHiCorner,cornerIndex);
+								// if (isCorner) {
+								//  	tempVertIndexesArray[memIndex][cornerOffset + cornerIndex] = 1;
+								// }
+								isCorner = false;
+								isHiCorner = false;
+								if ((abs(cp[0]) == 0.5)&&(abs(cp[1]) == 0.5)&&(abs(cp[2]) == 0.5))
+								{
+									isCorner = true;
+									isHiCorner = ((cp[0] == 0.5)&&(cp[1] == 0.5)&&(cp[2] == 0.5));
+									// compute the column for storing this vertex in tempEdgeVert array
+									int cornerIndex = 0;
+									int coldir = 1;
+									for (int dir = 0; dir < SpaceDim; ++ dir)
+									{
+										if (cp[dir] >= 0) {
+											cornerIndex += coldir;
+											coldir = coldir*2;
+										}
+									}
+									// set to 1 the column for this corner in the temp vertex array
+									tempVertIndexesArray[memIndex][cornerOffset + cornerIndex] = 1;
+								}
+								//
+								// end of function call determineCornerStatus
+								// since this crosspoint has not been set, create a new vertex and set its index in tempVertIndexesArray
+								if ((!isCorner)||(isHiCorner))
+								{
+									triangleVertexCount ++;
+									// new vertex: triangleVertexCount is the current index
+									vertexList[triangleVertexCount].coords = cross_point;
+									tempVertIndexesArray[memIndex][edgeNumber] = triangleVertexCount;
+								}
+								// only interested in hi sides and edges. otherwise we are done
+								if ((hiLoFace != Side::Hi) || ((iedge!=1) && (iedge!=3)))
+								{
+									continue;
+								}
+
+								// if face is hi and edge is hi, share this vertex with lo neighbors that share
+								// a face or an edge, or the corner - there are 7 possible neighbors (if in same level)
+								// NOTE: if neighbor is not in the same refinement level, for now do nothing
+								if (gridIndex[face] + 1 < vectNxes[ilev][face]) // if not next to wall (this is also checked in assignEdgeVertArray)
+								{
+									// (1) (2) (3): neighbors that share a face:
+									//          face x+, neighbor i+1,j,k; face y+, neighbor i,j+1,k; face z+, neighbor i,j,k+1
+									//          otherEdge (for neighbor sharing edge) is the same edge in face x- y- or z-
+									IntVect nGridIndex = gridIndex;
+									nGridIndex[face] ++;
+									int otherEdge = edgeIndex[faceCount - 1][iedge];
+									bool bKeepGoing = assignEdgeVertArray(ilev, nGridIndex, isCorner, otherEdge, triangleVertexCount, tempVertIndexesArray);
+									if (!bKeepGoing) continue;
+									// end (1) (2) (3)
+
+									int faceEdgeMask = 6*face+iedge;
+									// (4) (5) (6): neighbors that share an edge
+									// (4) 	7			// if ((face == 1) && (iedge == 1))
+									// (5)	15			// if ((face == 2) && (iedge == 3))
+									if ((faceEdgeMask == 7)||(faceEdgeMask == 15))
+									{
+										int otherdir = iedge - face;
+										// (4) face y+ and edge is the intersection between x+ and y+,
+										// neighbor i+1,j+1,k (gridindex + [1 1 0]) find membrane index and edge number of the neighbor
+										// (5) face z+, edge is the intersection between y+ and z+,
+										// neighbor i,j+1,k+1 (gridindex + [0 1 1]) find membrane index and edge number of the neighbor
+										nGridIndex = gridIndex;
+										nGridIndex[face]++;
+										nGridIndex[otherdir]++;
+										//if (nGridIndex[face] < vectNxes[ilev][face] && nGridIndex[[otherdir]] < vectNxes[ilev][[otherdir]] ) // if not wall
+										//   //  if (nGridIndex[[otherdir]] < vectNxes[ilev][[otherdir]] ) // if not wall  (this is checked in assignEdgeVertArray)
+										//   //  {
+										if (faceEdgeMask == 7)
+										{
+											otherEdge = edgeIndex[0][0];
+										} 
+										else
+										{
+											otherEdge = edgeIndex[4][2];
+										}
+										bool bKeepGoing = assignEdgeVertArray(ilev, nGridIndex, isCorner, otherEdge, triangleVertexCount, tempVertIndexesArray);
+										if (!bKeepGoing) continue;
+										//   // }
+									} // end (4) (5)
+									// (6) 				// else if ((face == 2) && (iedge == 1))
+									else if (faceEdgeMask == 13)
+									{
+										int otherdir = 0;
+										// edge is the intersection between x+ and z+, for neighbor i+1,j,k+1 and edge number of the neighbor
+										nGridIndex = gridIndex;
+										nGridIndex[face]++;
+										nGridIndex[otherdir]++; // gridindex + [1 0 1]
+										//   //  if (nGridIndex[otherdir] < vectNxes[ilev][otherdir]) // if not  on wall
+										//   // {
+										int otherEdge = edgeIndex[2][0];
+										bool bKeepGoing = assignEdgeVertArray(ilev, nGridIndex, isCorner, otherEdge, triangleVertexCount, tempVertIndexesArray);
+										if (!bKeepGoing) continue;
+										//   //  }
+									}// end (6)
+								} // end if (gridIndex[face] + 1 < vectNxes[ilev][face])
+								if (isHiCorner)
+								{
+									// neighbor (7) find membrane index for neighbor i+1,j+1,k+1 and corner number of the neighbor
+									IntVect nGridIndex = gridIndex + IntVect(1,1,1);
+									/*nGridIndex[0]++;
+									nGridIndex[1]++;
+									nGridIndex[2]++;*/
+									//
+									int cornerIndex = 0;
+									int otherEdge = cornerOffset + cornerIndex;
+									bool bKeepGoing = assignEdgeVertArray(ilev, nGridIndex, isCorner, otherEdge, 1, tempVertIndexesArray);
+									if (!bKeepGoing) continue;
+								} // end isHiCorner (7)
+							} // end for (iedge)
+
+							/////////////////////////////////////////
+							/////////////////////////////////////////
+							/// new code outside of the loop
+							/////////////////////////////////////////
+							/////////////////////////////////////////
+							if (crossedEdgeCount >= 3)
+							{
+								// multi valued point, continue, why?
+								stringstream ss;
+								ss << "Point " << gridIndex << " has " << crossedEdgeCount << " cross edge points; it is a multi-valued cell.";
+								//				<< "Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
+								pout() << ss.str() << endl;
 							}
-							++ triangleCount;
+							else if (crossedEdgeCount > 0)
+							{
+								// initialize new triangle (eventually these will replace surfaceData)
+								membraneTriangles[triangleCount].memElementIndex = memIndex;
+								membraneTriangles[triangleCount].volElementFace = faceCount;
+
+								////////////////////////////////////////////
+								////////////////////////////////////////////
+								//// old code outside of edge loop
+								///////////////////////////////////////////
+								///////////////////////////////////////////
+								surfaceData[triangleCount].index = memIndex;
+								surfaceData[triangleCount].face = faceCount;
+								surfaceData[triangleCount].triVertices[0] = mem_point;
+								for(int dir = 0; dir < SpaceDim; ++ dir)
+								{
+									RealVect crossPoint;
+									bool oneFaceCross = computeOneFaceCross(dir, face, hiLoFace == 0 ? -1 : 1, vectDxes[ilev],
+													vol_center, surfaceData[triangleCount].triVertices[1],
+													surfaceData[triangleCount].triVertices[2], crossPoint);
+									if (oneFaceCross)
+									{
+										sliceViewData[memIndex].crossPoints[dir][sliceCrossPointCount[dir] * 2] = crossPoint[0];
+										sliceViewData[memIndex].crossPoints[dir][sliceCrossPointCount[dir] * 2 + 1] = crossPoint[1];
+										++ sliceCrossPointCount[dir];
+									}
+								}
+								++ triangleCount;								
+							} // end if (crossedEdgeCount >= 3) , else
+							
 						} // end for (int hiLoFace
 					} // end for (int face
 #endif
@@ -2005,12 +2275,105 @@ void ChomboScheduler::writeMembraneFiles()
 	// find membrane neighbors for points having corner neighbors.
 #if CH_SPACEDIM == 2
 	delete[] edgeVertices;
+	writeMeshHdf5(metricsData, vertexCount, vertexList, segmentList);
+#else
+	int numTriangles = triangleCount;
+	for (int tri = 0; tri < numTriangles; ++ tri)
+	{
+		pout() << "tri=" << tri << endl;
+		int imem = membraneTriangles[tri].memElementIndex;
+		int centroidIndex = tempVertIndexesArray[imem][memCentroidOffset];
+		if (centroidIndex < 0)
+		{
+			stringstream ss;
+			ss << " for membrane element " << imem << ", no vertex was stored for its centroid.";
+			throw ss.str();
+		}
+		int triface = membraneTriangles[tri].volElementFace;
+		int triverts[4];
+		int vcount = 0;
+		for (int j = 0; j < 4; ++ j)
+		{
+			int edgeNumber = edgeIndex[triface][j];
+			int foundVert = tempVertIndexesArray[imem][edgeNumber];
+			if (foundVert != MEMBRANE_INDEX_INVALID)
+			{
+				if (vcount < 2)
+				{
+					triverts[vcount] = foundVert;  // set vertex index
+				}
+				vcount++;
+			}
+		}
+
+		if (vcount == 2)
+		{
+			// 1. order vertices consistently counter-clockwise
+			RealVect pts[3] = {vertexList[triverts[0]].coords, vertexList[triverts[1]].coords, vertexList[centroidIndex].coords};
+			RealVect outNormal = metricsData[imem].normal;
+			IntVect newOrder = orientVertices(pts, outNormal);
+			membraneTriangles[tri].oriented = true;
+			// 2. assign vertex indeces
+			for (int i = 0; i < 3; ++ i) {
+				if (newOrder[i] == 2) {
+					membraneTriangles[tri].triVertices[i] = centroidIndex;
+				} else {
+					membraneTriangles[tri].triVertices[i] = triverts[newOrder[i]];
+				}
+			}
+		}
+		else
+		{
+			// vcount != 2
+			// cases with corners or cases with more than 2 cross points
+			// construct a dummy triangle
+			for (int i = 0; i < SpaceDim; ++ i) {
+				membraneTriangles[tri].triVertices[i] = centroidIndex;
+			}
+		}
+	}// end tri
+	pout() << "tempVertIndexesArray" << endl;
+	for (int i = 0; i < numMembranePoints;  ++ i)
+	{
+		for (int j = 0; j < 21; ++ j)
+		{
+			pout() << tempVertIndexesArray[i][j] << " ";
+		}
+		pout() << endl;
+	}
+	delete[] tempVertIndexesArray;
+	vertexCount = triangleVertexCount + 1;
+	writeMeshHdf5(metricsData, vertexCount, vertexList, triangleCount, surfaceData, sliceViewData);
+	delete[] surfaceData;
+	delete[] sliceViewData;
 #endif
 
+	delete[] metricsData;
+	delete[] vertexList;
+
+	pout() << "Exit " << methodName << endl;
+}
+
+#if CH_SPACEDIM == 2
+void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int vertexCount, Vertex* vertexList, Segment* segmentList)
+#else
+void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int vertexCount, Vertex* vertexList, int triangleCount, Triangle* surfaceData, SliceView* sliceViewData)
+#endif
+{
 	int viewLevel = chomboSpec->getViewLevel();
+	
+	hid_t file_access = H5P_DEFAULT;
+#ifdef CH_MPI
+	file_access = H5Pcreate(H5P_FILE_ACCESS);
+	H5Pset_fapl_mpio(file_access,  MPI_COMM_WORLD, MPI_INFO_NULL);
+#endif
+	
+	char fileName[128];
 	// now start writing we have computed so far
 	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MESH_HDF5_FILE_EXT);
-	hid_t h5MeshFile = H5Fcreate(fileName, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	hid_t h5MeshFile = H5Fcreate(fileName, H5F_ACC_TRUNC, H5P_DEFAULT, file_access);
+	H5Pclose(file_access);
+	
 	hid_t meshGroup = H5Gcreate(h5MeshFile, MESH_GROUP, H5P_DEFAULT);
 
 	// attribute
@@ -2167,7 +2530,6 @@ void ChomboScheduler::writeMembraneFiles()
 	H5Dclose(metricsDataset);
 	H5Sclose(space);
 	H5Tclose(metricsType);
-	delete[] metricsData;
 	}
 
 	// vertices
@@ -2183,7 +2545,6 @@ void ChomboScheduler::writeMembraneFiles()
 	H5Dclose(verticesDataset);
 	H5Sclose(space);
 	H5Tclose(vertexType);
-	delete[] vertexList;
 	}
 
 #if CH_SPACEDIM == 2
@@ -2217,7 +2578,6 @@ void ChomboScheduler::writeMembraneFiles()
 	H5Dclose(surfaceDataset);
 	H5Sclose(space);
 	H5Tclose(triangleType);
-	delete[] surfaceData;
 	}
 
 	// slice view
@@ -2232,13 +2592,11 @@ void ChomboScheduler::writeMembraneFiles()
 	H5Dwrite(sliceViewDataset, sliceViewType, H5S_ALL, H5S_ALL, H5P_DEFAULT, sliceViewData);
 	H5Dclose(sliceViewDataset);
 	H5Sclose(space);
-	delete[] sliceViewData;
 	}
 #endif
 
 	H5Gclose(meshGroup);
 	H5Fclose(h5MeshFile);
-	pout() << "Exit " << methodName << endl;
 }
 
 bool ChomboScheduler::computeOneFaceCross(int dir, int face, int hiLoFace, RealVect& H, RealVect& v0,
