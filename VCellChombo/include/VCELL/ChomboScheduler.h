@@ -33,11 +33,19 @@ template <class> class BaseIVFAB;
 
 #define NUM_PHASES 2
 struct ConnectedComponent;
+struct MembraneElementMetrics;
+struct Vertex;
+#if CH_SPACEDIM == 2
+struct Segment;
+#else
 struct Triangle;
+struct SliceView;
+#endif
 
 enum MembraneInvalidIndex
 {
 	MEMBRANE_INDEX_IN_FINER_LEVEL = -1,
+	MEMBRANE_INDEX_INVALID = -100,
 };
 
 class ChomboScheduler {
@@ -125,13 +133,17 @@ protected:
 	static void populateStructureMetricsDataType(hid_t& metricsType);
 	static void populateVertexDataType(hid_t& metricsType);
 	static void populateSegmentDataType(hid_t& triangleType);
-	static void populateSliceViewDataType(hid_t& sliceViewType);
-	static void populateTriangleDataType(hid_t& triangleType);
 	Vector< map<int, int> > irregVolumeMembraneMap;
 
 #if CH_SPACEDIM == 2
-	int findNeighborMembraneIndex2D(int iphase, int ilev, const IntVect& gridIndex, int iedge, 
+	int findNeighborMembraneIndex2D(int iphase, int ilev, const IntVect& gridIndex, int iedge,
 	const RealVect& normalizedCrossPoint, const RealVect& crossPointRealCoords, int& neighborEdge);
+#else
+	static void populateSliceViewDataType(hid_t& sliceViewType);
+	static void populateTriangleDataType(hid_t& triangleType);
+	static void populateSurfaceTriangleDataType(hid_t& triangleType);
+	bool assignEdgeVertArray(int ilev, IntVect& nGridIndex, bool isCorner, int otherEdge, int vertexIndex, int (*edgeVertArray)[21]);
+	IntVect orientVertices(RealVect* vertices, RealVect& outNormal);
 #endif
 	
 	static const int phase0;
@@ -146,6 +158,12 @@ protected:
 	void exchangeFeatures();
 #else
 	void computeStructureSizes();
+#endif
+
+#if CH_SPACEDIM == 2
+	void writeMeshHdf5(MembraneElementMetrics* metricsData, int vertexCount, Vertex* vertexList, Segment* segmentList);
+#else
+	void writeMeshHdf5(MembraneElementMetrics* metricsData, int vertexCount, Vertex* vertexList, int triangleCount, Triangle* surfaceData, SliceView* sliceViewData);
 #endif
 };
 
