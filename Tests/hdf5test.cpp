@@ -6,6 +6,7 @@
 #include <vhdf5/facade.h>
 #include <vhdf5/flex.h>
 #include <vhdf5/vlen.h>
+#include <HDF5Client.h>
 using std::cout;
 using std::endl;
 
@@ -670,3 +671,4 @@ TEST(hdf5,bugDemo) {
 	myVec.push_back(0); 
 	vcellH5::facadeWriteAttribute(ds,"BeverlyHills",trait);
 }
+

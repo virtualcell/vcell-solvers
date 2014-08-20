@@ -2,6 +2,7 @@
 #define HDF5Client_h
 #include <MPoint.h>
 #include <map>
+#include <set>
 #include <iomanip>
 #include <algo.h>
 #include <Mesh.h>
@@ -142,6 +143,143 @@ namespace moving_boundary {
 		}
 	};
 
+	class TimeReport {
+		double startTime;
+	public:
+		static const unsigned int STD_PRIORITY = 10;
+		TimeReport(double startTime_)
+			:startTime(startTime_) {}
+		double getStartTime( ) const {
+			return startTime;
+		}
+		/**
+		* allow object to expired itself
+		* @return false (default)
+		*/
+		virtual bool expired(double time, int generation) const {
+			return false;
+		}
+		/**
+		* return relative priority for objects with same start time. Lower is higher priority
+		* @returns 10
+		*/
+		virtual unsigned int priority( ) const {
+			return STD_PRIORITY;
+		}
+		virtual bool needReport(unsigned int generation, unsigned int lastReportGeneration, double time, double lastReportTime) const = 0;
+	};
+
+	class TimeReportStep : public TimeReport {
+		unsigned long step;
+	public:
+		TimeReportStep(double startTime, unsigned long step_)
+			:TimeReport(startTime),
+			step(step_) {}
+		virtual bool needReport(unsigned int generation, unsigned int lastReportGeneration, double time, double lastReportTime) const {
+			return generation - lastReportGeneration >= step;
+		}
+	};
+
+	class TimeReportInterval : public TimeReport {
+		double interval;
+	public:
+		TimeReportInterval(double startTime, double interval_)
+			:TimeReport(startTime),
+			interval(interval_) {}
+		virtual bool needReport(unsigned int generation, unsigned int lastReportGeneration, double time, double lastReportTime) const {
+			return time - lastReportTime >= interval; 
+		}
+	};
+
+	/**
+	* TimeReport which reports beginning generation
+	*/
+	struct TimeReportBegin : public TimeReport {
+		TimeReportBegin( )
+			:TimeReport(0) {}
+		virtual bool needReport(unsigned int generation, unsigned int lastReportGeneration, double time, double lastReportTime) const {
+			return generation == 0; 
+		}
+		/**
+		* expire after first time
+		*/
+		virtual bool expired(double time, int generation) const {
+			return time > 0.0;
+		}
+		/**
+		* @return 0 (highest) 
+		*/
+		virtual unsigned int priority( ) const {
+			return 0;
+		}
+	};
+
+	/**
+	* TimeReport which never reports; acts as placeholder
+	* @param startTime
+	* @param priority lower is higher priority, "standard" value is 10
+	*/
+	struct TimeReportQuiet : public TimeReport {
+
+		TimeReportQuiet(long startTime, unsigned int priority = STD_PRIORITY)
+			:TimeReport(startTime),
+			priorityValue(priority) {}
+
+		/**
+		* never wants report
+		*/
+		virtual bool needReport(unsigned int generation, unsigned int lastReportGeneration, double time, double lastReportTime) const {
+			return false; 
+		}
+		/**
+		* never expires 
+		*/
+		virtual bool expired(double time, int generation) const {
+			return false; 
+		}
+		/**
+		* @return priorty constructed with 
+		*/
+		virtual unsigned int priority( ) const {
+			return priorityValue; 
+		}
+	private:
+		const unsigned int priorityValue;
+	};
+
+	/**
+	* dummy placeholder so set iterator always has next element
+	*/
+	struct CollectionTail : public TimeReport {
+		CollectionTail( ) 
+			:TimeReport(std::numeric_limits<unsigned long>::max( )) {}
+		virtual bool needReport(unsigned int generation, unsigned int lastReportGeneration, double time, double lastReportTime) const {
+			return false; 
+		}
+	};
+
+	struct TimeSorter {
+		bool operator( )(const TimeReport * lhs, const TimeReport * rhs) {
+			const double left =  lhs->getStartTime( );
+			const double right =  rhs->getStartTime( );
+			if (left < right) {
+				return true;
+			}
+			if (right < left) {
+				return false;
+			}
+			//if equal, use priorities
+			const unsigned int lPriority = lhs->priority( );
+			const unsigned int rPriority = rhs->priority( );
+			if (lPriority > rPriority) {
+				return true;
+			}
+			if (rPriority > lPriority) {
+				return false;
+			}
+			VCELL_EXCEPTION(logic_error, "Duplicate start time " << left << " and priority " << lPriority);
+		}
+	};
 
 
 	struct NoSolution {
@@ -178,6 +316,7 @@ namespace moving_boundary {
 		*/
 		static const size_t yArrayIndex = 2; 
 
+		/*
 		static unsigned int calcReportStep(const moving_boundary::MovingBoundaryParabolicProblem &mbpp, 
 			double startTime,
 			unsigned int numberReports) {
@@ -193,46 +332,60 @@ namespace moving_boundary {
 				}
 				return 1;
 		}
+		*/
 
 		/**
 		* @param f file to write to
 		* @param mbpp the problem 
-		* @param numberReports number time steps to record
 		* @param baseName name of dataset in HDF5 file if not default
-		* @param startTime_ when to start recording (time 0 always recorded)
 		*/
+		template <typename R>
 		NHDF5Client(H5::H5File &f, 
 			WorldType & world_,
 			const moving_boundary::MovingBoundaryParabolicProblem &mbpp, 
-			unsigned int numberReports,
-			const char *baseName = nullptr,
-			const double startTime_ = 0) 
+			const char *baseName,
+			R &timeReports) 
 			:file(f),
-			startTime(startTime_),
 			theProblem(mbpp), 
 			currentTime(0),
 			totalStuff(0),
 			oldStuff(0),
 			meshDef(mbpp.meshDef( )),
 			eRecords(),
-			genTime(),
+			genTimes(),
+			moveTimes(),
 			timeStep(mbpp.baseTimeStep( )),
 			buffer(),
 			baseGroup( ),
 			elementDataset( ),
 			worldDim( ),
-			reportStep(calcReportStep(mbpp,startTime_,numberReports)),
-			reportCounter(0),
-			reportBegan(startTime_ == 0), //if beginning at zero, we've "begun" at the start
+			//reportStep(calcReportStep(mbpp,startTime_,numberReports)),
+			//reportCounter(0),
+			//reportBegan(startTime_ == 0), //if beginning at zero, we've "begun" at the start
 			reportActive(true),
 			timer( ),
 			world(world_),
+			reportControllers( ),
+			lastReportTime(0),
+			lastReportGeneration(0),
+			reportControlIterator( ),
+			reportControl(nullptr),
 			pointconverter(world.pointConverter( ))
 		{
 			using spatial::cX;
 			using spatial::cY;
 			int numberGenerations = mbpp.numberTimeSteps( );
 			timer.start( );
+			reportControllers.insert(new TimeReportBegin( ));
+			reportControllers.insert(new TimeReportQuiet(0, std::numeric_limits<unsigned int>::max(  )) );
+			for (R::iterator iter = timeReports.begin( );iter != timeReports.end( ); ++iter) {
+				reportControllers.insert(*iter);
+			}
+			reportControllers.insert(new CollectionTail( ));
+			reportControlIterator = reportControllers.begin( );
+			reportControl = *reportControlIterator;
+			++reportControlIterator;
+
 			{ //create group
 
 				std::string groupName;
@@ -337,6 +490,14 @@ namespace moving_boundary {
 			} //create boundary dataset
 		}
 
+
+		/**
+		* delete TimeReport objects  
+		*/
+		~NHDF5Client( ) {
+			std::for_each(reportControllers.begin( ),reportControllers.end( ),cleanup);
+		}
+
 		/**
 		* add information from MovingBoundarySetup; currently just the concentration string
 		*/
@@ -354,24 +515,37 @@ namespace moving_boundary {
 		}
 
 		virtual void time(double t, unsigned int generationCounter, bool last, const moving_boundary::GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) { 
-			reportActive = false;
-			if (t == 0 || last|| t > startTime) {
-				if (!reportBegan && t > 0) {
-					std::cout << std::endl;
-					reportBegan = true;
-				}
-				reportActive = (reportCounter%reportStep == 0) || last;
-				if (reportActive) {
-					writeBoundary(genTime.size( ),geometryInfo.boundary);
-					currentTime = t;
-					totalStuff = 0;
-					std::cout << "generation " << std::setw(2) <<  generationCounter << " time " << currentTime << std::endl;
-					genTime.push_back(t);
-				}
-				reportCounter++;
+			if (geometryInfo.nodesAdjusted) {
+				moveTimes.push_back(t);
 			}
-			else {
-				std::cout << '.';
+			while (reportControl->expired(t,generationCounter)) {
+				if (t >=(*reportControlIterator)->getStartTime( )) {
+					reportControl = *reportControlIterator; 
+					++reportControlIterator;
+					continue;
+				}
+				VCELL_EXCEPTION(logic_error,"No time reporter for time " << t << ", generation " << generationCounter);
+			}
+			while (t >= (*reportControlIterator)->getStartTime( )) {
+				const TimeReport * nextReportControl = *reportControlIterator; 
+				if (nextReportControl->getStartTime( ) > reportControl->getStartTime( )) {
+					reportControl = nextReportControl;
+					++reportControlIterator;
+				}
+				else {
+					break;
+				}
+			}
+			reportActive = last || reportControl->needReport(generationCounter,lastReportGeneration,t,lastReportTime);
+
+			if (reportActive) {
+				writeBoundary(genTimes.size( ),geometryInfo.boundary);
+				currentTime = t;
+				totalStuff = 0;
+				std::cout << "generation " << std::setw(2) <<  generationCounter << " time " << currentTime << std::endl;
+				genTimes.push_back(t);
+				lastReportGeneration = generationCounter;
+				lastReportTime = t;
 			}
 		}
 
@@ -472,7 +646,7 @@ namespace moving_boundary {
 						const size_t jSpan = maxJ - minJ + 1;
 						buffer.reindex(iSpan,jSpan);
 
-						size_t timeIndex = genTime.size( ) - 1;
+						size_t timeIndex = genTimes.size( ) - 1;
 
 						for (RecordMap::iterator iter = eRecords.begin( ); iter != eRecords.end( ); ++iter) {
 							HElementRecord & er = iter->second;
@@ -525,11 +699,14 @@ namespace moving_boundary {
 				const double totalTime = timer.elapsed( );
 				vcellH5::primitiveWrite(baseGroup,"endTime",currentTime);
 				vcellH5::primitiveWrite(baseGroup,"runTime",totalTime);
-				unsigned int lastTimeIndex = static_cast<unsigned int>(genTime.size( ));
+				unsigned int lastTimeIndex = static_cast<unsigned int>(genTimes.size( ));
 				vcellH5::primitiveWrite(baseGroup,"lastTimeIndex",lastTimeIndex); 
 
-				vcellH5::SeqFacade<std::vector<double> > gt(genTime);
+				vcellH5::SeqFacade<std::vector<double> > gt(genTimes);
 				vcellH5::facadeWrite(baseGroup,"generationTimes",gt);
+
+				vcellH5::SeqFacade<std::vector<double> > mt(moveTimes);
+				vcellH5::facadeWrite(baseGroup,"moveTimes",mt);
 			}
 			catch (H5::Exception &e) {
 				throw vcellH5::Exception(e);
@@ -537,17 +714,25 @@ namespace moving_boundary {
 		}
 
 	private:
+		/**
+		* for_each function for destructor
+		* @param tr to delete
+		*/
+		static void cleanup(const TimeReport *tr) {
+			delete tr;
+		}
+
 		const moving_boundary::MovingBoundaryParabolicProblem &theProblem;
 
 		H5::H5File & file;
-		double startTime;
 		double currentTime; 
 		double totalStuff;
 		double oldStuff;
 		const spatial::MeshDef<moving_boundary::CoordinateType,2> meshDef;
 		typedef std::map<spatial::TPoint<size_t,2>, HElementRecord> RecordMap; 
 		RecordMap eRecords;
-		std::vector<double> genTime;
+		std::vector<double> genTimes;
+		std::vector<double> moveTimes;
 		const double timeStep;
 		vcellH5::Flex2<typename SOLUTION::DataType> buffer;
 		H5::Group baseGroup; 
@@ -555,12 +740,14 @@ namespace moving_boundary {
 		H5::DataSet boundaryDataset;
 		hsize_t worldDim[3];
 		hsize_t boundaryDim[1];
-		const unsigned int reportStep;
-		unsigned int reportCounter;
-		bool reportBegan;
 		bool reportActive;
 		vcell_util::Timer timer;
 		const WorldType & world;
+		std::set<const TimeReport *,TimeSorter> reportControllers;
+		double lastReportTime;
+		unsigned long lastReportGeneration;
+		std::set<const TimeReport *,TimeSorter>::iterator reportControlIterator;
+		const TimeReport * reportControl;
 
 		WorldType::PointConverter pointconverter;
 	};

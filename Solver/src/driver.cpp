@@ -167,7 +167,6 @@ namespace {
 		const moving_boundary::MovingBoundarySetup & mbs) {
 		try {
 			const XMLElement & report = vcell_xml::get(root,"report");
-			unsigned int numberReports = vcell_xml::convertChildElement<unsigned int>(report,"numberReports");
 			H5::H5File output;
 			if (filename != nullptr) {
 				output = vcellH5::VH5File(filename,H5F_ACC_TRUNC|H5F_ACC_RDWR);
@@ -185,10 +184,56 @@ namespace {
 			if (dnq.first) {
 				datasetName = dnq.second.c_str( );
 			}
-			const double startTime = vcell_xml::convertChildElementWithDefault<double>(report,"startTime",0);
+
+			std::vector<moving_boundary::TimeReport *> timeReports;
+
+			std::pair<bool,unsigned int> nr = vcell_xml::queryElement<unsigned int>(report,"numberReports");
+			if (nr.first) {
+				std::cerr << "numberReports XML element deprecated" << std::endl;
+				const double startTime = vcell_xml::convertChildElementWithDefault<double>(report,"startTime",0);
+				unsigned int nts = mbpp.numberTimeSteps( );
+				unsigned int rs = nts /  nr.second;
+				if (startTime >0) { //if not beginning, scale based on fraction of time reported
+					const double end = mbpp.endTime( );
+					unsigned int scaled = static_cast<unsigned int>(nts * (end -startTime) / end);
+					rs = scaled / nr.second; 
+				}
+				if (rs < 1) {
+					rs = 1;
+				}
+				timeReports.push_back( new moving_boundary::TimeReportInterval(startTime,rs));
+			}
+
+			const XMLElement * timeReport = report.FirstChildElement("timeReport"); 
+			while(timeReport != nullptr) {
+				const int NOT_THERE = -1;
+				const double startTime = vcell_xml::convertChildElement<double>(*timeReport,"startTime");
+				const long step = vcell_xml::convertChildElementWithDefault<long>(*timeReport,"step", NOT_THERE);
+				const double interval = vcell_xml::convertChildElementWithDefault<double>(*timeReport,"interval",NOT_THERE);
+				bool quiet = timeReport->FirstChildElement("quiet") != nullptr;
+				int nsubs = 0;
+
+
+				if (step != NOT_THERE) {
+					nsubs++;
+					timeReports.push_back( new moving_boundary::TimeReportStep(startTime,step) );
+				}
+				if (interval != NOT_THERE) {
+					nsubs++;
+					timeReports.push_back( new moving_boundary::TimeReportInterval(startTime,interval) );
+				}
+				if (quiet) {
+					nsubs++;
+					timeReports.push_back( new moving_boundary::TimeReportQuiet(startTime) );
+				}
+				if (nsubs != 1) {
+					throw std::invalid_argument("XML error exactly one of <step>, <interval>, or <quiet> must be specified per timeReport element");
+				}
+				timeReport = timeReport->NextSiblingElement("timeReport");
+			}
 
 			moving_boundary::World<moving_boundary::CoordinateType,2> &world = moving_boundary::World<moving_boundary::CoordinateType,2>::get( );
-			moving_boundary::NHDF5Client<> *client =  new moving_boundary::NHDF5Client<>(output,world,mbpp,numberReports, datasetName, startTime);
+			moving_boundary::NHDF5Client<> *client =  new moving_boundary::NHDF5Client<>(output,world,mbpp,datasetName, timeReports);
 			client->addInitial(mbs);
 			const XMLElement * const annotateSection = report.FirstChildElement("annotation"); 
 			if (annotateSection != nullptr) {
@@ -259,3 +304,5 @@ namespace {
 		}
 	}
 }
+
+

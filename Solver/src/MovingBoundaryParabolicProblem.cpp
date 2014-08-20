@@ -474,8 +474,11 @@ namespace moving_boundary {
 			return 0; //return value not used by frontier
 		}
 
-		void giveElementsToClient(MovingBoundaryClient & client, size_t generationCount) {
-			GeometryInfo<moving_boundary::CoordinateType> gi(currentFront);
+		/**
+		* @param changed nodes have changed since last report
+		*/
+		void giveElementsToClient(MovingBoundaryClient & client, size_t generationCount, bool changed) {
+			GeometryInfo<moving_boundary::CoordinateType> gi(currentFront,changed);
 			client.time(currentTime, generationCount, currentTime == maxTime, gi);
 			for (MBMesh::const_iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
 				//std::cout << iter->ident( ) << std::endl;
@@ -716,7 +719,7 @@ namespace moving_boundary {
 			size_t generationCount = 0;
 			try { 
 				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),commenceSimulation);
-				giveElementsToClient(client,generationCount);
+				giveElementsToClient(client,generationCount,true);
 				if (matlabBridge::MatLabDebug::on("frontmove")) {
 					debugDump(generationCount, 's');
 				}
@@ -815,9 +818,10 @@ namespace moving_boundary {
 						debugDump(generationCount,'b');
 					}
 
+					bool changed;
 					//adjustNodes calls MeshElementSpecies.updateBoundaryNeighbors
 					try {
-						voronoiMesh.adjustNodes(boundaryElements,currentFront);
+						changed = voronoiMesh.adjustNodes(boundaryElements,currentFront);
 					} catch (SkipsBoundary & skips) {
 						std::ofstream sb("sb.m");
 						matlabBridge::TPolygon<long long> oldPoly("k",1);
@@ -846,7 +850,7 @@ namespace moving_boundary {
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),EndCycle(*this));
 
 					//tell the client about it
-					giveElementsToClient(client,++generationCount);
+					giveElementsToClient(client,++generationCount, changed);
 					if (heartbeat && generationCount%heartbeat == 0) {
 						std::cout << heartbeatSymbol;
 					}

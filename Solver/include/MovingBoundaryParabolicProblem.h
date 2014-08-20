@@ -97,13 +97,18 @@ namespace moving_boundary {
 	*/
 	template <class T>
 	struct GeometryInfo {
-		GeometryInfo(const std::vector<spatial::TPoint<T,2> > & boundary)
-			:boundary(boundary) {};
+		GeometryInfo(const std::vector<spatial::TPoint<T,2> > & boundary, bool adjusted_)
+			:boundary(boundary),
+			nodesAdjusted(adjusted_) {};
 
 		/**
 		* current control front
 		*/
 		const std::vector<spatial::TPoint<T,2> > & boundary;
+		/**
+		* have nodes changed since last time?
+		*/
+		const bool nodesAdjusted;
 	};
 
 	struct MovingBoundaryClient {
