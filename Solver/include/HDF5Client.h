@@ -378,7 +378,7 @@ namespace moving_boundary {
 			timer.start( );
 			reportControllers.insert(new TimeReportBegin( ));
 			reportControllers.insert(new TimeReportQuiet(0, std::numeric_limits<unsigned int>::max(  )) );
-			for (R::iterator iter = timeReports.begin( );iter != timeReports.end( ); ++iter) {
+			for (typename R::iterator iter = timeReports.begin( );iter != timeReports.end( ); ++iter) {
 				reportControllers.insert(*iter);
 			}
 			reportControllers.insert(new CollectionTail( ));

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cassert>
+#ifdef LATER
 
 #include <vector>
 #include <algorithm>
@@ -428,4 +429,5 @@ std::ostream &operator<<(std::ostream & os, const boost::polygon::voronoi_vertex
 	}
 	return os;
 }
+#endif
 #endif

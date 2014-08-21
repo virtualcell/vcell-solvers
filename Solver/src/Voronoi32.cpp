@@ -350,6 +350,7 @@ namespace {
 #endif
 
 namespace spatial {
+	template <>
 	struct Voronoi2DImpl<int32_t> * ImplFactory<int32_t>::createImplementation(Voronoi2D<int32_t> & owner, bool & dirty, std::vector<VoronoiPoint> & points) {
 		return new Voronoi2DImpl32(owner,dirty,points);
 	}
