@@ -58,7 +58,7 @@ namespace detail {
 template <typename T>
 T get_sqrt(const T& that) {
   using std::sqrt;
-  return (sqrt)(that);
+  return sqrt BOOST_PREVENT_MACRO_SUBSTITUTION (that);
 }
 
 template <typename T>
