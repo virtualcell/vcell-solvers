@@ -16,8 +16,8 @@ if (MSVC) # VS2012 doesn't support correctly the tuples yet
 endif(MSVC)
 if (UNIX)
   message("unix")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-  set(CXX_FLAGS "${CXX_FLAGS} -std=c++0x")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  set(CXX_FLAGS "${CXX_FLAGS} -std=c++11")
   
 endif (UNIX)
 
