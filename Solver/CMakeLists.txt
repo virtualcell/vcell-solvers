@@ -1,9 +1,10 @@
 project(MovingBoundarySolver)
 
-set(SOLVER_MAIN src/driver.cpp)
+#glob to get full path of driver.cpp so REMOVE_ITEM works correctly
+file(GLOB SOLVER_MAIN src/driver.cpp)
 file(GLOB SRC_FILES src/*cpp) 
-
 list(REMOVE_ITEM SRC_FILES ${SOLVER_MAIN}) 
+
 file(GLOB HEADER_FILES include/*h include/*hpp) 
 file(GLOB BRIDGE_HEADER_FILES include/MBridge/*h) 
 set(EXE_FILE MovingBoundary)
