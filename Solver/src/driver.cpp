@@ -46,7 +46,7 @@ namespace {
 int main(int argc, char *argv[])
 {
 	std::cout 
-		<< "FrontTierSolver version $URL$" VCELLSVNQUOTE(SVNVERSION) 
+		<< "MovingBoundarySolver version $URL$" VCELLSVNQUOTE(SVNVERSION)
 		<< std::endl; 
 	if (argc < 2) {
 		std::cerr << "Usage: " << argv[0] << " [xml input file] <hdf5 output file name> " << std::endl; 
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 	}
 	catch (...) {
 		std::cerr <<  argv[0] << " caught unknown exception" << " reading " << filename << std::endl; 
-		return 4;
+		return 5;
 	}
 
 	try {
@@ -89,12 +89,13 @@ int main(int argc, char *argv[])
 	}
 	catch (std::exception & e) {
 		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << filename << std::endl; 
-		return 4;
+		return 6;
 	}
 	catch (...) {
 		std::cerr <<  argv[0] << " caught unknown exception" << " reading " << filename << std::endl; 
 		return 4;
 	}
+	std::cout << "MovingBoundary " << filename << " complete " << std::endl;
 }
 
 namespace {
