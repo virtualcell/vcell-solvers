@@ -13,7 +13,9 @@ namespace {
 	/**
 	* constants
 	*/
-	const char * const XML_ROOT_NAME = "vcellfrontiersetup";
+	const char * const XML_ROOT_NAME = "MovingBoundarySetup";
+	const char * const XML_OLD_ROOT_NAME = "vcellfrontiersetup";
+
 	/**
 	* usings and typedefs
 	*/
@@ -64,8 +66,13 @@ int main(int argc, char *argv[])
 		}
 		const tinyxml2::XMLElement & root = *doc.RootElement( );
 		if (!strcmp(root.Name( ),XML_ROOT_NAME) == 0) {
-			std::cerr <<  "Invalid XML root identifier " << root.Name( ) << ", " << XML_ROOT_NAME << " expected" << std::endl;
-			return 3; 
+			if (strcmp(root.Name( ),XML_OLD_ROOT_NAME) == 0) {
+				std::cout <<  "XML root identifier " << root.Name( ) << "deprecated, " << XML_ROOT_NAME << " preferred" << std::endl;
+			}
+			else {
+				std::cerr <<  "Invalid XML root identifier " << root.Name( ) << ", " << XML_ROOT_NAME << " expected" << std::endl;
+				return 3; 
+			}
 		}
 		setupTrace(root);
 		setupMatlabDebug(root);
