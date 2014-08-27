@@ -202,7 +202,7 @@ namespace {
 				if (rs < 1) {
 					rs = 1;
 				}
-				timeReports.push_back( new moving_boundary::TimeReportInterval(startTime,rs));
+				timeReports.push_back( new moving_boundary::TimeReportStep(startTime,rs));
 			}
 
 			const XMLElement * timeReport = report.FirstChildElement("timeReport"); 

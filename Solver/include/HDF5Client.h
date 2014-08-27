@@ -271,10 +271,10 @@ namespace moving_boundary {
 			//if equal, use priorities
 			const unsigned int lPriority = lhs->priority( );
 			const unsigned int rPriority = rhs->priority( );
-			if (lPriority > rPriority) {
+			if (lPriority < rPriority) {
 				return true;
 			}
-			if (rPriority > lPriority) {
+			if (rPriority < lPriority) {
 				return false;
 			}
 			VCELL_EXCEPTION(logic_error, "Duplicate start time " << left << " and priority " << lPriority);
@@ -368,8 +368,8 @@ namespace moving_boundary {
 			reportControllers( ),
 			lastReportTime(0),
 			lastReportGeneration(0),
-			reportControlIterator( ),
 			reportControl(nullptr),
+			nextReportControlTime(-1),
 			pointconverter(world.pointConverter( ))
 		{
 			using spatial::cX;
@@ -382,9 +382,7 @@ namespace moving_boundary {
 				reportControllers.insert(*iter);
 			}
 			reportControllers.insert(new CollectionTail( ));
-			reportControlIterator = reportControllers.begin( );
-			reportControl = *reportControlIterator;
-			++reportControlIterator;
+			determineReportControl(0,0);
 
 			{ //create group
 
@@ -514,28 +512,46 @@ namespace moving_boundary {
 			vcellH5::writeAttribute(elementDataset,attributeName,value);
 		}
 
+		/**
+		* set #reportControl and #nextReportControlTime
+		*/
+		void determineReportControl(double t, unsigned int generation) {
+			std::set<const TimeReport *,TimeSorter>::const_iterator iter = reportControllers.begin( );
+			bool pastTime = t>=nextReportControlTime;
+			//delete any expired or past time
+			while (iter != reportControllers.end( )) {
+				const TimeReport *tr = *iter;
+				std::set<const TimeReport *,TimeSorter>::iterator eraseIter(iter); 
+				++iter;
+				if (tr->expired(t,generation) || (pastTime && tr->getStartTime( ) < nextReportControlTime )) {
+					const TimeReport *dtr = *eraseIter;
+					reportControllers.erase(eraseIter);
+					delete dtr;
+				}
+			}
+			nextReportControlTime = std::numeric_limits<double>::max( );
+			for (iter = reportControllers.begin( );iter != reportControllers.end( ); ++iter) {
+				double st = (*iter)->getStartTime( );
+				if (st > t) {
+					nextReportControlTime = st;
+					break;
+				}
+			}
+			iter = reportControllers.begin( );
+			if (iter == reportControllers.end( )) {
+				VCELL_EXCEPTION(logic_error,"No time reporter for time " << t << ", generation " << generation);
+			}
+			reportControl = *iter;
+		}
+
 		virtual void time(double t, unsigned int generationCounter, bool last, const moving_boundary::GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) { 
 			if (geometryInfo.nodesAdjusted) {
 				moveTimes.push_back(t);
 			}
-			while (reportControl->expired(t,generationCounter)) {
-				if (t >=(*reportControlIterator)->getStartTime( )) {
-					reportControl = *reportControlIterator; 
-					++reportControlIterator;
-					continue;
-				}
-				VCELL_EXCEPTION(logic_error,"No time reporter for time " << t << ", generation " << generationCounter);
+			if (reportControl->expired(t,generationCounter) || t >= nextReportControlTime) {
+				determineReportControl(t,generationCounter);
 			}
-			while (t >= (*reportControlIterator)->getStartTime( )) {
-				const TimeReport * nextReportControl = *reportControlIterator; 
-				if (nextReportControl->getStartTime( ) > reportControl->getStartTime( )) {
-					reportControl = nextReportControl;
-					++reportControlIterator;
-				}
-				else {
-					break;
-				}
-			}
+
 			reportActive = last || reportControl->needReport(generationCounter,lastReportGeneration,t,lastReportTime);
 
 			if (reportActive) {
@@ -746,8 +762,11 @@ namespace moving_boundary {
 		std::set<const TimeReport *,TimeSorter> reportControllers;
 		double lastReportTime;
 		unsigned long lastReportGeneration;
-		std::set<const TimeReport *,TimeSorter>::iterator reportControlIterator;
 		const TimeReport * reportControl;
+		/**
+		* start time of next TimeReport object not currently active
+		*/
+		double nextReportControlTime;
 
 		WorldType::PointConverter pointconverter;
 	};
