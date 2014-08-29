@@ -180,7 +180,7 @@ void MeshElementSpecies::setPos(SurfacePosition m)  {
 		return;
 	}
 	VCELL_LOG(trace,this->indexInfo( ) << " position " << m << " from " << this->mPos( ));
-	VCELL_KEY_LOG(fatal,"setPos",this->indexInfo( ) << " position " << m << " from " << this->mPos( ));
+	VCELL_KEY_LOG(verbose,Key::setPos,this->indexInfo( ) << " position " << m << " from " << this->mPos( ));
 	switch (state( )) {
 	case initial:
 		if (this->mPos( ) != unsetPosition) {
@@ -858,7 +858,7 @@ void MeshElementSpecies::collectMassFromNeighbors(const FrontType & front) {
 			}
 		}
 		else {
-			VCELL_LOG(warn,"Not collecting from " << nb.ident( ));
+			VCELL_KEY_LOG(warn,Key::notCollecting,"Not collecting from " << nb.ident( ));
 		}
 		//testing show some overlap with other neighbor states, but it was ~ 1 part in 10^6 of volume
 	}

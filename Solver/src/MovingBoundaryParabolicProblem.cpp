@@ -54,13 +54,13 @@ namespace {
 
 		ConcentrationExpression(VCell::Expression &e) 
 			:exp(e) {
-				VCELL_KEY_LOG(debug,"concentrationExpression", "expression: " << exp.infix( ));
+				VCELL_KEY_LOG(debug,Key::concentrationExpression, "expression: " << exp.infix( ));
 		}
 
 		virtual double conc(double x, double y) {
 			double in[NUMBER_SYMBOLS] = {x,y,0};
 			const double rval =  exp.evaluateVector(in);
-			VCELL_KEY_LOG(debug,"concentrationExpression", "f(" << x << ", " << y << ") = " << rval);
+			VCELL_KEY_LOG(debug,Key::concentrationExpression, "f(" << x << ", " << y << ") = " << rval);
 			return rval;
 		}
 		VCell::Expression exp; 

@@ -31,12 +31,31 @@ TEST(logger,macro) {
 TEST(logger,key) {
 	Logger & logger = Logger::get( );
 	logger.set(Logger::debug);
-	logger.set(Logger::debug, "fish");
-	logger.set(Logger::info, "fowl");
-	VCELL_KEY_LOG(debug,"fish","pike swims in the " << "water")
-	VCELL_KEY_LOG(debug,"fowl","should not see this")
-	VCELL_KEY_LOG(verbose,"koala","should not see this")
-	VCELL_KEY_LOG(fatal,"koala","should not see this")
+	logger.set(Logger::Key::extra1,true);
+	ASSERT_TRUE(logger.enabled(Logger::verbose,Logger::Key::extra1));
+	logger.set(Logger::Key::extra1,false);
+	ASSERT_FALSE(logger.enabled(Logger::verbose,Logger::Key::extra1));
+
+	ASSERT_FALSE(logger.enabled(Logger::verbose,Logger::Key::extra2));
+	ASSERT_TRUE(logger.enabled(Logger::debug,Logger::Key::extra2));
+	ASSERT_TRUE(logger.enabled(Logger::warn,Logger::Key::extra2));
+
+	logger.set(Logger::warn);
+	ASSERT_FALSE(logger.enabled(Logger::verbose,Logger::Key::extra2));
+	ASSERT_FALSE(logger.enabled(Logger::debug,Logger::Key::extra2));
+	ASSERT_TRUE(logger.enabled(Logger::warn,Logger::Key::extra2));
+	ASSERT_TRUE(logger.enabled(Logger::fatal,Logger::Key::extra2));
+
+	ASSERT_FALSE(logger.enabled(Logger::fatal,Logger::Key::extra1));
+	logger.set(Logger::verbose);
+	ASSERT_FALSE(logger.enabled(Logger::fatal,Logger::Key::extra1));
+
+//	logger.set(Logger::debug, "fish");
+//	logger.set(Logger::info, "fowl");
+//	VCELL_KEY_LOG(debug,"fish","pike swims in the " << "water")
+//	VCELL_KEY_LOG(debug,"fowl","should not see this")
+//	VCELL_KEY_LOG(verbose,"koala","should not see this")
+//	VCELL_KEY_LOG(fatal,"koala","should not see this")
 	
 }
 TEST(logger,level) {
@@ -47,9 +66,9 @@ TEST(logger,level) {
 		<< Logger::info << ' ' 
 		<< Logger::verbose << ' ' 
 		<< Logger::trace << std::endl; 
-	Logger::Level lvl = Logger::read("debug");
+	Logger::Level lvl = Logger::readLevel("debug");
 	ASSERT_TRUE(lvl == Logger::debug);
-	ASSERT_THROW( lvl = Logger::read("ignore"),std::domain_error);
+//	ASSERT_THROW( lvl = Logger::read("ignore"),std::domain_error);
 }
 
 TEST(logger,exception) {

@@ -14,24 +14,35 @@ namespace {
 			}
 		}
 	} defDest;
+
 }
+/**
+* function object; set KeyInfos to lvl unless explicitly set
+*/
+
+struct vcell_util::KeyInfoSetter {
+	const Logger::Level level;
+	KeyInfoSetter(Logger::Level lvl)
+		:level(lvl) {}
+
+	void operator( )(Logger::KeyInfo & ki) {
+		if (!ki.isSet) {
+			ki.level = level;
+		}
+	}
+};
 
 Logger Logger::instance; 
-
-struct Logger::KeyStore {
-	std::map<std::string,Logger::Level> keys;
-};
 
 #pragma warning ( disable: 4355 )
 Logger::Logger( )
 	:logStream(*this),
 	dest(&defDest),
 	level(fatal),
-	keyStore(new KeyStore)
+	keys( )
 { }
 
 Logger::~Logger( ) {
-	delete keyStore;
 }
 
 //static 
@@ -41,7 +52,7 @@ Logger::~Logger( ) {
 * @return corresponding level
 * @throws std::domain_error if no match for string
 */
-Logger::Level Logger::read(const char *in) {
+Logger::Level Logger::readLevel(const char *in) {
 #	define MATCH(x) if (strcmp(in,#x) ==0) return x; 
 	MATCH(verbose);
 	MATCH(trace);
@@ -50,22 +61,36 @@ Logger::Level Logger::read(const char *in) {
 	MATCH(warn);
 	MATCH(fatal);
 # undef MATCH
+	std::string s("No match for logging level ");
+	s += in;
+	throw new std::domain_error(s);
+}
+Logger::Key Logger::readKey(const char *in) {
+#	define MATCH(x) if (strcmp(in,#x) ==0) return Key::x; 
+	MATCH(formBoundaryPolygon);
+	MATCH(setPos);
+	MATCH(notCollecting);
+	MATCH(concentrationExpression);
+	MATCH(generationTime);
+	MATCH(extra1);
+	MATCH(extra2);
+# undef MATCH
 	VCELL_EXCEPTION(domain_error,"no match for logging level '" << in << "'");
 }
-void Logger::set(Level lvl, const char * key) {
-	Level current = keyStore->keys[key];
-	if (lvl > current) {
-		keyStore->keys[key] = lvl;
-	}
+
+
+
+void Logger::set(Level lvl) {
+	level = lvl;
+	std::for_each(keys.begin( ),keys.end( ), KeyInfoSetter(lvl));
+}
+void Logger::set(Key key, bool on) {
+	int idx = static_cast<int>(key);
+	KeyInfo & ki = keys[idx];
+	ki.isSet = true;
+	ki.level = static_cast<Level>(on ? verbose - 1 : fatal + 1);
 }
 
-bool Logger::inStore(Level lvl, const char *key) const {
-	std::map<std::string,Logger::Level>::const_iterator iter = keyStore->keys.find(key);
-	if (iter == keyStore->keys.end( )) {
-		return false;
-	}
-	return lvl >= iter->second;
-}
 namespace vcell_util {
 	std::ostream &operator<<(std::ostream & os, const Logger::Level & lvl) {
 #	define CASE(x) case Logger::x: os << #x; break;

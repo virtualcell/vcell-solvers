@@ -273,17 +273,17 @@ namespace {
 			Logger & logger = Logger::get( );
 			traceFileDestination.reset(new vcell_util::FileDest(tracefilename.c_str( )) );
 			logger.setDestination(*traceFileDestination);
-			Logger::Level level = Logger::read(levelStr.c_str( ));
+			Logger::Level level = Logger::readLevel(levelStr.c_str( ));
 			logger.set(level);
 			//set specific level keys
 			const char * const KEYSET = "keyset";
 			const tinyxml2::XMLElement *keySet = trace->FirstChildElement(KEYSET);
 			while (keySet != nullptr) {
 				using vcell_xml::convertChildElement;
-				levelStr = convertChildElement<std::string>(*keySet,"level");
-				level = Logger::read(levelStr.c_str( ));
+				bool enabled = convertChildElement<bool>(*keySet,"enabled");
 				std::string key = convertChildElement<std::string>(*keySet,"key");
-				logger.set(level,key.c_str( ));
+				Logger::Key k = Logger::readKey(key.c_str( ));
+				logger.set(k,enabled);
 				keySet = keySet->NextSiblingElement(KEYSET);
 			}
 		}

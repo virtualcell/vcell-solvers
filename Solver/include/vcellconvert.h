@@ -1,10 +1,11 @@
 #ifndef vcellconvert_h
 #define vcellconvert_h
 #include <boost/lexical_cast.hpp>
+#include <string>
 namespace vcell_util {
 
 	template <typename TARGET>
-	struct CharPointerConvert {
+	struct VCellConvert {
 		TARGET operator( )(const char *v) {
 			return boost::lexical_cast<TARGET>(v);
 		}
@@ -14,21 +15,27 @@ namespace vcell_util {
 	* specialize template; boost does not handle std::string conversion
 	*/
 	template <>
-	struct CharPointerConvert<std::string> {
+	struct VCellConvert<std::string> {
 		std::string operator( )(const char *v) {
 			return std::string(v);
 		}
 	};
 	template <>
-	struct CharPointerConvert<const char *> {
+	struct VCellConvert<const char *> {
 		const char * operator( )(const char *v) {
 			return v;
 		} 
 	};
 	template <>
-	struct CharPointerConvert<char *> {
+	struct VCellConvert<char *> {
 		char * operator( )(const char *v) {
 		}  //do not use this specialization; use <const char *> instead
+	};
+	template <>
+	struct VCellConvert<bool> {
+		bool operator( )(const char *v) {
+			return strcmp(v,"false")!=0;
+		}
 	};
 
 	/**
@@ -38,7 +45,7 @@ namespace vcell_util {
 	*/
 	template <class TARGET>
 	TARGET convertType(const char *v) {
-		return CharPointerConvert<TARGET>( )(v); 
+		return VCellConvert<TARGET>( )(v); 
 	}
 
 	/**

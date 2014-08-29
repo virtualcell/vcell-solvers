@@ -9,11 +9,14 @@ namespace vcellH5 {
 	struct SeqFacade {
 		typedef T Container;
 		typename Container::const_iterator IteratorType;
+		/**
+		* this is the number of dimensions supported by the facade
+		*/
 		const static size_t N = 1;
 		SeqFacade(T & v)
 			:container(v) {}
 		static size_t numDimensions( ) {
-			return 1;
+			return N;
 		}
 		H5::DataType elementType( ) const {
 			const H5::PredType predType = TPredType<typename Container::value_type>::predType( );
@@ -22,7 +25,7 @@ namespace vcellH5 {
 			return arrayType;
 		}
 		void fillDim(std::array<hsize_t,1> &dim) const {
-			dim[0] = 1; 
+			dim[0] = N; 
 		}
 		size_t arraySize( ) const {
 			return container.size( );

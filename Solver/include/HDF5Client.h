@@ -559,6 +559,7 @@ namespace moving_boundary {
 				currentTime = t;
 				totalStuff = 0;
 				std::cout << "generation " << std::setw(2) <<  generationCounter << " time " << currentTime << std::endl;
+				VCELL_KEY_LOG(trace,Key::generationTime,"generation " << std::setw(2) <<  generationCounter << " time " << currentTime);
 				genTimes.push_back(t);
 				lastReportGeneration = generationCounter;
 				lastReportTime = t;
@@ -718,6 +719,7 @@ namespace moving_boundary {
 				unsigned int lastTimeIndex = static_cast<unsigned int>(genTimes.size( ));
 				vcellH5::primitiveWrite(baseGroup,"lastTimeIndex",lastTimeIndex); 
 
+				VCELL_KEY_LOG(info,Key::generationTime,"logging " << genTimes.size( ) << " generation times"); 
 				vcellH5::SeqFacade<std::vector<double> > gt(genTimes);
 				vcellH5::facadeWrite(baseGroup,"generationTimes",gt);
 
