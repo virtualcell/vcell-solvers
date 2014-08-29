@@ -4,6 +4,7 @@
 #include <Logger.h>
 #include <VCellException.h>
 #include <stdexcept>
+#include <algorithm>
 using vcell_util::Logger;
 namespace {
 	class DefaultDest: public Logger::Destination {
