@@ -198,6 +198,8 @@ namespace moving_boundary {
 			currentTime(0),
 			maxTime(mbs.maxTime),
 			timeStep(mbs.timeStep),
+			baselineTime(0),
+			baselineGeneration(0),
 			minimimMeshInterval(0),
 
 			symTable(buildSymTable( )),
@@ -242,11 +244,12 @@ namespace moving_boundary {
 			double maxStep = minimimMeshInterval * minimimMeshInterval/(4 * diffusionConstant);
 			if (maxStep < timeStep) {
 				if (mbs.hardTime) {
-					VCELL_EXCEPTION(logic_error,"input time step " << timeStep << " greater than maximum allowed by problem (" << maxStep << ')');
+					VCELL_EXCEPTION(logic_error,"hard set input time step " << timeStep << " greater than maximum allowed by problem (" << maxStep << ')');
 				}
-				//use floor to make newNumberSteps lower and timeStep bigger to avoid very short last step
-				int newNumberSteps = static_cast<int>(maxTime/maxStep);
-				timeStep = (maxTime / newNumberSteps) * (1 + 1e-13); //add margin to overcome precision lost to addition
+				updateTimeStep(maxStep,0);
+				if (timeStep > maxStep) {
+					VCELL_EXCEPTION(logic_error,"calculated input time step " << timeStep << " greater than maximum allowed by problem (" << maxStep << ')');
+				}
 			}
 
 
@@ -326,6 +329,7 @@ namespace moving_boundary {
 					}
 				}
 		}
+
 		~MovingBoundaryParabolicProblemImpl( ) {
 			delete vcFront;
 		}
@@ -456,6 +460,7 @@ namespace moving_boundary {
 		}
 
 		spatial::SVector<moving_boundary::VelocityType,2> advectionVelocity(double x, double y) const {
+
 			double worldValues[2] = {x,y};
 			enum {ex = 0, ey = 1, et = 2};
 			double syms[3];
@@ -472,6 +477,25 @@ namespace moving_boundary {
 			out[cY] = v(cY); 
 
 			return 0; //return value not used by frontier
+		}
+		/**
+		* @return <timeNow, timeIncrement>
+		*/
+		std::pair<double,double> times(int generationCount) { 
+			double timeNow = baselineTime + (generationCount - baselineGeneration) * timeStep;
+			if (timeNow > maxTime) {
+				timeNow = maxTime;
+			}
+			double incr = timeNow - currentTime;
+			return std::pair<double,double>(timeNow,incr);
+		}
+
+		void updateTimeStep(double desiredStep, int generationCount) {
+			double intervalTilEnd = maxTime - baselineTime;
+			int n = ceil(intervalTilEnd / desiredStep);
+			timeStep = intervalTilEnd / n;
+			baselineGeneration = generationCount;
+			baselineTime = currentTime;
 		}
 
 		/**
@@ -605,6 +629,20 @@ namespace moving_boundary {
 			REAL maxVel;
 		};
 #endif
+		/**
+		* Functor
+		* find maximum velocity of front points (squared) 
+		*/
+		struct FrontVelocity : public FunctorBase {
+			FrontVelocity (Outer &o)
+				:FunctorBase(o),
+				maxSquaredVel(0){}
+			void operator( )(const spatial::TPoint<CoordinateType,2> & point) {
+				spatial::SVector<VelocityType,2> velVector = this->outer.frontVelocity(point(cX),point(cY));
+				maxSquaredVel = std::max(maxSquaredVel,velVector.magnitudeSquared( ));
+			}
+			moving_boundary::VelocityType maxSquaredVel;
+		};
 
 		/**
 		* Functor
@@ -725,29 +763,19 @@ namespace moving_boundary {
 				}
 
 				while (currentTime < maxTime) {
-					double timeIncr = timeStep;
+					std::pair<double,double> nowAndStep = times(generationCount); 
+					//TODO -- we're approximating front velocity for time step with velocity at beginning of time step
+						FrontVelocity fv(*this);
+						std::for_each(currentFront.begin( ),currentFront.end( ),fv);
+						double maxVel = sqrt(fv.maxSquaredVel);
+						double maxTime = minimimMeshInterval / (2 * maxVel);
+						if (nowAndStep.second > maxTime) {
+							updateTimeStep(maxTime,generationCount);
+							nowAndStep = times(generationCount); 
+					}
+					currentTime = nowAndStep.first;
+					double timeIncr = nowAndStep.second;
 
-					currentTime += timeIncr;
-					//make last step end exactly on limit to simplify comparisions betweens different simulations
-					if (currentTime > maxTime) {
-						currentTime = maxTime;
-					}
-					bool goodStep = false;
-					while (!goodStep) {
-						ApplyVelocity mv(*this);
-						std::for_each(primaryMesh.begin( ),primaryMesh.end( ),mv);
-						double maxTime = minimimMeshInterval / (2 * mv.maxVel);
-						maxTime = meshDef( ).minimumInterval( ) / (2);
-						if (timeIncr <= maxTime) {
-							goodStep = true;
-						}
-						else {
-							currentTime -= timeIncr;
-							timeIncr = maxTime; 
-							currentTime += timeIncr;
-							VCELL_LOG(debug, "reduced time step to " << timeIncr)
-						}
-					}
 #if PENDING_DISCUSSION_OF_WHERE_TO_CHECK
 					ApplyVelocity mv(*this);
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),mv);
@@ -933,6 +961,8 @@ namespace moving_boundary {
 		double currentTime;
 		double maxTime;
 		double timeStep; 
+		double baselineTime;
+		unsigned int baselineGeneration;
 		/**
 		* in problem domain units
 		*/

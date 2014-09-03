@@ -30,7 +30,7 @@ namespace moving_boundary {
 		double timeStep;
 
 		/**
-		* if true, fail simluation if time set by #numberTimeSteps or #timeStep. If false, time
+		* if true, fail simluation if time set by #numberTimeSteps or #timeStep not numerically stable. If false, time
 		* step may be adjusted
 		*/
 		bool hardTime;
