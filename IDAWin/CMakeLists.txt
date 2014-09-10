@@ -29,8 +29,6 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	set(EXE_FILE SundialsSolverStandalone)
 	if (ARCH_64bit) 
 		set(EXE_FILE ${EXE_FILE}_x64)
-	elseif (MACOSX_BINARIES_ppc)
-		set(EXE_FILE ${EXE_FILE}_ppc)
 	endif()
 
 	if (TARGET_SOLVERS_WITH_MESSAGING)
