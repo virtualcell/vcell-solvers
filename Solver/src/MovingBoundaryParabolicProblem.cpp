@@ -776,10 +776,8 @@ namespace moving_boundary {
 					currentTime = nowAndStep.first;
 					double timeIncr = nowAndStep.second;
 
-#if PENDING_DISCUSSION_OF_WHERE_TO_CHECK
 					ApplyVelocity mv(*this);
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),mv);
-#endif //PENDING_DISCUSSION_OF_WHERE_TO_CHECK
 
 					VCELL_LOG(debug, "moved to time " << currentTime << " generation " << generationCount);
 					vcFront->propagateTo(currentTime); 
