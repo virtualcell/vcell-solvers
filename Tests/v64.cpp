@@ -1,4 +1,4 @@
-
+#ifdef LATER
 #pragma warning (disable: 4996 4267)
 #include <cmath>
 #include <boost/multiprecision/cpp_int.hpp> 
@@ -109,4 +109,4 @@ TEST(highv,size) {
 	std::cout << "radix " << std::numeric_limits<floatingType>::radix << std::endl;
 }
 
-
+#endif
