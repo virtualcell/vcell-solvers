@@ -7,14 +7,17 @@ else()
 endif()
 
 if (UNIX)
-  message("unix")
   set(CMAKE_C_COMPILER "gcc")
   set(CMAKE_CXX_COMPILER "g++")
+endif (UNIX)
+
+project(MovingBoundarySolver)
+
+if (UNIX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   set(CXX_FLAGS "${CXX_FLAGS} -std=c++11")
 endif (UNIX)
 
-project(MovingBoundarySolver)
 include (svnversion.txt)
 message("sys ${CMAKE_SYSTEM_NAME}")
 # per http://code.google.com/p/googletest/issues/detail?id=412 
