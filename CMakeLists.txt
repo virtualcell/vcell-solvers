@@ -6,6 +6,14 @@ else()
    SET(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
 endif()
 
+if (UNIX)
+  message("unix")
+  set(CMAKE_C_COMPILER "gcc")
+  set(CMAKE_CXX_COMPILER "g++")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  set(CXX_FLAGS "${CXX_FLAGS} -std=c++11")
+endif (UNIX)
+
 project(MovingBoundarySolver)
 include (svnversion.txt)
 message("sys ${CMAKE_SYSTEM_NAME}")
@@ -14,12 +22,6 @@ if (MSVC) # VS2012 doesn't support correctly the tuples yet
 		add_definitions( /D _VARIADIC_MAX=10 )
 		add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
 endif(MSVC)
-if (UNIX)
-  message("unix")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-  set(CXX_FLAGS "${CXX_FLAGS} -std=c++11")
-  
-endif (UNIX)
 
 message("flags ${CMAKE_CXX_FLAGS}")
 OPTION (HDF5_BUILD_CPP_LIB  "Build HDF5 C++ Library" ON)
