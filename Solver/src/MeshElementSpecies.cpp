@@ -858,7 +858,7 @@ void MeshElementSpecies::collectMassFromNeighbors(const FrontType & front) {
 			}
 		}
 		else {
-			VCELL_KEY_LOG(warn,Key::notCollecting,"Not collecting from " << nb.ident( ));
+			VCELL_KEY_LOG(debug,Key::notCollecting,"Not collecting from " << nb.ident( ));
 		}
 		//testing show some overlap with other neighbor states, but it was ~ 1 part in 10^6 of volume
 	}
@@ -967,7 +967,7 @@ void MeshElementSpecies::endOfCycle( ) {
 			concValue[i] = 0; 
 		}
 	}
-	VCELL_LOG(verbose,this->ident( ) << " eoc end mass " << this->mass(0) << " vol " << volumePD(  ) << " conc " << concentration(0));
+	VCELL_LOG(info,this->ident( ) << " eoc end mass " << this->mass(0) << " vol " << volumePD(  ) << " conc " << concentration(0));
 }
 
 using moving_boundary::BioQuanType;
@@ -1047,7 +1047,7 @@ void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, Bi
 				//BioQuanType transferAmount = (diffusionTerm + advectTerm) * edgeLength * timeStep;
 				BioQuanType transferAmount = sum * edgeLength * timeStep;
 				amtMassTransient[s] += transferAmount; 
-				VCELL_COND_LOG(debug, s == 0, this->indexInfo( ) << " da " << transferAmount << " from " << nb.indexInfo( ) 
+				VCELL_COND_LOG(info, s == 0, this->indexInfo( ) << " da " << transferAmount << " from " << nb.indexInfo( ) 
 					<< " u(i) = " << cUs << " u(j) " << cOther << " distance " << neighbors[i].distanceTo 
 					<< " D = " << diffusionConstant << " u(avg) = " << averageConcentration << " advectCoeff " << advectCoeff 
 					<< " advectTerm = " << advectTerm << " edge length " << edgeLength 
