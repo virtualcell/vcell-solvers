@@ -51,12 +51,18 @@ int main(int argc, char *argv[])
 		<< "MovingBoundarySolver version $URL$" VCELLSVNQUOTE(SVNVERSION)
 		<< std::endl; 
 	if (argc < 2) {
-		std::cerr << "Usage: " << argv[0] << " [xml input file] <hdf5 output file name> " << std::endl; 
+		std::cerr << "Usage: " << argv[0] << " [xml input file] <hdf5 output file name|'parseonly'> " << std::endl; 
 		return 1; 
 	}
 	moving_boundary::MovingBoundaryParabolicProblem mbpp;
 	std::auto_ptr<moving_boundary::MovingBoundaryClient> client;
 	const char * const filename = argv[1];
+	const char * outname = argv[2];
+	const bool parseonly = strcmp("parseonly",outname) == 0; 
+	if (parseonly) {
+		std::cout <<  "parse XML only mode" << std::endl;
+		outname = nullptr;
+	}
 	try {
 		tinyxml2::XMLDocument doc;
 		doc.LoadFile(filename);
@@ -89,6 +95,10 @@ int main(int argc, char *argv[])
 	catch (...) {
 		std::cerr <<  argv[0] << " caught unknown exception" << " reading " << filename << std::endl; 
 		return 5;
+	}
+	if (parseonly) {
+		std::cout <<  filename << " validated" << std::endl;
+		return 0;
 	}
 
 	try {
