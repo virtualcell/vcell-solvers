@@ -7,19 +7,10 @@
       </xs:documentation>
     </xs:annotation>
   </xs:element>
-  <xs:complexType name="circleType">
-    <xs:all>
-      <xs:element type="xs:float" name="originx"/>
-      <xs:element type="xs:float" name="originy"/>
-      <xs:element type="xs:float" name="radius"/>
-      <xs:element type="xs:float" name="velocityx"/>
-      <xs:element type="xs:float" name="thetaIncrement"/>
-    </xs:all>
-  </xs:complexType>
   <xs:complexType name="specialFrontType">
-    <xs:all>
-      <xs:element type="circleType" name="circle"/>
-    </xs:all>
+    <xs:sequence maxOccurs="unbounded">
+      <xs:any processContents="lax"/>
+    </xs:sequence>
   </xs:complexType>
   <xs:complexType name="xLimitsType">
     <xs:all>
