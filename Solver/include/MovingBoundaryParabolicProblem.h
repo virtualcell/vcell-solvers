@@ -79,6 +79,8 @@ namespace moving_boundary {
 			frontToNodeRatio(5),
 			maxTime( ),
 			numberTimeSteps( ),
+			timeStep(0),
+			hardTime(false),
 			levelFunction( ),
 			velocityFunction( ),
 			concentrationFunction( ),

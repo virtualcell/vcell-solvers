@@ -14,7 +14,6 @@ namespace {
 	* constants
 	*/
 	const char * const XML_ROOT_NAME = "MovingBoundarySetup";
-	const char * const XML_OLD_ROOT_NAME = "vcellfrontiersetup";
 
 	/**
 	* usings and typedefs
@@ -58,7 +57,7 @@ int main(int argc, char *argv[])
 	std::auto_ptr<moving_boundary::MovingBoundaryClient> client;
 	const char * const filename = argv[1];
 	const char * outname = argv[2];
-	const bool parseonly = strcmp("parseonly",outname) == 0; 
+	const bool parseonly = outname != nullptr && strcmp("parseonly",outname) == 0; 
 	if (parseonly) {
 		std::cout <<  "parse XML only mode" << std::endl;
 		outname = nullptr;
@@ -72,13 +71,8 @@ int main(int argc, char *argv[])
 		}
 		const tinyxml2::XMLElement & root = *doc.RootElement( );
 		if (!strcmp(root.Name( ),XML_ROOT_NAME) == 0) {
-			if (strcmp(root.Name( ),XML_OLD_ROOT_NAME) == 0) {
-				std::cout <<  "XML root identifier " << root.Name( ) << "deprecated, " << XML_ROOT_NAME << " preferred" << std::endl;
-			}
-			else {
-				std::cerr <<  "Invalid XML root identifier " << root.Name( ) << ", " << XML_ROOT_NAME << " expected" << std::endl;
-				return 3; 
-			}
+			std::cerr <<  "Invalid XML root identifier " << root.Name( ) << ", " << XML_ROOT_NAME << " expected" << std::endl;
+			return 3; 
 		}
 		setupTrace(root);
 		setupMatlabDebug(root);
