@@ -33,8 +33,6 @@ namespace spatial {
 	protected:
 		std::array<T,N> coord; 
 	public:
-		//deprecated
-		typedef T realType;
 		typedef T value_type; 
 		TPoint(const std::array<T,N> &val)  
 			:coord(val) {}
@@ -55,6 +53,7 @@ namespace spatial {
 			coord[1] = b;
 			coord[2] = c;
 		}
+		TPoint(std::istream &os);
 
 		/**
 		* initialize from C style array
@@ -143,6 +142,10 @@ namespace spatial {
 			return false;
 		}
 
+		void persist(std::ostream &);
+		protected:
+			static std::string persistToken;
+
 	};
 
 //#pragma warning ( disable : 4351 )
@@ -230,32 +233,6 @@ namespace spatial {
 		return ! (lhs == rhs);
 	}
 
-#if 0 // to algo
-	template <class T, int N>
-	inline TPoint<T,N> midPoint(const spatial::TPoint<T,N> & lhs, const spatial::TPoint<T,N> & rhs ) {
-		std::array<T,N> values;
-		for (int i = 0; i < N ;i++) {
-			const Axis a = static_cast<Axis>(i);
-			values[i] = ( lhs(a) + rhs(a) )/ 2;
-		}
-		return  TPoint<T,N>(values);
-	}
-
-	template <class T, int N>
-	inline TPoint<T,N> integerMidPoint(const spatial::TPoint<T,N> & lhs, const spatial::TPoint<T,N> & rhs ) {
-		std::array<T,N> values;
-		for (int i = 0; i < N ;i++) {
-			const Axis a = static_cast<Axis>(i);
-			values[i] = lhs(a) / 2 + rhs(a) / 2; //divide before add to avoid overflow
-		}
-		return  TPoint<T,N>(values);
-	}
-
-	template <int N>
-	inline TPoint<long,N> midPoint(const spatial::TPoint<long,N> & lhs, const spatial::TPoint<long,N> & rhs ) {
-		return integerMidPoint(lhs,rhs);
-	}
-#endif
 
 	template <class T, int N>
 	inline std::ostream &operator<<(std::ostream & os, const spatial::TPoint<T,N> & point) {
