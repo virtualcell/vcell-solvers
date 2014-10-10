@@ -1388,16 +1388,22 @@ inline bool CartesianMesh::computeNormalsFromNeighbors(long index) {
 		// compute tangent normals
 		if (dimension == 2) {
 			const int lastOfTwo = 1;
-			UnitVector3 & first = tangentWc[0].unitVector;
-			DoubleVector3 dv(first.yvalue( ), -first.xvalue( ),0);
-			if (!dv.isAbsolutelyZero( )) {
-				tangentNormals[tangentNormalIndex++] = dv;
+			UnitHolder &uh1 =  tangentWc[0];
+			if (uh1.valid) {
+				UnitVector3 & first = uh1.unitVector;
+				DoubleVector3 dv(first.yvalue( ), -first.xvalue( ),0);
+				if (!dv.isAbsolutelyZero( )) {
+					tangentNormals[tangentNormalIndex++] = dv;
+				}
 			}
-			UnitVector3 & last = tangentWc[lastOfTwo].unitVector;
-			//sign flipped from first  
-			DoubleVector3 dv2(-last.yvalue( ), last.xvalue( ),0);
-			if (!dv2.isAbsolutelyZero( )) {
-				tangentNormals[tangentNormalIndex++] = dv2;
+			UnitHolder &uh2 =  tangentWc[lastOfTwo];
+			if (uh2.valid) {
+				UnitVector3 & last = uh2.unitVector;
+				//sign flipped from first
+				DoubleVector3 dv2(-last.yvalue( ), last.xvalue( ),0);
+				if (!dv2.isAbsolutelyZero( )) {
+					tangentNormals[tangentNormalIndex++] = dv2;
+				}
 			}
 
 		} else if (dimension == 3) {
