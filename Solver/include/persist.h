@@ -24,14 +24,16 @@ namespace vcell_persist {
 	struct TokenT<bool> {
 		template<typename C>
 		static void insert(std::ostream &os) {
-			insert(os,typeid(C).name( ));
+			insert(os,typeid(C));
 		}
 		template<typename C>
 		static void check(std::istream &is) {
-			check(is,typeid(C).name( ));
+			check(is,typeid(C));
 		}
 		static void insert(std::ostream &os, const std::string & token);
 		static void check(std::istream &os, const std::string & token);
+		static void insert(std::ostream &os,const type_info &);
+		static void check(std::istream &os, const type_info &);
 		
 	};
 

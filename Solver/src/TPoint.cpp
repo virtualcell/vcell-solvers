@@ -20,6 +20,7 @@ void TPoint<T,N>::persist(std::ostream &os) {
 
 }
 
+
 template spatial::TPoint<char,2>::TPoint(std::istream &);
 template spatial::TPoint<short,2>::TPoint(std::istream &);
 template spatial::TPoint<int,2>::TPoint(std::istream &);
@@ -27,9 +28,12 @@ template spatial::TPoint<long,2>::TPoint(std::istream &);
 
 template spatial::TPoint<double,2>::TPoint(std::istream &);
 
-//template spatial::TPoint<int16_t,2>::TPoint(std::istream &);
 template spatial::TPoint<uint64_t,2>::TPoint(std::istream &);
-//template spatial::TPoint<int64_t,2>::TPoint(std::istream &);
 
 template spatial::TPoint<int,3>::TPoint(std::istream &);
 template spatial::TPoint<double,3>::TPoint(std::istream &);
+
+#ifdef _MSC_BUILD
+	template spatial::TPoint<int16_t,2>::TPoint(std::istream &);
+	template spatial::TPoint<int64_t,2>::TPoint(std::istream &);
+#endif

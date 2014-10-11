@@ -6,6 +6,7 @@
 #include <TPoint.h>
 #include <vcellstring.h>
 #include <typeinfo>
+#include <Persistent.h>
 using namespace vcell_util; 
 namespace {
 	double dx = 2.0 / 3 - 0.0001;
@@ -17,8 +18,14 @@ TEST(vcellutil,multiply) {
 	ASSERT_FALSE(validMultiply<char>(127,127));
 }
 
+TEST(persist,tcheck) {
+	ASSERT_TRUE(typeid(spatial::TPoint<double,2>) == typeid(const spatial::TPoint<double,2>)); 
+}
+
 TEST(persist,TPoint) {
 	{
+	vcell_persist::registerTypeToken(typeid(spatial::TPoint<double,2>),"doobie");
+	vcell_persist::registerTypeToken(typeid(spatial::TPoint<int,3>),"dubai");
 	std::ofstream out("tpoint2.dat");
 	spatial::TPoint<double,2> d(dx,dy);
 	d.persist(out);
