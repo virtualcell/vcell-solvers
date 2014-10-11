@@ -5,7 +5,7 @@ std::string vcell_util::convertNonPrintable(const std::string &source) {
 	string rval;
 	rval.reserve(source.size( ) * 4); //near worse case each character replaced with \0x--
 	for (string::const_iterator iter = source.begin( ); iter != source.end( ); ++iter) {
-		char c = *iter;
+		unsigned char c = *iter;
 		if (isprint(c)) {
 			rval.push_back(c);
 		}

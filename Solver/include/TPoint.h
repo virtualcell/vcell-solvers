@@ -4,6 +4,7 @@
 #include <iostream>
 #include <array>
 #include <cmath>
+#include <Persistent.h>
 namespace spatial {
 
 
@@ -29,7 +30,7 @@ namespace spatial {
 	* @param N number of dimensions
 	*/
 	template<class T, int N>
-	class TPoint {
+	class TPoint : public vcell_persist::Persistent {
 	protected:
 		std::array<T,N> coord; 
 	public:
@@ -142,9 +143,7 @@ namespace spatial {
 			return false;
 		}
 
-		void persist(std::ostream &);
-		protected:
-			static std::string persistToken;
+		virtual void persist(std::ostream &);
 
 	};
 

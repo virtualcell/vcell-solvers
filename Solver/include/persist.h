@@ -21,8 +21,17 @@ namespace vcell_persist {
 
 	template <>
 	struct TokenT<bool> {
+		template<typename C>
+		static void insert(std::ostream &os) {
+			insert(os,typeid(C).name( ));
+		}
+		template<typename C>
+		static void check(std::istream &is) {
+			check(is,typeid(C).name( ));
+		}
 		static void insert(std::ostream &os, const std::string & token);
 		static void check(std::istream &os, const std::string & token);
+		
 	};
 
 	/**

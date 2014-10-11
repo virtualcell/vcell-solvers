@@ -4,6 +4,8 @@
 #include <vcellutil.h>
 #include <NumericConvert.h>
 #include <TPoint.h>
+#include <vcellstring.h>
+#include <typeinfo>
 using namespace vcell_util; 
 namespace {
 	double dx = 2.0 / 3 - 0.0001;
@@ -13,7 +15,6 @@ namespace {
 TEST(vcellutil,multiply) {
 	ASSERT_TRUE(validMultiply(3,4));
 	ASSERT_FALSE(validMultiply<char>(127,127));
-
 }
 
 TEST(persist,TPoint) {
@@ -32,16 +33,22 @@ TEST(persist,TPoint) {
 		spatial::TPoint<int,3> e(in);
 		ASSERT_TRUE(d(spatial::cX) == dx);
 		ASSERT_TRUE(d(spatial::cY) == dy);
-
 	}
-
 }
 
-TEST(persist,TPointR) {
+/*
+TEST(persist,rback) {
+	const std::type_info & ti = typeid(spatial::TPoint<double,2>);
+	std::cout << ti.name( ) << std::endl;
 	std::ifstream in("tpoint.dat");
 	spatial::TPoint<double,2> d(in);
 	spatial::TPoint<int,3> e(in);
-	std::cout << d << std::endl;
-	std::cout << e<< std::endl;
-
 }
+*/
+TEST(persist,npc) {
+	std::string x("me");
+	x.push_back(03);
+	std::string pretty = vcell_util::convertNonPrintable(x);
+	std::cout << x << ", " << pretty << std::endl; 
+}
+
