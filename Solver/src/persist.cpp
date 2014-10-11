@@ -9,6 +9,7 @@
 #include <VCellException.h>
 #include <ManagedArrayPtr.h>
 #include <vcellstring.h>
+using std::type_info;
 using namespace vcell_persist;
 using namespace vcell_util;
 namespace {

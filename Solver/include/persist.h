@@ -32,8 +32,8 @@ namespace vcell_persist {
 		}
 		static void insert(std::ostream &os, const std::string & token);
 		static void check(std::istream &os, const std::string & token);
-		static void insert(std::ostream &os,const type_info &);
-		static void check(std::istream &os, const type_info &);
+		static void insert(std::ostream &os,const std::type_info &);
+		static void check(std::istream &os, const std::type_info &);
 		
 	};
 
