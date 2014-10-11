@@ -1,6 +1,7 @@
 #ifndef persist_h
 #define persist_h
 #include <ostream>
+#include <typeinfo>
 namespace vcell_persist {
 	template <typename E> struct TokenT;
 

@@ -1,5 +1,7 @@
 #include <string>
+#include <cstring>
 #include <iostream>
+#include <stdexcept>
 #include <persist.h>
 #include <VCellException.h>
 #include <ManagedArrayPtr.h>

@@ -1,7 +1,7 @@
+#include <algorithm>
+#include <stdint.h>
 #include <TPoint.h>
 #include <persist.h>
-#include <persist.h>
-#include <stdint.h>
 using namespace spatial;
 using namespace vcell_persist; 
 
@@ -27,9 +27,9 @@ template spatial::TPoint<long,2>::TPoint(std::istream &);
 
 template spatial::TPoint<double,2>::TPoint(std::istream &);
 
-template spatial::TPoint<int16_t,2>::TPoint(std::istream &);
+//template spatial::TPoint<int16_t,2>::TPoint(std::istream &);
 template spatial::TPoint<uint64_t,2>::TPoint(std::istream &);
-template spatial::TPoint<int64_t,2>::TPoint(std::istream &);
+//template spatial::TPoint<int64_t,2>::TPoint(std::istream &);
 
 template spatial::TPoint<int,3>::TPoint(std::istream &);
 template spatial::TPoint<double,3>::TPoint(std::istream &);
