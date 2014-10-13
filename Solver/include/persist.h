@@ -3,12 +3,19 @@
 #include <ostream>
 #include <typeinfo>
 namespace vcell_persist {
+	void registerTypeToken(const std::type_info &, const char * token); 
+	const std::string & getTypeToken(const std::type_info &); 
+
+	#define VCELL_PERSIST_REGISTER_MACRO(X) registerTypeToken(typeid(X),#X);
+	#define VCELL_PERSIST_REGISTER_MACRO2(X,Y) registerTypeToken(typeid(X,Y),#X","#Y);
+
 	template <typename E> struct TokenT;
 
 	/**
 	* typedef to control token usage; tokens used if and only if parameter type is "bool"
 	*/
-	typedef TokenT<bool> Token;
+	typedef TokenT<bool> Token;		//tokens on
+	//typedef TokenT<int> Token;			//tokens off
 
 	/**
 	* insert/read check tokens into persistence streams
@@ -16,6 +23,10 @@ namespace vcell_persist {
 	*/
 	template <typename E>
 	struct TokenT {
+		template<typename C>
+		static void insert(std::ostream &os) { }
+		template<typename C>
+		static void check(std::istream &is) { }
 		static void insert(std::ostream &os, const std::string & token) {}
 		static void check(std::istream &os, const std::string & token) {}
 	};

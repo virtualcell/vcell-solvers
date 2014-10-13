@@ -4,7 +4,6 @@
 #include <iostream>
 #include <array>
 #include <cmath>
-#include <Persistent.h>
 namespace spatial {
 
 
@@ -142,7 +141,7 @@ namespace spatial {
 			return false;
 		}
 
-		virtual void persist(std::ostream &);
+		void persist(std::ostream &);
 
 	};
 

@@ -8,14 +8,8 @@ namespace {
 
 	struct Registrar {
 		Registrar ( ) {
-			#define comma , 
-			#define RTT(X) registerTypeToken(typeid(X),#X);
-
-			RTT(spatial::TPoint<int comma 3>)
-			RTT(spatial::TPoint<double comma 2>)
-
-			#undef comma
-			#undef RTT 
+			VCELL_PERSIST_REGISTER_MACRO2(spatial::TPoint<double,2>)
+			VCELL_PERSIST_REGISTER_MACRO2(spatial::TPoint<int,3>)
 		}
 
 	};
@@ -38,13 +32,17 @@ void TPoint<T,N>::persist(std::ostream &os) {
 
 }
 
+template void spatial::TPoint<double,2>::persist(std::ostream &);
+template void spatial::TPoint<int,3>::persist(std::ostream &);
 
+template spatial::TPoint<double,2>::TPoint(std::istream &);
+template spatial::TPoint<int,3>::TPoint(std::istream &);
+/*
 template spatial::TPoint<char,2>::TPoint(std::istream &);
 template spatial::TPoint<short,2>::TPoint(std::istream &);
 template spatial::TPoint<int,2>::TPoint(std::istream &);
 template spatial::TPoint<long,2>::TPoint(std::istream &);
 
-template spatial::TPoint<double,2>::TPoint(std::istream &);
 
 template spatial::TPoint<uint64_t,2>::TPoint(std::istream &);
 
@@ -55,3 +53,4 @@ template spatial::TPoint<double,3>::TPoint(std::istream &);
 	template spatial::TPoint<int16_t,2>::TPoint(std::istream &);
 	template spatial::TPoint<int64_t,2>::TPoint(std::istream &);
 #endif
+*/

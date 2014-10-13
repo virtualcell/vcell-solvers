@@ -25,6 +25,9 @@ namespace spatial {
 				index[i] = n[i];
 			}
 		}
+
+		MPoint(std::istream &);
+
 		size_t indexOf(int dim) const {
 			return index[dim];
 		}
@@ -45,6 +48,7 @@ namespace spatial {
 			return TPoint<size_t,N>(index);
 		}
 
+		void persist(std::ostream &);
 
 	protected:
 		std::array<size_t,N> index;
@@ -59,6 +63,12 @@ namespace spatial {
 			:base(n,values),
 			mp(unsetPosition)
 		{ }
+
+		/**
+		* create from binary stream
+		* MPoint.cpp
+		*/
+		MeshElement(std::istream &);
 
 		SurfacePosition mPos( ) const {
 			return mp;
@@ -102,6 +112,12 @@ namespace spatial {
 				throw std::logic_error("isDeep unset position");
 			}
 		}
+
+		/**
+		* write this to binary stream
+		* MPoint.cpp
+		*/
+		void persist(std::ostream &);
 	protected:
 		void setPos(SurfacePosition m)  {
 			size_t x = this->index[0];

@@ -3,10 +3,10 @@
 #include <fstream>
 #include <vcellutil.h>
 #include <NumericConvert.h>
-#include <TPoint.h>
+#include <MPoint.h>
 #include <vcellstring.h>
 #include <typeinfo>
-#include <Persistent.h>
+#include <persist.h>
 using namespace vcell_util; 
 namespace {
 	double dx = 2.0 / 3 - 0.0001;
@@ -20,18 +20,17 @@ TEST(vcellutil,multiply) {
 
 TEST(persist,tcheck) {
 	ASSERT_TRUE(typeid(spatial::TPoint<double,2>) == typeid(const spatial::TPoint<double,2>)); 
+	std::cout << "dtt " << vcell_persist::getTypeToken(typeid(double)) << std::endl;
 }
 
 TEST(persist,TPoint) {
 	{
-	vcell_persist::registerTypeToken(typeid(spatial::TPoint<double,2>),"doobie");
-	vcell_persist::registerTypeToken(typeid(spatial::TPoint<int,3>),"dubai");
-	std::ofstream out("tpoint2.dat");
-	spatial::TPoint<double,2> d(dx,dy);
-	d.persist(out);
-	spatial::TPoint<int,3> e(7,24,25);
-	e.persist(out);
-	spatial::TPoint<int,3> other(e); 
+		std::ofstream out("tpoint2.dat");
+		spatial::TPoint<double,2> d(dx,dy);
+		d.persist(out);
+		spatial::TPoint<int,3> e(7,24,25);
+		e.persist(out);
+		spatial::TPoint<int,3> other(e); 
 	}
 
 	{
@@ -40,6 +39,45 @@ TEST(persist,TPoint) {
 		spatial::TPoint<int,3> e(in);
 		ASSERT_TRUE(d(spatial::cX) == dx);
 		ASSERT_TRUE(d(spatial::cY) == dy);
+	}
+
+}
+namespace {
+	struct PromiscousME : public spatial::MeshElement<double, 2> {
+		 PromiscousME ( const size_t *n, const double *values)  
+			 :spatial::MeshElement<double, 2>(n,values) {} 
+		void setForTesting(spatial::SurfacePosition sp) {
+			setPos(sp);
+		}
+	};
+
+}
+TEST(persist,MPoint) {
+	size_t i[2] = {5,7};
+	double r[2] = {3.4, 8.5};
+	spatial::SurfacePosition sp = spatial::boundarySurface;
+	{
+		std::ofstream out("mpoint.dat");
+		spatial::MPoint<double,2> a(i,r);
+		a.persist(out);
+		PromiscousME b(i,r);
+		b.setForTesting(sp);
+		b.persist(out);
+	}
+
+	{
+		std::ifstream in("mpoint.dat");
+		spatial::MPoint<double,2> d(in);
+		ASSERT_TRUE(d(spatial::cX) == r[0]); 
+		ASSERT_TRUE(d(spatial::cY) == r[1]);
+		ASSERT_TRUE(d.indexOf(0) == i[0]);
+		ASSERT_TRUE(d.indexOf(1) == i[1]);
+		spatial::MeshElement<double,2> f(in);
+		ASSERT_TRUE(f(spatial::cX) == r[0]); 
+		ASSERT_TRUE(f(spatial::cY) == r[1]);
+		ASSERT_TRUE(f.indexOf(0) == i[0]);
+		ASSERT_TRUE(f.indexOf(1) == i[1]);
+		ASSERT_TRUE(f.mPos( ) == sp);
 	}
 }
 
