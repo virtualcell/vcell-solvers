@@ -4,17 +4,35 @@
 #include <persist.h>
 using namespace spatial;
 using namespace vcell_persist; 
+namespace {
+
+	struct Registrar {
+		Registrar ( ) {
+			#define comma , 
+			#define RTT(X) registerTypeToken(typeid(X),#X);
+
+			RTT(spatial::TPoint<int comma 3>)
+			RTT(spatial::TPoint<double comma 2>)
+
+			#undef comma
+			#undef RTT 
+		}
+
+	};
+}
 
 template <class T, int N>
 TPoint<T,N>::TPoint(std::istream &is)
 	:coord( ) 
 {
+	static Registrar r;
 	Token::check<TPoint<T,N> >(is); 
 	std::for_each(coord.begin( ), coord.end( ),binaryRead<T>(is) );
 }
 
 template <class T, int N>
 void TPoint<T,N>::persist(std::ostream &os) {
+	static Registrar r;
 	Token::insert<TPoint<T,N> >(os); 
 	std::for_each(coord.begin( ), coord.end( ),binaryWrite<T>(os) );
 

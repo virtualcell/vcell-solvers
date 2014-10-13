@@ -22,7 +22,6 @@ namespace spatial {
 		return a;
 	}
 
-
 #   pragma warning ( disable : 4351 )
 	/**
 	* basic point definition
@@ -30,7 +29,7 @@ namespace spatial {
 	* @param N number of dimensions
 	*/
 	template<class T, int N>
-	class TPoint : public vcell_persist::Persistent {
+	class TPoint {
 	protected:
 		std::array<T,N> coord; 
 	public:
