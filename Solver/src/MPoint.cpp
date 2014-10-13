@@ -1,5 +1,6 @@
-#include <MPoint.h>
 #include <sstream>
+#include <algorithm>
+#include <MPoint.h>
 #include <persist.h>
 
 using spatial::IndexInfo;
@@ -62,6 +63,8 @@ void MeshElement<T,N>::persist(std::ostream &os) {
 	bw(mp);
 }
 
+template void MPoint<double,2>::persist(std::ostream &);
+template MPoint<double,2>::MPoint(std::istream &);
 template void MeshElement<double,2>::persist(std::ostream &);
 template MeshElement<double,2>::MeshElement(std::istream &);
 
