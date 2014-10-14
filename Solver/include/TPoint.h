@@ -4,6 +4,7 @@
 #include <iostream>
 #include <array>
 #include <cmath>
+#include <algorithm>
 #include <persist.h>
 namespace spatial {
 
