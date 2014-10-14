@@ -17,16 +17,23 @@ namespace spatial {
 	*/
 	template<class REAL, int N>
 	struct MPoint : public TPoint<REAL,N> {
+		typedef TPoint<REAL,N> base;
+
 		MPoint(const size_t *n, const REAL *values) {
 			for (int i = 0; i < N; i++) {
 				MPoint & us = *this;
 				//us(static_cast<Axis>(i)) = values[i];
-				TPoint<REAL,N>::coord[i] = values[i];
+				base::coord[i] = values[i];
 				index[i] = n[i];
 			}
 		}
 
-		MPoint(std::istream &);
+		MPoint(std::istream &is) 
+			:base(is)
+		{
+			vcell_persist::Token::check<MPoint<REAL,N> >(is); 
+			std::for_each(index.begin( ), index.end( ), vcell_persist::binaryRead<size_t>(is) );
+		}
 
 		size_t indexOf(int dim) const {
 			return index[dim];
@@ -48,7 +55,16 @@ namespace spatial {
 			return TPoint<size_t,N>(index);
 		}
 
-		void persist(std::ostream &);
+		void persist(std::ostream &os) {
+			base::persist(os);
+			vcell_persist::Token::insert<MPoint<REAL,N> >(os); 
+			std::for_each(index.begin( ), index.end( ), vcell_persist::binaryWrite<size_t>(os) );	
+		}
+
+		static void registerType( ) {
+			base::registerType( );
+			vcell_persist::tRegisterTypeToken<REAL,N>(typeid(MPoint<REAL,N>),"MPoint");
+		}
 
 	protected:
 		std::array<size_t,N> index;
@@ -66,9 +82,14 @@ namespace spatial {
 
 		/**
 		* create from binary stream
-		* MPoint.cpp
 		*/
-		MeshElement(std::istream &);
+		MeshElement(std::istream &is) 
+			:base(is)
+		{
+			vcell_persist::Token::check<MeshElement<REAL,N> >(is); 
+			vcell_persist::binaryRead<SurfacePosition> br(is);
+			br(mp);
+		}
 
 		SurfacePosition mPos( ) const {
 			return mp;
@@ -117,7 +138,16 @@ namespace spatial {
 		* write this to binary stream
 		* MPoint.cpp
 		*/
-		void persist(std::ostream &);
+		void persist(std::ostream & os ) {
+			base::persist(os);
+			vcell_persist::Token::insert<MeshElement<REAL,N> >(os); 
+			vcell_persist::binaryWrite<SurfacePosition> bw(os);
+			bw(mp);
+		}
+		static void registerType( ) {
+			base::registerType( );
+			vcell_persist::tRegisterTypeToken<REAL,N>(typeid(MeshElement<REAL,N>),"MeshElement");
+		}
 	protected:
 		void setPos(SurfacePosition m)  {
 			size_t x = this->index[0];

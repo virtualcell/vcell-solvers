@@ -24,11 +24,14 @@ TEST(persist,tcheck) {
 }
 
 TEST(persist,TPoint) {
+
 	{
 		std::ofstream out("tpoint2.dat");
 		spatial::TPoint<double,2> d(dx,dy);
+		d.registerType( );
 		d.persist(out);
 		spatial::TPoint<int,3> e(7,24,25);
+		e.registerType( );
 		e.persist(out);
 		spatial::TPoint<int,3> other(e); 
 	}
@@ -53,6 +56,7 @@ namespace {
 
 }
 TEST(persist,MPoint) {
+	spatial::MeshElement<double,2>::registerType( );
 	size_t i[2] = {5,7};
 	double r[2] = {3.4, 8.5};
 	spatial::SurfacePosition sp = spatial::boundarySurface;

@@ -3,8 +3,16 @@
 #include <ostream>
 #include <typeinfo>
 namespace vcell_persist {
-	void registerTypeToken(const std::type_info &, const char * token); 
+		void registerTypeToken(const std::type_info &, const char * token); 
+		void registerTypeToken(const std::type_info &, const char * token,const std::type_info &templateParameter, int dim); 
+
+	template <class T, int N>
+	void tRegisterTypeToken(const std::type_info &ti, const char *token) {
+			registerTypeToken(ti,token,typeid(T),N);
+	};
+
 	const std::string & getTypeToken(const std::type_info &); 
+	//const std::string typeNameFor(const char *classname, const std::type_info &templateParameter, int dim); 
 
 	#define VCELL_PERSIST_REGISTER_MACRO(X) registerTypeToken(typeid(X),#X);
 	#define VCELL_PERSIST_REGISTER_MACRO2(X,Y) registerTypeToken(typeid(X,Y),#X","#Y);

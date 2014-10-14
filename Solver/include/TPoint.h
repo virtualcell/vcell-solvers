@@ -4,6 +4,7 @@
 #include <iostream>
 #include <array>
 #include <cmath>
+#include <persist.h>
 namespace spatial {
 
 
@@ -52,7 +53,13 @@ namespace spatial {
 			coord[1] = b;
 			coord[2] = c;
 		}
-		TPoint(std::istream &os);
+		TPoint(std::istream &is)
+			:coord( ) 
+		{
+			vcell_persist::Token::check<TPoint<T,N> >(is); 
+			std::for_each(coord.begin( ), coord.end( ),vcell_persist::binaryRead<T>(is) );
+		}
+
 
 		/**
 		* initialize from C style array
@@ -111,10 +118,8 @@ namespace spatial {
 				coord[i] = values[i];
 			}
 		}
+		
 
-		static int numDim( ) {
-			return N;
-		}
 
 		T operator( )(Axis a) const {
 			return coord[a];
@@ -141,7 +146,18 @@ namespace spatial {
 			return false;
 		}
 
-		void persist(std::ostream &);
+		void persist(std::ostream &os) {
+			vcell_persist::Token::insert<TPoint<T,N> >(os); 
+			std::for_each(coord.begin( ), coord.end( ), vcell_persist::binaryWrite<T>(os) );
+		}
+
+		static int numDim( ) {
+			return N;
+		}
+
+		static void registerType( ) {
+			vcell_persist::tRegisterTypeToken<T,N>(typeid(TPoint<T,N>),"TPoint");
+		}
 
 	};
 

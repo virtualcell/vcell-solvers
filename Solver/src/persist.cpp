@@ -15,6 +15,7 @@ namespace {
 	struct TokenMap : public std::map<const type_info *,std::string> {
 		TokenMap( ) {
 			registerTypeToken(typeid(double),"double");
+			registerTypeToken(typeid(int),"int");
 		}
 	};
 
@@ -67,5 +68,11 @@ const std::string & vcell_persist::getTypeToken(const type_info & ti) {
 			return iter->second;
 		}
 		VCELL_EXCEPTION(invalid_argument,"type " << ti.name( ) << " not registered with call to registerTypeToken");
+}
+
+void vcell_persist::registerTypeToken(const type_info &clzz, const char *classname, const std::type_info &templateParameter, int dim) {
+	std::ostringstream oss;
+	oss << classname << '<' << getTypeToken(templateParameter) << ',' << dim << '>';
+	typeTokens[&clzz] = oss.str( ); 
 }
 
