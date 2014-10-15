@@ -19,6 +19,7 @@ namespace spatial {
 
 	/**
 	* external accessor to get edges from Volume
+	* results will not be valid if Volume changed during iteration
 	*/
 	template <class COORD_TYPE, class VALUE_TYPE,int N>
 	struct SegmentAccessor {
@@ -125,7 +126,7 @@ namespace spatial {
 		*/
 		void clear( ) {
 			state->clear( );
-				notifyMonitor( );
+			notifyMonitor( );
 		}
 		/**
 		* close existing construct. It must contain at least
@@ -133,7 +134,7 @@ namespace spatial {
 		*/
 		void close( ) {
 			state->close( );
-				notifyMonitor( );
+			notifyMonitor( );
 		}
 
 		/**
@@ -163,7 +164,7 @@ namespace spatial {
 		*/
 		void nextSection( ) {
 			state = state->nextSection( );
-				notifyMonitor( );
+			notifyMonitor( );
 		};
 
 		/**
@@ -176,7 +177,7 @@ namespace spatial {
 		*/
 		FillingIteratorType fillingIterator(size_t n) {
 			state = state->prep(VolumeImpl<COORD_TYPE,VALUE_TYPE,N>::opFillingIterator);
-				notifyMonitor( );
+			notifyMonitor( );
 			return state->fillingIterator(n);
 		}
 		/**
@@ -184,7 +185,7 @@ namespace spatial {
 		*/
 		void add(const TPoint<COORD_TYPE,N> & point) {
 			state = state->add(point);
-				notifyMonitor( );
+			notifyMonitor( );
 		}
 		Volume<COORD_TYPE, VALUE_TYPE,N> intersection(const Volume<COORD_TYPE,VALUE_TYPE,N> &rhs) const {
 			return state->intersection(rhs);
@@ -197,8 +198,8 @@ namespace spatial {
 			state->persist(os);
 		}
 
-		void registerType( ) const {
-			state->registerType( );
+		static void registerType( ) {
+			VolumeImpl<COORD_TYPE,VALUE_TYPE,N>::registerType( );
 		}
 
 	protected:
@@ -208,6 +209,10 @@ namespace spatial {
 				state = nullptr;
 			}
 		}
+		/**
+		* does this have more edges
+		* @param index last index accessed
+		*/
 		bool more(size_t index) const {
 			return state->more(index);
 		};
@@ -266,14 +271,14 @@ namespace spatial {
 
 		virtual bool more(size_t index) const = 0; 
 		virtual bool inside(const TPoint<COORD_TYPE,N> &point) const=0; 
-		virtual Edge<COORD_TYPE,N> getEdge(size_t index) const = 0; 
+		//virtual Edge<COORD_TYPE,N> getEdge(size_t index) const = 0; 
 		virtual Segment<COORD_TYPE,N> getSegment(size_t index) const = 0; 
 		virtual typename std::vector<TPoint<COORD_TYPE,N> >::iterator fillingIterator(size_t n) = 0; 
 		virtual bool singleton( ) {
 			return false;
 		}
 		virtual void persist(std::ostream &os) const = 0; 
-		void registerType( ) const; 
+		static void registerType( ); 
 	protected:
 		const VolumeImpl<COORD_TYPE,VALUE_TYPE,N> & pal(const Volume<COORD_TYPE,VALUE_TYPE,N> &rhs) const {
 			return *rhs.state;

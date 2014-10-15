@@ -20,8 +20,8 @@ namespace vcell_persist {
 	const std::string & getTypeToken(const std::type_info &); 
 	//const std::string typeNameFor(const char *classname, const std::type_info &templateParameter, int dim); 
 
-	#define VCELL_PERSIST_REGISTER_MACRO(X) registerTypeToken(typeid(X),#X);
-	#define VCELL_PERSIST_REGISTER_MACRO2(X,Y) registerTypeToken(typeid(X,Y),#X","#Y);
+	//#define VCELL_PERSIST_REGISTER_MACRO(X) registerTypeToken(typeid(X),#X);
+	//#define VCELL_PERSIST_REGISTER_MACRO2(X,Y) registerTypeToken(typeid(X,Y),#X","#Y);
 
 	template <typename E> struct TokenT;
 
@@ -63,12 +63,13 @@ namespace vcell_persist {
 	};
 
 
+
 	/**
 	* binary write single value to stream
 	* @param os output stream -- must be ios::binary
 	*/
 	template<typename T>
-	void binaryWrite(std::ostream &os, const T & t)  {
+	inline void binaryWrite(std::ostream &os, const T & t)  {
 		std::streamsize s = sizeof(T);
 		const char * const location = reinterpret_cast<const char *>(&t);
 		os.write(location,s);
@@ -79,7 +80,7 @@ namespace vcell_persist {
 	* @param t destination to set 
 	*/
 	template<typename T>
-	void binaryRead(std::istream &is, T & t)  {
+	inline void binaryRead(std::istream &is, T & t)  {
 		std::streamsize s = sizeof(T);
 		char * const location = reinterpret_cast<char *>(&t);
 		is.read(location,s);

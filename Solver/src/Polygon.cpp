@@ -10,19 +10,44 @@
 using vcell_persist::binaryWriter;
 using vcell_persist::binaryReader;
 namespace {
-	inline void writeBinaryShort(unsigned short n,std::ostream &os) {
-		if (n > 2) {
-			VCELL_EXCEPTION(invalid_argument, "short must be < 3, " << n << " passed")
+	/**
+	* @tparam V vector
+	*/
+	template <typename V>
+	struct vectorWriter {
+		std::ostream &os;
+		vectorWriter(std::ostream &os_) 
+			:os(os_) {}
+		void operator( )(V v) {
+			vcell_persist::persistVector(os,v);
 		}
-		binaryWriter<unsigned short> bw(os);
-		bw(n);
+	};
+	/**
+	* @tparam V vector
+	*/
+	template<typename V>
+	void persistVectors(std::ostream &os,  const std::vector< V >& vec) {
+		vcell_persist::binaryWrite(os,vec.size( ));
+		std::for_each(vec.begin( ), vec.end( ),vectorWriter<V>(os) );
 	}
 
-	inline unsigned short readBinaryShort(std::istream &is) {
-		unsigned short r;
-		binaryReader<unsigned short> br(is);
-		br(r);
-		return r;
+	/**
+	* @tparam V vector
+	*/
+	template<typename V>
+	void readVectors(std::istream &is,  std::vector< V >& vec) {
+		typedef typename std::vector<V>::size_type Stype;
+		Stype size; 
+		vcell_persist::binaryRead(is,size);
+
+		vec.clear( );
+		vec.reserve(size);
+		for (Stype i = 0; i < size; ++i) {
+			V v;
+			vcell_persist::readVector(is,v);
+			vec.push_back( v );
+		}
+
 	}
 }
 namespace spatial {
@@ -34,8 +59,10 @@ namespace spatial {
 	struct Polygons; 
 
 	template <class COORD_TYPE,class VALUE_TYPE,int N>
-	void VolumeImpl<COORD_TYPE,VALUE_TYPE,N>::registerType( ) const {
+	void VolumeImpl<COORD_TYPE,VALUE_TYPE,N>::registerType( ) {
 		vcell_persist::tRegisterTypeToken<COORD_TYPE,VALUE_TYPE,N>(typeid(Volume<COORD_TYPE,VALUE_TYPE,N>),"Volume");
+		TPoint<COORD_TYPE,N>::registerType( );
+		TPoint<VALUE_TYPE,N>::registerType( );
 	}
 
 	/**
@@ -129,7 +156,7 @@ namespace spatial {
 		}
 		virtual void persist(std::ostream &os) const {
 			vcell_persist::Token::insert<Volume<COORD_TYPE,VALUE_TYPE,2> >(os);
-			writeBinaryShort(0,os);
+			vcell_persist::binaryWrite<short>(os,0);
 		} 
 	private:
 		void *operator new[](size_t s); 
@@ -158,6 +185,13 @@ namespace spatial {
 			:pointStorage(points_),
 			dirty(true),
 			vol(0) {}
+
+		Polygon(std::istream &is) {
+			//factory checks token and reads initial short, so constructor just reads remaining fields
+			vcell_persist::readVector(is,pointStorage);
+			vcell_persist::binaryRead(is,dirty);
+			vcell_persist::binaryRead(is,vol);
+		}
 
 		/**
 		* construct rectangular Polygon
@@ -295,7 +329,7 @@ namespace spatial {
 		}
 		virtual void persist(std::ostream &os) const {
 			vcell_persist::Token::insert<Volume<COORD_TYPE,VALUE_TYPE,2> >(os);
-			writeBinaryShort(1,os);
+			vcell_persist::binaryWrite<short>(os,1);
 			vcell_persist::persistVector(os,pointStorage);
 			vcell_persist::binaryWrite(os,dirty);
 			vcell_persist::binaryWrite(os,vol);
@@ -347,14 +381,39 @@ namespace spatial {
 			:polys(),
 			current(0),
 			dirty(true),
-			vol(0) {}
+			vol(0),
+			referenceIndex(std::numeric_limits<size_t>::max( )),
+			getVector(nullptr)
+		{}
 
 		Polygons(const std::vector<Point> &input)
 			:polys(),
 			dirty(true),
-			vol(0) {
+			vol(0),
+			referenceIndex(std::numeric_limits<size_t>::max( )),
+			getVector(nullptr)
+		{
 				polys.push_back(input);
 				current = &polys.front( );
+		}
+
+		Polygons(std::istream &is) 
+			:polys(),
+			dirty(true),
+			vol(0),
+			referenceIndex(std::numeric_limits<size_t>::max( )), //see #persist( )
+			getVector(nullptr) 
+		{
+			//factory checks token and reads initial short, so constructor just reads remaining fields
+			readVectors(is,polys);
+			unsigned short cIndex;
+			vcell_persist::binaryRead(is,cIndex);
+			vcell_persist::binaryRead(is,dirty);
+			vcell_persist::binaryRead(is,vol);
+			if (cIndex >= polys.size( ) ) {
+				VCELL_EXCEPTION(out_of_range,"Retrieved index " << cIndex << " >= " << polys.size( ));
+			}
+			current = &polys[cIndex];
 		}
 
 		bool empty( )  const {
@@ -472,17 +531,25 @@ namespace spatial {
 		}
 	protected:
 		bool more(size_t index) const {
+			/*
+			* if index is greater than or equal to last queried value, first look in
+			currently iterator vector ("getVector"). 
+			*/
 			if (index >= referenceIndex)  {
 				const size_t adjusted = index - referenceIndex;
 				if (adjusted < getVector->size( ) - 1) {
 					return true;
 				}
 			}
+			/*
+			* otherwise, start over from beginning, counting edges as we go
+			*/
 
 			size_t base = 0; 
 			for (size_t pIndex = 0; pIndex < polys.size( ); ++pIndex) {
 				const size_t adjusted = index - base;
 				if (adjusted < polys[pIndex].size( ) - 1) {
+					//set reference index and getVector for next query
 					referenceIndex = base;
 					getVector = &polys[pIndex];
 					return true;
@@ -491,11 +558,19 @@ namespace spatial {
 			}
 			return false;
 		}
+
 		/**
 		* @tparam BCT type with ctor than takes two adjacent points "binary container type"
 		*/
 		template <class BCT>
 		BCT getBCT(size_t index) const {
+			/*
+			* if index is greater than or equal to last queried value, first look in
+			* currently iterator vector ("getVector"). 
+			* this is called through a protected method, and it is expected that "more( )" will
+			* be called prior, such that referenceIndex and getVector are set to something
+			* reasonable
+			*/
 			if (index >= referenceIndex)  {
 				const size_t adjusted = index - referenceIndex;
 				if (adjusted < getVector->size( ) - 1) {
@@ -503,6 +578,9 @@ namespace spatial {
 					return BCT(pv[adjusted],pv[adjusted+1]);
 				}
 			}
+			/*
+			* otherwise, start over from beginning, counting edges as we go
+			*/
 			size_t adjusted = index;
 			for (size_t pIndex = 0; pIndex < polys.size( ); ++pIndex) {
 				if (adjusted < polys[pIndex].size( ) - 1) {
@@ -511,15 +589,47 @@ namespace spatial {
 			}
 			VCELL_EXCEPTION(invalid_argument, "invalid call to get, index = " << index);
 		}
+		/*
 		Edge<COORD_TYPE,2> getEdge(size_t index) const {
 			return getBCT<Edge<COORD_TYPE, 2> >(index);
 		}
+		*/
 		Segment<COORD_TYPE,2> getSegment(size_t index) const {
 			return getBCT<Segment<COORD_TYPE, 2> >(index);
 		}
-		virtual void persist(std::ostream &os) const {} 
-		virtual void registerType( ) const {}
+		virtual void persist(std::ostream &os) const {
+			//convert current pointer into unsigned short
+			if (polys.size( ) >> std::numeric_limits<unsigned short>::max( )) {
+				VCELL_EXCEPTION(logic_error, "number of polygons " << polys.size( ) 
+					<< " exceeds storage design limit " << std::numeric_limits<unsigned short>::max( ));
+			}
+			unsigned short cIndex = 0;
+			bool found = false;
+			while (cIndex < polys.size( ) ) {
+				found = (&polys[cIndex] == current); 
+				if (found)  {
+					break;
+				}
+				else {
+					++cIndex;
+				}
+			}
 
+			if (!found)  {
+				VCELL_EXCEPTION(domain_error,"Can't find index of current pointer");
+			}
+
+			vcell_persist::Token::insert<Volume<COORD_TYPE,VALUE_TYPE,2> >(os);
+			vcell_persist::binaryWrite<short>(os,2);
+
+			persistVectors(os,polys);
+			vcell_persist::binaryWrite(os,cIndex);
+			vcell_persist::binaryWrite(os,dirty);
+			vcell_persist::binaryWrite(os,vol);
+			//we do not write #referenceIndex and #getVector, as these are 
+			//performance optimization used only during iteration and
+			//do not represent actual object state
+		} 
 
 	private:
 		void calculateVolume( ) {
@@ -568,8 +678,23 @@ namespace spatial {
 		return 0;
 	}
 	template <class COORD_TYPE,class VALUE_TYPE,int N>
-	VolumeImpl<COORD_TYPE,VALUE_TYPE,N> * VolumeImplCreator<COORD_TYPE,VALUE_TYPE,N>::read(std::istream &) {
-		return nullptr;
+	VolumeImpl<COORD_TYPE,VALUE_TYPE,N> * VolumeImplCreator<COORD_TYPE,VALUE_TYPE,N>::read(std::istream &is) {
+		vcell_persist::Token::check<Volume<COORD_TYPE,VALUE_TYPE,2> >(is);
+		short nPolygons;
+		vcell_persist::binaryRead(is,nPolygons);
+		switch (nPolygons) {
+			case 0:
+				return EmptyVolume2<COORD_TYPE,VALUE_TYPE>::getSingleton( );
+				break;
+			case 1:
+				return new Polygon<COORD_TYPE,VALUE_TYPE>(is);
+				break;
+			case 2:
+				return new Polygons<COORD_TYPE,VALUE_TYPE>(is);
+				break;
+			default:
+				VCELL_EXCEPTION(out_of_range,"Volume readback number polys " << nPolygons << "out of range 0 - 2")
+		}
 	}
 	template <class COORD_TYPE,class VALUE_TYPE,int N>
 	VolumeImpl<COORD_TYPE,VALUE_TYPE,N> * VolumeImplCreator<COORD_TYPE,VALUE_TYPE,N>::rectangle(const std::array<COORD_TYPE,N> &origin, const std::array<COORD_TYPE,N> & lengths) {

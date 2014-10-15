@@ -8,6 +8,7 @@
 #include <random>
 #include "MPoint.h"
 #include "Volume.h"
+#include <Segment.h>
 //#include "SegmentIterator.h"
 #include "gtest/gtest.h"
 #include "MBridge/MBPolygon.h"
@@ -155,6 +156,47 @@ TEST(volume,multipoly) {
 		}
 	}
 }
+TEST(volume,polyaccessor) {
+	 spatial::Volume<double,double,2> result(multiple(4,1000,100) ); 
+	 spatial::Volume<double,double,2>::SegAccessor accessor = result.accessor( );
+	 long double mSquared = 0;
+	 while (accessor.hasNext( )) {
+		const spatial::Segment<double,2> seg = accessor.getAndAdvance( );
+		mSquared += seg.magnitude<long double>( );
+	 }
+	 std::cout << mSquared << std::endl;
+}
+
+namespace {
+	//include in both "volume" and "persist" test suites
+	void testVolumePolygonsPersistence( ) {
+		using std::ios;
+		spatial::Volume<double,double,2>::registerType( );
+		spatial::Volume<double,double,2> result(multiple(4,1000,100) ); 
+		{
+		 std::ofstream out("polyVolume.dat",ios::trunc|ios::binary);
+		 out.exceptions(ios::badbit|ios::failbit|ios::eofbit);
+		 result.persist(out);
+		 result.volume( );
+		 result.persist(out);
+		}
+		std::ifstream in("polyVolume.dat",ios::binary);
+		in.exceptions(ios::badbit|ios::failbit);
+		spatial::Volume<double,double,2> back(in); 
+		spatial::Volume<double,double,2> back2(in); 
+		double orig = result.volume( );
+		double restored = back.volume( );
+		double restored2 = back2.volume( );
+		ASSERT_TRUE(orig == restored);
+		ASSERT_TRUE(orig == restored2);
+	}
+}
+TEST(volume,persistpoly) {
+	testVolumePolygonsPersistence( );
+}
+TEST(persist,complexVolume) {
+	testVolumePolygonsPersistence( );
+}
 
 TEST(volume,randpoly) {
 	std::ofstream d("randpoly.m");
@@ -244,6 +286,18 @@ TEST(volume,swaptest) {
 	std::swap(a,b);
 	ASSERT_TRUE(a.volume( ) == 0);
 	ASSERT_TRUE(b.volume( ) == theVol);
+}
+
+TEST(volume,persist) {
+	std::ofstream out("volume.dat");
+	using spatial::Volume;
+	Volume<double,double,2> a = randVolume(1000,20);
+	a.persist(out);
+
+	std::ifstream in("volume.dat");
+	Volume<double,double,2> back(in); 
+
+
 }
 
 TEST(array,exists) {
