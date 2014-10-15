@@ -58,12 +58,14 @@ namespace spatial {
 	template <class COORD_TYPE,class VALUE_TYPE>
 	struct Polygons; 
 
+	/*
 	template <class COORD_TYPE,class VALUE_TYPE,int N>
 	void VolumeImpl<COORD_TYPE,VALUE_TYPE,N>::registerType( ) {
 		vcell_persist::tRegisterTypeToken<COORD_TYPE,VALUE_TYPE,N>(typeid(Volume<COORD_TYPE,VALUE_TYPE,N>),"Volume");
 		TPoint<COORD_TYPE,N>::registerType( );
 		TPoint<VALUE_TYPE,N>::registerType( );
 	}
+	*/
 
 	/**
 	* support double dispatch virtual functions
