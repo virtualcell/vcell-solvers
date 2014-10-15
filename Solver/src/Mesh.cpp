@@ -1,4 +1,5 @@
 #include <cstdint>
+#pragma warning ( disable: 4018 )
 #include <Mesh.h>
 
 //using namespace spatial;

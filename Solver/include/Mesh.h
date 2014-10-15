@@ -7,6 +7,7 @@
 #include <TPoint.h>
 #include <DiffuseAdvectCache.h>
 #include <boost/iterator/iterator_facade.hpp>
+#include <persist.h>
 namespace spatial {
 
 	/**
@@ -106,6 +107,33 @@ namespace spatial {
 			nPoints(rhs.nPoints),
 			minInterval(rhs.minInterval) {}
 
+		MeshDef(std::istream & is) {
+			using vcell_persist::binaryReader;
+
+			vcell_persist::Token::check<MeshDef<CT,N> >(is); 
+			binaryReader<CT> br(is);
+			std::for_each(origin.begin( ), origin.end( ), br);
+			std::for_each(intervals.begin( ), intervals.end( ), br);
+			std::for_each(nPoints.begin( ), nPoints.end( ), binaryReader<size_t>(is) ); 
+			br(minInterval);
+		}
+
+
+		void persist(std::ostream &os) const {
+			using vcell_persist::binaryWriter;
+
+			vcell_persist::Token::insert<MeshDef<CT,N> >(os); 
+			binaryWriter<CT> bw(os);
+			std::for_each(origin.begin( ), origin.end( ), bw);
+			std::for_each(intervals.begin( ), intervals.end( ), bw);
+			std::for_each(nPoints.begin( ), nPoints.end( ), binaryWriter<size_t>(os) ); 
+			bw(minInterval);
+		}
+
+		static void registerType( ) {
+			vcell_persist::tRegisterTypeToken<CT,N>(typeid(MeshDef<CT,N>),"MeshDef");
+		}
+
 		CT startCorner(Axis a) const {
 			return origin[a];
 		}
@@ -176,6 +204,24 @@ namespace spatial {
 				return rval;
 			}
 			return rval - intervals[dimension];
+		}
+
+		/**
+		* return a very rough hash value 
+		*/
+		size_t checkvalue( ) const {
+			size_t cv = 0;
+			CT coordCv = 0;
+			for (int i = 0; i < N; i++) {
+				coordCv +=origin[i];
+				coordCv +=intervals[i] * 17;
+				cv^=nPoints[i];
+			}
+			coordCv = std::abs(coordCv);
+			while (coordCv < ( std::numeric_limits<size_t>::max( ) / 100) ) {
+				coordCv *= 10;
+			}
+			return cv ^ static_cast<size_t>(coordCv);
 		}
 
 	protected:

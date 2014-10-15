@@ -14,8 +14,12 @@ using namespace vcell_util;
 namespace {
 	struct TokenMap : public std::map<const type_info *,std::string> {
 		TokenMap( ) {
-			registerTypeToken(typeid(double),"double");
+			registerTypeToken(typeid(char),"char");
+			registerTypeToken(typeid(short),"short");
 			registerTypeToken(typeid(int),"int");
+			registerTypeToken(typeid(long),"long");
+			registerTypeToken(typeid(float),"float");
+			registerTypeToken(typeid(double),"double");
 		}
 	};
 
@@ -73,6 +77,12 @@ const std::string & vcell_persist::getTypeToken(const type_info & ti) {
 void vcell_persist::registerTypeToken(const type_info &clzz, const char *classname, const std::type_info &templateParameter, int dim) {
 	std::ostringstream oss;
 	oss << classname << '<' << getTypeToken(templateParameter) << ',' << dim << '>';
+	typeTokens[&clzz] = oss.str( ); 
+}
+
+void vcell_persist::registerTypeToken(const type_info &clzz, const char *classname, const std::type_info &templateParameterA, const std::type_info &templateParameterB, int dim) {
+	std::ostringstream oss;
+	oss << classname << '<' << getTypeToken(templateParameterA) << ',' << getTypeToken(templateParameterB) << ',' << dim << '>';
 	typeTokens[&clzz] = oss.str( ); 
 }
 

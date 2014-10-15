@@ -32,7 +32,7 @@ namespace spatial {
 			:base(is)
 		{
 			vcell_persist::Token::check<MPoint<REAL,N> >(is); 
-			std::for_each(index.begin( ), index.end( ), vcell_persist::binaryRead<size_t>(is) );
+			std::for_each(index.begin( ), index.end( ), vcell_persist::binaryReader<size_t>(is) );
 		}
 
 		size_t indexOf(int dim) const {
@@ -58,7 +58,7 @@ namespace spatial {
 		void persist(std::ostream &os) {
 			base::persist(os);
 			vcell_persist::Token::insert<MPoint<REAL,N> >(os); 
-			std::for_each(index.begin( ), index.end( ), vcell_persist::binaryWrite<size_t>(os) );	
+			std::for_each(index.begin( ), index.end( ), vcell_persist::binaryWriter<size_t>(os) );	
 		}
 
 		static void registerType( ) {
@@ -87,8 +87,7 @@ namespace spatial {
 			:base(is)
 		{
 			vcell_persist::Token::check<MeshElement<REAL,N> >(is); 
-			vcell_persist::binaryRead<SurfacePosition> br(is);
-			br(mp);
+			vcell_persist::binaryRead(is,mp);
 		}
 
 		SurfacePosition mPos( ) const {
@@ -141,8 +140,7 @@ namespace spatial {
 		void persist(std::ostream & os ) {
 			base::persist(os);
 			vcell_persist::Token::insert<MeshElement<REAL,N> >(os); 
-			vcell_persist::binaryWrite<SurfacePosition> bw(os);
-			bw(mp);
+			vcell_persist::binaryWrite(os,mp);
 		}
 		static void registerType( ) {
 			base::registerType( );

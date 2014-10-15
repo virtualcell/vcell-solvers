@@ -2,13 +2,19 @@
 #define persist_h
 #include <ostream>
 #include <typeinfo>
+#include <vector>
 namespace vcell_persist {
 		void registerTypeToken(const std::type_info &, const char * token); 
 		void registerTypeToken(const std::type_info &, const char * token,const std::type_info &templateParameter, int dim); 
+		void registerTypeToken(const std::type_info &, const char * token,const std::type_info &templateParameterA, const std::type_info &templateParameterB, int dim); 
 
 	template <class T, int N>
 	void tRegisterTypeToken(const std::type_info &ti, const char *token) {
 			registerTypeToken(ti,token,typeid(T),N);
+	};
+	template <class A, class B, int N>
+	void tRegisterTypeToken(const std::type_info &ti, const char *token) {
+			registerTypeToken(ti,token,typeid(A),typeid(B),N);
 	};
 
 	const std::string & getTypeToken(const std::type_info &); 
@@ -56,16 +62,43 @@ namespace vcell_persist {
 		
 	};
 
+
+	/**
+	* binary write single value to stream
+	* @param os output stream -- must be ios::binary
+	*/
+	template<typename T>
+	void binaryWrite(std::ostream &os, const T & t)  {
+		std::streamsize s = sizeof(T);
+		const char * const location = reinterpret_cast<const char *>(&t);
+		os.write(location,s);
+	}
+	/**
+	* binary read single value form stream
+	* @param is input stream -- must be ios::binary
+	* @param t destination to set 
+	*/
+	template<typename T>
+	void binaryRead(std::istream &is, T & t)  {
+		std::streamsize s = sizeof(T);
+		char * const location = reinterpret_cast<char *>(&t);
+		is.read(location,s);
+	}
+	
+
 	/**
 	* functor to write binary data
 	*/
 	template<typename T>
-	struct binaryWrite {
+	struct binaryWriter {
 		std::ostream &os;
-		binaryWrite(std::ostream &os_) 
+		/**
+		* @param os_ output stream -- must be ios::binary
+		*/
+		binaryWriter(std::ostream &os_) 
 			:os(os_) {}
-		void operator( )(T t) {
-			os.write(reinterpret_cast<char *>(&t),sizeof(T) );
+		void operator( )(const T  &t) {
+			binaryWrite(os,t);
 		}
 	};
 
@@ -73,14 +106,31 @@ namespace vcell_persist {
 	* functor to read binary data
 	*/
 	template<typename T>
-	struct binaryRead {
+	struct binaryReader {
 		std::istream &is;
-		binaryRead(std::istream &is_) 
+		/**
+		* @param is_ input stream -- must be ios::binary
+		*/
+		binaryReader(std::istream &is_) 
 			:is(is_) {}
 		void operator( )(T &in) {
-			char * const location = reinterpret_cast<char *>(&in);
-			is.read(location,sizeof(T) );
+			binaryRead(is,in);
 		}
 	};
+
+	
+
+	/*
+	template<typename T>
+	struct persistGen {
+		std::istream &is;
+		persistGen(std::istream &is_)
+			:is(is_) {}
+		T operator( )( ) {
+			T t(is);
+			return t;
+		}
+	};
+	*/
 }	
 #endif

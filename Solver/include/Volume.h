@@ -72,6 +72,10 @@ namespace spatial {
 			:monitor(vm),
 			state(VolumeImplCreator<COORD_TYPE,VALUE_TYPE,N>::create(nConstructs) ) {}
 
+		Volume(std::istream &is, VolumeMonitor *vm = nullptr)  
+			:monitor(vm),
+			state(VolumeImplCreator<COORD_TYPE,VALUE_TYPE,N>::read(is) ) {}
+
 		/**
 		*  assumes ownership of implementation
 		*/
@@ -189,6 +193,14 @@ namespace spatial {
 			return state->intersection(rhs);
 		}
 
+		void persist(std::ostream &os) const {
+			state->persist(os);
+		}
+
+		void registerType( ) const {
+			state->registerType( );
+		}
+
 	protected:
 		void releaseExisting( ) {
 			if (state && !state->singleton( )) {
@@ -260,6 +272,8 @@ namespace spatial {
 		virtual bool singleton( ) {
 			return false;
 		}
+		virtual void persist(std::ostream &os) const = 0; 
+		void registerType( ) const; 
 	protected:
 		const VolumeImpl<COORD_TYPE,VALUE_TYPE,N> & pal(const Volume<COORD_TYPE,VALUE_TYPE,N> &rhs) const {
 			return *rhs.state;
@@ -268,6 +282,7 @@ namespace spatial {
 	template <class COORD_TYPE, class VALUE_TYPE, int N>
 	struct VolumeImplCreator {
 		static VolumeImpl<COORD_TYPE,VALUE_TYPE,N> * create(size_t nPolygons);
+		static VolumeImpl<COORD_TYPE,VALUE_TYPE,N> * read(std::istream &);
 		static VolumeImpl<COORD_TYPE,VALUE_TYPE,N> * rectangle(const std::array<COORD_TYPE,N> &origin, const std::array<COORD_TYPE,N> & lengths);
 	};
 

@@ -58,7 +58,7 @@ namespace spatial {
 			:coord( ) 
 		{
 			vcell_persist::Token::check<TPoint<T,N> >(is); 
-			std::for_each(coord.begin( ), coord.end( ),vcell_persist::binaryRead<T>(is) );
+			std::for_each(coord.begin( ), coord.end( ),vcell_persist::binaryReader<T>(is) );
 		}
 
 
@@ -149,7 +149,7 @@ namespace spatial {
 
 		void persist(std::ostream &os) {
 			vcell_persist::Token::insert<TPoint<T,N> >(os); 
-			std::for_each(coord.begin( ), coord.end( ), vcell_persist::binaryWrite<T>(os) );
+			std::for_each(coord.begin( ), coord.end( ), vcell_persist::binaryWriter<T>(os) );
 		}
 
 		static int numDim( ) {

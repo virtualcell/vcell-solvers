@@ -1,10 +1,30 @@
+#include <cstdint>
 #include <Volume.h>
 #include <Edge.h>
 #include <Segment.h>
 #include <intersection.h>
 #include <VCellException.h>
-#include <cstdint>
+#include <persist.h>
+#include <persistvector.h>
 #define COMPILE_64
+using vcell_persist::binaryWriter;
+using vcell_persist::binaryReader;
+namespace {
+	inline void writeBinaryShort(unsigned short n,std::ostream &os) {
+		if (n > 2) {
+			VCELL_EXCEPTION(invalid_argument, "short must be < 3, " << n << " passed")
+		}
+		binaryWriter<unsigned short> bw(os);
+		bw(n);
+	}
+
+	inline unsigned short readBinaryShort(std::istream &is) {
+		unsigned short r;
+		binaryReader<unsigned short> br(is);
+		br(r);
+		return r;
+	}
+}
 namespace spatial {
 	//forward
 	template <class COORD_TYPE,class VALUE_TYPE>
@@ -12,6 +32,11 @@ namespace spatial {
 
 	template <class COORD_TYPE,class VALUE_TYPE>
 	struct Polygons; 
+
+	template <class COORD_TYPE,class VALUE_TYPE,int N>
+	void VolumeImpl<COORD_TYPE,VALUE_TYPE,N>::registerType( ) const {
+		vcell_persist::tRegisterTypeToken<COORD_TYPE,VALUE_TYPE,N>(typeid(Volume<COORD_TYPE,VALUE_TYPE,N>),"Volume");
+	}
 
 	/**
 	* support double dispatch virtual functions
@@ -102,6 +127,10 @@ namespace spatial {
 		void operator delete(void *ptr) {
 			throw std::logic_error("EmptyVolume2 delete");
 		}
+		virtual void persist(std::ostream &os) const {
+			vcell_persist::Token::insert<Volume<COORD_TYPE,VALUE_TYPE,2> >(os);
+			writeBinaryShort(0,os);
+		} 
 	private:
 		void *operator new[](size_t s); 
 		/**
@@ -136,7 +165,7 @@ namespace spatial {
 		Polygon(const std::array<COORD_TYPE,2> &origin, const std::array<COORD_TYPE,2> & lengths)
 			:pointStorage(),
 			dirty(false),
-			vol(lengths[cX] * lengths[cY]) 
+			vol(static_cast<VALUE_TYPE>(lengths[cX] * lengths[cY])) 
 		{
 			std::array<COORD_TYPE,2> working(origin);
 			pointStorage.push_back(working); //top left
@@ -264,6 +293,13 @@ namespace spatial {
 			spatial::intersectionsManySingle(rval,rhs.storage( ), pointStorage);
 			return rval;
 		}
+		virtual void persist(std::ostream &os) const {
+			vcell_persist::Token::insert<Volume<COORD_TYPE,VALUE_TYPE,2> >(os);
+			writeBinaryShort(1,os);
+			vcell_persist::persistVector(os,pointStorage);
+			vcell_persist::binaryWrite(os,dirty);
+			vcell_persist::binaryWrite(os,vol);
+		} 
 	protected:
 		bool more(size_t index) const {
 			return index < pointStorage.size( ) - 1;
@@ -481,6 +517,8 @@ namespace spatial {
 		Segment<COORD_TYPE,2> getSegment(size_t index) const {
 			return getBCT<Segment<COORD_TYPE, 2> >(index);
 		}
+		virtual void persist(std::ostream &os) const {} 
+		virtual void registerType( ) const {}
 
 
 	private:
@@ -528,6 +566,10 @@ namespace spatial {
 			}
 		}
 		return 0;
+	}
+	template <class COORD_TYPE,class VALUE_TYPE,int N>
+	VolumeImpl<COORD_TYPE,VALUE_TYPE,N> * VolumeImplCreator<COORD_TYPE,VALUE_TYPE,N>::read(std::istream &) {
+		return nullptr;
 	}
 	template <class COORD_TYPE,class VALUE_TYPE,int N>
 	VolumeImpl<COORD_TYPE,VALUE_TYPE,N> * VolumeImplCreator<COORD_TYPE,VALUE_TYPE,N>::rectangle(const std::array<COORD_TYPE,N> &origin, const std::array<COORD_TYPE,N> & lengths) {
