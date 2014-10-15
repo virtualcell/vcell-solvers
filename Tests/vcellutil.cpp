@@ -13,18 +13,16 @@ using namespace vcell_util;
 namespace {
 	double dx = 2.0 / 3 - 0.0001;
 	double dy = 2.0 / 7 + 0.0001;
-	std::ofstream output(const char *name) {
+	void binaryOpen(std::ofstream &out, const char *name) {
 		using std::ios;
-		std::ofstream out(name, ios::trunc|ios::binary);
+		out.open(name,ios::trunc|ios::binary);
 		out.exceptions(ios::badbit|ios::failbit|ios::eofbit);
-		return out;
 	}
 
-	std::ifstream input(const char *name) {
+	void binaryOpen(std::ifstream &in, const char *name) {
 		using std::ios;
-		std::ifstream in(name, ios::binary);
+		in.open(name, ios::binary);
 		in.exceptions(ios::badbit|ios::failbit);
-		return in;
 	}
 }
 
@@ -43,13 +41,15 @@ TEST(persist,prim) {
 	const long seven = 7; 
 	const double pi =3.14159;
 	{
-		std::ofstream out = output("prim.dat");
+		std::ofstream out;
+		binaryOpen(out,"prim.dat");
 		vcell_persist::binaryWrite(out,five);
 		vcell_persist::binaryWrite(out,seven);
 		vcell_persist::binaryWrite(out,pi);
 	}
 	{
-		std::ifstream in = input("prim.dat");
+		std::ifstream in;
+		binaryOpen(in,"prim.dat");
 		short f;
 		long s;
 		double p;
@@ -65,7 +65,8 @@ TEST(persist,prim) {
 TEST(persist,TPoint) {
 
 	{
-		std::ofstream out = output("tpoint2.dat");
+		std::ofstream out;
+		binaryOpen(out,"tpoint.dat");
 		spatial::TPoint<double,2> d(dx,dy);
 		d.registerType( );
 		d.persist(out);
@@ -76,7 +77,8 @@ TEST(persist,TPoint) {
 	}
 
 	{
-		std::ifstream in = input("tpoint2.dat");
+		std::ifstream in;
+		binaryOpen(in,"tpoint.dat");
 		spatial::TPoint<double,2> d(in);
 		spatial::TPoint<int,3> e(in);
 		ASSERT_TRUE(d(spatial::cX) == dx);
@@ -99,12 +101,14 @@ TEST(persist,TPointVector) {
 		vec.push_back(d);
 	}
 	{
-		std::ofstream out = output("tpointvec.dat");
+		std::ofstream out;
+		binaryOpen(out,"tpointvec.dat");
 		vcell_persist::persistVector<DPoint>(out,vec);
 	}
 
 	{
-		std::ifstream in = input("tpointvec.dat");
+		std::ifstream in;
+		binaryOpen(in,"tpointvec.dat");
 		in.exceptions(ios::badbit|ios::failbit);
 		std::vector<DPoint> vec2;
 		vcell_persist::readVector(in,vec2);
@@ -131,7 +135,8 @@ TEST(persist,MPoint) {
 	double r[2] = {3.4, 8.5};
 	spatial::SurfacePosition sp = spatial::boundarySurface;
 	{
-		std::ofstream out = output("mpoint.dat");
+		std::ofstream out;
+		binaryOpen(out,"mpoint.dat");
 		spatial::MPoint<double,2> a(i,r);
 		a.persist(out);
 		PromiscousME b(i,r);
@@ -140,7 +145,8 @@ TEST(persist,MPoint) {
 	}
 
 	{
-		std::ifstream in = input("mpoint.dat");
+		std::ifstream in;
+		binaryOpen(in,"mpoint.dat");
 		spatial::MPoint<double,2> d(in);
 		ASSERT_TRUE(d(spatial::cX) == r[0]); 
 		ASSERT_TRUE(d(spatial::cY) == r[1]);
@@ -161,7 +167,8 @@ TEST(persist,Mesh) {
 	std::array<short,2> intervals; 
 	size_t cv = 0;
 	{
-		std::ofstream out = output("mesh.dat");
+		std::ofstream out;
+		binaryOpen(out,"mesh.dat");
 		spatial::MeshDef<short,2> md(origin,sizes,npoints);
 		md.registerType( );
 		md.persist(out);
@@ -170,7 +177,8 @@ TEST(persist,Mesh) {
 		cv = md.checkvalue( );
 	}
 	{
-		std::ifstream in = input("mesh.dat");
+		std::ifstream in;
+		binaryOpen(in,"mesh.dat");
 		spatial::MeshDef<short,2> back(in); 
 		ASSERT_TRUE(back.startCorner(spatial::cX) == origin[0]) ; 
 		ASSERT_TRUE(back.startCorner(spatial::cY) == origin[1]) ; 
@@ -196,11 +204,13 @@ TEST(persist,volume) {
 	single.close( );
 	double vol = single.volume( );
 	{
-		std::ofstream out = output("volume.dat");
+		std::ofstream out;
+		binaryOpen(out,"volume.dat");
 		empty.persist(out);
 		single.persist(out);
 	}
-	std::ifstream in = input("volume.dat");
+	std::ifstream in;
+	binaryOpen(in,"volume.dat");
 	VType eback(in);
 	VType sback(in);
 	ASSERT_TRUE(sback.volume( ) == vol);
