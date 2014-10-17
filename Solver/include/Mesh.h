@@ -131,7 +131,7 @@ namespace spatial {
 		}
 
 		static void registerType( ) {
-			vcell_persist::tRegisterTypeToken<CT,N>(typeid(MeshDef<CT,N>),"MeshDef");
+			vcell_persist::Registrar::reg<MeshDef<CT,N>,CT,N>("MeshDef");
 		}
 
 		CT startCorner(Axis a) const {

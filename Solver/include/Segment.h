@@ -1,7 +1,9 @@
 #ifndef Segment_h
 #define Segment_h
-#include <TPoint.h>
+#include <istream>
 #include <ostream>
+#include <TPoint.h>
+#include <persist.h>
 
 namespace spatial {
 	/**
@@ -26,6 +28,15 @@ namespace spatial {
 			:points(rhs.points) {}
 
 		//default assigment operator works fine
+
+		/**
+		* read from stream
+		*/
+		Segment(std::istream & is) {
+			vcell_persist::Token::check<Segment<T,N> >(is); 
+			points[0] = TPoint<T,N>(is);
+			points[1] = TPoint<T,N>(is);
+		}
 
 		/**
 		* one of the points; it is guaranteed #a( ) <= #b( )
@@ -85,6 +96,17 @@ namespace spatial {
 			T lc = points[0](a);
 			T rc = points[1](a);
 			return rc > lc ? rc -lc : lc - rc;
+		}
+
+		void persist(std::ostream &os) {
+			vcell_persist::Token::insert<Segment<T,N> >(os); 
+			points[0].persist(os);
+			points[1].persist(os);
+		}
+
+		static void registerType( ) {
+			TPoint<T,N>::registerType( );
+			vcell_persist::Registrar::reg< Segment<T,N>, T,N>("Segment");
 		}
 
 	private:

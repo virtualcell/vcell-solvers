@@ -75,6 +75,11 @@ namespace vcell_util {
 		void set(Level lvl);
 
 		/**
+		* get current level
+		*/
+		Level currentLevel( ) const;
+
+		/**
 		* activate level for specific scope
 		* @param key specific scope for logging
 		* @param  on turn on or off

@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <TPoint.h>
 #include <Angle.h>
+#include <persist.h>
 
 namespace spatial {
 	template <class T, int N>
@@ -26,7 +27,6 @@ namespace spatial {
 			static_assert(N==2, "need 2");
 			component[cX] = x;
 			component[cY] = y;
-			check( );
 		}
 		SVector(Angle a, T length) {
 			static_assert(N==2, "need 2");
@@ -35,7 +35,6 @@ namespace spatial {
 			}
 			component[cX] = length * a.cos( ); 
 			component[cY] = length * a.sin( ); 
-			check( );
 		}
 
 		SVector(const TPoint<T, N> & lhs, const TPoint<T, N> & rhs) {
@@ -43,7 +42,11 @@ namespace spatial {
 				const Axis a = static_cast<Axis>(i);
 				component[i] = rhs(a) - lhs(a);
 			}
-			check( );
+		}
+
+		SVector(std::istream &is) {
+			vcell_persist::Token::check<SVector<T,N> >(is); 
+			std::for_each(component.begin( ),component.end( ),vcell_persist::binaryReader<T>(is) );
 		}
 
 		bool operator==(const SVector &rhs) const {
@@ -169,8 +172,14 @@ namespace spatial {
 			}
 			return other;
 		}
-	private:
-		void check( )  {} //obsolete
+		void persist(std::ostream &os) const {
+			vcell_persist::Token::insert<SVector<T,N> >(os); 
+			std::for_each(component.begin( ),component.end( ),vcell_persist::binaryWriter<T>(os));
+		}
+
+		static void registerType( ) {
+			vcell_persist::Registrar::reg< SVector<T,N>, T,N>("SVector");
+		}
 	};
 	
 	/*

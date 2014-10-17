@@ -63,7 +63,7 @@ namespace spatial {
 
 		static void registerType( ) {
 			base::registerType( );
-			vcell_persist::tRegisterTypeToken<REAL,N>(typeid(MPoint<REAL,N>),"MPoint");
+			vcell_persist::Registrar::reg< MPoint<REAL,N>,REAL,N>("MPoint");
 		}
 
 	protected:
@@ -144,7 +144,7 @@ namespace spatial {
 		}
 		static void registerType( ) {
 			base::registerType( );
-			vcell_persist::tRegisterTypeToken<REAL,N>(typeid(MeshElement<REAL,N>),"MeshElement");
+			vcell_persist::Registrar::reg<MeshElement<REAL,N>, REAL,N>("MeshElement");
 		}
 	protected:
 		void setPos(SurfacePosition m)  {

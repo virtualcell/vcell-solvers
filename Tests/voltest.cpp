@@ -9,6 +9,7 @@
 #include "MPoint.h"
 #include "Volume.h"
 #include <Segment.h>
+#include <Logger.h>
 //#include "SegmentIterator.h"
 #include "gtest/gtest.h"
 #include "MBridge/MBPolygon.h"
@@ -171,10 +172,16 @@ namespace {
 	//include in both "volume" and "persist" test suites
 	void testVolumePolygonsPersistence( ) {
 		using std::ios;
+		using vcell_util::Logger;
+		Logger & logger = Logger::get( );
 		spatial::Volume<double,double,2>::registerType( );
 		spatial::Volume<double,double,2> result(multiple(4,1000,100) ); 
 		{
 		 std::ofstream out("polyVolume.dat",ios::trunc|ios::binary);
+		 Logger::Level level = logger.currentLevel( );
+		 logger.set(Logger::info);
+		 vcell_persist::WriteFormatter wf(out,1,true);
+		 logger.set(level);
 		 out.exceptions(ios::badbit|ios::failbit|ios::eofbit);
 		 result.persist(out);
 		 result.volume( );
@@ -182,6 +189,7 @@ namespace {
 		}
 		std::ifstream in("polyVolume.dat",ios::binary);
 		in.exceptions(ios::badbit|ios::failbit);
+		vcell_persist::ReadFormatter wf(in,1);
 		spatial::Volume<double,double,2> back(in); 
 		spatial::Volume<double,double,2> back2(in); 
 		double orig = result.volume( );

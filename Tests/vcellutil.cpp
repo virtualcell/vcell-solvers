@@ -9,10 +9,13 @@
 #include <Mesh.h>
 #include <persistvector.h>
 #include <Volume.h>
+#include <Segment.h>
+#include <SVector.h>
 using namespace vcell_util; 
 namespace {
 	double dx = 2.0 / 3 - 0.0001;
 	double dy = 2.0 / 7 + 0.0001;
+	double dz = 14.0 / 5 + 0.0301;
 	void binaryOpen(std::ofstream &out, const char *name) {
 		using std::ios;
 		out.open(name,ios::trunc|ios::binary);
@@ -43,6 +46,7 @@ TEST(persist,prim) {
 	{
 		std::ofstream out;
 		binaryOpen(out,"prim.dat");
+		vcell_persist::WriteFormatter wf(out,1,true);
 		vcell_persist::binaryWrite(out,five);
 		vcell_persist::binaryWrite(out,seven);
 		vcell_persist::binaryWrite(out,pi);
@@ -50,6 +54,7 @@ TEST(persist,prim) {
 	{
 		std::ifstream in;
 		binaryOpen(in,"prim.dat");
+		vcell_persist::ReadFormatter wf(in,1);
 		short f;
 		long s;
 		double p;
@@ -59,6 +64,7 @@ TEST(persist,prim) {
 		ASSERT_TRUE(f == five);
 		ASSERT_TRUE(s == seven);
 		ASSERT_TRUE(p == pi);
+		ASSERT_TRUE(typeid(int) == typeid(signed int));
 	}
 
 }
@@ -216,6 +222,98 @@ TEST(persist,volume) {
 	ASSERT_TRUE(sback.volume( ) == vol);
 }
 
+TEST(persist,segment) {
+	{
+		spatial::TPoint<double,2> d(dx,dy);
+		spatial::TPoint<double,2> e(dx + 1,dy + 1);
+		spatial::Segment<double,2> s1(d,e);
+		spatial::Segment<double,2> s2(e,d);
+		ASSERT_TRUE(s1.a( )(spatial::cX) == dx);
+		ASSERT_TRUE(s1.a( )(spatial::cY) == dy);
+		ASSERT_TRUE(s2.a( )(spatial::cX) == dx);
+		ASSERT_TRUE(s2.a( )(spatial::cY) == dy);
+		ASSERT_TRUE(s1.b( )(spatial::cX) == dx + 1);
+		ASSERT_TRUE(s1.b( )(spatial::cY) == dy + 1);
+		ASSERT_TRUE(s2.b( )(spatial::cX) == dx + 1);
+		ASSERT_TRUE(s2.b( )(spatial::cY) == dy + 1);
+		s1.registerType( );
+		std::ofstream out;
+		binaryOpen(out,"segment.dat");
+		s1.persist(out);
+		s2.persist(out);
+	}
+
+	{
+		std::ifstream in;
+		binaryOpen(in,"segment.dat");
+		spatial::Segment<double,2> back1(in);
+		spatial::Segment<double,2> back2(in);
+		ASSERT_TRUE(back1.a( )(spatial::cX) == dx);
+		ASSERT_TRUE(back1.a( )(spatial::cY) == dy);
+		ASSERT_TRUE(back2.a( )(spatial::cX) == dx);
+		ASSERT_TRUE(back2.a( )(spatial::cY) == dy);
+		ASSERT_TRUE(back1.b( )(spatial::cX) == dx + 1);
+		ASSERT_TRUE(back1.b( )(spatial::cY) == dy + 1);
+		ASSERT_TRUE(back2.b( )(spatial::cX) == dx + 1);
+		ASSERT_TRUE(back2.b( )(spatial::cY) == dy + 1);
+	}
+}
+TEST(persist,doubleRegister) {
+
+	struct Dummy {};
+	vcell_persist::Registrar::reg<Dummy>("dummy");
+	try {
+		vcell_persist::Registrar::reg<Dummy>("whammy");
+	} catch (std::invalid_argument &) {
+		return;
+	}
+	FAIL( ) << " exception should have been thrown";
+}
+TEST(persist,vector) {
+	spatial::TPoint<double,2> d(dx,dy);
+	spatial::TPoint<double,2> e(dx + 1,dy + 1);
+	spatial::SVector<double,2> v1(d,e);
+
+	spatial::TPoint<double,3> f (dx,dy,dz);
+	spatial::TPoint<double,3> g (dx + 1,dy - 1 ,dz + 2);
+	spatial::SVector<double,3> v2(f,g);
+	v1.registerType( );
+	v2.registerType( );
+	{
+		std::ofstream out;
+		binaryOpen(out,"svector.dat");
+		vcell_persist::WriteFormatter(out,7,true);
+		v1.persist(out);
+		v2.persist(out);
+	}
+	{
+		std::ofstream out;
+		binaryOpen(out,"svector2.dat");
+		vcell_persist::WriteFormatter(out,7,false);
+		v1.persist(out);
+		v2.persist(out);
+	}
+
+	{
+		std::ifstream in;
+		binaryOpen(in,"svector.dat");
+		vcell_persist::ReadFormatter(in,7);
+		spatial::SVector<double,2> back1(in);
+		spatial::SVector<double,3> back2(in);
+		ASSERT_TRUE(back1 == v1);
+		ASSERT_TRUE(back2 == v2);
+	}
+
+	{
+		std::ifstream in;
+		binaryOpen(in,"svector2.dat");
+		vcell_persist::ReadFormatter(in,7);
+		spatial::SVector<double,2> back1(in);
+		spatial::SVector<double,3> back2(in);
+		ASSERT_TRUE(back1 == v1);
+		ASSERT_TRUE(back2 == v2);
+	}
+}
 /*
 TEST(persist,rback) {
 	const std::type_info & ti = typeid(spatial::TPoint<double,2>);
@@ -231,4 +329,3 @@ TEST(persist,npc) {
 	std::string pretty = vcell_util::convertNonPrintable(x);
 	std::cout << x << ", " << pretty << std::endl; 
 }
-

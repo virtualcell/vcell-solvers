@@ -85,6 +85,10 @@ void Logger::set(Level lvl) {
 	level = lvl;
 	std::for_each(keys.begin( ),keys.end( ), KeyInfoSetter(lvl));
 }
+
+Logger::Level Logger::currentLevel( ) const {
+	return level;
+}
 void Logger::set(Key key, bool on) {
 	int idx = static_cast<int>(key);
 	KeyInfo & ki = keys[idx];

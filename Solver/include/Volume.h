@@ -199,7 +199,10 @@ namespace spatial {
 		}
 
 		static void registerType( ) {
-			vcell_persist::tRegisterTypeToken<COORD_TYPE,VALUE_TYPE,N>(typeid(Volume<COORD_TYPE,VALUE_TYPE,N>),"Volume");
+			//vcell_persist::tRegisterTypeToken<COORD_TYPE,VALUE_TYPE,N>(typeid(Volume<COORD_TYPE,VALUE_TYPE,N>),"Volume");
+
+			//vcell_persist::tRegisterTypeToken<COORD_TYPE,VALUE_TYPE,N>(typeid(
+			vcell_persist::Registrar::reg<Volume<COORD_TYPE,VALUE_TYPE,N>, COORD_TYPE,VALUE_TYPE,N>("Volume");
 			TPoint<COORD_TYPE,N>::registerType( );
 			TPoint<VALUE_TYPE,N>::registerType( );
 		}

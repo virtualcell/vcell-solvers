@@ -1,27 +1,48 @@
 #ifndef persist_h
 #define persist_h
+#include <istream>
 #include <ostream>
 #include <typeinfo>
 #include <vector>
 namespace vcell_persist {
-		void registerTypeToken(const std::type_info &, const char * token); 
-		void registerTypeToken(const std::type_info &, const char * token,const std::type_info &templateParameter, int dim); 
-		void registerTypeToken(const std::type_info &, const char * token,const std::type_info &templateParameterA, const std::type_info &templateParameterB, int dim); 
-
-	template <class T, int N>
-	void tRegisterTypeToken(const std::type_info &ti, const char *token) {
-			registerTypeToken(ti,token,typeid(T),N);
+	class Registrar {
+		static void registerTypeToken(const char *token,const std::type_info &);
+		static void registerTypeToken(const char *token, const std::type_info & primaryType, const std::type_info &templateParameter, int dim); 
+		static void registerTypeToken(const char *token, const std::type_info & primaryType, const std::type_info &templateParameterA, const std::type_info &templateParameterB, int dim); 
+	public:
+		template <class T>
+		static void reg(const char *token) {
+			registerTypeToken(token,typeid(T));
+		}
+		template <class P, typename T, int N>
+		static void reg(const char *token) {
+			registerTypeToken(token,typeid(P),typeid(T),N);
+		}
+		template <class P, typename A, typename B, int N>
+		static void reg(const char *token) {
+			registerTypeToken(token,typeid(P),typeid(A),typeid(B),N);
+		}
 	};
-	template <class A, class B, int N>
-	void tRegisterTypeToken(const std::type_info &ti, const char *token) {
-			registerTypeToken(ti,token,typeid(A),typeid(B),N);
+
+	/**
+	* writes validation to stream. Optionally compacts token keys. 
+	* Object should exist during streaming and be destroyed afterwards
+	*/
+	struct WriteFormatter {
+		WriteFormatter(std::ostream &is,unsigned short version, bool dictionary = false);
+		~WriteFormatter( );
+	};
+	/**
+	* does some basic validation.
+	* Object should exist during streaming and be destroyed afterwards
+	*/
+	struct ReadFormatter {
+		ReadFormatter(std::istream &os, unsigned short version);
+		~ReadFormatter( );
 	};
 
 	const std::string & getTypeToken(const std::type_info &); 
 	//const std::string typeNameFor(const char *classname, const std::type_info &templateParameter, int dim); 
-
-	//#define VCELL_PERSIST_REGISTER_MACRO(X) registerTypeToken(typeid(X),#X);
-	//#define VCELL_PERSIST_REGISTER_MACRO2(X,Y) registerTypeToken(typeid(X,Y),#X","#Y);
 
 	template <typename E> struct TokenT;
 
@@ -41,8 +62,8 @@ namespace vcell_persist {
 		static void insert(std::ostream &os) { }
 		template<typename C>
 		static void check(std::istream &is) { }
-		static void insert(std::ostream &os, const std::string & token) {}
-		static void check(std::istream &os, const std::string & token) {}
+		static void insert(std::ostream &os,const std::type_info &) {}
+		static void check(std::istream &os, const std::type_info &) {}
 	};
 
 	template <>
@@ -55,14 +76,10 @@ namespace vcell_persist {
 		static void check(std::istream &is) {
 			check(is,typeid(C));
 		}
-		static void insert(std::ostream &os, const std::string & token);
-		static void check(std::istream &os, const std::string & token);
 		static void insert(std::ostream &os,const std::type_info &);
 		static void check(std::istream &os, const std::type_info &);
 		
 	};
-
-
 
 	/**
 	* binary write single value to stream
@@ -74,6 +91,7 @@ namespace vcell_persist {
 		const char * const location = reinterpret_cast<const char *>(&t);
 		os.write(location,s);
 	}
+
 	/**
 	* binary read single value form stream
 	* @param is input stream -- must be ios::binary
@@ -118,20 +136,5 @@ namespace vcell_persist {
 			binaryRead(is,in);
 		}
 	};
-
-	
-
-	/*
-	template<typename T>
-	struct persistGen {
-		std::istream &is;
-		persistGen(std::istream &is_)
-			:is(is_) {}
-		T operator( )( ) {
-			T t(is);
-			return t;
-		}
-	};
-	*/
 }	
 #endif

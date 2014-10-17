@@ -157,7 +157,7 @@ namespace spatial {
 		}
 
 		static void registerType( ) {
-			vcell_persist::tRegisterTypeToken<T,N>(typeid(TPoint<T,N>),"TPoint");
+			vcell_persist::Registrar::reg<TPoint<T,N>, T,N>("TPoint");
 		}
 
 	};
