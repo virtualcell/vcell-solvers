@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <vector>
 #include <array>
+#include <persist.h>
 namespace spatial {
 	//forward
 	template<class T, int N>

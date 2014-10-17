@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <map>
+#include <limits>
 #include <persist.h>
 #include <VCellException.h>
 #include <ManagedArrayPtr.h>
