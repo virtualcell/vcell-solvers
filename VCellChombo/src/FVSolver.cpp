@@ -37,7 +37,7 @@ extern bool bConsoleOutput;
 # JMS_Paramters
 JMS_PARAM_BEGIN
 JMS_BROKER tcp://code:2507
-JMS_USER serverUser cbittech
+JMS_USER serverUser xxxxxxxx
 JMS_QUEUE workerEventDev
 JMS_TOPIC serviceControlDev
 VCELL_USER fgao
@@ -776,7 +776,7 @@ void FVSolver::loadSerialScanParameterValues(istream& ifsInput, int numSerialSca
 # JMS_Paramters
 JMS_PARAM_BEGIN
 JMS_BROKER tcp://code:2507
-JMS_USER serverUser cbittech
+JMS_USER serverUser xxxxxxxx
 JMS_QUEUE workerEventDev
 JMS_TOPIC serviceControlDev
 VCELL_USER fgao

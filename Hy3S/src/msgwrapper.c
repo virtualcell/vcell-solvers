@@ -17,7 +17,7 @@ void load_jms_info_(char* broker, char* smqusername, char* password, char* qname
 #endif
 ////	char *broker = "tcp://code:2507";
 //	char* smqusername = "serverUser";
-//	char* password = "cbittech";
+//	char* password = "xxxxxx";
 //	char* qname = "workerEventDev";
 //	char* tname = "serviceControlDev";
 //	char* vcname = "fgao";
