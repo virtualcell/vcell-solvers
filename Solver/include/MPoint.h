@@ -194,9 +194,9 @@ namespace spatial {
 
 		template <typename C>
 		ElementOffset(const C & lhs, const C & rhs ) {
-			C::const_iterator lIter = lhs.begin( );
-			C::const_iterator rIter = rhs.begin( );
-			std::array<OffsetType,N>::iterator outIter = offsets.begin( );
+			typename C::const_iterator lIter = lhs.begin( );
+			typename C::const_iterator rIter = rhs.begin( );
+			typename std::array<OffsetType,N>::iterator outIter = offsets.begin( );
 			while (lIter != lhs.end( )) {
 				*outIter = subtract(*lIter,*rIter);
 				outIter++;
