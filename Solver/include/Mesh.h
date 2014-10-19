@@ -9,6 +9,8 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <persist.h>
 namespace spatial {
+	//forward
+	template <int N> struct ElementOffset; 
 
 	/**
 	* helper class for mesh to allow specialization of recursive template
@@ -460,7 +462,22 @@ namespace spatial {
 			return iterator(*this,construct);
 		}
 
+		/**
+		* return element with given offset from provided element.
+		* see also MPoint#offset( ... )
+		* @param src element from
+		* @param eo offset 
+		*/
+		TELEMENT * element(const TELEMENT & src, const ElementOffset<N> & eo) const {
+			const std::array<size_t,N> & from = src.indexes( );
+			std::array<size_t,N> indexes;
+			for (int i = 0; i < N; ++i) {
+				indexes[i] = from[i] + eo.offsets[i];
+			}
+			return query(indexes);
+		}
 	};
+
 
 }
 #endif

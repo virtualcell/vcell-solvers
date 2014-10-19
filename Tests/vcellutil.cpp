@@ -11,6 +11,7 @@
 #include <Volume.h>
 #include <Segment.h>
 #include <SVector.h>
+#include "mockpoint.inc"
 using namespace vcell_util; 
 namespace {
 	double dx = 2.0 / 3 - 0.0001;
@@ -313,6 +314,34 @@ TEST(persist,vector) {
 		ASSERT_TRUE(back1 == v1);
 		ASSERT_TRUE(back2 == v2);
 	}
+}
+
+TEST(persist, offset) {
+	using namespace spatial; 
+	ElementOffset<2>::registerType( );
+	spatial::MeshDef<double,2> sample(arrayInit<double>(-3.2,7), arrayInit<double>(0.34,3.4),arrayInit<size_t>(30,40) );
+
+
+	Mesh<double,2,MockPoint > snap(sample);
+	std::array<size_t,2> indexes = { 3, 4 };
+
+	MockPoint *one = snap.query(indexes);
+	indexes[0] = 7;
+	indexes[1] = 12;
+	MockPoint *two = snap.query(indexes);
+	{
+		ElementOffset<2> eo = one->offset(*two);
+		std::ofstream out;
+		binaryOpen(out,"offset.dat");
+		eo.persist(out);
+	}
+	std::ifstream in;
+	binaryOpen(in,"offset.dat");
+	ElementOffset<2> eback(in);
+
+	MockPoint *back = snap.element(*one,eback);
+
+	ASSERT_TRUE(two == back);
 }
 /*
 TEST(persist,rback) {

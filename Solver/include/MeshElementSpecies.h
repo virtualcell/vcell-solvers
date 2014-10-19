@@ -15,6 +15,7 @@
 #include <DiffuseAdvectCache.h>
 #include <portability.h>
 #include <math.h>
+#include <persist.h>
 
 //forward definitions
 namespace spatial {
@@ -59,9 +60,31 @@ namespace moving_boundary {
 			distanceTo( ),
 			edgeLength( ) 
 		{}
+		MeshElementNeighbor(std::istream & is,  const MeshElementSpecies & client) ;
+			/*
+			vcell_persist::Token::check<MeshElementNeighbor>(is);
+			spatial::ElementOffset<2> eo(is);
+			vcell_persist::binaryRead(is,distanceTo);
+			vcell_persist::binaryRead(is,edgeLength);
+		}
+		*/
 		MeshElementSpecies *element; 
 		moving_boundary::DistanceType distanceTo;
 		moving_boundary::DistanceType edgeLength;
+
+		void persist(std::ostream &os, const MeshElementSpecies &client); 
+			/*
+			vcell_persist::Token::insert<MeshElementNeighbor>(os);
+			spatial::ElementOffset<2> eo = client.offset(*element);
+			eo.persist(os);
+			vcell_persist::binaryWrite(os,distanceTo);
+			vcell_persist::binaryWrite(os,edgeLength);
+		}
+		*/
+
+		static void registerType( ) {
+			vcell_persist::Registrar::reg<MeshElementNeighbor>("MeshElementNeighbor");
+		}
 	};
 
 	namespace MeshElementStateful {
@@ -166,6 +189,7 @@ namespace moving_boundary {
 
 	struct MeshElementSpecies : public spatial::MeshElement<moving_boundary::CoordinateType,2> , public spatial::VolumeMonitor {
 		typedef spatial::MeshDef<moving_boundary::CoordinateType,2> MeshDefinition; 
+		typedef spatial::Mesh<moving_boundary::CoordinateType,2,MeshElementSpecies> MeshType; 
 		typedef spatial::MeshElement<moving_boundary::CoordinateType,2> base;
 		typedef MeshElementSpecies OurType;
 		typedef MeshElementNeighbor NeighborType;
@@ -506,6 +530,7 @@ namespace moving_boundary {
 		virtual void volumeChanged( ) {
 			segments_.clear( );
 		}
+		OurType *neighbor(spatial::ElementOffset<2> & eo) const;
 	private:
 		/**
 		* log creation information to trace file

@@ -7,6 +7,7 @@
 namespace vcell_persist {
 	class Registrar {
 		static void registerTypeToken(const char *token,const std::type_info &);
+		static void registerTypeToken(const char *token, const std::type_info & primaryType, int dim); 
 		static void registerTypeToken(const char *token, const std::type_info & primaryType, const std::type_info &templateParameter, int dim); 
 		static void registerTypeToken(const char *token, const std::type_info & primaryType, const std::type_info &templateParameterA, const std::type_info &templateParameterB, int dim); 
 	public:
@@ -18,6 +19,12 @@ namespace vcell_persist {
 		static void reg(const char *token) {
 			registerTypeToken(token,typeid(P),typeid(T),N);
 		}
+
+		template <class P, int N>
+		static void reg(const char *token) {
+			registerTypeToken(token,typeid(P),N);
+		}
+
 		template <class P, typename A, typename B, int N>
 		static void reg(const char *token) {
 			registerTypeToken(token,typeid(P),typeid(A),typeid(B),N);

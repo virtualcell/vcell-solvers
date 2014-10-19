@@ -1114,6 +1114,11 @@ void MeshElementSpecies::listBoundary(std::ostream & os) const {
 	}
 }
 
+MeshElementSpecies::OurType *MeshElementSpecies::neighbor(spatial::ElementOffset<2> & eo) const {
+	const spatial::Mesh<moving_boundary::CoordinateType,2,OurType> & m = mesh;
+	return m.element(*this,eo);
+}
+
 BioQuanType MeshElementSpecies::distanceScaled        = 1;
 BioQuanType MeshElementSpecies::distanceScaledSquared = 1;
 

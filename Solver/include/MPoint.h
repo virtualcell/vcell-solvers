@@ -7,8 +7,9 @@
 #include <TPoint.h>
 #include <infix_iterator.h>
 namespace spatial {
-	template<int N>
-	class IndexInfo;
+	//forward
+	template <int N> struct ElementOffset; 
+	template<int N> class IndexInfo;
 
 	/**
 	* indexed point 
@@ -35,12 +36,16 @@ namespace spatial {
 			std::for_each(index.begin( ), index.end( ), vcell_persist::binaryReader<size_t>(is) );
 		}
 
+		ElementOffset<N> offset(const MPoint<REAL,N> & other) const {
+			return ElementOffset<N>(other.index,index);
+		}
+
 		size_t indexOf(int dim) const {
 			return index[dim];
 		}
 
-		const size_t * const indexes( ) const {
-			return index.data( );
+		const std::array<size_t,N> & indexes() const {
+			return index;
 		}
 
 		bool sameIndexes(const MPoint &rhs) const {
@@ -177,6 +182,63 @@ namespace spatial {
 		}
 		return os;
 	}
+
+	/**
+	* represent difference between MPoint indexes
+	*/
+	template <int N>
+	struct ElementOffset {
+		typedef signed char OffsetType;
+		ElementOffset( )
+			:offsets() {}
+
+		template <typename C>
+		ElementOffset(const C & lhs, const C & rhs ) {
+			C::const_iterator lIter = lhs.begin( );
+			C::const_iterator rIter = rhs.begin( );
+			std::array<OffsetType,N>::iterator outIter = offsets.begin( );
+			while (lIter != lhs.end( )) {
+				*outIter = subtract(*lIter,*rIter);
+				outIter++;
+				lIter++;
+				rIter++;
+			}
+		}
+
+
+		ElementOffset(std::istream &is) {
+			vcell_persist::Token::check<ElementOffset<N> >(is); 
+			std::for_each(offsets.begin( ),offsets.end( ),vcell_persist::binaryReader<OffsetType>(is) );
+		}
+
+		void persist(std::ostream &os) {
+			vcell_persist::Token::insert<ElementOffset<N> >(os); 
+			std::for_each(offsets.begin( ),offsets.end( ),vcell_persist::binaryWriter<OffsetType>(os) );
+		}
+
+		static void registerType( ) {
+			vcell_persist::Registrar::reg<ElementOffset<N>,N>("ElementOffset");
+		}
+
+		std::array<OffsetType,N> offsets;
+	private:
+		/**
+		* @tparam T input type, may be unsigned
+		*/
+		template <typename T>
+		OffsetType subtract(const T & lhs, const T &rhs) {
+			if (lhs > rhs) {
+				T delta = lhs - rhs; 
+				assert(delta < std::numeric_limits<OffsetType>::max( ));
+				return static_cast<OffsetType>(delta);
+			}
+			//else, implied
+			T delta = rhs - lhs; 
+			assert(delta < std::numeric_limits<OffsetType>::max( ));
+			return static_cast<OffsetType>(-1 * delta);
+		}
+	};
+
 	/**
 	* proxy class for pretty printing index information
 	*/

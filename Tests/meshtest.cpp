@@ -11,27 +11,8 @@
 #include "MeshElementSpecies.h"
 #include "algo.h"
 #include <cassert>
+#include "mockpoint.inc"
 using namespace spatial;
-namespace {
-	struct IntMockPoint : spatial::MPoint<int,2> {
-		IntMockPoint(const size_t *n, const int *values)
-			:spatial::MPoint<int,2>(n,values) {} 
-		const static int numSpecies=5;
-		static spatial::DiffuseAdvectCache * createCache(const spatial::MeshDef<int,2> &) { return 0; }
-	};
-	struct MockPoint : spatial::MPoint<double,2> {
-		MockPoint(MeshDef<double,2> & ,const size_t *n, const double *values)
-			:spatial::MPoint<double,2>(n,values) {} 
-		const static int numSpecies=5;
-		static spatial::DiffuseAdvectCache * createCache(const spatial::MeshDef<double,2> &) { return 0; }
-	};
-	struct MockPoint3 : spatial::MPoint<double,3> {
-		MockPoint3(MeshDef<double,3> &, const size_t *n, const double *values)
-			:spatial::MPoint<double,3>(n,values) {} 
-		const static int numSpecies=5;
-		static spatial::DiffuseAdvectCache * createCache(const spatial::MeshDef<double,3> &) { return 0; }
-	};
-}
 using vcell_util::arrayInit; 
 TEST(mesh,gridfunctions) {
 	{
@@ -70,6 +51,16 @@ TEST(mesh,gridfunctions) {
 
 }
 
+TEST(mpoint,offset) {
+	size_t a[] = {3,4};
+	double v[] = {6.2,8,4};
+	size_t b[] = {13,2};
+	double r[] = {6.2,8,4};
+	spatial::MPoint<double,2> mp(a,v);
+	spatial::MPoint<double,2> other(b,r);
+	spatial::ElementOffset<2> eo = mp.offset(other);
+	std::cout << eo.offsets[0] << std::endl;
+}
 TEST(mpoint,indexpoint) {
 	size_t a[] = {3,4};
 	double v[] = {6.2,8,4};
@@ -119,6 +110,26 @@ TEST(mesh, values) {
 		ASSERT_TRUE(spatial::nearlyEqual(mx,vx) );
 		ASSERT_TRUE(spatial::nearlyEqual(my,vy) );
 	}
+}
+TEST(mesh, offset) {
+	using spatial::Mesh;
+	using spatial::MPoint;
+	using spatial::cX;
+	using spatial::cY;
+	spatial::MeshDef<double,2> sample(arrayInit<double>(-3.2,7), arrayInit<double>(0.34,3.4),arrayInit<size_t>(30,40) );
+
+
+	Mesh<double,2,MockPoint > snap(sample);
+	std::array<size_t,2> indexes = { 3, 4 };
+
+	MockPoint *one = snap.query(indexes);
+	indexes[0] = 7;
+	indexes[1] = 12;
+	MockPoint *two = snap.query(indexes);
+	spatial::ElementOffset<2> eo = one->offset(*two);
+	MockPoint *back = snap.element(*one,eo);
+
+	ASSERT_TRUE(two == back);
 }
 TEST(mesh, size) {
 	size_t mSize = sizeof(spatial::MeshElement<double,2>);

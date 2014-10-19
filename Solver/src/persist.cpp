@@ -119,6 +119,12 @@ void Registrar::registerTypeToken(const char *classname, const type_info &clzz, 
 	registerTypeToken(oss.str( ).c_str( ),clzz);
 }
 
+void Registrar::registerTypeToken(const char *classname, const type_info &clzz, int dim) {
+	std::ostringstream oss;
+	oss << classname << '<' <<  dim << '>';
+	registerTypeToken(oss.str( ).c_str( ),clzz);
+}
+
 void Registrar::registerTypeToken(const char *classname, const type_info &clzz, const std::type_info &templateParameterA, const std::type_info &templateParameterB, int dim) {
 	std::ostringstream oss;
 	oss << classname << '<' << getTypeToken(templateParameterA) << ',' << getTypeToken(templateParameterB) << ',' << dim << '>';
