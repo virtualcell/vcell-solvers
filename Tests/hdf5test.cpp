@@ -1,3 +1,4 @@
+#pragma warning ( disable : 4996 )
 #include <array>
 #include "gtest/gtest.h"
 #include <H5Cpp.h>

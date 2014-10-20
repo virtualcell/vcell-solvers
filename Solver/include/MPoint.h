@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <TPoint.h>
 #include <infix_iterator.h>
+#include <persistcontainer.h>
 namespace spatial {
 	//forward
 	template <int N> struct ElementOffset; 
@@ -33,7 +34,7 @@ namespace spatial {
 			:base(is)
 		{
 			vcell_persist::Token::check<MPoint<REAL,N> >(is); 
-			std::for_each(index.begin( ), index.end( ), vcell_persist::binaryReader<size_t>(is) );
+			vcell_persist::restore(is,index);
 		}
 
 		ElementOffset<N> offset(const MPoint<REAL,N> & other) const {
@@ -63,7 +64,7 @@ namespace spatial {
 		void persist(std::ostream &os) const {
 			base::persist(os);
 			vcell_persist::Token::insert<MPoint<REAL,N> >(os); 
-			std::for_each(index.begin( ), index.end( ), vcell_persist::binaryWriter<size_t>(os) );	
+			vcell_persist::save(os,index);
 		}
 
 		static void registerType( ) {
@@ -208,12 +209,12 @@ namespace spatial {
 
 		ElementOffset(std::istream &is) {
 			vcell_persist::Token::check<ElementOffset<N> >(is); 
-			std::for_each(offsets.begin( ),offsets.end( ),vcell_persist::binaryReader<OffsetType>(is) );
+			vcell_persist::restore(is,offsets);
 		}
 
 		void persist(std::ostream &os) const {
 			vcell_persist::Token::insert<ElementOffset<N> >(os); 
-			std::for_each(offsets.begin( ),offsets.end( ),vcell_persist::binaryWriter<OffsetType>(os) );
+			vcell_persist::save(os,offsets);
 		}
 
 		static void registerType( ) {

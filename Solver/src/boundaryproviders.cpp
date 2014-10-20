@@ -3,6 +3,7 @@
 #include <MovingBoundaryCollections.h>
 #include <vcellxml.h>
 #include <World.h>
+#include <persist.h>
 
 namespace { 
 	const double Pi = 3.14159265358979323846264338327950288419716939937;
@@ -11,11 +12,20 @@ namespace {
 		typedef moving_boundary::World<moving_boundary::CoordinateType,2> WorldType; 
 	protected:
 		const WorldType & world;
+		/**
+		* used for saving / restoring
+		*/
+		const double problemDomainVelocityx;
+		/**
+		* used in problem, scaled value
+		*/
 		const double xVel;
 		double time;
 		moving_boundary::FrontType baseFront;
+
 		FixedBoundary(double xvelocity) 
 			:world(WorldType::get( )),
+			problemDomainVelocityx(xvelocity),
 			xVel(xvelocity * world.theScale( ) ),
 			time(0) { }
 
@@ -48,6 +58,13 @@ namespace {
 			std::ostringstream os;
 			os << "Fixed boundary front with " << baseFront.size( ) << " points and x velocity " << xVel << std::ends;
 			return os.str( ); 
+		}
+		void persist(std::ostream &os) const {
+		}
+
+		static void registerType( ) {
+			vcell_persist::Registrar::reg<FixedBoundary>("fixedBoundary");
+			FixedBoundaryPoint::registerType( );
 		}
 
 	protected:
@@ -83,6 +100,10 @@ namespace {
 			close( );
 		}
 
+		static const std::string token( ) {
+			return "circle";
+		}
+
 		std::string describe( ) const {
 			std::ostringstream os;
 			os << "Circle at " << x << ',' << y << " of radius " << r << " theta step " << std::setprecision(12) << s << " with " 
@@ -93,12 +114,47 @@ namespace {
 
 		~Circle( ) {
 		}
+
+		static Circle *restore(std::istream &is) {
+			//factory "Builder" has already checked token and type
+			double originx;
+			double originy;
+			double radius; 
+			double step; 
+			double pdVelocityx; 
+			double time;
+			vcell_persist::binaryRead(is,time);
+			vcell_persist::binaryRead(is,pdVelocityx);
+			vcell_persist::binaryRead(is,originx);
+			vcell_persist::binaryRead(is,originy);
+			vcell_persist::binaryRead(is,radius);
+			vcell_persist::binaryRead(is,step);
+			//Circle constructor scales velocity, so set to zero and manually set after
+			Circle * rval = new Circle(originx,originy,radius,step,pdVelocityx);
+			rval->time = time;
+			vcell_persist::restore(is,rval->baseFront);
+			return rval;
+		}
+
+		void persist(std::ostream &os) const {
+			registerType( );
+			vcell_persist::Token::insert<FixedBoundary>(os);
+			vcell_persist::StdString<>::save(os,token( ));
+			vcell_persist::binaryWrite(os,time);
+			vcell_persist::binaryWrite(os,problemDomainVelocityx);
+			vcell_persist::binaryWrite(os,x);
+			vcell_persist::binaryWrite(os,y);
+			vcell_persist::binaryWrite(os,r);
+			vcell_persist::binaryWrite(os,s);
+			vcell_persist::save(os,baseFront);
+		}
 	private:
 		const double x; 
 		const double y; 
 		const double r;
 		const double s; 
 	};
+
 
 	struct Rectangle : public FixedBoundary {
 		Rectangle(double originx, double originy, double width, double height, double velocityx)
@@ -129,6 +185,20 @@ namespace {
 			return std::string( );
 		}
 
+		static const std::string token( ) {
+			return "rectangle";
+		}
+
+		void persist(std::ostream &os) const {
+			registerType( );
+			vcell_persist::Token::insert<FixedBoundary>(os);
+			vcell_persist::StdString<>::save(os,token( ));
+			vcell_persist::binaryWrite(os,time);
+			vcell_persist::binaryWrite(os,x);
+			vcell_persist::binaryWrite(os,y);
+			vcell_persist::binaryWrite(os,w);
+			vcell_persist::binaryWrite(os,h);
+		}
 	private:
 		const double x; 
 		const double y; 
@@ -149,6 +219,10 @@ namespace {
 		* @return nullptr if top level node doesn't match
 		*/
 		virtual spatial::FrontProvider<moving_boundary::CoordinateType> * build(const tinyxml2::XMLElement &node) = 0; 
+		virtual std::string token( ) = 0; 
+		virtual spatial::FrontProvider<moving_boundary::CoordinateType> * restore(std::istream &is) = 0; 
+
+
 		static spatial::FrontProvider<moving_boundary::CoordinateType> * construct( const tinyxml2::XMLElement &node) {
 			for (size_t i = 0; i < builders.size( ) ; i++) {
 				Builder * b = builders[i];
@@ -161,6 +235,22 @@ namespace {
 				}
 			}
 			return nullptr;
+		}
+
+		static spatial::FrontProvider<moving_boundary::CoordinateType> * construct(std::istream &is) { 
+			FixedBoundary::registerType( );
+			vcell_persist::Token::check<FixedBoundary>(is);
+			std::string type = vcell_persist::StdString<>::restore(is);
+			for (size_t i = 0; i < builders.size( ) ; i++) {
+				Builder * b = builders[i];
+				if (b == nullptr) { //no match
+					break;
+				}
+				if (type == b->token( )) {
+					return b->restore(is);
+				}
+			}
+			VCELL_EXCEPTION(invalid_argument,"Invalid FixedBoundary restoration key " << type);
 		}
 	protected:
 		static std::array<Builder*,10> builders;
@@ -187,6 +277,12 @@ namespace {
 			}
 			return nullptr;
 		}
+		virtual std::string token( ) {
+			return Circle::token( );
+		}
+		virtual spatial::FrontProvider<moving_boundary::CoordinateType> * restore(std::istream &is) {
+			return Circle::restore(is);
+		}
 	} Cb;
 
 	struct RectangleBuild : public Builder {
@@ -206,6 +302,14 @@ namespace {
 				return new Rectangle(x,y,width,height,vx); 
 			}
 			return nullptr;
+		}
+
+		virtual std::string token( ) {
+			return Rectangle::token( );
+		}
+
+		virtual spatial::FrontProvider<moving_boundary::CoordinateType> * restore(std::istream &is) {
+			return 0;
 		}
 	} Rb;
 
@@ -229,4 +333,8 @@ spatial::FrontProvider<moving_boundary::CoordinateType> * moving_boundary::front
 		return fp;
 	}
 	VCELL_EXCEPTION(invalid_argument,"Invalid XML for alternate front");
+}
+
+spatial::FrontProvider<moving_boundary::CoordinateType> * moving_boundary::restore(std::istream &is) {
+	return Builder::construct(is); 
 }

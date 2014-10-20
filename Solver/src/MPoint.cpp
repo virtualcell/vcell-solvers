@@ -1,6 +1,6 @@
+#include <MPoint.h>
 #include <sstream>
 #include <algorithm>
-#include <MPoint.h>
 #include <persist.h>
 
 using spatial::IndexInfo;

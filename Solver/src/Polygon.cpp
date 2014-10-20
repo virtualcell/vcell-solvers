@@ -19,7 +19,7 @@ namespace {
 		vectorWriter(std::ostream &os_) 
 			:os(os_) {}
 		void operator( )(V v) {
-			vcell_persist::persist(os,v);
+			vcell_persist::save(os,v);
 		}
 	};
 	/**
@@ -332,7 +332,7 @@ namespace spatial {
 		virtual void persist(std::ostream &os) const {
 			vcell_persist::Token::insert<Volume<COORD_TYPE,VALUE_TYPE,2> >(os);
 			vcell_persist::binaryWrite<short>(os,1);
-			vcell_persist::persist(os,pointStorage);
+			vcell_persist::save(os,pointStorage);
 			vcell_persist::binaryWrite(os,dirty);
 			vcell_persist::binaryWrite(os,vol);
 		} 

@@ -202,7 +202,7 @@ namespace moving_boundary {
 			amtMass( ),
 			amtMassTransient( ),
 			interiorNeighbors( ),
-			neighbors(interiorNeighbors), //default to interior, update when id'd as boundary
+			neighbors(interiorNeighbors.data( )), //default to interior, update when id'd as boundary
 			boundaryNeighbors(0),
 			voronoiVolume( ),
 			nOutside(0),
@@ -213,6 +213,10 @@ namespace moving_boundary {
 			}
 		}
 
+		/**
+		* restore from persistent storage. 
+		*/
+		MeshElementSpecies(const MeshDefinition &owner, std::istream &is);
 
 		/**
 		* return proxy object identifying this for streaming to an ostream
@@ -348,7 +352,7 @@ namespace moving_boundary {
 				if (mPos( ) == spatial::interiorSurface) { 
 					setState(stableUpdated);
 					setInteriorVolume(interiorVolume);
-					neighbors = interiorNeighbors;
+					neighbors = interiorNeighbors.data( );
 					vol.clear( );
 				}
 				else {
@@ -436,7 +440,7 @@ namespace moving_boundary {
 		* boundary element whose voronoi doesn't intersect front
 		*/
 		bool isBoundaryElementWithInsideNeighbors( ) const {
-			return this->mPos( ) == spatial::boundarySurface && neighbors == interiorNeighbors;
+			return this->mPos( ) == spatial::boundarySurface && neighbors == interiorNeighbors.data( );
 		}
 
 		/**
@@ -531,6 +535,7 @@ namespace moving_boundary {
 		OurType *neighbor(spatial::ElementOffset<2> & eo) const;
 
 		static void registerType( ) {
+			base::registerType( );
 			Volume2DClass::registerType( );
 			NeighborType::registerType( );
 			spatial::SVector<moving_boundary::VelocityType,2>::registerType( );
@@ -614,7 +619,7 @@ namespace moving_boundary {
 		* return number of neighbors
 		*/
 		size_t numNeighbors( )  const {
-			if (neighbors == interiorNeighbors) {
+			if (neighbors == interiorNeighbors.data( )) {
 				return NUM_INSIDE;
 			}
 			return boundaryNeighbors.size( );
@@ -702,7 +707,7 @@ namespace moving_boundary {
 		std::array<moving_boundary::BioQuanType,nOfS> concValue; //concentration at beginning of cycle
 
 		const static int NUM_INSIDE = 4;
-		NeighborType interiorNeighbors[NUM_INSIDE]; 
+		std::array<NeighborType,NUM_INSIDE> interiorNeighbors; 
 		NeighborType * neighbors;
 		std::vector<NeighborType> boundaryNeighbors;
 		Volume2DClass voronoiVolume;

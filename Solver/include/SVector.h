@@ -46,7 +46,7 @@ namespace spatial {
 
 		SVector(std::istream &is) {
 			vcell_persist::Token::check<SVector<T,N> >(is); 
-			std::for_each(component.begin( ),component.end( ),vcell_persist::binaryReader<T>(is) );
+			vcell_persist::restore(is,component);
 		}
 
 		bool operator==(const SVector &rhs) const {
@@ -174,7 +174,7 @@ namespace spatial {
 		}
 		void persist(std::ostream &os) const {
 			vcell_persist::Token::insert<SVector<T,N> >(os); 
-			std::for_each(component.begin( ),component.end( ),vcell_persist::binaryWriter<T>(os));
+			vcell_persist::save(os,component);
 		}
 
 		static void registerType( ) {

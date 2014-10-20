@@ -74,7 +74,27 @@ namespace spatial {
 		* provide description of front
 		*/
 		virtual std::string describe( ) const = 0;
+		/**
+		* store
+		*/
+		virtual void persist(std::ostream &os) const = 0; 
+
 	};
+
+//	template <typename T>
+//	struct FrontProviderCreator {
+//		/**
+//		* identification token
+//		*/
+//		virtual const std::string & token( ) const = 0;
+//		virtual FrontProvider<T> * create(std::istream &is) const = 0;
+//	};
+//
+//	template <typename T>
+//	struct FrontProviderFactory {
+//		static void identify(const FrontProviderCreator<T> &);
+//		const FrontProviderCreator<T> &lookup(const std::string &);  
+//	};
 
 	/**
 	* @tparam FCT front coordinate type
@@ -109,6 +129,10 @@ namespace spatial {
 		std::vector<spatial::TPoint<FCT,2> > retrieveSurf( );
 
 		virtual std::vector<spatial::TPoint<FCT,2> > retrieveFront( );
+		/**
+		* not implemented
+		*/
+		virtual void persist(std::ostream &os) const {} 
 
 		/**
 		* retrieve front while logging points to csv file

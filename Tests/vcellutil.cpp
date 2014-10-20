@@ -11,6 +11,7 @@
 #include <Volume.h>
 #include <Segment.h>
 #include <SVector.h>
+#include <boundaryProviders.h>
 #include "mockpoint.inc"
 using namespace vcell_util; 
 namespace {
@@ -69,6 +70,40 @@ TEST(persist,prim) {
 	}
 
 }
+TEST(persist,string) {
+	using std::string;
+	using vcell_persist::StdString; 
+	string dog("dog");
+	string catfish("catfish");
+	string caterpillar("caterpillar");
+	string toolong;
+	for (int i =0; i< 1000; i++) {
+		toolong.append("x");
+	}
+	{
+		std::ofstream out;
+		binaryOpen(out,"string.dat");
+		StdString<>::save(out,dog);
+		StdString<>::save(out,catfish);
+		StdString<>::save(out,caterpillar);
+		StdString<unsigned short>::save(out,toolong);
+
+		//this should be too big for unsigned char, and fail with exception
+		ASSERT_THROW(StdString<unsigned char>::save(out,toolong),std::out_of_range);
+	}
+	std::ifstream in;
+	binaryOpen(in,"string.dat");
+	string back;
+	StdString<>::restore(in,back);
+	ASSERT_TRUE(back == dog);
+	StdString<>::restore(in,back);
+	ASSERT_TRUE(back == catfish);
+	StdString<>::restore(in,back);
+	ASSERT_TRUE(back == caterpillar);
+	StdString<unsigned short>::restore(in,back);
+	ASSERT_TRUE(back == toolong);
+
+}
 TEST(persist,TPoint) {
 
 	{
@@ -94,6 +129,37 @@ TEST(persist,TPoint) {
 
 }
 
+TEST(persist,arrays) {
+	typedef spatial::TPoint<double,2> DPoint;
+	DPoint::registerType( );
+	const int asize = 7;
+	{
+		std::ofstream out;
+		binaryOpen(out,"arrays.dat");
+		std::array<DPoint,asize> a;
+		std::array<int,asize> b;
+		for (int i = 0; i < asize; i++) {
+			a[i] = DPoint(dx + i ,dy -i);
+			b[i] = i * i;
+		}
+		vcell_persist::save(out,a);
+		vcell_persist::save(out,b);
+	}
+
+	{
+		std::ifstream in;
+		binaryOpen(in,"arrays.dat");
+		std::array<DPoint,asize> c;
+		std::array<int,asize> d;
+		vcell_persist::restore(in,c);
+		vcell_persist::restore(in,d);
+
+		for (int i = 0; i < asize; i++) {
+			ASSERT_TRUE(c[i] == DPoint(dx + i ,dy -i));
+			ASSERT_TRUE(d[i] == i * i);
+		}
+	}
+}
 TEST(persist,TPointVector) {
 	std::minstd_rand g;
 	std::uniform_int_distribution<short> sd(2,30);
@@ -110,12 +176,12 @@ TEST(persist,TPointVector) {
 	{
 		std::ofstream out;
 		binaryOpen(out,"tpointvec.dat");
-		vcell_persist::persist(out,vec);
+		vcell_persist::save(out,vec);
 		std::vector<int> vec3;
 		vec3.push_back(0);
 		vec3.push_back(0);
 		vec3.push_back(7);
-		vcell_persist::persist<int>(out,vec3);
+		vcell_persist::save<int>(out,vec3);
 	}
 
 	{
@@ -351,6 +417,30 @@ TEST(persist, offset) {
 
 	ASSERT_TRUE(two == back);
 }
+TEST(persist, circle) {
+	using moving_boundary::Universe;
+	Universe<2> &universe = Universe<2>::get( );
+	universe.destroy( ); //for testing
+	std::array<spatial::GeoLimit,2> limits;
+	limits[0] = spatial::GeoLimit(-50,50);
+	limits[1] = spatial::GeoLimit(-50,50);
+	universe.init(limits);
+	using spatial::FrontProvider;
+	FrontProvider<moving_boundary::CoordinateType> *fp = moving_boundary::circleFront(3,4,12,0.3,2);
+	fp->propagateTo(2);
+	{
+		std::ofstream out;
+		binaryOpen(out,"circle.dat");
+		fp->persist(out);
+	}
+	std::ifstream in;
+	binaryOpen(in,"circle.dat");
+	FrontProvider<moving_boundary::CoordinateType> *back= moving_boundary::restore(in);
+	std::vector<spatial::TPoint<moving_boundary::CoordinateType, 2> > orig = fp->retrieveFront( );
+	std::vector<spatial::TPoint<moving_boundary::CoordinateType, 2> > file = back->retrieveFront( );
+	ASSERT_TRUE( orig == file); 
+}
+
 
 /*
 TEST(persist,rback) {

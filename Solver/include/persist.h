@@ -4,6 +4,7 @@
 #include <ostream>
 #include <typeinfo>
 #include <vector>
+#include <type_traits>
 namespace vcell_persist {
 	/**
 	* traits base class. Indicates derived class T implements
@@ -119,7 +120,6 @@ namespace vcell_persist {
 		char * const location = reinterpret_cast<char *>(&t);
 		is.read(location,s);
 	}
-	
 
 	/**
 	* functor to write binary data
@@ -152,5 +152,36 @@ namespace vcell_persist {
 			binaryRead(is,in);
 		}
 	};
+
+	//--------------------------------
+	//  std::string
+	//--------------------------------
+	/**
+	* std::string persistence
+	* @tparam S unsigned integral type used to store length
+	*/
+	template <typename S = unsigned char>
+	struct StdString   {
+
+		/**
+		* write std::string 
+		*/
+		static typename std::enable_if< std::is_same<S, unsigned char>::value || std::is_same<S,unsigned short>::value, void>::type
+		save(std::ostream &os,  const std::string &); 
+
+
+		/**
+		* restore  
+		*/
+		static typename std::enable_if< std::is_same<S, unsigned char>::value || std::is_same<S,unsigned short>::value, void>::type
+		restore(std::istream &is, std::string &); 
+
+		/**
+		* restore  
+		*/
+		static typename std::enable_if< std::is_same<S, unsigned char>::value || std::is_same<S,unsigned short>::value, std::string>::type
+		restore(std::istream &is);
+	};
+
 }	
 #endif

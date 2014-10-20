@@ -10,6 +10,7 @@
 #include <ManagedArrayPtr.h>
 #include <vcellstring.h>
 #include <Logger.h>
+#include <boost/integer_traits.hpp>
 using std::type_info;
 using namespace vcell_persist;
 using namespace vcell_util;
@@ -163,9 +164,7 @@ WriteFormatter::WriteFormatter(std::ostream &os, unsigned short version, bool di
 			if (token.size( ) > maxTokenLength) {
 				VCELL_EXCEPTION(out_of_range, token << " length " << token.size( ) << " > max size " << maxTokenLength);
 			}
-			TokenLengthType slen = static_cast<TokenLengthType>(token.size( ));
-			binaryWrite(os,slen);
-			os.write(token.c_str( ),slen);
+			StdString<TokenLengthType>::save(os,token);
 			VCELL_LOG(info,"token " << token << " index " << i);
 		}
 	}
@@ -194,14 +193,9 @@ ReadFormatter::ReadFormatter(std::istream &is, unsigned short version) {
 		writeDictionary.clear( );
 		TokenKeyType limit; 
 		binaryRead(is,limit);
-		const size_t ml = 255; //work around older compiler 
-		assert(ml == std::numeric_limits<TokenLengthType>::max( ));
-		char buffer[ml];
+		//char buffer[ml];
 		for (TokenKeyType i = 1 ; i < limit; i++) {
-			TokenLengthType slen;
-			binaryRead(is,slen);
-			is.read(buffer,slen);
-			std::string token(buffer,slen);
+			std::string token = StdString<TokenLengthType>::restore(is);
 			writeDictionary[token] = i;
 		}
 	}
@@ -221,3 +215,35 @@ ReadFormatter::~ReadFormatter( ) {
 	writeDictionary.clear( );
 }
 
+
+template <typename S>
+typename std::enable_if< std::is_same<S, unsigned char>::value || std::is_same<S,unsigned short>::value, void>::type
+StdString<S>::save(std::ostream &os,  const std::string &str) {
+	const size_t length = str.size( );
+	if (length > std::numeric_limits<S>::max( )) {
+		const size_t mLength = std::numeric_limits<S>::max( );
+		VCELL_EXCEPTION(out_of_range,"string " << str << " length " << length << " greater than max allowed " << mLength); 
+	}
+	S slen = static_cast<S>(length);
+	binaryWrite(os,slen);
+	os.write(str.c_str( ),slen);
+}
+
+template <typename S>
+typename std::enable_if< std::is_same<S, unsigned char>::value || std::is_same<S,unsigned short>::value, void>::type
+StdString<S>::restore(std::istream &is, std::string &out) {
+	out = restore(is);
+}
+
+template <typename S>
+typename std::enable_if< std::is_same<S, unsigned char>::value || std::is_same<S,unsigned short>::value, std::string>::type
+StdString<S>::restore(std::istream &is) {
+	char buffer[boost::integer_traits<S>::const_max];
+	S slen;
+	binaryRead(is,slen);
+	is.read(buffer,slen);
+	return std::string(buffer,slen);
+}
+
+template StdString<unsigned char>;
+template StdString<unsigned short>;

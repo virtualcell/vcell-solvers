@@ -28,7 +28,7 @@ namespace moving_boundary {
 		* initialize the world. std::logic_error
 		* @param limits to use
 		* @param numNodes in a dimension 
-		* @param lock if true, prevents destory from being used
+		* @param lock if true, prevents destroy from being used
 		* @throws std::logic_error if called more than once without #destroy call
 		* @throws std::domain_error if low values not less than high values
 		*/

@@ -92,6 +92,7 @@ namespace moving_boundary {
 			diffusionConstant(0),
 			alternateFrontProvider(nullptr)
 		{}
+
 	};
 
 	/**

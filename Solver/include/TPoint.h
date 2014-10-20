@@ -5,7 +5,7 @@
 #include <array>
 #include <cmath>
 #include <algorithm>
-#include <persist.h>
+#include <persistcontainer.h>
 namespace spatial {
 
 
@@ -58,7 +58,7 @@ namespace spatial {
 			:coord( ) 
 		{
 			vcell_persist::Token::check<TPoint<T,N> >(is); 
-			std::for_each(coord.begin( ), coord.end( ),vcell_persist::binaryReader<T>(is) );
+			vcell_persist::restore(is,coord);
 		}
 
 
@@ -149,7 +149,7 @@ namespace spatial {
 
 		void persist(std::ostream &os) const {
 			vcell_persist::Token::insert<TPoint<T,N> >(os); 
-			std::for_each(coord.begin( ), coord.end( ), vcell_persist::binaryWriter<T>(os) );
+			vcell_persist::save(os,coord);
 		}
 
 		static int numDim( ) {
