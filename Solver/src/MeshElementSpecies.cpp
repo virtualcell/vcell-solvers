@@ -18,8 +18,8 @@
 #include <vcellutil.h>
 #include <Logger.h>
 #include <Distance.h>
+#include <persistcontainer.h>
 
-#include <iomanip>
 #include <ManagedArrayPtr.h> //StackPtr
 #include <MBridge/FronTierAdapt.h>
 #include <MBridge/Figure.h>
@@ -1115,9 +1115,19 @@ void MeshElementSpecies::listBoundary(std::ostream & os) const {
 }
 
 MeshElementSpecies::OurType *MeshElementSpecies::neighbor(spatial::ElementOffset<2> & eo) const {
-	const spatial::Mesh<moving_boundary::CoordinateType,2,OurType> & m = mesh;
-	return m.element(*this,eo);
+	//nominally unsafe downcast
+	const MeshType * m = static_cast<const MeshType *>(&mesh);
+	return m->element(*this,eo);
 }
+void MeshElementSpecies::persist(std::ostream &os) {
+	base::persist(os);
+	vcell_persist::Token::insert<MeshElementSpecies>(os); 
+	vcell_persist::binaryWrite(os,stateVar);
+	vcell_persist::binaryWrite(os,interiorVolume);
+	vol.persist(os);
+	vcell_persist::persist(os,segments_);
+}
+	
 
 BioQuanType MeshElementSpecies::distanceScaled        = 1;
 BioQuanType MeshElementSpecies::distanceScaledSquared = 1;

@@ -5,6 +5,13 @@
 #include <typeinfo>
 #include <vector>
 namespace vcell_persist {
+	/**
+	* traits base class. Indicates derived class T implements
+	* void persist(std::ostream &s, const T &) const
+	* T(std::istream &)
+	*/
+	struct Persistent{};
+
 	class Registrar {
 		static void registerTypeToken(const char *token,const std::type_info &);
 		static void registerTypeToken(const char *token, const std::type_info & primaryType, int dim); 
@@ -33,6 +40,7 @@ namespace vcell_persist {
 
 	/**
 	* writes validation to stream. Optionally compacts token keys. 
+	* sets stream to throw exceptions on ios errors
 	* Object should exist during streaming and be destroyed afterwards
 	*/
 	struct WriteFormatter {
@@ -41,6 +49,7 @@ namespace vcell_persist {
 	};
 	/**
 	* does some basic validation.
+	* sets stream to throw exceptions on ios errors
 	* Object should exist during streaming and be destroyed afterwards
 	*/
 	struct ReadFormatter {

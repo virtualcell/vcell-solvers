@@ -64,7 +64,7 @@ namespace spatial {
 	* @tparam N number of dimensions
 	*/
 	template <class COORD_TYPE, class VALUE_TYPE, int N>
-	struct Volume {
+	struct Volume : public vcell_persist::Persistent {
 		typedef COORD_TYPE CoordType;
 		typedef VALUE_TYPE ValueType;
 		const static int NumDim = N;

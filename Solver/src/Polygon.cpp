@@ -5,7 +5,7 @@
 #include <intersection.h>
 #include <VCellException.h>
 #include <persist.h>
-#include <persistvector.h>
+#include <persistcontainer.h>
 #define COMPILE_64
 using vcell_persist::binaryWriter;
 using vcell_persist::binaryReader;
@@ -19,14 +19,14 @@ namespace {
 		vectorWriter(std::ostream &os_) 
 			:os(os_) {}
 		void operator( )(V v) {
-			vcell_persist::persistVector(os,v);
+			vcell_persist::persist(os,v);
 		}
 	};
 	/**
 	* @tparam V vector
 	*/
 	template<typename V>
-	void persistVectors(std::ostream &os,  const std::vector< V >& vec) {
+	void persists(std::ostream &os,  const std::vector< V >& vec) {
 		vcell_persist::binaryWrite(os,vec.size( ));
 		std::for_each(vec.begin( ), vec.end( ),vectorWriter<V>(os) );
 	}
@@ -44,7 +44,7 @@ namespace {
 		vec.reserve(size);
 		for (Stype i = 0; i < size; ++i) {
 			V v;
-			vcell_persist::readVector(is,v);
+			vcell_persist::restore(is,v);
 			vec.push_back( v );
 		}
 
@@ -190,7 +190,7 @@ namespace spatial {
 
 		Polygon(std::istream &is) {
 			//factory checks token and reads initial short, so constructor just reads remaining fields
-			vcell_persist::readVector(is,pointStorage);
+			vcell_persist::restore(is,pointStorage);
 			vcell_persist::binaryRead(is,dirty);
 			vcell_persist::binaryRead(is,vol);
 		}
@@ -332,7 +332,7 @@ namespace spatial {
 		virtual void persist(std::ostream &os) const {
 			vcell_persist::Token::insert<Volume<COORD_TYPE,VALUE_TYPE,2> >(os);
 			vcell_persist::binaryWrite<short>(os,1);
-			vcell_persist::persistVector(os,pointStorage);
+			vcell_persist::persist(os,pointStorage);
 			vcell_persist::binaryWrite(os,dirty);
 			vcell_persist::binaryWrite(os,vol);
 		} 
@@ -624,7 +624,7 @@ namespace spatial {
 			vcell_persist::Token::insert<Volume<COORD_TYPE,VALUE_TYPE,2> >(os);
 			vcell_persist::binaryWrite<short>(os,2);
 
-			persistVectors(os,polys);
+			persists(os,polys);
 			vcell_persist::binaryWrite(os,cIndex);
 			vcell_persist::binaryWrite(os,dirty);
 			vcell_persist::binaryWrite(os,vol);

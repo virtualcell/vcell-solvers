@@ -7,7 +7,7 @@
 #include <MPoint.h>
 #include <vcellstring.h>
 #include <Mesh.h>
-#include <persistvector.h>
+#include <persistcontainer.h>
 #include <Volume.h>
 #include <Segment.h>
 #include <SVector.h>
@@ -110,7 +110,12 @@ TEST(persist,TPointVector) {
 	{
 		std::ofstream out;
 		binaryOpen(out,"tpointvec.dat");
-		vcell_persist::persistVector<DPoint>(out,vec);
+		vcell_persist::persist(out,vec);
+		std::vector<int> vec3;
+		vec3.push_back(0);
+		vec3.push_back(0);
+		vec3.push_back(7);
+		vcell_persist::persist<int>(out,vec3);
 	}
 
 	{
@@ -118,12 +123,15 @@ TEST(persist,TPointVector) {
 		binaryOpen(in,"tpointvec.dat");
 		in.exceptions(ios::badbit|ios::failbit);
 		std::vector<DPoint> vec2;
-		vcell_persist::readVector(in,vec2);
+		vcell_persist::restore(in,vec2);
 		for (int i = 0; i < vecSize; i++) {
 			const DPoint &back = vec2[i];
 			ASSERT_TRUE(back(spatial::cX) == dx + i); 
 			ASSERT_TRUE(back(spatial::cY) == dy - i); 
 		}
+		std::vector<int> vec3;
+		vcell_persist::restore(in,vec3);
+		ASSERT_TRUE(vec3[2] == 7);
 	}
 }
 namespace {
@@ -343,6 +351,7 @@ TEST(persist, offset) {
 
 	ASSERT_TRUE(two == back);
 }
+
 /*
 TEST(persist,rback) {
 	const std::type_info & ti = typeid(spatial::TPoint<double,2>);

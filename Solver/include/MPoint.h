@@ -60,7 +60,7 @@ namespace spatial {
 			return TPoint<size_t,N>(index);
 		}
 
-		void persist(std::ostream &os) {
+		void persist(std::ostream &os) const {
 			base::persist(os);
 			vcell_persist::Token::insert<MPoint<REAL,N> >(os); 
 			std::for_each(index.begin( ), index.end( ), vcell_persist::binaryWriter<size_t>(os) );	
@@ -142,7 +142,7 @@ namespace spatial {
 		* write this to binary stream
 		* MPoint.cpp
 		*/
-		void persist(std::ostream & os ) {
+		void persist(std::ostream & os ) const {
 			base::persist(os);
 			vcell_persist::Token::insert<MeshElement<REAL,N> >(os); 
 			vcell_persist::binaryWrite(os,mp);
@@ -187,7 +187,7 @@ namespace spatial {
 	* represent difference between MPoint indexes
 	*/
 	template <int N>
-	struct ElementOffset {
+	struct ElementOffset :public vcell_persist::Persistent {
 		typedef signed char OffsetType;
 		ElementOffset( )
 			:offsets() {}
@@ -211,7 +211,7 @@ namespace spatial {
 			std::for_each(offsets.begin( ),offsets.end( ),vcell_persist::binaryReader<OffsetType>(is) );
 		}
 
-		void persist(std::ostream &os) {
+		void persist(std::ostream &os) const {
 			vcell_persist::Token::insert<ElementOffset<N> >(os); 
 			std::for_each(offsets.begin( ),offsets.end( ),vcell_persist::binaryWriter<OffsetType>(os) );
 		}

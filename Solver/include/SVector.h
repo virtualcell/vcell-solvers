@@ -17,7 +17,7 @@ namespace spatial {
 	* @tparam N number of dimensions 
 	*/
 	template <class T, int N>
-	class SVector {
+	class SVector : public vcell_persist::Persistent {
 		std::array<T,N> component;
 	public:
 		SVector( ) {

@@ -30,7 +30,7 @@ namespace spatial {
 	* @param N number of dimensions
 	*/
 	template<class T, int N>
-	class TPoint {
+	class TPoint : public vcell_persist::Persistent {
 	protected:
 		std::array<T,N> coord; 
 	public:
@@ -147,7 +147,7 @@ namespace spatial {
 			return false;
 		}
 
-		void persist(std::ostream &os) {
+		void persist(std::ostream &os) const {
 			vcell_persist::Token::insert<TPoint<T,N> >(os); 
 			std::for_each(coord.begin( ), coord.end( ), vcell_persist::binaryWriter<T>(os) );
 		}

@@ -135,6 +135,8 @@ WriteFormatter::WriteFormatter(std::ostream &os, unsigned short version, bool di
 	if (dictionary && usingWriteDictionary) {
 			throw std::runtime_error("attempt to create second formatter object before destruction of first (on writing)");
 	}
+	using std::ios;
+	os.exceptions(ios::badbit|ios::failbit|ios::eofbit);
 	usingWriteDictionary = dictionary;
 
 	binaryWrite(os,magicWord);
@@ -175,6 +177,8 @@ ReadFormatter::ReadFormatter(std::istream &is, unsigned short version) {
 	if (usingWriteDictionary) {
 		throw std::runtime_error("attempt to create second formatter object before destruction of first (on reading)");
 	}
+	using std::ios;
+	is.exceptions(ios::badbit|ios::failbit);
 	long word; 
 	binaryRead(is,word);
 	if (word != magicWord) {

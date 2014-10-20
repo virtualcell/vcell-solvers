@@ -13,7 +13,7 @@ namespace spatial {
 	* @tparam N point number of dimensions
 	*/
 	template <typename T, int N>
-	struct Segment {
+	struct Segment : public vcell_persist::Persistent {
 		static_assert(N > 0, "Segment dim must be non-zero");
 
 		/**
@@ -98,7 +98,7 @@ namespace spatial {
 			return rc > lc ? rc -lc : lc - rc;
 		}
 
-		void persist(std::ostream &os) {
+		void persist(std::ostream &os) const {
 			vcell_persist::Token::insert<Segment<T,N> >(os); 
 			points[0].persist(os);
 			points[1].persist(os);

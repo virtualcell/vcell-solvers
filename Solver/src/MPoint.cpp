@@ -31,7 +31,7 @@ const std::string & IndexInfo<N>::str( ) const {
 	return str_;
 }
 template MPoint<double,2>::MPoint(std::istream &);
-template void MeshElement<double,2>::persist(std::ostream &);
+template void MeshElement<double,2>::persist(std::ostream &) const;
 template MeshElement<double,2>::MeshElement(std::istream &);
 
 

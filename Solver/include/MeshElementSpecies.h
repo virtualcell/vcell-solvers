@@ -61,28 +61,21 @@ namespace moving_boundary {
 			edgeLength( ) 
 		{}
 		MeshElementNeighbor(std::istream & is,  const MeshElementSpecies & client) ;
-			/*
-			vcell_persist::Token::check<MeshElementNeighbor>(is);
-			spatial::ElementOffset<2> eo(is);
-			vcell_persist::binaryRead(is,distanceTo);
-			vcell_persist::binaryRead(is,edgeLength);
+
+		bool operator==(const MeshElementNeighbor &rhs) const {
+			return element == rhs.element 
+				&& distanceTo == rhs.distanceTo
+				&& edgeLength == rhs.edgeLength;
 		}
-		*/
+
 		MeshElementSpecies *element; 
 		moving_boundary::DistanceType distanceTo;
 		moving_boundary::DistanceType edgeLength;
 
 		void persist(std::ostream &os, const MeshElementSpecies &client); 
-			/*
-			vcell_persist::Token::insert<MeshElementNeighbor>(os);
-			spatial::ElementOffset<2> eo = client.offset(*element);
-			eo.persist(os);
-			vcell_persist::binaryWrite(os,distanceTo);
-			vcell_persist::binaryWrite(os,edgeLength);
-		}
-		*/
 
 		static void registerType( ) {
+			spatial::ElementOffset<2>::registerType( );
 			vcell_persist::Registrar::reg<MeshElementNeighbor>("MeshElementNeighbor");
 		}
 	};
@@ -530,7 +523,23 @@ namespace moving_boundary {
 		virtual void volumeChanged( ) {
 			segments_.clear( );
 		}
+
+		/**
+		* return neighbor with specified offset. See also
+		* Mesh#element( ...) 
+		*/
 		OurType *neighbor(spatial::ElementOffset<2> & eo) const;
+
+		static void registerType( ) {
+			Volume2DClass::registerType( );
+			NeighborType::registerType( );
+			spatial::SVector<moving_boundary::VelocityType,2>::registerType( );
+			vcell_persist::Registrar::reg<MeshElementSpecies>("MeshElementSpecies");
+		}
+
+		void persist(std::ostream &);
+
+
 	private:
 		/**
 		* log creation information to trace file
