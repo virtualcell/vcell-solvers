@@ -245,5 +245,5 @@ StdString<S>::restore(std::istream &is) {
 	return std::string(buffer,slen);
 }
 
-template StdString<unsigned char>;
-template StdString<unsigned short>;
+template struct StdString<unsigned char>;
+template struct StdString<unsigned short>;

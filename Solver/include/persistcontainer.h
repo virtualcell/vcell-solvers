@@ -115,7 +115,7 @@ namespace vcell_persist {
 	/**
 	* write array of T (Persistent or binary) 
 	*/
-	template<typename T, int N>
+	template<typename T, size_t N>
 	void save(std::ostream &os,  const std::array<T,N> & arr) {
 		std::for_each(arr.begin( ), arr.end( ),persistWrite(os));
 	}
@@ -123,7 +123,7 @@ namespace vcell_persist {
 	/**
 	* restore array of T (Persistent or binary) 
 	*/
-	template<typename T, int N>
+	template<typename T, size_t N>
 	void restore(std::istream &is, std::array<T,N> & arr) {
 		std::for_each(arr.begin( ), arr.end( ),persistRead(is));
 	}
