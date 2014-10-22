@@ -1,4 +1,5 @@
 #include <World.h>
+#include <persistcontainer.h>
 using moving_boundary::Universe;
 using spatial::GeoLimit;
 /********************************************************************
@@ -41,6 +42,31 @@ void Universe<N>::init(std::array<GeoLimit,N> &iValues, std::array<CountType, N>
 		wb = wb->nextWorld;
 	}
 }
+template <int N>
+void Universe<N>::persist(std::ostream &os) const {
+	vcell_persist::Token::insert<Universe<N> >(os); 
+	vcell_persist::save(os,inputLimits);
+	vcell_persist::save(os,nodeNumbers);
+	vcell_persist::save(os,inputZeroPoint);
+	vcell_persist::binaryWrite(os,diagonal_);
+	vcell_persist::binaryWrite(os,lockState);
+	//due to the complexity of generating factory methods to
+	//restore any type of World, we're going to shift that
+	//responsibility to the client
+}
+
+template <int N>
+void Universe<N>::restore(std::istream &is) {
+	vcell_persist::Token::check<Universe<N> >(is); 
+	vcell_persist::restore(is,inputLimits);
+	vcell_persist::restore(is,nodeNumbers);
+	vcell_persist::restore(is,inputZeroPoint);
+	vcell_persist::binaryRead(is,diagonal_);
+	vcell_persist::binaryRead(is,lockState);
+	//due to the complexity of generating factory methods to
+	//restore any type of World, we're going to shift that
+	//responsibility to the client
+}
 
 template <int N>
 void Universe<N>::destroy( ) {
@@ -62,6 +88,10 @@ void Universe<N>::destroy( ) {
 template <int N>
 bool Universe<N>::locked( ) const {
 	return lockState == lockedUniverse;
+}
+template <int N>
+void Universe<N>::registerType( ) {
+	vcell_persist::Registrar::reg<Universe<N>,N>("Universe");
 }
 
 

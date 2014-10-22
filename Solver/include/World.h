@@ -62,7 +62,9 @@ namespace moving_boundary {
 	};
 
 	/**
-	* Problem domain values converted to a particular coordinate type
+	* Problem domain values converted to a particular coordinate type.
+	* There is a single universe per simulation, but there can be 
+	* multiple worlds
 	* @tparam NUM_DIM number of dimensions supported
 	* @tparam COORD_TYPE type needed for modeling or API
 	*/
@@ -190,10 +192,14 @@ namespace moving_boundary {
 		typedef WorldToPDCoordinateConverter<COORD_TYPE,NUM_DIM,spatial::cZ> ZConverter; 
 		typedef WorldToPDPointConverter<COORD_TYPE,NUM_DIM> PointConverter;
 
+		void persist(std::ostream &) const;
+		void restore(std::istream &);
+		static void registerType( ); 
 
 	private:
 
 		World( );
+
 		/**
 		* constructor functionality in separate module
 		to allow recreation for tests

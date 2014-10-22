@@ -441,6 +441,48 @@ TEST(persist, circle) {
 	ASSERT_TRUE( orig == file); 
 }
 
+TEST(persist, world) {
+	using moving_boundary::Universe;
+	using moving_boundary::World;
+
+	typedef int32_t testType;
+
+	Universe<2> &universe = Universe<2>::get( );
+	World<testType,2>::registerType( );
+	universe.registerType( );
+	universe.destroy( ); //for testing
+	std::array<spatial::GeoLimit,2> limits;
+	limits[0] = spatial::GeoLimit(-50,50);
+	limits[1] = spatial::GeoLimit(-50,50);
+	universe.init(limits);
+	double uDiag = universe.diagonal( );
+
+	double s;
+	testType d;
+	{
+		World<testType,2> & w= World<testType,2>::get( );
+	    s = w.theScale( );
+		d = w.diagonal( );
+		std::ofstream out;
+		binaryOpen(out,"world.dat");
+		universe.persist(out);
+		w.persist(out);
+	}
+	universe.destroy( ); //for testing
+	World<testType,2> & back = World<testType,2>::get( );
+	back.destroy( );
+	std::ifstream in;
+	binaryOpen(in,"world.dat");
+	universe.restore(in);
+	ASSERT_TRUE(universe.limits( ) == limits);
+	ASSERT_TRUE(universe.diagonal( ) == uDiag);
+
+
+	back.restore(in);
+	ASSERT_TRUE(s == back.theScale( ));
+	ASSERT_TRUE(d == back.diagonal( ));
+}
+
 
 /*
 TEST(persist,rback) {

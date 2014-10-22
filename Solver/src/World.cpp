@@ -145,6 +145,31 @@ template <typename WORLD_COORD, int N>
 void World<WORLD_COORD,N>::destroy( ) {
 	diagV = 0;
 	scale = 0;
+	limitsWorldSystem.fill(spatial::TGeoLimit<WORLD_COORD>( ) );
+}
+
+template <typename WORLD_COORD, int N>
+void World<WORLD_COORD,N>::persist(std::ostream &os) const {
+	vcell_persist::Token::insert<World<WORLD_COORD,N> >(os);
+	vcell_persist::binaryWrite(os,maxSupported);
+	vcell_persist::binaryWrite(os,diagV);
+	vcell_persist::save(os,limitsWorldSystem);
+	vcell_persist::binaryWrite(os,scale);
+}
+
+template <typename WORLD_COORD, int N>
+void World<WORLD_COORD,N>::restore(std::istream &is) {
+	vcell_persist::Token::check<World<WORLD_COORD,N> >(is);
+	WORLD_COORD maxReadback;
+	
+	vcell_persist::binaryRead(is,maxReadback);
+	vcell_persist::binaryRead(is,diagV);
+	vcell_persist::restore(is,limitsWorldSystem);
+	vcell_persist::binaryRead(is,scale);
+}
+template <typename WORLD_COORD, int N>
+void World<WORLD_COORD,N>::registerType( ) {
+	vcell_persist::Registrar::reg<World<WORLD_COORD,N>,WORLD_COORD,N>("World");
 }
 
 template <typename WORLD_COORD, int N>

@@ -7,12 +7,18 @@
 
 namespace moving_boundary {
 
-	//forward
-	//enum UniverseLock;
 	enum UniverseLock {unsetUniverse, set, lockedUniverse};
+	//forward
 	template<int N>
 	struct WorldBase; 
 
+	/**
+	* the moving boundary Universe is, in problem domain terms,
+	* the limits of the analysis and the resolution to which
+	* we analyze it.
+	* There is a single universe per simulation, but there
+	* can be different Worlds
+	*/
 	template <int NUM_DIM>
 	struct Universe {
 		/**
@@ -84,6 +90,12 @@ namespace moving_boundary {
 		double diagonal( ) const {
 			return diagonal_;
 		}
+
+		void persist(std::ostream &) const;
+
+		void restore(std::istream &);
+
+		static void registerType( );
 
 	private:
 		Universe( );
