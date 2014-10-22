@@ -151,7 +151,7 @@ void World<WORLD_COORD,N>::destroy( ) {
 template <typename WORLD_COORD, int N>
 void World<WORLD_COORD,N>::persist(std::ostream &os) const {
 	vcell_persist::Token::insert<World<WORLD_COORD,N> >(os);
-	vcell_persist::binaryWrite(os,maxSupported);
+	vcell_persist::binaryWrite(os, WorldTypeBase<WORLD_COORD>::maxSupported);
 	vcell_persist::binaryWrite(os,diagV);
 	vcell_persist::save(os,limitsWorldSystem);
 	vcell_persist::binaryWrite(os,scale);
