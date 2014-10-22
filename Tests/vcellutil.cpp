@@ -241,7 +241,7 @@ TEST(persist,MPoint) {
 		ASSERT_TRUE(f.mPos( ) == sp);
 	}
 }
-TEST(persist,Mesh) {
+TEST(persist,MeshDef) {
 	std::array<short,2> origin = {{2,3}};
 	std::array<short,2> sizes = {{5,6}};
 	std::array<size_t,2> npoints = {{11,17}};
@@ -249,7 +249,7 @@ TEST(persist,Mesh) {
 	size_t cv = 0;
 	{
 		std::ofstream out;
-		binaryOpen(out,"mesh.dat");
+		binaryOpen(out,"meshDef.dat");
 		spatial::MeshDef<short,2> md(origin,sizes,npoints);
 		md.registerType( );
 		md.persist(out);
@@ -259,7 +259,7 @@ TEST(persist,Mesh) {
 	}
 	{
 		std::ifstream in;
-		binaryOpen(in,"mesh.dat");
+		binaryOpen(in,"meshDef.dat");
 		spatial::MeshDef<short,2> back(in); 
 		ASSERT_TRUE(back.startCorner(spatial::cX) == origin[0]) ; 
 		ASSERT_TRUE(back.startCorner(spatial::cY) == origin[1]) ; 
@@ -446,6 +446,8 @@ TEST(persist, world) {
 	using moving_boundary::World;
 
 	typedef int32_t testType;
+	//this might mess up other tests, so comment out unless specifically testing
+	//moving_boundary::WorldMax<testType>(20000);
 
 	Universe<2> &universe = Universe<2>::get( );
 	World<testType,2>::registerType( );

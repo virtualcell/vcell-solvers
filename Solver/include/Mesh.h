@@ -266,6 +266,36 @@ namespace spatial {
 			}
 			while (increment(0,loop));
 		}
+
+		Mesh(std::istream &is)
+			:MeshDef<CT,N>(is),
+			storage(0),
+			daCache(TELEMENT::createCache(*this)) {
+				vcell_persist::Token::check<Mesh<CT,N,TELEMENT> >(is); 
+				const size_t nCells =  this->numCells( );
+				const size_t needed =  nCells * sizeof(TELEMENT);
+				storage = static_cast<TELEMENT *>(malloc(needed));
+				for (size_t i = 0; i < nCells; i++) {
+					void * addr = &storage[i];
+					new (addr) TELEMENT(*this,is); //placement new
+				}
+		}
+		
+		void persist(std::ostream &os) const {
+			MeshDef<CT,N>::persist(os);
+			vcell_persist::Token::insert<Mesh<CT,N,TELEMENT> >(os); 
+			size_t nCells = numCells( );
+			for (size_t i = 0; i < nCells; i++) {
+				storage[i].persist(os);
+			}
+			//daCache is not persisted as it's transient data -- easier just to rebuild from scratch
+		}
+
+		static void registerType( ) {
+			TELEMENT::registerType( );
+			MeshDef<CT,N>::registerType( );
+			vcell_persist::Registrar::reg<Mesh<CT,N, TELEMENT>,CT,TELEMENT,N>("Mesh");
+		}
 	private:
 
 

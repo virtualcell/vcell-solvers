@@ -166,6 +166,10 @@ void World<WORLD_COORD,N>::restore(std::istream &is) {
 	vcell_persist::binaryRead(is,diagV);
 	vcell_persist::restore(is,limitsWorldSystem);
 	vcell_persist::binaryRead(is,scale);
+	if (maxReadback != WorldTypeBase<WORLD_COORD>::maxSupported) {
+		VCELL_EXCEPTION(out_of_range, vcell_persist::getTypeToken(typeid(*this)) << " max supported readback " << maxReadback
+			<< " differs from existing " << WorldTypeBase<WORLD_COORD>::maxSupported)
+	}
 }
 template <typename WORLD_COORD, int N>
 void World<WORLD_COORD,N>::registerType( ) {
