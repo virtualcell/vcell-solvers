@@ -262,6 +262,6 @@ int localMain(int argc, char **argv)
 
 #include <gtest/gtest.h>
 TEST(frontier,example2D) {
-	char *args[]={"demo",nullptr};
+	const char *args[]={"demo",nullptr};
 	//localMain(1,args);
 }

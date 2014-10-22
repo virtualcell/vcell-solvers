@@ -282,9 +282,11 @@ namespace spatial {
 		}
 		
 		void persist(std::ostream &os) const {
-			MeshDef<CT,N>::persist(os);
+			typedef MeshDef<CT,N> base;
+			//note the base:: qualifier need for gcc
+			base::persist(os);
 			vcell_persist::Token::insert<Mesh<CT,N,TELEMENT> >(os); 
-			size_t nCells = numCells( );
+			size_t nCells = base::numCells( );
 			for (size_t i = 0; i < nCells; i++) {
 				storage[i].persist(os);
 			}
