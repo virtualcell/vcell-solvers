@@ -1109,7 +1109,8 @@ namespace moving_boundary {
 				vcFront = moving_boundary::restoreFrontProvider(is);
 				vcell_persist::restore(is,currentFront);
 				meshDefinition = MBMeshDef(is);
-				primaryMesh = MBMesh(is);
+				MBMesh temp(is);
+				primaryMesh = temp; 
 				vcell_persist::binaryRead(is,interiorVolume);
 
 				restoreElementsVector(is, boundaryElements);
