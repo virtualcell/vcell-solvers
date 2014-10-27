@@ -9,7 +9,7 @@ template <int N>
 Universe<N>::Universe( )
 	:inputLimits( ),
 	diagonal_( ),
-	lockState(unsetUniverse) {}
+	initialized(false) {}
 
 template <int N>
 Universe<N> & Universe<N>::get( ) {
@@ -18,11 +18,11 @@ Universe<N> & Universe<N>::get( ) {
 }
 
 template <int N>
-void Universe<N>::init(std::array<GeoLimit,N> &iValues, std::array<CountType, N> numNodes, bool lock) {
+void Universe<N>::init(std::array<GeoLimit,N> &iValues, std::array<CountType, N> numNodes) {
 	nodeNumbers = numNodes;
 	typedef moving_boundary::CoordinateType CoordType;
 	//validate state 
-	if (lockState != unsetUniverse) {
+	if (initialized) {
 		VCELL_EXCEPTION(logic_error, "Universe<REAL, " << N << "> already initialized");
 	}
 	double diagonalScratch = 0; 
@@ -35,7 +35,7 @@ void Universe<N>::init(std::array<GeoLimit,N> &iValues, std::array<CountType, N>
 	}
 	diagonal_ = sqrt(diagonalScratch);
 	inputLimits = iValues;
-	lockState = lock ?  lockedUniverse : set;
+	initialized = true;
 	WorldBase<N> *wb = worlds;
 	while (wb != nullptr) {
 		wb->init( );
@@ -49,7 +49,7 @@ void Universe<N>::persist(std::ostream &os) const {
 	vcell_persist::save(os,nodeNumbers);
 	vcell_persist::save(os,inputZeroPoint);
 	vcell_persist::binaryWrite(os,diagonal_);
-	vcell_persist::binaryWrite(os,lockState);
+	vcell_persist::binaryWrite(os,initialized);
 	//due to the complexity of generating factory methods to
 	//restore any type of World, we're going to shift that
 	//responsibility to the client
@@ -62,7 +62,7 @@ void Universe<N>::restore(std::istream &is) {
 	vcell_persist::restore(is,nodeNumbers);
 	vcell_persist::restore(is,inputZeroPoint);
 	vcell_persist::binaryRead(is,diagonal_);
-	vcell_persist::binaryRead(is,lockState);
+	vcell_persist::binaryRead(is,initialized);
 	//due to the complexity of generating factory methods to
 	//restore any type of World, we're going to shift that
 	//responsibility to the client
@@ -70,14 +70,11 @@ void Universe<N>::restore(std::istream &is) {
 
 template <int N>
 void Universe<N>::destroy( ) {
-	if (locked( )) {
-		VCELL_EXCEPTION(logic_error, "Universe<REAL, " << N << "> locked");
-	}
 
 	for (int i = 0; i < N; i++) {
 		inputLimits[i] = GeoLimit(0,0);
 	}
-	lockState = unsetUniverse;
+	initialized = false;
 	WorldBase<N> *wb = worlds;
 	while (wb != nullptr) {
 		wb->destroy( );
@@ -87,7 +84,7 @@ void Universe<N>::destroy( ) {
 
 template <int N>
 bool Universe<N>::locked( ) const {
-	return lockState == lockedUniverse;
+	return initialized; 
 }
 template <int N>
 void Universe<N>::registerType( ) {

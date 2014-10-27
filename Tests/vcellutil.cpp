@@ -435,7 +435,7 @@ TEST(persist, circle) {
 	}
 	std::ifstream in;
 	binaryOpen(in,"circle.dat");
-	FrontProvider<moving_boundary::CoordinateType> *back= moving_boundary::restore(in);
+	FrontProvider<moving_boundary::CoordinateType> *back= moving_boundary::restoreFrontProvider(in);
 	std::vector<spatial::TPoint<moving_boundary::CoordinateType, 2> > orig = fp->retrieveFront( );
 	std::vector<spatial::TPoint<moving_boundary::CoordinateType, 2> > file = back->retrieveFront( );
 	ASSERT_TRUE( orig == file); 

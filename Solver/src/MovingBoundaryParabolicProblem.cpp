@@ -18,6 +18,7 @@
 #include <VoronoiMesh.h>
 #include <Logger.h>
 #include <Modulo.h>
+#include <boundaryProviders.h>
 
 #include <MBridge/FronTierAdapt.h>
 #include <MBridge/Figure.h>
@@ -27,7 +28,13 @@
 using spatial::cX;
 using spatial::cY;
 
+//*********************************************************
+// Validation of input to problem functors & ValidationBase 
+//*********************************************************
 namespace {
+
+	typedef double (*ConcentrationFunction)(double x, double y);
+
 	//std::ofstream fspy("fcalls.txt"); //temp, frontier spy
 	//std::ofstream lspy("levelcalls.txt"); //temp, frontier spy
 	//concentration function implement -- use either function pointer or expression parser
@@ -36,13 +43,13 @@ namespace {
 	};
 
 	struct ConcentrationPointer : public ConcentrationProvider {
-		ConcentrationPointer(const moving_boundary::ConcentrationFunction &p)
+		ConcentrationPointer(const ConcentrationFunction &p)
 			:cfunc(p) {}
 
 		virtual double conc(double x, double y) {
 			return cfunc(x,y);
 		}
-		const moving_boundary::ConcentrationFunction cfunc;
+		const ConcentrationFunction cfunc;
 	};
 
 	template<int NUMBER_SYMBOLS>
@@ -85,11 +92,13 @@ namespace {
 
 				CHECK(mbs.maxTime);
 				CHECK2(mbs.numberTimeSteps, mbs.timeStep);
+#ifdef OLD_FUNCTION_POINTER_IMPLEMENTATION
 				CHECK2(reinterpret_cast<void *>(mbs.concentrationFunction),mbs.concentrationFunctionStr);
 				CHECK2(reinterpret_cast<void*>(mbs.velocityFunction),mbs.advectVelocityFunctionStrX)
 					if (mbs.alternateFrontProvider == 0) {
 						CHECK2(reinterpret_cast<void *>(mbs.levelFunction),mbs.levelFunctionStr);
 					}
+#endif
 #undef CHECK
 #undef CHECK2
 					switch (nFunctionPointers) {
@@ -100,7 +109,11 @@ namespace {
 						badset << "functions must be specified by pointers or strings, not both ";
 						break;
 					}
+#ifdef OLD_FUNCTION_POINTER_IMPLEMENTATION
 					if (mbs.velocityFunction == 0 && mbs.advectVelocityFunctionStrY.empty( )) {
+#else
+					if (mbs.advectVelocityFunctionStrY.empty( )) {
+#endif
 						badset << "Unset Y velocity " << std::endl; 
 					}
 
@@ -175,7 +188,12 @@ namespace {
 		}
 		int nFunctionPointers;
 	};
+
 }
+
+//**************************************************
+// main solver, local definition 
+//**************************************************
 namespace moving_boundary {
 	struct MovingBoundaryParabolicProblemImpl : public ValidationBase {
 		typedef MovingBoundaryParabolicProblemImpl Outer;
@@ -231,8 +249,10 @@ namespace moving_boundary {
 				setInitialValues(ce);
 			}
 			else {
+#ifdef OLD_FUNCTION_POINTER_IMPLEMENTATION
 				ConcentrationPointer cp(mbs.concentrationFunction);
 				setInitialValues(cp);
+#endif
 			}
 
 			//check time step
@@ -334,14 +354,24 @@ namespace moving_boundary {
 			delete vcFront;
 		}
 
+		void setInterior(Element &e) {
+			e.setInteriorVolume(interiorVolume);
+		}
+
 		/**
 		* set initial mesh sizes
 		*/
 		void setInitialValues(ConcentrationProvider &provider) {
 			using std::vector;
 			//set inside volumes on all elements; they may become inside as front moves.
+			/*
 			for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
 				iter->setInteriorVolume(interiorVolume);
+			}
+			*/
+			//std::for_each(primaryMesh.begin( ), primaryMesh.end( ), setInterior);
+			for (Element & e: primaryMesh) {
+				e.setInteriorVolume(interiorVolume);
 			}
 			currentFront = vcFront->retrieveFront( );
 			std::cout << "front size " << currentFront.size( ) << std::endl;
@@ -572,9 +602,9 @@ namespace moving_boundary {
 		* base class for functors which need access to #Outer
 		*/
 		struct FunctorBase {
-			FunctorBase(Outer &o)
+			FunctorBase(const Outer &o)
 				:outer(o) {}
-			Outer & outer;
+			const Outer & outer;
 		};
 		/**
 		* Functor
@@ -950,6 +980,156 @@ namespace moving_boundary {
 			return setup_;
 		}
 
+		static void registerType( ) {
+			MBMesh::registerType( );
+			vcell_persist::Registrar::reg<MovingBoundaryParabolicProblemImpl>("MovingBoundaryParabolicProblemImpl");
+		}
+
+		/**
+		* Functor -- convert Element * to index 
+		*/
+		typedef unsigned short ElementStorageType;
+
+		struct ElementToIndex : public FunctorBase {
+			ElementToIndex(const Outer &o)
+				:FunctorBase(o) {}
+
+			ElementStorageType operator( )(const Element *in) {
+				spatial::MeshPosition mp = outer.primaryMesh.indexOf(in->indexes( ));
+				return mp.to<ElementStorageType>( ); 
+			}
+		};
+
+		/**
+		* Functor -- convert index to Element *  
+		*/
+		struct IndexToElement : public FunctorBase {
+			IndexToElement(const Outer &o)
+				:FunctorBase(o) {}
+
+			Element * operator( )(ElementStorageType i) {
+				spatial::MeshPosition mp(i);
+				return & outer.primaryMesh.get(mp);
+			}
+		};
+
+		/**
+		* persist given vector of elements to os
+		* converts Element * to ElementStorageType
+		* @tparam E const Element or Element
+		*/
+		template <class E>
+		void persistElementsVector(std::ostream &os, const vector<E *>  &vec) const {
+			std::vector<ElementStorageType> writeBuffer(vec.size( ));
+			ElementToIndex eToIndex(*this);
+			std::transform(vec.begin( ),vec.end( ),writeBuffer.begin( ),eToIndex);
+			vcell_persist::save(os,writeBuffer);
+		}
+
+		/**
+		* restore given vector of elements from is 
+		* converts ElementStorageType to (const) Element * 
+		* @tparam E const Element or Element
+		*/
+		template <class E>
+		void restoreElementsVector(std::istream &is, vector<E *>  &vec) const {
+			std::vector<ElementStorageType> readBuffer; 
+			vcell_persist::restore(is,readBuffer);
+			IndexToElement iToElement(*this);
+			vec.resize( readBuffer.size( ) );
+			std::transform(readBuffer.begin( ),readBuffer.end( ),vec.begin( ),iToElement);
+		}
+
+		/**
+		* save this. Note #MovingBoundarySetup must be saved separately by client
+		*/
+		void persist(std::ostream &os) const {
+			//setup_.persist(os);
+			vcell_persist::Token::insert<MovingBoundaryParabolicProblemImpl>(os);
+			//vcell_persist::binaryWrite(os,diffusionConstant);
+			vcell_persist::binaryWrite(os,currentTime);
+			//vcell_persist::binaryWrite(os,maxTime);
+			vcell_persist::binaryWrite(os,timeStep);
+			vcell_persist::binaryWrite(os,baselineTime);
+			vcell_persist::binaryWrite(os,baselineGeneration);
+			vcell_persist::binaryWrite(os,minimimMeshInterval);
+			vcFront->persist(os);
+			vcell_persist::save(os,currentFront);
+			meshDefinition.persist(os);
+			primaryMesh.persist(os);
+			vcell_persist::binaryWrite(os,interiorVolume);
+
+			persistElementsVector(os, boundaryElements);
+			persistElementsVector(os, lostElements);
+			persistElementsVector(os, gainedElements);
+			vcell_persist::binaryWrite(os,heartbeat);
+			vcell_persist::StdString<>::save(os,heartbeatSymbol);
+		}
+
+		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs, std::istream &is) 
+			:ValidationBase(mbs),
+			world(WorldType::get( )),
+			setup_(mbs),
+			diffusionConstant(mbs.diffusionConstant),
+			currentTime(0),
+			maxTime(mbs.maxTime),
+			timeStep(mbs.timeStep),
+			baselineTime(0),
+			baselineGeneration(0),
+			minimimMeshInterval(0),
+
+			symTable(buildSymTable( )),
+			levelExp(mbs.levelFunctionStr,symTable), 
+			advectVelocityExpX(mbs.advectVelocityFunctionStrX,symTable), 
+			advectVelocityExpY(mbs.advectVelocityFunctionStrY,symTable), 
+			frontVelocityExpX(mbs.frontVelocityFunctionStrX,symTable), 
+			frontVelocityExpY(mbs.frontVelocityFunctionStrY,symTable), 
+			concentrationExp(mbs.concentrationFunctionStr,symTable), 
+
+			vcFront(nullptr),
+			currentFront( ),
+			meshDefinition( ),
+			interiorVolume( ),
+			primaryMesh(),
+			voronoiMesh(),
+			//alloc( ),
+			boundaryElements( ),
+			lostElements( ),
+			gainedElements(  ),
+			heartbeat(0),
+			heartbeatSymbol( ) {
+				vcell_persist::Token::check<MovingBoundaryParabolicProblemImpl>(is);
+				//vcell_persist::binaryRead(is,diffusionConstant);
+				vcell_persist::binaryRead(is,currentTime);
+				//vcell_persist::binaryRead(is,maxTime);
+				vcell_persist::binaryRead(is,timeStep);
+				vcell_persist::binaryRead(is,baselineTime);
+				vcell_persist::binaryRead(is,baselineGeneration);
+				vcell_persist::binaryRead(is,minimimMeshInterval);
+				vcFront = moving_boundary::restoreFrontProvider(is);
+				vcell_persist::restore(is,currentFront);
+				meshDefinition = MBMeshDef(is);
+				primaryMesh = MBMesh(is);
+				vcell_persist::binaryRead(is,interiorVolume);
+
+				restoreElementsVector(is, boundaryElements);
+				restoreElementsVector(is, lostElements);
+				restoreElementsVector(is, gainedElements);
+				vcell_persist::binaryRead(is,heartbeat);
+				vcell_persist::StdString<>::restore(is,heartbeatSymbol);
+				voronoiMesh.setMesh(primaryMesh);
+			}
+	#ifdef PROB_NOT
+		/**
+
+		* this needs reference to #MovingBoundarySetup, so parse that first
+		* before creating object
+		*/
+		static MovingBoundaryParabolicProblemImpl * restore(std::istream &is) {
+			MovingBoundarySetup(
+		}
+#endif
+
 		WorldType & world;
 		const MovingBoundarySetup &setup_;
 		const double diffusionConstant;
@@ -957,7 +1137,7 @@ namespace moving_boundary {
 		* currentTime must be set before #vcFront initialized
 		*/
 		double currentTime;
-		double maxTime;
+		const double maxTime;
 		double timeStep; 
 		double baselineTime;
 		unsigned int baselineGeneration;
@@ -1013,24 +1193,9 @@ namespace moving_boundary {
 
 	};
 
-
-	MovingBoundaryParabolicProblem::MovingBoundaryParabolicProblem(const MovingBoundarySetup &mbs)
-		:impl(new MovingBoundaryParabolicProblemImpl(mbs)) { }
-
-	const spatial::MeshDef<moving_boundary::CoordinateType,2> & MovingBoundaryParabolicProblem::meshDef( ) const {
-		return impl->meshDef( );
-	}
-	double MovingBoundaryParabolicProblem::baseTimeStep( ) const {
-		return impl->timeStep;
-	}
-	unsigned int MovingBoundaryParabolicProblem::numberTimeSteps( ) const {
-		return impl->numberTimeSteps( );
-	}
-
-	MovingBoundaryParabolicProblem::~MovingBoundaryParabolicProblem( ) {
-		delete impl;
-	}
-
+	//**************************************************
+	// local definitions, functors / functions 
+	//**************************************************
 	namespace {
 		struct Evaluator {
 			virtual ~Evaluator( ) {}
@@ -1116,6 +1281,31 @@ namespace moving_boundary {
 			os << scatter << empty;
 		}
 	}
+
+	//**************************************************
+	// MovingBoundary proper
+	//**************************************************
+
+	MovingBoundaryParabolicProblem::MovingBoundaryParabolicProblem(const MovingBoundarySetup &mbs)
+		:impl(new MovingBoundaryParabolicProblemImpl(mbs)) { }
+
+	MovingBoundaryParabolicProblem::MovingBoundaryParabolicProblem(const MovingBoundarySetup &mbs, std::istream &is) 
+		:impl(new MovingBoundaryParabolicProblemImpl(mbs,is)) { }
+
+	const spatial::MeshDef<moving_boundary::CoordinateType,2> & MovingBoundaryParabolicProblem::meshDef( ) const {
+		return impl->meshDef( );
+	}
+	double MovingBoundaryParabolicProblem::baseTimeStep( ) const {
+		return impl->timeStep;
+	}
+	unsigned int MovingBoundaryParabolicProblem::numberTimeSteps( ) const {
+		return impl->numberTimeSteps( );
+	}
+
+	MovingBoundaryParabolicProblem::~MovingBoundaryParabolicProblem( ) {
+		delete impl;
+	}
+
 	void MovingBoundaryParabolicProblem::setHeartbeat(size_t numGen, const std::string &symbol) {
 		impl->setHeartbeat(numGen,symbol);
 	}
@@ -1136,5 +1326,11 @@ namespace moving_boundary {
 		return impl->setup( );
 	}
 
+	void MovingBoundaryParabolicProblem::persist(std::ostream &os) const {
+		impl->persist(os);
+	}
+	void MovingBoundaryParabolicProblem::registerType( ) {
+		MovingBoundaryParabolicProblemImpl::registerType( );
+	}
 
 }

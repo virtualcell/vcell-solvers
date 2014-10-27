@@ -1,6 +1,8 @@
 #include <cstdint>
+#include <stdexcept>
 #pragma warning ( disable: 4018 )
 #include <Mesh.h>
+#include <VCellException.h>
 
 //using namespace spatial;
 template <class REAL, int N> 
@@ -15,6 +17,16 @@ std::vector<REAL> spatial::MeshDef<REAL,N>::coordinateValues(spatial::Axis a) co
 	return rval;
 }
 
+#ifndef NDEBUG
+template <typename T> 
+void spatial::MeshPosition::check( ) {
+	if (index > std::numeric_limits<T>::max( ) ) {
+		VCELL_EXCEPTION(out_of_range, "index value " << index <<  " greater max permited by type " //<< typeid(T).name( )
+			<< ", " << std::numeric_limits<T>::max( ) );
+	}
+}
+#endif
+
 
 
 /**
@@ -25,4 +37,6 @@ namespace spatial {
 	template struct MeshDef<int16_t,2>; 
 	template struct MeshDef<int32_t,2>; 
 	template struct MeshDef<int64_t,2>; 
+
+	template unsigned short MeshPosition::to<unsigned short>( );
 }

@@ -131,3 +131,18 @@ TEST(persist,mesh) {
 	}
 }
 
+struct Salad {};
+
+struct F {
+	int operator( )(Salad *in) {
+		return 5;
+	}
+};
+
+TEST(persist,dogx) {
+	std::vector<int> v;
+	std::vector<Salad *> salad;
+	std::transform(salad.begin( ),salad.end( ),v.begin( ),F( ));
+
+
+}

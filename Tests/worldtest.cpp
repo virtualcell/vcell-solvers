@@ -233,7 +233,7 @@ TEST(universe, intervals) {
 		limits[0] = spatial::GeoLimit(-1,2); //3
 		limits[1] = spatial::GeoLimit(-2.5,1.5); //4
 		std::array<uint16_t, 2> nnodes = {nx, ny}; 
-		universe.init(limits,nnodes,false);
+		universe.init(limits,nnodes);
 		World<int32_t,2> & lworld = World<int32_t,2>::get( );
 		double dscale = lworld.theScale( );
 		long scale = static_cast<long>(dscale);

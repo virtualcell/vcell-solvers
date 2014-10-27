@@ -69,6 +69,13 @@ namespace spatial {
 		typedef CT realType;
 		static int numDim( ) { return N; }
 
+		//default
+		MeshDef( ) 
+			:origin( ),
+			intervals( ),
+			nPoints( ), 
+			minInterval() { }
+
 		/**
 		* @param origin_ coordinates of "lower left" corner of modeled region
 		* @param sizes_ sizes of sides
@@ -240,11 +247,48 @@ namespace spatial {
 		CT minInterval;
 	};
 
+	/**
+	* encapsulate compact storage of element's location 
+	*/
+	struct MeshPosition {
+		template <typename T>
+		MeshPosition(const T &i) 
+			:index(i) {}
+
+		/**
+		* convert to specified type
+		* @tparam type to conver to
+		*/
+		template <typename T>
+		T to( ) {
+			check<T>();
+			return static_cast<T>(index);
+		}
+
+	private:
+		typedef size_t IndexType;
+		MeshPosition(const IndexType &i)
+			:index(i) {}
+		 template<class CT, int N, class TELEMENT> friend struct Mesh;
+		 IndexType index;
+#ifdef NDEBUG
+		template <typename T> void check( ) {}
+#else
+		template <typename T> void check( );
+#endif
+	};
+
 	template<class CT, int N, class TELEMENT>
 	struct Mesh : public MeshDef<CT,N> {
+		//default
+		Mesh( ) 
+			:MeshDef<CT,N>( ),
+			storage(nullptr),
+			daCache(nullptr) {}
+
 		Mesh(const MeshDef<CT,N> &definition) 
 			:MeshDef<CT,N>(definition),
-			storage(0),
+			storage(nullptr),
 			daCache(TELEMENT::createCache(definition))
 		{
 			std::array<size_t,N> loop;
@@ -269,7 +313,7 @@ namespace spatial {
 
 		Mesh(std::istream &is)
 			:MeshDef<CT,N>(is),
-			storage(0),
+			storage(nullptr),
 			daCache(TELEMENT::createCache(*this)) {
 				vcell_persist::Token::check<Mesh<CT,N,TELEMENT> >(is); 
 				const size_t nCells =  this->numCells( );
@@ -280,6 +324,22 @@ namespace spatial {
 					new (addr) TELEMENT(*this,is); //placement new
 				}
 		}
+		/**
+		* "transfer" assignment operator 
+		* Assumes ownership of rhs's storage and cache
+		* @param rhs object to take content of
+		*/
+		 
+		Mesh & operator=(Mesh &rhs) {
+			MeshDef<CT,N>::operator=(rhs);
+			storage = rhs.storage;
+			daCache = rhs.daCache;
+			rhs.storage = nullptr;
+			rhs.daCache = nullptr;
+			std::fill(rhs.nPoints.begin( ),rhs.nPoints.end( ), 0);
+			return *this;
+		}
+
 		
 		void persist(std::ostream &os) const {
 			typedef MeshDef<CT,N> base;
@@ -367,8 +427,23 @@ namespace spatial {
 		* undefined behavior if invalid coordinates
 		*/
 		TELEMENT &get(const std::array<size_t,N> & position) const {
-			size_t i = index<N-1>(position);
-			return storage[i];
+			return storage[index<N-1>(position)];
+		}
+		/**
+		* retrieve element
+		* this is provided for compactness / persistence
+		* @param index -- stored index
+		*/
+
+		TELEMENT &get(const MeshPosition &mp) const {
+			return storage[mp.index];
+		}
+
+		/**
+		* convert position to persistable object 
+		*/
+		MeshPosition indexOf(const std::array<size_t,N> & position) const {
+			return MeshPosition( index<N-1>(position) );
 		}
 
 		/**
@@ -488,7 +563,11 @@ namespace spatial {
 		iterator end( )  {
 			size_t construct[N];
 			for (int i = 0; i < N; i++) {
-				construct[i] = this->nPoints[i] - 1; 
+				auto current = this->nPoints[i];
+				if (current == 0) {
+					return begin( );
+				}
+				construct[i] = current - 1; 
 			}
 			construct[N-1]++;
 			return iterator(*this,construct);

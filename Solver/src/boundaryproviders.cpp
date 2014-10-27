@@ -335,6 +335,6 @@ spatial::FrontProvider<moving_boundary::CoordinateType> * moving_boundary::front
 	VCELL_EXCEPTION(invalid_argument,"Invalid XML for alternate front");
 }
 
-spatial::FrontProvider<moving_boundary::CoordinateType> * moving_boundary::restore(std::istream &is) {
+spatial::FrontProvider<moving_boundary::CoordinateType> * moving_boundary::restoreFrontProvider(std::istream &is) {
 	return Builder::construct(is); 
 }

@@ -20,7 +20,8 @@ namespace moving_boundary {
 		typedef MeshElementSpecies Element;
 		typedef spatial::Mesh<moving_boundary::CoordinateType,2,Element> MBMesh; 
 
-		VoronoiMesh(MBMesh &m);
+		explicit VoronoiMesh(MBMesh &m);
+		VoronoiMesh();
 
 		~VoronoiMesh( );
 
@@ -35,7 +36,7 @@ namespace moving_boundary {
 		void getResult(spatial::VoronoiResult &, const Element & element) const;
 
 		const MBMesh &mesh( ) const {
-			return mesh_;
+			return *mesh_;
 		}
 
 		/**
@@ -45,20 +46,35 @@ namespace moving_boundary {
 		*/
 		void matlabPlot(std::ostream &, const FrontType *pFront = nullptr);
 
-	Positions<Element> classify2(const FrontType & polygon); 
+		Positions<Element> classify2(const FrontType & polygon); 
 
-	/**
-	* adjust positions of nodes relative to front 
-	* @param boundaryContainer struct which supports push_back (e.g. STL)
-	* @param front new front
-	*/
-	template<class STL_CONTAINER>
-	bool adjustNodes(STL_CONTAINER & boundaryContainer, const FrontType & front);
+		/**
+		* adjust positions of nodes relative to front 
+		* @param boundaryContainer struct which supports push_back (e.g. STL)
+		* @param front new front
+		*/
+		template<class STL_CONTAINER>
+		bool adjustNodes(STL_CONTAINER & boundaryContainer, const FrontType & front);
+
+		/**
+		* set mesh for default constructed VoronoiMesh
+		* @param m mesh to set
+		* @throws if mesh already set 
+		*/
+		void setMesh(MBMesh &m);
 
 	private:
+		/**
+		* not implemented
+		*/
+		VoronoiMesh(const VoronoiMesh &);
+		/**
+		* not implemented
+		*/
+		VoronoiMesh & operator=(const VoronoiMesh &);
 		struct VoronoiMeshImpl;
 
-		MBMesh &mesh_;
+		MBMesh *mesh_;
 		VoronoiMeshImpl * impl;
 	};
 

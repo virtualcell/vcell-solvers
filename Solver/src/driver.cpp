@@ -25,7 +25,6 @@ namespace {
 	/**
 	* forward declarations of functions in file
 	*/
-	MovingBoundarySetup setupProblem(const XMLElement &root); 
 	void setupTrace(const XMLElement &root); 
 	MovingBoundaryClient *setupClient(const XMLElement &root, const char *filename, MovingBoundaryParabolicProblem &mbpp, const moving_boundary::MovingBoundarySetup &); 
 	void setupMatlabDebug(const XMLElement &root); 
@@ -77,7 +76,8 @@ int main(int argc, char *argv[])
 		setupTrace(root);
 		setupMatlabDebug(root);
 
-		moving_boundary::MovingBoundarySetup mbs = setupProblem(root);
+		using moving_boundary::MovingBoundarySetup;
+		MovingBoundarySetup mbs = MovingBoundarySetup::setupProblem(root);
 		mbpp = moving_boundary::MovingBoundaryParabolicProblem(mbs);
 		client = std::auto_ptr<moving_boundary::MovingBoundaryClient>( setupClient(root, argv[2], mbpp, mbs) ); 
 		setupHeartbeat(root,mbpp);
@@ -111,69 +111,6 @@ int main(int argc, char *argv[])
 
 namespace {
 
-	bool convertTrueOrFalse(const char *v) {
-		std::string in(v);
-		std::transform(in.begin( ),in.end( ),in.begin( ), ::tolower);
-		if (in.compare("true") == 0) {
-			return true;
-		}
-		if (in.compare("false") == 0) {
-			return false;
-		}
-		VCELL_EXCEPTION(domain_error,"invalid boolean string " << v << ", must be 'true' or 'false'");
-	}
-
-	void readLimits(const tinyxml2::XMLElement &element, spatial::GeoLimit & limits) {
-		double low = vcell_xml::convertChildElement<double>(element,"low");
-		double high = vcell_xml::convertChildElement<double>(element,"high");
-		limits = spatial::GeoLimit(low,high);
-	}
-	moving_boundary::MovingBoundarySetup setupProblem(const XMLElement &root) {
-		using vcell_xml::convertChildElement;
-
-		moving_boundary::MovingBoundarySetup mbSetup; 
-		const XMLElement & prob = vcell_xml::get(root,"problem");
-
-		std::array<spatial::GeoLimit,2> limits;
-		const tinyxml2::XMLElement & xlimits = vcell_xml::get(prob,"xLimits"); 
-		readLimits(xlimits,limits[0]);
-		const tinyxml2::XMLElement & ylimits = vcell_xml::get(prob,"yLimits"); 
-		readLimits(ylimits,limits[1]);
-		std::array<unsigned short,2> numNodes;
-		numNodes[0]  = convertChildElement<unsigned short>(prob,"numNodesX");
-		numNodes[1]  = convertChildElement<unsigned short>(prob,"numNodesY");
-
-		moving_boundary::Universe<2>::get( ).init(limits,numNodes, true);
-
-
-		mbSetup.frontToNodeRatio = convertChildElement<unsigned int>(prob,"frontToNodeRatio");
-		mbSetup.maxTime = convertChildElement<double>(prob,"maxTime");
-		mbSetup.diffusionConstant = convertChildElement<double>(prob,"diffusionConstant");
-		mbSetup.advectVelocityFunctionStrX = convertChildElement<std::string>(prob,"advectVelocityFunctionX");
-		mbSetup.advectVelocityFunctionStrY = convertChildElement<std::string>(prob,"advectVelocityFunctionY");
-		mbSetup.concentrationFunctionStr = convertChildElement<std::string>(prob,"concentrationFunction");
-
-		mbSetup.numberTimeSteps = vcell_xml::convertChildElementWithDefault<unsigned int>(prob,"numberTimeSteps",0);
-		mbSetup.timeStep = vcell_xml::convertChildElementWithDefault<double>(prob,"timeStep",0);
-		mbSetup.hardTime = convertTrueOrFalse(vcell_xml::convertChildElementWithDefault<const char *>(prob,"hardTime","false"));
-
-		using vcell_xml::convertChildElementWithDefault;
-		mbSetup.frontVelocityFunctionStrX = 
-			convertChildElementWithDefault<std::string>(prob,"frontVelocityFunctionX", mbSetup.advectVelocityFunctionStrX);
-		mbSetup.frontVelocityFunctionStrY = 
-			convertChildElementWithDefault<std::string>(prob,"frontVelocityFunctionY", mbSetup.advectVelocityFunctionStrY);
-
-		std::pair<bool,std::string> lvq = vcell_xml::queryElement<std::string>(prob,"levelFunction");
-		if (lvq.first) {
-			 mbSetup.levelFunctionStr = lvq.second;
-		}
-		const tinyxml2::XMLElement *altFront = prob.FirstChildElement("specialFront");
-		if (altFront != nullptr) {
-			mbSetup.alternateFrontProvider = moving_boundary::frontFromXML(*altFront);
-			std::cout << mbSetup.alternateFrontProvider->describe( ) << std::endl;
-		}
-		return mbSetup; 
-	}
 
 	moving_boundary::MovingBoundaryClient *setupClient(const XMLElement &root, const char *filename, moving_boundary::MovingBoundaryParabolicProblem &mbpp,
 		const moving_boundary::MovingBoundarySetup & mbs) {

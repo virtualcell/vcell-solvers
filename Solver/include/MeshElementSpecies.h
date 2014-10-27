@@ -539,6 +539,7 @@ namespace moving_boundary {
 			Volume2DClass::registerType( );
 			NeighborType::registerType( );
 			spatial::SVector<moving_boundary::VelocityType,2>::registerType( );
+			SegmentType::registerType( );
 			vcell_persist::Registrar::reg<MeshElementSpecies>("MeshElementSpecies");
 		}
 

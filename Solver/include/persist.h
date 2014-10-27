@@ -171,13 +171,13 @@ namespace vcell_persist {
 
 
 		/**
-		* restore  
+		* restore value passed by reference
 		*/
 		static typename std::enable_if< std::is_same<S, unsigned char>::value || std::is_same<S,unsigned short>::value, void>::type
 		restore(std::istream &is, std::string &); 
 
 		/**
-		* restore  
+		* restore value, return 
 		*/
 		static typename std::enable_if< std::is_same<S, unsigned char>::value || std::is_same<S,unsigned short>::value, std::string>::type
 		restore(std::istream &is);

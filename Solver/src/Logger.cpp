@@ -41,7 +41,9 @@ Logger::Logger( )
 	dest(&defDest),
 	level(fatal),
 	keys( )
-{ }
+{ 
+	set(level);
+}
 
 Logger::~Logger( ) {
 }

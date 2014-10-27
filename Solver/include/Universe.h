@@ -7,7 +7,6 @@
 
 namespace moving_boundary {
 
-	enum UniverseLock {unsetUniverse, set, lockedUniverse};
 	//forward
 	template<int N>
 	struct WorldBase; 
@@ -34,12 +33,10 @@ namespace moving_boundary {
 		* initialize the world. std::logic_error
 		* @param limits to use
 		* @param numNodes in a dimension 
-		* @param lock if true, prevents destroy from being used
 		* @throws std::logic_error if called more than once without #destroy call
 		* @throws std::domain_error if low values not less than high values
 		*/
-		void init(std::array<spatial::GeoLimit, NUM_DIM> & limits, std::array<CountType,NUM_DIM> numNodes= std::array<CountType,NUM_DIM>( ),
-			bool lock = false);
+		void init(std::array<spatial::GeoLimit, NUM_DIM> & limits, std::array<CountType,NUM_DIM> numNodes= std::array<CountType,NUM_DIM>( ));
 
 		/**
 		* return limit for specific dimension
@@ -74,7 +71,6 @@ namespace moving_boundary {
 
 		/**
 		* reset the world to the unset state. Intended for testing only
-		* @throws std::domain_error if locked
 		*/
 		void destroy( );
 
@@ -103,7 +99,7 @@ namespace moving_boundary {
 		std::array<CountType,NUM_DIM> nodeNumbers;
 		std::array<double,NUM_DIM> inputZeroPoint;
 		double diagonal_;
-		UniverseLock lockState;
+		bool initialized; 
 		WorldBase<NUM_DIM> *worlds;
 		template <typename COORD_TYPE, int> friend struct World;
 	};

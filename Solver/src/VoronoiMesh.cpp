@@ -111,24 +111,37 @@ struct VoronoiMesh::VoronoiMeshImpl {
 		}
 	}
 
+
+	static VoronoiMeshImpl * create( ) {
+		if (moving_boundary::Universe<2>::get( ).locked( )) {
+			typedef moving_boundary::World<moving_boundary::CoordinateType,2> WorldType; 
+			WorldType & world = WorldType::get( );
+			return new VoronoiMeshImpl(world);
+		}
+		else {
+			throw std::logic_error("VoronoiMesh created with unlocked world");
+		}
+	}
 };
 
+
+VoronoiMesh::VoronoiMesh( )
+	:mesh_(nullptr),
+	impl(VoronoiMeshImpl::create( )) { }
+
 VoronoiMesh::VoronoiMesh(MBMesh &m)
-	:mesh_(m),
-	impl(nullptr) 
-{
-	if (moving_boundary::Universe<2>::get( ).locked( )) {
-		typedef moving_boundary::World<moving_boundary::CoordinateType,2> WorldType; 
-		WorldType & world = WorldType::get( );
-		impl = new VoronoiMeshImpl(world);
-	}
-	else {
-		throw std::logic_error("VoronoiMesh created with unlocked world");
-	}
-}
+	:mesh_(&m),
+	impl(VoronoiMeshImpl::create( )) { }
 
 VoronoiMesh::~VoronoiMesh( ) {
 	delete impl;
+}
+
+void VoronoiMesh::setMesh(MBMesh &m) {
+	if (mesh_ == nullptr) {
+		mesh_ = &m;
+		return;
+	}
 }
 
 void VoronoiMesh::setFront(const FrontType &front) {
