@@ -8,6 +8,12 @@
 #include <DiffuseAdvectCache.h>
 #include <boost/iterator/iterator_facade.hpp>
 #include <persist.h>
+#define TRACK_STORAGE
+#ifdef TRACK_STORAGE
+#define STORAGE(x) std::cout << x << std::endl;
+#else
+#define STORAGE(x) 
+#endif
 namespace spatial {
 	//forward
 	template <int N> struct ElementOffset; 
@@ -299,6 +305,8 @@ namespace spatial {
 			}
 			const size_t needed =  this->numCells( ) * sizeof(TELEMENT);
 			storage = static_cast<TELEMENT *>(malloc(needed));
+			STORAGE("meshdef allocated " << needed << " at " << storage)
+			
 			do {
 				std::array<CT,N> values;
 				for (int d = 0; d < N; d++) {
@@ -319,6 +327,7 @@ namespace spatial {
 				const size_t nCells =  this->numCells( );
 				const size_t needed =  nCells * sizeof(TELEMENT);
 				storage = static_cast<TELEMENT *>(malloc(needed));
+				STORAGE("istream allocated " << needed << " at " << storage)
 				for (size_t i = 0; i < nCells; i++) {
 					void * addr = &storage[i];
 					new (addr) TELEMENT(*this,is); //placement new
@@ -337,6 +346,7 @@ namespace spatial {
 			rhs.storage = nullptr;
 			rhs.daCache = nullptr;
 			std::fill(rhs.nPoints.begin( ),rhs.nPoints.end( ), 0);
+			STORAGE("transferred storage " << storage)
 			return *this;
 		}
 
@@ -412,6 +422,7 @@ namespace spatial {
 
 		~Mesh( ) {
 			std::for_each(begin( ),end( ),callDestructor);
+			STORAGE("destructor freeing " << storage)
 			free(storage);
 			delete(daCache);
 		}
