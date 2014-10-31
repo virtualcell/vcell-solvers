@@ -19,6 +19,7 @@
 #undef degrees 
 #undef Error 
 #undef isnan
+#undef free 
 namespace Frontier {
 	typedef ::HYPER_SURF HYPER_SURF; 
 	typedef ::HYPER_SURF_ELEMENT HYPER_SURF_ELEMENT; 

@@ -14,6 +14,9 @@
 #else
 #define STORAGE(x) 
 #endif
+#ifdef free
+#error free macro defined
+#endif
 namespace spatial {
 	//forward
 	template <int N> struct ElementOffset; 
