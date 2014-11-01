@@ -3,6 +3,7 @@
 #include <DirichletPoissonEBBC.H>
 #include <EBAMRPoissonOpFactory.H>
 
+//#include <VCELL/ChomboLevelRedist.H>
 #include <VCELL/ChomboSemiImplicitScheduler.h>
 #include <VCELL/Variable.h>
 #include <VCELL/VarContext.h>
@@ -182,7 +183,8 @@ void ChomboSemiImplicitScheduler::iterate() {
 					Interval ivarint(ivar, ivar);
 
 					//solver is for a single variable.  copy solution and rhs to scratch space
-					for(int ilev = 0; ilev < numLevels; ilev++) {
+					for(int ilev = 0; ilev < numLevels; ++ ilev)
+					{
 						volSolnOld[iphase][ivol][ilev]->copyTo(ivarint, *volSolnOldWorkspace[iphase][ivol][ilev], zeroint);
 						volSoln[iphase][ivol][ilev]->copyTo(ivarint, *volSolnWorkspace[iphase][ivol][ilev], zeroint);
 						volSource[iphase][ivol][ilev]->copyTo(ivarint, *volSourceWorkspace[iphase][ivol][ilev], zeroint);
@@ -205,6 +207,18 @@ void ChomboSemiImplicitScheduler::iterate() {
 					
 					ebBEIntegratorList[iphase][ivol][ivar]->oneStep(volSolnWorkspace[iphase][ivol], volSolnOldWorkspace[iphase][ivol],
 								volSourceWorkspace[iphase][ivol], dt, 0, numLevels - 1, zeroPhi, kappaWeighted);
+					/*
+					for(int ilev = 0; ilev < numLevels; ++ ilev)
+					{
+						DisjointBoxLayout& currGrids = vectGrids[ilev];
+						EBISLayout& ebisl = vectEbis[iphase][ivol][ilev];
+						ProblemDomain& domain = vectDomains[ilev];
+						int nComp = 1;
+						ChomboLevelRedist levelRedist;
+						levelRedist.define(currGrids, ebisl, domain, nComp);
+						levelRedist.redistribute(*volSolnWorkspace[iphase][ivol][ilev]);
+					}
+					 */
 					EBAMRDataOps::assign(volSoln[iphase][ivol], volSolnWorkspace[iphase][ivol], ivarint, zeroint);
 				}
 			}
@@ -861,13 +875,12 @@ void ChomboSemiImplicitScheduler::updateSource() {
 						Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(iFeature, jFeature);
 						for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit) {
 							const VolIndex& vof = vofit();
-							const IntVect& gridIndex = vof.gridIndex();
-							int volIndex = getVolumeIndex(vectNxes[ilev], gridIndex);
-							map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(volIndex);
-							if (iter == irregVolumeMembraneMap[ilev].end() || iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
+							int memIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
+							if (memIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
 							{
 								continue;
 							}
+							
 							int membraneID = (*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()](vof, 0);
 							if (membraneID != currentMembraneID) {
 								continue;

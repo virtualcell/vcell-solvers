@@ -133,7 +133,6 @@ protected:
 	static void populateStructureMetricsDataType(hid_t& metricsType);
 	static void populateVertexDataType(hid_t& metricsType);
 	static void populateSegmentDataType(hid_t& triangleType);
-	Vector< map<int, int> > irregVolumeMembraneMap;
 
 #if CH_SPACEDIM == 2
 	int findNeighborMembraneIndex2D(int iphase, int ilev, const IntVect& gridIndex, int iedge,
@@ -165,6 +164,9 @@ protected:
 #else
 	void writeMeshHdf5(MembraneElementMetrics* metricsData, int vertexCount, Vertex* vertexList, int triangleCount, Triangle* surfaceData, SliceView* sliceViewData);
 #endif
+	
+private:
+	Vector< map<int, int> > irregVolumeMembraneMap;
 };
 
 #endif

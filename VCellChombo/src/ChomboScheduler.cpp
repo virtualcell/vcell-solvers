@@ -926,10 +926,8 @@ void ChomboScheduler::computeStructureSizes()
 								{
 									continue;
 								}
-								const IntVect& gridIndex = vof.gridIndex();
-								int globalIndex = getVolumeIndex(vectNxes[ilev], gridIndex);
-								map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(globalIndex);
-								if (iter == irregVolumeMembraneMap[ilev].end() || iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
+								int memIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
+								if (memIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
 								{
 									continue;
 								}
@@ -1119,14 +1117,12 @@ void ChomboScheduler::updateSolution()
 
 				for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit) {
 					const VolIndex& vof = vofit();
-					const IntVect& gridIndex = vof.gridIndex();
-					int globalIndex = getVolumeIndex(vectNxes[ilev], gridIndex);
-					map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(globalIndex);
-					if (iter == irregVolumeMembraneMap[ilev].end() || iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
+					int memIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
+					if (memIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
 					{
 						continue;
 					}
-					int memIndex = iter->second;
+
 					int membraneID = (*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0);
 					if (membraneID < 0)
 					{
@@ -1269,15 +1265,12 @@ void ChomboScheduler::updateSolution()
 					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
 					{
 						const VolIndex& vof = vofit();
-						const IntVect& gridIndex = vof.gridIndex();
-						int globalIndex = getVolumeIndex(vectNxes[ilev], gridIndex);
-						map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(globalIndex);
-						if (iter == irregVolumeMembraneMap[ilev].end() || iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
+						int memIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
+						if (memIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
 						{
 							continue;
 						}
-
-						int memIndex = iter->second;
+						
 						for (int iDefinedVar = 0; iDefinedVar < numDefinedVolVars; iDefinedVar ++)
 						{
 							VolumeVariable* var = (VolumeVariable*)feature->getDefinedVariable(iDefinedVar);
@@ -1894,9 +1887,13 @@ void ChomboScheduler::writeMembraneFiles()
 				for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++ vofit)
 				{
 					const VolIndex& vof = vofit();
-					const IntVect& gridIndex = vof.gridIndex();
 					int memIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
-
+					if (memIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
+					{
+						continue;
+					}
+					
+					const IntVect& gridIndex = vof.gridIndex();
 					RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
 					const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
 					RealVect mem_point = mem_centroid;
@@ -2276,6 +2273,7 @@ void ChomboScheduler::writeMembraneFiles()
 #if CH_SPACEDIM == 2
 	delete[] edgeVertices;
 	writeMeshHdf5(metricsData, vertexCount, vertexList, segmentList);
+	delete[] segmentList;
 #else
 	int numTriangles = triangleCount;
 	for (int tri = 0; tri < numTriangles; ++ tri)
@@ -2561,7 +2559,6 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	H5Dclose(segmentsDataset);
 	H5Sclose(space);
 	H5Tclose(segmentType);
-	delete[] segmentList;
 	}
 
 #else
