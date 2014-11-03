@@ -16,6 +16,7 @@
 using tinyxml2::XMLElement;
 */
 using namespace std;
+struct B;
 struct C;
 class A {
 	friend struct B;

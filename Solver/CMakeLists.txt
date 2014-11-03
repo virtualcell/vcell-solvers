@@ -2,7 +2,7 @@ project(MovingBoundarySolver)
 
 #glob to get full path of driver.cpp so REMOVE_ITEM works correctly
 file(GLOB SOLVER_MAIN src/driver.cpp)
-file(GLOB ALLOC_MAIN src/alloctest.cpp)
+file(GLOB ALLOC_MAIN src/alloctestmain.cpp)
 file(GLOB SRC_FILES src/*cpp) 
 list(REMOVE_ITEM SRC_FILES ${SOLVER_MAIN} ${ALLOC_MAIN}) 
 
