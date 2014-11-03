@@ -3,6 +3,8 @@
 #include <cmath>
 #include <limits>
 #include <cstdint>
+#include <type_traits>
+#include <VCellException.h>
 namespace vcell_util {
 	/**
 	* @tparam IN input type
@@ -116,5 +118,17 @@ namespace vcell_util {
 			return static_cast<long>(ceil(in));
 	}
 #endif
+
+	template <typename T>
+	typename std::enable_if<std::numeric_limits<T>::is_integer, unsigned int>::type
+	numberDigits(T value) {
+		unsigned int digits = 0;
+		if (value < 0) digits = 1;
+		while (value) {
+			value /= 10;
+			++digits;
+		}
+		return digits;
+	}
 }
 #endif

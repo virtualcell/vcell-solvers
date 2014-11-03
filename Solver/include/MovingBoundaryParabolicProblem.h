@@ -58,10 +58,18 @@ namespace moving_boundary {
 		*/
 		void setHeartbeat(size_t numGen, const std::string &symbol);
 		/**
+		* add a client. Caller responsible for ensuring reference remains valid
+		*/
+		void add(MovingBoundaryTimeClient &client);
+		/**
+		* add a client. Caller responsible for ensuring reference remains valid
+		*/
+		void add(MovingBoundaryElementClient &client);
+		/**
 		* run the simulation
 		* @throws #TimeStepTooBig
 		*/
-		void run(MovingBoundaryClient &client);
+		void run( );
 		void plotPolygons(std::ostream &os) const ;
 		void plotAreas(std::ostream &os) const;
 		const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDef( ) const;

@@ -8,7 +8,6 @@
 #include <DiffuseAdvectCache.h>
 #include <boost/iterator/iterator_facade.hpp>
 #include <persist.h>
-#define TRACK_STORAGE
 #ifdef TRACK_STORAGE
 #define STORAGE(x) std::cout << x << std::endl;
 #else

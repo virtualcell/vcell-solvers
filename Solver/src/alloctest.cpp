@@ -15,8 +15,37 @@
 #include <MBridge/MatlabDebug.h>
 using tinyxml2::XMLElement;
 */
+using namespace std;
+struct C;
+class A {
+	friend struct B;
+	void call(B *) {
+		cout << "B" << endl;
+	}
+	void call(C *) {
+		cout << "C" << endl;
+	}
+
+};
+struct B {
+	virtual void f(A &a) {
+		a.call(this);
+	}
+};
+struct C : public B {
+	virtual void f(A &a) {
+		B::f(a);
+	}
+};
+
 int main(int argc, char *argv[])
 {
+	A a;
+	B b;
+	C c;
+	b.f(a);
+	c.f(a);
+
 	size_t s = 256600;
 	if (argc > 1) {
 		s = std::strtoul(argv[1],nullptr,10);

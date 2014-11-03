@@ -126,9 +126,8 @@ namespace moving_boundary {
 		const bool nodesAdjusted;
 	};
 
-	struct MovingBoundaryClient {
-
-		virtual ~MovingBoundaryClient( ) {}
+	struct MovingBoundaryTimeClient {
+		virtual ~MovingBoundaryTimeClient( ) {}
 		/**
 		* time of simulation
 		* @param t current time
@@ -136,7 +135,15 @@ namespace moving_boundary {
 		* @param last is this last time increment of sim?
 		* @param geometryInfo current geometry information. Reference is not valid after return of function call.
 		*/
-		virtual void time(double t, unsigned int generationCoount, bool last, const GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) = 0; 
+		virtual void time(double t, unsigned int generationCount, bool last, const GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) = 0; 
+		/**
+		* simulation has finished executing
+		*/
+		virtual void simulationComplete( ) = 0;
+	};
+
+	struct MovingBoundaryElementClient : public MovingBoundaryTimeClient {
+
 		/**
 		* state of inside / boundary nodes
 		*/
@@ -145,10 +152,6 @@ namespace moving_boundary {
 		* notify client they've received all elements
 		*/
 		virtual void iterationComplete( ) = 0;
-		/**
-		* simulation has finished executing
-		*/
-		virtual void simulationComplete( ) = 0;
 	};
 }
 

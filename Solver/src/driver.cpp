@@ -6,7 +6,9 @@
 #include <HDF5Client.h>
 #include <Logger.h>
 #include <boundaryProviders.h>
+#include <StateClient.h>
 #include <MBridge/MatlabDebug.h>
+#include <tclap/CmdLine.h>
 using tinyxml2::XMLElement;
 
 namespace {
@@ -18,7 +20,7 @@ namespace {
 	/**
 	* usings and typedefs
 	*/
-	using moving_boundary::MovingBoundaryClient;
+	using moving_boundary::MovingBoundaryElementClient;
 	using moving_boundary::MovingBoundarySetup;
 	using moving_boundary::MovingBoundaryParabolicProblem;
 
@@ -26,7 +28,7 @@ namespace {
 	* forward declarations of functions in file
 	*/
 	void setupTrace(const XMLElement &root); 
-	MovingBoundaryClient *setupClient(const XMLElement &root, const char *filename, MovingBoundaryParabolicProblem &mbpp, const moving_boundary::MovingBoundarySetup &); 
+	MovingBoundaryElementClient *setupReportClient(const XMLElement &root, const char *filename, MovingBoundaryParabolicProblem &mbpp, const moving_boundary::MovingBoundarySetup &); 
 	void setupMatlabDebug(const XMLElement &root); 
 	void setupHeartbeat(const XMLElement &root,moving_boundary::MovingBoundaryParabolicProblem & mbpp);
 
@@ -48,14 +50,43 @@ int main(int argc, char *argv[])
 	std::cout 
 		<< "MovingBoundarySolver version $URL$" VCELLSVNQUOTE(SVNVERSION)
 		<< std::endl; 
-	if (argc < 2) {
-		std::cerr << "Usage: " << argv[0] << " [xml input file] <hdf5 output file name|'parseonly'> " << std::endl; 
+
+	namespace tclap = TCLAP;
+	std::string filename;
+	try {
+		using namespace tclap;
+		CmdLine cmd("Moving boundary solve",'=',"1");
+		cmd.setExceptionHandling(false);
+		ValueArg<std::string> config("c","config","Input XML file name",false,"","string",cmd);
+		cmd.parse(argc,argv);
+		filename = config.getValue( );
+			/*
+		const char * const HELP = "help";
+		const char * const CONFIG = "config"; 
+		const char * const OUTPUT = "output"; 
+		std::string filename;
+		*/
+
+
+
+	} catch(tclap::ArgException  &ae) {
+		std::cerr << "error " << ae.error( ) << " arg " << ae.argId( ) << std::endl;
+		return 3;
+	} catch (tclap::ExitException &ee) {
+		return ee.getExitStatus( );
+	}
+
+	if (filename.empty( )) {
+		//std::cerr  << opts << std::endl;
+		//std::cerr << "Usage: " << argv[0] << " [xml input file] <hdf5 output file name|'parseonly'> " << std::endl; 
 		return 1; 
 	}
 	moving_boundary::MovingBoundaryParabolicProblem mbpp;
-	std::auto_ptr<moving_boundary::MovingBoundaryClient> client;
-	const char * const filename = argv[1];
-	const char * outname = argv[2];
+	std::unique_ptr<moving_boundary::MovingBoundaryElementClient> reportClient;
+	std::unique_ptr<moving_boundary::MovingBoundaryTimeClient> persistClient;
+	//const char * const filename = argv[1];
+	//const char * outname = argv[2];
+	const char * outname = nullptr; 
 	const bool parseonly = outname != nullptr && strcmp("parseonly",outname) == 0; 
 	if (parseonly) {
 		std::cout <<  "parse XML only mode" << std::endl;
@@ -63,7 +94,7 @@ int main(int argc, char *argv[])
 	}
 	try {
 		tinyxml2::XMLDocument doc;
-		doc.LoadFile(filename);
+		doc.LoadFile(filename.c_str( ));
 		if (doc.ErrorID( ) != tinyxml2::XML_SUCCESS) {
 			std::cerr <<  "Error " << doc.ErrorID( ) << " loading  " << filename << std::endl;
 			return 2; 
@@ -79,8 +110,13 @@ int main(int argc, char *argv[])
 		using moving_boundary::MovingBoundarySetup;
 		MovingBoundarySetup mbs = MovingBoundarySetup::setupProblem(root);
 		mbpp = moving_boundary::MovingBoundaryParabolicProblem(mbs);
-		client = std::auto_ptr<moving_boundary::MovingBoundaryClient>( setupClient(root, argv[2], mbpp, mbs) ); 
+		//client = std::auto_ptr<moving_boundary::MovingBoundaryElementClient>( setupReportClient(root, argv[2], mbpp, mbs) ); 
+		reportClient.reset( setupReportClient(root, argv[2], mbpp, mbs) ); 
+		mbpp.add(*reportClient);
 		setupHeartbeat(root,mbpp);
+
+		persistClient.reset( new moving_boundary::StateClient(mbpp,"sim",0.5,0.01) );
+
 	}
 	catch (std::exception & e) {
 		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << filename << std::endl; 
@@ -96,7 +132,7 @@ int main(int argc, char *argv[])
 	}
 
 	try {
-		mbpp.run(*client);
+		mbpp.run( );
 	}
 	catch (std::exception & e) {
 		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << filename << std::endl; 
@@ -112,7 +148,7 @@ int main(int argc, char *argv[])
 namespace {
 
 
-	moving_boundary::MovingBoundaryClient *setupClient(const XMLElement &root, const char *filename, moving_boundary::MovingBoundaryParabolicProblem &mbpp,
+	moving_boundary::MovingBoundaryElementClient *setupReportClient(const XMLElement &root, const char *filename, moving_boundary::MovingBoundaryParabolicProblem &mbpp,
 		const moving_boundary::MovingBoundarySetup & mbs) {
 		try {
 			const XMLElement & report = vcell_xml::get(root,"report");

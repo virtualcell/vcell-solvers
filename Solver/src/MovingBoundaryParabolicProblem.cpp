@@ -528,12 +528,13 @@ namespace moving_boundary {
 			baselineTime = currentTime;
 		}
 
+		//This implementation is optimized for the case 10/2014 where this is but a single "element" client
+		//If there are multiple clients it could be better to loop over them inside this function -- probably
+		//more efficient to iterate over std::vector than the mesh
 		/**
 		* @param changed nodes have changed since last report
 		*/
-		void giveElementsToClient(MovingBoundaryClient & client, size_t generationCount, bool changed) {
-			GeometryInfo<moving_boundary::CoordinateType> gi(currentFront,changed);
-			client.time(currentTime, generationCount, currentTime == maxTime, gi);
+		void giveElementsToClient(MovingBoundaryElementClient & client, size_t generationCount, bool changed) {
 			for (MBMesh::const_iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
 				//std::cout << iter->ident( ) << std::endl;
 				if (iter->isInside( )) {
@@ -541,6 +542,19 @@ namespace moving_boundary {
 				}
 			}
 			client.iterationComplete();
+		}
+
+		/**
+		* notify all clients that time has changed, and give the elements to those  that want them
+		*/
+		void notifyClients(size_t generationCount, bool changed) {
+			for (MovingBoundaryTimeClient *tclient: timeClients) {
+				GeometryInfo<moving_boundary::CoordinateType> gi(currentFront,changed);
+				tclient->time(currentTime, generationCount, currentTime == maxTime, gi);
+			}
+			for (MovingBoundaryElementClient *eclient: elementClients) {
+				giveElementsToClient(*eclient,generationCount,changed);
+			}
 		}
 
 		void debugDump(size_t gc, char key) {
@@ -779,7 +793,22 @@ namespace moving_boundary {
 			}
 		};
 
-		void run(MovingBoundaryClient & client) {
+		void add(MovingBoundaryElementClient & client) {
+			VCELL_LOG(info,"added element client " << typeid(client).name( ) );
+			if (std::find(elementClients.begin( ), elementClients.end( ),&client) == elementClients.end( ) ) {
+				elementClients.push_back(&client);
+			}
+			add(static_cast<MovingBoundaryTimeClient &>(client) );
+		}
+
+		void add(MovingBoundaryTimeClient & client) {
+			VCELL_LOG(info,"added time client " << typeid(client).name( ) );
+			if (std::find(timeClients.begin( ), timeClients.end( ),&client) == timeClients.end( ) ) {
+				timeClients.push_back(&client);
+			}
+		}
+
+		void run( ) {
 			VCELL_LOG(info,"commence simulation");
 			const bool frontMoveTrace = matlabBridge::MatLabDebug::on("frontmove");
 			FrontType oldFront; //for debugging
@@ -787,7 +816,7 @@ namespace moving_boundary {
 			size_t generationCount = 0;
 			try { 
 				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),commenceSimulation);
-				giveElementsToClient(client,generationCount,true);
+				notifyClients(generationCount,true);
 				if (matlabBridge::MatLabDebug::on("frontmove")) {
 					debugDump(generationCount, 's');
 				}
@@ -905,8 +934,8 @@ namespace moving_boundary {
 
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),EndCycle(*this));
 
-					//tell the client about it
-					giveElementsToClient(client,++generationCount, changed);
+					//tell the clients about it
+					notifyClients(++generationCount, changed);
 					if (heartbeat && generationCount%heartbeat == 0) {
 						std::cout << heartbeatSymbol;
 					}
@@ -957,7 +986,9 @@ namespace moving_boundary {
 
 #endif
 				}
-				client.simulationComplete( );
+				for (MovingBoundaryTimeClient *client : timeClients) {
+					client->simulationComplete( );
+				}
 			} catch (std::exception &e) {
 				VCELL_LOG(fatal,"run( ) caught " << e.what( )  << " generation " << generationCount);
 				throw e;
@@ -1120,16 +1151,6 @@ namespace moving_boundary {
 				vcell_persist::StdString<>::restore(is,heartbeatSymbol);
 				voronoiMesh.setMesh(primaryMesh);
 			}
-	#ifdef PROB_NOT
-		/**
-
-		* this needs reference to #MovingBoundarySetup, so parse that first
-		* before creating object
-		*/
-		static MovingBoundaryParabolicProblemImpl * restore(std::istream &is) {
-			MovingBoundarySetup(
-		}
-#endif
 
 		WorldType & world;
 		const MovingBoundarySetup &setup_;
@@ -1191,6 +1212,11 @@ namespace moving_boundary {
 		std::vector<Element *> gainedElements;
 		size_t heartbeat;
 		std::string heartbeatSymbol;
+		/**
+		* client storage; not persistent
+		*/
+		std::vector<MovingBoundaryTimeClient *> timeClients;
+		std::vector<MovingBoundaryElementClient *> elementClients;
 
 	};
 
@@ -1310,8 +1336,14 @@ namespace moving_boundary {
 	void MovingBoundaryParabolicProblem::setHeartbeat(size_t numGen, const std::string &symbol) {
 		impl->setHeartbeat(numGen,symbol);
 	}
-	void MovingBoundaryParabolicProblem::run(moving_boundary::MovingBoundaryClient & client) {
-		impl->run(client);
+	void MovingBoundaryParabolicProblem::add(moving_boundary::MovingBoundaryTimeClient & client) {
+		impl->add(client);
+	}
+	void MovingBoundaryParabolicProblem::add(moving_boundary::MovingBoundaryElementClient & client) {
+		impl->add(client);
+	}
+	void MovingBoundaryParabolicProblem::run( ) {
+		impl->run( );
 	}
 
 	void MovingBoundaryParabolicProblem::plotPolygons(std::ostream &os)  const {

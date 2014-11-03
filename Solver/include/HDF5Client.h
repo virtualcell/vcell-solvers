@@ -290,7 +290,7 @@ namespace moving_boundary {
 	};
 
 	template <class SOLUTION = NoSolution> 
-	struct NHDF5Client :public moving_boundary::MovingBoundaryClient {
+	struct NHDF5Client :public moving_boundary::MovingBoundaryElementClient {
 		typedef World<CoordinateType,2> WorldType;
 		/**
 		* HDF5 spatial chunk size (x and y dimensions)
