@@ -48,7 +48,7 @@ namespace moving_boundary {
 	/**
 	* used by #MeshElementSpecies to store information about neighbors
 	*/
-	struct MeshElementNeighbor {
+	struct MeshElementNeighbor : public vcell_persist::Persistent {
 		MeshElementNeighbor( )
 			:element(nullptr),
 			distanceTo( ),
@@ -72,7 +72,7 @@ namespace moving_boundary {
 		moving_boundary::DistanceType distanceTo;
 		moving_boundary::DistanceType edgeLength;
 
-		void persist(std::ostream &os, const MeshElementSpecies &client); 
+		void persist(std::ostream &os, const MeshElementSpecies &client) const; 
 
 		static void registerType( ) {
 			spatial::ElementOffset<2>::registerType( );

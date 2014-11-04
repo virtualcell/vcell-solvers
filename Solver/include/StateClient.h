@@ -1,6 +1,6 @@
 #ifndef StateClient_h
 #define StateClient_h
-#include <MovingBoundaryParabolicProblem.h>
+#include <ProblemPackage.h>
 namespace moving_boundary {
 
 	struct StateClient : public MovingBoundaryTimeClient {
@@ -9,7 +9,17 @@ namespace moving_boundary {
 
 		virtual void time(double t, unsigned int generationCount, bool last, const GeometryInfo<moving_boundary::CoordinateType> & geometryInfo); 
 		virtual void simulationComplete( );
+		/**
+		* restore previously persisted problem from file
+		*/
+		static MovingBoundaryParabolicProblem restore(const std::string &name);
+
+		/**
+		* version number for tracking format
+		*/
+		static const int MB_VERSION = 1;
 	private:
+		static void registerTypes( );
 		MovingBoundaryParabolicProblem & problem;
 		std::string baseName;
 		double startTime;

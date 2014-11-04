@@ -81,11 +81,18 @@ namespace moving_boundary {
 		*/
 		const MovingBoundarySetup &setup( ) const;
 
+		/**
+		* register any polymorphic types present
+		*/
+		void registerInstanceType( ) const;
+
 		static void registerType( );
 		/**
 		* save this. Note #MovingBoundarySetup must be saved separately by client
 		*/
 		void persist(std::ostream &os) const;
+
+		std::string frontDescription( ) const;
 
 	private:
 		MovingBoundaryParabolicProblemImpl *impl;
@@ -97,5 +104,6 @@ namespace moving_boundary {
 		TimeStepTooBig(const std::string & what)
 			:std::invalid_argument(what) {}
 	};
+
 }
 #endif

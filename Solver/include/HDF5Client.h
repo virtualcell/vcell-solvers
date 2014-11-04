@@ -454,11 +454,8 @@ namespace moving_boundary {
 				vcellH5::writeAttribute(elementDataset,"hy",hy);
 				const std::string layout("time x X x Y (transposed in MATLAB)");
 				vcellH5::writeAttribute(elementDataset,"layout",layout);
-				const MovingBoundarySetup & setup = theProblem.setup( );
-				if (setup.alternateFrontProvider != nullptr) {
-					std::string desc = setup.alternateFrontProvider->describe( );
-					vcellH5::writeAttribute(elementDataset,"alternate front",desc);
-				}
+				std::string desc = theProblem.frontDescription( ); 
+				vcellH5::writeAttribute(elementDataset,"front description",desc);
 
 				std::vector<moving_boundary::CoordinateType> xvalues = meshDef.coordinateValues(spatial::cX);
 				std::vector<double> dv(xvalues.size( ));

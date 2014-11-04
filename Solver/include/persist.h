@@ -13,6 +13,11 @@ namespace vcell_persist {
 	*/
 	struct Persistent{};
 
+	/**
+	* register type tokens. Note WriteFormatter requires registration of all used tokens before object creation.
+	* reregistering an a type with the same token is a no-op
+	* reregistering an a type with a different token throws an exception 
+	*/
 	class Registrar {
 		static void registerTypeToken(const char *token,const std::type_info &);
 		static void registerTypeToken(const char *token, const std::type_info & primaryType, int dim); 
@@ -41,8 +46,13 @@ namespace vcell_persist {
 
 	/**
 	* writes validation to stream. Optionally compacts token keys. 
-	* sets stream to throw exceptions on ios errors
-	* Object should exist during streaming and be destroyed afterwards
+	* sets stream to throw exceptions on ios errors.
+	* Object should exist during streaming and be destroyed afterwards.
+	* Note type registration of a type for the first time after object creation will throw an exception;
+	* type registration of previously registered type is ok. 
+	* @param is destination stream
+	* @param version recorded in streamed for checking later
+	* @param dictionary if true, compact type tokens using a dictonary recorded in data file
 	*/
 	struct WriteFormatter {
 		WriteFormatter(std::ostream &is,unsigned short version, bool dictionary = false);

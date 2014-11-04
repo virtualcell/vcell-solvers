@@ -43,24 +43,25 @@ namespace {
 
 	TokenMap typeTokens;
 
-	bool usingWriteDictionary = false;
+	bool isDictionaryInUse = false;
+	bool writeInProgress = false;
 	//bool usingReadDictionary = false;
 	typedef unsigned short TokenKeyType;
 	//typedef std::map<TokenKeyType,std::string> DictionaryType;
 
 	//DictionaryType readTokenDictionary;
-	std::map<const std::string,TokenKeyType> writeDictionary;
+	std::map<const std::string,TokenKeyType> tokenDictionary;
 
 	typedef unsigned char TokenLengthType;
 }
 
 void TokenT<bool>::insert(std::ostream &os, const type_info & ti) {
 	const std::string & token = getTypeToken(ti);
-	if (!usingWriteDictionary) {
+	if (!isDictionaryInUse) {
 		os << token; 
 	}
 	else {
-		const TokenKeyType tokenKey = writeDictionary[token];
+		const TokenKeyType tokenKey = tokenDictionary[token];
 		binaryWrite(os,tokenKey);
 	}
 }
@@ -68,7 +69,7 @@ void TokenT<bool>::insert(std::ostream &os, const type_info & ti) {
 
 void TokenT<bool>::check(std::istream &is, const type_info & ti) {
 	const std::string & token = getTypeToken(ti);
-	if (!usingWriteDictionary) {
+	if (!isDictionaryInUse) {
 		const size_t ts = token.size( );
 		StackPtr<char,100> b(ts);
 		char * buffer = b.get( );
@@ -81,7 +82,7 @@ void TokenT<bool>::check(std::istream &is, const type_info & ti) {
 		}
 	}
 	else {
-		TokenKeyType expectedKey = writeDictionary[token];
+		TokenKeyType expectedKey = tokenDictionary[token];
 		TokenKeyType key; 
 		binaryRead(is,key);
 		if (key != expectedKey) {
@@ -92,11 +93,11 @@ void TokenT<bool>::check(std::istream &is, const type_info & ti) {
 }
 
 void Registrar::registerTypeToken(const char * token,const type_info & ti) {
-		if (usingWriteDictionary) {
-			throw std::runtime_error("Invalid registration attempt during streaming");
-		}
 		TokenMap::iterator iter = typeTokens.find(&ti);
 		if (iter == typeTokens.end( )) {
+			if (writeInProgress) {
+				VCELL_EXCEPTION(runtime_error,"Invalid registration attempt during streaming out");
+			}
 			typeTokens[&ti] = token; 
 			return;
 		}
@@ -133,24 +134,24 @@ void Registrar::registerTypeToken(const char *classname, const type_info &clzz, 
 }
 
 WriteFormatter::WriteFormatter(std::ostream &os, unsigned short version, bool dictionary) {
-	if (dictionary && usingWriteDictionary) {
+	if (dictionary && isDictionaryInUse) {
 			throw std::runtime_error("attempt to create second formatter object before destruction of first (on writing)");
 	}
 	using std::ios;
 	os.exceptions(ios::badbit|ios::failbit|ios::eofbit);
-	usingWriteDictionary = dictionary;
+	isDictionaryInUse = writeInProgress = dictionary;
 
 	binaryWrite(os,magicWord);
 	binaryWrite(os,version);
-	binaryWrite(os,usingWriteDictionary);
-	if (usingWriteDictionary) {
+	binaryWrite(os,isDictionaryInUse);
+	if (isDictionaryInUse) {
 		std::vector<std::string> tokensByKey(typeTokens.size( ) + 1); //zero slot unused
-		writeDictionary.clear( );
+		tokenDictionary.clear( );
 		TokenKeyType index = 1; 
 		for (TokenMap::const_iterator iter = typeTokens.begin( ); iter != typeTokens.end( ); ++iter) {
 			const TokenKeyType key = index++;
 			const std::string & token = iter->second;
-			writeDictionary[iter->second] = key; 
+			tokenDictionary[iter->second] = key; 
 			tokensByKey[key] = token;
 			if (index == 0) {
 				VCELL_EXCEPTION(domain_error,"too many tokens, exceeds limit " << std::numeric_limits<TokenKeyType>::max( ) - 1 );
@@ -173,7 +174,7 @@ WriteFormatter::WriteFormatter(std::ostream &os, unsigned short version, bool di
 }
 
 ReadFormatter::ReadFormatter(std::istream &is, unsigned short version) {
-	if (usingWriteDictionary) {
+	if (isDictionaryInUse) {
 		throw std::runtime_error("attempt to create second formatter object before destruction of first (on reading)");
 	}
 	using std::ios;
@@ -188,15 +189,15 @@ ReadFormatter::ReadFormatter(std::istream &is, unsigned short version) {
 	if (ver != version) {
 		VCELL_EXCEPTION(invalid_argument,"file does not begin with correct version, " << ver << " read, " << version << " expected");
 	}
-	binaryRead(is,usingWriteDictionary);
-	if (usingWriteDictionary) {
-		writeDictionary.clear( );
+	binaryRead(is,isDictionaryInUse);
+	if (isDictionaryInUse) {
+		tokenDictionary.clear( );
 		TokenKeyType limit; 
 		binaryRead(is,limit);
 		//char buffer[ml];
 		for (TokenKeyType i = 1 ; i < limit; i++) {
 			std::string token = StdString<TokenLengthType>::restore(is);
-			writeDictionary[token] = i;
+			tokenDictionary[token] = i;
 		}
 	}
 	unsigned char shouldBeZero;
@@ -207,12 +208,12 @@ ReadFormatter::ReadFormatter(std::istream &is, unsigned short version) {
 }
 
 WriteFormatter::~WriteFormatter( ) {
-	usingWriteDictionary = false;
-	writeDictionary.clear( );
+	isDictionaryInUse = writeInProgress = false;
+	tokenDictionary.clear( );
 }
 ReadFormatter::~ReadFormatter( ) {
-	usingWriteDictionary = false;
-	writeDictionary.clear( );
+	isDictionaryInUse =false;
+	tokenDictionary.clear( );
 }
 
 

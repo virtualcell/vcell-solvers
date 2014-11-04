@@ -45,7 +45,19 @@ namespace {
 "</MovingBoundarySetup>";
 
 }
+TEST(persist,lifetime) {
+	tinyxml2::XMLDocument doc;
+	tinyxml2::XMLError rcode = doc.Parse(setupXml);
+	ASSERT_TRUE(rcode == tinyxml2::XML_SUCCESS);
+	MovingBoundarySetup dupe; 
+	{
+		MovingBoundarySetup mbs = MovingBoundarySetup::setupProblem(*doc.RootElement( ));
+		dupe = mbs;
+	}
+	std::cout << dupe.advectVelocityFunctionStrX << std::endl;
+}
 TEST(persist,movingBoundarySetup) {
+	moving_boundary::Universe<2>::get( ).destroy( );
 	tinyxml2::XMLDocument doc;
 	tinyxml2::XMLError rcode = doc.Parse(setupXml);
 	ASSERT_TRUE(rcode == tinyxml2::XML_SUCCESS);

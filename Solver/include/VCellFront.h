@@ -76,6 +76,10 @@ namespace spatial {
 		*/
 		virtual std::string describe( ) const = 0;
 		/**
+		* register peristent type
+		*/
+		virtual void registerType( ) const = 0; 
+		/**
 		* store
 		*/
 		virtual void persist(std::ostream &os) const = 0; 
@@ -134,6 +138,10 @@ namespace spatial {
 		* not implemented
 		*/
 		virtual void persist(std::ostream &os) const {} 
+		/**
+		* not implemented
+		*/
+		virtual void registerType( ) const {} 
 
 		/**
 		* retrieve front while logging points to csv file

@@ -62,9 +62,19 @@ namespace {
 		void persist(std::ostream &os) const {
 		}
 
-		static void registerType( ) {
+		/**
+		* "class" register type; disambiguate from virtual #registerType
+		*/
+		static void cRegisterType( ) {
 			vcell_persist::Registrar::reg<FixedBoundary>("fixedBoundary");
 			FixedBoundaryPoint::registerType( );
+		}
+
+		/**
+		* implement virtual 
+		*/
+		void registerType( ) const {
+			cRegisterType( );
 		}
 
 	protected:
@@ -98,6 +108,7 @@ namespace {
 				baseFront.push_back(fP);
 			}
 			close( );
+			std::cout << "circle birth " << static_cast<void *>(this) << std::endl;
 		}
 
 		static const std::string token( ) {
@@ -113,6 +124,7 @@ namespace {
 		}
 
 		~Circle( ) {
+			std::cout << "circle death" << std::endl;
 		}
 
 		static Circle *restore(std::istream &is) {
@@ -238,7 +250,7 @@ namespace {
 		}
 
 		static spatial::FrontProvider<moving_boundary::CoordinateType> * construct(std::istream &is) { 
-			FixedBoundary::registerType( );
+			FixedBoundary::cRegisterType( );
 			vcell_persist::Token::check<FixedBoundary>(is);
 			std::string type = vcell_persist::StdString<>::restore(is);
 			for (size_t i = 0; i < builders.size( ) ; i++) {

@@ -85,3 +85,37 @@ TEST(alloc,basic) {
 	}
 
 }
+namespace {
+	struct NoDef {
+		NoDef(int x_, int y_)
+			:x(x_),
+			y(y_) {}
+
+		int x;
+		int y;
+	};
+	std::ostream &operator<<(std::ostream & os, const NoDef & nd) {
+		os << nd.x << ',' << nd.y;
+		return os;
+	}
+}
+TEST(alloc,vt) {
+	using namespace std;
+	std::vector<NoDef> nds;
+	for (int i = 0; i < 1000; i++) {
+		nds.push_back(NoDef(i, i + 3));
+		if (nds.capacity( ) != nds.size( ) ) {
+			cout << nds.capacity( ) << ',' << nds.size( ) << endl;
+		}
+	}
+	/*
+	std::vector<int> ic;
+	for (int i = 0; i < 1000; i++) {
+		ic.push_back(i);
+		if (ic.capacity( ) != ic.size( ) ) {
+			cout << ic.capacity( ) << ',' << ic.size( ) << endl;
+		}
+	}
+	*/
+	
+}

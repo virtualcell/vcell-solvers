@@ -206,7 +206,6 @@ namespace spatial {
 			}
 		}
 
-
 		ElementOffset(std::istream &is) {
 			vcell_persist::Token::check<ElementOffset<N> >(is); 
 			vcell_persist::restore(is,offsets);
@@ -215,6 +214,15 @@ namespace spatial {
 		void persist(std::ostream &os) const {
 			vcell_persist::Token::insert<ElementOffset<N> >(os); 
 			vcell_persist::save(os,offsets);
+		}
+
+		bool allZero( ) const {
+			for (OffsetType ot : offsets) {
+				if (ot != 0) {
+					return false;
+				}
+			}
+			return true;
 		}
 
 		static void registerType( ) {

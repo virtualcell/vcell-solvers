@@ -1120,24 +1120,40 @@ MeshElementSpecies::OurType *MeshElementSpecies::neighbor(spatial::ElementOffset
 	return m->element(*this,eo);
 }
 
+namespace {
+	struct NeighborBuilder {
+		MeshElementSpecies & client;
+		NeighborBuilder(MeshElementSpecies &c)
+			:client(c) {}
+		template <typename T>
+		MeshElementSpecies::NeighborType generate(std::istream &in) {
+			return MeshElementSpecies::NeighborType(in,client);
+		}
+	};
+}
+
 MeshElementSpecies::MeshElementSpecies(const MeshDefinition &owner,std::istream &is)
 	:base(is),
 	mesh(owner)
 {
 	vcell_persist::Token::check<MeshElementSpecies>(is); 
+
+	NeighborBuilder nb(*this);
+	vcell_persist::readFunctor<NeighborBuilder> functor(is,nb);
+
 	vcell_persist::binaryRead(is,stateVar);
 	vcell_persist::binaryRead(is,interiorVolume);
 	vol = Volume2DClass(is);
-	vcell_persist::restore(is,segments_);
+	//vcell_persist::restore(is,segments_);
 	vcell_persist::restore(is,amtMass);
 	vcell_persist::restore(is,amtMassTransient);
 	vcell_persist::restore(is,concValue);
-	vcell_persist::restore(is,interiorNeighbors);
+	vcell_persist::restore(is,interiorNeighbors, vcell_persist::readFunctor<NeighborBuilder>(is,nb) );
 	//gcw 10-20-2014 thinking vector of neighbors not used if element not boundary, so no point in storing it
 	bool usingNeighborVector;
 	vcell_persist::binaryRead(is, usingNeighborVector);
 	if (usingNeighborVector) {
-		vcell_persist::restore(is,boundaryNeighbors);
+		vcell_persist::restore(is,boundaryNeighbors, vcell_persist::InsertFrom<NeighborBuilder>(nb) );
 		neighbors = boundaryNeighbors.data( ); 
 	}
 	else {
@@ -1147,23 +1163,37 @@ MeshElementSpecies::MeshElementSpecies(const MeshDefinition &owner,std::istream 
 	vcell_persist::binaryRead(is,nOutside);
 	velocity = spatial::SVector<moving_boundary::VelocityType,2>(is);
 }
+namespace {
+	struct NeighborWriter {
+		MeshElementSpecies & client;
+		NeighborWriter(MeshElementSpecies &c)
+			:client(c) {}
+		void operator( )(std::ostream &os, const MeshElementSpecies::NeighborType  & nb) {
+			nb.persist(os,client);
+		}
+	};
+}
 
 void MeshElementSpecies::persist(std::ostream &os) {
 	base::persist(os);
+
+	NeighborWriter nw(*this);
+	vcell_persist::writeFunctor<NeighborWriter> functor(os,nw);
+
 	vcell_persist::Token::insert<MeshElementSpecies>(os); 
 	vcell_persist::binaryWrite(os,stateVar);
 	vcell_persist::binaryWrite(os,interiorVolume);
 	vol.persist(os);
-	vcell_persist::save(os,segments_);
+	//vcell_persist::save(os,segments_);
 	vcell_persist::save(os,amtMass);
 	vcell_persist::save(os,amtMassTransient);
 	vcell_persist::save(os,concValue);
-	vcell_persist::save(os,interiorNeighbors);
+	vcell_persist::save(os,interiorNeighbors, functor);
 	//gcw 10-20-2014 thinking vector of neighbors not used if element not boundary, so no point in storing it
 	const bool usingNeighborVector = (neighbors == boundaryNeighbors.data( )); 
 	vcell_persist::binaryWrite(os, usingNeighborVector);
 	if (usingNeighborVector) {
-		vcell_persist::save(os,boundaryNeighbors);
+		vcell_persist::save(os,boundaryNeighbors, functor); 
 	}
 	voronoiVolume.persist(os);
 	vcell_persist::binaryWrite(os,nOutside);

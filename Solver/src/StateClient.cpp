@@ -23,11 +23,21 @@ StateClient::StateClient(MovingBoundaryParabolicProblem & prb, const std::string
 	timeIncrement(increment),
 	lastTimeSaved(NEVER_SAVED),
 	requiredDigits( ){
-		MovingBoundarySetup::registerType( );
-		MovingBoundaryParabolicProblem::registerType( );
+		registerTypes( );
+		problem.registerInstanceType( );
 		problem.add(*this);
 		auto endInt = static_cast<unsigned long>(problem.endTime( ));
 		requiredDigits = vcell_util::numberDigits(endInt) + afterDecimal + 1;
+}
+
+/**
+* use same types on save and restore
+*/
+void StateClient::registerTypes( ) {
+		MovingBoundarySetup::registerType( );
+		MovingBoundaryParabolicProblem::registerType( );
+		Universe<2>::registerType( );
+		World<CoordinateType,2>::registerType( );
 }
 
 void StateClient::time(double t, unsigned int generationCount, bool last, const GeometryInfo<moving_boundary::CoordinateType> & geometryInfo){
@@ -39,8 +49,10 @@ void StateClient::time(double t, unsigned int generationCount, bool last, const 
 			std::replace(filename.begin( ), filename.end( ),'.','-');
 			filename += ".dat";
 			std::ofstream out(filename, std::ios::binary|std::ios::trunc);
-			vcell_persist::WriteFormatter wf(out, 1);
+			vcell_persist::WriteFormatter wf(out, MB_VERSION, true);
 			problem.setup( ).persist(out);
+			Universe<2>::get( ).persist(out);
+			World<CoordinateType,2>::get( ).persist(out);
 			problem.persist(out);
 			lastTimeSaved = t;
 		}
@@ -48,3 +60,16 @@ void StateClient::time(double t, unsigned int generationCount, bool last, const 
 }
 
 void StateClient::simulationComplete( ) {}
+
+MovingBoundaryParabolicProblem StateClient::restore(const std::string & filename) {
+		registerTypes( );
+		MovingBoundarySetup::registerType( );
+		MovingBoundaryParabolicProblem::registerType( );
+		std::ifstream in(filename,std::ios::binary);
+		vcell_persist::ReadFormatter rf(in, MB_VERSION);
+		MovingBoundarySetup mbs(in);
+		Universe<2>::get( ).restore(in);
+		World<CoordinateType,2>::get( ).restore(in);
+		MovingBoundaryParabolicProblem mbpp(mbs,in);
+		return mbpp;
+}

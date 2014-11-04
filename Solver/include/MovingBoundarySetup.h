@@ -72,7 +72,7 @@ namespace moving_boundary {
 		* provide alternate to frontier; for testing / validation
 		* Must be heap allocated; will be deleted upon simulation completion
 		*/
-		spatial::FrontProvider<moving_boundary::CoordinateType> *alternateFrontProvider;
+		spatial::FrontProvider<moving_boundary::CoordinateType> * alternateFrontProvider;
 
 		MovingBoundarySetup( ) 
 			:
@@ -90,11 +90,58 @@ namespace moving_boundary {
 			levelFunctionStr( ),
 			advectVelocityFunctionStrX( ),
 			advectVelocityFunctionStrY( ),
+			frontVelocityFunctionStrX( ),
+			frontVelocityFunctionStrY( ),
 			concentrationFunctionStr( ),
 			diffusionConstant(0),
 			alternateFrontProvider(nullptr)
 		{}
 
+		MovingBoundarySetup(const MovingBoundarySetup &rhs)
+			:
+			frontToNodeRatio(rhs.frontToNodeRatio),
+			maxTime(rhs.maxTime),
+			numberTimeSteps(rhs.numberTimeSteps),
+			timeStep(rhs.timeStep),
+			hardTime(rhs.hardTime),
+#ifdef OLD_FUNCTION_POINTER_IMPLEMENTATION
+			levelFunction(rhs.levelFunction),
+			velocityFunction(rhs.velocityFunction),
+			concentrationFunction(rhs.concentrationFunction),
+#endif
+			//diffusionCoefficient( ),
+			levelFunctionStr(rhs.levelFunctionStr),
+			advectVelocityFunctionStrX(rhs.advectVelocityFunctionStrX),
+			advectVelocityFunctionStrY(rhs.advectVelocityFunctionStrY),
+			frontVelocityFunctionStrX(rhs.frontVelocityFunctionStrX),
+			frontVelocityFunctionStrY(rhs.frontVelocityFunctionStrY),
+			concentrationFunctionStr(rhs.concentrationFunctionStr),
+			diffusionConstant(rhs.diffusionConstant),
+			alternateFrontProvider(rhs.alternateFrontProvider) {
+		}
+
+	MovingBoundarySetup &operator= (const MovingBoundarySetup &rhs) {
+			frontToNodeRatio = rhs.frontToNodeRatio;
+			maxTime = rhs.maxTime;
+			numberTimeSteps = rhs.numberTimeSteps;
+			timeStep = rhs.timeStep;
+			hardTime = rhs.hardTime;
+#ifdef OLD_FUNCTION_POINTER_IMPLEMENTATION
+			levelFunction = rhs.levelFunction;
+			velocityFunction = rhs.velocityFunction;
+			concentrationFunction = rhs.concentrationFunction;
+#endif
+			//diffusionCoefficient =  ;
+			levelFunctionStr = rhs.levelFunctionStr;
+			advectVelocityFunctionStrX = rhs.advectVelocityFunctionStrX;
+			advectVelocityFunctionStrY = rhs.advectVelocityFunctionStrY;
+			frontVelocityFunctionStrX = rhs.frontVelocityFunctionStrX;
+			frontVelocityFunctionStrY = rhs.frontVelocityFunctionStrY;
+			concentrationFunctionStr = rhs.concentrationFunctionStr;
+			diffusionConstant = rhs.diffusionConstant;
+			alternateFrontProvider = rhs.alternateFrontProvider;
+			return *this;
+		}
 		explicit MovingBoundarySetup(std::istream &is) ;
 		void persist(std::ostream &os) const;
 		static void registerType( );

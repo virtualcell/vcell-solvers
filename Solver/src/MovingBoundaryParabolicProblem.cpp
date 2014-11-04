@@ -213,6 +213,7 @@ namespace moving_boundary {
 			world(WorldType::get( )),
 			setup_(mbs),
 			diffusionConstant(mbs.diffusionConstant),
+			generationCount(0),
 			currentTime(0),
 			maxTime(mbs.maxTime),
 			timeStep(mbs.timeStep),
@@ -813,9 +814,10 @@ namespace moving_boundary {
 			const bool frontMoveTrace = matlabBridge::MatLabDebug::on("frontmove");
 			FrontType oldFront; //for debugging
 
-			size_t generationCount = 0;
 			try { 
-				std::for_each(primaryMesh.begin( ),primaryMesh.end( ),commenceSimulation);
+				if (generationCount == 0) {
+					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),commenceSimulation);
+				}
 				notifyClients(generationCount,true);
 				if (matlabBridge::MatLabDebug::on("frontmove")) {
 					debugDump(generationCount, 's');
@@ -1016,6 +1018,10 @@ namespace moving_boundary {
 			vcell_persist::Registrar::reg<MovingBoundaryParabolicProblemImpl>("MovingBoundaryParabolicProblemImpl");
 		}
 
+		void registerInstanceType( ) const {
+			vcFront->registerType(  );
+		}
+
 		/**
 		* Functor -- convert Element * to index 
 		*/
@@ -1078,6 +1084,7 @@ namespace moving_boundary {
 			//setup_.persist(os);
 			vcell_persist::Token::insert<MovingBoundaryParabolicProblemImpl>(os);
 			//vcell_persist::binaryWrite(os,diffusionConstant);
+			vcell_persist::binaryWrite(os,generationCount);
 			vcell_persist::binaryWrite(os,currentTime);
 			//vcell_persist::binaryWrite(os,maxTime);
 			vcell_persist::binaryWrite(os,timeStep);
@@ -1102,6 +1109,7 @@ namespace moving_boundary {
 			world(WorldType::get( )),
 			setup_(mbs),
 			diffusionConstant(mbs.diffusionConstant),
+			generationCount(0),
 			currentTime(0),
 			maxTime(mbs.maxTime),
 			timeStep(mbs.timeStep),
@@ -1131,6 +1139,7 @@ namespace moving_boundary {
 			heartbeatSymbol( ) {
 				vcell_persist::Token::check<MovingBoundaryParabolicProblemImpl>(is);
 				//vcell_persist::binaryRead(is,diffusionConstant);
+				vcell_persist::binaryRead(is,generationCount);
 				vcell_persist::binaryRead(is,currentTime);
 				//vcell_persist::binaryRead(is,maxTime);
 				vcell_persist::binaryRead(is,timeStep);
@@ -1153,8 +1162,10 @@ namespace moving_boundary {
 			}
 
 		WorldType & world;
-		const MovingBoundarySetup &setup_;
+		const MovingBoundarySetup setup_;
 		const double diffusionConstant;
+
+		size_t generationCount;
 		/**
 		* currentTime must be set before #vcFront initialized
 		*/
@@ -1358,12 +1369,20 @@ namespace moving_boundary {
 	const MovingBoundarySetup &MovingBoundaryParabolicProblem::setup( ) const {
 		return impl->setup( );
 	}
+	std::string MovingBoundaryParabolicProblem::frontDescription( ) const {
+		return impl->vcFront->describe( );
+	}
 
 	void MovingBoundaryParabolicProblem::persist(std::ostream &os) const {
 		impl->persist(os);
 	}
+
 	void MovingBoundaryParabolicProblem::registerType( ) {
 		MovingBoundaryParabolicProblemImpl::registerType( );
+	}
+
+	void MovingBoundaryParabolicProblem::registerInstanceType( ) const {
+		impl->registerInstanceType( );
 	}
 
 }
