@@ -2,7 +2,6 @@
 #include <iostream>
 #include <vcellxml.h>
 #include <vhdf5/file.h>
-#include <ProblemPackage.h>
 #include <HDF5Client.h>
 #include <Logger.h>
 #include <boundaryProviders.h>

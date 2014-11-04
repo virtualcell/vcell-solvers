@@ -1,6 +1,6 @@
 #ifndef StateClient_h
 #define StateClient_h
-#include <ProblemPackage.h>
+#include <MovingBoundaryParabolicProblem.h>
 namespace moving_boundary {
 
 	struct StateClient : public MovingBoundaryTimeClient {
