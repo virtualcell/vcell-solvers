@@ -108,7 +108,6 @@ namespace {
 				baseFront.push_back(fP);
 			}
 			close( );
-			std::cout << "circle birth " << static_cast<void *>(this) << std::endl;
 		}
 
 		static const std::string token( ) {
@@ -124,7 +123,6 @@ namespace {
 		}
 
 		~Circle( ) {
-			std::cout << "circle death" << std::endl;
 		}
 
 		static Circle *restore(std::istream &is) {

@@ -321,37 +321,26 @@ namespace spatial {
 			while (increment(0,loop));
 		}
 
+		/*
+		The following would require updating each element with a new reference to "this";
+		not worth the effort
 		Mesh(std::istream &is)
-			:MeshDef<CT,N>(is),
-			storage(nullptr),
-			daCache(TELEMENT::createCache(*this)) {
-				vcell_persist::Token::check<Mesh<CT,N,TELEMENT> >(is); 
-				const size_t nCells =  this->numCells( );
-				const size_t needed =  nCells * sizeof(TELEMENT);
-				storage = static_cast<TELEMENT *>(malloc(needed));
-				STORAGE("istream allocated " << needed << " at " << storage)
-				for (size_t i = 0; i < nCells; i++) {
-					void * addr = &storage[i];
-					new (addr) TELEMENT(*this,is); //placement new
-				}
-		}
-		/**
-		* "transfer" assignment operator 
-		* Assumes ownership of rhs's storage and cache
-		* @param rhs object to take content of
-		*/
-		 
 		Mesh & operator=(Mesh &rhs) {
-			MeshDef<CT,N>::operator=(rhs);
-			storage = rhs.storage;
-			daCache = rhs.daCache;
-			rhs.storage = nullptr;
-			rhs.daCache = nullptr;
-			std::fill(rhs.nPoints.begin( ),rhs.nPoints.end( ), 0);
-			STORAGE("transferred storage " << storage)
-			return *this;
-		}
+		 */
 
+		void restore(std::istream &is) {
+			static_cast<MeshDef<CT,N> &>(*this) = MeshDef<CT,N>(is);
+			daCache = TELEMENT::createCache(*this);
+			vcell_persist::Token::check<Mesh<CT,N,TELEMENT> >(is); 
+			const size_t nCells =  this->numCells( );
+			const size_t needed =  nCells * sizeof(TELEMENT);
+			storage = static_cast<TELEMENT *>(malloc(needed));
+			STORAGE("istream allocated " << needed << " at " << storage)
+			for (size_t i = 0; i < nCells; i++) {
+			void * addr = &storage[i];
+				new (addr) TELEMENT(*this,is); //placement new
+			}
+		}
 		
 		void persist(std::ostream &os) const {
 			typedef MeshDef<CT,N> base;

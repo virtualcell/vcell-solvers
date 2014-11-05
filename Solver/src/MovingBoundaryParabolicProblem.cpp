@@ -243,6 +243,8 @@ namespace moving_boundary {
 			heartbeatSymbol( )
 		{  
 
+			MeshElementSpecies::setProblemToWorldDistanceScale(world.theScale( ));
+
 			//init using either function pointer or string
 			if (nFunctionPointers == 0) {
 				ConcentrationExpression<3> ce(concentrationExp);
@@ -439,7 +441,6 @@ namespace moving_boundary {
 		*/
 		static MBMeshDef createMeshDef(const WorldType & world, const moving_boundary::MovingBoundarySetup &mbs)  {
 
-			MeshElementSpecies::setProblemToWorldDistanceScale(world.theScale( ));
 
 			typedef spatial::TGeoLimit<moving_boundary::CoordinateType> LimitType;
 			using vcell_util::arrayInit;
@@ -1137,6 +1138,7 @@ namespace moving_boundary {
 			gainedElements(  ),
 			heartbeat(0),
 			heartbeatSymbol( ) {
+				MeshElementSpecies::setProblemToWorldDistanceScale(world.theScale( ));
 				vcell_persist::Token::check<MovingBoundaryParabolicProblemImpl>(is);
 				//vcell_persist::binaryRead(is,diffusionConstant);
 				vcell_persist::binaryRead(is,generationCount);
@@ -1149,8 +1151,8 @@ namespace moving_boundary {
 				vcFront = moving_boundary::restoreFrontProvider(is);
 				vcell_persist::restore(is,currentFront);
 				meshDefinition = MBMeshDef(is);
-				MBMesh temp(is);
-				primaryMesh = temp; 
+				//MBMesh temp(is);
+				primaryMesh.restore(is);
 				vcell_persist::binaryRead(is,interiorVolume);
 
 				restoreElementsVector(is, boundaryElements);
