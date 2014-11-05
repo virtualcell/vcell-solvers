@@ -10,6 +10,9 @@
 * varies, easier to write custom methods for each type
 */
 namespace vcell_persist {
+//
+// Write section
+//
 	/**
 	* default "W" writer which using "persist" for objects of type Persistent
 	* and binaryWrite for objects of other types
@@ -20,7 +23,7 @@ namespace vcell_persist {
 		*/
 		template <typename U>
 		typename std::enable_if<std::is_base_of<Persistent,U>::value,void>::type 
-		operator( )(std::ostream &os, const U & u) {
+		operator( )(std::ostream &os, const U & u) const {
 			u.persist(os);
 		}
 
@@ -29,7 +32,7 @@ namespace vcell_persist {
 		*/
 		template <typename U>
 		typename std::enable_if< ! std::is_base_of<Persistent,U>::value,void>::type 
-		operator( )(std::ostream &os, const U & u) {
+		operator( )(std::ostream &os, const U & u) const {
 			binaryWrite(os,u);
 		}
 	};
@@ -37,38 +40,40 @@ namespace vcell_persist {
 	template <typename W = persistWrite>
 	struct writeFunctor {
 		std::ostream &os;
-		W & w;
-		writeFunctor(std::ostream &os_, W & w_ = W( ) ) 
+		const W & w;
+		writeFunctor(std::ostream &os_, const W & w_ = W( ) ) 
 			:os(os_),
 			w(w_) {}
 
 		template <typename U>
-		void operator( )(const U & u) {
+		void operator( )(const U & u) const {
 			w(os,u);
 		}
+	};
 
+//
+// Read section; enable_if did not work so well because templated values are return values 
+// and more difficult for the compiler to deduce. Therefore we explicitly name the two types
+// and use SFINAE later in the restore methods
+//
+	/**
+	* generator which returns new object from stream; supports
+	* classes with constructor of form U(std::istream &is)
+	*/
+	template <class U>
+	struct persistReadPersistentType {
+		U generate(std::istream &is) const {
+			return U(is);
+		}
 	};
 
 	/**
 	* generator which returns new object from stream; supports
-	* binaryReads and classes with constructor of form U(std::istream &is)
+	* binaryReads 
 	*/
-	struct persistRead {
-		/**
-		* operator for classes which derived from Persistent -- calls U(istream &)
-		*/
-		template <typename U>
-		typename std::enable_if<std::is_base_of<Persistent,U>::value,U>::type 
-		generate(std::istream &is) {
-			return U(is);
-		}
-
-		/**
-		* operator for classes which do not derived from Persistent -- calls binaryRead
-		*/
-		template <typename U>
-		typename std::enable_if< ! std::is_base_of<Persistent,U>::value,U>::type 
-		generate(std::istream &is) {
+	template <class U>
+	struct persistReadBinaryType {
+		U generate(std::istream &is) const {
 			U u;
 			binaryRead(is,u);
 			return u;
@@ -79,11 +84,11 @@ namespace vcell_persist {
 	* for each compatible function object
 	* @tparam R generator; must implement U generate(std::istream &is) 
 	*/
-	template <typename R = persistRead>
+	template <typename R>
 	struct readFunctor {
 		std::istream &is;
-		R & r;
-		readFunctor(std::istream &is_, R & r_ = R( )) 
+		const R & r;
+		readFunctor(std::istream &is_, const R & r_ = R( )) 
 			:is(is_),
 			r(r_) {}
 
@@ -91,8 +96,8 @@ namespace vcell_persist {
 		* operator for classes which derived from Persistent -- calls U(istream &)
 		*/
 		template <typename U>
-		void operator( )(U &u) {
-			u = r.generate<U>(is);
+		void operator( )(U &u) const {
+			u = r.generate(is);
 		}
 	};
 
@@ -100,21 +105,22 @@ namespace vcell_persist {
 	* vector insertion function object
 	* @tparam R generator; must implement U generate(std::istream &is) 
 	*/
-	template <typename R = persistRead>
+	template <typename R>
 	struct InsertFrom {
-		R & r;
-		InsertFrom(R & r_ = R( ))
+		const R & r;
+		InsertFrom(const R & r_ = R( ))
 			:r(r_) {}
 
 		template <typename U>
-		void operator ( )(std::istream &is, std::vector<U> &vec)  {
-			vec.push_back( r.generate<U>(is) );
+		void operator ( )(std::istream &is, std::vector<U> &vec)  const {
+			//vec.push_back( r.generate<U>(is) );
+			vec.push_back( r.generate(is) );
 		}
 	};
 
-	//--------------------------------
-	// Vector
-	//--------------------------------
+//--------------------------------
+// Vector
+//--------------------------------
 	/**
 	* write vector of T (Persistent or binary) 
 	* @ tparam T type to restore
@@ -122,7 +128,7 @@ namespace vcell_persist {
 	* write t to os
 	*/
 	template<typename T, typename W>
-	void save(std::ostream &os,  const std::vector<T> & vec, W & w) {
+	void save(std::ostream &os,  const std::vector<T> & vec, const W & w) {
 		binaryWrite(os, vec.size( ));
 		std::for_each(vec.begin( ), vec.end( ),w);
 	}
@@ -143,7 +149,7 @@ namespace vcell_persist {
 	* new object from stream into vector (e.g. InsertFrom)
 	*/
 	template<typename T, class I>
-	void restore(std::istream &is, std::vector<T> & vec, I & inserter) {
+	void restore(std::istream &is, std::vector<T> & vec, const I & inserter) {
 		typedef typename std::vector<T>::size_type Stype;
 		Stype size; 
 		binaryRead(is,size);
@@ -156,17 +162,27 @@ namespace vcell_persist {
 	}
 
 	/**
-	* restore vector of T (Persistent or binary) using 
-	* InsertFrom 
+	* restore vector of Persistent T  using InsertFrom 
 	* @ tparam T type to restore
 	*/
 	template<typename T>
-	void restore(std::istream &is, std::vector<T> & vec) {
-		restore(is,vec,InsertFrom<persistRead>( ));
+	typename std::enable_if< std::is_base_of<Persistent,T>::value,void>::type 
+	restore(std::istream &is, std::vector<T> & vec) {
+		restore(is,vec,InsertFrom<persistReadPersistentType<T> >( ));
 	}
-	//--------------------------------
-	// array 
-	//--------------------------------
+
+	/**
+	* restore vector of binary readable T using InsertFrom 
+	* @ tparam T type to restore
+	*/
+	template<typename T>
+	typename std::enable_if< ! std::is_base_of<Persistent,T>::value,void>::type 
+	restore(std::istream &is, std::vector<T> & vec) {
+		restore(is,vec,InsertFrom<persistReadBinaryType<T> >( ));
+	}
+//--------------------------------
+// array 
+//--------------------------------
 	/**
 	* write array of T (Persistent or binary) 
 	* @ tparam T array type
@@ -175,10 +191,15 @@ namespace vcell_persist {
     *	write t to stream
 	*/
 	template<typename T, size_t N, typename W>
-	void save(std::ostream &os,  const std::array<T,N> & arr, W & w) {
+	void save(std::ostream &os,  const std::array<T,N> & arr, const W & w) {
 		std::for_each(arr.begin( ), arr.end( ),w);
 	}
 
+	/**
+	* write array of T (Persistent or binary) 
+	* @ tparam T array type
+	* @ tparam n array size 
+	*/
 	template<typename T, size_t N>
 	void save(std::ostream &os,  const std::array<T,N> & arr) {
 		save(os,arr,writeFunctor<>(os));
@@ -192,18 +213,30 @@ namespace vcell_persist {
     * set t from stream	
 	*/
 	template<typename T, size_t N, typename R>
-	void restore(std::istream &is, std::array<T,N> & arr, R &r) {
+	void restore(std::istream &is, std::array<T,N> & arr, const R &r) {
 		std::for_each(arr.begin( ), arr.end( ),r);
 	}
 
 	/**
-	* restore array of T (Persistent or binary) using readFunctor<>
+	* restore array of Persistent T using readFunctor 
 	* @ tparam T array type
 	* @ tparam n array size 
 	*/
 	template<typename T, size_t N>
-	void restore(std::istream &is, std::array<T,N> & arr) {
-		restore(is,arr,readFunctor<>(is));
+	typename std::enable_if< std::is_base_of<Persistent,T>::value,void>::type 
+	restore(std::istream &is, std::array<T,N> & arr) {
+		restore(is,arr,readFunctor<persistReadPersistentType<T> >(is));
+	}
+
+	/**
+	* restore array of binary readable T using readFunctor 
+	* @ tparam T array type
+	* @ tparam n array size 
+	*/
+	template<typename T, size_t N>
+	typename std::enable_if< ! std::is_base_of<Persistent,T>::value,void>::type 
+	restore(std::istream &is, std::array<T,N> & arr) {
+		restore(is,arr,readFunctor<persistReadBinaryType<T> >(is));
 	}
 }	
 #endif

@@ -1125,8 +1125,8 @@ namespace {
 		MeshElementSpecies & client;
 		NeighborBuilder(MeshElementSpecies &c)
 			:client(c) {}
-		template <typename T>
-		MeshElementSpecies::NeighborType generate(std::istream &in) {
+
+		MeshElementSpecies::NeighborType generate(std::istream &in) const {
 			return MeshElementSpecies::NeighborType(in,client);
 		}
 	};
@@ -1168,7 +1168,7 @@ namespace {
 		MeshElementSpecies & client;
 		NeighborWriter(MeshElementSpecies &c)
 			:client(c) {}
-		void operator( )(std::ostream &os, const MeshElementSpecies::NeighborType  & nb) {
+		void operator( )(std::ostream &os, const MeshElementSpecies::NeighborType  & nb) const {
 			nb.persist(os,client);
 		}
 	};
