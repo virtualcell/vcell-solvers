@@ -1132,9 +1132,13 @@ namespace {
 	};
 }
 
+/**
+* see #persist
+*/
 MeshElementSpecies::MeshElementSpecies(const MeshDefinition &owner,std::istream &is)
 	:base(is),
-	mesh(owner)
+	mesh(owner),
+	vol(0,this) //required to register this as VolumeMonitor of volume
 {
 	vcell_persist::Token::check<MeshElementSpecies>(is); 
 
@@ -1144,7 +1148,6 @@ MeshElementSpecies::MeshElementSpecies(const MeshDefinition &owner,std::istream 
 	vcell_persist::binaryRead(is,stateVar);
 	vcell_persist::binaryRead(is,interiorVolume);
 	vol = Volume2DClass(is);
-	//vcell_persist::restore(is,segments_);
 	vcell_persist::restore(is,amtMass);
 	vcell_persist::restore(is,amtMassTransient);
 	vcell_persist::restore(is,concValue);
@@ -1174,6 +1177,9 @@ namespace {
 	};
 }
 
+/**
+* save essential state information necessary to restore from a file later
+*/
 void MeshElementSpecies::persist(std::ostream &os) {
 	base::persist(os);
 
@@ -1184,12 +1190,12 @@ void MeshElementSpecies::persist(std::ostream &os) {
 	vcell_persist::binaryWrite(os,stateVar);
 	vcell_persist::binaryWrite(os,interiorVolume);
 	vol.persist(os);
-	//vcell_persist::save(os,segments_);
+	//vcell_persist::save(os,segments_); //segments can be recreated on the fly
 	vcell_persist::save(os,amtMass);
 	vcell_persist::save(os,amtMassTransient);
 	vcell_persist::save(os,concValue);
 	vcell_persist::save(os,interiorNeighbors, functor);
-	//gcw 10-20-2014 thinking vector of neighbors not used if element not boundary, so no point in storing it
+	//vector of neighbors not used if element not boundary, so no point in storing it
 	const bool usingNeighborVector = (neighbors == boundaryNeighbors.data( )); 
 	vcell_persist::binaryWrite(os, usingNeighborVector);
 	if (usingNeighborVector) {

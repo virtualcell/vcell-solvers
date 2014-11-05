@@ -897,8 +897,8 @@ namespace moving_boundary {
 						}
 					} catch (ReverseLengthException &rle) {
 						std::ofstream s("rle.m");
-						rle.aElement.writeMatlab(s, true, 20);
-						rle.bElement.writeMatlab(s, true, 20);
+						rle.aElement.writeMatlab(s, false, 20);
+						rle.bElement.writeMatlab(s, false, 20);
 						throw rle;
 					}
 					primaryMesh.diffuseAdvectCache( ).finish( );
