@@ -3,7 +3,7 @@
 #include <DirichletPoissonEBBC.H>
 #include <EBAMRPoissonOpFactory.H>
 
-#include <VCELL/ChomboLevelRedist.H>
+//#include <VCELL/ChomboLevelRedist.H>
 #include <VCELL/ChomboSemiImplicitScheduler.h>
 #include <VCELL/Variable.h>
 #include <VCELL/VarContext.h>
@@ -879,7 +879,7 @@ void ChomboSemiImplicitScheduler::updateSource() {
 						for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
 						{
 							const VolIndex& vof = vofit();
-							double volfrac = currEBISBox.volFrac(vof);
+//							double volfrac = currEBISBox.volFrac(vof);
 //							if (volfrac <= ChomboLevelRedist::TINY_VOL_FRAC)
 //							{
 //								pout() << "====phase " << iphase << ", @ " << vof << ", volfrac=" << volfrac
