@@ -13,15 +13,14 @@ namespace moving_boundary {
 
 		virtual void time(double t, unsigned int generationCount, bool last, const GeometryInfo<moving_boundary::CoordinateType> & geometryInfo); 
 		virtual void simulationComplete( );
+		struct ProblemState {
+			MovingBoundaryParabolicProblem problem;
+			ReportClient *reportClient;
+			StateClient *stateClient;
+		};
 		/**
 		* restore previously persisted problem and clients from file. Caller must delete ReportClient and State Client
 		*/
-		//typedef std::pair<MovingBoundaryParabolicProblem,ReportClient *> 
-			struct ProblemState {
-				MovingBoundaryParabolicProblem problem;
-				ReportClient *reportClient;
-				StateClient *stateClient;
-			};
 		static ProblemState restore(const std::string &name);
 
 		/**

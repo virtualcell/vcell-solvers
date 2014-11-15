@@ -30,7 +30,7 @@ namespace moving_boundary {
 		* copy constructor -- XXXX transfers ownership impl from rhs to this
 		* copy constructor -- shares pointer 
 		*/
-		MovingBoundaryParabolicProblem(MovingBoundaryParabolicProblem & rhs) 
+		MovingBoundaryParabolicProblem(const MovingBoundaryParabolicProblem & rhs) 
 			:sImpl(rhs.sImpl) {
 		}
 		/**
