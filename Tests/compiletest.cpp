@@ -20,7 +20,8 @@
 //#include <Segment.h>
 //#include <World.h>
 //#include <algo.h>
-#include <cstdint>
+//#include <cstdint>
+#include <ReportClient.h>
 
 /*
 void a(moving_boundary::MeshElementSpecies & mes) {

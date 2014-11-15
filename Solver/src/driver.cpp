@@ -2,13 +2,19 @@
 #include <iostream>
 #include <vcellxml.h>
 #include <vhdf5/file.h>
-#include <HDF5Client.h>
 #include <Logger.h>
 #include <boundaryProviders.h>
 #include <StateClient.h>
 #include <MBridge/MatlabDebug.h>
 #include <tclap/CmdLine.h>
+#include <ReportClient.h>
+/**
+* usings and typedefs
+*/
 using tinyxml2::XMLElement;
+using moving_boundary::MovingBoundaryElementClient;
+using moving_boundary::MovingBoundarySetup;
+using moving_boundary::MovingBoundaryParabolicProblem;
 
 namespace {
 	/**
@@ -16,18 +22,11 @@ namespace {
 	*/
 	const char * const XML_ROOT_NAME = "MovingBoundarySetup";
 
-	/**
-	* usings and typedefs
-	*/
-	using moving_boundary::MovingBoundaryElementClient;
-	using moving_boundary::MovingBoundarySetup;
-	using moving_boundary::MovingBoundaryParabolicProblem;
 
 	/**
 	* forward declarations of functions in file
 	*/
 	void setupTrace(const XMLElement &root); 
-	MovingBoundaryElementClient *setupReportClient(const XMLElement &root, const std::string & filename, MovingBoundaryParabolicProblem &mbpp); 
 	void setupMatlabDebug(const XMLElement &root); 
 	void setupHeartbeat(const XMLElement &root,moving_boundary::MovingBoundaryParabolicProblem & mbpp);
 
@@ -83,7 +82,7 @@ int main(int argc, char *argv[])
 	}
 	moving_boundary::MovingBoundaryParabolicProblem problem;
 	//moving_boundary::ProblemPackage package;
-	std::unique_ptr<moving_boundary::MovingBoundaryElementClient> reportClient;
+	std::unique_ptr<moving_boundary::ReportClient> reportClient;
 	std::unique_ptr<moving_boundary::MovingBoundaryTimeClient> persistClient;
 	//const char * const filename = argv[1];
 	//const char * outname = argv[2];
@@ -94,7 +93,7 @@ int main(int argc, char *argv[])
 		tinyxml2::XMLDocument doc;
 		doc.LoadFile(filename.c_str( ));
 		if (doc.ErrorID( ) != tinyxml2::XML_SUCCESS) {
-			std::cerr <<  "Error " << doc.ErrorID( ) << " loading  " << filename << std::endl;
+			std::cerr <<  "Error " << doc.ErrorID( ) << " loading " << filename << std::endl;
 			return 2; 
 		}
 		const tinyxml2::XMLElement & root = *doc.RootElement( );
@@ -109,22 +108,24 @@ int main(int argc, char *argv[])
 		if (restorename.empty( )) {
 			auto mbs = MovingBoundarySetup::setupProblem(root);
 			problem = moving_boundary::MovingBoundaryParabolicProblem(mbs);
+			reportClient.reset( moving_boundary::ReportClient::setupReportClient(root, outname, problem) ); 
+			persistClient.reset( new moving_boundary::StateClient(problem,*reportClient, "sim",0.1,0.01) );
 		}
 		else {
 			try {
-				problem = moving_boundary::StateClient::restore(restorename);
+				 using moving_boundary::StateClient;
+				 StateClient::ProblemState pState =  StateClient::restore(restorename);
+				 problem = pState.problem;
+				 reportClient.reset( pState.reportClient); 
+				 persistClient.reset( pState.stateClient); 
 			}
 			catch (std::exception & e) {
 				std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << restorename << std::endl; 
 				return 6;
 			}
 		}
-		reportClient.reset( setupReportClient(root, outname, problem) ); 
 		problem.add(*reportClient);
 		setupHeartbeat(root,problem);
-
-		persistClient.reset( new moving_boundary::StateClient(problem,"sim",0.1,0.01) );
-
 	}
 	catch (std::exception & e) {
 		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << filename << std::endl; 
@@ -156,97 +157,6 @@ int main(int argc, char *argv[])
 namespace {
 
 
-	moving_boundary::MovingBoundaryElementClient *setupReportClient(const XMLElement &root, const std::string & filename , moving_boundary::MovingBoundaryParabolicProblem &mbpp) {
-		try {
-			const moving_boundary::MovingBoundarySetup & mbs = mbpp.setup( );
-			const XMLElement & report = vcell_xml::get(root,"report");
-			H5::H5File output;
-			if (!filename.empty( )) {
-				output = vcellH5::VH5File(filename.c_str( ),H5F_ACC_TRUNC|H5F_ACC_RDWR);
-			}
-			else {
-				std::string filename = vcell_xml::convertChildElement<std::string>(report,"outputFilename");
-				bool deleteExisting = vcell_xml::convertChildElementWithDefault<bool>(report,"deleteExisting",false);
-				if (deleteExisting) {
-					unlink(filename.c_str( ));
-				}
-				output = vcellH5::VH5File(filename.c_str( ),H5F_ACC_TRUNC|H5F_ACC_RDWR);
-			}
-			const char *datasetName = nullptr;
-			std::pair<bool,std::string> dnq = vcell_xml::queryElement<std::string>(report,"datasetName");
-			if (dnq.first) {
-				datasetName = dnq.second.c_str( );
-			}
-
-			std::vector<moving_boundary::TimeReport *> timeReports;
-
-			std::pair<bool,unsigned int> nr = vcell_xml::queryElement<unsigned int>(report,"numberReports");
-			if (nr.first) {
-				std::cerr << "numberReports XML element deprecated" << std::endl;
-				const double startTime = vcell_xml::convertChildElementWithDefault<double>(report,"startTime",0);
-				unsigned int nts = mbpp.numberTimeSteps( );
-				unsigned int rs = nts /  nr.second;
-				if (startTime >0) { //if not beginning, scale based on fraction of time reported
-					const double end = mbpp.endTime( );
-					unsigned int scaled = static_cast<unsigned int>(nts * (end -startTime) / end);
-					rs = scaled / nr.second; 
-				}
-				if (rs < 1) {
-					rs = 1;
-				}
-				timeReports.push_back( new moving_boundary::TimeReportStep(startTime,rs));
-			}
-
-			const XMLElement * timeReport = report.FirstChildElement("timeReport"); 
-			while(timeReport != nullptr) {
-				const int NOT_THERE = -1;
-				const double startTime = vcell_xml::convertChildElement<double>(*timeReport,"startTime");
-				const long step = vcell_xml::convertChildElementWithDefault<long>(*timeReport,"step", NOT_THERE);
-				const double interval = vcell_xml::convertChildElementWithDefault<double>(*timeReport,"interval",NOT_THERE);
-				bool quiet = timeReport->FirstChildElement("quiet") != nullptr;
-				int nsubs = 0;
-
-
-				if (step != NOT_THERE) {
-					nsubs++;
-					timeReports.push_back( new moving_boundary::TimeReportStep(startTime,step) );
-				}
-				if (interval != NOT_THERE) {
-					nsubs++;
-					timeReports.push_back( new moving_boundary::TimeReportInterval(startTime,interval) );
-				}
-				if (quiet) {
-					nsubs++;
-					timeReports.push_back( new moving_boundary::TimeReportQuiet(startTime) );
-				}
-				if (nsubs != 1) {
-					throw std::invalid_argument("XML error exactly one of <step>, <interval>, or <quiet> must be specified per timeReport element");
-				}
-				timeReport = timeReport->NextSiblingElement("timeReport");
-			}
-
-			moving_boundary::World<moving_boundary::CoordinateType,2> &world = moving_boundary::World<moving_boundary::CoordinateType,2>::get( );
-			moving_boundary::NHDF5Client<> *client =  new moving_boundary::NHDF5Client<>(output,world,mbpp,datasetName, timeReports);
-			client->addInitial(mbs);
-			const XMLElement * const annotateSection = report.FirstChildElement("annotation"); 
-			if (annotateSection != nullptr) {
-				const XMLElement *annotateElement = annotateSection->FirstChildElement( );
-				while (annotateElement != nullptr) {
-					const char *const name = annotateElement->Name( );
-					const std::string value = vcell_xml::convertElement<std::string>(*annotateElement);
-					client->annotate(name,value);
-					annotateElement = annotateElement->NextSiblingElement( );
-				}
-			}
-			return client;
-		} 
-		catch (H5::Exception &h5e) {
-			std::string h5Msg = h5e.getDetailMsg( );
-			h5Msg += " ";
-			h5Msg += h5e.getFuncName( );
-			throw new std::runtime_error(h5Msg);
-		}
-	}
 	void setupTrace(const XMLElement &root) {
 		const tinyxml2::XMLElement *trace = root.FirstChildElement("trace");
 		if (trace != nullptr) {

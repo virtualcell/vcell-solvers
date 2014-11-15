@@ -1327,56 +1327,57 @@ namespace moving_boundary {
 	//**************************************************
 
 	MovingBoundaryParabolicProblem::MovingBoundaryParabolicProblem(const MovingBoundarySetup &mbs)
-		:impl(new MovingBoundaryParabolicProblemImpl(mbs)) { }
+		:sImpl(std::make_shared<MovingBoundaryParabolicProblemImpl>(mbs) ) {}
+		//:impl(new MovingBoundaryParabolicProblemImpl(mbs)) { }
 
 	MovingBoundaryParabolicProblem::MovingBoundaryParabolicProblem(const MovingBoundarySetup &mbs, std::istream &is) 
-		:impl(new MovingBoundaryParabolicProblemImpl(mbs,is)) { }
+		:sImpl(std::make_shared<MovingBoundaryParabolicProblemImpl>(mbs,is) ) {}
+		//:impl(new MovingBoundaryParabolicProblemImpl(mbs,is)) { }
 
 	const spatial::MeshDef<moving_boundary::CoordinateType,2> & MovingBoundaryParabolicProblem::meshDef( ) const {
-		return impl->meshDef( );
+		return sImpl->meshDef( );
 	}
 	double MovingBoundaryParabolicProblem::baseTimeStep( ) const {
-		return impl->timeStep;
+		return sImpl->timeStep;
 	}
 	unsigned int MovingBoundaryParabolicProblem::numberTimeSteps( ) const {
-		return impl->numberTimeSteps( );
+		return sImpl->numberTimeSteps( );
 	}
 
 	MovingBoundaryParabolicProblem::~MovingBoundaryParabolicProblem( ) {
-		delete impl;
 	}
 
 	void MovingBoundaryParabolicProblem::setHeartbeat(size_t numGen, const std::string &symbol) {
-		impl->setHeartbeat(numGen,symbol);
+		sImpl->setHeartbeat(numGen,symbol);
 	}
 	void MovingBoundaryParabolicProblem::add(moving_boundary::MovingBoundaryTimeClient & client) {
-		impl->add(client);
+		sImpl->add(client);
 	}
 	void MovingBoundaryParabolicProblem::add(moving_boundary::MovingBoundaryElementClient & client) {
-		impl->add(client);
+		sImpl->add(client);
 	}
 	void MovingBoundaryParabolicProblem::run( ) {
-		impl->run( );
+		sImpl->run( );
 	}
 
 	void MovingBoundaryParabolicProblem::plotPolygons(std::ostream &os)  const {
-		meshElementPlot(Concentration( ),*impl,os);
+		meshElementPlot(Concentration( ),*sImpl,os);
 	}
 	void MovingBoundaryParabolicProblem::plotAreas(std::ostream &os) const {
-		meshElementPlot(VolumeEval( ),*impl,os);
+		meshElementPlot(VolumeEval( ),*sImpl,os);
 	}
 	double MovingBoundaryParabolicProblem::endTime( ) const {
-		return impl->maxTime;
+		return sImpl->maxTime;
 	}
 	const MovingBoundarySetup &MovingBoundaryParabolicProblem::setup( ) const {
-		return impl->setup( );
+		return sImpl->setup( );
 	}
 	std::string MovingBoundaryParabolicProblem::frontDescription( ) const {
-		return impl->vcFront->describe( );
+		return sImpl->vcFront->describe( );
 	}
 
 	void MovingBoundaryParabolicProblem::persist(std::ostream &os) const {
-		impl->persist(os);
+		sImpl->persist(os);
 	}
 
 	void MovingBoundaryParabolicProblem::registerType( ) {
@@ -1384,7 +1385,7 @@ namespace moving_boundary {
 	}
 
 	void MovingBoundaryParabolicProblem::registerInstanceType( ) const {
-		impl->registerInstanceType( );
+		sImpl->registerInstanceType( );
 	}
 
 }

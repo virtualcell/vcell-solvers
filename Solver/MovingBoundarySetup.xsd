@@ -33,7 +33,7 @@
       <xs:element type="xs:short" name="numNodesY"/>
       <xs:element type="xs:byte" name="frontToNodeRatio"/>
       <xs:element type="xs:float" name="maxTime"/>
-      <xs:element type="xs:short" name="numberTimeSteps"/>
+      <xs:element type="xs:float" name="timeStep"/>
       <xs:element type="xs:float" name="diffusionConstant"/>
       <xs:element type="xs:string" name="levelFunction"/>
       <xs:element type="xs:string" name="advectVelocityFunctionX"/>
@@ -52,7 +52,17 @@
   <xs:complexType name="timeReportType">
     <xs:all>
       <xs:element type="xs:float" name="startTime"/>
-      <xs:element type="xs:short" name="step"/>
+  <xs:complexType>
+	  <xs:choice>
+		  <xs:element type="xs:short" name="step"/>
+		  <xs:element type="xs:float" name="interval"/>
+		  <xs:element type="xs:float" name="quiet"/>
+	  </xs:choice>
+  </xs:complexType>
+	  <xs:choice>
+    <xs:all>
+  <xs:complexType>
+  </xs:complexType>
     </xs:all>
   </xs:complexType>
   <xs:complexType name="reportType">

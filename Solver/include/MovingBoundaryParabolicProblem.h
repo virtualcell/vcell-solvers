@@ -25,13 +25,13 @@ namespace moving_boundary {
 		* default constructor to allow placeholder variables
 		*/
 		MovingBoundaryParabolicProblem( )
-			:impl(nullptr) {}
+			:sImpl( ) {}
 		/**
-		* copy constructor -- transfers ownership impl from rhs to this
+		* copy constructor -- XXXX transfers ownership impl from rhs to this
+		* copy constructor -- shares pointer 
 		*/
 		MovingBoundaryParabolicProblem(MovingBoundaryParabolicProblem & rhs) 
-			:impl(rhs.impl) {
-				rhs.impl = nullptr;
+			:sImpl(rhs.sImpl) {
 		}
 		/**
 		* stored instance constructor 
@@ -41,12 +41,12 @@ namespace moving_boundary {
 		~MovingBoundaryParabolicProblem( );
 
 		/**
-		* assignment operator -- transfers ownership impl from rhs to this
+		* assignment operator -- XXXX transfers ownership impl from rhs to this
+		* shares pointer 
 		*/
 		MovingBoundaryParabolicProblem & operator=(const MovingBoundaryParabolicProblem & rhs) 
 		{ 
-			impl = rhs.impl;
-			const_cast<MovingBoundaryParabolicProblem &>(rhs).impl = nullptr;
+			sImpl = rhs.sImpl;
 			return *this;
 		}
 
@@ -95,7 +95,8 @@ namespace moving_boundary {
 		std::string frontDescription( ) const;
 
 	private:
-		MovingBoundaryParabolicProblemImpl *impl;
+		//MovingBoundaryParabolicProblemImpl *impl;
+		std::shared_ptr<MovingBoundaryParabolicProblemImpl> sImpl;
 	};
 
 	struct TimeStepTooBig : public std::invalid_argument {
