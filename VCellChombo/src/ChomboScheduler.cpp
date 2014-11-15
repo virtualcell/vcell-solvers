@@ -926,7 +926,7 @@ void ChomboScheduler::computeStructureSizes()
 								{
 									continue;
 								}
-								int memIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
+								int memIndex = (*irregularPointMembraneElementIndex[iphase][ivol][ilev])[dit()](vof, 0);
 								if (memIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
 								{
 									continue;
@@ -1265,7 +1265,7 @@ void ChomboScheduler::updateSolution()
 					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
 					{
 						const VolIndex& vof = vofit();
-						int memIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
+						int memIndex = (*irregularPointMembraneElementIndex[iphase][ivol][ilev])[dit()](vof, 0);
 						if (memIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
 						{
 							continue;
@@ -2278,7 +2278,7 @@ void ChomboScheduler::writeMembraneFiles()
 	int numTriangles = triangleCount;
 	for (int tri = 0; tri < numTriangles; ++ tri)
 	{
-		pout() << "tri=" << tri << endl;
+//		pout() << "tri=" << tri << endl;
 		int imem = membraneTriangles[tri].memElementIndex;
 		int centroidIndex = tempVertIndexesArray[imem][memCentroidOffset];
 		if (centroidIndex < 0)
@@ -2330,15 +2330,15 @@ void ChomboScheduler::writeMembraneFiles()
 			}
 		}
 	}// end tri
-	pout() << "tempVertIndexesArray" << endl;
-	for (int i = 0; i < numMembranePoints;  ++ i)
-	{
-		for (int j = 0; j < 21; ++ j)
-		{
-			pout() << tempVertIndexesArray[i][j] << " ";
-		}
-		pout() << endl;
-	}
+//	pout() << "tempVertIndexesArray" << endl;
+//	for (int i = 0; i < numMembranePoints;  ++ i)
+//	{
+//		for (int j = 0; j < 21; ++ j)
+//		{
+//			pout() << tempVertIndexesArray[i][j] << " ";
+//		}
+//		pout() << endl;
+//	}
 	delete[] tempVertIndexesArray;
 	vertexCount = triangleVertexCount + 1;
 	writeMeshHdf5(metricsData, vertexCount, vertexList, triangleCount, surfaceData, sliceViewData);

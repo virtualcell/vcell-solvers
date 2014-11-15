@@ -3,7 +3,7 @@
 #include <DirichletPoissonEBBC.H>
 #include <EBAMRPoissonOpFactory.H>
 
-//#include <VCELL/ChomboLevelRedist.H>
+#include <VCELL/ChomboLevelRedist.H>
 #include <VCELL/ChomboSemiImplicitScheduler.h>
 #include <VCELL/Variable.h>
 #include <VCELL/VarContext.h>
@@ -207,18 +207,18 @@ void ChomboSemiImplicitScheduler::iterate() {
 					
 					ebBEIntegratorList[iphase][ivol][ivar]->oneStep(volSolnWorkspace[iphase][ivol], volSolnOldWorkspace[iphase][ivol],
 								volSourceWorkspace[iphase][ivol], dt, 0, numLevels - 1, zeroPhi, kappaWeighted);
-					/*
-					for(int ilev = 0; ilev < numLevels; ++ ilev)
-					{
-						DisjointBoxLayout& currGrids = vectGrids[ilev];
-						EBISLayout& ebisl = vectEbis[iphase][ivol][ilev];
-						ProblemDomain& domain = vectDomains[ilev];
-						int nComp = 1;
-						ChomboLevelRedist levelRedist;
-						levelRedist.define(currGrids, ebisl, domain, nComp);
-						levelRedist.redistribute(*volSolnWorkspace[iphase][ivol][ilev]);
-					}
-					 */
+					
+//					for(int ilev = 0; ilev < numLevels; ++ ilev)
+//					{
+//						DisjointBoxLayout& currGrids = vectGrids[ilev];
+//						EBISLayout& ebisl = vectEbis[iphase][ivol][ilev];
+//						ProblemDomain& domain = vectDomains[ilev];
+//						int nComp = 1;
+//						ChomboLevelRedist levelRedist;
+//						levelRedist.define(currGrids, ebisl, domain, nComp);
+//						levelRedist.redistribute(*volSolnWorkspace[iphase][ivol][ilev]);
+//					}
+
 					EBAMRDataOps::assign(volSoln[iphase][ivol], volSolnWorkspace[iphase][ivol], ivarint, zeroint);
 				}
 			}
@@ -865,111 +865,137 @@ void ChomboSemiImplicitScheduler::updateSource() {
 						int jvol = adjacentVolumes[j]->volumeIndexInPhase;
 
 						int currentMembraneID = 0;
-						if (iphase == phase0) {
+						if (iphase == phase0)
+						{
 							currentMembraneID = ivol * numConnectedComponents + jvol;
-						} else if (iphase == phase1) {
+						} 
+						else if (iphase == phase1)
+						{
 							currentMembraneID = jvol * numConnectedComponents + ivol;
 						}
 
 						Feature* jFeature = adjacentVolumes[j]->feature;
 						Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(iFeature, jFeature);
-						for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit) {
+						for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
+						{
 							const VolIndex& vof = vofit();
-							int memIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
-							if (memIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
-							{
-								continue;
-							}
-							
-							int membraneID = (*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()](vof, 0);
-							if (membraneID != currentMembraneID) {
-								continue;
-							}
-							const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
-							Real mem_areaFrac = currEBISBox.bndryArea(vof);
-							RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+							double volfrac = currEBISBox.volFrac(vof);
+//							if (volfrac <= ChomboLevelRedist::TINY_VOL_FRAC)
+//							{
+//								pout() << "====phase " << iphase << ", @ " << vof << ", volfrac=" << volfrac
+//												<< " <= " << ChomboLevelRedist::TINY_VOL_FRAC << ", skip membrane flux.====" << endl;
+//							}
+//							else
+//							{
+								int memIndex = (*irregularPointMembraneElementIndex[iphase][ivol][ilev])[dit()](vof, 0);
+								if (memIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
+								{
+									continue;
+								}
 
-							// fill vectValues
-							RealVect mem_point = mem_centroid;
-							mem_point *= vectDxes[ilev];
-							mem_point += vol_center;
+								int membraneID = (*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()](vof, 0);
+								if (membraneID != currentMembraneID)
+								{
+									continue;
+								}
+								const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
+								Real mem_areaFrac = currEBISBox.bndryArea(vof);
+								RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
 
-							memset(vectValues, 0, numSymbols * sizeof(double));
-							vectValues[0] = simulation->getTime_sec();
-							vectValues[1] = mem_point[0];
-							vectValues[2] = mem_point[1];
-							vectValues[3] = SpaceDim == 2 ? 0.5 : mem_point[2];
+								// fill vectValues
+								RealVect mem_point = mem_centroid;
+								mem_point *= vectDxes[ilev];
+								mem_point += vol_center;
 
-							{
-								int iDefinedVar = 0, jDefinedVar = 0;
-								// to fill extrapolated values in iFeature and jFeature.
-								for (int ivar = 0; ivar < numVolVars; ++ ivar) {
-									Variable* var = (Variable*)simulation->getVolVariable(ivar);
-									if (iFeature->isVariableDefined(var)) {
-										Real extrapVal = (*extrapValues[iphase][ivol][ilev])[dit()](vof, iDefinedVar);
-										vectValues[volSymbolOffset + ivar * numSymbolsPerVolVar + 1 + iFeature->getIndex()] = extrapVal;
-										++ iDefinedVar;
-									}
-									if (jFeature->isVariableDefined(var)) {
-										Real extrapVal = (*extrapValues[jphase][jvol][ilev])[dit()](vof, jDefinedVar);
-										vectValues[volSymbolOffset + ivar * numSymbolsPerVolVar + 1 + jFeature->getIndex()] = extrapVal;
-										++ jDefinedVar;
+								memset(vectValues, 0, numSymbols * sizeof(double));
+								vectValues[0] = simulation->getTime_sec();
+								vectValues[1] = mem_point[0];
+								vectValues[2] = mem_point[1];
+								vectValues[3] = SpaceDim == 2 ? 0.5 : mem_point[2];
+
+								{
+									int iDefinedVar = 0, jDefinedVar = 0;
+									// Fill volume variables to vectValues in iFeature and jFeature.
+									for (int ivar = 0; ivar < numVolVars; ++ ivar)
+									{
+										Variable* var = (Variable*)simulation->getVolVariable(ivar);
+										if (iFeature->isVariableDefined(var))
+										{
+											Real extrapVal = (*extrapValues[iphase][ivol][ilev])[dit()](vof, iDefinedVar);
+											vectValues[volSymbolOffset + ivar * numSymbolsPerVolVar + 1 + iFeature->getIndex()] = extrapVal;
+											++ iDefinedVar;
+										}
+										if (jFeature->isVariableDefined(var))
+										{
+											Real extrapVal = (*extrapValues[jphase][jvol][ilev])[dit()](vof, jDefinedVar);
+											vectValues[volSymbolOffset + ivar * numSymbolsPerVolVar + 1 + jFeature->getIndex()] = extrapVal;
+											++ jDefinedVar;
+										}
 									}
 								}
-							}
-							
-							{
-								int ivolInPhase0 = iphase == phase0 ? ivol : jvol;
-								Feature* iFeatureInPhase0 = iphase == phase0 ? iFeature : jFeature;
-								for (int ivar = 0; ivar < iFeatureInPhase0->getMemVarIndexesInAdjacentMembranes().size(); ivar ++) {
-									int varIndex =	iFeatureInPhase0->getMemVarIndexesInAdjacentMembranes()[ivar];
-									Variable* var = (Variable*)simulation->getMemVariable(varIndex);
-									if (membrane->isVariableDefined(var)) {
-										Real mv = (*memSolnOld[ivolInPhase0][ilev])[dit()](vof, ivar);
-										vectValues[memSymbolOffset + varIndex] = mv;
-									}
-								}
-							}
-							
-							if (numDefinedVolVars > 0) {
-								EBCellFAB& sourceEBCellFAB = (*volSource[iphase][ivol][ilev])[dit()];
-								for (int ivar = 0; ivar < numDefinedVolVars; ivar ++) {
-									Variable* var = iFeature->getDefinedVariable(ivar);
-									if (!var->isDiffusing())
-									{
-										continue;
-									}
 
-									// kappa weight reaction, so that we don't have divide volFrac in membrane flux
-									Real volFrac = currEBISBox.volFrac(vof);
-									sourceEBCellFAB(vof, ivar, vof.cellIndex()) *= volFrac;
-									
-									VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)var->getVarContext();
-									double Jval = varContextExp->evaluateJumpCondition(membrane, vectValues);
-									if (iFeature->getEbBcType(membrane) == BOUNDARY_VALUE)
+								{
+									// Fill membrane variables to vectValues in iFeature and jFeature.
+									int ivolInPhase0 = iphase == phase0 ? ivol : jvol;
+									Feature* iFeatureInPhase0 = iphase == phase0 ? iFeature : jFeature;
+									for (int ivar = 0; ivar < iFeatureInPhase0->getMemVarIndexesInAdjacentMembranes().size(); ivar ++)
 									{
-										(*extrapValues[iphase][ivol][ilev])[dit()](vof, ivar) = Jval;
-									}
-									else
-									{
-										double flux = Jval * mem_areaFrac/maxDxComponent;
-										sourceEBCellFAB(vof, ivar, vof.cellIndex()) += flux;
+										int varIndex =	iFeatureInPhase0->getMemVarIndexesInAdjacentMembranes()[ivar];
+										Variable* var = (Variable*)simulation->getMemVariable(varIndex);
+										if (membrane->isVariableDefined(var))
+										{
+											Real mv = (*memSolnOld[ivolInPhase0][ilev])[dit()](vof, ivar);
+											vectValues[memSymbolOffset + varIndex] = mv;
+										}
 									}
 								}
-							}
-							
-							if (iphase == phase0 && numDefinedMemVars > 0) {
-								for (int ivar = 0; ivar < iFeature->getMemVarIndexesInAdjacentMembranes().size(); ivar ++) {
+
+								if (numDefinedVolVars > 0)
+								{
+									EBCellFAB& sourceEBCellFAB = (*volSource[iphase][ivol][ilev])[dit()];
+									for (int ivar = 0; ivar < numDefinedVolVars; ivar ++)
+									{
+										Variable* var = iFeature->getDefinedVariable(ivar);
+										if (!var->isDiffusing())
+										{
+											continue;
+										}
+
+										// kappa weight reaction, so that we don't have divide volFrac in membrane flux
+										Real volFrac = currEBISBox.volFrac(vof);
+										sourceEBCellFAB(vof, ivar, vof.cellIndex()) *= volFrac;
+
+										VolumeVarContextExpression* varContextExp =	(VolumeVarContextExpression*)var->getVarContext();
+										double Jval = varContextExp->evaluateJumpCondition(membrane, vectValues);
+										if (iFeature->getEbBcType(membrane) == BOUNDARY_VALUE)
+										{
+											(*extrapValues[iphase][ivol][ilev])[dit()](vof, ivar) = Jval;
+										}
+										else
+										{
+											double flux = Jval * mem_areaFrac/maxDxComponent;
+											sourceEBCellFAB(vof, ivar, vof.cellIndex()) += flux;
+										}
+									}
+								}
+//							} // end if (volfrac)
+
+							// membrane variables, simply iterate
+							if (iphase == phase0 && numDefinedMemVars > 0)
+							{
+								for (int ivar = 0; ivar < iFeature->getMemVarIndexesInAdjacentMembranes().size(); ivar ++)
+								{
 									int varIndex =	iFeature->getMemVarIndexesInAdjacentMembranes()[ivar];
 									Variable* var = (Variable*)simulation->getMemVariable(varIndex);
-									if (membrane->isVariableDefined(var)) {
+									if (membrane->isVariableDefined(var))
+									{
 										MembraneVarContextExpression* varContextExp = (MembraneVarContextExpression*)var->getVarContext();
 										double eval = varContextExp->evaluateExpression(REACT_RATE_EXP, vectValues);
 										Real oldSol = (*memSolnOld[ivol][ilev])[dit()](vof, ivar);
 										(*memSoln[ivol][ilev])[dit()](vof, ivar) = oldSol + deltaT * eval;
 									}
 								}
-							}					
+							}
 						} // for (VoFIterator vofit(irregCells,currEBGraph);
 					} // end for jvol
 				} // end DataIter
