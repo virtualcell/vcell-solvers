@@ -9,6 +9,11 @@ namespace moving_boundary {
 	* but this is deferred per YAGNI ("You ain't gonna need it")
 	*/
 	struct StateClient : public MovingBoundaryTimeClient {
+		/**
+		* @param name used to generate names of output files
+		* @param startTime when to save first state 
+		* @param increment how often to save after that 
+		*/
 		StateClient(MovingBoundaryParabolicProblem & problem, const ReportClient & reportClient, const std::string & name, double startTime, double increment);
 
 		virtual void time(double t, unsigned int generationCount, bool last, const GeometryInfo<moving_boundary::CoordinateType> & geometryInfo); 
@@ -22,6 +27,13 @@ namespace moving_boundary {
 		* restore previously persisted problem and clients from file. Caller must delete ReportClient and State Client
 		*/
 		static ProblemState restore(const std::string &name);
+
+		 /**
+		 * @param root document root containing problem section
+		 * @param filename optional override of file name in XML, may be empty string
+		 * @param mbpp problem to report on
+		 */
+	 static StateClient *setup(const tinyxml2::XMLElement &root, MovingBoundaryParabolicProblem &mbpp,const ReportClient & reportClient);
 
 		/**
 		* version number for tracking format

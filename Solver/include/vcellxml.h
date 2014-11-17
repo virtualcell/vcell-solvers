@@ -106,6 +106,17 @@ namespace vcell_xml {
 		}
 		VCELL_EXCEPTION(invalid_argument,"missing XML element " << name);
 	}
+
+	/**
+	* get element if present
+	* (adds no functionality to tinyxml2 but is used for API consistency with #get 
+	* @param node place to get name from
+	* @param name tag name to get
+	* @returns null if not present
+	*/
+	inline const tinyxml2::XMLElement * query(const tinyxml2::XMLElement &node,const char *name) {
+		return node.FirstChildElement(name);
+	}
 }
 namespace tinyxml2 {
 	std::ostream & operator<<(std::ostream &os, XMLError);  

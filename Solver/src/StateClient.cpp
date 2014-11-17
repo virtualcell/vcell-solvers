@@ -105,7 +105,19 @@ StateClient::ProblemState StateClient::restore(const std::string & filename) {
 
 	tinyxml2::XMLDocument doc;
 	doc.Parse(xmlString.c_str( ));
-	rval.reportClient = ReportClient::setupReportClient(*doc.RootElement( ),std::string( ),rval.problem);
+	rval.reportClient = ReportClient::setup(*doc.RootElement( ),std::string( ),rval.problem);
 	rval.stateClient = new StateClient(rval.problem,xmlString,in);
 	return rval; 
 }
+
+using tinyxml2::XMLElement;
+StateClient *StateClient::setup(const tinyxml2::XMLElement &root, MovingBoundaryParabolicProblem &mbpp,const ReportClient & reportClient) {
+		const XMLElement *save = vcell_xml::query(root,"save");
+		if (save != nullptr) {
+			std::string name = vcell_xml::convertChildElement<std::string>(*save,"filenamePrefix");
+			const double startTime = vcell_xml::convertChildElement<double>(*save,"startTime");
+			const double increment = vcell_xml::convertChildElement<double>(*save,"increment");
+			return new StateClient(mbpp,reportClient,name,startTime,increment);
+		}
+		return nullptr;
+ }

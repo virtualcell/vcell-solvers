@@ -49,25 +49,32 @@ int main(int argc, char *argv[])
 		<< "MovingBoundarySolver version $URL$" VCELLSVNQUOTE(SVNVERSION)
 		<< std::endl; 
 
-	namespace tclap = TCLAP;
 	std::string filename;
 	std::string outname;
 	std::string restorename;
 	bool parseOnly;
+	bool configPresent;
+	namespace tclap = TCLAP;
 	try {
-		using namespace tclap;
+		using namespace TCLAP; 
 		CmdLine cmd("Moving boundary solve",' ',"1");
 		cmd.setExceptionHandling(false);
-		ValueArg<std::string> config("c","config","Input XML file name",true,"","string",cmd);
+		ValueArg<std::string> config("c","config","Input XML file name",false,"","string",cmd);
 		ValueArg<std::string> output("o","output","HDF5 output file name",false,"","string",cmd);
 		ValueArg<std::string> restore("r","restore","stored state file name",false,"","string",cmd);
-		ValueArg<std::string> ignore("i","ignore","ignore me",false,"","string",cmd);
+		MultiArg<std::string> ignore("i","ignore","ignore me",false,"string",cmd);
 		SwitchArg ponly("p","parseonly","Parse XML without running simulation",cmd);
 		cmd.parse(argc,argv);
 		filename = config.getValue( );
 		outname = output.getValue( );
 		restorename = restore.getValue( );
 		parseOnly = ponly.getValue( );
+		configPresent = config.isSet( );
+		if (!configPresent && !restore.isSet( ) ) { 
+			std::cerr << "error, either -" << config.getName( ) << " or -" << restore.getName( )  
+				<< " must be set " << std::endl;
+			return 4;
+		}
 	} catch(tclap::ArgException  &ae) {
 		std::cerr << "error " << ae.error( ) << " arg " << ae.argId( ) << std::endl;
 		return 3;
@@ -75,11 +82,6 @@ int main(int argc, char *argv[])
 		return ee.getExitStatus( );
 	}
 
-	if (filename.empty( )) {
-		//std::cerr  << opts << std::endl;
-		//std::cerr << "Usage: " << argv[0] << " [xml input file] <hdf5 output file name|'parseonly'> " << std::endl; 
-		return 1; 
-	}
 	moving_boundary::MovingBoundaryParabolicProblem problem;
 	//moving_boundary::ProblemPackage package;
 	std::unique_ptr<moving_boundary::ReportClient> reportClient;
@@ -91,33 +93,37 @@ int main(int argc, char *argv[])
 	}
 	try {
 		tinyxml2::XMLDocument doc;
-		doc.LoadFile(filename.c_str( ));
-		if (doc.ErrorID( ) != tinyxml2::XML_SUCCESS) {
-			std::cerr <<  "Error " << doc.ErrorID( ) << " loading " << filename << std::endl;
-			return 2; 
-		}
-		const tinyxml2::XMLElement & root = *doc.RootElement( );
-		if (!strcmp(root.Name( ),XML_ROOT_NAME) == 0) {
-			std::cerr <<  "Invalid XML root identifier " << root.Name( ) << ", " << XML_ROOT_NAME << " expected" << std::endl;
-			return 3; 
-		}
-		setupTrace(root);
-		setupMatlabDebug(root);
+		if (configPresent) {
+			doc.LoadFile(filename.c_str( ));
+			if (doc.ErrorID( ) != tinyxml2::XML_SUCCESS) {
+				std::cerr <<  "Error " << doc.ErrorID( ) << " loading " << filename << std::endl;
+				return 2; 
+			}
+			const tinyxml2::XMLElement & root = *doc.RootElement( );
+			if (!strcmp(root.Name( ),XML_ROOT_NAME) == 0) {
+				std::cerr <<  "Invalid XML root identifier " << root.Name( ) << ", " << XML_ROOT_NAME << " expected" << std::endl;
+				return 3; 
+			}
+			setupTrace(root);
+			setupMatlabDebug(root);
+			setupHeartbeat(root,problem);
 
-		using moving_boundary::MovingBoundarySetup;
-		if (restorename.empty( )) {
-			auto mbs = MovingBoundarySetup::setupProblem(root);
-			problem = moving_boundary::MovingBoundaryParabolicProblem(mbs);
-			reportClient.reset( moving_boundary::ReportClient::setupReportClient(root, outname, problem) ); 
-			persistClient.reset( new moving_boundary::StateClient(problem,*reportClient, "sim",0.1,0.01) );
+			using moving_boundary::MovingBoundarySetup;
+			if (restorename.empty( )) {
+				auto mbs = MovingBoundarySetup::setupProblem(root);
+				problem = moving_boundary::MovingBoundaryParabolicProblem(mbs);
+				reportClient.reset( moving_boundary::ReportClient::setup(root, outname, problem) ); 
+				persistClient.reset( moving_boundary::StateClient::setup(root, problem,*reportClient) );
+			}
 		}
-		else {
+		if (!restorename.empty( )) {
+
 			try {
-				 using moving_boundary::StateClient;
-				 StateClient::ProblemState pState =  StateClient::restore(restorename);
-				 problem = pState.problem;
-				 reportClient.reset( pState.reportClient); 
-				 persistClient.reset( pState.stateClient); 
+				using moving_boundary::StateClient;
+				StateClient::ProblemState pState =  StateClient::restore(restorename);
+				problem = pState.problem;
+				reportClient.reset( pState.reportClient); 
+				persistClient.reset( pState.stateClient); 
 			}
 			catch (std::exception & e) {
 				std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << restorename << std::endl; 
@@ -125,7 +131,9 @@ int main(int argc, char *argv[])
 			}
 		}
 		problem.add(*reportClient);
-		setupHeartbeat(root,problem);
+		if (configPresent) {
+			setupHeartbeat(*doc.RootElement( ),problem);
+		}
 	}
 	catch (std::exception & e) {
 		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << filename << std::endl; 
