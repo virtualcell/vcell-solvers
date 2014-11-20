@@ -80,7 +80,7 @@ void Variable::computeFinalStatistics()
 	mean = total / structure->getSize();
 	if (getVarType() == VAR_VOLUME || getVarType() == VAR_VOLUME_REGION)
 	{
-		total *= 620;
+		total *= 602;
 	}
 	if (l2Exact != 0)
 	{
