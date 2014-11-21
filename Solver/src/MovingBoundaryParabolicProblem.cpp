@@ -327,7 +327,7 @@ namespace moving_boundary {
 #endif
 			//validate grid 
 			CoordinateType hSpace = primaryMesh.interval(cX);
-			CoordinateType vSpace = primaryMesh.interval(cX);
+			CoordinateType vSpace = primaryMesh.interval(cY);
 			if (hSpace%2 != 0 || vSpace%2 != 0) {
 				VCELL_EXCEPTION(logic_error,"spacings horiz " << hSpace << " and vert " << vSpace << " not even");
 			}
