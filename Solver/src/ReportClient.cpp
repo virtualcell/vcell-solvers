@@ -58,6 +58,7 @@ namespace {
 		//double lastPosition;
 		double x;
 		double y;
+		char  boundaryPosition; 
 		std::vector<PODPoint<double> > controlVolume;
 		HElementRecord(double x_ = 0, double y_ = 0)
 			//:lastPosition(),
@@ -66,6 +67,7 @@ namespace {
 			concentration(),
 			x(x_),
 			y(y_),
+			boundaryPosition('T'),
 			controlVolume( ){ }
 		void clear( ) {
 			volume = mass = concentration = 0;
@@ -80,6 +82,7 @@ namespace {
 			:mass(0),
 			volume(0),
 			concentrationNumeric(0),
+			boundaryPosition(0),
 			volumePoints( )
 		{ }
 		void set(const spatial::TPoint<size_t,2> & idx, const HElementRecord & er, double time)
@@ -88,11 +91,13 @@ namespace {
 			mass = er.mass;
 			volume = er.volume;
 			concentrationNumeric = er.concentration;
+			boundaryPosition = er.boundaryPosition;
 			volumePoints = vtype.adapt(er.controlVolume);
 		}
 		double mass;
 		double volume;
 		double concentrationNumeric;
+		char boundaryPosition;
 		hvl_t  volumePoints; 
 		static H5::CompType getType( ) {
 			static H5::CompType ct = getType(sizeof(ResultPoint));
@@ -102,10 +107,12 @@ namespace {
 		static H5::CompType getType(size_t size) {
 			using H5::PredType;
 			H5::PredType dtype = vcellH5::TPredType<double>::predType( ); 
+			H5::PredType ctype = vcellH5::TPredType<char>::predType( ); 
 			H5::CompType resultPointType(size);
 			resultPointType.insertMember("mass", offsetof(ResultPoint,mass),dtype);
 			resultPointType.insertMember("volume", HOFFSET(ResultPoint,volume),dtype);
 			resultPointType.insertMember("uNumeric", HOFFSET(ResultPoint,concentrationNumeric),dtype);
+			resultPointType.insertMember("boundaryPosition", HOFFSET(ResultPoint,boundaryPosition),ctype);
 			resultPointType.insertMember("volumePoints", HOFFSET(ResultPoint,volumePoints),PODPoint<double>::vectorType( ).getType( ));
 			return resultPointType;
 		}
@@ -606,6 +613,24 @@ namespace {
 			return p;
 		};
 
+		char encodePosition(const moving_boundary::MeshElementSpecies &e) {
+			switch (e.mPos( )) {
+			case spatial::deepInteriorSurface:
+				return 'D';
+			case spatial::interiorSurface:
+				return 'I';
+			case spatial::boundarySurface:
+				return 'B';
+			case spatial::outsideSurface:
+				return 'T';
+			case spatial::deepOutsideSurface:
+				return 'Z';
+			case spatial::unsetPosition:
+				return 'U'; 
+			default:
+				return 'X';
+			}
+		}
 
 		/**
 		* state of inside / boundary nodes
@@ -626,6 +651,7 @@ namespace {
 				er.mass = m;
 				er.concentration = c;
 				er.volume = v;
+				er.boundaryPosition = encodePosition(e);
 				Volume2DClass::VectorOfVectors vOfv = e.getControlVolume().points( );
 				if (vOfv.size( ) > 1) {
 					//throw std::domain_error("multi region control volumes not supported yet");

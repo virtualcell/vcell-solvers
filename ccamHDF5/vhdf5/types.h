@@ -105,5 +105,17 @@ namespace vcellH5 {
 			return H5::PredType::NATIVE_ULLONG;
 		}
 	};
+	template <>
+	struct TPredType<unsigned char> {
+		static H5::PredType predType( ) {
+			return H5::PredType::NATIVE_UCHAR;
+		}
+	};
+	template <>
+	struct TPredType<char> {
+		static H5::PredType predType( ) {
+			return H5::PredType::NATIVE_CHAR;
+		}
+	};
 }
 #endif
