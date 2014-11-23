@@ -174,16 +174,17 @@ namespace {
 			w(width),
 			h(height) 
 		{
-			spatial::Point2D cursor(originx,originy); 
 			using spatial::cX;
 			using spatial::cY;
-			baseFront.push_back(world.toWorld(cursor) );
+
+			spatial::Point2D cursor(originx,originy); 
+			baseFront.push_back( world.toWorld(cursor) );
 			cursor(cX) += w;
-			baseFront.push_back(world.toWorld(cursor) );
-			cursor(cX) += h;
-			baseFront.push_back(world.toWorld(cursor) );
+			baseFront.push_back( world.toWorld(cursor) );
+			cursor(cY) += h;
+			baseFront.push_back( world.toWorld(cursor) );
 			cursor(cX) -= w;
-			baseFront.push_back(world.toWorld(cursor) );
+			baseFront.push_back( world.toWorld(cursor) );
 			close( );
 		}
 
@@ -308,7 +309,6 @@ namespace {
 
 				double x = vcell_xml::convertChildElementWithDefault<double>(node,"originx",0);
 				double y = vcell_xml::convertChildElementWithDefault<double>(node,"originy",0);
-				double radius = vcell_xml::convertChildElementWithDefault<double>(node,"radius",1);
 				return new Rectangle(x,y,width,height,vx); 
 			}
 			return nullptr;
