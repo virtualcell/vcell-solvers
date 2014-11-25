@@ -88,11 +88,11 @@ LDLIBSOPTIONS=-L../Chombo/lib -L../numerics/cmake-build-cygwin/bin -L../numerics
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/vcellchombo.exe
+	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/vcellchombo_parallel.exe
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/vcellchombo.exe: ${OBJECTFILES}
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/vcellchombo_parallel.exe: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/vcellchombo ${OBJECTFILES} ${LDLIBSOPTIONS}
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/vcellchombo_parallel ${OBJECTFILES} ${LDLIBSOPTIONS}
 
 ${OBJECTDIR}/src/ChomboDomainBC.o: src/ChomboDomainBC.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
@@ -265,7 +265,7 @@ ${OBJECTDIR}/src/VolumeVariable.o: src/VolumeVariable.cpp
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
 	${RM} -r ${CND_BUILDDIR}/${CND_CONF}
-	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/vcellchombo.exe
+	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/vcellchombo_parallel.exe
 
 # Subprojects
 .clean-subprojects:

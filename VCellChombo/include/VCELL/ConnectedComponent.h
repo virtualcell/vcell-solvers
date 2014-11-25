@@ -18,11 +18,9 @@ struct ConnectedComponent {
 	Feature* feature;
 	RefCountedPtr<EBIndexSpace> volume;
 	Vector<ConnectedComponent*> adjacentVolumes;
-	double size;
 
 	ConnectedComponent()
 	{
-		size = 0;
 		feature = NULL;
 	}
 };

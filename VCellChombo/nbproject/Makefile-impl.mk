@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=VCellChombo
+PROJECTNAME=VCellChombo_Parallel
 
 # Active Configuration
 DEFAULTCONF=Debug_2D

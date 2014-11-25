@@ -108,6 +108,7 @@ ChomboScheduler::ChomboScheduler(SimulationExpression* sim, ChomboSpec* chomboSp
 	pout() << "maxBoxSiz=" << chomboSpec->getMaxBoxSize() << endl;
 	pout() << "fillRatio=" << chomboSpec->getFillRatio() << endl;
 
+	memIndexOffset = 0;
 	H5dont_atexit();
 }
 
@@ -128,7 +129,7 @@ ChomboScheduler::~ChomboScheduler() {
 	phaseVolumeList.clear();
 	irregularPointMembraneIDs.clear();
 	irregularPointMembraneElementIndex.clear();
-	irregVolumeMembraneMap.clear();
+	irregVolumeLocalMembraneMap.clear();
 
 	if (refinementRoiExps != NULL)
 	{
@@ -181,14 +182,21 @@ int ChomboScheduler::getChomboBoxLocalIndex(const IntVect& size, int ivar, D_DEC
 }
 
 #ifdef CH_MPI
-void ChomboScheduler::exchangeFeatures()
+void ChomboScheduler::exchangeFeaturesAndMembraneIndexOffset()
 {
-	const char* methodName = "(ChomboScheduler::exchangeFeatures)";
+	const char* methodName = "(ChomboScheduler::exchangeFeaturesAndMembraneIndexOffset)";
 	pout() << "Entry " << methodName << endl;
 
-	int* sendBuffer = new int[numConnectedComponents];
 	int numProcs = SimTool::getInstance()->getCommSize();
-	int receiveSize = numProcs * numConnectedComponents;
+	pout() << "numProcs=" << numProcs << endl;
+	
+	// sendBuffer: feature indexes of all volumes (numConnectedComponents), numMembranePoints on each proc, totalNumMembranePoints in all
+	// so the total size is (numConnectedComponents + numProcs + 1)
+	// but the first send, only send my own numMembranePoints, so it will only use (numConnectedComponents + 1)
+	// later when the root broadcast, it would use all the capacity
+	int* sendBuffer = new int[numConnectedComponents + numProcs + 1];
+	int singleRecvSize = numConnectedComponents + 1;
+	int receiveSize = numProcs * singleRecvSize;
 	int *recvBuffer = NULL;
 	if (SimTool::getInstance()->isRootRank())
 	{
@@ -196,8 +204,7 @@ void ChomboScheduler::exchangeFeatures()
 	}
 
 	// collect feature indexes to send
-	int volCnt = 0;
-	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
+	for (int iphase = 0, volCnt = 0; iphase < NUM_PHASES; ++ iphase)
 	{
 		// Select one index-space
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol, ++ volCnt)
@@ -206,18 +213,18 @@ void ChomboScheduler::exchangeFeatures()
 			sendBuffer[volCnt] = cc->feature == NULL ? -1 : cc->feature->getIndex();
 		}
 	}
+	sendBuffer[numConnectedComponents] = numMembranePoints;
 
 	// each processor puts its sendBuffer in recvBuffer in the order or rank.
 	// so in recvBuffer, the data looks like
 	// ---sendBuffer of processor 1---sendBuffer of processor 2---
-	pout() << "gathering features " << endl;
-	//MPI::COMM_WORLD.Gather(sendBuffer, numConnectedComponents, MPI_INT, recvBuffer, numConnectedComponents, MPI_INT, SimTool::rootRank);
-	MPI_Gather(sendBuffer, numConnectedComponents, MPI_INT, recvBuffer, numConnectedComponents, MPI_INT, SimTool::rootRank,MPI_COMM_WORLD);
+	pout() << "gathering features and # membrane points from each processor" << endl;
+	MPI_Gather(sendBuffer, singleRecvSize, MPI_INT, recvBuffer, singleRecvSize, MPI_INT, SimTool::rootRank,MPI_COMM_WORLD);
 
 	if (SimTool::getInstance()->isRootRank())
 	{
 		pout() << "root rank collecting features" << endl;
-		for (volCnt = 0; volCnt < numConnectedComponents; ++ volCnt)
+		for (int volCnt = 0; volCnt < numConnectedComponents; ++ volCnt)
 		{
 			if (sendBuffer[volCnt] != -1)
 			{
@@ -229,24 +236,33 @@ void ChomboScheduler::exchangeFeatures()
 				{
 					continue;
 				}
-				int idx = iproc * numConnectedComponents + volCnt;
+				int idx = iproc * singleRecvSize + volCnt;
 				if (recvBuffer[idx] != -1)
 				{
 					sendBuffer[volCnt] = recvBuffer[idx];
 					break;
 				}
 			} // end iproc
-		} // end icc
+		} // end volCnt
+		
+		pout() << "root rank collect membraneIndexOffset" << endl;
+		totalNumMembranePoints = 0;
+		for (int iproc = 0; iproc < numProcs; ++ iproc)
+		{
+			int n = recvBuffer[iproc * singleRecvSize + numConnectedComponents];
+			sendBuffer[numConnectedComponents + iproc] = totalNumMembranePoints;
+			totalNumMembranePoints += n;
+		}
+		sendBuffer[numConnectedComponents + numProcs] = totalNumMembranePoints;
+		pout() << "totalNumMembranePoints=" << totalNumMembranePoints << endl;
 	}
 
-	pout() << "broadcasting features " << endl;
+	pout() << "broadcasting features and membraneIndexOffset " << endl;
 	// broadcast
-	//MPI::COMM_WORLD.Bcast(sendBuffer, numConnectedComponents, MPI_INT, SimTool::rootRank);
-	MPI_Bcast(sendBuffer, numConnectedComponents, MPI_INT, SimTool::rootRank, MPI_COMM_WORLD);
-
+	MPI_Bcast(sendBuffer, numConnectedComponents + numProcs + 1, MPI_INT, SimTool::rootRank, MPI_COMM_WORLD);
+	
 	pout() << "populating features" << endl;
-	volCnt = 0;
-	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
+	for (int iphase = 0, volCnt = 0; iphase < NUM_PHASES; ++ iphase)
 	{
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol, ++ volCnt)
 		{
@@ -270,8 +286,15 @@ void ChomboScheduler::exchangeFeatures()
 			}
 		} // end ivol
 	}	// end iphase
+
+	pout() << "** find memIndexOffset" << endl;
+	memIndexOffset = sendBuffer[numConnectedComponents + SimTool::getInstance()->getMyRank()];
+	totalNumMembranePoints = sendBuffer[numConnectedComponents + numProcs];
+	pout() << "** my memIndexOffset is = " << memIndexOffset << ", totalNumMembranePoints=" << totalNumMembranePoints << endl;
+
 	delete[] sendBuffer;
 	delete[] recvBuffer;
+	
 	pout() << "Exit " << methodName << endl;
 }
 #endif
@@ -390,9 +413,6 @@ void ChomboScheduler::computeFeatures()
 		} // end for ivol
 	}// end for phase
 
-#ifdef CH_MPI
-	exchangeFeatures();
-#endif
 	pout() << "Exit " << methodName << endl;
 }
 
@@ -441,112 +461,116 @@ void ChomboScheduler::populateMembraneIndexData()
 	} // end iphase
 
 	// find membrane for each irregular point
+	pout() << "Computing membrane ID , adjacent volumes, membrane indexes and map of irregular point (volIndex) to membrane index"	<< endl;
+	bool* bAdjacent = new bool[phaseVolumeList[phase1].size()];
+	numMembranePoints = 0;
+	irregVolumeLocalMembraneMap.resize(numLevels);
+	for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ++ ivol)
 	{
-		pout() << "Computing membrane ID , adjacent volumes, membrane indexes and the map of irregular point (volIndex) to membrane index."	<< endl;
-		bool* bAdjacent = new bool[phaseVolumeList[phase1].size()];
-		numMembranePoints = 0;
-		irregVolumeMembraneMap.resize(numLevels);
-		for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ++ ivol)
+		memset(bAdjacent, 0, phaseVolumeList[phase1].size() * sizeof(bool));
+
+		for (int ilev = 0; ilev < numLevels; ilev ++)
 		{
-			memset(bAdjacent, 0, phaseVolumeList[phase1].size() * sizeof(bool));
-
-			for (int ilev = 0; ilev < numLevels; ilev ++)
+			for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit)
 			{
-				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit)
+				const Box& currBox = vectGrids[ilev][dit()];
+
+				const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
+				const EBGraph& currEBGraph = currEBISBox.getEBGraph();
+				IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
+				for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++ vofit)
 				{
-					const Box& currBox = vectGrids[ilev][dit()];
+					const VolIndex& vof = vofit();
+					const IntVect& gridIndex = vof.gridIndex();
 
-					const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
-					const EBGraph& currEBGraph = currEBISBox.getEBGraph();
-					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
-					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++ vofit)
+					int membraneID = -1;
+					int jvol;
+					for (jvol = 0; jvol < phaseVolumeList[phase1].size(); ++ jvol)
 					{
-						const VolIndex& vof = vofit();
-						const IntVect& gridIndex = vof.gridIndex();
-
-						int membraneID = -1;
-						int jvol;
-						for (jvol = 0; jvol < phaseVolumeList[phase1].size(); ++ jvol)
+						const IntVectSet& ivs = vectEbis[phase1][jvol][ilev][dit()].getIrregIVS(currBox);
+						if (ivs.contains(gridIndex))
 						{
-							const IntVectSet& ivs = vectEbis[phase1][jvol][ilev][dit()].getIrregIVS(currBox);
-							if (ivs.contains(gridIndex))
-							{
-								membraneID = ivol * numConnectedComponents + jvol;
-								(*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0) = membraneID;
-								(*irregularPointMembraneIDs[phase1][jvol][ilev])[dit()](vof, 0) = membraneID;
-								bAdjacent[jvol] = true;
-								break;
-							}
+							membraneID = ivol * numConnectedComponents + jvol;
+							(*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0) = membraneID;
+							(*irregularPointMembraneIDs[phase1][jvol][ilev])[dit()](vof, 0) = membraneID;
+							bAdjacent[jvol] = true;
+							break;
 						}
-						if (membraneID == -1)
+					}
+					if (membraneID == -1)
+					{
+						// membrane not found
+						Feature* feature = phaseVolumeList[phase0][ivol]->feature;
+						assert(feature != NULL);
+						RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+						pout() << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev
+								<< ": no membrane id for point " << vof.gridIndex() << " at "  << vol_center << "." << endl;
+						(*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0) = -1;
+					}
+					else
+					{
+						int localMemIndex = -1;
+						if (isInNextFinerLevel(ilev, gridIndex))
 						{
-							// membrane not found
-							Feature* feature = phaseVolumeList[phase0][ivol]->feature;
-							assert(feature != NULL);
-							RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-							pout() << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev
-									<< ": no membrane id for point " << vof.gridIndex() << " at "  << vol_center << "." << endl;
-							(*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0) = -1;
+							localMemIndex = MEMBRANE_INDEX_IN_FINER_LEVEL;
 						}
 						else
 						{
-							int localMemIndex = -1;
-							if (isInNextFinerLevel(ilev, gridIndex))
+							localMemIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
+							if (localMemIndex >= 0)
 							{
-								localMemIndex = MEMBRANE_INDEX_IN_FINER_LEVEL;
+								Feature* feature = phaseVolumeList[phase0][ivol]->feature;
+								RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+								stringstream ss;
+								ss << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev
+										<< ", Point " << gridIndex << " at "  << vol_center << " is multi-valued point."
+										<< "Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
+								throw ss.str();
 							}
-							else
-							{
-								localMemIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
-								if (localMemIndex >= 0)
-								{
-									Feature* feature = phaseVolumeList[phase0][ivol]->feature;
-									RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-									stringstream ss;
-									ss << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev
-											<< ", Point " << gridIndex << " at "  << vol_center << " is multi-valued point."
-											<< "Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
-									throw ss.str();
-								}
-								 // in parallel, these indexes are not unique from processor to processor
-								 // but it is probably not a problem as long as it is corrected by offset when needed
-								localMemIndex = numMembranePoints ++;
-							}
-							(*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0) = localMemIndex;
-							(*irregularPointMembraneElementIndex[phase1][jvol][ilev])[dit()](vof, 0) = localMemIndex;
+							 // in parallel, these indexes are not unique from processor to processor
+							 // but it is probably not a problem as long as it is corrected by offset when needed
+							localMemIndex = numMembranePoints ++;
 						}
-					} // end of VoFIterator
-				}// end DataIterator
-				// populate the irregular point (volIndex) -> membrane index map , based on membrane index level data
-				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
-				{
-					const Box& currBox = vectGrids[ilev][dit()];
-					const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
-					const EBGraph& currEBGraph = currEBISBox.getEBGraph();
-					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
-					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
-					{
-						const VolIndex& vof = vofit();
-						const IntVect& gridIndex = vof.gridIndex();
-						// compute map entry
-						int globalIndex = getVolumeIndex(vectNxes[ilev], gridIndex);
-						int localMemIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
-						irregVolumeMembraneMap[ilev][globalIndex] = localMemIndex;
+						(*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0) = localMemIndex;
+						(*irregularPointMembraneElementIndex[phase1][jvol][ilev])[dit()](vof, 0) = localMemIndex;
 					}
-				}
-			}// end ilev
-
-			for (int jvol = 0; jvol < phaseVolumeList[phase1].size(); ++ jvol)
+				} // end for VoFIterator
+			} // end for DataIterator
+#ifdef CH_MPI
+//			pout() << "phase " << phase0 << ", level " << ilev << ", Construct map of irregular point (volIndex) to membrane index"	<< endl;
+//			irregularPointMembraneElementIndex[phase0][ivol][ilev]->exchange();
+//			irregularPointMembraneElementIndex[phase1][ivol][ilev]->exchange();
+//			pout() << "phase " << phase0 << ", level " << ilev << ", membrane index level data exchange done"	<< endl;
+#endif
+			// populate the irregular point (volIndex) -> membrane index map , based on membrane index level data
+			for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
 			{
-				if (bAdjacent[jvol])
+				const Box& currBox = vectGrids[ilev][dit()];
+				const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
+				const EBGraph& currEBGraph = currEBISBox.getEBGraph();
+				IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
+				for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
 				{
-					phaseVolumeList[phase0][ivol]->adjacentVolumes.push_back(phaseVolumeList[phase1][jvol]);
-					phaseVolumeList[phase1][jvol]->adjacentVolumes.push_back(phaseVolumeList[phase0][ivol]);
+					const VolIndex& vof = vofit();
+					const IntVect& gridIndex = vof.gridIndex();
+					// compute map entry
+					int volIndex = getVolumeIndex(vectNxes[ilev], gridIndex);
+					int localMemIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
+					irregVolumeLocalMembraneMap[ilev][volIndex] = localMemIndex;
 				}
+			} // end for dit
+		} // end for ilev
+
+		for (int jvol = 0; jvol < phaseVolumeList[phase1].size(); ++ jvol)
+		{
+			if (bAdjacent[jvol])
+			{
+				phaseVolumeList[phase0][ivol]->adjacentVolumes.push_back(phaseVolumeList[phase1][jvol]);
+				phaseVolumeList[phase1][jvol]->adjacentVolumes.push_back(phaseVolumeList[phase0][ivol]);
 			}
-		} // end ivol
-		delete[] bAdjacent;
-	}
+		}
+	} // end for ivol
+	delete[] bAdjacent;
 }
 
 void ChomboScheduler::generateMesh()
@@ -763,7 +787,7 @@ void ChomboScheduler::initializeGrids()
 		coarsestDomain.setPeriodic(idir, false);
 	}
 
-	// setup Domains Dxes;
+	// setup Domains and Dxes for all levels;
 	vectDomains.resize(numLevels);
 	vectDomains[0] = coarsestDomain;
 	vectDxes.resize(numLevels);
@@ -782,9 +806,24 @@ void ChomboScheduler::initializeGrids()
 	computeFeatures();
   populateMembraneIndexData();
 
-#ifndef CH_MPI
-	computeStructureSizes();
+#ifdef CH_MPI
+	// has to call this after everything
+	// needs numMembranePoints to find memIndexOffset
+	exchangeFeaturesAndMembraneIndexOffset();
 #endif
+
+	pout() << "Features summary" << endl;
+	for(int iphase = 0; iphase < NUM_PHASES; ++ iphase)
+	{
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol)
+		{
+			ConnectedComponent* cc = phaseVolumeList[iphase][ivol];
+			pout() << "iphase " << iphase << ", ivol " << ivol << ", feature " << cc->feature->getName() << endl;
+		}
+	}
+
+	// compute/exchange structure sizes
+	computeStructureSizes();
 
 	// print summary
 	pout() << "Printing summary" << endl;
@@ -823,7 +862,6 @@ void ChomboScheduler::initializeGrids()
 	pout() << "Exit " << methodName << endl;
 }
 
-#ifndef CH_MPI
 void ChomboScheduler::computeStructureSizes()
 {
 	const char* methodName = "(ChomboScheduler::computeStructureSizes)";
@@ -926,8 +964,8 @@ void ChomboScheduler::computeStructureSizes()
 								{
 									continue;
 								}
-								int memIndex = (*irregularPointMembraneElementIndex[iphase][ivol][ilev])[dit()](vof, 0);
-								if (memIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
+								int localMemIndex = (*irregularPointMembraneElementIndex[iphase][ivol][ilev])[dit()](vof, 0);
+								if (localMemIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
 								{
 									continue;
 								}
@@ -941,15 +979,53 @@ void ChomboScheduler::computeStructureSizes()
 				refratio /= vectRefRatios[ilev];
 			} // level
 			double s = sumVolFrac * finestLevelUnitV;
-			phaseVolumeList[iphase][ivol]->size = s;
 			phaseVolumeList[iphase][ivol]->feature->addSize(s);
 			phaseVolumeList[iphase][ivol]->feature->addNumPoints(numPoints);
 		} // ivol
 	} // iphase
+
+#ifdef CH_MPI
+	// need to collect the total sizes
+	VCellModel* model = SimTool::getInstance()->getModel();
+	int count = model->getNumFeatures() * 2 + model->getNumMembranes() * 2;
+	double* sendBuffer = new double[count];
+	double* recvBuffer = new double[count];
+	int bi = 0;
+	for (int i = 0; i < model->getNumFeatures(); ++ i)
+	{
+		Feature* f = model->getFeatureFromIndex(i);
+		sendBuffer[bi ++] = f->getNumPoints();
+		sendBuffer[bi ++] = f->getSize();
+	}
+	for (int i = 0; i < model->getNumMembranes(); ++ i)
+	{
+		Membrane* m = model->getMembraneFromIndex(i);
+		sendBuffer[bi ++] = m->getNumPoints();
+		sendBuffer[bi ++] = m->getSize();
+	}
+	// all reduce - sum
+	MPI_Allreduce(sendBuffer, recvBuffer, count, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+	bi = 0;
+	for (int i = 0; i < model->getNumFeatures(); ++ i)
+	{
+		Feature* f = model->getFeatureFromIndex(i);
+		f->setNumPoints((int)recvBuffer[bi ++]);
+		f->setSize(recvBuffer[bi ++]);
+	}
+	for (int i = 0; i < model->getNumMembranes(); ++ i)
+	{
+		Membrane* m = model->getMembraneFromIndex(i);
+		m->setNumPoints((int)recvBuffer[bi ++]);
+		m->setSize(recvBuffer[bi ++]);
+	}
+	delete[] sendBuffer;
+	delete[] recvBuffer;
+#endif
 	pout() << "Exit " << methodName << endl;
 }
-#endif
 
+#ifndef CH_MPI
 void ChomboScheduler::updateSolution()
 {
 	const char* methodName = "(ChomboScheduler::updateSolution)";
@@ -1062,12 +1138,12 @@ void ChomboScheduler::updateSolution()
 										for (int jj = 0; jj < refratio; jj ++) {
 											for (int ii = 0; ii < refratio; ii ++) {
 												IntVect viewLevelGridIndex(D_DECL(ioffset * refratio + ii, joffset * refratio + jj, koffset * refratio + kk));
-												int globalIndex = getVolumeIndex(vectNxes[viewLevel], viewLevelGridIndex);
-												varCurr[globalIndex] = sol;
+												int volIndex = getVolumeIndex(vectNxes[viewLevel], viewLevelGridIndex);
+												varCurr[volIndex] = sol;
 												if (bComputeError)
 												{
-													errorCurr[globalIndex] = error;
-													relErrCurr[globalIndex] = relErr;
+													errorCurr[volIndex] = error;
+													relErrCurr[volIndex] = relErr;
 												}
 											} // end for ii
 										} // end for jj
@@ -1117,8 +1193,8 @@ void ChomboScheduler::updateSolution()
 
 				for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit) {
 					const VolIndex& vof = vofit();
-					int memIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
-					if (memIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
+					int localMemIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
+					if (localMemIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
 					{
 						continue;
 					}
@@ -1147,7 +1223,7 @@ void ChomboScheduler::updateSolution()
 									double sol = (*memSoln[ivol][ilev])[dit()](vof, ivar);
 									var->addTotal(sol * areaFrac * levelUnitS);
 
-									varCurr[memIndex] = sol;
+									varCurr[localMemIndex] = sol;
 									Variable* errorVar = var->getExactErrorVariable();
 									if (errorVar != NULL)
 									{
@@ -1164,10 +1240,10 @@ void ChomboScheduler::updateSolution()
 										double exact = var->getVarContext()->evaluateExpression(EXACT_EXP, vectValues);
 										double* errorCurr = errorVar->getCurr();
 										double error = sol - exact;
-										errorCurr[memIndex] = error;
+										errorCurr[localMemIndex] = error;
 										Variable* relErrVar = var->getRelativeErrorVariable();
 										double* relErrCurr = relErrVar->getCurr();
-										relErrCurr[memIndex] = exact = 0 ? 0 : std::abs(error/exact);
+										relErrCurr[localMemIndex] = exact = 0 ? 0 : std::abs(error/exact);
 										var->updateMaxError(abs(error));
 
 										double l2 = error * error * areaFrac;
@@ -1223,14 +1299,14 @@ void ChomboScheduler::updateSolution()
 			for (int j = smallEnd[1]; j <= bigEnd[1]; j ++) {
 				for (int i = smallEnd[0]; i <= bigEnd[0]; i ++) {
 					IntVect viewLevelGridIndex(D_DECL(i, j, k));
-					int globalIndex = getVolumeIndex(vectNxes[viewLevel], viewLevelGridIndex);
+					int volIndex = getVolumeIndex(vectNxes[viewLevel], viewLevelGridIndex);
 					RealVect a_point = EBArith::getIVLocation(viewLevelGridIndex, vectDxes[viewLevel], chomboGeometry->getDomainOrigin());
 					for (int d = 0; d < numSubdomains; ++ d)
 					{
 						ChomboIF* chomboIf = chomboGeometry->getChomboIF(d);
 						Feature* feature = chomboIf->getFeature();
 						VolumeVariable* var = feature->getIFVariable();
-						var->getCurr()[globalIndex] = chomboIf->value(a_point);
+						var->getCurr()[volIndex] = chomboIf->value(a_point);
 					}
 				}
 			}
@@ -1265,8 +1341,8 @@ void ChomboScheduler::updateSolution()
 					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
 					{
 						const VolIndex& vof = vofit();
-						int memIndex = (*irregularPointMembraneElementIndex[iphase][ivol][ilev])[dit()](vof, 0);
-						if (memIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
+						int localMemIndex = (*irregularPointMembraneElementIndex[iphase][ivol][ilev])[dit()](vof, 0);
+						if (localMemIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
 						{
 							continue;
 						}
@@ -1275,7 +1351,7 @@ void ChomboScheduler::updateSolution()
 						{
 							VolumeVariable* var = (VolumeVariable*)feature->getDefinedVariable(iDefinedVar);
 							Real extrapVal = (*extrapValues[iphase][ivol][ilev])[dit()](vof, iDefinedVar);
-							var->getExtrapolated()[memIndex] = extrapVal;
+							var->getExtrapolated()[localMemIndex] = extrapVal;
 						}
 					}
 				} // end dit()
@@ -1285,6 +1361,7 @@ void ChomboScheduler::updateSolution()
 
 	pout() << "Exit " << methodName << endl;
 }
+#endif
 
 void ChomboScheduler::writeData(char* filename) {
 	const char* methodName = "(ChomboScheduler::writeData)";
@@ -1303,7 +1380,7 @@ void ChomboScheduler::writeData(char* filename) {
 				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
 				if (feature == NULL || feature->getNumDefinedVariables() == 0)
 				{
-					pout() << methodName << " feature not found or no variables defined in feature" << endl;
+					pout() << methodName << " feature not found or no variables defined in feature " << (feature == NULL ? "" : feature->getName()) << endl;
 					continue;
 				}
 				pout() << methodName << " writeEBHDF5, [iphase, ivol]=[" << iphase << "," << ivol << "]" << endl;
@@ -1549,6 +1626,9 @@ void ChomboScheduler::populateSliceViewDataType(hid_t& sliceViewType)
 int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const IntVect& gridIndex,
 				int iedge, const RealVect& cp, const RealVect& cpcoords, int& neighborEdge)
 {
+//	const char* methodName = "(ChomboScheduler::findNeighborMembraneIndex2D)";
+//	pout() << "Entry " << methodName << ", gridIndex=" << gridIndex << ", iedge=" << iedge << endl;
+
 	bool bHasNeighbor = false;
 	IntVect diff = IntVect::Zero;
 	int idir = iedge / Side::NUMSIDES;
@@ -1567,11 +1647,11 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 	}
 
 	static double cornerTol = 1.e-12;
-	int nidx = MEMBRANE_NEIGHBOR_UNKNOWN;
+	int neighborLocalMemIndex = MEMBRANE_NEIGHBOR_UNKNOWN;
 	int otherDir = (idir + 1) % 2;
 	if (bNextToWall)
 	{
-		nidx = MEMBRANE_NEIGHBOR_NEXT_TO_WALL;
+		neighborLocalMemIndex = MEMBRANE_NEIGHBOR_NEXT_TO_WALL;
 	}
 	else
 	{
@@ -1654,7 +1734,7 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 						||	gridIndex[idir] == vectNxes[ilev][idir] - 1 && diff[idir] == +1 )
 			{
 				bHasNeighbor = false;
-				nidx = MEMBRANE_NEIGHBOR_NEXT_TO_WALL;
+				neighborLocalMemIndex = MEMBRANE_NEIGHBOR_NEXT_TO_WALL;
 				break;
 			}
 		}
@@ -1663,12 +1743,12 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 	{
 		IntVect neighborGridIndex = gridIndex + diff;
 		int vi = getVolumeIndex(vectNxes[ilev], neighborGridIndex);
-		map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(vi);
-		if (iter == irregVolumeMembraneMap[ilev].end())
+		map<int,int>::iterator iter = irregVolumeLocalMembraneMap[ilev].find(vi);
+		if (iter == irregVolumeLocalMembraneMap[ilev].end())
 		{
 			stringstream ss;
-			ss << "Error finding neighbor membrane element: Volume element " << vi << " in level" << ilev << " is not an irregular point";
-			throw ss.str();
+			ss << "Error finding neighbor membrane element: Volume element " << vi << " in level " << ilev << " is not an irregular point";
+			//throw ss.str();
 		}
 		else if (iter->second == MEMBRANE_INDEX_IN_FINER_LEVEL)
 		{
@@ -1719,8 +1799,8 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 
 			int nextLevel = ilev + 1;
 			int fvi = getVolumeIndex(vectNxes[nextLevel], fineGridIndex);
-			map<int, int>::iterator fiter = irregVolumeMembraneMap[nextLevel].find(fvi);
-			if (fiter == irregVolumeMembraneMap[nextLevel].end())
+			map<int, int>::iterator fiter = irregVolumeLocalMembraneMap[nextLevel].find(fvi);
+			if (fiter == irregVolumeLocalMembraneMap[nextLevel].end())
 			{
 				stringstream ss;
 				ss << " Volume element " << fvi << " in finer level is not irregular (testing neighbor)";
@@ -1735,28 +1815,30 @@ int ChomboScheduler::findNeighborMembraneIndex2D(int iphase, int ilev, const Int
 					fineGridIndex[otherDir] = fineGridIndex[otherDir] - 1;
 				}
 				fvi = getVolumeIndex(vectNxes[nextLevel], fineGridIndex);
-				map<int,int>::iterator fiter = irregVolumeMembraneMap[nextLevel].find(fvi);
-				if (fiter == irregVolumeMembraneMap[nextLevel].end())
+				map<int,int>::iterator fiter = irregVolumeLocalMembraneMap[nextLevel].find(fvi);
+				if (fiter == irregVolumeLocalMembraneMap[nextLevel].end())
 				{
 					stringstream ss;
 					ss << "warning: Volume element " << fvi << " in finer level is ALSO not irregular ?";
 				}
 				else
 				{
-					nidx = fiter->second;
+					neighborLocalMemIndex = fiter->second;
 				}
 			}
 			else
 			{
-				nidx = fiter->second;
+				neighborLocalMemIndex = fiter->second;
 			}
 		}
 		else
 		{
-			nidx = iter->second;
+			neighborLocalMemIndex = iter->second;
 		}
 	}
-	return nidx;
+//	pout() << "Exit " << methodName << endl;
+	
+	return neighborLocalMemIndex;
 }
 #else
 bool ChomboScheduler::assignEdgeVertArray(int ilev, IntVect& nGridIndex, bool isCorner, int otherEdge, int vertexIndex, int (*edgeVertArray)[21])
@@ -1764,15 +1846,15 @@ bool ChomboScheduler::assignEdgeVertArray(int ilev, IntVect& nGridIndex, bool is
 	bool bKeepGoing = true;
 	if ((nGridIndex[0] < vectNxes[ilev][0])&&(nGridIndex[1] < vectNxes[ilev][1])&&(nGridIndex[2] < vectNxes[ilev][2])) // if not  on wall
 	{
-		int globalIndex = getVolumeIndex(vectNxes[ilev], nGridIndex);
-		map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(globalIndex);
+		int volIndex = getVolumeIndex(vectNxes[ilev], nGridIndex);
+		map<int,int>::iterator iter = irregVolumeLocalMembraneMap[ilev].find(volIndex);
 		// check if neighbor has a valid membrane element index and fill vertex for neighbor
-		if (iter == irregVolumeMembraneMap[ilev].end())
+		if (iter == irregVolumeLocalMembraneMap[ilev].end())
 		{
 			// did not find membrane index; check if it is a corner point; if not, issue a warning message for now
 			if (!isCorner)
 			{
-				pout() << "globalIndex"<< globalIndex<<" in level"<< ilev << "should be irregular, should have a membrane element" << endl;
+				pout() << "volIndex"<< volIndex<<" in level"<< ilev << "should be irregular, should have a membrane element" << endl;
 				// keep going for now because there may be other reason why the index is not set
 			}
 		}
@@ -1814,12 +1896,6 @@ void ChomboScheduler::writeMembraneFiles()
 {
 	const char* methodName = "(ChomboScheduler::writeMembraneFiles)";
 	pout() << "Entry " << methodName << endl;
-
-	if (!chomboSpec->isSaveVCellOutput())
-	{
-		pout() << methodName << " isSaveVCellOutput is false, returning" << endl;
-		return;
-	}
 
 	MembraneElementMetrics* metricsData = new MembraneElementMetrics[numMembranePoints];
 #if CH_SPACEDIM == 2
@@ -1887,8 +1963,8 @@ void ChomboScheduler::writeMembraneFiles()
 				for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++ vofit)
 				{
 					const VolIndex& vof = vofit();
-					int memIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
-					if (memIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
+					int localMemIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
+					if (localMemIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
 					{
 						continue;
 					}
@@ -1900,15 +1976,16 @@ void ChomboScheduler::writeMembraneFiles()
 					mem_point *= vectDxes[ilev];
 					mem_point += vol_center;
 
-					metricsData[memIndex].index = memIndex;
-					metricsData[memIndex].level = ilev;
-					metricsData[memIndex].membraneId = (*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0);;
-					metricsData[memIndex].gridIndex = gridIndex;
-					metricsData[memIndex].coord = mem_point;
-					metricsData[memIndex].normal = currEBISBox.normal(vof);
-					metricsData[memIndex].areaFraction = currEBISBox.bndryArea(vof);
-					metricsData[memIndex].volumeFraction = currEBISBox.volFrac(vof);
-					metricsData[memIndex].cornerPhaseMask = 0;
+					int globalMemIndex = localMemIndex + memIndexOffset;
+					metricsData[localMemIndex].index = globalMemIndex;
+					metricsData[localMemIndex].level = ilev;
+					metricsData[localMemIndex].membraneId = (*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0);;
+					metricsData[localMemIndex].gridIndex = gridIndex;
+					metricsData[localMemIndex].coord = mem_point;
+					metricsData[localMemIndex].normal = currEBISBox.normal(vof);
+					metricsData[localMemIndex].areaFraction = currEBISBox.bndryArea(vof);
+					metricsData[localMemIndex].volumeFraction = currEBISBox.volFrac(vof);
+					metricsData[localMemIndex].cornerPhaseMask = 0;
 
 					// compute corner phase mask
 					RealVect dP[2] = {-0.5 * vectDxes[ilev], 0.5 * vectDxes[ilev]};
@@ -1928,7 +2005,7 @@ void ChomboScheduler::writeMembraneFiles()
 								P[0] = vol_center[0] + dP[i][0];
 								if (geoIfs[phase0]->value(P) > 0)
 								{
-									metricsData[memIndex].cornerPhaseMask |= (0x1 << cindex);
+									metricsData[localMemIndex].cornerPhaseMask |= (0x1 << cindex);
 								}
 								++ cindex;
 							}
@@ -1938,7 +2015,7 @@ void ChomboScheduler::writeMembraneFiles()
 #endif
 
 #if CH_SPACEDIM == 2
-					segmentList[memIndex].index = memIndex;
+					segmentList[localMemIndex].index = globalMemIndex;
 					edgeMo edges[4];
 
 					bool faceCovered;
@@ -1962,7 +2039,7 @@ void ChomboScheduler::writeMembraneFiles()
 						for (int lohi = Side::Lo; lohi < Side::NUMSIDES;  ++ lohi)
 						{
 							++ iedge;
-							if (edgeVertices[memIndex * 4 + iedge] >= 0)
+							if (edgeVertices[localMemIndex * 4 + iedge] >= 0)
 							{
 								++ crossedEdgeCount;
 								continue;
@@ -1979,10 +2056,10 @@ void ChomboScheduler::writeMembraneFiles()
 									cross_point += vol_center;
 
 									int neighborEdge = (iedge ^ 1);
-									int nidx  = findNeighborMembraneIndex2D(phase0, ilev, gridIndex, iedge, cp, cross_point, neighborEdge);
-									if (nidx == MEMBRANE_NEIGHBOR_UNKNOWN)
+									int neighborLocalMemIdx  = findNeighborMembraneIndex2D(phase0, ilev, gridIndex, iedge, cp, cross_point, neighborEdge);
+									if (neighborLocalMemIdx == MEMBRANE_NEIGHBOR_UNKNOWN)
 									{
-										pout() << "did not find neighbor at edge " << neighborEdge << " for membrane point (not next to wall) " << memIndex << gridIndex;
+										pout() << "did not find neighbor at edge " << neighborEdge << " for membrane point (not next to wall) globalMemIndex=" << globalMemIndex << ", gridIndex=" << gridIndex << endl;
 									}
 									else
 									{
@@ -1990,7 +2067,7 @@ void ChomboScheduler::writeMembraneFiles()
 										// compute Q (as membrane enters the volume element from outside
 										// find a point to the right of cross point, and compute fQ=implF(Q);
 										RealVect Vp = mem_point - cross_point;
-										RealVect Vtan(-metricsData[memIndex].normal[1], metricsData[memIndex].normal[0]);
+										RealVect Vtan(-metricsData[localMemIndex].normal[1], metricsData[localMemIndex].normal[0]);
 										double Dtest = Vp.dotProduct(Vtan);
 										int orderV, orderN;
 										if (Dtest > 0)
@@ -2005,14 +2082,14 @@ void ChomboScheduler::writeMembraneFiles()
 										}
 
 										// set neighbor vertex and neighbor
-										segmentList[memIndex].vertexIndexes[orderV] = vertexCount;
-										segmentList[memIndex].neighborIndexes[orderV] = nidx;
-										edgeVertices[memIndex * 4 + iedge] = vertexCount;
-										if (nidx != MEMBRANE_NEIGHBOR_NEXT_TO_WALL)
+										segmentList[localMemIndex].vertexIndexes[orderV] = vertexCount;
+										segmentList[localMemIndex].neighborIndexes[orderV] = neighborLocalMemIdx + memIndexOffset;
+										edgeVertices[localMemIndex * 4 + iedge] = vertexCount;
+										if (neighborLocalMemIdx != MEMBRANE_NEIGHBOR_NEXT_TO_WALL)
 										{
-											segmentList[nidx].vertexIndexes[orderN] = vertexCount;
-											segmentList[nidx].neighborIndexes[orderN] = memIndex;
-											edgeVertices[nidx * 4 + neighborEdge] = vertexCount;
+											segmentList[neighborLocalMemIdx].vertexIndexes[orderN] = vertexCount;
+											segmentList[neighborLocalMemIdx].neighborIndexes[orderN] = globalMemIndex;
+											edgeVertices[neighborLocalMemIdx * 4 + neighborEdge] = vertexCount;
 										}
 										vertexList[vertexCount].coords = cross_point;
 										++ vertexCount;
@@ -2024,17 +2101,17 @@ void ChomboScheduler::writeMembraneFiles()
 #else
 					int faceCount = -1;
 					int sliceCrossPointCount[SpaceDim];
-					sliceViewData[memIndex].index = memIndex;
+					sliceViewData[localMemIndex].index = globalMemIndex;
 					for (int dir = 0; dir < SpaceDim; ++ dir)
 					{
 						sliceCrossPointCount[dir] = 0;
 						for (int i = 0; i < 4; ++ i)
 						{
-							sliceViewData[memIndex].crossPoints[dir][i] = sliceCrossPointDefaultValue;
+							sliceViewData[localMemIndex].crossPoints[dir][i] = sliceCrossPointDefaultValue;
 						}
 						for (int i = 0; i < 2; ++ i)
 						{
-							sliceViewData[memIndex].vertices[dir][i] = MEMBRANE_INDEX_INVALID;
+							sliceViewData[localMemIndex].vertices[dir][i] = MEMBRANE_INDEX_INVALID;
 						}
 					}
 
@@ -2043,7 +2120,7 @@ void ChomboScheduler::writeMembraneFiles()
 					// this vertex in the tempVertIndexesArray
 					triangleVertexCount ++;
 					vertexList[triangleVertexCount].coords = mem_point;
-					tempVertIndexesArray[memIndex][memCentroidOffset] = triangleVertexCount;
+					tempVertIndexesArray[localMemIndex][memCentroidOffset] = triangleVertexCount;
 
 					for (int face = 0; face < SpaceDim; ++ face)
 					{
@@ -2096,7 +2173,7 @@ void ChomboScheduler::writeMembraneFiles()
 								////////////////////////////////////////
 								int edgeNumber = edgeIndex[faceCount][iedge]; // find the number for this edge in a cube
 								//  the crosspoint may have already been assigned by a neighbor (foundVert may be valid or invalid at this point)
-								int foundVert = tempVertIndexesArray[memIndex][edgeNumber];
+								int foundVert = tempVertIndexesArray[localMemIndex][edgeNumber];
 								if (foundVert != MEMBRANE_INDEX_INVALID)  // vertex already set, continue;
 								{
 									continue;
@@ -2125,7 +2202,7 @@ void ChomboScheduler::writeMembraneFiles()
 										}
 									}
 									// set to 1 the column for this corner in the temp vertex array
-									tempVertIndexesArray[memIndex][cornerOffset + cornerIndex] = 1;
+									tempVertIndexesArray[localMemIndex][cornerOffset + cornerIndex] = 1;
 								}
 								//
 								// end of function call determineCornerStatus
@@ -2135,7 +2212,7 @@ void ChomboScheduler::writeMembraneFiles()
 									triangleVertexCount ++;
 									// new vertex: triangleVertexCount is the current index
 									vertexList[triangleVertexCount].coords = cross_point;
-									tempVertIndexesArray[memIndex][edgeNumber] = triangleVertexCount;
+									tempVertIndexesArray[localMemIndex][edgeNumber] = triangleVertexCount;
 								}
 								// only interested in hi sides and edges. otherwise we are done
 								if ((hiLoFace != Side::Hi) || ((iedge!=1) && (iedge!=3)))
@@ -2234,7 +2311,7 @@ void ChomboScheduler::writeMembraneFiles()
 							else if (crossedEdgeCount > 0)
 							{
 								// initialize new triangle (eventually these will replace surfaceData)
-								membraneTriangles[triangleCount].memElementIndex = memIndex;
+								membraneTriangles[triangleCount].memElementIndex = globalMemIndex;
 								membraneTriangles[triangleCount].volElementFace = faceCount;
 
 								////////////////////////////////////////////
@@ -2242,7 +2319,7 @@ void ChomboScheduler::writeMembraneFiles()
 								//// old code outside of edge loop
 								///////////////////////////////////////////
 								///////////////////////////////////////////
-								surfaceData[triangleCount].index = memIndex;
+								surfaceData[triangleCount].index = globalMemIndex;
 								surfaceData[triangleCount].face = faceCount;
 								surfaceData[triangleCount].triVertices[0] = mem_point;
 								for(int dir = 0; dir < SpaceDim; ++ dir)
@@ -2253,8 +2330,8 @@ void ChomboScheduler::writeMembraneFiles()
 													surfaceData[triangleCount].triVertices[2], crossPoint);
 									if (oneFaceCross)
 									{
-										sliceViewData[memIndex].crossPoints[dir][sliceCrossPointCount[dir] * 2] = crossPoint[0];
-										sliceViewData[memIndex].crossPoints[dir][sliceCrossPointCount[dir] * 2 + 1] = crossPoint[1];
+										sliceViewData[localMemIndex].crossPoints[dir][sliceCrossPointCount[dir] * 2] = crossPoint[0];
+										sliceViewData[localMemIndex].crossPoints[dir][sliceCrossPointCount[dir] * 2 + 1] = crossPoint[1];
 										++ sliceCrossPointCount[dir];
 									}
 								}
@@ -2272,6 +2349,7 @@ void ChomboScheduler::writeMembraneFiles()
 	// find membrane neighbors for points having corner neighbors.
 #if CH_SPACEDIM == 2
 	delete[] edgeVertices;
+	pout() << methodName << " writing mesh hdf5" << endl;
 	writeMeshHdf5(metricsData, vertexCount, vertexList, segmentList);
 	delete[] segmentList;
 #else
@@ -2358,21 +2436,29 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int vertexCount, Vertex* vertexList, int triangleCount, Triangle* surfaceData, SliceView* sliceViewData)
 #endif
 {
+	const char* methodName = "(ChomboScheduler::writeMeshHdf5)";
+	pout() << "Entry " << methodName << endl;
+
 	int viewLevel = chomboSpec->getViewLevel();
+	herr_t err;
 	
 	hid_t file_access = H5P_DEFAULT;
 #ifdef CH_MPI
 	file_access = H5Pcreate(H5P_FILE_ACCESS);
 	H5Pset_fapl_mpio(file_access,  MPI_COMM_WORLD, MPI_INFO_NULL);
 #endif
-	
+
 	char fileName[128];
 	// now start writing we have computed so far
 	sprintf(fileName, "%s%s", SimTool::getInstance()->getBaseFileName(), MESH_HDF5_FILE_EXT);
+	pout() << "creating file " << fileName << endl;
 	hid_t h5MeshFile = H5Fcreate(fileName, H5F_ACC_TRUNC, H5P_DEFAULT, file_access);
 	H5Pclose(file_access);
-	
+
+	pout() << "creating group " << MESH_GROUP << endl;
 	hid_t meshGroup = H5Gcreate(h5MeshFile, MESH_GROUP, H5P_DEFAULT);
+
+	pout() << "root writing attributes " << endl;
 
 	// attribute
 	{
@@ -2452,26 +2538,31 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	hid_t boxType = H5Tcreate(H5T_COMPOUND, sizeof(MeshBox));
 	populateBoxDataType(boxType);
 	int rank = 1;
+	
 	for (int ilev = 0; ilev < numLevels; ++ ilev)
 	{
 		Vector<Box> vectBoxes = vectGrids[ilev].boxArray();
 		int numBoxes = vectBoxes.size();
-		MeshBox* levelBoxData = new MeshBox[numBoxes];
-		for (int i = 0; i < numBoxes; ++ i)
-		{
-			levelBoxData[i].lo = vectBoxes[i].smallEnd();
-			levelBoxData[i].hi = vectBoxes[i].bigEnd();
-		}
 		hsize_t dim[] = {numBoxes};   /* Dataspace dimensions */
-		hid_t space = H5Screate_simple (rank, dim, NULL);
+		hid_t fileSpace = H5Screate_simple (rank, dim, NULL);
 		char levelBoxDataSetName[20];
 		sprintf(levelBoxDataSetName, "%s%d", BOXES_LEVEL_DATASET_PREFIX, ilev);
-		pout() << "writing dataset " << levelBoxDataSetName << endl;
-		hid_t levelBoxDataSet = H5Dcreate (h5MeshFile, levelBoxDataSetName, boxType, space, H5P_DEFAULT);
-		H5Dwrite(levelBoxDataSet, boxType, H5S_ALL, H5S_ALL, H5P_DEFAULT, levelBoxData);
+		hid_t levelBoxDataSet = H5Dcreate (h5MeshFile, levelBoxDataSetName, boxType, fileSpace, H5P_DEFAULT);
+		// let root write
+		if (SimTool::getInstance()->isRootRank())
+		{
+			MeshBox* levelBoxData = new MeshBox[numBoxes];
+			for (int i = 0; i < numBoxes; ++ i)
+			{
+				levelBoxData[i].lo = vectBoxes[i].smallEnd();
+				levelBoxData[i].hi = vectBoxes[i].bigEnd();
+			}
+			pout() << "writing dataset " << levelBoxDataSetName << endl;
+			H5Dwrite(levelBoxDataSet, boxType, H5S_ALL, H5S_ALL, H5P_DEFAULT, levelBoxData);
+			delete[] levelBoxData;
+		}
 		H5Dclose(levelBoxDataSet);
-		H5Sclose(space);
-		delete[] levelBoxData;
+		H5Sclose(fileSpace);
 	}
 	H5Tclose(boxType);
 	H5Gclose(boxesGroup);
@@ -2479,69 +2570,168 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 
 	// structures
 	{
-	pout() << "writing dataset " << STRUCTURES_DATASET << endl;
+	pout() << "creating dataset " << STRUCTURES_DATASET << endl;
 	hid_t sType = H5Tcreate(H5T_COMPOUND, sizeof(StructureMetrics));
 	populateStructureMetricsDataType(sType);
 	VCellModel* model = SimTool::getInstance()->getModel();
 	int numStructures = model->getNumFeatures() + model->getNumMembranes();
-	StructureMetrics* structureData = new StructureMetrics[numStructures];
-	int cnt = 0;
-	for (int i = 0; i < model->getNumFeatures(); ++ i)
-	{
-		Feature* f = model->getFeatureFromIndex(i);
-		strcpy(structureData[cnt].name, f->getName().c_str());
-		strcpy(structureData[cnt].type, "feature");
-		structureData[cnt].size = f->getSize();
-		structureData[cnt].numPoints = f->getNumPoints();
-		++ cnt;
-	}
-	for (int i = 0; i < model->getNumMembranes(); ++ i)
-	{
-		Membrane* m = model->getMembraneFromIndex(i);
-		strcpy(structureData[cnt].name, m->getName().c_str());
-		strcpy(structureData[cnt].type, "membrane");
-		structureData[cnt].size = m->getSize();
-		structureData[cnt].numPoints = m->getNumPoints();
-		++ cnt;
-	}
+	
 	hsize_t dim[] = {numStructures};   /* Dataspace dimensions */
 	int rank = 1;  // number of dimensions
-	hid_t space = H5Screate_simple (rank, dim, NULL);
-	hid_t structureDataset = H5Dcreate (h5MeshFile, STRUCTURES_DATASET, sType, space, H5P_DEFAULT);
-	H5Dwrite(structureDataset, sType, H5S_ALL, H5S_ALL, H5P_DEFAULT, structureData);
-	H5Dclose(structureDataset);
-	H5Sclose(space);
-	H5Tclose(sType);
-	delete[] structureData;
+	hid_t fileSpace = H5Screate_simple (rank, dim, NULL);
+	hid_t structureDataset = H5Dcreate(h5MeshFile, STRUCTURES_DATASET, sType, fileSpace, H5P_DEFAULT);
+  // let root write
+	if (SimTool::getInstance()->isRootRank())
+	{
+		pout() << "writing dataset " << STRUCTURES_DATASET << endl;
+		StructureMetrics* structureData = new StructureMetrics[numStructures];
+		int cnt = 0;
+		for (int i = 0; i < model->getNumFeatures(); ++ i)
+		{
+			Feature* f = model->getFeatureFromIndex(i);
+			strcpy(structureData[cnt].name, f->getName().c_str());
+			strcpy(structureData[cnt].type, "feature");
+			structureData[cnt].size = f->getSize();
+			structureData[cnt].numPoints = f->getNumPoints();
+			++ cnt;
+		}
+		for (int i = 0; i < model->getNumMembranes(); ++ i)
+		{
+			Membrane* m = model->getMembraneFromIndex(i);
+			strcpy(structureData[cnt].name, m->getName().c_str());
+			strcpy(structureData[cnt].type, "membrane");
+			structureData[cnt].size = m->getSize();
+			structureData[cnt].numPoints = m->getNumPoints();
+			++ cnt;
+		}
+		H5Dwrite(structureDataset, sType, H5S_ALL, H5S_ALL, H5P_DEFAULT, structureData);
+		delete[] structureData;
 	}
-
+	H5Dclose(structureDataset);
+	H5Sclose(fileSpace);
+	H5Tclose(sType);
+	}
+	
 	// membrane metrics
 	{
 	pout() << "writing dataset " << MEMBRANE_ELEMENTS_DATASET << ", count=" << numMembranePoints << endl;
 	hid_t metricsType = H5Tcreate(H5T_COMPOUND, sizeof(MembraneElementMetrics));
 	populateMembraneElementMetricsDataType(metricsType);
-	hsize_t dim[] = {numMembranePoints};   /* Dataspace dimensions */
 	int rank = 1;
-	hid_t space = H5Screate_simple (rank, dim, NULL);
-	hid_t metricsDataset = H5Dcreate (h5MeshFile, MEMBRANE_ELEMENTS_DATASET, metricsType, space, H5P_DEFAULT);
-	H5Dwrite(metricsDataset, metricsType, H5S_ALL, H5S_ALL, H5P_DEFAULT, metricsData);
+	// memory dataspace dimensions
+	hsize_t dim[] = {numMembranePoints};
+	hid_t memSpace = H5Screate_simple(rank, dim, NULL);
+
+#ifdef CH_MPI
+	// file dataspace dimensions
+	dim[0] = totalNumMembranePoints;
+	hid_t fileSpace = H5Screate_simple(rank, dim, NULL);
+	// select offset in file space
+	hsize_t start[] = {memIndexOffset};
+	hsize_t count[] = {numMembranePoints};
+	err = H5Sselect_hyperslab(fileSpace, H5S_SELECT_SET, start, NULL, count, NULL);
+	if (err < 0)
+	{
+		stringstream ss;
+		ss << "failed to select position to write " << MEMBRANE_ELEMENTS_DATASET;
+		throw ss.str();
+	}
+#else
+	hid_t fileSpace = memSpace;
+	memSpace = H5S_ALL; // same as file space in serial
+#endif
+	hid_t metricsDataset = H5Dcreate (h5MeshFile, MEMBRANE_ELEMENTS_DATASET, metricsType, fileSpace, H5P_DEFAULT);
+	H5Dwrite(metricsDataset, metricsType, memSpace, fileSpace, H5P_DEFAULT, metricsData);
 	H5Dclose(metricsDataset);
-	H5Sclose(space);
+#ifdef CH_MPI
+	H5Sclose(memSpace);
+#endif
+	H5Sclose(fileSpace);
 	H5Tclose(metricsType);
 	}
 
 	// vertices
+#ifdef CH_MPI
+	int vertexIndexOffset = 0; // this will be used below by segments which has vertex indices
+#endif
+	
 	{
 	pout() << "writing dataset " << VERTICES_DATASET << ", count=" << vertexCount << endl;
 	hid_t vertexType = H5Tcreate(H5T_COMPOUND, sizeof(Vertex));
 	populateVertexDataType(vertexType);
-	hsize_t dim[] = {vertexCount};   /* Dataspace dimensions */
 	int rank = 1;
-	hid_t space = H5Screate_simple(rank, dim, NULL);
-	hid_t verticesDataset = H5Dcreate (h5MeshFile, VERTICES_DATASET, vertexType, space, H5P_DEFAULT);
-	H5Dwrite(verticesDataset, vertexType, H5S_ALL, H5S_ALL, H5P_DEFAULT, vertexList);
+	// memory space
+	hsize_t dim[] = {vertexCount};
+	hid_t memSpace = H5Screate_simple(rank, dim, NULL);
+#ifdef CH_MPI
+	// exchange vertex offset and total
+	int numProcs = SimTool::getInstance()->getCommSize();
+	int* sendBuffer = new int[numProcs + 1];  // only send my vertextCount, receive all offsets and total
+	sendBuffer[0] =  vertexCount;
+	int receiveSize = numProcs;
+	int *recvBuffer = NULL;
+	if (SimTool::getInstance()->isRootRank())
+	{
+		 recvBuffer = new int[receiveSize];
+	}
+
+	int totalNumVertices = vertexCount;
+
+	// each processor puts its sendBuffer in recvBuffer in the order or rank.
+	// so in recvBuffer, the data looks like
+	// ---sendBuffer of processor 1---sendBuffer of processor 2---
+	pout() << "gathering # vertices from each processor" << endl;
+	MPI_Gather(sendBuffer, 1, MPI_INT, recvBuffer, 1, MPI_INT, SimTool::rootRank, MPI_COMM_WORLD);
+	if (SimTool::getInstance()->isRootRank())
+	{
+		pout() << "root rank collect vertextIndexOffset" << endl;
+		totalNumVertices = 0;
+		for (int iproc = 0; iproc < numProcs; ++ iproc)
+		{
+			int n = recvBuffer[iproc];
+			sendBuffer[iproc] = totalNumVertices;
+			totalNumVertices += n;
+		}
+		sendBuffer[numProcs] = totalNumVertices;
+		pout() << "totalNumVertices=" << totalNumVertices << endl;
+	}
+
+	pout() << "broadcast vertexIndexOffsets and total " << endl;
+	// broadcast
+	MPI_Bcast(sendBuffer, numProcs + 1, MPI_INT, SimTool::rootRank, MPI_COMM_WORLD);
+
+	pout() << "** find vertexIndexOffset" << endl;
+	vertexIndexOffset = sendBuffer[SimTool::getInstance()->getMyRank()];
+	totalNumVertices = sendBuffer[numProcs];
+	pout() << "** my vertexIndexOffset is = " << vertexIndexOffset << ", totalNumVertices=" << totalNumVertices << endl;
+
+	delete[] sendBuffer;
+	delete[] recvBuffer;
+
+	// file dataspace dimensions
+	dim[0] = totalNumVertices;
+	hid_t fileSpace = H5Screate_simple(rank, dim, NULL);
+	// select offset in file space
+	hsize_t start[] = {vertexIndexOffset};
+	hsize_t count[] = {vertexCount};
+	err = H5Sselect_hyperslab(fileSpace, H5S_SELECT_SET, start, NULL, count, NULL);
+	if (err < 0)
+	{
+		stringstream ss;
+		ss << "failed to select position to write " << VERTICES_DATASET;
+		throw ss.str();
+	}
+#else
+	hid_t fileSpace = memSpace;
+	memSpace = H5S_ALL; // same as file space in serial
+#endif
+	hid_t verticesDataset = H5Dcreate (h5MeshFile, VERTICES_DATASET, vertexType, fileSpace, H5P_DEFAULT);
+	H5Dwrite(verticesDataset, vertexType, memSpace, fileSpace, H5P_DEFAULT, vertexList);
 	H5Dclose(verticesDataset);
-	H5Sclose(space);
+#ifdef CH_MPI
+	H5Sclose(memSpace);
+#endif
+	H5Sclose(fileSpace);
 	H5Tclose(vertexType);
 	}
 
@@ -2551,13 +2741,43 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	pout() << "writing dataset " << SEGMENTS_DATASET << ", count=" << numMembranePoints << endl;
 	hid_t segmentType = H5Tcreate(H5T_COMPOUND, sizeof(Segment));
 	populateSegmentDataType(segmentType);
-	hsize_t dim[] = {numMembranePoints};   /* Dataspace dimensions */
 	int rank = 1;
-	hid_t space = H5Screate_simple(rank, dim, NULL);
-	hid_t segmentsDataset = H5Dcreate (h5MeshFile, SEGMENTS_DATASET, segmentType, space, H5P_DEFAULT);
-	H5Dwrite(segmentsDataset, segmentType, H5S_ALL, H5S_ALL, H5P_DEFAULT, segmentList);
+	// memory dataspace dimensions
+	hsize_t dim[] = {numMembranePoints};
+	hid_t memSpace = H5Screate_simple(rank, dim, NULL);
+
+#ifdef CH_MPI
+	// adjust vertexIndex in segments
+	for (int i = 0; i < numMembranePoints; ++ i)
+	{
+		segmentList[i].vertexIndexes[0] += vertexIndexOffset;
+		segmentList[i].vertexIndexes[1] += vertexIndexOffset;
+	}
+	// file dataspace dimensions
+	dim[0] = totalNumMembranePoints;
+	hid_t fileSpace = H5Screate_simple(rank, dim, NULL);
+	// select offset in file space
+	hsize_t start[] = {memIndexOffset};
+	hsize_t count[] = {numMembranePoints};
+	err = H5Sselect_hyperslab(fileSpace, H5S_SELECT_SET, start, NULL, count, NULL);
+	if (err < 0)
+	{
+		stringstream ss;
+		ss << "failed to select position to write " << SEGMENTS_DATASET;
+		throw ss.str();
+	}
+#else
+	hid_t fileSpace = memSpace;
+	memSpace = H5S_ALL;  // same as file space in serial
+#endif
+	
+	hid_t segmentsDataset = H5Dcreate (h5MeshFile, SEGMENTS_DATASET, segmentType, fileSpace, H5P_DEFAULT);
+	H5Dwrite(segmentsDataset, segmentType, memSpace, fileSpace, H5P_DEFAULT, segmentList);
 	H5Dclose(segmentsDataset);
-	H5Sclose(space);
+#ifdef CH_MPI
+	H5Sclose(memSpace);
+#endif
+	H5Sclose(fileSpace);
 	H5Tclose(segmentType);
 	}
 
@@ -2592,8 +2812,11 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	}
 #endif
 
+	pout() << "closing group " << MESH_GROUP << " and file." << endl;
 	H5Gclose(meshGroup);
 	H5Fclose(h5MeshFile);
+
+	pout() << "Exit " << methodName << endl;
 }
 
 bool ChomboScheduler::computeOneFaceCross(int dir, int face, int hiLoFace, RealVect& H, RealVect& v0,

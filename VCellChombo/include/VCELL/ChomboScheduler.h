@@ -111,8 +111,6 @@ protected:
 
 	int hdf5FileCount;
 
-	void updateSolution();
-
 	int getChomboBoxLocalIndex(const IntVect& size, int ivar, const IntVect& ijk);
 	int getChomboBoxLocalIndex(const IntVect& size, int ivar, D_DECL(int i, int j, int k));
 	int getVolumeIndex(const IntVect& size, const IntVect& ijk);
@@ -152,11 +150,13 @@ protected:
 	void generateMesh();
 	void computeFeatures();
 	void populateMembraneIndexData();
+	void computeStructureSizes();
 	
 #ifdef CH_MPI
-	void exchangeFeatures();
+	void exchangeFeaturesAndMembraneIndexOffset();
+	int totalNumMembranePoints;
 #else
-	void computeStructureSizes();
+	void updateSolution();
 #endif
 
 #if CH_SPACEDIM == 2
@@ -166,7 +166,8 @@ protected:
 #endif
 	
 private:
-	Vector< map<int, int> > irregVolumeMembraneMap;
+	int memIndexOffset;
+	Vector< map<int, int> > irregVolumeLocalMembraneMap;
 };
 
 #endif

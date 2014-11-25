@@ -59,6 +59,10 @@ public:
 	{
 		return size;
 	}
+	void setSize(double s)
+	{
+		size = s;
+	}
 	void addSize(double s)
 	{
 		size += s;
@@ -66,6 +70,10 @@ public:
 	void addNumPoints(int np)
 	{
 		numPoints += np;
+	}
+	void setNumPoints(int np)
+	{
+		numPoints = np;
 	}
 	int getNumPoints()
 	{

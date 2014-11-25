@@ -73,10 +73,7 @@ SimTool::SimTool()
 	
 	
 #ifdef CH_MPI
-	//myRank = MPI::COMM_WORLD.Get_rank();
 	MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
-	
-	//commSize = MPI::COMM_WORLD.Get_size();
 	MPI_Comm_size(MPI_COMM_WORLD,&commSize);
 #endif
 	
@@ -426,9 +423,7 @@ void SimTool::start()
 		// simulation starts from scratch
 		if (bStoreEnable)
 		{
-#ifndef CH_MPI
 			simulation->getScheduler()->writeMembraneFiles();
-#endif
 			writeData(0.0, 0.0, 0);
 		}
 		else
@@ -460,7 +455,6 @@ void SimTool::start()
 		}
 
 #ifdef CH_MPI
-		//MPI::COMM_WORLD.Barrier();
 		if (MPI_Barrier(MPI_COMM_WORLD) != MPI_SUCCESS) {
 			throw std::invalid_argument("barrier didn't accept MPI_COMM_WORLD"); 
 		}

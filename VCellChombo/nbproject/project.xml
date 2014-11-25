@@ -3,7 +3,7 @@
     <type>org.netbeans.modules.cnd.makeproject</type>
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
-            <name>VCellChombo</name>
+            <name>VCellChombo_Parallel</name>
             <c-extensions/>
             <cpp-extensions>cpp</cpp-extensions>
             <header-extensions>h</header-extensions>
@@ -33,10 +33,6 @@
                 </confElem>
                 <confElem>
                     <name>Release_Profile_3D</name>
-                    <type>1</type>
-                </confElem>
-                <confElem>
-                    <name>Debug_2D_Messaging</name>
                     <type>1</type>
                 </confElem>
             </confList>
