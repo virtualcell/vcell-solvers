@@ -17,7 +17,9 @@ public:
 
 	VariableType getVarType() { return VAR_MEMBRANE; }
 
+#ifndef CH_MPI
 	void createErrorVariables();
+#endif
 };
 
 #endif

@@ -30,6 +30,7 @@ VolumeVariable::~VolumeVariable()
 	delete[] extrapolated;
 }
 
+#ifndef CH_MPI
 void VolumeVariable::createErrorVariables()
 {
 	if (exactErrorVar == NULL)
@@ -40,3 +41,4 @@ void VolumeVariable::createErrorVariables()
 		relativeErrorVar = new VolumeVariable(errorVarName, (Feature*)structure, size, 0);
 	}
 }
+#endif

@@ -10,6 +10,7 @@ MembraneRegionVariable::MembraneRegionVariable(string& nameStr, Membrane* membra
 {
 }
 
+#ifndef CH_MPI
 void MembraneRegionVariable::createErrorVariables()
 {
 	if (exactErrorVar == NULL)
@@ -20,3 +21,4 @@ void MembraneRegionVariable::createErrorVariables()
 		relativeErrorVar = new MembraneRegionVariable(errorVarName, (Membrane*)structure, size);
 	}
 }
+#endif

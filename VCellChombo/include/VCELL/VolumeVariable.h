@@ -30,7 +30,9 @@ public:
 		return extrapolatedSize;
 	}
 
+#ifndef CH_MPI
 	void createErrorVariables();
+#endif
 	
 private:
 	bool bAdvecting;

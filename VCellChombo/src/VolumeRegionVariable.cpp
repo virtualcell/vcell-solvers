@@ -10,6 +10,7 @@ VolumeRegionVariable::VolumeRegionVariable(string& nameStr, Feature* feature, in
 {
 }
 
+#ifndef CH_MPI
 void VolumeRegionVariable::createErrorVariables()
 {
 	if (exactErrorVar == NULL)
@@ -20,3 +21,4 @@ void VolumeRegionVariable::createErrorVariables()
 		relativeErrorVar = new VolumeRegionVariable(errorVarName, (Feature*)structure, size);
 	}
 }
+#endif

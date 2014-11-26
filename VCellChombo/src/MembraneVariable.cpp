@@ -17,6 +17,7 @@ MembraneVariable::~MembraneVariable()
 {
 }
 
+#ifndef CH_MPI
 void MembraneVariable::createErrorVariables()
 {
 	if (exactErrorVar == NULL)
@@ -27,3 +28,4 @@ void MembraneVariable::createErrorVariables()
 		relativeErrorVar = new MembraneVariable(errorVarName, (Membrane*)structure, size);
 	}
 }
+#endif

@@ -23,7 +23,10 @@ public:
 	static void readDoubles(FILE *fp, double *data, int length);
 
 	static bool isBigEndian();
+
+#ifndef CH_MPI
 	static void write(SimulationExpression *sim, char* filename);
+#endif
 	
 private:
 	static Endian endian;

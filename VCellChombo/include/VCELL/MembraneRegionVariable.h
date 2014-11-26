@@ -15,7 +15,10 @@ public:
 	MembraneRegionVariable(string& nameStr, Membrane* membrane, long size);
 
 	VariableType getVarType() { return VAR_MEMBRANE_REGION; }
+
+#ifndef CH_MPI
 	void createErrorVariables();
+#endif
 };
 
 #endif

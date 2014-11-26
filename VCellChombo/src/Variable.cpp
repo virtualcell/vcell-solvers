@@ -16,10 +16,11 @@ Variable::Variable(string& nameStr, Structure* s, long Asize)
 	name = nameStr;
 	structure = s;
 	size = Asize;
-	curr = new double[size];
 	bDiffusing = false;
 	bElliptic = false;
 	varContext = 0;
+#ifndef CH_MPI
+	curr = new double[size];
 	exactErrorVar = 0;
 	relativeErrorVar = 0;
 	for (int i = 0; i < size; ++ i)
@@ -27,15 +28,25 @@ Variable::Variable(string& nameStr, Structure* s, long Asize)
 		curr[i] = BASEFAB_REAL_SETVAL;
 	}
 	reset();
+#endif
 }
 
 Variable::~Variable()
 {
-//	delete[] old;
+#ifndef CH_MPI
 	delete[] curr;
+#endif
 	delete varContext;
 }
 
+string Variable::getQualifiedName(){
+	if (structure != 0){
+		return structure->getName() + "::" + name;
+	}
+	return name;
+}
+
+#ifndef CH_MPI
 void Variable::reset()
 {
 	maxError = 0;
@@ -49,13 +60,6 @@ void Variable::reset()
 		memset(exactErrorVar->getCurr(), 0, exactErrorVar->getSize() * sizeof(double));
 		memset(relativeErrorVar->getCurr(), 0, relativeErrorVar->getSize() * sizeof(double));
 	}
-}
-
-string Variable::getQualifiedName(){
-	if (structure != 0){
-		return structure->getName() + "::" + name;
-	}
-	return name;
 }
 
 void Variable::addL2Error(double d)
@@ -88,3 +92,4 @@ void Variable::computeFinalStatistics()
 	}
 	l2Error = std::sqrt(l2Error);
 }
+#endif

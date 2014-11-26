@@ -96,6 +96,7 @@ void DataSet::readDoubles(FILE *fp, double *data, int length)
 	}
 }
 
+#ifndef CH_MPI
 void DataSet::write(SimulationExpression *sim, char* filename)
 {
   vector<Variable*> allVarList;
@@ -285,4 +286,4 @@ void DataSet::write(SimulationExpression *sim, char* filename)
 	H5Sclose(scalarDataSpace);
 	H5Fclose(h5SimFile);
 }
-
+#endif

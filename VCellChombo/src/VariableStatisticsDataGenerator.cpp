@@ -20,6 +20,7 @@ VariableStatisticsDataGenerator::~VariableStatisticsDataGenerator() {
 }
 
 void VariableStatisticsDataGenerator::resolveReferences(SimulationExpression* sim) {
+#ifndef CH_MPI
 	int numVar = sim->getNumVariables();
 
 	// compute data size
@@ -68,10 +69,11 @@ void VariableStatisticsDataGenerator::resolveReferences(SimulationExpression* si
 	memset(data, 0, dataSize * sizeof(double));
 	hdf5Rank = 1;
 	hdf5Dims[0] = dataSize;
-	
+#endif
 }
 
 void VariableStatisticsDataGenerator::computePPData(SimulationExpression* sim) {
+#ifndef CH_MPI
 	int numVar = sim->getNumVariables();
 
 	memset(data, 0, dataSize * sizeof(double));
@@ -87,4 +89,5 @@ void VariableStatisticsDataGenerator::computePPData(SimulationExpression* sim) {
 			data[dataCount ++] = var->getMaxError(); // max error
 		}
 	}
+#endif
 }

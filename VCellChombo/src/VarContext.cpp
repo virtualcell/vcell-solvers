@@ -32,10 +32,12 @@ VarContext::VarContext(Structure *s, Variable* var)
 void VarContext::resolveReferences(SimulationExpression *Asim)
 {
 	sim = Asim;
+#ifndef CH_MPI
 	if (expressions[EXACT_EXP] != NULL)
 	{
 		variable->createErrorVariables();
 	}
+#endif
 }
 
 VarContext::~VarContext()
