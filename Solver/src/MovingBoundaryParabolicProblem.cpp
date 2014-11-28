@@ -899,7 +899,7 @@ namespace moving_boundary {
 						std::ofstream s("rle.m");
 						rle.aElement.writeMatlab(s, false, 20);
 						rle.bElement.writeMatlab(s, false, 20);
-						throw rle;
+						throw;
 					}
 					primaryMesh.diffuseAdvectCache( ).finish( );
 					if (frontMoveTrace) {
@@ -922,7 +922,7 @@ namespace moving_boundary {
 						sb << oldPoly << newPoly << scatter;
 						std::cerr << "rethrowing skips" << std::endl;
 						debugDump(generationCount,'e');
-						throw skips;
+						throw;
 					}
 					if (frontMoveTrace) {
 						debugDump(generationCount,'a');
@@ -994,7 +994,7 @@ namespace moving_boundary {
 				}
 			} catch (std::exception &e) {
 				VCELL_LOG(fatal,"run( ) caught " << e.what( )  << " generation " << generationCount);
-				throw e;
+				throw;
 			}
 		}
 
