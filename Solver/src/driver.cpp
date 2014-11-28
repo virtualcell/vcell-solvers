@@ -151,11 +151,11 @@ int main(int argc, char *argv[])
 		problem.run( );
 	}
 	catch (std::exception & e) {
-		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << filename << std::endl; 
+		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " running " << filename << std::endl; 
 		return 6;
 	}
 	catch (...) {
-		std::cerr <<  argv[0] << " caught unknown exception" << " reading " << filename << std::endl; 
+		std::cerr <<  argv[0] << " caught unknown exception" << " running " << filename << std::endl; 
 		return 4;
 	}
 	std::cout << "MovingBoundary " << filename << " complete " << std::endl;
