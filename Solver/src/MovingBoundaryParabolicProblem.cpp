@@ -993,8 +993,8 @@ namespace moving_boundary {
 					client->simulationComplete( );
 				}
 			} catch (std::exception &e) {
-				VCELL_LOG(fatal,"run( ) caught " << e.what( )  << " generation " << generationCount);
-				throw;
+				VCELL_LOG(fatal,"run( ) caught " << e.what( )  << " generation " << generationCount << " time" << currentTime);
+			throw;
 			}
 		}
 
