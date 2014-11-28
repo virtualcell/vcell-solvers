@@ -106,7 +106,6 @@ int main(int argc, char *argv[])
 			}
 			setupTrace(root);
 			setupMatlabDebug(root);
-			setupHeartbeat(root,problem);
 
 			using moving_boundary::MovingBoundarySetup;
 			if (restorename.empty( )) {
