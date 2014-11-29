@@ -6,6 +6,7 @@
 #define DATASET_H
 
 #include <stdio.h>
+#include <hdf5.h>
 
 typedef unsigned int uint32;
 
@@ -24,7 +25,10 @@ public:
 
 	static bool isBigEndian();
 
-#ifndef CH_MPI
+#ifdef CH_MPI
+	static void writeExtrapolatedValues(SimulationExpression* sim, hid_t h5SimFile, int memIndexOffet, int totalNumMembranePoints);
+#else
+	static void writeExtrapolatedValues(SimulationExpression* sim, hid_t h5SimFile);
 	static void write(SimulationExpression *sim, char* filename);
 #endif
 	

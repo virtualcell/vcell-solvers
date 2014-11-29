@@ -9,6 +9,7 @@
 #include <VCELL/SimTool.h>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <vector>
 using std::cout;
 using std::endl;
@@ -16,10 +17,7 @@ using std::string;
 #include <VCELL/VolumeVariable.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/ChomboGeometry.h>
-#include <hdf5.h>
-#include <H5Tpublic.h>
-
-#include "VCELL/VCellModel.h"
+#include <VCELL/VCellModel.h>
 
 /*
  * Little-endian operating systems:
@@ -96,6 +94,9 @@ void DataSet::readDoubles(FILE *fp, double *data, int length)
 	}
 }
 
+static const char* EXTRAPOLATED_VOLUMES_GROUP = "/extrapolated_volumes";
+static const char* DATASET_ATTR_VARIABLE_TYPE = "variable type";
+
 #ifndef CH_MPI
 void DataSet::write(SimulationExpression *sim, char* filename)
 {
@@ -121,13 +122,10 @@ void DataSet::write(SimulationExpression *sim, char* filename)
 	static const char* SOLUTION_ATTR_VARIABLE_TYPES = "variable types";
 	
 	static const char* SOLUTION_DATASET_ATTR_DOMAIN = "domain";
-	static const char* DATASET_ATTR_VARIABLE_TYPE = "variable type";
 	static const char* SOLUTION_DATASET_ATTR_MEAN = "mean";
 	static const char* SOLUTION_DATASET_ATTR_SUM_VOLFRAC = "sum of volume fraction";
 	static const char* SOLUTION_DATASET_ATTR_RELATIVE_L2ERROR = "relative L2 error";
 	static const char* SOLUTION_DATASET_ATTR_MAX_ERROR = "max error";
-
-	static const char* EXTRAPOLATED_VOLUMES_GROUP = "/extrapolated_volumes";
 
 	hid_t h5SimFile = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	hid_t solGroup = H5Gcreate(h5SimFile, SOLUTION_GROUP, H5P_DEFAULT);
@@ -256,34 +254,74 @@ void DataSet::write(SimulationExpression *sim, char* filename)
 	
 	if (SimTool::getInstance()->getModel()->getNumMembranes() > 0)
 	{
-		hid_t extrapolatedVolumesGroup = H5Gcreate(h5SimFile, EXTRAPOLATED_VOLUMES_GROUP, H5P_DEFAULT);
-		int numVolVar = sim->getNumVolVariables();
-		for (int i = 0; i < numVolVar; i ++)
-		{
-			VolumeVariable* volVar = sim->getVolVariable(i);
-			dim[0] = volVar->getExtrapolatedSize();
-			if (dim[0] > 0)
-			{
-				space = H5Screate_simple(rank, dim, NULL);
-				char dsName[128];
-				sprintf(dsName, "%s/__%s_extrapolated__", EXTRAPOLATED_VOLUMES_GROUP, volVar->getName().c_str());
-				hid_t varDataset = H5Dcreate (h5SimFile, dsName, H5T_NATIVE_DOUBLE, space, H5P_DEFAULT);
-				H5Dwrite(varDataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, volVar->getExtrapolated());
-
-				// attribute: variable type
-				attribute = H5Acreate(varDataset, DATASET_ATTR_VARIABLE_TYPE, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
-				VariableType varType = VAR_MEMBRANE;
-				H5Awrite(attribute, H5T_NATIVE_INT, &varType);
-				H5Aclose(attribute);
-
-				H5Dclose(varDataset);
-				H5Sclose(space);
-			}
-		}
-		H5Gclose(extrapolatedVolumesGroup);
+		writeExtrapolatedValues(sim, h5SimFile);
 	}
 	
 	H5Sclose(scalarDataSpace);
 	H5Fclose(h5SimFile);
 }
 #endif
+
+#ifdef CH_MPI
+void DataSet::writeExtrapolatedValues(SimulationExpression* sim, hid_t h5SimFile, int memIndexOffset, int totalNumMembranePoints)
+#else
+void DataSet::writeExtrapolatedValues(SimulationExpression* sim, hid_t h5SimFile)
+#endif
+{
+	const char* methodName = "(DataSet::writeExtrapolatedValues)";
+	pout() << "Entry " << methodName << endl;
+
+	hid_t extrapolatedVolumesGroup = H5Gcreate(h5SimFile, EXTRAPOLATED_VOLUMES_GROUP, H5P_DEFAULT);
+	hid_t scalarDataSpace = H5Screate(H5S_SCALAR); // shared among all attributes
+
+	int numVolVar = sim->getNumVolVariables();
+	for (int i = 0; i < numVolVar; i ++)
+	{
+		VolumeVariable* volVar = sim->getVolVariable(i);
+		int numMembranePoints = volVar->getExtrapolatedSize();
+		
+		int rank = 1;
+		// memory dataspace dimensions
+		hsize_t dim[] = {numMembranePoints};
+		hid_t memSpace = H5Screate_simple(rank, dim, NULL);
+
+#ifdef CH_MPI
+		// file dataspace dimensions
+		dim[0] = totalNumMembranePoints;
+		hsize_t fileSpace = H5Screate_simple(rank, dim, NULL);
+		// select offset in file space
+		hsize_t start[] = {memIndexOffset};
+		hsize_t count[] = {numMembranePoints};
+		herr_t err = H5Sselect_hyperslab(fileSpace, H5S_SELECT_SET, start, NULL, count, NULL);
+		if (err < 0)
+		{
+			stringstream ss;
+			ss << "failed to select position to write " << EXTRAPOLATED_VOLUMES_GROUP;
+			throw ss.str();
+		}
+#else
+		hid_t fileSpace = memSpace;
+		memSpace = H5S_ALL; // same as file space in serial
+#endif
+
+		char dsName[128];
+		sprintf(dsName, "%s/__%s_extrapolated__", EXTRAPOLATED_VOLUMES_GROUP, volVar->getName().c_str());
+		hid_t varDataset = H5Dcreate (h5SimFile, dsName, H5T_NATIVE_DOUBLE, fileSpace, H5P_DEFAULT);
+		// attribute: variable type
+		hsize_t attribute = H5Acreate(varDataset, DATASET_ATTR_VARIABLE_TYPE, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
+		VariableType varType = VAR_MEMBRANE;
+		H5Awrite(attribute, H5T_NATIVE_INT, &varType);
+		H5Aclose(attribute);
+		// data
+		H5Dwrite(varDataset, H5T_NATIVE_DOUBLE, memSpace, fileSpace, H5P_DEFAULT, volVar->getExtrapolated());
+		H5Dclose(varDataset);
+#ifdef CH_MPI
+		H5Sclose(memSpace);
+#endif
+		H5Sclose(fileSpace);
+	}
+	H5Sclose(scalarDataSpace);
+	H5Gclose(extrapolatedVolumesGroup);
+
+	pout() << "Exit " << methodName << endl;
+}

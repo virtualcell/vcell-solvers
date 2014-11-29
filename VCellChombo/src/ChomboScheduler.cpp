@@ -1025,11 +1025,12 @@ void ChomboScheduler::computeStructureSizes()
 	pout() << "Exit " << methodName << endl;
 }
 
-#ifndef CH_MPI
 void ChomboScheduler::updateSolution()
 {
 	const char* methodName = "(ChomboScheduler::updateSolution)";
 	pout() << "Entry " << methodName << endl;
+
+#ifndef CH_MPI
 	// reset variables
 	int numVars = simulation->getNumVariables();
 	for(int v = 0; v < numVars; ++ v){
@@ -1315,66 +1316,28 @@ void ChomboScheduler::updateSolution()
 #endif
 		bIFVariableUpdated = true;
 	}
-
-	pout() << "populating extrapolated values" << endl;
-	for (int iphase = 0; iphase < NUM_PHASES; iphase ++)
-	{
-		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++)
-		{
-			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-			int numDefinedVolVars = feature->getNumDefinedVariables();
-			if (numDefinedVolVars == 0)
-			{
-				continue;
-			}
-			for (int ilev = 0; ilev < numLevels; ++ ilev)
-			{
-				DisjointBoxLayout& currGrids = vectGrids[ilev];
-				for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++dit)
-				{
-					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
-					const Box& currBox = vectGrids[ilev][dit()];
-
-					const EBGraph& currEBGraph = currEBISBox.getEBGraph();
-					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
-
-					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
-					{
-						const VolIndex& vof = vofit();
-						int localMemIndex = (*irregularPointMembraneElementIndex[iphase][ivol][ilev])[dit()](vof, 0);
-						if (localMemIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
-						{
-							continue;
-						}
-						
-						for (int iDefinedVar = 0; iDefinedVar < numDefinedVolVars; iDefinedVar ++)
-						{
-							VolumeVariable* var = (VolumeVariable*)feature->getDefinedVariable(iDefinedVar);
-							Real extrapVal = (*extrapValues[iphase][ivol][ilev])[dit()](vof, iDefinedVar);
-							var->getExtrapolated()[localMemIndex] = extrapVal;
-						}
-					}
-				} // end dit()
-			} // end ilev
-		} // end ivol
-	} // end iphase
-
+#endif
+	
+	populateExtrapolatedValues();
 	pout() << "Exit " << methodName << endl;
 }
-#endif
 
 void ChomboScheduler::writeData(char* filename) {
 	const char* methodName = "(ChomboScheduler::writeData)";
 	pout() << "Entry " << methodName << endl;
+
+	updateSolution(); // in MPI case, update extrapolated values
+	
 #ifndef CH_MPI
 	if (chomboSpec->isSaveVCellOutput())
 	{
-		updateSolution();
 		DataSet::write(simulation, filename);
 	}
 	// we need at least one hdf5 to show mesh in viewer.
-	if (chomboSpec->isSaveChomboOutput()) {
+	if (chomboSpec->isSaveChomboOutput())
+	{
 #endif
+		int firstFilePhase = -1, firstFileVol = -1;
 		for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
@@ -1383,9 +1346,15 @@ void ChomboScheduler::writeData(char* filename) {
 					pout() << methodName << " feature not found or no variables defined in feature " << (feature == NULL ? "" : feature->getName()) << endl;
 					continue;
 				}
-				pout() << methodName << " writeEBHDF5, [iphase, ivol]=[" << iphase << "," << ivol << "]" << endl;
+				if (firstFilePhase == -1)
+				{
+					firstFilePhase = iphase;
+					firstFileVol = ivol;
+				}
 				char hdf5FileName[128];
 				sprintf(hdf5FileName, "%s%06d.feature_%s.vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), ivol, HDF5_FILE_EXT);
+				pout() << methodName << " writeEBHDF5, [iphase, ivol]=[" << iphase << "," << ivol << "] to " << hdf5FileName << endl;
+				
 				Vector<string> names(feature->getNumDefinedVariables());
 				for (int ivar = 0; ivar < feature->getNumDefinedVariables(); ivar ++) {
 					Variable* var = feature->getDefinedVariable(ivar);
@@ -1402,9 +1371,29 @@ void ChomboScheduler::writeData(char* filename) {
 					 vectRefRatios, numLevels, replaceCovered, dummy);
 			} // ivol
 		} // iphase
+
+		if (firstFilePhase != -1)
+		{
+			Feature* feature = phaseVolumeList[firstFilePhase][firstFileVol]->feature;
+			char hdf5FileName[128];
+			// write membrane variable solution and extrapolated values to the first hdf5 file
+			sprintf(hdf5FileName, "%s%06d.feature_%s.vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), firstFileVol, HDF5_FILE_EXT);
+			pout() << methodName << " writing extrapolated values, [iphase, ivol]=[" << firstFilePhase << "," << firstFileVol << "] to " << hdf5FileName << endl;
+
+			hid_t h5SimFile =  H5Fopen(hdf5FileName, H5F_ACC_RDWR, H5P_DEFAULT);
+#ifdef CH_MPI
+			DataSet::writeExtrapolatedValues(simulation, h5SimFile, memIndexOffset, totalNumMembranePoints);
+#else
+			DataSet::writeExtrapolatedValues(simulation, h5SimFile);
+#endif
+			H5Fclose(h5SimFile);
+		}
+		
 #ifndef CH_MPI
 	}
 #endif
+
+	
 	hdf5FileCount ++;
 	pout() << "Exit " << methodName << endl;
 }
@@ -2440,7 +2429,6 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	pout() << "Entry " << methodName << endl;
 
 	int viewLevel = chomboSpec->getViewLevel();
-	herr_t err;
 	
 	hid_t file_access = H5P_DEFAULT;
 #ifdef CH_MPI
@@ -2629,7 +2617,7 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	// select offset in file space
 	hsize_t start[] = {memIndexOffset};
 	hsize_t count[] = {numMembranePoints};
-	err = H5Sselect_hyperslab(fileSpace, H5S_SELECT_SET, start, NULL, count, NULL);
+	herr_t err = H5Sselect_hyperslab(fileSpace, H5S_SELECT_SET, start, NULL, count, NULL);
 	if (err < 0)
 	{
 		stringstream ss;
@@ -2714,7 +2702,7 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	// select offset in file space
 	hsize_t start[] = {vertexIndexOffset};
 	hsize_t count[] = {vertexCount};
-	err = H5Sselect_hyperslab(fileSpace, H5S_SELECT_SET, start, NULL, count, NULL);
+	herr_t err = H5Sselect_hyperslab(fileSpace, H5S_SELECT_SET, start, NULL, count, NULL);
 	if (err < 0)
 	{
 		stringstream ss;
@@ -2759,7 +2747,7 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	// select offset in file space
 	hsize_t start[] = {memIndexOffset};
 	hsize_t count[] = {numMembranePoints};
-	err = H5Sselect_hyperslab(fileSpace, H5S_SELECT_SET, start, NULL, count, NULL);
+	herr_t err = H5Sselect_hyperslab(fileSpace, H5S_SELECT_SET, start, NULL, count, NULL);
 	if (err < 0)
 	{
 		stringstream ss;
@@ -2881,4 +2869,54 @@ int ChomboScheduler::findLevel(const ProblemDomain& domain)
 		}
 	}
 	return -1;
+}
+
+void ChomboScheduler::populateExtrapolatedValues()
+{
+	const char* methodName = "(ChomboScheduler::populateExtrapolatedValues)";
+	pout() << "Entry " << methodName << endl;
+
+	for (int iphase = 0; iphase < NUM_PHASES; iphase ++)
+	{
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++)
+		{
+			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+			int numDefinedVolVars = feature->getNumDefinedVariables();
+			if (numDefinedVolVars == 0)
+			{
+				continue;
+			}
+			for (int ilev = 0; ilev < numLevels; ++ ilev)
+			{
+				DisjointBoxLayout& currGrids = vectGrids[ilev];
+				for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++dit)
+				{
+					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
+					const Box& currBox = vectGrids[ilev][dit()];
+
+					const EBGraph& currEBGraph = currEBISBox.getEBGraph();
+					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
+
+					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
+					{
+						const VolIndex& vof = vofit();
+						int localMemIndex = (*irregularPointMembraneElementIndex[iphase][ivol][ilev])[dit()](vof, 0);
+						if (localMemIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
+						{
+							continue;
+						}
+
+						for (int iDefinedVar = 0; iDefinedVar < numDefinedVolVars; iDefinedVar ++)
+						{
+							VolumeVariable* var = (VolumeVariable*)feature->getDefinedVariable(iDefinedVar);
+							Real extrapVal = (*extrapValues[iphase][ivol][ilev])[dit()](vof, iDefinedVar);
+							var->getExtrapolated()[localMemIndex] = extrapVal;
+						}
+					}
+				} // end dit()
+			} // end ilev
+		} // end ivol
+	} // end iphase
+
+	pout() << "Exit " << methodName << endl;
 }

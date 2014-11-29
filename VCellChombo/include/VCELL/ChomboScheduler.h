@@ -76,6 +76,7 @@ public:
 	{
 		return vectNxes[chomboSpec->getViewLevel()];
 	}
+	
 protected:
 	SimulationExpression* simulation;
 	VCell::Expression** refinementRoiExps;
@@ -122,6 +123,11 @@ protected:
 	Vector< Vector<ConnectedComponent*> > phaseVolumeList;
 	int numConnectedComponents;
 	int numMembranePoints;
+
+	static const int phase0;
+	static const int phase1;
+
+private:
 	bool computeOneFaceCross(int, int, int, RealVect&, RealVect&, RealVect&, RealVect&, RealVect&);
 
 	static void populateBoxDataType(hid_t& boxType);
@@ -143,9 +149,6 @@ protected:
 	IntVect orientVertices(RealVect* vertices, RealVect& outNormal);
 #endif
 	
-	static const int phase0;
-	static const int phase1;
-
 	void generatePhasesAndVolumes();
 	void generateMesh();
 	void computeFeatures();
@@ -155,19 +158,18 @@ protected:
 #ifdef CH_MPI
 	void exchangeFeaturesAndMembraneIndexOffset();
 	int totalNumMembranePoints;
-#else
-	void updateSolution();
 #endif
+	void updateSolution();
 
 #if CH_SPACEDIM == 2
 	void writeMeshHdf5(MembraneElementMetrics* metricsData, int vertexCount, Vertex* vertexList, Segment* segmentList);
 #else
 	void writeMeshHdf5(MembraneElementMetrics* metricsData, int vertexCount, Vertex* vertexList, int triangleCount, Triangle* surfaceData, SliceView* sliceViewData);
 #endif
-	
-private:
 	int memIndexOffset;
 	Vector< map<int, int> > irregVolumeLocalMembraneMap;
+
+	void populateExtrapolatedValues();
 };
 
 #endif
