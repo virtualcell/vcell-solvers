@@ -17,6 +17,7 @@ typedef enum {
 } Endian;
 
 class SimulationExpression;
+class Variable;
 
 class DataSet
 {
@@ -26,8 +27,10 @@ public:
 	static bool isBigEndian();
 
 #ifdef CH_MPI
+	static void writeMembraneSolution(SimulationExpression* sim, hid_t h5SimFile, int memIndexOffet, int totalNumMembranePoints);
 	static void writeExtrapolatedValues(SimulationExpression* sim, hid_t h5SimFile, int memIndexOffet, int totalNumMembranePoints);
 #else
+	static void writeMembraneSolution(SimulationExpression* sim, hid_t h5SimFile);
 	static void writeExtrapolatedValues(SimulationExpression* sim, hid_t h5SimFile);
 	static void write(SimulationExpression *sim, char* filename);
 #endif

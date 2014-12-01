@@ -1031,10 +1031,26 @@ void ChomboScheduler::updateSolution()
 	pout() << "Entry " << methodName << endl;
 
 #ifndef CH_MPI
-	// reset variables
-	int numVars = simulation->getNumVariables();
-	for(int v = 0; v < numVars; ++ v){
-		Variable* var = (Variable*)simulation->getVariable(v);
+	populateVolumeSolution();
+	populateImplicitFunctions();
+#endif
+
+	populateMembraneSolution();
+	populateExtrapolatedValues();
+
+	pout() << "Exit " << methodName << endl;
+}
+
+#ifndef CH_MPI
+void ChomboScheduler::populateVolumeSolution()
+{
+	const char* methodName = "(ChomboScheduler::populateVolumeSolution)";
+	pout() << "Entry " << methodName << endl;
+
+	// reset volume variables
+	for(int v = 0; v < simulation->getNumVolVariables(); ++ v)
+	{
+		VolumeVariable* var = simulation->getVolVariable(v);
 		var->reset();
 	}
 
@@ -1168,111 +1184,16 @@ void ChomboScheduler::updateSolution()
 		Variable* var = simulation->getVolVariable(i);
 		var->computeFinalStatistics();
 	}
+	pout() << "Exit " << methodName << endl;
+}
 
-	// membrane variables
-	int numMembraneVars = simulation->getNumMemVariables();
+void ChomboScheduler::populateImplicitFunctions()
+{
+	const char* methodName = "(ChomboScheduler::populateImplicitFunctions)";
+	pout() << "Entry " << methodName << endl;
 
-	for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++) {
-		Feature* iFeature = phaseVolumeList[phase0][ivol]->feature;
-
-		for (int ilev = 0; ilev < numLevels; ++ ilev)
-		{
-			// unit surface area in this level
-			Real maxDxComponent = vectDxes[ilev][0];
-			for(int idir = 1; idir < SpaceDim; idir ++) {
-				maxDxComponent = max(maxDxComponent, vectDxes[ilev][idir]);
-			}
-			double levelUnitS = pow(maxDxComponent,SpaceDim -1);
-
-			DisjointBoxLayout& currGrids = vectGrids[ilev];
-			for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++dit)	{
-				const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
-				const Box& currBox = vectGrids[ilev][dit()];
-
-				const EBGraph& currEBGraph = currEBISBox.getEBGraph();
-				IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
-
-				for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit) {
-					const VolIndex& vof = vofit();
-					int localMemIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
-					if (localMemIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
-					{
-						continue;
-					}
-
-					int membraneID = (*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0);
-					if (membraneID < 0)
-					{
-						continue;
-					}
-					int jvol = membraneID % numConnectedComponents;
-
-					double areaFrac = currEBISBox.bndryArea(vof);
-					Feature* jFeature = phaseVolumeList[phase1][jvol]->feature;
-					Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(iFeature, jFeature);
-					for (int memVarIdx = 0; memVarIdx < numMembraneVars; ++ memVarIdx)
-					{
-						Variable* var = (Variable*)simulation->getMemVariable(memVarIdx);
-						for (int ivar = 0; ivar < iFeature->getMemVarIndexesInAdjacentMembranes().size(); ++ ivar)
-						{
-							int varIndex =	iFeature->getMemVarIndexesInAdjacentMembranes()[ivar];
-							if (varIndex == memVarIdx)
-							{
-								if (membrane->isVariableDefined(var))
-								{
-									double* varCurr = var->getCurr();
-									double sol = (*memSoln[ivol][ilev])[dit()](vof, ivar);
-									var->addTotal(sol * areaFrac * levelUnitS);
-
-									varCurr[localMemIndex] = sol;
-									Variable* errorVar = var->getExactErrorVariable();
-									if (errorVar != NULL)
-									{
-										RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-										const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
-										RealVect coord = mem_centroid;
-										coord *= vectDxes[ilev];
-										coord += vol_center;
-										memset(vectValues, 0, numSymbols * sizeof(double));
-										vectValues[0] = simulation->getTime_sec();
-										vectValues[1] = coord[0];
-										vectValues[2] = coord[1];
-										vectValues[3] = SpaceDim < 3 ? 0.5 : coord[2];
-										double exact = var->getVarContext()->evaluateExpression(EXACT_EXP, vectValues);
-										double* errorCurr = errorVar->getCurr();
-										double error = sol - exact;
-										errorCurr[localMemIndex] = error;
-										Variable* relErrVar = var->getRelativeErrorVariable();
-										double* relErrCurr = relErrVar->getCurr();
-										relErrCurr[localMemIndex] = exact = 0 ? 0 : std::abs(error/exact);
-										var->updateMaxError(abs(error));
-
-										double l2 = error * error * areaFrac;
-										double l2exact = exact * exact * areaFrac;
-										var->addL2Error(l2);
-										var->addL2Exact(l2exact);
-									}
-								}
-								break;
-							}
-						}
-					}
-				} // for (VoFIterator vofit(irregCells,currEBGraph);
-			} // end DataIter
-		} // end ilev
-	} // end ivol
-
-	for (int i = 0; i < simulation->getNumMemVariables(); ++ i)
-	{
-		MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(i);
-		//////////////////////////////////////////////////////////////////////////////////////////////
-		////////  WARNING
-		////////  In parallel the L2 error and exact sums need to be gathered to compute the final sum
-		////////  computeFinalStatistics has to be re-written with this in mind
-		//////////////////////////////////////////////////////////////////////////////////////////////
-		var->computeFinalStatistics();
-	}
-
+	int viewLevel = chomboSpec->getViewLevel();
+	
 	// first time to save IF as volume variable
 	static bool bIFVariableUpdated = false;
 	if (!bIFVariableUpdated)
@@ -1316,11 +1237,9 @@ void ChomboScheduler::updateSolution()
 #endif
 		bIFVariableUpdated = true;
 	}
-#endif
-	
-	populateExtrapolatedValues();
 	pout() << "Exit " << methodName << endl;
 }
+#endif
 
 void ChomboScheduler::writeData(char* filename) {
 	const char* methodName = "(ChomboScheduler::writeData)";
@@ -1378,14 +1297,21 @@ void ChomboScheduler::writeData(char* filename) {
 			char hdf5FileName[128];
 			// write membrane variable solution and extrapolated values to the first hdf5 file
 			sprintf(hdf5FileName, "%s%06d.feature_%s.vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), firstFileVol, HDF5_FILE_EXT);
-			pout() << methodName << " writing extrapolated values, [iphase, ivol]=[" << firstFilePhase << "," << firstFileVol << "] to " << hdf5FileName << endl;
 
 			hid_t h5SimFile =  H5Fopen(hdf5FileName, H5F_ACC_RDWR, H5P_DEFAULT);
+			pout() << methodName << " writing membrane solution, [iphase, ivol]=[" << firstFilePhase << "," << firstFileVol << "] to " << hdf5FileName << endl;
+			DataSet::writeMembraneSolution(simulation, h5SimFile
 #ifdef CH_MPI
-			DataSet::writeExtrapolatedValues(simulation, h5SimFile, memIndexOffset, totalNumMembranePoints);
-#else
-			DataSet::writeExtrapolatedValues(simulation, h5SimFile);
+			, memIndexOffset, totalNumMembranePoints
 #endif
+			);
+			
+			pout() << methodName << " writing extrapolated values, [iphase, ivol]=[" << firstFilePhase << "," << firstFileVol << "] to " << hdf5FileName << endl;
+			DataSet::writeExtrapolatedValues(simulation, h5SimFile
+#ifdef CH_MPI
+			, memIndexOffset, totalNumMembranePoints
+#endif
+			);
 			H5Fclose(h5SimFile);
 		}
 		
@@ -1393,7 +1319,6 @@ void ChomboScheduler::writeData(char* filename) {
 	}
 #endif
 
-	
 	hdf5FileCount ++;
 	pout() << "Exit " << methodName << endl;
 }
@@ -2918,5 +2843,126 @@ void ChomboScheduler::populateExtrapolatedValues()
 		} // end ivol
 	} // end iphase
 
+	pout() << "Exit " << methodName << endl;
+}
+
+void ChomboScheduler::populateMembraneSolution()
+{
+	const char* methodName = "(ChomboScheduler::populateMembraneSolution)";
+	pout() << "Entry " << methodName << endl;
+
+	// membrane variables
+	int numMembraneVars = simulation->getNumMemVariables();
+	// reset membrane variables
+	for(int v = 0; v < numMembraneVars; ++ v){
+		MembraneVariable* var = simulation->getMemVariable(v);
+		var->reset();
+	}
+	
+	for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++) {
+		Feature* iFeature = phaseVolumeList[phase0][ivol]->feature;
+
+		for (int ilev = 0; ilev < numLevels; ++ ilev)
+		{
+			// unit surface area in this level
+			Real maxDxComponent = vectDxes[ilev][0];
+			for(int idir = 1; idir < SpaceDim; idir ++) {
+				maxDxComponent = max(maxDxComponent, vectDxes[ilev][idir]);
+			}
+			double levelUnitS = pow(maxDxComponent,SpaceDim -1);
+
+			DisjointBoxLayout& currGrids = vectGrids[ilev];
+			for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++dit)	{
+				const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
+				const Box& currBox = vectGrids[ilev][dit()];
+
+				const EBGraph& currEBGraph = currEBISBox.getEBGraph();
+				IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
+
+				for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit) {
+					const VolIndex& vof = vofit();
+					int localMemIndex = (*irregularPointMembraneElementIndex[phase0][ivol][ilev])[dit()](vof, 0);
+					if (localMemIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
+					{
+						continue;
+					}
+
+					int membraneID = (*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0);
+					if (membraneID < 0)
+					{
+						continue;
+					}
+					int jvol = membraneID % numConnectedComponents;
+
+					double areaFrac = currEBISBox.bndryArea(vof);
+					Feature* jFeature = phaseVolumeList[phase1][jvol]->feature;
+					Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(iFeature, jFeature);
+					for (int memVarIdx = 0; memVarIdx < numMembraneVars; ++ memVarIdx)
+					{
+						Variable* var = (Variable*)simulation->getMemVariable(memVarIdx);
+						for (int ivar = 0; ivar < iFeature->getMemVarIndexesInAdjacentMembranes().size(); ++ ivar)
+						{
+							int varIndex =	iFeature->getMemVarIndexesInAdjacentMembranes()[ivar];
+							if (varIndex == memVarIdx)
+							{
+								if (membrane->isVariableDefined(var))
+								{
+									double* varCurr = var->getCurr();
+									double sol = (*memSoln[ivol][ilev])[dit()](vof, ivar);
+									varCurr[localMemIndex] = sol;
+#ifndef CH_MPI
+									var->addTotal(sol * areaFrac * levelUnitS);
+
+									Variable* errorVar = var->getExactErrorVariable();
+									if (errorVar != NULL)
+									{
+										RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+										const RealVect& mem_centroid = currEBISBox.bndryCentroid(vof);
+										RealVect coord = mem_centroid;
+										coord *= vectDxes[ilev];
+										coord += vol_center;
+										memset(vectValues, 0, numSymbols * sizeof(double));
+										vectValues[0] = simulation->getTime_sec();
+										vectValues[1] = coord[0];
+										vectValues[2] = coord[1];
+										vectValues[3] = SpaceDim < 3 ? 0.5 : coord[2];
+										double exact = var->getVarContext()->evaluateExpression(EXACT_EXP, vectValues);
+										double* errorCurr = errorVar->getCurr();
+										double error = sol - exact;
+										errorCurr[localMemIndex] = error;
+										Variable* relErrVar = var->getRelativeErrorVariable();
+										double* relErrCurr = relErrVar->getCurr();
+										relErrCurr[localMemIndex] = exact = 0 ? 0 : std::abs(error/exact);
+										var->updateMaxError(abs(error));
+
+										double l2 = error * error * areaFrac;
+										double l2exact = exact * exact * areaFrac;
+										var->addL2Error(l2);
+										var->addL2Exact(l2exact);
+									}
+#endif
+								}
+								break;
+							}
+						}
+					}
+				} // for (VoFIterator vofit(irregCells,currEBGraph);
+			} // end DataIter
+		} // end ilev
+	} // end ivol
+
+#ifndef CH_MPI
+	for (int i = 0; i < simulation->getNumMemVariables(); ++ i)
+	{
+		MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(i);
+		//////////////////////////////////////////////////////////////////////////////////////////////
+		////////  WARNING
+		////////  In parallel the L2 error and exact sums need to be gathered to compute the final sum
+		////////  computeFinalStatistics has to be re-written with this in mind
+		//////////////////////////////////////////////////////////////////////////////////////////////
+		var->computeFinalStatistics();
+	}
+#endif
+	
 	pout() << "Exit " << methodName << endl;
 }

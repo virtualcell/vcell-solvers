@@ -33,6 +33,7 @@ class Variable
 public:
 	virtual ~Variable();
 
+	double *getCurr();
 	long getSize() { return size; }
 	const string& getName() { return name; }
 	string getQualifiedName();
@@ -67,7 +68,6 @@ public:
 		return varContext;
 	}
 #ifndef CH_MPI
-	double *getCurr() { return curr; }
 	Variable* getExactErrorVariable()
 	{
 		return exactErrorVar;
@@ -102,8 +102,8 @@ public:
 	{
 		return total;
 	}
-	void reset();
 #endif
+	void reset();
 	
 protected:
 	Variable(string& nameStr, Structure* structure, long Asize);
@@ -111,6 +111,7 @@ protected:
 	string name;
 	Structure* structure;
 	    
+	double *curr;
 	long size;
 
 	bool bDiffusing;
@@ -118,7 +119,6 @@ protected:
 	VarContext* varContext;
 
 #ifndef CH_MPI
-	double *curr;
 	Variable* exactErrorVar;
 	Variable* relativeErrorVar;
 	double l2Error;

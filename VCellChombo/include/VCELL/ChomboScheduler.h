@@ -170,6 +170,12 @@ private:
 	Vector< map<int, int> > irregVolumeLocalMembraneMap;
 
 	void populateExtrapolatedValues();
+	void populateMembraneSolution();
+
+#ifndef CH_MPI
+	void populateVolumeSolution();
+	void populateImplicitFunctions();
+#endif
 };
 
 #endif

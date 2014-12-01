@@ -267,13 +267,15 @@ char** SimulationExpression::getOutputVarNames()
 		outputVarCnt = 0;
 		for (int i = 0; i < varList.size(); i ++)
 		{
-			Variable* var = varList[i];
 			++ outputVarCnt;
+#ifndef CH_MPI
+			Variable* var = varList[i];
 			if (var->getExactErrorVariable() != NULL)
 			{
 				++ outputVarCnt;
 				++ outputVarCnt;
 			}
+#endif
 		}
 		outputVarNames = new char*[outputVarCnt];
 		outputVarTypes = new int[outputVarCnt];
@@ -287,6 +289,7 @@ char** SimulationExpression::getOutputVarNames()
 			sprintf(outputVarNames[varcnt], "%s", name.c_str());
 			++ varcnt;
 
+#ifndef CH_MPI
 			Variable* errVar = var->getExactErrorVariable();
 			if (errVar != NULL)
 			{
@@ -303,6 +306,7 @@ char** SimulationExpression::getOutputVarNames()
 				sprintf(outputVarNames[varcnt], "%s", name.c_str());
 				++ varcnt;
 			}
+#endif
 		}
 	}
 	return outputVarNames;

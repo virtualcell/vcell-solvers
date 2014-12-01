@@ -15,6 +15,7 @@ using std::cout;
 using std::endl;
 using std::string;
 #include <VCELL/VolumeVariable.h>
+#include <VCELL/MembraneVariable.h>
 #include <VCELL/SimulationExpression.h>
 #include <VCELL/ChomboGeometry.h>
 #include <VCELL/VCellModel.h>
@@ -96,6 +97,8 @@ void DataSet::readDoubles(FILE *fp, double *data, int length)
 
 static const char* EXTRAPOLATED_VOLUMES_GROUP = "/extrapolated_volumes";
 static const char* DATASET_ATTR_VARIABLE_TYPE = "variable type";
+static const char* SOLUTION_GROUP = "/solution";
+static const char* SOLUTION_DATASET_ATTR_DOMAIN = "domain";
 
 #ifndef CH_MPI
 void DataSet::write(SimulationExpression *sim, char* filename)
@@ -115,13 +118,11 @@ void DataSet::write(SimulationExpression *sim, char* filename)
 	{
 		cout << "DataSet::write() - no variables defined" << endl;
 	}
-	
-	static const char* SOLUTION_GROUP = "/solution";
+
 	static const char* SOLUTION_ATTR_TIME = "time";
 	static const char* SOLUTION_ATTR_VARIABLES = "variables";
 	static const char* SOLUTION_ATTR_VARIABLE_TYPES = "variable types";
-	
-	static const char* SOLUTION_DATASET_ATTR_DOMAIN = "domain";
+
 	static const char* SOLUTION_DATASET_ATTR_MEAN = "mean";
 	static const char* SOLUTION_DATASET_ATTR_SUM_VOLFRAC = "sum of volume fraction";
 	static const char* SOLUTION_DATASET_ATTR_RELATIVE_L2ERROR = "relative L2 error";
@@ -261,6 +262,82 @@ void DataSet::write(SimulationExpression *sim, char* filename)
 	H5Fclose(h5SimFile);
 }
 #endif
+
+#ifdef CH_MPI
+void DataSet::writeMembraneSolution(SimulationExpression* sim, hid_t h5SimFile, int memIndexOffset, int totalNumMembranePoints)
+#else
+void DataSet::writeMembraneSolution(SimulationExpression* sim, hid_t h5SimFile)
+#endif
+{
+	const char* methodName = "(DataSet::writeMembraneSolution)";
+	pout() << "Entry " << methodName << endl;
+
+	hid_t solutionGroup = H5Gcreate(h5SimFile, SOLUTION_GROUP, H5P_DEFAULT);
+	hid_t scalarDataSpace = H5Screate(H5S_SCALAR); // shared among all attributes
+
+	int numMemVar = sim->getNumMemVariables();
+	for (int i = 0; i < numMemVar; i ++)
+	{
+		MembraneVariable* var = sim->getMemVariable(i);
+
+		int rank = 1;
+		// memory dataspace dimensions
+		hsize_t dim[] = {var->getSize()};
+		hid_t memSpace = H5Screate_simple(rank, dim, NULL);
+#ifdef CH_MPI
+		// file dataspace dimensions
+		dim[0] = totalNumMembranePoints;
+		hsize_t fileSpace = H5Screate_simple(rank, dim, NULL);
+		// select offset in file space
+		hsize_t start[] = {memIndexOffset};
+		hsize_t count[] = {var->getSize()};
+		herr_t err = H5Sselect_hyperslab(fileSpace, H5S_SELECT_SET, start, NULL, count, NULL);
+		if (err < 0)
+		{
+			stringstream ss;
+			ss << "failed to select position to write membrane solution";
+			throw ss.str();
+		}
+#else
+		hid_t fileSpace = memSpace;
+		memSpace = H5S_ALL; // same as file space in serial
+#endif
+		char dsName[128];
+		sprintf(dsName, "%s/%s", SOLUTION_GROUP, var->getName().c_str());
+		hid_t varDataset = H5Dcreate (h5SimFile, dsName, H5T_NATIVE_DOUBLE, fileSpace, H5P_DEFAULT);
+		H5Dwrite(varDataset, H5T_NATIVE_DOUBLE, memSpace, fileSpace, H5P_DEFAULT, var->getCurr());
+
+		// attribute: domain
+		hid_t strtype = H5Tcopy(H5T_C_S1);
+		char domainName[50];
+		if (var->getStructure() != NULL)
+		{
+			sprintf(domainName, "%s", var->getStructure()->getName().c_str());
+			H5Tset_size(strtype, strlen(domainName));
+			hid_t attribute = H5Acreate(varDataset, SOLUTION_DATASET_ATTR_DOMAIN, strtype, scalarDataSpace, H5P_DEFAULT);
+			H5Awrite(attribute, strtype, domainName);
+			H5Aclose(attribute);
+		}
+
+		// attribute: variable type
+		hid_t attribute = H5Acreate(varDataset, DATASET_ATTR_VARIABLE_TYPE, H5T_NATIVE_INT, scalarDataSpace, H5P_DEFAULT);
+		VariableType varType = var->getVarType();
+		H5Awrite(attribute, H5T_NATIVE_INT, &varType);
+		H5Aclose(attribute);
+
+		H5Dclose(varDataset);
+		H5Tclose(strtype);
+#ifdef CH_MPI
+		H5Sclose(memSpace);
+#endif
+		H5Sclose(fileSpace);
+	}
+
+	H5Sclose(scalarDataSpace);
+	H5Gclose(solutionGroup);
+
+	pout() << "Exit " << methodName << endl;
+}
 
 #ifdef CH_MPI
 void DataSet::writeExtrapolatedValues(SimulationExpression* sim, hid_t h5SimFile, int memIndexOffset, int totalNumMembranePoints)

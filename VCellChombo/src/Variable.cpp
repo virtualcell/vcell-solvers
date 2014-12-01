@@ -4,12 +4,14 @@
  */
 
 #include <VCELL/Variable.h>
+#include <parstream.H>
 #include <string.h>
 #include <algorithm>
 #include <VCELL/Structure.h>
 #include <VCELL/VarContext.h>
 #include <REAL.H>
 #include <cmath>
+#include <iostream>
 
 Variable::Variable(string& nameStr, Structure* s, long Asize)
 {
@@ -19,24 +21,30 @@ Variable::Variable(string& nameStr, Structure* s, long Asize)
 	bDiffusing = false;
 	bElliptic = false;
 	varContext = 0;
+	curr = NULL;
 #ifndef CH_MPI
-	curr = new double[size];
 	exactErrorVar = 0;
 	relativeErrorVar = 0;
-	for (int i = 0; i < size; ++ i)
-	{
-		curr[i] = BASEFAB_REAL_SETVAL;
-	}
 	reset();
 #endif
 }
 
 Variable::~Variable()
 {
-#ifndef CH_MPI
-	delete[] curr;
-#endif
+	if (curr != NULL)
+	{
+		delete[] curr;
+	}
 	delete varContext;
+}
+
+double* Variable::getCurr()
+{
+	if (curr == NULL)
+	{
+		curr = new double[size];
+	}
+	return curr;
 }
 
 string Variable::getQualifiedName(){
@@ -46,9 +54,17 @@ string Variable::getQualifiedName(){
 	return name;
 }
 
-#ifndef CH_MPI
 void Variable::reset()
 {
+	const char* methodName = "(Variable::reset)";
+	pout() << "Entry " << methodName << ": " << getQualifiedName() << std::endl;
+
+	for (int i = 0; i < size; ++ i)
+	{
+		getCurr()[i] = BASEFAB_REAL_SETVAL;
+	}
+
+#ifndef CH_MPI
 	maxError = 0;
 	l2Error = 0;
 	l2Exact = 0;
@@ -60,8 +76,11 @@ void Variable::reset()
 		memset(exactErrorVar->getCurr(), 0, exactErrorVar->getSize() * sizeof(double));
 		memset(relativeErrorVar->getCurr(), 0, relativeErrorVar->getSize() * sizeof(double));
 	}
+#endif
+	pout() << "Exit " << methodName << std::endl;
 }
 
+#ifndef CH_MPI
 void Variable::addL2Error(double d)
 {
 	l2Error += d;
