@@ -51,12 +51,13 @@ namespace moving_boundary {
 		}
 
 		/**
-		* set heartbeat output to std::cout
-		* @param numGen output after every numGen generations
-		* @param symbol symbol to output (newline not implied)
-		* default is no heartbeart
+		* report progress report interval 
+		* @param percent how often to report 1 - 100 
+		* @param estimateTime ; include time estimate until completion 
+		* default is no report 
+		* @throws std::domain_error if percent not 1 to 99 
 		*/
-		void setHeartbeat(size_t numGen, const std::string &symbol);
+		void reportProgress(unsigned char percent, bool estimateTime = false);
 		/**
 		* add a client. Caller responsible for ensuring reference remains valid
 		*/

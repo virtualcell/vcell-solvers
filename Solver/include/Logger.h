@@ -40,6 +40,7 @@ namespace vcell_util {
 			notCollecting,
 			concentrationExpression,
 			generationTime,
+			progressEstimate,
 			/** utility key for development purpose, should be replaced by named enum before committing to source code control */
 			extra1, 
 			extra2,

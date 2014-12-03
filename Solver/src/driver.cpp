@@ -133,6 +133,8 @@ int main(int argc, char *argv[])
 		if (configPresent) {
 			setupHeartbeat(*doc.RootElement( ),problem);
 		}
+		problem.reportProgress(1,true);
+
 	}
 	catch (std::exception & e) {
 		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << filename << std::endl; 
@@ -205,6 +207,7 @@ namespace {
 		}
 	}
 	void setupHeartbeat(const XMLElement &root,moving_boundary::MovingBoundaryParabolicProblem & mbpp) {
+		/*
 		const tinyxml2::XMLElement *hb = root.FirstChildElement("heartbeat");
 		if (hb != nullptr) {
 			using vcell_xml::convertChildElementWithDefault;
@@ -212,6 +215,7 @@ namespace {
 			std::string symbol = convertChildElementWithDefault<std::string>(*hb,"symbol",".");
 			mbpp.setHeartbeat(heartbeat,symbol);
 		}
+		*/
 	}
 }
 

@@ -87,7 +87,6 @@ TEST(persist,movingBoundaryProblem) {
 
 	MovingBoundarySetup mbs = MovingBoundarySetup::setupProblem(*doc.RootElement( ));
 	MovingBoundaryParabolicProblem mbpp(mbs);
-	mbpp.setHeartbeat(10,"bub bub");
 	const char * const filename = "MovingBoundaryProblem.dat";
 	{
 		std::ofstream out(filename, std::ios::binary|std::ios::trunc);

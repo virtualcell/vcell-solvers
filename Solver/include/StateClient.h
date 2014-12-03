@@ -38,7 +38,7 @@ namespace moving_boundary {
 		/**
 		* version number for tracking format
 		*/
-		static const int MB_VERSION = 3;
+		static const int MB_VERSION = 4;
 	private:
 		StateClient(MovingBoundaryParabolicProblem & problem, const std::string & reportClientXML, std::istream &); 
 		static void registerTypes( );

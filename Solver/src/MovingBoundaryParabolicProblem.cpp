@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <exception>
 #include <forward_list>
+#include <chrono>
 #include <vcellutil.h>
 #include <Expression.h>
 #include <SimpleSymbolTable.h>
@@ -239,8 +240,9 @@ namespace moving_boundary {
 			boundaryElements( ),
 			lostElements( ),
 			gainedElements(  ),
-			heartbeat(0),
-			heartbeatSymbol( )
+			statusPercent(0),
+			estimateProgress(false),
+			isRunning(false)
 		{  
 
 			MeshElementSpecies::setProblemToWorldDistanceScale(world.theScale( ));
@@ -522,6 +524,10 @@ namespace moving_boundary {
 			return std::pair<double,double>(timeNow,incr);
 		}
 
+		/**
+		* update time step to ensure last step(s) do not proceed past maxTime
+		* for the simulation
+		*/
 		void updateTimeStep(double desiredStep, int generationCount) {
 			double intervalTilEnd = maxTime - baselineTime;
 			int n = ceil(intervalTilEnd / desiredStep);
@@ -810,8 +816,66 @@ namespace moving_boundary {
 			}
 		}
 
+		//reset a flag to false during stack unwinding
+		struct Resetter{
+			bool & flag;
+			Resetter(bool & flag_)
+				:flag(flag_) {}
+			~Resetter( ) {
+				flag = false;
+			}
+		};
+
+		/**
+		* package of percent progress variables for convenience / clarity
+		*/
+		struct ProgressPercentInfo {
+			double simStartTime;
+			double lastPercentTime; //PDEL
+			double progressDelta; //statusPercent in time 
+			size_t nextProgressGeneration; 
+			std::chrono::steady_clock::time_point runStartTime;
+
+			/**
+			* initialize to unused state
+			*/
+			ProgressPercentInfo( )
+				:simStartTime(0),
+				lastPercentTime(0),
+				progressDelta(0),
+				nextProgressGeneration(std::numeric_limits<size_t>::max( )),
+				runStartTime( ) {}
+
+			/**
+			* estimate next generation a percent should be output
+			* assumes progressData et. al. have been set externally
+			*/
+			void calculateNextProgress(size_t currentGeneration, double timeStep) {
+				//double nextTime = lastPercentTime + progressDelta;
+				nextProgressGeneration = static_cast<size_t>(progressDelta/timeStep) + currentGeneration;
+				VCELL_KEY_LOG(debug,Key::progressEstimate, "PE lpt " << lastPercentTime << " pd " << progressDelta 
+				//	<< " nextTime " << nextTime 
+					<< " timeStep " << timeStep << " current gen " << currentGeneration 
+					<< " next Gen " << nextProgressGeneration);
+			}
+		};
+
 		void run( ) {
 			VCELL_LOG(info,"commence simulation");
+			Resetter r(isRunning);
+			isRunning = true;
+
+			ProgressPercentInfo percentInfo;
+
+			if (statusPercent > 0)  {
+				percentInfo.simStartTime = currentTime;
+				percentInfo.progressDelta = statusPercent / 100.0 * maxTime;
+				percentInfo.calculateNextProgress(generationCount,timeStep);
+				if (estimateProgress) {
+					percentInfo.runStartTime = std::chrono::steady_clock::now( );
+				}
+			}
+
 			const bool frontMoveTrace = matlabBridge::MatLabDebug::on("frontmove");
 			FrontType oldFront; //for debugging
 
@@ -830,9 +894,9 @@ namespace moving_boundary {
 						FrontVelocity fv(*this);
 						std::for_each(currentFront.begin( ),currentFront.end( ),fv);
 						double maxVel = sqrt(fv.maxSquaredVel);
-						double maxTime = minimimMeshInterval / (2 * maxVel);
-						if (nowAndStep.second > maxTime) {
-							updateTimeStep(maxTime,generationCount);
+						double maxTimeStep_ = minimimMeshInterval / (2 * maxVel);
+						if (nowAndStep.second > maxTimeStep_) {
+							updateTimeStep(maxTimeStep_,generationCount);
 							nowAndStep = times(generationCount); 
 					}
 					currentTime = nowAndStep.first;
@@ -939,55 +1003,42 @@ namespace moving_boundary {
 
 					//tell the clients about it
 					notifyClients(++generationCount, changed);
-					if (heartbeat && generationCount%heartbeat == 0) {
-						std::cout << heartbeatSymbol;
-					}
-#ifdef OLD				
-					lostElements.clear( );
-					gainedElements.clear( );
-					for (MBMesh::const_iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
+					if (generationCount >= percentInfo.nextProgressGeneration) {
+						unsigned int percent = static_cast<unsigned int>(100 * currentTime / maxTime + 0.5);
+						std::cout << std::setw(2) << percent << "% complete";
+						if (estimateProgress) {
+							namespace chrono = std::chrono;
+							using chrono::steady_clock;
+							steady_clock::time_point timeNow = steady_clock::now( );
+							steady_clock::duration elapsed = timeNow - percentInfo.runStartTime;
+							chrono::seconds seconds = chrono::duration_cast<chrono::seconds>(elapsed); 
+							 VCELL_KEY_LOG(debug,Key::progressEstimate, "PE percent " << percent << " elapsed " << seconds.count( ));
 
-						const Element &previous = *iter;
-						Element &next = previous.doppelganger( );
-						if (next.isInside( )) {
-							next.setVelocity(velocity(next(cX),next(cY)) );
-						}
-						Element::Transition tns = previous.stateChange( );
-						switch (tns) {
-						case Element::same:
-							for (size_t s = 0; s < NUM_S;s++) {
-								const REAL mass = previous.mass(s);
-								next.setMass(s,mass);
+							//simulation may not have started at time 0 if this run was restored from a persisted problem
+							const double simTimeThisRun = maxTime - percentInfo.simStartTime;
+							const double simTimeThusFar = currentTime - percentInfo.simStartTime;
+							if (simTimeThusFar > 0) { //can't estimate at beginning
+									//double guess = seconds.count( ) * simTimeThisRun  / simTimeThusFar; 
+									const double t = seconds.count( )  * simTimeThisRun  / simTimeThusFar;
+									chrono::seconds total(static_cast<int>(t));
+									chrono::seconds remaining = total - seconds; 
+									chrono::hours h = chrono::duration_cast<chrono::hours>(remaining); 
+									remaining -= h;
+									chrono::minutes m = chrono::duration_cast<chrono::minutes>(remaining); 
+									remaining -= m;
+									std::cout << ", estimated time remaining " << h.count( ) << " hours " 
+										<< m.count( ) << " minutes " << remaining.count( ) << " seconds";
+									VCELL_KEY_LOG(debug,Key::progressEstimate, "PE thisRun " <<  simTimeThisRun 
+										<< " thusFar " << simTimeThusFar << " t calc " << t
+										<< " est total seconds " << total.count( ) << ' ' << h.count( ) << " hours " 
+										<< m.count( ) << " minutes " << remaining.count( ) << " sec");
+
 							}
-							break;
-						case Element::lost:
-							assert(previous.mPos( ) == boundarySurface);
-							boundaryElements.remove(const_cast<Element *>(&previous));
-							lostElements.push_back(&previous);
-							break;
-						case Element::gained:
-							assert(next.mPos( ) == boundarySurface);
-							boundaryElements.emplace_front(const_cast<Element *>(&previous));
-							gainedElements.push_back(&next);
-							break;
 						}
+						std::cout << std::endl;
+						percentInfo.lastPercentTime = currentTime;
+						percentInfo.calculateNextProgress(generationCount,timeStep);
 					}
-					for (std::vector<const Element *>::const_iterator iter = lostElements.begin( );iter != lostElements.end( );++iter) {
-						const Element * e = (*iter);
-						size_t x = e->indexOf(0);
-						size_t y = e->indexOf(1);
-						e->distributeMassToNeighbors(meshDefinition);
-					}
-					for (std::vector<Element *>::iterator iter = gainedElements.begin( );iter != gainedElements.end( );++iter) {
-						Element * e = (*iter);
-						e->collectMassFromNeighbors(meshDefinition);
-					}
-
-					//tell the client about it
-					giveElementsToClient(client);
-
-
-#endif
 				}
 				for (MovingBoundaryTimeClient *client : timeClients) {
 					client->simulationComplete( );
@@ -1005,9 +1056,13 @@ namespace moving_boundary {
 		unsigned int numberTimeSteps( ) const {
 			return static_cast<unsigned int>(maxTime / timeStep);
 		}
-		void setHeartbeat(size_t numGen, const std::string &symbol)  {
-			heartbeat = numGen;
-			heartbeatSymbol = symbol;
+		void reportProgress(unsigned char percent, bool estimateTime) {
+			if (!isRunning) {
+				statusPercent = percent;
+				estimateProgress = estimateTime;
+				return;
+			}
+			throw std::logic_error("Call to reportProgress( ) while simulation is running");
 		}
 
 		const MovingBoundarySetup & setup( ) const {
@@ -1101,8 +1156,10 @@ namespace moving_boundary {
 			persistElementsVector(os, boundaryElements);
 			persistElementsVector(os, lostElements);
 			persistElementsVector(os, gainedElements);
-			vcell_persist::binaryWrite(os,heartbeat);
-			vcell_persist::StdString<>::save(os,heartbeatSymbol);
+			vcell_persist::binaryWrite(os,statusPercent);
+			if (statusPercent > 0) {
+				vcell_persist::binaryWrite(os,estimateProgress);
+			}
 		}
 
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs, std::istream &is) 
@@ -1136,8 +1193,10 @@ namespace moving_boundary {
 			boundaryElements( ),
 			lostElements( ),
 			gainedElements(  ),
-			heartbeat(0),
-			heartbeatSymbol( ) {
+			statusPercent(0),
+			estimateProgress(false),
+			isRunning(false)
+		{
 				MeshElementSpecies::setProblemToWorldDistanceScale(world.theScale( ));
 				vcell_persist::Token::check<MovingBoundaryParabolicProblemImpl>(is);
 				//vcell_persist::binaryRead(is,diffusionConstant);
@@ -1158,8 +1217,10 @@ namespace moving_boundary {
 				restoreElementsVector(is, boundaryElements);
 				restoreElementsVector(is, lostElements);
 				restoreElementsVector(is, gainedElements);
-				vcell_persist::binaryRead(is,heartbeat);
-				vcell_persist::StdString<>::restore(is,heartbeatSymbol);
+				vcell_persist::binaryRead(is,statusPercent);
+				if (statusPercent > 0) {
+					vcell_persist::binaryRead(is,estimateProgress);
+				}
 				voronoiMesh.setMesh(primaryMesh);
 			}
 
@@ -1174,7 +1235,13 @@ namespace moving_boundary {
 		double currentTime;
 		const double maxTime;
 		double timeStep; 
+		/**
+		* time last timeStep was calculated
+		*/
 		double baselineTime;
+		/**
+		* generation last time step was calculated
+		*/
 		unsigned int baselineGeneration;
 		/**
 		* in problem domain units
@@ -1223,8 +1290,14 @@ namespace moving_boundary {
 		* point to next generation 
 		*/
 		std::vector<Element *> gainedElements;
-		size_t heartbeat;
-		std::string heartbeatSymbol;
+		unsigned char statusPercent;
+		bool estimateProgress;
+
+		/**
+		* runtime flag (not-persistent)
+		*/
+		bool isRunning;
+
 		/**
 		* client storage; not persistent
 		*/
@@ -1347,9 +1420,13 @@ namespace moving_boundary {
 	MovingBoundaryParabolicProblem::~MovingBoundaryParabolicProblem( ) {
 	}
 
-	void MovingBoundaryParabolicProblem::setHeartbeat(size_t numGen, const std::string &symbol) {
-		sImpl->setHeartbeat(numGen,symbol);
+	void MovingBoundaryParabolicProblem::reportProgress(unsigned char percent, bool estimateTime) {
+		if (percent == 0 || percent > 99) {
+			VCELL_EXCEPTION(domain_error, "percent value " << percent << " must be between 1 and 99");
+		}
+		sImpl->reportProgress(percent,estimateTime);
 	}
+
 	void MovingBoundaryParabolicProblem::add(moving_boundary::MovingBoundaryTimeClient & client) {
 		sImpl->add(client);
 	}
