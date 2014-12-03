@@ -1422,7 +1422,8 @@ namespace moving_boundary {
 
 	void MovingBoundaryParabolicProblem::reportProgress(unsigned char percent, bool estimateTime) {
 		if (percent == 0 || percent > 99) {
-			VCELL_EXCEPTION(domain_error, "percent value " << percent << " must be between 1 and 99");
+			unsigned int p = percent;
+			VCELL_EXCEPTION(domain_error, "percent value " << p << " must be between 1 and 99");
 		}
 		sImpl->reportProgress(percent,estimateTime);
 	}

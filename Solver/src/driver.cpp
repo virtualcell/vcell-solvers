@@ -28,7 +28,7 @@ namespace {
 	*/
 	void setupTrace(const XMLElement &root); 
 	void setupMatlabDebug(const XMLElement &root); 
-	void setupHeartbeat(const XMLElement &root,moving_boundary::MovingBoundaryParabolicProblem & mbpp);
+	void setupProgress(const XMLElement &root,moving_boundary::MovingBoundaryParabolicProblem & mbpp); 
 
 	/**
 	* shared variables 
@@ -131,10 +131,8 @@ int main(int argc, char *argv[])
 		}
 		problem.add(*reportClient);
 		if (configPresent) {
-			setupHeartbeat(*doc.RootElement( ),problem);
+			setupProgress(*doc.RootElement( ),problem);
 		}
-		problem.reportProgress(1,true);
-
 	}
 	catch (std::exception & e) {
 		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << filename << std::endl; 
@@ -206,16 +204,13 @@ namespace {
 			}
 		}
 	}
-	void setupHeartbeat(const XMLElement &root,moving_boundary::MovingBoundaryParabolicProblem & mbpp) {
-		/*
-		const tinyxml2::XMLElement *hb = root.FirstChildElement("heartbeat");
-		if (hb != nullptr) {
-			using vcell_xml::convertChildElementWithDefault;
-			size_t heartbeat = convertChildElementWithDefault<size_t>(*hb,"generations",0);
-			std::string symbol = convertChildElementWithDefault<std::string>(*hb,"symbol",".");
-			mbpp.setHeartbeat(heartbeat,symbol);
+	void setupProgress(const XMLElement &root,moving_boundary::MovingBoundaryParabolicProblem & mbpp) {
+		const tinyxml2::XMLElement *prog = root.FirstChildElement("progress");
+		if (prog != nullptr) {
+			const unsigned short percent = vcell_xml::convertChildElement<unsigned short>(*prog,"percent");
+			const bool estimateProgress =vcell_xml::convertChildElementWithDefault<bool>(*prog,"estimateProgress",false);
+			mbpp.reportProgress(percent,estimateProgress);
 		}
-		*/
 	}
 }
 
