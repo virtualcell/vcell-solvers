@@ -1017,7 +1017,7 @@ namespace moving_boundary {
 							//simulation may not have started at time 0 if this run was restored from a persisted problem
 							const double simTimeThisRun = maxTime - percentInfo.simStartTime;
 							const double simTimeThusFar = currentTime - percentInfo.simStartTime;
-							if (simTimeThusFar > 0) { //can't estimate at beginning
+							if (seconds.count( ) > 0) { //can't estimate at beginning
 									//double guess = seconds.count( ) * simTimeThisRun  / simTimeThusFar; 
 									const double t = seconds.count( )  * simTimeThisRun  / simTimeThusFar;
 									chrono::seconds total(static_cast<int>(t));
