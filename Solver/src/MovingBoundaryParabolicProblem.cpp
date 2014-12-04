@@ -10,6 +10,7 @@
 #include <forward_list>
 #include <chrono>
 #include <vcellutil.h>
+#include <VCellChrono.h>
 #include <Expression.h>
 #include <SimpleSymbolTable.h>
 #include <VCellFront.h>
@@ -1012,26 +1013,22 @@ namespace moving_boundary {
 							steady_clock::time_point timeNow = steady_clock::now( );
 							steady_clock::duration elapsed = timeNow - percentInfo.runStartTime;
 							chrono::seconds seconds = chrono::duration_cast<chrono::seconds>(elapsed); 
-							 VCELL_KEY_LOG(debug,Key::progressEstimate, "PE percent " << percent << " elapsed " << seconds.count( ));
+							VCELL_KEY_LOG(debug,Key::progressEstimate, "PE percent " << percent << " elapsed " << seconds.count( ));
 
 							//simulation may not have started at time 0 if this run was restored from a persisted problem
 							const double simTimeThisRun = maxTime - percentInfo.simStartTime;
 							const double simTimeThusFar = currentTime - percentInfo.simStartTime;
 							if (seconds.count( ) > 0) { //can't estimate at beginning
-									//double guess = seconds.count( ) * simTimeThisRun  / simTimeThusFar; 
+									using vcell_util::HMS;
 									const double t = seconds.count( )  * simTimeThisRun  / simTimeThusFar;
 									chrono::seconds total(static_cast<int>(t));
 									chrono::seconds remaining = total - seconds; 
-									chrono::hours h = chrono::duration_cast<chrono::hours>(remaining); 
-									remaining -= h;
-									chrono::minutes m = chrono::duration_cast<chrono::minutes>(remaining); 
-									remaining -= m;
-									std::cout << ", estimated time remaining " << h.count( ) << " hours " 
-										<< m.count( ) << " minutes " << remaining.count( ) << " seconds";
+									const int format = vcell_util::HMSFormat::FIXED|vcell_util::HMSFormat::ALL;
+									std::cout << ", elasped time " << HMS<chrono::seconds>(total,format) << ", estimated time remaining "
+										<< HMS<chrono::seconds>(remaining,format) << std::endl;
 									VCELL_KEY_LOG(debug,Key::progressEstimate, "PE thisRun " <<  simTimeThisRun 
 										<< " thusFar " << simTimeThusFar << " t calc " << t
-										<< " est total seconds " << total.count( ) << ' ' << h.count( ) << " hours " 
-										<< m.count( ) << " minutes " << remaining.count( ) << " sec");
+										<< " est total seconds " << total.count( ) << ' ' << remaining.count( ) << " sec");
 
 							}
 						}

@@ -196,6 +196,10 @@ namespace {
 		if (trace != nullptr) {
 			const char * const TOKEN = "token";
 			const tinyxml2::XMLElement *token = trace->FirstChildElement(TOKEN);
+			if (token != nullptr) {
+				std::ofstream *out = new std::ofstream("mdebug.m");
+				matlabBridge::MatLabDebug::setDebug(*out);
+			}
 			while (token != nullptr) {
 				using vcell_xml::convertChildElement;
 				const std::string spec = vcell_xml::convertElement<std::string>(*token);
