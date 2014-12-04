@@ -1019,13 +1019,12 @@ namespace moving_boundary {
 							const double simTimeThisRun = maxTime - percentInfo.simStartTime;
 							const double simTimeThusFar = currentTime - percentInfo.simStartTime;
 							if (seconds.count( ) > 0) { //can't estimate at beginning
-									using vcell_util::HMS;
 									const double t = seconds.count( )  * simTimeThisRun  / simTimeThusFar;
 									chrono::seconds total(static_cast<int>(t));
 									chrono::seconds remaining = total - seconds; 
-									const int format = vcell_util::HMSFormat::FIXED|vcell_util::HMSFormat::ALL;
-									std::cout << ", elasped time " << HMS<chrono::seconds>(total,format) << ", estimated time remaining "
-										<< HMS<chrono::seconds>(remaining,format) << std::endl;
+									typedef vcell_util::HMS<chrono::seconds,vcell_util::HMSFormat::FIXED|vcell_util::HMSFormat::ALL> HMS;
+									std::cout << ", elasped time " << HMS(total) << ", estimated time remaining "
+										<< HMS(remaining) << std::endl;
 									VCELL_KEY_LOG(debug,Key::progressEstimate, "PE thisRun " <<  simTimeThisRun 
 										<< " thusFar " << simTimeThusFar << " t calc " << t
 										<< " est total seconds " << total.count( ) << ' ' << remaining.count( ) << " sec");

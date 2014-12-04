@@ -4,12 +4,13 @@
 
 using namespace vcell_util;
 namespace {
+
 	void demo(const std::chrono::seconds & s) {
 		using namespace std::chrono;
 		std::cout << HMS<seconds>(s) << std::endl;
-		std::cout << HMS<seconds>(s, HMSFormat::FIXED).describe( ) << ' ' << HMS<seconds>(s,HMSFormat::FIXED) << std::endl;
-		std::cout << HMS<seconds>(s, HMSFormat::FIXED||HMSFormat::ALL).describe( ) << ' ' << HMS<seconds>(s,HMSFormat::FIXED|HMSFormat::ALL) << std::endl;
-		std::cout << HMS<seconds>(s, HMSFormat::ALL).describe( ) << ' ' << HMS<seconds>(s,HMSFormat::ALL) << std::endl << std::endl;
+		std::cout << HMS<seconds,HMSFormat::FIXED>(s).describe( ) << ' ' << HMS<seconds,HMSFormat::FIXED>(s) << std::endl;
+		std::cout << HMS<seconds,HMSFormat::FIXED|HMSFormat::ALL>(s).describe( ) << ' ' << HMS<seconds,HMSFormat::FIXED|HMSFormat::ALL>(s) << std::endl;
+		std::cout << HMS<seconds,HMSFormat::ALL>(s).describe( ) << ' ' << HMS<seconds,HMSFormat::ALL>(s) << std::endl;
 	}
 
 }
@@ -24,9 +25,9 @@ TEST(chrono,hms) {
 	demo(three);
 
 	milliseconds ms(4357);
-	std::cout << HMS<milliseconds>(ms) << std::endl;
+	std::cout << HMS<milliseconds,1>(ms) << std::endl;
 	nanoseconds ns(1);
-	std::cout << HMS<nanoseconds>(ns) << std::endl;
+	std::cout << HMS<nanoseconds,2>(ns) << std::endl;
 	
 
 }

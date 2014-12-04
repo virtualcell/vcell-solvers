@@ -11,7 +11,7 @@
 #include <chrono>
 #include <iomanip>
 namespace vcell_util {
-	template <class D> struct HMSDescription;
+	template <class D, int F> struct HMSDescription;
 
 	namespace HMSFormat {
 		/**
@@ -32,11 +32,10 @@ namespace vcell_util {
 	/**
 	* @tparam D std::chrono::duration
 	*/
-	template <class D>
+	template <class D, int F = HMSFormat::COMPACT>
 	struct HMS {
-		HMS(const D &d, int f = HMSFormat::COMPACT)
-			:period(d),
-			format(f) {}
+		HMS(const D &d)
+			:period(d){}
 
 		void writeValue(std::ostream &os) const {
 			using namespace std::chrono;
@@ -71,44 +70,43 @@ namespace vcell_util {
 		/**
 		* manipulator to describe format
 		*/
-		HMSDescription<D> describe( ) const {
-			return HMSDescription<D>(*this);
+		HMSDescription<D,F> describe( ) const {
+			return HMSDescription<D,F>(*this);
 		}
 
 	private:
 		bool isAll( ) const {
 			using HMSFormat::ALL;
-			return (format&ALL) == ALL;
+			return (F&ALL) == ALL;
 		}
 		std::ostream &setformat(std::ostream &os) const {
 			using HMSFormat::FIXED;
-			if ((format&FIXED) == FIXED) {
+			if ((F&FIXED) == FIXED) {
 				os.width(2);
 				os.fill('0');
 			}
 			return os;
 		}
 		const D &period;
-		const int format;
 
 	};
 
-	template <class D>
+	template <class D, int F>
 	struct HMSDescription {
-		HMSDescription(const HMS<D> & d)
+		HMSDescription(const HMS<D,F> & d)
 			:hms(d) {}
-		const HMS<D> & hms;
+		const HMS<D,F> & hms;
 	};
 
 
-	template <class D>
-	std::ostream & operator<<(std::ostream &os, const HMS<D> &hms) {
+	template <class D, int F>
+	std::ostream & operator<<(std::ostream &os, const HMS<D,F> &hms) {
 		hms.writeValue(os);
 		return os;
 	}
 
-	template <class D>
-	std::ostream & operator<<(std::ostream &os, const HMSDescription<D> &desc) {
+	template <class D, int F>
+	std::ostream & operator<<(std::ostream &os, const HMSDescription<D,F> &desc) {
 		desc.hms.writeDescription(os);
 		return os;
 	}
