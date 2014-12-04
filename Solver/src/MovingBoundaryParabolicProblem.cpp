@@ -1012,19 +1012,18 @@ namespace moving_boundary {
 							using chrono::steady_clock;
 							steady_clock::time_point timeNow = steady_clock::now( );
 							steady_clock::duration elapsed = timeNow - percentInfo.runStartTime;
-							chrono::seconds seconds = chrono::duration_cast<chrono::seconds>(elapsed); 
-							VCELL_KEY_LOG(debug,Key::progressEstimate, "PE percent " << percent << " elapsed " << seconds.count( ));
+							chrono::seconds eseconds = chrono::duration_cast<chrono::seconds>(elapsed); 
+							VCELL_KEY_LOG(debug,Key::progressEstimate, "PE percent " << percent << " elapsed " << eseconds.count( ));
 
 							//simulation may not have started at time 0 if this run was restored from a persisted problem
 							const double simTimeThisRun = maxTime - percentInfo.simStartTime;
 							const double simTimeThusFar = currentTime - percentInfo.simStartTime;
-							if (seconds.count( ) > 0) { //can't estimate at beginning
-									const double t = seconds.count( )  * simTimeThisRun  / simTimeThusFar;
+							if (eseconds.count( ) > 0) { //can't estimate at beginning
+									const double t = eseconds.count( )  * simTimeThisRun  / simTimeThusFar;
 									chrono::seconds total(static_cast<int>(t));
-									chrono::seconds remaining = total - seconds; 
+									chrono::seconds remaining = total - eseconds; 
 									typedef vcell_util::HMS<chrono::seconds,vcell_util::HMSFormat::FIXED|vcell_util::HMSFormat::ALL> HMS;
-									std::cout << ", elasped time " << HMS(total) << ", estimated time remaining "
-										<< HMS(remaining) << std::endl;
+									std::cout << ", elasped time " << HMS(eseconds) << ", estimated time remaining " << HMS(remaining);
 									VCELL_KEY_LOG(debug,Key::progressEstimate, "PE thisRun " <<  simTimeThisRun 
 										<< " thusFar " << simTimeThusFar << " t calc " << t
 										<< " est total seconds " << total.count( ) << ' ' << remaining.count( ) << " sec");
