@@ -1022,8 +1022,10 @@ namespace moving_boundary {
 									const double t = eseconds.count( )  * simTimeThisRun  / simTimeThusFar;
 									chrono::seconds total(static_cast<int>(t));
 									chrono::seconds remaining = total - eseconds; 
-									typedef vcell_util::HMS<chrono::seconds,vcell_util::HMSFormat::FIXED|vcell_util::HMSFormat::ALL> HMS;
-									std::cout << ", elasped time " << HMS(eseconds) << ", estimated time remaining " << HMS(remaining);
+									namespace HMSf = vcell_util::HoursMinutesSecondsFormat;
+									typedef vcell_util::HoursMinutesSeconds<chrono::seconds,HMSf::FIXED|HMSf::ALL> HMS;
+									typedef vcell_util::HoursMinutesSeconds<chrono::seconds,HMSf::FIXED|HMSf::ALL|HMSf::LONG_UNITS> HMSu;
+									std::cout << ", elasped time " << HMS(eseconds) << ", estimated time remaining " << HMSu(remaining);
 									VCELL_KEY_LOG(debug,Key::progressEstimate, "PE thisRun " <<  simTimeThisRun 
 										<< " thusFar " << simTimeThusFar << " t calc " << t
 										<< " est total seconds " << total.count( ) << ' ' << remaining.count( ) << " sec");

@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
 		if (!configPresent && !restore.isSet( ) ) { 
 			std::cerr << "error, either -" << config.getName( ) << " or -" << restore.getName( )  
 				<< " must be set " << std::endl;
+			std::cerr << "-h for full list of command line options" << std::endl;
 			return 4;
 		}
 	} catch(tclap::ArgException  &ae) {

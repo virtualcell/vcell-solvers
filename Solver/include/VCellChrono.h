@@ -1,19 +1,21 @@
 #ifndef VCellChrono_h
 #define VCellChrono_h
- /* Copyright (C) 2014 UConn Health 
- *
- * Licensed under the MIT License (the "License").
- * You may not use this file except in compliance with the License.
- * You may obtain a copy of the License at:
- *
- *  http://www.opensource.org/licenses/mit-license.php
- */
+/* Copyright (C) 2014 UConn Health 
+*
+* Licensed under the MIT License (the "License").
+* You may not use this file except in compliance with the License.
+* You may obtain a copy of the License at:
+*
+*  http://www.opensource.org/licenses/mit-license.php
+*/
 #include <chrono>
 #include <iomanip>
 namespace vcell_util {
-	template <class D, int F> struct HMSDescription;
 
-	namespace HMSFormat {
+	/**
+	* bit mapped values
+	*/
+	namespace HoursMinutesSecondsFormat {
 		/**
 		* compact as possible
 		*/
@@ -26,17 +28,30 @@ namespace vcell_util {
 		* zero pad so all the same
 		*/
 		static const int FIXED = 2; 
+		/**
+		* include short units (e.g. H:M:S)
+		*/
+		static const int SHORT_UNITS = 4;  
+		/**
+		* include long units (e.g. hours minutes seconds)
+		* overrides SHORT_UNITS
+		*/
+		static const int LONG_UNITS = 8;  
 	};
 
 
 	/**
 	* @tparam D std::chrono::duration
 	*/
-	template <class D, int F = HMSFormat::COMPACT>
-	struct HMS {
-		HMS(const D &d)
+	template <class D, int F = HoursMinutesSecondsFormat::COMPACT>
+	struct HoursMinutesSeconds {
+		HoursMinutesSeconds(const D &d)
 			:period(d){}
 
+		/**
+		* write value to output; note stream operator is provided for convenience
+		* @param os destination
+		*/
 		void writeValue(std::ostream &os) const {
 			using namespace std::chrono;
 			seconds copy = duration_cast<seconds>(period);
@@ -46,7 +61,7 @@ namespace vcell_util {
 			copy -= m;
 			int hv = h.count( );
 			int mv = m.count( );
-			const bool all  = isAll( ); 
+			const bool all  = isSet(HoursMinutesSecondsFormat::ALL);
 			if (all || hv > 0) {
 				setformat(os)<< hv << ':'; 
 			}
@@ -54,33 +69,54 @@ namespace vcell_util {
 				setformat(os)<< mv << ':'; 
 			}
 			setformat(os)<< copy.count( ); 
+			if (isSet(HoursMinutesSecondsFormat::SHORT_UNITS)|isSet(HoursMinutesSecondsFormat::LONG_UNITS))  {
+				os.put(' ');
+				streamUnits(os,all,hv,mv);
+			}
 		}
 
-		void writeDescription(std::ostream &os) const {
-			using namespace std::chrono;
-			const bool all  = isAll( ); 
-			if ( all ||  duration_cast<hours>(period).count( ) > 0)  {
-				os << "hours:";
-			}
-			if ( all || duration_cast<minutes>(period).count( ) > 0) {
-				os << "minutes:";
-			}
-			os << "seconds";
-		}
 		/**
-		* manipulator to describe format
+		* output units
+		* @param os destination
 		*/
-		HMSDescription<D,F> describe( ) const {
-			return HMSDescription<D,F>(*this);
+		void writeUnits(std::ostream &os) const {
+			using namespace std::chrono;
+			const bool all  = isSet(HoursMinutesSecondsFormat::ALL);
+			streamUnits(os,all,duration_cast<hours>(period).count( ),duration_cast<minutes>(period).count( ));
 		}
 
 	private:
-		bool isAll( ) const {
-			using HMSFormat::ALL;
-			return (F&ALL) == ALL;
+		/**
+		* common implementation
+		* @param os destination
+		* @param all is ALL flag set?
+		*/
+		void streamUnits(std::ostream &os, bool all, int hours, int minutes) const {
+			if (isSet(HoursMinutesSecondsFormat::LONG_UNITS))  {
+				if ( all ||  hours > 0)  {
+					os << "hours:";
+				}
+				if ( all ||  minutes > 0)  {
+					os << "minutes:";
+				}
+				os << "seconds";
+			}
+			if (isSet(HoursMinutesSecondsFormat::SHORT_UNITS))  {
+				if ( all ||  hours > 0)  {
+					os << "H:";
+				}
+				if ( all ||  minutes > 0)  {
+					os << "M:";
+				}
+				os << "S";
+			}
 		}
+		bool isSet(int bit) const {
+			return (F&bit) == bit;
+		}
+
 		std::ostream &setformat(std::ostream &os) const {
-			using HMSFormat::FIXED;
+			using HoursMinutesSecondsFormat::FIXED;
 			if ((F&FIXED) == FIXED) {
 				os.width(2);
 				os.fill('0');
@@ -92,23 +128,10 @@ namespace vcell_util {
 	};
 
 	template <class D, int F>
-	struct HMSDescription {
-		HMSDescription(const HMS<D,F> & d)
-			:hms(d) {}
-		const HMS<D,F> & hms;
-	};
-
-
-	template <class D, int F>
-	std::ostream & operator<<(std::ostream &os, const HMS<D,F> &hms) {
+	std::ostream & operator<<(std::ostream &os, const HoursMinutesSeconds<D,F> &hms) {
 		hms.writeValue(os);
 		return os;
 	}
 
-	template <class D, int F>
-	std::ostream & operator<<(std::ostream &os, const HMSDescription<D,F> &desc) {
-		desc.hms.writeDescription(os);
-		return os;
-	}
 }
 #endif
