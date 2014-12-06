@@ -27,6 +27,16 @@ namespace spatial {
 namespace moving_boundary {
 	//placeholder until we convert fixed std::array to dynamic storage
 	const size_t nOfS = 1;
+#ifndef MB_VARY_MASS
+		typedef std::array<moving_boundary::BioQuanType,nOfS> SpeciesStorage; 
+#else
+	//temporary drop in replaceable vector of size one
+		struct SpeciesStorage : public std::vector<moving_boundary::BioQuanType>  {
+			SpeciesStorage( )
+				:std::vector<moving_boundary::BioQuanType>(1) {}
+		};
+
+#endif
 	struct VoronoiMesh;
 	struct MeshElementSpecies;
 	struct MeshElementSpeciesIdent;
@@ -703,9 +713,9 @@ namespace moving_boundary {
 		*/
 		Volume2DClass vol;
 		std::vector<SegmentType> segments_;
-		std::array<moving_boundary::BioQuanType,nOfS> amtMass; //amount of mass
-		std::array<moving_boundary::BioQuanType,nOfS> amtMassTransient; //amount of mass, working copy
-		std::array<moving_boundary::BioQuanType,nOfS> concValue; //concentration at beginning of cycle
+		SpeciesStorage amtMass; //amount of mass
+		SpeciesStorage amtMassTransient; //amount of mass, working copy
+		SpeciesStorage concValue; //concentration at beginning of cycle
 
 		const static int NUM_INSIDE = 4;
 		std::array<NeighborType,NUM_INSIDE> interiorNeighbors; 

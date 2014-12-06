@@ -1,5 +1,10 @@
 project(MovingBoundarySolver)
 
+OPTION(VARIABLE_SPECIES_STORAGE "DYNAMIC SPECIES STORAGE" OFF)
+if (VARIABLE_SPECIES_STORAGE) 
+	add_definitions(-DMB_VARY_MASS)
+endif (VARIABLE_SPECIES_STORAGE) 
+
 #glob to get full path of driver.cpp so REMOVE_ITEM works correctly
 file(GLOB SOLVER_MAIN src/driver.cpp)
 file(GLOB ALLOC_MAIN src/alloctestmain.cpp)
