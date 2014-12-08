@@ -242,3 +242,43 @@ TEST(universe, intervals) {
 		ASSERT_TRUE(scale % ny == 0);
 	}
 }
+
+TEST(universe, herror) { 
+	std::default_random_engine gen;
+	std::uniform_int_distribution<int> rdims(3, 90);
+	std::uniform_real_distribution<double> lowlimit(-10,0);
+	std::uniform_real_distribution<double> highlimit(0,10);
+
+	for (int c = 0 ; c < 100; ++c) {
+		double low = lowlimit(gen);
+		double high = highlimit(gen);
+		double span = high - low;
+		uint16_t nx = static_cast<uint16_t>(rdims(gen)); 
+		uint16_t ny =  static_cast<uint16_t>(rdims(gen)); 
+		Universe<2> &universe = Universe<2>::get( );
+		universe.destroy( ); //for testing
+		std::array<spatial::GeoLimit,2> limits;
+		limits[0] = spatial::GeoLimit(low,high); 
+		limits[1] = spatial::GeoLimit(low,high);
+		ASSERT_TRUE(limits[0].span( ) == span);
+		ASSERT_TRUE(limits[1].span( ) == span);
+		std::array<uint16_t, 2> nnodes = {nx, ny}; 
+		universe.init(limits,nnodes);
+		World<int32_t,2> & lworld = World<int32_t,2>::get( );
+		double dscale = lworld.theScale( );
+		long scale = static_cast<long>(dscale);
+		ASSERT_TRUE(scale == dscale);
+		ASSERT_TRUE(scale % nx == 0);
+		ASSERT_TRUE(scale % ny == 0);
+		int32_t horiz = lworld.limits()[0].span( );
+		int32_t vert = lworld.limits()[1].span( );
+		double dh = lworld.distanceToProblemDomain(horiz);
+		double vh = lworld.distanceToProblemDomain(vert);
+		double hdelta = dh - span; 
+		double vdelta = vh - span; 
+		double maxDelta = std::max(hdelta,vdelta);
+		double rel = maxDelta / span;
+		std::cout << span << " nx  " << nx << " ny " << ny << " dh " << hdelta << " vh " << vdelta << " rel " << maxDelta << std::endl;
+
+	}
+}
