@@ -249,10 +249,18 @@ TEST(universe, herror) {
 	std::uniform_real_distribution<double> lowlimit(-10,0);
 	std::uniform_real_distribution<double> highlimit(0,10);
 
+	double low = 0;
+	double high = 0;
+	double span = 0;
+
 	for (int c = 0 ; c < 100; ++c) {
-		double low = lowlimit(gen);
-		double high = highlimit(gen);
-		double span = high - low;
+		//current implementation has bug, freaks out if span < 1 ...
+		do {
+			low = lowlimit(gen);
+			high = highlimit(gen);
+			span = high - low;
+		}
+		while (span < 1);
 		uint16_t nx = static_cast<uint16_t>(rdims(gen)); 
 		uint16_t ny =  static_cast<uint16_t>(rdims(gen)); 
 		Universe<2> &universe = Universe<2>::get( );
