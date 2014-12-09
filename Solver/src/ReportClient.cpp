@@ -163,7 +163,7 @@ namespace {
 			return startTime;
 		}
 		/**
-		* allow object to expired itself
+		* allow object to expire itself
 		* @return false (default)
 		*/
 		virtual bool expired(double time, int generation) const {
@@ -365,7 +365,8 @@ namespace {
 			eRecords(),
 			genTimes(),
 			moveTimes(),
-			timeStep(mbpp.baseTimeStep( )),
+			timeStepTimes( ),
+			lastTimeStep(-1), //invalid value, to trigger recording
 			buffer(),
 			baseGroup( ),
 			elementDataset( ),
@@ -412,8 +413,8 @@ namespace {
 				}
 				std::cerr << "creating " << groupName << std::endl;
 				baseGroup = file.createGroup(groupName);
-
-				vcellH5::writeAttribute(baseGroup,"timeStep",timeStep);
+				const double & bts = mbpp.baseTimeStep( );
+				vcellH5::writeAttribute(baseGroup,"requestedTimeStep",bts);
 				if (SOLUTION::validates) {
 					const std::string s = SOLUTION::expression( ); 
 					vcellH5::writeAttribute(baseGroup,"expression",s);
@@ -553,6 +554,12 @@ namespace {
 		}
 
 		virtual void time(double t, unsigned int generationCounter, bool last, const moving_boundary::GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) { 
+			double ts = theProblem.baseTimeStep( );
+			if (ts != lastTimeStep) {
+				timeStepTimes.push_back(t);
+				timeStep.push_back(ts);
+				lastTimeStep = ts;
+			}
 			if (geometryInfo.nodesAdjusted) {
 				moveTimes.push_back(t);
 			}
@@ -752,6 +759,12 @@ namespace {
 
 				vcellH5::SeqFacade<std::vector<double> > mt(moveTimes);
 				vcellH5::facadeWrite(baseGroup,"moveTimes",mt);
+
+				vcellH5::SeqFacade<std::vector<double> > tst(timeStepTimes);
+				vcellH5::facadeWrite(baseGroup,"timeStepTimes",tst);
+
+				vcellH5::SeqFacade<std::vector<double> > ts(timeStep);
+				vcellH5::facadeWrite(baseGroup,"timeStep",ts);
 			}
 			catch (H5::Exception &e) {
 				throw vcellH5::Exception(e);
@@ -785,7 +798,9 @@ namespace {
 		RecordMap eRecords;
 		std::vector<double> genTimes;
 		std::vector<double> moveTimes;
-		const double timeStep;
+		std::vector<double> timeStepTimes;
+		std::vector<double> timeStep;
+		double lastTimeStep;
 		vcellH5::Flex2<typename SOLUTION::DataType> buffer;
 		H5::Group baseGroup; 
 		H5::DataSet elementDataset;
