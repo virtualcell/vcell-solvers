@@ -68,26 +68,32 @@ namespace {
 				maxSupported = std::numeric_limits<WORLD_COORD>::max( );
 			}
 			scale = maxSupported / universe.diagonal( );
-			WORLD_COORD iScale = static_cast<WORLD_COORD>(scale);
-
-			//find desired divider for iScale -- we want all mesh centers and edges to be on exact integers
 			WORLD_COORD divider = 1;
-			const std::array<CountType,N> & numNodes = universe.numNodes( );
-			for (int i = 0; i < N; i++) {
-				const CountType spaces = 2*numNodes[i];
-				if (spaces > 0) {
-					divider = boost::math::lcm<WORLD_COORD>(divider,2*numNodes[i]);
-				}
-			}
-			WORLD_COORD multiplier = iScale / divider;  //truncation 
-			iScale = multiplier * divider;
-			assert(iScale % divider == 0);
-			if (iScale == 1) {
-				VCELL_EXCEPTION(logic_error, "unable to find decent scale for least common multiplier of " << divider << " and scale " << scale 
-					<< ", max supported is " << maxSupported);
-			}
+			{
+				//WORLD_COORD iScale = static_cast<WORLD_COORD>(scale); #this doesn't work in cases where span < 1 
+				long double iScale = std::floor(scale);
 
-			scale = iScale;
+				//find desired divider for iScale -- we want all mesh centers and edges to be on exact integers
+				const std::array<CountType,N> & numNodes = universe.numNodes( );
+				for (int i = 0; i < N; i++) {
+					const CountType spaces = 2*numNodes[i];
+					if (spaces > 0) {
+						divider = boost::math::lcm<WORLD_COORD>(divider,2*numNodes[i]);
+					}
+				}
+				long double  multiplier = std::floor(iScale / divider);  
+				iScale = multiplier * divider;
+#				ifndef NDEBUG
+				long double junk;
+				assert(std::modf(iScale,&junk)== 0);
+#				endif
+				if (iScale == 1) {
+					VCELL_EXCEPTION(logic_error, "unable to find decent scale for least common multiplier of " << divider << " and scale " << scale 
+						<< ", max supported is " << maxSupported);
+				}
+
+				scale = iScale;
+			}
 			for (int i = 0; i < N; i++) {
 				WORLD_COORD low  = vcell_util::ConvertDown<WORLD_COORD>(scale * (universe.limits( )[i].low( )  - universe.zeros( )[i]));
 				WORLD_COORD high = vcell_util::ConvertUp<WORLD_COORD>  (scale * (universe.limits( )[i].high( ) - universe.zeros( )[i]));
@@ -95,14 +101,14 @@ namespace {
 				high += (divider - remainder);
 				remainder = (high - low ) % divider;
 				if (remainder != 0) {
-					VCELL_EXCEPTION(logic_error, " world scale not to be evenly divisible by desired scale" << iScale);
+					VCELL_EXCEPTION(logic_error, " world scale not to be evenly divisible by desired scale" << scale);
 				}
 				limitsWorldSystem[i] = spatial::TGeoLimit<WORLD_COORD>(low,high);
 			}
 
 			diagV = vcell_util::ConvertUp<WORLD_COORD>(scale * universe.diagonal( ));
 			static_assert(std::numeric_limits<WORLD_COORD>::is_integer,"non-integer type"); 
-			VCELL_LOG(info,"World type is " <<  std::numeric_limits<WORLD_COORD>::digits << " digits, scale is " << iScale);
+			VCELL_LOG(info,"World type is " <<  std::numeric_limits<WORLD_COORD>::digits << " digits, scale is " << scale);
 		}
 		typename vcell::Type<WORLD_COORD>::realType scale;
 		WORLD_COORD diagV;
