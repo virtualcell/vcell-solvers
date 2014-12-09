@@ -286,7 +286,7 @@ TEST(universe, herror) {
 		double vdelta = vh - span; 
 		double maxDelta = std::max(hdelta,vdelta);
 		double rel = maxDelta / span;
-		std::cout << span << " nx  " << nx << " ny " << ny << " dh " << hdelta << " vh " << vdelta << " rel " << maxDelta << std::endl;
+		std::cout << span << " nx  " << nx << " ny " << ny << " delta " << maxDelta << vdelta << " rel " << rel << std::endl;
 
 	}
 }
