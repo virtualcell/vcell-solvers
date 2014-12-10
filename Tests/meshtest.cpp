@@ -75,7 +75,7 @@ TEST(mesh, construct) {
 	using spatial::MPoint;
 	using spatial::cX;
 	using spatial::cY;
-	spatial::MeshDef<double,2> small(arrayInit<double>(1,1),arrayInit<size_t>(3,3));
+	spatial::MeshDef<double,2> small(arrayInit<double>(0,0),arrayInit<double>(1,1), arrayInit<size_t>(3,3));
 
 	Mesh<double,2,MockPoint > snap(small);
 	std::array<size_t,2> xy;
@@ -147,7 +147,7 @@ TEST(mesh, iterate) {
 	using spatial::MPoint;
 	using spatial::cX;
 	using spatial::cY;
-	spatial::MeshDef<double,2> small(arrayInit<double>(1,1),arrayInit<size_t>(3,3));
+	spatial::MeshDef<double,2> small(arrayInit<double>(0,0),arrayInit<double>(1,1), arrayInit<size_t>(3,3));
 
 	typedef MPoint<double,2> MPoint2;
 	typedef Mesh<double,2,MockPoint> MMesh; 
@@ -196,7 +196,7 @@ TEST(mesh, translate) {
 TEST(mesh, construct3) {
 	using spatial::Mesh;
 	using spatial::MPoint;
-	spatial::MeshDef<double,3> small(arrayInit<double>(1,1,1),arrayInit<size_t>(3,3,3));
+	spatial::MeshDef<double,3> small(arrayInit<double>(0,0,0), arrayInit<double>(1,1,1),arrayInit<size_t>(3,3,3));
 	Mesh<double,3,MockPoint3> snap(small);
 	std::array<size_t,3> xy;
 	xy[0] = 1;

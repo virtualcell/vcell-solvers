@@ -39,7 +39,10 @@ namespace {
 "    <advectVelocityFunctionY>0</advectVelocityFunctionY>"
 "    <frontVelocityFunctionX>1</frontVelocityFunctionX>"
 "    <frontVelocityFunctionY>0</frontVelocityFunctionY>"
-"    <concentrationFunction>x/(x*x+y*y)^0.5*j1(1.841183781340659*(x*x+y*y)^0.5)+j1(1.841183781340659)</concentrationFunction>"
+"	 <concentration>"
+"       <species>x/(x*x+y*y)^0.5*j1(1.841183781340659*(x*x+y*y)^0.5)+j1(1.841183781340659)</species>"
+"       <species>exp(-x)</species>"
+"	 </concentration>"
 "    <hardTime>true</hardTime>"
 "  </problem>"
 "</MovingBoundarySetup>";
@@ -57,6 +60,7 @@ TEST(persist,lifetime) {
 	std::cout << dupe.advectVelocityFunctionStrX << std::endl;
 }
 TEST(persist,movingBoundarySetup) {
+	const char * const filename = "MovingBoundarySetup.dat";
 	moving_boundary::Universe<2>::get( ).destroy( );
 	tinyxml2::XMLDocument doc;
 	tinyxml2::XMLError rcode = doc.Parse(setupXml);
@@ -64,7 +68,6 @@ TEST(persist,movingBoundarySetup) {
 	MovingBoundarySetup::registerType( );
 	MovingBoundarySetup mbs = MovingBoundarySetup::setupProblem(*doc.RootElement( ));
 	//MeshElementNeighbor::registerType( );
-	const char * const filename = "MovingBoundarySetup.dat";
 	{
 		std::ofstream out(filename, std::ios::binary|std::ios::trunc);
 		vcell_persist::WriteFormatter wf(out, 1);
@@ -73,9 +76,27 @@ TEST(persist,movingBoundarySetup) {
 	std::ifstream in(filename,std::ios::binary);
 	vcell_persist::ReadFormatter wf(in, 1);
 	MovingBoundarySetup back(in); 
-	ASSERT_TRUE(back.concentrationFunctionStr == mbs.concentrationFunctionStr);
+	//MovingBoundarySetup back = mbs;
+
+	ASSERT_TRUE(back.concentrationFunctionStrings == mbs.concentrationFunctionStrings);
 	ASSERT_TRUE(back.diffusionConstant == mbs.diffusionConstant);
-	moving_boundary::Universe<2>::get( ).destroy( );
+	back.concentrationFunctionStrings.resize(0);
+	mbs.concentrationFunctionStrings.resize(0);
+	//moving_boundary::Universe<2>::get( ).destroy( );
+}
+
+TEST(memory,vector) {
+	using namespace std;
+	vector<string> a;
+	a.push_back("moe");
+	a.push_back("curly");
+	vector<string> b = a;
+	vector<string> c = a;
+	b = c;
+	ASSERT_TRUE(a == b);
+	ASSERT_TRUE(a == c);
+	ASSERT_TRUE(b == c);
+	
 }
 
 TEST(persist,movingBoundaryProblem) {

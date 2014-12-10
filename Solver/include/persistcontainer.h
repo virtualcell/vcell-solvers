@@ -37,6 +37,17 @@ namespace vcell_persist {
 		}
 	};
 
+	/**
+	* std::string persistence
+	* @tparam S unsigned integral type used to store length
+	*/
+	template <class S>
+	struct stringWrite {
+		void operator( )(std::ostream &os, const std::string & s) const {
+			StdString<S>::save(os,s);
+		}
+	};
+
 	template <typename W = persistWrite>
 	struct writeFunctor {
 		std::ostream &os;
@@ -77,6 +88,17 @@ namespace vcell_persist {
 			U u;
 			binaryRead(is,u);
 			return u;
+		}
+	};
+
+	/**
+	* std::string persistence
+	* @tparam S unsigned integral type used to store length
+	*/
+	template<typename S>
+	struct persistReadString {
+		std::string generate(std::istream &is) const {
+			return StdString<S>::restore(is);
 		}
 	};
 
@@ -138,8 +160,18 @@ namespace vcell_persist {
 	* @ tparam T type to restore
 	*/
 	template<typename T>
-	void save(std::ostream &os,  const std::vector<T> & vec) {
+	typename std::enable_if< ! std::is_same<std::string,T>::value,void>::type 
+	save(std::ostream &os,  const std::vector<T> & vec) {
 		save(os,vec,writeFunctor<>(os) );
+	}
+	/**
+	* std::string persistence
+	* @tparam S unsigned integral type used to store length
+	*/
+	template <typename S>
+	void saveStrings(std::ostream &os,  const std::vector<std::string> & vec) {
+		typedef stringWrite<S> StringWriteFunctor;
+		save(os,vec,writeFunctor<StringWriteFunctor>(os, StringWriteFunctor( ) ) );
 	}
 
 	/**
@@ -178,8 +210,20 @@ namespace vcell_persist {
 	template<typename T>
 	typename std::enable_if< ! std::is_base_of<Persistent,T>::value,void>::type 
 	restore(std::istream &is, std::vector<T> & vec) {
+		static_assert( ! std::is_same<std::string,T>::value, "use restoreStrings for std::string");
 		restore(is,vec,InsertFrom<persistReadBinaryType<T> >( ));
 	}
+
+	/**
+	* std::string persistence
+	* @tparam S unsigned integral type used to store length
+	*/
+	template<typename S>
+	void restoreStrings(std::istream &is, std::vector<std::string> & vec) {
+		restore(is,vec,InsertFrom<persistReadString<S> >( ));
+	}
+
+	
 //--------------------------------
 // array 
 //--------------------------------

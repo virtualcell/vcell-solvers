@@ -35,27 +35,8 @@ using spatial::cY;
 //*********************************************************
 namespace {
 
-	typedef double (*ConcentrationFunction)(double x, double y);
-
-	//std::ofstream fspy("fcalls.txt"); //temp, frontier spy
-	//std::ofstream lspy("levelcalls.txt"); //temp, frontier spy
-	//concentration function implement -- use either function pointer or expression parser
-	struct ConcentrationProvider {
-		virtual double conc(double x, double y) = 0;
-	};
-
-	struct ConcentrationPointer : public ConcentrationProvider {
-		ConcentrationPointer(const ConcentrationFunction &p)
-			:cfunc(p) {}
-
-		virtual double conc(double x, double y) {
-			return cfunc(x,y);
-		}
-		const ConcentrationFunction cfunc;
-	};
-
 	template<int NUMBER_SYMBOLS>
-	struct ConcentrationExpression : public ConcentrationProvider {
+	struct ConcentrationExpression {
 		/**
 		* runtime accessible #NUMBER_SYMBOLS
 		*/
@@ -66,14 +47,18 @@ namespace {
 				VCELL_KEY_LOG(debug,Key::concentrationExpression, "expression: " << exp.infix( ));
 		}
 
-		virtual double conc(double x, double y) {
+		double conc(double x, double y) {
 			double in[NUMBER_SYMBOLS] = {x,y,0};
 			const double rval =  exp.evaluateVector(in);
 			VCELL_KEY_LOG(debug,Key::concentrationExpression, "f(" << x << ", " << y << ") = " << rval);
 			return rval;
 		}
-		VCell::Expression exp; 
+		VCell::Expression & exp; 
 	};
+
+	//legacy name from early development code
+	typedef ConcentrationExpression<3> ConcentrationProvider;
+
 
 	/**
 	* abstract class which validates input
@@ -212,6 +197,7 @@ namespace moving_boundary {
 
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs) 
 			:ValidationBase(mbs),
+			numSpecies(mbs.concentrationFunctionStrings.size( )),
 			world(WorldType::get( )),
 			setup_(mbs),
 			diffusionConstant(mbs.diffusionConstant),
@@ -229,11 +215,11 @@ namespace moving_boundary {
 			advectVelocityExpY(mbs.advectVelocityFunctionStrY,symTable), 
 			frontVelocityExpX(mbs.frontVelocityFunctionStrX,symTable), 
 			frontVelocityExpY(mbs.frontVelocityFunctionStrY,symTable), 
-			concentrationExp(mbs.concentrationFunctionStr,symTable), 
+			concentrationExpressions(numSpecies), 
 
 			vcFront(initFront(world, *this,mbs)),
 			currentFront( ),
-			meshDefinition(createMeshDef(world, mbs)),
+			meshDefinition(createMeshDef(world, mbs, numSpecies)),
 			interiorVolume(calculateInteriorVolume(world, meshDefinition)),
 			primaryMesh(meshDefinition),
 			voronoiMesh(primaryMesh),
@@ -248,18 +234,11 @@ namespace moving_boundary {
 
 			MeshElementSpecies::setProblemToWorldDistanceScale(world.theScale( ));
 
-			//init using either function pointer or string
-			if (nFunctionPointers == 0) {
-				ConcentrationExpression<3> ce(concentrationExp);
-				assert (ce.numberSymbols == symTable.size( )); 
-				setInitialValues(ce);
+			assert(nFunctionPointers == 0); 
+			for (int i = 0; i < numSpecies; i++) {
+				concentrationExpressions[i] = VCell::Expression(mbs.concentrationFunctionStrings[i],symTable);
 			}
-			else {
-#ifdef OLD_FUNCTION_POINTER_IMPLEMENTATION
-				ConcentrationPointer cp(mbs.concentrationFunction);
-				setInitialValues(cp);
-#endif
-			}
+			setInitialValues( );
 
 			//check time step
 			if (timeStep == 0) {
@@ -364,18 +343,27 @@ namespace moving_boundary {
 			e.setInteriorVolume(interiorVolume);
 		}
 
+		void setConcentrations( vector<ConcentrationProvider> & concExp, Element & e) {
+			e.allocateSpecies();
+			ProblemDomainPoint pdp = world.toProblemDomain(e);
+			for (int i = 0; i< numSpecies; i++) {
+				double mu = concExp[i].conc(pdp(cX),pdp(cY));
+				e.setConcentration(i,mu);
+			}
+		}
+
 		/**
 		* set initial mesh sizes
 		*/
-		void setInitialValues(ConcentrationProvider &provider) {
+		void setInitialValues( ) {
 			using std::vector;
-			//set inside volumes on all elements; they may become inside as front moves.
-			/*
-			for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
-				iter->setInteriorVolume(interiorVolume);
+			assert(concentrationExpressions.size( ) == numSpecies);
+			vector<ConcentrationProvider> concExp;
+			for (vector<VCell::Expression>::iterator iter = concentrationExpressions.begin( ); iter != concentrationExpressions.end( ); ++iter) {
+				concExp.push_back(ConcentrationProvider(*iter));
 			}
-			*/
-			//std::for_each(primaryMesh.begin( ), primaryMesh.end( ), setInterior);
+			assert(concExp.size( ) == numSpecies);
+
 			for (Element & e: primaryMesh) {
 				e.setInteriorVolume(interiorVolume);
 			}
@@ -387,20 +375,17 @@ namespace moving_boundary {
 			VCELL_LOG(warn,"initial front has " << currentFront.size( ) << " points");
 			assert(currentFront.front( ) == currentFront.back( ));  //verify closed 
 			voronoiMesh.setFront(currentFront);
+
 			//spatial::Positions<Element> positions = spatial::classify2(voronoiMesh,currentFront);
 			moving_boundary::Positions<Element> positions = voronoiMesh.classify2(currentFront);
 			for (vector<Element *>::iterator iter = positions.inside.begin( ); iter != positions.inside.end( ); ++iter) {
 				Element  & insideElement = **iter;
-				ProblemDomainPoint pdp = world.toProblemDomain(insideElement);
-				double mu = provider.conc(pdp(cX),pdp(cY));
-				insideElement.setConcentration(0,mu);
+				setConcentrations(concExp,insideElement);
 				insideElement.getControlVolume();
 			}
 			for (vector<Element *>::iterator iter = positions.boundary.begin( ); iter != positions.boundary.end( ); ++iter) {
 				Element  & boundaryElement = **iter;
-				ProblemDomainPoint pdp = world.toProblemDomain(boundaryElement);
-				double mu = provider.conc(pdp(cX),pdp(cY));
-				boundaryElement.setConcentration(0,mu);
+				setConcentrations(concExp,boundaryElement);
 				boundaryElements.push_back(&boundaryElement);
 				boundaryElement.findNeighborEdges();
 			}
@@ -442,7 +427,7 @@ namespace moving_boundary {
 		/**
 		* constructor support; mesh initialization
 		*/
-		static MBMeshDef createMeshDef(const WorldType & world, const moving_boundary::MovingBoundarySetup &mbs)  {
+		static MBMeshDef createMeshDef(const WorldType & world, const moving_boundary::MovingBoundarySetup &mbs, int numSpecies)  {
 
 
 			typedef spatial::TGeoLimit<moving_boundary::CoordinateType> LimitType;
@@ -452,7 +437,7 @@ namespace moving_boundary {
 			std::array<moving_boundary::CoordinateType,2> c = arrayInit<moving_boundary::CoordinateType>(worldLimits[0].span( ),worldLimits[1].span( ) );
 			const Universe<2> & universe = world.universe( );
 			std::array<size_t,2> p = { universe.numNodes( )[0], universe.numNodes( )[1] };
-			return MBMeshDef(origin,c,p);
+			return MBMeshDef(origin,c,p, numSpecies);
 		}
 
 		/**
@@ -1161,6 +1146,7 @@ namespace moving_boundary {
 
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs, std::istream &is) 
 			:ValidationBase(mbs),
+			numSpecies(mbs.concentrationFunctionStrings.size( )),
 			world(WorldType::get( )),
 			setup_(mbs),
 			diffusionConstant(mbs.diffusionConstant),
@@ -1178,7 +1164,7 @@ namespace moving_boundary {
 			advectVelocityExpY(mbs.advectVelocityFunctionStrY,symTable), 
 			frontVelocityExpX(mbs.frontVelocityFunctionStrX,symTable), 
 			frontVelocityExpY(mbs.frontVelocityFunctionStrY,symTable), 
-			concentrationExp(mbs.concentrationFunctionStr,symTable), 
+			concentrationExpressions( ), //PERSIST TODO
 
 			vcFront(nullptr),
 			currentFront( ),
@@ -1221,6 +1207,7 @@ namespace moving_boundary {
 				voronoiMesh.setMesh(primaryMesh);
 			}
 
+		const int numSpecies;
 		WorldType & world;
 		const MovingBoundarySetup setup_;
 		const double diffusionConstant;
@@ -1257,7 +1244,7 @@ namespace moving_boundary {
 		mutable VCell::Expression advectVelocityExpY;
 		mutable VCell::Expression frontVelocityExpX;
 		mutable VCell::Expression frontVelocityExpY;
-		mutable VCell::Expression concentrationExp;
+		std::vector<VCell::Expression> concentrationExpressions;
 		/**
 		* FronTier integration
 		*/

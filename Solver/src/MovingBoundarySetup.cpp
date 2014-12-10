@@ -1,6 +1,6 @@
 #include <MovingBoundarySetup.h>
 #include <boundaryProviders.h>
-#include <persist.h>
+#include <persistcontainer.h>
 #include <vcellxml.h>
 
 using namespace moving_boundary;
@@ -22,7 +22,7 @@ MovingBoundarySetup::MovingBoundarySetup(std::istream &is)
 	vcell_persist::StdString<>::restore(is,advectVelocityFunctionStrY);
 	vcell_persist::StdString<>::restore(is,frontVelocityFunctionStrX);
 	vcell_persist::StdString<>::restore(is,frontVelocityFunctionStrY);
-	vcell_persist::StdString<>::restore(is,concentrationFunctionStr);
+	vcell_persist::restoreStrings<unsigned short>(is, concentrationFunctionStrings);
 	vcell_persist::binaryRead(is,diffusionConstant);
 	/*
 	bool hasProvider;
@@ -32,6 +32,10 @@ MovingBoundarySetup::MovingBoundarySetup(std::istream &is)
 	}
 	*/
 }
+MovingBoundarySetup::~MovingBoundarySetup() {
+	concentrationFunctionStrings.resize(0);
+}
+
 
 void MovingBoundarySetup::persist(std::ostream &os) const {
 	vcell_persist::Token::insert<MovingBoundarySetup>(os);
@@ -45,7 +49,7 @@ void MovingBoundarySetup::persist(std::ostream &os) const {
 	vcell_persist::StdString<>::save(os,advectVelocityFunctionStrY);
 	vcell_persist::StdString<>::save(os,frontVelocityFunctionStrX);
 	vcell_persist::StdString<>::save(os,frontVelocityFunctionStrY);
-	vcell_persist::StdString<>::save(os,concentrationFunctionStr);
+	vcell_persist::saveStrings<unsigned short>(os,concentrationFunctionStrings);
 	vcell_persist::binaryWrite(os,diffusionConstant);
 	/*
 	const bool hasProvider = ( alternateFrontProvider != nullptr );
@@ -102,7 +106,7 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 	mbSetup.diffusionConstant = convertChildElement<double>(prob,"diffusionConstant");
 	mbSetup.advectVelocityFunctionStrX = convertChildElement<std::string>(prob,"advectVelocityFunctionX");
 	mbSetup.advectVelocityFunctionStrY = convertChildElement<std::string>(prob,"advectVelocityFunctionY");
-	mbSetup.concentrationFunctionStr = convertChildElement<std::string>(prob,"concentrationFunction");
+	//mbSetup.concentrationFunctionStr = convertChildElement<std::string>(prob,"concentrationFunction");
 
 	mbSetup.numberTimeSteps = vcell_xml::convertChildElementWithDefault<unsigned int>(prob,"numberTimeSteps",0);
 	mbSetup.timeStep = vcell_xml::convertChildElementWithDefault<double>(prob,"timeStep",0);
@@ -123,6 +127,14 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 		mbSetup.alternateFrontProvider = ::frontFromXML(*altFront);
 		std::cout << mbSetup.alternateFrontProvider->describe( ) << std::endl;
 	}
+	const XMLElement & concElement = vcell_xml::get(prob,"concentration");
+	const XMLElement *sp = concElement.FirstChildElement("species");
+	while (sp != nullptr) {
+		std::string exp = vcell_xml::convertElement<std::string>(*sp);
+		mbSetup.concentrationFunctionStrings.push_back(exp);
+		sp = sp->NextSiblingElement("species");
+	}
+
 	return mbSetup; 
 }
 

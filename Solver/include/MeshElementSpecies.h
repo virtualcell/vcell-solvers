@@ -9,6 +9,7 @@
 #include <Volume.h>
 #include <SVector.h>
 #include <Segment.h>
+#include <Mesh.h>
 //#include <VoronoiMesh.h>
 #include <VCellException.h>
 #include <Logger.h>
@@ -18,25 +19,16 @@
 #include <persist.h>
 
 //forward definitions
-namespace spatial {
-	template<class COORD_TYPE, int N> struct MeshDef; 
-	template<class COORD_TYPE, int N, class TELEMENT> struct Mesh; 
-	//struct VoronoiResult;
-}
+//namespace spatial {
+//
+//	template<class COORD_TYPE, int N> struct MeshDef; 
+//	template<class COORD_TYPE, int N, class TELEMENT> struct Mesh; 
+//	//struct VoronoiResult;
+//}
 
 namespace moving_boundary {
 	//placeholder until we convert fixed std::array to dynamic storage
-	const size_t nOfS = 1;
-#ifndef MB_VARY_MASS
-		typedef std::array<moving_boundary::BioQuanType,nOfS> SpeciesStorage; 
-#else
-	//temporary drop in replaceable vector of size one
-		struct SpeciesStorage : public std::vector<moving_boundary::BioQuanType>  {
-			SpeciesStorage( )
-				:std::vector<moving_boundary::BioQuanType>(1) {}
-		};
-
-#endif
+	//const size_t nOfS = 1;
 	struct VoronoiMesh;
 	struct MeshElementSpecies;
 	struct MeshElementSpeciesIdent;
@@ -200,17 +192,17 @@ namespace moving_boundary {
 		typedef spatial::Segment<moving_boundary::CoordinateType,2> SegmentType; 
 
 		static spatial::DiffuseAdvectCache *createCache(const MeshDefinition & meshDef);
-		static const int numSpecies = nOfS; 
 
-		MeshElementSpecies(const MeshDefinition &owner,const size_t *n, const moving_boundary::CoordinateType *values) 
+		MeshElementSpecies(const MeshDefinition &owner,const size_t *n, const moving_boundary::CoordinateType *values)
 			:base(n,values),
 			mesh(owner),
 			stateVar(State::initial),
 			interiorVolume(-1),
 			vol(0,this),
 			segments_( ),
-			amtMass( ),
-			amtMassTransient( ),
+			amtMass(),
+			amtMassTransient(),
+			concValue(),
 			interiorNeighbors( ),
 			neighbors(interiorNeighbors.data( )), //default to interior, update when id'd as boundary
 			boundaryNeighbors(0),
@@ -235,6 +227,17 @@ namespace moving_boundary {
 			return MeshElementSpeciesIdent(*this);
 		};
 
+		int numSpecies( ) const {
+			return mesh.numberSpecies( ); 
+		}
+
+		void allocateSpecies( ) {
+			const size_t i = mesh.numberSpecies( );
+			amtMass.resize(i);
+			amtMassTransient.resize(i);
+			concValue.resize(i);
+		}
+
 		/**
 		* set initial concentration 
 		*/
@@ -247,7 +250,7 @@ namespace moving_boundary {
 				throw std::invalid_argument("setConcentration not a number");
 				std::cout << "nan" << std::endl;
 			}
-			assert (i < nOfS);
+			assert (i < numSpecies( ));
 			assert ( c >= 0);
 			if (c > 0) {
 				amtMass[i] = c * volumePD( );
@@ -261,7 +264,7 @@ namespace moving_boundary {
 		* to #setConcentration
 		*/
 		moving_boundary::BioQuanType concentration(size_t i) const { 
-			assert (i < nOfS);
+			assert (i < numSpecies( ));
 			if (amtMass[i] > 0) {
 				return amtMass[i] / volumePD( ); 
 			}
@@ -273,7 +276,7 @@ namespace moving_boundary {
 		* see #concentration
 		*/
 		moving_boundary::BioQuanType mass(size_t i) const { 
-			assert (i < nOfS);
+			assert (i < numSpecies( ));
 			return amtMass[i];
 		}
 
@@ -603,6 +606,7 @@ namespace moving_boundary {
 		* @param i index
 		* @param mass value
 		*/
+		/*
 		void setMass(std::array<moving_boundary::BioQuanType,nOfS> & store, size_t i, moving_boundary::BioQuanType mass) {
 			assert (i < nOfS);
 			store[i] = mass;
@@ -610,6 +614,7 @@ namespace moving_boundary {
 				throw std::logic_error("setMass");
 			}
 		}
+		*/
 #		undef isnan
 		/**
 		* set list of neighbors which are present 
@@ -713,9 +718,9 @@ namespace moving_boundary {
 		*/
 		Volume2DClass vol;
 		std::vector<SegmentType> segments_;
-		SpeciesStorage amtMass; //amount of mass
-		SpeciesStorage amtMassTransient; //amount of mass, working copy
-		SpeciesStorage concValue; //concentration at beginning of cycle
+		std::vector<moving_boundary::BioQuanType> amtMass; //amount of mass
+		std::vector<moving_boundary::BioQuanType> amtMassTransient; //amount of mass, working copy
+		std::vector<moving_boundary::BioQuanType> concValue; //concentration at beginning of cycle
 
 		const static int NUM_INSIDE = 4;
 		std::array<NeighborType,NUM_INSIDE> interiorNeighbors; 

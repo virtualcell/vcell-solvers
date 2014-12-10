@@ -258,7 +258,7 @@ TEST(frontier,classify) {
 		const FrontPointType & p = *iter;
 		pgon.add(p(cX),p(cY));
 	}
-	moving_boundary::VoronoiMesh::MBMeshDef trial(arrayInit<moving_boundary::CoordinateType>(5,2),arrayInit<size_t>(35,35));
+	moving_boundary::VoronoiMesh::MBMeshDef trial(arrayInit<moving_boundary::CoordinateType>(0,0),arrayInit<moving_boundary::CoordinateType>(5,2), arrayInit<size_t>(35,35));
 
 	typedef moving_boundary::MeshElementSpecies MPoint2;
 	moving_boundary::VoronoiMesh::MBMesh mView(trial);

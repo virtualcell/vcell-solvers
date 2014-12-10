@@ -75,6 +75,7 @@ namespace spatial {
 	template<class CT, int N>
 	struct MeshDef {
 		typedef CT realType;
+		typedef unsigned int species_type;
 		static int numDim( ) { return N; }
 
 		//default
@@ -89,10 +90,11 @@ namespace spatial {
 		* @param sizes_ sizes of sides
 		* @param nPoints_ how many points in each region
 		*/
-		MeshDef(const std::array<CT,N> & origin_, const std::array<CT,N> & sizes_, const std::array<size_t,N> & nPoints_)
+		MeshDef(const std::array<CT,N> & origin_, const std::array<CT,N> & sizes_, const std::array<size_t,N> & nPoints_, species_type numSpecies_ = 1)
 			:origin(origin_),
 			intervals( ),
 			nPoints(nPoints_), 
+			numSpecies(numSpecies_),
 			minInterval(std::numeric_limits<CT>::max( )) {
 				for (int i = 0; i < N; i++) {
 					intervals[i] = static_cast<CT>(sizes_[i]/nPoints[i]);
@@ -104,6 +106,7 @@ namespace spatial {
 		* @param sizes_ sizes of sides
 		* @param nPoints_ how many points in each region
 		*/
+		/*
 		MeshDef(const std::array<CT,N> & sizes_, const std::array<size_t,N> & nPoints_)
 			:origin( ),
 			intervals( ),
@@ -114,14 +117,16 @@ namespace spatial {
 					minInterval = std::min(minInterval,intervals[i]);
 				}
 		}
+		*/
 
 		/**
-		* copy ctor, of course
+		* copy ctor
 		*/
 		MeshDef(const MeshDef & rhs)
 			:origin(rhs.origin),
 			intervals(rhs.intervals),
 			nPoints(rhs.nPoints),
+			numSpecies(rhs.numSpecies),
 			minInterval(rhs.minInterval) {}
 
 		MeshDef(std::istream & is) {
@@ -133,6 +138,8 @@ namespace spatial {
 			std::for_each(intervals.begin( ), intervals.end( ), br);
 			std::for_each(nPoints.begin( ), nPoints.end( ), binaryReader<size_t>(is) ); 
 			br(minInterval);
+			binaryReader<species_type> speciesReader(is);
+			speciesReader(numSpecies);
 		}
 
 
@@ -145,6 +152,8 @@ namespace spatial {
 			std::for_each(intervals.begin( ), intervals.end( ), bw);
 			std::for_each(nPoints.begin( ), nPoints.end( ), binaryWriter<size_t>(os) ); 
 			bw(minInterval);
+			binaryWriter<species_type> speciesWriter(os);
+			speciesWriter(numSpecies);
 		}
 
 		static void registerType( ) {
@@ -177,6 +186,10 @@ namespace spatial {
 
 		CT minimumInterval( ) const {
 			return minInterval;
+		}
+
+		species_type numberSpecies( ) const {
+			return numSpecies;
 		}
 		/**
 		* translate point from grid coordinates to scaled
@@ -253,6 +266,7 @@ namespace spatial {
 		*/
 		std::array<size_t,N> nPoints; 
 		CT minInterval;
+		species_type numSpecies;
 	};
 
 	/**

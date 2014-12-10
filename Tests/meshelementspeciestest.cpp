@@ -15,10 +15,11 @@ TEST(persist,mesNeighbor) {
 	//spatial::VCellFront<moving_boundary::CoordinateType> front(limits, 175,1.5, lv,vel); 
 	using spatial::Point2D; 
 	FrontProvider<CoordinateType> * fp = moving_boundary::circleFront(0,0,1,0.1,0);
+	const std::array<CoordinateType,2> origin = { 0, 0};
 	const std::array<CoordinateType,2> edge = { 5, 2};
 	const std::array<size_t,2> extent = { 35, 35 }; 
 
-	VoronoiMesh::MBMeshDef trial(edge,extent);
+	VoronoiMesh::MBMeshDef trial(origin,edge,extent);
 
 	//typedef moving_boundary::MeshElementSpecies MPoint2;
 	VoronoiMesh::MBMesh mesh(trial);
@@ -55,7 +56,8 @@ TEST(persist,mes) {
 	const std::array<CoordinateType,2> edge = { 5, 2};
 	const std::array<size_t,2> extent = { 35, 35 }; 
 
-	VoronoiMesh::MBMeshDef trial(edge,extent);
+	const std::array<CoordinateType,2> origin = { 0, 0};
+	VoronoiMesh::MBMeshDef trial(origin,edge,extent);
 
 	//typedef moving_boundary::MeshElementSpecies MPoint2;
 	VoronoiMesh::MBMesh mesh(trial);
@@ -88,10 +90,11 @@ TEST(persist,mesh) {
 	//spatial::VCellFront<moving_boundary::CoordinateType> front(limits, 175,1.5, lv,vel); 
 	using spatial::Point2D; 
 	FrontProvider<CoordinateType> * fp = moving_boundary::circleFront(0,0,1,0.1,0);
+	const std::array<CoordinateType,2> origin = { 0, 0};
 	const std::array<CoordinateType,2> edge = { 5, 2};
 	const std::array<size_t,2> extent = { 35, 35 }; 
 
-	VoronoiMesh::MBMeshDef trial(edge,extent);
+	VoronoiMesh::MBMeshDef trial(origin,edge,extent);
 
 	//typedef moving_boundary::MeshElementSpecies MPoint2;
 	VoronoiMesh::MBMesh mesh(trial);

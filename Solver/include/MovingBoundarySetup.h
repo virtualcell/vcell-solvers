@@ -33,20 +33,6 @@ namespace moving_boundary {
 		*/
 		bool hardTime;
 
-#ifdef OLD_FUNCTION_POINTER_IMPLEMENTATION
-		/**
-		* if zero, #levelFunctionStr function is in levelFunctionStr
-		*/
-		spatial::FronTierLevelFunction levelFunction;
-		/**
-		* if zero, #levelFunctionStr function is in advectVelocityFunctionStrX, Y
-		*/
-		spatial::FronTierVelocityFunction velocityFunction;
-		/**
-		* if zero, #levelFunctionStr function is in concentrationFunctionStr
-		*/
-		ConcentrationFunction concentrationFunction; 
-#endif
 		//double diffusionCoefficient;
 		std::string levelFunctionStr;
 		/**
@@ -66,7 +52,7 @@ namespace moving_boundary {
 		*/
 		std::string frontVelocityFunctionStrY;
 
-		std::string concentrationFunctionStr;
+		std::vector<std::string> concentrationFunctionStrings;
 		double diffusionConstant;
 		/**
 		* provide alternate to frontier; for testing / validation
@@ -81,18 +67,13 @@ namespace moving_boundary {
 			numberTimeSteps( ),
 			timeStep(0),
 			hardTime(false),
-#ifdef OLD_FUNCTION_POINTER_IMPLEMENTATION
-			levelFunction( ),
-			velocityFunction( ),
-			concentrationFunction( ),
-#endif
 			//diffusionCoefficient( ),
 			levelFunctionStr( ),
 			advectVelocityFunctionStrX( ),
 			advectVelocityFunctionStrY( ),
 			frontVelocityFunctionStrX( ),
 			frontVelocityFunctionStrY( ),
-			concentrationFunctionStr( ),
+			concentrationFunctionStrings( ),
 			diffusionConstant(0),
 			alternateFrontProvider(nullptr)
 		{}
@@ -104,18 +85,13 @@ namespace moving_boundary {
 			numberTimeSteps(rhs.numberTimeSteps),
 			timeStep(rhs.timeStep),
 			hardTime(rhs.hardTime),
-#ifdef OLD_FUNCTION_POINTER_IMPLEMENTATION
-			levelFunction(rhs.levelFunction),
-			velocityFunction(rhs.velocityFunction),
-			concentrationFunction(rhs.concentrationFunction),
-#endif
 			//diffusionCoefficient( ),
 			levelFunctionStr(rhs.levelFunctionStr),
 			advectVelocityFunctionStrX(rhs.advectVelocityFunctionStrX),
 			advectVelocityFunctionStrY(rhs.advectVelocityFunctionStrY),
 			frontVelocityFunctionStrX(rhs.frontVelocityFunctionStrX),
 			frontVelocityFunctionStrY(rhs.frontVelocityFunctionStrY),
-			concentrationFunctionStr(rhs.concentrationFunctionStr),
+			concentrationFunctionStrings(rhs.concentrationFunctionStrings),
 			diffusionConstant(rhs.diffusionConstant),
 			alternateFrontProvider(rhs.alternateFrontProvider) {
 		}
@@ -126,23 +102,19 @@ namespace moving_boundary {
 			numberTimeSteps = rhs.numberTimeSteps;
 			timeStep = rhs.timeStep;
 			hardTime = rhs.hardTime;
-#ifdef OLD_FUNCTION_POINTER_IMPLEMENTATION
-			levelFunction = rhs.levelFunction;
-			velocityFunction = rhs.velocityFunction;
-			concentrationFunction = rhs.concentrationFunction;
-#endif
 			//diffusionCoefficient =  ;
 			levelFunctionStr = rhs.levelFunctionStr;
 			advectVelocityFunctionStrX = rhs.advectVelocityFunctionStrX;
 			advectVelocityFunctionStrY = rhs.advectVelocityFunctionStrY;
 			frontVelocityFunctionStrX = rhs.frontVelocityFunctionStrX;
 			frontVelocityFunctionStrY = rhs.frontVelocityFunctionStrY;
-			concentrationFunctionStr = rhs.concentrationFunctionStr;
+			concentrationFunctionStrings = rhs.concentrationFunctionStrings;
 			diffusionConstant = rhs.diffusionConstant;
 			alternateFrontProvider = rhs.alternateFrontProvider;
 			return *this;
 		}
 		explicit MovingBoundarySetup(std::istream &is) ;
+		~MovingBoundarySetup( );
 		void persist(std::ostream &os) const;
 		static void registerType( );
 

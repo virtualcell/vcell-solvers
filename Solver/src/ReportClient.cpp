@@ -53,11 +53,11 @@ namespace {
 
 	struct HElementRecord {
 		double volume;
-		double mass;
-		double concentration;
+		std::vector<double> mass;
+		std::vector<double> concentration;
 		//double lastPosition;
-		double x;
-		double y;
+		//double x;
+		//double y;
 		char  boundaryPosition; 
 		std::vector<PODPoint<double> > controlVolume;
 		HElementRecord(double x_ = 0, double y_ = 0)
@@ -65,12 +65,22 @@ namespace {
 			:volume(),
 			mass(),
 			concentration(),
-			x(x_),
-			y(y_),
+			//x(x_),
+			//y(y_),
 			boundaryPosition('T'),
 			controlVolume( ){ }
+		/**
+		* size mass and concentration vectors
+		* @param s new size
+		*/
+		void resize(size_t s) {
+			mass.resize(s);
+			concentration.resize(s);
+		}
 		void clear( ) {
-			volume = mass = concentration = 0;
+			volume = 0;
+			mass.assign(mass.size( ), 0);
+			concentration.assign(mass.size( ), 0);
 		}
 	};
 
@@ -79,24 +89,24 @@ namespace {
 	*/
 	struct ResultPoint {
 		ResultPoint( )
-			:mass(0),
+			:mass( ),
 			volume(0),
-			concentrationNumeric(0),
+			concentrationNumeric( ),
 			boundaryPosition(0),
 			volumePoints( )
 		{ }
-		void set(const spatial::TPoint<size_t,2> & idx, const HElementRecord & er, double time)
-		{
-			static vcellH5::VarLen<PODPoint<double> > & vtype = PODPoint<double>::vectorType( );
-			mass = er.mass;
+		void set(const HElementRecord & er) {
+			static vcellH5::VarLen<PODPoint<double> > & vpointType = PODPoint<double>::vectorType( );
+			static vcellH5::VarLenSimple<double>  valueType;
+			mass = valueType.adapt(er.mass);
 			volume = er.volume;
-			concentrationNumeric = er.concentration;
+			concentrationNumeric = valueType.adapt(er.concentration);
 			boundaryPosition = er.boundaryPosition;
-			volumePoints = vtype.adapt(er.controlVolume);
+			volumePoints = vpointType.adapt(er.controlVolume);
 		}
-		double mass;
+		hvl_t mass;
 		double volume;
-		double concentrationNumeric;
+		hvl_t concentrationNumeric;
 		char boundaryPosition;
 		hvl_t  volumePoints; 
 		static H5::CompType getType( ) {
@@ -118,40 +128,6 @@ namespace {
 		}
 	};
 
-	/**
-	* adds exact solution and error information; 
-	*/
-	template <class SOLUTION>
-	struct TSolutionPoint : public ResultPoint {
-		TSolutionPoint( ) 
-			:ResultPoint( ),
-			concentrationExact(0),
-			error(0) {}
-
-		void set(const spatial::TPoint<size_t,2> & idx, const HElementRecord & er, double time)
-		{
-			ResultPoint::set(idx,er,time);
-			const double sol = SOLUTION::solution(er.x,er.y,time);
-			if (concentrationNumeric != 0) {
-				concentrationExact = sol;
-				error = std::abs(concentrationNumeric - sol);
-			} 
-			else {
-				concentrationExact = 0;
-				error = 0; 
-			}
-		}
-		double concentrationExact;
-		double error;
-
-		static H5::CompType getType( ) {
-			H5::PredType dtype = vcellH5::TPredType<double>::predType( ); 
-			H5::CompType solutionPointType = ResultPoint::getType(sizeof(TSolutionPoint<SOLUTION>));
-			solutionPointType.insertMember("uExact", HOFFSET(TSolutionPoint<SOLUTION>,concentrationExact),dtype);
-			solutionPointType.insertMember("error", HOFFSET(TSolutionPoint<SOLUTION>,error),dtype);
-			return solutionPointType;
-		}
-	};
 
 	class TimeReport {
 		double startTime;
@@ -359,8 +335,8 @@ namespace {
 			file(f),
 			theProblem(mbpp), 
 			currentTime(0),
-			totalStuff(0),
-			oldStuff(0),
+			//totalStuff(0),
+			//oldStuff(0),
 			meshDef(mbpp.meshDef( )),
 			eRecords(),
 			genTimes(),
@@ -509,8 +485,8 @@ namespace {
 		* add information from MovingBoundarySetup; currently just the concentration string
 		*/
 		void addInitial(const moving_boundary::MovingBoundarySetup & mbs) {
-			const std::string s = mbs.concentrationFunctionStr; 
-			vcellH5::writeAttribute(baseGroup,"concentrationFunction",s);
+			//XRAY const std::string s = mbs.concentrationFunctionStr; 
+			//vcellH5::writeAttribute(baseGroup,"concentrationFunction",s);
 		}
 		/**
 		* free form annotation of data set for including notes in HDF file
@@ -572,7 +548,7 @@ namespace {
 			if (reportActive) {
 				writeBoundary(genTimes.size( ),geometryInfo.boundary);
 				currentTime = t;
-				totalStuff = 0;
+				//totalStuff = 0;
 				std::cout << "generation " << std::setw(2) <<  generationCounter << " time " << currentTime << std::endl;
 				VCELL_KEY_LOG(trace,Key::generationTime,"generation " << std::setw(2) <<  generationCounter << " time " << currentTime);
 				genTimes.push_back(t);
@@ -647,17 +623,18 @@ namespace {
 				using spatial::cX;
 				using spatial::cY;
 				spatial::TPoint<size_t,2> key(e.indexOf(0),e.indexOf(1));
+				const int numSpecies = e.numSpecies( );
 				if (eRecords.find(key) == eRecords.end( )) {
 					HElementRecord newRecord(e(cX),e(cY));
 					eRecords[key] = newRecord;
+					eRecords[key].resize(numSpecies);
 				}
 				HElementRecord & er = eRecords[key];
-				double m = e.mass(0);
-				double c = e.concentration(0);
 				double v = e.volumePD( );
-				er.mass = m;
-				er.concentration = c;
-				er.volume = v;
+				for (int i = 0; i < numSpecies; i++) { 
+					er.mass[i] = e.mass(i); 
+					er.concentration[i] = e.concentration(i);
+				}
 				er.boundaryPosition = encodePosition(e);
 				Volume2DClass::VectorOfVectors vOfv = e.getControlVolume().points( );
 				if (vOfv.size( ) > 1) {
@@ -668,7 +645,7 @@ namespace {
 				er.controlVolume.resize(pVec.size( ));
 				std::transform(pVec.begin( ),pVec.end( ),er.controlVolume.begin( ),pointconverter);
 
-				totalStuff += m;
+				//totalStuff += m;
 			}
 		}
 		/**
@@ -676,7 +653,8 @@ namespace {
 		*/
 		virtual void iterationComplete( ) {
 			if (reportActive) {
-				VCELL_LOG(info,"Time " << currentTime << " total mass " << totalStuff); 
+				//VCELL_LOG(info,"Time " << currentTime << " total mass " << totalStuff); 
+				VCELL_LOG(info,"Time " << currentTime); 
 				if (eRecords.size( ) > 0) {
 
 					try {
@@ -704,7 +682,7 @@ namespace {
 							const spatial::TPoint<size_t,2> & index = iter->first;
 							hsize_t i = index(spatial::cX);
 							hsize_t j = index(spatial::cY); 
-							buffer[i - minI][j - minJ].set(index,er,currentTime);
+							buffer[i - minI][j - minJ].set(er);
 							er.clear( );
 						}
 						const size_t singleTimeSlice = 1;
@@ -735,12 +713,14 @@ namespace {
 				theProblem.plotAreas(fa);
 				theProblem.plotPolygons(fp);
 				*/
+				/*
 				if (oldStuff != 0 && !spatial::nearlyEqual(oldStuff,totalStuff,1e-3)) {
 					simulationComplete( ); //write out final info
 					VCELL_EXCEPTION(logic_error, "mass not conserved old"<< oldStuff << " , new " << totalStuff
 						<< ", gain(+)/loss(-) " << (totalStuff - oldStuff));
 				}
 				oldStuff = totalStuff;
+				*/
 			}
 		}
 
@@ -791,8 +771,8 @@ namespace {
 		std::string xml;
 		H5::H5File & file;
 		double currentTime; 
-		double totalStuff;
-		double oldStuff;
+		//double totalStuff;
+		//double oldStuff;
 		const spatial::MeshDef<moving_boundary::CoordinateType,2> meshDef;
 		typedef std::map<spatial::TPoint<size_t,2>, HElementRecord> RecordMap; 
 		RecordMap eRecords;

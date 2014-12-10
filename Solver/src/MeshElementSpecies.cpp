@@ -7,7 +7,6 @@
 #include <VCellFront.h>
 #include <VoronoiResult.h>
 #include <VoronoiMesh.h>
-#include <Mesh.h>
 #include <algo.h>
 #include <intersection.h>
 #include <MovingBoundaryParabolicProblem.h>
@@ -161,7 +160,7 @@ void MeshElementSpecies::logCreation( ) const {
 	moving_boundary::CoordinateType y = get(spatial::cY);
 	double px = world.toProblemDomain(x,spatial::cX);
 	double py = world.toProblemDomain(y,spatial::cY);
-	
+
 	std::ostringstream oss;
 	oss << "creation " << this->indexInfo( ) << " (" << this->get(spatial::cX) << ',' << this->get(spatial::cY) << "), ("
 		<< px << ',' << py << ')';
@@ -315,12 +314,12 @@ void MeshElementSpecies::processBoundaryNeighbors(const VoronoiMesh & vm, std::v
 		vm.getResult(vResult,*this);
 		/*
 		{
-			std::ofstream vp("voronoiPoly.m");
-			vp << "% " << ident( ) << std::endl;
-			vp << "% " << vResult.type << std::endl;
-			matlabBridge::TPolygon<long long> p("r-+");
-			frontTierAdapt::copyVectorInto(p,vResult.vertices);
-			vp << p;
+		std::ofstream vp("voronoiPoly.m");
+		vp << "% " << ident( ) << std::endl;
+		vp << "% " << vResult.type << std::endl;
+		matlabBridge::TPolygon<long long> p("r-+");
+		frontTierAdapt::copyVectorInto(p,vResult.vertices);
+		vp << p;
 		}
 		*/
 
@@ -749,7 +748,7 @@ void MeshElementSpecies::distributeMassToNeighbors() {
 			if (iVol > 0) {
 				distributed = true;
 				moving_boundary::CoordinateProductType nbVol = nb.volumePD( );
-				for (size_t s = 0; s < nOfS; s++) {
+				for (size_t s = 0; s < numSpecies( ); s++) {
 					moving_boundary::BioQuanType m = iVol * amtMassTransient[s] / volumeValue; 
 					VCELL_COND_LOG(debug, s == 0 , " " << this->indexInfo( ) << " giving " <<nb.indexInfo( ) << " mass " << m 
 						<< " has vol " << nbVol << " existing mass " << nb.amtMassTransient[0] );
@@ -770,7 +769,7 @@ void MeshElementSpecies::distributeMassToNeighbors() {
 			neighbors[i].element->writeMatlab(script);
 		}
 	}
-	for (size_t s = 0; s < nOfS; s++) {
+	for (size_t s = 0; s < numSpecies( ); s++) {
 		amtMass[s] = 0;
 	}
 	setState(stable);
@@ -784,6 +783,7 @@ void MeshElementSpecies::collectMassFromNeighbors(const FrontType & front) {
 	if (state( ) != gainedEmpty) {
 		throw std::domain_error("collectMassFromNeighbors");
 	}
+	allocateSpecies( );
 	if (amtMass[0] != 0) {
 		VCELL_EXCEPTION(domain_error,"non zero new mass");
 	}
@@ -815,7 +815,7 @@ void MeshElementSpecies::collectMassFromNeighbors(const FrontType & front) {
 			assert(intersectVolume>=0);
 			if (intersectVolume > 0) {
 				moving_boundary::CoordinateProductType donorVolume = nb.volumePD( );
-				for (size_t s = 0; s < nOfS; s++) {
+				for (size_t s = 0; s < numSpecies( ); s++) {
 					const moving_boundary::BioQuanType mu = nb.amtMass[s] / donorVolume; 
 					VCELL_LOG(verbose,this->indexInfo( ) << ':' << nb.indexInfo( ) << " volume " << nb.volumePD( ) << " conc " << mu); 
 					moving_boundary::BioQuanType m =  mu * intersectVolume; 
@@ -908,7 +908,7 @@ void MeshElementSpecies::endOfCycle( ) {
 		VCELL_LOG(verbose,this->ident( ) << " eoc prior copy " << amtMassTransient[0] << " mass " << amtMass[0]);
 		std::copy(amtMassTransient.begin( ), amtMassTransient.end( ), amtMass.begin( ));
 		/* REVIEW -- check for negative
-		for (int s = 0; s < nOfS; s++) {
+		for (int s = 0; s < numSpecies( ); s++) {
 		if (amtMassTransient[s] < 0) {
 		VCELL_EXCEPTION(logic_error, ident() << " has gone negative") ;
 		}
@@ -958,12 +958,12 @@ void MeshElementSpecies::endOfCycle( ) {
 	//temporary? store concentration
 	moving_boundary::CoordinateProductType vol = this->volumePD( );
 	if (vol > 0) {
-		for (int i = 0; i < nOfS; i++) {
+		for (int i = 0; i < numSpecies( ); i++) {
 			concValue[i] = amtMass[i] / vol;
 		}
 	}
-	else {
-		for (int i = 0; i < nOfS; i++) {
+	else if (isInside( ) ) {
+		for (int i = 0; i < numSpecies( ); i++) {
 			concValue[i] = 0; 
 		}
 	}
@@ -1035,7 +1035,7 @@ void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, Bi
 			// this coefficient divided by problem domain to world scaling factor twice; one because velocity is scaled,
 			// secondly because it's going to be multiplied by edgeLength (which is squared)
 			BioQuanType advectCoeff = dot(averageVelocity,normalVector) /distanceScaledSquared;
-			for (size_t s = 0; s < nOfS;s++) {
+			for (size_t s = 0; s < numSpecies( );s++) {
 				//moving_boundary::BioQuanType cUs = concentration(s); EVAL using concentration
 				//moving_boundary::BioQuanType cOther = nb.concentration(s);
 				BioQuanType cUs = concValue[s]; 
@@ -1054,32 +1054,34 @@ void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, Bi
 					<< " timeStep " << timeStep
 					<< " m(i) " << amtMass[0] << " vol(i) = " << volumePD( ) << " m(j) " << nb.amtMass[0] << " vol(j) " << nb.volumePD( ) 
 					); 
-				std::pair<const OurType *,const OurType *> inv(&nb,this);
-				if (diffuseAdvectMap.find(inv) != diffuseAdvectMap.end( )) {
-					if (diffuseAdvectMap[inv].reversed) {
-						VCELL_EXCEPTION(logic_error, this->indexInfo( ) << " to " << nb.indexInfo( ) << " already transferred or reversed?") ;
-					}
-					BioQuanType prevAmount = diffuseAdvectMap[inv].value; 
-					if ( !spatial::nearlyEqual(-1 * prevAmount,transferAmount,toleranceDiffuseAdvectException) ) {
-						VCELL_EXCEPTION(logic_error, this->indexInfo( ) << " to " << nb.indexInfo( ) << " amt " << transferAmount
+				if (s == 0) {
+					std::pair<const OurType *,const OurType *> inv(&nb,this);
+					if (diffuseAdvectMap.find(inv) != diffuseAdvectMap.end( )) {
+						if (diffuseAdvectMap[inv].reversed) {
+							VCELL_EXCEPTION(logic_error, this->indexInfo( ) << " to " << nb.indexInfo( ) << " already transferred or reversed?") ;
+						}
+						BioQuanType prevAmount = diffuseAdvectMap[inv].value; 
+						if ( !spatial::nearlyEqual(-1 * prevAmount,transferAmount,toleranceDiffuseAdvectException) ) {
+							VCELL_EXCEPTION(logic_error, this->indexInfo( ) << " to " << nb.indexInfo( ) << " amt " << transferAmount
+								<< " differs from inverse " << prevAmount << " relative diff " 
+								<< spatial::relativeDifference(-1 *prevAmount,transferAmount));
+							/*
+							VCELL_LOG(warn, "WARNING " << indexInfo( ) << " to " << nb.indexInfo( ) << " amt " << transferAmount
 							<< " differs from inverse " << prevAmount << " relative diff " 
-							<< spatial::relativeDifference(-1 *prevAmount,transferAmount));
-						/*
-						VCELL_LOG(warn, "WARNING " << indexInfo( ) << " to " << nb.indexInfo( ) << " amt " << transferAmount
-						<< " differs from inverse " << prevAmount << " relative diff " 
-						<< spatial::relativeDifference(-1 *prevAmount,transferAmount))
-						*/
-					}
+							<< spatial::relativeDifference(-1 *prevAmount,transferAmount))
+							*/
+						}
 
-					diffuseAdvectMap[inv].reversed = true;
-				}
-				else { //haven't done other way yet, store amount
-					std::pair<const OurType *,const OurType *> pr(this,&nb);
-					diffuseAdvectMap[pr] = CheckValue(false,transferAmount);
+						diffuseAdvectMap[inv].reversed = true;
+					}
+					else { //haven't done other way yet, store amount
+						std::pair<const OurType *,const OurType *> pr(this,&nb);
+						diffuseAdvectMap[pr] = CheckValue(false,transferAmount);
+					}
 				}
 			} //species loop
 		} //neighbor loop
-		for (size_t s = 0; s < nOfS;s++) {
+		for (size_t s = 0; s < numSpecies( );s++) {
 			if (amtMassTransient[s] < 0) {
 				VCELL_LOG(fatal,ident( ) << " negative mass, m(" << s << ") = " << amtMassTransient[s]);
 				negativeMassError = true;
@@ -1205,7 +1207,7 @@ void MeshElementSpecies::persist(std::ostream &os) {
 	vcell_persist::binaryWrite(os,nOutside);
 	velocity.persist(os);
 }
-	
+
 
 BioQuanType MeshElementSpecies::distanceScaled        = 1;
 BioQuanType MeshElementSpecies::distanceScaledSquared = 1;
