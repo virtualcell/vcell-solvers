@@ -55,18 +55,12 @@ namespace {
 		double volume;
 		std::vector<double> mass;
 		std::vector<double> concentration;
-		//double lastPosition;
-		//double x;
-		//double y;
 		char  boundaryPosition; 
 		std::vector<PODPoint<double> > controlVolume;
-		HElementRecord(double x_ = 0, double y_ = 0)
-			//:lastPosition(),
+		HElementRecord( )
 			:volume(),
 			mass(),
 			concentration(),
-			//x(x_),
-			//y(y_),
 			boundaryPosition('T'),
 			controlVolume( ){ }
 		/**
@@ -118,10 +112,12 @@ namespace {
 			using H5::PredType;
 			H5::PredType dtype = vcellH5::TPredType<double>::predType( ); 
 			H5::PredType ctype = vcellH5::TPredType<char>::predType( ); 
+			vcellH5::VarLenSimple<double> vlen;
+			H5::DataType arrayType = vlen.getType( );
 			H5::CompType resultPointType(size);
-			resultPointType.insertMember("mass", offsetof(ResultPoint,mass),dtype);
+			resultPointType.insertMember("mass", offsetof(ResultPoint,mass),arrayType);
 			resultPointType.insertMember("volume", HOFFSET(ResultPoint,volume),dtype);
-			resultPointType.insertMember("uNumeric", HOFFSET(ResultPoint,concentrationNumeric),dtype);
+			resultPointType.insertMember("uNumeric", HOFFSET(ResultPoint,concentrationNumeric),vlen.getType( ));
 			resultPointType.insertMember("boundaryPosition", HOFFSET(ResultPoint,boundaryPosition),ctype);
 			resultPointType.insertMember("volumePoints", HOFFSET(ResultPoint,volumePoints),PODPoint<double>::vectorType( ).getType( ));
 			return resultPointType;
@@ -625,8 +621,7 @@ namespace {
 				spatial::TPoint<size_t,2> key(e.indexOf(0),e.indexOf(1));
 				const int numSpecies = e.numSpecies( );
 				if (eRecords.find(key) == eRecords.end( )) {
-					HElementRecord newRecord(e(cX),e(cY));
-					eRecords[key] = newRecord;
+					eRecords[key] = HElementRecord( ); 
 					eRecords[key].resize(numSpecies);
 				}
 				HElementRecord & er = eRecords[key];
@@ -683,7 +678,7 @@ namespace {
 							hsize_t i = index(spatial::cX);
 							hsize_t j = index(spatial::cY); 
 							buffer[i - minI][j - minJ].set(er);
-							er.clear( );
+							//er.clear( );
 						}
 						const size_t singleTimeSlice = 1;
 						hsize_t  bufferDim[3] = {singleTimeSlice,iSpan, jSpan}; 

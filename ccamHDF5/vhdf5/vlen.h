@@ -37,6 +37,11 @@ namespace vcellH5 {
 		*/
 		VarLenSimple( )
 		:VarLen<T>(supportedType( ) ) {}
+
+		 static H5::VarLenType arrayType( ) {
+			 return H5::VarLenType(supportedType( ));
+		 }
+
 	private:
 		/**
 		 * return default type; must be function (not static member) due to static member 
