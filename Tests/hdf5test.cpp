@@ -671,16 +671,32 @@ TEST(hdf5,bugDemo) {
 	myVec.push_back(0); 
 	vcellH5::facadeWriteAttribute(ds,"BeverlyHills",trait);
 }
+namespace {
+	inline double testValue(size_t x, size_t y, size_t z) {
+		return static_cast<double>(10000 * x + 100 * y + z);
+	}
+
+
+}
 TEST(hdf5,flex3) {
 	using namespace vcellH5;
 	vcellH5::Flex3<double> trial(3,4,5);
-	Flex3Depth<double> dp = trial[0];
-	Flex3Col<double> col = dp[0];
-	trial[0][0][0] = 3;
-	trial[2][3][1] = 4;
+	for (int x = 0; x < trial.depthSize( ); x++) 
+		for (int y = 0; y < trial.columnSize( ); y ++)
+			for (int z = 0; z < trial.rowSize( ); z++) {
+				trial[x][y][z] = testValue(x,y,z);
+	}
+	for (int x = 0; x < trial.depthSize( ); x++) 
+		for (int y = 0; y < trial.columnSize( ); y ++)
+			for (int z = 0; z < trial.rowSize( ); z++) {
+				double back = testValue(x,y,z);
+				ASSERT_TRUE(trial[x][y][z] == testValue(x,y,z));
+	}
 	const vcellH5::Flex3<double> copy(trial); 
-	ASSERT_TRUE(trial[2][3][1] == 4);
-	ASSERT_TRUE(trial[0][0][0] == 3);
-	ASSERT_TRUE(copy[2][3][1] == 4);
+	for (int x = 0; x < trial.depthSize( ); x++) 
+		for (int y = 0; y < trial.columnSize( ); y ++)
+			for (int z = 0; z < trial.rowSize( ); z++) {
+				ASSERT_TRUE(copy[x][y][z] == testValue(x,y,z));
+	}
 }
 

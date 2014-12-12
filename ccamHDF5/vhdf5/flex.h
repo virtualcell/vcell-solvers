@@ -121,7 +121,8 @@ namespace vcellH5 {
 			:storage(depthSize * columnSize* rowSize ),
 			depthSize_(depthSize),
 			colSize_(columnSize),
-			rowSize_(rowSize) {}
+			rowSize_(rowSize), 
+			depthBlock(colSize_ * rowSize_) {}
 
 		/**
 		* allow construction with same array used to create DataSpace
@@ -131,7 +132,9 @@ namespace vcellH5 {
 			:storage(dims[0] * dims[1] * dims[2]),
 			depthSize_(dims[0]),
 			colSize_(dims[1]),
-			rowSize_(dims[2]) {}
+			rowSize_(dims[2]),
+			depthBlock(colSize_ * rowSize_) {}
+
 		/**
 		* default ctor -- must call reindex before use
 		*/
@@ -139,7 +142,8 @@ namespace vcellH5 {
 			:storage(0),
 			depthSize_(0),
 			colSize_(0),
-			rowSize_(0) {}
+			rowSize_(0),
+			depthBlock(0) {}
 
 		size_t rowSize( ) const {
 			return rowSize_;
@@ -172,7 +176,8 @@ namespace vcellH5 {
 			depthSize_ = depthSize;
 			colSize_ = columnSize;
 			rowSize_ = rowSize;
-			storage.resize(depthSize * columnSize * rowSize);
+			depthBlock = columnSize * rowSize;
+			storage.resize(depthSize * depthBlock);
 		}
 		/*
 		* allow setting with same array used to create DataSpace
@@ -181,10 +186,7 @@ namespace vcellH5 {
 		* longer accessible using previous indexing scheme
 		*/
 		void reindex(hsize_t *dims) {
-			depthSize_ = dims[0]; 
-			colSize_ = dims[1]; 
-			rowSize_ = dims[2]; 
-			storage.resize(depthSize_ * colSize_ * rowSize_);
+			reindex(dims[0],dims[1],dims[2]);
 		}
 	private:
 		friend Flex3Col<T>;
@@ -192,6 +194,7 @@ namespace vcellH5 {
 		size_t depthSize_;
 		size_t colSize_;
 		size_t rowSize_;
+		size_t depthBlock;
 	};
 
 	template <class T>
@@ -215,12 +218,12 @@ namespace vcellH5 {
 	struct Flex3Col {
 		T & operator[](size_t r) {
 			assert(r < flex.rowSize( ));
-			const size_t index = depth * flex.depthSize( ) + col * flex.rowSize( ) + r; 
+			const size_t index = depth * flex.depthBlock + col * flex.rowSize( ) + r; 
 			return flex.storage[index];
 		}
 		const T & operator[](size_t r) const {
 			assert(r < flex.rowSize( ));
-			const size_t index = depth * flex.depthSize( ) + col * flex.rowSize( ) + r; 
+			const size_t index = depth * flex.depthBlock + col * flex.rowSize( ) + r; 
 			return flex.storage[index];
 		}
 
