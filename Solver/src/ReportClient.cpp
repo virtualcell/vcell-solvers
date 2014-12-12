@@ -83,47 +83,58 @@ namespace {
 	*/
 	struct ResultPoint {
 		ResultPoint( )
-			:mass( ),
-			volume(0),
-			concentrationNumeric( ),
+			:volume(0),
 			boundaryPosition(0),
 			volumePoints( )
 		{ }
 		void set(const HElementRecord & er) {
 			static vcellH5::VarLen<PODPoint<double> > & vpointType = PODPoint<double>::vectorType( );
 			static vcellH5::VarLenSimple<double>  valueType;
-			mass = valueType.adapt(er.mass);
 			volume = er.volume;
-			concentrationNumeric = valueType.adapt(er.concentration);
 			boundaryPosition = er.boundaryPosition;
 			volumePoints = vpointType.adapt(er.controlVolume);
 		}
-		hvl_t mass;
 		double volume;
-		hvl_t concentrationNumeric;
 		char boundaryPosition;
 		hvl_t  volumePoints; 
-		static H5::CompType getType( ) {
-			static H5::CompType ct = getType(sizeof(ResultPoint));
-			return ct;
-		}
-	protected:
-		static H5::CompType getType(size_t size) {
+		static H5::CompType getType() {
 			using H5::PredType;
 			H5::PredType dtype = vcellH5::TPredType<double>::predType( ); 
 			H5::PredType ctype = vcellH5::TPredType<char>::predType( ); 
 			vcellH5::VarLenSimple<double> vlen;
 			H5::DataType arrayType = vlen.getType( );
-			H5::CompType resultPointType(size);
-			resultPointType.insertMember("mass", offsetof(ResultPoint,mass),arrayType);
+			H5::CompType resultPointType(sizeof(ResultPoint));
 			resultPointType.insertMember("volume", HOFFSET(ResultPoint,volume),dtype);
-			resultPointType.insertMember("uNumeric", HOFFSET(ResultPoint,concentrationNumeric),vlen.getType( ));
 			resultPointType.insertMember("boundaryPosition", HOFFSET(ResultPoint,boundaryPosition),ctype);
 			resultPointType.insertMember("volumePoints", HOFFSET(ResultPoint,volumePoints),PODPoint<double>::vectorType( ).getType( ));
 			return resultPointType;
 		}
 	};
 
+	/**
+	* aggregates results for Hdf5 writing
+	*/
+	struct SpeciesData {
+		SpeciesData( )
+			:mass( ),
+			concentrationNumeric( )
+		{ }
+		void set(const HElementRecord & er, size_t index) {
+			static vcellH5::VarLen<PODPoint<double> > & vpointType = PODPoint<double>::vectorType( );
+			static vcellH5::VarLenSimple<double>  valueType;
+			mass = er.mass[index];
+			concentrationNumeric = er.concentration[index];
+		}
+		double mass;
+		double concentrationNumeric;
+		static H5::CompType getType() {
+			H5::PredType dtype = vcellH5::TPredType<double>::predType( ); 
+			H5::CompType resultPointType(sizeof(SpeciesData));
+			resultPointType.insertMember("mass", HOFFSET(SpeciesData,mass),dtype);
+			resultPointType.insertMember("uNumeric", HOFFSET(SpeciesData,concentrationNumeric),dtype);
+			return resultPointType;
+		}
+	};
 
 	class TimeReport {
 		double startTime;
@@ -263,16 +274,7 @@ namespace {
 		}
 	};
 
-
-	struct NoSolution {
-		typedef ResultPoint DataType;
-		const static bool validates = false;
-		static double solution(double,double,double) { return 0; }
-		static std::string expression( ) { throw std::domain_error("unsupported"); } 
-	};
-
-	template <class SOLUTION = NoSolution> 
-	struct NHDF5Client :public moving_boundary::ReportClient {
+	struct HDF5Client :public moving_boundary::ReportClient {
 		typedef World<CoordinateType,2> WorldType;
 		/**
 		* HDF5 spatial chunk size (x and y dimensions)
@@ -284,37 +286,24 @@ namespace {
 		static const size_t timeChunkSize = 50;
 
 		/**
-		* worldDim index
+		* worldDim, speciesDim index
 		*/
 		static const size_t timeArrayIndex = 0; 
 
 		/**
-		* worldDim index
+		* worldDim, speciesDim index
 		*/
 		static const size_t xArrayIndex = 1; 
 
 		/**
-		* worldDim index
+		* worldDim, speciesDim index
 		*/
 		static const size_t yArrayIndex = 2; 
 
-		/*
-		static unsigned int calcReportStep(const moving_boundary::MovingBoundaryParabolicProblem &mbpp, 
-		double startTime,
-		unsigned int numberReports) {
-		unsigned int nts = mbpp.numberTimeSteps( );
-		unsigned int rs = nts / numberReports;
-		if (startTime >0) { //if not beginning, scale based on fraction of time reported
-		const double end = mbpp.endTime( );
-		unsigned int scaled = static_cast<unsigned int>(nts * (end -startTime) / end);
-		rs = scaled / numberReports; 
-		}
-		if (rs > 0) {
-		return rs;
-		}
-		return 1;
-		}
+		/**
+		* speciesDim index
 		*/
+		static const size_t speciesIndex = 3; 
 
 		/**
 		* @param f file to write to
@@ -322,7 +311,7 @@ namespace {
 		* @param baseName name of dataset in HDF5 file if not default
 		*/
 		template <typename R>
-		NHDF5Client(std::string xml_,H5::H5File &f, 
+		HDF5Client(std::string xml_,H5::H5File &f, 
 			WorldType & world_,
 			const moving_boundary::MovingBoundaryParabolicProblem &mbpp, 
 			const char *baseName,
@@ -334,15 +323,20 @@ namespace {
 			//totalStuff(0),
 			//oldStuff(0),
 			meshDef(mbpp.meshDef( )),
+			numberSpecies(meshDef.numberSpecies( )),
 			eRecords(),
 			genTimes(),
 			moveTimes(),
 			timeStepTimes( ),
 			lastTimeStep(-1), //invalid value, to trigger recording
-			buffer(),
 			baseGroup( ),
+			elementStorage(),
 			elementDataset( ),
 			worldDim( ),
+			speciesDataset( ),
+			speciesDim( ),
+			boundaryDataset( ),
+			boundaryDim( ),
 			//reportStep(calcReportStep(mbpp,startTime_,numberReports)),
 			//reportCounter(0),
 			//reportBegan(startTime_ == 0), //if beginning at zero, we've "begun" at the start
@@ -387,10 +381,6 @@ namespace {
 				baseGroup = file.createGroup(groupName);
 				const double & bts = mbpp.baseTimeStep( );
 				vcellH5::writeAttribute(baseGroup,"requestedTimeStep",bts);
-				if (SOLUTION::validates) {
-					const std::string s = SOLUTION::expression( ); 
-					vcellH5::writeAttribute(baseGroup,"expression",s);
-				}
 				const double scaleFactor = world.theScale( );
 				vcellH5::writeAttribute(baseGroup,"scaleFactor",scaleFactor);
 				const double halfStep = world.distanceToProblemDomain(1) / 2.0;
@@ -410,9 +400,12 @@ namespace {
 				H5::DSetCreatPropList  prop;
 				hsize_t     chunkDim[3]  = {timeChunkSize,spatialChunkSize,spatialChunkSize};
 				prop.setChunk(3, chunkDim);
-				H5::CompType dataType = SOLUTION::DataType::getType( ); 
+				H5::CompType dataType = ResultPoint::getType( ); 
 
 				elementDataset = baseGroup.createDataSet( "elements", dataType, dataspace ,prop);
+
+
+				//record attributes
 				const double startx = world.toProblemDomain( meshDef.startCorner(spatial::cX), spatial::cX);
 				const double starty = world.toProblemDomain( meshDef.startCorner(spatial::cY), spatial::cY);
 				const double hx = world.distanceToProblemDomain( meshDef.interval(spatial::cX) );
@@ -455,6 +448,22 @@ namespace {
 				vcellH5::facadeWriteAttribute(elementDataset,"yvalues",axisSF);
 			} //create element dataset
 
+			{ //create species  dataset
+				speciesDim[timeArrayIndex] = worldDim[timeArrayIndex];
+				speciesDim[xArrayIndex] = worldDim[xArrayIndex];
+				speciesDim[yArrayIndex] = worldDim[yArrayIndex];
+				speciesDim[speciesIndex] = numberSpecies; 
+				hsize_t     maxsdim[4] = {H5S_UNLIMITED, speciesDim[1],speciesDim[2],speciesDim[3]};
+				H5::DataSpace dataspace(4,speciesDim,maxsdim); 
+
+				H5::DSetCreatPropList  prop;
+				hsize_t     chunkDim[4]  = {timeChunkSize,spatialChunkSize,spatialChunkSize,numberSpecies};
+				prop.setChunk(4, chunkDim);
+				H5::CompType dataType = SpeciesData::getType( ); 
+
+				speciesDataset = baseGroup.createDataSet( "species", dataType, dataspace ,prop);
+			}
+
 			{ //create boundary dataset
 				boundaryDim[0] = timeChunkSize;
 				hsize_t     maxdim[1]= {H5S_UNLIMITED};
@@ -473,7 +482,7 @@ namespace {
 		/**
 		* delete TimeReport objects  
 		*/
-		~NHDF5Client( ) {
+		~HDF5Client( ) {
 			std::for_each(reportControllers.begin( ),reportControllers.end( ),cleanup);
 		}
 
@@ -668,7 +677,8 @@ namespace {
 						}
 						const size_t iSpan = maxI - minI + 1;
 						const size_t jSpan = maxJ - minJ + 1;
-						buffer.reindex(iSpan,jSpan);
+						elementStorage.reindex(iSpan,jSpan);
+						speciesStorage.reindex(iSpan,jSpan,numberSpecies);
 
 						size_t timeIndex = genTimes.size( ) - 1;
 
@@ -677,25 +687,42 @@ namespace {
 							const spatial::TPoint<size_t,2> & index = iter->first;
 							hsize_t i = index(spatial::cX);
 							hsize_t j = index(spatial::cY); 
-							buffer[i - minI][j - minJ].set(er);
-							//er.clear( );
+							elementStorage[i - minI][j - minJ].set(er);
+							for (int s = 0; s < numberSpecies; ++s) {
+								speciesStorage[i - minI][j - minJ][s].set(er,s);
+							}
 						}
 						const size_t singleTimeSlice = 1;
-						hsize_t  bufferDim[3] = {singleTimeSlice,iSpan, jSpan}; 
-						H5::DataSpace memoryspace(3,bufferDim); 
-
-						//is dataset big enough in time dimension?
+						//are datasets big enough in time dimension?
 						if (timeIndex >= worldDim[timeArrayIndex]) {
 							worldDim[timeArrayIndex] += timeChunkSize;
 							elementDataset.extend(worldDim);
+							speciesDim[timeArrayIndex] += timeChunkSize;
+							speciesDataset.extend(speciesDim);
+						}
+						{ //first write out the 3D element data 
+							hsize_t  bufferDim[3] = {singleTimeSlice,iSpan, jSpan}; 
+							H5::DataSpace memoryspace(3,bufferDim); 
+
+							hsize_t offset[3] = {timeIndex ,minI,minJ};
+							H5::DataSpace dataspace = elementDataset.getSpace( );
+							dataspace.selectHyperslab(H5S_SELECT_SET,bufferDim,offset);
+
+							H5::CompType dataType = ResultPoint::getType( ); 
+							elementDataset.write(elementStorage.ptr( ),dataType,memoryspace,dataspace);
 						}
 
-						hsize_t offset[3] = {timeIndex ,minI,minJ};
-						H5::DataSpace dataspace = elementDataset.getSpace( );
-						dataspace.selectHyperslab(H5S_SELECT_SET,bufferDim,offset);
+						{ //next the 4D species data
+							hsize_t  bufferDim[4] = {singleTimeSlice,iSpan, jSpan,numberSpecies}; 
+							H5::DataSpace memoryspace(4,bufferDim); 
 
-						H5::CompType dataType = SOLUTION::DataType::getType( ); 
-						elementDataset.write(buffer.ptr( ),dataType,memoryspace,dataspace);
+							hsize_t offset[4] = {timeIndex ,minI,minJ,0};
+							H5::DataSpace dataspace = speciesDataset.getSpace( );
+							dataspace.selectHyperslab(H5S_SELECT_SET,bufferDim,offset);
+
+							H5::CompType dataType = SpeciesData::getType( ); 
+							speciesDataset.write(speciesStorage.ptr( ),dataType,memoryspace,dataspace);
+						}
 					}
 
 					catch (H5::Exception &e) {
@@ -710,9 +737,9 @@ namespace {
 				*/
 				/*
 				if (oldStuff != 0 && !spatial::nearlyEqual(oldStuff,totalStuff,1e-3)) {
-					simulationComplete( ); //write out final info
-					VCELL_EXCEPTION(logic_error, "mass not conserved old"<< oldStuff << " , new " << totalStuff
-						<< ", gain(+)/loss(-) " << (totalStuff - oldStuff));
+				simulationComplete( ); //write out final info
+				VCELL_EXCEPTION(logic_error, "mass not conserved old"<< oldStuff << " , new " << totalStuff
+				<< ", gain(+)/loss(-) " << (totalStuff - oldStuff));
 				}
 				oldStuff = totalStuff;
 				*/
@@ -769,6 +796,7 @@ namespace {
 		//double totalStuff;
 		//double oldStuff;
 		const spatial::MeshDef<moving_boundary::CoordinateType,2> meshDef;
+		const size_t numberSpecies;
 		typedef std::map<spatial::TPoint<size_t,2>, HElementRecord> RecordMap; 
 		RecordMap eRecords;
 		std::vector<double> genTimes;
@@ -776,11 +804,28 @@ namespace {
 		std::vector<double> timeStepTimes;
 		std::vector<double> timeStep;
 		double lastTimeStep;
-		vcellH5::Flex2<typename SOLUTION::DataType> buffer;
 		H5::Group baseGroup; 
-		H5::DataSet elementDataset;
-		H5::DataSet boundaryDataset;
+		/**
+		* element information for a single time slice
+		*/
+		vcellH5::Flex2<ResultPoint> elementStorage;
+		/**
+		* 3 dimensional HDF data
+		*/
+		H5::DataSet elementDataset; 
 		hsize_t worldDim[3];
+
+		/**
+		* species information for a single time slice
+		*/
+		vcellH5::Flex3<SpeciesData> speciesStorage;
+		/**
+		* 4 dimensional HDF data
+		*/
+		H5::DataSet speciesDataset;
+		hsize_t speciesDim[4];
+
+		H5::DataSet boundaryDataset;
 		hsize_t boundaryDim[1];
 		bool reportActive;
 		vcell_util::Timer timer;
@@ -908,7 +953,7 @@ ReportClient * ReportClient::setup(const XMLElement &root, const std::string & f
 		}
 
 		moving_boundary::World<moving_boundary::CoordinateType,2> &world = moving_boundary::World<moving_boundary::CoordinateType,2>::get( );
-		NHDF5Client<> *client =  new NHDF5Client<>(xmlCopy,output,world,mbpp,datasetName, timeReports);
+		HDF5Client *client =  new HDF5Client(xmlCopy,output,world,mbpp,datasetName, timeReports);
 		client->addInitial(mbs);
 		const XMLElement * const annotateSection = report.FirstChildElement("annotation"); 
 		if (annotateSection != nullptr) {

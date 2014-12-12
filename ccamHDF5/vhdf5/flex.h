@@ -5,12 +5,17 @@
 namespace vcellH5 {
 
 
-	template <class T>
-	struct Flex2Col;
+	template <class T> struct Flex2Col;
 
 	/**
+	*
 	* provide flexible interpretation of static buffer for writing
 	* different size blocks to HDF5
+	* e.g.  vcellH5::Flex2<double> buffer(3,4);
+	* buffer[2][3] = 4;
+	* dataset.write(buffer.ptr( ),doublePointType,memoryspace,dataspace);
+	*
+	*  vcellH5::Flex3<double> data(3,4,5);
 	*/
 #pragma warning ( disable : 4351 )
 	template <class T>
@@ -75,7 +80,7 @@ namespace vcellH5 {
 			storage.resize(colSize_ * rowSize_);
 		}
 	private:
-		friend struct Flex2Col<T>;
+		friend Flex2Col<T>;
 		std::vector<T> storage;
 		size_t colSize_;
 		size_t rowSize_;
@@ -95,11 +100,139 @@ namespace vcellH5 {
 		}
 
 	private:
-		friend struct Flex2<T>;
+		friend Flex2<T>;
 		Flex2Col(Flex2<T> & parent, size_t c)
 			:flex(parent),
 			col(c) {}
 		Flex2<T> & flex;
+		const size_t col;
+	};
+
+// ------------------------------------------------	
+// 3 dimensional 
+// ------------------------------------------------	
+	template <class T> struct Flex3Depth;
+	template <class T> struct Flex3Col;
+
+#pragma warning ( disable : 4351 )
+	template <class T>
+	struct Flex3 {
+		Flex3(size_t depthSize, size_t columnSize, size_t rowSize)
+			:storage(depthSize * columnSize* rowSize ),
+			depthSize_(depthSize),
+			colSize_(columnSize),
+			rowSize_(rowSize) {}
+
+		/**
+		* allow construction with same array used to create DataSpace
+		* array must have size >= 3
+		*/
+		Flex3(hsize_t *dims)
+			:storage(dims[0] * dims[1] * dims[2]),
+			depthSize_(dims[0]),
+			colSize_(dims[1]),
+			rowSize_(dims[2]) {}
+		/**
+		* default ctor -- must call reindex before use
+		*/
+		Flex3( )
+			:storage(0),
+			depthSize_(0),
+			colSize_(0),
+			rowSize_(0) {}
+
+		size_t rowSize( ) const {
+			return rowSize_;
+		}
+		size_t columnSize( ) const {
+			return colSize_;
+		}
+		size_t depthSize( ) const {
+			return depthSize_;
+		}
+
+		Flex3Depth<T> operator[](size_t depth) {
+			assert(depth < depthSize_);
+			return Flex3Depth<T>(*this,depth);
+		}
+		const Flex3Depth<T> operator[](size_t depth) const {
+			assert(depth < depthSize_);
+			Flex3<T> & us = const_cast<Flex3<T> & > (*this);
+	
+			return Flex3Depth<T>(us,depth);
+		}
+		const void *ptr( ) const {
+			return storage.data( );
+		}
+		/**
+		* reconfigure to difference layout; previous values no
+		* longer accessible using previous indexing scheme
+		*/
+		void reindex(size_t depthSize, size_t columnSize, size_t rowSize) {
+			depthSize_ = depthSize;
+			colSize_ = columnSize;
+			rowSize_ = rowSize;
+			storage.resize(depthSize * columnSize * rowSize);
+		}
+		/*
+		* allow setting with same array used to create DataSpace
+		* array must have size >= 2
+		* reconfigure to difference layout; previous values no
+		* longer accessible using previous indexing scheme
+		*/
+		void reindex(hsize_t *dims) {
+			depthSize_ = dims[0]; 
+			colSize_ = dims[1]; 
+			rowSize_ = dims[2]; 
+			storage.resize(depthSize_ * colSize_ * rowSize_);
+		}
+	private:
+		friend Flex3Col<T>;
+		std::vector<T> storage;
+		size_t depthSize_;
+		size_t colSize_;
+		size_t rowSize_;
+	};
+
+	template <class T>
+	struct Flex3Depth {
+		Flex3Col<T> operator[](size_t c) {
+			return Flex3Col<T>(flex,depth,c);
+		}
+		const Flex3Col<T> operator[](size_t c) const {
+			return Flex3Col<T>(flex,depth,c);
+		}
+  private:
+		friend Flex3<T>;
+		Flex3Depth(Flex3<T> & parent, size_t d)
+			:flex(parent),
+			depth(d) {}
+		Flex3<T> & flex;
+		const size_t depth;
+	};
+
+	template <class T>
+	struct Flex3Col {
+		T & operator[](size_t r) {
+			assert(r < flex.rowSize( ));
+			const size_t index = depth * flex.depthSize( ) + col * flex.rowSize( ) + r; 
+			return flex.storage[index];
+		}
+		const T & operator[](size_t r) const {
+			assert(r < flex.rowSize( ));
+			const size_t index = depth * flex.depthSize( ) + col * flex.rowSize( ) + r; 
+			return flex.storage[index];
+		}
+
+	private:
+		friend Flex3<T>;
+		friend Flex3Depth<T>;
+		Flex3Col(Flex3<T> & parent, size_t d, size_t c)
+			:flex(parent),
+			depth(d),
+			col(c) {}
+		Flex3<T> & flex;
+		const size_t depth;
 		const size_t col;
 	};
 

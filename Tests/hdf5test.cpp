@@ -223,9 +223,9 @@ TEST(hdf5,slab) {
 		}
 		//const test
 		{
-		const vcellH5::Flex2<SolutionPoint> copy(buffer); 
-		std::cout << copy[5][10].x << std::endl;
-	 	//copy[5][10].x = .3;  //fails, like it should
+			const vcellH5::Flex2<SolutionPoint> copy(buffer); 
+			std::cout << copy[5][10].x << std::endl;
+			//copy[5][10].x = .3;  //fails, like it should
 		}
 
 
@@ -535,8 +535,8 @@ TEST(hdf5,compoundArray) {
 				sps[idx++] =  scratch;
 			}
 
-		DataSet dataset = file.createDataSet( "arraydemo", solutionPointType, dataspace );
-		dataset.write(sps.data( ), solutionPointType); 
+			DataSet dataset = file.createDataSet( "arraydemo", solutionPointType, dataspace );
+			dataset.write(sps.data( ), solutionPointType); 
 	}
 	catch (H5::Exception &e) {
 		std::cerr << e.getDetailMsg( ) << std::endl;
@@ -670,5 +670,17 @@ TEST(hdf5,bugDemo) {
 	myVec.push_back(1);
 	myVec.push_back(0); 
 	vcellH5::facadeWriteAttribute(ds,"BeverlyHills",trait);
+}
+TEST(hdf5,flex3) {
+	using namespace vcellH5;
+	vcellH5::Flex3<double> trial(3,4,5);
+	Flex3Depth<double> dp = trial[0];
+	Flex3Col<double> col = dp[0];
+	trial[0][0][0] = 3;
+	trial[2][3][1] = 4;
+	const vcellH5::Flex3<double> copy(trial); 
+	ASSERT_TRUE(trial[2][3][1] == 4);
+	ASSERT_TRUE(trial[0][0][0] == 3);
+	ASSERT_TRUE(copy[2][3][1] == 4);
 }
 
