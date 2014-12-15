@@ -244,7 +244,7 @@ TEST(universe, herror) {
 	using vcell_util::Logger;
 	Logger::get( ).set(Logger::Key::nodeScaling,true);
 	std::default_random_engine gen;
-	std::uniform_int_distribution<int> rdims(3, 90);
+	std::uniform_int_distribution<int> rdims(3, 450);
 	std::uniform_real_distribution<double> lowlimit(-10,0);
 	std::uniform_real_distribution<double> highlimit(0,10);
 
@@ -290,7 +290,7 @@ TEST(universe, herror) {
 		double vdelta = vh - span; 
 		double maxDelta = std::max(hdelta,vdelta);
 		double rel = maxDelta / span;
-		std::cout << span << " nx  " << nx << " ny " << ny << " delta " << maxDelta << vdelta << " rel " << rel << std::endl;
+		std::cout << span << " nx  " << nx << " ny " << ny << " delta " << maxDelta << " rel " << rel << std::endl;
 
 	}
 }
