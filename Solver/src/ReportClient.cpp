@@ -634,7 +634,7 @@ namespace {
 					eRecords[key].resize(numSpecies);
 				}
 				HElementRecord & er = eRecords[key];
-				double v = e.volumePD( );
+				er.volume = e.volumePD( );
 				for (int i = 0; i < numSpecies; i++) { 
 					er.mass[i] = e.mass(i); 
 					er.concentration[i] = e.concentration(i);
@@ -805,7 +805,7 @@ namespace {
 		std::vector<double> timeStep;
 		double lastTimeStep;
 		//H5::Group baseGroup; if we want to put individual data sets in groups 
-		H5::H5File & baseGroup; //synonum for "file"
+		H5::H5File baseGroup; //synonum for "file"
 		/**
 		* element information for a single time slice
 		*/
