@@ -129,8 +129,8 @@ int main(int argc, char *argv[])
 				std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << restorename << std::endl; 
 				return 6;
 			}
-		}
 		problem.add(*reportClient);
+		}
 		if (configPresent) {
 			setupProgress(*doc.RootElement( ),problem);
 		}

@@ -3,6 +3,7 @@
 #include <NumericConvert.h>
 #include <map>
 #include <list>
+#include <iomanip>
 #include <boost/math/common_factor.hpp>
 
 using moving_boundary::Universe;
@@ -67,7 +68,15 @@ namespace {
 			if (maxSupported  == 0) {
 				maxSupported = std::numeric_limits<WORLD_COORD>::max( );
 			}
+#ifndef SPECIAL_TEST
 			scale = maxSupported / universe.diagonal( );
+#else
+			static_assert(N == 2, "2d only");
+			if (universe.limitFor(0) != universe.limitFor(1) || universe.numNodes( )[0] != universe.numNodes( )[1] ) {
+				throw new std::logic_error("special test requires Square universe (World.cpp)");
+			}
+			scale = maxSupported / universe.limitFor(0).span( );
+#endif
 			WORLD_COORD divider = 1;
 			{
 				//WORLD_COORD iScale = static_cast<WORLD_COORD>(scale); #this doesn't work in cases where span < 1 
@@ -87,6 +96,8 @@ namespace {
 				long double junk;
 				assert(std::modf(iScale,&junk)== 0);
 #				endif
+				VCELL_KEY_LOG(trace,Key::nodeScaling,"SD:," << maxSupported << ',' << std::setprecision(16) << universe.diagonal( ) << ',' << std::fixed << scale << ',' << iScale << ','
+					<< numNodes[0] << ',' << divider);
 				if (iScale == 1) {
 					VCELL_EXCEPTION(logic_error, "unable to find decent scale for least common multiplier of " << divider << " and scale " << scale 
 						<< ", max supported is " << maxSupported);

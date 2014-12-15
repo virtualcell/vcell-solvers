@@ -298,7 +298,7 @@ TEST(frontier,fronttest) {
 	myvel vel;
 	//spatial::VCellFront<double> front(limits, 175,1.5, lv,vel); 
 	//spatial::VCellFront<double> front(limits, 175,1.5, levelFuncFingers,vf );
-	spatial::VCellFront<double> front(limits, 175,1.5, levelFunc,vf );
+	spatial::VCellFront<double> front(limits, 100,1.5, levelFunc,vf );
 	using spatial::cX; 
 	using spatial::cY; 
 	using spatial::Mesh;
@@ -310,6 +310,7 @@ TEST(frontier,fronttest) {
 	vectorVector curves = front.retrieveCurves( );
 	const char *colors[] = {"k","r","g","b","y"};
 	int c = 0;
+	std::cout << "Number curves " << curves.size( ) << std::endl;
 	for (vectorVector::iterator iter = curves.begin( ); iter != curves.end( );++iter) {
 
 		matlabBridge::Polygon pgon(colors[c++]);

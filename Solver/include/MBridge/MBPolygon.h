@@ -85,7 +85,8 @@ namespace matlabBridge {
 			lineSpec(lineSpec_),
 			lineWidth(lineWidth_),
 			precision(6),
-			polyAreaName( )
+			rainbow( )
+			//polyAreaName( )
 		{}
 
 		void add(T x, T y) {
@@ -113,6 +114,8 @@ namespace matlabBridge {
 				return;
 			}
 			os << "hold on;" << endl;
+			int polygonCount = 0;
+			const size_t nColors = rainbow.size( );
 			for (typename std::vector<PVector>::const_iterator vIter = collection.begin( ); vIter != collection.end( );++vIter) {
 				const PVector & current = *vIter;
 				if (current.empty( )) {
@@ -126,12 +129,21 @@ namespace matlabBridge {
 					os << variableName << '(' << i++ << ",2) = " << std::setprecision(precision) << iter->second << ';' << endl; 
 				}
 				os << "plot(" << variableName<< "(:,1)," << variableName << "(:,2),'"
-					<< lineSpec << "'";
+					<< lineSpec;
+				if (nColors > 0) { //if colors provided, use next one
+					os << rainbow[polygonCount++];
+					polygonCount %= nColors; //modulo nColors
+				}
+				
+				os << "'";
 				if (lineWidth > 0) {
 					os << ",'LineWidth'," << lineWidth;
 				}
 				
 				os << ");"<< endl;
+				if (nColors> 0) {
+					os << "% polygon number " <<polygonCount << std::endl;
+				}
 				if (polyAreaName.length( ) > 0) {
 					os << polyAreaName << areaCount << " = polyarea(" << variableName<< "(:,1)," << variableName << "(:,2));" << std::endl;
 				}
@@ -153,6 +165,10 @@ namespace matlabBridge {
 			polyAreaName = n;
 		}
 
+		void setRainbow(const std::vector<char> & colors) {
+			rainbow = colors;
+		}
+
 	private:
 		typedef std::pair<T,T> PPair;
 		typedef std::vector<PPair> PVector; 
@@ -168,6 +184,7 @@ namespace matlabBridge {
 		const int lineWidth;
 		int precision;
 		std::string polyAreaName;
+		std::vector<char> rainbow; 
 	};
 
 

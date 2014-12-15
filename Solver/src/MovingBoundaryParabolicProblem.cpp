@@ -26,6 +26,7 @@
 #include <MBridge/Figure.h>
 #include <MBridge/MBPatch.h>
 #include <MBridge/MBMovie.h>
+#include <MBridge/Scatter.h>
 #include <MBridge/MatlabDebug.h>
 using spatial::cX;
 using spatial::cY;
@@ -34,6 +35,8 @@ using spatial::cY;
 // Validation of input to problem functors & ValidationBase 
 //*********************************************************
 namespace {
+	//matlabBridge::Scatter scatterInside('r',2);
+	//matlabBridge::Scatter scatterOutside('b',2);
 
 	template<int NUMBER_SYMBOLS>
 	struct ConcentrationExpression {
@@ -412,7 +415,11 @@ namespace moving_boundary {
 				int mnode = *std::max_element(nodes.begin( ),nodes.end( ));
 				int numFrontRegions = mnode * mbs.frontToNodeRatio;
 				if (base.nFunctionPointers == 0) {
-					return new spatial::VCellFront<moving_boundary::CoordinateType>(limits,numFrontRegions,mbs.maxTime,base,base);
+					spatial::FrontProvider<moving_boundary::CoordinateType> *prv = 
+						new spatial::VCellFront<moving_boundary::CoordinateType>(limits,numFrontRegions,mbs.maxTime,base,base);
+					//std::ofstream lc("levelcalls.m");
+					//lc << scatterInside << scatterOutside;
+					return prv;
 				}  
 				/* else */
 				throw std::domain_error("function pointers no longer supported");
@@ -460,10 +467,17 @@ namespace moving_boundary {
 		}
 
 		virtual double level(double *in) const {
-			//lspy << in[0] << ',' << in[1] << std::endl; 
 			double problemDomainValues[2];
 			world.toProblemDomain(in,problemDomainValues);
 			double r = levelExp.evaluateVector(problemDomainValues);
+			/*
+			if (r > 0) {
+				scatterInside.add(problemDomainValues[0],problemDomainValues[1]);
+			}
+			else {
+				scatterOutside.add(problemDomainValues[0],problemDomainValues[1]);
+			}
+			*/
 			return r;
 		}
 

@@ -165,6 +165,7 @@ namespace spatial {
 
 		const FronTierLevel * const levelObj;
 		const FronTierVelocity * const velObj;
+		std::array<GeoLimit, 2> domainLimits;
 		static double levelAdapter(Frontier::POINTER, double *); 
 
 		static int velocityAdapter(Frontier::POINTER,Frontier::Front*,Frontier::POINT*,HYPER_SURF_ELEMENT*, HYPER_SURF*,double*);

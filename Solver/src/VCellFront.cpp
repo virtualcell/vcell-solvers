@@ -3,9 +3,11 @@
 #include <VCellFront.h>
 #include <Logger.h>
 #include <VCellException.h>
+#include <MBridge/FronTierAdapt.h>
 using namespace spatial;
 namespace {
 	/**
+	* type conversion without scaling
 	* convert frontier output into point, truncating if necessary
 	*/
 	template <typename T>
@@ -47,6 +49,8 @@ void VCellFront<FCT>::init(std::vector<GeoLimit> & limits, int N, double tmax,
 					  FronTierLevelFunction levelFunction,
 					  FronTierVelocityFunction velocityFunction, 
 					  bool isAdapter) {
+						  domainLimits[0] = limits[0];
+						  domainLimits[1] = limits[1];
 						  const size_t dim = limits.size( );
 
 						  f_basic.dim = static_cast<int>(dim);	
@@ -221,7 +225,21 @@ int VCellFront<FCT>::velocityAdapter(Frontier::POINTER us,Frontier::Front *ft,Fr
 
 template <typename FCT>
 std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveFront( ) {
-	return retrieveSurf( );
+	try {
+		return retrieveSurf( );
+	} catch (std::domain_error &) {
+		std::vector<std::vector<spatial::TPoint<FCT,2> > > curves = retrieveCurves( );
+		matlabBridge::Polygons polygons("+");
+		char colors[] = {'y','m','c','g','b','k'};
+		std::vector<char> colorVec(colors, colors + sizeof(colors)/sizeof(colors[0]));
+		polygons.setRainbow(colorVec);
+		frontTierAdapt::copyVectorsInto(polygons,curves);
+		std::ofstream mcurves("mcurves.m");
+		mcurves << polygons;
+
+		std::cout << "got " << curves.size( ) << " curves " << std::endl;
+		throw;
+	}
 }
 template <typename FCT>
 std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveFront(std::ostream & csv ) {
@@ -291,11 +309,26 @@ std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveSurf( ) {
 			rval.push_back(vcPoint);
 		}
 		numCurves++;
+		//filter out "shadow" curves frontier returns sometimes
+		if (++numCurves > 1) {
+			VCFPointType & vcPoint = rval.front( );
+			const double x = vcPoint(cX);
+			const bool xGood = (x >= domainLimits[cX].low( ) &&  x <= domainLimits[cX].high( ));
+			const double y = vcPoint(cY);
+			const bool yGood = (y >= domainLimits[cY].low( ) &&  y <= domainLimits[cY].high( ));
+			if (!xGood || !yGood) {
+				VCELL_EXCEPTION(logic_error, "Multi curve frontier's first set, first point " << x  << ',' << y
+					<< " out of bounds X" << domainLimits[cX] << " , Y"   << domainLimits[cY] << std::endl);
+			}
+			return rval;
+		}
 	}
+	/*
 	if (numCurves != 1) {
 		VCELL_EXCEPTION(domain_error,"frontier returning " << numCurves << " curves");
 	}
 	assert(numCurves == 1);
+	*/
 
 	//Logger::stream( ) << "# interior curves = " << numCurves << EndLog; 
 

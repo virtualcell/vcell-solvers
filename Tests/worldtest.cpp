@@ -1,6 +1,7 @@
 #include <random>
 #include "gtest/gtest.h"
 #include <vcellconvert.h>
+#include <Logger.h>
 #include <World.h> 
 	template <typename S, typename D>
 	struct MaxConvert {
@@ -240,6 +241,8 @@ TEST(universe, intervals) {
 }
 
 TEST(universe, herror) { 
+	using vcell_util::Logger;
+	Logger::get( ).set(Logger::Key::nodeScaling,true);
 	std::default_random_engine gen;
 	std::uniform_int_distribution<int> rdims(3, 90);
 	std::uniform_real_distribution<double> lowlimit(-10,0);
@@ -262,7 +265,8 @@ TEST(universe, herror) {
 		while (span < 1);
 		*/
 		uint16_t nx = static_cast<uint16_t>(rdims(gen)); 
-		uint16_t ny =  static_cast<uint16_t>(rdims(gen)); 
+		//uint16_t ny =  static_cast<uint16_t>(rdims(gen)); 
+		uint16_t ny =  nx;
 		Universe<2> &universe = Universe<2>::get( );
 		universe.destroy( ); //for testing
 		std::array<spatial::GeoLimit,2> limits;

@@ -41,6 +41,7 @@ namespace vcell_util {
 			concentrationExpression,
 			generationTime,
 			progressEstimate,
+			nodeScaling,
 			/** utility key for development purpose, should be replaced by named enum before committing to source code control */
 			extra1, 
 			extra2,
@@ -160,12 +161,10 @@ namespace vcell_util {
 * @param level desired Logger level
 * @param x code fragment to stream 
 */
-/*
 #define VCELL_LOG_N(level,x) { \
 using vcell_util::Logger; \
 if (Logger::get( ).enabled(Logger::level) ) { std::ostringstream oss; oss << x ; Logger::get( ).report(oss.str( ).c_str( ),false); } \
 }
-*/
 
 /**
 * based on some ideas in apache Log4jcxxx (BSD licensed)

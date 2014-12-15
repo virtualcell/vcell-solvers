@@ -42,6 +42,17 @@ namespace spatial {
 		return lhs.low( ) == rhs.low( ) && lhs.high( ) == rhs.high( );
 	}
 
+	template <typename T>
+	inline bool operator!=(const TGeoLimit<T> &lhs,const TGeoLimit<T> &rhs) {
+		return !(lhs == rhs); 
+	}
+
+	template <typename T>
+	inline std::ostream &  operator<<(std::ostream & os, const TGeoLimit<T> & limit) {
+		os << '{' << limit.low( )  << ',' << limit.high( ) << '}' << std::endl;
+		return os;
+	}
+
 	/**
 	* conversion functor
 	*/
