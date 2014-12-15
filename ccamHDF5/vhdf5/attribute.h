@@ -6,7 +6,7 @@ namespace vcellH5 {
 	/**
 	* remove attribute if it exists
 	*/
-	inline void removeAttribute(H5::H5Object &parent, const char *attributeName) {
+	inline void removeAttribute(H5::H5Location &parent, const char *attributeName) {
 		Suppressor s; //disable error messages
 
 		H5Adelete(parent.getId(), attributeName);
@@ -51,7 +51,7 @@ namespace vcellH5 {
 	}
 
 	template <class T>
-	void writeAttribute(H5::H5Object &parent, const char *attributeName, T& value, bool overwrite = false) { 
+	void writeAttribute(H5::H5Location &parent, const char *attributeName, T& value, bool overwrite = false) { 
 		if (overwrite) {
 			removeAttribute(parent,attributeName);
 		}
@@ -62,7 +62,7 @@ namespace vcellH5 {
 		attr.write(predType,&value);
 	}
 	template <>
-	inline void writeAttribute<const std::string>(H5::H5Object &parent, const char *attributeName, const std::string& value, bool overwrite) { 
+	inline void writeAttribute<const std::string>(H5::H5Location &parent, const char *attributeName, const std::string& value, bool overwrite) { 
 		if (overwrite) {
 			removeAttribute(parent,attributeName);
 		}
@@ -75,7 +75,7 @@ namespace vcellH5 {
 	* overload non-const string by explicity invoking const template specialization
 	*/
 	template <>
-	inline void writeAttribute<std::string>(H5::H5Object &parent, const char *attributeName, std::string& value, bool overwrite)  { 
+	inline void writeAttribute<std::string>(H5::H5Location &parent, const char *attributeName, std::string& value, bool overwrite)  { 
 		writeAttribute<const std::string>(parent,attributeName,value, overwrite);
 	}
 }

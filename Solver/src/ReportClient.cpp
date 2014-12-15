@@ -329,7 +329,7 @@ namespace {
 			moveTimes(),
 			timeStepTimes( ),
 			lastTimeStep(-1), //invalid value, to trigger recording
-			baseGroup( ),
+			baseGroup(file),
 			elementStorage(),
 			elementDataset( ),
 			worldDim( ),
@@ -377,8 +377,8 @@ namespace {
 					vcellH5::Suppressor s; //no error message if not there
 					H5Ldelete( file.getLocId(), groupName.c_str( ), H5P_DEFAULT );
 				}
-				std::cerr << "creating " << groupName << std::endl;
-				baseGroup = file.createGroup(groupName);
+				//std::cerr << "creating " << groupName << std::endl;
+				//baseGroup = file.createGroup(groupName);
 				const double & bts = mbpp.baseTimeStep( );
 				vcellH5::writeAttribute(baseGroup,"requestedTimeStep",bts);
 				const double scaleFactor = world.theScale( );
@@ -804,7 +804,8 @@ namespace {
 		std::vector<double> timeStepTimes;
 		std::vector<double> timeStep;
 		double lastTimeStep;
-		H5::Group baseGroup; 
+		//H5::Group baseGroup; if we want to put individual data sets in groups 
+		H5::H5File & baseGroup; //synonum for "file"
 		/**
 		* element information for a single time slice
 		*/
