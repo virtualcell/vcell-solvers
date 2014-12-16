@@ -1,5 +1,6 @@
 #ifndef SExpression_h
 #define SExpression_h
+#include <typeinfo>
 #include <Expression.h>
 #include <SimpleSymbolTable.h>
 namespace moving_boundary {

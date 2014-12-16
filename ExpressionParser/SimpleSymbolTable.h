@@ -16,9 +16,10 @@ public:
 	* implementation to new object; rhs will be unusable
 	* @param rhs object to move data from
 	*/
-	SimpleSymbolTable(SimpleSymbolTable &rhs)
+	SimpleSymbolTable(const SimpleSymbolTable &rhs)
 		:steArray(rhs.steArray) {
-			rhs.steArray.clear( );
+			SimpleSymbolTable &scr = const_cast<SimpleSymbolTable &>(rhs);
+			scr.steArray.clear( );
 	}
 
 	//SimpleSymbolTable(string* symbols, NameScope* namescopeVal);

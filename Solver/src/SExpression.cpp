@@ -2,10 +2,11 @@
 #include <VCellException.h>
 #include <vector>
 #include <array>
+#include <limits>
 using moving_boundary::SExpression;
 
 
-void SExpression::badContainer(const type_info &ti, size_t size) const {
+void SExpression::badContainer(const std::type_info &ti, size_t size) const {
 	VCELL_EXCEPTION(domain_error, "container of type " << ti.name( ) << " has " << size 
 		<< " values, " << static_cast<unsigned int>(numSymbols) << " required");
 }
