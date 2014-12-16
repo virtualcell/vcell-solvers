@@ -30,6 +30,7 @@ class Box;
 class EBAMRPoissonOpFactory;
 class DisjointBoxLayout;
 template <class> class BaseIVFAB;
+class VolIndex;
 
 #define NUM_PHASES 2
 struct ConnectedComponent;
@@ -97,12 +98,13 @@ protected:
 	Vector<RealVect> vectDxes;
 	Vector<IntVect> vectNxes;
 	Vector< Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<int> > > > > > irregularPointMembraneIDs; // here it stores membrane ID
-	Vector< Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<int> > > > > > irregularPointMembraneElementIndex; // here it stores membrane index
+	Vector< Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<int> > > > > > irregularPointMembraneIndex; // here it stores membrane index
 	int findLevel(const ProblemDomain& domain);
 
 	Vector< Vector< Vector<LevelData<EBCellFAB>*> > > volSoln;
 	Vector< Vector< RefCountedPtr< LevelData< BaseIVFAB<Real> > > > > memSoln;
 	IntVect numGhostSoln;
+	IntVect membraneIndexGhost;
 	Vector< Vector< Vector< RefCountedPtr< LevelData<BaseIVFAB<Real> > > > > > extrapValues;
 
 	Vector<EBAMRPoissonOpFactory *> opFactories;
@@ -130,21 +132,21 @@ protected:
 private:
 	bool computeOneFaceCross(int, int, int, RealVect&, RealVect&, RealVect&, RealVect&, RealVect&);
 
-	static void populateBoxDataType(hid_t& boxType);
-	static void populateRealVectDataType(hid_t& realVectType);
-	static void populateIntVectDataType(hid_t& intVectType);
-	static void populateMembraneElementMetricsDataType(hid_t& metricsType);
-	static void populateStructureMetricsDataType(hid_t& metricsType);
-	static void populateVertexDataType(hid_t& metricsType);
-	static void populateSegmentDataType(hid_t& triangleType);
+	static void fillBoxDataType(hid_t& boxType);
+	static void fillRealVectDataType(hid_t& realVectType);
+	static void fillIntVectDataType(hid_t& intVectType);
+	static void fillMembraneElementMetricsDataType(hid_t& metricsType);
+	static void fillStructureMetricsDataType(hid_t& metricsType);
+	static void fillVertexDataType(hid_t& metricsType);
+	static void fillSegmentDataType(hid_t& triangleType);
 
 #if CH_SPACEDIM == 2
 	int findNeighborMembraneIndex2D(int iphase, int ilev, const IntVect& gridIndex, int iedge,
 	const RealVect& normalizedCrossPoint, const RealVect& crossPointRealCoords, int& neighborEdge);
 #else
-	static void populateSliceViewDataType(hid_t& sliceViewType);
-	static void populateTriangleDataType(hid_t& triangleType);
-	static void populateSurfaceTriangleDataType(hid_t& triangleType);
+	static void fillSliceViewDataType(hid_t& sliceViewType);
+	static void fillTriangleDataType(hid_t& triangleType);
+	static void fillSurfaceTriangleDataType(hid_t& triangleType);
 	bool assignEdgeVertArray(int ilev, IntVect& nGridIndex, bool isCorner, int otherEdge, int vertexIndex, int (*edgeVertArray)[21]);
 	IntVect orientVertices(RealVect* vertices, RealVect& outNormal);
 #endif
@@ -152,8 +154,9 @@ private:
 	void generatePhasesAndVolumes();
 	void generateMesh();
 	void computeFeatures();
-	void populateMembraneIndexData();
+	void generateMembraneIndexData();
 	void computeStructureSizes();
+	void generateVolumeMembraneIndexMap();
 	
 #ifdef CH_MPI
 	void exchangeFeaturesAndMembraneIndexOffset();
@@ -167,7 +170,7 @@ private:
 	void writeMeshHdf5(MembraneElementMetrics* metricsData, int vertexCount, Vertex* vertexList, int triangleCount, Triangle* surfaceData, SliceView* sliceViewData);
 #endif
 	int memIndexOffset;
-	Vector< map<int, int> > irregVolumeLocalMembraneMap;
+	Vector< map<int, int> > irregVolumeMembraneMap;
 
 	void populateExtrapolatedValues();
 	void populateMembraneSolution();

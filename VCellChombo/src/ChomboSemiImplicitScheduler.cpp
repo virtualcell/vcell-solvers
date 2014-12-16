@@ -887,8 +887,8 @@ void ChomboSemiImplicitScheduler::updateSource() {
 //							}
 //							else
 //							{
-								int localMemIndex = (*irregularPointMembraneElementIndex[iphase][ivol][ilev])[dit()](vof, 0);
-								if (localMemIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
+								int globalMemIndex = (*irregularPointMembraneIndex[iphase][ivol][ilev])[dit()](vof, 0);
+								if (globalMemIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
 								{
 									continue;
 								}
