@@ -69,7 +69,11 @@ namespace {
 				maxSupported = std::numeric_limits<WORLD_COORD>::max( );
 			}
 #ifndef SPECIAL_TEST
-			scale = maxSupported / universe.diagonal( );
+			double diag =  universe.diagonal( );
+			if (diag == 0) {
+				VCELL_EXCEPTION(logic_error, "Creating World  " << typeid(WORLD_COORD).name( ) << ',' << N << " with no universe");
+			}
+			scale = maxSupported / diag; 
 #else
 			static_assert(N == 2, "2d only");
 			if (universe.limitFor(0) != universe.limitFor(1) || universe.numNodes( )[0] != universe.numNodes( )[1] ) {

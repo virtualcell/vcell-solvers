@@ -76,7 +76,7 @@ namespace spatial {
 		*/
 		virtual std::string describe( ) const = 0;
 		/**
-		* register peristent type
+		* register persistent type
 		*/
 		virtual void registerType( ) const = 0; 
 		/**

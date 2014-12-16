@@ -4,9 +4,12 @@
 #include <vcellxml.h>
 #include <World.h>
 #include <persist.h>
+#include <Expression.h>
+#include <SimpleSymbolTable.h>
 
 namespace { 
 	const double Pi = 3.14159265358979323846264338327950288419716939937;
+
 	class FixedBoundary : public spatial::FrontProvider<moving_boundary::CoordinateType> {
 		typedef spatial::TPoint<moving_boundary::CoordinateType,2> FixedBoundaryPoint;
 		typedef moving_boundary::World<moving_boundary::CoordinateType,2> WorldType; 
@@ -217,6 +220,114 @@ namespace {
 		const double h; 
 	};
 
+	class ExpandingCircle : public spatial::FrontProvider<moving_boundary::CoordinateType> {
+		typedef spatial::TPoint<moving_boundary::CoordinateType,2> ExpandingCirclePoint;
+		typedef moving_boundary::World<moving_boundary::CoordinateType,2> WorldType; 
+
+		const WorldType & world;
+		/**
+		* used for saving / restoring
+		*/
+		//const double problemDomainVelocityx;
+		/**
+		* used in problem, scaled value
+		*/
+		//const double xVel;
+		//double time;
+		moving_boundary::FrontType baseFront;
+		SimpleSymbolTable symTable;
+		mutable VCell::Expression radiusExpression;
+		double multiplier;
+
+	public:
+		ExpandingCircle(double theta, const char * const expression) 
+			:world(WorldType::get( )),
+			symTable(buildSymTable( )),
+			radiusExpression(expression,symTable),
+			multiplier(1) {
+				//estimate final vector size to make a little quicker
+				size_t estimate = (2 * Pi)/theta + 2; //two to allow for closing point
+				baseFront.reserve(estimate);
+
+				double values[3] = {0,0,0};
+				double radius = radiusExpression.evaluateVector(values);
+				for (double t = 0; t < 2 *Pi; t+=theta) {
+					spatial::Point2D in(radius * sin(t), radius * cos(t));
+					ExpandingCirclePoint pt = world.toWorld(in);
+					baseFront.push_back(pt);
+				}
+				close( );
+		}
+
+
+
+		virtual bool propagateTo(double time_) {
+			double values[1];
+			values[0] = time_;
+			multiplier = radiusExpression.evaluateVector(values);
+			return true;
+		}
+		/**
+		* get current front 
+		*/
+		virtual std::vector<ExpandingCirclePoint> retrieveFront( ) {
+			std::vector<ExpandingCirclePoint> rval(baseFront.size( ));
+			std::transform(baseFront.begin( ),baseFront.end( ),rval.begin( ),*this);
+			return rval;
+		}
+
+		/**
+		* make self a transform operator
+		*/
+		moving_boundary::FrontPointType operator( )(const moving_boundary::FrontPointType & in) {
+			moving_boundary::FrontPointType rval(in(spatial::cX) * multiplier, in(spatial::cY) *  multiplier);
+			return rval;
+		}
+
+		std::string describe( ) const {
+			std::ostringstream os;
+			os << "Expanding circle with " << baseFront.size( ) << " points and radius " << radiusExpression.infix( ); 
+			return os.str( ); 
+		}
+		void persist(std::ostream &os) const {
+			throw std::domain_error("expanding circle persistence not implemented yet");
+		}
+
+		/**
+		* "class" register type; disambiguate from virtual #registerType
+		*/
+		static void cRegisterType( ) {
+			vcell_persist::Registrar::reg<ExpandingCircle>("expandingCircle");
+			ExpandingCirclePoint::registerType( );
+		}
+
+		/**
+		* implement virtual 
+		*/
+		void registerType( ) const {
+			cRegisterType( );
+		}
+
+	protected:
+		/*
+		* constructor support; build SymbolTable 
+		*/
+		static SimpleSymbolTable buildSymTable( ) {
+			std::string syms[] = { "x","y","t"};
+			SimpleSymbolTable sst(syms, sizeof(syms)/sizeof(syms[0]));
+			return sst;
+		}
+
+
+		/**
+		* close polygon
+		*/
+		void close( ) {
+			baseFront.push_back(baseFront.front( ));
+		}
+
+	};
+
 	/**
 	* base class / factory for alternate front providers
 	*/
@@ -275,7 +386,7 @@ namespace {
 		CircleBuild( )
 			:Builder(this) {}
 		virtual spatial::FrontProvider<moving_boundary::CoordinateType> * build(const tinyxml2::XMLElement &root) {
-			const tinyxml2::XMLElement *n = root.FirstChildElement("circle");
+			const tinyxml2::XMLElement *n = root.FirstChildElement(token( ).c_str( ));
 			if (n != nullptr) {
 				const tinyxml2::XMLElement &node = *n; 
 				double theta = vcell_xml::convertChildElement<double>(node,"thetaIncrement");
@@ -300,7 +411,7 @@ namespace {
 		RectangleBuild( )
 			:Builder(this) {}
 		virtual spatial::FrontProvider<moving_boundary::CoordinateType> * build(const tinyxml2::XMLElement &root) {
-			const tinyxml2::XMLElement *n = root.FirstChildElement("rectangle");
+			const tinyxml2::XMLElement *n = root.FirstChildElement(token( ).c_str( ));
 			if (n != nullptr) {
 				const tinyxml2::XMLElement &node = *n; 
 				double width = vcell_xml::convertChildElement<double>(node,"width");
@@ -323,6 +434,28 @@ namespace {
 		}
 	} Rb;
 
+	struct ExpandingCircleBuild : public Builder {
+		ExpandingCircleBuild( )
+			:Builder(this) {}
+		virtual spatial::FrontProvider<moving_boundary::CoordinateType> * build(const tinyxml2::XMLElement &root) {
+			const tinyxml2::XMLElement *n = root.FirstChildElement(token( ).c_str( ));
+			if (n != nullptr) {
+				const tinyxml2::XMLElement &node = *n; 
+				double theta = vcell_xml::convertChildElement<double>(node,"theta");
+				const char * exp  = vcell_xml::convertChildElement<const char *>(node,"radiusExpression");
+				return new ExpandingCircle(theta,exp); 
+			}
+			return nullptr;
+		}
+		virtual std::string token( ) {
+			return "expandingCircle"; 
+		}
+
+		virtual spatial::FrontProvider<moving_boundary::CoordinateType> * restore(std::istream &is) {
+			return 0;
+		}
+	} Ecb;
+
 }
 
 /**
@@ -334,6 +467,9 @@ namespace {
 */
 spatial::FrontProvider<moving_boundary::CoordinateType> * moving_boundary::circleFront(double originx, double originy, double radius, double step, double velocityx) {
 	return new Circle(originx,originy,radius,step,velocityx);
+}
+spatial::FrontProvider<moving_boundary::CoordinateType> *moving_boundary::expandingCircle(double theta, const char * const expression) {
+	return new ExpandingCircle(theta,expression); 
 }
 
 

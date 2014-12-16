@@ -11,6 +11,7 @@
 #include "gtest/gtest.h"
 #include "vcellxml.h"
 #include <boost/lexical_cast.hpp>
+#include <SExpression.h>
 namespace {
 }
 TEST(expression,base) {
@@ -23,14 +24,54 @@ TEST(expression,base) {
 	std::cout << exp.infix( ) << " = " << r << std::endl;
 	ASSERT_TRUE(r == 20);
 }
+TEST(sexpression,ops) {
+	std::string syms[] = {"a","b","c"};
+	SimpleSymbolTable symTb(syms,sizeof(syms)/sizeof(syms[0]));
+	moving_boundary::SExpression exp("(a + b) * c",symTb);
+	moving_boundary::SExpression copy(exp); 
+	std::array<double,3> arr = {2,3,4};
+	double r= copy.evaluate(arr);
+	moving_boundary::SExpression alone("1");
+	alone = exp;
+	double r2= alone.evaluate(arr);
+	ASSERT_TRUE(r == 20);
+	ASSERT_TRUE(r2 == 20);
+	std::cout << exp.infix( ) << " = " << r << std::endl;
+}
+TEST(sexpression,base) {
+	std::string syms[] = {"a","b","c"};
+	SimpleSymbolTable symTb(syms,sizeof(syms)/sizeof(syms[0]));
+	moving_boundary::SExpression exp("(a + b) * c",symTb);
+	std::array<double,3> arr = {2,3,4};
+	double r= exp.evaluate(arr);
+	std::vector<double> vec;
+	vec.resize(arr.size( ));
+	std::copy(arr.begin( ),arr.end( ),vec.begin( ));
+	double r2= exp.evaluate(vec);
+	ASSERT_TRUE(r == 20);
+	ASSERT_TRUE(r2 == 20);
+	std::cout << exp.infix( ) << " = " << r << std::endl;
+}
+
+TEST(sexpression,badsize) {
+	std::string syms[] = {"a","b","c"};
+	SimpleSymbolTable symTb(syms,sizeof(syms)/sizeof(syms[0]));
+	moving_boundary::SExpression exp("(a + b) * c",symTb);
+	std::array<double,2> arr = {2,3};
+	ASSERT_THROW(double r= exp.evaluate(arr),std::domain_error);
+	std::vector<double> vec;
+	vec.resize(arr.size( ));
+	std::copy(arr.begin( ),arr.end( ),vec.begin( ));
+	ASSERT_THROW(double r= exp.evaluate(vec),std::domain_error);
+}
 
 TEST(expression,construct) {
 	VCell::Expression a; 
 	{
-		VCell::Expression exp("(a + b) * c");
+		VCell::Expression exp("(ax + b) * c");
 		a = exp;
 	}
-	std::string syms[] = {"a","b","c"};
+	std::string syms[] = {"ax","b","c"};
 	SimpleSymbolTable symTb(syms,sizeof(syms)/sizeof(syms[0]));
 	a.bindExpression(&symTb);
 	double v[] = {5,6,8};
