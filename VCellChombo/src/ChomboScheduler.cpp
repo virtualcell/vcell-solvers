@@ -1810,9 +1810,9 @@ bool ChomboScheduler::assignEdgeVertArray(int ilev, IntVect& nGridIndex, bool is
 	if ((nGridIndex[0] < vectNxes[ilev][0])&&(nGridIndex[1] < vectNxes[ilev][1])&&(nGridIndex[2] < vectNxes[ilev][2])) // if not  on wall
 	{
 		int volIndex = getVolumeIndex(vectNxes[ilev], nGridIndex);
-		map<int,int>::iterator iter = irregVolumeLocalMembraneMap[ilev].find(volIndex);
+		map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(volIndex);
 		// check if neighbor has a valid membrane element index and fill vertex for neighbor
-		if (iter == irregVolumeLocalMembraneMap[ilev].end())
+		if (iter == irregVolumeMembraneMap[ilev].end())
 		{
 			// did not find membrane index; check if it is a corner point; if not, issue a warning message for now
 			if (!isCorner)
