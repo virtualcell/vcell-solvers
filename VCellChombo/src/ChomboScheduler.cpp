@@ -1340,6 +1340,11 @@ void ChomboScheduler::writeData(char* filename) {
 			} // ivol
 		} // iphase
 
+#ifdef CH_MPI
+		MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
+		pout() << methodName << "firstFilePhase=" << firstFilePhase << ", firstFileVol=" << firstFileVol << endl;
 		if (firstFilePhase != -1)
 		{
 			Feature* feature = phaseVolumeList[firstFilePhase][firstFileVol]->feature;
@@ -1347,7 +1352,13 @@ void ChomboScheduler::writeData(char* filename) {
 			// write membrane variable solution and extrapolated values to the first hdf5 file
 			sprintf(hdf5FileName, "%s%06d.feature_%s.vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), firstFileVol, HDF5_FILE_EXT);
 
-			hid_t h5SimFile =  H5Fopen(hdf5FileName, H5F_ACC_RDWR, H5P_DEFAULT);
+			hid_t file_access = H5P_DEFAULT;
+#ifdef CH_MPI
+			file_access = H5Pcreate(H5P_FILE_ACCESS);
+			H5Pset_fapl_mpio(file_access,  MPI_COMM_WORLD, MPI_INFO_NULL);
+#endif
+	
+			hid_t h5SimFile =  H5Fopen(hdf5FileName, H5F_ACC_RDWR, file_access);
 			pout() << methodName << " writing membrane solution, [iphase, ivol]=[" << firstFilePhase << "," << firstFileVol << "] to " << hdf5FileName << endl;
 			DataSet::writeMembraneSolution(simulation, h5SimFile
 #ifdef CH_MPI
