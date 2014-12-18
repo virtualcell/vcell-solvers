@@ -11,20 +11,24 @@ namespace {
 }
 TEST(bio,physio) {
 	Physiology physio;
+	ASSERT_THROW(physio.numberSymbols( ),std::domain_error);
 	physio.createSpecies("dog","1 + t * cat");
 	physio.createSpecies("cat","2 * cat");
 	std::array<std::string,1> syms = {"t"};
 
 	physio.buildSymbolTable(syms);
+	physio.lock( );
 
 	std::vector<double> values(physio.numberSymbols( ));
 	size_t idx = physio.symbolIndex("t");
 	size_t cidx = physio.symbolIndex("cat");
 	values[idx] = 2;
 	values[cidx] = 10; 
+	auto species = physio.species( );
 	for (int i = 0; i < physio.numSpecies( ) ; ++i) {
-		eval(physio.species(i), values );
+		eval(species[i], values );
 	}
+	ASSERT_THROW(physio.createSpecies("alligator","3"), std::domain_error);
 
 
 
