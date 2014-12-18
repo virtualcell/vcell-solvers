@@ -957,17 +957,38 @@ void MeshElementSpecies::endOfCycle( ) {
 	}
 	//temporary? store concentration
 	moving_boundary::CoordinateProductType vol = this->volumePD( );
-	if (vol > 0) {
-		for (int i = 0; i < numSpecies( ); i++) {
-			concValue[i] = amtMass[i] / vol;
+	const bool inside = isInside( );
+	if (inside) {
+		if (vol > 0) {
+			for (int i = 0; i < numSpecies( ); i++) {
+				concValue[i] = amtMass[i] / vol;
+			}
+		}
+		else {
+			std::fill(concValue.begin( ),concValue.begin( ) + physiology( ).numSpecies( ), 0); 
 		}
 	}
-	else if (isInside( ) ) {
-		for (int i = 0; i < numSpecies( ); i++) {
-			concValue[i] = 0; 
+	if (vcell_util::Logger::get( ).enabled(vcell_util::Logger::info) ) { 
+		if (inside) {
+			VCELL_LOG_ALWAYS(this->ident( ) << " eoc end mass " << this->mass(0) << " vol " << volumePD(  ) << " conc " << concentration(0));
+		}
+		else {
+			VCELL_LOG_ALWAYS(this->ident( ) << " eoc outside"); 
 		}
 	}
-	VCELL_LOG(info,this->ident( ) << " eoc end mass " << this->mass(0) << " vol " << volumePD(  ) << " conc " << concentration(0));
+}
+
+void MeshElementSpecies::react(double) {
+	switch (state( )) {
+	case stable:
+		setState(stableSourceApplied);
+		break;
+	case legacyVolume:
+		setState(legacySourceApplied);
+		break;
+	default:
+		VCELL_EXCEPTION(domain_error,"Invalid react state " << ident( ));
+	}
 }
 
 using moving_boundary::BioQuanType;
@@ -975,22 +996,23 @@ using moving_boundary::TimeType;
 void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, BioQuanType diffusionConstant, TimeType timeStep, bool & negativeMassError) {
 	DaCache & ourCache = static_cast<DaCache &>(daCache);
 	switch (state( )) {
-	case stable:
-	case stableUpdated:
+	case stableSourceApplied:
+	//case stable:
+	//case stableUpdated:
 		if (this->mPos( ) != interiorSurface && this->mPos( ) != deepInteriorSurface) {
 			VCELL_EXCEPTION(domain_error,ident( ) << " diffuseAdvect");
 		}
 		setState(stableUpdated);
 		break;
-	case legacyVolume:
+	case legacySourceApplied:
 	case legacyVolumeNeighborSet:
-	case legacyUpdated:
+	//case legacyUpdated:
 		assert(this->mPos( ) == boundarySurface);
 		findNeighborEdges();
 		setState(legacyUpdated); 
 		break;
 	default:
-		throw std::domain_error("diffuseAvect");
+		VCELL_EXCEPTION(domain_error,"Invalid diffuseAdvect state " << ident( ));
 	}
 
 	if (this->isInside( )) {
@@ -1140,6 +1162,8 @@ namespace {
 MeshElementSpecies::MeshElementSpecies(const MeshDefinition &owner,std::istream &is)
 	:base(is),
 	mesh(owner),
+	concValue( ),
+	sourceTermValues(concValue),
 	vol(0,this) //required to register this as VolumeMonitor of volume
 {
 	vcell_persist::Token::check<MeshElementSpecies>(is); 
@@ -1227,9 +1251,14 @@ std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::Me
 		CASE(legacyUpdated);
 		CASE(legacyVoronoiSet);
 		CASE(legacyVoronoiSetCollected);
+		CASE(legacyVolumeNeighborSet);
+		CASE(stableSourceApplied);
+		CASE(legacySourceApplied);
 		//CASE(legacyInteriorSet);
 		//CASE(legacyInteriorSetCollected);
 		CASE(transient);
+		default:
+			os << "missing state " << static_cast<int>(state); //cast required to avoid recursive call
 	}
 #undef CASE
 	return os;

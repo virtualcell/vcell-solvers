@@ -21,6 +21,7 @@
 #include <Logger.h>
 #include <Modulo.h>
 #include <boundaryProviders.h>
+#include <Physiology.h>
 
 #include <MBridge/FronTierAdapt.h>
 #include <MBridge/Figure.h>
@@ -100,7 +101,7 @@ namespace {
 						break;
 					}
 #ifdef OLD_FUNCTION_POINTER_IMPLEMENTATION
-					if (mbs.velocityFunction == 0 && mbs.advectVelocityFunctionStrY.empty( )) {
+					if (mbs.velocityFunction == 0 && mbs.advectVelocityFunctionStrY.empty( )) { }
 #else
 					if (mbs.advectVelocityFunctionStrY.empty( )) {
 #endif
@@ -200,7 +201,7 @@ namespace moving_boundary {
 
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs) 
 			:ValidationBase(mbs),
-			numSpecies(mbs.concentrationFunctionStrings.size( )),
+			numSpecies(mbs.speciesSpecs.size( )),
 			world(WorldType::get( )),
 			setup_(mbs),
 			diffusionConstant(mbs.diffusionConstant),
@@ -239,8 +240,14 @@ namespace moving_boundary {
 
 			assert(nFunctionPointers == 0); 
 			for (int i = 0; i < numSpecies; i++) {
-				concentrationExpressions[i] = VCell::Expression(mbs.concentrationFunctionStrings[i],symTable);
+				const SpeciesSpecification & ss = mbs.speciesSpecs[i];
+				concentrationExpressions[i] = VCell::Expression(ss.initialConcentrationStr,symTable);
+				physiology.createSpecies(ss.sourceExpressionStr,ss.sourceExpressionStr);
 			}
+			std::array<std::string,3> syms = {"x","y","t"};
+			physiology.buildSymbolTable(syms);
+			physiology.lock( );
+			
 			setInitialValues( );
 
 			//check time step
@@ -259,7 +266,6 @@ namespace moving_boundary {
 					VCELL_EXCEPTION(logic_error,"calculated input time step " << timeStep << " greater than maximum allowed by problem (" << maxStep << ')');
 				}
 			}
-
 
 			using matlabBridge::MatLabDebug;
 			if (MatLabDebug::on("tiling")) {
@@ -361,6 +367,7 @@ namespace moving_boundary {
 		void setInitialValues( ) {
 			using std::vector;
 			assert(concentrationExpressions.size( ) == numSpecies);
+			assert(physiology.numSpecies( ) == numSpecies);
 			vector<ConcentrationProvider> concExp;
 			for (vector<VCell::Expression>::iterator iter = concentrationExpressions.begin( ); iter != concentrationExpressions.end( ); ++iter) {
 				concExp.push_back(ConcentrationProvider(*iter));
@@ -369,6 +376,7 @@ namespace moving_boundary {
 
 			for (Element & e: primaryMesh) {
 				e.setInteriorVolume(interiorVolume);
+				e.setPhysiology(physiology);
 			}
 			currentFront = vcFront->retrieveFront( );
 			std::cout << "front size " << currentFront.size( ) << std::endl;
@@ -392,10 +400,10 @@ namespace moving_boundary {
 				boundaryElements.push_back(&boundaryElement);
 				boundaryElement.findNeighborEdges();
 			}
+			/*
 			for (vector<Element *>::iterator iter = positions.outside.begin( ); iter != positions.outside.end( ); ++iter) {
-				Element  & boundaryElement = **iter;
-				boundaryElement.setConcentration(0,0);
 			}
+			*/
 		}
 
 		void boundaryElementSetup(Element & bElem) {
@@ -566,6 +574,8 @@ namespace moving_boundary {
 		}
 
 		void debugDump(size_t gc, char key) {
+			static bool fullDump = matlabBridge::MatLabDebug::on("frontmovefull");
+			VCELL_LOG(trace,"dd " << gc << key << " time " << currentTime); 
 			std::ostringstream oss;
 			oss << "frontmove"  << std::setfill('0') << std::setw(3) << gc << key << ".m" << std::ends;
 			std::ofstream dump(oss.str( ));
@@ -600,14 +610,19 @@ namespace moving_boundary {
 				default:
 					VCELL_EXCEPTION(domain_error,"bad state " << static_cast<int>(iter->mPos( )) << iter->ident( )) ;
 				}
-				/*
+				VCELL_LOG(trace,"dd " << iter->ident( ));
 				double  x = iter->get(cX);
 				double  y = iter->get(cY);
 
 				std::stringstream ss;
 				ss << iter->indexOf(cX) << ',' << iter->indexOf(cY); 
 				dump << matlabBridge::Text(x,y, ss.str( ).c_str( ));
-				*/
+				if (fullDump) {
+					matlabBridge::Polygons pgons("k");
+					const Volume2DClass & vol = iter->getControlVolume( );
+					frontTierAdapt::copyVectorsInto(pgons,vol.points( ));
+					dump << pgons;
+				}
 			}
 			dump << deepInside << inside << boundary << outside << deepOutside; 
 			matlabBridge::TPolygon<CoordinateType> pPoly("k",1);
@@ -734,6 +749,22 @@ namespace moving_boundary {
 			const double diffusionConstant;
 			const double timeStep;
 			bool & errorFlag;
+		};
+		/**
+		* Functor react 
+		*/
+		struct React {
+			React(double time_)
+				:time(time_) {}
+
+			void operator( )(Element & e) {
+				if (e.isInside( )) {
+					VCELL_LOG(trace,e.ident( ) << " react")
+						e.react(time);
+				}
+			}
+
+			const double time;
 		};
 
 #if 0
@@ -876,7 +907,7 @@ namespace moving_boundary {
 				}
 			}
 
-			const bool frontMoveTrace = matlabBridge::MatLabDebug::on("frontmove");
+			const bool frontMoveTrace = matlabBridge::MatLabDebug::on("frontmove") || matlabBridge::MatLabDebug::on("frontmovefull");
 			FrontType oldFront; //for debugging
 
 			try { 
@@ -884,7 +915,7 @@ namespace moving_boundary {
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),commenceSimulation);
 				}
 				notifyClients(generationCount,true);
-				if (matlabBridge::MatLabDebug::on("frontmove")) {
+				if (frontMoveTrace) {
 					debugDump(generationCount, 's');
 				}
 
@@ -951,6 +982,8 @@ namespace moving_boundary {
 						}
 					} while (tooBig);
 #endif
+					std::for_each(primaryMesh.begin( ),primaryMesh.end( ), React(currentTime) );
+
 					primaryMesh.diffuseAdvectCache( ).start( );
 					bool tooBig = false;
 					try {
@@ -969,6 +1002,7 @@ namespace moving_boundary {
 					if (frontMoveTrace) {
 						debugDump(generationCount,'b');
 					}
+
 
 					bool changed;
 					//adjustNodes calls MeshElementSpecies.updateBoundaryNeighbors
@@ -989,7 +1023,9 @@ namespace moving_boundary {
 						throw;
 					}
 					if (frontMoveTrace) {
-						debugDump(generationCount,'a');
+						if (generationCount > 0) {
+							debugDump(generationCount,'a');
+						}
 					}
 					//TODO: nochange
 
@@ -1160,7 +1196,7 @@ namespace moving_boundary {
 
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs, std::istream &is) 
 			:ValidationBase(mbs),
-			numSpecies(mbs.concentrationFunctionStrings.size( )),
+			numSpecies(mbs.speciesSpecs.size( )),
 			world(WorldType::get( )),
 			setup_(mbs),
 			diffusionConstant(mbs.diffusionConstant),
@@ -1290,6 +1326,11 @@ namespace moving_boundary {
 		std::vector<Element *> gainedElements;
 		unsigned char statusPercent;
 		bool estimateProgress;
+		/**
+		* represent physiology stuff here for now ...
+		* will likely become domain specific in the future
+		*/
+		biology::Physiology physiology;
 
 		/**
 		* runtime flag (not-persistent)

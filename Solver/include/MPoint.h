@@ -164,7 +164,8 @@ namespace spatial {
 	inline std::ostream & operator<<(std::ostream & os, spatial::SurfacePosition mp) {
 		switch (mp) {
 		case spatial::deepInteriorSurface:
-			os << "deep interior";
+			//more convenient for tables, csv, et. al. if all states print as single word
+			os << "deepInterior";
 			break;
 		case spatial::interiorSurface:
 			os << "interior";
@@ -173,7 +174,7 @@ namespace spatial {
 			os << "outside";
 			break;
 		case spatial::deepOutsideSurface:
-			os << "deep outside";
+			os << "deepOutside";
 			break;
 		case spatial::boundarySurface:
 			os << "boundary";

@@ -6,12 +6,12 @@ namespace moving_boundary {
 	namespace biology {
 
 		struct Species {
-			Species(const char *name, const char *expression)
+			Species(const std::string & name, const std::string & sexpression)
 				:name_(name),
-				sExp(expression) {}
+				sourceExp(sexpression) {}
 
 			void setTable(const SimpleSymbolTable &symTable) {
-				sExp.bindExpression(symTable);
+				sourceExp.bindExpression(symTable);
 			}
 
 			/**
@@ -19,7 +19,7 @@ namespace moving_boundary {
 			*/
 			template <class CTR>
 			double evaluate(const CTR  &values) const {
-				return sExp.evaluate(values);
+				return sourceExp.evaluate(values);
 			}
 
 			const std::string & name( ) const {
@@ -28,7 +28,7 @@ namespace moving_boundary {
 
 		private:
 			std::string name_;
-			SExpression sExp;
+			SExpression sourceExp;
 
 		};
 

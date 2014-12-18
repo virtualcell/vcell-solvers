@@ -22,7 +22,7 @@ MovingBoundarySetup::MovingBoundarySetup(std::istream &is)
 	vcell_persist::StdString<>::restore(is,advectVelocityFunctionStrY);
 	vcell_persist::StdString<>::restore(is,frontVelocityFunctionStrX);
 	vcell_persist::StdString<>::restore(is,frontVelocityFunctionStrY);
-	vcell_persist::restoreStrings<unsigned short>(is, concentrationFunctionStrings);
+	//PWORK vcell_persist::restoreStrings<unsigned short>(is, concentrationFunctionStrings);
 	vcell_persist::binaryRead(is,diffusionConstant);
 	/*
 	bool hasProvider;
@@ -33,7 +33,7 @@ MovingBoundarySetup::MovingBoundarySetup(std::istream &is)
 	*/
 }
 MovingBoundarySetup::~MovingBoundarySetup() {
-	concentrationFunctionStrings.resize(0);
+	speciesSpecs.resize(0);
 }
 
 
@@ -49,8 +49,9 @@ void MovingBoundarySetup::persist(std::ostream &os) const {
 	vcell_persist::StdString<>::save(os,advectVelocityFunctionStrY);
 	vcell_persist::StdString<>::save(os,frontVelocityFunctionStrX);
 	vcell_persist::StdString<>::save(os,frontVelocityFunctionStrY);
-	vcell_persist::saveStrings<unsigned short>(os,concentrationFunctionStrings);
+	//PWORK vcell_persist::saveStrings<unsigned short>(os,concentrationFunctionStrings);
 	vcell_persist::binaryWrite(os,diffusionConstant);
+	throw new std::domain_error("not updated for species spec");
 	/*
 	const bool hasProvider = ( alternateFrontProvider != nullptr );
 	vcell_persist::binaryWrite(os,hasProvider);
@@ -127,12 +128,30 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 		mbSetup.alternateFrontProvider = ::frontFromXML(*altFront);
 		std::cout << mbSetup.alternateFrontProvider->describe( ) << std::endl;
 	}
-	const XMLElement & concElement = vcell_xml::get(prob,"concentration");
-	const XMLElement *sp = concElement.FirstChildElement("species");
-	while (sp != nullptr) {
-		std::string exp = vcell_xml::convertElement<std::string>(*sp);
-		mbSetup.concentrationFunctionStrings.push_back(exp);
-		sp = sp->NextSiblingElement("species");
+	const XMLElement & physiologyElement = vcell_xml::get(prob,"physiology");
+	const XMLElement *spE = physiologyElement.FirstChildElement("species");
+	size_t sNumber = 0;
+	std::ostringstream defaultNameS;
+	std::string name;
+	while (spE != nullptr) {
+		//get name, or design default
+		const char * n  = spE->Attribute("name");
+		if (n != nullptr) {
+			name = n;
+		}
+		else {
+			defaultNameS.rdbuf( )->pubseekpos(0); 
+			defaultNameS << 'u' << sNumber << std::ends;
+			name = defaultNameS.str( );
+		}
+		++sNumber;
+
+		//get other terms 
+		std::string source = vcell_xml::convertChildElement<std::string>(*spE,"source");
+		std::string init = vcell_xml::convertChildElementWithDefault<std::string>(*spE,"source", source);
+		mbSetup.speciesSpecs.push_back(SpeciesSpecification(name,init,source));
+
+		spE = spE->NextSiblingElement("species");
 	}
 
 	return mbSetup; 

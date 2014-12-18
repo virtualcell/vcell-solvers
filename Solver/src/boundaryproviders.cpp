@@ -4,7 +4,7 @@
 #include <vcellxml.h>
 #include <World.h>
 #include <persist.h>
-#include <Expression.h>
+#include <SExpression.h>
 #include <SimpleSymbolTable.h>
 
 namespace { 
@@ -236,21 +236,22 @@ namespace {
 		//double time;
 		moving_boundary::FrontType baseFront;
 		SimpleSymbolTable symTable;
-		mutable VCell::Expression radiusExpression;
+		moving_boundary::SExpression radiusExpression;
 		double multiplier;
+		std::array<double,3> values;
 
 	public:
 		ExpandingCircle(double theta, const char * const expression) 
 			:world(WorldType::get( )),
 			symTable(buildSymTable( )),
 			radiusExpression(expression,symTable),
-			multiplier(1) {
+			multiplier(1),
+			values( ) {
 				//estimate final vector size to make a little quicker
 				size_t estimate = (2 * Pi)/theta + 2; //two to allow for closing point
 				baseFront.reserve(estimate);
 
-				double values[3] = {0,0,0};
-				double radius = radiusExpression.evaluateVector(values);
+				double radius = radiusExpression.evaluate(values);
 				for (double t = 0; t < 2 *Pi; t+=theta) {
 					spatial::Point2D in(radius * sin(t), radius * cos(t));
 					ExpandingCirclePoint pt = world.toWorld(in);
@@ -262,9 +263,8 @@ namespace {
 
 
 		virtual bool propagateTo(double time_) {
-			double values[1];
 			values[0] = time_;
-			multiplier = radiusExpression.evaluateVector(values);
+			multiplier = radiusExpression.evaluate(values);
 			return true;
 		}
 		/**

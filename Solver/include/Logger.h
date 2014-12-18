@@ -152,8 +152,17 @@ namespace vcell_util {
 * @param x code fragment to stream 
 */
 #define VCELL_LOG(level,x) { \
-	using vcell_util::Logger; \
-	if (Logger::get( ).enabled(Logger::level) ) { std::ostringstream oss; oss << x ; Logger::get( ).report(oss.str( ).c_str( )); } \
+	if (vcell_util::Logger::get( ).enabled(vcell_util::Logger::level) ) \
+	{ std::ostringstream oss; oss << x ; vcell_util::Logger::get( ).report(oss.str( ).c_str( )); } \
+}
+
+/**
+* based on some ideas in apache Log4jcxxx (BSD licensed)
+* unconditionally log 
+* @param x code fragment to stream 
+*/
+#define VCELL_LOG_ALWAYS(x) { \
+	{ std::ostringstream oss; oss << x ; vcell_util::Logger::get( ).report(oss.str( ).c_str( )); } \
 }
 
 /**
@@ -162,8 +171,8 @@ namespace vcell_util {
 * @param x code fragment to stream 
 */
 #define VCELL_LOG_N(level,x) { \
-using vcell_util::Logger; \
-if (Logger::get( ).enabled(Logger::level) ) { std::ostringstream oss; oss << x ; Logger::get( ).report(oss.str( ).c_str( ),false); } \
+if (vcell_util::Logger::get( ).enabled(vcell_util::Logger::level) ) \
+	{ std::ostringstream oss; oss << x ; vcell_util::Logger::get( ).report(oss.str( ).c_str( ),false); } \
 }
 
 /**
@@ -173,8 +182,8 @@ if (Logger::get( ).enabled(Logger::level) ) { std::ostringstream oss; oss << x ;
 * @param x code fragment to stream 
 */
 #define VCELL_KEY_LOG(level,key,x) { \
-	using vcell_util::Logger; \
-	if (Logger::get( ).enabled(Logger::level,Logger::key) ) { std::ostringstream oss; oss << x ; Logger::get( ).report(oss.str( ).c_str( )); } \
+	if (vcell_util::Logger::get( ).enabled(vcell_util::Logger::level,vcell_util::Logger::key) ) \
+	{ std::ostringstream oss; oss << x ; vcell_util::Logger::get( ).report(oss.str( ).c_str( )); } \
 }
 /**
 * based on some ideas in apache Log4jcxxx (BSD licensed)
@@ -183,8 +192,8 @@ if (Logger::get( ).enabled(Logger::level) ) { std::ostringstream oss; oss << x ;
 * @param x code fragment to stream 
 */
 #define VCELL_COND_LOG(level,predicate, x) { \
-	using vcell_util::Logger; \
-	if (Logger::get( ).enabled(Logger::level) && ( predicate) ) { std::ostringstream oss; oss << x ; Logger::get( ).report(oss.str( ).c_str( )); } \
+	if (vcell_util::Logger::get( ).enabled(vcell_util::Logger::level) && ( predicate) ) \
+	{ std::ostringstream oss; oss << x ; vcell_util::Logger::get( ).report(oss.str( ).c_str( )); } \
 }
 
 #endif

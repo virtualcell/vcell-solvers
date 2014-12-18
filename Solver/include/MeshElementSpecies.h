@@ -17,6 +17,7 @@
 #include <portability.h>
 #include <math.h>
 #include <persist.h>
+#include <Physiology.h>
 
 //forward definitions
 //namespace spatial {
@@ -83,6 +84,7 @@ namespace moving_boundary {
 	};
 
 	namespace MeshElementStateful {
+		//if adding state, add to std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::MeshElementStateful::State state) in *cpp 
 		enum State { 
 			/**
 			* initial state. #setPos to #stable
@@ -92,6 +94,14 @@ namespace moving_boundary {
 			* begin/end of move diffuse advect cycle
 			*/
 			stable, 
+			/**
+			* source terms applied (interior nodes)
+			*/
+			stableSourceApplied,
+			/**
+			* source terms applied (boundary nodes)
+			*/
+			legacySourceApplied,
 			/**
 			* diffusionAdvection applied
 			*/
@@ -154,6 +164,7 @@ namespace moving_boundary {
 	}
 
 	/**
+	* OUT OF DATE due sourceApplied term
 	* Allowable transitions. First transition from <i>initial</i> to <i>stable</i> omitted for simplicity.
 	<table><tr><th></th><th>stable</th><th>stableUpdated</th><th>awaitingNb</th><th>lost</th><th>gainedAwaitingNb</th><th>gainedEmpty</th><th>gained</th><th>legacyVolume</th><th>legacyUpdated</th><th>legacyVoronoiSet</th><th>legacyInterior</th></tr>
 	<tr><td>stable</td><td></td><td>diffuseAdvect</td><td></td><td></td><td>setPos(O->B)</td><td></td><td></td><td>moveFront</td><td></td><td></td></tr>
@@ -171,6 +182,7 @@ namespace moving_boundary {
 	* <ul>
 	* <li>setPos</li>
 	* <li>moveFront</li>
+	* <li>react</li>
 	* <li>diffuseAdvect</li>
 	* <li>setPos</li>
 	* <li>updateBoundary</li>
@@ -203,6 +215,8 @@ namespace moving_boundary {
 			amtMass(),
 			amtMassTransient(),
 			concValue(),
+			sourceTermValues(concValue),
+			pPhysio(nullptr), //set after creation
 			interiorNeighbors( ),
 			neighbors(interiorNeighbors.data( )), //default to interior, update when id'd as boundary
 			boundaryNeighbors(0),
@@ -231,11 +245,15 @@ namespace moving_boundary {
 			return mesh.numberSpecies( ); 
 		}
 
+		/**
+		* allocate species storage
+		* #setPhysiology( ) must be calle first
+		*/
 		void allocateSpecies( ) {
 			const size_t i = mesh.numberSpecies( );
 			amtMass.resize(i);
 			amtMassTransient.resize(i);
-			concValue.resize(i);
+			concValue.resize( physiology( ).numberSymbols( ) );
 		}
 
 		/**
@@ -294,6 +312,13 @@ namespace moving_boundary {
 			}
 			base::setPos(m);
 			VCELL_LOG(trace,this->indexInfo( ) << " initial position " << m)
+		}
+
+		void setPhysiology(const biology::Physiology &p) {
+			if (p.numSpecies( )!= numSpecies( )) {
+				throw std::domain_error("wrong number species");
+			}
+			pPhysio = &p;
 		}
 
 		void beginSimulation( ) {
@@ -418,6 +443,7 @@ namespace moving_boundary {
 			case State::initial:
 			case State::stable: 
 			case State:: stableUpdated:
+			case State:: stableSourceApplied:
 				switch (this->mPos( )) {
 				case spatial::interiorSurface:
 				case spatial::deepInteriorSurface: 
@@ -436,6 +462,7 @@ namespace moving_boundary {
 			case State::legacyUpdated:
 			case State::legacyVoronoiSet:
 			case State::legacyVoronoiSetCollected:
+			case State::legacySourceApplied:
 			//case State::legacyInteriorSet:
 			//case State::legacyInteriorSetCollected:
 				return vol.volume( ) /distanceScaledSquared; 
@@ -478,6 +505,7 @@ namespace moving_boundary {
 		* @param mesh owning mesh
 		*/
 		const Volume2DClass & getControlVolume( ) const;
+					
 
 		const spatial::SVector<moving_boundary::VelocityType,2> & getVelocity( ) const {
 			return velocity;
@@ -487,6 +515,10 @@ namespace moving_boundary {
 			velocity = rhs;
 		}
 
+		/**
+		* apply source terms at specified time (expressions may contain "x" and "y" ... the nodes know that already)
+		*/
+		void react(double time); 
 		/**
 		* perform diffusion and advection step, storing values in next generation
 		* @param daCache   
@@ -668,6 +700,14 @@ namespace moving_boundary {
 			return nullptr;
 		}
 
+		void setCollected( ) {
+			//static_assert(State::legacyInteriorSetCollected == State::legacyInteriorSet + 1,"collected not set up correctly");
+			static_assert(State::legacyVoronoiSetCollected == State::legacyVoronoiSet + 1,"collected not set up correctly");
+			//setState(static_cast<State>(stateVar + 1) );
+			assert(stateVar == State::legacyVoronoiSet);
+			setState(State::legacyVoronoiSetCollected);
+		}
+
 		/**
 		* return distance to neighbor, if it's been calculated; otherwise return 0
 		*/
@@ -679,18 +719,22 @@ namespace moving_boundary {
 			return 0;
 		}
 
-		void setCollected( ) {
-			//static_assert(State::legacyInteriorSetCollected == State::legacyInteriorSet + 1,"collected not set up correctly");
-			static_assert(State::legacyVoronoiSetCollected == State::legacyVoronoiSet + 1,"collected not set up correctly");
-			setState(static_cast<State>(stateVar + 1) );
-		}
-
 		void setState(MeshElementStateful::State s) {
 			using namespace MeshElementStateful;
 			stateVar = s;
 			VCELL_LOG(trace, ident( ) << " new state" ); 
 			assert(debugSetState( ));
 		}
+
+
+
+		/*
+		const std::vector<const biology::Species> & species( ) const {
+			assert(psv != nullptr);
+			assert(psv->size( ) == numSpecies( )); 
+			return *psv;
+		}
+		*/
 
 		/*
 		* hook to allow setting specific break /log conditions in *cpp 
@@ -702,12 +746,18 @@ namespace moving_boundary {
 			return stateVar;
 		}
 
+		const biology::Physiology & physiology( ) const {
+			assert(pPhysio != nullptr);
+			return *pPhysio;
+		}
+
+		/**
+		* debug only 
+		*/
+		void genDebugPlot(std::ostream & dest, const Volume2DClass &ourVolume, const Volume2DClass & intersection, const OurType & nb);
+
 		const MeshDefinition &mesh;
 
-		struct Helper {
-			void setDirty( ) {};
-			void destroyed( ) {};
-		};
 		MeshElementStateful::State stateVar;
 		/**
 		* volume if this is an inside element -- otherwise volume comes from vol object
@@ -721,6 +771,19 @@ namespace moving_boundary {
 		std::vector<moving_boundary::BioQuanType> amtMass; //amount of mass
 		std::vector<moving_boundary::BioQuanType> amtMassTransient; //amount of mass, working copy
 		std::vector<moving_boundary::BioQuanType> concValue; //concentration at beginning of cycle
+		/**
+		* pointer to species vector
+		*/
+		const biology::Physiology * pPhysio;
+		/**
+		* values needed to evaluate source term
+		* for now, assume the indexing of species in the Physiology is the same as the local values
+		* and use the same vector as #concValue
+		* { must be declared after concValue }
+		*/
+		static_assert(std::is_same<moving_boundary::BioQuanType,double>::value, "update implementation");
+		std::vector<double> & sourceTermValues;
+
 
 		const static int NUM_INSIDE = 4;
 		std::array<NeighborType,NUM_INSIDE> interiorNeighbors; 

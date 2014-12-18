@@ -11,6 +11,31 @@ namespace tinyxml2 {
 namespace moving_boundary {
 	struct MeshElementSpecies; 
 
+	/**
+	* POD for species initialization
+	*/
+	struct SpeciesSpecification {
+		std::string name;
+		std::string initialConcentrationStr;
+		std::string sourceExpressionStr;
+		
+		/**
+		* default to allow storage in vector
+		*/
+		SpeciesSpecification( )
+			:name( ),
+			initialConcentrationStr( ),
+			sourceExpressionStr( ) {}
+		/**
+		* @param n name
+		* @param i initial concentration 
+		* @param s source (reaction) 
+		*/
+		SpeciesSpecification(std::string n, std::string i, std::string s)
+			:name(n),
+			initialConcentrationStr(i),
+			sourceExpressionStr(s) {}
+	};
 
 	struct MovingBoundarySetup {
 		unsigned int frontToNodeRatio;
@@ -52,7 +77,7 @@ namespace moving_boundary {
 		*/
 		std::string frontVelocityFunctionStrY;
 
-		std::vector<std::string> concentrationFunctionStrings;
+		std::vector<SpeciesSpecification> speciesSpecs;
 		double diffusionConstant;
 		/**
 		* provide alternate to frontier; for testing / validation
@@ -73,7 +98,7 @@ namespace moving_boundary {
 			advectVelocityFunctionStrY( ),
 			frontVelocityFunctionStrX( ),
 			frontVelocityFunctionStrY( ),
-			concentrationFunctionStrings( ),
+			speciesSpecs( ),
 			diffusionConstant(0),
 			alternateFrontProvider(nullptr)
 		{}
@@ -91,7 +116,7 @@ namespace moving_boundary {
 			advectVelocityFunctionStrY(rhs.advectVelocityFunctionStrY),
 			frontVelocityFunctionStrX(rhs.frontVelocityFunctionStrX),
 			frontVelocityFunctionStrY(rhs.frontVelocityFunctionStrY),
-			concentrationFunctionStrings(rhs.concentrationFunctionStrings),
+			speciesSpecs(rhs.speciesSpecs),
 			diffusionConstant(rhs.diffusionConstant),
 			alternateFrontProvider(rhs.alternateFrontProvider) {
 		}
@@ -108,7 +133,7 @@ namespace moving_boundary {
 			advectVelocityFunctionStrY = rhs.advectVelocityFunctionStrY;
 			frontVelocityFunctionStrX = rhs.frontVelocityFunctionStrX;
 			frontVelocityFunctionStrY = rhs.frontVelocityFunctionStrY;
-			concentrationFunctionStrings = rhs.concentrationFunctionStrings;
+			speciesSpecs = rhs.speciesSpecs,
 			diffusionConstant = rhs.diffusionConstant;
 			alternateFrontProvider = rhs.alternateFrontProvider;
 			return *this;
