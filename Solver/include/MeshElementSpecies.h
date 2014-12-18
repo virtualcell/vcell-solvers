@@ -216,6 +216,7 @@ namespace moving_boundary {
 			amtMassTransient(),
 			concValue(),
 			sourceTermValues(concValue),
+			indexToTimeVariable(-1),
 			pPhysio(nullptr), //set after creation
 			interiorNeighbors( ),
 			neighbors(interiorNeighbors.data( )), //default to interior, update when id'd as boundary
@@ -249,12 +250,8 @@ namespace moving_boundary {
 		* allocate species storage
 		* #setPhysiology( ) must be calle first
 		*/
-		void allocateSpecies( ) {
-			const size_t i = mesh.numberSpecies( );
-			amtMass.resize(i);
-			amtMassTransient.resize(i);
-			concValue.resize( physiology( ).numberSymbols( ) );
-		}
+		void allocateSpecies(); 
+
 
 		/**
 		* set initial concentration 
@@ -518,7 +515,7 @@ namespace moving_boundary {
 		/**
 		* apply source terms at specified time (expressions may contain "x" and "y" ... the nodes know that already)
 		*/
-		void react(double time); 
+		void react(moving_boundary::TimeType time); 
 		/**
 		* perform diffusion and advection step, storing values in next generation
 		* @param daCache   
@@ -783,6 +780,7 @@ namespace moving_boundary {
 		*/
 		static_assert(std::is_same<moving_boundary::BioQuanType,double>::value, "update implementation");
 		std::vector<double> & sourceTermValues;
+		size_t indexToTimeVariable;
 
 
 		const static int NUM_INSIDE = 4;

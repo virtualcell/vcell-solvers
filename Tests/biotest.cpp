@@ -1,4 +1,5 @@
 #include <iostream>
+#include <functional>
 #include "gtest/gtest.h"
 #include <Physiology.h>
 #include <Species.h>
@@ -9,6 +10,32 @@ namespace {
 		std::cout << ns << " " << sp.name( ) << std::endl;
 	}
 }
+TEST(bio,vsum) {
+	std::array<double,3> a = {1, 2, 3};
+	std::array<double,3> b = {4, 5, 6};
+	std::transform(a.begin( ), a.end( ), b.begin( ), a.begin( ),std::plus<double>( ));
+	ASSERT_TRUE(a[0] == 5);
+	ASSERT_TRUE(a[1] == 7);
+	ASSERT_TRUE(a[2] == 9);
+}
+
+namespace {
+	struct SpecOp {
+		double operator( )(double a, double b) {
+			return a + b * 2;
+		}
+	};
+	
+}
+TEST(bio,specOp) {
+	std::array<double,3> a = {1, 2, 3};
+	std::array<double,3> b = {4, 5, 6};
+	std::transform(a.begin( ), a.end( ), b.begin( ), a.begin( ),SpecOp( ));
+	ASSERT_TRUE(a[0] == 9);
+	ASSERT_TRUE(a[1] == 12);
+	ASSERT_TRUE(a[2] == 15);
+}
+
 TEST(bio,physio) {
 	Physiology physio;
 	ASSERT_THROW(physio.numberSymbols( ),std::domain_error);
@@ -29,7 +56,4 @@ TEST(bio,physio) {
 		eval(species[i], values );
 	}
 	ASSERT_THROW(physio.createSpecies("alligator","3"), std::domain_error);
-
-
-
 }

@@ -41,7 +41,7 @@ namespace moving_boundary {
 
 			/**
 			* lookup name in symbol table
-			* @throws std::domain_error if not locked
+			* @throws std::domain_error if not locked or name invalid
 			*/
 			int symbolIndex(const std::string &name) const {
 				verifyLocked( );

@@ -242,7 +242,7 @@ namespace moving_boundary {
 			for (int i = 0; i < numSpecies; i++) {
 				const SpeciesSpecification & ss = mbs.speciesSpecs[i];
 				concentrationExpressions[i] = VCell::Expression(ss.initialConcentrationStr,symTable);
-				physiology.createSpecies(ss.sourceExpressionStr,ss.sourceExpressionStr);
+				physiology.createSpecies(ss.name,ss.sourceExpressionStr);
 			}
 			std::array<std::string,3> syms = {"x","y","t"};
 			physiology.buildSymbolTable(syms);

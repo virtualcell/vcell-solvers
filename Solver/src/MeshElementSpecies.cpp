@@ -130,6 +130,29 @@ namespace {
 		const moving_boundary::DistanceType edgeLengthTolerance; 
 		const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDef;
 	};
+
+		/**
+		* converts mass to concentration by dividing by specified volume 
+		*/
+		struct MassToConcentration {
+			/**
+			* @parm volume
+			* @throws std::domain_error if volume < = 0
+			*/
+			MassToConcentration( moving_boundary::VolumeType volume_)
+				:volume(volume_) {
+					if (volume <= 0) {
+						throw std::domain_error("MassToConcentration volume <= 0");
+					}
+				}
+
+			moving_boundary::BioQuanType operator( )(moving_boundary::BioQuanType mass) {
+				return mass / volume;
+			}
+
+			moving_boundary::VolumeType volume;
+		};
+
 #ifdef COUNT_INSERTS
 #define COUNT_INSERT ++iCounter
 
@@ -960,9 +983,13 @@ void MeshElementSpecies::endOfCycle( ) {
 	const bool inside = isInside( );
 	if (inside) {
 		if (vol > 0) {
+			std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
+
+			/*
 			for (int i = 0; i < numSpecies( ); i++) {
-				concValue[i] = amtMass[i] / vol;
+				assert(concValue[i] == amtMass[i] / vol);
 			}
+			*/
 		}
 		else {
 			std::fill(concValue.begin( ),concValue.begin( ) + physiology( ).numSpecies( ), 0); 
@@ -978,7 +1005,68 @@ void MeshElementSpecies::endOfCycle( ) {
 	}
 }
 
-void MeshElementSpecies::react(double) {
+void MeshElementSpecies::allocateSpecies( ) {
+	assert(concValue == sourceTermValues); //if this is no longer term, allocate sourceTermValues separately
+
+		const size_t i = mesh.numberSpecies( );
+		amtMass.resize(i);
+		amtMassTransient.resize(i);
+
+		auto  & physio = physiology( );
+		concValue.resize( physio.numberSymbols( ) );
+		indexToTimeVariable = physio.symbolIndex("t");
+		const size_t xIndex = physio.symbolIndex("x");
+		const size_t yIndex = physio.symbolIndex("y");
+
+		World<moving_boundary::CoordinateType,2> & world = World<moving_boundary::CoordinateType,2>::get( );
+		moving_boundary::CoordinateType x = get(spatial::cX);
+		moving_boundary::CoordinateType y = get(spatial::cY);
+		const double px = world.toProblemDomain(x,spatial::cX);
+		const double py = world.toProblemDomain(y,spatial::cY);
+		sourceTermValues[xIndex] = px;
+		sourceTermValues[yIndex] = py;
+}
+
+namespace {
+	struct Evaluator {
+		typedef std::vector <moving_boundary::BioQuanType> ValueVector; 
+		Evaluator (ValueVector & v)
+			:values(v) {}
+			
+		moving_boundary::BioQuanType operator( )(const moving_boundary::biology::Species &sp) {
+			moving_boundary::BioQuanType r = sp.evaluate(values);
+			return r;
+		}
+
+		ValueVector &values;
+	};
+
+		/**
+		* converts mass to concentration by dividing by specified volume 
+		*/
+	struct ConcToMassAndAdd {
+			typedef moving_boundary::BioQuanType BioQuan; 
+			/**
+			* @parm volume
+			* @throws std::domain_error if volume < = 0
+			*/
+			ConcToMassAndAdd( moving_boundary::VolumeType volume_)
+				:volume(volume_) {
+					if (volume <= 0) {
+						throw std::domain_error("ConcToMassAndAdd volume <= 0");
+					}
+				}
+
+			BioQuan operator( )(BioQuan mass, BioQuan sourceConcentration) {
+				BioQuan newMass = mass + sourceConcentration * volume; 
+				return newMass;
+			}
+
+			moving_boundary::VolumeType volume;
+		};
+}
+
+void MeshElementSpecies::react(moving_boundary::TimeType time) {
 	switch (state( )) {
 	case stable:
 		setState(stableSourceApplied);
@@ -989,6 +1077,28 @@ void MeshElementSpecies::react(double) {
 	default:
 		VCELL_EXCEPTION(domain_error,"Invalid react state " << ident( ));
 	}
+	moving_boundary::VolumeType vol = volumePD( );
+	if (vol == 0) {
+		std::cout << "Stop";
+	}
+
+	assert(concValue == sourceTermValues); //if this is no longer term, copy values from concValue ->sourceTermValues
+	
+	sourceTermValues[indexToTimeVariable] = time;
+	const std::vector<const biology::Species> & species = physiology( ).species( );
+	const size_t n = species.size( ); 
+	assert(n == numSpecies( ));
+	std::vector <moving_boundary::BioQuanType> sourceTermConcentrations(n);
+
+	//evaluate source terms
+	std::transform(species.begin( ), species.end( ),sourceTermConcentrations.begin( ), Evaluator(sourceTermValues) );
+
+	//convert concentrations to mass, add to existing mass
+	assert(sourceTermValues.size( ) >= amtMass.size( ));
+	std::transform(amtMass.begin( ), amtMass.end( ),sourceTermConcentrations.begin( ),amtMass.begin( ), ConcToMassAndAdd(vol) );
+
+	assert(concValue.size( ) >= amtMass.size( ));
+	std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
 }
 
 using moving_boundary::BioQuanType;

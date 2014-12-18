@@ -148,7 +148,7 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 
 		//get other terms 
 		std::string source = vcell_xml::convertChildElement<std::string>(*spE,"source");
-		std::string init = vcell_xml::convertChildElementWithDefault<std::string>(*spE,"source", source);
+		std::string init = vcell_xml::convertChildElementWithDefault<std::string>(*spE,"initial", source);
 		mbSetup.speciesSpecs.push_back(SpeciesSpecification(name,init,source));
 
 		spE = spE->NextSiblingElement("species");
