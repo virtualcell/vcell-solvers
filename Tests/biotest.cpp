@@ -1,5 +1,6 @@
 #include <iostream>
 #include <functional>
+#include <algorithm>
 #include "gtest/gtest.h"
 #include <Physiology.h>
 #include <Species.h>
@@ -43,7 +44,7 @@ TEST(bio,physio) {
 	physio.createSpecies("cat","2 * cat");
 	std::array<std::string,1> syms = {"t"};
 
-	physio.buildSymbolTable(syms);
+	physio.buildSymbolTable<1>(syms);
 	physio.lock( );
 
 	std::vector<double> values(physio.numberSymbols( ));
