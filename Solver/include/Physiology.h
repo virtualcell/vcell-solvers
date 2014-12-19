@@ -14,10 +14,13 @@ namespace moving_boundary {
 				locked(false)
 			{}
 
+			//************************************
+			// Species access
+			//************************************
 			/**
 			* @throws std::domain_error if not locked
 			*/
-			size_t numSpecies( )  const {
+			size_t numberSpecies( )  const {
 				verifyLocked( );
 				return species_.size( );
 			}
@@ -25,12 +28,22 @@ namespace moving_boundary {
 			/**
 			* @throws std::domain_error if not locked
 			*/
-			const std::vector<const Species> & species( ) const {
+			const Species & species(size_t index) const {
 				verifyLocked( );
-				return species_;
+				return species_[index];
+			}
+			typedef std::vector<Species>::const_iterator SpeciesIterator;
+
+			SpeciesIterator beginSpecies( ) const {
+				return species_.begin( );
+			}
+			SpeciesIterator endSpecies( ) const {
+				return species_.end( );
 			}
 
-
+			//************************************
+			// Symbol access
+			//************************************
 			/**
 			* @throws std::domain_error if not locked
 			*/
@@ -43,7 +56,7 @@ namespace moving_boundary {
 			* lookup name in symbol table
 			* @throws std::domain_error if not locked or name invalid
 			*/
-			int symbolIndex(const std::string &name) const {
+			size_t symbolIndex(const std::string &name) const {
 				verifyLocked( );
 				auto entry =  pSymTable->getEntry(name);
 				if (entry != nullptr) {
@@ -92,7 +105,7 @@ namespace moving_boundary {
 
 		private:
 			Physiology(const Physiology &); //not defined
-			std::vector<const Species> species_;
+			std::vector<Species> species_;
 			std::unique_ptr<SimpleSymbolTable> pSymTable;
 			bool locked;
 

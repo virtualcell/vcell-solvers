@@ -992,7 +992,7 @@ void MeshElementSpecies::endOfCycle( ) {
 			*/
 		}
 		else {
-			std::fill(concValue.begin( ),concValue.begin( ) + physiology( ).numSpecies( ), 0); 
+			std::fill(concValue.begin( ),concValue.begin( ) + physiology( ).numberSpecies( ), 0); 
 		}
 	}
 	if (vcell_util::Logger::get( ).enabled(vcell_util::Logger::info) ) { 
@@ -1085,13 +1085,14 @@ void MeshElementSpecies::react(moving_boundary::TimeType time) {
 	assert(concValue == sourceTermValues); //if this is no longer term, copy values from concValue ->sourceTermValues
 	
 	sourceTermValues[indexToTimeVariable] = time;
-	const std::vector<const biology::Species> & species = physiology( ).species( );
-	const size_t n = species.size( ); 
+	const biology::Physiology & physio = physiology( );
+	//const std::vector<const biology::Species> & species = physiology( ).species( );
+	const size_t n = physio.numberSpecies( );
 	assert(n == numSpecies( ));
 	std::vector <moving_boundary::BioQuanType> sourceTermConcentrations(n);
 
 	//evaluate source terms
-	std::transform(species.begin( ), species.end( ),sourceTermConcentrations.begin( ), Evaluator(sourceTermValues) );
+	std::transform(physio.beginSpecies( ), physio.endSpecies( ),sourceTermConcentrations.begin( ), Evaluator(sourceTermValues) );
 
 	//convert concentrations to mass, add to existing mass
 	assert(sourceTermValues.size( ) >= amtMass.size( ));

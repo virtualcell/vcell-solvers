@@ -367,7 +367,7 @@ namespace moving_boundary {
 		void setInitialValues( ) {
 			using std::vector;
 			assert(concentrationExpressions.size( ) == numSpecies);
-			assert(physiology.numSpecies( ) == numSpecies);
+			assert(physiology.numberSpecies( ) == numSpecies);
 			vector<ConcentrationProvider> concExp;
 			for (vector<VCell::Expression>::iterator iter = concentrationExpressions.begin( ); iter != concentrationExpressions.end( ); ++iter) {
 				concExp.push_back(ConcentrationProvider(*iter));

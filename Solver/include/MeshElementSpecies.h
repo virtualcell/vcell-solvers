@@ -312,7 +312,7 @@ namespace moving_boundary {
 		}
 
 		void setPhysiology(const biology::Physiology &p) {
-			if (p.numSpecies( )!= numSpecies( )) {
+			if (p.numberSpecies( )!= numSpecies( )) {
 				throw std::domain_error("wrong number species");
 			}
 			pPhysio = &p;

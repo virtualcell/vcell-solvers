@@ -51,9 +51,12 @@ TEST(bio,physio) {
 	size_t cidx = physio.symbolIndex("cat");
 	values[idx] = 2;
 	values[cidx] = 10; 
-	auto species = physio.species( );
-	for (int i = 0; i < physio.numSpecies( ) ; ++i) {
-		eval(species[i], values );
+	for (int i = 0; i < physio.numberSpecies( ) ; ++i) {
+		eval(physio.species(i), values );
+	}
+	for (auto iter = physio.beginSpecies( ); iter != physio.endSpecies( ); ++iter) {
+		std::cout << iter->name( ) << std::endl;
+		//iter->setTable(syms); correctly fails to compile
 	}
 	ASSERT_THROW(physio.createSpecies("alligator","3"), std::domain_error);
 }
