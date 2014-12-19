@@ -245,7 +245,7 @@ namespace moving_boundary {
 				physiology.createSpecies(ss.name,ss.sourceExpressionStr);
 			}
 			std::array<std::string,3> syms = {"x","y","t"};
-			physiology.buildSymbolTable(syms);
+			physiology.buildSymbolTable<3>(syms);
 			physiology.lock( );
 			
 			setInitialValues( );
