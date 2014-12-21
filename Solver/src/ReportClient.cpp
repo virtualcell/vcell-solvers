@@ -554,7 +554,7 @@ namespace {
 				writeBoundary(genTimes.size( ),geometryInfo.boundary);
 				currentTime = t;
 				//totalStuff = 0;
-				std::cout << "generation " << std::setw(2) <<  generationCounter << " time " << currentTime << std::endl;
+				std::cout << "generation " << std::setw(2) <<  generationCounter << " time " << currentTime << " end " << std::endl;
 				VCELL_KEY_LOG(trace,Key::generationTime,"generation " << std::setw(2) <<  generationCounter << " time " << currentTime);
 				genTimes.push_back(t);
 				lastReportGeneration = generationCounter;
