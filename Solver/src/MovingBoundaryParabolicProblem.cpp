@@ -790,7 +790,7 @@ namespace moving_boundary {
 			CollectMass (Outer &o)
 				:FunctorBase(o) {}
 			void operator( )(Element *p) {
-				VCELL_LOG(trace,p->indexInfo( ) << " collectMass")
+				VCELL_LOG(trace,p->ident( ) << " collectMass")
 					p->collectMass(this->outer.currentFront);
 			}
 		};
@@ -802,9 +802,9 @@ namespace moving_boundary {
 		struct ApplyFront : public FunctorBase {
 			ApplyFront(Outer &o)
 				:FunctorBase(o) {}
-			void operator( )(Element &e) {
-				VCELL_LOG(trace,e.indexInfo( ) << " applyFront")
-					e.applyFront(this->outer.currentFront, this->outer.interiorVolume);
+			void operator( )(Element *p) {
+				VCELL_LOG(trace,p->ident( ) << " applyFront")
+					p->applyFront(this->outer.currentFront, this->outer.interiorVolume);
 			}
 		};
 
@@ -1031,7 +1031,7 @@ namespace moving_boundary {
 
 					std::for_each(boundaryElements.begin( ),boundaryElements.end( ),CollectMass(*this));
 
-					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),ApplyFront(*this));
+					std::for_each(boundaryElements.begin( ),boundaryElements.end( ),ApplyFront(*this));
 
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),DistributeLost());
 

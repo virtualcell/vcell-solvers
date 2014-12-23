@@ -451,6 +451,9 @@ void MeshElementSpecies::applyFrontLegacyVoronoiSet( const FrontType & front) {
 void MeshElementSpecies::applyFront( const FrontType & front, moving_boundary::CoordinateProductType interiorVolume) {
 	switch (state( )) {
 	case bndDiffAdvDone:
+			std::copy(amtMassTransient.begin ( ), amtMassTransient.end( ), amtMass.begin( ));
+			//fall through 
+	case bndDiffAdvDoneMU:
 	case transInBnd:
 	case transOutBndMassCollected:
 
@@ -461,6 +464,7 @@ void MeshElementSpecies::applyFront( const FrontType & front, moving_boundary::C
 	case outStable:
 	case outStableDeep:
 	case inDiffAdvDone: 
+	case inDiffAdvDoneMU: 
 	case inStableDeepDiffAdvDone: 
 	case transBndOut:
 		break;
@@ -809,6 +813,7 @@ const moving_boundary::Volume2DClass & MeshElementSpecies::getControlVolume( ) c
 		break;
 	case outStable:
 	case outStableDeep:
+	case transOutBndNbrSet: 
 		break;
 		/*
 		case transBndOut: 
@@ -949,11 +954,11 @@ void MeshElementSpecies::collectMassFromNeighbors(const FrontType & front) {
 			//this allows us to use original as basis for pre-collection concentration 
 		case inDiffAdvDone:
 			std::copy(nb.amtMassTransient.begin ( ), nb.amtMassTransient.end( ), nb.amtMass.begin( ));
-			setState(inDiffAdvDoneMU);
+			nb.setState(inDiffAdvDoneMU);
 			break;
 		case bndDiffAdvDone:
 			std::copy(nb.amtMassTransient.begin ( ), nb.amtMassTransient.end( ), nb.amtMass.begin( ));
-			setState(bndDiffAdvDoneMU);
+			nb.setState(bndDiffAdvDoneMU);
 			break;
 		}
 
@@ -1009,8 +1014,8 @@ void MeshElementSpecies::collectMassFromNeighbors(const FrontType & front) {
 				}
 			}
 		}
-		else {
-//			VCELL_EXCEPTION (logic_error, "Not collecting from " << nb.ident( )); //REVISIT
+		else if (nbState != transOutBndNbrSet && nbState != transOutBndMassCollected) {
+			VCELL_EXCEPTION (logic_error, ident( ) << " not collecting from " << nb.ident( )); //REVISIT
 
 			VCELL_KEY_LOG(debug,Key::notCollecting,"Not collecting from " << nb.ident( ));
 		}
@@ -1035,13 +1040,14 @@ void MeshElementSpecies::endOfCycle( ) {
 						break;
 					}
 				}
+			}
 				if (deep) {
 					setState(outStableDeep);
 				}
 				else {
 					setState(outStable);
 				}
-			}
+			vol.clear( );
 		}
 
 		break;
@@ -1049,6 +1055,8 @@ void MeshElementSpecies::endOfCycle( ) {
 	case inStableDeepDiffAdvDone:
 		VCELL_LOG(verbose,this->ident( ) << " eoc prior copy " << amtMassTransient[0] << " mass " << amtMass[0]);
 		std::copy(amtMassTransient.begin( ), amtMassTransient.end( ), amtMass.begin( )); //REVISIT -- do we need to do this??
+		//fall through
+	case inDiffAdvDoneMU:
 		/* REVIEW -- check for negative
 		for (int s = 0; s < numSpecies( ); s++) {
 		if (amtMassTransient[s] < 0) {
@@ -1076,7 +1084,6 @@ void MeshElementSpecies::endOfCycle( ) {
 		}
 		break;
 	case bndFrontApplied:
-		std::copy(amtMassTransient.begin( ), amtMassTransient.end( ), amtMass.begin( )); //REVISIT -- do we need to do this??
 		setState(bndStable);
 		break;
 	case transOutBndMassCollected:

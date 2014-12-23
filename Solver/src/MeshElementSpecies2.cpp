@@ -132,6 +132,7 @@ bool MeshElementSpecies::isDeep( ) const  {
 	case outStableDeep:
 	case inStableDeep:
 		return true;
+	default:
 		badState("isDeep");
 	}
 	return false; 
