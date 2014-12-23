@@ -115,11 +115,11 @@ namespace {
 				if (!cv.reversed && cv.value != 0) {
 					const MesPair & ePair = iter->first;
 #ifdef PENDING_DISCUSSION
-					VCELL_EXCEPTION(logic_error,ePair.first->indexInfo( ) 
-						<< " to " << ePair.second->indexInfo( ) << " not reversed" << std::endl);
+					VCELL_EXCEPTION(logic_error,ePair.first->ident( ) 
+						<< " to " << ePair.second->ident( ) << " not reversed" << std::endl);
 #else
-					VCELL_LOG(warn, ePair.first->indexInfo( ) 
-						<< " to " << ePair.second->indexInfo( ) << " with mass " << cv.value
+					VCELL_LOG(warn, ePair.first->ident( ) 
+						<< " to " << ePair.second->ident( ) << " with mass " << cv.value
 						<< " not reversed" << std::endl);
 #endif
 				}
@@ -131,27 +131,27 @@ namespace {
 		const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDef;
 	};
 
+	/**
+	* converts mass to concentration by dividing by specified volume 
+	*/
+	struct MassToConcentration {
 		/**
-		* converts mass to concentration by dividing by specified volume 
+		* @parm volume
+		* @throws std::domain_error if volume < = 0
 		*/
-		struct MassToConcentration {
-			/**
-			* @parm volume
-			* @throws std::domain_error if volume < = 0
-			*/
-			MassToConcentration( moving_boundary::VolumeType volume_)
-				:volume(volume_) {
-					if (volume <= 0) {
-						throw std::domain_error("MassToConcentration volume <= 0");
-					}
+		MassToConcentration( moving_boundary::VolumeType volume_)
+			:volume(volume_) {
+				if (volume <= 0) {
+					throw std::domain_error("MassToConcentration volume <= 0");
 				}
+		}
 
-			moving_boundary::BioQuanType operator( )(moving_boundary::BioQuanType mass) {
-				return mass / volume;
-			}
+		moving_boundary::BioQuanType operator( )(moving_boundary::BioQuanType mass) {
+			return mass / volume;
+		}
 
-			moving_boundary::VolumeType volume;
-		};
+		moving_boundary::VolumeType volume;
+	};
 
 #ifdef COUNT_INSERTS
 #define COUNT_INSERT ++iCounter
@@ -185,7 +185,7 @@ void MeshElementSpecies::logCreation( ) const {
 	double py = world.toProblemDomain(y,spatial::cY);
 
 	std::ostringstream oss;
-	oss << "creation " << this->indexInfo( ) << " (" << this->get(spatial::cX) << ',' << this->get(spatial::cY) << "), ("
+	oss << "creation " << this->ident( ) << " (" << this->get(spatial::cX) << ',' << this->get(spatial::cY) << "), ("
 		<< px << ',' << py << ')';
 	logger.report(oss.str( ).c_str());
 }
@@ -198,108 +198,162 @@ bool MeshElementSpecies::debugSetState( ) {
 	return true;
 }
 void MeshElementSpecies::setPos(SurfacePosition m)  {
-	if (m == this->mPos( ) || (m == spatial::interiorSurface && this->mPos( ) == spatial::deepInteriorSurface) ){
+	if (m == mPos( )) {
 		return;
 	}
-	VCELL_LOG(trace,this->indexInfo( ) << " position " << m << " from " << this->mPos( ));
-	VCELL_KEY_LOG(verbose,Key::setPos,this->indexInfo( ) << " position " << m << " from " << this->mPos( ));
+	VCELL_LOG(trace,this->ident( ) << " (t) position " << m << " from " << state( ));
+	VCELL_KEY_LOG(verbose,Key::setPos,this->ident( ) << " (v) position " << m << " from " << state( ));
 	switch (state( )) {
-	case initial:
-		if (this->mPos( ) != unsetPosition) {
-			throw std::domain_error("initial not unset");
+		//case initial:
+	case inStable:
+	case inDiffAdvDone:
+		//case inStableDeep:
+		//case inStableDeepDiffAdvDone:
+		if (m == boundarySurface) {
+			neighbors = boundaryNeighbors.data( ); 
+			setState(transInBnd);
+			return;
 		}
-		setState(stable);
-		break;
-	case stableUpdated:
-		switch (m) {
-		case deepInteriorSurface: 
-		case interiorSurface:
-		case outsideSurface:
-		case deepOutsideSurface:
-			throw SkipsBoundary(*this,m);
-			break;
-		case boundarySurface:
-			setState(awaitingNb);
-			break;
-		default:
-			assert(0);
-		}
-		break;
-	case stable:
-		switch (m) {
-		case boundarySurface:
-			throw std::domain_error("s");
-		case interiorSurface:
-			setState(transient);
-			break;
-		case deepInteriorSurface: 
-			throw std::domain_error("stable -> deep interior");
-		case outsideSurface:
-		case deepOutsideSurface:
-			throw std::domain_error("stable -> ext");
-		}
-		break;
-		/*
-		case legacyInteriorSet:
-		//this occurs during reclassification B->I->B
-		if (m  != boundarySurface) {
-		throw std::domain_error("lis not boundary");
-		}
-		setState(legacyUpdated); //set back to what it was
-		break;
-		*/
-	case legacyUpdated: 
-		switch (m) {
-		case interiorSurface:
-			setState(stableUpdated); 
-			neighbors = interiorNeighbors.data( );
+
+		//case bndFrontMoved:
+		//case bndNbrEdgesFound:
+	case bndDiffAdvDone:
+		if (m == interiorSurface) {
+			neighbors = interiorNeighbors.data( ); 
 			vol.clear( );
 			getControlVolume( );
-			break;
-		case outsideSurface:
-			//not deepOutside -- too far
-			setState(lost);
-			break;
-		default:
-			assert(0);
+			setState(inDiffAdvDone);
+			return;
 		}
-		break;
-	case transient:
-		switch (m) {
-		case interiorSurface:
-			setState(stableUpdated);
-			break;
-		case deepInteriorSurface: 
-		case outsideSurface:
-			VCELL_EXCEPTION(domain_error,this->indexInfo( ) << " position " << m << " from " << this->mPos( ));
-			break;
-		case boundarySurface:
-			setState(gainedAwaitingNb);
-			break;
-		default:
-			assert(0);
+		else {
+			assert(m == outsideSurface);
+			setState(transBndOut);
+			return;
 		}
-		break;
-
-	default:
-		VCELL_EXCEPTION(domain_error,this->indexInfo( ) << " state " << state( ) 
-			<< " currently " << this->mPos( ) << " being set to " << m);
-	}
-	base::setPos(m);
-	switch (this->mPos( )) {
-	case deepInteriorSurface:
-	case interiorSurface:
-		neighbors = interiorNeighbors.data( );
-		break;
-	case outsideSurface:
-	case deepOutsideSurface:
-		break; //keep neighbors pointer intact for #distributeLost
-	case boundarySurface:
-		//NOTE: neighbors will need to be reset if boundaryNeighbors vector resizes
+		//case bndFrontApplied:
+		//case bndFrontAppliedMU:
+		//case bndStable:
+	case outStable:
+		if (m == interiorSurface) {
+			setState(transOutBndSetIn);
+			return;
+		}
+		//case outStableDeep:
+		//case transBndOut: 
+		//case transInBnd:
+		//case transOutBndSetBnd:
+		//case transOutBndNbrSet:
+		//case transOutBndMassCollected: 
+	case transOutBndSetIn:
+		if (m != boundarySurface)  {
+			badState("setPos");
+		}
 		neighbors = boundaryNeighbors.data( ); 
-		break;
+		setState(transOutBndSetBnd);
+		return;
 	}
+	VCELL_EXCEPTION(domain_error,this->ident( ) << " position " << m << " from " << state( ));
 }
+//	if (m == this->mPos( ) || (m == spatial::interiorSurface && this->mPos( ) == spatial::deepInteriorSurface) ){
+//		return;
+//	}
+//	switch (state( )) {
+//	case initial:
+//		if (this->mPos( ) != unsetPosition) {
+//			throw std::domain_error("initial not unset");
+//		}
+//		setState(stable);
+//		break;
+//	case stableUpdated:
+//		switch (m) {
+//		case deepInteriorSurface: 
+//		case interiorSurface:
+//		case outsideSurface:
+//		case deepOutsideSurface:
+//			throw SkipsBoundary(*this,m);
+//			break;
+//		case boundarySurface:
+//			setState(transInBnd);
+//			break;
+//		default:
+//			assert(0);
+//		}
+//		break;
+//	case stable:
+//		switch (m) {
+//		case boundarySurface:
+//			throw std::domain_error("s");
+//		case interiorSurface:
+//			setState(transOutBndSetIn);
+//			break;
+//		case deepInteriorSurface: 
+//			throw std::domain_error("stable -> deep interior");
+//		case outsideSurface:
+//		case deepOutsideSurface:
+//			throw std::domain_error("stable -> ext");
+//		}
+//		break;
+//		/*
+//		case legacyInteriorSet:
+//		//this occurs during reclassification B->I->B
+//		if (m  != boundarySurface) {
+//		throw std::domain_error("lis not boundary");
+//		}
+//		setState(bndDiffAdvDone); //set back to what it was
+//		break;
+//		*/
+//	case bndDiffAdvDone: 
+//		switch (m) {
+//		case interiorSurface:
+//			setState(stableUpdated); 
+//			neighbors = interiorNeighbors.data( );
+//			vol.clear( );
+//			getControlVolume( );
+//			break;
+//		case outsideSurface:
+//			//not deepOutside -- too far
+//			setState(transBndOut);
+//			break;
+//		default:
+//			assert(0);
+//		}
+//		break;
+//	case transOutBndSetIn:
+//		switch (m) {
+//		case interiorSurface:
+//			setState(stableUpdated);
+//			break;
+//		case deepInteriorSurface: 
+//		case outsideSurface:
+//			VCELL_EXCEPTION(domain_error,this->ident( ) << " position " << m << " from " << this->mPos( ));
+//			break;
+//		case boundarySurface:
+//			setState(transOutBndSetBnd);
+//			break;
+//		default:
+//			assert(0);
+//		}
+//		break;
+//
+//	default:
+//		VCELL_EXCEPTION(domain_error,this->ident( ) << " state " << state( ) 
+//			<< " currently " << this->mPos( ) << " being set to " << m);
+//	}
+//	base::setPos(m);
+//	switch (this->mPos( )) {
+//	case deepInteriorSurface:
+//	case interiorSurface:
+//		neighbors = interiorNeighbors.data( );
+//		break;
+//	case outsideSurface:
+//	case deepOutsideSurface:
+//		break; //keep neighbors pointer intact for #distributeLost
+//	case boundarySurface:
+//		//NOTE: neighbors will need to be reset if boundaryNeighbors vector resizes
+//		neighbors = boundaryNeighbors.data( ); 
+//		break;
+//	}
+//}
 
 struct MeshElementSpecies::SetupBoundaryNeighbor : public std::unary_function<OurType *,NeighborType> {
 	OurType &clientElement;
@@ -327,7 +381,7 @@ struct MeshElementSpecies::SetupBoundaryNeighbor : public std::unary_function<Ou
 };
 
 void MeshElementSpecies::processBoundaryNeighbors(const VoronoiMesh & vm, std::vector<OurType *>  & bn) {
-	VCELL_LOG(trace,this->indexInfo( ) << " processBoundaryNeighors " << state( ) << ' ' << this->mPos( ));
+	VCELL_LOG(trace,this->ident( ) << " processBoundaryNeighors "); 
 	//getting vornoi volume and setting up boundary neighbors in same function due to legacy reasons ...
 	{ //clarity scope, building voronoiVolume
 		using spatial::VoronoiResult; 
@@ -373,31 +427,55 @@ void MeshElementSpecies::processBoundaryNeighbors(const VoronoiMesh & vm, std::v
 
 void MeshElementSpecies::moveFront(const FrontType & front) {
 	using namespace MeshElementStateful;
-	if (this->isInside( )) {
-		if (state( ) != stable) {
-			throw std::domain_error("moveFront not stable");
-		}
-		//const moving_boundary::CoordinateProductType oldVolume = vol.volume( );
+	switch (state( )) {
+	case bndStable:
 		formBoundaryPolygon(front);
-		setState(legacyVolume);
+		setState(bndFrontMoved);
+		return;
+	case inStable:
+		return;
+	}
+	badState("moveFront");
+}
+
+
+void MeshElementSpecies::applyFrontLegacyVoronoiSet( const FrontType & front) {
+	assert(0);
+/*
+	assert(!voronoiVolume.empty( ));
+	assert(state( ) == bndFrontApplied || state( ) == bndFrontAppliedMU); 
+	formBoundaryPolygon(front);
+	setState(stableUpdated);
+*/
+}
+void MeshElementSpecies::applyFront( const FrontType & front, moving_boundary::CoordinateProductType interiorVolume) {
+	switch (state( )) {
+	case bndDiffAdvDone:
+	case transInBnd:
+	case transOutBndMassCollected:
+
+	//case bndNbrUpdated:
+		formBoundaryPolygon(front);
+		setState(bndFrontApplied);
+		break;
+	case outStable:
+	case outStableDeep:
+	case inDiffAdvDone: 
+	case inStableDeepDiffAdvDone: 
+	case transBndOut:
+		break;
+	default:
+		badState("applyFront"); //REVISIT
 	}
 }
 
-
-//this should be combined with moveFront, above
-void MeshElementSpecies::applyFrontLegacyVoronoiSet( const FrontType & front) {
-	assert(!voronoiVolume.empty( ));
-	assert(state( ) == legacyVoronoiSet || state( ) == legacyVoronoiSetCollected); 
-	formBoundaryPolygon(front);
-	setState(stableUpdated);
-}
-
 void MeshElementSpecies::formBoundaryPolygon( const FrontType & front) {
+	assert(isBoundary( ));
 	using spatial::Edge;
 
 	assert(!voronoiVolume.empty( ));
 	//VoronoiResult &vResult = *pVoronoiResult;
-	VCELL_LOG(debug,this->indexInfo( ) << " formBoundaryPolygon old volume " << vol.volume( ));
+	VCELL_LOG(debug,this->ident( ) << " formBoundaryPolygon old volume " << vol.volume( ));
 	vol = voronoiVolume.intersection(front); 
 	if (state( ) == initial) {
 		return;
@@ -413,7 +491,7 @@ void MeshElementSpecies::formBoundaryPolygon( const FrontType & front) {
 		}
 		throw std::logic_error("empty boundary front");
 	}
-	VCELL_LOG(debug,this->indexInfo( ) << " new volume " << vol.volume( )) ;
+	VCELL_LOG(debug,this->ident( ) << " new volume " << vol.volume( )) ;
 }
 #ifdef OLD_STUFF
 if (MatLabDebug::on("edgefind")) { 
@@ -429,15 +507,18 @@ matlabBridge::Polygon pedge("-+r",2);
 #endif
 
 void MeshElementSpecies::findNeighborEdges() {
-	if(mPos( ) != spatial::boundarySurface) {
-		std::cout << "who";
-	}
-	VCELL_LOG(verbose,ident( ) << " findNeighborEdges");
-	if (state( ) == legacyVolume) {
+	switch (state( )) {
+	case bndFrontMoved:
+		VCELL_LOG(verbose,ident( ) << " findNeighborEdges");
+		setState(bndNbrEdgesFound);
 		if (vol.empty( )) {
 			getControlVolume( );
 		}
-		setState(legacyVolumeNeighborSet);
+		break;
+	case initialBoundary:
+		break;
+	default:
+		badState("findNeighborEdges");
 	}
 
 	typedef TPoint<moving_boundary::CoordinateType,2> MeshPointType;
@@ -445,7 +526,7 @@ void MeshElementSpecies::findNeighborEdges() {
 	for (size_t i = 0; i < boundaryNeighbors.size( ); i++) {
 		DistanceType edgeLength = 0;
 		OurType & nb = *boundaryNeighbors[i].element;
-		if (nb.state( ) == legacyVolume) {
+		if (nb.state( ) == bndFrontMoved) {
 			if (nb.vol.empty( )) {
 				nb.getControlVolume();
 			}
@@ -507,7 +588,7 @@ void MeshElementSpecies::findNeighborEdges() {
 				if (smallRelativeDifference<SquaredType>(tDistSquare - nbTDistSquare, meshMin,tolerancePerpendicularSegmentDistanceSquared)) {
 					const double mag = edge.edgeVector( ).magnitude( );
 					const moving_boundary::DistanceType length = static_cast<moving_boundary::DistanceType>(mag);
-					VCELL_KEY_LOG(debug,"MeshElementSpecies.formBoundaryPolygon",this->indexInfo( ) << " between " << nb.indexInfo( ) << " vector " << edge.edgeVector( ) << " length " 
+					VCELL_KEY_LOG(debug,"MeshElementSpecies.formBoundaryPolygon",this->ident( ) << " between " << nb.ident( ) << " vector " << edge.edgeVector( ) << " length " 
 						<< std::setprecision(12) << length << " <" <<  std::setprecision(12) << edge.origin( ) << " : " 
 						<< std::setprecision(12) << tail << " >");
 					boundaryNeighbors[i].edgeLength = std::max(boundaryNeighbors[i].edgeLength,length);
@@ -550,27 +631,23 @@ void MeshElementSpecies::updateBoundaryNeighbors(const VoronoiMesh & vm, std::ve
 		throw std::logic_error("implement isolated point");
 	}
 
-	if (this->mPos( ) != boundarySurface) {
-		throw std::domain_error("updateBoundaryNeighbors");
-	}
 	bool processNeighbors = false;
 	switch (state( )) {
-	case initial:
-		processNeighbors = false;
+		case initialBoundary:
+		case bndDiffAdvDone:
+	case transInBnd:
+		processNeighbors = true;
+		//setState(bndStable);
 		break;
-	case awaitingNb:
-		setState(legacyVoronoiSet);
 		processNeighbors = true;
 		break;
-	case gainedAwaitingNb:
-		setState(gainedEmpty);
+	case transOutBndSetBnd:
+		setState(transOutBndNbrSet);
 		processNeighbors = true;
 		break;
-	case legacyUpdated:
-		setState(legacyVoronoiSet);
 		break;
 	default:
-		throw std::logic_error("invalid state updateBoundaryNeighbors");
+		badState("invalid state updateBoundaryNeighbors");
 	}
 	if (!processNeighbors) {
 		bool changed =  boundaryNeighbors.size( )  != bn.size( ) ;
@@ -707,26 +784,66 @@ const moving_boundary::Volume2DClass & MeshElementSpecies::getControlVolume( ) c
 	}
 	OurType & us = const_cast<OurType &>(*this);
 	typedef TPoint<moving_boundary::CoordinateType, 2> MeshPointType;
+	switch (state( )) {
+		//case initial:
+	case initialInside:
+	case inStable:
+	case inDiffAdvDone:
+	case inDiffAdvDoneMU:
+	case inStableDeep:
+	case inStableDeepDiffAdvDone:
+		us.vol =  us.createInsidePolygon( );
+		break;
+	case bndFrontMoved:
+	case bndNbrEdgesFound:
+	case bndDiffAdvDone:
+	case bndDiffAdvDoneMU:
+	case bndFrontApplied:
+	case bndStable:
+		if (isBoundaryElementWithInsideNeighbors( )) {
+			us.vol = us.createInsidePolygon( );
+		}
+		else {
+			VCELL_EXCEPTION(logic_error,this->ident( ) << "has no polygon")   ;
+		}
+		break;
+	case outStable:
+	case outStableDeep:
+		break;
+		/*
+		case transBndOut: 
+		case transInBnd:
+		case transOutBndSetBnd:
+		case transOutBndNbrSet:
+		case transOutBndMassCollected: 
+		case transOutBndSetIn:
+		*/
+	default:
+		badState("getControlVolume");
+		break;
+	}
+
+	/*
 	switch (this->mp) {
 	case deepInteriorSurface: 
 	case interiorSurface:
-		us.vol =  us.createInsidePolygon( );
-		break;
+	us.vol =  us.createInsidePolygon( );
+	break;
 	case boundarySurface:
-		if (isBoundaryElementWithInsideNeighbors( )) {
-			us.vol = us.createInsidePolygon(
-				);
-		}
-		else {
-			VCELL_EXCEPTION(logic_error,this->indexInfo( ) << " " << state( ) << " " << this->mPos( ) << "has no polygon")   ;
-		}
-		break;
+	if (isBoundaryElementWithInsideNeighbors( )) {
+	us.vol = us.createInsidePolygon( );
+	}
+	else {
+	VCELL_EXCEPTION(logic_error,this->ident( ) << " " << state( ) << "has no polygon")   ;
+	}
+	break;
 	case outsideSurface: 
 	case deepOutsideSurface: 
-		break;
+	break;
 	default:
-		throw std::logic_error("unknown case");
+	throw std::logic_error("unknown case");
 	}
+	*/
 	return vol;
 }
 
@@ -749,11 +866,11 @@ inline moving_boundary::CoordinateProductType MeshElementSpecies::voronoiOverlap
 }
 
 void MeshElementSpecies::distributeMassToNeighbors() {
-	if (state( ) != lost) {
+	if (state( ) != transBndOut) {
 		return;
 	}
 	const Volume2DClass & ourVolume = getControlVolume();
-	VCELL_LOG(debug,this->indexInfo( ) << " dMtoN mass " << amtMassTransient[0] << " vol " << volumePD( ));
+	VCELL_LOG(debug,this->ident( ) << " dMtoN mass " << amtMassTransient[0] << " vol " << volumePD( ));
 
 	const size_t nN = numNeighbors( );
 	const moving_boundary::CoordinateProductType volumeValue = volumePD( );
@@ -763,7 +880,7 @@ void MeshElementSpecies::distributeMassToNeighbors() {
 	for (int i = 0; i < nN; i++) {
 		assert(neighbors[i].element != nullptr);
 		OurType & nb = *neighbors[i].element;
-		if (nb.state( ) == stableUpdated) {
+		if (nb.state( ) == bndFrontApplied) { 
 			debugAid++;
 			Volume2DClass intersection = ourVolume.intersection(nb.getControlVolume());
 			moving_boundary::CoordinateProductType iVol = intersection.volume( ) / distanceScaledSquared;
@@ -773,19 +890,26 @@ void MeshElementSpecies::distributeMassToNeighbors() {
 				moving_boundary::CoordinateProductType nbVol = nb.volumePD( );
 				for (size_t s = 0; s < numSpecies( ); s++) {
 					moving_boundary::BioQuanType m = iVol * amtMassTransient[s] / volumeValue; 
-					VCELL_COND_LOG(debug, s == 0 , " " << this->indexInfo( ) << " giving " <<nb.indexInfo( ) << " mass " << m 
+					VCELL_COND_LOG(debug, s == 0 , " " << this->ident( ) << " giving " <<nb.ident( ) << " mass " << m 
 						<< " has vol " << nbVol << " existing mass " << nb.amtMassTransient[0] );
 					nb.amtMassTransient[s] += m; 
 					massSentinel -= m;
-					VCELL_COND_LOG(debug, s == 0 , "  " << nb.indexInfo( ) << " new mass " << nb.amtMassTransient[0] );
+					VCELL_COND_LOG(debug, s == 0 , "  " << nb.ident( ) << " new mass " << nb.amtMassTransient[0] );
 				}
 			}
 		}
+		/*
+		else {
+			if (nb.state( ) != transBndOut) {
+				std::cout << "dMtoN " << nb.state( ) << std::endl;
+			}
+		}
+		*/
 	}
 	// mass is gone
 	if (massSentinel > 0.001) {
 		std::ofstream script("massLost.m");
-		script << matlabBridge::FigureName("lost mass");
+		script << matlabBridge::FigureName("transBndOut mass");
 		writeMatlab(script);
 		for (int i = 0; i < nN; i++) {
 			script << matlabBridge::pause << matlabBridge::clearFigure;
@@ -795,56 +919,61 @@ void MeshElementSpecies::distributeMassToNeighbors() {
 	for (size_t s = 0; s < numSpecies( ); s++) {
 		amtMass[s] = 0;
 	}
-	setState(stable);
+	setState(outStable);
 
 	if (!distributed) {
-		VCELL_EXCEPTION(logic_error, this->indexInfo( ) << " with " << nN << " neighbors has none to distribute to") ;
+		VCELL_EXCEPTION(logic_error, this->ident( ) << " with " << nN << " neighbors has none to distribute to") ;
 	}
 }
 
 void MeshElementSpecies::collectMassFromNeighbors(const FrontType & front) {
-	if (state( ) != gainedEmpty) {
-		throw std::domain_error("collectMassFromNeighbors");
+	if (state( ) != transOutBndNbrSet) {
+		badState("collectMassFromNeighbors");
 	}
 	allocateSpecies( );
 	if (amtMass[0] != 0) {
 		VCELL_EXCEPTION(domain_error,"non zero new mass");
 	}
-	VCELL_LOG(debug,this->indexInfo( ) << "collecting Mass");
+	VCELL_LOG(debug,this->ident( ) << "collecting Mass");
 	formBoundaryPolygon(front);
 	const Volume2DClass & ourVolume = getControlVolume();
-	VCELL_LOG(debug,this->indexInfo( ) << " collecting with volume " << ourVolume.volume( ) / distanceScaledSquared);
+	VCELL_LOG(debug,this->ident( ) << " collecting with volume " << ourVolume.volume( ) / distanceScaledSquared);
 	const size_t nN = numNeighbors( );
 	moving_boundary::CoordinateProductType totalVolume = 0;
 	for (int i = 0; i < nN; i++) {
 		assert(neighbors[i].element != nullptr);
 		OurType & nb = *neighbors[i].element;
-		VCELL_COND_LOG(debug, nb.state( ) == legacyVoronoiSetCollected, nb.indexInfo ( ) << " collected again ") ;
-		//if (nb.state( ) == legacyVoronoiSet || nb.state( ) == legacyInteriorSet ) {
-		if (nb.state( ) == legacyVoronoiSet) { 
-			//here we copy the transient mass to the base -- at this point in the cycle we don't need the original any more
+		//if (nb.state( ) == bndFrontApplied || nb.state( ) == legacyInteriorSet ) {
+		switch (nb.state( )) {
+			//here we copy the transOutBndSetIn mass to the base -- at this point in the cycle we don't need the original any more
 			//this allows us to use original as basis for pre-collection concentration 
+		case inDiffAdvDone:
 			std::copy(nb.amtMassTransient.begin ( ), nb.amtMassTransient.end( ), nb.amtMass.begin( ));
-			nb.setCollected( );
+			setState(inDiffAdvDoneMU);
+			break;
+		case bndDiffAdvDone:
+			std::copy(nb.amtMassTransient.begin ( ), nb.amtMassTransient.end( ), nb.amtMass.begin( ));
+			setState(bndDiffAdvDoneMU);
+			break;
 		}
 
 		const MeshElementStateful::State nbState = nb.state( );
-		//if (nbState == legacyVoronoiSetCollected || nbState == legacyInteriorSetCollected) {
-		if (nbState == legacyVoronoiSetCollected ) {
+		//if (nbState == bndFrontAppliedMU || nbState == legacyInteriorSetCollected) {
+		if (nbState == inDiffAdvDoneMU || nbState == bndDiffAdvDoneMU ) {
 			Volume2DClass intersection = ourVolume.intersection(nb.getControlVolume( ));
 			CoordinateProductType intersectVolume = intersection.volume( );
 			intersectVolume /= distanceScaledSquared;  //World -> pd conversion
-			VCELL_LOG(debug, this->indexInfo( ) << " overlap volume with " <<nb.indexInfo( ) << " is " << intersectVolume);
+			VCELL_LOG(debug, this->ident( ) << " overlap volume with " <<nb.ident( ) << " is " << intersectVolume);
 			assert(intersectVolume>=0);
 			if (intersectVolume > 0) {
 				moving_boundary::CoordinateProductType donorVolume = nb.volumePD( );
 				for (size_t s = 0; s < numSpecies( ); s++) {
 					const moving_boundary::BioQuanType mu = nb.amtMass[s] / donorVolume; 
-					VCELL_LOG(verbose,this->indexInfo( ) << ':' << nb.indexInfo( ) << " volume " << nb.volumePD( ) << " conc " << mu); 
+					VCELL_LOG(verbose,this->ident( ) << ':' << nb.ident( ) << " volume " << nb.volumePD( ) << " conc " << mu); 
 					moving_boundary::BioQuanType m =  mu * intersectVolume; 
 					amtMass[s] += m;
 					nb.amtMassTransient[s] -= m;
-					VCELL_COND_LOG(debug, s == 0, this->indexInfo( ) << " adding mass " <<  m  << " from " <<nb.indexInfo( ) << ' ' << nb.state( ));
+					VCELL_COND_LOG(debug, s == 0, this->ident( ) << " adding mass " <<  m  << " from " <<nb.ident( ) << ' ' << nb.state( ));
 					if (s== 0 && matlabBridge::MatLabDebug::on("collectmass")) {
 						const char semi = ';';
 						static int collectCounter = 1;
@@ -873,7 +1002,7 @@ void MeshElementSpecies::collectMassFromNeighbors(const FrontType & front) {
 						mlScript << "ivol = " << std::setprecision(20) << intersection.volume( ) <<  semi << endl;
 						mlScript << "sourcemass = " << nb.amtMass[s] << semi << endl;
 						mlScript << "transfermass = " << m << semi << endl;
-						mlScript << "%gained " << indexInfo( ).str( ) << " vol " << std::setprecision(20) << ourVolume.volume( ) << endl;
+						mlScript << "%transOutBndMassCollected " << indexInfo( ).str( ) << " vol " << std::setprecision(20) << ourVolume.volume( ) << endl;
 						mlScript << "%neighbor " << nb.indexInfo( ).str( ) << " vol " << std::setprecision(20) << nb.getControlVolume( ).volume( ) << endl;
 						mlScript << "%intersection vol " << std::setprecision(20) << intersection.volume( ) << endl;
 					}
@@ -881,55 +1010,45 @@ void MeshElementSpecies::collectMassFromNeighbors(const FrontType & front) {
 			}
 		}
 		else {
+//			VCELL_EXCEPTION (logic_error, "Not collecting from " << nb.ident( )); //REVISIT
+
 			VCELL_KEY_LOG(debug,Key::notCollecting,"Not collecting from " << nb.ident( ));
 		}
 		//testing show some overlap with other neighbor states, but it was ~ 1 part in 10^6 of volume
 	}
-	VCELL_LOG(debug, this->indexInfo( ) << " final mass is " << amtMass[0] << " vol " << ourVolume.volume( ) / distanceScaledSquared << " conc " << concentration(0)); 
-	setState(gained); 
+	VCELL_LOG(debug, this->ident( ) << " final mass is " << amtMass[0] << " vol " << ourVolume.volume( ) / distanceScaledSquared << " conc " << concentration(0)); 
+	setState(transOutBndMassCollected); 
 }
 
 void MeshElementSpecies::endOfCycle( ) {
 	VCELL_LOG(verbose,this->ident( ) << " begin eoc"); 
 	switch (state( )) {
-	case stable:
-		if (this->isInside( )) {
-			VCELL_EXCEPTION(domain_error, ident( )  << " end of cycle");
-		}
+	case outStable:
+	case outStableDeep:
 		{
 			bool deep = true;
 			for (int i = 0; i < numNeighbors( ); i++) {
 				if (neighbors[i].element != nullptr) {
 					OurType & nb = *neighbors[i].element;
-					switch (nb.mPos( )) {
-					case spatial::boundarySurface:
+					if (nb.isBoundary( )) {
 						deep = false;
-						break;
-					case spatial::deepInteriorSurface: 
-					case spatial::interiorSurface:
-						VCELL_EXCEPTION(logic_error,ident( ) << " has neighbor " << nb.ident( )); 
-						break;
-					case spatial::outsideSurface:
-					case spatial::deepOutsideSurface:
 						break;
 					}
 				}
-				else {
-					break; //break the for loop
+				if (deep) {
+					setState(outStableDeep);
 				}
-			}
-			if (deep) {
-				base::setPos(spatial::deepOutsideSurface);
-			}
-			else {
-				base::setPos(spatial::outsideSurface);
+				else {
+					setState(outStable);
+				}
 			}
 		}
 
 		break;
-	case stableUpdated:
+	case inDiffAdvDone:
+	case inStableDeepDiffAdvDone:
 		VCELL_LOG(verbose,this->ident( ) << " eoc prior copy " << amtMassTransient[0] << " mass " << amtMass[0]);
-		std::copy(amtMassTransient.begin( ), amtMassTransient.end( ), amtMass.begin( ));
+		std::copy(amtMassTransient.begin( ), amtMassTransient.end( ), amtMass.begin( )); //REVISIT -- do we need to do this??
 		/* REVIEW -- check for negative
 		for (int s = 0; s < numSpecies( ); s++) {
 		if (amtMassTransient[s] < 0) {
@@ -938,58 +1057,40 @@ void MeshElementSpecies::endOfCycle( ) {
 		amtMass[s] = amtMassTransient[s];
 		}
 		*/
-		setState(stable);
-		switch (this->mPos( )) {
-		case spatial::deepInteriorSurface: 
-		case spatial::interiorSurface:
-			{
-				bool deep = true; //assume true until find boundary neighbor
-				for (int i = 0; deep && i < numNeighbors( ); i++) {
-					assert(neighbors[i].element != nullptr);
-					OurType & nb = *neighbors[i].element;
-					switch (nb.mPos( )) {
-					case spatial::boundarySurface:
-						deep = false;
-					case spatial::deepInteriorSurface: 
-					case spatial::interiorSurface:
-						break;
-					case spatial::deepOutsideSurface:
-					case spatial::outsideSurface:
-						VCELL_EXCEPTION(logic_error,ident( ) << " has neighbor " << nb.ident( )); 
-						break;
-					}
-				}
-				if (deep) {
-					base::setPos(spatial::deepInteriorSurface);
-				}
-				else {
-					base::setPos(spatial::interiorSurface);
+		{
+			bool deep = true; //assume true until find boundary neighbor
+			for (int i = 0; deep && i < numNeighbors( ); i++) {
+				assert(neighbors[i].element != nullptr);
+				OurType & nb = *neighbors[i].element;
+				if (nb.isBoundary( )) {
+					deep = false;
+					break;
 				}
 			}
-			break;
-		case spatial::outsideSurface:
-		case spatial::deepOutsideSurface:
-			VCELL_EXCEPTION(logic_error,ident( ) << " at eoc");
-		} //sub-switch
+			if (deep) {
+				setState(inStableDeep);
+			}
+			else {
+				setState(inStable);
+			}
+		}
 		break;
-	case gained:
-		setState(stable);
+	case bndFrontApplied:
+		std::copy(amtMassTransient.begin( ), amtMassTransient.end( ), amtMass.begin( )); //REVISIT -- do we need to do this??
+		setState(bndStable);
+		break;
+	case transOutBndMassCollected:
+		setState(bndStable);
 		break;
 	default:
-		throw std::logic_error("illegal endOfCycle state");
+		badState("illegal endOfCycle state");
 	}
 	//temporary? store concentration
-	moving_boundary::CoordinateProductType vol = this->volumePD( );
 	const bool inside = isInside( );
 	if (inside) {
+		moving_boundary::CoordinateProductType vol = this->volumePD( );
 		if (vol > 0) {
 			std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
-
-			/*
-			for (int i = 0; i < numSpecies( ); i++) {
-				assert(concValue[i] == amtMass[i] / vol);
-			}
-			*/
 		}
 		else {
 			std::fill(concValue.begin( ),concValue.begin( ) + physiology( ).numberSpecies( ), 0); 
@@ -1008,23 +1109,23 @@ void MeshElementSpecies::endOfCycle( ) {
 void MeshElementSpecies::allocateSpecies( ) {
 	assert(concValue == sourceTermValues); //if this is no longer term, allocate sourceTermValues separately
 
-		const size_t i = mesh.numberSpecies( );
-		amtMass.resize(i);
-		amtMassTransient.resize(i);
+	const size_t i = mesh.numberSpecies( );
+	amtMass.resize(i);
+	amtMassTransient.resize(i);
 
-		auto  & physio = physiology( );
-		concValue.resize( physio.numberSymbols( ) );
-		indexToTimeVariable = physio.symbolIndex("t");
-		const size_t xIndex = physio.symbolIndex("x");
-		const size_t yIndex = physio.symbolIndex("y");
+	auto  & physio = physiology( );
+	concValue.resize( physio.numberSymbols( ) );
+	indexToTimeVariable = physio.symbolIndex("t");
+	const size_t xIndex = physio.symbolIndex("x");
+	const size_t yIndex = physio.symbolIndex("y");
 
-		World<moving_boundary::CoordinateType,2> & world = World<moving_boundary::CoordinateType,2>::get( );
-		moving_boundary::CoordinateType x = get(spatial::cX);
-		moving_boundary::CoordinateType y = get(spatial::cY);
-		const double px = world.toProblemDomain(x,spatial::cX);
-		const double py = world.toProblemDomain(y,spatial::cY);
-		sourceTermValues[xIndex] = px;
-		sourceTermValues[yIndex] = py;
+	World<moving_boundary::CoordinateType,2> & world = World<moving_boundary::CoordinateType,2>::get( );
+	moving_boundary::CoordinateType x = get(spatial::cX);
+	moving_boundary::CoordinateType y = get(spatial::cY);
+	const double px = world.toProblemDomain(x,spatial::cX);
+	const double py = world.toProblemDomain(y,spatial::cY);
+	sourceTermValues[xIndex] = px;
+	sourceTermValues[yIndex] = py;
 }
 
 namespace {
@@ -1032,7 +1133,7 @@ namespace {
 		typedef std::vector <moving_boundary::BioQuanType> ValueVector; 
 		Evaluator (ValueVector & v)
 			:values(v) {}
-			
+
 		moving_boundary::BioQuanType operator( )(const moving_boundary::biology::Species &sp) {
 			moving_boundary::BioQuanType r = sp.evaluate(values);
 			return r;
@@ -1041,65 +1142,65 @@ namespace {
 		ValueVector &values;
 	};
 
-		/**
-		* converts mass to concentration by dividing by specified volume 
-		*/
+	/**
+	* converts mass to concentration by dividing by specified volume 
+	*/
 	struct ConcToMassAndAdd {
-			typedef moving_boundary::BioQuanType BioQuan; 
-			/**
-			* @parm volume
-			* @throws std::domain_error if volume < = 0
-			*/
-			ConcToMassAndAdd( moving_boundary::VolumeType volume_)
-				:volume(volume_) {
-					if (volume <= 0) {
-						throw std::domain_error("ConcToMassAndAdd volume <= 0");
-					}
+		typedef moving_boundary::BioQuanType BioQuan; 
+		/**
+		* @parm volume
+		* @throws std::domain_error if volume < = 0
+		*/
+		ConcToMassAndAdd( moving_boundary::VolumeType volume_)
+			:volume(volume_) {
+				if (volume <= 0) {
+					throw std::domain_error("ConcToMassAndAdd volume <= 0");
 				}
+		}
 
-			BioQuan operator( )(BioQuan mass, BioQuan sourceConcentration) {
-				BioQuan newMass = mass + sourceConcentration * volume; 
-				return newMass;
-			}
+		BioQuan operator( )(BioQuan mass, BioQuan sourceConcentration) {
+			BioQuan newMass = mass + sourceConcentration * volume; 
+			return newMass;
+		}
 
-			moving_boundary::VolumeType volume;
-		};
+		moving_boundary::VolumeType volume;
+	};
 }
 
 void MeshElementSpecies::react(moving_boundary::TimeType time) {
-	switch (state( )) {
-	case stable:
-		setState(stableSourceApplied);
-		break;
-	case legacyVolume:
-		setState(legacySourceApplied);
-		break;
-	default:
-		VCELL_EXCEPTION(domain_error,"Invalid react state " << ident( ));
-	}
-	moving_boundary::VolumeType vol = volumePD( );
-	if (vol == 0) {
-		std::cout << "Stop";
-	}
+	//switch (state( )) {
+	//case stable:
+	//	setState(stableSourceApplied);
+	//	break;
+	//case bndFrontMoved:
+	//	setState(legacySourceApplied);
+	//	break;
+	//default:
+	//	VCELL_EXCEPTION(domain_error,"Invalid react state " << ident( ));
+	//}
+	//moving_boundary::VolumeType vol = volumePD( );
+	//if (vol == 0) {
+	//	std::cout << "Stop";
+	//}
 
-	assert(concValue == sourceTermValues); //if this is no longer term, copy values from concValue ->sourceTermValues
-	
-	sourceTermValues[indexToTimeVariable] = time;
-	const biology::Physiology & physio = physiology( );
-	//const std::vector<const biology::Species> & species = physiology( ).species( );
-	const size_t n = physio.numberSpecies( );
-	assert(n == numSpecies( ));
-	std::vector <moving_boundary::BioQuanType> sourceTermConcentrations(n);
+	//assert(concValue == sourceTermValues); //if this is no longer term, copy values from concValue ->sourceTermValues
 
-	//evaluate source terms
-	std::transform(physio.beginSpecies( ), physio.endSpecies( ),sourceTermConcentrations.begin( ), Evaluator(sourceTermValues) );
+	//sourceTermValues[indexToTimeVariable] = time;
+	//const biology::Physiology & physio = physiology( );
+	////const std::vector<const biology::Species> & species = physiology( ).species( );
+	//const size_t n = physio.numberSpecies( );
+	//assert(n == numSpecies( ));
+	//std::vector <moving_boundary::BioQuanType> sourceTermConcentrations(n);
 
-	//convert concentrations to mass, add to existing mass
-	assert(sourceTermValues.size( ) >= amtMass.size( ));
-	std::transform(amtMass.begin( ), amtMass.end( ),sourceTermConcentrations.begin( ),amtMass.begin( ), ConcToMassAndAdd(vol) );
+	////evaluate source terms
+	//std::transform(physio.beginSpecies( ), physio.endSpecies( ),sourceTermConcentrations.begin( ), Evaluator(sourceTermValues) );
 
-	assert(concValue.size( ) >= amtMass.size( ));
-	std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
+	////convert concentrations to mass, add to existing mass
+	//assert(sourceTermValues.size( ) >= amtMass.size( ));
+	//std::transform(amtMass.begin( ), amtMass.end( ),sourceTermConcentrations.begin( ),amtMass.begin( ), ConcToMassAndAdd(vol) );
+
+	//assert(concValue.size( ) >= amtMass.size( ));
+	//std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
 }
 
 using moving_boundary::BioQuanType;
@@ -1107,23 +1208,20 @@ using moving_boundary::TimeType;
 void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, BioQuanType diffusionConstant, TimeType timeStep, bool & negativeMassError) {
 	DaCache & ourCache = static_cast<DaCache &>(daCache);
 	switch (state( )) {
-	case stableSourceApplied:
-	//case stable:
-	//case stableUpdated:
-		if (this->mPos( ) != interiorSurface && this->mPos( ) != deepInteriorSurface) {
-			VCELL_EXCEPTION(domain_error,ident( ) << " diffuseAdvect");
-		}
-		setState(stableUpdated);
+	case inStable: 
+		setState(inDiffAdvDone);
 		break;
-	case legacySourceApplied:
-	case legacyVolumeNeighborSet:
-	//case legacyUpdated:
-		assert(this->mPos( ) == boundarySurface);
+	case inStableDeep: 
+		setState(inStableDeepDiffAdvDone);
+		break;
+	case bndFrontMoved: 
 		findNeighborEdges();
-		setState(legacyUpdated); 
+		//fall through
+	case bndNbrEdgesFound:
+		setState(bndDiffAdvDone); 
 		break;
 	default:
-		VCELL_EXCEPTION(domain_error,"Invalid diffuseAdvect state " << ident( ));
+		badState("Invalid diffuseAdvect state ");
 	}
 
 	if (this->isInside( )) {
@@ -1144,7 +1242,7 @@ void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, Bi
 			if (edgeLength == 0) { //if no edge, don't bother
 				continue;
 			}
-			if (nb.state( ) == legacyVolume) {
+			if (nb.state( ) == bndFrontMoved) {
 				if (nb.vol.empty( )) {
 					std::cout << nb.ident( ) << " empty vol " << std::endl;
 				}
@@ -1152,7 +1250,7 @@ void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, Bi
 			}
 			const NeighborType * usToThem = nb.findUs(*this);
 			if (usToThem == nullptr) {
-				VCELL_EXCEPTION(logic_error, this->indexInfo( ) << " neighbor " << nb.indexInfo( ) << " has no record of 'this'"); 
+				VCELL_EXCEPTION(logic_error, this->ident( ) << " neighbor " << nb.ident( ) << " has no record of 'this'"); 
 			}
 			const moving_boundary::DistanceType edgeLengthFrom = usToThem->edgeLength;
 			if (edgeLengthFrom != edgeLength) {
@@ -1180,7 +1278,7 @@ void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, Bi
 				//BioQuanType transferAmount = (diffusionTerm + advectTerm) * edgeLength * timeStep;
 				BioQuanType transferAmount = sum * edgeLength * timeStep;
 				amtMassTransient[s] += transferAmount; 
-				VCELL_COND_LOG(info, s == 0, this->indexInfo( ) << " da " << transferAmount << " from " << nb.indexInfo( ) 
+				VCELL_COND_LOG(info, s == 0, this->ident( ) << " da " << transferAmount << " from " << nb.ident( ) 
 					<< " u(i) = " << cUs << " u(j) " << cOther << " distance " << neighbors[i].distanceTo 
 					<< " D = " << diffusionConstant << " u(avg) = " << averageConcentration << " advectCoeff " << advectCoeff 
 					<< " advectTerm = " << advectTerm << " edge length " << edgeLength 
@@ -1191,15 +1289,15 @@ void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, Bi
 					std::pair<const OurType *,const OurType *> inv(&nb,this);
 					if (diffuseAdvectMap.find(inv) != diffuseAdvectMap.end( )) {
 						if (diffuseAdvectMap[inv].reversed) {
-							VCELL_EXCEPTION(logic_error, this->indexInfo( ) << " to " << nb.indexInfo( ) << " already transferred or reversed?") ;
+							VCELL_EXCEPTION(logic_error, this->ident( ) << " to " << nb.ident( ) << " already transferred or reversed?") ;
 						}
 						BioQuanType prevAmount = diffuseAdvectMap[inv].value; 
 						if ( !spatial::nearlyEqual(-1 * prevAmount,transferAmount,toleranceDiffuseAdvectException) ) {
-							VCELL_EXCEPTION(logic_error, this->indexInfo( ) << " to " << nb.indexInfo( ) << " amt " << transferAmount
+							VCELL_EXCEPTION(logic_error, this->ident( ) << " to " << nb.ident( ) << " amt " << transferAmount
 								<< " differs from inverse " << prevAmount << " relative diff " 
 								<< spatial::relativeDifference(-1 *prevAmount,transferAmount));
 							/*
-							VCELL_LOG(warn, "WARNING " << indexInfo( ) << " to " << nb.indexInfo( ) << " amt " << transferAmount
+							VCELL_LOG(warn, "WARNING " << ident( ) << " to " << nb.ident( ) << " amt " << transferAmount
 							<< " differs from inverse " << prevAmount << " relative diff " 
 							<< spatial::relativeDifference(-1 *prevAmount,transferAmount))
 							*/
@@ -1224,155 +1322,7 @@ void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, Bi
 	} //isInside
 }
 
-void MeshElementSpecies::listBoundary(std::ostream & os) const {
-	switch (mPos( )) {
-	case spatial::outsideSurface:
-	case spatial::deepOutsideSurface:
-		return;
-	case spatial::interiorSurface:
-	case spatial::deepInteriorSurface:
-	case spatial::boundarySurface:
-		{
-			const char comma = ',';
-			const Volume2DClass & cVol = getControlVolume( );
-			typedef Volume2DClass::PointVector PointVector; 
-			PointVector pv = cVol.points( ).front( ); 
-			for (PointVector::const_iterator iter = pv.begin( ); iter != pv.end( ); ++iter) {
-				os << index[0] << comma << index[1] << comma << mPos( ) << comma
-					<< iter->get(cX) << comma << iter->get(cY) << std::endl;
-			}
-		}
-		break;
-	default:
-		assert(false); //unknown state
-
-	}
-}
-
-MeshElementSpecies::OurType *MeshElementSpecies::neighbor(spatial::ElementOffset<2> & eo) const {
-	//nominally unsafe downcast
-	const MeshType * m = static_cast<const MeshType *>(&mesh);
-	return m->element(*this,eo);
-}
-
-namespace {
-	struct NeighborBuilder {
-		MeshElementSpecies & client;
-		NeighborBuilder(MeshElementSpecies &c)
-			:client(c) {}
-
-		MeshElementSpecies::NeighborType generate(std::istream &in) const {
-			return MeshElementSpecies::NeighborType(in,client);
-		}
-	};
-}
-
-/**
-* see #persist
-*/
-MeshElementSpecies::MeshElementSpecies(const MeshDefinition &owner,std::istream &is)
-	:base(is),
-	mesh(owner),
-	concValue( ),
-	sourceTermValues(concValue),
-	vol(0,this) //required to register this as VolumeMonitor of volume
-{
-	vcell_persist::Token::check<MeshElementSpecies>(is); 
-
-	NeighborBuilder nb(*this);
-	vcell_persist::readFunctor<NeighborBuilder> functor(is,nb);
-
-	vcell_persist::binaryRead(is,stateVar);
-	vcell_persist::binaryRead(is,interiorVolume);
-	vol = Volume2DClass(is);
-	vcell_persist::restore(is,amtMass);
-	vcell_persist::restore(is,amtMassTransient);
-	vcell_persist::restore(is,concValue);
-	vcell_persist::restore(is,interiorNeighbors, vcell_persist::readFunctor<NeighborBuilder>(is,nb) );
-	//gcw 10-20-2014 thinking vector of neighbors not used if element not boundary, so no point in storing it
-	bool usingNeighborVector;
-	vcell_persist::binaryRead(is, usingNeighborVector);
-	if (usingNeighborVector) {
-		vcell_persist::restore(is,boundaryNeighbors, vcell_persist::InsertFrom<NeighborBuilder>(nb) );
-		neighbors = boundaryNeighbors.data( ); 
-	}
-	else {
-		neighbors = interiorNeighbors.data( ); 
-	}
-	voronoiVolume = Volume2DClass(is);
-	vcell_persist::binaryRead(is,nOutside);
-	velocity = spatial::SVector<moving_boundary::VelocityType,2>(is);
-}
-namespace {
-	struct NeighborWriter {
-		MeshElementSpecies & client;
-		NeighborWriter(MeshElementSpecies &c)
-			:client(c) {}
-		void operator( )(std::ostream &os, const MeshElementSpecies::NeighborType  & nb) const {
-			nb.persist(os,client);
-		}
-	};
-}
-
-/**
-* save essential state information necessary to restore from a file later
-*/
-void MeshElementSpecies::persist(std::ostream &os) {
-	base::persist(os);
-
-	NeighborWriter nw(*this);
-	vcell_persist::writeFunctor<NeighborWriter> functor(os,nw);
-
-	vcell_persist::Token::insert<MeshElementSpecies>(os); 
-	vcell_persist::binaryWrite(os,stateVar);
-	vcell_persist::binaryWrite(os,interiorVolume);
-	vol.persist(os);
-	//vcell_persist::save(os,segments_); //segments can be recreated on the fly
-	vcell_persist::save(os,amtMass);
-	vcell_persist::save(os,amtMassTransient);
-	vcell_persist::save(os,concValue);
-	vcell_persist::save(os,interiorNeighbors, functor);
-	//vector of neighbors not used if element not boundary, so no point in storing it
-	const bool usingNeighborVector = (neighbors == boundaryNeighbors.data( )); 
-	vcell_persist::binaryWrite(os, usingNeighborVector);
-	if (usingNeighborVector) {
-		vcell_persist::save(os,boundaryNeighbors, functor); 
-	}
-	voronoiVolume.persist(os);
-	vcell_persist::binaryWrite(os,nOutside);
-	velocity.persist(os);
-}
-
-
-BioQuanType MeshElementSpecies::distanceScaled        = 1;
-BioQuanType MeshElementSpecies::distanceScaledSquared = 1;
-
-std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::MeshElementStateful::State state) {
-#define CASE(x) case x: os << #x; break;
-	switch (state) {
-		CASE(initial);
-		CASE(stable );
-		CASE(stableUpdated);
-		CASE(lost );
-		CASE(awaitingNb);
-		CASE(gainedAwaitingNb);
-		CASE(gainedEmpty);
-		CASE(gained );
-		CASE(legacyVolume);
-		CASE(legacyUpdated);
-		CASE(legacyVoronoiSet);
-		CASE(legacyVoronoiSetCollected);
-		CASE(legacyVolumeNeighborSet);
-		CASE(stableSourceApplied);
-		CASE(legacySourceApplied);
-		//CASE(legacyInteriorSet);
-		//CASE(legacyInteriorSetCollected);
-		CASE(transient);
-		default:
-			os << "missing state " << static_cast<int>(state); //cast required to avoid recursive call
-	}
-#undef CASE
-	return os;
-}
 
 MatLabDebug MatLabDebug::instance;
+moving_boundary::BioQuanType MeshElementSpecies::distanceScaled        = 1;
+moving_boundary::BioQuanType MeshElementSpecies::distanceScaledSquared = 1;

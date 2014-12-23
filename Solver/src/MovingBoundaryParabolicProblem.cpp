@@ -812,7 +812,7 @@ namespace moving_boundary {
 		* Functor
 		* distribute lost mass 
 		*/
-		struct DistributeLost {
+		struct DistributeLost { //OPTIMIZE -- keep collection of objects in state 
 			void operator( )(Element &e) {
 				VCELL_LOG(trace,e.indexInfo( ) << " distributeLost")
 					e.distributeMassToNeighbors();

@@ -18,6 +18,9 @@
 #include <math.h>
 #include <persist.h>
 #include <Physiology.h>
+#ifdef MES_STATE_TRACK
+#define setState(x) DEBUG_SET_STATE(x, __FILE__, __LINE__)
+#endif
 
 //forward definitions
 //namespace spatial {
@@ -85,119 +88,101 @@ namespace moving_boundary {
 
 	namespace MeshElementStateful {
 		//if adding state, add to std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::MeshElementStateful::State state) in *cpp 
+		/**
+		* describes both position relative to boundary and processing status. Names indicate last step performed
+		* trans -- tranisitioning
+		* in -- inside boundary but not adjacent to boundary
+		* Bnd -- inside and adjacent to boundary 
+		* Out -- outside boundary 
+		* DiffAdv -- diffusionAdvection 
+		* Nbr -- neighbor 
+		*/
 		enum State { 
 			/**
 			* initial state. #setPos to #stable
 			*/
 			initial,
+			initialInside,
+			initialBoundary,
 			/**
 			* begin/end of move diffuse advect cycle
 			*/
-			stable, 
+			//stable, 
 			/**
 			* source terms applied (interior nodes)
 			*/
-			stableSourceApplied,
+			//stableSourceApplied,
 			/**
 			* source terms applied (boundary nodes)
 			*/
-			legacySourceApplied,
+			//legacySourceApplied,
 			/**
 			* diffusionAdvection applied
 			*/
-			stableUpdated,
+			//stableUpdated,
 			/**
 			* moved outside boundary
 			*/
-			lost, 
+			transBndOut, 
 			/**
 			* moved from interior to boundary
 			*/
-			awaitingNb,
+			transInBnd,
 			/**
 			* moved inside boundary (from #setPos)
 			*/
-			gainedAwaitingNb,
+			transOutBndSetBnd,
 			/**
-			* neighbors applied (last state #gainedAwaitingNb)
+			* neighbors applied (last state #transOutBndSetBnd)
 			*/
-			gainedEmpty,
+			transOutBndNbrSet,
 			/**
-			* mass collected (last state #gainedEmpty)
+			* mass collected (last state #transOutBndNbrSet)
 			*/
-			gained, 
+			transOutBndMassCollected, 
 			/**
 			* front moved but neighbor edges stale, voronoi not applied 
 			*/
-			legacyVolume,
+			bndFrontMoved,
 			/**
 			* front moved, neighbor edges set, voronoi not applied 
 			*/
-			legacyVolumeNeighborSet,
+			bndNbrEdgesFound,
 			/**
-			* diffusionAdvection applied (last state #legacyVolumeNeighborSet)
+			* diffusionAdvection applied (last state #bndNbrEdgesFound)
 			*/
-			legacyUpdated,
+			bndDiffAdvDone,
+			bndDiffAdvDoneMU,
+			//bndNbrUpdated,
 			/**
-			* neighbors updated: (last state #legacyUpdated, #awaitingNb)
+			* neighbors updated: (last state #bndDiffAdvDone, #transInBnd)
 			*/
-			legacyVoronoiSet,
+			bndFrontApplied,
 			/**
-			* neighbors updated and some mass has been collected: (last state #legacyVoronoiSet)
+			* neighbors updated and some mass has been collected: (last state #bndFrontApplied)
 			*/
-			legacyVoronoiSetCollected,
 			/**
 			* must be one more than #legacySetCollected
-			* interior volume is set, from #setPos, (last state #legacyUpdated)
+			* interior volume is set, from #setPos, (last state #bndDiffAdvDone)
 			*/
-			//legacyInteriorSet,
-			/**
-			* interior volume and some mass has been collected (last state #legacyInteriorSet)
-			*/
-			//legacyInteriorSetCollected,
-			/** 
-			* must be one more than #legacyInteriorSet
-			* psuedo-state which may occur during reclassification
-			*/
-			transient
+			transOutBndSetIn,
+			transBndIn,
+			bndStable,
+			outStable,
+			outStableDeep,
+			inStable,
+			inDiffAdvDone,
+			inDiffAdvDoneMU,
+			inStableDeep,
+			inStableDeepDiffAdvDone,
 		};
 	}
 
-	/**
-	* OUT OF DATE due sourceApplied term
-	* Allowable transitions. First transition from <i>initial</i> to <i>stable</i> omitted for simplicity.
-	<table><tr><th></th><th>stable</th><th>stableUpdated</th><th>awaitingNb</th><th>lost</th><th>gainedAwaitingNb</th><th>gainedEmpty</th><th>gained</th><th>legacyVolume</th><th>legacyUpdated</th><th>legacyVoronoiSet</th><th>legacyInterior</th></tr>
-	<tr><td>stable</td><td></td><td>diffuseAdvect</td><td></td><td></td><td>setPos(O->B)</td><td></td><td></td><td>moveFront</td><td></td><td></td></tr>
-	<tr><td>stableUpdated</td><td>endOfCycle</td><td></td>setPos(I->B)<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-	<tr><td>awaitingNb</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>updateNb</td></tr>
-	<tr><td>lost</td><td>distribute</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-	<tr><td>gainedAwaitingNb</td><td></td><td></td><td></td><td></td><td></td><td>updateNb</td><td></td><td></td><td></td><td></td></tr>
-	<tr><td>gainedEmpty</td><td></td><td></td><td></td><td></td><td></td><td></td><td>collectMass</td><td></td><td></td><td></td></tr>
-	<tr><td>gained</td><td>endOfCycle</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-	<tr><td>legacyVolume</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>diffuseAdvect</td><td></td></tr>
-	<tr><td>legacyUpdated</td><td></td><td></td><td></td><td>setPos(0)</td><td></td><td></td><td></td><td></td><td></td><td>updateNb</td><td>setPos(I)
-	<tr><td>legacyVoronoiSet</td><td></td><td>applyFront</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-	<tr><td>legacyInterior</td><td></td><td>setVol</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table>
-	* Event sequence. See state diagram for which elements calls made on.
-	* <ul>
-	* <li>setPos</li>
-	* <li>moveFront</li>
-	* <li>react</li>
-	* <li>diffuseAdvect</li>
-	* <li>setPos</li>
-	* <li>updateBoundary</li>
-	* <li>collectMass</li>
-	* <li>applyFront</li>
-	* <li>distribute</li>
-	* <li>endOfCycle</li>
-	* <li>transient <i>not a real state, but needed due to reclassification algorithm</i><li>
-	* </ul> 
-	*/
 
-	struct MeshElementSpecies : public spatial::MeshElement<moving_boundary::CoordinateType,2> , public spatial::VolumeMonitor {
+	struct MeshElementSpecies : public spatial::MPoint<moving_boundary::CoordinateType,2> , public spatial::VolumeMonitor {
 		typedef spatial::MeshDef<moving_boundary::CoordinateType,2> MeshDefinition; 
 		typedef spatial::Mesh<moving_boundary::CoordinateType,2,MeshElementSpecies> MeshType; 
-		typedef spatial::MeshElement<moving_boundary::CoordinateType,2> base;
+		typedef spatial::MPoint<moving_boundary::CoordinateType,2> base;
 		typedef MeshElementSpecies OurType;
 		typedef MeshElementNeighbor NeighborType;
 		typedef MeshElementStateful::State State;
@@ -229,6 +214,16 @@ namespace moving_boundary {
 				logCreation( );
 			}
 		}
+		//RFR
+		bool isInside( ) const; 
+		spatial::SurfacePosition mPos( ) const; 
+		bool isOutside( ) const {
+			return !isInside( );
+		}
+		bool isDeep( ) const; 
+		bool isBoundary( ) const {
+			return mPos( ) == spatial::boundarySurface;
+		}
 
 		/**
 		* restore from persistent storage. 
@@ -258,7 +253,7 @@ namespace moving_boundary {
 		*/
 		void setConcentration(size_t i, moving_boundary::BioQuanType c) {
 			using namespace MeshElementStateful;
-			if (state( ) != initial) {
+			if (state( ) != initialInside && state( ) != initialBoundary) {
 				throw std::domain_error("setConcentration");
 			}
 			if (vcell_portable::isNotANumber(c)) {
@@ -302,14 +297,7 @@ namespace moving_boundary {
 		/**
 		* set initial position
 		*/
-		void setInitialPos(spatial::SurfacePosition m) {
-			using namespace MeshElementStateful;
-			if (state( )!=initial) {
-				throw std::domain_error("setInitialPos");
-			}
-			base::setPos(m);
-			VCELL_LOG(trace,this->indexInfo( ) << " initial position " << m)
-		}
+		void setInitialPos(spatial::SurfacePosition m); 
 
 		void setPhysiology(const biology::Physiology &p) {
 			if (p.numberSpecies( )!= numSpecies( )) {
@@ -318,12 +306,23 @@ namespace moving_boundary {
 			pPhysio = &p;
 		}
 
+		/**
+		* legacy from prior state impl
+		*/
 		void beginSimulation( ) {
-			using namespace MeshElementStateful;
-			if (state( )!=initial) {
-				throw std::domain_error("beginSimulation");
+			using namespace moving_boundary::MeshElementStateful;
+			switch (state( )) {
+			case initialInside:
+				setState(inStable);
+				break;
+			case initialBoundary:
+				setState(bndStable);
+				break;
+			case outStable:
+				break;
+			default:
+				badState("beginSimulation");
 			}
-			setState(stable);
 		}
 
 		/**
@@ -374,58 +373,58 @@ namespace moving_boundary {
 		* @param front moved front
 		* @param interiorVolume volume if node entirely interior 
 		*/
-		void applyFront( const FrontType & front, moving_boundary::CoordinateProductType interiorVolume) {
-			using namespace MeshElementStateful;
-			switch (state( )) {
-			case legacyVoronoiSet:
-			case legacyVoronoiSetCollected:
-				//formBoundaryPolygon(mesh,front);
-				//setState(stableUpdated);
-				applyFrontLegacyVoronoiSet(front);
-				break;
-			case legacyUpdated:
-				if (mPos( ) == spatial::interiorSurface) { 
-					setState(stableUpdated);
-					setInteriorVolume(interiorVolume);
-					neighbors = interiorNeighbors.data( );
-					vol.clear( );
-				}
-				else {
-					assert(mPos( ) == spatial::boundarySurface);
-					setState(legacyVoronoiSet);
-					applyFrontLegacyVoronoiSet(front);
-				}
-				break;
-				/*
-			case legacyInteriorSet:
-			case legacyInteriorSetCollected:
-				setInteriorVolume(interiorVolume);
-				setState(stableUpdated);
-				break;
-				*/
-			case lost:
-			case stable:
-				assert(this->isOutside( ));
-				break;
-			case stableUpdated:
-			case gained:
-				assert(this->isInside( ));
-				break;
-			default:
-				VCELL_EXCEPTION(domain_error, "apply front " << ident( )); 
-			}
-		}
+		void applyFront( const FrontType & front, moving_boundary::CoordinateProductType interiorVolume); 
+		//	using namespace MeshElementStateful;
+		//	switch (state( )) {
+		//		/*
+		//	case bndFrontApplied:
+		//	case bndFrontAppliedMU:
+		//		//formBoundaryPolygon(mesh,front);
+		//		//setState(stableUpdated);
+		//		applyFrontLegacyVoronoiSet(front);
+		//		break;
+		//		*/
+		//	case bndDiffAdvDone:
+		//		if (mPos( ) == spatial::interiorSurface) { 
+		//			setState(stableUpdated);
+		//			setInteriorVolume(interiorVolume);
+		//			neighbors = interiorNeighbors.data( );
+		//			vol.clear( );
+		//		}
+		//		else {
+		//			assert(mPos( ) == spatial::boundarySurface);
+		//			setState(bndFrontApplied);
+		//			applyFrontLegacyVoronoiSet(front);
+		//		}
+		//		break;
+		//		/*
+		//	case legacyInteriorSet:
+		//	case legacyInteriorSetCollected:
+		//		setInteriorVolume(interiorVolume);
+		//		setState(stableUpdated);
+		//		break;
+		//		*/
+		//	case transBndOut:
+		//	//case stable:
+		//		assert(this->isOutside( ));
+		//		break;
+		//	case stableUpdated:
+		//	case transOutBndMassCollected:
+		//		assert(this->isInside( ));
+		//		break;
+		//	default:
+		//		VCELL_EXCEPTION(domain_error, "apply front " << ident( )); 
+		//	}
+		//}
 
 		/**
 		* update list of neighbors which are present 
 		* this should be a boundary element
+		* not all calls result in state transition
 		* @param vm 
 		* @param bn boundary neighbors inside front
-		* @param front of interest
 		*/
-		void updateBoundaryNeighbors( 
-			const VoronoiMesh &vm,
-			std::vector<OurType *>  & bn) ;
+		void updateBoundaryNeighbors( const VoronoiMesh &vm, std::vector<OurType *>  & bn) ;
 		/**
 		* indicate diffusion-advection processing complete; swap concentration pointers, check interior deepness
 		*/
@@ -437,10 +436,15 @@ namespace moving_boundary {
 		moving_boundary::CoordinateProductType volumePD(  ) const {
 			using MeshElementStateful::State;
 			switch(this->state( ) ) {
-			case State::initial:
-			case State::stable: 
-			case State:: stableUpdated:
-			case State:: stableSourceApplied:
+			case State::initialInside:
+			case State::inStable:
+			case State::inStableDeep:
+
+			case State::inStableDeepDiffAdvDone:
+			case State::inDiffAdvDone:
+			case State::inDiffAdvDoneMU:
+			//case State:: stableUpdated:
+			//case State:: stableSourceApplied:
 				switch (this->mPos( )) {
 				case spatial::interiorSurface:
 				case spatial::deepInteriorSurface: 
@@ -449,24 +453,27 @@ namespace moving_boundary {
 				}
 				return vol.volume( ) /distanceScaledSquared; 
 				break;
-			case State::lost: 
-			case State::awaitingNb:
-			case State::gainedAwaitingNb:
-			case State::gainedEmpty: 
-			case State::gained: 
-			case State::legacyVolume:
-			case State::legacyVolumeNeighborSet:
-			case State::legacyUpdated:
-			case State::legacyVoronoiSet:
-			case State::legacyVoronoiSetCollected:
-			case State::legacySourceApplied:
+			case State::transBndOut: 
+			case State::transInBnd:
+			case State::transOutBndSetBnd:
+			case State::transOutBndNbrSet: 
+			case State::transOutBndMassCollected: 
+			case State::initialBoundary:
+			case State::bndFrontMoved:
+			case State::bndNbrEdgesFound:
+			case State::bndDiffAdvDone:
+			case State::bndDiffAdvDoneMU:
+			case State::bndFrontApplied:
+			case State::bndStable:
+			//case State::legacySourceApplied:
 			//case State::legacyInteriorSet:
 			//case State::legacyInteriorSetCollected:
 				return vol.volume( ) /distanceScaledSquared; 
-			case State::transient:
+			case State::transOutBndSetIn:
 			default:
-				VCELL_EXCEPTION(logic_error,"volume( ) called on " << ident( ));
+				badState("volumePD");
 			}
+			return 0;
 		}
 
 		void setInteriorVolume(moving_boundary::CoordinateProductType v) {
@@ -482,7 +489,7 @@ namespace moving_boundary {
 
 		/**
 		* distribute mass to neighbors 
-		* (implies this element is being lost)
+		* (implies this element is being transBndOut)
 		*/
 		void distributeMassToNeighbors( ); 
 
@@ -491,7 +498,7 @@ namespace moving_boundary {
 		*/
 		void collectMass(const FrontType & front) {
 			using namespace MeshElementStateful;
-			if (state( ) == gainedEmpty) {
+			if (state( ) == transOutBndNbrSet) {
 				collectMassFromNeighbors(front);
 			}
 		}
@@ -562,6 +569,10 @@ namespace moving_boundary {
 		*/
 		void listBoundary(std::ostream & os) const; 
 
+		/**
+		* find neighbor edges. We don't do this until after all the nodes have received the
+		* new front #FrontMoved( )
+		*/
 		void findNeighborEdges(); 
 		/**
 		* clear segments
@@ -589,6 +600,7 @@ namespace moving_boundary {
 
 
 	private:
+		void badState(const char * const) const;
 		/**
 		* log creation information to trace file
 		*/
@@ -697,13 +709,15 @@ namespace moving_boundary {
 			return nullptr;
 		}
 
+		/*
 		void setCollected( ) {
 			//static_assert(State::legacyInteriorSetCollected == State::legacyInteriorSet + 1,"collected not set up correctly");
-			static_assert(State::legacyVoronoiSetCollected == State::legacyVoronoiSet + 1,"collected not set up correctly");
+			static_assert(State::bndFrontAppliedMU == State::bndFrontApplied + 1,"collected not set up correctly");
 			//setState(static_cast<State>(stateVar + 1) );
-			assert(stateVar == State::legacyVoronoiSet);
-			setState(State::legacyVoronoiSetCollected);
+			assert(stateVar == State::bndFrontApplied);
+			setState(State::bndFrontAppliedMU);
 		}
+		*/
 
 		/**
 		* return distance to neighbor, if it's been calculated; otherwise return 0
@@ -715,13 +729,16 @@ namespace moving_boundary {
 			}
 			return 0;
 		}
-
+#ifdef MES_STATE_TRACK
+		void DEBUG_SET_STATE(MeshElementStateful::State s, const char *file, int line);
+#else 
 		void setState(MeshElementStateful::State s) {
 			using namespace MeshElementStateful;
 			stateVar = s;
 			VCELL_LOG(trace, ident( ) << " new state" ); 
 			assert(debugSetState( ));
 		}
+#endif
 
 
 
@@ -851,7 +868,7 @@ namespace moving_boundary {
 	std::ostream & operator<<(std::ostream &,MeshElementStateful::State);
 
 	inline void MeshElementSpeciesIdent::write(std::ostream &os) const {
-		os << mes.indexInfo( ) << ' ' << mes.mPos( ) << ' ' << mes.state( ); 
+		os << mes.indexInfo( ) << ' ' << mes.state( ); 
 	}
 }
 #endif
