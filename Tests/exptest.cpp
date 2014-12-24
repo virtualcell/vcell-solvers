@@ -12,8 +12,30 @@
 #include "vcellxml.h"
 #include <boost/lexical_cast.hpp>
 #include <SExpression.h>
+#include <Exception.h>
 namespace {
+
+	void expTest(const char * const exp, bool expectedToBeConstant) {
+		VCell::Expression e(exp); 
+		EXPECT_EQ(e.isConstant( ), expectedToBeConstant);
+	}
+
+
 }
+TEST(expression,constant) {
+	expTest("7 * x ",false);
+	VCell::Expression empty; 
+	ASSERT_FALSE(empty.isConstant( ));
+
+	expTest("7",true);
+	expTest("7 * 3 ",true);
+	expTest("7 + 3",true);
+	expTest("7 + y",false);
+	expTest("sin(.1)",true);
+	expTest("sin(t)",false);
+
+}
+
 TEST(expression,base) {
 	std::string syms[] = {"a","b","c"};
 	VCell::Expression exp("(a + b) * c");

@@ -63,6 +63,21 @@ namespace moving_boundary {
 			return 0;
 		}
 
+		/**
+		* is expression constant?
+		* @return true if is
+		*/
+		bool isConstant( ) const {
+			return expression.isConstant( );
+		}
+
+		/**
+		* return constant value
+		* @throws VCell::ExpressionException if #isConstant( ) != true
+		*/ 
+		double constantValue( ) const {
+			return expression.evaluateConstant( );
+		}
 
 	private:
 		typedef unsigned char NSym;

@@ -451,15 +451,15 @@ void MeshElementSpecies::applyFrontLegacyVoronoiSet( const FrontType & front) {
 void MeshElementSpecies::applyFront( const FrontType & front, moving_boundary::CoordinateProductType interiorVolume) {
 	switch (state( )) {
 	case bndDiffAdvDone:
-			std::copy(amtMassTransient.begin ( ), amtMassTransient.end( ), amtMass.begin( ));
-			//fall through 
 	case bndDiffAdvDoneMU:
 	case transInBnd:
-	case transOutBndMassCollected:
 
 	//case bndNbrUpdated:
 		formBoundaryPolygon(front);
 		setState(bndFrontApplied);
+		break;
+	case transOutBndMassCollected:
+		setState(bndMassCollectedFrontApplied);
 		break;
 	case outStable:
 	case outStableDeep:
@@ -921,9 +921,9 @@ void MeshElementSpecies::distributeMassToNeighbors() {
 			neighbors[i].element->writeMatlab(script);
 		}
 	}
-	for (size_t s = 0; s < numSpecies( ); s++) {
-		amtMass[s] = 0;
-	}
+	std::fill(amtMass.begin( ),amtMass.end( ),0);
+	std::fill(concValue.begin( ), concValue.begin( ) + numSpecies( ),0);
+	vol.clear( );
 	setState(outStable);
 
 	if (!distributed) {
@@ -1027,9 +1027,11 @@ void MeshElementSpecies::collectMassFromNeighbors(const FrontType & front) {
 
 void MeshElementSpecies::endOfCycle( ) {
 	VCELL_LOG(verbose,this->ident( ) << " begin eoc"); 
+	bool copyMass = true;
 	switch (state( )) {
 	case outStable:
 	case outStableDeep:
+		copyMass = false;
 		{
 			bool deep = true;
 			for (int i = 0; i < numNeighbors( ); i++) {
@@ -1053,10 +1055,8 @@ void MeshElementSpecies::endOfCycle( ) {
 		break;
 	case inDiffAdvDone:
 	case inStableDeepDiffAdvDone:
-		VCELL_LOG(verbose,this->ident( ) << " eoc prior copy " << amtMassTransient[0] << " mass " << amtMass[0]);
-		std::copy(amtMassTransient.begin( ), amtMassTransient.end( ), amtMass.begin( )); //REVISIT -- do we need to do this??
-		//fall through
 	case inDiffAdvDoneMU:
+		//fall through
 		/* REVIEW -- check for negative
 		for (int s = 0; s < numSpecies( ); s++) {
 		if (amtMassTransient[s] < 0) {
@@ -1086,13 +1086,19 @@ void MeshElementSpecies::endOfCycle( ) {
 	case bndFrontApplied:
 		setState(bndStable);
 		break;
-	case transOutBndMassCollected:
+	case bndMassCollectedFrontApplied:
+		copyMass = false;
 		setState(bndStable);
 		break;
 	default:
 		badState("illegal endOfCycle state");
 	}
-	//temporary? store concentration
+	if (copyMass) {
+		VCELL_LOG(verbose,this->ident( ) << " eoc prior copy " << amtMassTransient[0] << " mass " << amtMass[0]);
+		std::copy(amtMassTransient.begin( ), amtMassTransient.end( ), amtMass.begin( )); 
+	} else {
+		VCELL_LOG(verbose,this->ident( ) << " eoc not copying ");
+	}
 	const bool inside = isInside( );
 	if (inside) {
 		moving_boundary::CoordinateProductType vol = this->volumePD( );

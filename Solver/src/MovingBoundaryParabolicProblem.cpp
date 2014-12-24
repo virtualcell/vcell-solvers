@@ -2,6 +2,7 @@
 #pragma warning ( disable: 4244 )
 #pragma warning ( disable: 4267 )
 #include <MPoint.h>
+#include <boost/logic/tribool.hpp>
 #include <World.h>
 #include <VoronoiMesh.h>
 #include <sstream>
@@ -29,6 +30,8 @@
 #include <MBridge/MBMovie.h>
 #include <MBridge/Scatter.h>
 #include <MBridge/MatlabDebug.h>
+
+#include <ExpressionException.h>
 using spatial::cX;
 using spatial::cY;
 
@@ -219,7 +222,8 @@ namespace moving_boundary {
 			advectVelocityExpY(mbs.advectVelocityFunctionStrY,symTable), 
 			frontVelocityExpX(mbs.frontVelocityFunctionStrX,symTable), 
 			frontVelocityExpY(mbs.frontVelocityFunctionStrY,symTable), 
-			concentrationExpressions(numSpecies), 
+			initialConcentrationExpressions(numSpecies), 
+			zeroSourceTerms(boost::logic::indeterminate),
 
 			vcFront(initFront(world, *this,mbs)),
 			currentFront( ),
@@ -241,13 +245,13 @@ namespace moving_boundary {
 			assert(nFunctionPointers == 0); 
 			for (int i = 0; i < numSpecies; i++) {
 				const SpeciesSpecification & ss = mbs.speciesSpecs[i];
-				concentrationExpressions[i] = VCell::Expression(ss.initialConcentrationStr,symTable);
+				initialConcentrationExpressions[i] = VCell::Expression(ss.initialConcentrationStr,symTable);
 				physiology.createSpecies(ss.name,ss.sourceExpressionStr);
 			}
 			std::array<std::string,3> syms = {"x","y","t"};
 			physiology.buildSymbolTable<3>(syms);
 			physiology.lock( );
-			
+
 			setInitialValues( );
 
 			//check time step
@@ -366,10 +370,10 @@ namespace moving_boundary {
 		*/
 		void setInitialValues( ) {
 			using std::vector;
-			assert(concentrationExpressions.size( ) == numSpecies);
+			assert(initialConcentrationExpressions.size( ) == numSpecies);
 			assert(physiology.numberSpecies( ) == numSpecies);
 			vector<ConcentrationProvider> concExp;
-			for (vector<VCell::Expression>::iterator iter = concentrationExpressions.begin( ); iter != concentrationExpressions.end( ); ++iter) {
+			for (vector<VCell::Expression>::iterator iter = initialConcentrationExpressions.begin( ); iter != initialConcentrationExpressions.end( ); ++iter) {
 				concExp.push_back(ConcentrationProvider(*iter));
 			}
 			assert(concExp.size( ) == numSpecies);
@@ -480,10 +484,10 @@ namespace moving_boundary {
 			double r = levelExp.evaluateVector(problemDomainValues);
 			/*
 			if (r > 0) {
-				scatterInside.add(problemDomainValues[0],problemDomainValues[1]);
+			scatterInside.add(problemDomainValues[0],problemDomainValues[1]);
 			}
 			else {
-				scatterOutside.add(problemDomainValues[0],problemDomainValues[1]);
+			scatterOutside.add(problemDomainValues[0],problemDomainValues[1]);
 			}
 			*/
 			return r;
@@ -885,7 +889,7 @@ namespace moving_boundary {
 				//double nextTime = lastPercentTime + progressDelta;
 				nextProgressGeneration = static_cast<size_t>(progressDelta/timeStep) + currentGeneration;
 				VCELL_KEY_LOG(debug,Key::progressEstimate, "PE lpt " << lastPercentTime << " pd " << progressDelta 
-				//	<< " nextTime " << nextTime 
+					//	<< " nextTime " << nextTime 
 					<< " timeStep " << timeStep << " current gen " << currentGeneration 
 					<< " next Gen " << nextProgressGeneration);
 			}
@@ -922,13 +926,13 @@ namespace moving_boundary {
 				while (currentTime < maxTime) {
 					std::pair<double,double> nowAndStep = times(generationCount); 
 					//TODO -- we're approximating front velocity for time step with velocity at beginning of time step
-						FrontVelocity fv(*this);
-						std::for_each(currentFront.begin( ),currentFront.end( ),fv);
-						double maxVel = sqrt(fv.maxSquaredVel);
-						double maxTimeStep_ = minimimMeshInterval / (2 * maxVel);
-						if (nowAndStep.second > maxTimeStep_) {
-							updateTimeStep(maxTimeStep_,generationCount);
-							nowAndStep = times(generationCount); 
+					FrontVelocity fv(*this);
+					std::for_each(currentFront.begin( ),currentFront.end( ),fv);
+					double maxVel = sqrt(fv.maxSquaredVel);
+					double maxTimeStep_ = minimimMeshInterval / (2 * maxVel);
+					if (nowAndStep.second > maxTimeStep_) {
+						updateTimeStep(maxTimeStep_,generationCount);
+						nowAndStep = times(generationCount); 
 					}
 					currentTime = nowAndStep.first;
 					double timeIncr = nowAndStep.second;
@@ -1054,16 +1058,16 @@ namespace moving_boundary {
 							const double simTimeThisRun = maxTime - percentInfo.simStartTime;
 							const double simTimeThusFar = currentTime - percentInfo.simStartTime;
 							if (eseconds.count( ) > 0) { //can't estimate at beginning
-									const double t = eseconds.count( )  * simTimeThisRun  / simTimeThusFar;
-									chrono::seconds total(static_cast<int>(t));
-									chrono::seconds remaining = total - eseconds; 
-									namespace HMSf = vcell_util::HoursMinutesSecondsFormat;
-									typedef vcell_util::HoursMinutesSeconds<chrono::seconds,HMSf::FIXED|HMSf::ALL> HMS;
-									typedef vcell_util::HoursMinutesSeconds<chrono::seconds,HMSf::FIXED|HMSf::ALL|HMSf::LONG_UNITS> HMSu;
-									std::cout << ", elasped time " << HMS(eseconds) << ", estimated time remaining " << HMSu(remaining);
-									VCELL_KEY_LOG(debug,Key::progressEstimate, "PE thisRun " <<  simTimeThisRun 
-										<< " thusFar " << simTimeThusFar << " t calc " << t
-										<< " est total seconds " << total.count( ) << ' ' << remaining.count( ) << " sec");
+								const double t = eseconds.count( )  * simTimeThisRun  / simTimeThusFar;
+								chrono::seconds total(static_cast<int>(t));
+								chrono::seconds remaining = total - eseconds; 
+								namespace HMSf = vcell_util::HoursMinutesSecondsFormat;
+								typedef vcell_util::HoursMinutesSeconds<chrono::seconds,HMSf::FIXED|HMSf::ALL> HMS;
+								typedef vcell_util::HoursMinutesSeconds<chrono::seconds,HMSf::FIXED|HMSf::ALL|HMSf::LONG_UNITS> HMSu;
+								std::cout << ", elasped time " << HMS(eseconds) << ", estimated time remaining " << HMSu(remaining);
+								VCELL_KEY_LOG(debug,Key::progressEstimate, "PE thisRun " <<  simTimeThisRun 
+									<< " thusFar " << simTimeThusFar << " t calc " << t
+									<< " est total seconds " << total.count( ) << ' ' << remaining.count( ) << " sec");
 
 							}
 						}
@@ -1077,7 +1081,7 @@ namespace moving_boundary {
 				}
 			} catch (std::exception &e) {
 				VCELL_LOG(fatal,"run( ) caught " << e.what( )  << " generation " << generationCount << " time" << currentTime);
-			throw;
+				throw;
 			}
 		}
 
@@ -1095,6 +1099,20 @@ namespace moving_boundary {
 				return;
 			}
 			throw std::logic_error("Call to reportProgress( ) while simulation is running");
+		}
+
+		bool noReaction( ) const {
+			if (zeroSourceTerms.value == boost::logic::tribool::indeterminate_value) {
+				zeroSourceTerms = true; //assume true, test for falseness
+				for (auto iter = physiology.beginSpecies( ); iter != physiology.endSpecies( ); ++iter) {
+					SExpression sourceTerm = iter->sourceTerm( );
+					if (!sourceTerm.isConstant( ) || sourceTerm.constantValue( ) != 0) {
+						zeroSourceTerms = false; 
+						break;
+					}
+				}
+			}
+			return zeroSourceTerms;
 		}
 
 		const MovingBoundarySetup & setup( ) const {
@@ -1214,7 +1232,8 @@ namespace moving_boundary {
 			advectVelocityExpY(mbs.advectVelocityFunctionStrY,symTable), 
 			frontVelocityExpX(mbs.frontVelocityFunctionStrX,symTable), 
 			frontVelocityExpY(mbs.frontVelocityFunctionStrY,symTable), 
-			concentrationExpressions( ), //PERSIST TODO
+			initialConcentrationExpressions( ), //PERSIST TODO
+			zeroSourceTerms( ), //PERSIST TODO
 
 			vcFront(nullptr),
 			currentFront( ),
@@ -1230,32 +1249,32 @@ namespace moving_boundary {
 			estimateProgress(false),
 			isRunning(false)
 		{
-				MeshElementSpecies::setProblemToWorldDistanceScale(world.theScale( ));
-				vcell_persist::Token::check<MovingBoundaryParabolicProblemImpl>(is);
-				//vcell_persist::binaryRead(is,diffusionConstant);
-				vcell_persist::binaryRead(is,generationCount);
-				vcell_persist::binaryRead(is,currentTime);
-				//vcell_persist::binaryRead(is,maxTime);
-				vcell_persist::binaryRead(is,timeStep);
-				vcell_persist::binaryRead(is,baselineTime);
-				vcell_persist::binaryRead(is,baselineGeneration);
-				vcell_persist::binaryRead(is,minimimMeshInterval);
-				vcFront = moving_boundary::restoreFrontProvider(is);
-				vcell_persist::restore(is,currentFront);
-				meshDefinition = MBMeshDef(is);
-				//MBMesh temp(is);
-				primaryMesh.restore(is);
-				vcell_persist::binaryRead(is,interiorVolume);
+			MeshElementSpecies::setProblemToWorldDistanceScale(world.theScale( ));
+			vcell_persist::Token::check<MovingBoundaryParabolicProblemImpl>(is);
+			//vcell_persist::binaryRead(is,diffusionConstant);
+			vcell_persist::binaryRead(is,generationCount);
+			vcell_persist::binaryRead(is,currentTime);
+			//vcell_persist::binaryRead(is,maxTime);
+			vcell_persist::binaryRead(is,timeStep);
+			vcell_persist::binaryRead(is,baselineTime);
+			vcell_persist::binaryRead(is,baselineGeneration);
+			vcell_persist::binaryRead(is,minimimMeshInterval);
+			vcFront = moving_boundary::restoreFrontProvider(is);
+			vcell_persist::restore(is,currentFront);
+			meshDefinition = MBMeshDef(is);
+			//MBMesh temp(is);
+			primaryMesh.restore(is);
+			vcell_persist::binaryRead(is,interiorVolume);
 
-				restoreElementsVector(is, boundaryElements);
-				restoreElementsVector(is, lostElements);
-				restoreElementsVector(is, gainedElements);
-				vcell_persist::binaryRead(is,statusPercent);
-				if (statusPercent > 0) {
-					vcell_persist::binaryRead(is,estimateProgress);
-				}
-				voronoiMesh.setMesh(primaryMesh);
+			restoreElementsVector(is, boundaryElements);
+			restoreElementsVector(is, lostElements);
+			restoreElementsVector(is, gainedElements);
+			vcell_persist::binaryRead(is,statusPercent);
+			if (statusPercent > 0) {
+				vcell_persist::binaryRead(is,estimateProgress);
 			}
+			voronoiMesh.setMesh(primaryMesh);
+		}
 
 		const int numSpecies;
 		WorldType & world;
@@ -1294,7 +1313,8 @@ namespace moving_boundary {
 		mutable VCell::Expression advectVelocityExpY;
 		mutable VCell::Expression frontVelocityExpX;
 		mutable VCell::Expression frontVelocityExpY;
-		std::vector<VCell::Expression> concentrationExpressions;
+		std::vector<VCell::Expression> initialConcentrationExpressions;
+		mutable boost::logic::tribool zeroSourceTerms; //logically const, but lazily evaluated
 		/**
 		* FronTier integration
 		*/
@@ -1440,11 +1460,11 @@ namespace moving_boundary {
 
 	MovingBoundaryParabolicProblem::MovingBoundaryParabolicProblem(const MovingBoundarySetup &mbs)
 		:sImpl(std::make_shared<MovingBoundaryParabolicProblemImpl>(mbs) ) {}
-		//:impl(new MovingBoundaryParabolicProblemImpl(mbs)) { }
+	//:impl(new MovingBoundaryParabolicProblemImpl(mbs)) { }
 
 	MovingBoundaryParabolicProblem::MovingBoundaryParabolicProblem(const MovingBoundarySetup &mbs, std::istream &is) 
 		:sImpl(std::make_shared<MovingBoundaryParabolicProblemImpl>(mbs,is) ) {}
-		//:impl(new MovingBoundaryParabolicProblemImpl(mbs,is)) { }
+	//:impl(new MovingBoundaryParabolicProblemImpl(mbs,is)) { }
 
 	const spatial::MeshDef<moving_boundary::CoordinateType,2> & MovingBoundaryParabolicProblem::meshDef( ) const {
 		return sImpl->meshDef( );
@@ -1475,6 +1495,9 @@ namespace moving_boundary {
 	}
 	void MovingBoundaryParabolicProblem::run( ) {
 		sImpl->run( );
+	}
+	bool MovingBoundaryParabolicProblem::noReaction( ) const {
+		return sImpl->noReaction( );
 	}
 
 	void MovingBoundaryParabolicProblem::plotPolygons(std::ostream &os)  const {

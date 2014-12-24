@@ -18,6 +18,7 @@
 #include <math.h>
 #include <persist.h>
 #include <Physiology.h>
+//#define MES_STATE_TRACK
 #ifdef MES_STATE_TRACK
 #define setState(x) DEBUG_SET_STATE(x, __FILE__, __LINE__)
 #endif
@@ -158,6 +159,7 @@ namespace moving_boundary {
 			* neighbors updated: (last state #bndDiffAdvDone, #transInBnd)
 			*/
 			bndFrontApplied,
+			bndMassCollectedFrontApplied,
 			/**
 			* neighbors updated and some mass has been collected: (last state #bndFrontApplied)
 			*/

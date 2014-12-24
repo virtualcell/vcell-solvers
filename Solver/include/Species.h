@@ -26,6 +26,14 @@ namespace moving_boundary {
 				return name_;
 			}
 
+			/**
+			* does this have a constant source term?
+			* @return true if does
+			*/
+			const SExpression & sourceTerm( ) const {
+				return sourceExp;
+			}
+
 		private:
 			std::string name_;
 			SExpression sourceExp;

@@ -319,9 +319,10 @@ namespace {
 			:xml(xml_),
 			file(f),
 			theProblem(mbpp), 
+			constantSim(mbpp.noReaction( )),
 			currentTime(0),
-			//totalStuff(0),
-			//oldStuff(0),
+			totalStuff(0),
+			oldStuff(0),
 			meshDef(mbpp.meshDef( )),
 			numberSpecies(meshDef.numberSpecies( )),
 			eRecords(),
@@ -553,7 +554,7 @@ namespace {
 			if (reportActive) {
 				writeBoundary(genTimes.size( ),geometryInfo.boundary);
 				currentTime = t;
-				//totalStuff = 0;
+				totalStuff = 0;
 				std::cout << "generation " << std::setw(2) <<  generationCounter << " time " << currentTime << " end " << std::endl;
 				VCELL_KEY_LOG(trace,Key::generationTime,"generation " << std::setw(2) <<  generationCounter << " time " << currentTime);
 				genTimes.push_back(t);
@@ -649,7 +650,9 @@ namespace {
 				er.controlVolume.resize(pVec.size( ));
 				std::transform(pVec.begin( ),pVec.end( ),er.controlVolume.begin( ),pointconverter);
 
-				//totalStuff += m;
+				if (constantSim) {
+					totalStuff += er.mass[0];
+				}
 			}
 		}
 		/**
@@ -657,8 +660,8 @@ namespace {
 		*/
 		virtual void iterationComplete( ) {
 			if (reportActive) {
-				//VCELL_LOG(info,"Time " << currentTime << " total mass " << totalStuff); 
-				VCELL_LOG(info,"Time " << currentTime); 
+				VCELL_LOG(info,"Time " << currentTime << " total mass " << totalStuff); 
+				//VCELL_LOG(info,"Time " << currentTime); 
 				if (eRecords.size( ) > 0) {
 
 					try {
@@ -735,14 +738,16 @@ namespace {
 				theProblem.plotAreas(fa);
 				theProblem.plotPolygons(fp);
 				*/
-				/*
+
+				
+				if (constantSim) {
 				if (oldStuff != 0 && !spatial::nearlyEqual(oldStuff,totalStuff,1e-3)) {
-				simulationComplete( ); //write out final info
-				VCELL_EXCEPTION(logic_error, "mass not conserved old"<< oldStuff << " , new " << totalStuff
-				<< ", gain(+)/loss(-) " << (totalStuff - oldStuff));
+					simulationComplete( ); //write out final info
+					VCELL_EXCEPTION(logic_error, "mass not conserved old"<< oldStuff << " , new " << totalStuff
+					<< ", gain(+)/loss(-) " << (totalStuff - oldStuff));
 				}
 				oldStuff = totalStuff;
-				*/
+				}
 			}
 		}
 
@@ -786,6 +791,7 @@ namespace {
 		}
 
 		const moving_boundary::MovingBoundaryParabolicProblem &theProblem;
+		const bool constantSim;
 
 		/**
 		* XML used to create
@@ -793,8 +799,8 @@ namespace {
 		std::string xml;
 		H5::H5File & file;
 		double currentTime; 
-		//double totalStuff;
-		//double oldStuff;
+		double totalStuff;
+		double oldStuff;
 		const spatial::MeshDef<moving_boundary::CoordinateType,2> meshDef;
 		const size_t numberSpecies;
 		typedef std::map<spatial::TPoint<size_t,2>, HElementRecord> RecordMap; 
@@ -972,7 +978,7 @@ ReportClient * ReportClient::setup(const XMLElement &root, const std::string & f
 		std::string h5Msg = h5e.getDetailMsg( );
 		h5Msg += " ";
 		h5Msg += h5e.getFuncName( );
-		throw new std::runtime_error(h5Msg);
+		throw std::runtime_error(h5Msg);
 	}
 }
 

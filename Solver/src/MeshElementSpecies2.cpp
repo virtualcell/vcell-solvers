@@ -67,6 +67,7 @@ spatial::SurfacePosition MeshElementSpecies::mPos( ) const {
 	case bndDiffAdvDone:
 	case bndDiffAdvDoneMU:
 	case bndFrontApplied:
+	case bndMassCollectedFrontApplied:
 	case transInBnd:
 	case transOutBndSetBnd:
 	case transOutBndNbrSet:
@@ -304,6 +305,7 @@ std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::Me
 		CASE(bndDiffAdvDoneMU);
 		//CASE(bndNbrUpdated);
 		CASE(bndFrontApplied);
+		CASE(bndMassCollectedFrontApplied);
 		CASE(bndStable);
 		CASE(outStable);
 		CASE(outStableDeep);
@@ -329,10 +331,10 @@ void MeshElementSpecies::DEBUG_SET_STATE(moving_boundary::MeshElementStateful::S
 	const char comma = ',';
 
 	//to trace individual element calls
-	slog << ident( ) << comma << s << comma << full.substr(idx + 1) << comma << line << std::endl;
+	//slog << ident( ) << comma << s << comma << full.substr(idx + 1) << comma << line << std::endl;
 
 	//just to find active calls
-	//slog << stateVar << comma << s << comma << full.substr(idx + 1) << comma << line << std::endl;
+	slog << stateVar << comma << s << comma << full.substr(idx + 1) << comma << line << std::endl;
 	stateVar = s;
 	VCELL_LOG(trace, ident( ) << " new state" ); 
 	assert(debugSetState( ));

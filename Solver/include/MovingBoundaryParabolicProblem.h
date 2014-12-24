@@ -95,6 +95,11 @@ namespace moving_boundary {
 
 		std::string frontDescription( ) const;
 
+		/**
+		* return true there are no reactions (zero terms are zero)
+		*/
+		bool noReaction( ) const;
+
 	private:
 		//MovingBoundaryParabolicProblemImpl *impl;
 		std::shared_ptr<MovingBoundaryParabolicProblemImpl> sImpl;

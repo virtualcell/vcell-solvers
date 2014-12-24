@@ -139,8 +139,12 @@ int main(int argc, char *argv[])
 		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << filename << std::endl; 
 		return 4;
 	}
+	catch (H5::Exception & e) {
+		std::cerr <<  argv[0] << " caught H5 exception" << e.getCDetailMsg( ) << " reading " << filename << std::endl; 
+		return 7;
+	}
 	catch (...) {
-		std::cerr <<  argv[0] << " caught unknown exception" << " reading " << filename << std::endl; 
+		std::cerr <<  argv[0] << " caught unknown exception reading " << filename << std::endl; 
 		return 5;
 	}
 	if (parseOnly) {
