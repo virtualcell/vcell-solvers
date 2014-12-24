@@ -106,7 +106,13 @@ ChomboScheduler::ChomboScheduler(SimulationExpression* sim, ChomboSpec* chomboSp
 	}
 	hdf5FileCount = 0;
 	numGhostSoln = IntVect::Unit * 3;
+	
+#ifdef CH_MPI
 	membraneIndexGhost = IntVect::Unit;
+#else
+	membraneIndexGhost = IntVect::Zero;
+#endif
+	
 	pout() << "maxBoxSiz=" << chomboSpec->getMaxBoxSize() << endl;
 	pout() << "fillRatio=" << chomboSpec->getFillRatio() << endl;
 
@@ -485,7 +491,7 @@ void ChomboScheduler::generateMembraneIndexData()
 				for (DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
 				{
 					(*irregularPointMembraneIDs[iphase][ivol][ilev])[dit()].setVal(-1);
-					(*irregularPointMembraneIndex[iphase][ivol][ilev])[dit()].setVal(-1);
+					(*irregularPointMembraneIndex[iphase][ivol][ilev])[dit()].setVal(MEMBRANE_INDEX_INVALID);
 				}
 			} // end ilev
 		} // end ivol
@@ -611,8 +617,28 @@ void ChomboScheduler::generateVolumeMembraneIndexMap()
 					// compute map entry
 					int volIndex = getVolumeIndex(vectNxes[ilev], gridIndex);
 					int globalMemIndex = (*irregularPointMembraneIndex[phase0][ivol][ilev])[dit()](vof, 0);
-					irregVolumeMembraneMap[ilev][volIndex] = globalMemIndex;
-				}
+					map<int,int>::iterator iter = irregVolumeMembraneMap[ilev].find(volIndex);
+					if (iter == irregVolumeMembraneMap[ilev].end())
+					{
+						irregVolumeMembraneMap[ilev][volIndex] = globalMemIndex;
+					}
+					else
+					{
+						int existingMemIndex = irregVolumeMembraneMap[ilev][volIndex];
+						if (existingMemIndex == globalMemIndex)
+						{
+							pout() << "Vol->Mem mapping @ " << gridIndex << " already set to  " << existingMemIndex
+											<< " and now another mapping set to the same again.";
+						}
+						else
+						{
+							stringstream ss;
+							ss << "Vol->Mem mapping @ " << gridIndex << " already set to  " << existingMemIndex
+											<< " and now another mapping set to " << globalMemIndex << " again.";
+							throw ss.str();
+						}
+					}
+				} // end for vof
 			} // end for dit
 		} // end for ilev
 	} // end for ivol
