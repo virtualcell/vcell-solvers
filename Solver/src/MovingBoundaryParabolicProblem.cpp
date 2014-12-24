@@ -589,11 +589,11 @@ namespace moving_boundary {
 				dump << matlabBridge::ConsoleMessage(mbuf.str());
 				dump << matlabBridge::FigureName(oss.str( ).c_str( ));
 			}
-			matlabBridge::TScatter<CoordinateType> deepInside('y',3,true,0);
+			matlabBridge::TScatter<CoordinateType> deepInside('b',3,false,0);
 			matlabBridge::TScatter<CoordinateType> inside('b',2,true,1);
 			matlabBridge::TScatter<CoordinateType> boundary('g',2,true,2);
-			matlabBridge::TScatter<CoordinateType> outside('m',2,true,3);
-			matlabBridge::TScatter<CoordinateType> deepOutside('r',2,false,4);
+			matlabBridge::TScatter<CoordinateType> outside('r',2,true,3);
+			matlabBridge::TScatter<CoordinateType> deepOutside('r',3,false,4);
 			for (MBMesh::const_iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
 				switch(iter->mPos( )) {
 				case spatial::deepInteriorSurface:

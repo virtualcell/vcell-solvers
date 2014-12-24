@@ -447,14 +447,8 @@ namespace moving_boundary {
 			case State::inDiffAdvDoneMU:
 			//case State:: stableUpdated:
 			//case State:: stableSourceApplied:
-				switch (this->mPos( )) {
-				case spatial::interiorSurface:
-				case spatial::deepInteriorSurface: 
 					assert(interiorVolume > 0); //should be set externally 
 					return interiorVolume;
-				}
-				return vol.volume( ) /distanceScaledSquared; 
-				break;
 			case State::transBndOut: 
 			case State::transInBnd:
 			case State::transOutBndSetBnd:

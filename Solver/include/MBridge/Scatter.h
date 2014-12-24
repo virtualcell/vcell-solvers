@@ -11,6 +11,12 @@ namespace matlabBridge {
 	*/
 	template <typename T>
 	struct TScatter : public MatlabGenerator {
+		/**
+		* @param color_ color of marker
+		* @param markerSize_ size of circle
+		* @param fill_ fill in the circle?
+		* @param sequenceNumber_ necessary when more than one scatter plot in same matlab script
+		*/
 		TScatter(char color_, int markerSize_, bool fill_ = false, int sequenceNumber_= 0)
 			:MatlabGenerator("scatterPlotMatrix", sequenceNumber_),
 			points( ),

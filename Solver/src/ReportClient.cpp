@@ -739,14 +739,14 @@ namespace {
 				theProblem.plotPolygons(fp);
 				*/
 
-				
+
 				if (constantSim) {
-				if (oldStuff != 0 && !spatial::nearlyEqual(oldStuff,totalStuff,1e-3)) {
-					simulationComplete( ); //write out final info
-					VCELL_EXCEPTION(logic_error, "mass not conserved old"<< oldStuff << " , new " << totalStuff
-					<< ", gain(+)/loss(-) " << (totalStuff - oldStuff));
-				}
-				oldStuff = totalStuff;
+					if (oldStuff != 0 && !spatial::nearlyEqual(oldStuff,totalStuff,1e-3)) {
+						simulationComplete( ); //write out final info
+						VCELL_EXCEPTION(logic_error, "mass not conserved old"<< oldStuff << " , new " << totalStuff
+							<< ", gain(+)/loss(-) " << (totalStuff - oldStuff));
+					}
+					oldStuff = totalStuff;
 				}
 			}
 		}

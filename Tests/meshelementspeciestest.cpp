@@ -146,6 +146,11 @@ TEST(persist,dogx) {
 	std::vector<int> v;
 	std::vector<Salad *> salad;
 	std::transform(salad.begin( ),salad.end( ),v.begin( ),F( ));
-
-
+}
+TEST(mes,states) {
+	using namespace moving_boundary::MeshElementStateful;
+	for (int i = 0; i < 30; i++) {
+		State s = static_cast<State>(i);
+		std::cout << s << std::endl;
+	}
 }

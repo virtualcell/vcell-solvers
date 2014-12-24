@@ -52,12 +52,13 @@ bool MeshElementSpecies::isInside( ) const {
 }
 spatial::SurfacePosition MeshElementSpecies::mPos( ) const {
 	switch (state( )) {
+	case inStableDeep:
+	case inStableDeepDiffAdvDone:
+		return spatial::deepInteriorSurface;
 	case initialInside:
 	case inStable:
 	case inDiffAdvDone:
 	case inDiffAdvDoneMU:
-	case inStableDeep:
-	case inStableDeepDiffAdvDone:
 	case transOutBndSetIn: //this has to return true to get second call to setPos
 		return spatial::interiorSurface;
 	case initialBoundary: 
@@ -75,9 +76,10 @@ spatial::SurfacePosition MeshElementSpecies::mPos( ) const {
 	//case bndNbrUpdated:
 		return spatial::boundarySurface;
 	case outStable:
-	case outStableDeep:
 	case transBndOut: 
 		return spatial::outsideSurface;
+	case outStableDeep:
+		return spatial::deepOutsideSurface;
 	default:
 		badState("mPos def");
 	}
@@ -303,7 +305,6 @@ std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::Me
 		CASE(bndNbrEdgesFound);
 		CASE(bndDiffAdvDone);
 		CASE(bndDiffAdvDoneMU);
-		//CASE(bndNbrUpdated);
 		CASE(bndFrontApplied);
 		CASE(bndMassCollectedFrontApplied);
 		CASE(bndStable);
