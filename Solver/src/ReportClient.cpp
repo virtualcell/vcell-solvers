@@ -11,6 +11,7 @@
 #include <World.h>
 #include <vcellxml.h>
 #include <ReportClient.h>
+#include <version.h>
 #include <vhdf5/dataset.h>
 #include <vhdf5/attribute.h>
 #include <vhdf5/suppressor.h>
@@ -365,19 +366,19 @@ namespace {
 
 			{ //create group
 
-				std::string groupName;
-				if (baseName != nullptr) {
-					groupName = baseName;
-				}
-				else {
-					std::ostringstream oss;
-					oss << "result-" << numberGenerations << '-' <<  meshDef.numCells(cX)  << '-' <<meshDef.numCells(cY); 
-					groupName = oss.str( );
-				}
-				{
-					vcellH5::Suppressor s; //no error message if not there
-					H5Ldelete( file.getLocId(), groupName.c_str( ), H5P_DEFAULT );
-				}
+				//std::string groupName;
+				//if (baseName != nullptr) {
+				//	groupName = baseName;
+				//}
+				//else {
+				//	std::ostringstream oss;
+				//	oss << "result-" << numberGenerations << '-' <<  meshDef.numCells(cX)  << '-' <<meshDef.numCells(cY); 
+				//	groupName = oss.str( );
+				//}
+				//{
+				//	vcellH5::Suppressor s; //no error message if not there
+				//	H5Ldelete( file.getLocId(), groupName.c_str( ), H5P_DEFAULT );
+				//}
 				//std::cerr << "creating " << groupName << std::endl;
 				//baseGroup = file.createGroup(groupName);
 				const double & bts = mbpp.baseTimeStep( );
@@ -477,6 +478,13 @@ namespace {
 
 				boundaryDataset = baseGroup.createDataSet( "boundaries", vtype.getType( ), dataspace ,prop);
 			} //create boundary dataset
+
+
+			//anotate version info
+			const vcell_util::Version & version = vcell_util::Version::get( );
+			annotate("svnVersion",version.svn);
+			annotate("compileDate",version.compileDate);
+			annotate("compileTime",version.compileTime);
 		}
 
 
@@ -500,7 +508,7 @@ namespace {
 		* @param value 
 		*/
 		void annotate(const char *attributeName, const std::string & value) { 
-			vcellH5::writeAttribute(elementDataset,attributeName,value);
+			vcellH5::writeAttribute(baseGroup,attributeName,value);
 		}
 
 		/**

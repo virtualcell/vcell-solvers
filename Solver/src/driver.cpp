@@ -8,6 +8,7 @@
 #include <MBridge/MatlabDebug.h>
 #include <tclap/CmdLine.h>
 #include <ReportClient.h>
+#include <version.h>
 /**
 * usings and typedefs
 */
@@ -36,18 +37,11 @@ namespace {
 	std::auto_ptr<vcell_util::FileDest> traceFileDestination; 
 }
 
-#if !defined(SVNVERSION)
-#error SVNVERSION version not defined
-#endif
-
-#define VCELLSVNQ(x) #x
-#define VCELLSVNQUOTE(x) VCELLSVNQ(x)
-
 int main(int argc, char *argv[])
 {
 	std::cout 
-		<< "MovingBoundarySolver version $URL$" VCELLSVNQUOTE(SVNVERSION)
-		<< std::endl; 
+		<< "MovingBoundarySolver version $URL$" 
+		<< vcell_util::Version::get( ).svn << std::endl; 
 
 	std::string filename;
 	std::string outname;
