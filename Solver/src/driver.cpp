@@ -39,9 +39,10 @@ namespace {
 
 int main(int argc, char *argv[])
 {
+	const vcell_util::Version & version = vcell_util::Version::get( );
 	std::cout 
 		<< "MovingBoundarySolver version $URL$" 
-		<< vcell_util::Version::get( ).svn << std::endl; 
+		<< "revision " << version.svn << ' ' << version.compileDate << std::endl; 
 
 	std::string filename;
 	std::string outname;
@@ -51,7 +52,7 @@ int main(int argc, char *argv[])
 	namespace tclap = TCLAP;
 	try {
 		using namespace TCLAP; 
-		CmdLine cmd("Moving boundary solve",' ',"1");
+		CmdLine cmd("Moving boundary solve",' ',version.svn);
 		cmd.setExceptionHandling(false);
 		ValueArg<std::string> config("c","config","Input XML file name",false,"","string",cmd);
 		ValueArg<std::string> output("o","output","HDF5 output file name",false,"","string",cmd);
