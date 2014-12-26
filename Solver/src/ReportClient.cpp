@@ -58,11 +58,12 @@ namespace {
 		std::vector<double> concentration;
 		char  boundaryPosition; 
 		std::vector<PODPoint<double> > controlVolume;
+		static const char inactivePosition = 'X';
 		HElementRecord( )
 			:volume(),
 			mass(),
 			concentration(),
-			boundaryPosition('T'),
+			boundaryPosition(inactivePosition),
 			controlVolume( ){ }
 		/**
 		* size mass and concentration vectors
@@ -619,13 +620,11 @@ namespace {
 			case spatial::boundarySurface:
 				return 'B';
 			case spatial::outsideSurface:
-				return 'T';
 			case spatial::deepOutsideSurface:
-				return 'Z';
 			case spatial::unsetPosition:
-				return 'U'; 
 			default:
-				return 'X';
+				assert(0);  //we don't currently expect any of these
+				return HElementRecord::inactivePosition; 
 			}
 		}
 
@@ -678,30 +677,34 @@ namespace {
 						minI = minJ = std::numeric_limits<size_t>::max( );
 						maxI = maxJ = std::numeric_limits<size_t>::min( );
 						for (RecordMap::const_iterator iter = eRecords.begin( ); iter != eRecords.end( ); ++iter) {
-							size_t i = iter->first(spatial::cX);
-							size_t j = iter->first(spatial::cY);
-							minI = std::min(minI,i);
-							minJ = std::min(minJ,j);
-							maxI = std::max(maxI,i);
-							maxJ = std::max(maxJ,j);
-
+							if (iter->second.boundaryPosition != HElementRecord::inactivePosition) {
+								size_t i = iter->first(spatial::cX);
+								size_t j = iter->first(spatial::cY);
+								minI = std::min(minI,i);
+								minJ = std::min(minJ,j);
+								maxI = std::max(maxI,i);
+								maxJ = std::max(maxJ,j);
+							}
 						}
 						const size_t iSpan = maxI - minI + 1;
 						const size_t jSpan = maxJ - minJ + 1;
-						elementStorage.reindex(iSpan,jSpan);
-						speciesStorage.reindex(iSpan,jSpan,numberSpecies);
+						elementStorage.reindex(iSpan,jSpan).reset( );
+						speciesStorage.reindex(iSpan,jSpan,numberSpecies).reset( );
 
 						size_t timeIndex = genTimes.size( ) - 1;
 
 						for (RecordMap::iterator iter = eRecords.begin( ); iter != eRecords.end( ); ++iter) {
 							HElementRecord & er = iter->second;
-							const spatial::TPoint<size_t,2> & index = iter->first;
-							hsize_t i = index(spatial::cX);
-							hsize_t j = index(spatial::cY); 
-							elementStorage[i - minI][j - minJ].set(er);
-							for (int s = 0; s < numberSpecies; ++s) {
-								speciesStorage[i - minI][j - minJ][s].set(er,s);
+							if (er.boundaryPosition != HElementRecord::inactivePosition) {
+								const spatial::TPoint<size_t,2> & index = iter->first;
+								hsize_t i = index(spatial::cX);
+								hsize_t j = index(spatial::cY); 
+								elementStorage[i - minI][j - minJ].set(er);
+								for (int s = 0; s < numberSpecies; ++s) {
+									speciesStorage[i - minI][j - minJ][s].set(er,s);
+								}
 							}
+							er.boundaryPosition = HElementRecord::inactivePosition;
 						}
 						const size_t singleTimeSlice = 1;
 						//are datasets big enough in time dimension?

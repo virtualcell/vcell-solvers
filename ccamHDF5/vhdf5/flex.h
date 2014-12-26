@@ -63,10 +63,11 @@ namespace vcellH5 {
 		* reconfigure to difference layout; previous values no
 		* longer accessible using previous indexing scheme
 		*/
-		void reindex(size_t columnSize, size_t rowSize) {
+		Flex2 & reindex(size_t columnSize, size_t rowSize) {
 			colSize_ = columnSize;
 			rowSize_ = rowSize;
 			storage.resize(columnSize * rowSize);
+			return *this;
 		}
 		/**
 		* allow setting with same array used to create DataSpace
@@ -74,10 +75,14 @@ namespace vcellH5 {
 		* reconfigure to difference layout; previous values no
 		* longer accessible using previous indexing scheme
 		*/
-		void reindex(hsize_t *dims) {
-			colSize_ = dims[0]; 
-			rowSize_ = dims[1]; 
-			storage.resize(colSize_ * rowSize_);
+		Flex2 & reindex(hsize_t *dims) {
+			return reindex( dims[0],dims[1]);
+		}
+		/**
+		* rest all values to default constructor value
+		*/
+		void reset( ) {
+			std::fill(storage.begin( ),storage.end( ),T( ));
 		}
 	private:
 		friend Flex2Col<T>;
@@ -172,12 +177,13 @@ namespace vcellH5 {
 		* reconfigure to difference layout; previous values no
 		* longer accessible using previous indexing scheme
 		*/
-		void reindex(size_t depthSize, size_t columnSize, size_t rowSize) {
+		Flex3 & reindex(size_t depthSize, size_t columnSize, size_t rowSize) {
 			depthSize_ = depthSize;
 			colSize_ = columnSize;
 			rowSize_ = rowSize;
 			depthBlock = columnSize * rowSize;
 			storage.resize(depthSize * depthBlock);
+			return *this;
 		}
 		/*
 		* allow setting with same array used to create DataSpace
@@ -185,8 +191,14 @@ namespace vcellH5 {
 		* reconfigure to difference layout; previous values no
 		* longer accessible using previous indexing scheme
 		*/
-		void reindex(hsize_t *dims) {
-			reindex(dims[0],dims[1],dims[2]);
+		Flex3 & reindex(hsize_t *dims) {
+			return reindex(dims[0],dims[1],dims[2]);
+		}
+		/**
+		* rest all values to default constructor value
+		*/
+		void reset( ) {
+			std::fill(storage.begin( ),storage.end( ),T( ));
 		}
 	private:
 		friend Flex3Col<T>;
