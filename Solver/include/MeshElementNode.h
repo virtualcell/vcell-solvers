@@ -17,7 +17,6 @@
 #include <math.h>
 #include <persist.h>
 #include <Physiology.h>
-#define MESH_ELEMENT_NODE_STATE_TRACK
 #ifdef MESH_ELEMENT_NODE_STATE_TRACK
 #define setState(x) DEBUG_SET_STATE(x, __FILE__, __LINE__)
 #endif
