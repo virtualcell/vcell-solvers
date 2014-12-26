@@ -254,106 +254,6 @@ void MeshElementSpecies::setPos(SurfacePosition m)  {
 	}
 	VCELL_EXCEPTION(domain_error,this->ident( ) << " position " << m << " from " << state( ));
 }
-//	if (m == this->mPos( ) || (m == spatial::interiorSurface && this->mPos( ) == spatial::deepInteriorSurface) ){
-//		return;
-//	}
-//	switch (state( )) {
-//	case initial:
-//		if (this->mPos( ) != unsetPosition) {
-//			throw std::domain_error("initial not unset");
-//		}
-//		setState(stable);
-//		break;
-//	case stableUpdated:
-//		switch (m) {
-//		case deepInteriorSurface: 
-//		case interiorSurface:
-//		case outsideSurface:
-//		case deepOutsideSurface:
-//			throw SkipsBoundary(*this,m);
-//			break;
-//		case boundarySurface:
-//			setState(transInBnd);
-//			break;
-//		default:
-//			assert(0);
-//		}
-//		break;
-//	case stable:
-//		switch (m) {
-//		case boundarySurface:
-//			throw std::domain_error("s");
-//		case interiorSurface:
-//			setState(transOutBndSetIn);
-//			break;
-//		case deepInteriorSurface: 
-//			throw std::domain_error("stable -> deep interior");
-//		case outsideSurface:
-//		case deepOutsideSurface:
-//			throw std::domain_error("stable -> ext");
-//		}
-//		break;
-//		/*
-//		case legacyInteriorSet:
-//		//this occurs during reclassification B->I->B
-//		if (m  != boundarySurface) {
-//		throw std::domain_error("lis not boundary");
-//		}
-//		setState(bndDiffAdvDone); //set back to what it was
-//		break;
-//		*/
-//	case bndDiffAdvDone: 
-//		switch (m) {
-//		case interiorSurface:
-//			setState(stableUpdated); 
-//			neighbors = interiorNeighbors.data( );
-//			vol.clear( );
-//			getControlVolume( );
-//			break;
-//		case outsideSurface:
-//			//not deepOutside -- too far
-//			setState(transBndOut);
-//			break;
-//		default:
-//			assert(0);
-//		}
-//		break;
-//	case transOutBndSetIn:
-//		switch (m) {
-//		case interiorSurface:
-//			setState(stableUpdated);
-//			break;
-//		case deepInteriorSurface: 
-//		case outsideSurface:
-//			VCELL_EXCEPTION(domain_error,this->ident( ) << " position " << m << " from " << this->mPos( ));
-//			break;
-//		case boundarySurface:
-//			setState(transOutBndSetBnd);
-//			break;
-//		default:
-//			assert(0);
-//		}
-//		break;
-//
-//	default:
-//		VCELL_EXCEPTION(domain_error,this->ident( ) << " state " << state( ) 
-//			<< " currently " << this->mPos( ) << " being set to " << m);
-//	}
-//	base::setPos(m);
-//	switch (this->mPos( )) {
-//	case deepInteriorSurface:
-//	case interiorSurface:
-//		neighbors = interiorNeighbors.data( );
-//		break;
-//	case outsideSurface:
-//	case deepOutsideSurface:
-//		break; //keep neighbors pointer intact for #distributeLost
-//	case boundarySurface:
-//		//NOTE: neighbors will need to be reset if boundaryNeighbors vector resizes
-//		neighbors = boundaryNeighbors.data( ); 
-//		break;
-//	}
-//}
 
 struct MeshElementSpecies::SetupBoundaryNeighbor : public std::unary_function<OurType *,NeighborType> {
 	OurType &clientElement;
@@ -827,43 +727,8 @@ const moving_boundary::Volume2DClass & MeshElementSpecies::getControlVolume( ) c
 		badState("getControlVolume");
 		break;
 	}
-
-	/*
-	switch (this->mp) {
-	case deepInteriorSurface: 
-	case interiorSurface:
-	us.vol =  us.createInsidePolygon( );
-	break;
-	case boundarySurface:
-	if (isBoundaryElementWithInsideNeighbors( )) {
-	us.vol = us.createInsidePolygon( );
-	}
-	else {
-	VCELL_EXCEPTION(logic_error,this->ident( ) << " " << state( ) << "has no polygon")   ;
-	}
-	break;
-	case outsideSurface: 
-	case deepOutsideSurface: 
-	break;
-	default:
-	throw std::logic_error("unknown case");
-	}
-	*/
 	return vol;
 }
-
-/*
-namespace {
-template <class COORD_TYPE, class REAL>
-struct VolRecord {
-VolRecord( )
-:neighbor(nullptr),
-vol(0) {}
-MeshElementSpecies *neighbor;
-REAL vol;
-};
-}
-*/
 
 inline moving_boundary::CoordinateProductType MeshElementSpecies::voronoiOverlap(const moving_boundary::Volume2DClass &oldVolume) {
 	Volume2DClass intersection = voronoiVolume.intersection(oldVolume);

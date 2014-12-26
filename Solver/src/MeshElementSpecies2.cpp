@@ -32,14 +32,12 @@ bool MeshElementSpecies::isInside( ) const {
 	case bndDiffAdvDone:
 	case bndDiffAdvDoneMU:
 	case bndFrontApplied:
-	//case bndNbrUpdated:
 	case bndStable:
 	case transInBnd:
 	case transOutBndSetBnd:
 	case transOutBndNbrSet:
 	case transOutBndMassCollected: 
 	case transOutBndSetIn:
-	case transBndIn:
 		return true;
 	case outStable:
 	case outStableDeep:
@@ -73,7 +71,6 @@ spatial::SurfacePosition MeshElementSpecies::mPos( ) const {
 	case transOutBndSetBnd:
 	case transOutBndNbrSet:
 	case transOutBndMassCollected: 
-	//case bndNbrUpdated:
 		return spatial::boundarySurface;
 	case outStable:
 	case transBndOut: 
@@ -85,31 +82,6 @@ spatial::SurfacePosition MeshElementSpecies::mPos( ) const {
 	}
 		return spatial::outsideSurface;
 }
-/*
-bool MeshElementSpecies::isOutside( ) const {
-	switch (state( )) {
-	case initial:
-	case inStable:
-	case inDiffAdvDone:
-	case inStableDeep:
-	case inStableDeepDiffAdvDone:
-	case bndFrontMoved:
-	case bndNbrEdgesFound:
-	case bndDiffAdvDone:
-	case bndFrontApplied:
-	case bndFrontAppliedMU:
-	case bndStable:
-	case outStable:
-	case outStableDeep:
-	case transBndOut: 
-	case transInBnd:
-	case transOutBndSetBnd:
-	case transOutBndNbrSet:
-	case transOutBndMassCollected: 
-	case transOutBndSetIn:
-	}
-} 
-*/
 bool MeshElementSpecies::isDeep( ) const  {
 	switch (state( )) {
 	case inDiffAdvDone:
@@ -121,7 +93,6 @@ bool MeshElementSpecies::isDeep( ) const  {
 	case bndStable:
 	case bndFrontMoved:
 	case bndNbrEdgesFound:
-	//case bndNbrUpdated:
 	case bndFrontApplied:
 	case outStable:
 	case transBndOut: 
@@ -140,31 +111,7 @@ bool MeshElementSpecies::isDeep( ) const  {
 	}
 	return false; 
 }
-/*
-bool MeshElementSpecies::isBoundary( ) const  {
-	switch (state( )) {
-	//case initial:
-	case inStable:
-	case inDiffAdvDone:
-	case inStableDeep:
-	case inStableDeepDiffAdvDone:
-	case bndFrontMoved:
-	case bndNbrEdgesFound:
-	case bndDiffAdvDone:
-	case bndFrontApplied:
-	case bndFrontAppliedMU:
-	case bndStable:
-	case outStable:
-	case outStableDeep:
-	case transBndOut: 
-	case transInBnd:
-	case transOutBndSetBnd:
-	case transOutBndNbrSet:
-	case transOutBndMassCollected: 
-	case transOutBndSetIn:
-	}
-}
-*/
+
 void MeshElementSpecies::listBoundary(std::ostream & os) const {
 	using spatial::cX;
 	using spatial::cY;
@@ -310,7 +257,6 @@ std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::Me
 		CASE(bndStable);
 		CASE(outStable);
 		CASE(outStableDeep);
-		CASE(transBndIn); 
 		CASE(transBndOut); 
 		CASE(transInBnd);
 		CASE(transOutBndSetBnd);

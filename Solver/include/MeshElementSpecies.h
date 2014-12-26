@@ -10,7 +10,6 @@
 #include <SVector.h>
 #include <Segment.h>
 #include <Mesh.h>
-//#include <VoronoiMesh.h>
 #include <VCellException.h>
 #include <Logger.h>
 #include <DiffuseAdvectCache.h>
@@ -18,22 +17,12 @@
 #include <math.h>
 #include <persist.h>
 #include <Physiology.h>
-//#define MES_STATE_TRACK
+#define MES_STATE_TRACK
 #ifdef MES_STATE_TRACK
 #define setState(x) DEBUG_SET_STATE(x, __FILE__, __LINE__)
 #endif
 
-//forward definitions
-//namespace spatial {
-//
-//	template<class COORD_TYPE, int N> struct MeshDef; 
-//	template<class COORD_TYPE, int N, class TELEMENT> struct Mesh; 
-//	//struct VoronoiResult;
-//}
-
 namespace moving_boundary {
-	//placeholder until we convert fixed std::array to dynamic storage
-	//const size_t nOfS = 1;
 	struct VoronoiMesh;
 	struct MeshElementSpecies;
 	struct MeshElementSpeciesIdent;
@@ -90,96 +79,152 @@ namespace moving_boundary {
 	namespace MeshElementStateful {
 		//if adding state, add to std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::MeshElementStateful::State state) in *cpp 
 		/**
-		* describes both position relative to boundary and processing status. Names indicate last step performed
-		* trans -- tranisitioning
-		* in -- inside boundary but not adjacent to boundary
-		* Bnd -- inside and adjacent to boundary 
-		* Out -- outside boundary 
-		* DiffAdv -- diffusionAdvection 
-		* Nbr -- neighbor 
+		* describes both position relative to boundary and processing status. Names indicate last step started or completed 
+		* -  trans -- tranisitioning
+		* -  in -- inside boundary but not adjacent to boundary
+		* -  Bnd -- inside and adjacent to boundary 
+		* -  Out -- outside boundary 
+		* -  DiffAdv -- diffusionAdvection 
+		* -  Nbr -- neighbor 
+		* -  MU -- mass updated, values copied from amtMassTransient to amtMass
+		* -  Deep -- node has no neighbors which are boundary
+		*
+		* comments preceding enumeration indicate which function puts node in that state
 		*/
 		enum State { 
-			/**
-			* initial state. #setPos to #stable
-			*/
 			initial,
+
+			//stays inside sequence
+			/**
+			*  - setInitialPos( )
+			*/
 			initialInside,
+			/**
+			*  - beginSimulation( )
+			*  - endOfCycle( )
+			*/
+			inStable,
+			/**
+			*  - diffuseAdvect( )
+			*/
+			inDiffAdvDone,
+			/**
+			*  - diffuseAdvect( )
+			*/
+			inStableDeepDiffAdvDone,
+			/**
+			*  - collectMass( ) [sets neighbor to this state]
+			*/
+			inDiffAdvDoneMU,
+			/**
+			*  - endOfCycle( )
+			*/
+			inStableDeep,
+
+			//stays boundary sequence
+			/**
+			*  - setInitialPos( )
+			*/
 			initialBoundary,
 			/**
-			* begin/end of move diffuse advect cycle
+			*  - beginSimulation( )
+			*  - endOfCycle( )
 			*/
-			//stable, 
+			bndStable,
 			/**
-			* source terms applied (interior nodes)
-			*/
-			//stableSourceApplied,
-			/**
-			* source terms applied (boundary nodes)
-			*/
-			//legacySourceApplied,
-			/**
-			* diffusionAdvection applied
-			*/
-			//stableUpdated,
-			/**
-			* moved outside boundary
-			*/
-			transBndOut, 
-			/**
-			* moved from interior to boundary
-			*/
-			transInBnd,
-			/**
-			* moved inside boundary (from #setPos)
-			*/
-			transOutBndSetBnd,
-			/**
-			* neighbors applied (last state #transOutBndSetBnd)
-			*/
-			transOutBndNbrSet,
-			/**
-			* mass collected (last state #transOutBndNbrSet)
-			*/
-			transOutBndMassCollected, 
-			/**
-			* front moved but neighbor edges stale, voronoi not applied 
+			*  - moveFront( )
 			*/
 			bndFrontMoved,
 			/**
-			* front moved, neighbor edges set, voronoi not applied 
+			*  - findNeighborEdges( )
 			*/
 			bndNbrEdgesFound,
 			/**
-			* diffusionAdvection applied (last state #bndNbrEdgesFound)
+			*  - diffuseAdvect( )
 			*/
 			bndDiffAdvDone,
-			bndDiffAdvDoneMU,
-			//bndNbrUpdated,
 			/**
-			* neighbors updated: (last state #bndDiffAdvDone, #transInBnd)
+			*  - collectMass( ) [sets neighbor to this state]
+			*/
+			bndDiffAdvDoneMU,
+			/**
+			*  - applyFront( ) [from #bndDiffAdvDone(MU), #transInBnd]
 			*/
 			bndFrontApplied,
-			bndMassCollectedFrontApplied,
+
+
+			//stays out sequence
 			/**
-			* neighbors updated and some mass has been collected: (last state #bndFrontApplied)
+			*  - setInitialPos( )
+			*  - distributeMassToNeighors( ) [from boundary]
+			*  - endOfCycle( )
 			*/
+			outStable,
 			/**
-			* must be one more than #legacySetCollected
-			* interior volume is set, from #setPos, (last state #bndDiffAdvDone)
+			*  - endOfCycle( )
+			*/
+			outStableDeep,
+
+
+			//in to boundary sequence
+			/**
+			*  - setPos( ) [applyFront( ) next]
+			*/
+			transInBnd,
+
+			//boundary to in sequence
+			/**
+			*  - setPos( )
+			*/
+			//transBndIn,
+
+
+			//out to boundary sequence
+			/**
+			*  - setPos( ) [first call]
 			*/
 			transOutBndSetIn,
-			transBndIn,
-			bndStable,
-			outStable,
-			outStableDeep,
-			inStable,
-			inDiffAdvDone,
-			inDiffAdvDoneMU,
-			inStableDeep,
-			inStableDeepDiffAdvDone,
+			/**
+			*  - setPos( ) [second call]
+			*/
+			transOutBndSetBnd,
+			/**
+			*  - updateBoundaryNeighbors( )
+			*/
+			transOutBndNbrSet,
+			/**
+			*  - collectMass( )
+			*/
+			transOutBndMassCollected, 
+			/**
+			*  - applyFront( )
+			*/
+			bndMassCollectedFrontApplied,
+
+
+			//boundary to out sequence
+			/**
+			*  - setPos( ) [distributeMassToNeighors() next]
+			*/
+			transBndOut, 
 		};
 	}
 
+
+	/**
+	* the following is the expected sequence of calls which may transition state
+	* - setInitialPos( )
+	* - beginSimulation( )
+	* - moveFront( )
+	*  - findNeighborEdges( )
+	* - diffuseAdvect( )
+	* - setPos( )
+	*  - updateBoundaryNeighbors( )
+	* - collectMass( )
+	* - applyFront( )
+	*  - distributeMassToNeighbors( )
+	* - endOfCycle( )
+	*/
 
 	struct MeshElementSpecies : public spatial::MPoint<moving_boundary::CoordinateType,2> , public spatial::VolumeMonitor {
 		typedef spatial::MeshDef<moving_boundary::CoordinateType,2> MeshDefinition; 
@@ -376,48 +421,6 @@ namespace moving_boundary {
 		* @param interiorVolume volume if node entirely interior 
 		*/
 		void applyFront( const FrontType & front, moving_boundary::CoordinateProductType interiorVolume); 
-		//	using namespace MeshElementStateful;
-		//	switch (state( )) {
-		//		/*
-		//	case bndFrontApplied:
-		//	case bndFrontAppliedMU:
-		//		//formBoundaryPolygon(mesh,front);
-		//		//setState(stableUpdated);
-		//		applyFrontLegacyVoronoiSet(front);
-		//		break;
-		//		*/
-		//	case bndDiffAdvDone:
-		//		if (mPos( ) == spatial::interiorSurface) { 
-		//			setState(stableUpdated);
-		//			setInteriorVolume(interiorVolume);
-		//			neighbors = interiorNeighbors.data( );
-		//			vol.clear( );
-		//		}
-		//		else {
-		//			assert(mPos( ) == spatial::boundarySurface);
-		//			setState(bndFrontApplied);
-		//			applyFrontLegacyVoronoiSet(front);
-		//		}
-		//		break;
-		//		/*
-		//	case legacyInteriorSet:
-		//	case legacyInteriorSetCollected:
-		//		setInteriorVolume(interiorVolume);
-		//		setState(stableUpdated);
-		//		break;
-		//		*/
-		//	case transBndOut:
-		//	//case stable:
-		//		assert(this->isOutside( ));
-		//		break;
-		//	case stableUpdated:
-		//	case transOutBndMassCollected:
-		//		assert(this->isInside( ));
-		//		break;
-		//	default:
-		//		VCELL_EXCEPTION(domain_error, "apply front " << ident( )); 
-		//	}
-		//}
 
 		/**
 		* update list of neighbors which are present 
@@ -445,8 +448,6 @@ namespace moving_boundary {
 			case State::inStableDeepDiffAdvDone:
 			case State::inDiffAdvDone:
 			case State::inDiffAdvDoneMU:
-			//case State:: stableUpdated:
-			//case State:: stableSourceApplied:
 					assert(interiorVolume > 0); //should be set externally 
 					return interiorVolume;
 			case State::transBndOut: 
@@ -461,9 +462,6 @@ namespace moving_boundary {
 			case State::bndDiffAdvDoneMU:
 			case State::bndFrontApplied:
 			case State::bndStable:
-			//case State::legacySourceApplied:
-			//case State::legacyInteriorSet:
-			//case State::legacyInteriorSetCollected:
 				return vol.volume( ) /distanceScaledSquared; 
 			case State::transOutBndSetIn:
 			default:
@@ -635,24 +633,6 @@ namespace moving_boundary {
 		*/
 		void collectMassFromNeighbors(const FrontType & front); 
 
-#		ifdef _MSC_VER	//a define in the frontier lib interferes with MSC's macro definition 
-#		define isnan _isnan 
-#		endif 
-		/**
-		* @param store #mu or #muTransient
-		* @param i index
-		* @param mass value
-		*/
-		/*
-		void setMass(std::array<moving_boundary::BioQuanType,nOfS> & store, size_t i, moving_boundary::BioQuanType mass) {
-			assert (i < nOfS);
-			store[i] = mass;
-			if (isnan(store[i])) {
-				throw std::logic_error("setMass");
-			}
-		}
-		*/
-#		undef isnan
 		/**
 		* set list of neighbors which are present 
 		* this should be a boundary element. 
@@ -705,16 +685,6 @@ namespace moving_boundary {
 			return nullptr;
 		}
 
-		/*
-		void setCollected( ) {
-			//static_assert(State::legacyInteriorSetCollected == State::legacyInteriorSet + 1,"collected not set up correctly");
-			static_assert(State::bndFrontAppliedMU == State::bndFrontApplied + 1,"collected not set up correctly");
-			//setState(static_cast<State>(stateVar + 1) );
-			assert(stateVar == State::bndFrontApplied);
-			setState(State::bndFrontAppliedMU);
-		}
-		*/
-
 		/**
 		* return distance to neighbor, if it's been calculated; otherwise return 0
 		*/
@@ -735,16 +705,6 @@ namespace moving_boundary {
 			assert(debugSetState( ));
 		}
 #endif
-
-
-
-		/*
-		const std::vector<const biology::Species> & species( ) const {
-			assert(psv != nullptr);
-			assert(psv->size( ) == numSpecies( )); 
-			return *psv;
-		}
-		*/
 
 		/*
 		* hook to allow setting specific break /log conditions in *cpp 
