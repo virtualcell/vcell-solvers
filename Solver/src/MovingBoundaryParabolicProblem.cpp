@@ -17,7 +17,7 @@
 #include <VCellFront.h>
 #include <algo.h>
 #include <MovingBoundaryParabolicProblem.h>
-#include <MeshElementSpecies.h>
+#include <MeshElementNode.h>
 #include <VoronoiMesh.h>
 #include <Logger.h>
 #include <Modulo.h>
@@ -240,7 +240,7 @@ namespace moving_boundary {
 			isRunning(false)
 		{  
 
-			MeshElementSpecies::setProblemToWorldDistanceScale(world.theScale( ));
+			MeshElementNode::setProblemToWorldDistanceScale(world.theScale( ));
 
 			assert(nFunctionPointers == 0); 
 			for (int i = 0; i < numSpecies; i++) {
@@ -1009,7 +1009,7 @@ namespace moving_boundary {
 
 
 					bool changed;
-					//adjustNodes calls MeshElementSpecies.updateBoundaryNeighbors
+					//adjustNodes calls MeshElementNode.updateBoundaryNeighbors
 					try {
 						changed = voronoiMesh.adjustNodes(boundaryElements,currentFront);
 					} catch (SkipsBoundary & skips) {
@@ -1249,7 +1249,7 @@ namespace moving_boundary {
 			estimateProgress(false),
 			isRunning(false)
 		{
-			MeshElementSpecies::setProblemToWorldDistanceScale(world.theScale( ));
+			MeshElementNode::setProblemToWorldDistanceScale(world.theScale( ));
 			vcell_persist::Token::check<MovingBoundaryParabolicProblemImpl>(is);
 			//vcell_persist::binaryRead(is,diffusionConstant);
 			vcell_persist::binaryRead(is,generationCount);

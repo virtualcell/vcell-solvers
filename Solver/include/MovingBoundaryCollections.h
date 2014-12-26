@@ -9,7 +9,7 @@
 */
 namespace moving_boundary {
 	/**
-	* base class of #MeshElementSpecies and #FrontPointType
+	* base class of #MeshElementNode and #FrontPointType
 	*/
 	typedef spatial::TPoint<CoordinateType,2> CoordinatePoint; 
 	/**

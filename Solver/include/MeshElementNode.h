@@ -1,5 +1,5 @@
-#ifndef MeshElementSpecies_h
-#define MeshElementSpecies_h
+#ifndef MeshElementNode_h
+#define MeshElementNode_h
 #include <MPoint.h>
 #include <fstream>
 #include <vector>
@@ -17,32 +17,32 @@
 #include <math.h>
 #include <persist.h>
 #include <Physiology.h>
-#define MES_STATE_TRACK
-#ifdef MES_STATE_TRACK
+#define MESH_ELEMENT_NODE_STATE_TRACK
+#ifdef MESH_ELEMENT_NODE_STATE_TRACK
 #define setState(x) DEBUG_SET_STATE(x, __FILE__, __LINE__)
 #endif
 
 namespace moving_boundary {
 	struct VoronoiMesh;
-	struct MeshElementSpecies;
-	struct MeshElementSpeciesIdent;
+	struct MeshElementNode;
+	struct MeshElementNodeIdent;
 	/**
-	* proxy object to stream identifying information about MeshElementSpecies
+	* proxy object to stream identifying information about MeshElementNode
 	*/
-	struct MeshElementSpeciesIdent {
-		const MeshElementSpecies &mes;
-		MeshElementSpeciesIdent(const MeshElementSpecies &m)
+	struct MeshElementNodeIdent {
+		const MeshElementNode &mes;
+		MeshElementNodeIdent(const MeshElementNode &m)
 			:mes(m) {}
 		void write(std::ostream &os) const; 
 	};
 
-	inline std::ostream & operator<<(std::ostream & os,const MeshElementSpeciesIdent& mesi) {
+	inline std::ostream & operator<<(std::ostream & os,const MeshElementNodeIdent& mesi) {
 		mesi.write(os);
 		return os;
 	}
 
 	/**
-	* used by #MeshElementSpecies to store information about neighbors
+	* used by #MeshElementNode to store information about neighbors
 	*/
 	struct MeshElementNeighbor : public vcell_persist::Persistent {
 		MeshElementNeighbor( )
@@ -51,12 +51,12 @@ namespace moving_boundary {
 			edgeLength( )
 			//daAmount(unset)
 		{}
-		MeshElementNeighbor(MeshElementSpecies *e)
+		MeshElementNeighbor(MeshElementNode *e)
 			:element(e),
 			distanceTo( ),
 			edgeLength( ) 
 		{}
-		MeshElementNeighbor(std::istream & is,  const MeshElementSpecies & client) ;
+		MeshElementNeighbor(std::istream & is,  const MeshElementNode & client) ;
 
 		bool operator==(const MeshElementNeighbor &rhs) const {
 			return element == rhs.element 
@@ -64,11 +64,11 @@ namespace moving_boundary {
 				&& edgeLength == rhs.edgeLength;
 		}
 
-		MeshElementSpecies *element; 
+		MeshElementNode *element; 
 		moving_boundary::DistanceType distanceTo;
 		moving_boundary::DistanceType edgeLength;
 
-		void persist(std::ostream &os, const MeshElementSpecies &client) const; 
+		void persist(std::ostream &os, const MeshElementNode &client) const; 
 
 		static void registerType( ) {
 			spatial::ElementOffset<2>::registerType( );
@@ -111,7 +111,7 @@ namespace moving_boundary {
 			/**
 			*  - diffuseAdvect( )
 			*/
-			inStableDeepDiffAdvDone,
+			inDeepDiffAdvDone,
 			/**
 			*  - collectMass( ) [sets neighbor to this state]
 			*/
@@ -226,18 +226,18 @@ namespace moving_boundary {
 	* - endOfCycle( )
 	*/
 
-	struct MeshElementSpecies : public spatial::MPoint<moving_boundary::CoordinateType,2> , public spatial::VolumeMonitor {
+	struct MeshElementNode : public spatial::MPoint<moving_boundary::CoordinateType,2> , public spatial::VolumeMonitor {
 		typedef spatial::MeshDef<moving_boundary::CoordinateType,2> MeshDefinition; 
-		typedef spatial::Mesh<moving_boundary::CoordinateType,2,MeshElementSpecies> MeshType; 
+		typedef spatial::Mesh<moving_boundary::CoordinateType,2,MeshElementNode> MeshType; 
 		typedef spatial::MPoint<moving_boundary::CoordinateType,2> base;
-		typedef MeshElementSpecies OurType;
+		typedef MeshElementNode OurType;
 		typedef MeshElementNeighbor NeighborType;
 		typedef MeshElementStateful::State State;
 		typedef spatial::Segment<moving_boundary::CoordinateType,2> SegmentType; 
 
 		static spatial::DiffuseAdvectCache *createCache(const MeshDefinition & meshDef);
 
-		MeshElementSpecies(const MeshDefinition &owner,const size_t *n, const moving_boundary::CoordinateType *values)
+		MeshElementNode(const MeshDefinition &owner,const size_t *n, const moving_boundary::CoordinateType *values)
 			:base(n,values),
 			mesh(owner),
 			stateVar(State::initial),
@@ -275,13 +275,13 @@ namespace moving_boundary {
 		/**
 		* restore from persistent storage. 
 		*/
-		MeshElementSpecies(const MeshDefinition &owner, std::istream &is);
+		MeshElementNode(const MeshDefinition &owner, std::istream &is);
 
 		/**
 		* return proxy object identifying this for streaming to an ostream
 		*/
-		MeshElementSpeciesIdent ident( ) const {
-			return MeshElementSpeciesIdent(*this);
+		MeshElementNodeIdent ident( ) const {
+			return MeshElementNodeIdent(*this);
 		};
 
 		int numSpecies( ) const {
@@ -445,7 +445,7 @@ namespace moving_boundary {
 			case State::inStable:
 			case State::inStableDeep:
 
-			case State::inStableDeepDiffAdvDone:
+			case State::inDeepDiffAdvDone:
 			case State::inDiffAdvDone:
 			case State::inDiffAdvDoneMU:
 					assert(interiorVolume > 0); //should be set externally 
@@ -587,7 +587,7 @@ namespace moving_boundary {
 			NeighborType::registerType( );
 			spatial::SVector<moving_boundary::VelocityType,2>::registerType( );
 			SegmentType::registerType( );
-			vcell_persist::Registrar::reg<MeshElementSpecies>("MeshElementSpecies");
+			vcell_persist::Registrar::reg<MeshElementNode>("MeshElementNode");
 		}
 
 		void persist(std::ostream &);
@@ -695,7 +695,7 @@ namespace moving_boundary {
 			}
 			return 0;
 		}
-#ifdef MES_STATE_TRACK
+#ifdef MESH_ELEMENT_NODE_STATE_TRACK
 		void DEBUG_SET_STATE(MeshElementStateful::State s, const char *file, int line);
 #else 
 		void setState(MeshElementStateful::State s) {
@@ -783,30 +783,30 @@ namespace moving_boundary {
 		/**
 		* not implemented
 		*/
-		MeshElementSpecies & operator=(const MeshElementSpecies &rhs);
-		friend struct MeshElementSpeciesIdent;
+		MeshElementNode & operator=(const MeshElementNode &rhs);
+		friend struct MeshElementNodeIdent;
 	};
 
 	/**
 	* exception when reverse lengths don't match
 	*/
 	struct ReverseLengthException : public std::logic_error {
-		ReverseLengthException(const std::string & msg, MeshElementSpecies &a, const MeshElementSpecies &b) 
+		ReverseLengthException(const std::string & msg, MeshElementNode &a, const MeshElementNode &b) 
 			:std::logic_error(msg),
 			aElement(a),
 			bElement(b) {}
-		const MeshElementSpecies &aElement;
-		const MeshElementSpecies &bElement;
+		const MeshElementNode &aElement;
+		const MeshElementNode &bElement;
 	};
 
 	/**
 	* when element skips boundary state
 	*/
 	struct SkipsBoundary : public std::exception {
-		MeshElementSpecies &mes;
+		MeshElementNode &mes;
 		const spatial::SurfacePosition newPosition;
 		std::string str;
-		SkipsBoundary(MeshElementSpecies &m, spatial::SurfacePosition np) 
+		SkipsBoundary(MeshElementNode &m, spatial::SurfacePosition np) 
 			:mes(m),
 			newPosition(np),
 			str( )
@@ -823,7 +823,7 @@ namespace moving_boundary {
 
 	std::ostream & operator<<(std::ostream &,MeshElementStateful::State);
 
-	inline void MeshElementSpeciesIdent::write(std::ostream &os) const {
+	inline void MeshElementNodeIdent::write(std::ostream &os) const {
 		os << mes.indexInfo( ) << ' ' << mes.state( ); 
 	}
 }

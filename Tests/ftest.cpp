@@ -15,7 +15,7 @@
 #include <algo.h>
 #include <vcellutil.h>
 #include <Mesh.h>
-#include <MeshElementSpecies.h>
+#include <MeshElementNode.h>
 #include <VCellFront.h>
 #include <Logger.h>
 #include <Timer.h>
@@ -260,7 +260,7 @@ TEST(frontier,classify) {
 	}
 	moving_boundary::VoronoiMesh::MBMeshDef trial(arrayInit<moving_boundary::CoordinateType>(0,0),arrayInit<moving_boundary::CoordinateType>(5,2), arrayInit<size_t>(35,35));
 
-	typedef moving_boundary::MeshElementSpecies MPoint2;
+	typedef moving_boundary::MeshElementNode MPoint2;
 	moving_boundary::VoronoiMesh::MBMesh mView(trial);
 	moving_boundary::VoronoiMesh vm(mView);
 	moving_boundary::Positions<MPoint2> positions = vm.classify2(points);

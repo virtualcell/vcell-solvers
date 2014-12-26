@@ -3,7 +3,7 @@
 
 namespace spatial {
 	/**
-	* #MeshElementSpecies needs place to check forward and back diffusion
+	* #MeshElementNode needs place to check forward and back diffusion
 	* This is interface class to facilitate this without introducing excessive 
 	* compile dependencies
 	*/

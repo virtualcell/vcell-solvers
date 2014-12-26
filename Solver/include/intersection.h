@@ -40,7 +40,7 @@ namespace spatial {
 	template <typename COORD_TYPE,typename VALUE_TYPE,class POINT_TYPE>
 	void intersectionsManyMany(Volume<COORD_TYPE,VALUE_TYPE,2> &result, const std::vector<std::vector<POINT_TYPE> > & vOfVa,const std::vector<std::vector<POINT_TYPE> > & vOfVb);
 
-	//use in MeshElementSpecies with call to spatial::intersection 
+	//use in MeshElementNode with call to spatial::intersection 
 	const int  MAX_EXPECTED_VORONOI_POINTS = 12;
 }
 #endif

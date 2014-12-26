@@ -1,6 +1,6 @@
 #pragma warning ( disable: 4996 )
 #include "gtest/gtest.h"
-#include <MeshElementSpecies.h>
+#include <MeshElementNode.h>
 #include <boundaryProviders.h>
 #include <VoronoiMesh.h>
 using std::cout;
@@ -21,14 +21,14 @@ TEST(persist,mesNeighbor) {
 
 	VoronoiMesh::MBMeshDef trial(origin,edge,extent);
 
-	//typedef moving_boundary::MeshElementSpecies MPoint2;
+	//typedef moving_boundary::MeshElementNode MPoint2;
 	VoronoiMesh::MBMesh mesh(trial);
 	std::array<size_t,2> s= { 3, 4}; 
-	MeshElementSpecies & sample = mesh.get( s );
+	MeshElementNode & sample = mesh.get( s );
 	s[0] += 3;
 	s[1] += 11;
-	MeshElementSpecies & nbElement = mesh.get ( s); 
-	MeshElementSpecies * p1 = mesh.query( s );
+	MeshElementNode & nbElement = mesh.get ( s); 
+	MeshElementNode * p1 = mesh.query( s );
 	MeshElementNeighbor nb( &nbElement);
 	nb.distanceTo = 3.14;
 	nb.edgeLength = 2.71;
@@ -41,7 +41,7 @@ TEST(persist,mesNeighbor) {
 	std::ifstream in("meshNeighbor.dat", std::ios::binary);
 	vcell_persist::ReadFormatter wf(in, 1);
 	MeshElementNeighbor back(in,sample); 
-	MeshElementSpecies * p2 = mesh.query( s );
+	MeshElementNode * p2 = mesh.query( s );
 	ASSERT_TRUE(back == nb);
 }
 
@@ -59,11 +59,11 @@ TEST(persist,mes) {
 	const std::array<CoordinateType,2> origin = { 0, 0};
 	VoronoiMesh::MBMeshDef trial(origin,edge,extent);
 
-	//typedef moving_boundary::MeshElementSpecies MPoint2;
+	//typedef moving_boundary::MeshElementNode MPoint2;
 	VoronoiMesh::MBMesh mesh(trial);
 	std::array<size_t,2> s= { 3, 4}; 
-	MeshElementSpecies & sample = mesh.get( s );
-	MeshElementSpecies::registerType( );
+	MeshElementNode & sample = mesh.get( s );
+	MeshElementNode::registerType( );
 	SVector<moving_boundary::VelocityType,2> vel = sample.getVelocity( );
 	vel(cX) = 3.4;
 	vel(cY) = 9.5;
@@ -75,7 +75,7 @@ TEST(persist,mes) {
 	}
 	std::ifstream in("mes.dat", std::ios::binary);
 	vcell_persist::ReadFormatter wf(in, 1);
-	MeshElementSpecies back(mesh,in); 
+	MeshElementNode back(mesh,in); 
 	ASSERT_TRUE(back.volumePD( ) == sample.volumePD( ));
 	ASSERT_TRUE(back.concentration(0) == sample.concentration(0));
 	ASSERT_TRUE(back.mass(0) == sample.mass(0));
@@ -96,13 +96,13 @@ TEST(persist,mesh) {
 
 	VoronoiMesh::MBMeshDef trial(origin,edge,extent);
 
-	//typedef moving_boundary::MeshElementSpecies MPoint2;
+	//typedef moving_boundary::MeshElementNode MPoint2;
 	VoronoiMesh::MBMesh mesh(trial);
 	std::array<size_t,2> s= { 3, 4}; 
-	MeshElementSpecies::registerType( );
+	MeshElementNode::registerType( );
 	SVector<moving_boundary::VelocityType,2> vel(3.4,9.5);
 	{
-		MeshElementSpecies & sample = mesh.get( s );
+		MeshElementNode & sample = mesh.get( s );
 		sample.setVelocity(vel);
 		mesh.registerType( );
 
@@ -122,14 +122,14 @@ TEST(persist,mesh) {
 		std::ifstream in("mesh.dat", std::ios::binary);
 		vcell_persist::ReadFormatter wf(in, 1);
 		VoronoiMesh::MBMesh back(in); 
-		MeshElementSpecies & sample = back.get( s );
+		MeshElementNode & sample = back.get( s );
 		ASSERT_TRUE(sample.getVelocity( ) == vel);
 	}
 	{
 		std::ifstream in("mesh2.dat", std::ios::binary);
 		vcell_persist::ReadFormatter wf(in, 7);
 		VoronoiMesh::MBMesh back(in); 
-		MeshElementSpecies & sample = back.get( s );
+		MeshElementNode & sample = back.get( s );
 		ASSERT_TRUE(sample.getVelocity( ) == vel);
 	}
 }

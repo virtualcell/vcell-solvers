@@ -1,7 +1,7 @@
-#include <MeshElementSpecies.h>
+#include <MeshElementNode.h>
 using namespace moving_boundary::MeshElementStateful;
-using moving_boundary::MeshElementSpecies;
-void MeshElementSpecies::setInitialPos(spatial::SurfacePosition pos) {
+using moving_boundary::MeshElementNode;
+void MeshElementNode::setInitialPos(spatial::SurfacePosition pos) {
 	if (state( ) != initial && state( ) != initialInside) {
 		badState("setInitialPos"); 
 	}
@@ -18,14 +18,14 @@ void MeshElementSpecies::setInitialPos(spatial::SurfacePosition pos) {
 	}
 }
 
-bool MeshElementSpecies::isInside( ) const {
+bool MeshElementNode::isInside( ) const {
 	switch (state( )) {
 	case initialInside:
 	case inStable:
 	case inDiffAdvDone:
 	case inDiffAdvDoneMU:
 	case inStableDeep:
-	case inStableDeepDiffAdvDone:
+	case inDeepDiffAdvDone:
 	case initialBoundary: 
 	case bndFrontMoved:
 	case bndNbrEdgesFound:
@@ -48,10 +48,10 @@ bool MeshElementSpecies::isInside( ) const {
 	badState("isInside");
 	return false;
 }
-spatial::SurfacePosition MeshElementSpecies::mPos( ) const {
+spatial::SurfacePosition MeshElementNode::mPos( ) const {
 	switch (state( )) {
 	case inStableDeep:
-	case inStableDeepDiffAdvDone:
+	case inDeepDiffAdvDone:
 		return spatial::deepInteriorSurface;
 	case initialInside:
 	case inStable:
@@ -82,7 +82,7 @@ spatial::SurfacePosition MeshElementSpecies::mPos( ) const {
 	}
 		return spatial::outsideSurface;
 }
-bool MeshElementSpecies::isDeep( ) const  {
+bool MeshElementNode::isDeep( ) const  {
 	switch (state( )) {
 	case inDiffAdvDone:
 	case inDiffAdvDoneMU:
@@ -102,7 +102,7 @@ bool MeshElementSpecies::isDeep( ) const  {
 	case transOutBndMassCollected: 
 	case transOutBndSetIn:
 		return false;
-	case inStableDeepDiffAdvDone:
+	case inDeepDiffAdvDone:
 	case outStableDeep:
 	case inStableDeep:
 		return true;
@@ -112,7 +112,7 @@ bool MeshElementSpecies::isDeep( ) const  {
 	return false; 
 }
 
-void MeshElementSpecies::listBoundary(std::ostream & os) const {
+void MeshElementNode::listBoundary(std::ostream & os) const {
 	using spatial::cX;
 	using spatial::cY;
 	switch (mPos( )) {
@@ -138,12 +138,12 @@ void MeshElementSpecies::listBoundary(std::ostream & os) const {
 
 	}
 }
-void MeshElementSpecies::badState(const char * const function) const {
+void MeshElementNode::badState(const char * const function) const {
 	std::cout <<  ident( ) << " in " << function << std::endl;
 	VCELL_EXCEPTION(logic_error, ident( ) << " in " << function);
 }
 
-MeshElementSpecies::OurType *MeshElementSpecies::neighbor(spatial::ElementOffset<2> & eo) const {
+MeshElementNode::OurType *MeshElementNode::neighbor(spatial::ElementOffset<2> & eo) const {
 	//nominally unsafe downcast
 	const MeshType * m = static_cast<const MeshType *>(&mesh);
 	return m->element(*this,eo);
@@ -151,12 +151,12 @@ MeshElementSpecies::OurType *MeshElementSpecies::neighbor(spatial::ElementOffset
 
 namespace {
 	struct NeighborBuilder {
-		MeshElementSpecies & client;
-		NeighborBuilder(MeshElementSpecies &c)
+		MeshElementNode & client;
+		NeighborBuilder(MeshElementNode &c)
 			:client(c) {}
 
-		MeshElementSpecies::NeighborType generate(std::istream &in) const {
-			return MeshElementSpecies::NeighborType(in,client);
+		MeshElementNode::NeighborType generate(std::istream &in) const {
+			return MeshElementNode::NeighborType(in,client);
 		}
 	};
 }
@@ -164,14 +164,14 @@ namespace {
 /**
 * see #persist
 */
-MeshElementSpecies::MeshElementSpecies(const MeshDefinition &owner,std::istream &is)
+MeshElementNode::MeshElementNode(const MeshDefinition &owner,std::istream &is)
 	:base(is),
 	mesh(owner),
 	concValue( ),
 	sourceTermValues(concValue),
 	vol(0,this) //required to register this as VolumeMonitor of volume
 {
-	vcell_persist::Token::check<MeshElementSpecies>(is); 
+	vcell_persist::Token::check<MeshElementNode>(is); 
 
 	NeighborBuilder nb(*this);
 	vcell_persist::readFunctor<NeighborBuilder> functor(is,nb);
@@ -199,10 +199,10 @@ MeshElementSpecies::MeshElementSpecies(const MeshDefinition &owner,std::istream 
 }
 namespace {
 	struct NeighborWriter {
-		MeshElementSpecies & client;
-		NeighborWriter(MeshElementSpecies &c)
+		MeshElementNode & client;
+		NeighborWriter(MeshElementNode &c)
 			:client(c) {}
-		void operator( )(std::ostream &os, const MeshElementSpecies::NeighborType  & nb) const {
+		void operator( )(std::ostream &os, const MeshElementNode::NeighborType  & nb) const {
 			nb.persist(os,client);
 		}
 	};
@@ -211,13 +211,13 @@ namespace {
 /**
 * save essential state information necessary to restore from a file later
 */
-void MeshElementSpecies::persist(std::ostream &os) {
+void MeshElementNode::persist(std::ostream &os) {
 	base::persist(os);
 
 	NeighborWriter nw(*this);
 	vcell_persist::writeFunctor<NeighborWriter> functor(os,nw);
 
-	vcell_persist::Token::insert<MeshElementSpecies>(os); 
+	vcell_persist::Token::insert<MeshElementNode>(os); 
 	vcell_persist::binaryWrite(os,stateVar);
 	vcell_persist::binaryWrite(os,interiorVolume);
 	vol.persist(os);
@@ -247,7 +247,7 @@ std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::Me
 		CASE(inDiffAdvDone);
 		CASE(inDiffAdvDoneMU);
 		CASE(inStableDeep);
-		CASE(inStableDeepDiffAdvDone);
+		CASE(inDeepDiffAdvDone);
 		CASE(bndFrontMoved);
 		CASE(bndNbrEdgesFound);
 		CASE(bndDiffAdvDone);
@@ -269,10 +269,10 @@ std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::Me
 #undef CASE
 	return os;
 }
-#ifdef MES_STATE_TRACK
+#ifdef MESH_ELEMENT_NODE_STATE_TRACK
 std::ofstream slog("states.txt");
-//void MeshElementSpecies::setState(moving_boundary::MeshElementStateful::State s) {
-void MeshElementSpecies::DEBUG_SET_STATE(moving_boundary::MeshElementStateful::State s, const char *file, int line) {
+//void MeshElementNode::setState(moving_boundary::MeshElementStateful::State s) {
+void MeshElementNode::DEBUG_SET_STATE(moving_boundary::MeshElementStateful::State s, const char *file, int line) {
 	std::string full(file);
 	size_t idx = full.find_last_of("/\\"); //just get file name, not path
 	const char comma = ',';

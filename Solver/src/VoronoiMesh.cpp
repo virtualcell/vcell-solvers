@@ -2,7 +2,7 @@
 #include <World.h>
 #include <VoronoiMesh.h>
 #include <Voronoi.h>
-#include <MeshElementSpecies.h>
+#include <MeshElementNode.h>
 #include <algo.h>
 
 #include <MBridge/Scatter.h>
@@ -488,6 +488,6 @@ bool VoronoiMesh::adjustNodes(STL_CONTAINER & boundaryContainer, const FrontType
 * template instantiation
 */
 namespace moving_boundary {
-	typedef std::vector<MeshElementSpecies *> BoundaryContainer; 
+	typedef std::vector<MeshElementNode *> BoundaryContainer; 
 	template bool VoronoiMesh::adjustNodes(BoundaryContainer &, const FrontType &);
 }

@@ -6,7 +6,7 @@
 
 namespace moving_boundary {
 
-	struct MeshElementSpecies; 
+	struct MeshElementNode; 
 	template<class MPOINT >
 	struct Positions {
 		std::vector<MPOINT *> inside;
@@ -17,7 +17,7 @@ namespace moving_boundary {
 	struct VoronoiMesh {
 		//typedef REAL FloatingPointType;
 		typedef spatial::MeshDef<moving_boundary::CoordinateType,2> MBMeshDef; 
-		typedef MeshElementSpecies Element;
+		typedef MeshElementNode Element;
 		typedef spatial::Mesh<moving_boundary::CoordinateType,2,Element> MBMesh; 
 
 		explicit VoronoiMesh(MBMesh &m);

@@ -4,7 +4,7 @@
 #include <iomanip>
 #include <algo.h>
 #include <Mesh.h>
-#include <MeshElementSpecies.h>
+#include <MeshElementNode.h>
 #include <Logger.h>
 #include <Timer.h>
 #include <MovingBoundaryParabolicProblem.h>
@@ -611,7 +611,7 @@ namespace {
 			return p;
 		};
 
-		char encodePosition(const moving_boundary::MeshElementSpecies &e) {
+		char encodePosition(const moving_boundary::MeshElementNode &e) {
 			switch (e.mPos( )) {
 			case spatial::deepInteriorSurface:
 				return 'D';
@@ -631,7 +631,7 @@ namespace {
 		/**
 		* state of inside / boundary nodes
 		*/
-		virtual void element(const moving_boundary::MeshElementSpecies &e) {
+		virtual void element(const moving_boundary::MeshElementNode &e) {
 			if (reportActive) {
 				using spatial::cX;
 				using spatial::cY;

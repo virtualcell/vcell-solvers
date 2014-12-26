@@ -6,7 +6,7 @@
 //#include <HDF5Client.h>
 //#include "VoronoiMesh.h"
 //#include <Voronoi.h>
-//#include "MeshElementSpecies.h"
+//#include "MeshElementNode.h"
 //#include "MovingBoundaryParabolicProblem.h"
 //#include "intersection.h"
 //#include "MovingBoundaryTypes.h"
@@ -24,7 +24,7 @@
 #include <ReportClient.h>
 
 /*
-void a(moving_boundary::MeshElementSpecies & mes) {
+void a(moving_boundary::MeshElementNode & mes) {
 }
 */
 

@@ -9,7 +9,7 @@ namespace tinyxml2 {
 }
 
 namespace moving_boundary {
-	struct MeshElementSpecies; 
+	struct MeshElementNode; 
 
 	/**
 	* POD for species initialization
@@ -191,7 +191,7 @@ namespace moving_boundary {
 		/**
 		* state of inside / boundary nodes
 		*/
-		virtual void element(const MeshElementSpecies &e) = 0;
+		virtual void element(const MeshElementNode &e) = 0;
 		/**
 		* notify client they've received all elements
 		*/

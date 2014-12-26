@@ -3,7 +3,7 @@
 #include <exception>
 #include <algorithm>
 #include <iomanip>
-#include <MeshElementSpecies.h>
+#include <MeshElementNode.h>
 #include <VCellFront.h>
 #include <VoronoiResult.h>
 #include <VoronoiMesh.h>
@@ -60,7 +60,7 @@ using spatial::cY;
 using spatial::TPoint;
 using namespace moving_boundary::MeshElementStateful;
 using matlabBridge::MatLabDebug;
-using  moving_boundary::MeshElementSpecies;
+using  moving_boundary::MeshElementNode;
 using  moving_boundary::VoronoiMesh;
 using  moving_boundary::FrontType;
 
@@ -97,7 +97,7 @@ namespace {
 	};
 
 	struct DaCache : public spatial::DiffuseAdvectCache { 
-		typedef std::pair<const MeshElementSpecies * ,const MeshElementSpecies *> MesPair;
+		typedef std::pair<const MeshElementNode * ,const MeshElementNode *> MesPair;
 		typedef std::map<MesPair,CheckValue> Map;
 		DaCache(const spatial::MeshDef<moving_boundary::CoordinateType,2> & md) 
 			:diffuseAdvectMap( ),
@@ -173,7 +173,7 @@ namespace {
 #endif
 
 }
-void MeshElementSpecies::logCreation( ) const {
+void MeshElementNode::logCreation( ) const {
 	using vcell_util::Logger;
 	Logger & logger = Logger::get( );
 	assert(logger.enabled(Logger::trace));
@@ -190,14 +190,14 @@ void MeshElementSpecies::logCreation( ) const {
 	logger.report(oss.str( ).c_str());
 }
 
-spatial::DiffuseAdvectCache * MeshElementSpecies::createCache(const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDef) {
+spatial::DiffuseAdvectCache * MeshElementNode::createCache(const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDef) {
 	return new DaCache(meshDef);
 }
 
-bool MeshElementSpecies::debugSetState( ) {
+bool MeshElementNode::debugSetState( ) {
 	return true;
 }
-void MeshElementSpecies::setPos(SurfacePosition m)  {
+void MeshElementNode::setPos(SurfacePosition m)  {
 	if (m == mPos( )) {
 		return;
 	}
@@ -208,7 +208,7 @@ void MeshElementSpecies::setPos(SurfacePosition m)  {
 	case inStable:
 	case inDiffAdvDone:
 		//case inStableDeep:
-		//case inStableDeepDiffAdvDone:
+		//case inDeepDiffAdvDone:
 		if (m == boundarySurface) {
 			neighbors = boundaryNeighbors.data( ); 
 			setState(transInBnd);
@@ -255,7 +255,7 @@ void MeshElementSpecies::setPos(SurfacePosition m)  {
 	VCELL_EXCEPTION(domain_error,this->ident( ) << " position " << m << " from " << state( ));
 }
 
-struct MeshElementSpecies::SetupBoundaryNeighbor : public std::unary_function<OurType *,NeighborType> {
+struct MeshElementNode::SetupBoundaryNeighbor : public std::unary_function<OurType *,NeighborType> {
 	OurType &clientElement;
 	SetupBoundaryNeighbor(OurType &client)
 		:clientElement(client) {}
@@ -280,7 +280,7 @@ struct MeshElementSpecies::SetupBoundaryNeighbor : public std::unary_function<Ou
 	};
 };
 
-void MeshElementSpecies::processBoundaryNeighbors(const VoronoiMesh & vm, std::vector<OurType *>  & bn) {
+void MeshElementNode::processBoundaryNeighbors(const VoronoiMesh & vm, std::vector<OurType *>  & bn) {
 	VCELL_LOG(trace,this->ident( ) << " processBoundaryNeighors "); 
 	//getting vornoi volume and setting up boundary neighbors in same function due to legacy reasons ...
 	{ //clarity scope, building voronoiVolume
@@ -325,7 +325,7 @@ void MeshElementSpecies::processBoundaryNeighbors(const VoronoiMesh & vm, std::v
 	neighbors = boundaryNeighbors.data( );
 }
 
-void MeshElementSpecies::moveFront(const FrontType & front) {
+void MeshElementNode::moveFront(const FrontType & front) {
 	using namespace MeshElementStateful;
 	switch (state( )) {
 	case bndStable:
@@ -339,7 +339,7 @@ void MeshElementSpecies::moveFront(const FrontType & front) {
 }
 
 
-void MeshElementSpecies::applyFrontLegacyVoronoiSet( const FrontType & front) {
+void MeshElementNode::applyFrontLegacyVoronoiSet( const FrontType & front) {
 	assert(0);
 /*
 	assert(!voronoiVolume.empty( ));
@@ -348,7 +348,7 @@ void MeshElementSpecies::applyFrontLegacyVoronoiSet( const FrontType & front) {
 	setState(stableUpdated);
 */
 }
-void MeshElementSpecies::applyFront( const FrontType & front, moving_boundary::CoordinateProductType interiorVolume) {
+void MeshElementNode::applyFront( const FrontType & front, moving_boundary::CoordinateProductType interiorVolume) {
 	switch (state( )) {
 	case bndDiffAdvDone:
 	case bndDiffAdvDoneMU:
@@ -365,7 +365,7 @@ void MeshElementSpecies::applyFront( const FrontType & front, moving_boundary::C
 	case outStableDeep:
 	case inDiffAdvDone: 
 	case inDiffAdvDoneMU: 
-	case inStableDeepDiffAdvDone: 
+	case inDeepDiffAdvDone: 
 	case transBndOut:
 		break;
 	default:
@@ -373,7 +373,7 @@ void MeshElementSpecies::applyFront( const FrontType & front, moving_boundary::C
 	}
 }
 
-void MeshElementSpecies::formBoundaryPolygon( const FrontType & front) {
+void MeshElementNode::formBoundaryPolygon( const FrontType & front) {
 	assert(isBoundary( ));
 	using spatial::Edge;
 
@@ -410,7 +410,7 @@ matlabBridge::Polygon trace(":+g");
 matlabBridge::Polygon pedge("-+r",2);
 #endif
 
-void MeshElementSpecies::findNeighborEdges() {
+void MeshElementNode::findNeighborEdges() {
 	switch (state( )) {
 	case bndFrontMoved:
 		VCELL_LOG(verbose,ident( ) << " findNeighborEdges");
@@ -492,7 +492,7 @@ void MeshElementSpecies::findNeighborEdges() {
 				if (smallRelativeDifference<SquaredType>(tDistSquare - nbTDistSquare, meshMin,tolerancePerpendicularSegmentDistanceSquared)) {
 					const double mag = edge.edgeVector( ).magnitude( );
 					const moving_boundary::DistanceType length = static_cast<moving_boundary::DistanceType>(mag);
-					VCELL_KEY_LOG(debug,"MeshElementSpecies.formBoundaryPolygon",this->ident( ) << " between " << nb.ident( ) << " vector " << edge.edgeVector( ) << " length " 
+					VCELL_KEY_LOG(debug,"MeshElementNode.formBoundaryPolygon",this->ident( ) << " between " << nb.ident( ) << " vector " << edge.edgeVector( ) << " length " 
 						<< std::setprecision(12) << length << " <" <<  std::setprecision(12) << edge.origin( ) << " : " 
 						<< std::setprecision(12) << tail << " >");
 					boundaryNeighbors[i].edgeLength = std::max(boundaryNeighbors[i].edgeLength,length);
@@ -530,7 +530,7 @@ void MeshElementSpecies::findNeighborEdges() {
 	}
 }
 
-void MeshElementSpecies::updateBoundaryNeighbors(const VoronoiMesh & vm, std::vector<OurType *>  & bn) {
+void MeshElementNode::updateBoundaryNeighbors(const VoronoiMesh & vm, std::vector<OurType *>  & bn) {
 	if (bn.size( ) == 0) {
 		throw std::logic_error("implement isolated point");
 	}
@@ -573,7 +573,7 @@ void MeshElementSpecies::updateBoundaryNeighbors(const VoronoiMesh & vm, std::ve
 	}
 }
 
-void MeshElementSpecies::writeMatlab(std::ostream  &os , bool noPoly, int precision) const {
+void MeshElementNode::writeMatlab(std::ostream  &os , bool noPoly, int precision) const {
 	World<moving_boundary::CoordinateType,2> & world = World<moving_boundary::CoordinateType,2>::get( );
 	World<moving_boundary::CoordinateType,2>::PointConverter pointconverter = world.pointConverter( );
 
@@ -605,7 +605,7 @@ void MeshElementSpecies::writeMatlab(std::ostream  &os , bool noPoly, int precis
 	}
 }
 
-moving_boundary::Volume2DClass MeshElementSpecies::createInsidePolygon() {
+moving_boundary::Volume2DClass MeshElementNode::createInsidePolygon() {
 	Volume2DClass rval(1);
 	const moving_boundary::CoordinateType width = mesh.interval(cX);
 	const moving_boundary::CoordinateType height = mesh.interval(cY);
@@ -625,7 +625,7 @@ moving_boundary::Volume2DClass MeshElementSpecies::createInsidePolygon() {
 	return rval; 
 }
 
-void MeshElementSpecies::volumeToSegments() {
+void MeshElementNode::volumeToSegments() {
 	Volume2DClass::SegAccessor sa = vol.accessor( );
 	assert(segments_.empty( ));
 	if (vol.empty( )) {
@@ -682,7 +682,7 @@ void MeshElementSpecies::volumeToSegments() {
 	std::sort(segments_.begin( ), segments_.end( ));
 }
 
-const moving_boundary::Volume2DClass & MeshElementSpecies::getControlVolume( ) const {
+const moving_boundary::Volume2DClass & MeshElementNode::getControlVolume( ) const {
 	if (!vol.empty( )) {
 		return vol;
 	}
@@ -695,7 +695,7 @@ const moving_boundary::Volume2DClass & MeshElementSpecies::getControlVolume( ) c
 	case inDiffAdvDone:
 	case inDiffAdvDoneMU:
 	case inStableDeep:
-	case inStableDeepDiffAdvDone:
+	case inDeepDiffAdvDone:
 		us.vol =  us.createInsidePolygon( );
 		break;
 	case bndFrontMoved:
@@ -730,12 +730,12 @@ const moving_boundary::Volume2DClass & MeshElementSpecies::getControlVolume( ) c
 	return vol;
 }
 
-inline moving_boundary::CoordinateProductType MeshElementSpecies::voronoiOverlap(const moving_boundary::Volume2DClass &oldVolume) {
+inline moving_boundary::CoordinateProductType MeshElementNode::voronoiOverlap(const moving_boundary::Volume2DClass &oldVolume) {
 	Volume2DClass intersection = voronoiVolume.intersection(oldVolume);
 	return intersection.volume( ); 
 }
 
-void MeshElementSpecies::distributeMassToNeighbors() {
+void MeshElementNode::distributeMassToNeighbors() {
 	if (state( ) != transBndOut) {
 		return;
 	}
@@ -796,7 +796,7 @@ void MeshElementSpecies::distributeMassToNeighbors() {
 	}
 }
 
-void MeshElementSpecies::collectMassFromNeighbors(const FrontType & front) {
+void MeshElementNode::collectMassFromNeighbors(const FrontType & front) {
 	if (state( ) != transOutBndNbrSet) {
 		badState("collectMassFromNeighbors");
 	}
@@ -890,7 +890,7 @@ void MeshElementSpecies::collectMassFromNeighbors(const FrontType & front) {
 	setState(transOutBndMassCollected); 
 }
 
-void MeshElementSpecies::endOfCycle( ) {
+void MeshElementNode::endOfCycle( ) {
 	VCELL_LOG(verbose,this->ident( ) << " begin eoc"); 
 	bool copyMass = true;
 	switch (state( )) {
@@ -919,7 +919,7 @@ void MeshElementSpecies::endOfCycle( ) {
 
 		break;
 	case inDiffAdvDone:
-	case inStableDeepDiffAdvDone:
+	case inDeepDiffAdvDone:
 	case inDiffAdvDoneMU:
 		//fall through
 		/* REVIEW -- check for negative
@@ -984,7 +984,7 @@ void MeshElementSpecies::endOfCycle( ) {
 	}
 }
 
-void MeshElementSpecies::allocateSpecies( ) {
+void MeshElementNode::allocateSpecies( ) {
 	assert(concValue == sourceTermValues); //if this is no longer term, allocate sourceTermValues separately
 
 	const size_t i = mesh.numberSpecies( );
@@ -1045,7 +1045,7 @@ namespace {
 	};
 }
 
-void MeshElementSpecies::react(moving_boundary::TimeType time) {
+void MeshElementNode::react(moving_boundary::TimeType time) {
 	//switch (state( )) {
 	//case stable:
 	//	setState(stableSourceApplied);
@@ -1083,14 +1083,14 @@ void MeshElementSpecies::react(moving_boundary::TimeType time) {
 
 using moving_boundary::BioQuanType;
 using moving_boundary::TimeType;
-void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, BioQuanType diffusionConstant, TimeType timeStep, bool & negativeMassError) {
+void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, BioQuanType diffusionConstant, TimeType timeStep, bool & negativeMassError) {
 	DaCache & ourCache = static_cast<DaCache &>(daCache);
 	switch (state( )) {
 	case inStable: 
 		setState(inDiffAdvDone);
 		break;
 	case inStableDeep: 
-		setState(inStableDeepDiffAdvDone);
+		setState(inDeepDiffAdvDone);
 		break;
 	case bndFrontMoved: 
 		findNeighborEdges();
@@ -1202,5 +1202,5 @@ void MeshElementSpecies::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, Bi
 
 
 MatLabDebug MatLabDebug::instance;
-moving_boundary::BioQuanType MeshElementSpecies::distanceScaled        = 1;
-moving_boundary::BioQuanType MeshElementSpecies::distanceScaledSquared = 1;
+moving_boundary::BioQuanType MeshElementNode::distanceScaled        = 1;
+moving_boundary::BioQuanType MeshElementNode::distanceScaledSquared = 1;

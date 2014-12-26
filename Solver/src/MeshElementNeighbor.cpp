@@ -1,6 +1,6 @@
-#include <MeshElementSpecies.h>
+#include <MeshElementNode.h>
 using namespace moving_boundary;
-MeshElementNeighbor::MeshElementNeighbor(std::istream & is,  const MeshElementSpecies & client)  {
+MeshElementNeighbor::MeshElementNeighbor(std::istream & is,  const MeshElementNode & client)  {
 	vcell_persist::Token::check<MeshElementNeighbor>(is);
 	spatial::ElementOffset<2> eo(is);
 	if (!eo.allZero( )) {
@@ -13,7 +13,7 @@ MeshElementNeighbor::MeshElementNeighbor(std::istream & is,  const MeshElementSp
 	vcell_persist::binaryRead(is,edgeLength);
 }
 
-void MeshElementNeighbor::persist(std::ostream &os, const MeshElementSpecies &client) const {
+void MeshElementNeighbor::persist(std::ostream &os, const MeshElementNode &client) const {
 	vcell_persist::Token::insert<MeshElementNeighbor>(os);
 	spatial::ElementOffset<2> eo;
 	if (element != nullptr) {

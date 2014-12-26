@@ -8,7 +8,7 @@
 #include <vcellutil.h>
 #include "gtest/gtest.h"
 #include "Mesh.h"
-#include "MeshElementSpecies.h"
+#include "MeshElementNode.h"
 #include "algo.h"
 #include <cassert>
 #include "mockpoint.inc"
@@ -134,8 +134,8 @@ TEST(mesh, offset) {
 TEST(mesh, size) {
 	size_t mSize = sizeof(spatial::MeshElement<double,2>);
 	std::cout << "The size of  MeshElement<double,2>  is " << mSize << std::endl;
-	size_t theSize = sizeof(moving_boundary::MeshElementSpecies);
-	std::cout << "The size of  MeshElementSpecies  is " << theSize << std::endl;
+	size_t theSize = sizeof(moving_boundary::MeshElementNode);
+	std::cout << "The size of  MeshElementNode  is " << theSize << std::endl;
 	size_t dSize = sizeof(double);
 	std::cout << "The size of  double  is " << dSize << std::endl;
 	size_t pdSize = sizeof(double *);
