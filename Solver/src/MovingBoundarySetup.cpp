@@ -4,8 +4,28 @@
 #include <vcellxml.h>
 
 using namespace moving_boundary;
+//SpeciesSpecification
+void SpeciesSpecification::registerType( ) {
+	vcell_persist::Registrar::reg<SpeciesSpecification>("SpeciesSpecification");
+}
 
+void SpeciesSpecification::persist(std::ostream &os) const {
+	vcell_persist::Token::insert<SpeciesSpecification>(os);
+	vcell_persist::StdString<>::save(os,name);
+	vcell_persist::StdString<>::save(os,initialConcentrationStr);
+	vcell_persist::StdString<>::save(os,sourceExpressionStr);
+}
+
+SpeciesSpecification::SpeciesSpecification(std::istream &is) {
+	vcell_persist::Token::check<SpeciesSpecification>(is);
+	vcell_persist::StdString<>::restore(is,name);
+	vcell_persist::StdString<>::restore(is,initialConcentrationStr);
+	vcell_persist::StdString<>::restore(is,sourceExpressionStr);
+}
+
+//MovingBoundarySetup
 void MovingBoundarySetup::registerType( ) {
+	SpeciesSpecification::registerType( );
 	vcell_persist::Registrar::reg<MovingBoundarySetup>("Moving Boundary Setup");
 }
 
@@ -22,15 +42,13 @@ MovingBoundarySetup::MovingBoundarySetup(std::istream &is)
 	vcell_persist::StdString<>::restore(is,advectVelocityFunctionStrY);
 	vcell_persist::StdString<>::restore(is,frontVelocityFunctionStrX);
 	vcell_persist::StdString<>::restore(is,frontVelocityFunctionStrY);
-	//PWORK vcell_persist::restoreStrings<unsigned short>(is, concentrationFunctionStrings);
 	vcell_persist::binaryRead(is,diffusionConstant);
-	/*
+	vcell_persist::restore(is,speciesSpecs);
 	bool hasProvider;
 	vcell_persist::binaryRead(is,hasProvider);
 	if (hasProvider) {
 		alternateFrontProvider = restoreFrontProvider(is);
 	}
-	*/
 }
 MovingBoundarySetup::~MovingBoundarySetup() {
 	speciesSpecs.resize(0);
@@ -49,16 +67,13 @@ void MovingBoundarySetup::persist(std::ostream &os) const {
 	vcell_persist::StdString<>::save(os,advectVelocityFunctionStrY);
 	vcell_persist::StdString<>::save(os,frontVelocityFunctionStrX);
 	vcell_persist::StdString<>::save(os,frontVelocityFunctionStrY);
-	//PWORK vcell_persist::saveStrings<unsigned short>(os,concentrationFunctionStrings);
 	vcell_persist::binaryWrite(os,diffusionConstant);
-	throw new std::domain_error("not updated for species spec");
-	/*
+	vcell_persist::save(os,speciesSpecs);
 	const bool hasProvider = ( alternateFrontProvider != nullptr );
 	vcell_persist::binaryWrite(os,hasProvider);
 	if (hasProvider) {
 		alternateFrontProvider->persist(os);
 	}
-	*/
 }
 using tinyxml2::XMLElement;
 	//MovingBoundarySetup setupProblem(const XMLElement &root); 

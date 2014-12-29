@@ -767,7 +767,14 @@ namespace {
 				timer.stop( );
 				const double totalTime = timer.elapsed( );
 				vcellH5::primitiveWrite(baseGroup,"endTime",currentTime);
-				vcellH5::primitiveWrite(baseGroup,"runTime",totalTime);
+				H5::DataSet runTime = vcellH5::primitiveWrite(baseGroup,"runTime",totalTime);
+				//annotate version info - we place on runTime node to allow easy exclusion when doing
+				//h5diff (see --exclude-path)
+				const vcell_util::Version & version = vcell_util::Version::get( );
+				vcellH5::writeAttribute(runTime,"svnVersion",version.svn);
+				vcellH5::writeAttribute(runTime,"compileDate",version.compileDate);
+				vcellH5::writeAttribute(runTime,"compileTime",version.compileTime);
+
 				unsigned int lastTimeIndex = static_cast<unsigned int>(genTimes.size( ));
 				vcellH5::primitiveWrite(baseGroup,"lastTimeIndex",lastTimeIndex); 
 

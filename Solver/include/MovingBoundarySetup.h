@@ -14,7 +14,7 @@ namespace moving_boundary {
 	/**
 	* POD for species initialization
 	*/
-	struct SpeciesSpecification {
+	struct SpeciesSpecification  : public vcell_persist::Persistent {
 		std::string name;
 		std::string initialConcentrationStr;
 		std::string sourceExpressionStr;
@@ -35,6 +35,11 @@ namespace moving_boundary {
 			:name(n),
 			initialConcentrationStr(i),
 			sourceExpressionStr(s) {}
+
+
+		explicit SpeciesSpecification(std::istream &is) ;
+		void persist(std::ostream &os) const;
+		static void registerType( );
 	};
 
 	struct MovingBoundarySetup {

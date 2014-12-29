@@ -64,6 +64,28 @@ TEST(mbs,lifetime) {
 	}
 	std::cout << dupe.advectVelocityFunctionStrX << std::endl;
 }
+TEST(persist,speciesSpecification) {
+	const char * const filename = "SpeciesSpecification.dat";
+	SpeciesSpecification ss;
+	ss.name = "Moe";
+	ss.initialConcentrationStr = "Larry";
+	ss.sourceExpressionStr =  "Curly";
+
+	SpeciesSpecification::registerType( );
+	//MeshElementNeighbor::registerType( );
+	{
+		std::ofstream out(filename, std::ios::binary|std::ios::trunc);
+		vcell_persist::WriteFormatter wf(out, 1);
+		ss.persist(out);
+	}
+	std::ifstream in(filename,std::ios::binary);
+	vcell_persist::ReadFormatter wf(in, 1);
+	SpeciesSpecification back(in); 
+	ASSERT_TRUE(back.name == ss.name); 
+	ASSERT_TRUE(back.initialConcentrationStr == ss.initialConcentrationStr);
+	ASSERT_TRUE(back.sourceExpressionStr == ss.sourceExpressionStr);
+}
+
 TEST(persist,movingBoundarySetup) {
 	const char * const filename = "MovingBoundarySetup.dat";
 	moving_boundary::Universe<2>::get( ).destroy( );
@@ -81,15 +103,9 @@ TEST(persist,movingBoundarySetup) {
 	std::ifstream in(filename,std::ios::binary);
 	vcell_persist::ReadFormatter wf(in, 1);
 	MovingBoundarySetup back(in); 
-	//MovingBoundarySetup back = mbs;
 
-	/* SPU
-	ASSERT_TRUE(back.concentrationFunctionStrings == mbs.concentrationFunctionStrings);
 	ASSERT_TRUE(back.diffusionConstant == mbs.diffusionConstant);
-	back.concentrationFunctionStrings.resize(0);
-	mbs.concentrationFunctionStrings.resize(0);
-	//moving_boundary::Universe<2>::get( ).destroy( );
-	*/
+	moving_boundary::Universe<2>::get( ).destroy( );
 }
 
 TEST(memory,vector) {
