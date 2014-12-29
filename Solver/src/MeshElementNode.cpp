@@ -290,12 +290,14 @@ void MeshElementNode::processBoundaryNeighbors(const VoronoiMesh & vm, std::vect
 		assert(voronoiVertices.empty( ));
 		vm.getResult(vResult,*this);
 		/*
+		if (matches(3,2)) 
 		{
 		std::ofstream vp("voronoiPoly.m");
 		vp << "% " << ident( ) << std::endl;
 		vp << "% " << vResult.type << std::endl;
 		matlabBridge::TPolygon<long long> p("r-+");
 		frontTierAdapt::copyVectorInto(p,vResult.vertices);
+		p.close( );
 		vp << p;
 		}
 		*/
@@ -474,8 +476,8 @@ void MeshElementNode::findNeighborEdges() {
 				foundANeighbor = true;
 				edgeLength += segs[s].magnitude<DistanceType>( ); 
 				VCELL_LOG(verbose,ident( ) << ',' << nb.ident( ) << " neighbor edge hit");
+				boundaryNeighbors[i].edgeLength = edgeLength; 
 			}
-			boundaryNeighbors[i].edgeLength = edgeLength; 
 		}
 	}
 #ifdef NOT_YET_NOT_YET 
@@ -515,7 +517,7 @@ void MeshElementNode::findNeighborEdges() {
 	if (!foundANeighbor) {
 		std::cout << ident( ) << " is lonely " << std::endl;
 	}
-	if (MatLabDebug::on("edgefind")) {
+	if (MatLabDebug::on("edgefind") ) {
 		matlabBridge::Scatter nbplot('b',2);
 		frontTierAdapt::copyPointInto(nbplot,*this);
 		for (size_t i = 0; i < boundaryNeighbors.size( ); i++) {

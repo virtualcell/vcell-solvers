@@ -35,6 +35,8 @@ struct VoronoiMesh::VoronoiMeshImpl {
 		vprocessor.clear( );
 		for (MBMesh::iterator iter = mesh.begin( ); iter != mesh.end( ); ++iter) {
 			Element & e= *iter;
+			//if (!e.isDeep( ) && spatial::inside<FrontPointType>(front,e)) { }
+			//OPTIMIZE -- update isDeep to return integer rather than boolean
 			if (spatial::inside<FrontPointType>(front,e)) {
 				vprocessor.add(e(cX),e(cY));
 				locations[&e] = voronoiIndex++;
