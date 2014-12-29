@@ -237,7 +237,10 @@ namespace moving_boundary {
 			gainedElements(  ),
 			statusPercent(0),
 			estimateProgress(false),
-			isRunning(false)
+			isRunning(false),
+			timeClients( ),
+			elementClients( ),
+			percentInfo( )
 		{  
 
 			MeshElementNode::setProblemToWorldDistanceScale(world.theScale( ));
@@ -878,7 +881,7 @@ namespace moving_boundary {
 				:simStartTime(0),
 				lastPercentTime(0),
 				progressDelta(0),
-				nextProgressGeneration(std::numeric_limits<size_t>::max( )),
+				nextProgressGeneration(inactiveValue( )),
 				runStartTime( ) {}
 
 			/**
@@ -893,6 +896,14 @@ namespace moving_boundary {
 					<< " timeStep " << timeStep << " current gen " << currentGeneration 
 					<< " next Gen " << nextProgressGeneration);
 			}
+
+			bool isActive( ) const {
+				return nextProgressGeneration != inactiveValue( );
+			}
+
+			static size_t inactiveValue( ) {
+				return std::numeric_limits<size_t>::max( );
+			}
 		};
 
 		void run( ) {
@@ -900,7 +911,6 @@ namespace moving_boundary {
 			Resetter r(isRunning);
 			isRunning = true;
 
-			ProgressPercentInfo percentInfo;
 
 			if (statusPercent > 0)  {
 				percentInfo.simStartTime = currentTime;
@@ -1045,36 +1055,52 @@ namespace moving_boundary {
 					notifyClients(++generationCount, changed);
 					if (generationCount >= percentInfo.nextProgressGeneration) {
 						unsigned int percent = static_cast<unsigned int>(100 * currentTime / maxTime + 0.5);
-						std::cout << std::setw(2) << percent << "% complete";
-						if (estimateProgress) {
-							namespace chrono = std::chrono;
-							using chrono::steady_clock;
-							steady_clock::time_point timeNow = steady_clock::now( );
-							steady_clock::duration elapsed = timeNow - percentInfo.runStartTime;
-							chrono::seconds eseconds = chrono::duration_cast<chrono::seconds>(elapsed); 
-							VCELL_KEY_LOG(debug,Key::progressEstimate, "PE percent " << percent << " elapsed " << eseconds.count( ));
+						if (percent < 100) { //looks silly to report 100% when still running
+							std::cout << std::setw(2) << percent << "% complete";
+							if (estimateProgress) {
+								namespace chrono = std::chrono;
+								using chrono::steady_clock;
+								steady_clock::time_point timeNow = steady_clock::now( );
+								steady_clock::duration elapsed = timeNow - percentInfo.runStartTime;
+								chrono::seconds eseconds = chrono::duration_cast<chrono::seconds>(elapsed); 
+								VCELL_KEY_LOG(debug,Key::progressEstimate, "PE percent " << percent << " elapsed " << eseconds.count( ));
 
-							//simulation may not have started at time 0 if this run was restored from a persisted problem
-							const double simTimeThisRun = maxTime - percentInfo.simStartTime;
-							const double simTimeThusFar = currentTime - percentInfo.simStartTime;
-							if (eseconds.count( ) > 0) { //can't estimate at beginning
-								const double t = eseconds.count( )  * simTimeThisRun  / simTimeThusFar;
-								chrono::seconds total(static_cast<int>(t));
-								chrono::seconds remaining = total - eseconds; 
-								namespace HMSf = vcell_util::HoursMinutesSecondsFormat;
-								typedef vcell_util::HoursMinutesSeconds<chrono::seconds,HMSf::FIXED|HMSf::ALL> HMS;
-								typedef vcell_util::HoursMinutesSeconds<chrono::seconds,HMSf::FIXED|HMSf::ALL|HMSf::LONG_UNITS> HMSu;
-								std::cout << ", elasped time " << HMS(eseconds) << ", estimated time remaining " << HMSu(remaining);
-								VCELL_KEY_LOG(debug,Key::progressEstimate, "PE thisRun " <<  simTimeThisRun 
-									<< " thusFar " << simTimeThusFar << " t calc " << t
-									<< " est total seconds " << total.count( ) << ' ' << remaining.count( ) << " sec");
+								//simulation may not have started at time 0 if this run was restored from a persisted problem
+								const double simTimeThisRun = maxTime - percentInfo.simStartTime;
+								const double simTimeThusFar = currentTime - percentInfo.simStartTime;
+								if (eseconds.count( ) > 0) { //can't estimate at beginning
+									const double t = eseconds.count( )  * simTimeThisRun  / simTimeThusFar;
+									chrono::seconds total(static_cast<int>(t));
+									chrono::seconds remaining = total - eseconds; 
+									namespace HMSf = vcell_util::HoursMinutesSecondsFormat;
+									typedef vcell_util::HoursMinutesSeconds<chrono::seconds,HMSf::FIXED|HMSf::ALL> HMS;
+									typedef vcell_util::HoursMinutesSeconds<chrono::seconds,HMSf::FIXED|HMSf::ALL|HMSf::LONG_UNITS> HMSu;
+									std::cout << ", elasped time " << HMS(eseconds) << ", estimated time remaining " << HMSu(remaining);
+									VCELL_KEY_LOG(debug,Key::progressEstimate, "PE thisRun " <<  simTimeThisRun 
+										<< " thusFar " << simTimeThusFar << " t calc " << t
+										<< " est total seconds " << total.count( ) << ' ' << remaining.count( ) << " sec");
 
+								}
 							}
+							std::cout << std::endl;
+							percentInfo.lastPercentTime = currentTime;
+							percentInfo.calculateNextProgress(generationCount,timeStep);
 						}
-						std::cout << std::endl;
-						percentInfo.lastPercentTime = currentTime;
-						percentInfo.calculateNextProgress(generationCount,timeStep);
 					}
+				}
+				if (percentInfo.isActive( )) {
+					std::cout << "100 % complete";
+					if (estimateProgress) {
+						namespace chrono = std::chrono;
+						using chrono::steady_clock;
+						steady_clock::time_point timeNow = steady_clock::now( );
+						steady_clock::duration elapsed = timeNow - percentInfo.runStartTime;
+						chrono::seconds eseconds = chrono::duration_cast<chrono::seconds>(elapsed); 
+						namespace HMSf = vcell_util::HoursMinutesSecondsFormat;
+						typedef vcell_util::HoursMinutesSeconds<chrono::seconds,HMSf::FIXED|HMSf::ALL> HMS;
+						std::cout << ", elasped time " << HMS(eseconds); 
+					}
+					std::cout << std::endl;
 				}
 				for (MovingBoundaryTimeClient *client : timeClients) {
 					client->simulationComplete( );
@@ -1362,6 +1388,7 @@ namespace moving_boundary {
 		*/
 		std::vector<MovingBoundaryTimeClient *> timeClients;
 		std::vector<MovingBoundaryElementClient *> elementClients;
+		ProgressPercentInfo percentInfo;
 
 	};
 
