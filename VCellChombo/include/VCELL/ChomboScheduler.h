@@ -177,6 +177,7 @@ private:
 
 #ifndef CH_MPI
 	void populateVolumeSolution();
+	void populateVolumeSolution(int iphase, int ivol);
 	void populateImplicitFunctions();
 #endif
 };

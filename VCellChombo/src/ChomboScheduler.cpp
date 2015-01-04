@@ -1128,7 +1128,36 @@ void ChomboScheduler::populateVolumeSolution()
 		VolumeVariable* var = simulation->getVolVariable(v);
 		var->reset();
 	}
+	
+	for (int iphase = 0; iphase < NUM_PHASES; iphase ++)
+	{
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++)
+		{
+			populateVolumeSolution(iphase, ivol);
+		} // end for ivol
+	} // end for iphase
 
+	for (int i = 0; i < simulation->getNumVolVariables(); ++ i)
+	{
+		Variable* var = simulation->getVolVariable(i);
+		var->computeFinalStatistics();
+	}
+	pout() << "Exit " << methodName << endl;
+}
+
+void ChomboScheduler::populateVolumeSolution(int iphase, int ivol)
+{
+	static const char* methodName = "(ChomboScheduler::populateVolumeSolution(iphase, ivol))";
+	pout() << "Entry " << methodName << endl;
+
+	Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+	int numDefinedVolVars = feature->getNumDefinedVariables();
+	if (numDefinedVolVars == 0)
+	{
+		pout() << " no variables defined in feature " << feature->getName() << endl;
+		return;
+	}
+	
 	int cfRefRatio = 1;
 	int viewLevel = chomboSpec->getViewLevel();
 	for(int ilev = 0; ilev < viewLevel; ilev ++) {
@@ -1136,129 +1165,127 @@ void ChomboScheduler::populateVolumeSolution()
 	}
 
 	double viewLevelUnitV = vectDxes[viewLevel].product();
-	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
-		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
-			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
-			int numDefinedVolVars = feature->getNumDefinedVariables();
-			if (numDefinedVolVars == 0) {
-				continue;
-			}
-			// average fine to coarse
-			Interval interv(0, numDefinedVolVars - 1);
-			for(int ilev = numLevels - 1; ilev > viewLevel; ilev --) {
-				int coarseLevel = ilev - 1;
-				EBCoarseAverage averageOp(vectGrids[ilev], vectGrids[coarseLevel], vectEbis[iphase][ivol][ilev], vectEbis[iphase][ivol][coarseLevel],
-					vectDomains[coarseLevel], vectRefRatios[coarseLevel], numDefinedVolVars, (const EBIndexSpace *)phaseVolumeList[iphase][ivol]->volume);
-				averageOp.average(*volSoln[iphase][ivol][coarseLevel], *volSoln[iphase][ivol][ilev], interv);
-			}
-
-			for (int ivar = 0; ivar < numDefinedVolVars; ivar ++) {
-				Variable* var = feature->getDefinedVariable(ivar);
-				double* varCurr = var->getCurr();
-				double* errorCurr = 0;
-				double* relErrCurr = 0;
-				bool bComputeError = false;
-				Variable* errorVar = var->getExactErrorVariable();
-				if (errorVar != NULL)
-				{
-					bComputeError = true;
-					errorCurr = errorVar->getCurr();
-					relErrCurr = var->getRelativeErrorVariable()->getCurr();
-				}
-
-				int refratio = cfRefRatio;
-				// copy phi to var, repeat values for coarse levels
-				for(int ilev = 0; ilev <= viewLevel; ilev ++) {
-					int numRepeats = pow(refratio,SpaceDim);
-					for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit)	{
-						const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
-
-						EBCellFAB& solnEBCellFAB = (*volSoln[iphase][ivol][ilev])[dit()];
-						FArrayBox& solnFab = solnEBCellFAB.getFArrayBox();
-						const IntVect& solnSize = solnFab.size();
-						const int* solnLo = solnFab.loVect();
-						Real* solnDataPtr = solnFab.dataPtr();
-
-#if CH_SPACEDIM==3
-						for (int k = numGhostSoln[2]; k < solnSize[2] - numGhostSoln[2]; k ++) {
-							int koffset = k + solnLo[2];
-#endif
-							for (int j = numGhostSoln[1]; j < solnSize[1] - numGhostSoln[1]; j ++) {
-								int joffset = j + solnLo[1];
-								for (int i = numGhostSoln[0]; i < solnSize[0] - numGhostSoln[0]; i ++) {
-									int ioffset = i + solnLo[0];
-
-									IntVect gridIndex(D_DECL(ioffset, joffset, koffset));
-									if (currEBISBox.isCovered(gridIndex) || ilev < viewLevel && isInNextFinerLevel(ilev, gridIndex)) {
-										continue;
-									}
-
-									double volFrac = 1.0;
-									if (currEBISBox.isIrregular(gridIndex))
-									{
-										volFrac = currEBISBox.volFrac(VolIndex(gridIndex, 0));
-									}
-									volFrac *= numRepeats;
-									double sol = solnDataPtr[getChomboBoxLocalIndex(solnSize, ivar, D_DECL(i, j, k))];
-									var->addTotal(sol * volFrac * viewLevelUnitV);
-									double error = 0;
-									double relErr = 0;
-									if (bComputeError)
-									{
-										RealVect coord = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-										memset(vectValues, 0, numSymbols * sizeof(double));
-										vectValues[0] = simulation->getTime_sec();
-										vectValues[1] = coord[0];
-										vectValues[2] = coord[1];
-										vectValues[3] = SpaceDim < 3 ? 0.5 : coord[2];
-										double exact = var->getVarContext()->evaluateExpression(EXACT_EXP, vectValues);
-										error = exact - sol;
-										relErr = exact == 0 ? 0 : std::abs(error/exact);
-
-										if (volFrac  > smallVolFrac)
-										{
-											var->updateMaxError(abs(error));
-										}
-										double l2 = error * error * volFrac;
-										double exactl2 = exact * exact * volFrac;
-										var->addL2Error(l2);
-										var->addL2Exact(exactl2);
-									}
-#if CH_SPACEDIM==3
-									for (int kk = 0; kk < refratio; kk ++) {
-#endif
-										for (int jj = 0; jj < refratio; jj ++) {
-											for (int ii = 0; ii < refratio; ii ++) {
-												IntVect viewLevelGridIndex(D_DECL(ioffset * refratio + ii, joffset * refratio + jj, koffset * refratio + kk));
-												int volIndex = getVolumeIndex(vectNxes[viewLevel], viewLevelGridIndex);
-												varCurr[volIndex] = sol;
-												if (bComputeError)
-												{
-													errorCurr[volIndex] = error;
-													relErrCurr[volIndex] = relErr;
-												}
-											} // end for ii
-										} // end for jj
-#if CH_SPACEDIM==3
-									} // end for kk
-#endif
-								} // end for i
-							} // end for j
-#if CH_SPACEDIM==3
-						} // end for k
-#endif
-					} // end for (DataIterator
-					refratio /= vectRefRatios[ilev];
-				} // end for ilev
-			} // for (int ivar)
-		} // for ivol
-	} // for iphase
-
-	for (int i = 0; i < simulation->getNumVolVariables(); ++ i)
+	
+	// average fine to coarse
+	Interval interv(0, numDefinedVolVars - 1);
+	for(int ilev = numLevels - 1; ilev > viewLevel; ilev --)
 	{
-		Variable* var = simulation->getVolVariable(i);
-		var->computeFinalStatistics();
+		int coarseLevel = ilev - 1;
+		EBCoarseAverage averageOp(vectGrids[ilev], vectGrids[coarseLevel], vectEbis[iphase][ivol][ilev], vectEbis[iphase][ivol][coarseLevel],
+			vectDomains[coarseLevel], vectRefRatios[coarseLevel], numDefinedVolVars, (const EBIndexSpace *)phaseVolumeList[iphase][ivol]->volume);
+		averageOp.average(*volSoln[iphase][ivol][coarseLevel], *volSoln[iphase][ivol][ilev], interv);
 	}
+
+	for (int ivar = 0; ivar < numDefinedVolVars; ivar ++)
+	{
+		Variable* var = feature->getDefinedVariable(ivar);
+		double* varCurr = var->getCurr();
+		double* errorCurr = 0;
+		double* relErrCurr = 0;
+		bool bComputeError = false;
+		Variable* errorVar = var->getExactErrorVariable();
+		if (errorVar != NULL)
+		{
+			bComputeError = true;
+			errorCurr = errorVar->getCurr();
+			relErrCurr = var->getRelativeErrorVariable()->getCurr();
+		}
+
+		int refratio = cfRefRatio;
+		// copy phi to var, repeat values for coarse levels
+		for(int ilev = 0; ilev <= viewLevel; ilev ++)
+		{
+			int numRepeats = pow(refratio,SpaceDim);
+			for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
+			{
+				const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
+
+				EBCellFAB& solnEBCellFAB = (*volSoln[iphase][ivol][ilev])[dit()];
+				FArrayBox& solnFab = solnEBCellFAB.getFArrayBox();
+				const IntVect& solnSize = solnFab.size();
+				const int* solnLo = solnFab.loVect();
+				Real* solnDataPtr = solnFab.dataPtr();
+
+#if CH_SPACEDIM==3
+				for (int k = numGhostSoln[2]; k < solnSize[2] - numGhostSoln[2]; k ++)
+				{
+					int koffset = k + solnLo[2];
+#endif
+					for (int j = numGhostSoln[1]; j < solnSize[1] - numGhostSoln[1]; j ++)
+					{
+						int joffset = j + solnLo[1];
+						for (int i = numGhostSoln[0]; i < solnSize[0] - numGhostSoln[0]; i ++)
+						{
+							int ioffset = i + solnLo[0];
+
+							IntVect gridIndex(D_DECL(ioffset, joffset, koffset));
+							if (currEBISBox.isCovered(gridIndex) || ilev < viewLevel && isInNextFinerLevel(ilev, gridIndex))
+							{
+								continue;
+							}
+
+							double volFrac = 1.0;
+							if (currEBISBox.isIrregular(gridIndex))
+							{
+								volFrac = currEBISBox.volFrac(VolIndex(gridIndex, 0));
+							}
+							volFrac *= numRepeats;
+							double sol = solnDataPtr[getChomboBoxLocalIndex(solnSize, ivar, D_DECL(i, j, k))];
+							var->addTotal(sol * volFrac * viewLevelUnitV);
+							double error = 0;
+							double relErr = 0;
+							if (bComputeError)
+							{
+								RealVect coord = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+								memset(vectValues, 0, numSymbols * sizeof(double));
+								vectValues[0] = simulation->getTime_sec();
+								vectValues[1] = coord[0];
+								vectValues[2] = coord[1];
+								vectValues[3] = SpaceDim < 3 ? 0.5 : coord[2];
+								double exact = var->getVarContext()->evaluateExpression(EXACT_EXP, vectValues);
+								error = exact - sol;
+								relErr = exact == 0 ? 0 : std::abs(error/exact);
+
+								if (volFrac  > smallVolFrac)
+								{
+									var->updateMaxError(abs(error));
+								}
+								double l2 = error * error * volFrac;
+								double exactl2 = exact * exact * volFrac;
+								var->addL2Error(l2);
+								var->addL2Exact(exactl2);
+							}
+#if CH_SPACEDIM==3
+							for (int kk = 0; kk < refratio; kk ++)
+							{
+#endif
+								for (int jj = 0; jj < refratio; jj ++)
+								{
+									for (int ii = 0; ii < refratio; ii ++)
+									{
+										IntVect viewLevelGridIndex(D_DECL(ioffset * refratio + ii, joffset * refratio + jj, koffset * refratio + kk));
+										int volIndex = getVolumeIndex(vectNxes[viewLevel], viewLevelGridIndex);
+										varCurr[volIndex] = sol;
+										if (bComputeError)
+										{
+											errorCurr[volIndex] = error;
+											relErrCurr[volIndex] = relErr;
+										}
+									} // end for ii
+								} // end for jj
+#if CH_SPACEDIM==3
+							} // end for kk
+#endif
+						} // end for i
+					} // end for j
+#if CH_SPACEDIM==3
+				} // end for k
+#endif
+			} // end for (DataIterator
+			refratio /= vectRefRatios[ilev];
+		} // end for ilev
+	} // for (int ivar)
+
 	pout() << "Exit " << methodName << endl;
 }
 
