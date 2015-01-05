@@ -394,9 +394,10 @@ namespace moving_boundary {
 
 		/**
 		* transfer interior neighbor edge length, distance and coordinate info to doppelganger
+		* called once for each inside neighbor during initialization regardless of node status
 		*/
 
-		void setInsideNeighbor(OurType & other, moving_boundary::DistanceType dist, moving_boundary::DistanceType length) {
+		void setInsideNeighborValue(OurType & other, moving_boundary::DistanceType dist, moving_boundary::DistanceType length) {
 			//scan inside neighbor storage, find first empty
 			for (int i = 0; i < 4; i++) {
 				MeshElementNeighbor & iNbhr = interiorNeighbors[i]; 

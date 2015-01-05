@@ -626,7 +626,7 @@ namespace moving_boundary {
 				double  y = iter->get(cY);
 
 				std::stringstream ss;
-				ss << iter->indexOf(cX) << ',' << iter->indexOf(cY); 
+				ss << iter->indexOf(cX) << ',' << iter->indexOf(cY) << '-' << static_cast<unsigned int>(iter->boundaryOffset( )) << std::ends;
 				dump << matlabBridge::Text(x,y, ss.str( ).c_str( ));
 				if (fullDump) {
 					matlabBridge::Polygons pgons("k");
@@ -1040,11 +1040,6 @@ namespace moving_boundary {
 						debugDump(generationCount,'e');
 						throw;
 					}
-					if (frontMoveTrace) {
-						if (generationCount > 0) {
-							debugDump(generationCount,'a');
-						}
-					}
 					//TODO: nochange
 
 					std::for_each(boundaryElements.begin( ),boundaryElements.end( ),CollectMass(*this));
@@ -1056,6 +1051,12 @@ namespace moving_boundary {
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),EndCycle(*this));
 
 					boundaryElements.front( )->setBoundaryOffsetValues( );
+
+					if (frontMoveTrace) {
+						if (generationCount > 0) {
+							debugDump(generationCount,'a');
+						}
+					}
 
 					//tell the clients about it
 					notifyClients(++generationCount, changed);

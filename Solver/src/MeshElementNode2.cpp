@@ -92,17 +92,18 @@ void MeshElementNode::propagateBoundaryValue() {
 	std::array<MeshElementNode *,8> nodesThatWereSet;
 	const BoundaryOffsetType oneMore = boundaryOffset( ) + 1;
 
-	for (int i = 0; i < numNeighbors( ); i++) {
-		assert(neighbors[i].element != nullptr);
-		OurType & nb = *neighbors[i].element;
-		if (nb.boundaryOffset( ) == unsetOffsetValue( ) || nb.boundaryOffset( ) > oneMore) {
-			if (!nb.isBoundary( )) {
-				nb.bndOffset = oneMore;
+	for (int i = 0; i < NUM_INSIDE; i++) {
+		if (interiorNeighbors[i].element != nullptr) {
+			OurType & nb = *interiorNeighbors[i].element;
+			if (nb.boundaryOffset( ) == unsetOffsetValue( ) || nb.boundaryOffset( ) > oneMore) {
+				if (!nb.isBoundary( )) {
+					nb.bndOffset = oneMore;
+				}
+				else {
+					nb.bndOffset = 0;
+				}
+				nodesThatWereSet[setIndex++] = &nb;
 			}
-			else {
-				nb.bndOffset = 0;
-			}
-			nodesThatWereSet[setIndex++] = &nb;
 		}
 	}
 

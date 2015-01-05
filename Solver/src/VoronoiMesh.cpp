@@ -247,7 +247,7 @@ namespace {
 		/**
 		* call once at beginning for all cells
 		*/
-		void setInside(EType & in) {
+		void setInsideValues(EType & in) {
 			const size_t x = in.indexOf(cX);
 			const size_t y = in.indexOf(cY);
 
@@ -260,13 +260,13 @@ namespace {
 			for (int i = 0 ; i < sizeof(xNeighbors)/sizeof(xNeighbors[0]); i++) {
 				EType * e = get(x, y, xNeighbors[i]);
 				if (e != nullptr) { 
-					in.setInsideNeighbor(*e,xDistance,yDistance);
+					in.setInsideNeighborValue(*e,xDistance,yDistance);
 				}
 			}
 			for (int i = 0 ; i < sizeof(yNeighbors)/sizeof(yNeighbors[0]); i++) {
 				EType * e = get(x, y, yNeighbors[i]);
 				if (e != nullptr) { 
-					in.setInsideNeighbor(*e,yDistance,xDistance);
+					in.setInsideNeighborValue(*e,yDistance,xDistance);
 				}
 			}
 		}
@@ -380,7 +380,7 @@ namespace {
 			const MESH & mesh = vmesh.mesh( );
 			for (typename MESH::iterator iter = mesh.begin( ); iter != mesh.end( ); ++iter) {
 				EType & point = *iter;
-				setInside(point);
+				setInsideValues(point);
 
 				using spatial::inside;
 				spatial::SurfacePosition pos = spatial::inside<moving_boundary::CoordinatePoint>(polygon,point) ? spatial::interiorSurface : spatial::outsideSurface;
