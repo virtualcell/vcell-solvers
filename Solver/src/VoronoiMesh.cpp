@@ -426,7 +426,7 @@ namespace {
 				EType & point = *iter;
 
 				using spatial::inside;
-				if (point.boundaryOffset( ) > 0) { //too far from boundary to change
+				if (point.boundaryOffset( ) > 1) { //too far from boundary to change
 					continue;
 				}
 				spatial::SurfacePosition oldPosition = point.mPos( ); 
