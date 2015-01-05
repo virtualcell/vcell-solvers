@@ -100,43 +100,24 @@ namespace spatial {
 			return mp;
 		}
 		/**
-		* point is inside boundary (#interiorSurface, #deepInteriorSurface or #boundarySurface)
+		* point is inside boundary (#interiorSurface or #boundarySurface)
 		*/
 		bool isInside( ) const {
 			switch (mPos( )) {
 			case interiorSurface:
-			case deepInteriorSurface: 
 			case boundarySurface:
 				return true;
 			case outsideSurface:
-			case deepOutsideSurface:
 				return false;
 			default:
 				throw std::logic_error("isInside unset position");
 			}
 		}
 		/**
-		* point is outside boundary (#outsideSurface,#deepOutsideSurface) 
+		* point is outside boundary (#outsideSurface) 
 		*/
 		bool isOutside( ) const {
 			return !isInside( );
-		}
-
-		/**
-		* point is sufficiently far from boundary its position will not change in one time generation
-		*/
-		bool isDeep( ) const {
-			switch (mPos( )) {
-			case deepInteriorSurface: 
-			case deepOutsideSurface:
-				return true;
-			case interiorSurface:
-			case boundarySurface:
-			case outsideSurface:
-				return false;
-			default:
-				throw std::logic_error("isDeep unset position");
-			}
 		}
 
 		/**
