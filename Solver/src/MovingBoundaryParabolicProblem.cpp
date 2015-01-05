@@ -599,20 +599,24 @@ namespace moving_boundary {
 			matlabBridge::TScatter<CoordinateType> deepOutside('r',3,false,4);
 			for (MBMesh::const_iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
 				switch(iter->mPos( )) {
-				case spatial::deepInteriorSurface:
-					frontTierAdapt::copyPointInto(deepInside,*iter);
-					break;
 				case spatial::interiorSurface:
-					frontTierAdapt::copyPointInto(inside,*iter);
+					if (iter->boundaryOffset( ) > 1) {
+						frontTierAdapt::copyPointInto(deepInside,*iter);
+					}
+					else {
+						frontTierAdapt::copyPointInto(inside,*iter);
+					}
 					break;
 				case spatial::boundarySurface:
 					frontTierAdapt::copyPointInto(boundary,*iter);
 					break;
 				case spatial::outsideSurface:
-					frontTierAdapt::copyPointInto(outside,*iter);
-					break;
-				case spatial::deepOutsideSurface:
+					if (iter->boundaryOffset( ) > 1) {
 					frontTierAdapt::copyPointInto(deepOutside,*iter);
+					}
+					else {
+						frontTierAdapt::copyPointInto(outside,*iter);
+					}
 					break;
 				default:
 					VCELL_EXCEPTION(domain_error,"bad state " << static_cast<int>(iter->mPos( )) << iter->ident( )) ;
@@ -1050,6 +1054,8 @@ namespace moving_boundary {
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),DistributeLost());
 
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),EndCycle(*this));
+
+					boundaryElements.front( )->setBoundaryOffsetValues( );
 
 					//tell the clients about it
 					notifyClients(++generationCount, changed);

@@ -6,15 +6,15 @@ void MeshElementNode::setInitialPos(spatial::SurfacePosition pos) {
 		badState("setInitialPos"); 
 	}
 	switch (pos) {
-		case spatial::interiorSurface:
-			setState(initialInside);
-			break;
-		case spatial::boundarySurface:
-			setState(initialBoundary);
-			break;
-		case spatial::outsideSurface:
-			setState(outStable);
-			break;
+	case spatial::interiorSurface:
+		setState(initialInside);
+		break;
+	case spatial::boundarySurface:
+		setState(initialBoundary);
+		break;
+	case spatial::outsideSurface:
+		setState(outStable);
+		break;
 	}
 }
 
@@ -24,8 +24,6 @@ bool MeshElementNode::isInside( ) const {
 	case inStable:
 	case inDiffAdvDone:
 	case inDiffAdvDoneMU:
-	case inStableDeep:
-	case inDeepDiffAdvDone:
 	case initialBoundary: 
 	case bndFrontMoved:
 	case bndNbrEdgesFound:
@@ -40,7 +38,6 @@ bool MeshElementNode::isInside( ) const {
 	case transOutBndSetIn:
 		return true;
 	case outStable:
-	case outStableDeep:
 	case transBndOut: 
 		return false;
 		break;
@@ -50,9 +47,6 @@ bool MeshElementNode::isInside( ) const {
 }
 spatial::SurfacePosition MeshElementNode::mPos( ) const {
 	switch (state( )) {
-	case inStableDeep:
-	case inDeepDiffAdvDone:
-		return spatial::deepInteriorSurface;
 	case initialInside:
 	case inStable:
 	case inDiffAdvDone:
@@ -75,41 +69,47 @@ spatial::SurfacePosition MeshElementNode::mPos( ) const {
 	case outStable:
 	case transBndOut: 
 		return spatial::outsideSurface;
-	case outStableDeep:
-		return spatial::deepOutsideSurface;
 	default:
 		badState("mPos def");
 	}
-		return spatial::outsideSurface;
+	return spatial::outsideSurface;
 }
-bool MeshElementNode::isDeep( ) const  {
-	switch (state( )) {
-	case inDiffAdvDone:
-	case inDiffAdvDoneMU:
-	case inStable:
-	case initial:
-	case bndDiffAdvDone:
-	case bndDiffAdvDoneMU:
-	case bndStable:
-	case bndFrontMoved:
-	case bndNbrEdgesFound:
-	case bndFrontApplied:
-	case outStable:
-	case transBndOut: 
-	case transInBnd:
-	case transOutBndSetBnd:
-	case transOutBndNbrSet:
-	case transOutBndMassCollected: 
-	case transOutBndSetIn:
-		return false;
-	case inDeepDiffAdvDone:
-	case outStableDeep:
-	case inStableDeep:
-		return true;
-	default:
-		badState("isDeep");
+
+void MeshElementNode::setBoundaryOffsetValues( ) {
+	if (!isBoundary( ) || boundaryOffset( ) != unsetOffsetValue()) {
+		VCELL_EXCEPTION(domain_error, ident( ) << "setBoundaryOffsetValue with value " << boundaryOffset( ) );
 	}
-	return false; 
+	bndOffset = 0;
+	propagateBoundaryValue( );
+}
+
+void MeshElementNode::propagateBoundaryValue() {
+	std::cout << ident( ) << " current " << static_cast<unsigned int>(boundaryOffset( )) << std::endl;
+	assert(boundaryOffset( ) != unsetOffsetValue());
+
+	//first pass, set unset neighbors and propagate call to neighbors at same offset
+	size_t setIndex = 0;
+	std::array<MeshElementNode *,8> nodesThatWereSet;
+	const BoundaryOffsetType oneMore = boundaryOffset( ) + 1;
+
+	for (int i = 0; i < numNeighbors( ); i++) {
+		assert(neighbors[i].element != nullptr);
+		OurType & nb = *neighbors[i].element;
+		if (nb.boundaryOffset( ) == unsetOffsetValue( ) || nb.boundaryOffset( ) > oneMore) {
+			if (!nb.isBoundary( )) {
+				nb.bndOffset = oneMore;
+			}
+			else {
+				nb.bndOffset = 0;
+			}
+			nodesThatWereSet[setIndex++] = &nb;
+		}
+	}
+
+	//second pass, tell neighbors we just set to set their unset neighbors
+	for (int i = 0; i < setIndex; i++) {
+		nodesThatWereSet[i]->propagateBoundaryValue();
+	}
 }
 
 void MeshElementNode::listBoundary(std::ostream & os) const {
@@ -117,10 +117,8 @@ void MeshElementNode::listBoundary(std::ostream & os) const {
 	using spatial::cY;
 	switch (mPos( )) {
 	case spatial::outsideSurface:
-	case spatial::deepOutsideSurface:
 		return;
 	case spatial::interiorSurface:
-	case spatial::deepInteriorSurface:
 	case spatial::boundarySurface:
 		{
 			const char comma = ',';
@@ -246,8 +244,6 @@ std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::Me
 		CASE(inStable);
 		CASE(inDiffAdvDone);
 		CASE(inDiffAdvDoneMU);
-		CASE(inStableDeep);
-		CASE(inDeepDiffAdvDone);
 		CASE(bndFrontMoved);
 		CASE(bndNbrEdgesFound);
 		CASE(bndDiffAdvDone);
@@ -256,7 +252,6 @@ std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::Me
 		CASE(bndMassCollectedFrontApplied);
 		CASE(bndStable);
 		CASE(outStable);
-		CASE(outStableDeep);
 		CASE(transBndOut); 
 		CASE(transInBnd);
 		CASE(transOutBndSetBnd);

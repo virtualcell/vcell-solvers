@@ -75,6 +75,19 @@ namespace moving_boundary {
 		}
 	};
 
+	/**
+	* struct used to help nodes find their #bndOffset value
+	*/
+	struct OffsetData {
+		/*
+		OffsetData(std::vector<MeshElementNode *> &b)
+			:boundaryNodes(b) {}
+		std::vector<MeshElementNode *> &boundaryNodes;
+		*/
+		std::vector<MeshElementNode *> levelOne;
+
+	};
+
 	namespace MeshElementStateful {
 		//if adding state, add to std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::MeshElementStateful::State state) in *cpp 
 		/**
@@ -86,7 +99,6 @@ namespace moving_boundary {
 		* -  DiffAdv -- diffusionAdvection 
 		* -  Nbr -- neighbor 
 		* -  MU -- mass updated, values copied from amtMassTransient to amtMass
-		* -  Deep -- node has no neighbors which are boundary
 		*
 		* comments preceding enumeration indicate which function puts node in that state
 		*/
@@ -108,17 +120,9 @@ namespace moving_boundary {
 			*/
 			inDiffAdvDone,
 			/**
-			*  - diffuseAdvect( )
-			*/
-			inDeepDiffAdvDone,
-			/**
 			*  - collectMass( ) [sets neighbor to this state]
 			*/
 			inDiffAdvDoneMU,
-			/**
-			*  - endOfCycle( )
-			*/
-			inStableDeep,
 
 			//stays boundary sequence
 			/**
@@ -159,11 +163,6 @@ namespace moving_boundary {
 			*  - endOfCycle( )
 			*/
 			outStable,
-			/**
-			*  - endOfCycle( )
-			*/
-			outStableDeep,
-
 
 			//in to boundary sequence
 			/**
@@ -233,6 +232,7 @@ namespace moving_boundary {
 		typedef MeshElementNeighbor NeighborType;
 		typedef MeshElementStateful::State State;
 		typedef spatial::Segment<moving_boundary::CoordinateType,2> SegmentType; 
+		typedef unsigned char BoundaryOffsetType;
 
 		static spatial::DiffuseAdvectCache *createCache(const MeshDefinition & meshDef);
 
@@ -240,6 +240,7 @@ namespace moving_boundary {
 			:base(n,values),
 			mesh(owner),
 			stateVar(State::initial),
+			bndOffset(0),
 			interiorVolume(-1),
 			vol(0,this),
 			segments_( ),
@@ -266,7 +267,27 @@ namespace moving_boundary {
 		bool isOutside( ) const {
 			return !isInside( );
 		}
-		bool isDeep( ) const; 
+
+		BoundaryOffsetType boundaryOffset( ) const {
+			return bndOffset;
+		}
+		/**
+		* set offset level for boundary value (recursively sets neighbors) 
+		* @throws std::domain_error if #boundaryOffset( ) != #unsetOffsetValue( ) or ! #isBoundary( )
+		*/
+		void setBoundaryOffsetValues(); 
+	private:
+		/**
+		* set neighbor's offset value
+		* @param targetLevel current desired level 
+		*/
+		void propagateBoundaryValue();
+	public:
+
+		static BoundaryOffsetType unsetOffsetValue( ) {
+			return MeshElementNode::unsetBoundaryOffset;
+		}
+		
 		bool isBoundary( ) const {
 			return mPos( ) == spatial::boundarySurface;
 		}
@@ -442,9 +463,7 @@ namespace moving_boundary {
 			switch(this->state( ) ) {
 			case State::initialInside:
 			case State::inStable:
-			case State::inStableDeep:
 
-			case State::inDeepDiffAdvDone:
 			case State::inDiffAdvDone:
 			case State::inDiffAdvDoneMU:
 					assert(interiorVolume > 0); //should be set externally 
@@ -729,6 +748,10 @@ namespace moving_boundary {
 
 		MeshElementStateful::State stateVar;
 		/**
+		* distance from boundary (more or less)
+		*/
+		BoundaryOffsetType bndOffset;
+		/**
 		* volume if this is an inside element -- otherwise volume comes from vol object
 		*/
 		moving_boundary::CoordinateProductType interiorVolume;
@@ -771,6 +794,10 @@ namespace moving_boundary {
 		* problem domain to solution coordinates scale, squared
 		*/
 		static moving_boundary::BioQuanType distanceScaledSquared;
+		/**
+		* value for unset boundary offset 
+		*/
+		static BoundaryOffsetType unsetBoundaryOffset;
 
 		/**
 		* boundary neighbor functor; declared as part of class to give acccess to typedefs

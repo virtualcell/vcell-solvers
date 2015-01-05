@@ -76,7 +76,7 @@ namespace spatial {
 		std::array<size_t,N> index;
 	};
 
-	enum SurfacePosition { unsetPosition = -1, deepInteriorSurface, interiorSurface, boundarySurface,outsideSurface, deepOutsideSurface };
+	enum SurfacePosition { unsetPosition = -1, interiorSurface, boundarySurface,outsideSurface};
 
 	template<class REAL, int N>
 	struct MeshElement : public MPoint<REAL,N> {
@@ -163,18 +163,11 @@ namespace spatial {
 
 	inline std::ostream & operator<<(std::ostream & os, spatial::SurfacePosition mp) {
 		switch (mp) {
-		case spatial::deepInteriorSurface:
-			//more convenient for tables, csv, et. al. if all states print as single word
-			os << "deepInterior";
-			break;
 		case spatial::interiorSurface:
 			os << "interior";
 			break;
 		case spatial::outsideSurface:
 			os << "outside";
-			break;
-		case spatial::deepOutsideSurface:
-			os << "deepOutside";
 			break;
 		case spatial::boundarySurface:
 			os << "boundary";

@@ -314,7 +314,7 @@ namespace {
 						}
 					} 
 					else {
-		 				if (d == 1) {
+						if (d == 1) {
 							typedef moving_boundary::World<moving_boundary::CoordinateType,2> WorldType;
 							WorldType & world = WorldType::get( );
 							spatial::TPoint<double,2> pd = world.toProblemDomain(in);
@@ -410,7 +410,9 @@ namespace {
 
 		/**
 		* update classifications following movement of boundary
+		* @tparam STL_C standard template library style container
 		* @param polygon the front
+		* @param container out param which receives set of boundary nodes 
 		*/
 		template<class INPOINT, class STL_C>
 		bool updateClassification(const std::vector<INPOINT> & polygon, STL_C &container) {
@@ -424,7 +426,7 @@ namespace {
 				EType & point = *iter;
 
 				using spatial::inside;
-				if (point.isDeep( )) { //too far from boundary to change
+				if (point.boundaryOffset( ) > 0) { //too far from boundary to change
 					continue;
 				}
 				spatial::SurfacePosition oldPosition = point.mPos( ); 
@@ -467,7 +469,7 @@ namespace {
 					}
 				}
 			}
-				return true;
+			return true;
 		}
 	};
 }
@@ -479,6 +481,11 @@ moving_boundary::Positions<typename VoronoiMesh::Element> VoronoiMesh::classify2
 	return classifier.initialClassification(polygon);
 }
 
+/**
+* @tparam STL_C standard template library style container
+* @param container out param which receives set of boundary nodes 
+* @param front the front
+*/
 template<class STL_CONTAINER>
 bool VoronoiMesh::adjustNodes(STL_CONTAINER & boundaryContainer, const FrontType & front) {
 	Classifier<VoronoiMesh> classifier(*this);

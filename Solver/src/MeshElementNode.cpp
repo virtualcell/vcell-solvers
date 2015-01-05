@@ -65,11 +65,9 @@ using  moving_boundary::VoronoiMesh;
 using  moving_boundary::FrontType;
 
 using spatial::SurfacePosition;
-using spatial::deepInteriorSurface;
 using spatial::interiorSurface;
 using spatial::boundarySurface;
 using spatial::outsideSurface;
-using spatial::deepOutsideSurface;
 using spatial::unsetPosition;
 
 using spatial::MeshDef;
@@ -364,10 +362,8 @@ void MeshElementNode::applyFront( const FrontType & front, moving_boundary::Coor
 		setState(bndMassCollectedFrontApplied);
 		break;
 	case outStable:
-	case outStableDeep:
 	case inDiffAdvDone: 
 	case inDiffAdvDoneMU: 
-	case inDeepDiffAdvDone: 
 	case transBndOut:
 		break;
 	default:
@@ -696,8 +692,6 @@ const moving_boundary::Volume2DClass & MeshElementNode::getControlVolume( ) cons
 	case inStable:
 	case inDiffAdvDone:
 	case inDiffAdvDoneMU:
-	case inStableDeep:
-	case inDeepDiffAdvDone:
 		us.vol =  us.createInsidePolygon( );
 		break;
 	case bndFrontMoved:
@@ -714,7 +708,6 @@ const moving_boundary::Volume2DClass & MeshElementNode::getControlVolume( ) cons
 		}
 		break;
 	case outStable:
-	case outStableDeep:
 	case transOutBndNbrSet: 
 		break;
 		/*
@@ -892,14 +885,17 @@ void MeshElementNode::collectMassFromNeighbors(const FrontType & front) {
 	setState(transOutBndMassCollected); 
 }
 
+
+
 void MeshElementNode::endOfCycle( ) {
 	VCELL_LOG(verbose,this->ident( ) << " begin eoc"); 
 	bool copyMass = true;
+	bndOffset = unsetOffsetValue( );
 	switch (state( )) {
 	case outStable:
-	case outStableDeep:
 		copyMass = false;
 		{
+			/*
 			bool deep = true;
 			for (int i = 0; i < numNeighbors( ); i++) {
 				if (neighbors[i].element != nullptr) {
@@ -916,12 +912,12 @@ void MeshElementNode::endOfCycle( ) {
 				else {
 					setState(outStable);
 				}
-			vol.clear( );
+		*/
 		}
+		vol.clear( );
 
 		break;
 	case inDiffAdvDone:
-	case inDeepDiffAdvDone:
 	case inDiffAdvDoneMU:
 		//fall through
 		/* REVIEW -- check for negative
@@ -932,6 +928,7 @@ void MeshElementNode::endOfCycle( ) {
 		amtMass[s] = amtMassTransient[s];
 		}
 		*/
+		/*
 		{
 			bool deep = true; //assume true until find boundary neighbor
 			for (int i = 0; deep && i < numNeighbors( ); i++) {
@@ -949,6 +946,8 @@ void MeshElementNode::endOfCycle( ) {
 				setState(inStable);
 			}
 		}
+		*/
+				setState(inStable);
 		break;
 	case bndFrontApplied:
 		setState(bndStable);
@@ -1091,9 +1090,6 @@ void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, BioQu
 	case inStable: 
 		setState(inDiffAdvDone);
 		break;
-	case inStableDeep: 
-		setState(inDeepDiffAdvDone);
-		break;
 	case bndFrontMoved: 
 		findNeighborEdges();
 		//fall through
@@ -1206,3 +1202,4 @@ void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, BioQu
 MatLabDebug MatLabDebug::instance;
 moving_boundary::BioQuanType MeshElementNode::distanceScaled        = 1;
 moving_boundary::BioQuanType MeshElementNode::distanceScaledSquared = 1;
+MeshElementNode::BoundaryOffsetType MeshElementNode::unsetBoundaryOffset = std::numeric_limits<MeshElementNode::BoundaryOffsetType>::max( );

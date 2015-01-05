@@ -613,14 +613,11 @@ namespace {
 
 		char encodePosition(const moving_boundary::MeshElementNode &e) {
 			switch (e.mPos( )) {
-			case spatial::deepInteriorSurface:
-				return 'D';
 			case spatial::interiorSurface:
 				return 'I';
 			case spatial::boundarySurface:
 				return 'B';
 			case spatial::outsideSurface:
-			case spatial::deepOutsideSurface:
 			case spatial::unsetPosition:
 			default:
 				assert(0);  //we don't currently expect any of these
