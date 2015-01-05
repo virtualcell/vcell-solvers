@@ -84,7 +84,7 @@ void MeshElementNode::setBoundaryOffsetValues( ) {
 }
 
 void MeshElementNode::propagateBoundaryValue() {
-	std::cout << ident( ) << " current " << static_cast<unsigned int>(boundaryOffset( )) << std::endl;
+	VCELL_LOG(verbose,  ident( ) << " propagate current " << static_cast<unsigned int>(boundaryOffset( )));
 	assert(boundaryOffset( ) != unsetOffsetValue());
 
 	//first pass, set unset neighbors and propagate call to neighbors at same offset
