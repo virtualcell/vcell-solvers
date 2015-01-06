@@ -15,16 +15,10 @@ namespace spatial {
 	struct InsideCache {
 		InsideCache( )
 			:front(nullptr),
-			storage( ),
-			nCalls( ),
-			nCalcs( )
+			storage( )
 		{
 			resetCachedValues( );
 		}
-		~InsideCache( ) {
-			std::cout << "C & C " << nCalls << ' ' << nCalcs << std::endl;
-		}
-
 
 		/**
 		* set maximum indexes used by MPoints
@@ -47,12 +41,10 @@ namespace spatial {
 		* @returns true if is, false otherwise
 		*/
 		bool inside(const spatial::MPoint<CoordinateType,2> & point) const {
-			nCalls++;
 			const size_t xIndex = point.indexOf(0);
 			const size_t yIndex = point.indexOf(1);
 			tribool & cachedValue = storage[xIndex][yIndex];
 			if (indeterminate(cachedValue)) {
-				nCalcs++;
 				cachedValue = spatial::inside<typename CFrontType::value_type>(*front,point);
 			}
 			return cachedValue;
@@ -83,8 +75,6 @@ namespace spatial {
 
 		const CFrontType *front;
 		mutable vcell_util::Flex2<tribool> storage;
-		mutable size_t nCalls;
-		mutable size_t nCalcs;
 	};
 
 }
