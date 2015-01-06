@@ -37,7 +37,7 @@ extern bool bConsoleOutput;
 # JMS_Paramters
 JMS_PARAM_BEGIN
 JMS_BROKER tcp://code:2507
-JMS_USER serverUser xxxxxxxx
+JMS_USER serverUser cbittech
 JMS_QUEUE workerEventDev
 JMS_TOPIC serviceControlDev
 VCELL_USER fgao
@@ -776,7 +776,7 @@ void FVSolver::loadSerialScanParameterValues(istream& ifsInput, int numSerialSca
 # JMS_Paramters
 JMS_PARAM_BEGIN
 JMS_BROKER tcp://code:2507
-JMS_USER serverUser xxxxxxxx
+JMS_USER serverUser cbittech
 JMS_QUEUE workerEventDev
 JMS_TOPIC serviceControlDev
 VCELL_USER fgao
@@ -956,7 +956,7 @@ FVSolver::FVSolver(istream& fvinput, int taskID) {
 	createSimTool(fvinput, taskID);
 }
 
-void FVSolver::solve()
+void FVSolver::solve(bool convertChomboData)
 {
 #ifdef CH_MPI
 	if (bConsoleOutput || SimTool::getInstance()->isRootRank())
@@ -964,7 +964,7 @@ void FVSolver::solve()
 	{
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "preprocessing finished"));
 	}
-	simTool->start();
+	simTool->start(convertChomboData);
 }
 
 void FVSolver::loadChomboSpec(istream& ifsInput) {
@@ -1142,3 +1142,4 @@ void FVSolver::loadPostProcessingBlock(istream& ifsInput){
 		}
 	}
 }
+

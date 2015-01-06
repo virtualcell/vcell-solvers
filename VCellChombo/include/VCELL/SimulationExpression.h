@@ -33,7 +33,7 @@ public:
 	{
 		return _scheduler->getChomboGeometry();
 	}
-	void iterate();          // computes 1 time step
+	void iterate(bool bSolve=true);          // computes 1 time step
 
 	double getTime_sec();
 	void setCurrIteration(int curriter) { 
@@ -58,8 +58,6 @@ public:
 		return (int)varList.size();
 	}
 	
-	void writeData(char* filename);
-
 	SymbolTable* getSymbolTable() { 
 		return symbolTable; 
 	};

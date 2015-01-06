@@ -23,7 +23,7 @@ AS=as.exe
 # Macros
 CND_PLATFORM=Cygwin_4.x_1-Windows
 CND_DLIB_EXT=dll
-CND_CONF=Debug_MPI_2D
+CND_CONF=Debug_2D_MPI
 CND_DISTDIR=dist
 CND_BUILDDIR=build
 

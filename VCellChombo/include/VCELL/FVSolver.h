@@ -24,7 +24,7 @@ class FVSolver {
 public:
 	FVSolver(istream& fvinput, int taskID=-1);
 	void createSimTool(istream& ifsInput, int taskID);
-	void solve();
+	void solve(bool convertChomboData);
 
 	double getCurrentTime();
 	void setEndTime(double endTime);

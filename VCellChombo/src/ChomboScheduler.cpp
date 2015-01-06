@@ -1,8 +1,10 @@
 #include <VCELL/ChomboScheduler.h>
 #include <BRMeshRefine.H>
+#include <CH_HDF5.H>
+#include <EBArith.H>
+#include <AMRIO.H>
 
 #include <EBISLayout.H>
-#include <EBAMRPoissonOp.H>
 #include <EBLevelGrid.H>
 #include <GeometryShop.H>
 #include <EBEllipticLoadBalance.H>
@@ -40,6 +42,7 @@
 #include <assert.h>
 #include <sstream>
 #include <hdf5.h>
+#include <iomanip>
 
 #ifdef CH_MPI
 #include <mpi.h>
@@ -605,7 +608,7 @@ void ChomboScheduler::generateVolumeMembraneIndexMap()
 				const Box& currBox = vectGrids[ilev][dit()];
 				Box boxWithGhost = currBox;
 				boxWithGhost.grow(membraneIndexGhost);
-
+				
 				pout() << "phase " << phase0 << ", level " << ilev << ", Box "	<< currBox << endl;
 				const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
 				const EBGraph& currEBGraph = currEBISBox.getEBGraph();
@@ -1100,16 +1103,23 @@ void ChomboScheduler::computeStructureSizes()
 	pout() << "Exit " << methodName << endl;
 }
 
-void ChomboScheduler::updateSolution()
+void ChomboScheduler::updateSolutionFromLevelData()
 {
-	const char* methodName = "(ChomboScheduler::updateSolution)";
+	const char* methodName = "(ChomboScheduler::updateSolutionFromLevelData)";
 	pout() << "Entry " << methodName << endl;
 
 #ifndef CH_MPI
-	populateVolumeSolution();
-	populateImplicitFunctions();
+	if (chomboSpec->isSaveVCellOutput())
+	{
+		// volume and IF values are written out
+		// for NON MPI VCell output
+		populateVolumeSolution();
+		populateImplicitFunctions();
+	}
 #endif
 
+	// membrane solution and extrapolated values are written out
+	// for both MPI and NON MPI and for both VCell and Chombo output
 	populateMembraneSolution();
 	populateExtrapolatedValues();
 
@@ -1119,7 +1129,7 @@ void ChomboScheduler::updateSolution()
 #ifndef CH_MPI
 void ChomboScheduler::populateVolumeSolution()
 {
-	const char* methodName = "(ChomboScheduler::populateVolumeSolution)";
+	static const char* methodName = "(ChomboScheduler::populateVolumeSolution)";
 	pout() << "Entry " << methodName << endl;
 
 	// reset volume variables
@@ -1160,10 +1170,10 @@ void ChomboScheduler::populateVolumeSolution(int iphase, int ivol)
 	
 	int cfRefRatio = 1;
 	int viewLevel = chomboSpec->getViewLevel();
-	for(int ilev = 0; ilev < viewLevel; ilev ++) {
+	for(int ilev = 0; ilev < viewLevel; ++ ilev)
+	{
 		cfRefRatio *= vectRefRatios[ilev];
 	}
-
 	double viewLevelUnitV = vectDxes[viewLevel].product();
 	
 	// average fine to coarse
@@ -1343,11 +1353,22 @@ void ChomboScheduler::populateImplicitFunctions()
 }
 #endif
 
-void ChomboScheduler::writeData(char* filename) {
+void ChomboScheduler::writeData(char* filename, bool convertChomboData) {
 	const char* methodName = "(ChomboScheduler::writeData)";
 	pout() << "Entry " << methodName << endl;
 
-	updateSolution(); // in MPI case, update extrapolated values
+	if (convertChomboData)
+	{
+#ifdef CH_MPI
+		throw "Chombo data conversion is not supported in MPI Parallel";
+#else
+		updateSolutionFromChomboOutputFile();  // read from file into vcell variables
+#endif
+	}
+	else
+	{
+		updateSolutionFromLevelData();  // read from level data into vcell variables
+	}
 	
 #ifndef CH_MPI
 	if (chomboSpec->isSaveVCellOutput())
@@ -1386,10 +1407,11 @@ void ChomboScheduler::writeData(char* filename) {
 
 				bool replaceCovered = false;
 				Vector<Real> dummy;
-
+				IntVect zeroGhost = IntVect::Zero; // not writing ghost
+								 
 				writeEBHDF5(string(hdf5FileName), vectGrids, volSoln[iphase][ivol], names,
 					 vectDomains[0].domainBox(), vectDxes[0][0], simulation->getDT_sec(), simulation->getTime_sec(),
-					 vectRefRatios, numLevels, replaceCovered, dummy);
+					 vectRefRatios, numLevels, replaceCovered, dummy, zeroGhost);
 			} // ivol
 		} // iphase
 
@@ -2934,6 +2956,7 @@ void ChomboScheduler::populateExtrapolatedValues()
 			int numDefinedVolVars = feature->getNumDefinedVariables();
 			if (numDefinedVolVars == 0)
 			{
+				pout() << methodName << "no variables defined in feature " << feature->getName() << endl;
 				continue;
 			}
 			for (int ilev = 0; ilev < numLevels; ++ ilev)
@@ -3093,3 +3116,129 @@ void ChomboScheduler::populateMembraneSolution()
 	
 	pout() << "Exit " << methodName << endl;
 }
+
+#ifndef CH_MPI
+void ChomboScheduler::updateSolutionFromChomboOutputFile()
+{
+	static const char* METHOD = "(ChomboScheduler::updateSolutionFromChomboOutputFile)";
+	pout() << "Entry " << METHOD << endl;
+
+	pout() << endl << "time = " << simulation->getTime_sec() << endl;
+
+	int firstFilePhase = -1, firstFileVol = -1;
+	
+	IntVect zeroGhost = IntVect::Zero;
+	volSoln.resize(NUM_PHASES);
+	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
+	{
+		int numVols = phaseVolumeList[iphase].size();
+		volSoln[iphase].resize(numVols);
+
+		for (int ivol = 0; ivol < numVols; ++ ivol)
+		{
+			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+			int ncomp = feature->getNumDefinedVariables();
+			if (ncomp == 0)
+			{
+				pout() << METHOD << "no variables defined in feature " << feature->getName() << endl;
+				continue;
+			}
+
+			if (firstFilePhase == -1)
+			{
+				firstFilePhase = iphase;
+				firstFileVol = ivol;
+			}
+			
+			char hdf5FileName[128];
+			sprintf(hdf5FileName, "%s%06d.feature_%s.vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), ivol, HDF5_FILE_EXT);
+			pout() << METHOD << " readEBHDF5, [iphase, ivol]=[" << iphase << "," << ivol << "] from " << hdf5FileName << endl;
+
+			Vector<LevelData<FArrayBox>* > chomboData;
+			Box domain;
+			int eek = ReadAMRHierarchyHDF5(hdf5FileName,
+                     vectGrids,
+                     chomboData,
+                     domain,
+                     vectRefRatios,
+                     numLevels);
+			if (eek != 0)
+      {
+        throw "ReadAMRHierarchyHDF5 failed";
+      }
+
+			// refill EBIS layout because of new grids
+			for (int ilev = 0; ilev < numLevels; ++ ilev)
+			{
+				phaseVolumeList[iphase][ivol]->volume->fillEBISLayout(vectEbis[iphase][ivol][ilev],
+										vectGrids[ilev],
+										vectDomains[ilev],
+										numGhostEBISLayout);
+			}
+
+			volSoln[iphase][ivol].resize(numLevels);
+
+			for (int ilev = 0; ilev < numLevels; ilev ++)
+			{
+				EBCellFactory ebCellFactory(vectEbis[iphase][ivol][ilev]);
+				delete volSoln[iphase][ivol][ilev];
+				volSoln[iphase][ivol][ilev] = new LevelData<EBCellFAB>(vectGrids[ilev], ncomp, numGhostSoln, ebCellFactory);
+
+				LevelData<EBCellFAB>& ebcfSoln = *volSoln[iphase][ivol][ilev];
+				LevelData<FArrayBox>& fabData = *chomboData[ilev];
+
+				for (DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
+				{
+					FArrayBox& currentFab = fabData[dit()];
+					// copy single valued data
+					ebcfSoln[dit()].getSingleValuedFAB().copy(currentFab);
+
+					// copy the multicell data
+					{
+						EBCellFAB& ebcf = ebcfSoln[dit()];
+						EBISBox ebisBox1 = ebcf.getEBISBox();
+            IntVectSet ivsMulti = ebisBox1.getMultiCells(currentFab.box());
+            for (VoFIterator vofit(ivsMulti, ebisBox1.getEBGraph()); vofit.ok(); ++vofit)
+            {
+							if (vofit().cellIndex() == 0)
+							{
+								IntVect iv = vofit().gridIndex();
+								for (int ivar = 0; ivar < ncomp; ++ivar)
+								{
+									ebcf(vofit(), ivar) = currentFab(iv, ivar);
+								}
+							}
+						}
+          }
+				}
+			}
+
+			populateVolumeSolution(iphase, ivol);
+		} // ivol
+	} // iphase
+
+	for (int i = 0; i < simulation->getNumVolVariables(); ++ i)
+	{
+		Variable* var = simulation->getVolVariable(i);
+		var->computeFinalStatistics();
+	}
+
+	populateImplicitFunctions();
+	
+	// read membrane solution and extrapolated values
+	pout() << METHOD << "firstFilePhase=" << firstFilePhase << ", firstFileVol=" << firstFileVol << endl;
+	if (firstFilePhase != -1)
+	{
+		Feature* feature = phaseVolumeList[firstFilePhase][firstFileVol]->feature;
+		char hdf5FileName[128];
+		// write membrane variable solution and extrapolated values to the first hdf5 file
+		sprintf(hdf5FileName, "%s%06d.feature_%s.vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), firstFileVol, HDF5_FILE_EXT);
+		hid_t h5SimFile =  H5Fopen(hdf5FileName, H5F_ACC_RDONLY, H5P_DEFAULT);
+		DataSet::readMembraneSolution(simulation, h5SimFile);
+		DataSet::readExtrapolatedValues(simulation, h5SimFile);
+	}
+	
+	// read membrane solution
+	pout() << "Exit " << METHOD << endl;
+}
+#endif

@@ -402,3 +402,46 @@ void DataSet::writeExtrapolatedValues(SimulationExpression* sim, hid_t h5SimFile
 
 	pout() << "Exit " << methodName << endl;
 }
+
+#ifndef CH_MPI
+void DataSet::readMembraneSolution(SimulationExpression* sim, hid_t h5SimFile)
+{
+	static const char* methodName = "(DataSet::readMembraneSolution)";
+	pout() << "Entry " << methodName << endl;
+
+	int numMemVar = sim->getNumMemVariables();
+	for (int i = 0; i < numMemVar; i ++)
+	{
+		MembraneVariable* var = sim->getMemVariable(i);
+		
+		char dsName[128];
+		sprintf(dsName, "%s/%s", SOLUTION_GROUP, var->getName().c_str());
+		hid_t varDataset = H5Dopen2(h5SimFile, dsName, H5P_DEFAULT);
+		H5Dread(varDataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, var->getCurr());
+
+		H5Dclose(varDataset);
+	}
+
+	pout() << "Exit " << methodName << endl;
+}
+
+void DataSet::readExtrapolatedValues(SimulationExpression* sim, hid_t h5SimFile)
+{
+	static const char* methodName = "(DataSet::readExtrapolatedValues)";
+	pout() << "Entry " << methodName << endl;
+
+	int numVolVar = sim->getNumVolVariables();
+	for (int i = 0; i < numVolVar; i ++)
+	{
+		VolumeVariable* volVar = sim->getVolVariable(i);
+
+		char dsName[128];
+		sprintf(dsName, "%s/__%s_extrapolated__", EXTRAPOLATED_VOLUMES_GROUP, volVar->getName().c_str());
+		hid_t varDataset = H5Dopen2 (h5SimFile, dsName, H5P_DEFAULT);
+		H5Dread(varDataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, volVar->getExtrapolated());
+		H5Dclose(varDataset);
+	}
+
+	pout() << "Exit " << methodName << endl;
+}
+#endif

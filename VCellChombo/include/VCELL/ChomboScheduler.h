@@ -61,7 +61,7 @@ public:
 	void initializeGrids();
 	virtual void initValues()=0;
 
-	void writeData(char* filename);
+	void writeData(char* filename, bool convertChomboData);
 	int getNumMembranePoints()
 	{
 		return numMembranePoints;
@@ -162,7 +162,8 @@ private:
 	void exchangeFeaturesAndMembraneIndexOffset();
 	int totalNumMembranePoints;
 #endif
-	void updateSolution();
+	void updateSolutionFromLevelData();
+	void updateSolutionFromChomboOutputFile();
 
 #if CH_SPACEDIM == 2
 	void writeMeshHdf5(MembraneElementMetrics* metricsData, int vertexCount, Vertex* vertexList, Segment* segmentList);

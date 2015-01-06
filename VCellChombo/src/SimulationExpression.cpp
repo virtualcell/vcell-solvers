@@ -72,9 +72,12 @@ SimulationExpression::~SimulationExpression()
 	delete[] outputVarTypes;
 }
 
-void SimulationExpression::iterate()
+void SimulationExpression::iterate(bool bSolve)
 {
-	_scheduler->iterate();
+	if (bSolve)
+	{
+		_scheduler->iterate();
+	}
 	currIteration ++;
 }
 
@@ -114,7 +117,7 @@ void SimulationExpression::initSimulation()
 	{
 		postProcessingBlock->resolveReferences();
 	}
-	_scheduler->initValues();
+		_scheduler->initValues();
 	currIteration = 0;
 }
 
@@ -253,11 +256,6 @@ void SimulationExpression::createSymbolTable() {
 
 int  SimulationExpression::getNumSymbols() {
 	return numSymbols;
-}
-
-void SimulationExpression::writeData(char* filename)
-{
-	_scheduler->writeData(filename);
 }
 
 char** SimulationExpression::getOutputVarNames()

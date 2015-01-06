@@ -33,6 +33,8 @@ public:
 	static void writeMembraneSolution(SimulationExpression* sim, hid_t h5SimFile);
 	static void writeExtrapolatedValues(SimulationExpression* sim, hid_t h5SimFile);
 	static void write(SimulationExpression *sim, char* filename);
+	static void readMembraneSolution(SimulationExpression* sim, hid_t h5SimFile);
+	static void readExtrapolatedValues(SimulationExpression* sim, hid_t h5SimFile);
 #endif
 	
 private:

@@ -28,11 +28,15 @@
                     <type>1</type>
                 </confElem>
                 <confElem>
-                    <name>Debug_MPI_2D</name>
+                    <name>Debug_2D_MPI</name>
                     <type>1</type>
                 </confElem>
                 <confElem>
                     <name>Release_Profile_3D</name>
+                    <type>1</type>
+                </confElem>
+                <confElem>
+                    <name>Debug_2D_Messaging</name>
                     <type>1</type>
                 </confElem>
             </confList>

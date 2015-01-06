@@ -38,14 +38,14 @@ CND_ARTIFACT_PATH_Release_3D=dist/Release_3D/Cygwin_4.x_1-Windows/vcellchombo_pa
 CND_PACKAGE_DIR_Release_3D=dist/Release_3D/Cygwin_4.x_1-Windows/package
 CND_PACKAGE_NAME_Release_3D=vcellchomboparallel.tar
 CND_PACKAGE_PATH_Release_3D=dist/Release_3D/Cygwin_4.x_1-Windows/package/vcellchomboparallel.tar
-# Debug_MPI_2D configuration
-CND_PLATFORM_Debug_MPI_2D=Cygwin_4.x_1-Windows
-CND_ARTIFACT_DIR_Debug_MPI_2D=dist/Debug_MPI_2D/Cygwin_4.x_1-Windows
-CND_ARTIFACT_NAME_Debug_MPI_2D=vcellchombo
-CND_ARTIFACT_PATH_Debug_MPI_2D=dist/Debug_MPI_2D/Cygwin_4.x_1-Windows/vcellchombo
-CND_PACKAGE_DIR_Debug_MPI_2D=dist/Debug_MPI_2D/Cygwin_4.x_1-Windows/package
-CND_PACKAGE_NAME_Debug_MPI_2D=vcellchomboparallel.tar
-CND_PACKAGE_PATH_Debug_MPI_2D=dist/Debug_MPI_2D/Cygwin_4.x_1-Windows/package/vcellchomboparallel.tar
+# Debug_2D_MPI configuration
+CND_PLATFORM_Debug_2D_MPI=Cygwin_4.x_1-Windows
+CND_ARTIFACT_DIR_Debug_2D_MPI=dist/Debug_2D_MPI/Cygwin_4.x_1-Windows
+CND_ARTIFACT_NAME_Debug_2D_MPI=vcellchombo
+CND_ARTIFACT_PATH_Debug_2D_MPI=dist/Debug_2D_MPI/Cygwin_4.x_1-Windows/vcellchombo
+CND_PACKAGE_DIR_Debug_2D_MPI=dist/Debug_2D_MPI/Cygwin_4.x_1-Windows/package
+CND_PACKAGE_NAME_Debug_2D_MPI=vcellchomboparallel.tar
+CND_PACKAGE_PATH_Debug_2D_MPI=dist/Debug_2D_MPI/Cygwin_4.x_1-Windows/package/vcellchomboparallel.tar
 # Release_Profile_3D configuration
 CND_PLATFORM_Release_Profile_3D=Cygwin_4.x_1-Windows
 CND_ARTIFACT_DIR_Release_Profile_3D=dist/Release_Profile_3D/Cygwin_4.x_1-Windows
@@ -54,6 +54,14 @@ CND_ARTIFACT_PATH_Release_Profile_3D=dist/Release_Profile_3D/Cygwin_4.x_1-Window
 CND_PACKAGE_DIR_Release_Profile_3D=dist/Release_Profile_3D/Cygwin_4.x_1-Windows/package
 CND_PACKAGE_NAME_Release_Profile_3D=vcellchomboparallel.tar
 CND_PACKAGE_PATH_Release_Profile_3D=dist/Release_Profile_3D/Cygwin_4.x_1-Windows/package/vcellchomboparallel.tar
+# Debug_2D_Messaging configuration
+CND_PLATFORM_Debug_2D_Messaging=Cygwin_4.x_1-Windows
+CND_ARTIFACT_DIR_Debug_2D_Messaging=dist/Debug_2D_Messaging/Cygwin_4.x_1-Windows
+CND_ARTIFACT_NAME_Debug_2D_Messaging=vcellchombo
+CND_ARTIFACT_PATH_Debug_2D_Messaging=dist/Debug_2D_Messaging/Cygwin_4.x_1-Windows/vcellchombo
+CND_PACKAGE_DIR_Debug_2D_Messaging=dist/Debug_2D_Messaging/Cygwin_4.x_1-Windows/package
+CND_PACKAGE_NAME_Debug_2D_Messaging=vcellchomboparallel.tar
+CND_PACKAGE_PATH_Debug_2D_Messaging=dist/Debug_2D_Messaging/Cygwin_4.x_1-Windows/package/vcellchomboparallel.tar
 #
 # include compiler specific variables
 #

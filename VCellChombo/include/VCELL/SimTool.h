@@ -35,7 +35,7 @@ public:
 	static void create();
 	~SimTool();
 
-	virtual void start();
+	void start(bool convertChomboData);
 
 	void setModel(VCellModel* model);
 	void setSimulation(SimulationExpression* sim);
@@ -127,8 +127,8 @@ private:
 	SimTool();
 
 	FILE* lockForReadWrite();
-	void writeData(double progress,double time,int iteration);
-	void cleanupLastRun();
+	void writeData(double progress, double time, int iteration, bool convertChomboData);
+	void cleanupLastRun(bool convertChomboData);
 
 	static SimTool* instance;
 	

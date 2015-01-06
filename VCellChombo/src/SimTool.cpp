@@ -157,6 +157,7 @@ void SimTool::setBaseFilename(char *fname) {
 		strcpy(baseSimName, p + 1);
 		*(p + 1)= 0;
 	}
+	pout() << "Base Simulation Name is " << baseSimName << endl;
 }
 
 static void retryWait(int seconds) {
@@ -168,8 +169,12 @@ static void retryWait(int seconds) {
 }
 
 static FILE* openFileWithRetry(const char* fileName, const char* mode) {
+	static const char* METHOD = "(openFileWithRetry)";
+	pout() << "Entry " << METHOD << endl;
+
 	FILE *fp = NULL;
-	for (int retry = 0; retry < numRetries; retry ++) {
+	for (int retry = 0; retry < numRetries; retry ++)
+	{
 		fp = fopen(fileName, mode);
 
 		if (fp != NULL) {
@@ -180,6 +185,7 @@ static FILE* openFileWithRetry(const char* fileName, const char* mode) {
 			retryWait(retryWaitSeconds);
 		}
 	}
+	pout() << "Exit " << METHOD << endl;
 	return fp;
 }
 
@@ -212,7 +218,7 @@ static bool zipUnzipWithRetry(bool bZip, char* zipFileName, char* simFileName, c
 		sprintf(errmsg, "Writing zip file <%s> failed, return code is %d", zipFileName, retcode);
 		bSuccess = false;
 	}
-	pout() << "Exist " << methodName << endl;
+	pout() << "Exit " << methodName << endl;
 	return bSuccess;
 }
 
@@ -264,7 +270,7 @@ FILE* SimTool::lockForReadWrite()
 	return fp;
 }
 
-void SimTool::writeData(double progress, double time, int iteration)
+void SimTool::writeData(double progress, double time, int iteration, bool convertChomboData)
 {
 	const char* methodName = "(SimTool::writeData)";
 	pout() << "Entry " << methodName << endl;	
@@ -286,7 +292,7 @@ void SimTool::writeData(double progress, double time, int iteration)
 	char hdf5SimFileName[128];
 	sprintf(hdf5SimFileName,"%s%.4d%s",baseSimName, simFileCount, SIM_HDF5_FILE_EXT);
 	// write VCell and/or Chombo output
-	simulation->writeData(hdf5SimFileName);
+	simulation->getScheduler()->writeData(hdf5SimFileName, convertChomboData);
 
 #ifndef CH_MPI
 	if (chomboSpec->isSaveVCellOutput())
@@ -343,17 +349,21 @@ void SimTool::writeData(double progress, double time, int iteration)
 	pout() << "Exit " << methodName << endl;
 }
 
-void SimTool::cleanupLastRun()
+void SimTool::cleanupLastRun(bool convertChomboData)
 {
+	const char* thisMethod = "(cleanupLastRun)";
+	pout() << "Entry " << thisMethod << ", removing log and zip files" << endl;
+
 	simStartTime = 0;
 	simFileCount = 0;
 	zipFileCount = 0;
 
-	const char* thisMethod = "(cleanupLastRun)";
-	pout() << "Entry " << thisMethod << ", removing log and zip files" << endl;
 	char buffer[256];
-	sprintf(buffer,"%s%s",baseFileName, MESH_HDF5_FILE_EXT);
-	remove(buffer);
+	if (!convertChomboData)
+	{
+		sprintf(buffer,"%s%s",baseFileName, MESH_HDF5_FILE_EXT);
+		remove(buffer);
+	}
 	for (int i = 0; i < 10; ++ i)
 	{
 		sprintf(buffer,"%s%s%02d",baseFileName, zipFileCount, ZIP_HDF5_FILE_EXT);
@@ -375,8 +385,18 @@ void SimTool::setSolver(string& s) {
 	solver = s;
 }
 
-void SimTool::start()
+void SimTool::start(bool convertChomboData)
 {
+	if (convertChomboData)
+	{
+#ifdef CH_MPI
+		throw "Chombo data conversion is not supported in MPI Parallel";
+#else
+		chomboSpec->setSaveChomboOutput(false);
+		chomboSpec->setSaveVCellOutput(true);
+#endif
+	}
+
 #ifndef CH_MPI
 	if (simulation->getPostProcessingBlock() != NULL)
 	{
@@ -386,9 +406,9 @@ void SimTool::start()
 	}
 #endif
 	
-	simulation->initSimulation();	
+	simulation->initSimulation();
 	// clean up last run results
-	cleanupLastRun();
+	cleanupLastRun(convertChomboData);
 
 	if (checkStopRequested()) {
 		return;
@@ -423,8 +443,11 @@ void SimTool::start()
 		// simulation starts from scratch
 		if (bStoreEnable)
 		{
-			simulation->getScheduler()->writeMembraneFiles();
-			writeData(0.0, 0.0, 0);
+			if (!convertChomboData)
+			{
+				simulation->getScheduler()->writeMembraneFiles();
+			}
+			writeData(0.0, 0.0, 0, convertChomboData);
 		}
 		else
 		{
@@ -460,7 +483,7 @@ void SimTool::start()
 		}
 #endif
 		
-		simulation->iterate();
+		simulation->iterate(convertChomboData ? false : true);
 
 		if (checkStopRequested()) {
 			return;
@@ -468,7 +491,7 @@ void SimTool::start()
 
 		if (simulation->getCurrIteration() % keepEvery == 0 || simulation->getTime_sec() > simEndTime - epsilon){
 			if (bStoreEnable){
-				writeData(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
+				writeData(percentile,simulation->getTime_sec(), simulation->getCurrIteration(), convertChomboData);
       }
     }
 		percentile = (simulation->getTime_sec() - simStartTime)/(simEndTime - simStartTime);

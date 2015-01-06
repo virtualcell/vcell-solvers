@@ -11,6 +11,7 @@ using namespace std;
 #include <VCELL/FVSolver.h>
 #include <sys/stat.h>
 #include <VCELL/SimTool.h>
+#include <string.h>
 #include <VCELL/SimulationMessaging.h>
 #include <Exception.h>
 
@@ -20,22 +21,31 @@ using namespace std;
 
 static bool bNormalReturn = false;
 
-void printUsage() {
-	pout() << "Arguments : [-d output] [-nz]";
+void printUsage()
+{
+	pout() << "To run a simulation:" << endl;
+	pout() << "\tArguments: ";
 #ifdef USE_MESSAGING
 	pout() << " [-tid taskID]";
 #endif
 	pout() << " fvInputFile" <<  endl;
+	pout() << "To generate vcell output (serial) from chombo output (parallel):" << endl;
+	pout() << "\tArguments: -ccd fvInputFile" << endl;
 }
 
 void vcellExit(int returnCode, string& errorMsg)
 {
-	if (SimulationMessaging::getInstVar() == 0) {
-		if (returnCode != 0) {
+	if (SimulationMessaging::getInstVar() == 0)
+	{
+		if (returnCode != 0)
+		{
 			cerr << errorMsg << endl;
 		}
-	} else if (!SimulationMessaging::getInstVar()->isStopRequested()) {
-		if (returnCode != 0) {
+	} 
+	else if (!SimulationMessaging::getInstVar()->isStopRequested())
+	{
+		if (returnCode != 0)
+		{
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_FAILURE, errorMsg.c_str()));
 		}
 #ifdef USE_MESSAGING
@@ -52,9 +62,7 @@ void vcellExit(int returnCode, string& errorMsg)
 	if (returnCode != 0)
 	{
 		pout() << "MPI::Abort starting" << endl;
-		//MPI::COMM_WORLD.Abort(returnCode);
 		MPI_Abort(MPI_COMM_WORLD,returnCode);
-		
 		pout() << "MPI::Abort complete" << endl;
 	}
 #endif
@@ -89,18 +97,19 @@ void onExit()
 int main(int argc, char *argv[])
 {
 #ifdef CH_MPI
-	const char * const mpiStatus = "MPI ";
+	const char * const mpiStatus = "(MPI Parallel)";
 #else
-	const char * const mpiStatus = "singleThread ";
+	const char * const mpiStatus = "(Serial)";
 #endif
 
 	pout()
 	<< "Chombo solver " << mpiStatus << VCELLSVNQUOTE(CH_SPACEDIM)"D version $URL$"VCELLSVNQUOTE(SVNVERSION)
 	<< std::endl;
+	printUsage();
+	
 #ifdef CH_MPI
 	pout() << "MPI::Init starting" << endl;
-  //MPI::Init(argc, argv);
-  	MPI_Init(&argc, &argv);
+  MPI_Init(&argc, &argv);
 	pout() << "MPI::Init complete" << endl;
 #endif
 
@@ -112,107 +121,110 @@ int main(int argc, char *argv[])
 
 	char* fvInputFile = 0;
 	ifstream ifsInput;
-	bool bContinue = true;
-	try {
+	bool convertChomboData = false;
+	try
+	{
 		int taskID = -1;
-		if (argc < 2) {
-			errorMsg = "Missing arguments";
-			pout() << errorMsg << endl;
-			printUsage();
-			returnCode = 1;
-			bContinue = false;
-		}
-		if (bContinue)
+		if (argc < 2)
 		{
-			for (int i = 1; i < argc; i ++) {
-				if (!strcmp(argv[i], "-tid")) {
-#ifdef USE_MESSAGING
-					i ++;
-					if (i >= argc) {
-						errorMsg =  "Missing taskID!";
-						pout() << errorMsg << endl;
-						printUsage();
-						returnCode = 1;
-						bContinue = false;
-					}
-					for (int j = 0; j < (int)strlen(argv[i]); j ++) {
-						if (argv[i][j] < '0' || argv[i][j] > '9') {
-							stringstream ss;
-							ss << "Wrong argument : " << argv[i] << ", taskID must be an integer!" << endl;
-							errorMsg =  ss.str();
-							pout() << errorMsg;
-							printUsage();
-							returnCode = 1;
-							bContinue = false;
-						}
-					}
-					taskID = atoi(argv[i]);
-					if (taskID >= 0)
-					{
-						bConsoleOutput = false;
-					}
-#else
-					stringstream ss;
-					ss << "Wrong argument : " << argv[i] << endl;
-					errorMsg =  ss.str();
-					pout() << errorMsg;
-					printUsage();
-					returnCode = 1;
-					bContinue = false;
-#endif
-				} else {
-					fvInputFile = argv[i];
-				}
-			}
-			if (bContinue)
+			throw "Missing arguments";
+		}
+		for (int i = 1; i < argc; i ++)
+		{
+			if (!strcmp(argv[i], "-ccd"))  // convert chombo data
 			{
-				atexit(onExit);
-				// redirect std::cerr because Chombo would write out to std::cerr and exit.
-				//std::cerr.rdbuf(stdErrBuffer.rdbuf());
-				stdErrBuffer[0] = '\0';
-				setvbuf (stderr , stdErrBuffer , _IOFBF , 1024 );
-				// strip " in case that file name has " around
-				int fl = strlen(fvInputFile);
-				if (fvInputFile[0] == '"' && fvInputFile[fl-1] == '"') {
-								fvInputFile[fl-1] = 0;
-								fvInputFile ++;
-				}
-				ifsInput.open(fvInputFile);
-				if (!ifsInput.is_open()) {
-					stringstream ss;
-					ss << "Solver input file fvinput doesn't exist: " << fvInputFile << endl;
-					errorMsg =  ss.str();
-					pout() << errorMsg;
-					returnCode = 102;
-					bContinue = false;
-				}
-
-				if (bContinue)
+				convertChomboData = true;
+			}
+			else if (!strcmp(argv[i], "-tid"))
+			{
+#ifdef USE_MESSAGING
+				i ++;
+				if (i >= argc)
 				{
-					FVSolver* fvSolver = new FVSolver(ifsInput, taskID);
-					ifsInput.close();
-
-					pout( ) << "start solve" << endl;
-					fvSolver->solve();
-					pout( ) << "end solve" << endl;
+					throw  "Missing taskID!";
 				}
+				for (int j = 0; j < (int)strlen(argv[i]); j ++)
+				{
+					if (argv[i][j] < '0' || argv[i][j] > '9')
+					{
+						stringstream ss;
+						ss << "Wrong argument : " << argv[i] << ", taskID must be an integer!" << endl;
+						throw ss.str();
+					}
+				}
+				taskID = atoi(argv[i]);
+				if (taskID >= 0)
+				{
+					bConsoleOutput = false;
+				}
+#else
+				stringstream ss;
+				ss << "Wrong argument : " << argv[i] << endl;
+				throw ss.str();
+#endif
+			}
+			else if (argv[i][0] == '-')
+			{
+				stringstream ss;
+				ss << "Wrong argument : " << argv[i] << endl;
+				throw ss.str();
+			}
+			else
+			{
+				fvInputFile = argv[i];
 			}
 		}
-	} catch (const char *exStr){
+			
+		atexit(onExit);
+		// redirect std::cerr because Chombo would write out to std::cerr and exit.
+		//std::cerr.rdbuf(stdErrBuffer.rdbuf());
+		stdErrBuffer[0] = '\0';
+		setvbuf (stderr , stdErrBuffer , _IOFBF , 1024 );
+		// strip " in case that file name has " around
+		int fl = strlen(fvInputFile);
+		if (fvInputFile[0] == '"' && fvInputFile[fl-1] == '"')
+		{
+			fvInputFile[fl-1] = 0;
+			fvInputFile ++;
+		}
+		ifsInput.open(fvInputFile);
+		if (!ifsInput.is_open())
+		{
+			stringstream ss;
+			ss << "Solver input file fvinput doesn't exist: " << fvInputFile << endl;
+			throw ss.str();
+		}
+
+		FVSolver* fvSolver = new FVSolver(ifsInput, taskID);
+		ifsInput.close();
+
+		pout( ) << "start solve" << endl;
+		fvSolver->solve(convertChomboData);
+		pout( ) << "end solve" << endl;
+	} 
+	catch (const char *exStr)
+	{
 		errorMsg += exStr;
 		returnCode = 1;
-	} catch (string& exStr){
+	} 
+	catch (string& exStr)
+	{
 		errorMsg += exStr;
 		returnCode = 1;
-	} catch (VCell::Exception& ex){
+	} 
+	catch (VCell::Exception& ex)
+	{
 		errorMsg += ex.getMessage();
 		returnCode = 1;
-	} catch (...){
+	} 
+	catch (...)
+	{
 		errorMsg += "unknown error";
 		returnCode = 1;
 	}
 
-	if (ifsInput.is_open()) {
+	if (ifsInput.is_open())
+	{
 		ifsInput.close();
 	}
 
