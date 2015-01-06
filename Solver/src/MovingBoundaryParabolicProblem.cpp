@@ -1025,7 +1025,7 @@ namespace moving_boundary {
 					bool changed;
 					//adjustNodes calls MeshElementNode.updateBoundaryNeighbors
 					try {
-						changed = voronoiMesh.adjustNodes(boundaryElements,currentFront);
+						changed = voronoiMesh.adjustNodes(boundaryElements);
 					} catch (SkipsBoundary & skips) {
 						std::ofstream sb("sb.m");
 						matlabBridge::TPolygon<long long> oldPoly("k",1);

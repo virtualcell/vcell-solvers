@@ -12,11 +12,11 @@
 #include <vcellxml.h>
 #include <ReportClient.h>
 #include <version.h>
+#include <flex.h>
 #include <vhdf5/dataset.h>
 #include <vhdf5/attribute.h>
 #include <vhdf5/suppressor.h>
 #include <vhdf5/facade.h>
-#include <vhdf5/flex.h>
 #include <vhdf5/file.h>
 #include <vhdf5/vlen.h>
 #include <vhdf5/exception.h>
@@ -830,7 +830,7 @@ namespace {
 		/**
 		* element information for a single time slice
 		*/
-		vcellH5::Flex2<ResultPoint> elementStorage;
+		vcell_util::Flex2<ResultPoint> elementStorage;
 		/**
 		* 3 dimensional HDF data
 		*/
@@ -840,7 +840,7 @@ namespace {
 		/**
 		* species information for a single time slice
 		*/
-		vcellH5::Flex3<SpeciesData> speciesStorage;
+		vcell_util::Flex3<SpeciesData> speciesStorage;
 		/**
 		* 4 dimensional HDF data
 		*/

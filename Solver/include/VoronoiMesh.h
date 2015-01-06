@@ -3,6 +3,9 @@
 #include <MovingBoundaryCollections.h>
 #include <Mesh.h>
 #include <VoronoiResult.h>
+namespace spatial {
+	template <class CFrontType, typename CoordinateType> struct InsideCache;
+}
 
 namespace moving_boundary {
 
@@ -19,6 +22,7 @@ namespace moving_boundary {
 		typedef spatial::MeshDef<moving_boundary::CoordinateType,2> MBMeshDef; 
 		typedef MeshElementNode Element;
 		typedef spatial::Mesh<moving_boundary::CoordinateType,2,Element> MBMesh; 
+		typedef spatial::InsideCache<FrontType,moving_boundary::CoordinateType> VMInsideCache;
 
 		explicit VoronoiMesh(MBMesh &m);
 		VoronoiMesh();
@@ -49,12 +53,11 @@ namespace moving_boundary {
 		Positions<Element> classify2(const FrontType & polygon); 
 
 		/**
-		* adjust positions of nodes relative to front 
+		* adjust positions of nodes relative to front using last call to #setFront( ) 
 		* @param boundaryContainer struct which supports push_back (e.g. STL)
-		* @param front new front
 		*/
 		template<class STL_CONTAINER>
-		bool adjustNodes(STL_CONTAINER & boundaryContainer, const FrontType & front);
+		bool adjustNodes(STL_CONTAINER & boundaryContainer);
 
 		/**
 		* set mesh for default constructed VoronoiMesh
@@ -75,7 +78,9 @@ namespace moving_boundary {
 		struct VoronoiMeshImpl;
 
 		MBMesh *mesh_;
+		VMInsideCache *insideCache;
 		VoronoiMeshImpl * impl;
+		
 	};
 
 }

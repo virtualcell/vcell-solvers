@@ -3,6 +3,7 @@
 
 #include <algo.h>
 #include <MovingBoundaryCollections.h>
+#include <InsideCache.h>
 #include "gtest/gtest.h"
 #if 0
 #include <MBridge/MBPolygon.h>
@@ -81,6 +82,56 @@ TEST(inside,diamond){
 	ASSERT_TRUE( inside(diamond,center));
 	diamond.push_back(diamond.front( ));
 	ASSERT_TRUE( inside(diamond,center));
+
+}
+
+TEST(inside,diamondcache){
+	size_t a[] = {3,4};
+	double v[] = {1.0,2.0};
+	spatial::MPoint<double,2> mp(a,v);
+
+	size_t a2[] = {4,3};
+	double v2[] = {100.0,2.0};
+	spatial::MPoint<double,2> mp2(a2,v2);
+
+	typedef spatial::TPoint<double,2> DPoint;
+	std::array<double,2> dpoints[4] = { {2,2}, {1,1},{0,2},{1,3} };
+	std::vector<DPoint> diamond(4);
+	for (int i = 0; i < 4; i++) {
+		diamond[i] = dpoints[i];
+	}
+
+	spatial::InsideCache<std::vector<DPoint>,double> ic;
+	ic.setIndexes(5,5);
+	ic.setFront(diamond);
+	ASSERT_TRUE( ic.noValuesSet( ) ); 
+
+	bool first = ic.inside(mp);
+	ASSERT_TRUE( first ); 
+	ASSERT_FALSE( ic.noValuesSet( ) ); 
+
+	bool second = ic.inside(mp);
+	ASSERT_TRUE( second ); 
+	ASSERT_FALSE( ic.noValuesSet( ) ); 
+
+	ic.setFront(diamond);
+	ASSERT_TRUE( ic.noValuesSet( ) ); 
+	bool third = ic.inside(mp);
+	ASSERT_TRUE( third ); 
+
+	bool out1 = ic.inside(mp2); 
+	bool out2 = ic.inside(mp2); 
+	ASSERT_FALSE(out1);
+	ASSERT_FALSE(out2);
+	ASSERT_FALSE( ic.noValuesSet( ) ); 
+
+	/* test assert
+	{
+		ic.setIndexes(1,1);
+		bool first = ic.inside(mp);
+	}
+	*/
+
 
 }
 TEST(inside,insideTriangle) {

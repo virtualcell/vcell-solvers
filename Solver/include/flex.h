@@ -1,8 +1,8 @@
 #ifndef vhd5_flex_h
 #define vhd5_flex_h
 #include <cassert>
-#include <vhdf5/vH5cpp.h>
-namespace vcellH5 {
+#include <vector>
+namespace vcell_util {
 
 
 	template <class T> struct Flex2Col;
@@ -11,11 +11,11 @@ namespace vcellH5 {
 	*
 	* provide flexible interpretation of static buffer for writing
 	* different size blocks to HDF5
-	* e.g.  vcellH5::Flex2<double> buffer(3,4);
+	* e.g.  vcell_util::Flex2<double> buffer(3,4);
 	* buffer[2][3] = 4;
 	* dataset.write(buffer.ptr( ),doublePointType,memoryspace,dataspace);
 	*
-	*  vcellH5::Flex3<double> data(3,4,5);
+	*  vcell_util::Flex3<double> data(3,4,5);
 	*/
 #pragma warning ( disable : 4351 )
 	template <class T>
@@ -29,7 +29,7 @@ namespace vcellH5 {
 		* allow construction with same array used to create DataSpace
 		* array must have size >= 2
 		*/
-		Flex2(hsize_t *dims)
+		Flex2(size_t *dims)
 			:storage(dims[0] * dims[1]),
 			colSize_(dims[0]),
 			rowSize_(dims[1]) {}
@@ -75,7 +75,7 @@ namespace vcellH5 {
 		* reconfigure to difference layout; previous values no
 		* longer accessible using previous indexing scheme
 		*/
-		Flex2 & reindex(hsize_t *dims) {
+		Flex2 & reindex(size_t *dims) {
 			return reindex( dims[0],dims[1]);
 		}
 		/**
@@ -83,6 +83,19 @@ namespace vcellH5 {
 		*/
 		void reset( ) {
 			std::fill(storage.begin( ),storage.end( ),T( ));
+		}
+		/**
+		* rest all values to value
+		* @param value value to ste to
+		*/
+		void reset(const T & value) {
+			std::fill(storage.begin( ),storage.end( ),value);
+		}
+		typename std::vector<T>::const_iterator begin( ) const {
+			return storage.begin( );
+		}
+		typename std::vector<T>::const_iterator end( ) const {
+			return storage.end( );
 		}
 	private:
 		friend Flex2Col<T>;
@@ -133,7 +146,7 @@ namespace vcellH5 {
 		* allow construction with same array used to create DataSpace
 		* array must have size >= 3
 		*/
-		Flex3(hsize_t *dims)
+		Flex3(size_t *dims)
 			:storage(dims[0] * dims[1] * dims[2]),
 			depthSize_(dims[0]),
 			colSize_(dims[1]),
@@ -191,7 +204,7 @@ namespace vcellH5 {
 		* reconfigure to difference layout; previous values no
 		* longer accessible using previous indexing scheme
 		*/
-		Flex3 & reindex(hsize_t *dims) {
+		Flex3 & reindex(size_t *dims) {
 			return reindex(dims[0],dims[1],dims[2]);
 		}
 		/**

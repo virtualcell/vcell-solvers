@@ -4,6 +4,7 @@
 #include <Voronoi.h>
 #include <MeshElementNode.h>
 #include <algo.h>
+#include <InsideCache.h>
 
 #include <MBridge/Scatter.h>
 #include <MBridge/Figure.h>
@@ -25,17 +26,22 @@ struct VoronoiMesh::VoronoiMeshImpl {
 	typedef std::map<const Element *,int> Map; 
 	Voronoi2D<moving_boundary::CoordinateType> vprocessor;
 	Map locations;
-	VoronoiMeshImpl(WorldType &wt)
+	VMInsideCache & insideCache;
+
+	VoronoiMeshImpl(WorldType &wt, VMInsideCache & ic)
 		:vprocessor(wt.limits( )),
-		locations( ) {}
+		locations( ),
+		insideCache(ic) {}
 
 	void setFront(const MBMesh & mesh, const FrontType &front) {
+		assert(insideCache.noValuesSet( ));
 		locations.clear( );
 		int voronoiIndex = 0;
 		vprocessor.clear( );
 		for (MBMesh::iterator iter = mesh.begin( ); iter != mesh.end( ); ++iter) {
 			Element & e= *iter;
-			if (e.boundaryOffset( ) < 2 &&  spatial::inside<FrontPointType>(front,e)) {
+			//if (e.boundaryOffset( ) < 2 &&  spatial::inside<FrontPointType>(front,e)) {}
+			if (e.boundaryOffset( ) < 2 &&  insideCache.inside(e) ) {
 				vprocessor.add(e(cX),e(cY));
 				locations[&e] = voronoiIndex++;
 			}
@@ -112,11 +118,11 @@ struct VoronoiMesh::VoronoiMeshImpl {
 	}
 
 
-	static VoronoiMeshImpl * create( ) {
+	static VoronoiMeshImpl * create(VMInsideCache & insideCache) {
 		if (moving_boundary::Universe<2>::get( ).locked( )) {
 			typedef moving_boundary::World<moving_boundary::CoordinateType,2> WorldType; 
 			WorldType & world = WorldType::get( );
-			return new VoronoiMeshImpl(world);
+			return new VoronoiMeshImpl(world, insideCache);
 		}
 		else {
 			throw std::logic_error("VoronoiMesh created with unlocked world");
@@ -127,24 +133,32 @@ struct VoronoiMesh::VoronoiMeshImpl {
 
 VoronoiMesh::VoronoiMesh( )
 	:mesh_(nullptr),
-	impl(VoronoiMeshImpl::create( )) { }
+	insideCache(new VMInsideCache( )) ,
+	impl(VoronoiMeshImpl::create(*insideCache))
+{ }
 
 VoronoiMesh::VoronoiMesh(MBMesh &m)
 	:mesh_(&m),
-	impl(VoronoiMeshImpl::create( )) { }
+	insideCache(new VMInsideCache( )) ,
+	impl(VoronoiMeshImpl::create(*insideCache))
+{ 
+	insideCache->setIndexes(m.numCells(spatial::cX),m.numCells(spatial::cY));
+}
 
 VoronoiMesh::~VoronoiMesh( ) {
+	delete insideCache;
 	delete impl;
 }
 
 void VoronoiMesh::setMesh(MBMesh &m) {
 	if (mesh_ == nullptr) {
 		mesh_ = &m;
-		return;
+		insideCache->setIndexes(m.numCells(spatial::cX),m.numCells(spatial::cY));
 	}
 }
 
 void VoronoiMesh::setFront(const FrontType &front) {
+	insideCache->setFront(front);
 	impl->setFront(mesh( ),front);
 }
 
@@ -430,8 +444,9 @@ namespace {
 		* @param polygon the front
 		* @param container out param which receives set of boundary nodes 
 		*/
-		template<class INPOINT, class STL_C>
-		bool updateClassification(const std::vector<INPOINT> & polygon, STL_C &container) {
+		//template<class INPOINT, class STL_C>
+		template<class STL_C>
+		bool updateClassification(const VoronoiMesh::VMInsideCache & insideCache, STL_C &container) {
 			using spatial::interiorSurface;
 			using spatial::outsideSurface;
 			using spatial::boundarySurface;
@@ -446,7 +461,8 @@ namespace {
 					continue;
 				}
 				spatial::SurfacePosition oldPosition = point.mPos( ); 
-				spatial::SurfacePosition pos = inside<INPOINT>(polygon,point) ? interiorSurface : outsideSurface;
+				//spatial::SurfacePosition pos = inside<INPOINT>(polygon,point) ? interiorSurface : outsideSurface;
+				spatial::SurfacePosition pos = insideCache.inside(point) ? interiorSurface : outsideSurface;
 				if (pos == oldPosition) { 
 					continue;
 				}
@@ -499,13 +515,14 @@ moving_boundary::Positions<typename VoronoiMesh::Element> VoronoiMesh::classify2
 
 /**
 * @tparam STL_C standard template library style container
+* adjust nodes using front in last #setFront call
 * @param container out param which receives set of boundary nodes 
 * @param front the front
 */
 template<class STL_CONTAINER>
-bool VoronoiMesh::adjustNodes(STL_CONTAINER & boundaryContainer, const FrontType & front) {
+bool VoronoiMesh::adjustNodes(STL_CONTAINER & boundaryContainer) {
 	Classifier<VoronoiMesh> classifier(*this);
-	const bool changed = classifier.updateClassification(front, boundaryContainer);
+	const bool changed = classifier.updateClassification(*insideCache,boundaryContainer);
 	return changed ; 
 }
 
@@ -514,5 +531,5 @@ bool VoronoiMesh::adjustNodes(STL_CONTAINER & boundaryContainer, const FrontType
 */
 namespace moving_boundary {
 	typedef std::vector<MeshElementNode *> BoundaryContainer; 
-	template bool VoronoiMesh::adjustNodes(BoundaryContainer &, const FrontType &);
+	template bool VoronoiMesh::adjustNodes(BoundaryContainer &);
 }
