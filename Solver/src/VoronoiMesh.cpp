@@ -35,9 +35,7 @@ struct VoronoiMesh::VoronoiMeshImpl {
 		vprocessor.clear( );
 		for (MBMesh::iterator iter = mesh.begin( ); iter != mesh.end( ); ++iter) {
 			Element & e= *iter;
-			//if (!e.isDeep( ) && spatial::inside<FrontPointType>(front,e)) { }
-			//OPTIMIZE -- update isDeep to return integer rather than boolean
-			if (spatial::inside<FrontPointType>(front,e)) {
+			if (e.boundaryOffset( ) < 2 &&  spatial::inside<FrontPointType>(front,e)) {
 				vprocessor.add(e(cX),e(cY));
 				locations[&e] = voronoiIndex++;
 			}
@@ -248,25 +246,43 @@ namespace {
 		* call once at beginning for all cells
 		*/
 		void setInsideValues(EType & in) {
+			size_t index = 0;
 			const size_t x = in.indexOf(cX);
 			const size_t y = in.indexOf(cY);
 
-			int xNeighbors[][2] = { 
-				{-1,0}, {1,0}, //left & right
-			};
-			int yNeighbors[][2] = { 
-				{0,-1}, {0,+1} //above & below
-			};
-			for (int i = 0 ; i < sizeof(xNeighbors)/sizeof(xNeighbors[0]); i++) {
-				EType * e = get(x, y, xNeighbors[i]);
-				if (e != nullptr) { 
-					in.setInsideNeighborValue(*e,xDistance,yDistance);
+			//immediately adjacent
+			{
+				int xNeighbors[][2] = { 
+					{-1,0}, {1,0}, //left & right
+				};
+				int yNeighbors[][2] = { 
+					{0,-1}, {0,+1} //above & below
+				};
+				for (int i = 0 ; i < sizeof(xNeighbors)/sizeof(xNeighbors[0]); i++) {
+					EType * e = get(x, y, xNeighbors[i]);
+					if (e != nullptr) { 
+						in.setInsideNeighborValue(*e,index++, xDistance,yDistance);
+					}
+				}
+				for (int i = 0 ; i < sizeof(yNeighbors)/sizeof(yNeighbors[0]); i++) {
+					EType * e = get(x, y, yNeighbors[i]);
+					if (e != nullptr) { 
+						in.setInsideNeighborValue(*e,index++, yDistance,xDistance);
+					}
 				}
 			}
-			for (int i = 0 ; i < sizeof(yNeighbors)/sizeof(yNeighbors[0]); i++) {
-				EType * e = get(x, y, yNeighbors[i]);
-				if (e != nullptr) { 
-					in.setInsideNeighborValue(*e,yDistance,xDistance);
+
+			//corners
+			{
+				int cornerNeighbors[][2] = { 
+					{-1,-1}, {-1,1}, {1,1}, {1,-1}
+				};
+				size_t index = 0;
+				for (int i = 0 ; i < sizeof(cornerNeighbors)/sizeof(cornerNeighbors[0]); i++) {
+					EType * e = get(x, y, cornerNeighbors[i]);
+					if (e != nullptr) { 
+						in.setCornerNeighborValue(*e,index++);
+					}
 				}
 			}
 		}

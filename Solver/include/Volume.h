@@ -139,13 +139,6 @@ namespace spatial {
 		}
 
 		/**
-		* is point inside Volume?
-		*/
-		bool inside(const TPoint<COORD_TYPE,N> &point) const {
-			return state->inside(point);
-		}
-
-		/**
 		* return volume as vector of contiguous vectors of points 
 		*/
 		typedef std::vector<TPoint<COORD_TYPE,N> > PointVector; 
@@ -242,6 +235,16 @@ namespace spatial {
 		* allow DefaultVolumeDecoratorimplement classes direct access to state
 		*/
 		friend struct VolumeImpl<COORD_TYPE,VALUE_TYPE,N>;
+#ifdef VOLUME_IMPLEMENT_INSIDE
+		/**
+		* is point inside Volume?
+		* this method is useful for testing if a new intersection implementation is used, bu
+		* normally not used
+		*/
+		bool inside(const TPoint<COORD_TYPE,N> &point) const {
+			return state->inside(point);
+		}
+#endif
 	};
 
 	template <class COORD_TYPE, class VALUE_TYPE, int N>
@@ -276,7 +279,10 @@ namespace spatial {
 		virtual Volume<COORD_TYPE, VALUE_TYPE,N> intersection(const std::vector<TPoint<COORD_TYPE,N> > &rhs) const = 0; 
 
 		virtual bool more(size_t index) const = 0; 
+#ifdef VOLUME_IMPLEMENT_INSIDE
 		virtual bool inside(const TPoint<COORD_TYPE,N> &point) const=0; 
+#endif
+		
 		//virtual Edge<COORD_TYPE,N> getEdge(size_t index) const = 0; 
 		virtual Segment<COORD_TYPE,N> getSegment(size_t index) const = 0; 
 		virtual typename std::vector<TPoint<COORD_TYPE,N> >::iterator fillingIterator(size_t n) = 0; 

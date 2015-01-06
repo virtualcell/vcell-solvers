@@ -12,6 +12,7 @@
 #include <Segment.h>
 #include <SVector.h>
 #include <boundaryProviders.h>
+#include <vcarray.h>
 #include "mockpoint.inc"
 using namespace vcell_util; 
 namespace {
@@ -45,4 +46,10 @@ TEST(vcellutil,digits) {
 TEST(vcellutil,multiply) {
 	ASSERT_TRUE(validMultiply(3,4));
 	ASSERT_FALSE(validMultiply<char>(127,127));
+}
+TEST(vcellutil,vcarray) {
+	using vcell_util::vcarray;
+	vcarray<double,3> cat;
+	vcarray<double,cat.ArraySize> dog;
+	static_assert(cat.ArraySize == 3, "size");
 }

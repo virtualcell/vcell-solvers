@@ -217,6 +217,7 @@ TEST(volume,randpoly) {
 	}
 }
 TEST(volume,intersections) {
+#ifdef VOLUME_IMPLEMENT_INSIDE
 	//const int nTests = 83883495; 
 	const int nTests = 100; 
 	const int coordLimit = 1000;
@@ -282,7 +283,7 @@ TEST(volume,intersections) {
 			d<<  matlabBridge::pause << matlabBridge::clearFigure ; 
 		}
 	}
-
+#endif
 }
 
 TEST(volume,swaptest) {

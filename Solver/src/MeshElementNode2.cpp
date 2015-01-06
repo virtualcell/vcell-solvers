@@ -95,9 +95,23 @@ void MeshElementNode::propagateBoundaryValue() {
 	*/
 	const BoundaryOffsetType neighborOffset = std::min<BoundaryOffsetType>(boundaryOffset( ) + 1,maxOffset( ));
 
-	for (int i = 0; i < NUM_INSIDE; i++) {
+	for (int i = 0; i < interiorNeighbors.ArraySize; i++) {
 		if (interiorNeighbors[i].element != nullptr) {
 			OurType & nb = *interiorNeighbors[i].element;
+			if (nb.boundaryOffset( ) == unsetOffsetValue( ) || nb.boundaryOffset( ) > neighborOffset) {
+				if (!nb.isBoundary( )) {
+					nb.bndOffset = neighborOffset;
+				}
+				else {
+					nb.bndOffset = 0;
+				}
+				nodesThatWereSet[setIndex++] = &nb;
+			}
+		}
+	}
+	for (int i = 0; i < cornerNeighbors.ArraySize; i++) {
+		if (cornerNeighbors[i] != nullptr) {
+			OurType & nb = *cornerNeighbors[i];
 			if (nb.boundaryOffset( ) == unsetOffsetValue( ) || nb.boundaryOffset( ) > neighborOffset) {
 				if (!nb.isBoundary( )) {
 					nb.bndOffset = neighborOffset;

@@ -106,9 +106,11 @@ namespace spatial {
 		}
 		virtual void close( ) {} 
 
+#ifdef VOLUME_IMPLEMENT_INSIDE
 		virtual bool inside(const TPoint<COORD_TYPE,2> &point) const {
 			return false;
 		}
+#endif
 		/**
 		* EmptyVolume doesn't exist if point has been added, so
 		* logically we're still on the first section
@@ -234,9 +236,11 @@ namespace spatial {
 			return false;
 		}
 
+#ifdef VOLUME_IMPLEMENT_INSIDE
 		virtual bool inside(const TPoint<COORD_TYPE,2> &point) const {
 			return spatial::inside(pointStorage,point);
 		}
+#endif
 
 		/**
 		* close polygon
@@ -449,6 +453,7 @@ namespace spatial {
 			return current->front( ) == current->back( );
 		}
 
+#ifdef VOLUME_IMPLEMENT_INSIDE
 		virtual bool inside(const TPoint<COORD_TYPE,2> &point) const {
 			for (typename VectorOfVectors::const_iterator iter = polys.begin( ); iter != polys.end( ); ++iter) {
 				const PointVector &pv = *iter;
@@ -459,6 +464,7 @@ namespace spatial {
 			}
 			return false;
 		}
+#endif
 		/**
 		* move to next polygon (if current has points)
 		*/

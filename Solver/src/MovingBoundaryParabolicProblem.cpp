@@ -1053,9 +1053,7 @@ namespace moving_boundary {
 					boundaryElements.front( )->setBoundaryOffsetValues( );
 
 					if (frontMoveTrace) {
-						if (generationCount > 0) {
-							debugDump(generationCount,'a');
-						}
+						debugDump(generationCount,'a');
 					}
 
 					//tell the clients about it

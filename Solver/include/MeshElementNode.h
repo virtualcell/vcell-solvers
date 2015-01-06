@@ -17,6 +17,7 @@
 #include <math.h>
 #include <persist.h>
 #include <Physiology.h>
+#include <vcarray.h>
 #ifdef MESH_ELEMENT_NODE_STATE_TRACK
 #define setState(x) DEBUG_SET_STATE(x, __FILE__, __LINE__)
 #endif
@@ -81,7 +82,7 @@ namespace moving_boundary {
 	struct OffsetData {
 		/*
 		OffsetData(std::vector<MeshElementNode *> &b)
-			:boundaryNodes(b) {}
+		:boundaryNodes(b) {}
 		std::vector<MeshElementNode *> &boundaryNodes;
 		*/
 		std::vector<MeshElementNode *> levelOne;
@@ -253,10 +254,12 @@ namespace moving_boundary {
 			interiorNeighbors( ),
 			neighbors(interiorNeighbors.data( )), //default to interior, update when id'd as boundary
 			boundaryNeighbors(0),
+			cornerNeighbors(),
 			voronoiVolume( ),
 			nOutside(0),
 			velocity(0,0)
 		{
+			std::fill(cornerNeighbors.begin( ),cornerNeighbors.end( ),nullptr);
 			if (vcell_util::Logger::get( ).enabled(vcell_util::Logger::trace)) {
 				logCreation( );
 			}
@@ -296,7 +299,7 @@ namespace moving_boundary {
 		static BoundaryOffsetType unsetOffsetValue( ) {
 			return MeshElementNode::unsetBoundaryOffset;
 		}
-		
+
 		bool isBoundary( ) const {
 			return mPos( ) == spatial::boundarySurface;
 		}
@@ -405,19 +408,20 @@ namespace moving_boundary {
 		* transfer interior neighbor edge length, distance and coordinate info to doppelganger
 		* called once for each inside neighbor during initialization regardless of node status
 		*/
+		void setInsideNeighborValue(OurType & other, size_t slot, moving_boundary::DistanceType dist, moving_boundary::DistanceType length) {
+			MeshElementNeighbor & iNbhr = interiorNeighbors[slot]; 
+			assert(iNbhr.element == nullptr); 
+			iNbhr.element = &other; 
+			iNbhr.distanceTo = dist;
+			iNbhr.edgeLength = length;
+		}
 
-		void setInsideNeighborValue(OurType & other, moving_boundary::DistanceType dist, moving_boundary::DistanceType length) {
-			//scan inside neighbor storage, find first empty
-			for (int i = 0; i < 4; i++) {
-				MeshElementNeighbor & iNbhr = interiorNeighbors[i]; 
-				if (iNbhr.element == nullptr) {
-					iNbhr.element = &other; 
-					iNbhr.distanceTo = dist;
-					iNbhr.edgeLength = length;
-					return;
-				}
-			}
-			assert(false);
+		/**
+		* called once for each corner neighbor during initialization regardless of node status
+		*/
+		void setCornerNeighborValue(OurType & other, size_t slot) {
+			assert(cornerNeighbors[slot] == nullptr);
+			cornerNeighbors[slot] = &other;
 		}
 
 		/**
@@ -476,8 +480,8 @@ namespace moving_boundary {
 
 			case State::inDiffAdvDone:
 			case State::inDiffAdvDoneMU:
-					assert(interiorVolume > 0); //should be set externally 
-					return interiorVolume;
+				assert(interiorVolume > 0); //should be set externally 
+				return interiorVolume;
 			case State::transBndOut: 
 			case State::transInBnd:
 			case State::transOutBndSetBnd:
@@ -531,7 +535,7 @@ namespace moving_boundary {
 		* @param mesh owning mesh
 		*/
 		const Volume2DClass & getControlVolume( ) const;
-					
+
 
 		const spatial::SVector<moving_boundary::VelocityType,2> & getVelocity( ) const {
 			return velocity;
@@ -568,8 +572,8 @@ namespace moving_boundary {
 		* @param pToW problem to world factor 
 		*/
 		static void setProblemToWorldDistanceScale(moving_boundary::BioQuanType pToW) {
-			 distanceScaled        = pToW;
-			 distanceScaledSquared = pToW * pToW;
+			distanceScaled        = pToW;
+			distanceScaledSquared = pToW * pToW;
 		}
 
 		/**
@@ -681,7 +685,7 @@ namespace moving_boundary {
 		*/
 		size_t numNeighbors( )  const {
 			if (neighbors == interiorNeighbors.data( )) {
-				return NUM_INSIDE;
+				return interiorNeighbors.ArraySize;
 			}
 			return boundaryNeighbors.size( );
 		}
@@ -788,10 +792,10 @@ namespace moving_boundary {
 		size_t indexToTimeVariable;
 
 
-		const static int NUM_INSIDE = 4;
-		std::array<NeighborType,NUM_INSIDE> interiorNeighbors; 
+		vcell_util::vcarray<NeighborType,4> interiorNeighbors; 
 		NeighborType * neighbors;
 		std::vector<NeighborType> boundaryNeighbors;
+		vcell_util::vcarray<OurType *,4> cornerNeighbors; 
 		Volume2DClass voronoiVolume;
 		int nOutside;
 		spatial::SVector<moving_boundary::VelocityType,2> velocity; 
@@ -847,9 +851,9 @@ namespace moving_boundary {
 			newPosition(np),
 			str( )
 		{
-				std::ostringstream oss;
-				oss << "Skipped Boundary " << mes.ident( ) << " to " << newPosition << std::ends;
-				str = oss.str( );
+			std::ostringstream oss;
+			oss << "Skipped Boundary " << mes.ident( ) << " to " << newPosition << std::ends;
+			str = oss.str( );
 		}
 		virtual ~SkipsBoundary( ) throw( ) {}
 		virtual const char* what() const throw() {
