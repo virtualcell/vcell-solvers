@@ -53,7 +53,7 @@ namespace spatial {
 			tribool & cachedValue = storage[xIndex][yIndex];
 			if (indeterminate(cachedValue)) {
 				nCalcs++;
-				cachedValue = spatial::inside<CFrontType::value_type>(*front,point);
+				cachedValue = spatial::inside<typename CFrontType::value_type>(*front,point);
 			}
 			return cachedValue;
 		}
