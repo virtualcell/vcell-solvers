@@ -22,11 +22,13 @@ bool MeshElementNode::isInside( ) const {
 	switch (state( )) {
 	case initialInside:
 	case inStable:
+	case inReacted:
 	case inDiffAdvDone:
 	case inDiffAdvDoneMU:
 	case initialBoundary: 
 	case bndFrontMoved:
 	case bndNbrEdgesFound:
+	case bndReacted:
 	case bndDiffAdvDone:
 	case bndDiffAdvDoneMU:
 	case bndFrontApplied:
@@ -49,6 +51,7 @@ spatial::SurfacePosition MeshElementNode::mPos( ) const {
 	switch (state( )) {
 	case initialInside:
 	case inStable:
+	case inReacted:
 	case inDiffAdvDone:
 	case inDiffAdvDoneMU:
 	case transOutBndSetIn: //this has to return true to get second call to setPos
@@ -57,6 +60,7 @@ spatial::SurfacePosition MeshElementNode::mPos( ) const {
 	case bndFrontMoved:
 	case bndStable:
 	case bndNbrEdgesFound:
+	case bndReacted:
 	case bndDiffAdvDone:
 	case bndDiffAdvDoneMU:
 	case bndFrontApplied:
@@ -260,9 +264,11 @@ std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::Me
 		CASE(initialInside);
 		CASE(initialBoundary);
 		CASE(inStable);
+		CASE(inReacted);
 		CASE(inDiffAdvDone);
 		CASE(inDiffAdvDoneMU);
 		CASE(bndFrontMoved);
+		CASE(bndReacted);
 		CASE(bndNbrEdgesFound);
 		CASE(bndDiffAdvDone);
 		CASE(bndDiffAdvDoneMU);

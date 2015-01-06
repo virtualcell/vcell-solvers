@@ -1024,39 +1024,42 @@ namespace {
 }
 
 void MeshElementNode::react(moving_boundary::TimeType time) {
-	//switch (state( )) {
-	//case stable:
-	//	setState(stableSourceApplied);
-	//	break;
-	//case bndFrontMoved:
-	//	setState(legacySourceApplied);
-	//	break;
-	//default:
-	//	VCELL_EXCEPTION(domain_error,"Invalid react state " << ident( ));
-	//}
-	//moving_boundary::VolumeType vol = volumePD( );
-	//if (vol == 0) {
-	//	std::cout << "Stop";
-	//}
+	switch (state( )) {
+	case inStable:
+		setState(inReacted);
+		break;
+	case bndFrontMoved: 
+		findNeighborEdges();
+		//fall through
+	case bndNbrEdgesFound:
+		setState(bndReacted);
+		break;
+	default:
+		VCELL_EXCEPTION(domain_error,"Invalid react state " << ident( ));
+	}
+	moving_boundary::VolumeType vol = volumePD( );
+	if (vol == 0) {
+		std::cout << "Stop";
+	}
 
-	//assert(concValue == sourceTermValues); //if this is no longer term, copy values from concValue ->sourceTermValues
+	assert(concValue == sourceTermValues); //if this is no longer term, copy values from concValue ->sourceTermValues
 
-	//sourceTermValues[indexToTimeVariable] = time;
-	//const biology::Physiology & physio = physiology( );
-	////const std::vector<const biology::Species> & species = physiology( ).species( );
-	//const size_t n = physio.numberSpecies( );
-	//assert(n == numSpecies( ));
-	//std::vector <moving_boundary::BioQuanType> sourceTermConcentrations(n);
+	sourceTermValues[indexToTimeVariable] = time;
+	const biology::Physiology & physio = physiology( );
+	//const std::vector<const biology::Species> & species = physiology( ).species( );
+	const size_t n = physio.numberSpecies( );
+	assert(n == numSpecies( ));
+	std::vector <moving_boundary::BioQuanType> sourceTermConcentrations(n);
 
-	////evaluate source terms
-	//std::transform(physio.beginSpecies( ), physio.endSpecies( ),sourceTermConcentrations.begin( ), Evaluator(sourceTermValues) );
+	//evaluate source terms
+	std::transform(physio.beginSpecies( ), physio.endSpecies( ),sourceTermConcentrations.begin( ), Evaluator(sourceTermValues) );
 
-	////convert concentrations to mass, add to existing mass
-	//assert(sourceTermValues.size( ) >= amtMass.size( ));
-	//std::transform(amtMass.begin( ), amtMass.end( ),sourceTermConcentrations.begin( ),amtMass.begin( ), ConcToMassAndAdd(vol) );
+	//convert concentrations to mass, add to existing mass
+	assert(sourceTermValues.size( ) >= amtMass.size( ));
+	std::transform(amtMass.begin( ), amtMass.end( ),sourceTermConcentrations.begin( ),amtMass.begin( ), ConcToMassAndAdd(vol) );
 
-	//assert(concValue.size( ) >= amtMass.size( ));
-	//std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
+	assert(concValue.size( ) >= amtMass.size( ));
+	std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
 }
 
 using moving_boundary::BioQuanType;
@@ -1064,13 +1067,10 @@ using moving_boundary::TimeType;
 void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, BioQuanType diffusionConstant, TimeType timeStep, bool & negativeMassError) {
 	DaCache & ourCache = static_cast<DaCache &>(daCache);
 	switch (state( )) {
-	case inStable: 
+	case inReacted: 
 		setState(inDiffAdvDone);
 		break;
-	case bndFrontMoved: 
-		findNeighborEdges();
-		//fall through
-	case bndNbrEdgesFound:
+	case bndReacted:
 		setState(bndDiffAdvDone); 
 		break;
 	default:

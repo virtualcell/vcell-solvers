@@ -117,6 +117,10 @@ namespace moving_boundary {
 			*/
 			inStable,
 			/**
+			*  - react( )
+			*/
+			inReacted,
+			/**
 			*  - diffuseAdvect( )
 			*/
 			inDiffAdvDone,
@@ -143,6 +147,10 @@ namespace moving_boundary {
 			*  - findNeighborEdges( )
 			*/
 			bndNbrEdgesFound,
+			/**
+			*  - react( )
+			*/
+			bndReacted,
 			/**
 			*  - diffuseAdvect( )
 			*/
@@ -477,7 +485,7 @@ namespace moving_boundary {
 			switch(this->state( ) ) {
 			case State::initialInside:
 			case State::inStable:
-
+			case State::inReacted:
 			case State::inDiffAdvDone:
 			case State::inDiffAdvDoneMU:
 				assert(interiorVolume > 0); //should be set externally 
@@ -489,6 +497,7 @@ namespace moving_boundary {
 			case State::transOutBndMassCollected: 
 			case State::initialBoundary:
 			case State::bndFrontMoved:
+			case State::bndReacted:
 			case State::bndNbrEdgesFound:
 			case State::bndDiffAdvDone:
 			case State::bndDiffAdvDoneMU:
