@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<MovingBoundarySetup>
+  <problem>
+
+    <noOperation>
+      <circle>
+        <originx>0</originx>
+        <originy>0</originy>
+        <radius>1</radius>
+        <velocityx>1</velocityx>
+        <thetaIncrement>THETA</thetaIncrement>
+      </circle>
+    </noOperation>
+    <specialFront>
+	<expandingCircle>
+	    <theta>.01</theta>
+	    <radiusExpression>1 + sin(t)</radiusExpression>
+	</expandingCircle>
+    </specialFront>
+
+    <xLimits>
+      <low>-1.5</low>
+      <high>1.5</high>
+    </xLimits>
+    <yLimits>
+      <low>-1.5</low>
+      <high>1.5</high>
+    </yLimits>
+    <numNodesX>10</numNodesX>
+    <numNodesY>10</numNodesY>
+    <frontToNodeRatio>1</frontToNodeRatio>
+    <maxTime>.2</maxTime>
+	<timeStep>.2</timeStep>
+    <diffusionConstant>1</diffusionConstant>
+    <levelFunction>x^2 + y^2 - 1</levelFunction>
+    <advectVelocityFunctionX>0</advectVelocityFunctionX>
+    <advectVelocityFunctionY>0</advectVelocityFunctionY>
+    <frontVelocityFunctionX>1</frontVelocityFunctionX>
+    <frontVelocityFunctionY>0</frontVelocityFunctionY>
+	 <physiology>
+       <species name="a">
+			<source>x/(x*x+y*y)^0.5*j1(1.841183781340659*(x*x+y*y)^0.5)+j1(1.841183781340659)</source>
+       </species>
+       <species>
+			<initial>1</initial>
+			<source>exp(-x)</source>
+       </species>
+	 </physiology>
+	
+    <concentration>
+	<species name="u">1</species>
+    </concentration>
+  </problem>
+  <report>
+    <deleteExisting>1</deleteExisting>
+    <outputFilename>figsix-10-4.h5</outputFilename>
+    <datasetName>10</datasetName>
+    <annotation>
+		<series>spatial convergence</series>
+    </annotation>
+    <timeReport>
+		<startTime>0</startTime>
+		<step>1500</step>
+    </timeReport>
+    <timeReport>
+		<startTime>0.1985</startTime>
+		<step>1</step>
+    </timeReport>
+  </report>
+	<progress>
+		<percent>5</percent>
+		<estimateProgress>true</estimateProgress>
+	</progress>
+  <trace>
+    <level>warn</level>
+    <traceFilename>trace10-4.txt</traceFilename>
+  </trace>
+</MovingBoundarySetup>
