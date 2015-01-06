@@ -150,27 +150,8 @@ namespace {
 
 		moving_boundary::VolumeType volume;
 	};
-
-#ifdef COUNT_INSERTS
-#define COUNT_INSERT ++iCounter
-
-	struct InsertCounter {
-		InsertCounter( ) 
-			:count(0) {}
-		~InsertCounter( ) {
-			++count;
-			return *this;
-		}
-
-		size_t count;
-	};
-
-	InsertCounter iCounter;
-#else
-#define COUNT_INSERT 
-#endif
-
 }
+
 void MeshElementNode::logCreation( ) const {
 	using vcell_util::Logger;
 	Logger & logger = Logger::get( );
@@ -341,12 +322,12 @@ void MeshElementNode::moveFront(const FrontType & front) {
 
 void MeshElementNode::applyFrontLegacyVoronoiSet( const FrontType & front) {
 	assert(0);
-/*
+	/*
 	assert(!voronoiVolume.empty( ));
 	assert(state( ) == bndFrontApplied || state( ) == bndFrontAppliedMU); 
 	formBoundaryPolygon(front);
 	setState(stableUpdated);
-*/
+	*/
 }
 void MeshElementNode::applyFront( const FrontType & front, moving_boundary::CoordinateProductType interiorVolume) {
 	switch (state( )) {
@@ -354,7 +335,7 @@ void MeshElementNode::applyFront( const FrontType & front, moving_boundary::Coor
 	case bndDiffAdvDoneMU:
 	case transInBnd:
 
-	//case bndNbrUpdated:
+		//case bndNbrUpdated:
 		formBoundaryPolygon(front);
 		setState(bndFrontApplied);
 		break;
@@ -535,8 +516,8 @@ void MeshElementNode::updateBoundaryNeighbors(const VoronoiMesh & vm, std::vecto
 
 	bool processNeighbors = false;
 	switch (state( )) {
-		case initialBoundary:
-		case bndDiffAdvDone:
+	case initialBoundary:
+	case bndDiffAdvDone:
 	case transInBnd:
 		processNeighbors = true;
 		//setState(bndStable);
@@ -640,9 +621,7 @@ void MeshElementNode::volumeToSegments() {
 
 			CoordinateType cut = 0;
 			while (right - left > mesh.interval(cX)) {
-				COUNT_INSERT
-
-					cut = mesh.greaterGridPoint(left,cX); 
+				cut = mesh.greaterGridPoint(left,cX); 
 				assert(cut < right);
 				segments_.push_back(SegmentType(CoordinatePoint(left,y), CoordinatePoint(cut,y)) );
 				left = cut;
@@ -662,9 +641,7 @@ void MeshElementNode::volumeToSegments() {
 
 			CoordinateType cut = 0;
 			while (up - down > mesh.interval(cY)) {
-				COUNT_INSERT
-
-					cut = mesh.greaterGridPoint(down,cY); 
+				cut = mesh.greaterGridPoint(down,cY); 
 				assert(cut < up);
 				segments_.push_back(SegmentType(CoordinatePoint(x,down), CoordinatePoint(x,cut)) );
 				down = cut;
@@ -765,9 +742,9 @@ void MeshElementNode::distributeMassToNeighbors() {
 		}
 		/*
 		else {
-			if (nb.state( ) != transBndOut) {
-				std::cout << "dMtoN " << nb.state( ) << std::endl;
-			}
+		if (nb.state( ) != transBndOut) {
+		std::cout << "dMtoN " << nb.state( ) << std::endl;
+		}
 		}
 		*/
 	}
@@ -898,21 +875,21 @@ void MeshElementNode::endOfCycle( ) {
 			/*
 			bool deep = true;
 			for (int i = 0; i < numNeighbors( ); i++) {
-				if (neighbors[i].element != nullptr) {
-					OurType & nb = *neighbors[i].element;
-					if (nb.isBoundary( )) {
-						deep = false;
-						break;
-					}
-				}
+			if (neighbors[i].element != nullptr) {
+			OurType & nb = *neighbors[i].element;
+			if (nb.isBoundary( )) {
+			deep = false;
+			break;
 			}
-				if (deep) {
-					setState(outStableDeep);
-				}
-				else {
-					setState(outStable);
-				}
-		*/
+			}
+			}
+			if (deep) {
+			setState(outStableDeep);
+			}
+			else {
+			setState(outStable);
+			}
+			*/
 		}
 		vol.clear( );
 
@@ -930,24 +907,24 @@ void MeshElementNode::endOfCycle( ) {
 		*/
 		/*
 		{
-			bool deep = true; //assume true until find boundary neighbor
-			for (int i = 0; deep && i < numNeighbors( ); i++) {
-				assert(neighbors[i].element != nullptr);
-				OurType & nb = *neighbors[i].element;
-				if (nb.isBoundary( )) {
-					deep = false;
-					break;
-				}
-			}
-			if (deep) {
-				setState(inStableDeep);
-			}
-			else {
-				setState(inStable);
-			}
+		bool deep = true; //assume true until find boundary neighbor
+		for (int i = 0; deep && i < numNeighbors( ); i++) {
+		assert(neighbors[i].element != nullptr);
+		OurType & nb = *neighbors[i].element;
+		if (nb.isBoundary( )) {
+		deep = false;
+		break;
+		}
+		}
+		if (deep) {
+		setState(inStableDeep);
+		}
+		else {
+		setState(inStable);
+		}
 		}
 		*/
-				setState(inStable);
+		setState(inStable);
 		break;
 	case bndFrontApplied:
 		setState(bndStable);

@@ -90,14 +90,17 @@ void MeshElementNode::propagateBoundaryValue() {
 	//first pass, set unset neighbors and propagate call to neighbors at same offset
 	size_t setIndex = 0;
 	std::array<MeshElementNode *,8> nodesThatWereSet;
-	const BoundaryOffsetType oneMore = boundaryOffset( ) + 1;
+	/* 
+	* cap offset at maxOffset( ) to minimize unnecesary recursion / computation
+	*/
+	const BoundaryOffsetType neighborOffset = std::min<BoundaryOffsetType>(boundaryOffset( ) + 1,maxOffset( ));
 
 	for (int i = 0; i < NUM_INSIDE; i++) {
 		if (interiorNeighbors[i].element != nullptr) {
 			OurType & nb = *interiorNeighbors[i].element;
-			if (nb.boundaryOffset( ) == unsetOffsetValue( ) || nb.boundaryOffset( ) > oneMore) {
+			if (nb.boundaryOffset( ) == unsetOffsetValue( ) || nb.boundaryOffset( ) > neighborOffset) {
 				if (!nb.isBoundary( )) {
-					nb.bndOffset = oneMore;
+					nb.bndOffset = neighborOffset;
 				}
 				else {
 					nb.bndOffset = 0;

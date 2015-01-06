@@ -267,7 +267,17 @@ namespace moving_boundary {
 		bool isOutside( ) const {
 			return !isInside( );
 		}
+		/**
+		* maximum offset value computed, used to eliminate unneeded recursive and computation 
+		*/
+		static BoundaryOffsetType maxOffset( ) {
+			return 2;
+		}
 
+		/**
+		* return distance from boundary, up to #maxOffset( )
+		* some computation steps can be skipped if we know node will not be adjacent to boundary.<br>
+		*/
 		BoundaryOffsetType boundaryOffset( ) const {
 			return bndOffset;
 		}
@@ -279,7 +289,6 @@ namespace moving_boundary {
 	private:
 		/**
 		* set neighbor's offset value
-		* @param targetLevel current desired level 
 		*/
 		void propagateBoundaryValue();
 	public:
