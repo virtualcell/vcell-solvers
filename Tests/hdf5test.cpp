@@ -188,7 +188,7 @@ TEST(hdf5,slab) {
 
 		H5File file( "slab.h5", H5F_ACC_RDWR );
 
-		vcell_util::Flex2<SolutionPoint> buffer(bufferSize,bufferSize);
+		vcell_util::Flex2<SolutionPoint,hsize_t> buffer(bufferSize,bufferSize);
 
 		//SolutionPoint buffer[bufferSize][bufferSize]; 
 		hsize_t     worldDim[2]  = {worldSize,worldSize};
@@ -223,7 +223,7 @@ TEST(hdf5,slab) {
 		}
 		//const test
 		{
-			const vcell_util::Flex2<SolutionPoint> copy(buffer); 
+			const vcell_util::Flex2<SolutionPoint,hsize_t> copy(buffer); 
 			std::cout << copy[5][10].x << std::endl;
 			//copy[5][10].x = .3;  //fails, like it should
 		}
@@ -286,7 +286,7 @@ TEST(hdf5,slabExtend) {
 
 		H5File file( "slabExtend.h5", H5F_ACC_TRUNC);
 
-		vcell_util::Flex2<SolutionPoint> buffer(bufferSize,bufferSize);
+		vcell_util::Flex2<SolutionPoint,hsize_t> buffer(bufferSize,bufferSize);
 
 		//SolutionPoint buffer[bufferSize][bufferSize]; 
 		hsize_t     worldDim[3]  = {1,worldSize,worldSize};
@@ -680,7 +680,7 @@ namespace {
 }
 TEST(hdf5,flex3) {
 	using namespace vcellH5;
-	vcell_util::Flex3<double> trial(3,4,5);
+	vcell_util::Flex3<double,hsize_t> trial(3,4,5);
 	for (int x = 0; x < trial.depthSize( ); x++) 
 		for (int y = 0; y < trial.columnSize( ); y ++)
 			for (int z = 0; z < trial.rowSize( ); z++) {
@@ -692,7 +692,7 @@ TEST(hdf5,flex3) {
 				double back = testValue(x,y,z);
 				ASSERT_TRUE(trial[x][y][z] == testValue(x,y,z));
 	}
-	const vcell_util::Flex3<double> copy(trial); 
+	const vcell_util::Flex3<double,hsize_t> copy(trial); 
 	for (int x = 0; x < trial.depthSize( ); x++) 
 		for (int y = 0; y < trial.columnSize( ); y ++)
 			for (int z = 0; z < trial.rowSize( ); z++) {

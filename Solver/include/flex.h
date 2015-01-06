@@ -5,7 +5,7 @@
 namespace vcell_util {
 
 
-	template <class T> struct Flex2Col;
+	template <class T, typename sizeType> struct Flex2Col;
 
 	/**
 	*
@@ -16,11 +16,13 @@ namespace vcell_util {
 	* dataset.write(buffer.ptr( ),doublePointType,memoryspace,dataspace);
 	*
 	*  vcell_util::Flex3<double> data(3,4,5);
+	*  @tparam T stored type
+	*  @tparam sizeType unsigned intergal type used for specifying sizes 
 	*/
 #pragma warning ( disable : 4351 )
-	template <class T>
+	template <class T, typename sizeType = size_t>
 	struct Flex2 {
-		Flex2(size_t columnSize, size_t rowSize)
+		Flex2(sizeType columnSize, sizeType rowSize)
 			:storage(columnSize* rowSize ),
 			colSize_(columnSize),
 			rowSize_(rowSize) {}
@@ -29,7 +31,7 @@ namespace vcell_util {
 		* allow construction with same array used to create DataSpace
 		* array must have size >= 2
 		*/
-		Flex2(size_t *dims)
+		Flex2(sizeType *dims)
 			:storage(dims[0] * dims[1]),
 			colSize_(dims[0]),
 			rowSize_(dims[1]) {}
@@ -41,20 +43,20 @@ namespace vcell_util {
 			colSize_(0),
 			rowSize_(0) {}
 
-		size_t rowSize( ) const {
+		sizeType rowSize( ) const {
 			return rowSize_;
 		}
-		size_t columnSize( ) const {
+		sizeType columnSize( ) const {
 			return colSize_;
 		}
 
-		Flex2Col<T> operator[](size_t column) {
+		Flex2Col<T,sizeType> operator[](sizeType column) {
 			assert(column < colSize_);
-			return Flex2Col<T>(*this,column);
+			return Flex2Col<T,sizeType>(*this,column);
 		}
-		const Flex2Col<T> operator[](size_t column) const {
-			Flex2<T> & us = const_cast<Flex2<T> & >(*this); 
-			return Flex2Col<T>(us,column);
+		const Flex2Col<T,sizeType> operator[](sizeType column) const {
+			Flex2<T,sizeType> & us = const_cast<Flex2<T,sizeType> & >(*this); 
+			return Flex2Col<T,sizeType>(us,column);
 		}
 		const void *ptr( ) const {
 			return storage.data( );
@@ -63,7 +65,7 @@ namespace vcell_util {
 		* reconfigure to difference layout; previous values no
 		* longer accessible using previous indexing scheme
 		*/
-		Flex2 & reindex(size_t columnSize, size_t rowSize) {
+		Flex2 & reindex(sizeType columnSize, sizeType rowSize) {
 			colSize_ = columnSize;
 			rowSize_ = rowSize;
 			storage.resize(columnSize * rowSize);
@@ -75,7 +77,7 @@ namespace vcell_util {
 		* reconfigure to difference layout; previous values no
 		* longer accessible using previous indexing scheme
 		*/
-		Flex2 & reindex(size_t *dims) {
+		Flex2 & reindex(sizeType *dims) {
 			return reindex( dims[0],dims[1]);
 		}
 		/**
@@ -98,44 +100,44 @@ namespace vcell_util {
 			return storage.end( );
 		}
 	private:
-		friend Flex2Col<T>;
+		friend Flex2Col<T,sizeType>;
 		std::vector<T> storage;
-		size_t colSize_;
-		size_t rowSize_;
+		sizeType colSize_;
+		sizeType rowSize_;
 	};
 
-	template <class T>
+	template <class T, typename sizeType>
 	struct Flex2Col {
-		T & operator[](size_t r) {
+		T & operator[](sizeType r) {
 			assert(r < flex.rowSize( ));
-			const size_t index = col * flex.rowSize( ) + r; 
+			const sizeType index = col * flex.rowSize( ) + r; 
 			return flex.storage[index];
 		}
-		const T & operator[](size_t r) const {
+		const T & operator[](sizeType r) const {
 			assert(r < flex.rowSize( ));
-			const size_t index = col * flex.rowSize( ) + r; 
+			const sizeType index = col * flex.rowSize( ) + r; 
 			return flex.storage[index];
 		}
 
 	private:
-		friend Flex2<T>;
-		Flex2Col(Flex2<T> & parent, size_t c)
+		friend Flex2<T, sizeType>;
+		Flex2Col(Flex2<T,sizeType> & parent, sizeType c)
 			:flex(parent),
 			col(c) {}
-		Flex2<T> & flex;
-		const size_t col;
+		Flex2<T,sizeType> & flex;
+		const sizeType col;
 	};
 
 // ------------------------------------------------	
 // 3 dimensional 
 // ------------------------------------------------	
-	template <class T> struct Flex3Depth;
-	template <class T> struct Flex3Col;
+	template <class T, typename sizeType> struct Flex3Depth;
+	template <class T, typename sizeType> struct Flex3Col;
 
 #pragma warning ( disable : 4351 )
-	template <class T>
+	template <class T, typename sizeType = size_t>
 	struct Flex3 {
-		Flex3(size_t depthSize, size_t columnSize, size_t rowSize)
+		Flex3(sizeType depthSize, sizeType columnSize, sizeType rowSize)
 			:storage(depthSize * columnSize* rowSize ),
 			depthSize_(depthSize),
 			colSize_(columnSize),
@@ -146,7 +148,7 @@ namespace vcell_util {
 		* allow construction with same array used to create DataSpace
 		* array must have size >= 3
 		*/
-		Flex3(size_t *dims)
+		Flex3(sizeType *dims)
 			:storage(dims[0] * dims[1] * dims[2]),
 			depthSize_(dims[0]),
 			colSize_(dims[1]),
@@ -163,25 +165,25 @@ namespace vcell_util {
 			rowSize_(0),
 			depthBlock(0) {}
 
-		size_t rowSize( ) const {
+		sizeType rowSize( ) const {
 			return rowSize_;
 		}
-		size_t columnSize( ) const {
+		sizeType columnSize( ) const {
 			return colSize_;
 		}
-		size_t depthSize( ) const {
+		sizeType depthSize( ) const {
 			return depthSize_;
 		}
 
-		Flex3Depth<T> operator[](size_t depth) {
+		Flex3Depth<T,sizeType> operator[](sizeType depth) {
 			assert(depth < depthSize_);
-			return Flex3Depth<T>(*this,depth);
+			return Flex3Depth<T,sizeType>(*this,depth);
 		}
-		const Flex3Depth<T> operator[](size_t depth) const {
+		const Flex3Depth<T,sizeType> operator[](sizeType depth) const {
 			assert(depth < depthSize_);
-			Flex3<T> & us = const_cast<Flex3<T> & > (*this);
+			Flex3<T,sizeType> & us = const_cast<Flex3<T,sizeType> & > (*this);
 	
-			return Flex3Depth<T>(us,depth);
+			return Flex3Depth<T,sizeType>(us,depth);
 		}
 		const void *ptr( ) const {
 			return storage.data( );
@@ -190,7 +192,7 @@ namespace vcell_util {
 		* reconfigure to difference layout; previous values no
 		* longer accessible using previous indexing scheme
 		*/
-		Flex3 & reindex(size_t depthSize, size_t columnSize, size_t rowSize) {
+		Flex3 & reindex(sizeType depthSize, sizeType columnSize, sizeType rowSize) {
 			depthSize_ = depthSize;
 			colSize_ = columnSize;
 			rowSize_ = rowSize;
@@ -204,7 +206,7 @@ namespace vcell_util {
 		* reconfigure to difference layout; previous values no
 		* longer accessible using previous indexing scheme
 		*/
-		Flex3 & reindex(size_t *dims) {
+		Flex3 & reindex(sizeType *dims) {
 			return reindex(dims[0],dims[1],dims[2]);
 		}
 		/**
@@ -214,54 +216,54 @@ namespace vcell_util {
 			std::fill(storage.begin( ),storage.end( ),T( ));
 		}
 	private:
-		friend Flex3Col<T>;
+		friend Flex3Col<T,sizeType>;
 		std::vector<T> storage;
-		size_t depthSize_;
-		size_t colSize_;
-		size_t rowSize_;
-		size_t depthBlock;
+		sizeType depthSize_;
+		sizeType colSize_;
+		sizeType rowSize_;
+		sizeType depthBlock;
 	};
 
-	template <class T>
+	template <class T, typename sizeType>
 	struct Flex3Depth {
-		Flex3Col<T> operator[](size_t c) {
-			return Flex3Col<T>(flex,depth,c);
+		Flex3Col<T,sizeType> operator[](sizeType c) {
+			return Flex3Col<T,sizeType>(flex,depth,c);
 		}
-		const Flex3Col<T> operator[](size_t c) const {
-			return Flex3Col<T>(flex,depth,c);
+		const Flex3Col<T,sizeType> operator[](sizeType c) const {
+			return Flex3Col<T,sizeType>(flex,depth,c);
 		}
   private:
-		friend Flex3<T>;
-		Flex3Depth(Flex3<T> & parent, size_t d)
+		friend Flex3<T,sizeType>;
+		Flex3Depth(Flex3<T,sizeType> & parent, sizeType d)
 			:flex(parent),
 			depth(d) {}
-		Flex3<T> & flex;
-		const size_t depth;
+		Flex3<T,sizeType> & flex;
+		const sizeType depth;
 	};
 
-	template <class T>
+	template <class T, typename sizeType>
 	struct Flex3Col {
-		T & operator[](size_t r) {
+		T & operator[](sizeType r) {
 			assert(r < flex.rowSize( ));
-			const size_t index = depth * flex.depthBlock + col * flex.rowSize( ) + r; 
+			const sizeType index = depth * flex.depthBlock + col * flex.rowSize( ) + r; 
 			return flex.storage[index];
 		}
-		const T & operator[](size_t r) const {
+		const T & operator[](sizeType r) const {
 			assert(r < flex.rowSize( ));
-			const size_t index = depth * flex.depthBlock + col * flex.rowSize( ) + r; 
+			const sizeType index = depth * flex.depthBlock + col * flex.rowSize( ) + r; 
 			return flex.storage[index];
 		}
 
 	private:
-		friend Flex3<T>;
-		friend Flex3Depth<T>;
-		Flex3Col(Flex3<T> & parent, size_t d, size_t c)
+		friend Flex3<T,sizeType>;
+		friend Flex3Depth<T,sizeType>;
+		Flex3Col(Flex3<T,sizeType> & parent, sizeType d, sizeType c)
 			:flex(parent),
 			depth(d),
 			col(c) {}
-		Flex3<T> & flex;
-		const size_t depth;
-		const size_t col;
+		Flex3<T,sizeType> & flex;
+		const sizeType depth;
+		const sizeType col;
 	};
 
 }
