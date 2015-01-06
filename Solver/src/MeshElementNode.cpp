@@ -1024,6 +1024,7 @@ namespace {
 }
 
 void MeshElementNode::react(moving_boundary::TimeType time) {
+	double noChange = amtMass[0];
 	switch (state( )) {
 	case inStable:
 		setState(inReacted);
@@ -1060,6 +1061,9 @@ void MeshElementNode::react(moving_boundary::TimeType time) {
 
 	assert(concValue.size( ) >= amtMass.size( ));
 	std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
+	if (noChange != amtMass[0]) {
+		std::cout << ident( ) << noChange << " to " << amtMass[0] << std::endl;
+	}
 }
 
 using moving_boundary::BioQuanType;
