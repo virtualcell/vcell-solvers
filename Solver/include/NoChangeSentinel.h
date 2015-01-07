@@ -19,7 +19,8 @@ namespace vcell_util {
 			value(v) {}
 		~NoChangeSentinel( ) {
 			if (variable != value) {
-				std::cout << name << ' ' << id << " changed from " << value << " to " << variable << std::endl;
+				const T diff = value - variable; 
+				std::cout << name << ' ' << id << " changed from " << value << " to " << variable << ", difference of " << diff << std::endl;
 			}
 		}
 	private:
@@ -41,7 +42,7 @@ namespace vcell_util {
 		~NoChangeSentinel( ) {
 			if (variable != value) {
 				const T diff = value - variable; 
-				std::cout << name << " changed from " << value << " to " << variable ", difference of " << diff << std::endl;
+				std::cout << name << " changed from " << value << " to " << variable << ", difference of " << diff << std::endl;
 			}
 		}
 	private:
