@@ -479,13 +479,6 @@ namespace {
 
 				boundaryDataset = baseGroup.createDataSet( "boundaries", vtype.getType( ), dataspace ,prop);
 			} //create boundary dataset
-
-
-			//anotate version info
-			const vcell_util::Version & version = vcell_util::Version::get( );
-			annotate("svnVersion",version.svn);
-			annotate("compileDate",version.compileDate);
-			annotate("compileTime",version.compileTime);
 		}
 
 

@@ -40,7 +40,8 @@ namespace vcell_util {
 			value(v) {}
 		~NoChangeSentinel( ) {
 			if (variable != value) {
-				std::cout << name << " changed from " << value << " to " << variable << std::endl;
+				const T diff = value - variable; 
+				std::cout << name << " changed from " << value << " to " << variable ", difference of " << diff << std::endl;
 			}
 		}
 	private:
