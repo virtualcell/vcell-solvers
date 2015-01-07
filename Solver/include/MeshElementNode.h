@@ -265,7 +265,8 @@ namespace moving_boundary {
 			cornerNeighbors(),
 			voronoiVolume( ),
 			nOutside(0),
-			velocity(0,0)
+			velocity(0,0),
+			lastVolume(0)
 		{
 			std::fill(cornerNeighbors.begin( ),cornerNeighbors.end( ),nullptr);
 			if (vcell_util::Logger::get( ).enabled(vcell_util::Logger::trace)) {
@@ -401,9 +402,11 @@ namespace moving_boundary {
 			switch (state( )) {
 			case initialInside:
 				setState(inStable);
+				lastVolume = interiorVolume;
 				break;
 			case initialBoundary:
 				setState(bndStable);
+				lastVolume = volumePD( );
 				break;
 			case outStable:
 				break;
@@ -479,11 +482,6 @@ namespace moving_boundary {
 		void endOfCycle( );  
 
 		/**
-		* update concentrations based on current mass values and volume if inside; set to 0 if outside  
-		*/
-		void updateConcentrations( );  
-
-		/**
 		* volume, in problem domain units
 		*/
 		moving_boundary::CoordinateProductType volumePD(  ) const {
@@ -509,6 +507,7 @@ namespace moving_boundary {
 			case State::bndDiffAdvDoneMU:
 			case State::bndFrontApplied:
 			case State::bndStable:
+			case State::bndMassCollectedFrontApplied:
 				return vol.volume( ) /distanceScaledSquared; 
 			case State::transOutBndSetIn:
 			default:
@@ -814,6 +813,7 @@ namespace moving_boundary {
 		Volume2DClass voronoiVolume;
 		int nOutside;
 		spatial::SVector<moving_boundary::VelocityType,2> velocity; 
+		moving_boundary::CoordinateProductType lastVolume; 
 
 		/**
 		* problem domain to solution coordinates scaled

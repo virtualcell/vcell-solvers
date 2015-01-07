@@ -203,6 +203,7 @@ void MeshElementNode::setPos(SurfacePosition m)  {
 			vol.clear( );
 			getControlVolume( );
 			setState(inDiffAdvDone);
+			lastVolume = interiorVolume;
 			return;
 		}
 		else {
@@ -863,20 +864,6 @@ void MeshElementNode::collectMassFromNeighbors(const FrontType & front) {
 	setState(transOutBndMassCollected); 
 }
 
-void MeshElementNode::updateConcentrations( ) {
-	const bool inside = isInside( );
-	if (inside) {
-		moving_boundary::CoordinateProductType vol = this->volumePD( );
-		if (vol > 0) {
-			std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
-		}
-		else {
-			VCELL_EXCEPTION(logic_error, ident( ) << " insided with zero / neg volume " << vol);
-			//std::fill(concValue.begin( ),concValue.begin( ) + physiology( ).numberSpecies( ), 0); 
-		}
-	}
-}
-
 void MeshElementNode::endOfCycle( ) {
 	VCELL_LOG(verbose,this->ident( ) << " begin eoc"); 
 	bool copyMass = true;
@@ -884,66 +871,19 @@ void MeshElementNode::endOfCycle( ) {
 	switch (state( )) {
 	case outStable:
 		copyMass = false;
-		{
-			/*
-			bool deep = true;
-			for (int i = 0; i < numNeighbors( ); i++) {
-			if (neighbors[i].element != nullptr) {
-			OurType & nb = *neighbors[i].element;
-			if (nb.isBoundary( )) {
-			deep = false;
-			break;
-			}
-			}
-			}
-			if (deep) {
-			setState(outStableDeep);
-			}
-			else {
-			setState(outStable);
-			}
-			*/
-		}
 		vol.clear( );
-
 		break;
 	case inDiffAdvDone:
 	case inDiffAdvDoneMU:
-		//fall through
-		/* REVIEW -- check for negative
-		for (int s = 0; s < numSpecies( ); s++) {
-		if (amtMassTransient[s] < 0) {
-		VCELL_EXCEPTION(logic_error, ident() << " has gone negative") ;
-		}
-		amtMass[s] = amtMassTransient[s];
-		}
-		*/
-		/*
-		{
-		bool deep = true; //assume true until find boundary neighbor
-		for (int i = 0; deep && i < numNeighbors( ); i++) {
-		assert(neighbors[i].element != nullptr);
-		OurType & nb = *neighbors[i].element;
-		if (nb.isBoundary( )) {
-		deep = false;
-		break;
-		}
-		}
-		if (deep) {
-		setState(inStableDeep);
-		}
-		else {
-		setState(inStable);
-		}
-		}
-		*/
 		setState(inStable);
 		break;
 	case bndFrontApplied:
 		setState(bndStable);
+		lastVolume = volumePD( );
 		break;
 	case bndMassCollectedFrontApplied:
 		copyMass = false;
+		lastVolume = volumePD( );
 		setState(bndStable);
 		break;
 	default:
@@ -955,9 +895,19 @@ void MeshElementNode::endOfCycle( ) {
 	} else {
 		VCELL_LOG(verbose,this->ident( ) << " eoc not copying ");
 	}
-	updateConcentrations( );
+	const bool inside = isInside( );
+	if (inside) {
+		moving_boundary::CoordinateProductType vol = this->volumePD( );
+		if (vol > 0) {
+			std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
+		}
+		else {
+			VCELL_EXCEPTION(logic_error, ident( ) << " insided with zero / neg volume " << vol);
+			//std::fill(concValue.begin( ),concValue.begin( ) + physiology( ).numberSpecies( ), 0); 
+		}
+	}
 	if (vcell_util::Logger::get( ).enabled(vcell_util::Logger::info) ) { 
-		if (isInside( )) {
+		if (inside) {
 			VCELL_LOG_ALWAYS(this->ident( ) << " eoc end mass " << this->mass(0) << " vol " << volumePD(  ) << " conc " << concentration(0));
 		}
 		else {
@@ -1028,10 +978,6 @@ namespace {
 }
 
 void MeshElementNode::react(moving_boundary::TimeType time) {
-	if (isBoundary( )) {
-		updateConcentrations( );
-	}
-#if 0
 	auto ms = vcell_util::makeSentinel("mass", ident( ), amtMass[0]);
 	auto cs = vcell_util::makeSentinel("concentration" ,ident( ), concValue[0]);
 
@@ -1050,9 +996,8 @@ void MeshElementNode::react(moving_boundary::TimeType time) {
 		VCELL_EXCEPTION(domain_error,"Invalid react state " << ident( ));
 	}
 	*/
-	moving_boundary::VolumeType vol = volumePD( );
-	if (vol == 0) {
-		std::cout << "Stop";
+	if (lastVolume <= 0) {
+		VCELL_EXCEPTION(logic_error, ident( ) << " lastVolume " << lastVolume << " in react");
 	}
 
 	assert(concValue == sourceTermValues); //if this is no longer term, copy values from concValue ->sourceTermValues
@@ -1069,11 +1014,10 @@ void MeshElementNode::react(moving_boundary::TimeType time) {
 
 	//convert concentrations to mass, add to existing mass
 	assert(sourceTermValues.size( ) >= amtMass.size( ));
-	std::transform(amtMass.begin( ), amtMass.end( ),sourceTermConcentrations.begin( ),amtMass.begin( ), ConcToMassAndAdd(vol) );
+	std::transform(amtMass.begin( ), amtMass.end( ),sourceTermConcentrations.begin( ),amtMass.begin( ), ConcToMassAndAdd(lastVolume) );
 
 	assert(concValue.size( ) >= amtMass.size( ));
-	std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
-#endif
+	std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(lastVolume) );
 }
 
 using moving_boundary::BioQuanType;
