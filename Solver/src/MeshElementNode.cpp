@@ -1028,6 +1028,7 @@ namespace {
 }
 
 void MeshElementNode::react(moving_boundary::TimeType time) {
+#if 0
 	if (isBoundary( )) {
 		updateConcentrations( );
 	}
@@ -1072,6 +1073,7 @@ void MeshElementNode::react(moving_boundary::TimeType time) {
 
 	assert(concValue.size( ) >= amtMass.size( ));
 	std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
+#endif
 }
 
 using moving_boundary::BioQuanType;
