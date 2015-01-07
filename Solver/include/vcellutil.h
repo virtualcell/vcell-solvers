@@ -35,8 +35,5 @@ namespace vcell_util {
 		ary[2] = c;
 		return ary;
 	} 
-
-
-
 }
 #endif

@@ -13,6 +13,7 @@
 #include <SVector.h>
 #include <boundaryProviders.h>
 #include <vcarray.h>
+#include <NoChangeSentinel.h>
 #include "mockpoint.inc"
 using namespace vcell_util; 
 namespace {
@@ -52,4 +53,16 @@ TEST(vcellutil,vcarray) {
 	vcarray<double,3> cat;
 	vcarray<double,cat.ArraySize> dog;
 	static_assert(cat.ArraySize == 3, "size");
+	cat[0] = dog[0] = 3;
+}
+TEST(vcellutil,nochange) {
+	int x = 3;
+	float y = 3.4f;
+	double z = 7.1;
+	
+	auto nc1 = makeSentinel("x",x);
+	auto nc2 = makeSentinel("y",y);
+	auto nc3 = makeSentinel("z",12,z);
+	x = 4;
+	z = 7.11;
 }

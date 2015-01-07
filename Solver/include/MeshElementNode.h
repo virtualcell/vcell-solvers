@@ -472,10 +472,16 @@ namespace moving_boundary {
 		* @param bn boundary neighbors inside front
 		*/
 		void updateBoundaryNeighbors( const VoronoiMesh &vm, std::vector<OurType *>  & bn) ;
+
 		/**
 		* indicate diffusion-advection processing complete; swap concentration pointers, check interior deepness
 		*/
 		void endOfCycle( );  
+
+		/**
+		* update concentrations based on current mass values and volume if inside; set to 0 if outside  
+		*/
+		void updateConcentrations( );  
 
 		/**
 		* volume, in problem domain units

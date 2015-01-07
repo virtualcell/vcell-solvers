@@ -18,6 +18,7 @@
 #include <Logger.h>
 #include <Distance.h>
 #include <persistcontainer.h>
+#include <NoChangeSentinel.h>
 
 #include <ManagedArrayPtr.h> //StackPtr
 #include <MBridge/FronTierAdapt.h>
@@ -862,7 +863,19 @@ void MeshElementNode::collectMassFromNeighbors(const FrontType & front) {
 	setState(transOutBndMassCollected); 
 }
 
-
+void MeshElementNode::updateConcentrations( ) {
+	const bool inside = isInside( );
+	if (inside) {
+		moving_boundary::CoordinateProductType vol = this->volumePD( );
+		if (vol > 0) {
+			std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
+		}
+		else {
+			VCELL_EXCEPTION(logic_error, ident( ) << " insided with zero / neg volume " << vol);
+			//std::fill(concValue.begin( ),concValue.begin( ) + physiology( ).numberSpecies( ), 0); 
+		}
+	}
+}
 
 void MeshElementNode::endOfCycle( ) {
 	VCELL_LOG(verbose,this->ident( ) << " begin eoc"); 
@@ -942,18 +955,9 @@ void MeshElementNode::endOfCycle( ) {
 	} else {
 		VCELL_LOG(verbose,this->ident( ) << " eoc not copying ");
 	}
-	const bool inside = isInside( );
-	if (inside) {
-		moving_boundary::CoordinateProductType vol = this->volumePD( );
-		if (vol > 0) {
-			std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
-		}
-		else {
-			std::fill(concValue.begin( ),concValue.begin( ) + physiology( ).numberSpecies( ), 0); 
-		}
-	}
+	updateConcentrations( );
 	if (vcell_util::Logger::get( ).enabled(vcell_util::Logger::info) ) { 
-		if (inside) {
+		if (isInside( )) {
 			VCELL_LOG_ALWAYS(this->ident( ) << " eoc end mass " << this->mass(0) << " vol " << volumePD(  ) << " conc " << concentration(0));
 		}
 		else {
@@ -1024,7 +1028,13 @@ namespace {
 }
 
 void MeshElementNode::react(moving_boundary::TimeType time) {
-	double noChange = amtMass[0];
+	if (isBoundary( )) {
+		updateConcentrations( );
+	}
+	auto ms = vcell_util::makeSentinel("mass", ident( ), amtMass[0]);
+	auto cs = vcell_util::makeSentinel("concentration" ,ident( ), concValue[0]);
+
+	/*
 	switch (state( )) {
 	case inStable:
 		setState(inReacted);
@@ -1038,6 +1048,7 @@ void MeshElementNode::react(moving_boundary::TimeType time) {
 	default:
 		VCELL_EXCEPTION(domain_error,"Invalid react state " << ident( ));
 	}
+	*/
 	moving_boundary::VolumeType vol = volumePD( );
 	if (vol == 0) {
 		std::cout << "Stop";
@@ -1061,9 +1072,6 @@ void MeshElementNode::react(moving_boundary::TimeType time) {
 
 	assert(concValue.size( ) >= amtMass.size( ));
 	std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(vol) );
-	if (noChange != amtMass[0]) {
-		std::cout << ident( ) << noChange << " to " << amtMass[0] << std::endl;
-	}
 }
 
 using moving_boundary::BioQuanType;
@@ -1071,10 +1079,13 @@ using moving_boundary::TimeType;
 void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, BioQuanType diffusionConstant, TimeType timeStep, bool & negativeMassError) {
 	DaCache & ourCache = static_cast<DaCache &>(daCache);
 	switch (state( )) {
-	case inReacted: 
+	case inStable: 
 		setState(inDiffAdvDone);
 		break;
-	case bndReacted:
+	case bndFrontMoved: 
+		findNeighborEdges();
+		//fall through
+	case bndNbrEdgesFound:
 		setState(bndDiffAdvDone); 
 		break;
 	default:

@@ -27,8 +27,7 @@ namespace moving_boundary {
 			}
 
 			/**
-			* does this have a constant source term?
-			* @return true if does
+			* return expression
 			*/
 			const SExpression & sourceTerm( ) const {
 				return sourceExp;
