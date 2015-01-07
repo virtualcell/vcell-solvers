@@ -978,10 +978,11 @@ namespace {
 }
 
 void MeshElementNode::react(moving_boundary::TimeType time) {
+	/*
 	auto ms = vcell_util::makeSentinel("mass", ident( ), amtMass[0]);
 	auto cs = vcell_util::makeSentinel("concentration" ,ident( ), concValue[0]);
+	*/
 
-	/*
 	switch (state( )) {
 	case inStable:
 		setState(inReacted);
@@ -995,7 +996,6 @@ void MeshElementNode::react(moving_boundary::TimeType time) {
 	default:
 		VCELL_EXCEPTION(domain_error,"Invalid react state " << ident( ));
 	}
-	*/
 	if (lastVolume <= 0) {
 		VCELL_EXCEPTION(logic_error, ident( ) << " lastVolume " << lastVolume << " in react");
 	}
@@ -1025,13 +1025,10 @@ using moving_boundary::TimeType;
 void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, BioQuanType diffusionConstant, TimeType timeStep, bool & negativeMassError) {
 	DaCache & ourCache = static_cast<DaCache &>(daCache);
 	switch (state( )) {
-	case inStable: 
+	case inReacted: 
 		setState(inDiffAdvDone);
 		break;
-	case bndFrontMoved: 
-		findNeighborEdges();
-		//fall through
-	case bndNbrEdgesFound:
+	case bndReacted:
 		setState(bndDiffAdvDone); 
 		break;
 	default:
