@@ -1028,10 +1028,10 @@ namespace {
 }
 
 void MeshElementNode::react(moving_boundary::TimeType time) {
-#if 0
 	if (isBoundary( )) {
 		updateConcentrations( );
 	}
+#if 0
 	auto ms = vcell_util::makeSentinel("mass", ident( ), amtMass[0]);
 	auto cs = vcell_util::makeSentinel("concentration" ,ident( ), concValue[0]);
 
