@@ -505,7 +505,8 @@ namespace moving_boundary {
 			syms[et] = currentTime; 
 			double vX = frontVelocityExpX.evaluateVector(syms);
 			double vY = frontVelocityExpY.evaluateVector(syms);
-			return world.toWorld<moving_boundary::VelocityType>(spatial::SVector<double,2>(vX,vY)); 
+			auto rval =  world.toWorld<moving_boundary::VelocityType>(spatial::SVector<double,2>(vX,vY)); 
+			return rval; 
 		}
 
 		spatial::SVector<moving_boundary::VelocityType,2> advectionVelocity(double x, double y) const {

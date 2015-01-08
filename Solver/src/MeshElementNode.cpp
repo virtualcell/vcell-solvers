@@ -1016,8 +1016,6 @@ void MeshElementNode::react(moving_boundary::TimeType time) {
 	assert(sourceTermValues.size( ) >= amtMass.size( ));
 	std::transform(amtMass.begin( ), amtMass.end( ),sourceTermConcentrations.begin( ),amtMass.begin( ), ConcToMassAndAdd(lastVolume) );
 
-	assert(concValue.size( ) >= amtMass.size( ));
-	std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(lastVolume) );
 }
 
 using moving_boundary::BioQuanType;

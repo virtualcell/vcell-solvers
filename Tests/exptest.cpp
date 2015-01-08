@@ -86,6 +86,20 @@ TEST(sexpression,badsize) {
 	std::copy(arr.begin( ),arr.end( ),vec.begin( ));
 	ASSERT_THROW(double r= exp.evaluate(vec),std::domain_error);
 }
+TEST(sexpression,xvel) {
+	const char * const xString = "x / sqrt(x*x + y*y)";
+	std::string syms[] = {"x","y"};
+	SimpleSymbolTable symTb(syms,sizeof(syms)/sizeof(syms[0]));
+	moving_boundary::SExpression exp(xString,symTb);
+	const double up  = sqrt(2) / 2.0;
+	const double direct = up / sqrt(up*up + up*up);
+	std::array<double,2> values = {up,up};
+	double out = exp.evaluate(values);
+	double delta = out - direct;
+	std::cout << std::setw(20) << std::setprecision(12) << up << ", " << out << std::endl ;
+	std::cout << delta << std::endl; 
+	std::cout << (out - up) << std::endl; 
+}
 
 TEST(expression,construct) {
 	VCell::Expression a; 
