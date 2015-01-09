@@ -961,23 +961,23 @@ namespace {
 		* @parm volume
 		* @throws std::domain_error if volume < = 0
 		*/
-		ConcToMassAndAdd( moving_boundary::VolumeType volume_)
-			:volume(volume_) {
-				if (volume <= 0) {
+		ConcToMassAndAdd( moving_boundary::VolumeType volume_, moving_boundary::TimeType timeStep_)
+			:volTimeProduct(volume_ * timeStep_) {
+				if (volume_ <= 0) {
 					throw std::domain_error("ConcToMassAndAdd volume <= 0");
 				}
 		}
 
 		BioQuan operator( )(BioQuan mass, BioQuan sourceConcentration) {
-			BioQuan newMass = mass + sourceConcentration * volume; 
+			BioQuan newMass = mass + sourceConcentration * volTimeProduct;
 			return newMass;
 		}
 
-		moving_boundary::VolumeType volume;
+		const moving_boundary::VolumeTimeProduct volTimeProduct;
 	};
 }
 
-void MeshElementNode::react(moving_boundary::TimeType time) {
+void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::TimeType timeStep) {
 	/*
 	auto ms = vcell_util::makeSentinel("mass", ident( ), amtMass[0]);
 	auto cs = vcell_util::makeSentinel("concentration" ,ident( ), concValue[0]);
@@ -1014,7 +1014,7 @@ void MeshElementNode::react(moving_boundary::TimeType time) {
 
 	//convert concentrations to mass, add to existing mass
 	assert(sourceTermValues.size( ) >= amtMass.size( ));
-	std::transform(amtMass.begin( ), amtMass.end( ),sourceTermConcentrations.begin( ),amtMass.begin( ), ConcToMassAndAdd(lastVolume) );
+	std::transform(amtMass.begin( ), amtMass.end( ),sourceTermConcentrations.begin( ),amtMass.begin( ), ConcToMassAndAdd(lastVolume, timeStep) );
 
 }
 

@@ -562,7 +562,7 @@ namespace moving_boundary {
 		/**
 		* apply source terms at specified time (expressions may contain "x" and "y" ... the nodes know that already)
 		*/
-		void react(moving_boundary::TimeType time); 
+		void react(moving_boundary::TimeType time, moving_boundary::TimeType timeStep); 
 		/**
 		* perform diffusion and advection step, storing values in next generation
 		* @param daCache   

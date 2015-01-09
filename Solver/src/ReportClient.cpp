@@ -122,7 +122,6 @@ namespace {
 			concentrationNumeric( )
 		{ }
 		void set(const HElementRecord & er, size_t index) {
-			static vcellH5::VarLen<PODPoint<double> > & vpointType = PODPoint<double>::vectorType( );
 			static vcellH5::VarLenSimple<double>  valueType;
 			mass = er.mass[index];
 			concentrationNumeric = er.concentration[index];

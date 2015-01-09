@@ -72,5 +72,7 @@ namespace moving_boundary {
 	* typedef for object used to represent Volumes
 	*/
 	typedef spatial::Volume<CoordinateType,CoordinateProductType,2> Volume2DClass;
+
+	typedef decltype(VolumeType( ) * TimeType( ) ) VolumeTimeProduct;
 }
 #endif

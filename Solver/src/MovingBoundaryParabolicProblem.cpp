@@ -766,17 +766,19 @@ namespace moving_boundary {
 		* Functor react 
 		*/
 		struct React {
-			React(double time_)
-				:time(time_) {}
+			React(double time_, double timeStep_)
+				:time(time_),
+				timeStep(timeStep_){}
 
 			void operator( )(Element & e) {
 				if (e.isInside( )) {
 					VCELL_LOG(trace,e.ident( ) << " react")
-						e.react(time);
+						e.react(time, timeStep);
 				}
 			}
 
 			const double time;
+			const double timeStep;
 		};
 
 #if 0
@@ -937,6 +939,7 @@ namespace moving_boundary {
 				if (frontMoveTrace) {
 					debugDump(generationCount, 's');
 				}
+				generationCount++;
 
 				while (currentTime < maxTime) {
 					std::pair<double,double> nowAndStep = times(generationCount); 
@@ -1001,7 +1004,7 @@ namespace moving_boundary {
 						}
 					} while (tooBig);
 #endif
-					std::for_each(primaryMesh.begin( ),primaryMesh.end( ), React(currentTime) );
+					std::for_each(primaryMesh.begin( ),primaryMesh.end( ), React(currentTime,timeIncr) );
 
 					primaryMesh.diffuseAdvectCache( ).start( );
 					bool tooBig = false;

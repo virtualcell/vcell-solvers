@@ -2,6 +2,7 @@
 #define vcellconvert_h
 #include <boost/lexical_cast.hpp>
 #include <string>
+#include <cassert>
 namespace vcell_util {
 
 	template <typename TARGET>
@@ -29,7 +30,10 @@ namespace vcell_util {
 	template <>
 	struct VCellConvert<char *> {
 		char * operator( )(const char *v) {
-		}  //do not use this specialization; use <const char *> instead
+			assert(false);
+			//do not use this specialization; use <const char *> instead
+			return nullptr;
+		}  
 	};
 	template <>
 	struct VCellConvert<bool> {
