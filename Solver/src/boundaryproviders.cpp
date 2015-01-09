@@ -239,6 +239,7 @@ namespace {
 		moving_boundary::SExpression radiusExpression;
 		double multiplier;
 		std::array<double,3> values;
+		const static size_t TIME_INDEX = 2;
 
 	public:
 		ExpandingCircle(double theta, const char * const expression) 
@@ -258,12 +259,13 @@ namespace {
 					baseFront.push_back(pt);
 				}
 				close( );
+				assert(symTable.getEntry("t")->getIndex( ) == TIME_INDEX);
 		}
 
 
 
 		virtual bool propagateTo(double time_) {
-			values[0] = time_;
+			values[TIME_INDEX] = time_;
 			multiplier = radiusExpression.evaluate(values);
 			return true;
 		}
@@ -325,6 +327,7 @@ namespace {
 		void close( ) {
 			baseFront.push_back(baseFront.front( ));
 		}
+
 
 	};
 
