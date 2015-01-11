@@ -1947,6 +1947,14 @@ void ChomboScheduler::writeMembraneFiles()
 	const char* methodName = "(ChomboScheduler::writeMembraneFiles)";
 	pout() << "Entry " << methodName << endl;
 
+#ifdef CH_MPI
+	if (CH_SPACEDIM == 3)
+	{
+		pout() << methodName << " 3D mesh is not written in parallel" << endl;
+		return;
+	}
+#endif
+	
 	MembraneElementMetrics* metricsData = new MembraneElementMetrics[numMembranePoints];
 #if CH_SPACEDIM == 2
 	Segment* segmentList = new Segment[numMembranePoints];
@@ -2505,6 +2513,11 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	
 	hid_t file_access = H5P_DEFAULT;
 #ifdef CH_MPI
+	if (CH_SPACEDIM == 3)
+	{
+		pout() << methodName << " 3D mesh is not written in parallel" << endl;
+		return;
+	}
 	file_access = H5Pcreate(H5P_FILE_ACCESS);
 	H5Pset_fapl_mpio(file_access,  MPI_COMM_WORLD, MPI_INFO_NULL);
 #endif

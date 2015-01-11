@@ -62,6 +62,14 @@ CND_ARTIFACT_PATH_Debug_2D_Messaging=dist/Debug_2D_Messaging/Cygwin_4.x_1-Window
 CND_PACKAGE_DIR_Debug_2D_Messaging=dist/Debug_2D_Messaging/Cygwin_4.x_1-Windows/package
 CND_PACKAGE_NAME_Debug_2D_Messaging=vcellchomboparallel.tar
 CND_PACKAGE_PATH_Debug_2D_Messaging=dist/Debug_2D_Messaging/Cygwin_4.x_1-Windows/package/vcellchomboparallel.tar
+# Debug_3D_MPI configuration
+CND_PLATFORM_Debug_3D_MPI=Cygwin_4.x_1-Windows
+CND_ARTIFACT_DIR_Debug_3D_MPI=dist/Debug_3D_MPI/Cygwin_4.x_1-Windows
+CND_ARTIFACT_NAME_Debug_3D_MPI=vcellchombo
+CND_ARTIFACT_PATH_Debug_3D_MPI=dist/Debug_3D_MPI/Cygwin_4.x_1-Windows/vcellchombo
+CND_PACKAGE_DIR_Debug_3D_MPI=dist/Debug_3D_MPI/Cygwin_4.x_1-Windows/package
+CND_PACKAGE_NAME_Debug_3D_MPI=vcellchomboparallel.tar
+CND_PACKAGE_PATH_Debug_3D_MPI=dist/Debug_3D_MPI/Cygwin_4.x_1-Windows/package/vcellchomboparallel.tar
 #
 # include compiler specific variables
 #

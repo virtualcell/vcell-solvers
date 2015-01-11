@@ -31,7 +31,7 @@ DEFAULTCONF=Debug_2D
 CONF=${DEFAULTCONF}
 
 # All Configurations
-ALLCONFS=Debug_2D Release_2D Debug_3D Release_3D Debug_2D_MPI Release_Profile_3D Debug_2D_Messaging 
+ALLCONFS=Debug_2D Release_2D Debug_3D Release_3D Debug_2D_MPI Release_Profile_3D Debug_2D_Messaging Debug_3D_MPI 
 
 
 # build
