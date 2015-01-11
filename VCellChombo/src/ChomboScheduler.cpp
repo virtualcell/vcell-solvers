@@ -14,6 +14,7 @@
 #include <MFIndexSpace.H>
 #include <ComplementIF.H>
 #include <UnionIF.H>
+#include <PolyGeom.H>
 
 #include <VCELL/VarContext.h>
 #include <Expression.h>
