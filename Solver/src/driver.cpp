@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
 		std::cerr <<  argv[0] << " caught unknown exception" << " running " << filename << std::endl; 
 		return 4;
 	}
-	std::cout << "MovingBoundary " << filename << " finished" << std::endl;
+	std::cout << "MovingBoundary " << filename << ", " << reportClient->outputName( ) << " finished" << std::endl;
 }
 
 namespace {

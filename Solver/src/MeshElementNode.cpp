@@ -993,6 +993,9 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 	case bndNbrEdgesFound:
 		setState(bndReacted);
 		break;
+	case inDiffAdvDone:
+	case bndDiffAdvDone:
+		break;
 	default:
 		VCELL_EXCEPTION(domain_error,"Invalid react state " << ident( ));
 	}
@@ -1028,6 +1031,9 @@ void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, BioQu
 		break;
 	case bndReacted:
 		setState(bndDiffAdvDone); 
+		break;
+	case inDiffAdvDone:
+	case bndDiffAdvDone:
 		break;
 	default:
 		badState("Invalid diffuseAdvect state ");

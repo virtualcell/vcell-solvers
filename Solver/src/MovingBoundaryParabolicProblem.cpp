@@ -211,7 +211,8 @@ namespace moving_boundary {
 			generationCount(0),
 			currentTime(0),
 			maxTime(mbs.maxTime),
-			timeStep(mbs.timeStep),
+			frontTimeStep(mbs.timeStep),
+			solverTimeStep(mbs.timeStep),
 			baselineTime(0),
 			baselineGeneration(0),
 			minimimMeshInterval(0),
@@ -258,20 +259,20 @@ namespace moving_boundary {
 			setInitialValues( );
 
 			//check time step
-			if (timeStep == 0) {
-				timeStep = maxTime/mbs.numberTimeSteps;
+			if (mbs.timeStep <= 0) {
+				VCELL_EXCEPTION(domain_error,"invalid time step  " << mbs.timeStep);
 			}
 			CoordinateType cMin = std::min(meshDefinition.interval(spatial::cX),meshDefinition.interval(spatial::cY));
 			minimimMeshInterval = world.distanceToProblemDomain(cMin); 
 			double maxStep = minimimMeshInterval * minimimMeshInterval/(4 * diffusionConstant);
-			if (maxStep < timeStep) {
+			if (maxStep < frontTimeStep) {
 				if (mbs.hardTime) {
-					VCELL_EXCEPTION(logic_error,"hard set input time step " << timeStep << " greater than maximum allowed by problem (" << maxStep << ')');
+					VCELL_EXCEPTION(logic_error,"hard set input time step " << frontTimeStep << " greater than maximum allowed by problem (" << maxStep << ')');
 				}
-				updateTimeStep(maxStep,0);
-				if (timeStep > maxStep) {
-					VCELL_EXCEPTION(logic_error,"calculated input time step " << timeStep << " greater than maximum allowed by problem (" << maxStep << ')');
-				}
+			}
+
+			if (maxStep < solverTimeStep) {
+				solverTimeStep = maxStep;
 			}
 
 			using matlabBridge::MatLabDebug;
@@ -532,7 +533,7 @@ namespace moving_boundary {
 		* @return <timeNow, timeIncrement>
 		*/
 		std::pair<double,double> times(int generationCount) { 
-			double timeNow = baselineTime + (generationCount - baselineGeneration) * timeStep;
+			double timeNow = baselineTime + (generationCount - baselineGeneration) * frontTimeStep;
 			if (timeNow > maxTime) {
 				timeNow = maxTime;
 			}
@@ -543,11 +544,15 @@ namespace moving_boundary {
 		/**
 		* update time step to ensure last step(s) do not proceed past maxTime
 		* for the simulation
+		* @param desiredStep 
+		* @param generationCount for comparing to baseline 
+		* @return time step that gets to end exactly 
 		*/
+
 		void updateTimeStep(double desiredStep, int generationCount) {
 			double intervalTilEnd = maxTime - baselineTime;
 			int n = ceil(intervalTilEnd / desiredStep);
-			timeStep = intervalTilEnd / n;
+			frontTimeStep = intervalTilEnd / n;
 			baselineGeneration = generationCount;
 			baselineTime = currentTime;
 		}
@@ -613,7 +618,7 @@ namespace moving_boundary {
 					break;
 				case spatial::outsideSurface:
 					if (iter->boundaryOffset( ) > 1) {
-					frontTierAdapt::copyPointInto(deepOutside,*iter);
+						frontTierAdapt::copyPointInto(deepOutside,*iter);
 					}
 					else {
 						frontTierAdapt::copyPointInto(outside,*iter);
@@ -747,38 +752,38 @@ namespace moving_boundary {
 			DiffuseAdvect(spatial::DiffuseAdvectCache &c, double d, double ts, bool &errFlag)
 				:dac(c),
 				diffusionConstant(d),
-				timeStep(ts),
+				frontTimeStep(ts),
 				errorFlag(errFlag) {}
 
 			void operator( )(Element & e) {
 				if (e.isInside( )) {
 					VCELL_LOG(trace,e.ident( ) << " diffuseAdvect")
-						e.diffuseAdvect(dac,diffusionConstant, timeStep, errorFlag);
+						e.diffuseAdvect(dac,diffusionConstant, frontTimeStep, errorFlag);
 				}
 			}
 
 			spatial::DiffuseAdvectCache &dac;
 			const double diffusionConstant;
-			const double timeStep;
+			const double frontTimeStep;
 			bool & errorFlag;
 		};
 		/**
 		* Functor react 
 		*/
 		struct React {
-			React(double time_, double timeStep_)
+			React(double time_, double frontTimeStep_)
 				:time(time_),
-				timeStep(timeStep_){}
+				frontTimeStep(frontTimeStep_){}
 
 			void operator( )(Element & e) {
 				if (e.isInside( )) {
 					VCELL_LOG(trace,e.ident( ) << " react")
-						e.react(time, timeStep);
+						e.react(time, frontTimeStep);
 				}
 			}
 
 			const double time;
-			const double timeStep;
+			const double frontTimeStep;
 		};
 
 #if 0
@@ -895,12 +900,12 @@ namespace moving_boundary {
 			* estimate next generation a percent should be output
 			* assumes progressData et. al. have been set externally
 			*/
-			void calculateNextProgress(size_t currentGeneration, double timeStep) {
+			void calculateNextProgress(size_t currentGeneration, double frontTimeStep) {
 				//double nextTime = lastPercentTime + progressDelta;
-				nextProgressGeneration = static_cast<size_t>(progressDelta/timeStep) + currentGeneration;
+				nextProgressGeneration = static_cast<size_t>(progressDelta/frontTimeStep) + currentGeneration;
 				VCELL_KEY_LOG(debug,Key::progressEstimate, "PE lpt " << lastPercentTime << " pd " << progressDelta 
 					//	<< " nextTime " << nextTime 
-					<< " timeStep " << timeStep << " current gen " << currentGeneration 
+					<< " frontTimeStep " << frontTimeStep << " current gen " << currentGeneration 
 					<< " next Gen " << nextProgressGeneration);
 			}
 
@@ -922,7 +927,7 @@ namespace moving_boundary {
 			if (statusPercent > 0)  {
 				percentInfo.simStartTime = currentTime;
 				percentInfo.progressDelta = statusPercent / 100.0 * maxTime;
-				percentInfo.calculateNextProgress(generationCount,timeStep);
+				percentInfo.calculateNextProgress(generationCount,frontTimeStep);
 				if (estimateProgress) {
 					percentInfo.runStartTime = std::chrono::steady_clock::now( );
 				}
@@ -980,47 +985,43 @@ namespace moving_boundary {
 						//					voronoiMesh.matlabPlot(f, &currentFront);
 					}
 					std::for_each(boundaryElements.begin( ),boundaryElements.end( ),MoveFront(*this));
-					//std::for_each(boundaryElements.begin( ),boundaryElements.end( ),FindNeighborEdges( );
 
 
-#ifdef HOLD_FOR_POSSIBLE_IMPLEMENTATION_LATER
-					double diffuseAdvectStep = timeIncr;
-					double totalStepped = 0;
-					int numberDASteps = 1;
-					bool tooBig = false;
-					do {	
-						tooBig = false;
-						for (int step = 0 ; step < numberDASteps; ++step ) {
-							primaryMesh.diffuseAdvectCache( ).clearDiffuseAdvectCache( );
-							std::for_each(primaryMesh.begin( ),primaryMesh.end( ), 
-								DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),diffusionConstant, diffuseAdvectStep, tooBig));
-							if (tooBig) {
-								diffuseAdvectStep /= 2;
-								numberDASteps *= 2; 
-								VCELL_LOG(debug,"Reducing da time step to " << diffuseAdvectStep <<  ", steps = " << numberDASteps);
+					//reaction diffusion advect loop
+					{
+						const double endRDAtime = currentTime + timeIncr;
+						double solverTime = currentTime;
+						double solverIncr = std::min(solverTimeStep,timeIncr);
+						bool looping = solverIncr < timeIncr;
+						for(;;) {
+							assert(solverTime <= endRDAtime);
+							std::for_each(primaryMesh.begin( ),primaryMesh.end( ), React(solverTime,solverIncr) );
+
+							primaryMesh.diffuseAdvectCache( ).start( );
+							bool tooBig = false;
+							try {
+								std::for_each(primaryMesh.begin( ),primaryMesh.end( ), 
+									DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),diffusionConstant, solverIncr, tooBig));
+								if (tooBig) {
+									throw TimeStepTooBig("time step makes mass go negative");
+								}
+							} catch (ReverseLengthException &rle) {
+								std::ofstream s("rle.m");
+								rle.aElement.writeMatlab(s, false, 20);
+								rle.bElement.writeMatlab(s, false, 20);
+								throw;
+							}
+							primaryMesh.diffuseAdvectCache( ).finish( );
+							const double timeLeft = endRDAtime - solverTime;
+							if (timeLeft > 0) {
+								solverIncr = std::min(solverIncr,timeLeft);
+								solverTime += solverIncr;
+							}
+							else {
 								break;
 							}
-							primaryMesh.diffuseAdvectCache( ).checkDiffuseAdvectCache( );
 						}
-					} while (tooBig);
-#endif
-					std::for_each(primaryMesh.begin( ),primaryMesh.end( ), React(currentTime,timeIncr) );
-
-					primaryMesh.diffuseAdvectCache( ).start( );
-					bool tooBig = false;
-					try {
-						std::for_each(primaryMesh.begin( ),primaryMesh.end( ), 
-							DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),diffusionConstant, timeIncr, tooBig));
-						if (tooBig) {
-							throw TimeStepTooBig("time step makes mass go negative");
-						}
-					} catch (ReverseLengthException &rle) {
-						std::ofstream s("rle.m");
-						rle.aElement.writeMatlab(s, false, 20);
-						rle.bElement.writeMatlab(s, false, 20);
-						throw;
 					}
-					primaryMesh.diffuseAdvectCache( ).finish( );
 					if (frontMoveTrace) {
 						debugDump(generationCount,'b');
 					}
@@ -1093,7 +1094,7 @@ namespace moving_boundary {
 							}
 							std::cout << std::endl;
 							percentInfo.lastPercentTime = currentTime;
-							percentInfo.calculateNextProgress(generationCount,timeStep);
+							percentInfo.calculateNextProgress(generationCount,frontTimeStep);
 						}
 					}
 				}
@@ -1125,7 +1126,7 @@ namespace moving_boundary {
 		}
 
 		unsigned int numberTimeSteps( ) const {
-			return static_cast<unsigned int>(maxTime / timeStep);
+			return static_cast<unsigned int>(maxTime / frontTimeStep);
 		}
 		void reportProgress(unsigned char percent, bool estimateTime) {
 			if (!isRunning) {
@@ -1228,7 +1229,7 @@ namespace moving_boundary {
 			vcell_persist::binaryWrite(os,generationCount);
 			vcell_persist::binaryWrite(os,currentTime);
 			//vcell_persist::binaryWrite(os,maxTime);
-			vcell_persist::binaryWrite(os,timeStep);
+			vcell_persist::binaryWrite(os,frontTimeStep);
 			vcell_persist::binaryWrite(os,baselineTime);
 			vcell_persist::binaryWrite(os,baselineGeneration);
 			vcell_persist::binaryWrite(os,minimimMeshInterval);
@@ -1256,7 +1257,7 @@ namespace moving_boundary {
 			generationCount(0),
 			currentTime(0),
 			maxTime(mbs.maxTime),
-			timeStep(mbs.timeStep),
+			frontTimeStep(mbs.timeStep),
 			baselineTime(0),
 			baselineGeneration(0),
 			minimimMeshInterval(0),
@@ -1290,7 +1291,7 @@ namespace moving_boundary {
 			vcell_persist::binaryRead(is,generationCount);
 			vcell_persist::binaryRead(is,currentTime);
 			//vcell_persist::binaryRead(is,maxTime);
-			vcell_persist::binaryRead(is,timeStep);
+			vcell_persist::binaryRead(is,frontTimeStep);
 			vcell_persist::binaryRead(is,baselineTime);
 			vcell_persist::binaryRead(is,baselineGeneration);
 			vcell_persist::binaryRead(is,minimimMeshInterval);
@@ -1322,9 +1323,10 @@ namespace moving_boundary {
 		*/
 		double currentTime;
 		const double maxTime;
-		double timeStep; 
+		double frontTimeStep; 
+		double solverTimeStep; 
 		/**
-		* time last timeStep was calculated
+		* time last frontTimeStep was calculated
 		*/
 		double baselineTime;
 		/**
@@ -1506,7 +1508,7 @@ namespace moving_boundary {
 		return sImpl->meshDef( );
 	}
 	double MovingBoundaryParabolicProblem::baseTimeStep( ) const {
-		return sImpl->timeStep;
+		return sImpl->frontTimeStep;
 	}
 	unsigned int MovingBoundaryParabolicProblem::numberTimeSteps( ) const {
 		return sImpl->numberTimeSteps( );

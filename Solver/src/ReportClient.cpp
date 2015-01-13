@@ -787,6 +787,9 @@ namespace {
 		virtual std::string getXML( ) const {
 			return xml;
 		}
+		virtual std::string outputName( ) const {
+			return file.getFileName( );
+		}
 
 	private:
 		/**
@@ -804,7 +807,7 @@ namespace {
 		* XML used to create
 		*/
 		std::string xml;
-		H5::H5File & file;
+		H5::H5File file;
 		double currentTime; 
 		double totalStuff;
 		double oldStuff;
