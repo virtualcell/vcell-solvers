@@ -381,7 +381,7 @@ namespace {
 				//}
 				//std::cerr << "creating " << groupName << std::endl;
 				//baseGroup = file.createGroup(groupName);
-				const double & bts = mbpp.baseTimeStep( );
+				const double & bts = mbpp.frontTimeStep( );
 				vcellH5::writeAttribute(baseGroup,"requestedTimeStep",bts);
 				const double scaleFactor = world.theScale( );
 				vcellH5::writeAttribute(baseGroup,"scaleFactor",scaleFactor);
@@ -537,7 +537,7 @@ namespace {
 		}
 
 		virtual void time(double t, unsigned int generationCounter, bool last, const moving_boundary::GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) { 
-			double ts = theProblem.baseTimeStep( );
+			double ts = theProblem.frontTimeStep( );
 			if (ts != lastTimeStep) {
 				timeStepTimes.push_back(t);
 				timeStep.push_back(ts);
@@ -779,6 +779,8 @@ namespace {
 
 				vcellH5::SeqFacade<std::vector<double> > ts(timeStep);
 				vcellH5::facadeWrite(baseGroup,"timeStep",ts);
+				const double sts = theProblem.solverTimeStep( );
+				vcellH5::primitiveWrite(baseGroup,"solverTimeStep",sts);
 			}
 			catch (H5::Exception &e) {
 				throw vcellH5::Exception(e);

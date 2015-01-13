@@ -41,7 +41,7 @@ struct VoronoiMesh::VoronoiMeshImpl {
 		for (MBMesh::iterator iter = mesh.begin( ); iter != mesh.end( ); ++iter) {
 			Element & e= *iter;
 			//if (e.boundaryOffset( ) < 2 &&  spatial::inside<FrontPointType>(front,e)) {}
-			if (e.boundaryOffset( ) < 2 &&  insideCache.inside(e) ) {
+			if (e.boundaryOffset( ) < 3 &&  insideCache.inside(e) ) {
 				vprocessor.add(e(cX),e(cY));
 				locations[&e] = voronoiIndex++;
 			}

@@ -497,8 +497,12 @@ namespace moving_boundary {
 			return r;
 		}
 
-		spatial::SVector<moving_boundary::VelocityType,2> frontVelocity(double x, double y) const {
-			//fspy << x << ',' << y << ',' << currentTime << std::endl;
+		/**
+		* front velocity returned in problem domain units
+		* @param x world coordinate
+		* @param y world coordinate
+		*/
+		spatial::SVector<double,2> frontVelocityProbDomain(double x, double y) const {
 			double worldValues[2] = {x,y};
 			enum {ex = 0, ey = 1, et = 2};
 			double syms[3];
@@ -506,7 +510,17 @@ namespace moving_boundary {
 			syms[et] = currentTime; 
 			double vX = frontVelocityExpX.evaluateVector(syms);
 			double vY = frontVelocityExpY.evaluateVector(syms);
-			auto rval =  world.toWorld<moving_boundary::VelocityType>(spatial::SVector<double,2>(vX,vY)); 
+			return spatial::SVector<double,2>(vX,vY);
+		}
+
+		/**
+		* front velocity returned  in world units 
+		* @param x world coordinate
+		* @param y world coordinate
+		*/
+		spatial::SVector<moving_boundary::VelocityType,2> frontVelocity(double x, double y) const {
+			//fspy << x << ',' << y << ',' << currentTime << std::endl;
+			auto rval =  world.toWorld<moving_boundary::VelocityType>(frontVelocityProbDomain(x,y));
 			return rval; 
 		}
 
@@ -722,7 +736,7 @@ namespace moving_boundary {
 				:FunctorBase(o),
 				maxSquaredVel(0){}
 			void operator( )(const spatial::TPoint<CoordinateType,2> & point) {
-				spatial::SVector<VelocityType,2> velVector = this->outer.frontVelocity(point(cX),point(cY));
+				spatial::SVector<double,2> velVector = this->outer.frontVelocityProbDomain(point(cX),point(cY));
 				maxSquaredVel = std::max(maxSquaredVel,velVector.magnitudeSquared( ));
 			}
 			moving_boundary::VelocityType maxSquaredVel;
@@ -949,8 +963,7 @@ namespace moving_boundary {
 				while (currentTime < maxTime) {
 					std::pair<double,double> nowAndStep = times(generationCount); 
 					//TODO -- we're approximating front velocity for time step with velocity at beginning of time step
-					FrontVelocity fv(*this);
-					std::for_each(currentFront.begin( ),currentFront.end( ),fv);
+					FrontVelocity fv = std::for_each(currentFront.begin( ),currentFront.end( ),FrontVelocity(*this));
 					double maxVel = sqrt(fv.maxSquaredVel);
 					double maxTimeStep_ = minimimMeshInterval / (2 * maxVel);
 					if (nowAndStep.second > maxTimeStep_) {
@@ -1507,8 +1520,11 @@ namespace moving_boundary {
 	const spatial::MeshDef<moving_boundary::CoordinateType,2> & MovingBoundaryParabolicProblem::meshDef( ) const {
 		return sImpl->meshDef( );
 	}
-	double MovingBoundaryParabolicProblem::baseTimeStep( ) const {
+	double MovingBoundaryParabolicProblem::frontTimeStep( ) const {
 		return sImpl->frontTimeStep;
+	}
+	double MovingBoundaryParabolicProblem::solverTimeStep( ) const {
+		return sImpl->solverTimeStep;
 	}
 	unsigned int MovingBoundaryParabolicProblem::numberTimeSteps( ) const {
 		return sImpl->numberTimeSteps( );

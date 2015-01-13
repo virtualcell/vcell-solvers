@@ -279,10 +279,14 @@ namespace moving_boundary {
 		bool isOutside( ) const {
 			return !isInside( );
 		}
+
 		/**
 		* maximum offset value computed, used to eliminate unneeded recursive and computation 
 		*/
-		static BoundaryOffsetType maxOffset( ) {
+		BoundaryOffsetType maxOffset( ) const {
+			if (isInside( )) {
+				return 3;
+			}
 			return 2;
 		}
 

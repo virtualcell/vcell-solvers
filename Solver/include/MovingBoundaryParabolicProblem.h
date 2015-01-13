@@ -74,7 +74,14 @@ namespace moving_boundary {
 		void plotPolygons(std::ostream &os) const ;
 		void plotAreas(std::ostream &os) const;
 		const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDef( ) const;
-		double baseTimeStep( ) const;
+		/**
+		* @return time step used for moving front
+		*/
+		double frontTimeStep( ) const;
+		/**
+		* @return time step used by implicit solver
+		*/
+		double solverTimeStep( ) const;
 		unsigned int numberTimeSteps( ) const; 
 		double endTime( ) const;
 		/**

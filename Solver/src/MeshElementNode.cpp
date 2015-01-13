@@ -375,6 +375,7 @@ void MeshElementNode::formBoundaryPolygon( const FrontType & front) {
 			eDebug << pFront << vs;
 		}
 		throw std::logic_error("empty boundary front");
+
 	}
 	VCELL_LOG(debug,this->ident( ) << " new volume " << vol.volume( )) ;
 }

@@ -93,7 +93,8 @@ void MeshElementNode::propagateBoundaryValue() {
 
 	//first pass, set unset neighbors and propagate call to neighbors at same offset
 	size_t setIndex = 0;
-	std::array<MeshElementNode *,8> nodesThatWereSet;
+	std::array<MeshElementNode *,4> nodesThatWereSet;
+	//std::array<MeshElementNode *,8> nodesThatWereSet;
 	/* 
 	* cap offset at maxOffset( ) to minimize unnecesary recursion / computation
 	*/
@@ -113,6 +114,7 @@ void MeshElementNode::propagateBoundaryValue() {
 			}
 		}
 	}
+	/*
 	for (int i = 0; i < cornerNeighbors.ArraySize; i++) {
 		if (cornerNeighbors[i] != nullptr) {
 			OurType & nb = *cornerNeighbors[i];
@@ -127,6 +129,7 @@ void MeshElementNode::propagateBoundaryValue() {
 			}
 		}
 	}
+	*/
 
 	//second pass, tell neighbors we just set to set their unset neighbors
 	for (int i = 0; i < setIndex; i++) {
