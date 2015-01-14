@@ -18,7 +18,7 @@ if (${PARALLEL_CHOMBO_SOLVER})
 	set(CHOMBO_DIR ChomboParallel)
 	set(COMP "mpic++")
 	set(MPITAG "MPI.")
-	set(PARA_EXT "p")
+	set(PARA_EXT "parallel")
 	#A cmake-ism requires the arguments below to be separately enclosed in quotes
 	set(PARALLEL_SUPPLEMENT "MPI=TRUE" "MPICXX=mpic++")
 	INCLUDE (FindMPI)

@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.9)
 include (svnversion.txt)
+include (LocalJNI.cmake)
 
 set(RULE_MESSAGES OFF)
 set(CMAKE_COLOR_MAKEFILE OFF)
@@ -113,7 +114,7 @@ if (NOT MSVC AND NOT APPLE AND NOT LINUX AND NOT CYGWIN)
 endif()
 
 if (MSVC)
-#	add_definitions(-DFORTRAN_BARE)
+	add_definitions(-DFORTRAN_BARE)
 else( ) 
 	add_definitions(-DFORTRAN_UNDERSCORE)
 endif( )
@@ -130,15 +131,18 @@ endif( )
 #
 ##############################################
 if (MSVC)
-	if (MSVC_VERSION LESS 1400)
-    	message(FATAL_ERROR "Visual Studio 8 or higher is required.")
+	if (MSVC_VERSION LESS 1600)
+    	message(FATAL_ERROR "Visual Studio 10 or higher is required.")
 	endif()
+	if (MSVC_VERSION GREATER 1600)
+		message(WARNING "Virtual Cell install program assumes VS 2010")
+	endif( )
 endif()
     
 #############################################
 # installation directories
 #############################################
-set(OPTION_EXE_DIRECTORY "bin" CACHE PATH "installation directory")
+set(OPTION_EXE_DIRECTORY "../bin" CACHE PATH "installation directory")
 set(OPTION_LIB_DIRECTORY "lib" CACHE PATH "library directory")
 
 
@@ -233,6 +237,7 @@ endif()
 # try to find ifort compiler
 #
 #######################################
+if (NOT TARGET_JAVA_BINDING)
 enable_language(Fortran)
 set(IFORT_EXECUTABLE NOTFOUND)
 
@@ -262,6 +267,7 @@ if (IFORT_EXECUTABLE MATCHES IFORT_EXECUTABLE-NOTFOUND AND NOT CYGWIN)
 	message("intel fortran compiler (ifort) not found")
 	set(HY3S_SOLVERS off) 
 endif()
+endif (NOT TARGET_JAVA_BINDING)
 	
 ######################################
 #
@@ -426,7 +432,10 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	add_subdirectory(PCGPack) 
 	add_subdirectory(qhull)
 	if (MSVC)
-		add_subdirectory(glut-3.7.6)
+#		add_subdirectory(glut-3.7.6)
+		if (NOT ZLIB_FOUND)
+			add_subdirectory(zlib)
+		endif()
 	endif()
 	add_subdirectory(smoldyn) 
 	if (${STOCHASTIC_SOLVER})
@@ -440,16 +449,19 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 		#add_subdirectory(VCell_CodeGen)
 	endif(TARGET_SOLVERS_WITH_MESSAGING)
 	add_subdirectory(zip)
-	if (NOT ZLIB_FOUND)
-#		old_#add_subdirectory(zlib)
-	endif()
 endif() 
 
 if (TARGET_JAVA_BINDING)
-	if (CYGWIN OR LINUX)
-		set(JAVA_INCLUDE_PATH ${CMAKE_SOURCE_DIR}/JNI/Linux/include)
-		set(JAVA_AWT_INCLUDE_PATH ${JAVA_INCLUDE_PATH})
-	endif (CYGWIN OR LINUX)
+	if (CYGWIN)
+		LocalJNI( )
+#		set(JAVA_INCLUDE_PATH ${CMAKE_SOURCE_DIR}/JNI/Linux/include)
+#		set(JAVA_AWT_INCLUDE_PATH ${JAVA_INCLUDE_PATH})
+	endif (CYGWIN)
+	if (LINUX)
+		find_package(JNI)
+	endif (LINUX)
+		
+
 	add_subdirectory(ExpressionParser)
 	add_subdirectory(IDAWin)
 	add_subdirectory(sundials)
