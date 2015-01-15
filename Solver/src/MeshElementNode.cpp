@@ -1094,10 +1094,10 @@ void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, BioQu
 				//BioQuanType transferAmount = (diffusionTerm + advectTerm) * edgeLength * timeStep;
 				BioQuanType transferAmount = sum * edgeLength * timeStep;
 				amtMassTransient[s] += transferAmount; 
-				VCELL_COND_LOG(info, s == 0, this->ident( ) << " da " << transferAmount << " from " << nb.ident( ) 
-					<< " u(i) = " << cUs << " u(j) " << cOther << " distance " << neighbors[i].distanceTo 
+				VCELL_COND_LOG(info, s == 0, std::setprecision(12) << this->ident( ) << " da " << transferAmount << " from " << nb.ident( ) 
+					<< " u(i) = " << cUs << " u(j) " << cOther << " distance " << std::setw(10) << neighbors[i].distanceTo 
 					<< " D = " << diffusionConstant << " u(avg) = " << averageConcentration << " advectCoeff " << advectCoeff 
-					<< " advectTerm = " << advectTerm << " edge length " << edgeLength 
+					<< " advectTerm = " << advectTerm << " edge length " << std::setw(10) << edgeLength 
 					<< " timeStep " << timeStep
 					<< " m(i) " << amtMass[0] << " vol(i) = " << volumePD( ) << " m(j) " << nb.amtMass[0] << " vol(j) " << nb.volumePD( ) 
 					); 

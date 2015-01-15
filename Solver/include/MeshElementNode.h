@@ -577,6 +577,13 @@ namespace moving_boundary {
 		void diffuseAdvect(spatial::DiffuseAdvectCache & daCache,moving_boundary::BioQuanType coefficient, moving_boundary::TimeType timeStep, bool & negativeMassError); 
 
 		/**
+		* notify node advect - diffuse cycle is complete
+		*/
+		void advectComplete( ) {
+			std::copy(amtMassTransient.begin( ),amtMassTransient.end( ),amtMass.begin( ));
+		}
+
+		/**
 		* debug dump polygon && voronoi
 		* @param os destination
 		* @param noPoly if true, don't write polygon out

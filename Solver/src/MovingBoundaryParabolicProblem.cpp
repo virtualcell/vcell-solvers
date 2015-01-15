@@ -771,7 +771,7 @@ namespace moving_boundary {
 
 			void operator( )(Element & e) {
 				if (e.isInside( )) {
-					VCELL_LOG(trace,e.ident( ) << " diffuseAdvect")
+					VCELL_LOG(trace,e.ident( ) << " diffuseAdvect");
 						e.diffuseAdvect(dac,diffusionConstant, frontTimeStep, errorFlag);
 				}
 			}
@@ -781,6 +781,19 @@ namespace moving_boundary {
 			const double frontTimeStep;
 			bool & errorFlag;
 		};
+
+		/**
+		* Functor advectComplete
+		*/
+		struct AdvectComplete {
+			void operator( )(Element & e) {
+				if (e.isInside( )) {
+					VCELL_LOG(trace,e.ident( ) << " advectComplete");
+					e.advectComplete( );
+				}
+			}
+		};
+
 		/**
 		* Functor react 
 		*/
@@ -934,6 +947,7 @@ namespace moving_boundary {
 
 		void run( ) {
 			VCELL_LOG(info,"commence simulation");
+			const AdvectComplete advectComplete;
 			Resetter r(isRunning);
 			isRunning = true;
 
@@ -967,7 +981,7 @@ namespace moving_boundary {
 					double maxVel = sqrt(fv.maxSquaredVel);
 					double maxTimeStep_ = minimimMeshInterval / (2 * maxVel);
 					if (nowAndStep.second > maxTimeStep_) {
-						updateTimeStep(maxTimeStep_,generationCount);
+						updateTimeStep(maxTimeStep_,generationCount - 1);
 						nowAndStep = times(generationCount); 
 					}
 					currentTime = nowAndStep.first;
@@ -1016,7 +1030,8 @@ namespace moving_boundary {
 								std::for_each(primaryMesh.begin( ),primaryMesh.end( ), 
 									DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),diffusionConstant, solverIncr, tooBig));
 								if (tooBig) {
-									throw TimeStepTooBig("time step makes mass go negative");
+									VCELL_EXCEPTION(domain_error, "time step " << solverIncr << " makes mass go negative at time " 
+										<< solverTime << " generation " << generationCount);
 								}
 							} catch (ReverseLengthException &rle) {
 								std::ofstream s("rle.m");
@@ -1025,6 +1040,7 @@ namespace moving_boundary {
 								throw;
 							}
 							primaryMesh.diffuseAdvectCache( ).finish( );
+							std::for_each(primaryMesh.begin( ),primaryMesh.end( ), advectComplete);
 							const double timeLeft = endRDAtime - solverTime;
 							if (timeLeft > 0) {
 								solverIncr = std::min(solverIncr,timeLeft);

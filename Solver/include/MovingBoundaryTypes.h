@@ -39,7 +39,7 @@ namespace moving_boundary {
 	typedef int32_t CoordinateType;
 	/**
 	* type used for distances of problem implementation
-	* use double for int32_t, long double for int64_t)
+	* use double for int32_t, long double for int64_t
 	*/
 	typedef vcell::Type<CoordinateType>::realType DistanceType; 
 	/**

@@ -55,6 +55,14 @@ TEST(vcellutil,vcarray) {
 	static_assert(cat.ArraySize == 3, "size");
 	cat[0] = dog[0] = 3;
 }
+TEST(vcellutil,print) {
+	const int spec = 12;
+	const double lvalue = 123456789012;
+	std::cout << std::setw(spec) << std::setprecision(spec) << lvalue << std::endl;
+	std::cout << std::setprecision(spec) << lvalue << std::endl;
+	std::cout << std::setw(spec) << lvalue << std::endl;
+	std::cout << lvalue << std::endl;
+}
 TEST(vcellutil,nochange) {
 	int x = 3;
 	float y = 3.4f;
