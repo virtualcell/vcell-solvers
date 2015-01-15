@@ -46,16 +46,13 @@ namespace moving_boundary {
 		unsigned int frontToNodeRatio;
 		double maxTime;
 		/**
-		* set desired number of time steps
-		* set this or #timeStep
+		* front time step increment
 		*/
-		unsigned int numberTimeSteps;
-
+		double frontTimeStep;
 		/**
-		* set time step increment
-		* set this or #numberTimeSteps;
+		* explicit solver time step 
 		*/
-		double timeStep;
+		double solverTimeStep;
 
 		/**
 		* if true, fail simluation if time set by #numberTimeSteps or #timeStep not numerically stable. If false, time
@@ -94,8 +91,8 @@ namespace moving_boundary {
 			:
 			frontToNodeRatio(5),
 			maxTime( ),
-			numberTimeSteps( ),
-			timeStep(0),
+			frontTimeStep(0),
+			solverTimeStep(0),
 			hardTime(false),
 			//diffusionCoefficient( ),
 			levelFunctionStr( ),
@@ -112,8 +109,8 @@ namespace moving_boundary {
 			:
 			frontToNodeRatio(rhs.frontToNodeRatio),
 			maxTime(rhs.maxTime),
-			numberTimeSteps(rhs.numberTimeSteps),
-			timeStep(rhs.timeStep),
+			frontTimeStep(rhs.frontTimeStep),
+			solverTimeStep(rhs.solverTimeStep),
 			hardTime(rhs.hardTime),
 			//diffusionCoefficient( ),
 			levelFunctionStr(rhs.levelFunctionStr),
@@ -129,8 +126,8 @@ namespace moving_boundary {
 	MovingBoundarySetup &operator= (const MovingBoundarySetup &rhs) {
 			frontToNodeRatio = rhs.frontToNodeRatio;
 			maxTime = rhs.maxTime;
-			numberTimeSteps = rhs.numberTimeSteps;
-			timeStep = rhs.timeStep;
+			frontTimeStep = rhs.frontTimeStep;
+			solverTimeStep = rhs.solverTimeStep;
 			hardTime = rhs.hardTime;
 			//diffusionCoefficient =  ;
 			levelFunctionStr = rhs.levelFunctionStr;

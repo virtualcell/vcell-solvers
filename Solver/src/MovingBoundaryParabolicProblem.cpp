@@ -85,7 +85,8 @@ namespace {
 #define CHECK2(X,Y) checkSet(badset,X, Y,#X);  
 
 				CHECK(mbs.maxTime);
-				CHECK2(mbs.numberTimeSteps, mbs.timeStep);
+				CHECK(mbs.frontTimeStep);
+				CHECK(mbs.solverTimeStep);
 #ifdef OLD_FUNCTION_POINTER_IMPLEMENTATION
 				CHECK2(reinterpret_cast<void *>(mbs.concentrationFunction),mbs.concentrationFunctionStr);
 				CHECK2(reinterpret_cast<void*>(mbs.velocityFunction),mbs.advectVelocityFunctionStrX)
@@ -211,8 +212,8 @@ namespace moving_boundary {
 			generationCount(0),
 			currentTime(0),
 			maxTime(mbs.maxTime),
-			frontTimeStep(mbs.timeStep),
-			solverTimeStep(mbs.timeStep),
+			frontTimeStep(mbs.frontTimeStep),
+			solverTimeStep(mbs.solverTimeStep),
 			baselineTime(0),
 			baselineGeneration(0),
 			minimimMeshInterval(0),
@@ -259,8 +260,8 @@ namespace moving_boundary {
 			setInitialValues( );
 
 			//check time step
-			if (mbs.timeStep <= 0) {
-				VCELL_EXCEPTION(domain_error,"invalid time step  " << mbs.timeStep);
+			if (mbs.frontTimeStep <= 0) {
+				VCELL_EXCEPTION(domain_error,"invalid time step  " << mbs.frontTimeStep);
 			}
 			CoordinateType cMin = std::min(meshDefinition.interval(spatial::cX),meshDefinition.interval(spatial::cY));
 			minimimMeshInterval = world.distanceToProblemDomain(cMin); 
@@ -1286,7 +1287,8 @@ namespace moving_boundary {
 			generationCount(0),
 			currentTime(0),
 			maxTime(mbs.maxTime),
-			frontTimeStep(mbs.timeStep),
+			frontTimeStep(mbs.frontTimeStep),
+			solverTimeStep(mbs.solverTimeStep),
 			baselineTime(0),
 			baselineGeneration(0),
 			minimimMeshInterval(0),

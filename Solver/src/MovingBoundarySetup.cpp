@@ -34,8 +34,8 @@ MovingBoundarySetup::MovingBoundarySetup(std::istream &is)
 	vcell_persist::Token::check<MovingBoundarySetup>(is);
 	vcell_persist::binaryRead(is,frontToNodeRatio);
 	vcell_persist::binaryRead(is,maxTime);
-	vcell_persist::binaryRead(is,numberTimeSteps);
-	vcell_persist::binaryRead(is,timeStep);
+	vcell_persist::binaryRead(is,frontTimeStep);
+	vcell_persist::binaryRead(is,solverTimeStep);
 	vcell_persist::binaryRead(is,hardTime);
 	vcell_persist::StdString<>::restore(is,levelFunctionStr);
 	vcell_persist::StdString<>::restore(is,advectVelocityFunctionStrX);
@@ -59,8 +59,8 @@ void MovingBoundarySetup::persist(std::ostream &os) const {
 	vcell_persist::Token::insert<MovingBoundarySetup>(os);
 	vcell_persist::binaryWrite(os,frontToNodeRatio);
 	vcell_persist::binaryWrite(os,maxTime);
-	vcell_persist::binaryWrite(os,numberTimeSteps);
-	vcell_persist::binaryWrite(os,timeStep);
+	vcell_persist::binaryWrite(os,frontTimeStep);
+	vcell_persist::binaryWrite(os,solverTimeStep);
 	vcell_persist::binaryWrite(os,hardTime);
 	vcell_persist::StdString<>::save(os,levelFunctionStr);
 	vcell_persist::StdString<>::save(os,advectVelocityFunctionStrX);
@@ -98,6 +98,19 @@ namespace {
 		limits = spatial::GeoLimit(low,high);
 	}
 }
+namespace {
+	/**
+	* set value to default if it is zero
+	* @param value to set
+	* @param  deflat default value
+	*/
+	template <typename T>
+	void useDefaultIfZero(T & value, T deflt) {
+		if (value == 0) {
+			value = deflt;
+		}
+	}
+}
 
 moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XMLElement &root) {
 	using vcell_xml::convertChildElement;
@@ -124,8 +137,12 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 	mbSetup.advectVelocityFunctionStrY = convertChildElement<std::string>(prob,"advectVelocityFunctionY");
 	//mbSetup.concentrationFunctionStr = convertChildElement<std::string>(prob,"concentrationFunction");
 
-	mbSetup.numberTimeSteps = vcell_xml::convertChildElementWithDefault<unsigned int>(prob,"numberTimeSteps",0);
-	mbSetup.timeStep = vcell_xml::convertChildElementWithDefault<double>(prob,"timeStep",0);
+	double legacyTS = vcell_xml::convertChildElementWithDefault<double>(prob,"timeStep",0);
+	mbSetup.frontTimeStep = vcell_xml::convertChildElementWithDefault<double>(prob,"frontTimeStep",0);
+	mbSetup.solverTimeStep = vcell_xml::convertChildElementWithDefault<double>(prob,"solverTimeStep",0);
+	useDefaultIfZero(mbSetup.frontTimeStep,legacyTS);
+	useDefaultIfZero(mbSetup.solverTimeStep,mbSetup.frontTimeStep);
+
 	mbSetup.hardTime = convertTrueOrFalse(vcell_xml::convertChildElementWithDefault<const char *>(prob,"hardTime","false"));
 
 	using vcell_xml::convertChildElementWithDefault;
