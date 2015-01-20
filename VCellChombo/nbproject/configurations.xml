@@ -608,7 +608,7 @@
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/vcellchombo</output>
           <linkerAddLib>
             <pElem>../Chombo/lib</pElem>
-            <pElem>../numerics/cmake-build-hdf5/bin</pElem>
+            <pElem>../numerics/cmake-build-hdf5-API16/bin</pElem>
             <pElem>../numerics/cmake-build-cygwin64/bin</pElem>
           </linkerAddLib>
           <linkerLibItems>
@@ -1949,86 +1949,86 @@
       </item>
       <item path="include/VCELL/VolumeVariable.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="src/ChomboDomainBC.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/ChomboDomainBC.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/ChomboEBBC.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/ChomboEBBC.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/ChomboGeometry.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/ChomboGeometry.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/ChomboGeometryShop.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/ChomboGeometryShop.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/ChomboIF.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/ChomboIF.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/ChomboScheduler.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/ChomboScheduler.cpp" ex="false" tool="1" flavor2="9">
       </item>
       <item path="src/ChomboSemiImplicitScheduler.cpp"
             ex="false"
             tool="1"
-            flavor2="0">
+            flavor2="9">
       </item>
-      <item path="src/ChomboSpec.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/ChomboSpec.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/DataGenerator.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/DataGenerator.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/DataSet.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/DataSet.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/FVSolver.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/FVSolver.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/Feature.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/Feature.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/FiniteVolume.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/FiniteVolume.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/JumpCondition.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/JumpCondition.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/Membrane.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/Membrane.cpp" ex="false" tool="1" flavor2="9">
       </item>
       <item path="src/MembraneRegionVarContextExpression.cpp"
             ex="false"
             tool="1"
-            flavor2="0">
+            flavor2="9">
       </item>
-      <item path="src/MembraneRegionVariable.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/MembraneRegionVariable.cpp" ex="false" tool="1" flavor2="9">
       </item>
       <item path="src/MembraneVarContextExpression.cpp"
             ex="false"
             tool="1"
-            flavor2="0">
+            flavor2="9">
       </item>
-      <item path="src/MembraneVariable.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/MembraneVariable.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/PostProcessingBlock.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/PostProcessingBlock.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/PostProcessingHdf5Writer.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/PostProcessingHdf5Writer.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/SimTool.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/SimTool.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/SimulationExpression.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/SimulationExpression.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/SimulationMessaging.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/SimulationMessaging.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/Structure.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/Structure.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/VCellModel.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/VCellModel.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/VarContext.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/VarContext.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/Variable.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/Variable.cpp" ex="false" tool="1" flavor2="9">
       </item>
       <item path="src/VariableStatisticsDataGenerator.cpp"
             ex="false"
             tool="1"
-            flavor2="0">
+            flavor2="9">
       </item>
       <item path="src/VolumeRegionVarContextExpression.cpp"
             ex="false"
             tool="1"
-            flavor2="0">
+            flavor2="9">
       </item>
-      <item path="src/VolumeRegionVariable.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/VolumeRegionVariable.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/VolumeVarContextExpression.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/VolumeVarContextExpression.cpp" ex="false" tool="1" flavor2="9">
       </item>
-      <item path="src/VolumeVariable.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/VolumeVariable.cpp" ex="false" tool="1" flavor2="9">
       </item>
     </conf>
   </confs>
