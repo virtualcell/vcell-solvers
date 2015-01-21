@@ -138,12 +138,6 @@ if (MSVC)
 		message(WARNING "Virtual Cell install program assumes VS 2010")
 	endif( )
 endif()
-    
-#############################################
-# installation directories
-#############################################
-set(OPTION_EXE_DIRECTORY "../bin" CACHE PATH "installation directory")
-set(OPTION_LIB_DIRECTORY "lib" CACHE PATH "library directory")
 
 
 #############################################
@@ -183,6 +177,17 @@ endif()
 if (TARGET_COUNT GREATER 1 OR TARGET_COUNT EQUAL 0)
 	message(FATAL_ERROR "It is required to select one target, either TARGET_SOLVERS_WITH_MESSAGING, or TARGET_SOLVERS_NO_MESSAGING or TARGET_JAVA_BINDING or TARGET_HYBRID_SOLVERS")
 endif()
+
+#############################################
+# installation directories
+#############################################
+if (NOT TARGET_SOLVERS_WITH_MESSAGING)
+	set(OPTION_EXE_DIRECTORY "bin" CACHE PATH "installation directory")
+else (NOT TARGET_SOLVERS_WITH_MESSAGING)
+	set(OPTION_EXE_DIRECTORY "../bin" CACHE PATH "installation directory")
+endif (NOT TARGET_SOLVERS_WITH_MESSAGING)
+
+set(OPTION_LIB_DIRECTORY "lib" CACHE PATH "library directory")
 
 
 #############################################
