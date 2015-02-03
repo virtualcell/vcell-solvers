@@ -8,6 +8,8 @@
 #include <MBridge/MBMatlabGenerator.h>
 #include <MBridge/FigureLimits.h>
 namespace matlabBridge {
+	//forward
+	template <typename T> struct FigureLimitFinder; 
 
 	template <class T>
 	struct TPolygon :public MatlabGenerator {
