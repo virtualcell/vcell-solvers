@@ -122,5 +122,6 @@ namespace matlabBridge {
 		t.write(in);
 		return in;
 	}
+
 }
 #endif

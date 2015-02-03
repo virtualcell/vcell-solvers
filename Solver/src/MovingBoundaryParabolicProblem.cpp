@@ -304,8 +304,10 @@ namespace moving_boundary {
 			if (MatLabDebug::on("tilingmovie")) {
 				std::ofstream master("tilingMovie.m");
 				matlabBridge::Movie movie(master);
+				master << "% move 'axis' command to beginning of file" << std::endl;
 				master << matlabBridge::FigureName("Tiling, the movie");
 				matlabBridge::Polygon pFront("b");
+				matlabBridge::FigureLimits<moving_boundary::CoordinateType> limits;
 				frontTierAdapt::copyVectorInto(pFront,currentFront);
 				int i = 0;
 				for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
@@ -313,10 +315,12 @@ namespace moving_boundary {
 					const Volume2DClass & vol = e.getControlVolume();
 					if (!vol.empty( )) {
 						master << matlabBridge::clearFigure << pFront;
-						e.writeMatlab(master);
+						e.writeMatlab(master, &limits);
 						movie.recordFrame( );
 					}
 				}
+				master << "% move this to top before executing "<< std::endl;
+				master << limits; 
 				movie.play( );
 			}
 #ifdef TEST_DUMP 
@@ -557,11 +561,10 @@ namespace moving_boundary {
 		}
 
 		/**
-		* update time step to ensure last step(s) do not proceed past maxTime
-		* for the simulation
+		* update front time step to ensure last step(s) do not proceed past maxTime
+		* for the simulation, and try make steps as even as possible
 		* @param desiredStep 
 		* @param generationCount for comparing to baseline 
-		* @return time step that gets to end exactly 
 		*/
 
 		void updateTimeStep(double desiredStep, int generationCount) {
@@ -985,14 +988,15 @@ namespace moving_boundary {
 						updateTimeStep(maxTimeStep_,generationCount - 1);
 						nowAndStep = times(generationCount); 
 					}
-					currentTime = nowAndStep.first;
+					//currentTime = nowAndStep.first;
+					const double endOfStepTime = nowAndStep.first;
 					double timeIncr = nowAndStep.second;
 
 					ApplyVelocity mv(*this);
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),mv);
 
-					VCELL_LOG(debug, "moved to time " << currentTime << " generation " << generationCount);
-					vcFront->propagateTo(currentTime); 
+					VCELL_LOG(debug, "moved to time " << endOfStepTime << " generation " << generationCount);
+					vcFront->propagateTo(endOfStepTime); 
 					/*
 					VCellFront *vcp = dynamic_cast<VCellFront *>(vcFront);
 					if (vcp != nullptr) {
@@ -1017,12 +1021,12 @@ namespace moving_boundary {
 
 					//reaction diffusion advect loop
 					{
-						const double endRDAtime = currentTime + timeIncr;
+						//const double endRDAtime = currentTime + timeIncr;
 						double solverTime = currentTime;
 						double solverIncr = std::min(solverTimeStep,timeIncr);
 						bool looping = solverIncr < timeIncr;
 						for(;;) {
-							assert(solverTime <= endRDAtime);
+							assert(solverTime <= endOfStepTime);
 							std::for_each(primaryMesh.begin( ),primaryMesh.end( ), React(solverTime,solverIncr) );
 
 							primaryMesh.diffuseAdvectCache( ).start( );
@@ -1036,13 +1040,13 @@ namespace moving_boundary {
 								}
 							} catch (ReverseLengthException &rle) {
 								std::ofstream s("rle.m");
-								rle.aElement.writeMatlab(s, false, 20);
-								rle.bElement.writeMatlab(s, false, 20);
+								rle.aElement.writeMatlab(s, nullptr,false, 20);
+								rle.bElement.writeMatlab(s, nullptr,false, 20);
 								throw;
 							}
 							primaryMesh.diffuseAdvectCache( ).finish( );
 							std::for_each(primaryMesh.begin( ),primaryMesh.end( ), advectComplete);
-							const double timeLeft = endRDAtime - solverTime;
+							const double timeLeft = endOfStepTime - solverTime;
 							if (timeLeft > 0) {
 								solverIncr = std::min(solverIncr,timeLeft);
 								solverTime += solverIncr;
@@ -1052,6 +1056,8 @@ namespace moving_boundary {
 							}
 						}
 					}
+
+					currentTime = endOfStepTime;
 					if (frontMoveTrace) {
 						debugDump(generationCount,'b');
 					}

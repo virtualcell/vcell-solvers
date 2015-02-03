@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <iomanip>
 #include <MBridge/MBMatlabGenerator.h>
+#include <MBridge/FigureLimits.h>
 namespace matlabBridge {
 
 	template <class T>
@@ -45,7 +46,7 @@ namespace matlabBridge {
 			if (lineWidth > 0) {
 				os << ",'LineWidth'," << lineWidth;
 			}
-			
+
 			os << ");"<< endl;
 		}
 
@@ -65,7 +66,12 @@ namespace matlabBridge {
 		void setPrecision(int p) {
 			precision = p;
 		}
-		 
+
+		FigureLimits<T> figureLimits( ) const {
+			FigureLimitFinder<T> f;
+			f = std::for_each(points.begin( ), points.end( ),f);
+			return FigureLimits<T>(f.minX,f.minY,f.maxX,f.maxY);
+		}
 
 	private:
 		typedef std::pair<T,T> PPair;
@@ -134,12 +140,12 @@ namespace matlabBridge {
 					os << rainbow[polygonCount++];
 					polygonCount %= nColors; //modulo nColors
 				}
-				
+
 				os << "'";
 				if (lineWidth > 0) {
 					os << ",'LineWidth'," << lineWidth;
 				}
-				
+
 				os << ");"<< endl;
 				if (nColors> 0) {
 					os << "% polygon number " <<polygonCount << std::endl;
@@ -157,7 +163,6 @@ namespace matlabBridge {
 			precision = p;
 		}
 
-
 		/**
 		* set variable name so that command to calculate area of poly is generated in #write
 		*/
@@ -167,6 +172,15 @@ namespace matlabBridge {
 
 		void setRainbow(const std::vector<char> & colors) {
 			rainbow = colors;
+		}
+
+		FigureLimits<T> figureLimits( ) const {
+			FigureLimitFinder<T> f;
+
+			for (auto iter = collection.begin( ); iter != collection.end( ); ++iter) {
+				f = std::for_each(iter->begin( ), iter->end( ),f);
+			}
+			return FigureLimits<T>(f.minX,f.minY,f.maxX,f.maxY);
 		}
 
 	private:
@@ -185,6 +199,26 @@ namespace matlabBridge {
 		int precision;
 		std::string polyAreaName;
 		std::vector<char> rainbow; 
+	};
+
+	template <typename T>
+	struct FigureLimitFinder {
+		FigureLimitFinder( )
+			:minX(0),
+			minY(0),
+			maxX(0),
+			maxY(0) {}
+		void operator( )(const std::pair<T,T> &pp) {
+			minX = std::min(minX,pp.first);
+			minY = std::min(minY,pp.second);
+			maxX = std::max(maxX,pp.first);
+			maxY = std::max(maxY,pp.second);
+		}
+
+		T minX;
+		T minY;
+		T maxX;
+		T maxY;
 	};
 
 

@@ -555,7 +555,7 @@ void MeshElementNode::updateBoundaryNeighbors(const VoronoiMesh & vm, std::vecto
 	}
 }
 
-void MeshElementNode::writeMatlab(std::ostream  &os , bool noPoly, int precision) const {
+void MeshElementNode::writeMatlab(std::ostream  &os , matlabBridge::FigureLimits<moving_boundary::CoordinateType> * limits, bool noPoly, int precision) const {
 	World<moving_boundary::CoordinateType,2> & world = World<moving_boundary::CoordinateType,2>::get( );
 	World<moving_boundary::CoordinateType,2>::PointConverter pointconverter = world.pointConverter( );
 
@@ -567,6 +567,9 @@ void MeshElementNode::writeMatlab(std::ostream  &os , bool noPoly, int precision
 			}
 			frontTierAdapt::copyVectorsInto(pVoro,voronoiVolume.points( ));
 			os << pVoro; 
+			if (limits != nullptr) {
+				limits->merge(pVoro.figureLimits( ));
+			}
 		}
 		matlabBridge::Scatter scatter('g',30,true);
 		frontTierAdapt::copyPointInto(scatter,*this);
@@ -582,6 +585,9 @@ void MeshElementNode::writeMatlab(std::ostream  &os , bool noPoly, int precision
 				}
 				frontTierAdapt::copyVectorInto(pPoly,*vvIter);
 				os << pPoly; 
+				if (limits != nullptr) {
+					limits->merge(pPoly.figureLimits( ));
+				}
 			}
 		}
 	}
@@ -959,22 +965,28 @@ namespace {
 	struct ConcToMassAndAdd {
 		typedef moving_boundary::BioQuanType BioQuan; 
 		/**
-		* @parm volume
+		* @param n client node (for logging) 
+		* @param volume
+		* @param timeStep_
 		* @throws std::domain_error if volume < = 0
 		*/
-		ConcToMassAndAdd( moving_boundary::VolumeType volume_, moving_boundary::TimeType timeStep_)
-			:volTimeProduct(volume_ * timeStep_) {
+		ConcToMassAndAdd(MeshElementNode & n ,moving_boundary::VolumeType volume_, moving_boundary::TimeType timeStep_)
+			:node(n),
+			volTimeProduct(volume_ * timeStep_) {
 				if (volume_ <= 0) {
 					throw std::domain_error("ConcToMassAndAdd volume <= 0");
 				}
+				VCELL_KEY_LOG(verbose,Key::extra1,node.ident( ) << " ConcToMass vol: " <<  volume_ << ", timeStep:  " << timeStep_ << " = " << volTimeProduct);
 		}
 
 		BioQuan operator( )(BioQuan mass, BioQuan sourceConcentration) {
 			BioQuan newMass = mass + sourceConcentration * volTimeProduct;
+			VCELL_KEY_LOG(verbose,Key::extra1,node.ident( ) << " react " << mass << " + " << sourceConcentration << " * " << volTimeProduct << " = " << newMass) ;
 			return newMass;
 		}
 
 		const moving_boundary::VolumeTimeProduct volTimeProduct;
+		const MeshElementNode & node;
 	};
 }
 
@@ -1018,7 +1030,8 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 
 	//convert concentrations to mass, add to existing mass
 	assert(sourceTermValues.size( ) >= amtMass.size( ));
-	std::transform(amtMass.begin( ), amtMass.end( ),sourceTermConcentrations.begin( ),amtMass.begin( ), ConcToMassAndAdd(lastVolume, timeStep) );
+	std::transform(amtMass.begin( ), amtMass.end( ),sourceTermConcentrations.begin( ),amtMass.begin( ), ConcToMassAndAdd(*this,lastVolume, timeStep) );
+	std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(lastVolume) );
 
 }
 

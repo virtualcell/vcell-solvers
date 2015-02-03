@@ -18,6 +18,7 @@
 #include <persist.h>
 #include <Physiology.h>
 #include <vcarray.h>
+#include <MBridge/FigureLimits.h>
 #ifdef MESH_ELEMENT_NODE_STATE_TRACK
 #define setState(x) DEBUG_SET_STATE(x, __FILE__, __LINE__)
 #endif
@@ -586,10 +587,11 @@ namespace moving_boundary {
 		/**
 		* debug dump polygon && voronoi
 		* @param os destination
+		* @param limits optional outparam for polygon limits 
 		* @param noPoly if true, don't write polygon out
 		* @param precision std::setprecision( ), 0 uses a default
 		*/
-		void writeMatlab(std::ostream & os , bool noPoly = false, int precision = 0) const;
+		void writeMatlab(std::ostream & os , matlabBridge::FigureLimits<moving_boundary::CoordinateType> * limits = nullptr,bool noPoly = false, int precision = 0) const;
 
 		/**
 		* set scale used to convert distances from problem domain to world coordinates;
@@ -824,6 +826,9 @@ namespace moving_boundary {
 		Volume2DClass voronoiVolume;
 		int nOutside;
 		spatial::SVector<moving_boundary::VelocityType,2> velocity; 
+		/**
+		* cached last stable volume
+		*/
 		moving_boundary::CoordinateProductType lastVolume; 
 
 		/**
