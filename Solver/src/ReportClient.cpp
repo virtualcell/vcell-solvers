@@ -891,7 +891,7 @@ namespace tinyxml2 {
 
 using moving_boundary::ReportClient; 
 using tinyxml2::XMLElement;
-ReportClient * ReportClient::setup(const XMLElement &root, const std::string & filename , moving_boundary::MovingBoundaryParabolicProblem &mbpp) {
+ReportClient * ReportClient::setup(const XMLElement &root, const std::string & h5filename , moving_boundary::MovingBoundaryParabolicProblem &mbpp) {
 	std::string xmlCopy;
 	{
 		tinyxml2::XMLDocument doc;
@@ -907,8 +907,8 @@ ReportClient * ReportClient::setup(const XMLElement &root, const std::string & f
 		const moving_boundary::MovingBoundarySetup & mbs = mbpp.setup( );
 		const XMLElement & report = vcell_xml::get(root,"report");
 		H5::H5File output;
-		if (!filename.empty( )) {
-			output = vcellH5::VH5File(filename.c_str( ),H5F_ACC_TRUNC|H5F_ACC_RDWR);
+		if (!h5filename.empty( )) {
+			output = vcellH5::VH5File(h5filename.c_str( ),H5F_ACC_TRUNC|H5F_ACC_RDWR);
 		}
 		else {
 			std::string filename = vcell_xml::convertChildElement<std::string>(report,"outputFilename");
@@ -916,7 +916,7 @@ ReportClient * ReportClient::setup(const XMLElement &root, const std::string & f
 			if (deleteExisting) {
 				unlink(filename.c_str( ));
 			}
-			output = vcellH5::VH5File(filename.c_str( ),H5F_ACC_TRUNC|H5F_ACC_RDWR);
+			output = vcellH5::VH5File(h5filename.c_str( ),H5F_ACC_TRUNC|H5F_ACC_RDWR);
 		}
 		const char *datasetName = nullptr;
 		std::pair<bool,std::string> dnq = vcell_xml::queryElement<std::string>(report,"datasetName");

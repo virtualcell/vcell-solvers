@@ -976,12 +976,12 @@ namespace {
 				if (volume_ <= 0) {
 					throw std::domain_error("ConcToMassAndAdd volume <= 0");
 				}
-				VCELL_KEY_LOG(verbose,Key::extra1,node.ident( ) << " ConcToMass vol: " <<  volume_ << ", timeStep:  " << timeStep_ << " = " << volTimeProduct);
+				VCELL_KEY_LOG(verbose,Key::reactionTerm,node.ident( ) << " ConcToMass vol: " <<  volume_ << ", timeStep:  " << timeStep_ << " = " << volTimeProduct);
 		}
 
 		BioQuan operator( )(BioQuan mass, BioQuan sourceConcentration) {
 			BioQuan newMass = mass + sourceConcentration * volTimeProduct;
-			VCELL_KEY_LOG(verbose,Key::extra1,node.ident( ) << " react " << mass << " + " << sourceConcentration << " * " << volTimeProduct << " = " << newMass) ;
+			VCELL_KEY_LOG(verbose,Key::reactionTerm,node.ident( ) << " react " << mass << " + " << sourceConcentration << " * " << volTimeProduct << " = " << newMass) ;
 			return newMass;
 		}
 

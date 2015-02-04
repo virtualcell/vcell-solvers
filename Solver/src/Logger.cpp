@@ -76,6 +76,7 @@ Logger::Key Logger::readKey(const char *in) {
 	MATCH(concentrationExpression);
 	MATCH(generationTime);
 	MATCH(progressEstimate);
+	MATCH(reactionTerm);
 	MATCH(extra1);
 	MATCH(extra2);
 # undef MATCH

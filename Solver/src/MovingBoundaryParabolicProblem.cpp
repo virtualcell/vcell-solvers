@@ -265,14 +265,11 @@ namespace moving_boundary {
 			}
 			CoordinateType cMin = std::min(meshDefinition.interval(spatial::cX),meshDefinition.interval(spatial::cY));
 			minimimMeshInterval = world.distanceToProblemDomain(cMin); 
-			double maxStep = minimimMeshInterval * minimimMeshInterval/(4 * diffusionConstant);
-			if (maxStep < frontTimeStep) {
+			double maxStep = minimimMeshInterval * minimimMeshInterval/(4 * diffusionConstant); //8 empirically determined
+			if (maxStep < solverTimeStep) {
 				if (mbs.hardTime) {
 					VCELL_EXCEPTION(logic_error,"hard set input time step " << frontTimeStep << " greater than maximum allowed by problem (" << maxStep << ')');
 				}
-			}
-
-			if (maxStep < solverTimeStep) {
 				solverTimeStep = maxStep;
 			}
 
@@ -770,19 +767,19 @@ namespace moving_boundary {
 			DiffuseAdvect(spatial::DiffuseAdvectCache &c, double d, double ts, bool &errFlag)
 				:dac(c),
 				diffusionConstant(d),
-				frontTimeStep(ts),
+				timeStep(ts),
 				errorFlag(errFlag) {}
 
 			void operator( )(Element & e) {
 				if (e.isInside( )) {
 					VCELL_LOG(trace,e.ident( ) << " diffuseAdvect");
-						e.diffuseAdvect(dac,diffusionConstant, frontTimeStep, errorFlag);
+						e.diffuseAdvect(dac,diffusionConstant, timeStep, errorFlag);
 				}
 			}
 
 			spatial::DiffuseAdvectCache &dac;
 			const double diffusionConstant;
-			const double frontTimeStep;
+			const double timeStep;
 			bool & errorFlag;
 		};
 
@@ -802,19 +799,19 @@ namespace moving_boundary {
 		* Functor react 
 		*/
 		struct React {
-			React(double time_, double frontTimeStep_)
+			React(double time_, double timeStep_)
 				:time(time_),
-				frontTimeStep(frontTimeStep_){}
+				timeStep(timeStep_){}
 
 			void operator( )(Element & e) {
 				if (e.isInside( )) {
 					VCELL_LOG(trace,e.ident( ) << " react")
-						e.react(time, frontTimeStep);
+						e.react(time, timeStep);
 				}
 			}
 
 			const double time;
-			const double frontTimeStep;
+			const double timeStep;
 		};
 
 #if 0
