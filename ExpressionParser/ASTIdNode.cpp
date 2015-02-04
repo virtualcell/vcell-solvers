@@ -12,7 +12,7 @@
 
 using namespace VCell;
 
-ASTIdNode::ASTIdNode(ASTIdNode* node) : Node(node->id) , name(node->name), symbolTableEntry(node->symbolTableEntry) {
+ASTIdNode::ASTIdNode(ASTIdNode* node) : Node(0) , name(node->name), symbolTableEntry(node->symbolTableEntry) {
 }
 
 ASTIdNode::ASTIdNode(int i) : Node(i), symbolTableEntry(NULL)

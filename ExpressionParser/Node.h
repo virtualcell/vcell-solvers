@@ -27,7 +27,7 @@ class NameScope;
 class Node
 {
 public:
-	Node(int i);
+	Node(int unused);
 	virtual ~Node(void);
 	virtual Node* copyTree()=0;
 	virtual void getStackElements(vector<StackElement>& elements)=0;
@@ -64,7 +64,6 @@ public:
 protected:
 	Node* parent;
 	Node** children;
-	int id;
 	int numChildren;
 };
 #endif

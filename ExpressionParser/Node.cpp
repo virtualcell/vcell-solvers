@@ -14,7 +14,6 @@ using std::endl;
 #include "ValueProxy.h"
 
 Node::Node(int i) {
-	id = i;
 	numChildren = 0;
 	children = 0;
 	parent = 0;
