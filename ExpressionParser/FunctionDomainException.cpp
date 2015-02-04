@@ -5,6 +5,6 @@ FunctionDomainException::FunctionDomainException(string msg) : ExpressionExcepti
 	
 }
 
-FunctionDomainException::~FunctionDomainException(void)
+FunctionDomainException::~FunctionDomainException(void) throw( )
 {
 }

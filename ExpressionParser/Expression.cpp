@@ -20,29 +20,42 @@ using std::istringstream;
 //long Expression::derivativeCount = 0;
 //long Expression::substituteCount = 0;
 //long Expression::bindCount = 0;
+using VCell::Expression;
 
-VCell::Expression::Expression(void)
+Expression::Expression(void)
+	:rootNode(NULL),
+	stackMachine(NULL) {}
+
+Expression::Expression(Expression* expression)
+	:rootNode(expression->rootNode->copyTree()),
+	stackMachine(NULL) {}
+
+Expression::Expression(const Expression &rhs)
+	:rootNode(rhs.rootNode->copyTree()),
+	stackMachine(NULL) {}
+
+/**
+* create and bind in single ctor
+* equivalent to default constructor if #expString is empty
+*/
+Expression::Expression(string expString, SymbolTable & symbolTable)
+	:rootNode(NULL),
+	stackMachine(NULL) 
 {
-	rootNode = NULL;
-	stackMachine = NULL;
+	if (!expString.empty( )) {
+		init(expString);
+		bindExpression(&symbolTable);
+	}
 }
 
-VCell::Expression::Expression(Expression* expression)
+Expression::Expression(string expString)
+	:rootNode(NULL),
+	stackMachine(NULL) 
 {
-	this->rootNode = (SimpleNode*)expression->rootNode->copyTree();
-	stackMachine = NULL;
+	init(expString);
 }
 
-VCell::Expression::~Expression(void)
-{
-	delete rootNode;
-	delete stackMachine;
-}
-
-VCell::Expression::Expression(string expString)
-{
-	rootNode = 0;
-	stackMachine = NULL;
+void Expression::init(string expString) {
 
 	if (expString.length() == 0) {
 		throw ParserException("Empty expression");
@@ -71,23 +84,36 @@ VCell::Expression::Expression(string expString)
 	parseExpression(trimstr);
 }
 
-void VCell::Expression::showStackInstructions(void)
+Expression::~Expression(void)
+{
+	delete rootNode;
+	delete stackMachine;
+}
+
+Expression & Expression::operator=(const Expression &rhs) {
+	rootNode = rhs.rootNode->copyTree();
+	delete stackMachine;
+	stackMachine = NULL;
+	return *this;
+}
+
+void Expression::showStackInstructions(void)
 {
 	getStackMachine()->showInstructions();
 	cout.flush();
 }
 
-double VCell::Expression::evaluateConstant(void)
+double Expression::evaluateConstant(void)
 {
 	return getStackMachine()->evaluate(NULL);
 }
 
-double VCell::Expression::evaluateConstantTree()
+double Expression::evaluateConstantTree()
 {
 	return rootNode->evaluate(EVALUATE_CONSTANT);
 }
 
-double VCell::Expression::evaluateVectorTree(double* values)
+double Expression::evaluateVectorTree(double* values)
 {
 	try {
 		return rootNode->evaluate(EVALUATE_VECTOR, values);
@@ -96,12 +122,12 @@ double VCell::Expression::evaluateVectorTree(double* values)
 	}
 }
 
-string VCell::Expression::getEvaluationSummary(double* values)
+string Expression::getEvaluationSummary(double* values)
 {
 	return rootNode->getNodeSummary(values, rootNode);
 }
 
-double VCell::Expression::evaluateVector(double* values)
+double Expression::evaluateVector(double* values)
 {
 	try {
 		return getStackMachine()->evaluate(values);
@@ -110,44 +136,45 @@ double VCell::Expression::evaluateVector(double* values)
 	}
 }
 
-void VCell::Expression::parseExpression(string exp)
+void Expression::parseExpression(string exp)
 {
 	//parseCount++;
 	try {
-		istringstream* iss = new istringstream(exp);
-		ExpressionParser* parser = new ExpressionParser(iss);
-		rootNode = parser->Expression();
+		istringstream iss(exp);
+		ExpressionParser parser(&iss);
+		
+		delete rootNode;
+		rootNode = parser.Expression();
 
 		if (typeid(*rootNode) == typeid(ASTExpression)){
 			if (rootNode->jjtGetNumChildren() == 1){ // we abandon the real root node here, so there is tiny memory leak;
-				rootNode = (SimpleNode*)rootNode->jjtGetChild(0);
-				rootNode->jjtSetParent(NULL);
+				Node * old = rootNode;
+				rootNode = old->abandonChild(0);
+				delete old;
 			}
 		}
-		delete iss;
-		delete parser;
 	} catch (Exception& e) {
 		throw ParserException("Parse Error while parsing expression " + e.getMessage());
 	}
 }
 
-string VCell::Expression::infix(void)
+string Expression::infix(void)
 {
 	return rootNode->infixString(LANGUAGE_DEFAULT, 0);
 }
 
-string VCell::Expression::infix_Visit(void)
+string Expression::infix_Visit(void)
 {
 	return rootNode->infixString(LANGUAGE_VISIT, 0);
 }
 
-void VCell::Expression::bindExpression(SymbolTable* symbolTable)
+void Expression::bindExpression(SymbolTable* symbolTable)
 {	
 	//bindCount++;
 	rootNode->bind(symbolTable);
 }
 
-string VCell::Expression::trim(string str)
+string Expression::trim(string str)
 {
 	int len = (int)str.length();
 	int st = 0;
@@ -162,7 +189,7 @@ string VCell::Expression::trim(string str)
 	return ((st > 0) || (len < (int)str.length())) ?  str.substr(st, len-st) : str;
 }
 
-inline StackMachine* VCell::Expression::getStackMachine() {
+inline StackMachine* Expression::getStackMachine() {
 	if (stackMachine == NULL) {
 		vector<StackElement> elements_vector;
 		rootNode->getStackElements(elements_vector);
@@ -177,21 +204,21 @@ inline StackMachine* VCell::Expression::getStackMachine() {
 	return stackMachine;
 }
 
-void VCell::Expression::getSymbols(vector<string>& symbols) {
+void Expression::getSymbols(vector<string>& symbols) {
 	rootNode->getSymbols(symbols, LANGUAGE_DEFAULT, 0);
 }
 
-SymbolTableEntry* VCell::Expression::getSymbolBinding(string symbol){
+SymbolTableEntry* Expression::getSymbolBinding(string symbol){
 	return rootNode->getBinding(symbol);
 }
 
-double VCell::Expression::evaluateProxy() {
+double Expression::evaluateProxy() {
 	return evaluateVector(0);
 }
 
-void VCell::Expression::substituteInPlace(Expression* origExp, Expression* newExp) {
-	SimpleNode* origNode = origExp->rootNode;
-	SimpleNode* newNode = (SimpleNode*)newExp->rootNode->copyTree();
+void Expression::substituteInPlace(Expression* origExp, Expression* newExp) {
+	Node* origNode = origExp->rootNode;
+	Node* newNode = newExp->rootNode->copyTree();
 	//
 	// first check if must replace entire tree, if not then leaves can deal with it
 	//
@@ -200,4 +227,11 @@ void VCell::Expression::substituteInPlace(Expression* origExp, Expression* newEx
 	} else {
 		rootNode->substitute(origNode, newNode);
 	}
+}
+
+bool Expression::isConstant( ) const {
+	if (rootNode != NULL) {
+		return rootNode->isConstant( );
+	}
+	return false;
 }

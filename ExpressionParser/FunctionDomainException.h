@@ -7,6 +7,6 @@ class FunctionDomainException : public ExpressionException
 {
 public:
 	FunctionDomainException(string msg);
-	~FunctionDomainException(void);
+	~FunctionDomainException(void) throw( );
 };
 #endif

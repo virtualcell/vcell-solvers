@@ -1,6 +1,6 @@
 #include "ExpressionException.h"
 
-ExpressionException::~ExpressionException(void)
+ExpressionException::~ExpressionException(void) throw( )
 {
 }
 

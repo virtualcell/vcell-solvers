@@ -12,10 +12,10 @@
 
 using namespace VCell;
 
-ASTIdNode::ASTIdNode(ASTIdNode* node) : SimpleNode(node->id) , name(node->name), symbolTableEntry(node->symbolTableEntry) {
+ASTIdNode::ASTIdNode(ASTIdNode* node) : Node(0) , name(node->name), symbolTableEntry(node->symbolTableEntry) {
 }
 
-ASTIdNode::ASTIdNode(int i) : SimpleNode(i), symbolTableEntry(NULL)
+ASTIdNode::ASTIdNode(int i) : Node(i), symbolTableEntry(NULL)
 {
 }
 
@@ -133,7 +133,7 @@ bool ASTIdNode::equals(Node* node) {
 	//
 	// check to see if the types and children are the same
 	//
-	if (!SimpleNode::equals(node)){
+	if (!Node::equals(node)){
 		return false;
 	}
 	
@@ -146,4 +146,9 @@ bool ASTIdNode::equals(Node* node) {
 	}
 
 	return true;
+}
+
+//virtual
+bool ASTIdNode::isConstant( ) const {
+	return false;
 }

@@ -2,10 +2,10 @@
 #include "ExpressionException.h"
 #include "ExpressionParserTreeConstants.h"
 
-ASTExpression::ASTExpression() : SimpleNode(JJTEXPRESSION) {
+ASTExpression::ASTExpression() : Node(JJTEXPRESSION) {
 }
 
-ASTExpression::ASTExpression(int i) : SimpleNode(i) {
+ASTExpression::ASTExpression(int i) : Node(i) {
 }
 
 ASTExpression::~ASTExpression() {

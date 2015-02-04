@@ -8,6 +8,6 @@ class RuntimeException : public Exception
 {
 public:
 	RuntimeException(string msg);
-	~RuntimeException(void);
+	~RuntimeException(void) throw( );
 };
 #endif

@@ -1,9 +1,9 @@
 #ifndef ASTORNODE_H
 #define ASTORNODE_H
 
-#include "SimpleNode.h"
+#include "Node.h"
 
-class ASTOrNode : public SimpleNode
+class ASTOrNode : public Node
 {
 public:
 	ASTOrNode(int i);

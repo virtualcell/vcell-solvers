@@ -25,12 +25,16 @@ VCell::Exception::Exception(string msg)
 	message = msg;
 }
 
-VCell::Exception::~Exception(void)
+VCell::Exception::~Exception(void) throw( )
 {
 }
 
 string VCell::Exception::getExactMessage() {
 	return message;
+}
+
+const char * VCell::Exception::what() const throw( ){
+	return message.c_str( );
 }
 
 string VCell::Exception::getMessage(void)

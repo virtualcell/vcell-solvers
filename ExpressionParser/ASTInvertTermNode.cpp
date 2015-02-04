@@ -5,10 +5,10 @@
 #include "ExpressionParserTreeConstants.h"
 #include "StackMachine.h"
 
-ASTInvertTermNode::ASTInvertTermNode() : SimpleNode(JJTINVERTTERMNODE) {
+ASTInvertTermNode::ASTInvertTermNode() : Node(JJTINVERTTERMNODE) {
 }
 
-ASTInvertTermNode::ASTInvertTermNode(int i) : SimpleNode(i) {
+ASTInvertTermNode::ASTInvertTermNode(int i) : Node(i) {
 }
 
 ASTInvertTermNode::~ASTInvertTermNode() {

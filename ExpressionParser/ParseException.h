@@ -10,7 +10,7 @@ class ParseException : public Exception
 public:
 	ParseException();
 	ParseException(string msg);
-	~ParseException(void);
+	~ParseException(void) throw( );
 	Token* currentToken;
 	int** expectedTokenSequences;
 	int numETS;

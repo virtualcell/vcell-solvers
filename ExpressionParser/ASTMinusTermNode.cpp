@@ -3,10 +3,10 @@
 #include "ExpressionParserTreeConstants.h"
 #include "StackMachine.h"
 
-ASTMinusTermNode::ASTMinusTermNode() : SimpleNode(JJTMINUSTERMNODE) {
+ASTMinusTermNode::ASTMinusTermNode() : Node(JJTMINUSTERMNODE) {
 }
 
-ASTMinusTermNode::ASTMinusTermNode(int i) : SimpleNode(i) {
+ASTMinusTermNode::ASTMinusTermNode(int i) : Node(i) {
 }
 
 ASTMinusTermNode::~ASTMinusTermNode() {

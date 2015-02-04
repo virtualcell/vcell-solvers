@@ -4,6 +4,6 @@ ParserException::ParserException(string msg) : ExpressionException("ParserExcept
 {
 }
 
-ParserException::~ParserException(void)
+ParserException::~ParserException(void) throw( )
 {
 }

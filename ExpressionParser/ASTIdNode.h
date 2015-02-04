@@ -1,11 +1,11 @@
 #ifndef ASTIDNODE_H
 #define ASTIDNODE_H
 
-#include "SimpleNode.h"
+#include "Node.h"
 
 class SymbolTableEntry;
 
-class ASTIdNode : public SimpleNode
+class ASTIdNode : public Node
 {
 public:
 	ASTIdNode(int i);
@@ -21,6 +21,10 @@ public:
 
 	Node* copyTree();
 	bool equals(Node* node);
+	/**
+	* @return false
+	*/
+	virtual bool isConstant( ) const;
 
 private:
 	ASTIdNode(ASTIdNode*);

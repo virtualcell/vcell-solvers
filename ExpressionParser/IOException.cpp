@@ -4,6 +4,6 @@ IOException::IOException(string msg) : Exception("IOException: " + msg)
 {	
 }
 
-IOException::~IOException(void)
+IOException::~IOException(void) throw( )
 {
 }

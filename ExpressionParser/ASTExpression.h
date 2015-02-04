@@ -1,9 +1,9 @@
 #ifndef ASTEXPRESSION_H
 #define ASTEXPRESSION_H
 
-#include "SimpleNode.h"
+#include "Node.h"
 
-class ASTExpression : public SimpleNode
+class ASTExpression : public Node
 {
 public:
 	ASTExpression(int i);
