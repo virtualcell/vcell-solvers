@@ -55,7 +55,7 @@ Expression::Expression(string expString)
 	init(expString);
 }
 
-void Expression::init(string expString) {
+void Expression::init(const string & expString) {
 
 	if (expString.length() == 0) {
 		throw ParserException("Empty expression");

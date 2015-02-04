@@ -63,7 +63,7 @@ private:
 	/**
 	* common ctor code
 	*/ 
-	void init(string expString);
+	void init(const string & expString);
 };
 }
 #endif
