@@ -39,7 +39,7 @@ private:
 	void loadJMSInfo(istream& ifsInput, int taskID);
 	void loadModel(istream& ifsInput);
 	void loadSimulation(istream& ifsInput);
-	VCell::Expression* readExpression(istream& ifsInput, string& var_name, string prefix="");
+	VCell::Expression* readExpression(istream& ifsInput, string& var_name);
 	void loadVarContext(istream& ifsInput, Structure* structure, Variable* var);
 	void loadJumpCondition(istream& ifsInput, Membrane*, string& var_name);
 	void loadFeature(istream& ifsInput, Feature* feature);

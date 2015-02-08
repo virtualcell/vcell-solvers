@@ -24,33 +24,35 @@ class ChomboIF: public BaseIF
 {
 public: 
 	ChomboIF(Feature* f, int phaseIndex, string& file);
-  	ChomboIF(Feature* f, int phaseIndex, VCell::Expression* exp);
+	ChomboIF(Feature* f, int phaseIndex, VCell::Expression* ifExp, VCell::Expression* userExp);
 
-  	// copy constructor used by Chombo
-  	ChomboIF(const ChomboIF*);
-  	virtual ~ChomboIF();
+	// copy constructor used by Chombo
+	ChomboIF(const ChomboIF*);
+	virtual ~ChomboIF();
 	
 	/** 
 	 * the level set value = 0 represnets the boundary and value < 0 is inside the fluid
 	 * 
 	 * */
-  	Real value(const RealVect& a_point) const;
-  	BaseIF* newImplicitFunction() const;
+	Real value(const RealVect& a_point) const;
+	Real value(const RealVect& a_point, bool validate) const;
+	BaseIF* newImplicitFunction() const;
 
-  	VCell::Expression* getIFExpression() {
-  		return ifExp;
-  	}
-  	Feature* getFeature() {
-  		return feature;
-  	}
-  	int getPhaseIndex() {
-  		return phaseIndex;
-  	}
+	VCell::Expression* getIFExpression() {
+		return ifExp;
+	}
+	Feature* getFeature() {
+		return feature;
+	}
+	int getPhaseIndex() {
+		return phaseIndex;
+	}
 
 private:
-  	Feature* feature;
-  	int phaseIndex;
-  	VCell::Expression* ifExp;
+	Feature* feature;
+	int phaseIndex;
+	VCell::Expression* ifExp;
+	VCell::Expression* userExp;
 
 	int dimension;
 	IntVect sampleN;

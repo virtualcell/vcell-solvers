@@ -356,9 +356,9 @@ void ChomboScheduler::computeFeatures()
 		{
 			ConnectedComponent* cc = phaseVolumeList[iphase][ivol];
 			bool bfoundMyFeature = false;
-			for (int ilev = 0; ilev < numLevels && !bfoundMyFeature; ++ ilev)
+			for (int ilev = 0; ilev < numLevels; ++ ilev)
 			{
-				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok() && !bfoundMyFeature; ++ dit)
+				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
 				{
 					const Box& currBox = vectGrids[ilev][dit()];
 					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
@@ -367,22 +367,28 @@ void ChomboScheduler::computeFeatures()
 					pout() << "Searching for feature (regular points), iphase: " << iphase << ", ivol: " << ivol
 										<< " , box smallEnd: " << smallEnd << " ; size: " << boxSize << endl;
 #if CH_SPACEDIM==3
-					for (int k = 0; k < boxSize[2] && !bfoundMyFeature; ++ k)
+					for (int k = 0; k < boxSize[2]; ++ k)
 					{
 #endif
-						for (int j = 0; j < boxSize[1] && !bfoundMyFeature; ++ j)
+						for (int j = 0; j < boxSize[1]; ++ j)
 						{
-							for (int i = 0; i < boxSize[0] && !bfoundMyFeature; ++ i)
+							for (int i = 0; i < boxSize[0]; ++ i)
 							{
 								IntVect gridIndex(D_DECL(i + smallEnd[0], j + smallEnd[1], k + smallEnd[2]));
+								// check every regular point to make sure
+								// our IF (R) functions are correct.
 								if (!isInNextFinerLevel(ilev, gridIndex) && currEBISBox.isRegular(gridIndex))
 								{
 									RealVect a_point = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-									cc->feature = chomboGeometry->getFeature(a_point);
+									cc->feature = chomboGeometry->getFeature(a_point, true);
 									cc->feature->setPhase(iphase);
+									if (!bfoundMyFeature)
+									{
+										// only print once
+										pout() << "Found feature (regular) for iphase " << iphase << ", ivol " << ivol
+											<< ", Feature (name, index)=(" << cc->feature->getName() << "," << cc->feature->getIndex() << ")" << endl;
+									}
 									bfoundMyFeature = true;
-									pout() << "Found feature (regular) for iphase " << iphase << ", ivol " << ivol
-										<< ", Feature (name, index)=(" << cc->feature->getName() << "," << cc->feature->getIndex() << ")" << endl;
 								}
 							} // end for i
 						} // end for j
@@ -427,7 +433,7 @@ void ChomboScheduler::computeFeatures()
 								RealVect centroid = currEBISBox.centroid(vof);
 								centroid *= vectDxes[ilev];
 								a_point += centroid;
-								Feature* fi = chomboGeometry->getFeature(a_point);
+								Feature* fi = chomboGeometry->getFeature(a_point, false);
 								if (cc->feature == NULL)
 								{
 									cc->feature = fi;

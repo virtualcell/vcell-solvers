@@ -324,10 +324,9 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 	}
 }
 
-VCell::Expression* FVSolver::readExpression(istream& lineInput, string& var_name, string prefix) {
+VCell::Expression* FVSolver::readExpression(istream& lineInput, string& var_name) {
 	string expStr;
 	getline(lineInput, expStr);
-	expStr = prefix + expStr;
 	trimString(expStr);
 	if (expStr[expStr.size()-1] != ';') {
 		stringstream msg;
@@ -1026,20 +1025,34 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 			int phaseIndex;
 			lineInput >> numSubdomains >> distanceMap;
 
-			// make sure the order of features is the same
-			// as the order of features in model.
-			// actually we can also use feature->getIndex() to identify the index.
-			for (int i = 0; i < numSubdomains; i ++) {
+			for (int i = 0; i < numSubdomains; i ++)
+			{
 				getline(ifsInput, line);
 				istringstream lineInput(line);
 
 				lineInput >> nextToken >> phaseIndex;
 				Feature* feature = model->getFeatureFromName(nextToken);
 
-				if (distanceMap.empty()) {
-					VCell::Expression* exp = readExpression(lineInput, nextToken);
-					chomboGeometry->addSubdomain(feature, phaseIndex, exp);
-				} else {
+				if (distanceMap.empty())
+				{
+					// IF (R) expression
+					getline(ifsInput, line);
+					istringstream lineInput0(line);
+					string whichExp;
+					lineInput0 >> whichExp;
+					string fullName = nextToken + ":" + whichExp;
+					VCell::Expression* ifExp = readExpression(lineInput0, fullName);
+
+					// user expression
+					getline(ifsInput, line);
+					istringstream lineInput1(line);
+					lineInput1 >> whichExp;
+					fullName = nextToken + ":" + whichExp;
+					VCell::Expression* userExp = readExpression(lineInput1, fullName);
+					chomboGeometry->addSubdomain(feature, phaseIndex, ifExp, userExp);
+				} 
+				else
+				{
 					string distanceMapFile;
 					getline(lineInput, distanceMapFile);
 					trimString(distanceMapFile);

@@ -29,10 +29,11 @@ SymbolTable* ChomboGeometry::getGeometrySymbolTable() {
 	return geometrySymbolTable;
 }
 
-void ChomboGeometry::addSubdomain(Feature* feature, int phaseIndex, VCell::Expression* exp)
+void ChomboGeometry::addSubdomain(Feature* feature, int phaseIndex, VCell::Expression* ifExp, VCell::Expression* userExp)
 {
-	exp->bindExpression(getGeometrySymbolTable());
-	chomboIFList.push_back(new ChomboIF(feature, phaseIndex, exp));
+	ifExp->bindExpression(getGeometrySymbolTable());
+	userExp->bindExpression(getGeometrySymbolTable());
+	chomboIFList.push_back(new ChomboIF(feature, phaseIndex, ifExp, userExp));
 }
 
 void ChomboGeometry::addSubdomain(Feature* feature, int phaseIndex, string& distanceMapFile)
@@ -40,10 +41,10 @@ void ChomboGeometry::addSubdomain(Feature* feature, int phaseIndex, string& dist
 	chomboIFList.push_back(new ChomboIF(feature, phaseIndex, distanceMapFile));
 }
 
-Feature* ChomboGeometry::getFeature(const RealVect& a_point) const
+Feature* ChomboGeometry::getFeature(const RealVect& a_point, bool validate) const
 {
 	for (int i = 0; i < (int)chomboIFList.size(); i ++) {
-		double d = chomboIFList[i]->value(a_point);
+		double d = chomboIFList[i]->value(a_point, validate);
 		if (d < 0) { // in this subdomain
 			return chomboIFList[i]->getFeature();
 		}

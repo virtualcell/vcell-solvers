@@ -5,12 +5,14 @@
 #include <Expression.h>
 #include <SimpleSymbolTable.h>
 #include <fstream>
+#include <sstream>
 
-ChomboIF::ChomboIF(Feature* f, int phaseIndex, VCell::Expression* exp)
+ChomboIF::ChomboIF(Feature* f, int phaseIndex, VCell::Expression* exp, VCell::Expression* uexp)
 {
 	this->feature = f;
 	this->phaseIndex = phaseIndex;
 	ifExp = exp;
+	userExp = uexp;
 	distanceMap = NULL;
 }
 
@@ -20,6 +22,7 @@ ChomboIF::ChomboIF(Feature* f, int phaseIndex, string& distanceMapFile)
 	this->phaseIndex = phaseIndex;
 	distanceMap = NULL;
 	ifExp = NULL;
+	userExp = NULL;
 	readDistanceMap(distanceMapFile);
 }
 
@@ -27,9 +30,11 @@ ChomboIF::ChomboIF(const ChomboIF* another)
 {
 	distanceMap = NULL;
 	ifExp = NULL;
+	userExp = NULL;
 	feature = another->feature;
 	phaseIndex = another->phaseIndex;
-	if (another->distanceMap != NULL) {
+	if (another->distanceMap != NULL)
+	{
 		//distanceMapFile = another->distanceMapFile;
 		dimension = another->dimension;
 		sampleH = another->sampleH;
@@ -37,14 +42,19 @@ ChomboIF::ChomboIF(const ChomboIF* another)
 		firstSamplePoint = another->firstSamplePoint;
 		sampleOffsetXY = another->sampleOffsetXY;
 		long dataLength = sampleOffsetXY;
-		if (dimension > 2) {
+		if (dimension > 2)
+		{
 			dataLength *= sampleN[2];
 		}
 		distanceMap = new double[dataLength];
 		memcpy(distanceMap, another->distanceMap, dataLength * sizeof(double));
-	} else {
+	} 
+	else
+	{
 		ifExp = new VCell::Expression(another->ifExp->infix());
 		ifExp->bindExpression(ChomboGeometry::getGeometrySymbolTable());
+		userExp = new VCell::Expression(another->userExp->infix());
+		userExp->bindExpression(ChomboGeometry::getGeometrySymbolTable());
 	}
 }
 
@@ -52,6 +62,7 @@ ChomboIF::~ChomboIF()
 {
 	delete[] distanceMap;
 	delete ifExp;
+	delete userExp;
 }
 
 void ChomboIF::readDistanceMap(string& distanceMapFile) {
@@ -120,12 +131,40 @@ void ChomboIF::readDistanceMap(string& distanceMapFile) {
 
 Real ChomboIF::value(const RealVect& a_point) const
 {
-	if (distanceMap != NULL) {
+	return value(a_point, false);
+}
+
+Real ChomboIF::value(const RealVect& a_point, bool validate) const
+{
+	static string helpMessage = "Try rewriting geometry description without nested boolean expressions.";
+	if (distanceMap == NULL)
+	{
+		double values[3] = {a_point[0], a_point[1], SpaceDim < 3 ? 0.5 : a_point[2]};
+		double ifValue = ifExp->evaluateVector(values);
+		if (validate)
+		{
+			double userValue = userExp->evaluateVector(values);
+			// userValue != 0 means inside
+			// ifValue < 0 means inside
+      if (userValue != 0 && ifValue > 0)
+			{
+				stringstream ss;
+				ss << "In feature " << feature->getName() << ", point " << a_point << " is inside but IF function value is >0 (outside). " << helpMessage;
+				throw ss.str();
+			}
+      if (userValue == 0 && ifValue < 0)
+			{
+				stringstream ss;
+				ss << "In feature " << feature->getName() << ", point " << a_point << " is outside but IF function value is <0 (inside). " << helpMessage;
+				throw ss.str();
+			}
+		}
+		return ifValue;
+	} 
+	else
+	{
 		double v = interpolateDistance(a_point);
 		return v;
-	} else {
-		double values[3] = {a_point[0], a_point[1], SpaceDim < 3 ? 0.5 : a_point[2]};
-		return ifExp->evaluateVector(values);
 	}
 }
 

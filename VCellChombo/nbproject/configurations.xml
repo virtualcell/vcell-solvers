@@ -1095,15 +1095,15 @@
           </linkerAddLib>
           <commandlineTool>g++</commandlineTool>
           <linkerLibItems>
-            <linkerLibLibItem>mftools3d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
-            <linkerLibLibItem>ebamrelliptic3d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
-            <linkerLibLibItem>ebamrtools3d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
-            <linkerLibLibItem>ebtools3d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
-            <linkerLibLibItem>amrelliptic3d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
-            <linkerLibLibItem>amrtools3d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
-            <linkerLibLibItem>workshop3d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
-            <linkerLibLibItem>basetools3d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
-            <linkerLibLibItem>boxtools3d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
+            <linkerLibLibItem>mftools2d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
+            <linkerLibLibItem>ebamrelliptic2d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
+            <linkerLibLibItem>ebamrtools2d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
+            <linkerLibLibItem>ebtools2d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
+            <linkerLibLibItem>amrelliptic2d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
+            <linkerLibLibItem>amrtools2d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
+            <linkerLibLibItem>workshop2d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
+            <linkerLibLibItem>basetools2d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
+            <linkerLibLibItem>boxtools2d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
             <linkerLibLibItem>hdf5_mpi</linkerLibLibItem>
             <linkerLibLibItem>unzip</linkerLibLibItem>
             <linkerLibLibItem>zip</linkerLibLibItem>
