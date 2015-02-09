@@ -18,7 +18,7 @@ namespace VCell {
 		
 		virtual string getExactMessage();
 		string getMessage(void);
-		~Exception(void) throw( );
+		~Exception(void);
 		static void rethrowException(Exception& ex, string replacementMessage="");
 		void replaceMessage(string& replacementMessage);
 		static string add_escapes(string str);
