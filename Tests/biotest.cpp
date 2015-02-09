@@ -7,7 +7,7 @@
 using namespace moving_boundary::biology;
 namespace {
 	void eval(const Species &sp, const std::vector<double> & v) {
-		double ns = sp.evaluate(v);
+		double ns = sp.sourceTerm( ).evaluate(v);
 		std::cout << ns << " " << sp.name( ) << std::endl;
 	}
 }
@@ -40,8 +40,9 @@ TEST(bio,specOp) {
 TEST(bio,physio) {
 	Physiology physio;
 	ASSERT_THROW(physio.numberSymbols( ),std::domain_error);
-	physio.createSpecies("dog","1 + t * cat");
-	physio.createSpecies("cat","2 * cat");
+	physio.createSpecies("dog","1 + t * cat", "3");
+	physio.createSpecies("cat","2 * cat", "0.4");
+	physio.createSpecies("cat","2 * cat", "");
 	std::array<std::string,1> syms = {"t"};
 
 	physio.buildSymbolTable<1>(syms);
@@ -59,5 +60,5 @@ TEST(bio,physio) {
 		std::cout << iter->name( ) << std::endl;
 		//iter->setTable(syms); correctly fails to compile
 	}
-	ASSERT_THROW(physio.createSpecies("alligator","3"), std::domain_error);
+	ASSERT_THROW(physio.createSpecies("alligator","3", "7"), std::domain_error);
 }

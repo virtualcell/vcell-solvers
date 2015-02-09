@@ -188,9 +188,11 @@ namespace spatial {
 			return minInterval;
 		}
 
+		/*
 		species_type numberSpecies( ) const {
 			return numSpecies;
 		}
+		*/
 		/**
 		* translate point from grid coordinates to scaled
 		*/
@@ -308,7 +310,7 @@ namespace spatial {
 			storage(nullptr),
 			daCache(nullptr) {}
 
-		Mesh(const MeshDef<CT,N> &definition) 
+		Mesh(const MeshDef<CT,N> &definition, typename TELEMENT::Environment & env) 
 			:MeshDef<CT,N>(definition),
 			storage(nullptr),
 			daCache(TELEMENT::createCache(definition))
@@ -330,7 +332,7 @@ namespace spatial {
 				}
 				size_t idx = index<N-1>(loop);
 				void * addr = &storage[idx];
-				new (addr) TELEMENT(*this,loop.data( ) ,values.data( )); //placement new
+				new (addr) TELEMENT(env,loop.data( ) ,values.data( )); //placement new
 			}
 			while (increment(0,loop));
 		}
@@ -342,7 +344,7 @@ namespace spatial {
 		Mesh & operator=(Mesh &rhs) {
 		 */
 
-		void restore(std::istream &is) {
+		void restore(std::istream &is, const typename TELEMENT::Environment &env) {
 			static_cast<MeshDef<CT,N> &>(*this) = MeshDef<CT,N>(is);
 			daCache = TELEMENT::createCache(*this);
 			vcell_persist::Token::check<Mesh<CT,N,TELEMENT> >(is); 
@@ -352,7 +354,7 @@ namespace spatial {
 			STORAGE("istream allocated " << needed << " at " << storage)
 			for (size_t i = 0; i < nCells; i++) {
 			void * addr = &storage[i];
-				new (addr) TELEMENT(*this,is); //placement new
+				new (addr) TELEMENT(env,is); //placement new
 			}
 		}
 		

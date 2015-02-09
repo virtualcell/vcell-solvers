@@ -27,6 +27,11 @@ namespace moving_boundary {
 	struct VoronoiMesh;
 	struct MeshElementNode;
 	struct MeshElementNodeIdent;
+	namespace biology {
+		struct Physiology;
+	}
+
+
 	/**
 	* proxy object to stream identifying information about MeshElementNode
 	*/
@@ -235,6 +240,17 @@ namespace moving_boundary {
 	*/
 
 	struct MeshElementNode : public spatial::MPoint<moving_boundary::CoordinateType,2> , public spatial::VolumeMonitor {
+		/**
+		* context information needs by MeshElementNode
+		*/
+		struct Environment {
+			const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh; 
+			const biology::Physiology & physiology;
+			Environment( const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDefinition_,
+				const biology::Physiology & physiology_)
+				:mesh(meshDefinition_),
+				physiology(physiology_) {}
+		};
 		typedef spatial::MeshDef<moving_boundary::CoordinateType,2> MeshDefinition; 
 		typedef spatial::Mesh<moving_boundary::CoordinateType,2,MeshElementNode> MeshType; 
 		typedef spatial::MPoint<moving_boundary::CoordinateType,2> base;
@@ -246,9 +262,9 @@ namespace moving_boundary {
 
 		static spatial::DiffuseAdvectCache *createCache(const MeshDefinition & meshDef);
 
-		MeshElementNode(const MeshDefinition &owner,const size_t *n, const moving_boundary::CoordinateType *values)
+		MeshElementNode(const Environment &env_,const size_t *n, const moving_boundary::CoordinateType *values)
 			:base(n,values),
-			mesh(owner),
+			env(env_),
 			stateVar(State::initial),
 			bndOffset(0),
 			interiorVolume(-1),
@@ -321,7 +337,7 @@ namespace moving_boundary {
 		/**
 		* restore from persistent storage. 
 		*/
-		MeshElementNode(const MeshDefinition &owner, std::istream &is);
+		MeshElementNode(const Environment & , std::istream &is);
 
 		/**
 		* return proxy object identifying this for streaming to an ostream
@@ -330,8 +346,8 @@ namespace moving_boundary {
 			return MeshElementNodeIdent(*this);
 		};
 
-		int numSpecies( ) const {
-			return mesh.numberSpecies( ); 
+		size_t numSpecies( ) const {
+			return env.physiology.numberSpecies( );
 		}
 
 		/**
@@ -571,11 +587,10 @@ namespace moving_boundary {
 		/**
 		* perform diffusion and advection step, storing values in next generation
 		* @param daCache   
-		* @param coefficient "D" -- coefficient to multiply change in concentration / distance 
 		* @param timeStep time step 
 		* @param negativeMassError set if mass goes negative 
 		*/
-		void diffuseAdvect(spatial::DiffuseAdvectCache & daCache,moving_boundary::BioQuanType coefficient, moving_boundary::TimeType timeStep, bool & negativeMassError); 
+		void diffuseAdvect(spatial::DiffuseAdvectCache & daCache,moving_boundary::TimeType timeStep, bool & negativeMassError); 
 
 		/**
 		* notify node advect - diffuse cycle is complete
@@ -785,7 +800,7 @@ namespace moving_boundary {
 		*/
 		void genDebugPlot(std::ostream & dest, const Volume2DClass &ourVolume, const Volume2DClass & intersection, const OurType & nb);
 
-		const MeshDefinition &mesh;
+		const Environment &env;
 
 		MeshElementStateful::State stateVar;
 		/**

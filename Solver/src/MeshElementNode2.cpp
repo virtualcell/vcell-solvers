@@ -168,7 +168,7 @@ void MeshElementNode::badState(const char * const function) const {
 
 MeshElementNode::OurType *MeshElementNode::neighbor(spatial::ElementOffset<2> & eo) const {
 	//nominally unsafe downcast
-	const MeshType * m = static_cast<const MeshType *>(&mesh);
+	const MeshType * m = static_cast<const MeshType *>(&env.mesh);
 	return m->element(*this,eo);
 }
 
@@ -187,9 +187,9 @@ namespace {
 /**
 * see #persist
 */
-MeshElementNode::MeshElementNode(const MeshDefinition &owner,std::istream &is)
+MeshElementNode::MeshElementNode(const Environment &env_,std::istream &is)
 	:base(is),
-	mesh(owner),
+	env(env_),
 	concValue( ),
 	sourceTermValues(concValue),
 	vol(0,this) //required to register this as VolumeMonitor of volume

@@ -134,7 +134,6 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 
 	mbSetup.frontToNodeRatio = convertChildElement<unsigned int>(prob,"frontToNodeRatio");
 	mbSetup.maxTime = convertChildElement<double>(prob,"maxTime");
-	mbSetup.diffusionConstant = convertChildElement<double>(prob,"diffusionConstant");
 	mbSetup.advectVelocityFunctionStrX = convertChildElement<std::string>(prob,"advectVelocityFunctionX");
 	mbSetup.advectVelocityFunctionStrY = convertChildElement<std::string>(prob,"advectVelocityFunctionY");
 	//mbSetup.concentrationFunctionStr = convertChildElement<std::string>(prob,"concentrationFunction");
@@ -170,6 +169,7 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 		mbSetup.alternateFrontProvider = ::frontFromXML(*altFront);
 		std::cout << mbSetup.alternateFrontProvider->describe( ) << std::endl;
 	}
+	std::pair<bool,std::string> defaultDiffQ = vcell_xml::queryElement<std::string>(prob,"diffusionConstant");
 	const XMLElement & physiologyElement = vcell_xml::get(prob,"physiology");
 	const XMLElement *spE = physiologyElement.FirstChildElement("species");
 	size_t sNumber = 0;
@@ -191,7 +191,13 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 		//get other terms 
 		std::string source = vcell_xml::convertChildElement<std::string>(*spE,"source");
 		std::string init = vcell_xml::convertChildElementWithDefault<std::string>(*spE,"initial", source);
-		mbSetup.speciesSpecs.push_back(SpeciesSpecification(name,init,source));
+		std::pair<bool,std::string> dq = vcell_xml::queryElement<std::string>(*spE,"diffusion");
+		if (!dq.first && !defaultDiffQ.first) {
+			VCELL_EXCEPTION(domain_error, "No diffusion specified for " << name); 
+		}
+		const std::string & diffusion  = dq.first ? dq.second : defaultDiffQ.second; 
+		
+		mbSetup.speciesSpecs.push_back(SpeciesSpecification(name,init,source, diffusion));
 
 		spE = spE->NextSiblingElement("species");
 	}

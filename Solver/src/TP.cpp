@@ -1,9 +1,7 @@
-#include <InsideCache.h>
-#include <MovingBoundaryCollections.h>
+#include <iostream>
+#include <MeshElementNode.h>
 
-void f( ) {
-	spatial::InsideCache<moving_boundary::FrontType, moving_boundary::CoordinateType> ic;
-	boost::logic::tribool tb;
-	tb = boost::indeterminate;
+void f(moving_boundary::MeshElementNode &men ) {
+	std::cout << men.ident( );
 
 }

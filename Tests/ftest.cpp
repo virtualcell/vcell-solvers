@@ -235,94 +235,95 @@ namespace {
 	SimpleAlloc sa;
 }
 
-TEST(frontier,classify) {
-	using moving_boundary::FrontPointType;
-	spatial::FronTierVelocityFunction vf = velFunction;
-	using spatial::GeoLimit;
-	std::vector<GeoLimit> limits;
-	limits.push_back(GeoLimit(0,5));
-	limits.push_back(GeoLimit(0,3));
-	mylevel lv;
-	myvel vel;
-	spatial::VCellFront<moving_boundary::CoordinateType> front(limits, 175,1.5, lv,vel); 
-	using spatial::Point2D; 
-	using spatial::cX; 
-	using spatial::cY; 
-	using spatial::Mesh;
-	using spatial::MeshElement;
-	using vcell_util::arrayInit;
-	using std::vector; 
-	vector<FrontPointType> points = front.retrieveSurf( );
-	matlabBridge::Polygon pgon("k");
-	for (vector<FrontPointType>::const_iterator iter = points.begin( );iter != points.end( );++iter) {
-		const FrontPointType & p = *iter;
-		pgon.add(p(cX),p(cY));
-	}
-	moving_boundary::VoronoiMesh::MBMeshDef trial(arrayInit<moving_boundary::CoordinateType>(0,0),arrayInit<moving_boundary::CoordinateType>(5,2), arrayInit<size_t>(35,35));
-
-	typedef moving_boundary::MeshElementNode MPoint2;
-	moving_boundary::VoronoiMesh::MBMesh mView(trial);
-	moving_boundary::VoronoiMesh vm(mView);
-	moving_boundary::Positions<MPoint2> positions = vm.classify2(points);
-	std::ofstream matlabScript("showit.m");
-	matlabBridge::Scatter iScat('b',10);
-
-
-	for (vector<MPoint2 *>::const_iterator iter = positions.inside.begin( );iter != positions.inside.end( );++iter) {
-		const MPoint2 & mp = **iter;
-		iScat.add(mp(cX), mp(cY));
-	}
-
-	matlabBridge::Scatter bScat('r',20);
-	for (vector<MPoint2 *>::const_iterator iter = positions.boundary.begin( );iter != positions.boundary.end( );++iter) {
-		const MPoint2 & mp = **iter;
-		bScat.add(mp(cX), mp(cY));
-	}
-
-	matlabBridge::Scatter oScat('g',10);
-	for (vector<MPoint2 *>::const_iterator iter = positions.outside.begin( );iter != positions.outside.end( );++iter) {
-		const MPoint2 & mp = **iter;
-		oScat.add(mp(cX), mp(cY));
-	}
-	matlabScript << matlabBridge::FigureName("demo") << iScat << bScat << oScat << pgon;
-}
-TEST(frontier,fronttest) {
-	using spatial::GeoLimit;
-	using spatial::Point2D;
-	using spatial::TPoint;
-	spatial::FronTierVelocityFunction vf = velFunction;
-	std::vector<GeoLimit> limits;
-	limits.push_back(GeoLimit(0,5));
-	limits.push_back(GeoLimit(0,3));
-	mylevel lv;
-	myvel vel;
-	//spatial::VCellFront<double> front(limits, 175,1.5, lv,vel); 
-	//spatial::VCellFront<double> front(limits, 175,1.5, levelFuncFingers,vf );
-	spatial::VCellFront<double> front(limits, 100,1.5, levelFunc,vf );
-	using spatial::cX; 
-	using spatial::cY; 
-	using spatial::Mesh;
-	using spatial::MeshElement;
-	typedef std::vector<TPoint<double,2> > DVector; 
-	typedef std::vector<DVector> vectorVector; 
-	std::ofstream matlabScript("polys.m");
-	matlabScript << matlabBridge::FigureName("curves") << matlabBridge::clearFigure;
-	vectorVector curves = front.retrieveCurves( );
-	const char *colors[] = {"k","r","g","b","y"};
-	int c = 0;
-	std::cout << "Number curves " << curves.size( ) << std::endl;
-	for (vectorVector::iterator iter = curves.begin( ); iter != curves.end( );++iter) {
-
-		matlabBridge::Polygon pgon(colors[c++]);
-		assert (c <= sizeof(colors)/sizeof(colors[0]) );
-
-		for (DVector::iterator piter = iter->begin( );piter != iter->end( );++piter) {
-			const Point2D & p = *piter;
-			pgon.add(p(cX),p(cY));
-		}
-		matlabScript << pgon; 
-	}
-}
+//TEST(frontier,classify) {
+//	using moving_boundary::FrontPointType;
+//	spatial::FronTierVelocityFunction vf = velFunction;
+//	using spatial::GeoLimit;
+//	std::vector<GeoLimit> limits;
+//	limits.push_back(GeoLimit(0,5));
+//	limits.push_back(GeoLimit(0,3));
+//	mylevel lv;
+//	myvel vel;
+//	spatial::VCellFront<moving_boundary::CoordinateType> front(limits, 175,1.5, lv,vel); 
+//	using spatial::Point2D; 
+//	using spatial::cX; 
+//	using spatial::cY; 
+//	using spatial::Mesh;
+//	using spatial::MeshElement;
+//	using vcell_util::arrayInit;
+//	using std::vector; 
+//	vector<FrontPointType> points = front.retrieveSurf( );
+//	matlabBridge::Polygon pgon("k");
+//	for (vector<FrontPointType>::const_iterator iter = points.begin( );iter != points.end( );++iter) {
+//		const FrontPointType & p = *iter;
+//		pgon.add(p(cX),p(cY));
+//	}
+//	moving_boundary::VoronoiMesh::MBMeshDef trial(arrayInit<moving_boundary::CoordinateType>(0,0),arrayInit<moving_boundary::CoordinateType>(5,2), arrayInit<size_t>(35,35));
+//
+//
+//	typedef moving_boundary::MeshElementNode MPoint2;
+//	moving_boundary::VoronoiMesh::MBMesh mView(trial);
+//	moving_boundary::VoronoiMesh vm(mView);
+//	moving_boundary::Positions<MPoint2> positions = vm.classify2(points);
+//	std::ofstream matlabScript("showit.m");
+//	matlabBridge::Scatter iScat('b',10);
+//
+//
+//	for (vector<MPoint2 *>::const_iterator iter = positions.inside.begin( );iter != positions.inside.end( );++iter) {
+//		const MPoint2 & mp = **iter;
+//		iScat.add(mp(cX), mp(cY));
+//	}
+//
+//	matlabBridge::Scatter bScat('r',20);
+//	for (vector<MPoint2 *>::const_iterator iter = positions.boundary.begin( );iter != positions.boundary.end( );++iter) {
+//		const MPoint2 & mp = **iter;
+//		bScat.add(mp(cX), mp(cY));
+//	}
+//
+//	matlabBridge::Scatter oScat('g',10);
+//	for (vector<MPoint2 *>::const_iterator iter = positions.outside.begin( );iter != positions.outside.end( );++iter) {
+//		const MPoint2 & mp = **iter;
+//		oScat.add(mp(cX), mp(cY));
+//	}
+//	matlabScript << matlabBridge::FigureName("demo") << iScat << bScat << oScat << pgon;
+//}
+//TEST(frontier,fronttest) {
+//	using spatial::GeoLimit;
+//	using spatial::Point2D;
+//	using spatial::TPoint;
+//	spatial::FronTierVelocityFunction vf = velFunction;
+//	std::vector<GeoLimit> limits;
+//	limits.push_back(GeoLimit(0,5));
+//	limits.push_back(GeoLimit(0,3));
+//	mylevel lv;
+//	myvel vel;
+//	//spatial::VCellFront<double> front(limits, 175,1.5, lv,vel); 
+//	//spatial::VCellFront<double> front(limits, 175,1.5, levelFuncFingers,vf );
+//	spatial::VCellFront<double> front(limits, 100,1.5, levelFunc,vf );
+//	using spatial::cX; 
+//	using spatial::cY; 
+//	using spatial::Mesh;
+//	using spatial::MeshElement;
+//	typedef std::vector<TPoint<double,2> > DVector; 
+//	typedef std::vector<DVector> vectorVector; 
+//	std::ofstream matlabScript("polys.m");
+//	matlabScript << matlabBridge::FigureName("curves") << matlabBridge::clearFigure;
+//	vectorVector curves = front.retrieveCurves( );
+//	const char *colors[] = {"k","r","g","b","y"};
+//	int c = 0;
+//	std::cout << "Number curves " << curves.size( ) << std::endl;
+//	for (vectorVector::iterator iter = curves.begin( ); iter != curves.end( );++iter) {
+//
+//		matlabBridge::Polygon pgon(colors[c++]);
+//		assert (c <= sizeof(colors)/sizeof(colors[0]) );
+//
+//		for (DVector::iterator piter = iter->begin( );piter != iter->end( );++piter) {
+//			const Point2D & p = *piter;
+//			pgon.add(p(cX),p(cY));
+//		}
+//		matlabScript << pgon; 
+//	}
+//}
 TEST(frontier,propagate) {
 	//const int NUMBER_STEPS = 1;
 	//const double TIME_INCREMENT = 0.1;

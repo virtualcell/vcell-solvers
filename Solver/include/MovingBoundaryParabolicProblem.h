@@ -12,6 +12,9 @@ namespace spatial {
 namespace moving_boundary {
 
 	struct MovingBoundaryParabolicProblemImpl;
+	namespace biology {
+		struct Physiology;
+	}
 
 //	typedef double (*ConcentrationFunction)(double x, double y);
 
@@ -74,6 +77,7 @@ namespace moving_boundary {
 		void plotPolygons(std::ostream &os) const ;
 		void plotAreas(std::ostream &os) const;
 		const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDef( ) const;
+		const biology::Physiology & physiology( ) const;
 		/**
 		* @return time step used for moving front
 		*/

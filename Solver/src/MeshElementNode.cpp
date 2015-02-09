@@ -595,8 +595,8 @@ void MeshElementNode::writeMatlab(std::ostream  &os , matlabBridge::FigureLimits
 
 moving_boundary::Volume2DClass MeshElementNode::createInsidePolygon() {
 	Volume2DClass rval(1);
-	const moving_boundary::CoordinateType width = mesh.interval(cX);
-	const moving_boundary::CoordinateType height = mesh.interval(cY);
+	const moving_boundary::CoordinateType width = env.mesh.interval(cX);
+	const moving_boundary::CoordinateType height = env.mesh.interval(cY);
 
 	moving_boundary::CoordinateType x = this->coord[cX] - width / 2;
 	moving_boundary::CoordinateType y = this->coord[cY] - height  / 2;
@@ -622,15 +622,15 @@ void MeshElementNode::volumeToSegments() {
 	while (sa.hasNext( )) {
 		const SegmentType & st = sa.getAndAdvance( );
 		//if horizontal segment longer than cell side, cut into pieces
-		if (st.horizontal( ) &&  ( st.axialDistance(cX) > mesh.interval(cX) ) ) {
+		if (st.horizontal( ) &&  ( st.axialDistance(cX) > env.mesh.interval(cX) ) ) {
 			const CoordinateType & y = st.a( )(cY); 
 			CoordinateType left = st.a( )(cX); 
 			CoordinateType right = st.b( )(cX); 
 			assert (left < right);
 
 			CoordinateType cut = 0;
-			while (right - left > mesh.interval(cX)) {
-				cut = mesh.greaterGridPoint(left,cX); 
+			while (right - left > env.mesh.interval(cX)) {
+				cut = env.mesh.greaterGridPoint(left,cX); 
 				assert(cut < right);
 				segments_.push_back(SegmentType(CoordinatePoint(left,y), CoordinatePoint(cut,y)) );
 				left = cut;
@@ -640,7 +640,7 @@ void MeshElementNode::volumeToSegments() {
 			}
 		}
 		//if vertical segment longer than cell side, cut into pieces
-		else if (st.vertical( ) && st.axialDistance(cY) > mesh.interval(cY)) {
+		else if (st.vertical( ) && st.axialDistance(cY) > env.mesh.interval(cY)) {
 			const CoordinateType & x = st.a( )(cX); 
 			const CoordinateType & a = st.a( )(cY); 
 			const CoordinateType & b = st.b( )(cY); 
@@ -649,8 +649,8 @@ void MeshElementNode::volumeToSegments() {
 			assert (down < up);
 
 			CoordinateType cut = 0;
-			while (up - down > mesh.interval(cY)) {
-				cut = mesh.greaterGridPoint(down,cY); 
+			while (up - down > env.mesh.interval(cY)) {
+				cut = env.mesh.greaterGridPoint(down,cY); 
 				assert(cut < up);
 				segments_.push_back(SegmentType(CoordinatePoint(x,down), CoordinatePoint(x,cut)) );
 				down = cut;
@@ -926,7 +926,7 @@ void MeshElementNode::endOfCycle( ) {
 void MeshElementNode::allocateSpecies( ) {
 	assert(concValue == sourceTermValues); //if this is no longer term, allocate sourceTermValues separately
 
-	const size_t i = mesh.numberSpecies( );
+	const size_t i = numSpecies( );
 	amtMass.resize(i);
 	amtMassTransient.resize(i);
 
@@ -946,13 +946,13 @@ void MeshElementNode::allocateSpecies( ) {
 }
 
 namespace {
-	struct Evaluator {
+	struct SourceTermEvaluator {
 		typedef std::vector <moving_boundary::BioQuanType> ValueVector; 
-		Evaluator (ValueVector & v)
+		SourceTermEvaluator (ValueVector & v)
 			:values(v) {}
 
 		moving_boundary::BioQuanType operator( )(const moving_boundary::biology::Species &sp) {
-			moving_boundary::BioQuanType r = sp.evaluate(values);
+			moving_boundary::BioQuanType r = sp.sourceTerm( ).evaluate(values);
 			return r;
 		}
 
@@ -1026,7 +1026,7 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 	std::vector <moving_boundary::BioQuanType> sourceTermConcentrations(n);
 
 	//evaluate source terms
-	std::transform(physio.beginSpecies( ), physio.endSpecies( ),sourceTermConcentrations.begin( ), Evaluator(sourceTermValues) );
+	std::transform(physio.beginSpecies( ), physio.endSpecies( ),sourceTermConcentrations.begin( ), SourceTermEvaluator(sourceTermValues) );
 
 	//convert concentrations to mass, add to existing mass
 	assert(sourceTermValues.size( ) >= amtMass.size( ));
@@ -1037,7 +1037,7 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 
 using moving_boundary::BioQuanType;
 using moving_boundary::TimeType;
-void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, BioQuanType diffusionConstant, TimeType timeStep, bool & negativeMassError) {
+void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, TimeType timeStep, bool & negativeMassError) {
 	DaCache & ourCache = static_cast<DaCache &>(daCache);
 	switch (state( )) {
 	case inReacted: 
@@ -1098,6 +1098,7 @@ void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, BioQu
 			for (size_t s = 0; s < numSpecies( );s++) {
 				//moving_boundary::BioQuanType cUs = concentration(s); EVAL using concentration
 				//moving_boundary::BioQuanType cOther = nb.concentration(s);
+				BioQuanType diffusionConstant = env.physiology.species(s).diffusionTerm( ).evaluate(sourceTermValues);  
 				BioQuanType cUs = concValue[s]; 
 				BioQuanType cOther = nb.concValue[s];
 				BioQuanType diffusionTerm = diffusionConstant * (cOther - cUs) / neighbors[i].distanceTo;

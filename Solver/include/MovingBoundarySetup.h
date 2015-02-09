@@ -18,6 +18,7 @@ namespace moving_boundary {
 		std::string name;
 		std::string initialConcentrationStr;
 		std::string sourceExpressionStr;
+		std::string diffusionExpressionStr;
 		
 		/**
 		* default to allow storage in vector
@@ -25,16 +26,19 @@ namespace moving_boundary {
 		SpeciesSpecification( )
 			:name( ),
 			initialConcentrationStr( ),
-			sourceExpressionStr( ) {}
+			sourceExpressionStr( ),
+			diffusionExpressionStr( ) {}
 		/**
 		* @param n name
 		* @param i initial concentration 
 		* @param s source (reaction) 
+		* @param d diffusion  
 		*/
-		SpeciesSpecification(std::string n, std::string i, std::string s)
+		SpeciesSpecification(const std::string & n, const std::string & i, const std::string & s,const std::string  &d)
 			:name(n),
 			initialConcentrationStr(i),
-			sourceExpressionStr(s) {}
+			sourceExpressionStr(s),
+			diffusionExpressionStr(d) {}
 
 
 		explicit SpeciesSpecification(std::istream &is) ;

@@ -20,9 +20,12 @@ TEST(persist,mesNeighbor) {
 	const std::array<size_t,2> extent = { 35, 35 }; 
 
 	VoronoiMesh::MBMeshDef trial(origin,edge,extent);
+	moving_boundary::biology::Physiology physio;
+	moving_boundary::MeshElementNode::Environment env(trial,physio);
+
 
 	//typedef moving_boundary::MeshElementNode MPoint2;
-	VoronoiMesh::MBMesh mesh(trial);
+	VoronoiMesh::MBMesh mesh(trial,env);
 	std::array<size_t,2> s= { 3, 4}; 
 	MeshElementNode & sample = mesh.get( s );
 	s[0] += 3;
@@ -60,7 +63,9 @@ TEST(persist,mes) {
 	VoronoiMesh::MBMeshDef trial(origin,edge,extent);
 
 	//typedef moving_boundary::MeshElementNode MPoint2;
-	VoronoiMesh::MBMesh mesh(trial);
+	moving_boundary::biology::Physiology physio;
+	moving_boundary::MeshElementNode::Environment env(trial,physio);
+	VoronoiMesh::MBMesh mesh(trial,env);
 	std::array<size_t,2> s= { 3, 4}; 
 	MeshElementNode & sample = mesh.get( s );
 	MeshElementNode::registerType( );
@@ -75,7 +80,7 @@ TEST(persist,mes) {
 	}
 	std::ifstream in("mes.dat", std::ios::binary);
 	vcell_persist::ReadFormatter wf(in, 1);
-	MeshElementNode back(mesh,in); 
+	MeshElementNode back(env,in); 
 	ASSERT_TRUE(back.volumePD( ) == sample.volumePD( ));
 	ASSERT_TRUE(back.concentration(0) == sample.concentration(0));
 	ASSERT_TRUE(back.mass(0) == sample.mass(0));
@@ -97,7 +102,9 @@ TEST(persist,mesh) {
 	VoronoiMesh::MBMeshDef trial(origin,edge,extent);
 
 	//typedef moving_boundary::MeshElementNode MPoint2;
-	VoronoiMesh::MBMesh mesh(trial);
+	moving_boundary::biology::Physiology physio;
+	moving_boundary::MeshElementNode::Environment env(trial,physio);
+	VoronoiMesh::MBMesh mesh(trial,env);
 	std::array<size_t,2> s= { 3, 4}; 
 	MeshElementNode::registerType( );
 	SVector<moving_boundary::VelocityType,2> vel(3.4,9.5);
@@ -121,14 +128,16 @@ TEST(persist,mesh) {
 	{
 		std::ifstream in("mesh.dat", std::ios::binary);
 		vcell_persist::ReadFormatter wf(in, 1);
-		VoronoiMesh::MBMesh back(in); 
+		VoronoiMesh::MBMesh back;
+		back.restore(in,env);
 		MeshElementNode & sample = back.get( s );
 		ASSERT_TRUE(sample.getVelocity( ) == vel);
 	}
 	{
 		std::ifstream in("mesh2.dat", std::ios::binary);
 		vcell_persist::ReadFormatter wf(in, 7);
-		VoronoiMesh::MBMesh back(in); 
+		VoronoiMesh::MBMesh back;
+		back.restore(in,env);
 		MeshElementNode & sample = back.get( s );
 		ASSERT_TRUE(sample.getVelocity( ) == vel);
 	}

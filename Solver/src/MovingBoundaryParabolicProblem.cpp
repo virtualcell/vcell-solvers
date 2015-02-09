@@ -194,7 +194,6 @@ namespace moving_boundary {
 		typedef MovingBoundaryParabolicProblemImpl Outer;
 		typedef VoronoiMesh VrnMesh;
 		typedef VrnMesh::MBMeshDef MBMeshDef;
-		typedef VrnMesh::Element Element;
 		typedef VrnMesh::MBMesh MBMesh;
 		//typedef VrnMesh::FrontType FrontType;
 		typedef std::vector<spatial::TPoint<moving_boundary::CoordinateType,2> > FrontType;
@@ -208,7 +207,7 @@ namespace moving_boundary {
 			numSpecies(mbs.speciesSpecs.size( )),
 			world(WorldType::get( )),
 			setup_(mbs),
-			diffusionConstant(mbs.diffusionConstant),
+			//diffusionConstant(mbs.diffusionConstant),
 			generationCount(0),
 			currentTime(0),
 			maxTime(mbs.maxTime),
@@ -230,8 +229,10 @@ namespace moving_boundary {
 			vcFront(initFront(world, *this,mbs)),
 			currentFront( ),
 			meshDefinition(createMeshDef(world, mbs, numSpecies)),
+			physiology( ),
+			meNodeEnvironment(meshDefinition,physiology),
 			interiorVolume(calculateInteriorVolume(world, meshDefinition)),
-			primaryMesh(meshDefinition),
+			primaryMesh(meshDefinition,meNodeEnvironment),
 			voronoiMesh(primaryMesh),
 			//alloc( ),
 			boundaryElements( ),
@@ -248,10 +249,15 @@ namespace moving_boundary {
 			MeshElementNode::setProblemToWorldDistanceScale(world.theScale( ));
 
 			assert(nFunctionPointers == 0); 
+			double maxConstantDiffusion = std::numeric_limits<double>::min( );
 			for (int i = 0; i < numSpecies; i++) {
 				const SpeciesSpecification & ss = mbs.speciesSpecs[i];
 				initialConcentrationExpressions[i] = VCell::Expression(ss.initialConcentrationStr,symTable);
-				physiology.createSpecies(ss.name,ss.sourceExpressionStr);
+				const biology::Species & sp = physiology.createSpecies(ss.name,ss.sourceExpressionStr, ss.diffusionExpressionStr);
+				const SExpression & dt = sp.diffusionTerm( );
+				if (dt.isConstant( )) {
+					maxConstantDiffusion = std::max(maxConstantDiffusion, dt.constantValue( ));
+				}
 			}
 			std::array<std::string,3> syms = {"x","y","t"};
 			physiology.buildSymbolTable<3>(syms);
@@ -265,7 +271,7 @@ namespace moving_boundary {
 			}
 			CoordinateType cMin = std::min(meshDefinition.interval(spatial::cX),meshDefinition.interval(spatial::cY));
 			minimimMeshInterval = world.distanceToProblemDomain(cMin); 
-			double maxStep = minimimMeshInterval * minimimMeshInterval/(4 * diffusionConstant); //8 empirically determined
+			double maxStep = minimimMeshInterval * minimimMeshInterval/(4 * maxConstantDiffusion); //8 empirically determined
 			if (maxStep < solverTimeStep) {
 				if (mbs.hardTime) {
 					VCELL_EXCEPTION(logic_error,"hard set input time step " << frontTimeStep << " greater than maximum allowed by problem (" << maxStep << ')');
@@ -280,7 +286,7 @@ namespace moving_boundary {
 				frontTierAdapt::copyVectorInto(pFront,currentFront);
 				int i = 0;
 				for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
-					Element &e = *iter;
+					MeshElementNode &e = *iter;
 					const Volume2DClass & vol = e.getControlVolume();
 					if (!vol.empty( )) {
 						std::stringstream command;
@@ -308,7 +314,7 @@ namespace moving_boundary {
 				frontTierAdapt::copyVectorInto(pFront,currentFront);
 				int i = 0;
 				for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
-					Element &e = *iter;
+					MeshElementNode &e = *iter;
 					const Volume2DClass & vol = e.getControlVolume();
 					if (!vol.empty( )) {
 						master << matlabBridge::clearFigure << pFront;
@@ -340,9 +346,9 @@ namespace moving_boundary {
 					std::array<size_t,2> p = {i    ,j};
 					std::array<size_t,2> r = {i + 1,j};
 					std::array<size_t,2> d = {i    ,j + 1};
-					Element &  e = primaryMesh.get(p);
-					Element & down = primaryMesh.get(d);
-					Element & right = primaryMesh.get(r);
+					MeshElementNode &  e = primaryMesh.get(p);
+					MeshElementNode & down = primaryMesh.get(d);
+					MeshElementNode & right = primaryMesh.get(r);
 					CoordinateType hGap = right(cX) - e(cX); 
 					CoordinateType vGap = down(cY) - e(cY); 
 					if (hGap != hSpace) {
@@ -358,11 +364,11 @@ namespace moving_boundary {
 			delete vcFront;
 		}
 
-		void setInterior(Element &e) {
+		void setInterior(MeshElementNode &e) {
 			e.setInteriorVolume(interiorVolume);
 		}
 
-		void setConcentrations( vector<ConcentrationProvider> & concExp, Element & e) {
+		void setConcentrations( vector<ConcentrationProvider> & concExp, MeshElementNode & e) {
 			e.allocateSpecies();
 			ProblemDomainPoint pdp = world.toProblemDomain(e);
 			for (int i = 0; i< numSpecies; i++) {
@@ -384,7 +390,7 @@ namespace moving_boundary {
 			}
 			assert(concExp.size( ) == numSpecies);
 
-			for (Element & e: primaryMesh) {
+			for (MeshElementNode & e: primaryMesh) {
 				e.setInteriorVolume(interiorVolume);
 				e.setPhysiology(physiology);
 			}
@@ -397,26 +403,26 @@ namespace moving_boundary {
 			assert(currentFront.front( ) == currentFront.back( ));  //verify closed 
 			voronoiMesh.setFront(currentFront);
 
-			//spatial::Positions<Element> positions = spatial::classify2(voronoiMesh,currentFront);
-			moving_boundary::Positions<Element> positions = voronoiMesh.classify2(currentFront);
-			for (vector<Element *>::iterator iter = positions.inside.begin( ); iter != positions.inside.end( ); ++iter) {
-				Element  & insideElement = **iter;
+			//spatial::Positions<MeshElementNode> positions = spatial::classify2(voronoiMesh,currentFront);
+			moving_boundary::Positions<MeshElementNode> positions = voronoiMesh.classify2(currentFront);
+			for (vector<MeshElementNode *>::iterator iter = positions.inside.begin( ); iter != positions.inside.end( ); ++iter) {
+				MeshElementNode  & insideElement = **iter;
 				setConcentrations(concExp,insideElement);
 				insideElement.getControlVolume();
 			}
-			for (vector<Element *>::iterator iter = positions.boundary.begin( ); iter != positions.boundary.end( ); ++iter) {
-				Element  & boundaryElement = **iter;
+			for (vector<MeshElementNode *>::iterator iter = positions.boundary.begin( ); iter != positions.boundary.end( ); ++iter) {
+				MeshElementNode  & boundaryElement = **iter;
 				setConcentrations(concExp,boundaryElement);
 				boundaryElements.push_back(&boundaryElement);
 				boundaryElement.findNeighborEdges();
 			}
 			/*
-			for (vector<Element *>::iterator iter = positions.outside.begin( ); iter != positions.outside.end( ); ++iter) {
+			for (vector<MeshElementNode *>::iterator iter = positions.outside.begin( ); iter != positions.outside.end( ); ++iter) {
 			}
 			*/
 		}
 
-		void boundaryElementSetup(Element & bElem) {
+		void boundaryElementSetup(MeshElementNode & bElem) {
 			assert (bElem.mPos( ) == spatial::boundarySurface);
 		}
 
@@ -662,7 +668,7 @@ namespace moving_boundary {
 			dump << pPoly; 
 		}
 
-		static void commenceSimulation(Element &e) {
+		static void commenceSimulation(MeshElementNode &e) {
 			e.beginSimulation( );
 		}
 
@@ -682,7 +688,7 @@ namespace moving_boundary {
 		struct MoveFront : public FunctorBase {
 			MoveFront(Outer &o)
 				:FunctorBase(o){}
-			void operator( )(Element * p) {
+			void operator( )(MeshElementNode * p) {
 				assert(p != nullptr);
 				VCELL_LOG(trace,p->indexInfo( ) << " front move")
 					if (p->mPos() == spatial::boundarySurface) {
@@ -701,7 +707,7 @@ namespace moving_boundary {
 			FindNeighborEdges (Outer &o)
 				:FunctorBase(o) {}
 
-			void operator( )(Element * p) {
+			void operator( )(MeshElementNode * p) {
 				if (p->isInside( ) ) {
 					p->findNeighborEdges( );
 				}
@@ -717,7 +723,7 @@ namespace moving_boundary {
 			MaxVel (Outer &o)
 				:FunctorBase(o),
 				maxVel(0) {}
-			void operator( )(Element & e) {
+			void operator( )(MeshElementNode & e) {
 				VCELL_LOG(trace,e.indexInfo( ) << " max velocity")
 					SVector<double,2> v = this->outer.velocity(e(cX),e(cY));
 				maxVel  = std::max(maxVel, v(cX));
@@ -751,7 +757,7 @@ namespace moving_boundary {
 			ApplyVelocity (Outer &o)
 				:FunctorBase(o),
 				maxVel(0){}
-			void operator( )(Element & e) {
+			void operator( )(MeshElementNode & e) {
 				VCELL_LOG(trace,e.indexInfo( ) << " set velocity");
 				spatial::SVector<moving_boundary::VelocityType,2> v = this->outer.advectionVelocity(e(cX),e(cY));
 				e.setVelocity(v);
@@ -764,21 +770,19 @@ namespace moving_boundary {
 		* Functor diffuseAdvect
 		*/
 		struct DiffuseAdvect {
-			DiffuseAdvect(spatial::DiffuseAdvectCache &c, double d, double ts, bool &errFlag)
+			DiffuseAdvect(spatial::DiffuseAdvectCache &c, double ts, bool &errFlag)
 				:dac(c),
-				diffusionConstant(d),
 				timeStep(ts),
 				errorFlag(errFlag) {}
 
-			void operator( )(Element & e) {
+			void operator( )(MeshElementNode & e) {
 				if (e.isInside( )) {
 					VCELL_LOG(trace,e.ident( ) << " diffuseAdvect");
-						e.diffuseAdvect(dac,diffusionConstant, timeStep, errorFlag);
+						e.diffuseAdvect(dac,timeStep, errorFlag);
 				}
 			}
 
 			spatial::DiffuseAdvectCache &dac;
-			const double diffusionConstant;
 			const double timeStep;
 			bool & errorFlag;
 		};
@@ -787,7 +791,7 @@ namespace moving_boundary {
 		* Functor advectComplete
 		*/
 		struct AdvectComplete {
-			void operator( )(Element & e) {
+			void operator( )(MeshElementNode & e) {
 				if (e.isInside( )) {
 					VCELL_LOG(trace,e.ident( ) << " advectComplete");
 					e.advectComplete( );
@@ -803,7 +807,7 @@ namespace moving_boundary {
 				:time(time_),
 				timeStep(timeStep_){}
 
-			void operator( )(Element & e) {
+			void operator( )(MeshElementNode & e) {
 				if (e.isInside( )) {
 					VCELL_LOG(trace,e.ident( ) << " react")
 						e.react(time, timeStep);
@@ -819,7 +823,7 @@ namespace moving_boundary {
 		* Functor ClearDiffuseAdvect
 		*/
 		struct ClearDiffuseAdvect {
-			void operator( )(Element & e) {
+			void operator( )(MeshElementNode & e) {
 				if (e.mPos( ) != outsideSurface) {
 					VCELL_LOG(trace,e.ident( ) << " clearDiffuseAdvect")
 						e.clearDiffuseAdvectAmounts( );
@@ -836,7 +840,7 @@ namespace moving_boundary {
 		struct CollectMass : public FunctorBase {
 			CollectMass (Outer &o)
 				:FunctorBase(o) {}
-			void operator( )(Element *p) {
+			void operator( )(MeshElementNode *p) {
 				VCELL_LOG(trace,p->ident( ) << " collectMass")
 					p->collectMass(this->outer.currentFront);
 			}
@@ -849,7 +853,7 @@ namespace moving_boundary {
 		struct ApplyFront : public FunctorBase {
 			ApplyFront(Outer &o)
 				:FunctorBase(o) {}
-			void operator( )(Element *p) {
+			void operator( )(MeshElementNode *p) {
 				VCELL_LOG(trace,p->ident( ) << " applyFront")
 					p->applyFront(this->outer.currentFront, this->outer.interiorVolume);
 			}
@@ -860,7 +864,7 @@ namespace moving_boundary {
 		* distribute lost mass 
 		*/
 		struct DistributeLost { //OPTIMIZE -- keep collection of objects in state 
-			void operator( )(Element &e) {
+			void operator( )(MeshElementNode &e) {
 				VCELL_LOG(trace,e.indexInfo( ) << " distributeLost")
 					e.distributeMassToNeighbors();
 			}
@@ -873,7 +877,7 @@ namespace moving_boundary {
 		struct EndCycle : public FunctorBase {
 			EndCycle(Outer &o)
 				:FunctorBase(o) {}
-			void operator( )(Element &e) {
+			void operator( )(MeshElementNode &e) {
 				VCELL_LOG(trace,e.indexInfo( ) << " end of cycle");
 				e.endOfCycle( );
 			}
@@ -1030,7 +1034,7 @@ namespace moving_boundary {
 							bool tooBig = false;
 							try {
 								std::for_each(primaryMesh.begin( ),primaryMesh.end( ), 
-									DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),diffusionConstant, solverIncr, tooBig));
+									DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),solverIncr, tooBig));
 								if (tooBig) {
 									VCELL_EXCEPTION(domain_error, "time step " << solverIncr << " makes mass go negative at time " 
 										<< solverTime << " generation " << generationCount);
@@ -1206,7 +1210,7 @@ namespace moving_boundary {
 			ElementToIndex(const Outer &o)
 				:FunctorBase(o) {}
 
-			ElementStorageType operator( )(const Element *in) {
+			ElementStorageType operator( )(const MeshElementNode *in) {
 				spatial::MeshPosition mp = outer.primaryMesh.indexOf(in->indexes( ));
 				return mp.to<ElementStorageType>( ); 
 			}
@@ -1219,7 +1223,7 @@ namespace moving_boundary {
 			IndexToElement(const Outer &o)
 				:FunctorBase(o) {}
 
-			Element * operator( )(ElementStorageType i) {
+			MeshElementNode * operator( )(ElementStorageType i) {
 				spatial::MeshPosition mp(i);
 				return & outer.primaryMesh.get(mp);
 			}
@@ -1286,7 +1290,7 @@ namespace moving_boundary {
 			numSpecies(mbs.speciesSpecs.size( )),
 			world(WorldType::get( )),
 			setup_(mbs),
-			diffusionConstant(mbs.diffusionConstant),
+			//diffusionConstant(mbs.diffusionConstant),
 			generationCount(0),
 			currentTime(0),
 			maxTime(mbs.maxTime),
@@ -1308,6 +1312,8 @@ namespace moving_boundary {
 			vcFront(nullptr),
 			currentFront( ),
 			meshDefinition( ),
+			physiology( ),
+			meNodeEnvironment(meshDefinition,physiology),
 			interiorVolume( ),
 			primaryMesh(),
 			voronoiMesh(),
@@ -1333,7 +1339,7 @@ namespace moving_boundary {
 			vcell_persist::restore(is,currentFront);
 			meshDefinition = MBMeshDef(is);
 			//MBMesh temp(is);
-			primaryMesh.restore(is);
+			primaryMesh.restore(is, meNodeEnvironment);
 			vcell_persist::binaryRead(is,interiorVolume);
 
 			restoreElementsVector(is, boundaryElements);
@@ -1349,7 +1355,7 @@ namespace moving_boundary {
 		const int numSpecies;
 		WorldType & world;
 		const MovingBoundarySetup setup_;
-		const double diffusionConstant;
+		//const double diffusionConstant;
 
 		size_t generationCount;
 		/**
@@ -1392,6 +1398,8 @@ namespace moving_boundary {
 		spatial::FrontProvider<moving_boundary::CoordinateType> * vcFront;
 		FrontType currentFront;
 		MBMeshDef meshDefinition;
+		biology::Physiology physiology;
+		MeshElementNode::Environment meNodeEnvironment;
 
 		/**
 		* standard volume of inside point
@@ -1403,25 +1411,20 @@ namespace moving_boundary {
 		/**
 		* current boundary elements
 		*/
-		//typedef std::forward_list<Element *> ElementList; 
-		std::vector<Element *> boundaryElements;
+		//typedef std::forward_list<MeshElementNode *> ElementList; 
+		std::vector<MeshElementNode *> boundaryElements;
 		/**
 		* elements "lost" (moved outside of boundary) during transition between generations
 		* point to previous generation 
 		*/
-		std::vector<const Element *> lostElements;
+		std::vector<const MeshElementNode *> lostElements;
 		/**
 		* elements "gained" (moved inside of boundary) during transition between generations
 		* point to next generation 
 		*/
-		std::vector<Element *> gainedElements;
+		std::vector<MeshElementNode *> gainedElements;
 		unsigned char statusPercent;
 		bool estimateProgress;
-		/**
-		* represent physiology stuff here for now ...
-		* will likely become domain specific in the future
-		*/
-		biology::Physiology physiology;
 
 		/**
 		* runtime flag (not-persistent)
@@ -1443,7 +1446,7 @@ namespace moving_boundary {
 	namespace {
 		struct Evaluator {
 			virtual ~Evaluator( ) {}
-			virtual double evaluate(MovingBoundaryParabolicProblemImpl::Element & mes) const = 0;
+			virtual double evaluate(MeshElementNode & mes) const = 0;
 			virtual const char * const label( ) const = 0;
 			virtual const char * const checkFunction( ) const = 0;
 			bool supportsCheck( ) const {
@@ -1452,7 +1455,7 @@ namespace moving_boundary {
 		};
 
 		struct Concentration : public Evaluator {
-			virtual double evaluate(MovingBoundaryParabolicProblemImpl::Element & mes) const { 
+			virtual double evaluate(MeshElementNode & mes) const { 
 				return mes.concentration(0);
 			}
 			virtual const char * const label( ) const {
@@ -1464,7 +1467,7 @@ namespace moving_boundary {
 		};
 
 		struct VolumeEval : public Evaluator {
-			virtual double evaluate(MovingBoundaryParabolicProblemImpl::Element & mes) const { 
+			virtual double evaluate(MeshElementNode & mes) const { 
 				double v = mes.volumePD( );
 				return v;
 			}
@@ -1486,7 +1489,7 @@ namespace moving_boundary {
 			matlabBridge::Scatter empty('r',2,true);
 			int seqNo = 1; //used to cause matlab variables to change
 			for (;iter != impl.primaryMesh.end( ); ++iter, ++seqNo) {
-				MovingBoundaryParabolicProblemImpl::Element & mes = *iter;
+				MeshElementNode & mes = *iter;
 				/*
 				if (mes.indexOf(cX) != 5) 
 				continue;
@@ -1540,6 +1543,9 @@ namespace moving_boundary {
 
 	const spatial::MeshDef<moving_boundary::CoordinateType,2> & MovingBoundaryParabolicProblem::meshDef( ) const {
 		return sImpl->meshDef( );
+	}
+	const biology::Physiology  & MovingBoundaryParabolicProblem::physiology( ) const {
+		return sImpl->physiology;
 	}
 	double MovingBoundaryParabolicProblem::frontTimeStep( ) const {
 		return sImpl->frontTimeStep;

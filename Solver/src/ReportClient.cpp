@@ -325,7 +325,7 @@ namespace {
 			totalStuff(0),
 			oldStuff(0),
 			meshDef(mbpp.meshDef( )),
-			numberSpecies(meshDef.numberSpecies( )),
+			numberSpecies(mbpp.physiology( ).numberSpecies( )),
 			eRecords(),
 			genTimes(),
 			moveTimes(),
@@ -625,14 +625,13 @@ namespace {
 				using spatial::cX;
 				using spatial::cY;
 				spatial::TPoint<size_t,2> key(e.indexOf(0),e.indexOf(1));
-				const int numSpecies = e.numSpecies( );
 				if (eRecords.find(key) == eRecords.end( )) {
 					eRecords[key] = HElementRecord( ); 
-					eRecords[key].resize(numSpecies);
+					eRecords[key].resize(numberSpecies);
 				}
 				HElementRecord & er = eRecords[key];
 				er.volume = e.volumePD( );
-				for (int i = 0; i < numSpecies; i++) { 
+				for (int i = 0; i < numberSpecies; i++) { 
 					er.mass[i] = e.mass(i); 
 					er.concentration[i] = e.concentration(i);
 				}
@@ -916,7 +915,7 @@ ReportClient * ReportClient::setup(const XMLElement &root, const std::string & h
 			if (deleteExisting) {
 				unlink(filename.c_str( ));
 			}
-			output = vcellH5::VH5File(h5filename.c_str( ),H5F_ACC_TRUNC|H5F_ACC_RDWR);
+			output = vcellH5::VH5File(filename.c_str( ),H5F_ACC_TRUNC|H5F_ACC_RDWR);
 		}
 		const char *datasetName = nullptr;
 		std::pair<bool,std::string> dnq = vcell_xml::queryElement<std::string>(report,"datasetName");

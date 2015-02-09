@@ -69,10 +69,7 @@ namespace moving_boundary {
 			/**
 			* @throws std::domain_error if locked
 			*/
-			void createSpecies(const std::string & name, const std::string & expression) {
-				verifyUnlocked( );
-				species_.push_back(Species(name,expression));
-			}
+			const Species & createSpecies(const std::string & name, const std::string & sourceExpression, const std::string & diffusionExpression); 
 
 			/**
 			* build list of names for symbol table
@@ -98,10 +95,7 @@ namespace moving_boundary {
 			/**
 			* prevent further changes
 			*/
-			void lock( ) {
-				assert(pSymTable.get( ) != nullptr);
-				locked = true;
-			}
+			void lock( );
 
 		private:
 			Physiology(const Physiology &); //not defined

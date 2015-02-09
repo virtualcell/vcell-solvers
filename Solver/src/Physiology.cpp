@@ -15,6 +15,17 @@ namespace {
 			return in.name( );
 		}
 	};
+
+	/**
+	* const diffusion functor 
+	*/
+	struct ConstDiff {
+		void operator( )(const Species & in) {
+			if (!in.diffusionTerm( ).isConstant( )) {
+				VCELL_EXCEPTION(domain_error,in.name( ) << " has non-constant diffusion " << in.diffusionTerm( ).infix( ));
+			}
+		}
+	};
 }
 
 /**
@@ -38,6 +49,12 @@ int Physiology::badName(const std::string &name) const {
 	VCELL_EXCEPTION(domain_error, "invalid name " << name);
 }
 
+void Physiology::lock( ) {
+	assert(pSymTable.get( ) != nullptr);
+	locked = true;
+	std::for_each(species_.begin( ),species_.end( ), ConstDiff( ) ); 
+}
+
 void Physiology::verifyUnlocked( ) const {
 	if (locked)  {
 		throw std::domain_error("locked Physiology");
@@ -46,5 +63,15 @@ void Physiology::verifyUnlocked( ) const {
 void Physiology::verifyLocked( ) const {
 	if (!locked)  {
 		throw std::domain_error("unlocked Physiology");
+	}
+}
+
+const Species & Physiology::createSpecies(const std::string & name, const std::string & source,const std::string & diffusion) {
+	verifyUnlocked( );
+	try {
+		species_.push_back(Species(name,source,diffusion));
+		return species_.back( );
+	} catch (std::exception &de) {
+		VCELL_EXCEPTION(domain_error, "error creating " << name << " with source " << source << " and diffusion " << diffusion << ": " << de.what( ));
 	}
 }
