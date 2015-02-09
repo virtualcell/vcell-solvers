@@ -42,6 +42,10 @@ ChomboEBBC::ChomboEBBC(ChomboSemiImplicitScheduler* scheduler, int a_iphase, int
 	{
 		dirichletEbBc = new DirichletPoissonEBBC(domain, layout, dx, &ghostCellsPhi, &ghostCellsRhs);
 		dirichletEbBc->setValue(0);
+		// Using second order stencil for Dirichlet ebbc
+		// current first order LS weight calculation produces wrong results for dx<0.002 - Feb 2015
+    // sometimes the code reduces the order anyway
+		dirichletEbBc->setOrder(2);
 		neumannEbBc = 0;
 		ebbc = dirichletEbBc;
 	}
