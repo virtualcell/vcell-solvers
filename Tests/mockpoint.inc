@@ -10,7 +10,7 @@ namespace {
 	};
 	struct MockPoint : spatial::MPoint<double,2> {
 		struct Environment{};
-		static Environment & eref(  ) {
+		static const Environment & eref(  ) {
 			static Environment e;
 			return e;
 		}
@@ -21,7 +21,7 @@ namespace {
 	};
 	struct MockPoint3 : spatial::MPoint<double,3> {
 		struct Environment{};
-		static Environment & eref(  ) {
+		static const Environment & eref(  ) {
 			static Environment e;
 			return e;
 		}

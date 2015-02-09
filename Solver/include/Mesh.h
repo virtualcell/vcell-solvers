@@ -310,7 +310,7 @@ namespace spatial {
 			storage(nullptr),
 			daCache(nullptr) {}
 
-		Mesh(const MeshDef<CT,N> &definition, typename TELEMENT::Environment & env) 
+		Mesh(const MeshDef<CT,N> &definition, const typename TELEMENT::Environment & env) 
 			:MeshDef<CT,N>(definition),
 			storage(nullptr),
 			daCache(TELEMENT::createCache(definition))
