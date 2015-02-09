@@ -1,9 +1,9 @@
 #ifndef ASTFLOATNODE_H
 #define ASTFLOATNODE_H
 
-#include "Node.h"
+#include "SimpleNode.h"
 
-class ASTFloatNode : public Node
+class ASTFloatNode : public SimpleNode
 {
 public:
 	ASTFloatNode(double i);

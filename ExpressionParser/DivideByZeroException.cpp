@@ -4,6 +4,6 @@ DivideByZeroException::DivideByZeroException(string msg) : ExpressionException("
 {
 }
 
-DivideByZeroException::~DivideByZeroException(void) throw( )
+DivideByZeroException::~DivideByZeroException(void)
 {
 }

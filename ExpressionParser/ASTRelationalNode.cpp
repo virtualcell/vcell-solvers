@@ -15,12 +15,12 @@ const int UNKNOWN = -1;
 
 int StackMachine_RelationalLookupTable[] = {0, TYPE_LT, TYPE_GT, TYPE_LE, TYPE_GE, TYPE_EQ, TYPE_NE};
 
-ASTRelationalNode::ASTRelationalNode() : Node(JJTRELATIONALNODE) {
+ASTRelationalNode::ASTRelationalNode() : SimpleNode(JJTRELATIONALNODE) {
 	operation = 0;
 	opString = "????";
 }
 
-ASTRelationalNode::ASTRelationalNode(int i) : Node(i) {
+ASTRelationalNode::ASTRelationalNode(int i) : SimpleNode(i) {
 	operation = 0;
 	opString = "????";
 }
@@ -180,7 +180,7 @@ bool ASTRelationalNode::equals(Node* node) {
 	//
 	// check to see if the types and children are the same
 	//
-	if (!Node::equals(node)){
+	if (!SimpleNode::equals(node)){
 		return false;
 	}
 	

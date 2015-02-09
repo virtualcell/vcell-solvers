@@ -49,14 +49,13 @@ const int ACSCH = 31;
 const int ACOTH = 32;
 const int ASECH = 33;
 const int FACTORIAL = 34;	
-const int J1 = 35;  
 
 int StackMachine_LookupTable[] = {TYPE_EXP, TYPE_SQRT, TYPE_ABS, TYPE_POW, 
 	TYPE_LOG, TYPE_SIN, TYPE_COS, TYPE_TAN, TYPE_ASIN, TYPE_ACOS, TYPE_ATAN, 
 	TYPE_ATAN2, TYPE_MAX, TYPE_MIN, TYPE_CEIL, TYPE_FLOOR, TYPE_CSC, TYPE_COT, 
 	TYPE_SEC, TYPE_ACSC, TYPE_ACOT, TYPE_ASEC, TYPE_SINH, TYPE_COSH, TYPE_TANH, 
 	TYPE_CSCH, TYPE_COTH, TYPE_SECH, TYPE_ASINH, TYPE_ACOSH, TYPE_ATANH, TYPE_ACSCH, 
-	TYPE_ACOTH, TYPE_ASECH, TYPE_FACTORIAL, TYPE_J1
+	TYPE_ACOTH, TYPE_ASECH, TYPE_FACTORIAL
 };
 
 const string functionNamesVCML[] = {
@@ -94,18 +93,16 @@ const string functionNamesVCML[] = {
 	"acsch",	// 31
 	"acoth",	// 32
 	"asech",	// 33	
-	"factorial",	// 34	
-	"j1"
+	"factorial"	// 34	
 };
 
-//const int parserNumFunctions = 35;
-const int parserNumFunctions = sizeof(StackMachine_LookupTable)/sizeof(StackMachine_LookupTable[0]);
+const int parserNumFunctions = 35;
 
-ASTFuncNode::ASTFuncNode() : Node(JJTFUNCNODE) {
+ASTFuncNode::ASTFuncNode() : SimpleNode(JJTFUNCNODE) {
 	funcType = -1;
 }
 
-ASTFuncNode::ASTFuncNode(int i) : Node(i) {
+ASTFuncNode::ASTFuncNode(int i) : SimpleNode(i) {
 	funcType = -1;
 }
 
@@ -621,15 +618,6 @@ double ASTFuncNode::evaluate(int evalType, double* values)
 				result = MathUtil::factorial(argument);
 				break;
 			}
-		case J1: 
-			{
-				if (jjtGetNumChildren() != 1 ){ 
-					throw RuntimeException("j1() expects 1 argument");
-				}
-				double argument = child0->evaluate(evalType, values);
-				result = j1(argument);
-				break;
-			}
 		default :
 			{
 				throw RuntimeException("undefined function");
@@ -658,7 +646,7 @@ bool ASTFuncNode::equals(Node* node) {
 	//
 	// check to see if the types and children are the same
 	//
-	if (!Node::equals(node)){
+	if (!SimpleNode::equals(node)){
 		return false;
 	}
 	

@@ -4,10 +4,10 @@ ExpressionBindingException::ExpressionBindingException(string msg) : ExpressionE
 {
 }
 
-ExpressionBindingException::~ExpressionBindingException(void) throw( )
+ExpressionBindingException::~ExpressionBindingException(void)
 {
 }
 
-std::string ExpressionBindingException::identify(){
+string ExpressionBindingException::identify(){
 	return "ExpressionBindingException";
 }

@@ -7,7 +7,7 @@ class ExpressionBindingException : public ExpressionException
 {
 public:
 	ExpressionBindingException(string msg);
-	~ExpressionBindingException(void) throw( );
+	~ExpressionBindingException(void);
 	string identify();
 };
 

@@ -9,10 +9,10 @@
 #include <sstream>
 using std::stringstream;
 
-ASTMultNode::ASTMultNode() : Node(JJTMULTNODE) {
+ASTMultNode::ASTMultNode() : SimpleNode(JJTMULTNODE) {
 }
 
-ASTMultNode::ASTMultNode(int i) : Node(i) {
+ASTMultNode::ASTMultNode(int i) : SimpleNode(i) {
 }
 
 ASTMultNode::~ASTMultNode() {

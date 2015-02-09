@@ -1,9 +1,9 @@
 #ifndef ASTMINUSTERMNODE_H
 #define ASTMINUSTERMNODE_H
 
-#include "Node.h"
+#include "SimpleNode.h"
 
-class ASTMinusTermNode : public Node
+class ASTMinusTermNode : public SimpleNode
 {
 public:
 	ASTMinusTermNode(int i);

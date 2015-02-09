@@ -3,7 +3,7 @@
  * All rights reserved.
  */
 
-#include "Node.h"
+#include "SimpleNode.h"
 #include "StackMachine.h"
 #include <math.h>
 #include <stdio.h>
@@ -372,9 +372,6 @@ double StackMachine::evaluate(double* values){
 					throw FunctionDomainException(string(problem));
 				}
 				*tos = MathUtil::factorial(*tos);
-				break;
-			case TYPE_J1:
-				*tos = j1(*tos);
 				break;
 			default:
 				throw Exception("StackMachine: unknown stack element type " + token->type);

@@ -5,6 +5,6 @@ FunctionRangeException::FunctionRangeException(string msg) : ExpressionException
 	
 }
 
-FunctionRangeException::~FunctionRangeException(void) throw()
+FunctionRangeException::~FunctionRangeException(void)
 {
 }

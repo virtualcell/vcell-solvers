@@ -4,10 +4,10 @@
 #include "ExpressionParserTreeConstants.h"
 #include "StackMachine.h"
 
-ASTNotNode::ASTNotNode() : Node(JJTNOTNODE) {
+ASTNotNode::ASTNotNode() : SimpleNode(JJTNOTNODE) {
 }
 
-ASTNotNode::ASTNotNode(int i) : Node(i) {
+ASTNotNode::ASTNotNode(int i) : SimpleNode(i) {
 }
 
 ASTNotNode::~ASTNotNode() {

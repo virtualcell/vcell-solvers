@@ -3,10 +3,10 @@
 #include "ExpressionParserTreeConstants.h"
 #include "StackMachine.h"
 
-ASTOrNode::ASTOrNode() : Node(JJTORNODE) {
+ASTOrNode::ASTOrNode() : SimpleNode(JJTORNODE) {
 }
 
-ASTOrNode::ASTOrNode(int i) : Node(i) {
+ASTOrNode::ASTOrNode(int i) : SimpleNode(i) {
 }
 
 ASTOrNode::~ASTOrNode() {

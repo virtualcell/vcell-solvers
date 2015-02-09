@@ -7,6 +7,6 @@ class DivideByZeroException : public ExpressionException
 {
 public:
 	DivideByZeroException(string msg);
-	~DivideByZeroException(void) throw( );
+	~DivideByZeroException(void);
 };
 #endif

@@ -1,9 +1,9 @@
 #ifndef ASTADDNODE_H
 #define ASTADDNODE_H
 
-#include "Node.h"
+#include "SimpleNode.h"
 
-class ASTAddNode : public Node
+class ASTAddNode : public SimpleNode
 {
 public:
 	ASTAddNode(int i);

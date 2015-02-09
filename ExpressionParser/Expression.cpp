@@ -20,42 +20,29 @@ using std::istringstream;
 //long Expression::derivativeCount = 0;
 //long Expression::substituteCount = 0;
 //long Expression::bindCount = 0;
-using VCell::Expression;
 
-Expression::Expression(void)
-	:rootNode(NULL),
-	stackMachine(NULL) {}
-
-Expression::Expression(Expression* expression)
-	:rootNode(expression->rootNode->copyTree()),
-	stackMachine(NULL) {}
-
-Expression::Expression(const Expression &rhs)
-	:rootNode(rhs.rootNode->copyTree()),
-	stackMachine(NULL) {}
-
-/**
-* create and bind in single ctor
-* equivalent to default constructor if #expString is empty
-*/
-Expression::Expression(string expString, SymbolTable & symbolTable)
-	:rootNode(NULL),
-	stackMachine(NULL) 
+VCell::Expression::Expression(void)
 {
-	if (!expString.empty( )) {
-		init(expString);
-		bindExpression(&symbolTable);
-	}
+	rootNode = NULL;
+	stackMachine = NULL;
 }
 
-Expression::Expression(string expString)
-	:rootNode(NULL),
-	stackMachine(NULL) 
+VCell::Expression::Expression(Expression* expression)
 {
-	init(expString);
+	this->rootNode = (SimpleNode*)expression->rootNode->copyTree();
+	stackMachine = NULL;
 }
 
-void Expression::init(const string & expString) {
+VCell::Expression::~Expression(void)
+{
+	delete rootNode;
+	delete stackMachine;
+}
+
+VCell::Expression::Expression(string expString)
+{
+	rootNode = 0;
+	stackMachine = NULL;
 
 	if (expString.length() == 0) {
 		throw ParserException("Empty expression");
@@ -84,36 +71,23 @@ void Expression::init(const string & expString) {
 	parseExpression(trimstr);
 }
 
-Expression::~Expression(void)
-{
-	delete rootNode;
-	delete stackMachine;
-}
-
-Expression & Expression::operator=(const Expression &rhs) {
-	rootNode = rhs.rootNode->copyTree();
-	delete stackMachine;
-	stackMachine = NULL;
-	return *this;
-}
-
-void Expression::showStackInstructions(void)
+void VCell::Expression::showStackInstructions(void)
 {
 	getStackMachine()->showInstructions();
 	cout.flush();
 }
 
-double Expression::evaluateConstant(void)
+double VCell::Expression::evaluateConstant(void)
 {
 	return getStackMachine()->evaluate(NULL);
 }
 
-double Expression::evaluateConstantTree()
+double VCell::Expression::evaluateConstantTree()
 {
 	return rootNode->evaluate(EVALUATE_CONSTANT);
 }
 
-double Expression::evaluateVectorTree(double* values)
+double VCell::Expression::evaluateVectorTree(double* values)
 {
 	try {
 		return rootNode->evaluate(EVALUATE_VECTOR, values);
@@ -122,12 +96,12 @@ double Expression::evaluateVectorTree(double* values)
 	}
 }
 
-string Expression::getEvaluationSummary(double* values)
+string VCell::Expression::getEvaluationSummary(double* values)
 {
 	return rootNode->getNodeSummary(values, rootNode);
 }
 
-double Expression::evaluateVector(double* values)
+double VCell::Expression::evaluateVector(double* values)
 {
 	try {
 		return getStackMachine()->evaluate(values);
@@ -136,45 +110,44 @@ double Expression::evaluateVector(double* values)
 	}
 }
 
-void Expression::parseExpression(string exp)
+void VCell::Expression::parseExpression(string exp)
 {
 	//parseCount++;
 	try {
-		istringstream iss(exp);
-		ExpressionParser parser(&iss);
-		
-		delete rootNode;
-		rootNode = parser.Expression();
+		istringstream* iss = new istringstream(exp);
+		ExpressionParser* parser = new ExpressionParser(iss);
+		rootNode = parser->Expression();
 
 		if (typeid(*rootNode) == typeid(ASTExpression)){
 			if (rootNode->jjtGetNumChildren() == 1){ // we abandon the real root node here, so there is tiny memory leak;
-				Node * old = rootNode;
-				rootNode = old->abandonChild(0);
-				delete old;
+				rootNode = (SimpleNode*)rootNode->jjtGetChild(0);
+				rootNode->jjtSetParent(NULL);
 			}
 		}
+		delete iss;
+		delete parser;
 	} catch (Exception& e) {
 		throw ParserException("Parse Error while parsing expression " + e.getMessage());
 	}
 }
 
-string Expression::infix(void)
+string VCell::Expression::infix(void)
 {
 	return rootNode->infixString(LANGUAGE_DEFAULT, 0);
 }
 
-string Expression::infix_Visit(void)
+string VCell::Expression::infix_Visit(void)
 {
 	return rootNode->infixString(LANGUAGE_VISIT, 0);
 }
 
-void Expression::bindExpression(SymbolTable* symbolTable)
+void VCell::Expression::bindExpression(SymbolTable* symbolTable)
 {	
 	//bindCount++;
 	rootNode->bind(symbolTable);
 }
 
-string Expression::trim(string str)
+string VCell::Expression::trim(string str)
 {
 	int len = (int)str.length();
 	int st = 0;
@@ -189,7 +162,7 @@ string Expression::trim(string str)
 	return ((st > 0) || (len < (int)str.length())) ?  str.substr(st, len-st) : str;
 }
 
-inline StackMachine* Expression::getStackMachine() {
+inline StackMachine* VCell::Expression::getStackMachine() {
 	if (stackMachine == NULL) {
 		vector<StackElement> elements_vector;
 		rootNode->getStackElements(elements_vector);
@@ -204,21 +177,21 @@ inline StackMachine* Expression::getStackMachine() {
 	return stackMachine;
 }
 
-void Expression::getSymbols(vector<string>& symbols) {
+void VCell::Expression::getSymbols(vector<string>& symbols) {
 	rootNode->getSymbols(symbols, LANGUAGE_DEFAULT, 0);
 }
 
-SymbolTableEntry* Expression::getSymbolBinding(string symbol){
+SymbolTableEntry* VCell::Expression::getSymbolBinding(string symbol){
 	return rootNode->getBinding(symbol);
 }
 
-double Expression::evaluateProxy() {
+double VCell::Expression::evaluateProxy() {
 	return evaluateVector(0);
 }
 
-void Expression::substituteInPlace(Expression* origExp, Expression* newExp) {
-	Node* origNode = origExp->rootNode;
-	Node* newNode = newExp->rootNode->copyTree();
+void VCell::Expression::substituteInPlace(Expression* origExp, Expression* newExp) {
+	SimpleNode* origNode = origExp->rootNode;
+	SimpleNode* newNode = (SimpleNode*)newExp->rootNode->copyTree();
 	//
 	// first check if must replace entire tree, if not then leaves can deal with it
 	//
@@ -227,11 +200,4 @@ void Expression::substituteInPlace(Expression* origExp, Expression* newExp) {
 	} else {
 		rootNode->substitute(origNode, newNode);
 	}
-}
-
-bool Expression::isConstant( ) const {
-	if (rootNode != NULL) {
-		return rootNode->isConstant( );
-	}
-	return false;
 }

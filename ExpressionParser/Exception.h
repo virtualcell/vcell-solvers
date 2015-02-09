@@ -1,21 +1,16 @@
 #ifndef EXCEPTION_H
 #define EXCEPTION_H
-#include <stdexcept>
+
 #include <string>
+using std::string;
 
 namespace VCell {
-	class Exception : public std::exception  
+	class Exception
 	{
 	public:
-		typedef std::string string;
 		Exception();
 		Exception(string message);
 		Exception(string title, string message);
-		/**
-		* calls #getMessage
-		*/
-	    virtual const char * what() const throw( );
-		
 		virtual string getExactMessage();
 		string getMessage(void);
 		~Exception(void);

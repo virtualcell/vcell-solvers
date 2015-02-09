@@ -1,9 +1,9 @@
 #ifndef ASTNOTNODE_H
 #define ASTNOTNODE_H
 
-#include "Node.h"
+#include "SimpleNode.h"
 
-class ASTNotNode : public Node
+class ASTNotNode : public SimpleNode
 {
 public:
 	ASTNotNode(int i);

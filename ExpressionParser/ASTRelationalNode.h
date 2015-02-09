@@ -1,9 +1,9 @@
 #ifndef ASTRELATIONALNODE_H
 #define ASTRELATIONALNODE_H
 
-#include "Node.h"
+#include "SimpleNode.h"
 
-class ASTRelationalNode : public Node
+class ASTRelationalNode : public SimpleNode
 {
 public:
 	ASTRelationalNode(int i);

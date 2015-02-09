@@ -1,9 +1,9 @@
 #ifndef ASTMULTNODE_H
 #define ASTMULTNODE_H
 
-#include "Node.h"
+#include "SimpleNode.h"
 
-class ASTMultNode : public Node
+class ASTMultNode : public SimpleNode
 {
 public:
 	ASTMultNode(int i);

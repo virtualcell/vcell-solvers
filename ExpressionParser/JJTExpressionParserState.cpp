@@ -28,7 +28,7 @@ void JJTExpressionParserState::reset(void)
 
 Node* JJTExpressionParserState::rootNode(void)
 {
-	return nodes.front();
+	return (Node*)nodes.front();
 }
 
 void JJTExpressionParserState::pushNode(Node* n)
@@ -43,13 +43,13 @@ Node* JJTExpressionParserState::popNode(void)
 		popMark();
 	}
 
-	Node* n = nodes.back();
+	Node* n = (Node*)nodes.back();
 	nodes.pop_back();	
 	return n;
 }
 
 Node* JJTExpressionParserState::peekNode(void) {
-	return nodes.front();
+	return (Node*)nodes.front();
 }
 
 int JJTExpressionParserState::nodeArity(void)

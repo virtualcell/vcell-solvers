@@ -1,9 +1,9 @@
 #ifndef ASTINVERTTERMNODE_H
 #define ASTINVERTTERMNODE_H
 
-#include "Node.h"
+#include "SimpleNode.h"
 
-class ASTInvertTermNode : public Node
+class ASTInvertTermNode : public SimpleNode
 {
 public:
 	ASTInvertTermNode(int i);

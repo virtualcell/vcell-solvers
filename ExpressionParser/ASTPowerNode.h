@@ -1,9 +1,9 @@
 #ifndef ASTPOWERNODE_H
 #define ASTPOWERNODE_H
 
-#include "Node.h"
+#include "SimpleNode.h"
 
-class ASTPowerNode : public Node
+class ASTPowerNode : public SimpleNode
 {
 public:
 	ASTPowerNode(int i);

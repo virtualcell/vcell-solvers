@@ -19,9 +19,6 @@
 #include "ExpressionParserConstants.h"
 #include "ExpressionParserTreeConstants.h"
 
-#if defined(VISUAL_LEAK_DETECTION)
-#include <vld.h>
-#endif
 int64 jj_la1_0[] = {0x2000,0x1000,0x30000,0x30000,0xc0000,0xc0000,0x10934000,0x10100000,0x10934000,0x40000000,};
 
 ExpressionParser::ExpressionParser(istream* stream)
