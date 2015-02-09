@@ -406,7 +406,7 @@ TEST(persist, offset) {
 	spatial::MeshDef<double,2> sample(arrayInit<double>(-3.2,7), arrayInit<double>(0.34,3.4),arrayInit<size_t>(30,40) );
 
 
-	Mesh<double,2,MockPoint > snap(sample, MockPoint::Environment( ));
+	Mesh<double,2,MockPoint > snap(sample, MockPoint::eref( ));
 	std::array<size_t,2> indexes = { 3, 4 };
 
 	MockPoint *one = snap.query(indexes);

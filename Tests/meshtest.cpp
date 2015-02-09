@@ -77,7 +77,7 @@ TEST(mesh, construct) {
 	using spatial::cY;
 	spatial::MeshDef<double,2> small(arrayInit<double>(0,0),arrayInit<double>(1,1), arrayInit<size_t>(3,3));
 
-	Mesh<double,2,MockPoint > snap(small, MockPoint::Environment( ));
+	Mesh<double,2,MockPoint > snap(small, MockPoint::eref( ));
 	std::array<size_t,2> xy;
 	xy[0] = 1;
 	xy[1] = 2;
@@ -98,7 +98,7 @@ TEST(mesh, values) {
 	std::vector<double> xvalues = sample.coordinateValues(cX);
 	std::vector<double> yvalues = sample.coordinateValues(cY);
 
-	Mesh<double,2,MockPoint > snap(sample, MockPoint::Environment( ));
+	Mesh<double,2,MockPoint > snap(sample, MockPoint::eref( ));
 	spatial::Mesh<double,2, MockPoint>::const_iterator iter = snap.begin( );
 	spatial::Mesh<double,2, MockPoint>::const_iterator end = snap.end( );
 	for (;!(iter == end); ++iter) {
@@ -119,7 +119,7 @@ TEST(mesh, offset) {
 	spatial::MeshDef<double,2> sample(arrayInit<double>(-3.2,7), arrayInit<double>(0.34,3.4),arrayInit<size_t>(30,40) );
 
 
-	Mesh<double,2,MockPoint > snap(sample, MockPoint::Environment( ));
+	Mesh<double,2,MockPoint > snap(sample, MockPoint::eref( ));
 	std::array<size_t,2> indexes = { 3, 4 };
 
 	MockPoint *one = snap.query(indexes);
@@ -152,7 +152,7 @@ TEST(mesh, iterate) {
 	typedef MPoint<double,2> MPoint2;
 	typedef Mesh<double,2,MockPoint> MMesh; 
 
-	Mesh<double,2,MockPoint > snap(small, MockPoint::Environment( ));
+	Mesh<double,2,MockPoint > snap(small, MockPoint::eref( ));
 	MMesh::const_iterator iter = snap.begin( );
 	MMesh::const_iterator  end = snap.end( );
 	for (;!(iter == end); ++iter) {
@@ -197,7 +197,7 @@ TEST(mesh, construct3) {
 	using spatial::Mesh;
 	using spatial::MPoint;
 	spatial::MeshDef<double,3> small(arrayInit<double>(0,0,0), arrayInit<double>(1,1,1),arrayInit<size_t>(3,3,3));
-	Mesh<double,3,MockPoint3> snap(small,MockPoint3::Environment( ));
+	Mesh<double,3,MockPoint3> snap(small,MockPoint3::eref( ));
 	std::array<size_t,3> xy;
 	xy[0] = 1;
 	xy[1] = 2;

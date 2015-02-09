@@ -10,6 +10,10 @@ namespace {
 	};
 	struct MockPoint : spatial::MPoint<double,2> {
 		struct Environment{};
+		static Environment & eref(  ) {
+			static Environment e;
+			return e;
+		}
 		MockPoint(const Environment & ,const size_t *n, const double *values)
 			:spatial::MPoint<double,2>(n,values) {} 
 		const static int numSpecies=5;
@@ -17,6 +21,10 @@ namespace {
 	};
 	struct MockPoint3 : spatial::MPoint<double,3> {
 		struct Environment{};
+		static Environment & eref(  ) {
+			static Environment e;
+			return e;
+		}
 		MockPoint3(const Environment &, const size_t *n, const double *values)
 			:spatial::MPoint<double,3>(n,values) {} 
 		const static int numSpecies=5;
