@@ -32,6 +32,8 @@
 #include <MBridge/MatlabDebug.h>
 
 #include <ExpressionException.h>
+#include <MapTable.h>
+#include <MTExpression.h>
 using spatial::cX;
 using spatial::cY;
 
@@ -126,6 +128,11 @@ namespace {
 				badset << "Unset value " << description << std::endl;  
 			}
 		}
+		void checkSet(std::stringstream & badset,const std::string & value, const char * const description) {
+			if (value.size( ) == 0) {
+				badset << "Unset value " << description << std::endl;  
+			}
+		}
 		void checkSet(std::stringstream & badset,void * value, const char * const description) {
 			if (value == 0) {
 				badset << "Unset value " << description << std::endl;  
@@ -211,8 +218,8 @@ namespace moving_boundary {
 			generationCount(0),
 			currentTime(0),
 			maxTime(mbs.maxTime),
-			frontTimeStep(mbs.frontTimeStep),
-			solverTimeStep(mbs.solverTimeStep),
+//TDX			frontTimeStep(mbs.frontTimeStep),
+//TDX			solverTimeStep(mbs.solverTimeStep),
 			baselineTime(0),
 			baselineGeneration(0),
 			minimimMeshInterval(0),
@@ -266,12 +273,23 @@ namespace moving_boundary {
 			setInitialValues( );
 
 			//check time step
+			/* TDX
 			if (mbs.frontTimeStep <= 0) {
 				VCELL_EXCEPTION(domain_error,"invalid time step  " << mbs.frontTimeStep);
 			}
-			CoordinateType cMin = std::min(meshDefinition.interval(spatial::cX),meshDefinition.interval(spatial::cY));
-			minimimMeshInterval = world.distanceToProblemDomain(cMin); 
-			double maxStep = minimimMeshInterval * minimimMeshInterval/(4 * maxConstantDiffusion); //8 empirically determined
+			*/
+			VCell::MapTable mt;
+			mt["D"] = maxConstantDiffusion;
+			double hx = mt["hx"] = world.distanceToProblemDomain(meshDefinition.interval(spatial::cX));
+			double hy = mt["hy"] = world.distanceToProblemDomain(meshDefinition.interval(spatial::cY));
+			mt["hmin"] = minimimMeshInterval = std::min(hx,hy);
+			mt["hmax"] = std::max(hx,hy);
+			VCell::MTExpression fts(mbs.frontTimeStep,mt);
+			VCell::MTExpression sts(mbs.solverTimeStep,mt);
+			frontTimeStep = fts.evaluate( );
+			solverTimeStep = sts.evaluate( );
+
+			double maxStep = minimimMeshInterval * minimimMeshInterval/(4 * maxConstantDiffusion); 
 			if (maxStep < solverTimeStep) {
 				if (mbs.hardTime) {
 					VCELL_EXCEPTION(logic_error,"hard set input time step " << frontTimeStep << " greater than maximum allowed by problem (" << maxStep << ')');
@@ -1294,8 +1312,8 @@ namespace moving_boundary {
 			generationCount(0),
 			currentTime(0),
 			maxTime(mbs.maxTime),
-			frontTimeStep(mbs.frontTimeStep),
-			solverTimeStep(mbs.solverTimeStep),
+//TDX			frontTimeStep(mbs.frontTimeStep),
+//TDX			solverTimeStep(mbs.solverTimeStep),
 			baselineTime(0),
 			baselineGeneration(0),
 			minimimMeshInterval(0),

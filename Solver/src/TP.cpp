@@ -1,7 +1,6 @@
-#include <iostream>
-#include <MeshElementNode.h>
+#include <SelfContainedExpression.h>
 
-void f(moving_boundary::MeshElementNode &men ) {
-	std::cout << men.ident( );
+void f( ) {
+	VCell::SelfContainedExpression sct("Dog");
 
 }

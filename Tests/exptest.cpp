@@ -12,6 +12,8 @@
 #include "vcellxml.h"
 #include <boost/lexical_cast.hpp>
 #include <SExpression.h>
+#include <MapTable.h>
+#include <MTExpression.h>
 #include <Exception.h>
 namespace {
 
@@ -99,6 +101,15 @@ TEST(sexpression,xvel) {
 	std::cout << std::setw(20) << std::setprecision(12) << up << ", " << out << std::endl ;
 	std::cout << delta << std::endl; 
 	std::cout << (out - up) << std::endl; 
+}
+TEST(sexpression,cse) {
+	const char * const hString = "hM / 10";
+	std::string syms[] = {"h","hM"};
+	SimpleSymbolTable symTb(syms,sizeof(syms)/sizeof(syms[0]));
+	moving_boundary::SExpression exp(hString,symTb);
+	std::array<double,2> values = {2,3};
+	double out = exp.evaluate(values);
+	std::cout << " out " << out << std::endl;
 }
 
 TEST(expression,construct) {
@@ -219,4 +230,24 @@ TEST(expression,parse) {
 				}
 	}
 
+}
+TEST(expression,solo) {
+	using VCell::MapTable;
+	using VCell::MTExpression;
+		MapTable mt;
+		MTExpression solo("x + 2",mt);
+		mt["x"] = 3;
+		double five = solo.evaluate( );
+		ASSERT_TRUE(five == 5);
+
+		MTExpression solo2("x + y",mt);
+		mt["x"] = 1;
+		mt["y"] = 4;
+		five = solo2.evaluate( );
+		ASSERT_TRUE(five == 5);
+		mt["x"] = 7;
+		mt["y"] = -2;
+		five = solo2.evaluate( );
+		ASSERT_TRUE(five == 5);
+		ASSERT_TRUE(solo.evaluate( ) == 9);
 }

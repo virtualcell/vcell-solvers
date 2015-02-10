@@ -52,11 +52,11 @@ namespace moving_boundary {
 		/**
 		* front time step increment
 		*/
-		double frontTimeStep;
+		std::string frontTimeStep;
 		/**
 		* explicit solver time step 
 		*/
-		double solverTimeStep;
+		std::string solverTimeStep;
 
 		/**
 		* if true, fail simluation if time set by #numberTimeSteps or #timeStep not numerically stable. If false, time
@@ -95,8 +95,8 @@ namespace moving_boundary {
 			:
 			frontToNodeRatio(5),
 			maxTime( ),
-			frontTimeStep(0),
-			solverTimeStep(0),
+			frontTimeStep(),
+			solverTimeStep(),
 			hardTime(false),
 			//diffusionCoefficient( ),
 			levelFunctionStr( ),

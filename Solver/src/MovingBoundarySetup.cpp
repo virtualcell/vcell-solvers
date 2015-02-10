@@ -106,10 +106,9 @@ namespace {
 	* @param  deflat default value
 	* @return true if substituion made
 	*/
-	template <typename T>
-	void useDefaultIfZero(T & value, T deflt) {
-		if (value == 0) {
-			value = deflt;
+	void useDefaultIfZero(std::string & value, const std::string & deflat) {
+		if (value == "0") {
+			value = deflat;
 		}
 	}
 }
@@ -138,11 +137,11 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 	mbSetup.advectVelocityFunctionStrY = convertChildElement<std::string>(prob,"advectVelocityFunctionY");
 	//mbSetup.concentrationFunctionStr = convertChildElement<std::string>(prob,"concentrationFunction");
 
-	std::pair<bool,double> tsPair = vcell_xml::queryElement<double>(prob,"timeStep");
+	std::pair<bool,std::string> tsPair = vcell_xml::queryElement<std::string>(prob,"timeStep");
 	if (tsPair.first) {
-		const double & legacyTS = tsPair.second; 
-		mbSetup.frontTimeStep = vcell_xml::convertChildElementWithDefault<double>(prob,"frontTimeStep",0);
-		mbSetup.solverTimeStep = vcell_xml::convertChildElementWithDefault<double>(prob,"solverTimeStep",0);
+		const std::string & legacyTS = tsPair.second; 
+		mbSetup.frontTimeStep = vcell_xml::convertChildElementWithDefault<std::string>(prob,"frontTimeStep","0");
+		mbSetup.solverTimeStep = vcell_xml::convertChildElementWithDefault<std::string>(prob,"solverTimeStep","0");
 		useDefaultIfZero(mbSetup.frontTimeStep,legacyTS);
 		useDefaultIfZero(mbSetup.solverTimeStep,mbSetup.frontTimeStep);
 		VCELL_LOG(warn,"legacy timeTime replaced by frontTimeStep and solverTimeStep");
