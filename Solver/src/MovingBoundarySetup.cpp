@@ -147,8 +147,8 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 		VCELL_LOG(warn,"legacy timeTime replaced by frontTimeStep and solverTimeStep");
 	}
 	else {
-		mbSetup.frontTimeStep = vcell_xml::convertChildElement<double>(prob,"frontTimeStep");
-		mbSetup.solverTimeStep = vcell_xml::convertChildElement<double>(prob,"solverTimeStep");
+		mbSetup.frontTimeStep = vcell_xml::convertChildElement<std::string>(prob,"frontTimeStep");
+		mbSetup.solverTimeStep = vcell_xml::convertChildElement<std::string>(prob,"solverTimeStep");
 	}
 
 	mbSetup.hardTime = convertTrueOrFalse(vcell_xml::convertChildElementWithDefault<const char *>(prob,"hardTime","false"));
