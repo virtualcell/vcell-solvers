@@ -2,7 +2,10 @@
 #include "Exception.h"
 using namespace VCell;
 #include <stdio.h>
-
+#include <iostream>
+using std::cout;
+using std::endl;
+using std::cerr;
 int main(int argc, char *argv[]) {
 	
 	vector<string> expStrs;
