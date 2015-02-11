@@ -31,14 +31,36 @@ struct vcell_util::TimerImpl {
 	const LARGE_INTEGER freq;
 };
 #elif defined(__MACH__)
+	#include <mach/clock.h>
+	#include <mach/mach.h>
+	#include <time.h>
+
 struct vcell_util::TimerImpl {
+	clock_serv_t cclock;
+	mach_timespec_t startTime;
+	mach_timespec_t stopTime;
+	TimerImpl( )
+		:cclock( ),
+		 startTime( ),
+		 stopTime( ) {
+			host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+	}
+
+	~TimerImpl( ) {
+		mach_port_deallocate(mach_task_self(), cclock);
+	}
 
 	void start( ) {
+		clock_get_time(cclock, &startTime);
 	}
 	void stop( ) {
+		clock_get_time(cclock, &stopTime);
 	}
 	double elapsed( ) const {
-	    return 0; //placeholder
+	  const time_t seconds = stopTime.tv_sec - startTime.tv_sec;
+	  const long nano = stopTime.tv_nsec - startTime.tv_nsec;
+	  const double rval = static_cast<double>(seconds + nano*1e-9);
+	  return rval;
 	}
 };
 #elif defined(__GNUG__)
