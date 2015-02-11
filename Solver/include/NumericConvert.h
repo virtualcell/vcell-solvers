@@ -57,6 +57,21 @@ namespace vcell_util {
 	inline int64_t ConvertUp(double in) {
 			return static_cast<int64_t>(ceil(in));
 	}
+#ifdef __MACH__
+
+	template <>
+	inline long int ConvertDown(double in) {
+		if (in >= 0) {
+			return static_cast<long int>(in);
+		}
+		return static_cast<long int>(floor(in)); 
+	}
+
+	template <>
+	inline long int ConvertUp(double in) {
+			return static_cast<long int>(ceil(in));
+	}
+#endif
 
 
 	template <>
