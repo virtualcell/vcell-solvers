@@ -79,12 +79,26 @@ getLeastSquaresGradStenAllVoFsRad(VoFStencil&          a_stencil,
       dropOrder = true;
     }
 
+  // Diana
+  // this is used for scaling stencils
+  Real maxDxComponent = a_dx[0];
+  RealVect dxAspectRatio;
+  for(int idir = 1; idir < SpaceDim; idir ++)
+  {
+	  maxDxComponent = max(maxDxComponent, a_dx[idir]);
+  }
+  for (int idir = 0; idir < SpaceDim; idir++)
+  {
+    dxAspectRatio[idir] =  a_dx[idir]/maxDxComponent;
+  }
   if (!dropOrder)
     {
       RealVect x0;
+      // Diana's changes: don't multiply by a_dx[idir]
       for (int idir = 0; idir < SpaceDim; idir++)
         {
-          x0[idir] = a_dx[idir] * (0.5 + a_centroid[idir] + iv0[idir]);
+          //x0[idir] =        a_dx[idir] * (0.5 + a_centroid[idir] + iv0[idir]);
+          x0[idir] = dxAspectRatio[idir] * (0.5 + a_centroid[idir] + iv0[idir]);
         }
 
       Vector<RealVect> xp(stenSize);
@@ -92,7 +106,8 @@ getLeastSquaresGradStenAllVoFsRad(VoFStencil&          a_stencil,
         {
           for (int idir = 0; idir < SpaceDim; idir++)
             {
-              xp[isten][idir] = a_dx[idir] * (0.5 + volSten[isten].gridIndex()[idir]);
+              //xp[isten][idir] =        a_dx[idir] * (0.5 + volSten[isten].gridIndex()[idir]);
+              xp[isten][idir] = dxAspectRatio[idir] * (0.5 + volSten[isten].gridIndex()[idir]);
             }
         }
 
@@ -112,7 +127,8 @@ getLeastSquaresGradStenAllVoFsRad(VoFStencil&          a_stencil,
                 {
                   dphidnWeight -= invATransAdeltaX[isten][idir] * a_normal[idir];
                 }
-              
+              // Diana's changes: scale weight by dx;
+			  dphidnWeight /= maxDxComponent;
               a_stencil.add(volSten[isten],dphidnWeight, a_ivar);
               a_weight -= dphidnWeight;
             }
@@ -2124,6 +2140,18 @@ getLeastSquaresGradSten(VoFStencil&     a_stencil,
                         int a_ivar)
 {
   IntVect iv0 = a_vof.gridIndex();
+  // Diana
+  // this is used for scaling stencil
+  Real maxDxComponent = a_dx[0];
+  RealVect dxAspectRatio;
+  for(int idir = 1; idir < SpaceDim; idir ++)
+  {
+	  maxDxComponent = max(maxDxComponent, a_dx[idir]);
+  }
+  for (int idir = 0; idir < SpaceDim; idir++)
+  {
+    dxAspectRatio[idir] =  a_dx[idir]/maxDxComponent;
+  }
 
 #if   CH_SPACEDIM == 2
   int stenSize = 3;
@@ -2192,9 +2220,11 @@ getLeastSquaresGradSten(VoFStencil&     a_stencil,
   if (!dropOrder)
     {
       RealVect x0;
+	  // Diana's changes: don't multiply by a_dx[idir]
       for (int idir = 0; idir < SpaceDim; idir++)
-        {
-          x0[idir] = a_dx[idir] * (0.5 + a_centroid[idir] + iv0[idir]);
+	    {
+          //        x0[idir] = a_dx[idir] * (0.5 + a_centroid[idir] + iv0[idir]);
+          x0[idir] =  dxAspectRatio[idir]*  (0.5 + a_centroid[idir] + iv0[idir]);
         }
 
       Vector<RealVect> xp(stenSize);
@@ -2202,7 +2232,8 @@ getLeastSquaresGradSten(VoFStencil&     a_stencil,
         {
           for (int idir = 0; idir < SpaceDim; idir++)
             {
-              xp[isten][idir] = a_dx[idir] * (0.5 + ivSten[isten][idir]);
+              // xp[isten][idir] =       a_dx[idir] * (0.5 + ivSten[isten][idir]);
+			  xp[isten][idir] = dxAspectRatio[idir] * (0.5 + ivSten[isten][idir]);
             }
         }
 
@@ -2222,7 +2253,8 @@ getLeastSquaresGradSten(VoFStencil&     a_stencil,
                 {
                   dphidnWeight -= invATransAdeltaX[isten][idir] * a_normal[idir];
                 }
-              
+              // Diana's changes: scale weight by dx;
+			  dphidnWeight /= maxDxComponent;
               a_stencil.add(volSten[isten],dphidnWeight, a_ivar);
               a_weight -= dphidnWeight;
             }
@@ -2240,9 +2272,11 @@ getLeastSquaresGradSten(VoFStencil&     a_stencil,
           //CP changed
           //collect all potentially usable points for the stencil
           RealVect x0;
+          // Diana's changes: don't multiply by a_dx[idir]
           for (int idir = 0; idir < SpaceDim; idir++)
             {
-              x0[idir] = a_dx[idir] * (0.5 + a_centroid[idir] + iv0[idir]);
+              // x0[idir] = a_dx[idir] * (0.5 + a_centroid[idir] + iv0[idir]);
+              x0[idir] =  dxAspectRatio[idir]*(0.5 + a_centroid[idir] + iv0[idir]);
             }
 
           Vector<RealVect> xp;
@@ -2257,7 +2291,8 @@ getLeastSquaresGradSten(VoFStencil&     a_stencil,
                   volStenIdx.push_back(isten);
                   for (int idir = 0; idir < SpaceDim; idir++)
                     {
-                      xp[ns-1][idir] = a_dx[idir] * (0.5 + ivSten[isten][idir]);
+                      // xp[ns-1][idir] =        a_dx[idir] * (0.5 + ivSten[isten][idir]);
+                      xp[ns-1][idir] =  dxAspectRatio[idir] * (0.5 + ivSten[isten][idir]);
                     }
                 }
             }
@@ -2345,6 +2380,8 @@ getLeastSquaresGradSten(VoFStencil&     a_stencil,
                       dphidnWeight -= invATransAdeltaX[isten][idir] * a_normal[idir];
                     }
 
+                  // Diana's changes: scale weight by dx;
+				  dphidnWeight /= maxDxComponent;
                   a_stencil.add(volSten[volStenIdx[isten]],dphidnWeight, a_ivar);
                   a_weight -= dphidnWeight;
                 }
@@ -2370,6 +2407,18 @@ getLeastSquaresGradStenAllVoFs(VoFStencil&          a_stencil,
                                int                  a_ivar)
 {
   IntVect iv0 = a_vof.gridIndex();
+  // Diana
+  // this is used for scaling stencil
+  Real maxDxComponent = a_dx[0];
+  RealVect dxAspectRatio;
+  for(int idir = 1; idir < SpaceDim; idir ++)
+  {
+	  maxDxComponent = max(maxDxComponent, a_dx[idir]);
+  }
+  for (int idir = 0; idir < SpaceDim; idir++)
+  {
+    dxAspectRatio[idir] =  a_dx[idir]/maxDxComponent;
+  }
 
 #if   CH_SPACEDIM == 2
   int numNeighbors = 8;
@@ -2439,7 +2488,8 @@ getLeastSquaresGradStenAllVoFs(VoFStencil&          a_stencil,
       RealVect x0;
       for (int idir = 0; idir < SpaceDim; idir++)
         {
-          x0[idir] = a_dx[idir] * (0.5 + a_centroid[idir] + iv0[idir]);
+          //        x0[idir] = a_dx[idir] * (0.5 + a_centroid[idir] + iv0[idir]);
+		  x0[idir] =  dxAspectRatio[idir] * (0.5 + a_centroid[idir] + iv0[idir]);
         }
 
       Vector<RealVect> xp(stenSize);
@@ -2447,7 +2497,8 @@ getLeastSquaresGradStenAllVoFs(VoFStencil&          a_stencil,
         {
           for (int idir = 0; idir < SpaceDim; idir++)
             {
-              xp[isten][idir] = a_dx[idir] * (0.5 + volSten[isten].gridIndex()[idir]);
+              //        xp[isten][idir] = a_dx[idir] * (0.5 + volSten[isten].gridIndex()[idir]);
+			  xp[isten][idir] =  dxAspectRatio[idir] * (0.5 + volSten[isten].gridIndex()[idir]);
             }
         }
 
@@ -2467,7 +2518,9 @@ getLeastSquaresGradStenAllVoFs(VoFStencil&          a_stencil,
                 {
                   dphidnWeight -= invATransAdeltaX[isten][idir] * a_normal[idir];
                 }
-              
+
+			  // Diana's changes: scale weight by dx;
+			  dphidnWeight /= maxDxComponent;
               a_stencil.add(volSten[isten],dphidnWeight, a_ivar);
               a_weight -= dphidnWeight;
             }
