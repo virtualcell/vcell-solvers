@@ -11,6 +11,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
+SVN_VERSION_TAG
 
 using spatial::Point2D;
 void mexFunctionClipper(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
@@ -38,7 +39,7 @@ void mexFunctionClipper(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
 	{
 		const bool showVer = mls.boolean("version", false);
 		if (showVer) {
-			mexPrintf("VCellFronTier version %s\n",VCellFronTier::svnVersion( ).c_str( ));
+			mexPrintf("Moving Boundary version %s\n",svn_version_string);
 		}
 	}
 	typedef matlabLink::MData<double> DS;
