@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
+project(MovingBoundarySolver)
+
+option(BUILD_INCLUDE_MATLAB_DIRS "Include matlab integration directory" OFF)
 
 if(DEFINED CMAKE_BUILD_TYPE)
    SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
@@ -11,7 +14,7 @@ if (UNIX)
   set(CMAKE_CXX_COMPILER "g++")
 endif (UNIX)
 
-project(MovingBoundarySolver)
+
 
 if (UNIX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -27,6 +30,8 @@ if (MSVC) # VS2012 doesn't support correctly the tuples yet
 endif(MSVC)
 
 message("flags ${CMAKE_CXX_FLAGS}")
+
+#OVERRIDE HDF5 default because we always need the cpp bindings
 OPTION (HDF5_BUILD_CPP_LIB  "Build HDF5 C++ Library" ON)
 set(HDF_VERSION "hdf5-1.8.14")
 set(HDF5_BUILD_CPP_LIB ON)
@@ -40,7 +45,11 @@ add_subdirectory(Solver)
 add_subdirectory(${GTEST_VERSION})
 add_subdirectory(ExpressionParser)
 add_subdirectory(Tests)
-#add_subdirectory(matlabLink)
+if (BUILD_INCLUDE_MATLAB_DIRS)
+	message("including ML dirs")
+	add_subdirectory(mexFronTier)
+	add_subdirectory(matlabLink)
+endif (BUILD_INCLUDE_MATLAB_DIRS)
 if (MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
 		
