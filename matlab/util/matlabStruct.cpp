@@ -1,5 +1,6 @@
 #include <sstream>
 #include "matlabStruct.h"
+#include "matlabAssert.h"
 #include "svnversion.h"
 SVN_VERSION_TAG
 
@@ -18,12 +19,23 @@ MatlabStruct::MatlabStruct(const mxArray *source_)
 		}
 }
 
+void * MatlabStruct::getRequired(const char * const name) const {
+	 mxArray * f = mxGetField(&source,0,name);
+	 if (f == nullptr) {
+		std::stringstream err;
+		err << "Required field " << name << " not found" << std::ends;
+		mexErrMsgTxt(err.str( ).c_str( ));
+		return nullptr;
+	 }
+	 return mxGetData(f);
+}
+
 MatlabStruct::ArrayData MatlabStruct::get(const char * const name, bool required,
 							const char * const type, validateFunction vf) const {
 							
 	ArrayData ad;
 	ad.marray = mxGetField(&source,0,name);
-	if (required && ad.marray == 0) {
+	if (required && ad.marray == nullptr) {
 		std::stringstream err;
 		err << "Required field " << name << " not found" << std::ends;
 		mexErrMsgTxt(err.str( ).c_str( ));
@@ -33,7 +45,7 @@ MatlabStruct::ArrayData MatlabStruct::get(const char * const name, bool required
 	}
 	if (!vf(ad.marray)) {
 		std::stringstream err;
-		err << "Field " << name << " not correct type " << type << std::ends; 
+		err << "Field " << name << " not correct type " << type << ", is " << mxGetClassName(ad.marray) << std::ends; 
 		mexErrMsgTxt(err.str( ).c_str( ));
 	}
 	const mwSize nDim = mxGetNumberOfDimensions(ad.marray);
@@ -65,7 +77,12 @@ MData<double> MatlabStruct::doubles(const char * const name, bool required) cons
 		return iter->second;
 	}
 	ArrayData ad = get(name,required, "double", mxIsDouble);
-	MData<double> md(ad.size, mxGetPr(ad.marray));
+	double *ptr = nullptr;
+	if (ad.size > 0) {
+		ML_ASSERT(ad.marray != nullptr);
+		ptr = mxGetPr(ad.marray);
+	}
+	MData<double> md(ad.size, ptr);
 	dblStore[key] = md;
 	return md;
 }
@@ -77,9 +94,14 @@ MData<int64_t> MatlabStruct::int64s(const char * const name, bool required) cons
 		return iter->second;
 	}
 	ArrayData ad = get(name,required, "int64", mxIsInt64);
+	int64_t *ptr = nullptr;
+	if (ad.size > 0) {
+		ML_ASSERT(ad.marray != nullptr);
+		//the use of the mex type int64_T (capital tee) is intentional -- make compiler verify it's compatible with int64_t (lower case)
+		ptr = static_cast<int64_T *>(mxGetData(ad.marray));
+	}
 
-	//the use of the mex type int64_T (capital tee) is intentional -- make compiler verify it's compatible with int64_t (lower case)
-	MData<int64_t> md(ad.size, static_cast<int64_T *>(mxGetData(ad.marray)));
+	MData<int64_t> md(ad.size, ptr); 
 	int64Store[key] = md;
 	return md;
 }
@@ -125,3 +147,5 @@ std::string MatlabStruct::str(const char *const name, const char * const default
 	}
 	return r;
 }
+
+

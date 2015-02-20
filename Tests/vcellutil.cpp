@@ -14,6 +14,7 @@
 #include <boundaryProviders.h>
 #include <vcarray.h>
 #include <NoChangeSentinel.h>
+#include <VCDictionary.h>
 #include "mockpoint.inc"
 using namespace vcell_util; 
 namespace {
@@ -73,4 +74,12 @@ TEST(vcellutil,nochange) {
 	auto nc3 = makeSentinel("z",12,z);
 	x = 4;
 	z = 7.11;
+}
+TEST(vcellutil,dictionary) {
+	Dictionary<int> tdict("names");
+	tdict["bob"] = 3;
+	tdict["sally"] = 4;
+	std::cout << tdict.options( ) << std::endl;
+	std::cout << tdict.get("bob") << std::endl;
+	std::cout << tdict.get("jane") << std::endl;
 }

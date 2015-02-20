@@ -4,22 +4,9 @@
 #include <TPoint.h>
 #include <World.h> //GeoLimit
 
-#ifdef _WIN32 //Visual Studio defines this by default
-#ifndef WIN32
-#define WIN32 //FronTier expects this for windows
-#endif
-#endif
-
 #pragma warning ( disable: 4800 )
 #include <boost/multi_array.hpp>
-#include <FronTier.h>
-#undef Coords
-#undef REAL 
-#undef radians
-#undef degrees 
-#undef Error 
-#undef isnan
-#undef free 
+#include <VFrontier.h>
 namespace Frontier {
 	typedef ::HYPER_SURF HYPER_SURF; 
 	typedef ::HYPER_SURF_ELEMENT HYPER_SURF_ELEMENT; 

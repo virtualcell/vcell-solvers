@@ -7,4 +7,5 @@
 * @param x code fragment to stream 
 */
 #define VCELL_EXCEPTION(EXC,x) { std::ostringstream oss; oss << x << " at " << __FILE__ << ':' << __LINE__ << std::ends;  throw std::EXC(oss.str( )); } 
+#define VCELL_EXCEPTION_NOLOCATION(EXC,x) { std::ostringstream oss; oss << x << std::ends;  throw std::EXC(oss.str( )); } 
 #endif
