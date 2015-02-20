@@ -60,6 +60,9 @@ namespace {
 		}
 	} redistVersionMap;
 
+	/**
+	* replace Frontier macro
+	*/
 	template <class T>
 	void zeroStruct(T &t) {
 		memset(&t,0,sizeof(T));

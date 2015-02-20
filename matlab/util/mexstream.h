@@ -2,6 +2,9 @@
 #define mexstream_h
 #include <mex.h>
 namespace matlabLink {
+	/**
+	* ostream implementation which prints to MATLAB on sync
+	*/
 	struct mexStream: public std::ostream
 	{
 		mexStream( )
