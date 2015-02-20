@@ -7,8 +7,10 @@
 #include <VCDictionary.h>
 #include <matlabAssert.h>
 #include <mexstream.h>
+#include <svnversion.h>
 using std::vector;
 namespace {
+	SVN_VERSION_TAG;
 
 	//slot in
 	std::vector<Front *> fronts;
@@ -270,8 +272,14 @@ void showHelp( ) {
 
 	help <<  "free parameters: " << endl 
 		<< tab << "front (returned from prior 'init' call) " << req << endl ;
+#ifdef NDEBUG
+	const char * const variant = "release";
+#else
+	const char * const variant = "debug";
+#endif
 		
-	help	<< std::ends;
+	help << "link library " << svn_version_string << ' ' << variant << endl;
+    help << std::ends;
 
 	std::string helpString = help.str( ); // create string on stack to keep c_str pointer valid until end of function
 	char * c_ptr = const_cast<char *>(helpString.c_str( ));
