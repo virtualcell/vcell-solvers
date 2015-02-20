@@ -8,6 +8,7 @@ namespace vcell_util {
 	*/
 	template <typename T>
 	struct Dictionary : public std::map<std::string,T> {
+		typedef typename std::map<std::string,T> base;
 
 		/**
 		* @param n identifying name
@@ -45,7 +46,7 @@ namespace vcell_util {
 			if (self.find(key) == self.end( )) {
 				VCELL_EXCEPTION_NOLOCATION(domain_error,"Invalid option " << key << ", value must be one of (" << options( ) << ')');
 			}
-			return at(key);
+			return base::at(key);
 		}
 
 		/**
