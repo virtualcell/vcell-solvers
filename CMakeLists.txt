@@ -24,14 +24,14 @@ if (UNIX)
 endif (UNIX)
 
 include (svnversion.txt)
-message("sys ${CMAKE_SYSTEM_NAME}")
+message(STATUS "Operating system ${CMAKE_SYSTEM_NAME}")
 # per http://code.google.com/p/googletest/issues/detail?id=412 
 if (MSVC) # VS2012 doesn't support correctly the tuples yet
 		add_definitions( /D _VARIADIC_MAX=10 )
 		add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
 endif(MSVC)
 
-message("flags ${CMAKE_CXX_FLAGS}")
+message(STATUS "c++ flags ${CMAKE_CXX_FLAGS}")
 
 #OVERRIDE HDF5 default because we always need the cpp bindings
 OPTION (HDF5_BUILD_CPP_LIB  "Build HDF5 C++ Library" ON)
@@ -48,7 +48,7 @@ add_subdirectory(${GTEST_VERSION})
 add_subdirectory(ExpressionParser)
 add_subdirectory(Tests)
 if (BUILD_INCLUDE_MATLAB_DIRS)
-	message("including ML dirs")
+	message(STATUS "Matlab link directories active")
 	add_subdirectory(matlab)
 endif (BUILD_INCLUDE_MATLAB_DIRS)
 if (MSVC)

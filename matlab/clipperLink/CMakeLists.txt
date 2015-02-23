@@ -19,7 +19,6 @@ include_directories(include
 set(PDIR ${CMAKE_BINARY_DIR}/${PROJECT_NAME})
 file(COPY ${ML_SCRIPT} ${ML_SOURCE} ../${OPT_FILE} DESTINATION ${PDIR})
 foreach(F ${ML_SOURCE})
-	message("copying " ${F})
 	get_filename_component(BASE ${F} NAME_WE)
 	file(RENAME ${PDIR}/${BASE}.cpm ${PDIR}/${BASE}.cpp)
 endforeach( )
