@@ -1,4 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
+
+if (UNIX)
+  set(ENV{CC} "gcc")
+  set(ENV{CXX} "g++")
+endif (UNIX)
+
 project(MovingBoundarySolver)
 
 option(BUILD_INCLUDE_MATLAB_DIRS "Include matlab integration directory" OFF)
@@ -9,10 +15,6 @@ else()
    SET(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
 endif()
 
-if (UNIX)
-  set(CMAKE_C_COMPILER "gcc")
-  set(CMAKE_CXX_COMPILER "g++")
-endif (UNIX)
 
 
 
