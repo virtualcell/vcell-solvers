@@ -266,12 +266,14 @@ void showHelp( ) {
 		<< tab << redistTypeMap.options(true) << opt << endl 
 		<< tab << redistVersionMap.options(true) << req << " (if full distribution type)" << endl 
 		<< tab << "redistributionFrequency  " << opt << endl
-		<< "return handle to front " << endl << endl;
+		<< tab << "debug (print debug messages) " << opt << endl 
+		<< "returns handle to front " << endl << endl;
 
 	help <<  "step parameters: " << endl 
 		<< tab << "front (returned from prior 'init' call) " << req << endl 
 		<< tab << "timeStop " << req << endl
-		<< tab << "debug (print debug messages) " << opt << endl << endl;
+		<< tab << "debug (print debug messages) " << opt << endl 
+		<< "returns [time front] " << endl << endl;
 
 	help <<  "free parameters: " << endl 
 		<< tab << "front (returned from prior 'init' call) " << req << endl ;
@@ -289,11 +291,10 @@ void showHelp( ) {
 	mexPrintf("%s",c_ptr);
 }
 
-void initFront(Front *front,const matlabLink::MatlabStruct & mlStruct) 
+void initFront(Front *front,const matlabLink::MatlabStruct & mlStruct, std::ostream & config) 
 {
 	ML_ASSERT(front != nullptr);
 
-	std::ostringstream config;
 	using matlabLink::MData;
 	MData<double> dims = mlStruct.doubles("dim");
 	int dim = static_cast<int>(dims[0]);
@@ -405,7 +406,6 @@ void initFront(Front *front,const matlabLink::MatlabStruct & mlStruct)
 	FT_Propagate(front);
 	FT_SetTimeStep(front);
 	FT_SetOutputCounter(front);
-	mexPrintf("%s", config.str( ).c_str( ));
 }
 
 void step(Front * front, int nlhs, mxArray *plhs[], const matlabLink::MatlabStruct & mlStruct, std::ostream & log) {
@@ -475,10 +475,16 @@ void flink(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 	try {
 		matlabLink::MatlabStruct mlStruct(prhs[0]);
 		std::string command = mlStruct.str("command"); 
+		bool debug = mlStruct.boolean("debug",false);
+		matlabLink::mexStream log;
+		if (!debug) {
+			log.setstate(std::ios_base::badbit);
+		}
+
 		if (command == "init") {
 			if (nlhs == 1) {
 				Front * front = new Front( );
-				initFront(front, mlStruct);
+				initFront(front, mlStruct,log);
 				plhs[0]  = mxCreateNumericMatrix(1, 1, mxINT64_CLASS, mxREAL);
 				fronts.push_back(front);
 				*static_cast<int64_t *>(mxGetData(plhs[0])) = fronts.size( ) - 1; 
@@ -496,11 +502,6 @@ void flink(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 			Front * front = fronts[index];
 			if (front == nullptr) {
 				VCELL_EXCEPTION_NOLOCATION(domain_error,"front index " << index << " no longer valid (prior call to 'free'?)");
-			}
-			bool debug = mlStruct.boolean("debug",false);
-			matlabLink::mexStream log;
-			if (!debug) {
-				log.setstate(std::ios_base::badbit);
 			}
 			step(front,nlhs,plhs,mlStruct,log);
 		}
