@@ -5,6 +5,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <iomanip>
+#include <algorithm>
 #include <MBridge/MBMatlabGenerator.h>
 #include <MBridge/FigureLimits.h>
 namespace matlabBridge {
