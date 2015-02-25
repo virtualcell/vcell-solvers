@@ -2,10 +2,8 @@
 #include "matlabStruct.h"
 #include "matlabAssert.h"
 #include "svnversion.h"
+#include "vcGccCompat.h"
 SVN_VERSION_TAG
-#if __GNUC__ == 4 and __GNUC_MINOR__ < 6
-	#define nullptr 0
-#endif
 
 using matlabLink::MatlabStruct;
 using matlabLink::MData;

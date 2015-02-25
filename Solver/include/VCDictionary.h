@@ -2,6 +2,7 @@
 #define VCDictionary_h
 #include <map>
 #include <VCellException.h>
+#include <stdexcept>
 namespace vcell_util {
 	/**
 	* a specialization of string based dictionaries.

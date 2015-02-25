@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 include(FindMatlabGerardus.txt)
 
-option(BUILD_CLIPPERLINK "Build link library for Clipper" ON)
+if (MSVC)
+	option(BUILD_CLIPPERLINK "Build link library for Clipper" ON)
+endif (MSVC)
 option(BUILD_FRONTIERLINK "Build link library for FronTierr" ON)
 
 if (MSVC11) #This actually means Visual Studio 2012 

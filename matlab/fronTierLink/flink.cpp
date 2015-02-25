@@ -8,6 +8,7 @@
 #include <matlabAssert.h>
 #include <mexstream.h>
 #include <svnversion.h>
+#include <vcGccCompat.h>
 using std::vector;
 namespace {
 	SVN_VERSION_TAG;
