@@ -410,7 +410,6 @@ namespace moving_boundary {
 
 			for (MeshElementNode & e: primaryMesh) {
 				e.setInteriorVolume(interiorVolume);
-				e.setPhysiology(physiology);
 			}
 			currentFront = vcFront->retrieveFront( );
 			std::cout << "front size " << currentFront.size( ) << std::endl;

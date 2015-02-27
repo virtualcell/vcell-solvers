@@ -275,7 +275,6 @@ namespace moving_boundary {
 			concValue(),
 			sourceTermValues(concValue),
 			indexToTimeVariable(-1),
-			pPhysio(nullptr), //set after creation
 			interiorNeighbors( ),
 			neighbors(interiorNeighbors.data( )), //default to interior, update when id'd as boundary
 			boundaryNeighbors(0),
@@ -407,13 +406,6 @@ namespace moving_boundary {
 		* set initial position
 		*/
 		void setInitialPos(spatial::SurfacePosition m); 
-
-		void setPhysiology(const biology::Physiology &p) {
-			if (p.numberSpecies( )!= numSpecies( )) {
-				throw std::domain_error("wrong number species");
-			}
-			pPhysio = &p;
-		}
 
 		/**
 		* legacy from prior state impl
@@ -790,11 +782,6 @@ namespace moving_boundary {
 			return stateVar;
 		}
 
-		const biology::Physiology & physiology( ) const {
-			assert(pPhysio != nullptr);
-			return *pPhysio;
-		}
-
 		/**
 		* debug only 
 		*/
@@ -819,10 +806,7 @@ namespace moving_boundary {
 		std::vector<moving_boundary::BioQuanType> amtMass; //amount of mass
 		std::vector<moving_boundary::BioQuanType> amtMassTransient; //amount of mass, working copy
 		std::vector<moving_boundary::BioQuanType> concValue; //concentration at beginning of cycle
-		/**
-		* pointer to species vector
-		*/
-		const biology::Physiology * pPhysio;
+		std::vector<moving_boundary::BioQuanType> diffusionValue; //cached diffusion constant values
 		/**
 		* values needed to evaluate source term
 		* for now, assume the indexing of species in the Physiology is the same as the local values

@@ -930,8 +930,9 @@ void MeshElementNode::allocateSpecies( ) {
 	amtMass.resize(i);
 	amtMassTransient.resize(i);
 
-	auto  & physio = physiology( );
+	const biology::Physiology & physio = env.physiology;
 	concValue.resize( physio.numberSymbols( ) );
+	diffusionValue.resize( physio.numberSpecies( ) );
 	indexToTimeVariable = physio.symbolIndex("t");
 	const size_t xIndex = physio.symbolIndex("x");
 	const size_t yIndex = physio.symbolIndex("y");
@@ -1019,7 +1020,7 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 	assert(concValue == sourceTermValues); //if this is no longer term, copy values from concValue ->sourceTermValues
 
 	sourceTermValues[indexToTimeVariable] = time;
-	const biology::Physiology & physio = physiology( );
+	const biology::Physiology & physio = env.physiology;
 	//const std::vector<const biology::Species> & species = physiology( ).species( );
 	const size_t n = physio.numberSpecies( );
 	assert(n == numSpecies( ));
@@ -1059,6 +1060,12 @@ void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, TimeT
 
 		//turn off to dcheck
 		//return;
+		const size_t nSpecies = numSpecies( );
+		//pre-compute all diffusion constants
+		for (size_t s = 0; s < nSpecies;s++) {
+				const BioQuanType diffusionConstant = env.physiology.species(s).diffusionTerm( ).evaluate(sourceTermValues);  
+				diffusionValue[s] = diffusionConstant;
+		}
 
 		for (int i = 0 ; i < numNeighbors( ); i++) {
 			if (neighbors[i].element == nullptr) {
@@ -1095,10 +1102,10 @@ void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, TimeT
 			// this coefficient divided by problem domain to world scaling factor twice; one because velocity is scaled,
 			// secondly because it's going to be multiplied by edgeLength (which is squared)
 			BioQuanType advectCoeff = dot(averageVelocity,normalVector) /distanceScaledSquared;
-			for (size_t s = 0; s < numSpecies( );s++) {
+			for (size_t s = 0; s < nSpecies;s++) {
 				//moving_boundary::BioQuanType cUs = concentration(s); EVAL using concentration
 				//moving_boundary::BioQuanType cOther = nb.concentration(s);
-				BioQuanType diffusionConstant = env.physiology.species(s).diffusionTerm( ).evaluate(sourceTermValues);  
+				BioQuanType diffusionConstant = diffusionValue[s]; 
 				BioQuanType cUs = concValue[s]; 
 				BioQuanType cOther = nb.concValue[s];
 				BioQuanType diffusionTerm = diffusionConstant * (cOther - cUs) / neighbors[i].distanceTo;
@@ -1142,7 +1149,7 @@ void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, TimeT
 				}
 			} //species loop
 		} //neighbor loop
-		for (size_t s = 0; s < numSpecies( );s++) {
+		for (size_t s = 0; s < nSpecies;s++) {
 			if (amtMassTransient[s] < 0) {
 				VCELL_LOG(fatal,ident( ) << " negative mass, m(" << s << ") = " << amtMassTransient[s]);
 				negativeMassError = true;
