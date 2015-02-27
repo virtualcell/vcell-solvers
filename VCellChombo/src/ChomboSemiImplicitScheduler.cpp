@@ -560,8 +560,15 @@ void ChomboSemiImplicitScheduler::createConstantCoeffOpFactory(RefCountedPtr<EBA
 	getEBLGAndQuadCFI(eblg, quadCFI, iphase, ivol);
 
 	Real currTime = simulation->getTime_sec();
-	Real alpha = var->isElliptic() ? 0 : 1.;
+	Real alpha = 1.0;
 	Real beta = getExpressionConstantValue(var, DIFF_RATE_EXP, phaseVolumeList[iphase][ivol]->feature);
+	if (var->isElliptic())
+	{
+		// set alpha to 0 when elliptic
+		alpha = 0;
+		// change the sign of beta when elliptic
+		beta = -beta;
+	}
 	a_factory = RefCountedPtr<EBAMRPoissonOpFactory>(new EBAMRPoissonOpFactory(eblg, vectRefRatios, quadCFI,
 					  vectDxes[0], chomboGeometry->getDomainOrigin(),
 					  numPreCondIters, relaxType,
