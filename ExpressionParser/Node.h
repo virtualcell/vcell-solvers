@@ -1,6 +1,5 @@
-#ifndef NODE_H
-#define NODE_H
-
+#ifndef SIMPLENODE_H
+#define SIMPLENODE_H
 #include <string>
 #include <vector>
 using std::string;
@@ -21,47 +20,50 @@ class SymbolTableEntry;
 struct StackElement;
 class SymbolTable;
 
+
+class ExpressionParser;
+class NameScope;
+
 class Node
 {
-public:	
-	virtual ~Node() { }
-	/*
-	virtual string code()=0;
-	virtual Node copyTreeBinary()=0;
-	virtual Node differentiate(string independentVariable)=0;
-	
-	virtual RealInterval evaluateInterval(RealInterval intervals[])=0;
-	virtual  RealInterval getInterval(RealInterval intervals[]) throws ExpressionBindingException;	
-	virtual String infixString(int lang, NameScope nameScope);
-	*/
+public:
+	Node(int unused);
+	virtual ~Node(void);
 	virtual Node* copyTree()=0;
-	virtual void jjtAddChild(Node* n)=0; 
-
-	virtual bool isBoolean()=0;
-	virtual void bind(SymbolTable* symbolTable)=0;
-	virtual SymbolTableEntry* getBinding(string symbol)=0;
-	virtual void getSymbols(vector<string>& symbols, int language, NameScope* nameScope)=0;  
-
-	//virtual Node* flatten()=0;
-	virtual string infixString(int lang, NameScope* nameScope)=0;  
-	virtual void jjtAddChild(Node* n, int i)=0;  
-	virtual void jjtClose()=0;  
-	virtual Node* jjtGetChild(int i)=0;  
-	virtual int jjtGetNumChildren()=0;
-	virtual Node* jjtGetParent()=0;  
-	virtual void jjtOpen()=0;  
-	virtual void jjtSetParent(Node* n)=0;  
-
 	virtual void getStackElements(vector<StackElement>& elements)=0;
 	virtual double evaluate(int type, double* values=0)=0;	
-	/*
-	virtual bool narrow(RealInterval intervals[]) throws ExpressionBindingException;
-	virtual void roundToFloat();
-	virtual  void setInterval(RealInterval interval, RealInterval intervals[]) throws ExpressionBindingException;
-	virtual void substituteBoundSymbols() throws ExpressionException;
-	*/
-	virtual bool equals(Node* node)=0;
-	virtual void substitute(Node* origNode, Node* newNode)=0;
-};
 
+	void jjtOpen();
+	void jjtClose();
+	void jjtSetParent(Node* n);
+	Node* jjtGetParent();
+	void jjtAddChild(Node* n, int i);
+	/**
+	* remove self as child's parent
+	* remove reference to specified child
+	* @return removed child
+	*/
+	Node* abandonChild(int i);
+	Node* jjtGetChild(int i);
+	int jjtGetNumChildren();
+	void dump(string prefix);
+	virtual string infixString(int lang, NameScope* nameScope)=0;
+	string toString(string prefix);
+	virtual void getSymbols(vector<string>& symbols, int language, NameScope* nameScope);
+	virtual SymbolTableEntry* getBinding(string symbol);
+	virtual void bind(SymbolTable* symbolTable);
+	static string getFunctionDomainError(string problem, double* values, string argumentName1, Node* node1, string argumentName2="", Node* node2=0);
+	static string getNodeSummary(double* values, Node* node);
+	virtual bool isBoolean();
+
+	void jjtAddChild(Node* n);
+	void substitute(Node* origNode, Node* newNode);
+	virtual bool equals(Node* node);
+	virtual bool isConstant( ) const;
+
+protected:
+	Node* parent;
+	Node** children;
+	int numChildren;
+};
 #endif

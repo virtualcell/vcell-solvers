@@ -4,10 +4,10 @@
 #include "ExpressionParserTreeConstants.h"
 #include "StackMachine.h"
 
-ASTAddNode::ASTAddNode() : SimpleNode(JJTADDNODE) {
+ASTAddNode::ASTAddNode() : Node(JJTADDNODE) {
 }
 
-ASTAddNode::ASTAddNode(int i) : SimpleNode(i) {
+ASTAddNode::ASTAddNode(int i) : Node(i) {
 }
 
 ASTAddNode::~ASTAddNode() {

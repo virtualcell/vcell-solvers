@@ -1,7 +1,7 @@
 #include "SimpleSymbolTableEntry.h"
 #include "ExpressionException.h"
 
-SimpleSymbolTableEntry::SimpleSymbolTableEntry(string& nameValue, int indexVal, NameScope* namescopeVal, ValueProxy* proxyVal)
+SimpleSymbolTableEntry::SimpleSymbolTableEntry(const string& nameValue, int indexVal, NameScope* namescopeVal, ValueProxy* proxyVal)
  : name(nameValue), index(indexVal), namescope(namescopeVal), valueProxy(proxyVal)
 {
 	bConstant = false;

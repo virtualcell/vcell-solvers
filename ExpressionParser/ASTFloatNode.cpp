@@ -5,7 +5,7 @@
 #include "ExpressionParserTreeConstants.h"
 #include "StackMachine.h"
 
-ASTFloatNode::ASTFloatNode(double doubleValue) : SimpleNode(JJTFLOATNODE) {
+ASTFloatNode::ASTFloatNode(double doubleValue) : Node(JJTFLOATNODE) {
 	// is not a number
 	if (doubleValue != doubleValue){
 		throw RuntimeException("cannot set float node to NaN");
@@ -13,7 +13,7 @@ ASTFloatNode::ASTFloatNode(double doubleValue) : SimpleNode(JJTFLOATNODE) {
 	value = doubleValue;
 }
 
-ASTFloatNode::ASTFloatNode(int i) : SimpleNode(i) , value(0)
+ASTFloatNode::ASTFloatNode(int i) : Node(i) , value(0)
 {
 }
 
@@ -51,7 +51,7 @@ bool ASTFloatNode::equals(Node* node) {
 	//
 	// check to see if the types and children are the same
 	//
-	if (!SimpleNode::equals(node)){
+	if (!Node::equals(node)){
 		return false;
 	}
 	

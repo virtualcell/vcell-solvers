@@ -9,10 +9,10 @@
 #include "StackMachine.h"
 #include "MathUtil.h"
 
-ASTPowerNode::ASTPowerNode() : SimpleNode(JJTPOWERNODE) {
+ASTPowerNode::ASTPowerNode() : Node(JJTPOWERNODE) {
 }
 
-ASTPowerNode::ASTPowerNode(int i) : SimpleNode(i) {
+ASTPowerNode::ASTPowerNode(int i) : Node(i) {
 }
 
 ASTPowerNode::~ASTPowerNode() {

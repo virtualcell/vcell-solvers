@@ -7,7 +7,7 @@ class ParserException : public ExpressionException
 {
 public:
 	ParserException(string msg);
-	~ParserException(void);
+	~ParserException(void) throw( );
 };
 
 #endif

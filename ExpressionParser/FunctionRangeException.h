@@ -7,6 +7,6 @@ class FunctionRangeException : public ExpressionException
 {
 public:
 	FunctionRangeException(string msg);
-	~FunctionRangeException(void);
+	~FunctionRangeException(void) throw( );
 };
 #endif

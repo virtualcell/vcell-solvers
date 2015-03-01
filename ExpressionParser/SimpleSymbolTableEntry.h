@@ -6,7 +6,7 @@
 class SimpleSymbolTableEntry : public SymbolTableEntry
 {
 public:
-	SimpleSymbolTableEntry(string& nameValue, int indexVal, NameScope* namescopeVal, ValueProxy* proxyVal);
+	SimpleSymbolTableEntry(const string& nameValue, int indexVal, NameScope* namescopeVal, ValueProxy* proxyVal);
 	~SimpleSymbolTableEntry(void);
 	double getConstantValue();
 	VCell::Expression* getExpression();

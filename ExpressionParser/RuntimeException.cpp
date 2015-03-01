@@ -5,6 +5,6 @@ RuntimeException::RuntimeException(string msg) : Exception("RuntimeException", m
 	
 }
 
-RuntimeException::~RuntimeException(void)
+RuntimeException::~RuntimeException(void) throw( )
 {
 }

@@ -24,7 +24,7 @@ ParseException::ParseException(string msg) : Exception("ParseException", msg)
 	tokenImage = 0;
 }
 
-ParseException::~ParseException(void)
+ParseException::~ParseException(void) throw( )
 {
 }
 

@@ -8,6 +8,6 @@ class IOException : public Exception
 {
 public:
 	IOException(string msg);
-	~IOException(void);
+	~IOException(void) throw( );
 };
 #endif

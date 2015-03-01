@@ -7,7 +7,7 @@ using namespace VCell;
 class ExpressionException : public Exception
 {
 public:
-	~ExpressionException(void);
+	~ExpressionException(void) throw( );
 	ExpressionException(string msg);
 	ExpressionException(string title, string msg);
 };
