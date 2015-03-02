@@ -151,7 +151,7 @@ ifeq ($(cxxname),g++)
   ##  # workaround for bug on MacOS where g++ and g77 dont play well
   ##  # together so force the preprocessor to use the Fortran compiler
   ifeq ($(system),Darwin)
-    CH_CPP = /usr/bin/cpp -E -P
+#    CH_CPP = /usr/bin/cpp -E -P gcw 2/13/2015
   endif
 
   # the preprocessor in v3 or later strips "//" by default,
