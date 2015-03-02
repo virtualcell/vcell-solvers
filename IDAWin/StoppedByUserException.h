@@ -7,7 +7,7 @@ class StoppedByUserException : public VCell::Exception
 {
 public:
 	StoppedByUserException(string msg);
-	~StoppedByUserException(void);
+	~StoppedByUserException(void) throw( );
 };
 
 #endif

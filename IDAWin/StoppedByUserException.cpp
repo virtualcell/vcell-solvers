@@ -4,6 +4,6 @@ StoppedByUserException::StoppedByUserException(string msg) : Exception("StoppedB
 {	
 }
 
-StoppedByUserException::~StoppedByUserException(void)
+StoppedByUserException::~StoppedByUserException(void) throw( )
 {
 }
