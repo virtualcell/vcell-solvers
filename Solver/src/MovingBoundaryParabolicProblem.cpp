@@ -88,7 +88,6 @@ namespace {
 
 				CHECK(mbs.maxTime);
 				CHECK(mbs.frontTimeStep);
-				CHECK(mbs.solverTimeStep);
 #ifdef OLD_FUNCTION_POINTER_IMPLEMENTATION
 				CHECK2(reinterpret_cast<void *>(mbs.concentrationFunction),mbs.concentrationFunctionStr);
 				CHECK2(reinterpret_cast<void*>(mbs.velocityFunction),mbs.advectVelocityFunctionStrX)
@@ -219,7 +218,6 @@ namespace moving_boundary {
 			currentTime(0),
 			maxTime(mbs.maxTime),
 //TDX			frontTimeStep(mbs.frontTimeStep),
-//TDX			solverTimeStep(mbs.solverTimeStep),
 			baselineTime(0),
 			baselineGeneration(0),
 			minimimMeshInterval(0),
@@ -285,16 +283,14 @@ namespace moving_boundary {
 			mt["hmin"] = minimimMeshInterval = std::min(hx,hy);
 			mt["hmax"] = std::max(hx,hy);
 			VCell::MTExpression fts(mbs.frontTimeStep,mt);
-			VCell::MTExpression sts(mbs.solverTimeStep,mt);
 			frontTimeStep = fts.evaluate( );
-			solverTimeStep = sts.evaluate( );
 
 			double maxStep = minimimMeshInterval * minimimMeshInterval/(4 * maxConstantDiffusion); 
-			if (maxStep < solverTimeStep) {
+			if (maxStep < frontTimeStep) {
 				if (mbs.hardTime) {
 					VCELL_EXCEPTION(logic_error,"hard set input time step " << frontTimeStep << " greater than maximum allowed by problem (" << maxStep << ')');
 				}
-				solverTimeStep = maxStep;
+				frontTimeStep = maxStep;
 			}
 
 			using matlabBridge::MatLabDebug;
@@ -1040,21 +1036,20 @@ namespace moving_boundary {
 					//reaction diffusion advect loop
 					{
 						//const double endRDAtime = currentTime + timeIncr;
-						double solverTime = currentTime;
-						double solverIncr = std::min(solverTimeStep,timeIncr);
-						bool looping = solverIncr < timeIncr;
-						for(;;) {
-							assert(solverTime <= endOfStepTime);
-							std::for_each(primaryMesh.begin( ),primaryMesh.end( ), React(solverTime,solverIncr) );
+						//double solverTime = currentTime;
+						//double solverIncr = std::min(solverTimeStep,timeIncr);
+						//bool looping = solverIncr < timeIncr;
+						//for(;;) {
+							std::for_each(primaryMesh.begin( ),primaryMesh.end( ), React(currentTime,timeIncr) );
 
 							primaryMesh.diffuseAdvectCache( ).start( );
 							bool tooBig = false;
 							try {
 								std::for_each(primaryMesh.begin( ),primaryMesh.end( ), 
-									DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),solverIncr, tooBig));
+									DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),timeIncr, tooBig));
 								if (tooBig) {
-									VCELL_EXCEPTION(domain_error, "time step " << solverIncr << " makes mass go negative at time " 
-										<< solverTime << " generation " << generationCount);
+									VCELL_EXCEPTION(domain_error, "time step " << timeIncr << " makes mass go negative at time " 
+										<< currentTime << " generation " << generationCount);
 								}
 							} catch (ReverseLengthException &rle) {
 								std::ofstream s("rle.m");
@@ -1064,6 +1059,7 @@ namespace moving_boundary {
 							}
 							primaryMesh.diffuseAdvectCache( ).finish( );
 							std::for_each(primaryMesh.begin( ),primaryMesh.end( ), advectComplete);
+							/*
 							const double timeLeft = endOfStepTime - solverTime;
 							if (timeLeft > 0) {
 								solverIncr = std::min(solverIncr,timeLeft);
@@ -1073,7 +1069,9 @@ namespace moving_boundary {
 								break;
 							}
 						}
+						*/
 					}
+					
 
 					currentTime = endOfStepTime;
 					if (frontMoveTrace) {
@@ -1381,7 +1379,7 @@ namespace moving_boundary {
 		double currentTime;
 		const double maxTime;
 		double frontTimeStep; 
-		double solverTimeStep; 
+		//double solverTimeStep; 
 		/**
 		* time last frontTimeStep was calculated
 		*/
@@ -1568,7 +1566,7 @@ namespace moving_boundary {
 		return sImpl->frontTimeStep;
 	}
 	double MovingBoundaryParabolicProblem::solverTimeStep( ) const {
-		return sImpl->solverTimeStep;
+		return -1; 
 	}
 	unsigned int MovingBoundaryParabolicProblem::numberTimeSteps( ) const {
 		return sImpl->numberTimeSteps( );
