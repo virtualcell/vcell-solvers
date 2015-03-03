@@ -291,8 +291,6 @@ namespace spatial {
 
 	private:
 		typedef size_t IndexType;
-		MeshPosition(const IndexType &i)
-			:index(i) {}
 		 template<class CT, int N, class TELEMENT> friend struct Mesh;
 		 IndexType index;
 #ifdef NDEBUG

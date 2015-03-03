@@ -39,4 +39,5 @@ namespace spatial {
 	template struct MeshDef<int64_t,2>; 
 
 	template unsigned short MeshPosition::to<unsigned short>( );
+	template size_t MeshPosition::to<size_t>( );
 }

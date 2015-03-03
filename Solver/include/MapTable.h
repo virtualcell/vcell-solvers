@@ -41,7 +41,7 @@ namespace VCell {
 		/**
 		* @Override SymbolTable function
 		*/
-		virtual SymbolTableEntry* getEntry(std::string name);
+		virtual SymbolTableEntry* getEntry(const std::string & name) const;
 		void buildTable( ) const;
 		 
 

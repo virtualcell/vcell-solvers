@@ -44,7 +44,7 @@ void MapTable::buildTable( ) const {
 	}
 }
 
-SymbolTableEntry* MapTable::getEntry(std::string name) {
+SymbolTableEntry* MapTable::getEntry(const std::string & name) const {
 	return symbols[name];
 }
 

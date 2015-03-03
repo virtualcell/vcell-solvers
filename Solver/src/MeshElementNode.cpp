@@ -595,8 +595,8 @@ void MeshElementNode::writeMatlab(std::ostream  &os , matlabBridge::FigureLimits
 
 moving_boundary::Volume2DClass MeshElementNode::createInsidePolygon() {
 	Volume2DClass rval(1);
-	const moving_boundary::CoordinateType width = env.mesh.interval(cX);
-	const moving_boundary::CoordinateType height = env.mesh.interval(cY);
+	const moving_boundary::CoordinateType width = env.mesh( ).interval(cX);
+	const moving_boundary::CoordinateType height = env.mesh( ).interval(cY);
 
 	moving_boundary::CoordinateType x = this->coord[cX] - width / 2;
 	moving_boundary::CoordinateType y = this->coord[cY] - height  / 2;
@@ -622,15 +622,15 @@ void MeshElementNode::volumeToSegments() {
 	while (sa.hasNext( )) {
 		const SegmentType & st = sa.getAndAdvance( );
 		//if horizontal segment longer than cell side, cut into pieces
-		if (st.horizontal( ) &&  ( st.axialDistance(cX) > env.mesh.interval(cX) ) ) {
+		if (st.horizontal( ) &&  ( st.axialDistance(cX) > env.mesh( ).interval(cX) ) ) {
 			const CoordinateType & y = st.a( )(cY); 
 			CoordinateType left = st.a( )(cX); 
 			CoordinateType right = st.b( )(cX); 
 			assert (left < right);
 
 			CoordinateType cut = 0;
-			while (right - left > env.mesh.interval(cX)) {
-				cut = env.mesh.greaterGridPoint(left,cX); 
+			while (right - left > env.mesh( ).interval(cX)) {
+				cut = env.mesh( ).greaterGridPoint(left,cX); 
 				assert(cut < right);
 				segments_.push_back(SegmentType(CoordinatePoint(left,y), CoordinatePoint(cut,y)) );
 				left = cut;
@@ -640,7 +640,7 @@ void MeshElementNode::volumeToSegments() {
 			}
 		}
 		//if vertical segment longer than cell side, cut into pieces
-		else if (st.vertical( ) && st.axialDistance(cY) > env.mesh.interval(cY)) {
+		else if (st.vertical( ) && st.axialDistance(cY) > env.mesh( ).interval(cY)) {
 			const CoordinateType & x = st.a( )(cX); 
 			const CoordinateType & a = st.a( )(cY); 
 			const CoordinateType & b = st.b( )(cY); 
@@ -649,8 +649,8 @@ void MeshElementNode::volumeToSegments() {
 			assert (down < up);
 
 			CoordinateType cut = 0;
-			while (up - down > env.mesh.interval(cY)) {
-				cut = env.mesh.greaterGridPoint(down,cY); 
+			while (up - down > env.mesh( ).interval(cY)) {
+				cut = env.mesh( ).greaterGridPoint(down,cY); 
 				assert(cut < up);
 				segments_.push_back(SegmentType(CoordinatePoint(x,down), CoordinatePoint(x,cut)) );
 				down = cut;

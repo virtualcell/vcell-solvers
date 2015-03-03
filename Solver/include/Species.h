@@ -4,18 +4,17 @@
 #include <SExpression.h>
 namespace moving_boundary {
 	namespace biology {
+		struct Physiology;
 
 		struct Species {
 			Species(const std::string & name, const std::string & source, const std::string &diffusion)
 				:name_(name),
 				sourceExp(source),
-				diffusionExp(diffusion) {}
+				diffusionExp(diffusion),
+				actDiffSpecI( )
+			{}
 
 
-			void setTable(const SimpleSymbolTable &symTable) {
-				sourceExp.bindExpression(symTable);
-				diffusionExp.bindExpression(symTable);
-			}
 
 
 			/**
@@ -46,10 +45,18 @@ namespace moving_boundary {
 				return diffusionExp;
 			}
 
+			typedef std::vector<unsigned int> IndexContainer;
+			const IndexContainer & activeDiffusionSpeciesIndexes( ) {
+				return actDiffSpecI;
+			}
+
 		private:
+			friend Physiology;
+			void setTable(const SimpleSymbolTable &symTable); 
 			std::string name_;
 			SExpression sourceExp;
 			SExpression diffusionExp;
+			IndexContainer actDiffSpecI;
 
 		};
 

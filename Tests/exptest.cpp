@@ -39,21 +39,25 @@ TEST(expression,constant) {
 }
 
 TEST(expression,base) {
-	std::string syms[] = {"a","b","c"};
+	std::string syms[] = {"a","b","c","d"};
 	VCell::Expression exp("(a + b) * c");
 	SimpleSymbolTable symTb(syms,sizeof(syms)/sizeof(syms[0]));
 	exp.bindExpression(&symTb);
-	double v[] = {2,3,4};
+	double v[] = {2,3,4, 5};
 	const double r= exp.evaluateVector(v);
 	std::cout << exp.infix( ) << " = " << r << std::endl;
+	std::vector<std::string> esyms;
+	exp.getSymbols(esyms);
+	std::ostream_iterator<std::string> sout(std::cout,", ");
+	std::copy(esyms.begin( ),esyms.end( ), sout);
 	ASSERT_TRUE(r == 20);
 }
 TEST(sexpression,ops) {
-	std::string syms[] = {"a","b","c"};
+	std::string syms[] = {"a","b","c","d"};
 	SimpleSymbolTable symTb(syms,sizeof(syms)/sizeof(syms[0]));
 	moving_boundary::SExpression exp("(a + b) * c",symTb);
 	moving_boundary::SExpression copy(exp); 
-	std::array<double,3> arr = {2,3,4};
+	std::array<double,4> arr = {2,3,4,5};
 	double r= copy.evaluate(arr);
 	moving_boundary::SExpression alone("1");
 	alone = exp;

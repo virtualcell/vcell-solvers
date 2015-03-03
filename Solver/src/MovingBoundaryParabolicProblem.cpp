@@ -775,7 +775,7 @@ namespace moving_boundary {
 				:FunctorBase(o),
 				maxVel(0){}
 			void operator( )(MeshElementNode & e) {
-				VCELL_LOG(trace,e.indexInfo( ) << " set velocity");
+				VCELL_LOG(trace,e.indexInfo( ) <<  " set velocity");
 				spatial::SVector<moving_boundary::VelocityType,2> v = this->outer.advectionVelocity(e(cX),e(cY));
 				e.setVelocity(v);
 				maxVel = std::max(maxVel, std::max(v(cX),v(cY)));

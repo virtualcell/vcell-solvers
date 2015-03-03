@@ -168,7 +168,7 @@ void MeshElementNode::badState(const char * const function) const {
 
 MeshElementNode::OurType *MeshElementNode::neighbor(spatial::ElementOffset<2> & eo) const {
 	//nominally unsafe downcast
-	const MeshType * m = static_cast<const MeshType *>(&env.mesh);
+	const MeshType * m = static_cast<const MeshType *>(&env.mesh( ));
 	return m->element(*this,eo);
 }
 

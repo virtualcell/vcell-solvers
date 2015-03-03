@@ -79,8 +79,18 @@ namespace moving_boundary {
 			return expression.evaluateConstant( );
 		}
 
+		size_t numberSymbols( ) const {
+			return numSymbols;
+		}
+
+		std::vector<std::string> getSymbols( ) const {
+			std::vector<std::string> rval;
+			expression.getSymbols(rval);
+			return rval;
+		}
+
 	private:
-		typedef unsigned char NSym;
+		typedef unsigned short NSym;
 		void badContainer(const std::type_info &, size_t) const;
 		void checkSize(size_t) const;
 

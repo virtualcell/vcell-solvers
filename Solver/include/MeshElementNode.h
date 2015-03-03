@@ -82,19 +82,6 @@ namespace moving_boundary {
 		}
 	};
 
-	/**
-	* struct used to help nodes find their #bndOffset value
-	*/
-	struct OffsetData {
-		/*
-		OffsetData(std::vector<MeshElementNode *> &b)
-		:boundaryNodes(b) {}
-		std::vector<MeshElementNode *> &boundaryNodes;
-		*/
-		std::vector<MeshElementNode *> levelOne;
-
-	};
-
 	namespace MeshElementStateful {
 		//if adding state, add to std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::MeshElementStateful::State state) in *cpp 
 		/**
@@ -243,12 +230,16 @@ namespace moving_boundary {
 		/**
 		* context information needs by MeshElementNode
 		*/
-		struct Environment {
-			const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh; 
+		class Environment {
+			const spatial::MeshDef<moving_boundary::CoordinateType,2> & md; 
+		public:
 			const biology::Physiology & physiology;
+			const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh( ) const {
+				return md;
+			}
 			Environment( const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDefinition_,
 				const biology::Physiology & physiology_)
-				:mesh(meshDefinition_),
+				:md(meshDefinition_),
 				physiology(physiology_) {}
 		};
 		typedef spatial::MeshDef<moving_boundary::CoordinateType,2> MeshDefinition; 
@@ -318,6 +309,7 @@ namespace moving_boundary {
 		* @throws std::domain_error if #boundaryOffset( ) != #unsetOffsetValue( ) or ! #isBoundary( )
 		*/
 		void setBoundaryOffsetValues(); 
+
 	private:
 		/**
 		* set neighbor's offset value
