@@ -54,16 +54,21 @@ namespace moving_boundary {
 		MeshElementNeighbor( )
 			:element(nullptr),
 			distanceTo( ),
-			edgeLength( )
+			edgeLength( ),
+			halfAdvectionFlux( )
 			//daAmount(unset)
 		{}
 		MeshElementNeighbor(MeshElementNode *e)
 			:element(e),
 			distanceTo( ),
-			edgeLength( ) 
+			edgeLength( ),
+			halfAdvectionFlux( )
 		{}
 		MeshElementNeighbor(std::istream & is,  const MeshElementNode & client) ;
 
+		/**
+		* compare persistent  parts of structure (only)
+		*/
 		bool operator==(const MeshElementNeighbor &rhs) const {
 			return element == rhs.element 
 				&& distanceTo == rhs.distanceTo
@@ -73,6 +78,10 @@ namespace moving_boundary {
 		MeshElementNode *element; 
 		moving_boundary::DistanceType distanceTo;
 		moving_boundary::DistanceType edgeLength;
+		/**
+		* non-persistent; dot product of average velocity and normal vector times edgeLength
+		*/
+		BioQuanType halfAdvectionFlux; 
 
 		void persist(std::ostream &os, const MeshElementNode &client) const; 
 
@@ -390,6 +399,10 @@ namespace moving_boundary {
 			return amtMass[i];
 		}
 
+		void setMass(size_t i, BioQuanType n) {
+			amtMassTransient[i] = n;
+		}
+
 		/**
 		* set position. See sequence diagram and state transition table
 		*/
@@ -490,6 +503,7 @@ namespace moving_boundary {
 		* volume, in problem domain units
 		*/
 		moving_boundary::CoordinateProductType volumePD(  ) const {
+			//OPTIMIZATION? 
 			using MeshElementStateful::State;
 			switch(this->state( ) ) {
 			case State::initialInside:
@@ -568,20 +582,19 @@ namespace moving_boundary {
 		* apply source terms at specified time (expressions may contain "x" and "y" ... the nodes know that already)
 		*/
 		void react(moving_boundary::TimeType time, moving_boundary::TimeType timeStep); 
-		/**
-		* perform diffusion and advection step, storing values in next generation
-		* @param daCache   
-		* @param timeStep time step 
-		* @param negativeMassError set if mass goes negative 
-		*/
-		void diffuseAdvect(spatial::DiffuseAdvectCache & daCache,moving_boundary::TimeType timeStep, bool & negativeMassError); 
+
+		template <class SOLVER>
+		void diffuseAdvect(SOLVER &solver, unsigned int species);
 
 		/**
 		* notify node advect - diffuse cycle is complete
 		*/
-		void advectComplete( ) {
+		template <class SOLVER>
+		void advectComplete(SOLVER & solver, unsigned int species); 
+			/*
 			std::copy(amtMassTransient.begin( ),amtMassTransient.end( ),amtMass.begin( ));
 		}
+		*/
 
 		/**
 		* debug dump polygon && voronoi

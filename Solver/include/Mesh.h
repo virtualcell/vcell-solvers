@@ -275,6 +275,9 @@ namespace spatial {
 	* encapsulate compact storage of element's location 
 	*/
 	struct MeshPosition {
+		MeshPosition( )
+			:index(0){}
+
 		template <typename T>
 		MeshPosition(const T &i) 
 			:index(i) {}

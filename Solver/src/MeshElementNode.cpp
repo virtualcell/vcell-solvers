@@ -20,6 +20,8 @@
 #include <persistcontainer.h>
 #include <NoChangeSentinel.h>
 
+#include <ExplicitSolver.h>
+
 #include <ManagedArrayPtr.h> //StackPtr
 #include <MBridge/FronTierAdapt.h>
 #include <MBridge/Figure.h>
@@ -1034,12 +1036,8 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 	std::transform(amtMass.begin( ), amtMass.end( ),sourceTermConcentrations.begin( ),amtMass.begin( ), ConcToMassAndAdd(*this,lastVolume, timeStep) );
 	std::transform(amtMass.begin( ),amtMass.end( ),concValue.begin( ), MassToConcentration(lastVolume) );
 
-}
-
-using moving_boundary::BioQuanType;
-using moving_boundary::TimeType;
-void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, TimeType timeStep, bool & negativeMassError) {
-	DaCache & ourCache = static_cast<DaCache &>(daCache);
+	//diffusion Prep
+	//fix states in a bit
 	switch (state( )) {
 	case inReacted: 
 		setState(inDiffAdvDone);
@@ -1055,34 +1053,34 @@ void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, TimeT
 	}
 
 	if (this->isInside( )) {
-		DaCache::Map & diffuseAdvectMap = ourCache.diffuseAdvectMap; 
+		//DaCache::Map & diffuseAdvectMap = ourCache.diffuseAdvectMap; 
 		std::copy(amtMass.begin( ), amtMass.end( ), amtMassTransient.begin( ));
 
-		//turn off to dcheck
-		//return;
 		const size_t nSpecies = numSpecies( );
 		//pre-compute all diffusion constants
 		for (size_t s = 0; s < nSpecies;s++) {
-				const BioQuanType diffusionConstant = env.physiology.species(s).diffusionTerm( ).evaluate(sourceTermValues);  
-				diffusionValue[s] = diffusionConstant;
+			const BioQuanType diffusionConstant = env.physiology.species(s).diffusionTerm( ).evaluate(sourceTermValues);  
+			diffusionValue[s] = diffusionConstant;
 		}
 
 		for (int i = 0 ; i < numNeighbors( ); i++) {
-			if (neighbors[i].element == nullptr) {
+			NeighborType & nbData = neighbors[i];
+			if (nbData.element == nullptr) {
 				VCELL_EXCEPTION(logic_error,ident( ) << " neighbor " << i << " is null");
 			}
-			OurType  *pNeighbor = neighbors[i].element;
-			const OurType & nb = *pNeighbor;
 
 			const moving_boundary::DistanceType edgeLength = neighbors[i].edgeLength; 
 			if (edgeLength == 0) { //if no edge, don't bother
 				continue;
 			}
+			OurType  & nbUpdateRef = *(nbData.element);
+			const OurType & nb = nbUpdateRef;
+
 			if (nb.state( ) == bndFrontMoved) {
 				if (nb.vol.empty( )) {
 					std::cout << nb.ident( ) << " empty vol " << std::endl;
 				}
-				pNeighbor->findNeighborEdges(); //change neighbor, use non-const pointer
+				nbUpdateRef.findNeighborEdges(); //change neighbor, use non-const pointer
 			}
 			const NeighborType * usToThem = nb.findUs(*this);
 			if (usToThem == nullptr) {
@@ -1094,27 +1092,21 @@ void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, TimeT
 				oss << this->ident( ) << " to " << nb.ident( ) << " length " << edgeLength
 					<< " different from reverse length " << edgeLengthFrom; 
 				throw  ReverseLengthException(oss.str( ),*this,nb); 
-
 			}
 
 			spatial::SVector<moving_boundary::VelocityType,2> averageVelocity = (getVelocity( ) +  nb.getVelocity( )) / 2; 
 			spatial::NormVector<double,2> normalVector(spatial::Point2D(nb),spatial::Point2D(*this) ); 
 			// this coefficient divided by problem domain to world scaling factor twice; one because velocity is scaled,
 			// secondly because it's going to be multiplied by edgeLength (which is squared)
-			BioQuanType advectCoeff = dot(averageVelocity,normalVector) /distanceScaledSquared;
-			for (size_t s = 0; s < nSpecies;s++) {
-				//moving_boundary::BioQuanType cUs = concentration(s); EVAL using concentration
-				//moving_boundary::BioQuanType cOther = nb.concentration(s);
-				BioQuanType diffusionConstant = diffusionValue[s]; 
-				BioQuanType cUs = concValue[s]; 
-				BioQuanType cOther = nb.concValue[s];
-				BioQuanType diffusionTerm = diffusionConstant * (cOther - cUs) / neighbors[i].distanceTo;
-				BioQuanType averageConcentration = (cUs + cOther) / 2;
-				BioQuanType advectTerm = advectCoeff * averageConcentration;
-				BioQuanType sum = (diffusionTerm + advectTerm); 
-				//BioQuanType transferAmount = (diffusionTerm + advectTerm) * edgeLength * timeStep;
-				BioQuanType transferAmount = sum * edgeLength * timeStep;
-				amtMassTransient[s] += transferAmount; 
+			BioQuanType averageVelComponent = dot(averageVelocity,normalVector) /distanceScaledSquared;
+			nbData.halfAdvectionFlux = averageVelComponent * edgeLength / 2;
+			VCELL_LOG(info, std::setprecision(12) << this->ident( ) << " to " << nb.ident( ) 
+				<< "avg vel coefficient " << averageVelComponent << " edgeLenth " << edgeLength 
+				<< " half flux " << nbData.halfAdvectionFlux); 
+		}
+	}
+}
+				/*
 				VCELL_COND_LOG(info, s == 0, std::setprecision(12) << this->ident( ) << " da " << transferAmount << " from " << nb.ident( ) 
 					<< " u(i) = " << cUs << " u(j) " << cOther << " distance " << std::setw(10) << neighbors[i].distanceTo 
 					<< " D = " << diffusionConstant << " u(avg) = " << averageConcentration << " advectCoeff " << advectCoeff 
@@ -1122,42 +1114,43 @@ void MeshElementNode::diffuseAdvect(spatial::DiffuseAdvectCache & daCache, TimeT
 					<< " timeStep " << timeStep
 					<< " m(i) " << amtMass[0] << " vol(i) = " << volumePD( ) << " m(j) " << nb.amtMass[0] << " vol(j) " << nb.volumePD( ) 
 					); 
-				if (s == 0) {
-					std::pair<const OurType *,const OurType *> inv(&nb,this);
-					if (diffuseAdvectMap.find(inv) != diffuseAdvectMap.end( )) {
-						if (diffuseAdvectMap[inv].reversed) {
-							VCELL_EXCEPTION(logic_error, this->ident( ) << " to " << nb.ident( ) << " already transferred or reversed?") ;
-						}
-						BioQuanType prevAmount = diffuseAdvectMap[inv].value; 
-						if ( !spatial::nearlyEqual(-1 * prevAmount,transferAmount,toleranceDiffuseAdvectException) ) {
-							VCELL_EXCEPTION(logic_error, this->ident( ) << " to " << nb.ident( ) << " amt " << transferAmount
-								<< " differs from inverse " << prevAmount << " relative diff " 
-								<< spatial::relativeDifference(-1 *prevAmount,transferAmount));
-							/*
-							VCELL_LOG(warn, "WARNING " << ident( ) << " to " << nb.ident( ) << " amt " << transferAmount
-							<< " differs from inverse " << prevAmount << " relative diff " 
-							<< spatial::relativeDifference(-1 *prevAmount,transferAmount))
-							*/
-						}
+					*/
 
-						diffuseAdvectMap[inv].reversed = true;
-					}
-					else { //haven't done other way yet, store amount
-						std::pair<const OurType *,const OurType *> pr(this,&nb);
-						diffuseAdvectMap[pr] = CheckValue(false,transferAmount);
-					}
-				}
-			} //species loop
-		} //neighbor loop
-		for (size_t s = 0; s < nSpecies;s++) {
-			if (amtMassTransient[s] < 0) {
-				VCELL_LOG(fatal,ident( ) << " negative mass, m(" << s << ") = " << amtMassTransient[s]);
-				negativeMassError = true;
-				return;
-			}
+using moving_boundary::BioQuanType;
+using moving_boundary::TimeType;
+template <class SOLVER>
+void MeshElementNode::diffuseAdvect(SOLVER &solver, unsigned int species) {
+	if (this->isInside( )) {
+		const size_t nSpecies = numSpecies( );
+		BioQuanType iCoefficient = 0; //this node's coefficent 
+		CoordinateProductType ourVolume = volumePD( );
+
+		for (int i = 0 ; i < numNeighbors( ); i++) {
+			NeighborType & nbData = neighbors[i];
+			OurType & nb = *(nbData.element);
+
+			BioQuanType diffusionConstant = diffusionValue[species]; 
+			BioQuanType edgeLength = nbData.edgeLength; 
+			/*
+			BioQuanType cUs = concValue[species]; 
+			BioQuanType cOther = nb.concValue[species];
+			*/
+			BioQuanType Dsld = diffusionConstant * edgeLength / nbData.distanceTo;
+			BioQuanType jCoefficient = (Dsld - nbData.halfAdvectionFlux) / nb.volumePD( ); 
+			solver.setCoefficent(nb,jCoefficient);
+			const BioQuanType iTerm = (Dsld + nbData.halfAdvectionFlux) / ourVolume;
+			iCoefficient -= iTerm; 
+			VCELL_COND_LOG(info, species == 0, std::setprecision(12) << this->ident( ) << " da with " <<  nb.ident( ) 
+				<< " diff constant " << diffusionConstant  << " edgeLength " << edgeLength << " dist to " << nbData.distanceTo
+				<< " Ds / d " << Dsld << " half flux " << nbData.halfAdvectionFlux <<  " nb vol " << nb.volumePD( )
+				<< " jC " << jCoefficient << " our volume " << ourVolume << " iTerm " << iTerm << " iC " << iCoefficient);
+
 		}
+		solver.setSolvingFor(*this,iCoefficient);
 	} //isInside
 }
+
+template void MeshElementNode::diffuseAdvect(moving_boundary::ExplicitSolver &,unsigned int species);
 
 
 MatLabDebug MatLabDebug::instance;

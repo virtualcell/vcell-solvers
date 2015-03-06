@@ -24,6 +24,8 @@
 #include <boundaryProviders.h>
 #include <Physiology.h>
 
+#include <ExplicitSolver.h>
+
 #include <MBridge/FronTierAdapt.h>
 #include <MBridge/Figure.h>
 #include <MBridge/MBPatch.h>
@@ -217,7 +219,7 @@ namespace moving_boundary {
 			generationCount(0),
 			currentTime(0),
 			maxTime(mbs.maxTime),
-//TDX			frontTimeStep(mbs.frontTimeStep),
+			//TDX			frontTimeStep(mbs.frontTimeStep),
 			baselineTime(0),
 			baselineGeneration(0),
 			minimimMeshInterval(0),
@@ -273,7 +275,7 @@ namespace moving_boundary {
 			//check time step
 			/* TDX
 			if (mbs.frontTimeStep <= 0) {
-				VCELL_EXCEPTION(domain_error,"invalid time step  " << mbs.frontTimeStep);
+			VCELL_EXCEPTION(domain_error,"invalid time step  " << mbs.frontTimeStep);
 			}
 			*/
 			VCell::MapTable mt;
@@ -782,22 +784,19 @@ namespace moving_boundary {
 		/**
 		* Functor diffuseAdvect
 		*/
+		template <class SOLVER>
 		struct DiffuseAdvect {
-			DiffuseAdvect(spatial::DiffuseAdvectCache &c, double ts, bool &errFlag)
-				:dac(c),
-				timeStep(ts),
-				errorFlag(errFlag) {}
+			DiffuseAdvect(SOLVER &s)
+				:speciesIdx(0),
+				solver(s) {}
 
 			void operator( )(MeshElementNode & e) {
-				if (e.isInside( )) {
-					VCELL_LOG(trace,e.ident( ) << " diffuseAdvect");
-						e.diffuseAdvect(dac,timeStep, errorFlag);
-				}
+				VCELL_LOG(trace,e.ident( ) << " diffuseAdvect");
+				e.diffuseAdvect(solver,speciesIdx);
 			}
+			unsigned int speciesIdx;
+			SOLVER &solver;
 
-			spatial::DiffuseAdvectCache &dac;
-			const double timeStep;
-			bool & errorFlag;
 		};
 
 		/**
@@ -807,7 +806,7 @@ namespace moving_boundary {
 			void operator( )(MeshElementNode & e) {
 				if (e.isInside( )) {
 					VCELL_LOG(trace,e.ident( ) << " advectComplete");
-					e.advectComplete( );
+					//e.advectComplete( );
 				}
 			}
 		};
@@ -966,6 +965,8 @@ namespace moving_boundary {
 		void run( ) {
 			VCELL_LOG(info,"commence simulation");
 			const AdvectComplete advectComplete;
+			ExplicitSolver solver(primaryMesh);
+			DiffuseAdvect<ExplicitSolver> diffuseAdvect(solver);
 			Resetter r(isRunning);
 			isRunning = true;
 
@@ -1033,45 +1034,24 @@ namespace moving_boundary {
 					std::for_each(boundaryElements.begin( ),boundaryElements.end( ),MoveFront(*this));
 
 
-					//reaction diffusion advect loop
-					{
-						//const double endRDAtime = currentTime + timeIncr;
-						//double solverTime = currentTime;
-						//double solverIncr = std::min(solverTimeStep,timeIncr);
-						//bool looping = solverIncr < timeIncr;
-						//for(;;) {
-							std::for_each(primaryMesh.begin( ),primaryMesh.end( ), React(currentTime,timeIncr) );
 
-							primaryMesh.diffuseAdvectCache( ).start( );
-							bool tooBig = false;
-							try {
-								std::for_each(primaryMesh.begin( ),primaryMesh.end( ), 
-									DiffuseAdvect(primaryMesh.diffuseAdvectCache( ),timeIncr, tooBig));
-								if (tooBig) {
-									VCELL_EXCEPTION(domain_error, "time step " << timeIncr << " makes mass go negative at time " 
-										<< currentTime << " generation " << generationCount);
-								}
-							} catch (ReverseLengthException &rle) {
-								std::ofstream s("rle.m");
-								rle.aElement.writeMatlab(s, nullptr,false, 20);
-								rle.bElement.writeMatlab(s, nullptr,false, 20);
-								throw;
-							}
-							primaryMesh.diffuseAdvectCache( ).finish( );
-							std::for_each(primaryMesh.begin( ),primaryMesh.end( ), advectComplete);
-							/*
-							const double timeLeft = endOfStepTime - solverTime;
-							if (timeLeft > 0) {
-								solverIncr = std::min(solverIncr,timeLeft);
-								solverTime += solverIncr;
-							}
-							else {
-								break;
-							}
-						}
-						*/
+					try {
+						std::for_each(primaryMesh.begin( ),primaryMesh.end( ), React(currentTime,timeIncr) );
+					} catch (ReverseLengthException &rle) {
+						std::ofstream s("rle.m");
+						rle.aElement.writeMatlab(s, nullptr,false, 20);
+						rle.bElement.writeMatlab(s, nullptr,false, 20);
+						throw;
 					}
-					
+					primaryMesh.diffuseAdvectCache( ).start( );
+					for (unsigned s = 0; s < physiology.numberSpecies( ) ; s++) { 
+						solver.setStepAndSpecies(timeIncr,s);
+						diffuseAdvect.speciesIdx = s;
+						std::for_each(primaryMesh.begin( ),primaryMesh.end( ), diffuseAdvect);
+						solver.solve( );
+					}
+					primaryMesh.diffuseAdvectCache( ).finish( );
+					//std::for_each(primaryMesh.begin( ),primaryMesh.end( ), advectComplete);
 
 					currentTime = endOfStepTime;
 					if (frontMoveTrace) {
@@ -1309,8 +1289,8 @@ namespace moving_boundary {
 			generationCount(0),
 			currentTime(0),
 			maxTime(mbs.maxTime),
-//TDX			frontTimeStep(mbs.frontTimeStep),
-//TDX			solverTimeStep(mbs.solverTimeStep),
+			//TDX			frontTimeStep(mbs.frontTimeStep),
+			//TDX			solverTimeStep(mbs.solverTimeStep),
 			baselineTime(0),
 			baselineGeneration(0),
 			minimimMeshInterval(0),
