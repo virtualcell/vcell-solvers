@@ -3166,7 +3166,7 @@ void ChomboScheduler::populateMembraneSolution()
 									double sol = (*memSoln[ivol][ilev])[dit()](vof, ivar);
 									varCurr[localMemIndex] = sol;
 #ifndef CH_MPI
-									var->addTotalVCell(sol * areaFrac * levelUnitS);
+									var->addTotal(sol * areaFrac * levelUnitS);
 
 									Variable* errorVar = var->getExactErrorVariable();
 									if (errorVar != NULL)

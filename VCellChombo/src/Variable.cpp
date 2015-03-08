@@ -73,13 +73,12 @@ void Variable::reset(bool bSaveVCellOutput)
 			memset(exactErrorVar->getCurr(), 0, exactErrorVar->getSize() * sizeof(double));
 			memset(relativeErrorVar->getCurr(), 0, relativeErrorVar->getSize() * sizeof(double));
 		}
-	
-		maxError = 0;
-		l2Error = 0;
-		l2Exact = 0;
-		meanVCell = 0;
-		totalVCell = 0;
 	}
+	maxError = 0;
+	l2Error = 0;
+	l2Exact = 0;
+	meanVCell = 0;
+	totalVCell = 0;
 #endif
 	
 	pout() << "Exit " << methodName << std::endl;
