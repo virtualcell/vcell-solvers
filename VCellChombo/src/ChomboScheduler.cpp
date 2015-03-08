@@ -1115,6 +1115,12 @@ void ChomboScheduler::updateSolutionFromLevelData()
 	const char* methodName = "(ChomboScheduler::updateSolutionFromLevelData)";
 	pout() << "Entry " << methodName << endl;
 
+	for (int i = 0; i < simulation->getNumVariables(); ++ i)
+	{
+		Variable* var = simulation->getVariable(i);
+		var->reset(chomboSpec->isSaveVCellOutput());
+	}
+
 #ifndef CH_MPI
 	if (chomboSpec->isSaveVCellOutput())
 	{
@@ -1130,22 +1136,27 @@ void ChomboScheduler::updateSolutionFromLevelData()
 	populateMembraneSolution();
 	populateExtrapolatedValues();
 
+	computeTotal();
+
+	for (int i = 0; i < simulation->getNumVariables(); ++ i)
+	{
+		Variable* var = simulation->getVariable(i);
+		var->computeFinalStatistics();
+	}
+
 	pout() << "Exit " << methodName << endl;
 }
 
 #ifndef CH_MPI
 void ChomboScheduler::populateVolumeSolution()
 {
+	if (!chomboSpec->isSaveVCellOutput())
+	{
+		return;
+	}
 	static const char* methodName = "(ChomboScheduler::populateVolumeSolution)";
 	pout() << "Entry " << methodName << endl;
 
-	// reset volume variables
-	for(int v = 0; v < simulation->getNumVolVariables(); ++ v)
-	{
-		VolumeVariable* var = simulation->getVolVariable(v);
-		var->reset();
-	}
-	
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++)
 	{
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++)
@@ -1154,16 +1165,16 @@ void ChomboScheduler::populateVolumeSolution()
 		} // end for ivol
 	} // end for iphase
 
-	for (int i = 0; i < simulation->getNumVolVariables(); ++ i)
-	{
-		Variable* var = simulation->getVolVariable(i);
-		var->computeFinalStatistics();
-	}
 	pout() << "Exit " << methodName << endl;
 }
 
 void ChomboScheduler::populateVolumeSolution(int iphase, int ivol)
 {
+	if (!chomboSpec->isSaveVCellOutput())
+	{
+		return;
+	}
+
 	static const char* methodName = "(ChomboScheduler::populateVolumeSolution(iphase, ivol))";
 	pout() << "Entry " << methodName << endl;
 
@@ -1248,7 +1259,7 @@ void ChomboScheduler::populateVolumeSolution(int iphase, int ivol)
 							}
 							volFrac *= numRepeats;
 							double sol = solnDataPtr[getChomboBoxLocalIndex(solnSize, ivar, D_DECL(i, j, k))];
-							var->addTotal(sol * volFrac * viewLevelUnitV);
+							var->addTotalVCell(sol * volFrac * viewLevelUnitV);
 							double error = 0;
 							double relErr = 0;
 							if (bComputeError)
@@ -1308,9 +1319,14 @@ void ChomboScheduler::populateVolumeSolution(int iphase, int ivol)
 
 void ChomboScheduler::populateImplicitFunctions()
 {
+	if (!chomboSpec->isSaveVCellOutput())
+	{
+		return;
+	}
+
 	const char* methodName = "(ChomboScheduler::populateImplicitFunctions)";
 	pout() << "Entry " << methodName << endl;
-
+	
 	int viewLevel = chomboSpec->getViewLevel();
 	
 	// first time to save IF as volume variable
@@ -1376,16 +1392,16 @@ void ChomboScheduler::writeData(char* filename, bool convertChomboData) {
 	{
 		updateSolutionFromLevelData();  // read from level data into vcell variables
 	}
-	
+
 #ifndef CH_MPI
 	if (chomboSpec->isSaveVCellOutput())
 	{
 		DataSet::write(simulation, filename);
 	}
-	// we need at least one hdf5 to show mesh in viewer.
+#endif
+	
 	if (chomboSpec->isSaveChomboOutput())
 	{
-#endif
 		int firstFilePhase = -1, firstFileVol = -1;
 		for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
@@ -1456,10 +1472,7 @@ void ChomboScheduler::writeData(char* filename, bool convertChomboData) {
 			);
 			H5Fclose(h5SimFile);
 		}
-		
-#ifndef CH_MPI
 	}
-#endif
 
 	hdf5FileCount ++;
 	pout() << "Exit " << methodName << endl;
@@ -3099,11 +3112,6 @@ void ChomboScheduler::populateMembraneSolution()
 
 	// membrane variables
 	int numMembraneVars = simulation->getNumMemVariables();
-	// reset membrane variables
-	for(int v = 0; v < numMembraneVars; ++ v){
-		MembraneVariable* var = simulation->getMemVariable(v);
-		var->reset();
-	}
 	
 	for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++) {
 		Feature* iFeature = phaseVolumeList[phase0][ivol]->feature;
@@ -3158,7 +3166,7 @@ void ChomboScheduler::populateMembraneSolution()
 									double sol = (*memSoln[ivol][ilev])[dit()](vof, ivar);
 									varCurr[localMemIndex] = sol;
 #ifndef CH_MPI
-									var->addTotal(sol * areaFrac * levelUnitS);
+									var->addTotalVCell(sol * areaFrac * levelUnitS);
 
 									Variable* errorVar = var->getExactErrorVariable();
 									if (errorVar != NULL)
@@ -3197,19 +3205,6 @@ void ChomboScheduler::populateMembraneSolution()
 			} // end DataIter
 		} // end ilev
 	} // end ivol
-
-#ifndef CH_MPI
-	for (int i = 0; i < simulation->getNumMemVariables(); ++ i)
-	{
-		MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(i);
-		//////////////////////////////////////////////////////////////////////////////////////////////
-		////////  WARNING
-		////////  In parallel the L2 error and exact sums need to be gathered to compute the final sum
-		////////  computeFinalStatistics has to be re-written with this in mind
-		//////////////////////////////////////////////////////////////////////////////////////////////
-		var->computeFinalStatistics();
-	}
-#endif
 	
 	pout() << "Exit " << methodName << endl;
 }
@@ -3222,9 +3217,14 @@ void ChomboScheduler::updateSolutionFromChomboOutputFile()
 
 	pout() << endl << "time = " << simulation->getTime_sec() << endl;
 
+	for (int i = 0; i < simulation->getNumVariables(); ++ i)
+	{
+		Variable* var = simulation->getVariable(i);
+		var->reset(chomboSpec->isSaveVCellOutput());
+	}
+	
 	int firstFilePhase = -1, firstFileVol = -1;
 	
-	IntVect zeroGhost = IntVect::Zero;
 	volSoln.resize(NUM_PHASES);
 	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
 	{
@@ -3314,12 +3314,6 @@ void ChomboScheduler::updateSolutionFromChomboOutputFile()
 		} // ivol
 	} // iphase
 
-	for (int i = 0; i < simulation->getNumVolVariables(); ++ i)
-	{
-		Variable* var = simulation->getVolVariable(i);
-		var->computeFinalStatistics();
-	}
-
 	populateImplicitFunctions();
 	
 	// read membrane solution and extrapolated values
@@ -3334,8 +3328,109 @@ void ChomboScheduler::updateSolutionFromChomboOutputFile()
 		DataSet::readMembraneSolution(simulation, h5SimFile);
 		DataSet::readExtrapolatedValues(simulation, h5SimFile);
 	}
+
+	for (int i = 0; i < simulation->getNumVariables(); ++ i)
+	{
+		Variable* var = simulation->getVariable(i);
+		var->computeFinalStatistics();
+	}
 	
 	// read membrane solution
 	pout() << "Exit " << METHOD << endl;
 }
 #endif
+
+void ChomboScheduler::computeTotal()
+{
+	static const char* METHOD = "(ChomboScheduler::computeTotal)";
+	pout() << "Entry " << METHOD << endl;
+
+	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
+	{
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol)
+		{
+			Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
+			int numDefinedVolVars = iFeature->getNumDefinedVariables();
+			int numDefinedMemVars = iphase == phase0 ? iFeature->getMemVarIndexesInAdjacentMembranes().size() : 0;
+			if (numDefinedVolVars == 0 && numDefinedMemVars == 0) {
+				continue;
+			}
+			// volume total
+			for (int ivar = 0; ivar < numDefinedVolVars; ivar ++)
+			{
+				Variable* var = iFeature->getDefinedVariable(ivar);
+				pout() << METHOD << " computeSum: volume variable " << var->getName() << " in " << iFeature->getName() << endl;
+				Real sum = computeSum(volSoln[iphase][ivol], vectEbis[iphase][ivol], ivar);
+				var->addTotal(sum);
+			}
+
+//			if (iphase == phase0 && numDefinedMemVars > 0)
+//			{
+//				// membrane variable total
+//				Vector<ConnectedComponent*>& adjacentVolumes = phaseVolumeList[iphase][ivol]->adjacentVolumes;
+//				for (int j = 0; j < adjacentVolumes.size(); ++ j)
+//				{
+//					Feature* jFeature = adjacentVolumes[j]->feature;
+//					Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(iFeature, jFeature);
+//					for (int ivar = 0; ivar < iFeature->getMemVarIndexesInAdjacentMembranes().size(); ivar ++)
+//					{
+//						int varIndex =	iFeature->getMemVarIndexesInAdjacentMembranes()[ivar];
+//						Variable* var = (Variable*)simulation->getMemVariable(varIndex);
+//						if (membrane->isVariableDefined(var))
+//						{
+//							pout() << METHOD << " computeSum: membrane variable " << var->getName() << " in " << iFeature->getName() << endl;
+//							Real sumSoln = computeSum(memSoln[ivol], vectEbis[iphase][ivol], ivar);
+//							var->addTotal(sumSoln);
+//						}
+//					}
+//				}
+//			}
+		}  // end for ivol
+	} // end for iphase
+
+	pout() << "Exit " << METHOD << endl;
+}
+
+Real ChomboScheduler::computeSum(const Vector< LevelData<EBCellFAB>* >& a_src,
+              const Vector< EBISLayout >&  a_ebisl,
+              const int& a_comp)
+{
+	static const char* METHOD = "(ChomboScheduler::computeSum)";
+	pout() << "Entry " << METHOD << endl;
+
+	Real sum = 0;
+	Real volume = 0;
+	int a_pval = -2;
+  EBNormType::NormMode a_mode = EBNormType::OverBoth;
+	
+	for (int ilev  = 0; ilev < numLevels; ++ ilev)
+	{
+		RealVect dxLev = vectDxes[ilev];
+
+		//don't count stuff covered by finer levels
+		IntVectSet ivsExclude;
+		if (ilev < numLevels - 1)
+		{
+			//put next finer grids into an IVS
+			for (LayoutIterator lit = vectGrids[ilev + 1].layoutIterator(); lit.ok(); ++ lit)
+			{
+				ivsExclude |= vectGrids[ilev+1].get(lit());
+			}
+			//coarsen back down to this level.
+			//ivs will now hold the image of the next finer level
+			ivsExclude.coarsen(vectRefRatios[ilev]);
+		}
+
+		Real sumLev, volLev;
+		EBArith::volWeightedSum(sumLev, volLev, *(a_src[ilev]),  vectGrids[ilev],
+									 a_ebisl[ilev], dxLev, ivsExclude,
+									 a_comp, a_pval, a_mode);
+
+		sum += sumLev;
+		volume += volLev;
+		dxLev /= vectRefRatios[ilev];
+	}
+
+	pout() << "Exit " << METHOD << endl;
+	return sum;
+}

@@ -309,13 +309,7 @@ void SimTool::writeData(double progress, double time, int iteration, bool conver
 			remove(hdf5SimFileName);
 
 			// write the log file
-			if (bSuccess) {
-				// write hdf5 post processing before writing log entry
-				if (postProcessingHdf5Writer != NULL)
-				{
-					postProcessingHdf5Writer->writeOutput();
-				}
-					
+			if (bSuccess) {					
 				char zipFileNameWithoutPath[512];
 				sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_HDF5_FILE_EXT);
 				fprintf(logFP,"%4d %s %s %.15lg\n", iteration, hdf5SimFileName, zipFileNameWithoutPath, time);
@@ -334,6 +328,12 @@ void SimTool::writeData(double progress, double time, int iteration, bool conver
 		if (tidFP != 0) {
 			fclose(tidFP);
 		}
+	}
+
+	// write hdf5 post processing before writing log entry
+	if (postProcessingHdf5Writer != NULL)
+	{
+		postProcessingHdf5Writer->writeOutput();
 	}
 #endif
 	

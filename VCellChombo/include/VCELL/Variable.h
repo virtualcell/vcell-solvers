@@ -67,6 +67,7 @@ public:
 	{
 		return varContext;
 	}
+
 #ifndef CH_MPI
 	Variable* getExactErrorVariable()
 	{
@@ -79,11 +80,10 @@ public:
 	}
 
 	virtual void createErrorVariables()=0;
-
+	
 	void addL2Error(double d);
 	void addL2Exact(double d);
-	void addTotal(double d);
-	void computeFinalStatistics();
+	void addTotalVCell(double d);
 	
 	double getL2Error()
 	{
@@ -98,12 +98,16 @@ public:
 	{
 		return maxError;
 	}
+#endif
+	
 	double getTotal()
 	{
 		return total;
 	}
-#endif
-	void reset();
+
+	void reset(bool bSaveVCellOutput);
+	void addTotal(double d);
+	void computeFinalStatistics();
 	
 protected:
 	Variable(string& nameStr, Structure* structure, long Asize);
@@ -124,9 +128,12 @@ protected:
 	double l2Error;
 	double maxError;
 	double l2Exact;
+	double meanVCell;
+	double totalVCell;
+#endif
+	
 	double mean;
 	double total;
-#endif
 };
 
 #endif

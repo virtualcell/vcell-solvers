@@ -25,7 +25,6 @@ Variable::Variable(string& nameStr, Structure* s, long Asize)
 #ifndef CH_MPI
 	exactErrorVar = 0;
 	relativeErrorVar = 0;
-	reset();
 #endif
 }
 
@@ -54,29 +53,35 @@ string Variable::getQualifiedName(){
 	return name;
 }
 
-void Variable::reset()
+void Variable::reset(bool bSaveVCellOutput)
 {
 	const char* methodName = "(Variable::reset)";
 	pout() << "Entry " << methodName << ": " << getQualifiedName() << std::endl;
 
-	for (int i = 0; i < size; ++ i)
-	{
-		getCurr()[i] = BASEFAB_REAL_SETVAL;
-	}
-
-#ifndef CH_MPI
-	maxError = 0;
-	l2Error = 0;
-	l2Exact = 0;
 	mean = 0;
 	total = 0;
 
-	if (exactErrorVar != NULL)
+#ifndef CH_MPI
+	if (bSaveVCellOutput)
 	{
-		memset(exactErrorVar->getCurr(), 0, exactErrorVar->getSize() * sizeof(double));
-		memset(relativeErrorVar->getCurr(), 0, relativeErrorVar->getSize() * sizeof(double));
+		for (int i = 0; i < size; ++ i)
+		{
+			getCurr()[i] = BASEFAB_REAL_SETVAL;
+		}
+		if (exactErrorVar != NULL)
+		{
+			memset(exactErrorVar->getCurr(), 0, exactErrorVar->getSize() * sizeof(double));
+			memset(relativeErrorVar->getCurr(), 0, relativeErrorVar->getSize() * sizeof(double));
+		}
+	
+		maxError = 0;
+		l2Error = 0;
+		l2Exact = 0;
+		meanVCell = 0;
+		totalVCell = 0;
 	}
 #endif
+	
 	pout() << "Exit " << methodName << std::endl;
 }
 
@@ -89,14 +94,15 @@ void Variable::addL2Exact(double d)
 {
 	l2Exact += d;
 }
-void Variable::addTotal(double d)
+void Variable::addTotalVCell(double d)
 {
-	total += d;
+	totalVCell += d;
 }
 void Variable::updateMaxError(double d)
 {
 	maxError = std::max<double>(maxError, d);
 }
+#endif
 
 void Variable::computeFinalStatistics()
 {
@@ -105,10 +111,32 @@ void Variable::computeFinalStatistics()
 	{
 		total *= 602;
 	}
-	if (l2Exact != 0)
+	pout() << " !!!!!!!!!!!!Variable " << name << ": total=" << total << "!!!!!!!!!!!!!!!!" << std::endl;
+
+#ifndef CH_MPI
+	if (curr != NULL)
 	{
-		l2Error /= l2Exact;
+		meanVCell = totalVCell / structure->getSize();
+		if (getVarType() == VAR_VOLUME || getVarType() == VAR_VOLUME_REGION)
+		{
+			totalVCell *= 602;
+		}
+		if (l2Exact != 0)
+		{
+			l2Error /= l2Exact;
+		}
+		l2Error = std::sqrt(l2Error);
+
+		// curr is populated, so totalVCell would be computed.
+		if (fabs(total - totalVCell) > 1e-5)
+		{
+			pout() << " !!!!!!!!!!!!Variable " << name << ": diff=" << fabs(total - totalVCell) << ", totalChombo(" << total << ") is different from totalVCell(" << totalVCell << ")!!!!!!!!!!!!! " << std::endl;
+		}
 	}
-	l2Error = std::sqrt(l2Error);
-}
 #endif
+}
+
+void Variable::addTotal(double d)
+{
+	total += d;
+}

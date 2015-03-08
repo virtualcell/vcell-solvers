@@ -181,6 +181,9 @@ private:
 	void populateVolumeSolution(int iphase, int ivol);
 	void populateImplicitFunctions();
 #endif
+	
+	void computeTotal();
+	Real computeSum(const Vector< LevelData<EBCellFAB>* >& a_src, const Vector< EBISLayout >& a_ebisl, const int& a_comp);
 };
 
 #endif

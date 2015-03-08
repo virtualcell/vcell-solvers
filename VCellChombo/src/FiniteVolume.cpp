@@ -195,6 +195,13 @@ int main(int argc, char *argv[])
 			throw ss.str();
 		}
 
+#ifdef CH_MPI
+		if (convertChomboData)
+		{
+			throw "Generating vcell output (serial) from chombo output (parallel) is not supported in parallel";
+		}
+#endif
+		
 		FVSolver* fvSolver = new FVSolver(ifsInput, taskID);
 		ifsInput.close();
 

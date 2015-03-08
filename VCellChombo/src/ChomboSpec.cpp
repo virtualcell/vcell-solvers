@@ -25,6 +25,10 @@ ChomboSpec::ChomboSpec(ChomboGeometry* cg, int nl, double rel_tol, int boxsize, 
 		refinementRois(roi),
 		refRatios(ros)
 {
+#ifdef CH_MPI
+	bSaveVCellOutput = false;
+	bSaveChomboOutput = true;
+#endif
 }
 
 ChomboSpec::~ChomboSpec()
