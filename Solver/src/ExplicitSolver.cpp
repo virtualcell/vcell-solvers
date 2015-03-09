@@ -62,7 +62,7 @@ void ExplicitSolver::setMass(MeshElementNode &e) {
 		MeshPosition p = mesh.indexOf(e.indexes( )); 
 		const size_t slot = p.to<size_t>();
 		const BioQuanType delta = deltaMass[slot];
-		BioQuanType newMass = e.mass(sIdx) + delta; 
+		BioQuanType newMass = e.mass(sIdx) - delta; 
 		 VCELL_COND_LOG(info,sIdx == 0,e.ident( ) << " old mass " << e.mass(sIdx) << " + delta from slot " 
 			 << slot << ' '  << delta << " is " << newMass); 
 		e.setMass(sIdx,newMass);
