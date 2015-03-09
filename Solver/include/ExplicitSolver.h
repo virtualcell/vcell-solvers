@@ -10,7 +10,7 @@ namespace moving_boundary {
 		typedef spatial::Mesh<moving_boundary::CoordinateType,2,MeshElementNode> Mesh; 
 		ExplicitSolver(Mesh &m);
 		void setStepAndSpecies(TimeType t, unsigned int speciesIndex); 
-		void setCoefficent(const MeshElementNode &j, BioQuanType);
+		void setCoefficent(const MeshElementNode &j, BioQuanType, BioQuanType iDebug = 0);
 		void setSolvingFor(MeshElementNode &i, BioQuanType);
 		void solve( );
 	private:

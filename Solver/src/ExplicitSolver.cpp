@@ -11,9 +11,21 @@ using moving_boundary::MeshElementNode;
 
 using spatial::MeshPosition;
 namespace {
+	struct CoeffData {
+		MeshPosition first;
+		/*
+		* j coefficient
+		*/
+		BioQuanType second;
+		BioQuanType iComponent; 
+		CoeffData(const MeshPosition & m, BioQuanType j, BioQuanType i = 0)
+			:first(m),
+			second(j),
+			iComponent(i) {}
+	};
 	//use local for devel, refactor into class later
 	TimeType timeStep;
-	typedef std::pair<MeshPosition,BioQuanType> CoeffData;  
+	//typedef std::pair<MeshPosition,BioQuanType> CoeffData;  
 	std::vector<CoeffData> cData;
 	std::vector<BioQuanType> deltaMass;
 }
@@ -29,10 +41,38 @@ void ExplicitSolver::setStepAndSpecies(TimeType t, unsigned int s) {
 	sIdx= s;
 	cData.clear( );
 }
-void ExplicitSolver::setCoefficent(const MeshElementNode &j, BioQuanType coeff) {
+void ExplicitSolver::setCoefficent(const MeshElementNode &j, BioQuanType coeff, BioQuanType iCoeff) {
 	MeshPosition p = mesh.indexOf(j.indexes( )); 
-	cData.push_back(CoeffData(p,coeff));
+	cData.push_back(CoeffData(p,coeff,iCoeff));
 }
+#define DVERSION
+#ifdef DVERSION
+void ExplicitSolver::setSolvingFor(MeshElementNode &i, BioQuanType coeff) {
+	VCELL_COND_LOG(info,sIdx == 0,i.ident( ) << " timeStep " << timeStep); 
+	BioQuanType result = 0;
+	//explicity find and calculate the j terms
+	for (std::vector<CoeffData>::const_iterator  iter = cData.begin( ); iter != cData.end( ); ++iter) {
+		MeshElementNode & node = mesh.get(iter->first);
+		const BioQuanType jdelta =  node.mass(sIdx) * iter->second * timeStep; 
+		const BioQuanType idelta =  i.mass(sIdx) * iter->iComponent * timeStep; 
+
+
+		const BioQuanType delta = jdelta + idelta; 
+		
+		result += delta; 
+		VCELL_COND_LOG(info,sIdx == 0,i.ident( ) << " j " << node.ident( ) << " mass " << node.mass(sIdx) 
+			<< " cf " << iter->second << " * t product = " << jdelta  << " i mass " << i.mass(sIdx) << " cf " 
+			<< iter->iComponent << " * t product = " << idelta << " delta " << delta
+			<< " result " <<result); 
+	}
+	//const BioQuanType delta =  i.mass(sIdx) * coeff * timeStep;
+	//result += delta; 
+	MeshPosition p = mesh.indexOf(i.indexes( )); 
+	VCELL_COND_LOG(info,sIdx == 0,i.ident( ) << " result " <<result << " in slot " << p.to<size_t>( )); 
+	deltaMass[p.to<size_t>()]= result;
+	cData.clear( );
+}
+#else
 void ExplicitSolver::setSolvingFor(MeshElementNode &i, BioQuanType coeff) {
 	VCELL_COND_LOG(info,sIdx == 0,i.ident( ) << " timeStep " << timeStep); 
 	BioQuanType result = 0;
@@ -52,6 +92,7 @@ void ExplicitSolver::setSolvingFor(MeshElementNode &i, BioQuanType coeff) {
 	deltaMass[p.to<size_t>()]= result;
 	cData.clear( );
 }
+#endif
 
 void ExplicitSolver::solve( ) {
 	std::for_each(mesh.begin( ),mesh.end( ),SetMass(*this));

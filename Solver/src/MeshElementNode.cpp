@@ -1121,6 +1121,9 @@ using moving_boundary::TimeType;
 template <class SOLVER>
 void MeshElementNode::diffuseAdvect(SOLVER &solver, unsigned int species) {
 	if (this->isInside( )) {
+		if (matches(1,9)) {
+			int x = 4;
+		}
 		const size_t nSpecies = numSpecies( );
 		BioQuanType iCoefficient = 0; //this node's coefficent 
 		CoordinateProductType ourVolume = volumePD( );
@@ -1137,8 +1140,8 @@ void MeshElementNode::diffuseAdvect(SOLVER &solver, unsigned int species) {
 			*/
 			BioQuanType Dsld = diffusionConstant * edgeLength / nbData.distanceTo;
 			BioQuanType jCoefficient = (Dsld - nbData.halfAdvectionFlux) / nb.volumePD( ); 
-			solver.setCoefficent(nb,jCoefficient);
 			const BioQuanType iTerm = (Dsld + nbData.halfAdvectionFlux) / ourVolume;
+			solver.setCoefficent(nb,jCoefficient,-1 * iTerm);
 			iCoefficient -= iTerm; 
 			VCELL_COND_LOG(info, species == 0, std::setprecision(12) << this->ident( ) << " da with " <<  nb.ident( ) 
 				<< " diff constant " << diffusionConstant  << " edgeLength " << edgeLength << " dist to " << nbData.distanceTo
