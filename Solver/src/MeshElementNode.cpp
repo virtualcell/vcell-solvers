@@ -1098,10 +1098,11 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 			spatial::NormVector<double,2> normalVector(spatial::Point2D(nb),spatial::Point2D(*this) ); 
 			// this coefficient divided by problem domain to world scaling factor twice; one because velocity is scaled,
 			// secondly because it's going to be multiplied by edgeLength (which is squared)
-			BioQuanType averageVelComponent = dot(averageVelocity,normalVector) /distanceScaledSquared;
+			BioQuanType averageVelComponent = dot(averageVelocity,normalVector) / distanceScaledSquared;
 			nbData.halfAdvectionFlux = averageVelComponent * edgeLength / 2;
 			VCELL_LOG(info, std::setprecision(12) << this->ident( ) << " to " << nb.ident( ) 
 				<< " avg vel coefficient " << averageVelComponent << " edgeLength " << edgeLength 
+				<< " dist sc sq " << distanceScaledSquared
 				<< " half flux " << nbData.halfAdvectionFlux); 
 		}
 	}
@@ -1139,8 +1140,8 @@ void MeshElementNode::diffuseAdvect(SOLVER &solver, unsigned int species) {
 			BioQuanType cOther = nb.concValue[species];
 			*/
 			BioQuanType Dsld = diffusionConstant * edgeLength / nbData.distanceTo;
-			BioQuanType jCoefficient = (Dsld - nbData.halfAdvectionFlux) / ourVolume; 
-			const BioQuanType iTerm = (Dsld + nbData.halfAdvectionFlux) / ourVolume;
+			BioQuanType jCoefficient = (Dsld + nbData.halfAdvectionFlux) / ourVolume; 
+			const BioQuanType iTerm = (Dsld - nbData.halfAdvectionFlux) / ourVolume;
 			solver.setCoefficent(nb,jCoefficient, iTerm);
 			iCoefficient += iTerm; 
 			VCELL_COND_LOG(info, species == 0, std::setprecision(12) << this->ident( ) << " da with " <<  nb.ident( ) 
