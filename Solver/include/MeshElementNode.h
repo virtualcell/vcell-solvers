@@ -362,9 +362,11 @@ namespace moving_boundary {
 		*/
 		void setConcentration(size_t i, moving_boundary::BioQuanType c) {
 			using namespace MeshElementStateful;
+			/*
 			if (state( ) != initialInside && state( ) != initialBoundary) {
 				throw std::domain_error("setConcentration");
 			}
+			*/
 			if (vcell_portable::isNotANumber(c)) {
 				throw std::invalid_argument("setConcentration not a number");
 				std::cout << "nan" << std::endl;
@@ -376,7 +378,22 @@ namespace moving_boundary {
 				concValue[i] = c;
 			}
 		}
+		void setTransConcentration(size_t i, moving_boundary::BioQuanType c) {
+			if (vcell_portable::isNotANumber(c)) {
+				throw std::invalid_argument("setConcentration not a number");
+				std::cout << "nan" << std::endl;
+			}
+			assert (i < numSpecies( ));
+			assert ( c >= 0);
+			if (c > 0) {
+				amtMassTransient[i] = c * volumePD( );
+				concValue[i] = c;
+			}
+		}
 
+		moving_boundary::BioQuanType priorConcentration(size_t i) const { 
+			return concValue[i];
+		}
 		/**
 		* return previous concentration value;
 		* does not necessarily equal value of last call

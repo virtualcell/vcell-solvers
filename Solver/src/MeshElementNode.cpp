@@ -1101,7 +1101,7 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 			BioQuanType averageVelComponent = dot(averageVelocity,normalVector) /distanceScaledSquared;
 			nbData.halfAdvectionFlux = averageVelComponent * edgeLength / 2;
 			VCELL_LOG(info, std::setprecision(12) << this->ident( ) << " to " << nb.ident( ) 
-				<< "avg vel coefficient " << averageVelComponent << " edgeLenth " << edgeLength 
+				<< " avg vel coefficient " << averageVelComponent << " edgeLength " << edgeLength 
 				<< " half flux " << nbData.halfAdvectionFlux); 
 		}
 	}
@@ -1139,13 +1139,13 @@ void MeshElementNode::diffuseAdvect(SOLVER &solver, unsigned int species) {
 			BioQuanType cOther = nb.concValue[species];
 			*/
 			BioQuanType Dsld = diffusionConstant * edgeLength / nbData.distanceTo;
-			BioQuanType jCoefficient = (Dsld - nbData.halfAdvectionFlux) / nb.volumePD( ); 
+			BioQuanType jCoefficient = (Dsld - nbData.halfAdvectionFlux) / ourVolume; 
 			const BioQuanType iTerm = (Dsld + nbData.halfAdvectionFlux) / ourVolume;
-			solver.setCoefficent(nb,jCoefficient,-1 * iTerm);
-			iCoefficient -= iTerm; 
+			solver.setCoefficent(nb,jCoefficient, iTerm);
+			iCoefficient += iTerm; 
 			VCELL_COND_LOG(info, species == 0, std::setprecision(12) << this->ident( ) << " da with " <<  nb.ident( ) 
 				<< " diff constant " << diffusionConstant  << " edgeLength " << edgeLength << " dist to " << nbData.distanceTo
-				<< " Ds / d " << Dsld << " half flux " << nbData.halfAdvectionFlux <<  " nb vol " << nb.volumePD( )
+				<< " Ds / d " << Dsld << " half flux " << nbData.halfAdvectionFlux 
 				<< " jC " << jCoefficient << " our volume " << ourVolume << " iTerm " << iTerm << " iC " << iCoefficient);
 
 		}

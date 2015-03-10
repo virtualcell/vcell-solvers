@@ -287,7 +287,7 @@ namespace spatial {
 		* @tparam type to conver to
 		*/
 		template <typename T>
-		T to( ) {
+		T to( ) const {
 			check<T>();
 			return static_cast<T>(index);
 		}
@@ -297,11 +297,15 @@ namespace spatial {
 		 template<class CT, int N, class TELEMENT> friend struct Mesh;
 		 IndexType index;
 #ifdef NDEBUG
-		template <typename T> void check( ) {}
+		template <typename T> void check( ) const {}
 #else
-		template <typename T> void check( );
+		template <typename T> void check( ) const;
 #endif
 	};
+
+	inline bool operator< (const MeshPosition &lhs, const MeshPosition &rhs) {
+		return lhs.to<size_t>( ) < rhs.to<size_t>( ) ;
+	}
 
 	template<class CT, int N, class TELEMENT>
 	struct Mesh : public MeshDef<CT,N> {

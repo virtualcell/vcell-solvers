@@ -19,7 +19,7 @@ std::vector<REAL> spatial::MeshDef<REAL,N>::coordinateValues(spatial::Axis a) co
 
 #ifndef NDEBUG
 template <typename T> 
-void spatial::MeshPosition::check( ) {
+void spatial::MeshPosition::check( ) const {
 	if (index > std::numeric_limits<T>::max( ) ) {
 		VCELL_EXCEPTION(out_of_range, "index value " << index <<  " greater max permited by type " //<< typeid(T).name( )
 			<< ", " << std::numeric_limits<T>::max( ) );
@@ -38,6 +38,6 @@ namespace spatial {
 	template struct MeshDef<int32_t,2>; 
 	template struct MeshDef<int64_t,2>; 
 
-	template unsigned short MeshPosition::to<unsigned short>( );
-	template size_t MeshPosition::to<size_t>( );
+	template unsigned short MeshPosition::to<unsigned short>( ) const;
+	template size_t MeshPosition::to<size_t>( ) const;
 }
