@@ -1,17 +1,75 @@
 #ifndef vcellconvert_h
 #define vcellconvert_h
-#include <boost/lexical_cast.hpp>
 #include <string>
 #include <cassert>
 namespace vcell_util {
 
+	template <typename TARGET, typename BASE> 
+	struct VCellConvertUHelper {
+		TARGET operator( )(BASE b) {
+			if (b < std::numeric_limits<TARGET>::max( )) {
+				return static_cast<TARGET>(b);
+			}
+			throw std::out_of_range("unsigned convert");
+		}
+	};
 	template <typename TARGET>
 	struct VCellConvert {
 		TARGET operator( )(const char *v) {
-			return boost::lexical_cast<TARGET>(v);
+			 SFINAE! //add unimplemented type
 		}
 	};
 
+	template <>
+	struct VCellConvert<unsigned long> {
+		unsigned long operator( )(const char *v) {
+			char *end;
+			unsigned long ul = std::strtoul(v,&end,10);
+			const size_t len = end - v;
+			if (len != strlen(v) ) { 
+				throw std::domain_error("invalid unsigned int type");
+			}
+			return ul;
+		}
+	};
+	template <>
+	struct VCellConvert<unsigned short> {
+		unsigned short operator( )(const char *v) {
+			return VCellConvertUHelper<unsigned short, unsigned long>( )( VCellConvert<unsigned long>( )(v) ); 
+		}
+	};
+	template <>
+	struct VCellConvert<unsigned int> {
+		unsigned int operator( )(const char *v) {
+			return VCellConvertUHelper<unsigned int, unsigned long>( )( VCellConvert<unsigned long>( )(v) ); 
+		}
+	};
+
+	template <>
+	struct VCellConvert<long> {
+		long operator( )(const char *v) {
+			char *end;
+			long lng = std::strtol(v,&end,10);
+			const size_t len = end - v;
+			if (len != strlen(v) ) { 
+				throw std::domain_error("invalid unsigned int type");
+			}
+			return lng;
+		}
+	};
+
+	template <>
+	struct VCellConvert<double> {
+		double operator( )(const char *v) {
+			char *end;
+			double d = std::strtod(v,&end);
+			const size_t len = end - v;
+			if (len != strlen(v) ) { 
+				throw std::domain_error("invalid unsigned double");
+			}
+			return d;
+		}
+	};
 	/*
 	* specialize template; boost does not handle std::string conversion
 	*/
