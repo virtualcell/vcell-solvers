@@ -1,5 +1,6 @@
 #ifndef vcellconvert_h
 #define vcellconvert_h
+#include <limits>
 #include <string>
 #include <cassert>
 namespace vcell_util {
@@ -16,7 +17,7 @@ namespace vcell_util {
 	template <typename TARGET>
 	struct VCellConvert {
 		TARGET operator( )(const char *v) {
-			 SFINAE! //add unimplemented type
+			 return v; //SFINAE! add unimplemented type
 		}
 	};
 
