@@ -24,11 +24,12 @@ include_directories(SYSTEM
 	${CMAKE_BINARY_DIR}/${HDF_VERSION} 
 	../${HDF_VERSION}/src 
 	../${HDF_VERSION}/c++/src)
+include_directories(../vcommons/include)
 
 
 add_executable(TestMovingBoundary ${SRC_FILES} ${HDR_FILES})
-add_dependencies(TestMovingBoundary MovingBoundaryLib gtest frontier ExpressionParser HDF5)
-target_link_libraries(TestMovingBoundary MovingBoundaryLib gtest frontier ExpressionParser hdf5_cpp)
+add_dependencies(TestMovingBoundary MovingBoundaryLib gtest frontier ExpressionParser HDF5 vcommons)
+target_link_libraries(TestMovingBoundary MovingBoundaryLib gtest frontier ExpressionParser hdf5_cpp vcommons)
 install(TARGETS TestMovingBoundary 
 	RUNTIME DESTINATION bin)
 

@@ -717,25 +717,6 @@ namespace moving_boundary {
 
 		/**
 		* Functor
-		* preset solver
-		*/
-		struct SolverRemember { 
-			SolverRemember(ExplicitSolver & s)
-			:solver(s) {}
-			void operator( )(MeshElementNode * p) {
-				assert(p != nullptr);
-				VCELL_LOG(trace,p->indexInfo( ) << " solver remember"); 
-					if (p->mPos() == spatial::boundarySurface) {
-						solver.remember(*p);
-					}
-					else {
-						throw std::domain_error("SolverRemember");
-					}
-			}
-			ExplicitSolver & solver;
-		};
-		/**
-		* Functor
 		* FindNeighborEdges 
 		*/
 		struct FindNeighborEdges  : public FunctorBase {
@@ -1052,10 +1033,7 @@ namespace moving_boundary {
 						//					std::ofstream f("fullvdump.m");
 						//					voronoiMesh.matlabPlot(f, &currentFront);
 					}
-					std::for_each(boundaryElements.begin( ),boundaryElements.end( ),SolverRemember(solver));
 					std::for_each(boundaryElements.begin( ),boundaryElements.end( ),MoveFront(*this));
-
-
 
 					try {
 						std::for_each(primaryMesh.begin( ),primaryMesh.end( ), React(currentTime,timeIncr) );

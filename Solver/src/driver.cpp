@@ -163,7 +163,6 @@ int main(int argc, char *argv[])
 
 namespace {
 
-
 	void setupTrace(const XMLElement &root) {
 		const tinyxml2::XMLElement *trace = root.FirstChildElement("trace");
 		if (trace != nullptr) {

@@ -26,14 +26,15 @@ include_directories(SYSTEM
 	${CMAKE_BINARY_DIR}/${HDF_VERSION} 
 	../${HDF_VERSION}/src 
 	../${HDF_VERSION}/c++/src)
+include_directories(../vcommons/include)
 
 add_library(MovingBoundaryLib ${SRC_FILES} ${HEADER_FILES} ${BRIDGE_HEADER_FILES})
 add_dependencies(MovingBoundaryLib FronTierLib ExpressionParser)
 
 
 add_executable(MovingBoundary ${SOLVER_MAIN})
-add_dependencies(MovingBoundary MovingBoundaryLib frontier ExpressionParser HDF5)
-target_link_libraries(MovingBoundary MovingBoundaryLib frontier ExpressionParser hdf5_cpp)
+add_dependencies(MovingBoundary MovingBoundaryLib frontier ExpressionParser HDF5 vcommons)
+target_link_libraries(MovingBoundary MovingBoundaryLib frontier ExpressionParser hdf5_cpp vcommons)
 #target_link_libraries(VCellFronTier ${DEP_LIBS})
 add_executable(AllocTest ${ALLOC_MAIN})
 add_dependencies(AllocTest MovingBoundaryLib frontier ExpressionParser HDF5)

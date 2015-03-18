@@ -1142,7 +1142,7 @@ void MeshElementNode::diffuseAdvect(SOLVER &solver, unsigned int species) {
 			BioQuanType Dsld = diffusionConstant * edgeLength / nbData.distanceTo;
 			BioQuanType jCoefficient = (Dsld + nbData.halfAdvectionFlux) / ourVolume; 
 			const BioQuanType iTerm = (Dsld - nbData.halfAdvectionFlux) / ourVolume;
-			solver.setCoefficent(nb,jCoefficient, iTerm);
+			solver.setCoefficent(*this,nb,jCoefficient, iTerm);
 			iCoefficient += iTerm; 
 			VCELL_COND_LOG(info, species == 0, std::setprecision(12) << this->ident( ) << " da with " <<  nb.ident( ) 
 				<< " diff constant " << diffusionConstant  << " edgeLength " << edgeLength << " dist to " << nbData.distanceTo
@@ -1150,7 +1150,7 @@ void MeshElementNode::diffuseAdvect(SOLVER &solver, unsigned int species) {
 				<< " jC " << jCoefficient << " our volume " << ourVolume << " iTerm " << iTerm << " iC " << iCoefficient);
 
 		}
-		solver.setSolvingFor(*this,iCoefficient);
+		solver.setSolvingFor(*this,iCoefficient, concentration(species));
 	} //isInside
 }
 

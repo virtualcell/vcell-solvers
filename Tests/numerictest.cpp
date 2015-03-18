@@ -2,6 +2,7 @@
 #include <cassert>
 #include <algorithm>
 #include <gtest/gtest.h>
+#include <cstdlib>
 #include <NumericConvert.h>
 using std::cout;
 using std::endl;
@@ -30,3 +31,17 @@ TEST(vcell_util,valid) {
 	ASSERT_FALSE(validMultiply<short>(f1,f2));
 
 }
+//namespace {
+//	void testc(const char *c) {
+//		char *end;
+//		unsigned long ul = std::strtoul(c,&end,10);
+//		int len = end - c;
+//		cout << "in " << c << " out " << ul << " length " << len << endl;
+//	}
+//}
+//TEST(vcell_util,conversion) {
+//	testc("4");
+//	testc("3dognight");
+//	testc("-4");
+//	testc("cat");
+//}

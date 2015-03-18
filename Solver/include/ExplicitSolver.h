@@ -9,11 +9,10 @@ namespace moving_boundary {
 	struct ExplicitSolver {
 		typedef spatial::Mesh<moving_boundary::CoordinateType,2,MeshElementNode> Mesh; 
 		ExplicitSolver(Mesh &m);
-		void begin( );
-		void remember(MeshElementNode & boundaryNode); 
+		void begin( ) {}
 		void setStepAndSpecies(TimeType t, unsigned int speciesIndex); 
-		void setCoefficent(const MeshElementNode &j, BioQuanType, BioQuanType iDebug = 0);
-		void setSolvingFor(MeshElementNode &i, BioQuanType);
+		void setCoefficent(const MeshElementNode &i, const MeshElementNode &j, BioQuanType coeff, BioQuanType iDebug = 0);
+		void setSolvingFor(MeshElementNode &i, BioQuanType coeff, BioQuanType rhs);
 		void solve( );
 	private:
 		void setMass(MeshElementNode &) {}

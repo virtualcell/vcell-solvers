@@ -40,4 +40,5 @@ namespace spatial {
 
 	template unsigned short MeshPosition::to<unsigned short>( ) const;
 	template size_t MeshPosition::to<size_t>( ) const;
+	template int MeshPosition::to<int>( ) const;
 }
