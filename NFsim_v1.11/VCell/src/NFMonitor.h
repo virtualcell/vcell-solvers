@@ -16,21 +16,30 @@ namespace vcell_nfsim {
 		 */
 		void reportStart( );
 		void reportComplete( );
+	private:
 		/**
 		 * receives each char written to stream (cout)
 		 */
-		void intercept(char);
-	private:
+		void interceptCout(char);
+		/**
+		 * receives each char written to stream (cerr)
+		 */
+		void interceptCerr(char);
 		void endOfLine();
+		void endOfErrLine();
 		void parseStartToken();
 		void parseTimeToken();
 		void parseFailToken();
 		void process(char);
+		void processErr(char);
+		void bufferOverflow(int line);
 		timeUnit timeDiff(clock_t end, clock_t start);
 
 		static const size_t bufferSize = 1024;
 		char buffer[bufferSize];
+		char errBuffer[bufferSize];
 		size_t cursor;
+		size_t errCursor;
 		bool active;
 		const char *startOfTimeData;
 		/**
@@ -51,10 +60,31 @@ namespace vcell_nfsim {
 		bool checkSimTime;
 		bool endMessageReceived;
 		/**
-		 * last fail message parsed
+		 * fail messages
 		 */
-		std::string failMessage;
+		std::ostringstream failStream;
+
+		struct Suppress;
+		friend struct Suppress;
+		friend struct NFMonitorCout;
+		friend struct NFMonitorCerr;
+	};
+	struct NFMonitorCout {
+		NFMonitor &mon;
+		NFMonitorCout(NFMonitor &m)
+			:mon(m) {}
+		void intercept(char c) {
+			mon.interceptCout(c);
+		}
 	};
 
+	struct NFMonitorCerr {
+		NFMonitor &mon;
+		NFMonitorCerr(NFMonitor &m)
+			:mon(m) {}
+		void intercept(char c) {
+			mon.interceptCerr(c);
+		}
+	};
 }
 #endif

@@ -80,8 +80,13 @@ int main(int argc, char **argv) {
 		int ecode = -100;
 		{
 			using vcell_nfsim::NFMonitor;
+			using vcell_nfsim::NFMonitorCout;
+			using vcell_nfsim::NFMonitorCerr;
 			NFMonitor monitor;
-			vcell_util::OStreamSpy<NFMonitor> coutToMonitor(std::cout, monitor);
+			NFMonitorCout monitorCout(monitor);
+			vcell_util::OStreamSpy<NFMonitorCout> coutToMonitor(std::cout, monitorCout);
+			NFMonitorCerr monitorCerr(monitor);
+			vcell_util::OStreamSpy<NFMonitorCerr> cerrToMonitor(std::cerr, monitorCerr);
 			if (isMessaging) {
 				monitor.reportStart();
 			}
