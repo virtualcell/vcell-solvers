@@ -29,7 +29,7 @@ using namespace decaf::util;
 using namespace decaf::lang;
 using namespace cms;
 #endif
-
+#include <iostream>
 using namespace std;
 
 #if (defined(WIN32) || defined(WIN64) )
@@ -169,14 +169,14 @@ private:
 
 	WorkerEvent* sendStatus();
 	bool bStopRequested;
+	std::ostream & logStream ( ) {
+		return *pStream;
+	}
 
 #ifdef USE_MESSAGING
 	bool bStarted;
 
 	SimulationMessaging(const char* broker, const char* smqusername, const char* passwd, const char* qname, const char*tname, const char* vcusername, int simKey, int jobIndex,  int taskID, int ttl_low=DEFAULT_TTL_LOW, int ttl_high=DEFAULT_TTL_HIGH);
-	std::ostream & logStream ( ) {
-		return *pStream;
-	}
 
 	WorkerEvent* getWorkerEvent();
 	void keepAlive();
