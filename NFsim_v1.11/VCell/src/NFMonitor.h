@@ -2,6 +2,7 @@
 #define NFMonitor_h
 #include <array>
 #include <ctime>
+#include <sstream>
 namespace vcell_nfsim {
 	struct NFMonitor {
 		typedef unsigned int timeUnit;
