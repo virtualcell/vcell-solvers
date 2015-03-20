@@ -82,11 +82,31 @@ include_directories()
 link_directories()
 
 link_libraries()
-
+#	set(DEP_LIBS vcell pcgwrapper ExpressionParser hdf5_cpp hdf5 IDAWin PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${JMS_LIBS} zip unzip)
 set(exe_target NFsim)
 if (ARCH_64bit) 
 	set(exe_target ${exe_target}_x64)
 endif (ARCH_64bit) 
 add_executable(${exe_target} ${SRC_FILES})
 
+#vcell additions
+if (UNIX)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+  set(CXX_FLAGS "${CXX_FLAGS} -std=c++0x")
+endif (UNIX) 
+aux_source_directory(${PROJECT_SOURCE_DIR}/../VCell/src VSRC)
+add_library(vlib STATIC ${VSRC})
+set_target_properties(vlib PROPERTIES LIBRARY_OUTPUT_DIRECTORY
+	${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/../VCell/include)
+include_directories(${JMS_INCS})
+include_directories(${PROJECT_SOURCE_DIR}/../../VCell/include)
+include_directories(${PROJECT_SOURCE_DIR}/../../vcommons/include)
+include_directories(${BOOST_VERSION})
+add_definitions(${JMS_DEFS})
+add_dependencies(${exe_target} VCell vcommons)
+target_link_libraries(${exe_target} vlib vcell vcommons ${JMS_LIBS} vcommons) #order matters
+#vcell additions
+
 install(TARGETS ${exe_target} RUNTIME DESTINATION ${OPTION_EXE_DIRECTORY})
+

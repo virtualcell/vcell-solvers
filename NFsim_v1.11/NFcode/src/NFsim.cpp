@@ -182,7 +182,7 @@ System *initSystemFromFlags(map<string,string> argMap, bool verbose);
 /*!
   @author Michael Sneddon
 */
-int main(int argc, char *argv[])
+int NFsimMain(int argc, char *argv[])
 {
 
 	// Check if scheduler should handle the work.  This functionality is

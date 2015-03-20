@@ -6,7 +6,8 @@ set(RULE_MESSAGES OFF)
 set(CMAKE_COLOR_MAKEFILE OFF)
 set(HDF_VERSION "hdf5-1.8.11")
 set(ZLIB_VERSION "zlib-1.2.8")
-
+set(_ECLIPSE_VERSION "4.4")
+set(BOOST_VERSION "${CMAKE_SOURCEIDR}/boost_1_53_0")
 #include (VCellCMakeShowVariables.txt)
 
 if(DEFINED CMAKE_BUILD_TYPE)
@@ -39,7 +40,7 @@ include (FindZLIB)
 #message("extra "${CMAKE_EXTRA_GENERATOR})
 #message("system "${CMAKE_SYSTEM_NAME})
 #message("windows "${WINDOWS})
-set(CHOMBO_SOLVER on)
+option(CHOMBO_SOLVER "Build Chombo" on)
 set(FV_SOLVER on)
 set(STOCHASTIC_SOLVER on)
 set(NFSIM_EXE on)
@@ -401,6 +402,8 @@ endif()
 #######################################
  
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
+	
+	add_subdirectory(vcommons)
 	add_subdirectory(ExpressionParser)
 	
 	set(HDF5_EXTERNALLY_CONFIGURED 1)
@@ -410,7 +413,8 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 #		cmake_policy(SET CMP0000 OLD)
 #	endif (CYGWIN) 
 	add_subdirectory(${HDF_VERSION})
-	if (NOT MSVC)
+	if (${CHOMBO_SOLVER} AND NOT MSVC) 
+
 		add_subdirectory(VCellChombo)
 	endif()
 #	include_directories(${ZLIB_VERSION})

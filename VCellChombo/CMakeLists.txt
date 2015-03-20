@@ -1,4 +1,5 @@
 project(VCellChombo)
+message(STATUS "VCellChombo")
 
 if (NOT DEFINED HDF_VERSION) 
 	message(FATAL_ERROR "HDF_VERSION not set")

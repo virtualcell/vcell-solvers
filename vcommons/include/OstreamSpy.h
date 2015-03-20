@@ -55,7 +55,7 @@ namespace vcell_util {
 	* class to intercept writes to an existing ostream
 	* @tparam Spy class which implements intercept(char_type)
 	*/
-	template <class Spy, typename char_type, typename traits = std::char_traits<char_type> >
+	template <class Spy, typename char_type = char, typename traits = std::char_traits<char_type> >
 	struct OStreamSpy {
 		/**
 		@param target stream to intercept

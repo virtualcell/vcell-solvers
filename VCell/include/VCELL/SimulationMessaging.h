@@ -146,16 +146,24 @@ public:
 	}
 
 #ifdef USE_MESSAGING
-	static SimulationMessaging* create(char* broker, char* smqusername, char* passwd, char* qname, char* tname, char* vcusername, int simKey, int jobIndex, int taskID, int ttl_low=DEFAULT_TTL_LOW, int ttl_high=DEFAULT_TTL_HIGH);
+	static SimulationMessaging* create(const char* broker, const char* smqusername, const char* passwd, const char* qname, const char* tname,
+			const char* vcusername, int simKey, int jobIndex, int taskID, int ttl_low=DEFAULT_TTL_LOW, int ttl_high=DEFAULT_TTL_HIGH);
     void onException(const CMSException& anException);
 	void onMessage(const Message* aMessage) throw();
 	void waitUntilFinished();
 	friend void* startMessagingThread(void* param);
 #endif
+	void setLogStream(std::ostream &dest) {
+		pStream = &dest;
+	}
 
 private:
 	SimulationMessaging();
 	static SimulationMessaging *m_inst;
+	/**
+	 * where logging goes
+	 */
+	std::ostream *pStream;
 	WorkerEvent* workerEvent;
 	int workerEventOutputMode;
 
@@ -165,7 +173,10 @@ private:
 #ifdef USE_MESSAGING
 	bool bStarted;
 
-	SimulationMessaging(char* broker, char* smqusername, char* passwd, char* qname, char*tname, char* vcusername, int simKey, int jobIndex,  int taskID, int ttl_low=DEFAULT_TTL_LOW, int ttl_high=DEFAULT_TTL_HIGH);
+	SimulationMessaging(const char* broker, const char* smqusername, const char* passwd, const char* qname, const char*tname, const char* vcusername, int simKey, int jobIndex,  int taskID, int ttl_low=DEFAULT_TTL_LOW, int ttl_high=DEFAULT_TTL_HIGH);
+	std::ostream & logStream ( ) {
+		return *pStream;
+	}
 
 	WorkerEvent* getWorkerEvent();
 	void keepAlive();

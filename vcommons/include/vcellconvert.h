@@ -91,7 +91,7 @@ namespace vcell_util {
 		char * operator( )(const char *v) {
 			assert(false);
 			//do not use this specialization; use <const char *> instead
-			return nullptr;
+			return 0;
 		}  
 	};
 	template <>
