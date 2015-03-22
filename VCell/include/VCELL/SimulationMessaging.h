@@ -153,25 +153,15 @@ public:
 	void waitUntilFinished();
 	friend void* startMessagingThread(void* param);
 #endif
-	void setLogStream(std::ostream &dest) {
-		pStream = &dest;
-	}
 
 private:
 	SimulationMessaging();
 	static SimulationMessaging *m_inst;
-	/**
-	 * where logging goes
-	 */
-	std::ostream *pStream;
 	WorkerEvent* workerEvent;
 	int workerEventOutputMode;
 
 	WorkerEvent* sendStatus();
 	bool bStopRequested;
-	std::ostream & logStream ( ) {
-		return *pStream;
-	}
 
 #ifdef USE_MESSAGING
 	bool bStarted;

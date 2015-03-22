@@ -18,11 +18,13 @@
 int NFsimMain(int argc, char **argv);
 
 namespace {
-	vcell::JMSHolder getXML(const char * const filename);
+	//vcell::JMSHolder getXML(const char * const filename);
+	bool startupMessaging(int argc, char **argv, vcell::JMSHolder & holder);
 	void nfsimExit(int returnCode, std::string& errorMsg);
 	void printUsage();
 	int parseInteger(const char * input);
 	const int unsetTaskId = -1;
+	inline void noop( ) {}
 	/**
 	 * pretty print boolean on / off
 	 */
@@ -30,6 +32,11 @@ namespace {
 		return b ? "on" : "off";
 	}
 }
+#ifdef USE_MESSAGING
+#define NETWORK_MESSAGING(x,y) x
+#else
+#define NETWORK_MESSAGING(x,y) y
+#endif
 
 #if !defined(SVNVERSION)
 #error SVNVERSION version not defined
@@ -37,46 +44,16 @@ namespace {
 #define VCELLSVNQ(x) #x
 #define VCELLSVNQUOTE(x) VCELLSVNQ(x)
 
-#ifdef USE_MESSAGING
 int main(int argc, char **argv) {
 
 	std::string errorMessage = "Exception: ";
 	vcell::JMSHolder holder; //we need to keep these strings in memory until end of program
 	try {
 		std::cout
-				<< "NFsim messaging version $URL$"VCELLSVNQUOTE(SVNVERSION)
+				<< "NFsim " << NETWORK_MESSAGING("network","console" ) << " messaging version $URL$"VCELLSVNQUOTE(SVNVERSION)
 				<< std::endl;
-
-		int taskId = unsetTaskId;
-		const char * inputFilename = 0;
-		const int penultimate = argc - 1;
-		for (int i = 0; i < penultimate; i++) {
-			if (strcmp(argv[i], "-tid") == 0) {
-				taskId = parseInteger(argv[i + 1]);
-			}
-			if (strcmp(argv[i], "-xml") == 0) {
-				inputFilename = argv[i + 1];
-			}
-		}
-		bool isMessaging = (taskId != unsetTaskId);
-		std::cout << "VCell messaging is " << onOrOff( isMessaging ) << std::endl;
-		if (isMessaging) {
-			if (inputFilename != 0) {
-				holder = getXML(inputFilename);
-				SimulationMessaging::create(holder.broker.c_str(),
-						holder.jmsUser.c_str(), holder.pw.c_str(),
-						holder.queue.c_str(), holder.topic.c_str(),
-						holder.vcellUser.c_str(), holder.simKey,
-						holder.jobIndex, taskId);
-				SimulationMessaging::getInstVar()->start(); // start the thread
-			} else {
-				VCELL_EXCEPTION(invalid_argument,
-						"no filename found with taskId = " << taskId);
-			}
-		}
-		else {
-				SimulationMessaging::create( );
-		}
+		bool isMessaging = startupMessaging(argc,argv,holder);
+		std::cout << " messaging is " << onOrOff(isMessaging) << std::endl;
 		int ecode = -100;
 		{
 			using vcell_nfsim::NFMonitor;
@@ -87,13 +64,9 @@ int main(int argc, char **argv) {
 			vcell_util::OStreamSpy<NFMonitorCout> coutToMonitor(std::cout, monitorCout);
 			NFMonitorCerr monitorCerr(monitor);
 			vcell_util::OStreamSpy<NFMonitorCerr> cerrToMonitor(std::cerr, monitorCerr);
-			if (isMessaging) {
-				monitor.reportStart();
-			}
+			monitor.reportStart();
 			ecode = NFsimMain(argc, argv);
-			if (isMessaging && ecode == 0) {
-				monitor.reportComplete();
-			}
+			monitor.reportComplete();
 		} //we want coutToMonitor destroyed, in case messaging going to cout
 		nfsimExit(ecode, errorMessage);
 	} catch (const std::exception &e) {
@@ -109,20 +82,7 @@ int main(int argc, char **argv) {
 		nfsimExit(-1, errorMessage);
 	}
 }
-#else
-int main(int argc, char **argv) {
-	std::cout
-	<< "NFsim (no messaging) version $URL$"VCELLSVNQUOTE(SVNVERSION)
-	<< std::endl;
-	return NFsimMain(argc,argv);
-}
-#endif
 
-#ifdef USE_MESSAGING
-#define MESSAGING_ONLY(x) x
-#else
-#define MESSAGING_ONLY(x)
-#endif
 
 namespace {
 
@@ -136,15 +96,12 @@ namespace {
 				SimulationMessaging::getInstVar()->setWorkerEvent(
 						new WorkerEvent(JOB_FAILURE, errorMsg.c_str()));
 			}
-			MESSAGING_ONLY(
-					SimulationMessaging::getInstVar()->waitUntilFinished()
-					;
-		)
+			NETWORK_MESSAGING(SimulationMessaging::getInstVar()->waitUntilFinished();,  noop( ); )
 	}
 }
 
 void printUsage() {
-	std::cout << "Arguments : [NFsim args] "MESSAGING_ONLY("[-tid taskID]")
+	std::cout << "Arguments : [NFsim args] "NETWORK_MESSAGING("[-tid taskID]","")
 			<< std::endl;
 }
 
@@ -174,6 +131,7 @@ int parseInteger(const char * input) {
  JMS_PARAM_END
  */
 
+#ifdef USE_MESSAGING
 vcell::JMSHolder getXML(const char * const filename) {
 	vcell::JMSHolder pkg;
 
@@ -204,4 +162,44 @@ vcell::JMSHolder getXML(const char * const filename) {
 	pkg.jobIndex = convertChildElement<unsigned int>(*jms, "jobIndex");
 	return pkg;
 }
+
+bool startupMessaging(int argc, char **argv, vcell::JMSHolder & holder)  {
+		int taskId = unsetTaskId;
+		const char * inputFilename = 0;
+		const int penultimate = argc - 1;
+		for (int i = 0; i < penultimate; i++) {
+			if (strcmp(argv[i], "-tid") == 0) {
+				taskId = parseInteger(argv[i + 1]);
+			}
+			if (strcmp(argv[i], "-xml") == 0) {
+				inputFilename = argv[i + 1];
+			}
+		}
+		bool isMessaging = (taskId != unsetTaskId);
+		std::cout << "VCell messaging is " << onOrOff( isMessaging ) << std::endl;
+		if (isMessaging) {
+			if (inputFilename != 0) {
+				holder = getXML(inputFilename);
+				SimulationMessaging::create(holder.broker.c_str(),
+						holder.jmsUser.c_str(), holder.pw.c_str(),
+						holder.queue.c_str(), holder.topic.c_str(),
+						holder.vcellUser.c_str(), holder.simKey,
+						holder.jobIndex, taskId);
+				SimulationMessaging::getInstVar()->start(); // start the thread
+			} else {
+				VCELL_EXCEPTION(invalid_argument,
+						"no filename found with taskId = " << taskId);
+			}
+		}
+		else {
+				SimulationMessaging::create( );
+		}
+		return isMessaging;
+}
+#else
+bool startupMessaging(int argc, char **argv, vcell::JMSHolder & holder)  {
+	SimulationMessaging::create( );
+	return true;
+}
+#endif
 }

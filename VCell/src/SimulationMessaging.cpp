@@ -2,7 +2,7 @@
 #include <utility>
 #include <iostream>
 using std::cerr;
-//using std::cout;
+using std::cout;
 using std::endl;
 
 #include <stdio.h>
@@ -47,7 +47,6 @@ SimulationMessaging::SimulationMessaging() {
 #ifdef USE_MESSAGING
 SimulationMessaging::SimulationMessaging(const char* broker, const char* smqusername, const char* passwd, const char*qname,
 		const char* tname, const char* vcusername, int simKey, int jobIndex, int taskID, int ttl_low, int ttl_high)
-:pStream(&std::cout)
 {
 	workerEvent = NULL;
 
@@ -83,7 +82,7 @@ SimulationMessaging::SimulationMessaging(const char* broker, const char* smquser
 		WSAStartup( wVersionRequested, &wsaData );			
 #endif
 		gethostname(m_hostname, 256);
-		//logStream( ) << "hostname is " << m_hostname << endl;
+		//cout) << "hostname is " << m_hostname << endl;
 	}
 
 	time(&lastSentEventTime);
@@ -157,12 +156,14 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 			fflush(stdout);
 			break;
 		case JOB_STARTING:
-			logStream( ) << workerEvent->eventMessage << endl;
+			cout<< workerEvent->eventMessage << endl;
 			break;
 		case JOB_COMPLETED:
 			cerr << "Simulation Complete in Main() ... " << endl;
 			break;
 		case JOB_FAILURE:
+			printf("[[[failure:%s]]]", workerEvent->eventMessage);
+			fflush(stdout);
 			cerr << workerEvent->eventMessage << endl;			
 			break;
 		}
@@ -206,14 +207,14 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 		//timePoint
 		msg->setDoubleProperty(WORKEREVENT_TIMEPOINT, newWorkerEvent->timepoint);		
 
-		logStream( ) << "!!!SimulationMessaging::sendStatus [" << (long)m_simKey << ":" << getStatusString(newWorkerEvent->status);
+		cout << "!!!SimulationMessaging::sendStatus [" << (long)m_simKey << ":" << getStatusString(newWorkerEvent->status);
 		if (revisedMsg != NULL) {
-			logStream( ) << ":" << revisedMsg;
+			cout << ":" << revisedMsg;
 		} else {
-			logStream( ) << ":" << newWorkerEvent->progress << ":" << newWorkerEvent->timepoint;
+			cout << ":" << newWorkerEvent->progress << ":" << newWorkerEvent->timepoint;
 		}
 
-		logStream( ) << "]" << endl;
+		cout << "]" << endl;
 		//send
 		try {
 			int timeToLive = m_ttl_highPriority;
@@ -236,7 +237,7 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 			}
 			qProducer->send(msg, DeliveryMode::PERSISTENT, DEFAULT_PRIORITY, timeToLive);
 		} catch (CMSException& e) {
-			logStream( ) << "!!!SimulationMessaging::sendStatus [" << e.getMessage() << "]" << endl;
+			cout << "!!!SimulationMessaging::sendStatus [" << e.getMessage() << "]" << endl;
 		}
 
 		time(&lastSentEventTime);
@@ -244,7 +245,7 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 #if ( defined(WIN32) || defined(WIN64) )
 			SetEvent(hMessagingThreadEndEvent);
 #else // UNIX
-			logStream( ) <<  "!!!thread exiting" << endl;
+			cout <<  "!!!thread exiting" << endl;
 			pthread_exit(NULL);
 #endif
 		}
@@ -428,13 +429,13 @@ void SimulationMessaging::onMessage(const Message* message) throw()
     {
 		vector<string> pNames = message->getPropertyNames();
 		for(int i=0; i<pNames.size(); i++){
-			logStream( ) << pNames.at(i) << endl;
+			cout << pNames.at(i) << endl;
 			if(pNames.at(i).compare(SIMKEY_PROPERTY) == 0){
 				long simKey = message->getLongProperty(SIMKEY_PROPERTY);
-				logStream( ) << "simKey:" <<simKey << endl;
+				cout << "simKey:" <<simKey << endl;
 			}else if(pNames.at(i).compare(MESSAGE_TYPE_PROPERTY) == 0){
 				string msgType = message->getStringProperty(MESSAGE_TYPE_PROPERTY);
-				logStream( ) << "messageType:" << msgType << endl;
+				cout << "messageType:" << msgType << endl;
 			}
 		}
 
@@ -446,7 +447,7 @@ void SimulationMessaging::onMessage(const Message* message) throw()
 		long key = message->getLongProperty(SIMKEY_PROPERTY);
 
 		if (msgType.compare(MESSAGE_TYPE_STOPSIMULATION_VALUE) == 0 && key==m_simKey) {	
-			logStream( ) << "Stopped by user" << endl;
+			cout << "Stopped by user" << endl;
 			bStopRequested = true;
 		}
 
@@ -461,13 +462,13 @@ void SimulationMessaging::onMessage(const Message* message) throw()
  */
 void SimulationMessaging::onException(const CMSException& ex AMQCPP_UNUSED)
 {
-	logStream( ) << "!!!CMSException: " << ex.getMessage() << endl;
+	cout << "!!!CMSException: " << ex.getMessage() << endl;
 	/*int dropCode = ErrorCodes_ERR_CONNECTION_DROPPED;
 	if (ErrorCodes::testException(e, dropCode)) {
 		m_connActive = false;
 		setupConnection();
 		m_connActive = true;
-		logStream( ) << "Connection restored.  Messages will now be accepted again" << endl;
+		cout << "Connection restored.  Messages will now be accepted again" << endl;
 	}*/
 }
 
@@ -478,7 +479,7 @@ bool SimulationMessaging::lockMessaging()
 	return true;
 #else // UNIX
     if (pthread_mutex_lock(&mutex_messaging)) {
-        logStream( ) << "Cannot acquire mutex, fatal error." << endl;
+        cout << "Cannot acquire mutex, fatal error." << endl;
         exit(1);
     }
 #endif
@@ -637,11 +638,11 @@ void SimulationMessaging::waitUntilFinished() {
 		break; 
 
 	default:
-		logStream( ) << "Wait error: " << GetLastError() << endl;
+		cout << "Wait error: " << GetLastError() << endl;
 		break;
 	}
 #else
-	logStream( ) << "!!!waiting for thread to exit" << endl;
+	cout << "!!!waiting for thread to exit" << endl;
 	pthread_join(newWorkerEventThread, NULL);
 #endif
 }
@@ -749,7 +750,7 @@ void* startMessagingThread(void* lpParam){
 			break; 
 
 		default:
-			std::cout  << "Wait error: " << GetLastError() << endl;
+			std::cout<< "Wait error: " << GetLastError() << endl;
 			break;
 		}
 	}
@@ -798,7 +799,7 @@ void* startMessagingThread(void* lpParam){
 				break; 
 
 			default:
-				std::cout << "Wait error: " << waitReturn << endl;
+				std::cout<< "Wait error: " << waitReturn << endl;
 				break;
 		}
 	}

@@ -53,10 +53,10 @@ NFMonitor::NFMonitor() :
 }
 
 void NFMonitor::reportStart() {
+	Suppress  suppressor(*this);
 	SimulationMessaging & sm = *SimulationMessaging::getInstVar();
-	sm.setLogStream(std::cerr); //keep simulation messages from being received
-	sm.setWorkerEvent(
-			new WorkerEvent(JOB_STARTING, "NFsim preprocessing started"));
+	WorkerEvent * const se = new WorkerEvent(JOB_STARTING, "NFsim preprocessing started");
+	sm.setWorkerEvent(se);
 	lastUpdate = clock();
 }
 
