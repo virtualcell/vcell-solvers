@@ -162,8 +162,6 @@ WorkerEvent* SimulationMessaging::sendStatus() {
 			cerr << "Simulation Complete in Main() ... " << endl;
 			break;
 		case JOB_FAILURE:
-			printf("[[[failure:%s]]]", workerEvent->eventMessage);
-			fflush(stdout);
 			cerr << workerEvent->eventMessage << endl;			
 			break;
 		}

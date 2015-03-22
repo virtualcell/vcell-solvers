@@ -20,7 +20,7 @@ int NFsimMain(int argc, char **argv);
 namespace {
 	//vcell::JMSHolder getXML(const char * const filename);
 	bool startupMessaging(int argc, char **argv, vcell::JMSHolder & holder);
-	void nfsimExit(int returnCode, std::string& errorMsg);
+	void nfsimExit(int returnCode, const std::string& errorMsg);
 	void printUsage();
 	int parseInteger(const char * input);
 	const int unsetTaskId = -1;
@@ -69,7 +69,8 @@ int main(int argc, char **argv) {
 			monitor.reportComplete();
 			ecode = monitor.exitCode( );
 		} //we want coutToMonitor destroyed, in case messaging going to cout
-		nfsimExit(ecode, errorMessage);
+		nfsimExit(0,std::string( )); // flush messaging queue
+		return ecode;
 	} catch (const std::exception &e) {
 		errorMessage += "caught exception ";
 		errorMessage += e.what();
@@ -87,7 +88,7 @@ int main(int argc, char **argv) {
 
 namespace {
 
-	void nfsimExit(int returnCode, std::string& errorMsg) {
+	void nfsimExit(int returnCode, const std::string& errorMsg) {
 		if (SimulationMessaging::getInstVar() == 0) {
 			if (returnCode != 0) {
 				std::cerr << errorMsg << std::endl;
