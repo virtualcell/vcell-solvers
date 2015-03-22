@@ -17,6 +17,9 @@ namespace vcell_nfsim {
 		 */
 		void reportStart( );
 		void reportComplete( );
+		int exitCode( ) const {
+			return exitValue;
+		}
 	private:
 		/**
 		 * receives each char written to stream (cout)
@@ -64,6 +67,10 @@ namespace vcell_nfsim {
 		 * fail messages
 		 */
 		std::ostringstream failStream;
+		/**
+		 * what program should return (NFsim itself always returns 0)
+		 */
+		int exitValue;
 
 		struct Suppress;
 		friend struct Suppress;

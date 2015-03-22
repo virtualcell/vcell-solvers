@@ -49,7 +49,8 @@ NFMonitor::NFMonitor() :
 		lastFraction(0),
 		checkSimTime(true),
 		endMessageReceived( false),
-		failStream() {
+		failStream(),
+		exitValue(999){
 }
 
 void NFMonitor::reportStart() {
@@ -66,11 +67,13 @@ void NFMonitor::reportComplete() {
 	if (endMessageReceived) {
 		sm.setWorkerEvent(new WorkerEvent(JOB_PROGRESS, 1.0, totalSimTime));
 		sm.setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1.0, totalSimTime));
+		exitValue = 0;
 		return;
 	}
 	failStream << std::ends; //null-terminate
 	std::string failMessage = failStream.str();
 	sm.setWorkerEvent(new WorkerEvent(JOB_FAILURE, failMessage.c_str()));
+	exitValue = -1;
 }
 
 inline NFMonitor::timeUnit NFMonitor::timeDiff(clock_t end, clock_t start) {

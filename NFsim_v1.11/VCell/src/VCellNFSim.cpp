@@ -65,8 +65,9 @@ int main(int argc, char **argv) {
 			NFMonitorCerr monitorCerr(monitor);
 			vcell_util::OStreamSpy<NFMonitorCerr> cerrToMonitor(std::cerr, monitorCerr);
 			monitor.reportStart();
-			ecode = NFsimMain(argc, argv);
+			 NFsimMain(argc, argv);
 			monitor.reportComplete();
+			ecode = monitor.exitCode( );
 		} //we want coutToMonitor destroyed, in case messaging going to cout
 		nfsimExit(ecode, errorMessage);
 	} catch (const std::exception &e) {
