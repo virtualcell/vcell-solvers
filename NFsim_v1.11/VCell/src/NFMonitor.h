@@ -11,7 +11,10 @@ namespace vcell_nfsim {
 		 */
 		static const timeUnit UPDATE_SECONDS = 2;
 
-		NFMonitor();
+		/**
+		 * if true, use network messaging
+		 */
+		NFMonitor(bool networkMessaging);
 		/**
 		 * begin simulation
 		 */
@@ -39,6 +42,7 @@ namespace vcell_nfsim {
 		void bufferOverflow(int line);
 		timeUnit timeDiff(clock_t end, clock_t start);
 
+		const bool networkMessaging;
 		static const size_t bufferSize = 1024;
 		char buffer[bufferSize];
 		char errBuffer[bufferSize];

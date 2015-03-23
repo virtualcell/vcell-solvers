@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 	vcell::JMSHolder holder; //we need to keep these strings in memory until end of program
 	try {
 		std::cout
-				<< "NFsim " << NETWORK_MESSAGING("network","console" ) << " messaging version $URL$"VCELLSVNQUOTE(SVNVERSION)
+				<< "NFsim " << NETWORK_MESSAGING( "network","console" ) << " messaging version $URL$"VCELLSVNQUOTE(SVNVERSION)
 				<< std::endl;
 		bool isMessaging = startupMessaging(argc,argv,holder);
 		std::cout << " messaging is " << onOrOff(isMessaging) << std::endl;
@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
 			using vcell_nfsim::NFMonitor;
 			using vcell_nfsim::NFMonitorCout;
 			using vcell_nfsim::NFMonitorCerr;
-			NFMonitor monitor;
+			NFMonitor monitor ( NETWORK_MESSAGING( true, false ) );
 			NFMonitorCout monitorCout(monitor);
 			vcell_util::OStreamSpy<NFMonitorCout> coutToMonitor(std::cout, monitorCout);
 			NFMonitorCerr monitorCerr(monitor);
@@ -98,7 +98,7 @@ namespace {
 				SimulationMessaging::getInstVar()->setWorkerEvent(
 						new WorkerEvent(JOB_FAILURE, errorMsg.c_str()));
 			}
-			NETWORK_MESSAGING(SimulationMessaging::getInstVar()->waitUntilFinished();,  noop( ); )
+			NETWORK_MESSAGING( SimulationMessaging::getInstVar()->waitUntilFinished();,  noop( ); )
 	}
 }
 

@@ -37,7 +37,8 @@ struct NFMonitor::Suppress {
  * do not use std::cout in this class; when connected via vcell_util::OstreamSpy it would  recursively call itself
  */
 
-NFMonitor::NFMonitor() :
+NFMonitor::NFMonitor(bool networkMessaging_)
+		:networkMessaging(networkMessaging_),
 		buffer(),
 		errBuffer(),
 		cursor(0),
@@ -70,9 +71,11 @@ void NFMonitor::reportComplete() {
 		exitValue = 0;
 		return;
 	}
-	failStream << std::ends; //null-terminate
-	std::string failMessage = failStream.str();
-	sm.setWorkerEvent(new WorkerEvent(JOB_FAILURE, failMessage.c_str()));
+	if (networkMessaging) {
+		failStream << std::ends; //null-terminate
+		std::string failMessage = failStream.str();
+		sm.setWorkerEvent(new WorkerEvent(JOB_FAILURE, failMessage.c_str()));
+	}
 	exitValue = -1;
 }
 
