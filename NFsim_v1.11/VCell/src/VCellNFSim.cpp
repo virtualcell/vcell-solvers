@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 	vcell::JMSHolder holder; //we need to keep these strings in memory until end of program
 	try {
 		std::cout
-				<< "NFsim " << NETWORK_MESSAGING( "network","console" ) << " messaging version $URL$"VCELLSVNQUOTE(SVNVERSION)
+				<< "NFsim " << NETWORK_MESSAGING( "network","console" ) << " messaging version $URL$" VCELLSVNQUOTE(SVNVERSION)
 				<< std::endl;
 		bool isMessaging = startupMessaging(argc,argv,holder);
 		std::cout << " messaging is " << onOrOff(isMessaging) << std::endl;
@@ -103,7 +103,7 @@ namespace {
 }
 
 void printUsage() {
-	std::cout << "Arguments : [NFsim args] "NETWORK_MESSAGING("[-tid taskID]","")
+	std::cout << "Arguments : [NFsim args] " NETWORK_MESSAGING("[-tid taskID]","")
 			<< std::endl;
 }
 
