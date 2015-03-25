@@ -102,7 +102,6 @@ include_directories(${PROJECT_SOURCE_DIR}/../VCell/include)
 include_directories(${JMS_INCS})
 include_directories(${PROJECT_SOURCE_DIR}/../../VCell/include)
 include_directories(${PROJECT_SOURCE_DIR}/../../vcommons/include)
-include_directories(${BOOST_VERSION})
 add_definitions(${JMS_DEFS})
 add_dependencies(${exe_target} VCell vcommons)
 target_link_libraries(${exe_target} vlib vcell vcommons ${JMS_LIBS} vcommons) #order matters

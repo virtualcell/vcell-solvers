@@ -7,7 +7,6 @@ set(CMAKE_COLOR_MAKEFILE OFF)
 set(HDF_VERSION "hdf5-1.8.11")
 set(ZLIB_VERSION "zlib-1.2.8")
 set(_ECLIPSE_VERSION "4.4")
-set(BOOST_VERSION "${CMAKE_SOURCEIDR}/boost_1_53_0")
 #include (VCellCMakeShowVariables.txt)
 
 if(DEFINED CMAKE_BUILD_TYPE)
