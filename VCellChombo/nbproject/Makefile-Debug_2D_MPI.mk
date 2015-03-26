@@ -40,6 +40,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/ChomboGeometry.o \
 	${OBJECTDIR}/src/ChomboGeometryShop.o \
 	${OBJECTDIR}/src/ChomboIF.o \
+	${OBJECTDIR}/src/ChomboRefinementRoi.o \
 	${OBJECTDIR}/src/ChomboScheduler.o \
 	${OBJECTDIR}/src/ChomboSemiImplicitScheduler.o \
 	${OBJECTDIR}/src/ChomboSpec.o \
@@ -118,6 +119,11 @@ ${OBJECTDIR}/src/ChomboIF.o: src/ChomboIF.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_MPI -DCH_SPACEDIM=2 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -DSVNVERSION=1 -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.11/src -I../numerics/cmake-build-cygwin64-hdf5 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/ChomboIF.o src/ChomboIF.cpp
+
+${OBJECTDIR}/src/ChomboRefinementRoi.o: src/ChomboRefinementRoi.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -DCH_CYGWIN -DCH_FORT_UNDERSCORE -DCH_LANG_CC -DCH_MPI -DCH_SPACEDIM=2 -DCH_USE_64 -DCH_USE_COMPLEX -DCH_USE_DOUBLE -DCH_USE_HDF5 -DCH_USE_MEMORY_TRACKING -DCH_USE_SETVAL -DH5_USE_16_API -DSVNVERSION=1 -I../Chombo/lib/include -I../numerics/ExpressionParser -Iinclude -I../numerics/hdf5-1.8.11/src -I../numerics/cmake-build-cygwin64-hdf5 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/ChomboRefinementRoi.o src/ChomboRefinementRoi.cpp
 
 ${OBJECTDIR}/src/ChomboScheduler.o: src/ChomboScheduler.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src

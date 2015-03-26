@@ -2,15 +2,17 @@
 #define CHOMBOSPEC_H_
 
 #include <string>
+#include <vector>
 using std::string;
+using std::vector;
 
 #include <VCELL/ChomboGeometry.h>
+#include <VCELL/ChomboRefinementRoi.h>
 
 class ChomboSpec
 {
 public:
-	ChomboSpec();
-	ChomboSpec(ChomboGeometry* cg, int numLevels, double rel_tol, int boxsize, int* tagsGrowSize, double fillRatio, int viewLevel, bool bSaveVCellOutput, bool bSaveChomboOutput, string* roi, int* ratios);
+	ChomboSpec(ChomboGeometry* chomboGeometry);
 	virtual ~ChomboSpec();
 
 	static int defaultTagsGrow;
@@ -36,22 +38,45 @@ public:
 		return chomboGeometry;
 	}
 
-	const string& getRefinementRoi(int ilev)
+	vector<ChomboRefinementRoi*>& getMembraneRefinementRois()
 	{
-		return refinementRois[ilev];
+		return membraneRefinementRois;
 	}
 
+	vector<ChomboRefinementRoi*>& getVolumeRefinementRois()
+	{
+		return volumeRefinementRois;
+	}
+
+	void addMembraneRefinementRoi(ChomboRefinementRoi* roi)
+	{
+		membraneRefinementRois.push_back(roi);
+	}
+
+	void addVolumeRefinementRoi(ChomboRefinementRoi* roi)
+	{
+		volumeRefinementRois.push_back(roi);
+	}
+	
 	int getViewLevel()
 	{
 		return viewLevel;
 	}
 	void setSaveVCellOutput(bool b)
 	{
+#ifdef CH_MPI
+		bSaveVCellOutput = false;
+#else
 		bSaveVCellOutput = b;
+#endif
 	}
 	void setSaveChomboOutput(bool b)
 	{
+#ifdef CH_MPI
+		bSaveChomboOutput = true;
+#else
 		bSaveChomboOutput = b;
+#endif
 	}
 	bool isSaveVCellOutput()
 	{
@@ -65,11 +90,38 @@ public:
 	{
 		return relTol;
 	}
-	
-	const int* getTagsGrow()
+	void setNumLevels(int nl)
 	{
-		return tagsGrow;
+		numLevels = nl;
+		viewLevel = numLevels - 1;  // default to finest
 	}
+
+	void setRefRatios(int* r)
+	{
+		refRatios = r;
+	}
+
+	void setMaxBoxSize(int bs)
+	{
+	  maxBoxSize = bs;
+	}
+
+	void setViewLevel(int vl)
+	{
+		viewLevel = vl;
+	}
+
+	void setRelTol(double rt)
+	{
+		relTol = rt;
+	}
+
+	void setFillRatio(double fr)
+	{
+		fillRatio = fr;
+	}
+
+	void printSummary();
 private:
 	ChomboGeometry* chomboGeometry;
 	int numLevels;
@@ -78,10 +130,10 @@ private:
 	int maxBoxSize;
 	double fillRatio;
 	int viewLevel;
-	string* refinementRois;
+	vector<ChomboRefinementRoi*> membraneRefinementRois;
+	vector<ChomboRefinementRoi*> volumeRefinementRois;
 	bool bSaveVCellOutput;
 	bool bSaveChomboOutput;
-	int* tagsGrow;
 };
 
 #endif /*CHOMBOSPEC_H_*/

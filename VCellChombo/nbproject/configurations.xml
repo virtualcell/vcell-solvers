@@ -9,6 +9,7 @@
       <itemPath>include/VCELL/ChomboGeometry.h</itemPath>
       <itemPath>include/VCELL/ChomboGeometryShop.h</itemPath>
       <itemPath>include/VCELL/ChomboIF.h</itemPath>
+      <itemPath>include/VCELL/ChomboRefinementRoi.h</itemPath>
       <itemPath>include/VCELL/ChomboScheduler.h</itemPath>
       <itemPath>include/VCELL/ChomboSemiImplicitScheduler.h</itemPath>
       <itemPath>include/VCELL/ChomboSpec.h</itemPath>
@@ -51,6 +52,7 @@
       <itemPath>src/ChomboGeometry.cpp</itemPath>
       <itemPath>src/ChomboGeometryShop.cpp</itemPath>
       <itemPath>src/ChomboIF.cpp</itemPath>
+      <itemPath>src/ChomboRefinementRoi.cpp</itemPath>
       <itemPath>src/ChomboScheduler.cpp</itemPath>
       <itemPath>src/ChomboSemiImplicitScheduler.cpp</itemPath>
       <itemPath>src/ChomboSpec.cpp</itemPath>
@@ -162,6 +164,11 @@
       </item>
       <item path="include/VCELL/ChomboIF.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="include/VCELL/ChomboRefinementRoi.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="include/VCELL/ChomboScheduler.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="include/VCELL/ChomboSemiImplicitScheduler.h"
@@ -263,6 +270,8 @@
       <item path="src/ChomboGeometryShop.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ChomboIF.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/ChomboRefinementRoi.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ChomboScheduler.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -401,6 +410,11 @@
       </item>
       <item path="include/VCELL/ChomboIF.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="include/VCELL/ChomboRefinementRoi.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="include/VCELL/ChomboScheduler.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="include/VCELL/ChomboSemiImplicitScheduler.h"
@@ -502,6 +516,8 @@
       <item path="src/ChomboGeometryShop.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ChomboIF.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/ChomboRefinementRoi.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ChomboScheduler.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -641,6 +657,11 @@
       </item>
       <item path="include/VCELL/ChomboIF.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="include/VCELL/ChomboRefinementRoi.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="include/VCELL/ChomboScheduler.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="include/VCELL/ChomboSemiImplicitScheduler.h"
@@ -742,6 +763,8 @@
       <item path="src/ChomboGeometryShop.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ChomboIF.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/ChomboRefinementRoi.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ChomboScheduler.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -880,6 +903,11 @@
       </item>
       <item path="include/VCELL/ChomboIF.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="include/VCELL/ChomboRefinementRoi.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="include/VCELL/ChomboScheduler.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="include/VCELL/ChomboSemiImplicitScheduler.h"
@@ -981,6 +1009,8 @@
       <item path="src/ChomboGeometryShop.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ChomboIF.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/ChomboRefinementRoi.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ChomboScheduler.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -1126,6 +1156,11 @@
       </item>
       <item path="include/VCELL/ChomboIF.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="include/VCELL/ChomboRefinementRoi.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="include/VCELL/ChomboScheduler.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="include/VCELL/ChomboSemiImplicitScheduler.h"
@@ -1227,6 +1262,8 @@
       <item path="src/ChomboGeometryShop.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ChomboIF.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/ChomboRefinementRoi.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ChomboScheduler.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -1365,6 +1402,11 @@
       </item>
       <item path="include/VCELL/ChomboIF.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="include/VCELL/ChomboRefinementRoi.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="include/VCELL/ChomboScheduler.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="include/VCELL/ChomboSemiImplicitScheduler.h"
@@ -1466,6 +1508,8 @@
       <item path="src/ChomboGeometryShop.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ChomboIF.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/ChomboRefinementRoi.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ChomboScheduler.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -1611,6 +1655,11 @@
       </item>
       <item path="include/VCELL/ChomboIF.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="include/VCELL/ChomboRefinementRoi.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="include/VCELL/ChomboScheduler.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="include/VCELL/ChomboSemiImplicitScheduler.h"
@@ -1712,6 +1761,8 @@
       <item path="src/ChomboGeometryShop.cpp" ex="false" tool="1" flavor2="9">
       </item>
       <item path="src/ChomboIF.cpp" ex="false" tool="1" flavor2="9">
+      </item>
+      <item path="src/ChomboRefinementRoi.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ChomboScheduler.cpp" ex="false" tool="1" flavor2="9">
       </item>
@@ -1857,6 +1908,11 @@
       </item>
       <item path="include/VCELL/ChomboIF.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="include/VCELL/ChomboRefinementRoi.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="include/VCELL/ChomboScheduler.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="include/VCELL/ChomboSemiImplicitScheduler.h"
@@ -1958,6 +2014,8 @@
       <item path="src/ChomboGeometryShop.cpp" ex="false" tool="1" flavor2="9">
       </item>
       <item path="src/ChomboIF.cpp" ex="false" tool="1" flavor2="9">
+      </item>
+      <item path="src/ChomboRefinementRoi.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ChomboScheduler.cpp" ex="false" tool="1" flavor2="9">
       </item>

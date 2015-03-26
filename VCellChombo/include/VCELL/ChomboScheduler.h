@@ -80,8 +80,6 @@ public:
 	
 protected:
 	SimulationExpression* simulation;
-	VCell::Expression** refinementRoiExps;
-	SymbolTable* refinementRoiSymbolTable;
 
 	int numLevels;
 	int numUnknowns;
@@ -184,6 +182,8 @@ private:
 	
 	void computeTotal();
 	Real computeSum(const Vector< LevelData<EBCellFAB>* >& a_src, const Vector< EBISLayout >& a_ebisl, const int& a_comp);
+
+	bool tagROIs(Vector<IntVectSet>& tags);
 };
 
 #endif

@@ -969,19 +969,9 @@ void FVSolver::solve(bool convertChomboData)
 void FVSolver::loadChomboSpec(istream& ifsInput) {
 
 	string nextToken, line;
-	int numLevels = 1;
-	int* refineratios = 0;
-	int maxBoxSize = 64;
-	int* tagsGrow = NULL;
-	int viewLevel = -1;
-	double fillRatio = 0.9;
-	double rel_tol = 1e-9;
-	bool bSaveVCellOutput = true;
-	bool bSaveChomboOutput = false;
-	string* rois;
 
 	ChomboGeometry* chomboGeometry = new ChomboGeometry();
-	chomboSpec = new ChomboSpec();
+	chomboSpec = new ChomboSpec(chomboGeometry);
 
 	while (!ifsInput.eof()) {
 		nextToken = "";
@@ -1060,47 +1050,65 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 				}
 			}
 		} else if (nextToken == "REFINEMENTS") {
+			int numLevels;
 			lineInput >> numLevels;
-			refineratios = new int[numLevels];
-			tagsGrow = new int[numLevels];
-			rois = new string[numLevels];
+			chomboSpec->setNumLevels(numLevels);
+			int* refineratios = new int[numLevels];
 			for (int i = 0; i < numLevels; i ++) {
-				tagsGrow[i] = ChomboSpec::defaultTagsGrow;
-				
+				lineInput >> refineratios[i];
+			}
+			chomboSpec->setRefRatios(refineratios);
+		} else if (nextToken == "MAX_BOX_SIZE") {
+			int maxBoxSize = 64;
+			lineInput >> maxBoxSize;
+			chomboSpec->setMaxBoxSize(maxBoxSize);
+		} else if (nextToken == "REFINEMENT_ROIS") {
+			string roiType;
+			int numRois;
+			lineInput >> roiType >> numRois;
+			for (int i = 0; i < numRois; ++ i)
+			{
+				int level, tagsGrow;
+				string roi;
 				getline(ifsInput, line);
 				istringstream lineInput0(line);
-				lineInput0 >> refineratios[i];
-				getline(lineInput0, rois[i]);
-				// trim
-				rois[i].erase(rois[i].find_last_not_of(" \n\r\t") + 1);
-			}
-		} else if (nextToken == "MAX_BOX_SIZE") {
-			lineInput >> maxBoxSize;
-		} else if (nextToken == "TAGS_GROW") {
-			for (int i = 0; i < numLevels; ++ i)
-			{
-				lineInput >> tagsGrow[i];
+				lineInput0 >> level >> tagsGrow;
+				getline(lineInput0, roi);
+				roi.erase(roi.find_last_not_of(" \n\r\t") + 1);
+				ChomboRefinementRoi* refinementRoi = new ChomboRefinementRoi(chomboGeometry, level, tagsGrow, roi);
+				if (roiType == "Membrane")
+				{
+					chomboSpec->addMembraneRefinementRoi(refinementRoi);
+				}
+				else if (roiType == "Volume")
+				{
+					chomboSpec->addVolumeRefinementRoi(refinementRoi);
+				}
 			}
 		} else if (nextToken == "RELATIVE_TOLERANCE") {
+			double rel_tol;
 			lineInput >> rel_tol;
+			chomboSpec->setRelTol(rel_tol);
 		} else if (nextToken == "VIEW_LEVEL") {
+			int viewLevel;
 			lineInput >> viewLevel;
+			chomboSpec->setViewLevel(viewLevel);
 		} else if (nextToken == "SAVE_VCELL_OUTPUT") {
 			lineInput >> nextToken;
-			bSaveVCellOutput = nextToken == "true";
+			bool bSaveVCellOutput = nextToken == "true";
+			chomboSpec->setSaveVCellOutput(bSaveVCellOutput);
 		} else if (nextToken == "SAVE_CHOMBO_OUTPUT") {
 			lineInput >> nextToken;
-			bSaveChomboOutput = nextToken == "true";
+			bool bSaveChomboOutput = nextToken == "true";
+			chomboSpec->setSaveChomboOutput(bSaveChomboOutput);
 		} else if (nextToken == "FILL_RATIO") {
+			double fillRatio = 0.9;
 			lineInput >> fillRatio;
+			chomboSpec->setFillRatio(fillRatio);
 		}
 	}
 
-	if (viewLevel < 0)
-	{
-		viewLevel = numLevels - 1; // finest level
-	}
-	chomboSpec = new ChomboSpec(chomboGeometry, numLevels, rel_tol, maxBoxSize, tagsGrow, fillRatio, viewLevel, bSaveVCellOutput, bSaveChomboOutput, rois, refineratios);
+	chomboSpec->printSummary();
 	simTool->setChomboSpec(chomboSpec);
 }
 

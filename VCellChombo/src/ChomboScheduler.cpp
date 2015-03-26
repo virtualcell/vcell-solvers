@@ -16,30 +16,29 @@
 #include <UnionIF.H>
 #include <PolyGeom.H>
 
-#include <VCELL/VarContext.h>
 #include <Expression.h>
 #include <SimpleSymbolTable.h>
-#include <VCELL/VolumeVariable.h>
-#include <VCELL/DataSet.h>
-#include <VCELL/VolumeRegionVariable.h>
-#include <VCELL/MembraneVariable.h>
-#include <VCELL/MembraneRegionVariable.h>
-#include <VCELL/VCellModel.h>
-#include <VCELL/Feature.h>
-#include <VCELL/SimTool.h>
-#include <VCELL/VarContext.h>
-#include <VCELL/VolumeVarContextExpression.h>
-#include <VCELL/VolumeRegionVarContextExpression.h>
-#include <VCELL/MembraneVarContextExpression.h>
-#include <VCELL/MembraneRegionVarContextExpression.h>
-#include <VCELL/SimulationMessaging.h>
-#include <VCELL/SimulationExpression.h>
-#include <VCELL/Membrane.h>
 #include <VCELL/ChomboIF.h>
-#include <VCELL/ChomboSpec.h>
 #include <VCELL/ChomboGeometry.h>
 #include <VCELL/ChomboGeometryShop.h>
 #include <VCELL/ConnectedComponent.h>
+#include <VCELL/ChomboSpec.h>
+#include <VCELL/DataSet.h>
+#include <VCELL/Feature.h>
+#include <VCELL/Membrane.h>
+#include <VCELL/MembraneRegionVariable.h>
+#include <VCELL/MembraneRegionVarContextExpression.h>
+#include <VCELL/MembraneVariable.h>
+#include <VCELL/MembraneVarContextExpression.h>
+#include <VCELL/SimTool.h>
+#include <VCELL/SimulationExpression.h>
+#include <VCELL/SimulationMessaging.h>
+#include <VCELL/VarContext.h>
+#include <VCELL/VCellModel.h>
+#include <VCELL/VolumeVariable.h>
+#include <VCELL/VolumeRegionVariable.h>
+#include <VCELL/VolumeRegionVarContextExpression.h>
+#include <VCELL/VolumeVarContextExpression.h>
 #include <assert.h>
 #include <sstream>
 #include <hdf5.h>
@@ -82,31 +81,9 @@ ChomboScheduler::ChomboScheduler(SimulationExpression* sim, ChomboSpec* chomboSp
 	chomboGeometry = this->chomboSpec->getChomboGeometry();
 	numLevels = chomboSpec->getNumLevels();
 	int* ratios = chomboSpec->getRefRatios();
-	refinementRoiExps = new VCell::Expression*[numLevels];
-	bool bHasRoi = false;
-	string spatialSymbols[3] = {"x", "y", "z"};
-	refinementRoiSymbolTable = new SimpleSymbolTable(spatialSymbols, 3, NULL);
 	for (int ilev = 0; ilev < numLevels; ++ ilev)
 	{
 		vectRefRatios.push_back(ratios[ilev]);
-		const string& roi = chomboSpec->getRefinementRoi(ilev);
-		if (roi.empty())
-		{
-			refinementRoiExps[ilev] = NULL;
-		}
-		else
-		{
-			bHasRoi = true;
-			refinementRoiExps[ilev] = new VCell::Expression(roi);
-			refinementRoiExps[ilev]->bindExpression(refinementRoiSymbolTable);
-		}
-	}
-	if (!bHasRoi)
-	{
-		delete[] refinementRoiExps;
-		delete refinementRoiSymbolTable;
-		refinementRoiExps = NULL;
-		refinementRoiSymbolTable = NULL;
 	}
 	hdf5FileCount = 0;
 	numGhostSoln = IntVect::Unit * 3;
@@ -116,16 +93,12 @@ ChomboScheduler::ChomboScheduler(SimulationExpression* sim, ChomboSpec* chomboSp
 #else
 	membraneIndexGhost = IntVect::Zero;
 #endif
-	
-	pout() << "maxBoxSiz=" << chomboSpec->getMaxBoxSize() << endl;
-	pout() << "fillRatio=" << chomboSpec->getFillRatio() << endl;
 
 	memIndexOffset = 0;
 	H5dont_atexit();
 }
 
 ChomboScheduler::~ChomboScheduler() {
-	delete refinementRoiSymbolTable;
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		delete geoIfs[iphase];
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
@@ -142,16 +115,6 @@ ChomboScheduler::~ChomboScheduler() {
 	irregularPointMembraneIDs.clear();
 	irregularPointMembraneIndex.clear();
 	irregVolumeMembraneMap.clear();
-
-	if (refinementRoiExps != NULL)
-	{
-		for (int ilev = 0; ilev < numLevels - 1; ++ ilev)
-		{
-			delete refinementRoiExps[ilev];
-		}
-		delete[] refinementRoiExps;
-		delete refinementRoiSymbolTable;
-	}
 }
 
 bool ChomboScheduler::isInNextFinerLevel(int level, const IntVect& gridIndex) {
@@ -656,6 +619,106 @@ void ChomboScheduler::generateVolumeMembraneIndexMap()
 	pout() << "Exit " << methodName << endl;
 }
 
+bool ChomboScheduler::tagROIs(Vector<IntVectSet>& tags)
+{
+	static const char* METHOD = "(ChomboScheduler::tagROIs)";
+	pout() << "Entry " << METHOD << endl;
+
+	bool bCellsTagged = false;
+	// Membrane ROIs
+	pout() << "Starting tagging membrane ROIs..." << endl;
+	vector<ChomboRefinementRoi*>& membraneRefinementRois = chomboSpec->getMembraneRefinementRois();
+	for (vector<ChomboRefinementRoi*>::iterator it = membraneRefinementRois.begin(); it != membraneRefinementRois.end(); ++ it)
+	{
+		ChomboRefinementRoi* roi = *it;
+		int tagLevel = roi->getLevel() - 1;   // if ROI is at Level N, we tag points at N-1 level
+		pout() << "Membrane ROI; " << roi->getRoi()->infix();
+		IntVectSet memTags;
+		try
+		{
+			// user might give 1.0 to refine all irregular points
+			double c = roi->getRoi()->evaluateConstant();
+			if (c != 0)
+			{
+				pout() << ", tagging all irregular points at level " << tagLevel << endl;
+				for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
+					for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
+						// Get the depth of the tag level
+						int depth = phaseVolumeList[iphase][ivol]->volume->getLevel(vectDomains[tagLevel]);
+
+						memTags |= phaseVolumeList[iphase][ivol]->volume->irregCells(depth);
+					}
+				}
+			}
+		}
+		catch (...)
+		{
+			pout() << ", tagging irregular points at level " << tagLevel << endl;
+			// not a constant, have to evaluate point by point
+			for (int iphase = 0; iphase < NUM_PHASES; iphase ++)
+			{
+				for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++)
+				{
+					int depth = phaseVolumeList[iphase][ivol]->volume->getLevel(vectDomains[tagLevel]);
+					IntVectSet tagsVol = phaseVolumeList[iphase][ivol]->volume->irregCells(depth);
+					IVSIterator ivsit (tagsVol);
+					for (ivsit.begin(); ivsit.ok(); ++ivsit)
+					{
+						IntVect gridIndex = ivsit();
+						RealVect vol_center = EBArith::getIVLocation(gridIndex, vectDxes[tagLevel], chomboGeometry->getDomainOrigin());
+						if (roi->getRoi()->evaluateVector(vol_center.dataPtr()))
+						{
+//							pout() << "tagging point " << gridIndex << " at level " << tagLevel << endl;
+							memTags |= gridIndex;
+						}
+					}
+				} // ivol
+			} // iphase
+		}
+		memTags.grow(roi->getTagsGrow());
+		tags[tagLevel] |= memTags;
+		bCellsTagged |= !memTags.isEmpty();
+	}
+
+	// volume ROIs
+	pout() << "Starting tagging volume ROIs..." << endl;
+	vector<ChomboRefinementRoi*>& volumeRefinementRois = chomboSpec->getVolumeRefinementRois();
+	for (vector<ChomboRefinementRoi*>::iterator it = volumeRefinementRois.begin(); it != volumeRefinementRois.end(); ++ it)
+	{
+		ChomboRefinementRoi* roi = *it;
+		int tagLevel = roi->getLevel() - 1;
+		pout() << "Volume ROI: " << roi->getRoi()->infix() << ", tagging points at level " << tagLevel << endl;
+
+		IntVectSet volTags;
+		// not a constant, have to evaluate point by point
+		// right now we have to go through each point because
+		// we don't have the grids for higher levels yet.
+#if CH_SPACEDIM==3
+		for (int k = 0; k < vectNxes[tagLevel][2]; k ++) {
+#endif
+			for (int j = 0; j < vectNxes[tagLevel][1]; j ++) {
+				for (int i = 0; i < vectNxes[tagLevel][0]; i ++) {
+					IntVect gridIndex(D_DECL(i, j, k));
+					RealVect coord = EBArith::getIVLocation(gridIndex, vectDxes[tagLevel], chomboGeometry->getDomainOrigin());
+					if (roi->getRoi()->evaluateVector(coord.dataPtr()))
+					{
+						//pout() << "tagging point " << gridIndex << " at level " << tagLevel << endl;
+						volTags |= gridIndex;
+					}
+				}
+			}
+#if CH_SPACEDIM==3
+		}
+#endif
+		volTags.grow(roi->getTagsGrow());
+		tags[tagLevel] |= volTags;
+		bCellsTagged |= !volTags.isEmpty();
+	}
+	
+	pout() << "Exit " << METHOD << endl;
+	return bCellsTagged;
+}
+
 void ChomboScheduler::generateMesh()
 {
 	static const char* thisMethod = "(ChomboScheduler::generateMesh)";
@@ -694,57 +757,10 @@ void ChomboScheduler::generateMesh()
 
 		// Tags for creating the finer levels
 		Vector<IntVectSet> tags(numLevels);
-		const int* tagsGrow = chomboSpec->getTagsGrow();
-		pout() << "Starting tagging..." << endl;
-		bool bCellsTagged = false;
-		if (refinementRoiExps == NULL) {
-			pout() << "Tagging all irregular points" << endl;
-			int tagLevel = numLevels - 2;
-			for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
-				for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
-					// Get the depth of the second to finest level
-					int depth = phaseVolumeList[iphase][ivol]->volume->getLevel(vectDomains[tagLevel]);
-
-					IntVectSet tagsVol = phaseVolumeList[iphase][ivol]->volume->irregCells(depth);
-					tagsVol.grow(tagsGrow[tagLevel]);
-					tags[tagLevel] |= tagsVol;
-				}
-			}
-			bCellsTagged |= !tags[tagLevel].isEmpty();
-		}
-		else
+		bool bCellsTagged = tagROIs(tags);
+		for (int i = 0; i < tags.size() - 1; ++ i) // finest level shouldn't have any points
 		{
-			pout() << "Tagging ROI points" << endl;
-			// tag points in second finest level that satisfy ROI
-			for (int ilev = 0; ilev < numLevels - 1; ++ ilev)
-			{
-				if (refinementRoiExps[ilev] == NULL)
-				{
-					continue;
-				}
-				for (int iphase = 0; iphase < NUM_PHASES; iphase ++)
-				{
-					for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++)
-					{
-						int depth = phaseVolumeList[iphase][ivol]->volume->getLevel(vectDomains[ilev]);
-						IntVectSet tagsVol = phaseVolumeList[iphase][ivol]->volume->irregCells(depth);
-						IVSIterator ivsit (tagsVol);
-						for (ivsit.begin(); ivsit.ok(); ++ivsit)
-						{
-							IntVect gridIndex = ivsit();
-							RealVect vol_center = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-							if (refinementRoiExps[ilev]->evaluateVector(vol_center.dataPtr()))
-							{
-								pout() << "tagging point " << gridIndex << " at level " << ilev << endl;
-								tags[ilev] |= gridIndex;
-							}
-						}
-					} // ivol
-				} // iphase
-				pout() << "tagsGrow=" << tagsGrow[ilev] << " at level " << ilev << endl;
-				tags[ilev].grow(tagsGrow[ilev]);
-				bCellsTagged |= !tags[ilev].isEmpty();
-			} // ilev
+			pout() << " Number of tagged points at level " << i << " is " << tags[i].numPts() << endl;
 		}
 
 #ifndef CH_MPI
