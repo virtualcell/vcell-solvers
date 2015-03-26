@@ -43,6 +43,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		include/VCELL/ChomboGeometry.h
 		include/VCELL/ChomboGeometryShop.h
 		include/VCELL/ChomboIF.h
+		include/VCELL/ChomboRefinementRoi.h
 		include/VCELL/ChomboScheduler.h
 		include/VCELL/ChomboSemiImplicitScheduler.h
 		include/VCELL/ChomboSpec.h
@@ -79,6 +80,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		src/ChomboGeometry.cpp
 		src/ChomboGeometryShop.cpp
 		src/ChomboIF.cpp
+		src/ChomboRefinementRoi.cpp
 		src/ChomboScheduler.cpp
 		src/ChomboSemiImplicitScheduler.cpp
 		src/ChomboSpec.cpp
