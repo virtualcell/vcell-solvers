@@ -680,6 +680,9 @@ namespace moving_boundary {
 
 		void persist(std::ostream &);
 
+		moving_boundary::CoordinateProductType getLastVolume(  ) const {
+			return lastVolume;
+		}
 
 	private:
 		void badState(const char * const) const;
