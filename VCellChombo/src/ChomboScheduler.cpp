@@ -634,24 +634,21 @@ bool ChomboScheduler::tagROIs(Vector<IntVectSet>& tags)
 		int tagLevel = roi->getLevel() - 1;   // if ROI is at Level N, we tag points at N-1 level
 		pout() << "Membrane ROI; " << roi->getRoi()->infix();
 		IntVectSet memTags;
-		try
+		// user might give 1.0 to refine all irregular points
+		const double* c = roi->getConstantValue();
+		if (c != NULL && *c != 0)
 		{
-			// user might give 1.0 to refine all irregular points
-			double c = roi->getRoi()->evaluateConstant();
-			if (c != 0)
-			{
-				pout() << ", tagging all irregular points at level " << tagLevel << endl;
-				for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
-					for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
-						// Get the depth of the tag level
-						int depth = phaseVolumeList[iphase][ivol]->volume->getLevel(vectDomains[tagLevel]);
+			pout() << ", tagging all irregular points at level " << tagLevel << endl;
+			for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
+				for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
+					// Get the depth of the tag level
+					int depth = phaseVolumeList[iphase][ivol]->volume->getLevel(vectDomains[tagLevel]);
 
-						memTags |= phaseVolumeList[iphase][ivol]->volume->irregCells(depth);
-					}
+					memTags |= phaseVolumeList[iphase][ivol]->volume->irregCells(depth);
 				}
 			}
 		}
-		catch (...)
+		else
 		{
 			pout() << ", tagging irregular points at level " << tagLevel << endl;
 			// not a constant, have to evaluate point by point

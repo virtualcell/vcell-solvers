@@ -33,6 +33,18 @@ ChomboSpec::~ChomboSpec()
 	}
 }
 
+static void printRoi(ChomboRefinementRoi* roi)
+{
+	pout() << "\tlevel:" << roi->getLevel() << "; tagsGrow:" << roi->getTagsGrow() 
+					<< "; expression:" << roi->getRoi()->infix() << ";";
+	const double* c = roi->getConstantValue();
+  if (c != NULL)
+	{
+		pout() << "constant=" << *c << ";";
+	}
+	pout() << endl;
+}
+
 void ChomboSpec::printSummary()
 {
 	pout() << "numLevels=" << numLevels << endl;
@@ -51,13 +63,11 @@ void ChomboSpec::printSummary()
 	pout() << "Membrane ROIs: " << membraneRefinementRois.size() << endl;
 	for (vector<ChomboRefinementRoi*>::iterator it = membraneRefinementRois.begin(); it != membraneRefinementRois.end(); ++ it)
 	{
-		ChomboRefinementRoi* roi = *it;
-		pout() << "\tlevel:" << roi->getLevel() << "; tagsGrow:" << roi->getTagsGrow() << "; expression:" << roi->getRoi()->infix() << endl;
+		printRoi(*it);
 	}
 	pout() << "Volume ROIs: " << volumeRefinementRois.size() << endl;
 	for (vector<ChomboRefinementRoi*>::iterator it = volumeRefinementRois.begin(); it != volumeRefinementRois.end(); ++ it)
 	{
-		ChomboRefinementRoi* roi = *it;
-		pout() << "\tlevel:" << roi->getLevel() << "; tagsGrow:" << roi->getTagsGrow() << "; expression:" << roi->getRoi()->infix() << endl;
+		printRoi(*it);
 	}
 }

@@ -36,12 +36,17 @@ public:
 	{
 		return tagsGrow;
 	}
+
+	const double* getConstantValue()
+	{
+		return constantValue;
+	}
 private:
 	ChomboGeometry* chomboGeometry;
 	int level;
 	VCell::Expression* roi;
 	int tagsGrow;
-	SymbolTable* roiSymbolTable;
+	double* constantValue;
 };
 
 #endif /*CHOMBOREFINEMENTROI_H_*/

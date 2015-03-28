@@ -3,15 +3,23 @@
 
  ChomboRefinementRoi::ChomboRefinementRoi(ChomboGeometry* geometry, int lvl, int tg, string& roiExp)
  : chomboGeometry(geometry), level(lvl), tagsGrow(tg)
- {
-	string spatialSymbols[3] = {"x", "y", "z"};
-	roiSymbolTable = new SimpleSymbolTable(spatialSymbols, 3, NULL);
+{
 	roi = new VCell::Expression(roiExp);
-	roi->bindExpression(chomboGeometry->getGeometrySymbolTable());
- }
+	constantValue = 0;
+	try
+	{
+		double d = roi->evaluateConstant();
+		constantValue = new double[1];
+		constantValue[0] = d;
+	} 
+	catch (...)
+	{
+		roi->bindExpression(chomboGeometry->getGeometrySymbolTable());
+	}
+}
 
- ChomboRefinementRoi::~ChomboRefinementRoi()
- {
-	 
- }
+ChomboRefinementRoi::~ChomboRefinementRoi()
+{
+	delete constantValue;
+}
 
