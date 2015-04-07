@@ -127,7 +127,10 @@ int main(int argc,char **argv) {
 			er=scmdopenfiles((cmdssptr) sim->cmds,wflag);
 		}
 		if(pflag || er) {
-			simLog(sim,4,"Simulation skipped\n"); }
+			simLog(sim,4,"Simulation skipped\n");
+			strcpy(errorMsg,"Invalid input arguments");
+			exitCode = 2;
+		}
 		else {
 			fflush(stdout);
 			fflush(stderr);
