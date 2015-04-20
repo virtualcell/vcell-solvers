@@ -328,13 +328,11 @@ int Gibson::core()
 		}
 #endif
 		//check if maximum save points is reached, then quit the simulation (if not using uniformOutputTimeSpec)
-		/* frm suggestion
 		if(!flag_savePeriod && savedSampleCount > MAX_SAVE_POINTS)
 		{
 			string errStr = "Simulation exceeded maximum saved time points. Patial results may be available. \nYou can increase the save interval (\"keep every\") or increase the maximum number of saved time points (\"keep at most\").";
 			throw errStr;
 		}
-		*/
 		//save last step variables' values
 		for(i = 0;i<varLen;i++){
 			lastStepVals[i]=*listOfVars.at(i)->getCurr();
