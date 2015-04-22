@@ -28,6 +28,11 @@ public:
 	int core();
 	void march();
 	double getRandomUniform();
+	//this limit is here until we figure out what's better
+	/**
+	* maximum number of points which can be saved
+	*/
+	const static unsigned int MAX_ALLOWED_POINTS = 5000000;
 private:
 	IndexedTree *Tree; //the data structure(binary tree) to store all the processes and make each parent smaller than it's children.
 	double* currvals;//array of variable values to be used by expression parser. variables are stored in vector listOfVars.

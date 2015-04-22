@@ -1,4 +1,6 @@
 //#define DEBUG //enable it when debug is needed.
+#include <limits>
+#include <stdexcept>
 #include "Gibson.h"
 
 //#undef DEBUG
@@ -27,7 +29,7 @@ using namespace std;
 #ifdef USE_MESSAGING
 #include <VCELL/SimulationMessaging.h>
 #endif
-#include <limits>
+#include <VCellException.h>
 const double double_infinity = numeric_limits<double>::infinity();
 const double EPSILON = 1E-12;
 /*
@@ -58,10 +60,7 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 	string instring;
 	infile.open(arg_infilename);
 	if (!infile) {
-		stringstream ss;
-		ss << "Unable to open file " << arg_infilename;
-		string errStr = ss.str();   // call system to stop
-		throw errStr;
+		VCELL_EXCEPTION(runtime_error, "Unable to open file " << arg_infilename);
 	}
 	flag_savePeriod=false;
 	while(infile >> instring)
@@ -203,16 +202,19 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 		Tree->addProcess(listOfProcesses[i]);
 	}
 	infile.close();
+	if (NUM_TRIAL > MAX_ALLOWED_POINTS) {
+		VCELL_EXCEPTION(invalid_argument,"Stochastic initialization: Server maximum number trials " << NUM_TRIAL << " exceeds limit of " << MAX_ALLOWED_POINTS);
+	}
+	if (MAX_SAVE_POINTS > MAX_ALLOWED_POINTS) {
+		VCELL_EXCEPTION(invalid_argument,"Stochastic initialization: Server save points " << MAX_SAVE_POINTS << " exceeds limit of " << MAX_ALLOWED_POINTS);
+	}
+
+
 	if(NUM_TRIAL > 1){
 		//this must be a gibson 'histogram' sim,
 		//java gui not allow setting of MAX_SAVE_POINTS and default is too low
 		//makes no sense for 'histogram' sim to have MAX_SAVE_POINTS < NUM_TRIAL
 		MAX_SAVE_POINTS = NUM_TRIAL;
-	}
-	//this limit is here until we figure out what's better
-	if(MAX_SAVE_POINTS > 5000000){
-		//Set hard limit of 5 million save points
-		throw "Stochastic initialization: Server maximum SAVED sample count exceeds limit of 5 million";
 	}
 
 	//initialization of the double array currvals
@@ -310,10 +312,7 @@ int Gibson::core()
 		//amended Oct 11th, 2007. Stop the simulation and send error message back if
 		//anyone of the propensity functions is negative.
 		if(p < 0){
-			stringstream ss;
-			ss <<  "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(jump->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << jump->getProbabilityRateEvaluationSummary(currvals);
-			string errStr = ss.str();
-			throw errStr;
+			VCELL_EXCEPTION(runtime_error,"at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(jump->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << jump->getProbabilityRateEvaluationSummary(currvals) );
 		}
 		//amended May 17th,2007 we can not take the first time random number to be 0.
 		//Otherwise, there is a situation that no previous random number to be reused.
@@ -385,10 +384,7 @@ int Gibson::core()
 		//amended Oct 11th, 2007. Stop the simulation and send error message back if
 		//anyone of the propensity functions is negative.
 		if(p < 0){
-			stringstream ss;
-			ss << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(event->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << event->getProbabilityRateEvaluationSummary(currvals);
-			string errStr = ss.str();
-			throw errStr;
+			VCELL_EXCEPTION(runtime_error,"at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(event->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << event->getProbabilityRateEvaluationSummary(currvals) );
 		}
 		//amended May 17th. The previous sentence will cause the time of a process stuck in double_infinity when r<=0
 		if(r>0)
@@ -413,10 +409,7 @@ int Gibson::core()
 			//amended Oct 11th, 2007. Stop the simulation and send error message back if
 			//anyone of the propensity functions is negative.
 			if(p_new < 0){
-				stringstream ss;
-				ss << "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(dJump->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << dJump->getProbabilityRateEvaluationSummary(currvals);
-				string errStr = ss.str();
-				throw errStr;
+				VCELL_EXCEPTION(runtime_error, "at time point " << simtime << ", propensity of jump process "<< listOfProcessNames.at(dJump->getNameIndex()) <<" evaluated to a negative value (" << p << "). Simulation abort!" << endl << dJump->getProbabilityRateEvaluationSummary(currvals) );
 			}
 			double tau = dJump->getTime();
 			//amended May 17th. to make sure that tau is a finite double
@@ -535,9 +528,10 @@ int Gibson::core()
 int Gibson::finalizeSampleRow(int savedSampleCount){
 	outfile << endl;
 //	cout << "savedSampleCount=" << savedSampleCount << endl;
-	if((savedSampleCount) > MAX_SAVE_POINTS) {
-		string errStr = "Simulation exceeded maximum saved time points. Patial results may be available. \nYou can increase the save interval (\"keep every\") or increase the maximum number of saved time points (\"keep at most\").";
-		throw errStr;
+	if(savedSampleCount > MAX_SAVE_POINTS) {
+		VCELL_EXCEPTION(runtime_error,
+			"Simulation exceeded maximum saved time points " << MAX_SAVE_POINTS 
+			<< ". Partial results may be available. \nYou can increase the save interval (\"keep every\") or increase the maximum number of saved time points (\"keep at most\").");
 	}
 	return savedSampleCount+1;
 }
@@ -628,8 +622,7 @@ void Gibson::march()
 	}
 	else
 	{
-		string errStr = "Number of trial smaller than 1!";
-		throw errStr;
+		VCELL_EXCEPTION(invalid_argument, "Number of trial smaller than 1!");
 	}
 #ifdef DEBUG
 	//Count performance time for single trial

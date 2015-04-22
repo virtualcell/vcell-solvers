@@ -171,8 +171,8 @@ int main(int argc, char *argv[])
 	} catch (string& ex) {
 		errMsg += ex;
 		returnCode = -1;
-	} catch (VCell::Exception& ex) {
-		errMsg += ex.getMessage();
+	} catch (std::exception& ex) {
+		errMsg += ex.what();
 		returnCode = -1;
 	} catch (const char* ex) {
 		errMsg += ex;
