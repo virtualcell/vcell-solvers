@@ -1,6 +1,8 @@
 //#define DEBUG //enable it when debug is needed.
 #include "Gibson.h"
 
+//#undef DEBUG
+
 #ifdef DEBUG
 #include <Windows.h>
 #endif
@@ -33,6 +35,7 @@ const double EPSILON = 1E-12;
  */
 Gibson::Gibson():StochModel()
 {
+	savedSampleCount = 1;
 	Tree=NULL;
 	currvals=NULL;
 }//end of constructor Gibson()
@@ -45,6 +48,7 @@ Gibson::Gibson():StochModel()
  */
 Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 {
+	savedSampleCount = 1;
 	Tree=NULL;
 	currvals=NULL;
 
@@ -199,6 +203,18 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 		Tree->addProcess(listOfProcesses[i]);
 	}
 	infile.close();
+	if(NUM_TRIAL > 1){
+		//this must be a gibson 'histogram' sim,
+		//java gui not allow setting of MAX_SAVE_POINTS and default is too low
+		//makes no sense for 'histogram' sim to have MAX_SAVE_POINTS < NUM_TRIAL
+		MAX_SAVE_POINTS = NUM_TRIAL;
+	}
+	//this limit is here until we figure out what's better
+	if(MAX_SAVE_POINTS > 5000000){
+		//Set hard limit of 5 million save points
+		throw "Stochastic initialization: Server maximum SAVED sample count exceeds limit of 5 million";
+	}
+
 	//initialization of the double array currvals
 	currvals=new double[listOfIniValues.size()+1];
 #ifdef DEBUG
@@ -272,7 +288,6 @@ int Gibson::core()
 	double* lastStepVals = new double[listOfIniValues.size()];//to remember the last step values, used for save output by save_period
 	double p, r; //temp variables used for propability and random number
 	int saveIntervalCount = SAMPLE_INTERVAL; //sampling counter, for default output time spec, keep every
-	int savedSampleCount = 1; //for default output time spec, keep at most, value is 1 because the first time step is written in march()
 	int iterationCounter=0;//counter used for termination of the loop when max_iteration is reached
 	int i; //loop variable
 	double prog = 0.19; // to control the output of progress, start from >0.19....>0.99
@@ -327,12 +342,6 @@ int Gibson::core()
 			break;
 		}
 #endif
-		//check if maximum save points is reached, then quit the simulation (if not using uniformOutputTimeSpec)
-		if(!flag_savePeriod && savedSampleCount > MAX_SAVE_POINTS)
-		{
-			string errStr = "Simulation exceeded maximum saved time points. Patial results may be available. \nYou can increase the save interval (\"keep every\") or increase the maximum number of saved time points (\"keep at most\").";
-			throw errStr;
-		}
 		//save last step variables' values
 		for(i = 0;i<varLen;i++){
 			lastStepVals[i]=*listOfVars.at(i)->getCurr();
@@ -353,15 +362,11 @@ int Gibson::core()
 					for(i=0;i<varLen;i++){
 						outfile<< lastStepVals[i] << "\t";
 					}
-					outfile << endl;
+					savedSampleCount = finalizeSampleRow(savedSampleCount);//outfile << endl;
 					outputTimer = outputTimer + SAVE_PERIOD;
 				}
 			}
 			break;
-		}
-		//increase output save points by 1, if not using uniformOutputTimeSpec
-		if(!flag_savePeriod){
-			savedSampleCount ++;
 		}
 		//update affected variables
 		int numVars = event->getNumVars();
@@ -449,7 +454,7 @@ int Gibson::core()
 						for(i=0;i<varLen;i++){
 							outfile<< lastStepVals[i] << "\t";
 						}
-						outfile << endl;
+						savedSampleCount = finalizeSampleRow(savedSampleCount);//outfile << endl;
 						outputTimer = outputTimer + SAVE_PERIOD;
 					}
 					if(outputTimer+SAVE_PERIOD <= simtime + EPSILON)
@@ -457,7 +462,7 @@ int Gibson::core()
 						outfile << outputTimer+SAVE_PERIOD << "\t";
 						for(i=0;i<varLen;i++){
 							outfile<< *listOfVars.at(i)->getCurr() << "\t";
-						outfile << endl;
+							savedSampleCount = finalizeSampleRow(savedSampleCount);//outfile << endl;
 						}
 						outputTimer = outputTimer + SAVE_PERIOD;
 					}
@@ -468,7 +473,7 @@ int Gibson::core()
 					for(i=0;i<varLen;i++){
 						outfile<< *listOfVars.at(i)->getCurr()<< "\t";
 					}
-					outfile << endl;
+					savedSampleCount = finalizeSampleRow(savedSampleCount);//outfile << endl;
 				}
 				// output data message every two seconds to Java program (useful for long simulation, user can view results during simulation)
 				clock_t currentTime = clock();
@@ -508,7 +513,7 @@ int Gibson::core()
 		{
 			outfile<< "\t" << *listOfVars.at(i)->getCurr();
 		}
-		outfile << endl;
+		savedSampleCount = finalizeSampleRow(savedSampleCount);//outfile << endl;
 	}
 	//to save the (last-step)values of varaibles after one run of simulation
 	if(NUM_TRIAL >1)
@@ -517,7 +522,7 @@ int Gibson::core()
 		{
 			outfile<< "\t" << *listOfVars.at(i)->getCurr();
 		}
-		outfile << endl;
+		savedSampleCount = finalizeSampleRow(savedSampleCount);//outfile << endl;
 	}
     //return parameter 0:ends by ending_time  1:ends by max_iteration
 	if(iterationCounter< MAX_ITERATION)
@@ -527,6 +532,15 @@ int Gibson::core()
 	else return 1;
 }//end of method core()
 
+int Gibson::finalizeSampleRow(int savedSampleCount){
+	outfile << endl;
+//	cout << "savedSampleCount=" << savedSampleCount << endl;
+	if((savedSampleCount) > MAX_SAVE_POINTS) {
+		string errStr = "Simulation exceeded maximum saved time points. Patial results may be available. \nYou can increase the save interval (\"keep every\") or increase the maximum number of saved time points (\"keep at most\").";
+		throw errStr;
+	}
+	return savedSampleCount+1;
+}
 /*
  *This method is the control of trials, which will be called for Gibson simulation.
  */
