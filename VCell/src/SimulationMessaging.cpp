@@ -1,6 +1,7 @@
 #include <VCELL/SimulationMessaging.h>
 #include <utility>
 #include <iostream>
+#include <algorithm>
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -184,8 +185,9 @@ void SimulationMessaging::sendStatus() {
 				break;
 			}
 
-		} else {
+		} 
 #ifdef USE_MESSAGING
+		else {
 			TextMessage* msg = initWorkerEventMessage();
 
 			char* revisedMsg = workerEvent->eventMessage;
@@ -260,13 +262,12 @@ void SimulationMessaging::sendStatus() {
 				pthread_exit(NULL);
 #endif
 			}
-			delete workerEvent;
-
+		}
 #else
 			throw "OUPUT_MODE_STANDOUT must be using if not using messaging!";
 #endif
 		}
-	}
+		delete workerEvent;
 }
 
 void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
@@ -276,8 +277,9 @@ void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
 	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
 		events.push_back(arg_workerEvent);
 		sendStatus();
-	} else {
+	} 
 #ifdef USE_MESSAGING
+	else {
 		bool ifset = true;
 		bool iftry = false;
 		static int lastStatus = -1;
@@ -317,8 +319,6 @@ void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
 		throw "OUPUT_MODE_STANDOUT must be using if not using messaging!";
 #endif
 }
-
-
 
 #ifdef USE_MESSAGING
 /**
