@@ -34,9 +34,10 @@ static const int CONNECTION_PING_PERIOD = 30 * ONE_SECOND;
 
 SimulationMessaging *SimulationMessaging::m_inst = NULL;
 
-SimulationMessaging::SimulationMessaging() {
+SimulationMessaging::SimulationMessaging()
+	:events( )
+	 {
 	bStopRequested = false;
-	workerEvent = NULL;
 #ifdef USE_MESSAGING
 	m_taskID = -1;
 	bStarted = false;
@@ -47,9 +48,8 @@ SimulationMessaging::SimulationMessaging() {
 #ifdef USE_MESSAGING
 SimulationMessaging::SimulationMessaging(const char* broker, const char* smqusername, const char* passwd, const char*qname,
 		const char* tname, const char* vcusername, int simKey, int jobIndex, int taskID, int ttl_low, int ttl_high)
+	:events( )
 {
-	workerEvent = NULL;
-
 	connection = NULL;
 	session = NULL;
 	qProducer = NULL;
@@ -104,15 +104,24 @@ SimulationMessaging::SimulationMessaging(const char* broker, const char* smquser
 }
 #endif
 
+namespace {
+	void cleanupWorkerEvent(WorkerEvent *we) {
+		delete we;
+	}
+}
+
 SimulationMessaging::~SimulationMessaging() throw()
 {
 	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
 		return;
 	}
+	std::for_each(events.begin(), events.end( ),cleanupWorkerEvent);
+	/*
 	if (workerEvent != NULL) {
 		delete workerEvent;
 		workerEvent = NULL;
 	}
+	*/
 #ifdef USE_MESSAGING
 	cleanup();
 #if ( defined(WIN32) || defined(WIN64) )
@@ -140,118 +149,123 @@ SimulationMessaging* SimulationMessaging::create()
     return(m_inst);
 }
 
-WorkerEvent* SimulationMessaging::sendStatus() {
-	if (workerEvent == NULL) {
-		return NULL;
-	}
-
-	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
-		switch (workerEvent->status) {
-		case JOB_DATA:
-			printf("[[[data:%lg]]]", workerEvent->timepoint);
-			fflush(stdout);
-			break;
-		case JOB_PROGRESS:
-			printf("[[[progress:%lg%%]]]", workerEvent->progress * 100.0);
-			fflush(stdout);
-			break;
-		case JOB_STARTING:
-			cout<< workerEvent->eventMessage << endl;
-			break;
-		case JOB_COMPLETED:
-			cerr << "Simulation Complete in Main() ... " << endl;
-			break;
-		case JOB_FAILURE:
-			cerr << workerEvent->eventMessage << endl;			
-			break;
-		}
-
-		return workerEvent;
-	} else {
-#ifdef USE_MESSAGING
-		lockWorkerEvent();
-		WorkerEvent* newWorkerEvent = new WorkerEvent(workerEvent);
-		unlockWorkerEvent();
-
-		TextMessage* msg = initWorkerEventMessage();
-	
-		char* revisedMsg = newWorkerEvent->eventMessage;
-		if (revisedMsg != NULL) {
-			revisedMsg = trim(revisedMsg);
-			if (strlen(revisedMsg) > 2048) {
-				revisedMsg[2047] = 0; //status message is only 2048 chars long in database
+void SimulationMessaging::sendStatus() {
+	WorkerEvent * workerEvent = 0;
+	for (;;) {
+		{ //scope for locking mutex
+			WorkerEventLocker locker(*this);
+			if (events.size( ) > 0 ) {
+				workerEvent = events.front( );
+				events.pop_front( );
 			}
+			else {
+				return;
+			}
+		} //unlocks mutex
 
-			for (int i = 0; i < (int)strlen(revisedMsg); i ++) {
-				switch (revisedMsg[i]) { 
-				case '\r': 
-				case '\n':
-				case '\'':
-					revisedMsg[i] = ' ';
-					break;
-					// these characters are not valid both in database and in messages as a property
-				}
-			}	
-		}
-
-		//status
-		msg->setIntProperty(WORKEREVENT_STATUS, newWorkerEvent->status);
-		//event message
-		if (revisedMsg != NULL) {
-			msg->setStringProperty(WORKEREVENT_STATUSMSG, revisedMsg);
-		}
-		//progress
-		msg->setDoubleProperty(WORKEREVENT_PROGRESS, newWorkerEvent->progress);
-		//timePoint
-		msg->setDoubleProperty(WORKEREVENT_TIMEPOINT, newWorkerEvent->timepoint);		
-
-		cout << "!!!SimulationMessaging::sendStatus [" << (long)m_simKey << ":" << getStatusString(newWorkerEvent->status);
-		if (revisedMsg != NULL) {
-			cout << ":" << revisedMsg;
-		} else {
-			cout << ":" << newWorkerEvent->progress << ":" << newWorkerEvent->timepoint;
-		}
-
-		cout << "]" << endl;
-		//send
-		try {
-			int timeToLive = m_ttl_highPriority;
-			switch (newWorkerEvent->status) {
+		if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
+			switch (workerEvent->status) {
 			case JOB_DATA:
-				timeToLive = m_ttl_lowPriority; 	
+				printf("[[[data:%lg]]]", workerEvent->timepoint);
+				fflush(stdout);
 				break;
 			case JOB_PROGRESS:
-				timeToLive = m_ttl_lowPriority; 	
+				printf("[[[progress:%lg%%]]]", workerEvent->progress * 100.0);
+				fflush(stdout);
 				break;
 			case JOB_STARTING:
-				timeToLive = m_ttl_highPriority; 	
+				cout<< workerEvent->eventMessage << endl;
 				break;
 			case JOB_COMPLETED:
-				timeToLive = m_ttl_highPriority; 	
+				cerr << "Simulation Complete in Main() ... " << endl;
 				break;
 			case JOB_FAILURE:
-				timeToLive = m_ttl_highPriority; 			
+				cerr << workerEvent->eventMessage << endl;
 				break;
 			}
-			qProducer->send(msg, DeliveryMode::PERSISTENT, DEFAULT_PRIORITY, timeToLive);
-		} catch (CMSException& e) {
-			cout << "!!!SimulationMessaging::sendStatus [" << e.getMessage() << "]" << endl;
-		}
 
-		time(&lastSentEventTime);
-		if (newWorkerEvent->status == JOB_COMPLETED || newWorkerEvent->status == JOB_FAILURE) {
+		} else {
+#ifdef USE_MESSAGING
+			TextMessage* msg = initWorkerEventMessage();
+
+			char* revisedMsg = workerEvent->eventMessage;
+			if (revisedMsg != NULL) {
+				revisedMsg = trim(revisedMsg);
+				if (strlen(revisedMsg) > 2048) {
+					revisedMsg[2047] = 0; //status message is only 2048 chars long in database
+				}
+
+				for (int i = 0; i < (int)strlen(revisedMsg); i ++) {
+					switch (revisedMsg[i]) {
+					case '\r':
+					case '\n':
+					case '\'':
+						revisedMsg[i] = ' ';
+						break;
+						// these characters are not valid both in database and in messages as a property
+					}
+				}
+			}
+
+			//status
+			msg->setIntProperty(WORKEREVENT_STATUS, workerEvent->status);
+			//event message
+			if (revisedMsg != NULL) {
+				msg->setStringProperty(WORKEREVENT_STATUSMSG, revisedMsg);
+			}
+			//progress
+			msg->setDoubleProperty(WORKEREVENT_PROGRESS, workerEvent->progress);
+			//timePoint
+			msg->setDoubleProperty(WORKEREVENT_TIMEPOINT, workerEvent->timepoint);
+
+			cout << "!!!SimulationMessaging::sendStatus [" << (long)m_simKey << ":" << getStatusString(workerEvent->status);
+			if (revisedMsg != NULL) {
+				cout << ":" << revisedMsg;
+			} else {
+				cout << ":" << workerEvent->progress << ":" << workerEvent->timepoint;
+			}
+
+			cout << "]" << endl;
+			//send
+			try {
+				int timeToLive = m_ttl_highPriority;
+				switch (workerEvent->status) {
+				case JOB_DATA:
+					timeToLive = m_ttl_lowPriority;
+					break;
+				case JOB_PROGRESS:
+					timeToLive = m_ttl_lowPriority;
+					break;
+				case JOB_STARTING:
+					timeToLive = m_ttl_highPriority;
+					break;
+				case JOB_COMPLETED:
+					timeToLive = m_ttl_highPriority;
+					break;
+				case JOB_FAILURE:
+					timeToLive = m_ttl_highPriority;
+					break;
+				}
+				qProducer->send(msg, DeliveryMode::PERSISTENT, DEFAULT_PRIORITY, timeToLive);
+			} catch (CMSException& e) {
+				cout << "!!!SimulationMessaging::sendStatus [" << e.getMessage() << "]" << endl;
+			}
+
+			time(&lastSentEventTime);
+			if (workerEvent->status == JOB_COMPLETED || workerEvent->status == JOB_FAILURE) {
 #if ( defined(WIN32) || defined(WIN64) )
-			SetEvent(hMessagingThreadEndEvent);
+				SetEvent(hMessagingThreadEndEvent);
 #else // UNIX
-			cout <<  "!!!thread exiting" << endl;
-			pthread_exit(NULL);
+				cout <<  "!!!thread exiting" << endl;
+				pthread_exit(NULL);
+#endif
+			}
+			delete workerEvent;
+
+#else
+			throw "OUPUT_MODE_STANDOUT must be using if not using messaging!";
 #endif
 		}
-
-		return newWorkerEvent;
-#else
-		throw "OUPUT_MODE_STANDOUT must be using if not using messaging!";
-#endif
 	}
 }
 
@@ -260,23 +274,19 @@ void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
 		throw "SimulationMessaging is not initialized";
 	}
 	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
-		workerEvent = arg_workerEvent;
+		events.push_back(arg_workerEvent);
 		sendStatus();
 	} else {
 #ifdef USE_MESSAGING
 		bool ifset = true;
 		bool iftry = false;
-		lockWorkerEvent();
-		int lastStatus = -1;
-		if (workerEvent != NULL) {
-			lastStatus = workerEvent->status;
-		}
-		unlockWorkerEvent();
-		if (arg_workerEvent->status == lastStatus && (arg_workerEvent->status == JOB_PROGRESS || arg_workerEvent->status == JOB_DATA)) {
+		static int lastStatus = -1;
+		bool critical = criticalDelivery(*arg_workerEvent);
+		if (!critical && arg_workerEvent->status == lastStatus) {
 			iftry = true;
-			if (((int)arg_workerEvent->progress) % 25 != 0) {
-				time_t currTime;
-				time(&currTime);
+			const int dProgress = arg_workerEvent->progress;
+			if (dProgress % 25 != 0) {
+				time_t currTime = time(0);
 				if (currTime - lastSentEventTime < 5) {
 					ifset = false;
 				}
@@ -284,30 +294,28 @@ void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
 		}
 
 		if (ifset) {
-			bool succ = false;
-			if (iftry) {
-				succ = lockWorkerEvent(true);
-			} else {
-				succ = lockWorkerEvent();
-			}
-			if (succ) {
-				delete workerEvent;
-				workerEvent = arg_workerEvent;
-				unlockWorkerEvent();
+			{ //scope for lock
+				WorkerEventLocker locker(*this,iftry);
+				if (locker.locked) {
+					if (!critical) {
+						lastStatus = arg_workerEvent->status;
+					}
+					events.push_back(arg_workerEvent);
+				}
+			} //unlock worker event
 #if ( defined(WIN32) || defined(WIN64) )				
-				SetEvent(hNewWorkerEvent);
+			SetEvent(hNewWorkerEvent);
 #else  //UNIX
-				pthread_mutex_lock(&mutex_cond_workerEvent);
-				bNewWorkerEvent = true;
-				pthread_cond_signal(&cond_workerEvent);
-				pthread_mutex_unlock(&mutex_cond_workerEvent);
+			pthread_mutex_lock(&mutex_cond_workerEvent);
+			bNewWorkerEvent = true;
+			pthread_cond_signal(&cond_workerEvent);
+			pthread_mutex_unlock(&mutex_cond_workerEvent);
 #endif
-			}
 		}
+	}
 #else
 		throw "OUPUT_MODE_STANDOUT must be using if not using messaging!";
 #endif
-	}
 }
 
 
@@ -582,7 +590,7 @@ void SimulationMessaging::keepAlive() {
 	}
 }
 
-char* SimulationMessaging::getStatusString(int status) {
+const char* SimulationMessaging::getStatusString(int status) {
 	switch (status) {
 	case JOB_STARTING:
 		return "JOB_STARTING";
@@ -618,10 +626,6 @@ SimulationMessaging* SimulationMessaging::create(const char* broker, const char*
 	}
 
     return(m_inst);
-}
-
-WorkerEvent* SimulationMessaging::getWorkerEvent() {
-	return workerEvent;
 }
 
 void SimulationMessaging::waitUntilFinished() {
@@ -787,8 +791,7 @@ void* startMessagingThread(void* lpParam){
 		
 		switch (waitReturn) {
 			case 0:  { // new event
-				WorkerEvent* sentWorkerEvent = simMessaging->sendStatus();
-				delete sentWorkerEvent;
+				simMessaging->sendStatus();
 				break; 
 			}
 

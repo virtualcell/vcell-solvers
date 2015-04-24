@@ -1,6 +1,7 @@
 #ifndef _SIMULATIONMESSAGING_H_
 #define _SIMULATIONMESSAGING_H_
 
+#include <deque>
 #ifdef USE_MESSAGING
 #include <activemq/library/ActiveMQCPP.h>
 #include <decaf/lang/Thread.h>
@@ -157,18 +158,29 @@ public:
 private:
 	SimulationMessaging();
 	static SimulationMessaging *m_inst;
-	WorkerEvent* workerEvent;
+	std::deque<WorkerEvent *> events;
 	int workerEventOutputMode;
 
-	WorkerEvent* sendStatus();
+	void sendStatus();
 	bool bStopRequested;
+	/**
+	 * is this a critical message type?
+	 */
+	bool criticalDelivery(const WorkerEvent & event) {
+		switch (event.status) {
+		case JOB_DATA:
+		case JOB_PROGRESS:
+			return false;
+		default:
+			return true;
+		}
+	}
 
 #ifdef USE_MESSAGING
 	bool bStarted;
 
 	SimulationMessaging(const char* broker, const char* smqusername, const char* passwd, const char* qname, const char*tname, const char* vcusername, int simKey, int jobIndex,  int taskID, int ttl_low=DEFAULT_TTL_LOW, int ttl_high=DEFAULT_TTL_HIGH);
 
-	WorkerEvent* getWorkerEvent();
 	void keepAlive();
 	static char* trim(char* str);
 	void setupConnection ();    //synchronized
@@ -211,7 +223,7 @@ private:
 	int  m_ttl_highPriority;
 	time_t lastSentEventTime;
 
-	char* getStatusString(int status);
+	const char* getStatusString(int status);
 
 	bool lockMessaging();
 	void unlockMessaging();
@@ -219,6 +231,17 @@ private:
 
 	bool lockWorkerEvent(bool bTry=false);
 	void unlockWorkerEvent();
+	struct WorkerEventLocker {
+		 WorkerEventLocker(SimulationMessaging &sm_, bool bTry = false)
+			 :sm(sm_),
+			  locked( sm.lockWorkerEvent(false)) {
+			 }
+		 ~WorkerEventLocker( ) {
+				 sm.unlockWorkerEvent();
+		 }
+		SimulationMessaging &sm;
+		const bool locked;
+	};
 
 #ifdef WIN32
     CRITICAL_SECTION lockForMessaging;
@@ -233,6 +256,12 @@ private:
 	pthread_cond_t cond_workerEvent;
 	bool bNewWorkerEvent;
 #endif
+
+#else
+	//NO MESSAGING compile compatibility variant
+	struct WorkerEventLocker {
+		 WorkerEventLocker(SimulationMessaging &, bool bTry = false) {}
+	};
 #endif
 };
 

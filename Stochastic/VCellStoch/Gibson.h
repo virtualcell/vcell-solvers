@@ -42,7 +42,6 @@ private:
 	int finalizeSampleRow(int,double);//central location to call to complete 1 output sample to file
 	int savedSampleCount; //saved sample counter that survives certain iterations to keep overall count
 	time_t lastTime;
-	void initTracking();
 } ;
 
 #endif

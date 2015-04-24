@@ -35,9 +35,11 @@ const double EPSILON = 1E-12;
 /*
  *Empty constructor of Gibson. It will use the defalt settings in StochModel.
  */
-Gibson::Gibson():StochModel()
+Gibson::Gibson()
+	:StochModel(),
+	savedSampleCount(1),
+	lastTime (std::numeric_limits<long>::min( ))
 {
-	initTracking();
 	Tree=NULL;
 	currvals=NULL;
 }//end of constructor Gibson()
@@ -48,9 +50,11 @@ Gibson::Gibson():StochModel()
  *Input para: srting, the input file(name), where the model info. is read.
  *            string, the output file(name), where the results are saved.
  */
-Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
+Gibson::Gibson(char* arg_infilename, char* arg_outfilename)
+	:StochModel(),
+	savedSampleCount(1),
+	lastTime (std::numeric_limits<long>::min( ))
 {
-	initTracking();
 	Tree=NULL;
 	currvals=NULL;
 
@@ -277,10 +281,6 @@ Gibson::~Gibson()
 	delete[] currvals;
 }//end of destructor ~Gibson()
 
-void Gibson::initTracking(){
-	savedSampleCount = 1;
-	lastTime = time(NULL);
-}
 /*
  *The method is the core function of Gibson method, it does one run for Gibson simulation.
  *The loop will end either by ending_time or max_iteration.
@@ -516,9 +516,9 @@ int Gibson::finalizeSampleRow(int savedSampleCount,double simtime){
 	if (difftime(time(NULL),lastTime) > 2.0){
 		lastTime = time(NULL);
 		if(NUM_TRIAL > 1){//histogram
-			double percentile =  ((double)savedSampleCount/(double)NUM_TRIAL);
+			double percentile =  static_cast<double>(savedSampleCount)  / NUM_TRIAL;
 #ifdef USE_MESSAGING
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, j - SEED));
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, savedSampleCount));
 #else
 			printf("[[[progress:%lg%%]]]", percentile * 100);
 			fflush(stdout);
@@ -526,8 +526,8 @@ int Gibson::finalizeSampleRow(int savedSampleCount,double simtime){
 		}else{//single_trajectory
 			double percentile = (simtime/ENDING_TIME);
 #ifdef USE_MESSAGING
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simtime));
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simtime));
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simtime) );
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simtime) );
 #else
 			printf("[[[progress:%lg%%]]]", percentile * 100);
 			printf("[[[data:%lg]]]", simtime);
