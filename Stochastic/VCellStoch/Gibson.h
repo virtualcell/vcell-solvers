@@ -39,8 +39,10 @@ private:
 	ofstream outfile; //the output file stream where the results are saved.
 	char* outfilename;//the output file name.
 	bool flag_savePeriod;//the flag for using save period.
-	int finalizeSampleRow(int);//central location to call to complete 1 output sample to file
+	int finalizeSampleRow(int,double);//central location to call to complete 1 output sample to file
 	int savedSampleCount; //saved sample counter that survives certain iterations to keep overall count
+	time_t lastTime;
+	void initTracking();
 } ;
 
 #endif

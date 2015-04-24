@@ -37,7 +37,7 @@ const double EPSILON = 1E-12;
  */
 Gibson::Gibson():StochModel()
 {
-	savedSampleCount = 1;
+	initTracking();
 	Tree=NULL;
 	currvals=NULL;
 }//end of constructor Gibson()
@@ -50,7 +50,7 @@ Gibson::Gibson():StochModel()
  */
 Gibson::Gibson(char* arg_infilename, char* arg_outfilename):StochModel()
 {
-	savedSampleCount = 1;
+	initTracking();
 	Tree=NULL;
 	currvals=NULL;
 
@@ -277,6 +277,10 @@ Gibson::~Gibson()
 	delete[] currvals;
 }//end of destructor ~Gibson()
 
+void Gibson::initTracking(){
+	savedSampleCount = 1;
+	lastTime = time(NULL);
+}
 /*
  *The method is the core function of Gibson method, it does one run for Gibson simulation.
  *The loop will end either by ending_time or max_iteration.
@@ -292,8 +296,6 @@ int Gibson::core()
 	int saveIntervalCount = SAMPLE_INTERVAL; //sampling counter, for default output time spec, keep every
 	int iterationCounter=0;//counter used for termination of the loop when max_iteration is reached
 	int i; //loop variable
-	double prog = 0.19; // to control the output of progress, start from >0.19....>0.99
-    clock_t oldTime = clock(); // to control the output of data, output data every 2 seconds.
 	int varLen = listOfIniValues.size(); //variables' length
 	//reset the indexed tree
 	for(i=0;i<Tree->getSize();i++)
@@ -353,7 +355,7 @@ int Gibson::core()
 		{
 			//simulation time exceed ending time. Before we quit the simulation
 			//output data between the last step simulation time and ending time if we have SAVE_PERIOD on.
-			if((NUM_TRIAL ==1) && (flag_savePeriod))
+			if((NUM_TRIAL ==1) && (flag_savePeriod))//SingleTrajectory_OutputInterval
 			{	//use EPSILON here to make sure that a double 0.99999999999995(usually happen in C) is not regarded as a number that smaller than 1. It should be 1.
 				while((outputTimer+SAVE_PERIOD+EPSILON) < ENDING_TIME)
 				{
@@ -361,7 +363,7 @@ int Gibson::core()
 					for(i=0;i<varLen;i++){
 						outfile<< lastStepVals[i] << "\t";
 					}
-					savedSampleCount = finalizeSampleRow(savedSampleCount);//outfile << endl;
+					savedSampleCount = finalizeSampleRow(savedSampleCount,simtime);//outfile << endl;
 					outputTimer = outputTimer + SAVE_PERIOD;
 				}
 			}
@@ -434,12 +436,12 @@ int Gibson::core()
 		if(infAll)
 			cout << "all times are set infinity.";
 #endif
-		if(NUM_TRIAL ==1)
+		if(NUM_TRIAL ==1)//SingleTrajectory
 		{
 			if(saveIntervalCount == SAMPLE_INTERVAL)
 			{
 				//output the result to file if the num_trial is one and the outputTimer reaches the new save period
-				if(flag_savePeriod)
+				if(flag_savePeriod)//OutputInterval
 				{
 					while((outputTimer+SAVE_PERIOD) < simtime)
 					{
@@ -447,7 +449,7 @@ int Gibson::core()
 						for(i=0;i<varLen;i++){
 							outfile<< lastStepVals[i] << "\t";
 						}
-						savedSampleCount = finalizeSampleRow(savedSampleCount);//outfile << endl;
+						savedSampleCount = finalizeSampleRow(savedSampleCount,simtime);//outfile << endl;
 						outputTimer = outputTimer + SAVE_PERIOD;
 					}
 					if(outputTimer+SAVE_PERIOD <= simtime + EPSILON)
@@ -455,67 +457,44 @@ int Gibson::core()
 						outfile << outputTimer+SAVE_PERIOD << "\t";
 						for(i=0;i<varLen;i++){
 							outfile<< *listOfVars.at(i)->getCurr() << "\t";
-							savedSampleCount = finalizeSampleRow(savedSampleCount);//outfile << endl;
+							savedSampleCount = finalizeSampleRow(savedSampleCount,simtime);//outfile << endl;
 						}
 						outputTimer = outputTimer + SAVE_PERIOD;
 					}
 				}
-				else //output according to simulation time
+				else //KeepEvery
 				{
 					outfile << simtime << "\t";
 					for(i=0;i<varLen;i++){
 						outfile<< *listOfVars.at(i)->getCurr()<< "\t";
 					}
-					savedSampleCount = finalizeSampleRow(savedSampleCount);//outfile << endl;
-				}
-				// output data message every two seconds to Java program (useful for long simulation, user can view results during simulation)
-				clock_t currentTime = clock();
-				double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
-				if (duration >= 2)
-				{
-					double percentile = (simtime/ENDING_TIME);
-#ifdef USE_MESSAGING
-					SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simtime));
-					SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simtime));
-#else
-					printf("[[[progress:%lg%%]]]", percentile * 100);
-					printf("[[[data:%lg]]]", simtime);
-					fflush(stdout);
-#endif
-					oldTime = currentTime;
+					savedSampleCount = finalizeSampleRow(savedSampleCount,simtime);//outfile << endl;
 				}
 			}
 			if(saveIntervalCount == 1)
 				saveIntervalCount = SAMPLE_INTERVAL;
 			else
 				saveIntervalCount--;
-			// output simulaiton progress message
-//              if((simtime/ENDING_TIME) > prog)
-//				{
-//					printf("[[[progress:%lg%%]]]", (simtime/ENDING_TIME) * 100.0);
-//					fflush(stdout);
-//					prog = prog + 0.2;
-//				}
 		}//if(NUM_TRIAL ==1)
 	}//end of while loop
 	//output the variable's vals at the ending time point.
-	if((simtime > ENDING_TIME) && (NUM_TRIAL == 1) && (flag_savePeriod))
+	if((simtime > ENDING_TIME) && (NUM_TRIAL == 1) && (flag_savePeriod))//SingleTrajectory_OutputInterval
 	{
 		outfile << ENDING_TIME ;
 		for(i=0;i<listOfVars.size();i++)
 		{
 			outfile<< "\t" << *listOfVars.at(i)->getCurr();
 		}
-		savedSampleCount = finalizeSampleRow(savedSampleCount);//outfile << endl;
+		savedSampleCount = finalizeSampleRow(savedSampleCount,simtime);//outfile << endl;
 	}
-	//to save the (last-step)values of varaibles after one run of simulation
-	if(NUM_TRIAL >1)
+	//to save the (last-step)values of variables after one run of simulation
+	if(NUM_TRIAL >1)//Histogram
 	{
 		for(i=0;i<listOfVars.size();i++)
 		{
 			outfile<< "\t" << *listOfVars.at(i)->getCurr();
 		}
-		savedSampleCount = finalizeSampleRow(savedSampleCount);//outfile << endl;
+		savedSampleCount = finalizeSampleRow(savedSampleCount,simtime);//outfile << endl;
 	}
     //return parameter 0:ends by ending_time  1:ends by max_iteration
 	if(iterationCounter< MAX_ITERATION)
@@ -525,7 +504,7 @@ int Gibson::core()
 	else return 1;
 }//end of method core()
 
-int Gibson::finalizeSampleRow(int savedSampleCount){
+int Gibson::finalizeSampleRow(int savedSampleCount,double simtime){
 	outfile << endl;
 //	cout << "savedSampleCount=" << savedSampleCount << endl;
 	if(savedSampleCount > MAX_SAVE_POINTS) {
@@ -533,6 +512,30 @@ int Gibson::finalizeSampleRow(int savedSampleCount){
 			"Simulation exceeded maximum saved time points " << MAX_SAVE_POINTS 
 			<< ". Partial results may be available. \nYou can increase the save interval (\"keep every\") or increase the maximum number of saved time points (\"keep at most\").");
 	}
+	//progress no more than every 2 seconds
+	if (difftime(time(NULL),lastTime) > 2.0){
+		lastTime = time(NULL);
+		if(NUM_TRIAL > 1){//histogram
+			double percentile =  ((double)savedSampleCount/(double)NUM_TRIAL);
+#ifdef USE_MESSAGING
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, j - SEED));
+#else
+			printf("[[[progress:%lg%%]]]", percentile * 100);
+			fflush(stdout);
+#endif
+		}else{//single_trajectory
+			double percentile = (simtime/ENDING_TIME);
+#ifdef USE_MESSAGING
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simtime));
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simtime));
+#else
+			printf("[[[progress:%lg%%]]]", percentile * 100);
+			printf("[[[data:%lg]]]", simtime);
+			fflush(stdout);
+#endif
+		}
+	}
+
 	return savedSampleCount+1;
 }
 /*
@@ -573,7 +576,6 @@ void Gibson::march()
 	}
 	else if (NUM_TRIAL > 1)
 	{
-		clock_t oldTime = clock(); // use to calculate time, send progress every two seconds
 		//output file header
 		outfile << "TrialNo:";
 		for(int i=0;i<listOfVarNames.size();i++){
@@ -593,30 +595,14 @@ void Gibson::march()
 #endif
 			srand(j);
 			//output trial number.  PS:results after each trial are printed in core() function.
-			outfile << j-SEED+1;
-			core();
+			outfile << j-SEED+1;//this expression should evaluate equal to 'savedSampleCount'
+			core();//this will save 1 row of data (
 			//reset to initial values before next simulation
 			for(int i=0;i<listOfIniValues.size();i++){
 				listOfVars[i]->setCurr(listOfIniValues.at(i));
 			}
 			for(int i=0;i<listOfProcesses.size();i++){
 				Tree->setProcess(i,listOfProcesses.at(i));
-			}
-
-			// output progress message every two seconds to Java program
-			clock_t currentTime = clock();
-			double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
-			if (duration >= 2)
-			{
-				double percentile =  ((j-SEED)*1.0/NUM_TRIAL);
-#ifdef USE_MESSAGING
-				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, j - SEED));
-#else
-				printf("[[[progress:%lg%%]]]", percentile * 100);
-				//printf("[[[data:%lg]]]", (j-SEED));
-				fflush(stdout);
-#endif
-				oldTime = currentTime;
 			}
 		}
 	}
