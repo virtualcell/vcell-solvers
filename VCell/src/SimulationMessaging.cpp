@@ -151,7 +151,7 @@ SimulationMessaging* SimulationMessaging::create()
 }
 
 void SimulationMessaging::sendStatus() {
-	WorkerEvent * workerEvent = 0;
+	WorkerEvent * workerEvent = 0; //set to null pointer
 	for (;;) {
 		{ //scope for locking mutex
 			WorkerEventLocker locker(*this);
