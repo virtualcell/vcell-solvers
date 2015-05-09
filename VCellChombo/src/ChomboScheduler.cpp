@@ -457,7 +457,17 @@ void ChomboScheduler::generateMembraneIndexData()
 			irregularPointMembraneIndex[iphase][ivol].resize(numLevels);
 			for (int ilev = 0; ilev < numLevels; ilev ++)
 			{
-				BaseIVFactory<int>  bivfabFactory(vectEbis[iphase][ivol][ilev]);
+				RefCountedPtr< LayoutData<IntVectSet> > irrSet = RefCountedPtr<LayoutData<IntVectSet> >(new LayoutData<IntVectSet>(vectGrids[ilev]));
+				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
+				{
+					const Box& currBox = vectGrids[ilev][dit()];
+					Box boxWithGhost = currBox;
+					boxWithGhost.grow(membraneIndexGhost);
+
+					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
+					(*irrSet)[dit()] = currEBISBox.getIrregIVS(boxWithGhost);
+				}
+				BaseIVFactory<int>  bivfabFactory(vectEbis[iphase][ivol][ilev], *irrSet);
 				irregularPointMembraneIDs[iphase][ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<int> > >(new LevelData< BaseIVFAB<int> >(vectGrids[ilev], 1, IntVect::Zero, bivfabFactory));
 				// add a new structure to store indexes for the membrane elements
 				irregularPointMembraneIndex[iphase][ivol][ilev] = RefCountedPtr<LevelData< BaseIVFAB<int> > >(new LevelData< BaseIVFAB<int> >(vectGrids[ilev], 1, membraneIndexGhost, bivfabFactory));
@@ -542,7 +552,25 @@ void ChomboScheduler::generateMembraneIndexData()
 						}
 						(*irregularPointMembraneIndex[phase0][ivol][ilev])[dit()](vof, 0) = localMemIndex;
 						(*irregularPointMembraneIndex[phase1][jvol][ilev])[dit()](vof, 0) = localMemIndex;
-					}
+
+						if (localMemIndex == MEMBRANE_INDEX_IN_FINER_LEVEL)
+						{
+							const EBISBox& currEBISBox_phase1 = vectEbis[phase1][jvol][ilev][dit()];
+							const EBGraph& currEBGraph_phase1 = currEBISBox_phase1.getEBGraph();
+							IntVectSet irregCells_phase1 = currEBISBox_phase1.getIrregIVS(currBox);
+							for (VoFIterator vofit_phase1(irregCells_phase1,currEBGraph_phase1); vofit_phase1.ok(); ++ vofit_phase1)
+							{
+								const VolIndex& vof_phase1 = vofit_phase1();
+								const IntVect& gridIndex_phase1 = vof_phase1.gridIndex();
+								if (gridIndex == gridIndex_phase1)
+								{
+									pout() << "setting value of same point in phase 1 to MEMBRANE_INDEX_IN_FINER_LEVEL "
+									<< "{phase:1, vol:" << ivol << ", lev:" << ilev << ", vof:" << vof << ", box:" << currBox << "}" << endl;
+									(*irregularPointMembraneIndex[phase1][jvol][ilev])[dit()](vof_phase1, 0) = MEMBRANE_INDEX_IN_FINER_LEVEL;
+								}
+							}
+						}
+					} // end else
 				} // end for VoFIterator
 			} // end for DataIterator
 		} // end for ilev
@@ -558,6 +586,33 @@ void ChomboScheduler::generateMembraneIndexData()
 	} // end for ivol
 	delete[] bAdjacent;
 	pout() << "numMembranePoints=" << numMembranePoints << endl;
+
+  // validate the membrane indexes in phase 1
+	for (int ivol = 0; ivol < phaseVolumeList[phase1].size(); ++ ivol)
+	{
+		for (int ilev = 0; ilev < numLevels; ilev ++)
+		{
+			for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit)
+			{
+				const Box& currBox = vectGrids[ilev][dit()];
+
+				const EBISBox& currEBISBox = vectEbis[phase1][ivol][ilev][dit()];
+				const EBGraph& currEBGraph = currEBISBox.getEBGraph();
+				IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
+				for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++ vofit)
+				{
+					const VolIndex& vof = vofit();
+					if ((*irregularPointMembraneIndex[phase1][ivol][ilev])[dit()](vof, 0) == MEMBRANE_INDEX_INVALID)
+					{
+						stringstream ss;
+						ss << "Membrane around point {phase:1, vol:" << ivol << ", lev:" << ilev
+										<< ", vof:" << vof << ", box:" << currBox << "} is too coarse to resolve, refine the mesh" << endl;
+						throw ss.str();
+					}
+				}
+			}
+		}
+	}
 	pout() << "Exit " << methodName << endl;
 }
 
