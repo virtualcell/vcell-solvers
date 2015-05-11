@@ -516,20 +516,38 @@ void ChomboScheduler::generateMembraneIndexData()
 							break;
 						}
 					}
+
+					bool bInFinerLevel = isInNextFinerLevel(ilev, gridIndex);
 					if (membraneID == -1)
 					{
 						// membrane not found
-						Feature* feature = phaseVolumeList[phase0][ivol]->feature;
-						assert(feature != NULL);
-						RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-						pout() << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev
-								<< ": no membrane id for point " << vof.gridIndex() << " at "  << vol_center << "." << endl;
-						(*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0) = -1;
+						if (bInFinerLevel)
+						{
+							// it is OK if the point is refined
+							(*irregularPointMembraneIDs[phase0][ivol][ilev])[dit()](vof, 0) = -1;
+							(*irregularPointMembraneIndex[phase0][ivol][ilev])[dit()](vof, 0) = MEMBRANE_INDEX_IN_FINER_LEVEL;
+						}
+						else
+						{
+							// throw exception if it's not refined
+							RealVect a_point = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+							RealVect centroid = currEBISBox.centroid(vof);
+							centroid *= vectDxes[ilev];
+							a_point += centroid;
+							double areaFrac = currEBISBox.bndryArea(vof);
+							double volFrac = currEBISBox.volFrac(vof);
+							stringstream ss;
+							ss << "Membrane not found at point {phase:1, vol:" << ivol << ", lev:" << ilev
+								<< ", box:" << currBox << ", vof:" << vof << ", coordinate:" << a_point
+								<< ", volumeFraction:" << volFrac << ", areaFraction:" << areaFrac
+								<< ", error:no matching point in phase 1}. Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
+							throw ss.str();
+						}
 					}
 					else
 					{
 						int localMemIndex = -1;
-						if (isInNextFinerLevel(ilev, gridIndex))
+						if (bInFinerLevel)
 						{
 							localMemIndex = MEMBRANE_INDEX_IN_FINER_LEVEL;
 						}
@@ -538,11 +556,16 @@ void ChomboScheduler::generateMembraneIndexData()
 							localMemIndex = (*irregularPointMembraneIndex[phase0][ivol][ilev])[dit()](vof, 0);
 							if (localMemIndex >= 0)
 							{
-								Feature* feature = phaseVolumeList[phase0][ivol]->feature;
-								RealVect vol_center = EBArith::getVofLocation(vof, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+								RealVect a_point = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+								RealVect centroid = currEBISBox.centroid(vof);
+								centroid *= vectDxes[ilev];
+								a_point += centroid;
+								double areaFrac = currEBISBox.bndryArea(vof);
+								double volFrac = currEBISBox.volFrac(vof);
 								stringstream ss;
-								ss << "phase " << phase0 << ":feature " << feature->getName() << ":volume " << ivol << ":level " << ilev
-										<< ", Point " << gridIndex << " at "  << vol_center << " is multi-valued point."
+								ss << "Point {phase:1, vol:" << ivol << ", lev:" << ilev
+									<< ", box:" << currBox << ", vof:" << vof << ", coordinate:" << a_point
+									<< ", volumeFraction:" << volFrac << ", areaFraction:" << areaFrac << "} is multi-valued point."
 										<< "Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
 								throw ss.str();
 							}
@@ -557,13 +580,14 @@ void ChomboScheduler::generateMembraneIndexData()
 						{
 							const EBISBox& currEBISBox_phase1 = vectEbis[phase1][jvol][ilev][dit()];
 							const EBGraph& currEBGraph_phase1 = currEBISBox_phase1.getEBGraph();
-							IntVectSet irregCells_phase1 = currEBISBox_phase1.getIrregIVS(currBox);
-							for (VoFIterator vofit_phase1(irregCells_phase1,currEBGraph_phase1); vofit_phase1.ok(); ++ vofit_phase1)
+							// if this point is multi-valued in phase 1, we need to assign other cells.
+							if (currEBISBox_phase1.numVoFs(gridIndex) > 1)
 							{
-								const VolIndex& vof_phase1 = vofit_phase1();
-								const IntVect& gridIndex_phase1 = vof_phase1.gridIndex();
-								if (gridIndex == gridIndex_phase1)
+								IntVectSet irregCells_phase1;
+								irregCells_phase1 |= gridIndex;  // add the same and only point
+								for (VoFIterator vofit_phase1(irregCells_phase1,currEBGraph_phase1); vofit_phase1.ok(); ++ vofit_phase1)
 								{
+									const VolIndex& vof_phase1 = vofit_phase1();
 									pout() << "setting value of same point in phase 1 to MEMBRANE_INDEX_IN_FINER_LEVEL "
 									<< "{phase:1, vol:" << ivol << ", lev:" << ilev << ", vof:" << vof << ", box:" << currBox << "}" << endl;
 									(*irregularPointMembraneIndex[phase1][jvol][ilev])[dit()](vof_phase1, 0) = MEMBRANE_INDEX_IN_FINER_LEVEL;
@@ -602,12 +626,27 @@ void ChomboScheduler::generateMembraneIndexData()
 				for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++ vofit)
 				{
 					const VolIndex& vof = vofit();
+					const IntVect& gridIndex = vof.gridIndex();
 					if ((*irregularPointMembraneIndex[phase1][ivol][ilev])[dit()](vof, 0) == MEMBRANE_INDEX_INVALID)
 					{
-						stringstream ss;
-						ss << "Membrane around point {phase:1, vol:" << ivol << ", lev:" << ilev
-										<< ", vof:" << vof << ", box:" << currBox << "} is too coarse to resolve, refine the mesh" << endl;
-						throw ss.str();
+						if (isInNextFinerLevel(ilev, gridIndex))
+						{
+							(*irregularPointMembraneIndex[phase1][ivol][ilev])[dit()](vof, 0) = MEMBRANE_INDEX_IN_FINER_LEVEL;
+						}
+						else
+						{
+							RealVect a_point = EBArith::getIVLocation(gridIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+							RealVect centroid = currEBISBox.centroid(vof);
+							centroid *= vectDxes[ilev];
+							a_point += centroid;
+							double areaFrac = currEBISBox.bndryArea(vof);
+							double volFrac = currEBISBox.volFrac(vof);
+							stringstream ss;
+							ss << "Mesh too coarse, needs refinement around point {phase:1, vol:" << ivol << ", lev:" << ilev
+								<< ", box:" << currBox << ", vof:" << vof << ", coordinate:" << a_point
+								<< ", volumeFraction:" << volFrac << ", areaFraction:" << areaFrac << ", error:no matching point in phase 0}" << endl;
+							throw ss.str();
+						}
 					}
 				}
 			}
@@ -621,7 +660,6 @@ void ChomboScheduler::generateVolumeMembraneIndexMap()
 	static const char* methodName = "(ChomboScheduler::generateVolumeMembraneIndexMap)";
 	pout() << "Entry " << methodName << endl;
 
-	pout() << "generate map of irregular point (volIndex) to membrane index"	<< endl;
 	irregVolumeMembraneMap.resize(numLevels);
 	for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ++ ivol)
 	{
@@ -634,7 +672,6 @@ void ChomboScheduler::generateVolumeMembraneIndexMap()
 				Box boxWithGhost = currBox;
 				boxWithGhost.grow(membraneIndexGhost);
 				
-				pout() << "phase " << phase0 << ", level " << ilev << ", Box "	<< currBox << endl;
 				const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
 				const EBGraph& currEBGraph = currEBISBox.getEBGraph();
 				IntVectSet irregCells = currEBISBox.getIrregIVS(boxWithGhost); // irregular points in box with ghost
