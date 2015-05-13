@@ -537,10 +537,11 @@ void ChomboScheduler::generateMembraneIndexData()
 							double areaFrac = currEBISBox.bndryArea(vof);
 							double volFrac = currEBISBox.volFrac(vof);
 							stringstream ss;
-							ss << "Membrane not found at point {phase:1, vol:" << ivol << ", lev:" << ilev
+							ss << "At point " << a_point << ", membrane cannot be resolved. Use finer mesh or refine near that point."
+							   << "{phase:0, vol:" << ivol << ", lev:" << ilev
 								<< ", box:" << currBox << ", vof:" << vof << ", coordinate:" << a_point
 								<< ", volumeFraction:" << volFrac << ", areaFraction:" << areaFrac
-								<< ", error:no matching point in phase 1}. Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
+								<< ", error:no matching point in the other phase}.";
 							throw ss.str();
 						}
 					}
@@ -563,10 +564,11 @@ void ChomboScheduler::generateMembraneIndexData()
 								double areaFrac = currEBISBox.bndryArea(vof);
 								double volFrac = currEBISBox.volFrac(vof);
 								stringstream ss;
-								ss << "Point {phase:1, vol:" << ivol << ", lev:" << ilev
-									<< ", box:" << currBox << ", vof:" << vof << ", coordinate:" << a_point
-									<< ", volumeFraction:" << volFrac << ", areaFraction:" << areaFrac << "} is multi-valued point."
-										<< "Mesh is too coarse to resolve. Use finer mesh or mesh refinement.";
+								ss << "At point " << a_point << ", multi-valued point found. Use finer mesh or refine near that point."
+							   << "{phase:0, vol:" << ivol << ", lev:" << ilev
+								<< ", box:" << currBox << ", vof:" << vof << ", coordinate:" << a_point
+								<< ", volumeFraction:" << volFrac << ", areaFraction:" << areaFrac
+								<< ", error:mulit-valued point}.";
 								throw ss.str();
 							}
 							 // in parallel, these indexes are not unique from processor to processor
@@ -585,11 +587,11 @@ void ChomboScheduler::generateMembraneIndexData()
 							{
 								IntVectSet irregCells_phase1;
 								irregCells_phase1 |= gridIndex;  // add the same and only point
-								for (VoFIterator vofit_phase1(irregCells_phase1,currEBGraph_phase1); vofit_phase1.ok(); ++ vofit_phase1)
+								for (VoFIterator vofit_phase1(irregCells_phase1, currEBGraph_phase1); vofit_phase1.ok(); ++ vofit_phase1)
 								{
 									const VolIndex& vof_phase1 = vofit_phase1();
-									pout() << "setting value of same point in phase 1 to MEMBRANE_INDEX_IN_FINER_LEVEL "
-									<< "{phase:1, vol:" << ivol << ", lev:" << ilev << ", vof:" << vof << ", box:" << currBox << "}" << endl;
+									pout() << "setting value of same point multi-valued in phase 1 to MEMBRANE_INDEX_IN_FINER_LEVEL "
+									<< "{phase:1, vol:" << ivol << ", lev:" << ilev << ", vof:" << vof_phase1 << ", box:" << currBox << "}" << endl;
 									(*irregularPointMembraneIndex[phase1][jvol][ilev])[dit()](vof_phase1, 0) = MEMBRANE_INDEX_IN_FINER_LEVEL;
 								}
 							}
@@ -642,9 +644,11 @@ void ChomboScheduler::generateMembraneIndexData()
 							double areaFrac = currEBISBox.bndryArea(vof);
 							double volFrac = currEBISBox.volFrac(vof);
 							stringstream ss;
-							ss << "Mesh too coarse, needs refinement around point {phase:1, vol:" << ivol << ", lev:" << ilev
+							ss << "At point " << a_point << ", membrane cannot be resolved. Use finer mesh or refine near that point."
+							   << "{phase:1, vol:" << ivol << ", lev:" << ilev
 								<< ", box:" << currBox << ", vof:" << vof << ", coordinate:" << a_point
-								<< ", volumeFraction:" << volFrac << ", areaFraction:" << areaFrac << ", error:no matching point in phase 0}" << endl;
+								<< ", volumeFraction:" << volFrac << ", areaFraction:" << areaFrac
+								<< ", error:no matching point in the other phase}.";
 							throw ss.str();
 						}
 					}
