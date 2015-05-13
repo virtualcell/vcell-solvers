@@ -93,7 +93,6 @@ public:
 	void setNumLevels(int nl)
 	{
 		numLevels = nl;
-		viewLevel = numLevels - 1;  // default to finest
 	}
 
 	void setRefRatios(int* r)

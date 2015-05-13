@@ -5,6 +5,7 @@ int ChomboSpec::defaultTagsGrow = 2;
 ChomboSpec::ChomboSpec(ChomboGeometry* geometry) : chomboGeometry(geometry)
 {
 	numLevels = 1;
+	viewLevel = 0;
 	refRatios = new int[1];
 	refRatios[0] = 2;	
 	maxBoxSize = 32;
