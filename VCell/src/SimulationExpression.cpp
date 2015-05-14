@@ -122,6 +122,10 @@ SimulationExpression::SimulationExpression(Mesh *mesh) : Simulation(mesh) {
 	memParticleVarList = 0;
 
 	postProcessingBlock = NULL;
+
+	//(if not set to 0) causes segmentation violation in destructor depending on where solver code exits
+	numRegionSizeVars = 0;
+	regionSizeVarList = 0;
 }
 
 SimulationExpression::~SimulationExpression() 

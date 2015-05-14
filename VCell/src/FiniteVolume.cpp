@@ -117,6 +117,11 @@ int main(int argc, char *argv[])
 		fvSolver = new FVSolver(ifsInput, taskID, outputPath, bSimZip);
 		ifsInput.close();
 
+		if(fvSolver->getNumVariables() == 0){
+			//sims with no reactions and no diffusing species cause exit logic to 'wait' forever
+			//never sending a job failed or job finished message and never cleaning up threads
+			throw invalid_argument("FiniteVolume error: Must have at least 1 variable or reaction to solve");
+		}
 		fvSolver->solve();
 
 	} catch (const char *exStr){
