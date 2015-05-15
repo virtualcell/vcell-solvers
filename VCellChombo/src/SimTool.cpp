@@ -340,7 +340,9 @@ void SimTool::writeData(double progress, double time, int iteration, bool conver
 	if (bSuccess) {
 		if (bConsoleOutput || isRootRank())
 		{
+#ifndef CH_MPI
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
+#endif
 		}
 		simFileCount++;
 	} else {
@@ -453,14 +455,18 @@ void SimTool::start(bool convertChomboData)
 		{
 			if (bConsoleOutput || isRootRank())
 			{
+#ifndef CH_MPI
 				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, 0, 0));
+#endif
 			}
 		}
 	} else {
 		// simulation continues from existing results, send data message
 		if (bConsoleOutput || isRootRank())
 		{
+#ifndef CH_MPI
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, percentile, simStartTime));
+#endif
 		}
 	}
 	//
@@ -509,6 +515,9 @@ void SimTool::start(bool convertChomboData)
 	} 
 	if (bConsoleOutput || isRootRank())
 	{
+#ifdef CH_MPI
+		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, 1.0, simulation->getTime_sec()));
+#endif
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, 1.0, simulation->getTime_sec()));
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));
 	}
