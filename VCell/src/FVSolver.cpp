@@ -10,6 +10,7 @@ using std::istringstream;
 using std::stringstream;
 using std::endl;
 
+
 #include <Expression.h>
 using VCell::Expression;
 
@@ -62,7 +63,7 @@ FieldData *getPSFFieldData() {
 # JMS_Paramters
 JMS_PARAM_BEGIN
 JMS_BROKER tcp://code:2507
-JMS_USER serverUser xxxxxxx
+JMS_USER serverUser cbittech
 JMS_QUEUE workerEventDev
 JMS_TOPIC serviceControlDev
 VCELL_USER fgao
@@ -1340,7 +1341,7 @@ void FVSolver::loadSerialScanParameterValues(istream& ifsInput, int numSerialSca
 # JMS_Paramters
 JMS_PARAM_BEGIN
 JMS_BROKER tcp://code:2507
-JMS_USER serverUser xxxxxxx
+JMS_USER serverUser cbittech
 JMS_QUEUE workerEventDev
 JMS_TOPIC serviceControlDev
 VCELL_USER fgao
@@ -1430,6 +1431,7 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 	if (taskID < 0) { // no messaging
 		SimulationMessaging::create();
 	}
+
 	string meshfile;
 	string nextToken, line;
 
@@ -1449,8 +1451,10 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 			SimulationMessaging::getInstVar()->start(); // start the thread
 #endif
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "preprocessing started"));
+
 		} else if (nextToken == "SIMULATION_PARAM_BEGIN") {
 			loadSimulationParameters(ifsInput);
+			simTool->checkTaskIdLockFile();//check if taskid compatible with taskid lockfile
 		} else if (nextToken == "POST_PROCESSING_BLOCK_BEGIN") {
 			loadPostProcessingBlock(ifsInput);
 		} else if (nextToken == "MODEL_BEGIN") {

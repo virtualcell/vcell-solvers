@@ -445,6 +445,10 @@ void SimTool::loadFinal()
 		clearLog();
 	}
 }
+void SimTool::checkTaskIdLockFile(){
+	FILE* fp = lockForReadWrite();
+	fclose(fp);
+}
 
 FILE* SimTool::lockForReadWrite() {
 	int myTaskID = SimulationMessaging::getInstVar()->getTaskID();
@@ -474,8 +478,12 @@ FILE* SimTool::lockForReadWrite() {
 		int numRead = fscanf(fp, "%d", &taskIDInFile);
 		if (numRead == 1) {
 			if (myTaskID < taskIDInFile) {
-				cout << "there is a new process running the simulation, exit..." << endl;
-				exit(0);
+				string taskIDErrorMsg = "Starting simulation with taskid="+
+						static_cast<ostringstream*>( &(ostringstream() << myTaskID) )->str()+
+						" but lockfile has later taskid="+
+						static_cast<ostringstream*>( &(ostringstream() << taskIDInFile) )->str();
+				cout << taskIDErrorMsg << endl;
+				throw taskIDErrorMsg;
 			}
 			if (myTaskID == taskIDInFile) { // it's me
 				return fp;

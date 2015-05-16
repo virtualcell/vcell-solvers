@@ -109,7 +109,8 @@ public:
 	void setLoadFinal(bool b) {
 		bLoadFinal = b;
 	}
-	
+	void checkTaskIdLockFile();
+
 #ifdef VCELL_HYBRID	
 	void setSmoldynInputFile(string& inputfile);
 #endif
