@@ -478,12 +478,10 @@ FILE* SimTool::lockForReadWrite() {
 		int numRead = fscanf(fp, "%d", &taskIDInFile);
 		if (numRead == 1) {
 			if (myTaskID < taskIDInFile) {
-				string taskIDErrorMsg = "Starting simulation with taskid="+
-						static_cast<ostringstream*>( &(ostringstream() << myTaskID) )->str()+
-						" but lockfile has later taskid="+
-						static_cast<ostringstream*>( &(ostringstream() << taskIDInFile) )->str();
-				cout << taskIDErrorMsg << endl;
-				throw taskIDErrorMsg;
+				ostringstream msg;
+				msg <<  "Starting simulation with taskid=" << myTaskID <<" but lockfile has later taskid="
+						<< taskIDInFile << std::ends;
+				throw std::runtime_error(msg.str( ));
 			}
 			if (myTaskID == taskIDInFile) { // it's me
 				return fp;
