@@ -231,12 +231,14 @@ void SimulationMessaging::sendStatus() {
 			//send
 			try {
 				int timeToLive = m_ttl_highPriority;
+				int deliveryMode = DeliveryMode::PERSISTENT;
 				switch (workerEvent->status) {
 				case JOB_DATA:
 					timeToLive = m_ttl_lowPriority;
 					break;
 				case JOB_PROGRESS:
 					timeToLive = m_ttl_lowPriority;
+					deliveryMode = DeliveryMode::NON_PERSISTENT;
 					break;
 				case JOB_STARTING:
 					timeToLive = m_ttl_highPriority;
@@ -248,7 +250,7 @@ void SimulationMessaging::sendStatus() {
 					timeToLive = m_ttl_highPriority;
 					break;
 				}
-				qProducer->send(msg, DeliveryMode::PERSISTENT, DEFAULT_PRIORITY, timeToLive);
+				qProducer->send(msg, deliveryMode, DEFAULT_PRIORITY, timeToLive);
 			} catch (CMSException& e) {
 				cout << "!!!SimulationMessaging::sendStatus [" << e.getMessage() << "]" << endl;
 			}
