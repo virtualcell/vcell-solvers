@@ -1,4 +1,5 @@
 project(MovingBoundaryTest)
+cmake_policy(SET CMP0046 OLD)
 
 file(GLOB SRC_FILES *cpp) 
 file(GLOB HDR_FILES *h) 
