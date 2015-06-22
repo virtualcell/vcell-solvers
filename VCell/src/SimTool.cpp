@@ -447,7 +447,9 @@ void SimTool::loadFinal()
 }
 void SimTool::checkTaskIdLockFile(){
 	FILE* fp = lockForReadWrite();
-	fclose(fp);
+	if (fp != 0 ) {
+		fclose(fp);
+	}
 }
 
 FILE* SimTool::lockForReadWrite() {
