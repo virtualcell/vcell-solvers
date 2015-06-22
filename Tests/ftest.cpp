@@ -375,3 +375,40 @@ TEST(frontier,propagate) {
 		}
 	}
 }
+
+TEST(frontier,store) {
+	//const int NUMBER_STEPS = 1;
+	//const double TIME_INCREMENT = 0.1;
+	const double MID_TIME = 0.5;
+	const double END_TIME = 1.0;
+	using spatial::Point2D; 
+	spatial::FronTierVelocityFunction vf = velFunction;
+	using spatial::GeoLimit;
+	std::vector<GeoLimit> limits;
+	limits.push_back(GeoLimit(0,5));
+	limits.push_back(GeoLimit(0,3));
+	spatial::VCellFront<double> front(limits, 175,1.5, levelFunc,vf );
+	using spatial::cX; 
+	using spatial::cY; 
+	using spatial::Mesh;
+	using spatial::MeshElement;
+	typedef std::vector<std::vector<Point2D> > vectorVector; 
+	std::ofstream matlabScript("store.m");
+	const char *colors[] = {"k","r","g","b","y"};
+	vcell_util::Modulo<int> c(0,sizeof(colors));
+	matlabScript << matlabBridge::FigureName("store") << matlabBridge::clearFigure;
+	front.propagateTo(MID_TIME);
+	vectorVector curves = front.retrieveCurves( );
+	for (vectorVector::iterator iter = curves.begin( ); iter != curves.end( );++iter) {
+
+		matlabBridge::Polygon pgon(colors[++c]);
+		assert (c <= sizeof(colors)/sizeof(colors[0]) );
+		std::vector<Point2D> points = *iter;
+
+		for (std::vector<Point2D>::iterator piter = points.begin( );piter != points.end( );++piter) {
+			const Point2D & p = *piter;
+			pgon.add(p(cX),p(cY));
+		}
+		matlabScript << pgon; 
+	}
+}

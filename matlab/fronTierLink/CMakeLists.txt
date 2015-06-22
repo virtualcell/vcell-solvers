@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(fronTierLink)
+message("fronTierLink activated")
 
 file(GLOB SRC_FILES *cpp) 
 file(GLOB HEADER_FILES *h) 
@@ -14,7 +15,9 @@ include_directories(include
 	../../FronTierLib 
 	../../FronTierLib/util 
 	../../boost_1_53_0
-	../../Solver/include)
+	../../Solver/include
+	../../vcommons/include
+	)
 
 set(PDIR ${CMAKE_BINARY_DIR}/${PROJECT_NAME})
 file(COPY ${ML_SCRIPT} ${ML_SOURCE} ../${OPT_FILE} DESTINATION ${PDIR})

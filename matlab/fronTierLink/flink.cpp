@@ -9,6 +9,7 @@
 #include <mexstream.h>
 #include <svnversion.h>
 #include <vcGccCompat.h>
+#include <VCellFrontierUtil.h>
 using std::vector;
 namespace {
 	SVN_VERSION_TAG;
@@ -267,6 +268,7 @@ void showHelp( ) {
 		<< tab << redistTypeMap.options(true) << opt << endl 
 		<< tab << redistVersionMap.options(true) << req << " (if full distribution type)" << endl 
 		<< tab << "redistributionFrequency  " << opt << endl
+		<< tab << "redistOrder (1 or 2)  " << opt << endl
 		<< tab << "debug (print debug messages) " << opt << endl 
 		<< "returns handle to front " << endl << endl;
 
@@ -360,6 +362,12 @@ void initFront(Front *front,const matlabLink::MatlabStruct & mlStruct, std::ostr
 	level_func_pack.func = level_func;
 	level_func_pack.wave_type = FIRST_PHYSICS_WAVE_TYPE;
 	FT_InitIntfc(front,&level_func_pack);
+	MData<double> redistOrder = mlStruct.doubles("redistOrder",false);
+	if (redistOrder.size > 0) {
+		int ro = redistOrder[0];
+		spatial::setRedistDefault(front,ro);
+		config << "set default redist_order to " << ro << std::endl;
+	}
 
 	if (dim == 2)
 	{

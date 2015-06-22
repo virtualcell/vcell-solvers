@@ -139,8 +139,11 @@ void ExplicitSolver::setSolvingFor(MeshElementNode &i, BioQuanType coeff, BioQua
 	const BioQuanType sum =  result + rhsValue;
 	MeshPosition p = mesh.indexOf(i.indexes( )); 
 	const MatrixIndex mi = p.to<MatrixIndex>( );
-	matrix[mi][mi] = 1 - concenCoeff;
+	CoordinateProductType adjust = i.volumePD( )  / i.getLastVolume( );
+	//matrix[mi][mi] = ( 1 - concenCoeff ) * i.volumePD( )  / i.getLastVolume( );
+	matrix[mi][mi] = ( 1 - concenCoeff ); 
 	rhs[mi] = rhsValue;
+	VCELL_COND_LOG(info,sIdx == 0, i.ident( ) << " adjust " << adjust); 
 
 	resultStore[p.to<size_t>()]= sum;
 	VCELL_COND_LOG(info,sIdx == 0,i.ident( ) << " i mass " << i.mass(sIdx)  << " cf " << concenCoeff << " ="
@@ -151,7 +154,7 @@ void ExplicitSolver::setSolvingFor(MeshElementNode &i, BioQuanType coeff, BioQua
 
 void ExplicitSolver::solve( ) {
 	std::for_each(mesh.begin( ),mesh.end( ),SetConc(*this));
-
+	#ifdef IMPLICIT_HOOK_TESTING
 	{
 		std::string mfilename("matrix");
 		mfilename += std::to_string(fileCount);
@@ -187,6 +190,7 @@ void ExplicitSolver::solve( ) {
 		}
 		sfile << std::endl;
 	}
+	#endif
 }
 
 void ExplicitSolver::setConcentration(MeshElementNode &e) {

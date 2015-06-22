@@ -76,6 +76,16 @@ void VCellFront<FCT>::init(std::vector<GeoLimit> & limits, int N, double tmax,
 							  level_func_pack.func_params = this;
 						  }
 						  FT_InitIntfc(&front,&level_func_pack);
+						  {
+							  CURVE * curve;
+							  next_curve(front.interf,0);
+							  while (next_curve(front.interf,&curve)) {
+								  std::cout << curve->redist_order << std::endl;
+
+							  }
+
+
+						  }
 
 						  if (dim == 2)
 						  {
