@@ -31,7 +31,7 @@ Integer, Allocatable, Public :: RandSeed(:)
 Character(len=128), Public :: filename
 
 !JMS info
-Character(len=32), Public :: jmsUrl, jmsUser, jmsPassword, jmsQueue, jmsTopic, vcellUser
+Character(len=72), Public :: jmsUrl, jmsUser, jmsPassword, jmsQueue, jmsTopic, vcellUser
 Integer, Public :: simKey, jobIndex, taskID
 
 Type, Public :: RxnDataType
