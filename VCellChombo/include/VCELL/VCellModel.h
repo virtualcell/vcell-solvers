@@ -12,12 +12,12 @@ using std::string;
 
 class Feature;
 class Membrane;
-class Simulation;
+class SimTool;
 
 class VCellModel
 {
 public:
-	VCellModel();
+	VCellModel(SimTool* simTool);
 	~VCellModel();
 
 	int getNumFeatures() {
@@ -37,10 +37,17 @@ public:
 	int getMembraneIndex(Feature* f1, Feature* f2);
 	   
 	void resolveReferences();
-   
+
+	SimTool* getSimTool()
+	{
+		return simTool;
+	}
+	
 private:
 	vector<Feature*> featureList;
 	vector<Membrane*> membraneList;
+
+	SimTool* simTool;
 };
 
 #endif

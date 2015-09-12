@@ -18,7 +18,8 @@
 #include <sstream>
 #include <assert.h>
 
-SimulationExpression::SimulationExpression() {
+SimulationExpression::SimulationExpression(SimTool* a_simTool) : simTool(a_simTool)
+{
 	_dT_sec = 0;   // seconds
 	currIteration = 0;
 	_scheduler = NULL;

@@ -107,9 +107,10 @@
           <commandlineTool>g++</commandlineTool>
           <incDir>
             <pElem>../Chombo/lib/include</pElem>
-            <pElem>../numerics/hdf5-1.8.11/src</pElem>
             <pElem>include</pElem>
             <pElem>../numerics/ExpressionParser</pElem>
+            <pElem>../hdf5-1.8.14/src</pElem>
+            <pElem>../hdf5-1.8.14/build</pElem>
           </incDir>
           <preprocessorList>
             <Elem>CH_CYGWIN</Elem>
@@ -131,7 +132,7 @@
           <linkerAddLib>
             <pElem>../Chombo/lib</pElem>
             <pElem>../numerics/cmake-build-cygwin64/bin</pElem>
-            <pElem>../numerics/cmake-build-hdf5_API16/bin</pElem>
+            <pElem>../hdf5-1.8.14/build/bin</pElem>
           </linkerAddLib>
           <commandlineTool>g++</commandlineTool>
           <linkerLibItems>
@@ -603,7 +604,8 @@
             <pElem>../Chombo/lib/include</pElem>
             <pElem>../numerics/ExpressionParser</pElem>
             <pElem>include</pElem>
-            <pElem>../numerics/hdf5-1.8.11/src</pElem>
+            <pElem>../hdf5-1.8.14/build</pElem>
+            <pElem>../hdf5-1.8.14/src</pElem>
           </incDir>
           <preprocessorList>
             <Elem>CH_CYGWIN</Elem>
@@ -624,8 +626,8 @@
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/vcellchombo</output>
           <linkerAddLib>
             <pElem>../Chombo/lib</pElem>
-            <pElem>../numerics/cmake-build-hdf5-API16/bin</pElem>
             <pElem>../numerics/cmake-build-cygwin64/bin</pElem>
+            <pElem>../hdf5-1.8.14/build/bin</pElem>
           </linkerAddLib>
           <linkerLibItems>
             <linkerLibLibItem>mftools3d.CYGWIN.64.g++.gfortran.DEBUG</linkerLibLibItem>
@@ -1097,8 +1099,8 @@
             <pElem>../Chombo/lib/include</pElem>
             <pElem>../numerics/ExpressionParser</pElem>
             <pElem>include</pElem>
-            <pElem>../numerics/hdf5-1.8.11/src</pElem>
-            <pElem>../numerics/cmake-build-cygwin64-hdf5</pElem>
+            <pElem>../hdf5-1.8.14/src</pElem>
+            <pElem>../hdf5-1.8.14/build-mpi</pElem>
           </incDir>
           <preprocessorList>
             <Elem>CH_CYGWIN</Elem>
@@ -1121,7 +1123,7 @@
           <linkerAddLib>
             <pElem>../Chombo/lib</pElem>
             <pElem>../numerics/cmake-build-cygwin64/bin</pElem>
-            <pElem>../numerics/cmake-build-cygwin64-hdf5</pElem>
+            <pElem>../hdf5-1.8.14/build-mpi/bin</pElem>
           </linkerAddLib>
           <commandlineTool>g++</commandlineTool>
           <linkerLibItems>
@@ -1134,7 +1136,7 @@
             <linkerLibLibItem>workshop2d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
             <linkerLibLibItem>basetools2d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
             <linkerLibLibItem>boxtools2d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
-            <linkerLibLibItem>hdf5_mpi</linkerLibLibItem>
+            <linkerLibLibItem>hdf5</linkerLibLibItem>
             <linkerLibLibItem>unzip</linkerLibLibItem>
             <linkerLibLibItem>zip</linkerLibLibItem>
             <linkerLibLibItem>ExpressionParser</linkerLibLibItem>
@@ -1849,8 +1851,8 @@
             <pElem>../Chombo/lib/include</pElem>
             <pElem>../numerics/ExpressionParser</pElem>
             <pElem>include</pElem>
-            <pElem>../numerics/hdf5-1.8.11/src</pElem>
-            <pElem>../numerics/cmake-build-cygwin64-hdf5</pElem>
+            <pElem>../hdf5-1.8.14/src</pElem>
+            <pElem>../hdf5-1.8.14/build-mpi</pElem>
           </incDir>
           <preprocessorList>
             <Elem>CH_CYGWIN</Elem>
@@ -1873,7 +1875,7 @@
           <linkerAddLib>
             <pElem>../Chombo/lib</pElem>
             <pElem>../numerics/cmake-build-cygwin64/bin</pElem>
-            <pElem>../numerics/cmake-build-cygwin64-hdf5</pElem>
+            <pElem>../hdf5-1.8.14/build-mpi/bin</pElem>
           </linkerAddLib>
           <commandlineTool>g++</commandlineTool>
           <linkerLibItems>
@@ -1886,7 +1888,7 @@
             <linkerLibLibItem>workshop3d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
             <linkerLibLibItem>basetools3d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
             <linkerLibLibItem>boxtools3d.CYGWIN.64.mpicxx.gfortran.DEBUG.MPI</linkerLibLibItem>
-            <linkerLibLibItem>hdf5_mpi</linkerLibLibItem>
+            <linkerLibLibItem>hdf5</linkerLibLibItem>
             <linkerLibLibItem>unzip</linkerLibLibItem>
             <linkerLibLibItem>zip</linkerLibLibItem>
             <linkerLibLibItem>ExpressionParser</linkerLibLibItem>

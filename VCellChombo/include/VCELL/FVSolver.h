@@ -54,10 +54,6 @@ private:
 	void loadPostProcessingBlock(istream& ifsInput);
 
 	SimTool* simTool;
-	SimulationExpression *simulation;
-	VCellModel *model;
-	ChomboSpec* chomboSpec;
-	ChomboScheduler* chomboScheduler;
 };
 
 #endif

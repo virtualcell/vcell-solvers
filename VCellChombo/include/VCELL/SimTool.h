@@ -37,10 +37,6 @@ public:
 
 	void start(bool convertChomboData);
 
-	void setModel(VCellModel* model);
-	void setSimulation(SimulationExpression* sim);
-	void setTimeStep(double period);
-
 	void setEndTimeSec(double timeSec) { simEndTime = timeSec; }
 	double getEndTime() { return simEndTime; }
 
@@ -63,10 +59,10 @@ public:
 	void setSolver(string& s);
 	bool isChomboSemiImplicitSolver();
 	bool isChomboSundialsSolver();
-	
-	void setChomboSpec(ChomboSpec* cs)
+
+	ChomboSpec* getChomboSpec()
 	{
-		chomboSpec = cs;
+		return chomboSpec;
 	}
 
 #ifdef CH_MPI
@@ -137,7 +133,6 @@ private:
 	ChomboSpec* chomboSpec;
 
 	double simEndTime, simStartTime;
-	double simDeltaTime;
 	int keepEvery;
 	bool bStoreEnable;
 	char* baseFileName;

@@ -112,7 +112,6 @@ MODEL_END
 */
 void FVSolver::loadModel(istream& ifsInput) {
 	//cout << "loading model " << endl;
-	model = new VCellModel();
 	string nextToken, line;
 	string feature_name;
 	int handle;
@@ -135,13 +134,13 @@ void FVSolver::loadModel(istream& ifsInput) {
 		if (nextToken == "FEATURE") {
 			numFeatures ++;
 			lineInput >> feature_name >> handle;
-			Feature* feature = model->addFeature(feature_name);
+			Feature* feature = simTool->getModel()->addFeature(feature_name);
 			structure = feature;
 		} else if (nextToken == "MEMBRANE") {
 			numMembranes ++;
 			string membrane_name, feature1_name, feature2_name;
 			lineInput >> membrane_name >> feature1_name >> feature2_name;
-			Membrane* membrane = model->addMembrane(membrane_name, feature1_name, feature2_name);
+			Membrane* membrane = simTool->getModel()->addMembrane(membrane_name, feature1_name, feature2_name);
 			structure = membrane;
 		}
 
@@ -217,12 +216,11 @@ MEMBRANE_REGION Voltage_membrane
 VARIABLE_END
 */
 void FVSolver::loadSimulation(istream& ifsInput) {
-	//cout << "loading simulation" << endl;
-	simulation = new SimulationExpression();
+	//cout << "loading simTool->getSimulation()" << endl;
 	// process geometry
-	chomboScheduler = new ChomboSemiImplicitScheduler(simulation, chomboSpec);
+	ChomboSemiImplicitScheduler* chomboScheduler = new ChomboSemiImplicitScheduler(simTool->getSimulation(), simTool->getChomboSpec());
 	chomboScheduler->initializeGrids();
-	simulation->setScheduler(chomboScheduler);
+	simTool->getSimulation()->setScheduler(chomboScheduler);
 	
 	int numMembranePoints = chomboScheduler->getNumMembranePoints();
 	string nextToken, line;
@@ -258,7 +256,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			string advectionflag, time_dependent_diffusion_flag, grad_flag;
 			lineInput >> variable_name >> variable_domain >> time_dependent_diffusion_flag >> advectionflag >> grad_flag;
 
-			Feature* feature = model->getFeatureFromName(variable_domain);
+			Feature* feature = simTool->getModel()->getFeatureFromName(variable_domain);
 			if (feature == NULL) {
 				stringstream ss;
 				ss << "volume variable " << variable_name << " is not defined in any feature.";
@@ -266,7 +264,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			}
 			if (time_dependent_diffusion_flag == "true") {
 				throw "time dependent diffusion not supported yet";
-				simulation->setHasTimeDependentDiffusionAdvection();
+				simTool->getSimulation()->setHasTimeDependentDiffusionAdvection();
 			}
 			bool bConvection = false;
 			if (advectionflag == "true" ) {
@@ -282,17 +280,17 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			if (nextToken == "VOLUME_PDE_STEADY")
 			{
 				volumeVar->setElliptic();
-				simulation->setHasElliptic();
+				simTool->getSimulation()->setHasElliptic();
 			}
 			else
 			{
-				simulation->setHasParabolic();
+				simTool->getSimulation()->setHasParabolic();
 			}
 			feature->addDefinedVariable(volumeVar);
-			simulation->addVariable(volumeVar);
+			simTool->getSimulation()->addVariable(volumeVar);
 		} else if (nextToken == "VOLUME_ODE") {
 			lineInput >> variable_name >> variable_domain;
-			Feature* feature = model->getFeatureFromName(variable_domain);
+			Feature* feature = simTool->getModel()->getFeatureFromName(variable_domain);
 			if (feature == NULL) {
 				stringstream ss;
 				ss << "volume variable " << variable_name << " is not defined in any feature.";
@@ -300,12 +298,12 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			}
 			VolumeVariable* volumeVar = new VolumeVariable(variable_name, feature, sizeX*sizeY*sizeZ, numMembranePoints);
 			feature->addDefinedVariable(volumeVar);
-			simulation->addVariable(volumeVar);
+			simTool->getSimulation()->addVariable(volumeVar);
 		} 
 		else if (nextToken == "MEMBRANE_ODE")
 		{
 			lineInput >> variable_name >> variable_domain;
-			Membrane* membrane = model->getMembraneFromName(variable_domain);
+			Membrane* membrane = simTool->getModel()->getMembraneFromName(variable_domain);
 			MembraneVariable* membraneVar = new MembraneVariable(variable_name, membrane, numMembranePoints);
 			if (membrane == NULL) {
 				stringstream ss;
@@ -313,7 +311,7 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				throw ss.str();
 			}
 			membrane->addDefinedVariable(membraneVar);
-			simulation->addVariable(membraneVar);
+			simTool->getSimulation()->addVariable(membraneVar);
 		} else if (nextToken == "MEMBRANE_PDE") {
 			throw "Membrane diffusion not supported yet";
 		} else if (nextToken == "VOLUME_REGION") {
@@ -438,7 +436,7 @@ void FVSolver::loadJumpCondition(istream& ifsInput, Membrane* membrane, string& 
 	//cout << "loading jump condition " << var_name << endl;
 	string nextToken, line;
 
-	Variable* var = simulation->getVariableFromName(var_name);	
+	Variable* var = simTool->getSimulation()->getVariableFromName(var_name);
 	while (!ifsInput.eof()) {
 		getline(ifsInput, line);
 		istringstream lineInput(line);
@@ -455,7 +453,7 @@ void FVSolver::loadJumpCondition(istream& ifsInput, Membrane* membrane, string& 
 			string featurename;
 			lineInput >> featurename;
 			assert(!featurename.empty());
-			Feature* f = model->getFeatureFromName(featurename);
+			Feature* f = simTool->getModel()->getFeatureFromName(featurename);
 			f->setEbBcType(membrane, nextToken == "FLUX" ? BOUNDARY_FLUX : BOUNDARY_VALUE);
 			string var_name = var->getName();
 			VCell::Expression* exp = readExpression(lineInput, var_name);
@@ -533,7 +531,7 @@ void FVSolver::loadFeature(istream& ifsInput, Feature* feature) {
 		if (nextToken == "EQUATION_BEGIN") {
 			char var_name[256];
 			lineInput >> var_name;
-			Variable* var = simulation->getVariableFromName(var_name);
+			Variable* var = simTool->getSimulation()->getVariableFromName(var_name);
 			if (var->getStructure() == feature)
 			{
 				loadVarContext(ifsInput, feature, var);
@@ -602,7 +600,7 @@ void FVSolver::loadMembrane(istream& ifsInput, Membrane* membrane) {
 		if (nextToken == "EQUATION_BEGIN") {
 			string var_name;
 			lineInput >> var_name;
-			Variable* var = simulation->getVariableFromName(var_name);
+			Variable* var = simTool->getSimulation()->getVariableFromName(var_name);
 			loadVarContext(ifsInput, membrane, var);
 		} else if (nextToken == "FAST_SYSTEM_BEGIN") {
 			throw "Fast system not supported";
@@ -688,7 +686,7 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 		} else if (nextToken == "TIME_STEP") {
 			double time_step;
 			lineInput >> time_step;
-			simTool->setTimeStep(time_step);
+			simTool->getSimulation()->setDT_sec(time_step);
 		} else if (nextToken == "CHECK_SPATIALLY_UNIFORM") {
 			throw "check spatially uniform not supported.";
 		} else if (nextToken == "KEEP_EVERY") {
@@ -729,7 +727,7 @@ FIELD_DATA_BEGIN
 FIELD_DATA_END
 */
 void FVSolver::loadFieldData(istream& ifsInput) {
-	if (simulation == 0) {
+	if (simTool->getSimulation() == 0) {
 		throw "Simulation has to be initialized before loading field data";
 	}
 	throw "field data not supported";	
@@ -744,14 +742,14 @@ U1
 PARAMETER_END
 */
 void FVSolver::loadParameters(istream& ifsInput, int numParameters) {
-	if (simulation == 0) {
+	if (simTool->getSimulation() == 0) {
 		throw "Simulation has to be initialized before loading field data";
 	}
 	throw "parameters not supported";
 }
 
 void FVSolver::loadSerialScanParameters(istream& ifsInput, int numSerialScanParameters) {
-	if (simulation == 0) {
+	if (simTool->getSimulation() == 0) {
 		throw "Simulation has to be initialized before loading serial scan parameters";
 	}
 	throw "serial scan parameters not supported";	
@@ -765,7 +763,7 @@ PARAMETER_SCAN_BEGIN 2
 PARAMETER_SCAN_END
 */
 void FVSolver::loadSerialScanParameterValues(istream& ifsInput, int numSerialScanParameterValues) {
-	if (simulation == 0) {
+	if (simTool->getSimulation() == 0) {
 		throw "Simulation has to be initialized before loading serial scan parameter values";
 	}
 	throw "serial scan parameter not supported";
@@ -893,17 +891,12 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 			loadSimulationParameters(ifsInput);
 		} else if (nextToken == "MODEL_BEGIN") {
 			loadModel(ifsInput);
-			if (model == NULL) {
-				throw "Model has 0 features";
-			}
-			simTool->setModel(model);
 		} else if (nextToken == "MESH_BEGIN") {
 			throw "MESH_BEGIN is deprecated.";
 		} else if (nextToken == "CHOMBO_SPEC_BEGIN") {
 			loadChomboSpec(ifsInput);
 		} else if (nextToken == "VARIABLE_BEGIN") {
 			loadSimulation(ifsInput);
-			simTool->setSimulation(simulation);
 		} else if (nextToken == "PARAMETER_BEGIN") {
 			int numParams = 0;
 			lineInput >> numParams;
@@ -923,7 +916,7 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 		} else if (nextToken == "COMPARTMENT_BEGIN") {
 			string feature_name;
 			lineInput >> feature_name;
-			Feature* feature = model->getFeatureFromName(feature_name);
+			Feature* feature = simTool->getModel()->getFeatureFromName(feature_name);
 			if (feature != NULL) {
 				loadFeature(ifsInput, feature);
 			} else {
@@ -932,7 +925,7 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 		} else if (nextToken == "MEMBRANE_BEGIN") {
 			string mem_name, feature1_name, feature2_name;
 			lineInput >> mem_name >> feature1_name >> feature2_name;
-			Membrane* membrane = model->getMembraneFromName(mem_name);
+			Membrane* membrane = simTool->getModel()->getMembraneFromName(mem_name);
 			if (membrane != 0) {
 				loadMembrane(ifsInput, membrane);
 			} else {
@@ -948,10 +941,6 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 
 FVSolver::FVSolver(istream& fvinput, int taskID) {
 	simTool = 0;
-	simulation = 0;
-	model = 0;
-	chomboScheduler = 0;
-	chomboSpec = 0;
 	createSimTool(fvinput, taskID);
 }
 
@@ -970,8 +959,8 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 
 	string nextToken, line;
 
-	ChomboGeometry* chomboGeometry = new ChomboGeometry();
-	chomboSpec = new ChomboSpec(chomboGeometry);
+	ChomboSpec* chomboSpec = simTool->getChomboSpec();
+	ChomboGeometry* chomboGeometry = chomboSpec->getChomboGeometry();
 
 	while (!ifsInput.eof()) {
 		nextToken = "";
@@ -1021,7 +1010,7 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 				istringstream lineInput(line);
 
 				lineInput >> nextToken >> phaseIndex;
-				Feature* feature = model->getFeatureFromName(nextToken);
+				Feature* feature = simTool->getModel()->getFeatureFromName(nextToken);
 
 				if (distanceMap.empty())
 				{
@@ -1109,7 +1098,6 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 	}
 
 	chomboSpec->printSummary();
-	simTool->setChomboSpec(chomboSpec);
 }
 
 /**
@@ -1119,13 +1107,8 @@ PROJECTION_DATA_GENERATOR postDex cell x sum (5.0 * Dex_cell);
 POST_PROCESSING_BLOCK_END
 */
 void FVSolver::loadPostProcessingBlock(istream& ifsInput){
-	if (simulation == 0)
-	{
-		throw "Simulation has to be initialized before loading field data";
-	}
-
 	// create post processing block;
-	PostProcessingBlock* postProcessingBlock = simulation->createPostProcessingBlock();
+	PostProcessingBlock* postProcessingBlock = simTool->getSimulation()->createPostProcessingBlock();
 	// add var statistics data generator always
 	postProcessingBlock->addDataGenerator(new VariableStatisticsDataGenerator());
 

@@ -12,7 +12,7 @@ using std::vector;
 class ChomboSpec
 {
 public:
-	ChomboSpec(ChomboGeometry* chomboGeometry);
+	ChomboSpec();
 	virtual ~ChomboSpec();
 
 	static int defaultTagsGrow;

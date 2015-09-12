@@ -2,7 +2,7 @@
 
 int ChomboSpec::defaultTagsGrow = 2;
 
-ChomboSpec::ChomboSpec(ChomboGeometry* geometry) : chomboGeometry(geometry)
+ChomboSpec::ChomboSpec()
 {
 	numLevels = 1;
 	viewLevel = 0;
@@ -11,6 +11,9 @@ ChomboSpec::ChomboSpec(ChomboGeometry* geometry) : chomboGeometry(geometry)
 	maxBoxSize = 32;
 	fillRatio = 0.9;
 	relTol = 1e-9;
+
+	chomboGeometry = new ChomboGeometry();
+	
 #ifdef CH_MPI
 	bSaveVCellOutput = false;
 	bSaveChomboOutput = true;

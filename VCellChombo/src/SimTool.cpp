@@ -26,6 +26,8 @@ using std::endl;
 
 #if ( !defined(WIN32) && !defined(WIN64) ) // UNIX
 #include <unistd.h>
+
+#include "VCELL/VCellModel.h"
 #endif
 
 #define ZIP_FILE_LIMIT 1E9
@@ -64,13 +66,14 @@ SimTool::SimTool()
 	baseDirName = NULL;
 	baseSimName = NULL;
 
-	vcellModel = 0;
-	simulation = 0;
+	vcellModel = new VCellModel(this);
+	simulation = new SimulationExpression(this);
 	solver = CHOMBO_SEMIIMPLICIT_SOLVER;
 	simStartTime = 0;
 	
 	postProcessingHdf5Writer = NULL;
 	
+	chomboSpec = new ChomboSpec();
 	
 #ifdef CH_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
@@ -98,25 +101,6 @@ SimTool::~SimTool()
 		delete postProcessingHdf5Writer;
 	}
 //	delete[] discontinuityTimes;
-}
-
-void SimTool::setModel(VCellModel* model) {
-	if (model == 0) {
-		throw "SimTool::setModel(), model can't be null";
-	}
-	vcellModel = model;
-}
-
-void SimTool::setSimulation(SimulationExpression* sim) {
-	if (sim == 0) {
-		throw "SimTool::setSimulation(), simulation can't be null";
-	}
-	simulation = sim;
-	simulation->setDT_sec(simDeltaTime);
-}
-
-void SimTool::setTimeStep(double period) {
-	simDeltaTime = period;
 }
 
 void SimTool::create() {

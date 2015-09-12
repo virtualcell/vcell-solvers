@@ -9,7 +9,7 @@
 
 #include <assert.h>
 
-VCellModel::VCellModel()
+VCellModel::VCellModel(SimTool* a_simTool) : simTool(a_simTool)
 {
 }
 

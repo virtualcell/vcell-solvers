@@ -13,11 +13,28 @@ class VolumeRegionVariable;
 class SymbolTable;
 class VolumeVariable;
 class PostProcessingBlock;
+class SimTool;
+
+struct TimeStep
+{
+	double tstop;
+	double dt;
+	int iter;
+
+	TimeStep()
+	{
+		iter = 0;
+	}
+	void increment()
+	{
+		++ iter;
+	}
+};
 
 class SimulationExpression
 {
 public:
-	SimulationExpression();
+	SimulationExpression(SimTool* simTool);
 	virtual ~SimulationExpression();
 
 	void initSimulation();
@@ -110,6 +127,10 @@ public:
 
 	PostProcessingBlock* createPostProcessingBlock();
 	PostProcessingBlock* getPostProcessingBlock();
+	SimTool* getSimTool()
+	{
+		return simTool;
+	}
 	
 private:
 	int currIteration;  // first iteration is currIteration=0
@@ -144,6 +165,7 @@ private:
 	int* outputVarTypes;
 
 	PostProcessingBlock* postProcessingBlock;
+	SimTool* simTool;
 };
 
 #endif
