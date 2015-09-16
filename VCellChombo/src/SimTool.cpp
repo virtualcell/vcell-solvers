@@ -58,7 +58,6 @@ static const int retryWaitSeconds = 5;
 SimTool::SimTool()
 {
 	simEndTime = 0.0;
-	keepEvery = 100;
 	bStoreEnable = true;
 	baseFileName=0;
 	simFileCount=0;
@@ -422,8 +421,8 @@ void SimTool::start(bool convertChomboData)
 	double increment = 0.01;
 	double lastSentPercentile = percentile;
 	//
-    // store initial log if enabled
-    //
+	// store initial log if enabled
+	//
 	if (simulation->getCurrIteration()==0)
 	{
 		// simulation starts from scratch
@@ -479,7 +478,7 @@ void SimTool::start(bool convertChomboData)
 			return;
 		}
 
-		if (simulation->getCurrIteration() % keepEvery == 0 || simulation->getTime_sec() > simEndTime - epsilon){
+		if (simulation->shouldSave() || simulation->getTime_sec() > simEndTime - epsilon){
 			if (bStoreEnable){
 				writeData(percentile,simulation->getTime_sec(), simulation->getCurrIteration(), convertChomboData);
       }

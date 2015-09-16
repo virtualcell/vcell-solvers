@@ -6,6 +6,10 @@
 #define SIMULATIONEXPRESSION_H
 
 #include <VCELL/ChomboScheduler.h>
+#include <vector>
+#include <sstream>
+using std::vector;
+using std::stringstream;
 
 class MembraneVariable;
 class MembraneRegionVariable;
@@ -15,19 +19,44 @@ class VolumeVariable;
 class PostProcessingBlock;
 class SimTool;
 
-struct TimeStep
+struct TimeInterval
 {
-	double tstop;
-	double dt;
-	int iter;
+	double tstart, tstop, dt;
+	int keepEvery;
+	int istep, nsteps;
 
-	TimeStep()
+	TimeInterval(double a_tstart, double a_tstop, double a_dt, int a_keepEvery)
 	{
-		iter = 0;
+		static double eps = 1e-12;
+		tstart = a_tstart;
+		tstop = a_tstop;
+		dt = a_dt;
+		keepEvery = a_keepEvery;
+		istep = 0;
+		double d = (tstop - tstart) / dt;
+		nsteps = (int)round(d);
+		if (abs((tstop - tstart)- nsteps * dt) > eps)
+		{
+			stringstream ss;
+			ss << "["  << tstart << " " << tstop << "] interval length has to be a multiple of dt";
+			throw ss.str();
+		}
 	}
-	void increment()
+	void nextStep()
 	{
-		++ iter;
+		++ istep;
+	}
+	bool ended()
+	{
+		return istep >= nsteps;
+	}
+	double getTime()
+	{
+		return tstart + istep * dt;
+	}
+	bool shouldSave()
+	{
+		return keepEvery > 0 && istep % keepEvery == 0;
 	}
 };
 
@@ -60,12 +89,12 @@ public:
 		return currIteration; 
 	}
 	double  getDT_sec() { 
-		return _dT_sec; 
+		return timeIntervals[timeIntervalIndex].dt;
 	}
-	void    setDT_sec(double dT) { 
-		_dT_sec = dT; 
+	bool shouldSave()
+	{
+		return timeIntervals[timeIntervalIndex].shouldSave();
 	}
-
 	Variable* getVariable(int index);
 
 	Variable *getVariableFromName(string& name);
@@ -131,13 +160,16 @@ public:
 	{
 		return simTool;
 	}
+	void addTimeInterval(TimeInterval& timeInterval)
+	{
+		timeIntervals.push_back(timeInterval);
+	}
 	
 private:
 	int currIteration;  // first iteration is currIteration=0
   bool bHasElliptic;
 	bool bHasParabolic;
 
-	double          _dT_sec;                  // seconds
 	ChomboScheduler  *_scheduler;
 	vector<Variable*> varList;
 	
@@ -166,6 +198,9 @@ private:
 
 	PostProcessingBlock* postProcessingBlock;
 	SimTool* simTool;
+
+	vector<TimeInterval> timeIntervals;
+	int timeIntervalIndex;
 };
 
 #endif

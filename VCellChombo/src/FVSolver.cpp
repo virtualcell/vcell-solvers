@@ -683,25 +683,26 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 			double end_time;
 			lineInput >> end_time;
 			simTool->setEndTimeSec(end_time);
-		} else if (nextToken == "TIME_STEP") {
-			double time_step;
-			lineInput >> time_step;
-			simTool->getSimulation()->setDT_sec(time_step);
+		}
+		else if (nextToken == "TIME_INTERVALS") {
+			int numts;
+			lineInput >> numts;
+			double p_tstop = 0;
+			for (int i = 0; i < numts; ++ i)
+			{
+				getline(ifsInput, line);
+				istringstream lineInput0(line);
+				double dt, tstop;
+				int keepEvery;
+				lineInput0 >> tstop >> dt >> keepEvery;
+				TimeInterval ts(p_tstop, tstop, dt, keepEvery);
+				simTool->getSimulation()->addTimeInterval(ts);
+				p_tstop = tstop;
+			}
+			simTool->setEndTimeSec(p_tstop);
 		} else if (nextToken == "CHECK_SPATIALLY_UNIFORM") {
 			throw "check spatially uniform not supported.";
 		} else if (nextToken == "KEEP_EVERY") {
-			int keep_every = 1;
-			string one_step, keep_every_str;
-			lineInput >> one_step >> keep_every_str;
-			if (one_step == "ONE_STEP") {
-				throw "keep every one step not supported";
-//				simTool->setSundialsOneStepOutput();
-			} else {
-				keep_every_str = one_step;
-			}
-			keep_every = atoi(keep_every_str.c_str());
-
-			simTool->setKeepEvery(keep_every);
 		} else if (nextToken == "KEEP_AT_MOST") {
 			throw "keep at most not supported.";
 //			int keep_at_most;

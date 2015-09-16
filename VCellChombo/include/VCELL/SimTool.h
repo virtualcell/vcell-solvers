@@ -40,7 +40,6 @@ public:
 	void setEndTimeSec(double timeSec) { simEndTime = timeSec; }
 	double getEndTime() { return simEndTime; }
 
-	void setKeepEvery(int ke) { keepEvery = ke; }
 	void setBaseFilename(char *fname);
 	char* getBaseFileName() {
 		return baseFileName;
@@ -133,7 +132,6 @@ private:
 	ChomboSpec* chomboSpec;
 
 	double simEndTime, simStartTime;
-	int keepEvery;
 	bool bStoreEnable;
 	char* baseFileName;
 	int simFileCount;

@@ -20,7 +20,6 @@
 
 SimulationExpression::SimulationExpression(SimTool* a_simTool) : simTool(a_simTool)
 {
-	_dT_sec = 0;   // seconds
 	currIteration = 0;
 	_scheduler = NULL;
 
@@ -48,6 +47,7 @@ SimulationExpression::SimulationExpression(SimTool* a_simTool) : simTool(a_simTo
 	outputVarTypes = 0;
 
 	postProcessingBlock = NULL;
+	timeIntervalIndex = 0;
 }
 
 SimulationExpression::~SimulationExpression() 
@@ -80,6 +80,11 @@ void SimulationExpression::iterate(bool bSolve)
 		_scheduler->iterate();
 	}
 	currIteration ++;
+	timeIntervals[timeIntervalIndex].nextStep();
+	if (timeIntervals[timeIntervalIndex].ended() && timeIntervalIndex < timeIntervals.size() - 1)
+	{
+		++ timeIntervalIndex;
+	}
 }
 
 Variable* SimulationExpression::getVariable(int index) {
@@ -124,7 +129,7 @@ void SimulationExpression::initSimulation()
 
 double SimulationExpression::getTime_sec() 
 {
-	return currIteration * _dT_sec;
+	return timeIntervals[timeIntervalIndex].getTime();
 }
 
 void SimulationExpression::addVariable(Variable *var)

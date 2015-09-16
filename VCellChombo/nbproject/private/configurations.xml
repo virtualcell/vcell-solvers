@@ -99,8 +99,6 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_85608639_0_.fvinput</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_85711350_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_86683964_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_86842015_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_86935975_0_.fvinput</runcommandpicklistitem>
@@ -109,8 +107,10 @@
           <runcommandpicklistitem>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_93607192_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_93951545_0_.fvinput</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" C:/temp/SimID_96767006_0_.fvinput</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_96787958_0_.fvinput</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_96820419_0_.fvinput</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" C:/temp/SimID_96767006_0_.fvinput</runcommand>
+        <runcommand>"${OUTPUT_PATH}" C:/chombo/data/users/fgao1/SimID_96820419_0_.fvinput</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>
