@@ -181,6 +181,7 @@ private:
 #endif
 	
 	void computeTotal();
+	void computeTotal(int iphase, int ivol);
 	Real computeSum(const Vector< LevelData<EBCellFAB>* >& a_src, const Vector< EBISLayout >& a_ebisl, const int& a_comp);
 
 	bool tagROIs(Vector<IntVectSet>& tags);

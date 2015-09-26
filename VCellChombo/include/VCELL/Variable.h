@@ -89,10 +89,6 @@ public:
 	{
 		return l2Error;
 	}
-	double getMean()
-	{
-		return mean;
-	}
 	void updateMaxError(double d);
 	double getMaxError()
 	{
@@ -103,6 +99,10 @@ public:
 	double getTotal()
 	{
 		return total;
+	}
+	double getMean()
+	{
+		return mean;
 	}
 
 	void reset(bool bSaveVCellOutput);

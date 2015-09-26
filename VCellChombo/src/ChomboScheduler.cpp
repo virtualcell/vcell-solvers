@@ -2824,7 +2824,7 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	hid_t fileSpace = memSpace;
 	memSpace = H5S_ALL; // same as file space in serial
 #endif
-	hid_t metricsDataset = H5Dcreate (h5MeshFile, MEMBRANE_ELEMENTS_DATASET, metricsType, fileSpace, H5P_DEFAULT);
+	hid_t metricsDataset = H5Dcreate(h5MeshFile, MEMBRANE_ELEMENTS_DATASET, metricsType, fileSpace, H5P_DEFAULT);
 	H5Dwrite(metricsDataset, metricsType, memSpace, fileSpace, H5P_DEFAULT, metricsData);
 	H5Dclose(metricsDataset);
 #ifdef CH_MPI
@@ -3418,7 +3418,7 @@ void ChomboScheduler::updateSolutionFromChomboOutputFile()
           }
 				}
 			}
-
+			computeTotal(iphase, ivol);
 			populateVolumeSolution(iphase, ivol);
 		} // ivol
 	} // iphase
@@ -3458,20 +3458,31 @@ void ChomboScheduler::computeTotal()
 	{
 		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ++ ivol)
 		{
-			Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
-			int numDefinedVolVars = iFeature->getNumDefinedVariables();
-			int numDefinedMemVars = iphase == phase0 ? iFeature->getMemVarIndexesInAdjacentMembranes().size() : 0;
-			if (numDefinedVolVars == 0 && numDefinedMemVars == 0) {
-				continue;
-			}
-			// volume total
-			for (int ivar = 0; ivar < numDefinedVolVars; ivar ++)
-			{
-				Variable* var = iFeature->getDefinedVariable(ivar);
-				pout() << METHOD << " computeSum: volume variable " << var->getName() << " in " << iFeature->getName() << endl;
-				Real sum = computeSum(volSoln[iphase][ivol], vectEbis[iphase][ivol], ivar);
-				var->addTotal(sum);
-			}
+			computeTotal(iphase, ivol);
+		}
+	}
+	pout() << "Exit " << METHOD << endl;
+}
+
+void ChomboScheduler::computeTotal(int iphase, int ivol)
+{
+	static const char* METHOD = "(ChomboScheduler::computeTotal)";
+	pout() << "Entry " << METHOD << "(iphase, ivol)=" << "(" << iphase << "," << ivol << ")" << endl;
+	
+	Feature* iFeature = phaseVolumeList[iphase][ivol]->feature;
+	int numDefinedVolVars = iFeature->getNumDefinedVariables();
+	int numDefinedMemVars = iphase == phase0 ? iFeature->getMemVarIndexesInAdjacentMembranes().size() : 0;
+	if (numDefinedVolVars == 0 && numDefinedMemVars == 0) {
+		return;
+	}
+	// volume total
+	for (int ivar = 0; ivar < numDefinedVolVars; ivar ++)
+	{
+		Variable* var = iFeature->getDefinedVariable(ivar);
+		pout() << METHOD << " computeSum: volume variable " << var->getName() << " in " << iFeature->getName() << endl;
+		Real sum = computeSum(volSoln[iphase][ivol], vectEbis[iphase][ivol], ivar);
+		var->addTotal(sum);
+	}
 
 //			if (iphase == phase0 && numDefinedMemVars > 0)
 //			{
@@ -3494,9 +3505,6 @@ void ChomboScheduler::computeTotal()
 //					}
 //				}
 //			}
-		}  // end for ivol
-	} // end for iphase
-
 	pout() << "Exit " << METHOD << endl;
 }
 

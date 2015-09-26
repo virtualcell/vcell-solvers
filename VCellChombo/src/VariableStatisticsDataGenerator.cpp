@@ -20,7 +20,6 @@ VariableStatisticsDataGenerator::~VariableStatisticsDataGenerator() {
 }
 
 void VariableStatisticsDataGenerator::resolveReferences(SimulationExpression* sim) {
-#ifndef CH_MPI
 	int numVar = sim->getNumVariables();
 
 	// compute data size
@@ -49,6 +48,7 @@ void VariableStatisticsDataGenerator::resolveReferences(SimulationExpression* si
 		m_compNames.push_back(n);
 		m_compUnits.push_back(u);
 
+#ifndef CH_MPI
 		if (var->getExactErrorVariable() != NULL)
 		{
 			dataSize += 2;
@@ -64,16 +64,15 @@ void VariableStatisticsDataGenerator::resolveReferences(SimulationExpression* si
 			m_compNames.push_back(n);
 			m_compUnits.push_back(u);
 		}
+#endif
 	}
 	data = new double[dataSize];
 	memset(data, 0, dataSize * sizeof(double));
 	hdf5Rank = 1;
 	hdf5Dims[0] = dataSize;
-#endif
 }
 
 void VariableStatisticsDataGenerator::computePPData(SimulationExpression* sim) {
-#ifndef CH_MPI
 	int numVar = sim->getNumVariables();
 
 	memset(data, 0, dataSize * sizeof(double));
@@ -82,12 +81,13 @@ void VariableStatisticsDataGenerator::computePPData(SimulationExpression* sim) {
 		Variable* var = sim->getVariable(i);
 		data[dataCount ++] = var->getMean(); // mean
 		data[dataCount ++] = var->getTotal(); // total
+#ifndef CH_MPI
 		if (var->getExactErrorVariable() != NULL)
 		{
 			// l2Error, maxError, mean
 			data[dataCount ++] = var->getL2Error(); // L2 error
 			data[dataCount ++] = var->getMaxError(); // max error
 		}
-	}
 #endif
+	}
 }

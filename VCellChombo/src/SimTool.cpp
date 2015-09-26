@@ -94,11 +94,7 @@ SimTool::~SimTool()
 	delete baseSimName;
 	delete baseDirName;
 	delete baseFileName;
-
-	if (postProcessingHdf5Writer != NULL)
-	{
-		delete postProcessingHdf5Writer;
-	}
+	delete postProcessingHdf5Writer;
 //	delete[] discontinuityTimes;
 }
 
@@ -343,21 +339,24 @@ void SimTool::cleanupLastRun(bool convertChomboData)
 	simFileCount = 0;
 	zipFileCount = 0;
 
-	char buffer[256];
-	if (!convertChomboData)
+	if (isRootRank())
 	{
-		sprintf(buffer,"%s%s",baseFileName, MESH_HDF5_FILE_EXT);
+		char buffer[256];
+		if (!convertChomboData)
+		{
+			sprintf(buffer,"%s%s",baseFileName, MESH_HDF5_FILE_EXT);
+			remove(buffer);
+		}
+		for (int i = 0; i < 10; ++ i)
+		{
+			sprintf(buffer,"%s%02d%s", baseFileName, i, ZIP_HDF5_FILE_EXT);
+			remove(buffer);
+		}
+		sprintf(buffer,"%s%s",baseFileName, LOG_FILE_EXT);
+		remove(buffer);
+		sprintf(buffer,"%s%s",baseFileName, PP_HDF5_FILE_EXT);
 		remove(buffer);
 	}
-	for (int i = 0; i < 10; ++ i)
-	{
-		sprintf(buffer,"%s%s%02d",baseFileName, zipFileCount, ZIP_HDF5_FILE_EXT);
-		remove(buffer);
-	}
-	sprintf(buffer,"%s%s",baseFileName, LOG_FILE_EXT);
-	remove(buffer);
-	sprintf(buffer,"%s%s",baseFileName, PP_HDF5_FILE_EXT);
-	remove(buffer);
 	pout() << "Exit " << thisMethod << endl;
 }
 
