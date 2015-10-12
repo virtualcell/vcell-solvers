@@ -16,9 +16,9 @@ using std::min;
 #include <ostream>
 #include <sstream>
 #include <iostream>
+#include "smoldyn.h"
 #include "random2.h"
 #include "RnSort.h"
-#include "smoldyn.h"
 #include "smoldynfuncs.h"
 #include "Zn.h"
 extern "C"
@@ -95,7 +95,7 @@ char *compartcl2string(enum CmptLogic cls,char *string) {
 /****************************** low level utilities ***************************/
 /******************************************************************************/
 
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 //called by posincompart and compartsupdateparams_volumeSample
 unsigned char getCompartmentID(char* cmptName, VolumeSamplesPtr vSamplesPtr)
 {
@@ -119,7 +119,7 @@ int posincompart(simptr sim,double *pos,compartptr cmpt) {
 	double crsspt[DIMMAX];
 	enum CmptLogic sym;
 	
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 	int dim;
 	VolumeSamples* volumeSamplePtr;
 	const int numNeighbors =3;
@@ -228,7 +228,7 @@ unsigned char fromHex(const char* src) {
 }
 
 
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 /* loadHighResVolumeSamples */
 int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2) {		//?? needs to be added to user manual
 	char errstring[STRCHAR];
@@ -963,7 +963,7 @@ int loadcompart(simptr sim,ParseFilePtr *pfpptr,char *line2) {
 
 /* compartsupdateparams */
 int compartsupdateparams(simptr sim) {
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 	return compartsupdateparams_volumeSample(sim);
 #else
 	return compartsupdateparams_original(sim);
@@ -1019,7 +1019,7 @@ int compartsupdateparams_original(simptr sim) {
 	return 0; }
 
 
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 /* compartsupdateparams_volumeSample */
 int compartsupdateparams_volumeSample(simptr sim) {					//VCELL
 	//indecies

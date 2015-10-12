@@ -11,7 +11,7 @@
 #include "smoldyn.h"
 #include "smoldynfuncs.h"
 #include "libsmoldyn.h"
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 	#include "SimpleValueProvider.h"
 	#include "SimpleMesh.h"
 #endif
@@ -287,7 +287,7 @@ extern "C" simptr smolPrepareSimFromFile(const char *filepath,const char *filena
 	emptystring[0]='\0';
 	if(!filepath) filepath=emptystring;
 	if(!flags) flags=emptystring;
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 	er=simInitAndLoad(filepath,filename,&sim,flags,new SimpleValueProviderFactory(),new SimpleMesh());
 #else
 	er=simInitAndLoad(filepath,filename,&sim,flags);

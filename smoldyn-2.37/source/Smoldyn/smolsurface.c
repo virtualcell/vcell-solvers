@@ -704,7 +704,7 @@ surfactionptr surfaceactionalloc(int species) {
 	if(!actdetails) return NULL;
 	actdetails->srfnewspec=NULL;
 	actdetails->srfrate=NULL;
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 	actdetails->srfRateValueProvider=NULL;
 #endif
 	actdetails->srfprob=NULL;
@@ -718,7 +718,7 @@ surfactionptr surfaceactionalloc(int species) {
 	CHECKMEM(actdetails->srfrate=(double*) calloc(MSMAX1,sizeof(double)));
 	for(ms=(MolecState)0;ms<MSMAX1;ms=(MolecState)(ms+1)) actdetails->srfrate[ms]=0;
 
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 	CHECKMEM(actdetails->srfRateValueProvider=(ValueProvider**) calloc(MSMAX1,sizeof(ValueProvider*)));
 	for(ms=(MolecState)0;ms<MSMAX1;ms=(MolecState)(ms+1)) actdetails->srfRateValueProvider[ms]=0;
 #endif
@@ -2049,7 +2049,7 @@ int surfsetrate(surfaceptr srf,int ident,enum MolecState ms,enum MolecState ms1,
 	return 0; }
 
 
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 /* surfSetRateExp */
 int surfSetRateExp(surfaceptr srf,int ident,enum MolecState ms,enum MolecState ms1,enum MolecState ms2,int newident,ValueProvider* valueProvider,int which) {
 	int i1,ilo,ihi;
@@ -2096,7 +2096,7 @@ int surfSetRateExp(surfaceptr srf,int ident,enum MolecState ms,enum MolecState m
 #endif
 
 
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 /* surfUpdateRate */
 int surfUpdateRate(simptr sim, moleculeptr mptr, enum PanelFace face, panelptr pnl) {
 	surfacessptr surfacess = sim -> srfss;
@@ -2707,7 +2707,7 @@ surfaceptr surfreadstring(simptr sim,ParseFilePtr pfp,surfaceptr srf,const char 
 		CHECKS(srf,"need to enter surface name first");
 		CHECKS(srfss->maxspecies,"need to enter molecules first");
 		
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 		bool constRate = true;
 		stringstream ss(line2);
 		ss >> nm >> nm1 >> nm2;
@@ -2746,7 +2746,7 @@ surfaceptr surfreadstring(simptr sim,ParseFilePtr pfp,surfaceptr srf,const char 
 			CHECKS(ms1!=ms2,"it is not permitted for state1 to equal state2"); }
 		else {
 			CHECKS(ms1==ms || ms1==MSsoln || ms1==MSbsoln,"state1 does not make sense"); }
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 		if(found!=string::npos)
 		{
 			if(constRate == true)
@@ -2770,7 +2770,7 @@ surfaceptr surfreadstring(simptr sim,ParseFilePtr pfp,surfaceptr srf,const char 
 			i3=stringfind(sim->mols->spname,sim->mols->nspecies,nm);
 			CHECKS(i3!=-1,"new species name not recognized");
 			line2=strnword(line2,2); }
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 		if(found!=string::npos)
 		{
 			if(constRate)
