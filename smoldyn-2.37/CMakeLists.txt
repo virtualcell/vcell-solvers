@@ -338,7 +338,7 @@ if(OPTION_USE_ZLIB)
 		find_path(ZLIB_INCLUDE_DIRS zlib.h)
 		find_library(ZLIB_LIBRARIES libz.a)
 	else()
-		include(FindZlib)
+		include(FindZLIB)
 	endif()
 
 	if(ZLIB_INCLUDE_DIRS AND ZLIB_LIBRARIES)
