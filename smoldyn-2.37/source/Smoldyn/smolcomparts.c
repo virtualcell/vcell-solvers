@@ -229,6 +229,8 @@ unsigned char fromHex(const char* src) {
 
 
 #ifdef OPTION_VCELL
+using std::istringstream;
+using std::istringstream;
 /* loadHighResVolumeSamples */
 int loadHighResVolumeSamples(simptr sim,ParseFilePtr *pfpptr,char *line2) {		//?? needs to be added to user manual
 	char errstring[STRCHAR];

@@ -73,8 +73,8 @@ set(HEADER_FILES
 	source/lib/SFMT/SFMT.h
 	source/Smoldyn/smoldyn.h
 	source/Smoldyn/smoldynfuncs.h
-	source/vcell/SimpleMesh.h
-	source/vcell/SimpleValueProvider.h
+#	source/vcell/SimpleMesh.h
+#	source/vcell/SimpleValueProvider.h
 	source/NextSubVolume/nsvc.h
 	source/vtk/vtkwrapper.h
 )
@@ -129,8 +129,7 @@ endif(OPTION_TARGET_LIBSMOLDYN)
 set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
 set_source_files_properties(${MAIN_FILES} PROPERTIES LANGUAGE CXX )
 
-include_directories(source/lib source/Smoldyn source/vcell source/NextSubVolume source/vtk ${CMAKE_BINARY_DIR})
-
+include_directories(source/lib source/Smoldyn source/vcell source/NextSubVolume source/vtk ${CMAKE_CURRENT_BINARY_DIR})
 
 
 ####### Build for debugging or release ##########
@@ -160,16 +159,19 @@ endif(OPTION_MINGW)
 
 
 ######### Platform dependent information ##########
-
 if (OPTION_VCELL)
-	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
-	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/source/vcell ${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
-	if (ARCH_64bit)
-		list(APPEND DEP_LIBS glut64)
-	else()
-		list(APPEND DEP_LIBS glut32 zlib)
-	endif()
+	if (OPTION_USE_OPENGL)
+		if (MSVC)
+			add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+			include_directories(${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
+			link_directories(${CMAKE_CURRENT_SOURCE_DIR}/source/vcell ${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
+			if (ARCH_64bit)
+				list(APPEND DEP_LIBS glut64)
+			else()
+				list(APPEND DEP_LIBS glut32 zlib)
+			endif()
+		endif (MSVC)
+	endif (OPTION_USE_OPENGL)
 elseif (OPTION_MINGW)
 	include_directories(${MINGWDIR}/include windows)
 	link_directories(${MINGWDIR}/lib)

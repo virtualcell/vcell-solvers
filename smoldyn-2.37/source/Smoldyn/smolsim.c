@@ -21,6 +21,9 @@
 #include "Zn.h"
 #include <string>
 #include <sstream>
+#ifdef OPTION_VCELL
+	using std::stringstream;
+#endif
 
 
 
@@ -1229,6 +1232,7 @@ int simreadstring(simptr sim,ParseFilePtr pfp,const char *word,char *line2) {
 		
 		if(line2) {
 #ifdef OPTION_VCELL
+			using std::stringstream;
 			string rawStr, expStr;
 			stringstream ss(line2);
 			getline(ss,rawStr);

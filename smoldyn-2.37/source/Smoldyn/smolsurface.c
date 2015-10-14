@@ -23,6 +23,9 @@
 #include <string>
 
 #include "smoldynconfigure.h"
+#ifdef OPTION_VCELL
+	using std::stringstream;
+#endif
 
 
 /******************************************************************************/

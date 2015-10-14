@@ -27,7 +27,7 @@
 	class AbstractMesh;
 	class ValueProvider;
 	class ValueProviderFactory;
-	using namespace std;
+	using std::string;
 #endif
 
 /********************************** General *********************************/
