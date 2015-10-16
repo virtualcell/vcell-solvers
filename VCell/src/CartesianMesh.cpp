@@ -6,12 +6,14 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <set>
 using std::stringstream;
 using std::cout;
 using std::endl;
 using std::setprecision;
 using std::max;
 using std::min;
+using std::set;
 
 #include <MathUtil.h>
 #include <assert.h>
@@ -1453,7 +1455,7 @@ void CartesianMesh::computeNormalsFromNeighbors() {
 	}
 	cout << "CartesianMesh::computeNormalsFromNeighbors(), compute normals from neighbors" << endl;
 
-	set<long> insufficientNeighbors;
+	std::set<long> insufficientNeighbors;
 	for (long index = 0; index < numMembrane; index ++){
 		if (!computeNormalsFromNeighbors(index)) {
 			insufficientNeighbors.insert(index);

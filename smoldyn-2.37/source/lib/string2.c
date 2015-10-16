@@ -1003,9 +1003,16 @@ int strEnhWildcardMatchAndSub(const char *pat,const char *str,const char *destpa
 double dblnan();
 
 
+
 /* dblnan */
+#if (_MSC_VER >= 1700)
+#include <limits>
+double dblnan() {
+	return std::numeric_limits<double>::quiet_NaN( ); }
+#else
 double dblnan() {
   return 0.0/0.0; }
+#endif
 
 
 /* strmatheval */

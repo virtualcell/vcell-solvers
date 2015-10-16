@@ -206,8 +206,8 @@ set(OPTION_USE_LIBTIFF OFF)
 
 ####### Option: Build with Zlib ##########
 if (MSVC OR MINGW) 
-	set(OPTION_USE_ZLIB OFF)
-	set(HAVE_ZLIB FALSE)
+	set(OPTION_USE_ZLIB ON)
+	set(HAVE_ZLIB ON)
 else()
 	option(OPTION_USE_ZLIB "Build with Zlib support" ON)
 endif()
@@ -298,11 +298,14 @@ endif(OPTION_USE_LIBMZR)
 		endif()
 	endif()
 	
-	if (ZLIB_FOUND)
-		list(APPEND DEP_LIBS z)
-	else()
-#		list(APPEND DEP_LIBS zlib)
-	endif()
+	if (NOT MSVC) 
+		if (ZLIB_FOUND)
+			list(APPEND DEP_LIBS z)
+		else()
+			list(APPEND DEP_LIBS zlib)
+		endif()
+	endif(NOT MSVC)
+
 	
 
 

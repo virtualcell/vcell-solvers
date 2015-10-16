@@ -17,6 +17,7 @@ using VCell::Expression;
 #include <algorithm>
 using std::max;
 using std::min;
+using std::stringstream;
 
 RoiDataGenerator::RoiDataGenerator(string& name,  int* argVolumePoints, int argNumVolPoints, int* argMemPoints, int argNumMemPoints, FieldData* argSampleImage, int argNumImageRegions, int argZSlice) : DataGenerator(name, NULL){
 	volumePoints = argVolumePoints;

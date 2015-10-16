@@ -30,7 +30,7 @@ option(OPTION_USE_ZLIB "Build with Zlib support" OFF)
 
 if (OPTION_VCELL)
 	set(OPTION_USE_LIBTIFF OFF)
-	set(OPTION_USE_ZLIB OFF)
+	set(OPTION_USE_ZLIB ON)
 	set(HAVE_ZLIB TRUE)
 	set(OPTION_USE_ICONV OFF)
 	set(HAVE_ICONV FALSE)
@@ -73,8 +73,6 @@ set(HEADER_FILES
 	source/lib/SFMT/SFMT.h
 	source/Smoldyn/smoldyn.h
 	source/Smoldyn/smoldynfuncs.h
-#	source/vcell/SimpleMesh.h
-#	source/vcell/SimpleValueProvider.h
 	source/NextSubVolume/nsvc.h
 	source/vtk/vtkwrapper.h
 )
@@ -116,8 +114,8 @@ set(MAIN_FILES source/Smoldyn/smoldyn.c)
 if(OPTION_VCELL)
 	list(APPEND SRC_FILES
 		source/Smoldyn/smoldynhybrid.c
-		source/vcell/SimpleMesh.cpp
-		source/vcell/SimpleValueProvider.cpp )
+		)
+	 list(APPEND DEP_LIBS ${VCELL_SMOL_DEP_LIBS})
 endif(OPTION_VCELL)
 		
 
@@ -129,7 +127,7 @@ endif(OPTION_TARGET_LIBSMOLDYN)
 set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
 set_source_files_properties(${MAIN_FILES} PROPERTIES LANGUAGE CXX )
 
-include_directories(source/lib source/Smoldyn source/vcell source/NextSubVolume source/vtk ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(source/lib source/Smoldyn source/NextSubVolume source/vtk ${CMAKE_CURRENT_BINARY_DIR})
 
 
 ####### Build for debugging or release ##########
@@ -470,7 +468,7 @@ endif(OPTION_TARGET_LIBSMOLDYN)
 
 ########## install ###########
 
-if(NOT OPTION_MINGW)
+if(NOT OPTION_MINGW AND NOT OPTION_VCELL)
 
 	if(OPTION_TARGET_SMOLDYN)
 		install(TARGETS smoldyn RUNTIME DESTINATION bin)
@@ -482,7 +480,7 @@ if(NOT OPTION_MINGW)
 		install(FILES source/Smoldyn/libsmoldyn.h source/Smoldyn/smoldyn.h ${CMAKE_CURRENT_BINARY_DIR}/smoldynconfigure.h DESTINATION include)
 	endif(OPTION_TARGET_LIBSMOLDYN)
 
-endif(NOT OPTION_MINGW)
+endif(NOT OPTION_MINGW AND NOT OPTION_VCELL)
 
 
 ########## configure file #########

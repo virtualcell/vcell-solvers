@@ -185,17 +185,14 @@ endif()
 
 
 add_definitions(-DVCELL_HYBRID)
-include_directories(include ../smoldyn/source/Smoldyn ../smoldyn/source/lib)
+include_directories(include ../${SMOL_DIR}/source/Smoldyn ../${SMOL_DIR}/source/lib)
 if (MSVC)
-	include_directories(../smoldyn/windows ../glut-3.7.6/ ../zlib)
+	include_directories(../${SMOL_DIR}/windows ../glut-3.7.6/ ../zlib)
 elseif (APPLE)
-	include_directories(../smoldyn/mac)
+	include_directories(../${SMOL_DIR}/mac)
 elseif (LINUX)
-	include_directories(../smoldyn/source)
+	include_directories(../${SMOL_DIR}/source)
 endif()
-
-
-
 
 if (MSVC)
 	include_directories(../${HDF_VERSION}/windows/src)
@@ -223,9 +220,10 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	endif()
 
 	include_directories(${JMS_INCS})
+    include_directories(${CMAKE_BINARY_DIR}/${SMOL_DIR})
 	add_definitions(${JMS_DEFS})
 	set(DEP_LIBS vcell pcgwrapper ExpressionParser hdf5_cpp hdf5 IDAWin PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${JMS_LIBS} zip unzip)
-	list(APPEND DEP_LIBS smoldynlib)
+	list(APPEND DEP_LIBS ${SMOL_LIB} bvcellsmoldyn)
 	if (MSVC)
 		link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../smoldyn/windows/glut-3.7.6/)
 		if (ARCH_64bit)
@@ -247,6 +245,10 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
 	add_executable(${EXE_FILE} ${EXE_SRC_FILES})	
 	target_link_libraries(${EXE_FILE} ${DEP_LIBS})
 	add_dependencies(${EXE_FILE} vcell pcgwrapper ExpressionParser IDAWin qhull sundials sundials_nvecserial sundials_cvode sundials_ida zip unzip)
+	if (MSVC)
+		add_dependencies(${EXE_FILE} zlib)
+	endif (MSVC)
+
 	install(TARGETS ${EXE_FILE} 
             RUNTIME DESTINATION ${OPTION_EXE_DIRECTORY})
 	
