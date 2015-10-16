@@ -3,6 +3,10 @@ cmake_minimum_required (VERSION 2.8.9) #current cygwin32 version
 else (CYGWIN)
 cmake_minimum_required (VERSION 2.8.10) #per hdf mailing list, need 2.8.10 for mac
 endif (CYGWIN)
+
+cmake_policy(VERSION 2.8)
+cmake_policy(SET CMP0053 OLD)
+cmake_policy(SET CMP0054 OLD)
 PROJECT (HDF5 C CXX)
 
 #-----------------------------------------------------------------------------
