@@ -1005,7 +1005,7 @@ double dblnan();
 
 
 /* dblnan */
-#if (_MSC_VER >= 1700)
+#if (_MSC_VER >= 1600)
 #include <limits>
 double dblnan() {
 	return std::numeric_limits<double>::quiet_NaN( ); }
