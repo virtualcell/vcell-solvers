@@ -1,4 +1,7 @@
 project(zlib)
+set(ZLIB_FOUND TRUE)
+set(ZLIB_ROOT ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
+set(ZLIB_LIBRARY "zlib" PARENT_SCOPE)
 
 set (SRC_FILES 
 	adler32.c 
