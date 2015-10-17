@@ -26,6 +26,7 @@ include_directories(${VCELL_SMOL_INC})
 
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 ADD_DEFINITIONS(-DVCELL)
+ADD_DEFINITIONS(-DVCELL_HYBRID)
 include_directories(../IDAWin ../ExpressionParser ../VCell/include ${CMAKE_CURRENT_BINARY_DIR})	
 
 include_directories(${CMAKE_BINARY_DIR}/${HDF_VERSION})
