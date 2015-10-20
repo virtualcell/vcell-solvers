@@ -70,12 +70,13 @@ private:
 	double **memVarOutputData;
 	int* molIdentVarIndexMap;
 	SmoldynVariable** variables;
-	double distance2(double* pos1, double* pos2);
 
 	SmoldynHdf5Writer* hdf5DataWriter;
 	vector<SmoldynDataGenerator*> dataGeneratorList;
 	SimTool* simTool;
 	
+	double distance2(double* pos1, double* pos2);
+
 	friend class SmoldynHdf5Writer;
 	friend class SmoldynVarStatDataGenerator;
 };

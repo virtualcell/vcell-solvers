@@ -46,44 +46,51 @@ static int getZipCount(char* zipFileName) {
 	return atoi(str);
 }
 
-VCellSmoldynOutput::VCellSmoldynOutput(simptr sim){
-	smoldynSim = sim;
-
-	simFileCount = 0;
-	zipFileCount = 0;
-	Nx = Ny = Nz = 1;
-	numVolumeElements = 0;
-	numMembraneElements = 0;
-	dimension = 0;
-	hdf5DataWriter = 0;
-
-	dataBlock = 0;
-	volVarOutputData = 0;
-	memVarOutputData = 0;
-	molIdentVarIndexMap = 0;
-
-	variables = 0;
-}
+VCellSmoldynOutput::VCellSmoldynOutput(simptr sim)
+:smoldynSim(sim),
+ simFileCount(0),
+zipFileCount(0),
+	baseFileName(),
+ 	baseSimName( ),
+	 Nx(0),
+	 Ny(0),
+	 Nz(0),
+	numVolumeElements(0),
+	numMembraneElements(0),
+	dimension(0),
+	extent( ),
+	origin(),
+ 	volVariables( ),
+	 memVariables( ),
+	fileHeader( ),
+	dataBlock(0),
+	volVarOutputData(0),
+ 	memVarOutputData(0),
+	molIdentVarIndexMap(0),
+	variables(0),
+     hdf5DataWriter(0),
+	dataGeneratorList( ) ,
+	simTool(0) {}
 
 VCellSmoldynOutput::~VCellSmoldynOutput() {
 #ifndef VCELL_HYBRID
-	for (int i = 0; i < volVariables.size(); i ++) {
-		delete[] volVarOutputData[i];
-	}
-	for (int i = 0; i < memVariables.size(); i ++) {
-		delete[] memVarOutputData[i];
-	}
+    for (int i = 0; i < volVariables.size(); i ++) {
+        delete[] volVarOutputData[i];
+    }
+    for (int i = 0; i < memVariables.size(); i ++) {
+        delete[] memVarOutputData[i];
+    }
 #endif
-	delete[] volVarOutputData;
-	delete[] memVarOutputData;
-	delete[] molIdentVarIndexMap;
-	delete[] dataBlock;
+    delete[] volVarOutputData;
+    delete[] memVarOutputData;
+    delete[] molIdentVarIndexMap;
+    delete[] dataBlock;
 
-	delete hdf5DataWriter;
-	for (int i = 0; i < smoldynSim->mols->nspecies - 1; i ++) {
-		delete variables[i];
-	}
-	delete[] variables;
+    delete hdf5DataWriter;
+    for (int i = 0; i < smoldynSim->mols->nspecies - 1; i ++) {
+        delete variables[i];
+    }
+    delete[] variables;
 }
 
 void VCellSmoldynOutput::parseDataProcessingInput(string& name, string& input) {
