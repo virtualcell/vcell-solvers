@@ -84,13 +84,6 @@ enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2) {
 		if (token == "begin") {
 			ss >> dataProcName;
 		} else if (token == "end") {
-#ifndef VCELL_HYBRID 
-			if (vcellSmoldynOutput == NULL) {
-				vcellSmoldynOutput = new VCellSmoldynOutput(sim);///check it out.
-			}
-			string input = dataProcessInput.str();
-			vcellSmoldynOutput->parseDataProcessingInput(dataProcName, input);
-#endif
 			dataProcessFirstTime = false;
 		} else {
 			dataProcessInput << line2 << endl;
@@ -99,9 +92,7 @@ enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2) {
 	return CMDok;
 }
 
-#ifndef VCELL_HYBRID
-extern int taskID;
-#endif
+//extern int taskID;
 int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 
 	char word[STRCHAR];
@@ -130,21 +121,6 @@ int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 			break;
 		} else if(!line2) {															// just word
 			CHECKS(0,"missing jms parameters");
-		} else {
-#if (defined(USE_MESSAGING) && !defined(VCELL_HYBRID))
-			if (taskID >= 0) {
-				char *jmsBroker = new char[64];
-				char *jmsUser = new char[64];
-				char* jmsPwd = new char[64];
-				char* jmsQueue = new char[64];
-				char* jmsTopic = new char[64];
-				char* vcellUser = new char[64];
-				int simKey, jobIndex;
-				sscanf(line2, "%s%s%s%s%s%s%d%d", jmsBroker, jmsUser, jmsPwd, jmsQueue, jmsTopic, vcellUser, &simKey, &jobIndex);
-				SimulationMessaging::create(jmsBroker, jmsUser, jmsPwd, jmsQueue, jmsTopic, vcellUser, simKey, jobIndex, taskID);
-				SimulationMessaging::getInstVar()->start(); // start the thread
-			}
-#endif
 		}
 	}
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "setting up simulation"));

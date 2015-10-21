@@ -383,7 +383,6 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 				simulation->addSolver(odeSolver);
 			}
 			simulation->addVolumeVariable(volumeVar, vrmap);
-#ifdef VCELL_HYBRID				
 		} else if (nextToken == "VOLUME_PARTICLE") {
 			lineInput >> variable_name >> structure_name;
 			Feature* feature = model->getFeatureFromName(structure_name);
@@ -394,7 +393,6 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 			Membrane* membrane = model->getMembraneFromName(structure_name);
 			MembraneParticleVariable* membraneParticleVar = new MembraneParticleVariable(variable_name, membrane, mesh->getNumMembraneElements());
 			simulation->addMembraneParticleVariable(membraneParticleVar);
-#endif			
 		} else if (nextToken == "MEMBRANE_ODE") {
 			lineInput >> variable_name >> structure_name;
 			int numSolveRegions = 0;  // flag specifying to solve for all regions
@@ -1468,10 +1466,8 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 		} else if (nextToken == "VARIABLE_BEGIN") {
 			loadSimulation(ifsInput);
 			simTool->setSimulation(simulation);
-#ifdef VCELL_HYBRID				
 		} else if (nextToken == "SMOLDYN_BEGIN") {
 			loadSmoldyn(ifsInput);
-#endif			
 		} else if (nextToken == "PARAMETER_BEGIN") {
 			int numParams = 0;
 			lineInput >> numParams;
@@ -1512,7 +1508,6 @@ void FVSolver::createSimTool(istream& ifsInput, int taskID)
 	}
 }
 
-#ifdef VCELL_HYBRID	
 void FVSolver::loadSmoldyn(istream& ifsInput) {
 	if (simulation == 0) {
 		throw "Simulation has to be initialized before loading smoldyn";
@@ -1539,7 +1534,6 @@ void FVSolver::loadSmoldyn(istream& ifsInput) {
 		}
 	}
 }
-#endif
 
 FVSolver::FVSolver(istream& fvinput, int taskID, char* outdir, bool bSimZip) {
 	simTool = 0;

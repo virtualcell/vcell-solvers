@@ -6,13 +6,12 @@
 
 #include <VCELL/SimulationMessaging.h>
 #include <SimCommand.h>
-#ifdef VCELL_HYBRID
 #include <VCELL/SimTool.h>
 #include <VCELL/Simulation.h>
 #include <VCELL/VolumeParticleVariable.h>
 #include <VCELL/MembraneParticleVariable.h>
-#endif
 #include "SmoldynVarStatDataGenerator.h"
+#include "vcellhybrid.h"
 //#include "SmoldynROIDataGenerator.h"
 #include "SmoldynHdf5Writer.h"
 #define SIM_FILE_EXT "sim"
@@ -73,14 +72,12 @@ zipFileCount(0),
 	simTool(0) {}
 
 VCellSmoldynOutput::~VCellSmoldynOutput() {
-#ifndef VCELL_HYBRID
     for (int i = 0; i < volVariables.size(); i ++) {
         delete[] volVarOutputData[i];
     }
     for (int i = 0; i < memVariables.size(); i ++) {
         delete[] memVarOutputData[i];
     }
-#endif
     delete[] volVarOutputData;
     delete[] memVarOutputData;
     delete[] molIdentVarIndexMap;
@@ -104,12 +101,12 @@ void VCellSmoldynOutput::parseDataProcessingInput(string& name, string& input) {
 	}
 }
 
-#define VCellSmoldynKeyword_dimension "dimension"
-#define VCellSmoldynKeyword_sampleSize "sampleSize"
-#define VCellSmoldynKeyword_numMembraneElements "numMembraneElements"
-#define VCellSmoldynKeyword_variable "variable"
-#define VCellSmoldynKeyword_membrane "membrane"
-#define VCellSmoldynKeyword_volume "volume"
+const char * const  VCellSmoldynKeyword_dimension ="dimension";
+const char * const  VCellSmoldynKeyword_sampleSize ="sampleSize";
+const char * const  VCellSmoldynKeyword_numMembraneElements ="numMembraneElements";
+const char * const  VCellSmoldynKeyword_variable = "variable";
+const char * const  VCellSmoldynKeyword_membrane = "membrane";
+const char * const  VCellSmoldynKeyword_volume = "volume";
 
 void VCellSmoldynOutput::parseInput(string& input) {
 	if (dimension > 0) {
@@ -271,28 +268,31 @@ void VCellSmoldynOutput::parseInput(string& input) {
 		blockIndex ++;
 	}
 	volVarOutputData = new double*[volVariables.size()];
-	for (int i = 0; i < volVariables.size(); i ++) {
-#ifdef VCELL_HYBRID
-		Simulation* sim = simTool->getSimulation();
-		VolumeParticleVariable* var = (VolumeParticleVariable*)sim->getVariableFromName(volVariables[i]->name);
-		//reminder that we ask smoldyn to write to molecule counts and in simtool we convert the counts to counts/mesh element size for FV 
-		//volVarOutputData[i] = var->getCurr(); 
-		volVarOutputData[i] = var->getMoleculeCounts();
-#else
-		volVarOutputData[i] = new double[numVolumeElements];
-#endif
+	if (vcellhybrid::isHybrid( )) {
+		Simulation* const sim = simTool->getSimulation();
+		for (int i = 0; i < volVariables.size(); i ++) {
+			VolumeParticleVariable* var = (VolumeParticleVariable*)sim->getVariableFromName(volVariables[i]->name);
+			//reminder that we ask smoldyn to write to molecule counts and in simtool we convert the counts to counts/mesh element size for FV
+			//volVarOutputData[i] = var->getCurr();
+			volVarOutputData[i] = var->getMoleculeCounts();
+		}
+		memVarOutputData = new double*[memVariables.size()];
+		for (int i = 0; i < memVariables.size(); i ++) {
+			MembraneParticleVariable* var = (MembraneParticleVariable*)sim->getVariableFromName(memVariables[i]->name);
+			//reminder that we ask smoldyn to write to molecule counts and in simtool we convert the counts to counts/mesh element size for FV
+			//memVarOutputData[i] = var->getCurr();
+			memVarOutputData[i] = var->getMoleculeCounts();
+		}
 	}
-	memVarOutputData = new double*[memVariables.size()];
-	for (int i = 0; i < memVariables.size(); i ++) {
-#ifdef VCELL_HYBRID
-		Simulation* sim = simTool->getSimulation();
-		MembraneParticleVariable* var = (MembraneParticleVariable*)sim->getVariableFromName(memVariables[i]->name);
-		//reminder that we ask smoldyn to write to molecule counts and in simtool we convert the counts to counts/mesh element size for FV 
-		//memVarOutputData[i] = var->getCurr(); 
-		memVarOutputData[i] = var->getMoleculeCounts();
-#else
-		memVarOutputData[i] = new double[numMembraneElements];
-#endif
+	else {
+
+		for (int i = 0; i < volVariables.size(); i ++) {
+			volVarOutputData[i] = new double[numVolumeElements];
+		}
+		memVarOutputData = new double*[memVariables.size()];
+		for (int i = 0; i < memVariables.size(); i ++) {
+			memVarOutputData[i] = new double[numMembraneElements];
+		}
 	}
 	//initialize hdf5 writer
 	if(hdf5DataWriter == 0)
@@ -310,9 +310,9 @@ void VCellSmoldynOutput::parseInput(string& input) {
 
 void VCellSmoldynOutput::write() {	//for each save time interval
 	computeHistogram();
-#ifdef VCELL_HYBRID
-	return;
-#endif
+	if (vcellhybrid::isHybrid()) {
+		return;
+	}
 	
 	// write sim file
 	char simFileName[256];

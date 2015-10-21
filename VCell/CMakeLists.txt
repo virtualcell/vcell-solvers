@@ -179,12 +179,12 @@ set (EXE_SRC_FILES
 )
 
 include_directories(include ../ExpressionParser ${HDF5_BINARY_DIR} ../${HDF_VERSION}/c++/src ../${HDF_VERSION}/src ../IDAWin ../sundials/include ../sundials/src ../zip)
+include_directories(include ../bridgeVCellSmoldyn)
 if (NOT ZLIB_FOUND)
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../zlib)
 endif()
 
 
-add_definitions(-DVCELL_HYBRID)
 include_directories(include ../${SMOL_DIR}/source/Smoldyn ../${SMOL_DIR}/source/lib)
 if (MSVC)
 	include_directories(../${SMOL_DIR}/windows ../glut-3.7.6/ ../zlib)

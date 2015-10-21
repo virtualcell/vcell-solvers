@@ -26,6 +26,7 @@ using std::endl;
 #include <VCELL/VolumeParticleVariable.h>
 #include <VCELL/MembraneParticleVariable.h>
 #include <VCELL/Element.h>
+#include <vcellhybrid.h>
 
 #include <float.h>
 #include <math.h>
@@ -63,49 +64,41 @@ static const int numRetries = 2;
 static const int retryWaitSeconds = 5;
 
 SimTool::SimTool()
-{
-	bSimZip = true;
+	:bSimZip(true ),
+	 vcellModel(0),
+	simulation(0),
+	_timer(0),
+	bSimFileCompress(false),
+	simEndTime(0),
+	simStartTime(0),
+	bCheckSpatiallyUniform(false),
+	simDeltaTime(0),
+	keepEvery(100),
+	bStoreEnable(true),
+	baseFileName(0),
+	simFileCount(0),
+	baseSimName(0),
+	baseDirName(0 ),
+	zipFileCount(0),
+	solver(FV_SOLVER ),
+    discontinuityTimes(0),
+	numDiscontinuityTimes(0),
+	bLoadFinal(true ),
+	sundialsSolverOptions( ),
+	spatiallyUniformAbsTol(1e-6 ),
+	spatiallyUniformRelTol(1e-3),
+	pcgRelTol(1e-8),
 
-	simEndTime = 0.0;
-	bCheckSpatiallyUniform = false;
-	keepEvery = 100;
-	bStoreEnable = true;
-	baseFileName=0;
-	simFileCount=0;
-	zipFileCount = 0;
-	bSimFileCompress = false;
-	baseDirName = NULL;
-	baseFileName = NULL;
-	baseSimName = NULL;
-	bLoadFinal = true;
+	bSundialsOneStepOutput(false),
+	keepAtMost(5000),
 
-	_timer = 0;
-	vcellModel = 0;
-	simulation = 0;
+	 serialScanParameterValues(0),
+	numSerialParameterScans(0),
 
-	spatiallyUniformAbsTol = 1e-6;
-	spatiallyUniformRelTol = 1e-3;
-
-	numDiscontinuityTimes = 0;
-	discontinuityTimes = 0;
-
-	solver = FV_SOLVER;
-	pcgRelTol = 1e-8;
-
-	simStartTime = 0;
-	bSundialsOneStepOutput = false;
-	keepAtMost = 5000;
-
-	numSerialParameterScans = 0;
-	serialScanParameterValues = 0;
-
-#ifdef VCELL_HYBRID
-	smoldynInputFile = "";
-	smoldynSim = NULL;
-#endif
-	
-	postProcessingHdf5Writer = NULL;
-}
+	postProcessingHdf5Writer(0),
+	smoldynSim(0 ),
+	smoldynInputFile("" )
+{ }
 
 SimTool::~SimTool()
 {
@@ -290,12 +283,10 @@ void SimTool::loadFinal()
 		return;
 	}
 
-#ifdef VCELL_HYBRID		
 	if (smoldynSim != NULL) {
 		clearLog();
 		return;
 	}
-#endif
 
 	//
 	// read '.log' file to determine simulation time and iteration
@@ -727,14 +718,9 @@ void SimTool::start() {
 	}
 }
 
-#ifdef VCELL_HYBRID	
-void smoldynOneStep(simptr sim);
-void smoldynEnd(simptr sim);
-simptr smoldynInit(SimTool* simTool, string& root);
 void SimTool::setSmoldynInputFile(string& inputfile) {
 	smoldynInputFile = inputfile;
 }
-#endif
 
 void SimTool::start1() {
 
@@ -749,9 +735,8 @@ void SimTool::start1() {
 
 	simulation->initSimulation();
 
-#ifdef VCELL_HYBRID	
 	if (smoldynInputFile != "") {
-		smoldynSim = smoldynInit(this, smoldynInputFile);//smoldynInit will write output therefore computeHistogram is called by VCellSmoldynOutput.write().
+		smoldynSim = vcellhybrid::smoldynInit(this, smoldynInputFile);//smoldynInit will write output therefore computeHistogram is called by VCellSmoldynOutput.write().
 		copyParticleCountsToConcentration();
 		// since smoldyn only initializes variable current value,
 		// we need to copy current to old.
@@ -760,7 +745,6 @@ void SimTool::start1() {
 			var->update();
 		}
 	}
-#endif
 
 	loadFinal();   // initializes to the latest file if it exists
 
@@ -837,12 +821,10 @@ void SimTool::start1() {
 		}
 
 		simulation->iterate();
-#ifdef VCELL_HYBRID			
 		if (smoldynSim != NULL) {
-			smoldynOneStep(smoldynSim);//smoldynOneStep includes computeHistogram after each time step.
+			vcellhybrid::smoldynOneStep(smoldynSim);//smoldynOneStep includes computeHistogram after each time step.
 			copyParticleCountsToConcentration();
 		}
-#endif
 
 		if (checkStopRequested()) {
 			return;
@@ -883,11 +865,9 @@ void SimTool::start1() {
 		}
 	}
 
-#ifdef VCELL_HYBRID	
 	if (smoldynSim != NULL) {
-		smoldynEnd(smoldynSim);
+		vcellhybrid::smoldynEnd(smoldynSim);
 	}
-#endif	
 	if (checkStopRequested()) {
 		return;
 	} 

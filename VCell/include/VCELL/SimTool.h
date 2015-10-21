@@ -11,9 +11,7 @@
 #include <VCELL/Timer.h>
 #include <VCELL/SundialsSolverOptions.h>
 
-#ifdef VCELL_HYBRID	
 #include <smoldyn.h>
-#endif
 
 #ifndef DIRECTORY_SEPARATOR
 #if ( defined(WIN32) || defined(WIN64) )
@@ -111,9 +109,7 @@ public:
 	}
 	void checkTaskIdLockFile();
 
-#ifdef VCELL_HYBRID	
 	void setSmoldynInputFile(string& inputfile);
-#endif
 
 private:
 	SimTool();
@@ -125,6 +121,7 @@ private:
 	void clearLog();
 	int	getZipCount(char* zipFileName);
 	void start1();
+	void copyParticleCountsToConcentration();
 
 	static SimTool* instance;
 
@@ -134,7 +131,8 @@ private:
 	Timer  *_timer;
 
 	bool bSimFileCompress;
-	double simEndTime, simStartTime;
+	double simEndTime;
+	double simStartTime;
 	bool bCheckSpatiallyUniform;
 	double simDeltaTime;
 	int keepEvery;
@@ -160,11 +158,8 @@ private:
 	int numSerialParameterScans;
 
 	PostProcessingHdf5Writer* postProcessingHdf5Writer;
-	void copyParticleCountsToConcentration();
-#ifdef VCELL_HYBRID	
 	simptr smoldynSim;
 	string smoldynInputFile;
-#endif
 };
 
 #endif

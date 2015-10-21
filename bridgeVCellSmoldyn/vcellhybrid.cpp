@@ -7,6 +7,7 @@
 #include "smoldyn.h"
 #include "random2.h"
 #include "smoldynfuncs.h"
+#include "vcellhybrid.h"
 #include <string.h>
 #include <string>
 using std::string;
@@ -20,7 +21,7 @@ using namespace std;
 #include "VCellSmoldynOutput.h"
 
 extern VCellSmoldynOutput* vcellSmoldynOutput;
-simptr smoldynInit(SimTool* simTool, string& fileName) {
+simptr vcellhybrid::smoldynInit(SimTool* simTool, string& fileName) {
 	LoggingCallback=NULL;
 	ThrowThreshold=10;
 
@@ -102,14 +103,16 @@ simptr smoldynInit(SimTool* simTool, string& fileName) {
 	return sim;
 }
 
-void smoldynOneStep(simptr sim){
+void vcellhybrid::smoldynOneStep(simptr sim){
 	simulatetimestep(sim);
 	vcellSmoldynOutput->computeHistogram();
 }
 
-void smoldynEnd(simptr sim) {
+void vcellhybrid::smoldynEnd(simptr sim) {
 	int er = 0;
 	sim->elapsedtime+=difftime(time(NULL),sim->clockstt);
 	endsimulate(sim,er);
 	simfree(sim);
 }
+
+bool vcellhybrid::bHybrid = false;
