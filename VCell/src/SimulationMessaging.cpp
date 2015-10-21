@@ -184,6 +184,7 @@ void SimulationMessaging::sendStatus() {
 				cerr << workerEvent->eventMessage << endl;
 				break;
 			}
+			return;
 
 		} 
 #ifdef USE_MESSAGING
@@ -279,6 +280,7 @@ void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
 	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_STDOUT) {
 		events.push_back(arg_workerEvent);
 		sendStatus();
+		return;
 	} 
 #ifdef USE_MESSAGING
 	else {
