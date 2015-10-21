@@ -18,7 +18,7 @@ struct vcellhybrid {
 		static bool isHybrid( ) {
 			return bHybrid;
 		}
-		static bool setHybrid( ) {
+		static void setHybrid( ) {
 			bHybrid = true;
 		}
 	private:

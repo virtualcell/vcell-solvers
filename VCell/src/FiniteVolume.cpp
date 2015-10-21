@@ -8,6 +8,7 @@ using namespace std;
 #include <VCELL/SimTool.h>
 #include <VCELL/SimulationMessaging.h>
 #include <Exception.h>
+#include <vcellhybrid.h>
 
 void vcellExit(int returnCode, string& errorMsg) {
 	if (SimulationMessaging::getInstVar() == 0) {
@@ -39,12 +40,13 @@ void printUsage() {
 
 int main(int argc, char *argv[])
 {
-    	std::cout 
+	std::cout
 	    << "Finite Volume version $URL$"VCELLSVNQUOTE(SVNVERSION) 
 	    << std::endl; 
 
     
-	int returnCode = 0;
+	vcellhybrid::setHybrid(); //get smoldyn library in correct state
+  	int returnCode = 0;
 	string errorMsg = "Exception : ";
 
 	char* outputPath = 0;
