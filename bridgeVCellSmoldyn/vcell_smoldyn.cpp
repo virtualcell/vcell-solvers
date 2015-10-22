@@ -110,17 +110,14 @@ int main(int argc,char **argv) {
 			return 0; }
 		sim=NULL;
 
-		if (argc > 1) {
+		if (argc > 2) { //-tid [int]
 			if (!strcmp(argv[1], "-tid")) {
-				argc --;
-				argv ++;
-
 				{
 					int taskID = -1;
 					sscanf(argv[2], "%d", &taskID);
 					vcellhybrid::setTaskId(taskID);
-					argc --;
-					argv ++;
+					argc -= 2;
+					argv += 2; //pointer arithmetic; remove vcell messaging args before passing to smoldyn
 
 				}
 			}
