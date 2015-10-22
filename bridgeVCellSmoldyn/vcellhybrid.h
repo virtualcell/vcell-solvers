@@ -7,10 +7,14 @@
 
 #ifndef BRIDGEVCELLSMOLDYN_VCELLHYBRID_H_
 #define BRIDGEVCELLSMOLDYN_VCELLHYBRID_H_
+#include <cassert>
 struct simstruct;
 class SimTool;
 typedef simstruct * simptr;
 
+/**
+* manage hybrid / standlone smolydn status
+*/
 struct vcellhybrid {
 		static simptr smoldynInit(SimTool* simTool, string& fileName);
 		static void smoldynOneStep(simptr sim);
@@ -21,12 +25,19 @@ struct vcellhybrid {
 		static void setHybrid( ) {
 			bHybrid = true;
 		}
+		static void setTaskId(int t) {
+			assert(!bHybrid);
+			taskID = t;
+		}
+		static int getTaskId( ) {
+			return taskID;
+		}
+		static bool isMessaging( ) {
+			return !bHybrid && (taskID >= 0) ;
+		}
 	private:
 		static bool bHybrid ;
+		static int taskID;
 };
-
-
-
-
 
 #endif /* BRIDGEVCELLSMOLDYN_VCELLHYBRID_H_ */

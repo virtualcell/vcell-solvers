@@ -29,7 +29,6 @@
 #define VCELLSVNQUOTE(x) VCELLSVNQ(x)
 
 
-int taskID = -1;
 #ifdef USE_MESSAGING
 	const char * const Variant = "messaging";
 #else
@@ -115,9 +114,14 @@ int main(int argc,char **argv) {
 				argc --;
 				argv ++;
 
-				sscanf(argv[1], "%d", &taskID);
-				argc --;
-				argv ++;
+				{
+					int taskID = -1;
+					sscanf(argv[2], "%d", &taskID);
+					vcellhybrid::setTaskId(taskID);
+					argc --;
+					argv ++;
+
+				}
 			}
 		}
 

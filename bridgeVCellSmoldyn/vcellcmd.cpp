@@ -1,14 +1,12 @@
+#include <iostream>
+#include <sstream>
+
 #include "smoldyn.h"
-#include <SimCommand.h>
-
-
-/**********************************************************/
-/******************** command declarations ****************/
-/**********************************************************/
 #include <VCELL/SimulationMessaging.h>
+#include <SimCommand.h>
 #include "VCellSmoldynOutput.h"
-
-#include "smoldynfuncs.h"
+#include "vcellhybrid.h"
+//#include "smoldynfuncs.h"
 namespace {
 	const double  reportIntervalSeconds = 30;
 	time_t lastTime = 0; // the static variable to allow sending out progress every two seconds
@@ -36,8 +34,6 @@ enum CMDcode cmdVCellPrintProgress(simptr sim, cmdptr cmd, char *line2) {
 	return CMDok;
 }
 
-#include <iostream>
-#include <sstream>
 using std::stringstream;
 using std::endl;
 enum CMDcode cmdVCellWriteOutput(simptr sim, cmdptr cmd, char *line2) {
@@ -84,6 +80,13 @@ enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2) {
 		if (token == "begin") {
 			ss >> dataProcName;
 		} else if (token == "end") {
+			if (!vcellhybrid::isHybrid( )) {
+				if (vcellSmoldynOutput == NULL) {
+					vcellSmoldynOutput = new VCellSmoldynOutput(sim);///check it out.
+				}
+				string input = dataProcessInput.str();
+				vcellSmoldynOutput->parseDataProcessingInput(dataProcName, input);
+			}
 			dataProcessFirstTime = false;
 		} else {
 			dataProcessInput << line2 << endl;
@@ -92,7 +95,9 @@ enum CMDcode cmdVCellDataProcess(simptr sim,cmdptr cmd,char *line2) {
 	return CMDok;
 }
 
-//extern int taskID;
+#ifndef VCELL_HYBRID
+extern int taskID;
+#endif
 int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 
 	char word[STRCHAR];
@@ -121,6 +126,21 @@ int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 			break;
 		} else if(!line2) {															// just word
 			CHECKS(0,"missing jms parameters");
+		} else {
+#ifdef USE_MESSAGING
+			if (vcellhybrid::isMessaging( )) {
+				char *jmsBroker = new char[128];
+				char *jmsUser = new char[128];
+				char* jmsPwd = new char[128];
+				char* jmsQueue = new char[128];
+				char* jmsTopic = new char[128];
+				char* vcellUser = new char[128];
+				int simKey, jobIndex;
+				sscanf(line2, "%s%s%s%s%s%s%d%d", jmsBroker, jmsUser, jmsPwd, jmsQueue, jmsTopic, vcellUser, &simKey, &jobIndex);
+				SimulationMessaging::create(jmsBroker, jmsUser, jmsPwd, jmsQueue, jmsTopic, vcellUser, simKey, jobIndex, vcellhybrid::getTaskID( ));
+				SimulationMessaging::getInstVar()->start(); // start the thread
+			}
+#endif
 		}
 	}
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "setting up simulation"));
