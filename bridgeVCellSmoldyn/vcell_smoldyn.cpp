@@ -17,6 +17,7 @@
 #include "smoldynfuncs.h"
 #include "SimpleValueProvider.h"
 #include "SimpleMesh.h"
+#include "vcellhybrid.h"
 #include <iostream>
 
 /* ***************************************************************** */

@@ -6,7 +6,7 @@
 #include <SimCommand.h>
 #include "VCellSmoldynOutput.h"
 #include "vcellhybrid.h"
-//#include "smoldynfuncs.h"
+#include "smoldynfuncs.h"
 namespace {
 	const double  reportIntervalSeconds = 30;
 	time_t lastTime = 0; // the static variable to allow sending out progress every two seconds
@@ -137,7 +137,7 @@ int loadJMS(simptr sim,ParseFilePtr *pfpptr,char *line2,char *erstr) {
 				char* vcellUser = new char[128];
 				int simKey, jobIndex;
 				sscanf(line2, "%s%s%s%s%s%s%d%d", jmsBroker, jmsUser, jmsPwd, jmsQueue, jmsTopic, vcellUser, &simKey, &jobIndex);
-				SimulationMessaging::create(jmsBroker, jmsUser, jmsPwd, jmsQueue, jmsTopic, vcellUser, simKey, jobIndex, vcellhybrid::getTaskID( ));
+				SimulationMessaging::create(jmsBroker, jmsUser, jmsPwd, jmsQueue, jmsTopic, vcellUser, simKey, jobIndex, vcellhybrid::getTaskId( ));
 				SimulationMessaging::getInstVar()->start(); // start the thread
 			}
 #endif

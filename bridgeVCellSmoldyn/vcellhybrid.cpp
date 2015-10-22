@@ -116,3 +116,4 @@ void vcellhybrid::smoldynEnd(simptr sim) {
 }
 
 bool vcellhybrid::bHybrid = false;
+int vcellhybrid::taskID = -1;
