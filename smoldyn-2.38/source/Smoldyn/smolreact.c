@@ -337,7 +337,7 @@ rxnptr rxnalloc(int order) {
 	rxn->logserno=NULL;
 	rxn->logfile=NULL;
 	rxn->rate=-1;
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 	rxn->rateValueProvider=NULL;
 #endif
 	rxn->bindrad2=-1;
@@ -2155,7 +2155,7 @@ int rxnsupdatelists(simptr sim,int order) {
 			i1=rxn->rctident[0];
 			if(order==1) {
 				for(ms1=(MolecState)0;ms1<MSMAX1;ms1=(MolecState)(ms1+1)) {
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 					if(rxn->permit[ms1] && (rxn->prob>0 || rxn->rate>0 || rxn->rateValueProvider != NULL))
 #else
 					if(rxn->permit[ms1] && (rxn->prob>0 || rxn->rate>0))
@@ -2169,7 +2169,7 @@ int rxnsupdatelists(simptr sim,int order) {
 				for(ms1=(MolecState)0;ms1<MSMAX1;ms1=(MolecState)(ms1+1))
 					for(ms2=(MolecState)0;ms2<MSMAX1;ms2=(MolecState)(ms2+1)) {
 
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 						if(rxn->permit[ms1*MSMAX1+ms2] && rxn->prob!=0 && (rxn->rate>0 || rxn->bindrad2>0 || rxn->rateValueProvider != NULL))
 #else
 						if(rxn->permit[ms1*MSMAX1+ms2] && rxn->prob!=0 && (rxn->rate>0 || rxn->bindrad2>0))
@@ -2429,7 +2429,7 @@ int zeroreact(simptr sim) {
 	for(r=0;r<rxnss->totrxn;r++) {
 		rxn=rxnss->rxn[r];
 				
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 		if(rxn->rateValueProvider != NULL) {
 			if(rxn->cmpt) {
 				AbstractMesh* mesh = sim->mesh;
@@ -2531,7 +2531,7 @@ int unireact(simptr sim) {
 				ms=mptr->mstate;
 				for(j=0;j<nrxn[i];j++) {
 					rxn=rxnlist[table[i][j]];
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 					if(rxn->rateValueProvider != NULL)
 					{
 						if(rxn->srf)//surface reaction
@@ -2615,7 +2615,7 @@ int morebireact(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int ll
 	return 0; }
 
 
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 void setBiReactRateForHybrid(simptr sim,rxnptr rxn,moleculeptr mptr1,moleculeptr mptr2,int r)
 {
 	if(rxn->rateValueProvider != NULL)
@@ -2690,7 +2690,7 @@ int bireact(simptr sim,int neigh) {
 							i=mptr1->ident*maxspecies+mptr2->ident;
 							for(j=0;j<nrxn[i];j++) {
 								rxn=rxnlist[table[i][j]];
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 								setBiReactRateForHybrid(sim, rxn, mptr1, mptr2, table[i][j]);
 #endif
 								dist2=0;
@@ -2720,7 +2720,7 @@ int bireact(simptr sim,int neigh) {
 									i=mptr1->ident*maxspecies+mptr2->ident;
 									for(j=0;j<nrxn[i];j++) {
 										rxn=rxnlist[table[i][j]];
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 										setBiReactRateForHybrid(sim, rxn, mptr1, mptr2, table[i][j]);
 #endif
 										dist2=wallcalcdist2(sim,mptr1->pos,mptr2->pos,wpcode,vect);
@@ -2737,7 +2737,7 @@ int bireact(simptr sim,int neigh) {
 									i=mptr1->ident*maxspecies+mptr2->ident;
 									for(j=0;j<nrxn[i];j++) {
 										rxn=rxnlist[table[i][j]];
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 										setBiReactRateForHybrid(sim, rxn, mptr1, mptr2, table[i][j]);
 #endif
 										dist2=0;

@@ -14,7 +14,7 @@
 #include "smoldyn.h"
 #include "random2.h"
 #include "smoldynfuncs.h"
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 	#include "SimpleValueProvider.h"
 	#include "SimpleMesh.h"
 #endif
@@ -81,7 +81,7 @@ int main(int argc,char **argv) {
 			return 0; }
 		sim=NULL;
 
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 		er=simInitAndLoad(root,fname,&sim,flags,new SimpleValueProviderFactory(), new SimpleMesh());
 #else
 		er=simInitAndLoad(root,fname,&sim,flags);

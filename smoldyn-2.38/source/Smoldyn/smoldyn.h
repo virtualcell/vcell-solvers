@@ -24,7 +24,11 @@
 
 #ifdef OPTION_VCELL
 	#include <string>
-	using namespace std;
+	typedef struct VolumeSamples * VolumeSamplesPtr;
+	class AbstractMesh;
+	class ValueProvider;
+	class ValueProviderFactory;
+	using std::string;
 #endif
 
 /********************************** General *********************************/

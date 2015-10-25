@@ -18,7 +18,6 @@ option(OPTION_TARGET_LIBSMOLDYN "Create LibSmoldyn library" OFF)
 
 
 ####### Compiling options ##########
-
 option(OPTION_VCELL "Compile Smoldyn for VCell" OFF)
 option(OPTION_NSV "Compile Smoldyn with NextSubvolume functionality" ON)
 option(OPTION_PDE "Compile Smoldyn with PDE functionality" OFF)
@@ -28,16 +27,8 @@ option(OPTION_MINGW "Cross-compile for Windows using MinGW compiler" OFF)
 option(OPTION_USE_OPENGL "Build with OpenGL support" ON)
 option(OPTION_USE_ZLIB "Build with Zlib support" OFF)
 
-if (OPTION_VCELL)
-	set(OPTION_USE_LIBTIFF OFF)
-	set(OPTION_USE_ZLIB OFF)
-	set(HAVE_ZLIB TRUE)
-	set(OPTION_USE_ICONV OFF)
-	set(HAVE_ICONV FALSE)
-else(OPTION_VCELL)
-	option(OPTION_USE_LIBTIFF "Build with LibTiff support" ON)
-	option(OPTION_USE_ICONV "Build with Libiconv support" OFF)
-endif(OPTION_VCELL)
+option(OPTION_USE_LIBTIFF "Build with LibTiff support" ON)
+option(OPTION_USE_ICONV "Build with Libiconv support" OFF)
 
 if (OPTION_NSV)
 	set(OPTION_LATTICE ON)
@@ -73,8 +64,6 @@ set(HEADER_FILES
 	source/lib/SFMT/SFMT.h
 	source/Smoldyn/smoldyn.h
 	source/Smoldyn/smoldynfuncs.h
-	source/vcell/SimpleMesh.h
-	source/vcell/SimpleValueProvider.h
 	source/NextSubVolume/nsvc.h
 	source/vtk/vtkwrapper.h
 )
@@ -112,12 +101,17 @@ set(SRC_FILES
 )
 
 set(MAIN_FILES source/Smoldyn/smoldyn.c)
+set(SMOLDYN_EXE smoldyn)
 
 if(OPTION_VCELL)
+	include (${CMAKE_SOURCE_DIR}/bridgeVCellSmoldyn/CMakeLists.txt)
+	set(MAIN_FILES ${VCELL_SMOL_MAIN}) 
 	list(APPEND SRC_FILES
 		source/Smoldyn/smoldynhybrid.c
-		source/vcell/SimpleMesh.cpp
-		source/vcell/SimpleValueProvider.cpp )
+		${VCELL_SMOL_SOURCES}
+		)
+	 list(APPEND HEADER_FILES ${VCELL_HEADER_FILES})
+	 list(APPEND DEP_LIBS ${VCELL_SMOL_DEP_LIBS})
 endif(OPTION_VCELL)
 		
 
@@ -129,8 +123,7 @@ endif(OPTION_TARGET_LIBSMOLDYN)
 set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
 set_source_files_properties(${MAIN_FILES} PROPERTIES LANGUAGE CXX )
 
-include_directories(source/lib source/Smoldyn source/vcell source/NextSubVolume source/vtk ${CMAKE_BINARY_DIR})
-
+include_directories(source/lib source/Smoldyn source/NextSubVolume source/vtk ${CMAKE_CURRENT_BINARY_DIR})
 
 
 ####### Build for debugging or release ##########
@@ -160,16 +153,19 @@ endif(OPTION_MINGW)
 
 
 ######### Platform dependent information ##########
-
 if (OPTION_VCELL)
-	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
-	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/source/vcell ${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
-	if (ARCH_64bit)
-		list(APPEND DEP_LIBS glut64)
-	else()
-		list(APPEND DEP_LIBS glut32 zlib)
-	endif()
+	if (OPTION_USE_OPENGL)
+		if (MSVC)
+			add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+			include_directories(${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
+			link_directories(${CMAKE_CURRENT_SOURCE_DIR}/source/vcell ${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
+			if (ARCH_64bit)
+				list(APPEND DEP_LIBS glut64)
+			else()
+				list(APPEND DEP_LIBS glut32 zlib)
+			endif()
+		endif (MSVC)
+	endif (OPTION_USE_OPENGL)
 elseif (OPTION_MINGW)
 	include_directories(${MINGWDIR}/include windows)
 	link_directories(${MINGWDIR}/lib)
@@ -339,7 +335,7 @@ if(OPTION_USE_ZLIB)
 		find_path(ZLIB_INCLUDE_DIRS zlib.h)
 		find_library(ZLIB_LIBRARIES libz.a)
 	else()
-		include(FindZlib)
+		include(FindZLIB)
 	endif()
 
 	if(ZLIB_INCLUDE_DIRS AND ZLIB_LIBRARIES)
@@ -452,14 +448,16 @@ endif(OPTION_NSV)
 ####### Targets ##########
 
 if(OPTION_TARGET_SMOLDYN)
-	add_executable(smoldyn ${SRC_FILES} ${MAIN_FILES} ${HEADER_FILES})
-	target_link_libraries(smoldyn ${DEP_LIBS})
+	add_executable(${SMOLDYN_EXE} ${SRC_FILES} ${MAIN_FILES} ${HEADER_FILES})
+	target_link_libraries(${SMOLDYN_EXE} ${DEP_LIBS})
 endif()
 
 if(OPTION_TARGET_LIBSMOLDYN)
-	add_library(smoldyn_shared SHARED ${SRC_FILES} ${HEADER_FILES})
+	if (NOT OPTION_VCELL)
+		add_library(smoldyn_shared SHARED ${SRC_FILES} ${HEADER_FILES})
+		target_link_libraries(smoldyn_shared ${DEP_LIBS})
+	endif (NOT OPTION_VCELL)
 	add_library(smoldyn_static STATIC ${SRC_FILES} ${HEADER_FILES})
-	target_link_libraries(smoldyn_shared ${DEP_LIBS})
 	target_link_libraries(smoldyn_static ${DEP_LIBS})
 	if(APPLE)
 		SET_TARGET_PROPERTIES(smoldyn_shared PROPERTIES LINK_FLAGS "-framework Glut -framework OpenGL")
@@ -469,19 +467,26 @@ endif(OPTION_TARGET_LIBSMOLDYN)
 
 ########## install ###########
 
-if(NOT OPTION_MINGW)
+if(NOT OPTION_MINGW) 
 
 	if(OPTION_TARGET_SMOLDYN)
-		install(TARGETS smoldyn RUNTIME DESTINATION bin)
+		if(NOT OPTION_VCELL)
+			install(TARGETS ${SMOLDYN_EXE} RUNTIME DESTINATION bin)
+		else(NOT OPTION_VCELL)
+			install(TARGETS ${SMOLDYN_EXE} RUNTIME DESTINATION
+				${OPTION_EXE_DIRECTORY})
+		endif(NOT OPTION_VCELL)
 	endif()
 
 	if(OPTION_TARGET_LIBSMOLDYN)
-		install(TARGETS smoldyn_shared LIBRARY DESTINATION lib)
+		if(NOT OPTION_VCELL)
+			install(TARGETS smoldyn_shared LIBRARY DESTINATION lib)
+		endif(NOT OPTION_VCELL)
 		install(TARGETS smoldyn_static ARCHIVE DESTINATION lib)
 		install(FILES source/Smoldyn/libsmoldyn.h source/Smoldyn/smoldyn.h ${CMAKE_CURRENT_BINARY_DIR}/smoldynconfigure.h DESTINATION include)
 	endif(OPTION_TARGET_LIBSMOLDYN)
 
-endif(NOT OPTION_MINGW)
+endif(NOT OPTION_MINGW) 
 
 
 ########## configure file #########

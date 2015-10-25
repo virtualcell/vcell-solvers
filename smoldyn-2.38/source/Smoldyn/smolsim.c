@@ -21,6 +21,9 @@
 #include "Zn.h"
 #include <string>
 #include <sstream>
+#ifdef OPTION_VCELL
+	using std::stringstream;
+#endif
 
 
 
@@ -1251,7 +1254,8 @@ int simreadstring(simptr sim,ParseFilePtr pfp,const char *word,char *line2) {
 		CHECKS(rxn,"out of memory trying to create reaction structure");
 		
 		if(line2) {
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
+			using std::stringstream;
 			string rawStr, expStr;
 			stringstream ss(line2);
 			getline(ss,rawStr);
@@ -1279,7 +1283,7 @@ int simreadstring(simptr sim,ParseFilePtr pfp,const char *word,char *line2) {
 				line2=strnword(line2,2);
 				CHECKS(!line2,"unexpected text following reaction"); }}}
 
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 	else if(!strcmp(word,"reaction_rate")) {				// reaction_rate
 		if(line2){
 			stringstream ss(line2);
@@ -1625,7 +1629,7 @@ int loadsim(simptr sim,const char *fileroot,const char *filename,const char *fla
 	CHECKS(pfp,"%s",errstring);
 	er=Parse_CmdLineArg(NULL,NULL,pfp);
 	CHECKMEM(!er);
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 	sim->volumeSamplesPtr = NULL;//initialize the volumesample to null
 #endif
 
@@ -1798,7 +1802,7 @@ int simupdate(simptr sim) {
 
 
 /* simInitAndLoad */
-#if OPTION_VCELL
+#ifdef OPTION_VCELL
 int simInitAndLoad(const char *fileroot,const char *filename,simptr *smptr,const char *flags, ValueProviderFactory* valueProviderFactory, AbstractMesh* mesh) {
 
 	simptr sim;
