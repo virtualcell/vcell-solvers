@@ -1511,7 +1511,7 @@ void ChomboScheduler::writeData(char* filename, bool convertChomboData) {
 	
 	if (chomboSpec->isSaveChomboOutput())
 	{
-		int firstFilePhase = -1, firstFileVol = -1;
+		string firstHdf5File;
 		for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
 				Feature* feature = phaseVolumeList[iphase][ivol]->feature;
@@ -1520,14 +1520,14 @@ void ChomboScheduler::writeData(char* filename, bool convertChomboData) {
 					pout() << methodName << " feature not found or no variables defined in feature " << (feature == NULL ? "" : feature->getName()) << endl;
 					continue;
 				}
-				if (firstFilePhase == -1)
-				{
-					firstFilePhase = iphase;
-					firstFileVol = ivol;
-				}
 				char hdf5FileName[128];
 				sprintf(hdf5FileName, "%s%06d.feature_%s.vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), ivol, HDF5_FILE_EXT);
 				pout() << methodName << " writeEBHDF5, [iphase, ivol]=[" << iphase << "," << ivol << "] to " << hdf5FileName << endl;
+
+				if (firstHdf5File.empty())
+				{
+					firstHdf5File = hdf5FileName;
+				}
 				
 				Vector<string> names(feature->getNumDefinedVariables());
 				for (int ivar = 0; ivar < feature->getNumDefinedVariables(); ivar ++) {
@@ -1551,29 +1551,24 @@ void ChomboScheduler::writeData(char* filename, bool convertChomboData) {
 		MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
-		pout() << methodName << "firstFilePhase=" << firstFilePhase << ", firstFileVol=" << firstFileVol << endl;
-		if (firstFilePhase != -1)
+		pout() << methodName << "firstHdf5File=" << firstHdf5File << endl;
+		if (!firstHdf5File.empty())
 		{
-			Feature* feature = phaseVolumeList[firstFilePhase][firstFileVol]->feature;
-			char hdf5FileName[128];
-			// write membrane variable solution and extrapolated values to the first hdf5 file
-			sprintf(hdf5FileName, "%s%06d.feature_%s.vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), firstFileVol, HDF5_FILE_EXT);
-
 			hid_t file_access = H5P_DEFAULT;
 #ifdef CH_MPI
 			file_access = H5Pcreate(H5P_FILE_ACCESS);
 			H5Pset_fapl_mpio(file_access,  MPI_COMM_WORLD, MPI_INFO_NULL);
 #endif
 	
-			hid_t h5SimFile =  H5Fopen(hdf5FileName, H5F_ACC_RDWR, file_access);
-			pout() << methodName << " writing membrane solution, [iphase, ivol]=[" << firstFilePhase << "," << firstFileVol << "] to " << hdf5FileName << endl;
+			hid_t h5SimFile =  H5Fopen(firstHdf5File.c_str(), H5F_ACC_RDWR, file_access);
+			pout() << methodName << " writing membrane solution to first hdf5 file " << firstHdf5File << endl;
 			DataSet::writeMembraneSolution(simulation, h5SimFile
 #ifdef CH_MPI
 			, memIndexOffset, totalNumMembranePoints
 #endif
 			);
 			
-			pout() << methodName << " writing extrapolated values, [iphase, ivol]=[" << firstFilePhase << "," << firstFileVol << "] to " << hdf5FileName << endl;
+			pout() << methodName << " writing extrapolated valuesto first hdf5 file " << firstHdf5File << endl;
 			DataSet::writeExtrapolatedValues(simulation, h5SimFile
 #ifdef CH_MPI
 			, memIndexOffset, totalNumMembranePoints
@@ -1600,6 +1595,8 @@ void ChomboScheduler::writeData(char* filename, bool convertChomboData) {
 #define BOXES_LEVEL_DATASET_PREFIX BOXES_GROUP"/level_"
 #define MEMBRANE_ELEMENTS_DATASET MESH_GROUP"/membrane elements"
 #define STRUCTURES_DATASET MESH_GROUP"/structures"
+#define FETUREPHASEVOLS_DATASET MESH_GROUP"/featurephasevols"
+#define MEMBRANEIDS_DATASET MESH_GROUP"/membraneids"
 #define VERTICES_DATASET MESH_GROUP"/vertices"
 #if CH_SPACEDIM == 2
 #define SEGMENTS_DATASET MESH_GROUP"/segments"
@@ -1682,6 +1679,35 @@ void ChomboScheduler::fillStructureMetricsDataType(hid_t& metricsType)
 	H5Tinsert(metricsType, "type", HOFFSET(StructureMetrics, type), strType);
 	H5Tinsert(metricsType, "size", HOFFSET(StructureMetrics, size), H5T_NATIVE_DOUBLE);
 	H5Tinsert(metricsType, "numPoints", HOFFSET(StructureMetrics, numPoints), H5T_NATIVE_INT);
+	H5Tclose(strType);
+}
+struct FeaturePhaseVol
+{
+	char feature[128];
+	int iphase;
+	int ivol;
+};
+
+void ChomboScheduler::fillFeaturePhaseVolDataType(hid_t& metricsType)
+{
+	hid_t strType = H5Tcreate(H5T_STRING, sizeof(char) * 128);
+	H5Tinsert(metricsType, "feature", HOFFSET(FeaturePhaseVol, feature), strType);
+	H5Tinsert(metricsType, "iphase", HOFFSET(FeaturePhaseVol, iphase), H5T_NATIVE_INT);
+	H5Tinsert(metricsType, "ivol", HOFFSET(FeaturePhaseVol, ivol), H5T_NATIVE_INT);
+	H5Tclose(strType);
+}
+
+struct MembraneId
+{
+	int id;
+	char membrane[128];
+};
+
+void ChomboScheduler::fillMembraneIdDataType(hid_t& metricsType)
+{
+	hid_t strType = H5Tcreate(H5T_STRING, sizeof(char) * 128);
+	H5Tinsert(metricsType, "id", HOFFSET(MembraneId, id), H5T_NATIVE_INT);
+	H5Tinsert(metricsType, "membrane", HOFFSET(MembraneId, membrane), strType);
 	H5Tclose(strType);
 }
 
@@ -2795,7 +2821,86 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	H5Sclose(fileSpace);
 	H5Tclose(sType);
 	}
+
+	// featurephasevols
+	{
+	pout() << "creating dataset " << FETUREPHASEVOLS_DATASET << endl;
+	hid_t sType = H5Tcreate(H5T_COMPOUND, sizeof(FeaturePhaseVol));
+	fillFeaturePhaseVolDataType(sType);
+
+	int ts = phaseVolumeList[phase0].size() + phaseVolumeList[phase1].size();
+	hsize_t dim[] = {ts};   /* Dataspace dimensions */
+	int rank = 1;  // number of dimensions
+	hid_t fileSpace = H5Screate_simple (rank, dim, NULL);
+	hid_t ds = H5Dcreate(h5MeshFile, FETUREPHASEVOLS_DATASET, sType, fileSpace, H5P_DEFAULT);
+  // let root write
+	if (SimTool::getInstance()->isRootRank())
+	{
+		pout() << "writing dataset " << FETUREPHASEVOLS_DATASET << endl;
+		FeaturePhaseVol* data = new FeaturePhaseVol[ts];
+		int cnt = 0;
+		for (int iphase = 0; iphase < NUM_PHASES; iphase ++)
+		{
+			for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++)
+			{
+				Feature* f = phaseVolumeList[iphase][ivol]->feature;
+				strcpy(data[cnt].feature, f->getName().c_str());
+				data[cnt].iphase = iphase;
+				data[cnt].ivol = ivol;
+				++ cnt;
+			}
+		}
+		H5Dwrite(ds, sType, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+		delete[] data;
+	}
+	H5Dclose(ds);
+	H5Sclose(fileSpace);
+	H5Tclose(sType);
+	}
 	
+	// membraneids
+	{
+	pout() << "creating dataset " << MEMBRANEIDS_DATASET << endl;
+	hid_t sType = H5Tcreate(H5T_COMPOUND, sizeof(MembraneId));
+	fillMembraneIdDataType(sType);
+
+	int ts = 0;
+	for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ++ ivol)
+	{
+		ts += phaseVolumeList[phase0][ivol]->adjacentVolumes.size();
+	}
+	hsize_t dim[] = {ts};   /* Dataspace dimensions */
+	int rank = 1;  // number of dimensions
+	hid_t fileSpace = H5Screate_simple (rank, dim, NULL);
+	hid_t ds = H5Dcreate(h5MeshFile, MEMBRANEIDS_DATASET, sType, fileSpace, H5P_DEFAULT);
+  // let root write
+	if (SimTool::getInstance()->isRootRank())
+	{
+		pout() << "writing dataset " << MEMBRANEIDS_DATASET << endl;
+		MembraneId* data = new MembraneId[ts];
+		int cnt = 0;
+		for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ivol ++)
+		{
+			Feature* iFeature = phaseVolumeList[phase0][ivol]->feature;
+			Vector<ConnectedComponent*>& adjacentVolumes = phaseVolumeList[phase0][ivol]->adjacentVolumes;
+			for (int j = 0; j < adjacentVolumes.size(); j ++) {
+				int jphase = adjacentVolumes[j]->phase;
+				int jvol = adjacentVolumes[j]->volumeIndexInPhase;
+				data[cnt].id = ivol * numConnectedComponents + jvol;
+				Feature* jFeature = adjacentVolumes[j]->feature;
+				Membrane* membrane = SimTool::getInstance()->getModel()->getMembrane(iFeature, jFeature);
+				strcpy(data[cnt].membrane, membrane->getName().c_str());
+				++ cnt;
+			}
+		}
+		H5Dwrite(ds, sType, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+		delete[] data;
+	}
+	H5Dclose(ds);
+	H5Sclose(fileSpace);
+	H5Tclose(sType);
+	}
+
 	// membrane metrics
 	{
 	pout() << "writing dataset " << MEMBRANE_ELEMENTS_DATASET << ", count=" << numMembranePoints << endl;

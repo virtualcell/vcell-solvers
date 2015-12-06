@@ -135,6 +135,8 @@ private:
 	static void fillIntVectDataType(hid_t& intVectType);
 	static void fillMembraneElementMetricsDataType(hid_t& metricsType);
 	static void fillStructureMetricsDataType(hid_t& metricsType);
+	static void fillFeaturePhaseVolDataType(hid_t& metricsType);
+	static void fillMembraneIdDataType(hid_t& metricsType);
 	static void fillVertexDataType(hid_t& metricsType);
 	static void fillSegmentDataType(hid_t& triangleType);
 
