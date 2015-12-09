@@ -1521,7 +1521,7 @@ void ChomboScheduler::writeData(char* filename, bool convertChomboData) {
 					continue;
 				}
 				char hdf5FileName[128];
-				sprintf(hdf5FileName, "%s%06d.feature_%s.vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), ivol, HDF5_FILE_EXT);
+				sprintf(hdf5FileName, "%s%06d_%s_vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), ivol, HDF5_FILE_EXT);
 				pout() << methodName << " writeEBHDF5, [iphase, ivol]=[" << iphase << "," << ivol << "] to " << hdf5FileName << endl;
 
 				if (firstHdf5File.empty())
@@ -1532,9 +1532,7 @@ void ChomboScheduler::writeData(char* filename, bool convertChomboData) {
 				Vector<string> names(feature->getNumDefinedVariables());
 				for (int ivar = 0; ivar < feature->getNumDefinedVariables(); ivar ++) {
 					Variable* var = feature->getDefinedVariable(ivar);
-					char charstr[100];
-					sprintf(charstr, "%s.vol%d",var->getName().c_str(), ivol);
-					names[ivar] = string(charstr);
+					names[ivar] = var->getName();
 				}
 
 				bool replaceCovered = false;
