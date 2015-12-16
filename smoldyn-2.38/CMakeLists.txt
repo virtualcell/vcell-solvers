@@ -278,7 +278,7 @@ elseif(OPTION_USE_OPENGL)
 	set(HAVE_OPENGL TRUE)
 	include_directories(${GLUT_INCLUDE_DIR})
 	list(APPEND DEP_LIBS ${GLUT_LIBRARIES})
-endif()
+endif(OPTION_USE_OPENGL AND OPTION_VCELL)
 
 
 ####### Build with LibX11 (only required for static build on Mac) ##########
