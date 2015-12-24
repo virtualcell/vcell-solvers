@@ -46,11 +46,9 @@ namespace moving_boundary {
 			}
 
 			typedef std::vector<unsigned int> IndexContainer;
-			/*
 			const IndexContainer & activeDiffusionSpeciesIndexes( ) {
 				return actDiffSpecI;
 			}
-			*/
 
 		private:
 			friend Physiology;

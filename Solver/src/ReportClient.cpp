@@ -57,19 +57,14 @@ namespace {
 		std::vector<double> mass;
 		std::vector<double> concentration;
 		char  boundaryPosition; 
-//		std::vector<PODPoint<double> > controlVolume;
-		std::vector<double> controlVolumeX;
-		std::vector<double> controlVolumeY;
+		std::vector<PODPoint<double> > controlVolume;
 		static const char inactivePosition = 'X';
 		HElementRecord( )
 			:volume(),
 			mass(),
 			concentration(),
 			boundaryPosition(inactivePosition),
-			controlVolumeX( ),
-			controlVolumeY( )
-
-		{ }
+			controlVolume( ){ }
 		/**
 		* size mass and concentration vectors
 		* @param s new size
@@ -81,23 +76,8 @@ namespace {
 		void clear( ) {
 			volume = 0;
 			mass.assign(mass.size( ), 0);
-			concentration.assign(concentration.size( ), 0);
-			controlVolumeX.assign(controlVolumeX.size(), 0);
-			controlVolumeY.assign(controlVolumeY.size(), 0);
+			concentration.assign(mass.size( ), 0);
 		}
-		void import(Volume2DClass::PointVector & pVec) {
-			controlVolumeX.resize(pVec.size( ));
-			controlVolumeY.resize(pVec.size( ));
-			int i = 0;
-			auto xiter= controlVolumeX.begin( );
-			auto yiter= controlVolumeY.begin( );
-			for (auto iter = pVec.begin( ); iter != pVec.end( ); ++iter,++xiter,++yiter) {
-				Volume2DClass::PointType &point = *iter;
-				(*xiter) = point.get(spatial::Axis::cX);
-				(*yiter) = point.get(spatial::Axis::cY);
-			}
-		}
-
 	};
 
 	/**
@@ -107,22 +87,18 @@ namespace {
 		ResultPoint( )
 			:volume(0),
 			boundaryPosition(0),
-			volumePointsX( ),
-			volumePointsY( )
+			volumePoints( )
 		{ }
 		void set(const HElementRecord & er) {
-			//static vcellH5::VarLen<PODPoint<double> > & vpointType = PODPoint<double>::vectorType( );
+			static vcellH5::VarLen<PODPoint<double> > & vpointType = PODPoint<double>::vectorType( );
 			static vcellH5::VarLenSimple<double>  valueType;
 			volume = er.volume;
 			boundaryPosition = er.boundaryPosition;
-			//volumePoints = vpointType.adapt(er.controlVolume);
-			volumePointsX = valueType.adapt(er.controlVolumeX);
-			volumePointsY = valueType.adapt(er.controlVolumeY);
+			volumePoints = vpointType.adapt(er.controlVolume);
 		}
 		double volume;
 		char boundaryPosition;
-		hvl_t  volumePointsX; 
-		hvl_t  volumePointsY; 
+		hvl_t  volumePoints; 
 		static H5::CompType getType() {
 			using H5::PredType;
 			H5::PredType dtype = vcellH5::TPredType<double>::predType( ); 
@@ -132,8 +108,7 @@ namespace {
 			H5::CompType resultPointType(sizeof(ResultPoint));
 			resultPointType.insertMember("volume", HOFFSET(ResultPoint,volume),dtype);
 			resultPointType.insertMember("boundaryPosition", HOFFSET(ResultPoint,boundaryPosition),ctype);
-			resultPointType.insertMember("volumePointsX", HOFFSET(ResultPoint,volumePointsX),arrayType);
-			resultPointType.insertMember("volumePointsY", HOFFSET(ResultPoint,volumePointsY),arrayType);
+			resultPointType.insertMember("volumePoints", HOFFSET(ResultPoint,volumePoints),PODPoint<double>::vectorType( ).getType( ));
 			return resultPointType;
 		}
 	};
@@ -460,21 +435,19 @@ namespace {
 				vcellH5::writeAttribute(elementDataset,"layout",layout);
 				std::string desc = theProblem.frontDescription( ); 
 				vcellH5::writeAttribute(elementDataset,"front description",desc);
-			} //create element dataset
 
-			{ //meshX & mesh Y
 				std::vector<moving_boundary::CoordinateType> xvalues = meshDef.coordinateValues(spatial::cX);
 				std::vector<double> dv(xvalues.size( ));
 				WorldType::XConverter xconverter(world);
 				std::transform(xvalues.begin( ),xvalues.end( ),dv.begin( ),xconverter);
 				vcellH5::SeqFacade<std::vector<double> > axisSF(dv); 
-				vcellH5::facadeWrite(baseGroup,"meshXvalues",axisSF);
+				vcellH5::facadeWriteAttribute(elementDataset,"xvalues",axisSF);
 
 				std::vector<moving_boundary::CoordinateType> yvalues = meshDef.coordinateValues(spatial::cY);
 				dv.resize(yvalues.size( )); 
 				WorldType::YConverter yconverter(world);
 				std::transform(yvalues.begin( ),yvalues.end( ),dv.begin( ),yconverter);
-				vcellH5::facadeWrite(baseGroup,"meshYvalues",axisSF);
+				vcellH5::facadeWriteAttribute(elementDataset,"yvalues",axisSF);
 			} //create element dataset
 
 			{ //create species  dataset
@@ -669,7 +642,8 @@ namespace {
 					std::cerr << "multi region warning" << std::endl;
 				}
 				Volume2DClass::PointVector & pVec = vOfv.front( );
-				er.import(pVec);
+				er.controlVolume.resize(pVec.size( ));
+				std::transform(pVec.begin( ),pVec.end( ),er.controlVolume.begin( ),pointconverter);
 
 				if (constantSim) {
 					totalStuff += er.mass[0];

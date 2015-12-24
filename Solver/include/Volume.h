@@ -138,8 +138,10 @@ namespace spatial {
 			notifyMonitor( );
 		}
 
-		typedef TPoint<COORD_TYPE,N> PointType; 
-		typedef std::vector<PointType> PointVector; 
+		/**
+		* return volume as vector of contiguous vectors of points 
+		*/
+		typedef std::vector<TPoint<COORD_TYPE,N> > PointVector; 
 		typedef std::vector<PointVector> VectorOfVectors; 
 		/**
 		* return copy of internal points
