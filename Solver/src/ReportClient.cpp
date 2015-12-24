@@ -435,19 +435,21 @@ namespace {
 				vcellH5::writeAttribute(elementDataset,"layout",layout);
 				std::string desc = theProblem.frontDescription( ); 
 				vcellH5::writeAttribute(elementDataset,"front description",desc);
+			} //create element dataset
 
+			{ //meshX & mesh Y
 				std::vector<moving_boundary::CoordinateType> xvalues = meshDef.coordinateValues(spatial::cX);
 				std::vector<double> dv(xvalues.size( ));
 				WorldType::XConverter xconverter(world);
 				std::transform(xvalues.begin( ),xvalues.end( ),dv.begin( ),xconverter);
 				vcellH5::SeqFacade<std::vector<double> > axisSF(dv); 
-				vcellH5::facadeWriteAttribute(elementDataset,"xvalues",axisSF);
+				vcellH5::facadeWrite(baseGroup,"meshXvalues",axisSF);
 
 				std::vector<moving_boundary::CoordinateType> yvalues = meshDef.coordinateValues(spatial::cY);
 				dv.resize(yvalues.size( )); 
 				WorldType::YConverter yconverter(world);
 				std::transform(yvalues.begin( ),yvalues.end( ),dv.begin( ),yconverter);
-				vcellH5::facadeWriteAttribute(elementDataset,"yvalues",axisSF);
+				vcellH5::facadeWrite(baseGroup,"meshYvalues",axisSF);
 			} //create element dataset
 
 			{ //create species  dataset
