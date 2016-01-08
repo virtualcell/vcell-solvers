@@ -24,7 +24,7 @@ endif( )
 
 project(numerics)
 
-option(NEW_SMOLDYN "Smoldyn 2.38" OFF)
+option(NEW_SMOLDYN "Smoldyn 2.38" ON)
 #include (CMakeTestCCompiler)
 #include (CheckCSourceCompiles)
 #include (CheckCXXSourceCompiles)

@@ -865,6 +865,7 @@ int Geo_NearestTrianglePt2(double **point,double *norm,double *testpt,double *an
 		if(dot<=0) corner=1;
 		else if(dot>=len2) corner=2;
 		else {
+			dot/=len2;
 			ans[0]=pt1[0]+dot*dx2;
 			ans[1]=pt1[1]+dot*dy2;
 			ans[2]=pt1[2]+dot*dz2;
@@ -879,6 +880,7 @@ int Geo_NearestTrianglePt2(double **point,double *norm,double *testpt,double *an
 		if(dot<=0) corner=2;
 		else if(dot>=len2) corner=3;
 		else {
+			dot/=len2;
 			ans[0]=pt2[0]+dot*dx2;
 			ans[1]=pt2[1]+dot*dy2;
 			ans[2]=pt2[2]+dot*dz2;
@@ -893,6 +895,7 @@ int Geo_NearestTrianglePt2(double **point,double *norm,double *testpt,double *an
 		if(dot<=0) corner=3;
 		else if(dot>=len2) corner=1;
 		else {
+			dot/=len2;
 			ans[0]=pt3[0]+dot*dx2;
 			ans[1]=pt3[1]+dot*dy2;
 			ans[2]=pt3[2]+dot*dz2;
