@@ -4,6 +4,10 @@ if (CYGWIN)
 	add_definitions(-DWIN64)
 endif (CYGWIN)
 
+if (NOT NEW_SMOLDYN)
+	add_definitions(-DVCELL_HYBRID)
+endif (NOT NEW_SMOLDYN)
+
 set(HEADER_FILES 
 	include/VCELL/AlgebraicSystem.h
 	include/VCELL/CartesianMesh.h

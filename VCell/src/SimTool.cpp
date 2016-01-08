@@ -56,6 +56,20 @@ using std::max;
 
 int zip32(int filecnt, char* zipfile, ...);
 int unzip32(char* zipfile, char* file, char* exdir);
+#ifdef VCELL_HYBRID	
+	void smoldynOneStep(simptr sim);
+	void vcellhybrid::smoldynOneStep(simptr sim) {
+		smoldynOneStep(sim);
+	}
+	simptr smoldynInit(SimTool* simTool, string& root);
+	simptr vcellhybrid::smoldynInit(SimTool* simTool, string& root) {
+		return smoldynInit(simTool, root);
+	}
+	void smoldynEnd(simptr sim);
+	void vcellhybrid::smoldynEnd(simptr sim) {
+		smoldynEnd(sim);
+	}
+#endif
 
 SimTool* SimTool::instance = 0;
 

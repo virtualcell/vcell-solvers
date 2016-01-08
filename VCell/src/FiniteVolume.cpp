@@ -9,6 +9,9 @@ using namespace std;
 #include <VCELL/SimulationMessaging.h>
 #include <Exception.h>
 #include <vcellhybrid.h>
+#ifdef VCELL_HYBRID
+	bool vcellhybrid::bHybrid;
+#endif VCELL_HYBRID	
 
 void vcellExit(int returnCode, string& errorMsg) {
 	if (SimulationMessaging::getInstVar() == 0) {
