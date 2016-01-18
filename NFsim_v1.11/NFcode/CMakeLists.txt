@@ -91,8 +91,8 @@ add_executable(${exe_target} ${SRC_FILES})
 
 #vcell additions
 if (UNIX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-  set(CXX_FLAGS "${CXX_FLAGS} -std=c++0x")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -fpermissive")
+  set(CXX_FLAGS "${CXX_FLAGS} -std=c++0x -fpermissive")
 endif (UNIX) 
 aux_source_directory(${PROJECT_SOURCE_DIR}/../VCell/src VSRC)
 add_library(vlib STATIC ${VSRC})
