@@ -44,8 +44,8 @@ void printUsage() {
 int main(int argc, char *argv[])
 {
 	std::cout
-	    << "Finite Volume version $URL$"VCELLSVNQUOTE(SVNVERSION) 
-	    << std::endl; 
+	    << "Finite Volume version $URL$"VCELLSVNQUOTE(SVNVERSION) << " with smoldyn version " << VERSION 
+		<< std::endl;
 
     
 	vcellhybrid::setHybrid(); //get smoldyn library in correct state
