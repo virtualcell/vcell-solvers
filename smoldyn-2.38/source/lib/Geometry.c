@@ -11,6 +11,11 @@ of the Gnu Lesser General Public License (LGPL). */
 #include "math2.h"
 
 #define EPSILON 100*DBL_EPSILON
+#ifndef INFINITY
+#include <limits>
+//MSVC 2012
+#define INFINITY std::numeric_limits<float>::infinity( );
+#endif
 
 /***************** ... Center **************/
 
