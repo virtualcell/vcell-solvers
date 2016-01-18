@@ -460,7 +460,7 @@ if(OPTION_TARGET_LIBSMOLDYN)
 	add_library(smoldyn_static STATIC ${SRC_FILES} ${HEADER_FILES})
 	target_link_libraries(smoldyn_static ${DEP_LIBS})
 	if(APPLE)
-		SET_TARGET_PROPERTIES(smoldyn_shared PROPERTIES LINK_FLAGS "-framework Glut -framework OpenGL")
+		#SET_TARGET_PROPERTIES(smoldyn_shared PROPERTIES LINK_FLAGS "-framework Glut -framework OpenGL")
 	endif(APPLE)
 endif(OPTION_TARGET_LIBSMOLDYN)
 
