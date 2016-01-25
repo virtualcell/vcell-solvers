@@ -20,7 +20,7 @@ int NFsimMain(int argc, char **argv);
 namespace {
 	//vcell::JMSHolder getXML(const char * const filename);
 	bool startupMessaging(int argc, char **argv, vcell::JMSHolder & holder);
-	void nfsimExit(int returnCode, const std::string& errorMsg);
+	int nfsimExit(int returnCode, const std::string& errorMsg);
 	void printUsage();
 	int parseInteger(const char * input);
 	const int unsetTaskId = -1;
@@ -74,21 +74,20 @@ int main(int argc, char **argv) {
 	} catch (const std::exception &e) {
 		errorMessage += "caught exception ";
 		errorMessage += e.what();
-		nfsimExit(-1, errorMessage);
+		return nfsimExit(-1, errorMessage);
 	} catch (const char * msg) {
 		errorMessage += "caught exception ";
 		errorMessage += msg;
-		nfsimExit(-1, errorMessage);
+		return nfsimExit(-1, errorMessage);
 	} catch (...) {
 		errorMessage += "caught unknown exception ";
-		nfsimExit(-1, errorMessage);
+		return nfsimExit(-1, errorMessage);
 	}
 }
 
-
 namespace {
 
-	void nfsimExit(int returnCode, const std::string& errorMsg) {
+	int nfsimExit(int returnCode, const std::string& errorMsg) {
 		if (SimulationMessaging::getInstVar() == 0) {
 			if (returnCode != 0) {
 				std::cerr << errorMsg << std::endl;
@@ -100,6 +99,7 @@ namespace {
 			}
 			NETWORK_MESSAGING( SimulationMessaging::getInstVar()->waitUntilFinished();,  noop( ); )
 	}
+	return returnCode;
 }
 
 void printUsage() {
