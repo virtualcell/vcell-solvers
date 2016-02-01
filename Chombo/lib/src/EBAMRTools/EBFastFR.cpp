@@ -134,15 +134,17 @@ EBFastFR::
 EBFastFR(const EBLevelGrid& a_eblgFine,
          const EBLevelGrid& a_eblgCoar,
          const int&         a_refRat,
-         const int&         a_nvar)
+         const int&         a_nvar,
+         bool a_forceNoEBCF)
 {
   setDefaultValues();
-  define(a_eblgFine, a_eblgCoar, a_refRat, a_nvar);
+  define(a_eblgFine, a_eblgCoar, a_refRat, a_nvar, a_forceNoEBCF);
 }
 /*******************/
 bool
 EBFastFR::computeHasEBCF()
 {
+  CH_TIME("EBFastFR::computeHasEBCF");
   const ProblemDomain&            domai =   m_eblgFine.getDomain();
   const EBISLayout&               ebisl =   m_eblgFine.getEBISL();
   const DisjointBoxLayout&        grids =   m_eblgFine.getDBL();
@@ -191,7 +193,8 @@ EBFastFR::
 define(const EBLevelGrid& a_eblgFine,
        const EBLevelGrid& a_eblgCoar,
        const int&         a_refRat,
-       const int&         a_nvar)
+       const int&         a_nvar,
+       bool a_forceNoEBCF)
 {
   CH_TIME("EBFastFR::define");
   clear();
@@ -223,8 +226,14 @@ define(const EBLevelGrid& a_eblgFine,
                          a_eblgCoar.getDBL(),
                          a_eblgFine.getDomain(),
                          a_refRat, a_nvar);
-
-  m_hasEBCF = computeHasEBCF();
+  if (a_forceNoEBCF)
+    {
+      m_hasEBCF = false;
+    }
+  else
+    {
+      m_hasEBCF = computeHasEBCF();
+    }
 
   //if no EBCF--nothing happens here but calls to level flux register
   if (m_hasEBCF)
