@@ -706,7 +706,7 @@ void ChomboScheduler::generateTinyVolumeNeighbors()
 					++ ibox;
 					pout() << "(iphase, ivol, ilev)=(" << iphase << "," << ivol << "," << ilev << "), ibox=" << ibox << endl;
 					const Box& currBox = vectGrids[ilev][dit()];
-					const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
+					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
 					const EBGraph& currEBGraph = currEBISBox.getEBGraph();
 					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
 					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
