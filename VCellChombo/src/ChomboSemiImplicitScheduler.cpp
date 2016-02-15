@@ -208,16 +208,66 @@ void ChomboSemiImplicitScheduler::iterate() {
 					ebBEIntegratorList[iphase][ivol][ivar]->oneStep(volSolnWorkspace[iphase][ivol], volSolnOldWorkspace[iphase][ivol],
 								volSourceWorkspace[iphase][ivol], dt, 0, numLevels - 1, zeroPhi, kappaWeighted);
 					
-//					for(int ilev = 0; ilev < numLevels; ++ ilev)
-//					{
-//						DisjointBoxLayout& currGrids = vectGrids[ilev];
-//						EBISLayout& ebisl = vectEbis[iphase][ivol][ilev];
-//						ProblemDomain& domain = vectDomains[ilev];
-//						int nComp = 1;
-//						ChomboLevelRedist levelRedist;
-//						levelRedist.define(currGrids, ebisl, domain, nComp);
-//						levelRedist.redistribute(*volSolnWorkspace[iphase][ivol][ilev]);
-//					}
+//---------------------------------
+// update solution of tiny volume points
+//--------------------------------
+if (bHasTinyVols)
+{
+	for(int ilev = 0; ilev < numLevels; ++ ilev)
+	{
+		int ibox = -1;
+		for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit)
+		{
+			++ ibox;
+			const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
+			for (int i = 0; i < irregTinyVolNeighbors[iphase][ivol][ilev][ibox].size(); ++ i)
+			{
+				VolIndex& tinyVof = irregTinyVolNeighbors[iphase][ivol][ilev][ibox][i];
+				double maxFaceArea = 0;
+				FaceIndex bestFace;
+				VolIndex bestNeighborVof;
+				for (int idir = 0; idir < SpaceDim; idir++)
+				{
+					for (SideIterator sit; sit.ok(); ++sit)
+					{
+						Vector<FaceIndex> faces = currEBISBox.getFaces(tinyVof, idir, sit());
+						if (faces.size() > 1)
+						{
+							stringstream ss;
+							ss << "multiple faces found @" << tinyVof << ", idir " << idir << ", sit " << sit() << endl;
+							throw ss.str();
+						}
+						if (faces.size() == 1)
+						{
+							const FaceIndex& face = faces[0];
+							double faceArea = currEBISBox.areaFrac(face);
+							if (maxFaceArea < faceArea)
+							{
+								maxFaceArea = faceArea;
+								bestFace = face;
+								bestNeighborVof = face.getVoF(sit());
+							}
+						}
+						else
+						{
+							pout() << "no faces found @" << tinyVof << ", idir " << idir << ", sit " << sit() << endl;
+						}
+					}
+				}
+
+				if (maxFaceArea > 0)
+				{
+					// found a better neighbor
+					double oldSol = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0);
+					(*volSolnWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0) = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](bestNeighborVof, 0);
+					double newSol = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0);
+					pout() << "tiny volume@" << tinyVof << ", best neighbor@" << bestNeighborVof
+							<< ", solution changed from " << oldSol << " to " << newSol << endl;
+				}
+			}
+		}
+	}
+}  // end if bHasTinyVols
 
 					EBAMRDataOps::assign(volSoln[iphase][ivol], volSolnWorkspace[iphase][ivol], ivarint, zeroint);
 				}

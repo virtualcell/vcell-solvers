@@ -64,10 +64,7 @@ public:
 		return chomboSpec;
 	}
 
-#ifdef CH_MPI
-	
 	static int rootRank;
-
 	inline int getMyRank()
 	{
 		return myRank;
@@ -82,12 +79,6 @@ public:
 	{
 		return commSize;
 	}
-#else
-	inline bool isRootRank()
-	{
-		return true;
-	}
-#endif
 	
 //	void setKeepAtMost(int kam) { keepAtMost = kam; }
 //	void setDiscontinuityTimes(int num, double* times) {
@@ -140,10 +131,8 @@ private:
 	int zipFileCount;
 	string solver;
 
-#ifdef CH_MPI
 	int myRank;
 	int commSize;
-#endif
 
 	PostProcessingHdf5Writer* postProcessingHdf5Writer;
 

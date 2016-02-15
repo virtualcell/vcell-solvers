@@ -46,9 +46,7 @@ int unzip32(char* zipfile, char* file, char* exdir);
 
 SimTool* SimTool::instance = NULL;
 
-#ifdef CH_MPI
 int SimTool::rootRank = 0;
-#endif
 extern bool bConsoleOutput;
 
 static int NUM_TOKENS_PER_LINE = 4;
@@ -77,6 +75,9 @@ SimTool::SimTool()
 #ifdef CH_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
 	MPI_Comm_size(MPI_COMM_WORLD,&commSize);
+#else
+	myRank = rootRank;
+	commSize = 1;
 #endif
 	
 //	numDiscontinuityTimes = 0;

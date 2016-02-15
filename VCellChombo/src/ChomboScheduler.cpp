@@ -64,6 +64,7 @@ static const int numPreCondIters = 4;
 static const int relaxType = 2;
 static const int numGhostEBISLayout = 4;
 static const double smallVolFrac = 1e-3;
+static const double tinyVolFrac = 1e-5;
 
 const int ChomboScheduler::phase0 = 0;
 const int ChomboScheduler::phase1 = 1;
@@ -101,15 +102,34 @@ ChomboScheduler::ChomboScheduler(SimulationExpression* sim, ChomboSpec* chomboSp
 ChomboScheduler::~ChomboScheduler() {
 	for (int iphase = 0; iphase < NUM_PHASES; iphase ++) {
 		delete geoIfs[iphase];
-		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++) {
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++)
+		{
 			volSoln[iphase][ivol].clear();
 			irregularPointMembraneIDs[iphase][ivol].clear();
 			irregularPointMembraneIndex[iphase][ivol].clear();
 			delete phaseVolumeList[iphase][ivol];
+
+			for (int ilev = 0; ilev < numLevels; ilev ++)
+			{
+				int ibox = -1;
+				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
+				{
+					++ ibox;
+//					for (int i = 0; i < irregTinyVolNeighbors[iphase][ivol][ilev][ibox].size(); ++ i)
+//					{
+//						delete irregTinyVolNeighbors[iphase][ivol][ilev][ibox][i];
+//					}
+					irregTinyVolNeighbors[iphase][ivol][ilev][ibox].clear();
+				}
+				irregTinyVolNeighbors[iphase][ivol][ilev].clear();
+			}
+			irregTinyVolNeighbors[iphase][ivol].clear();
 		}
 		phaseVolumeList[iphase].clear();
 		irregularPointMembraneIDs[iphase].clear();
 		irregularPointMembraneIndex[iphase].clear();
+
+		irregTinyVolNeighbors[iphase].clear();
 	}
 	phaseVolumeList.clear();
 	irregularPointMembraneIDs.clear();
@@ -659,6 +679,58 @@ void ChomboScheduler::generateMembraneIndexData()
 	pout() << "Exit " << methodName << endl;
 }
 
+void ChomboScheduler::generateTinyVolumeNeighbors()
+{
+	static const char* methodName = "(ChomboScheduler::generateTinyVolumeNeighbors)";
+	pout() << "Entry " << methodName << endl;
+
+	irregTinyVolNeighbors.resize(NUM_PHASES);
+	bHasTinyVols = false;
+	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
+	{
+		int numVols = phaseVolumeList[iphase].size();
+		irregTinyVolNeighbors[iphase].resize(numVols);
+		for (int ivol = 0; ivol < numVols; ++ ivol)
+		{
+			irregTinyVolNeighbors[iphase][ivol].resize(numLevels);
+			for (int ilev = 0; ilev < numLevels; ilev ++)
+			{
+				// populate the irregular point (volIndex) -> membrane index map , based on membrane index level data
+				int numBoxes = vectGrids[ilev].numBoxes(SimTool::getInstance()->getMyRank());
+				pout() << "(iphase, ivol, ilev)=(" << iphase << "," << ivol << "," << ilev << "), numBoxes=" << numBoxes << endl;
+				irregTinyVolNeighbors[iphase][ivol][ilev].resize(numBoxes);
+
+				int ibox = -1;
+				for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++ dit)
+				{
+					++ ibox;
+					pout() << "(iphase, ivol, ilev)=(" << iphase << "," << ivol << "," << ilev << "), ibox=" << ibox << endl;
+					const Box& currBox = vectGrids[ilev][dit()];
+					const EBISBox& currEBISBox = vectEbis[phase0][ivol][ilev][dit()];
+					const EBGraph& currEBGraph = currEBISBox.getEBGraph();
+					IntVectSet irregCells = currEBISBox.getIrregIVS(currBox);
+					for (VoFIterator vofit(irregCells,currEBGraph); vofit.ok(); ++vofit)
+					{
+						const VolIndex& vof = vofit();
+						const IntVect& gridIndex = vof.gridIndex();
+
+						double volFrac = currEBISBox.volFrac(vof);
+						if (volFrac < tinyVolFrac && !isInNextFinerLevel(ilev, gridIndex))
+						{
+							bHasTinyVols = true;
+							irregTinyVolNeighbors[iphase][ivol][ilev][ibox].push_back(vof);
+							pout() << "(iphase, ivol, ilev, ibox)=(" << iphase << "," << ivol << "," << ilev << "," << ibox << "), tiny vol "
+									<< vof << ", volFrac=" << volFrac << endl;
+						}
+					} // end for vof
+				} // end for dit
+			} // end for ilev
+		} // end for ivol
+	} // end for iphase
+
+	pout() << "Exit " << methodName << ", hasTinyVols=" << bHasTinyVols << endl;
+}
+
 void ChomboScheduler::generateVolumeMembraneIndexMap()
 {
 	static const char* methodName = "(ChomboScheduler::generateVolumeMembraneIndexMap)";
@@ -995,6 +1067,7 @@ void ChomboScheduler::initializeGrids()
 
 	generatePhasesAndVolumes();
 	generateMesh();
+	generateTinyVolumeNeighbors();
 	computeFeatures();
   generateMembraneIndexData();
 

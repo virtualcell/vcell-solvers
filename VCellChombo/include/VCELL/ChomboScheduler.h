@@ -127,6 +127,10 @@ protected:
 	static const int phase0;
 	static const int phase1;
 
+	// phase, ivol, Level, Box,
+	Vector< Vector< Vector< Vector< Vector<VolIndex> > > > > irregTinyVolNeighbors;
+	bool bHasTinyVols;
+
 private:
 	bool computeOneFaceCross(int, int, int, RealVect&, RealVect&, RealVect&, RealVect&, RealVect&);
 
@@ -172,6 +176,8 @@ private:
 #endif
 	int memIndexOffset;
 	Vector< map<int, int> > irregVolumeMembraneMap;
+
+	void generateTinyVolumeNeighbors();
 
 	void populateExtrapolatedValues();
 	void populateMembraneSolution();
