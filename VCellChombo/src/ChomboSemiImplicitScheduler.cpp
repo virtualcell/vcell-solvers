@@ -838,6 +838,7 @@ void ChomboSemiImplicitScheduler::updateSource() {
 				for(int idir = 1; idir < SpaceDim; idir ++) {
 					maxDxComponent = max(maxDxComponent, vectDxes[ilev][idir]);
 				}
+				Real bndryAreaScale = pow(maxDxComponent, SpaceDim - 1) / vectDxes[ilev].product();
 
 				for(DataIterator dit = currGrids.dataIterator(); dit.ok(); ++dit)	{
 					const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
@@ -1030,7 +1031,7 @@ void ChomboSemiImplicitScheduler::updateSource() {
 										}
 										else
 										{
-											double flux = Jval * mem_areaFrac/maxDxComponent;
+											double flux = Jval * mem_areaFrac * bndryAreaScale;
 											sourceEBCellFAB(vof, ivar, vof.cellIndex()) += flux;
 										}
 									}
