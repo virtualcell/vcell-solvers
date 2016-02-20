@@ -120,6 +120,24 @@ public:
 		fillRatio = fr;
 	}
 
+	void setActiveFeatureUnderDevelopment(bool b)
+	{
+		bActiveFeatureUnderDevelopment = true;
+	}
+	bool isActiveFeatureUnderDevelopment()
+	{
+		return bActiveFeatureUnderDevelopment;
+	}
+
+	void setSmallVolfracThreshold(double d)
+	{
+		smallVolfracThreshold = d;
+	}
+	double getSmallVolfracThreshold()
+	{
+		return smallVolfracThreshold;
+	}
+
 	void printSummary();
 private:
 	ChomboGeometry* chomboGeometry;
@@ -133,6 +151,8 @@ private:
 	vector<ChomboRefinementRoi*> volumeRefinementRois;
 	bool bSaveVCellOutput;
 	bool bSaveChomboOutput;
+	bool bActiveFeatureUnderDevelopment;
+	double smallVolfracThreshold;
 };
 
 #endif /*CHOMBOSPEC_H_*/

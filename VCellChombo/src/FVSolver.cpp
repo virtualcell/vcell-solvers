@@ -1095,6 +1095,14 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 			double fillRatio = 0.9;
 			lineInput >> fillRatio;
 			chomboSpec->setFillRatio(fillRatio);
+		} else if (nextToken == "ACTIVE_FEATURE_UNDER_DEVELOPMENT") {
+			lineInput >> nextToken;
+			bool b = nextToken == "true";
+			chomboSpec->setActiveFeatureUnderDevelopment(b);
+		} else if (nextToken == "SMALL_VOLFRAC_THRESHOLD") {
+			double d = 0;
+			lineInput >> d;
+			chomboSpec->setSmallVolfracThreshold(d);
 		}
 	}
 

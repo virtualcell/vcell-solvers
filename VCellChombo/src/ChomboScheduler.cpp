@@ -681,6 +681,11 @@ void ChomboScheduler::generateMembraneIndexData()
 
 void ChomboScheduler::generateTinyVolumeNeighbors()
 {
+	if (chomboSpec->getSmallVolfracThreshold() <= 0)
+	{
+		return;
+	}
+
 	static const char* methodName = "(ChomboScheduler::generateTinyVolumeNeighbors)";
 	pout() << "Entry " << methodName << endl;
 
@@ -1067,7 +1072,13 @@ void ChomboScheduler::initializeGrids()
 
 	generatePhasesAndVolumes();
 	generateMesh();
-	generateTinyVolumeNeighbors();
+if (chomboSpec->isActiveFeatureUnderDevelopment())
+{
+	if (chomboSpec->getSmallVolfracThreshold() > 0)
+	{
+		generateTinyVolumeNeighbors();
+	}
+}
 	computeFeatures();
   generateMembraneIndexData();
 
