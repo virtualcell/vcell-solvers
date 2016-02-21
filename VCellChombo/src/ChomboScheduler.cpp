@@ -64,7 +64,6 @@ static const int numPreCondIters = 4;
 static const int relaxType = 2;
 static const int numGhostEBISLayout = 4;
 static const double smallVolFrac = 1e-3;
-static const double tinyVolFrac = 1e-5;
 
 const int ChomboScheduler::phase0 = 0;
 const int ChomboScheduler::phase1 = 1;
@@ -720,7 +719,7 @@ void ChomboScheduler::generateTinyVolumeNeighbors()
 						const IntVect& gridIndex = vof.gridIndex();
 
 						double volFrac = currEBISBox.volFrac(vof);
-						if (volFrac < tinyVolFrac && !isInNextFinerLevel(ilev, gridIndex))
+						if (volFrac < chomboSpec->getSmallVolfracThreshold() && !isInNextFinerLevel(ilev, gridIndex))
 						{
 							bHasTinyVols = true;
 							irregTinyVolNeighbors[iphase][ivol][ilev][ibox].push_back(vof);
