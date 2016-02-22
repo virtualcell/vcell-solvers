@@ -1071,13 +1071,10 @@ void ChomboScheduler::initializeGrids()
 
 	generatePhasesAndVolumes();
 	generateMesh();
-if (chomboSpec->isActiveFeatureUnderDevelopment())
-{
 	if (chomboSpec->getSmallVolfracThreshold() > 0)
 	{
 		generateTinyVolumeNeighbors();
 	}
-}
 	computeFeatures();
   generateMembraneIndexData();
 

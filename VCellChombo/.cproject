@@ -301,6 +301,9 @@
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Debug 3D MPI">
+			<resource resourceType="PROJECT" workspacePath="/VCellChombo"/>
+		</configuration>
 		<configuration configurationName="Debug 3D"/>
 		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/VCellChombo"/>

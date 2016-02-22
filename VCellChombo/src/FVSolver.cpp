@@ -1098,7 +1098,7 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 		} else if (nextToken == "ACTIVE_FEATURE_UNDER_DEVELOPMENT") {
 			lineInput >> nextToken;
 			bool b = nextToken == "true";
-			chomboSpec->setActiveFeatureUnderDevelopment(b);
+			chomboSpec->setActivateFeatureUnderDevelopment(b);
 		} else if (nextToken == "SMALL_VOLFRAC_THRESHOLD") {
 			double d = 0;
 			lineInput >> d;

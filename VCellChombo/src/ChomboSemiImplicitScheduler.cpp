@@ -211,8 +211,6 @@ void ChomboSemiImplicitScheduler::iterate() {
 					//---------------------------------
 					// update solution of tiny volume points
 					//--------------------------------
-if (chomboSpec->isActiveFeatureUnderDevelopment())
-{
 					if (chomboSpec->getSmallVolfracThreshold() > 0)
 					{
 						if (bHasTinyVols)
@@ -262,18 +260,23 @@ if (chomboSpec->isActiveFeatureUnderDevelopment())
 										if (maxFaceArea > 0)
 										{
 											// found a better neighbor
-											double oldSol = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0);
-											(*volSolnWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0) = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](bestNeighborVof, 0);
-											double newSol = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0);
+											double solBefore = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0);
+											double solAfter = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](bestNeighborVof, 0);
+											if (chomboSpec->isActivateFeatureUnderDevelopment())
+											{
+												solAfter = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](bestNeighborVof, 0) -
+														(*volSolnOldWorkspace[iphase][ivol][ilev])[dit()](bestNeighborVof, 0)
+														+ (*volSolnOldWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0);
+											}
+											(*volSolnWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0) = solAfter;
 											pout() << "tiny volume@" << tinyVof << ", best neighbor@" << bestNeighborVof
-													<< ", solution changed from " << oldSol << " to " << newSol << endl;
+												<< ", solution changed from " << solAfter << " to " << solAfter << endl;
 										}
 									}
 								}
 							}
 						}  // end if bHasTinyVols
 					}
-}
 					EBAMRDataOps::assign(volSoln[iphase][ivol], volSolnWorkspace[iphase][ivol], ivarint, zeroint);
 				}
 			}

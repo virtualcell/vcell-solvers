@@ -120,13 +120,13 @@ public:
 		fillRatio = fr;
 	}
 
-	void setActiveFeatureUnderDevelopment(bool b)
+	void setActivateFeatureUnderDevelopment(bool b)
 	{
-		bActiveFeatureUnderDevelopment = true;
+		bActivateFeatureUnderDevelopment = true;
 	}
-	bool isActiveFeatureUnderDevelopment()
+	bool isActivateFeatureUnderDevelopment()
 	{
-		return bActiveFeatureUnderDevelopment;
+		return bActivateFeatureUnderDevelopment;
 	}
 
 	void setSmallVolfracThreshold(double d)
@@ -151,7 +151,7 @@ private:
 	vector<ChomboRefinementRoi*> volumeRefinementRois;
 	bool bSaveVCellOutput;
 	bool bSaveChomboOutput;
-	bool bActiveFeatureUnderDevelopment;
+	bool bActivateFeatureUnderDevelopment;
 	double smallVolfracThreshold;
 };
 
