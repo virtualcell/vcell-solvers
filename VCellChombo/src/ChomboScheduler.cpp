@@ -56,6 +56,7 @@
 #define HDF5_FILE_EXT ".hdf5"
 #define MESH_HDF5_FILE_EXT ".mesh.hdf5"
 #define IF_VAR_NAME_PREFIX "zzz_IF_"
+#define CHOMBO_OUTPUT_FILE_NAME_FORMAT "%s%06d_%s_vol%d"HDF5_FILE_EXT  // SimID_98312620_0_000000_outside_vol0.hdf5
 
 static const int blockFactor = 8;  // smallest box, 8 is recommended.
 static const int nestingRadius  = 2; //ghostPhi[0];  // should be the same as ghost phi size, but Terry used 2
@@ -1601,7 +1602,7 @@ void ChomboScheduler::writeData(char* filename, bool convertChomboData) {
 					continue;
 				}
 				char hdf5FileName[128];
-				sprintf(hdf5FileName, "%s%06d_%s_vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), ivol, HDF5_FILE_EXT);
+				sprintf(hdf5FileName, CHOMBO_OUTPUT_FILE_NAME_FORMAT, SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), ivol);
 				pout() << methodName << " writeEBHDF5, [iphase, ivol]=[" << iphase << "," << ivol << "] to " << hdf5FileName << endl;
 
 				if (firstHdf5File.empty())
@@ -3540,7 +3541,7 @@ void ChomboScheduler::updateSolutionFromChomboOutputFile()
 			}
 			
 			char hdf5FileName[128];
-			sprintf(hdf5FileName, "%s%06d.feature_%s.vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), ivol, HDF5_FILE_EXT);
+			sprintf(hdf5FileName, CHOMBO_OUTPUT_FILE_NAME_FORMAT, SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), ivol);
 			pout() << METHOD << " readEBHDF5, [iphase, ivol]=[" << iphase << "," << ivol << "] from " << hdf5FileName << endl;
 
 			Vector<LevelData<FArrayBox>* > chomboData;
@@ -3615,7 +3616,7 @@ void ChomboScheduler::updateSolutionFromChomboOutputFile()
 		Feature* feature = phaseVolumeList[firstFilePhase][firstFileVol]->feature;
 		char hdf5FileName[128];
 		// write membrane variable solution and extrapolated values to the first hdf5 file
-		sprintf(hdf5FileName, "%s%06d.feature_%s.vol%d%s", SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), firstFileVol, HDF5_FILE_EXT);
+		sprintf(hdf5FileName, CHOMBO_OUTPUT_FILE_NAME_FORMAT, SimTool::getInstance()->getBaseFileName(), simulation->getCurrIteration(), feature->getName().c_str(), firstFileVol);
 		hid_t h5SimFile =  H5Fopen(hdf5FileName, H5F_ACC_RDONLY, H5P_DEFAULT);
 		DataSet::readMembraneSolution(simulation, h5SimFile);
 		DataSet::readExtrapolatedValues(simulation, h5SimFile);
