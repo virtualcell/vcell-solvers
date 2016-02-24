@@ -221,6 +221,7 @@ void ChomboSemiImplicitScheduler::iterate() {
 								for(DataIterator dit = vectGrids[ilev].dataIterator(); dit.ok(); ++dit)
 								{
 									++ ibox;
+									pout() << "(iphase, ivol, ilev)=(" << iphase << "," << ivol << "," << ilev << "), ibox=" << ibox << endl;
 									const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
 									for (int i = 0; i < irregTinyVolNeighbors[iphase][ivol][ilev][ibox].size(); ++ i)
 									{

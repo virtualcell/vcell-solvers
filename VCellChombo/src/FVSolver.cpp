@@ -1095,7 +1095,7 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 			double fillRatio = 0.9;
 			lineInput >> fillRatio;
 			chomboSpec->setFillRatio(fillRatio);
-		} else if (nextToken == "ACTIVE_FEATURE_UNDER_DEVELOPMENT") {
+		} else if (nextToken == "ACTIVATE_FEATURE_UNDER_DEVELOPMENT") {
 			lineInput >> nextToken;
 			bool b = nextToken == "true";
 			chomboSpec->setActivateFeatureUnderDevelopment(b);
