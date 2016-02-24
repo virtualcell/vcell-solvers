@@ -122,7 +122,7 @@ public:
 
 	void setActivateFeatureUnderDevelopment(bool b)
 	{
-		bActivateFeatureUnderDevelopment = true;
+		bActivateFeatureUnderDevelopment = b;
 	}
 	bool isActivateFeatureUnderDevelopment()
 	{
