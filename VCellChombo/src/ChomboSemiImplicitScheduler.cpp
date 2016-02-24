@@ -261,17 +261,19 @@ void ChomboSemiImplicitScheduler::iterate() {
 										if (maxFaceArea > 0)
 										{
 											// found a better neighbor
-											double solBefore = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0);
-											double solAfter = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](bestNeighborVof, 0);
+											double solNewBefore = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0);
+											double solOld = (*volSolnOld[iphase][ivol][ilev])[dit()](tinyVof, ivar);
+											double neighborOld = (*volSolnOld[iphase][ivol][ilev])[dit()](bestNeighborVof, ivar);
+											double neighborNew = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](bestNeighborVof, 0);
+											double solNewAfter = neighborNew;
 											if (chomboSpec->isActivateFeatureUnderDevelopment())
 											{
-												solAfter = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](bestNeighborVof, 0) -
-														(*volSolnOldWorkspace[iphase][ivol][ilev])[dit()](bestNeighborVof, 0)
-														+ (*volSolnOldWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0);
+												solNewAfter = neighborNew - neighborOld + solOld;
 											}
-											(*volSolnWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0) = solAfter;
-											pout() << "tiny volume@" << tinyVof << ", best neighbor@" << bestNeighborVof
-												<< ", solution changed from " << solAfter << " to " << solAfter << endl;
+											(*volSolnWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0) = solNewAfter;
+											pout() << "tiny volume@" << tinyVof << "(old=" << solOld << ", new=" << solNewBefore
+													<< "), best neighbor@" << bestNeighborVof << "(old=" << neighborOld << ", new=" << neighborNew
+												<< "), solution changed from " << solNewBefore << " to " << solNewAfter << endl;
 										}
 									}
 								}
