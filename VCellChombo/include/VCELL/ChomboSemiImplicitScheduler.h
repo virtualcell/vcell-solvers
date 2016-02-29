@@ -55,6 +55,9 @@ private:
 	                  const IntVectSet & a_cfivs,
 	                  const DataIndex& a_dit, int iphase,
 	                  int ivol, int ilev, Real a_dx);
+
+	void printOpMatrix();
+	void printOpMatrix(int iphase, int ivol, int ilev, int ivar, const string& varName);
 };
 
 #endif

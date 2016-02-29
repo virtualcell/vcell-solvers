@@ -308,6 +308,8 @@ void ChomboSemiImplicitScheduler::iterate() {
 		}
 	}
 	extrapolateDataToBoundary();
+
+	//printOpMatrix();
 	pout() << "Exit " << methodName << endl;
 }
 
@@ -1072,4 +1074,145 @@ void ChomboSemiImplicitScheduler::updateSource() {
 		} // end ivol
 	} // end iphase
 	pout() << "Exit " << methodName << endl;
+}
+
+void ChomboSemiImplicitScheduler::printOpMatrix()
+{
+	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
+	{
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++)
+		{
+			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+
+			int numDefinedVars = feature->getNumDefinedVariables();
+
+			for(int ivar = 0; ivar < numDefinedVars; ++ ivar)
+			{
+				Variable* var = feature->getDefinedVariable(ivar);
+				for(int ilev = 0; ilev < numLevels; ++ ilev)
+				{
+					printOpMatrix(iphase, ivol, ilev, ivar, var->getName());
+				}
+			}
+		}
+	}
+}
+void ChomboSemiImplicitScheduler::printOpMatrix(int iphase, int ivol, int ilev, int ivar, const string& varName)
+{
+	pout() << "variable=\"" << varName << "\";" << endl;
+	pout() << "[iphase ivol ilev ivar]=[" << iphase << " " << ivol << " " << ilev << " " << ivar << " " << "]" << ";" << endl;
+	const LevelData<EBCellFAB>& a_rhs = (*volSource[iphase][ivol][ilev]);
+	const LevelData<EBCellFAB>& a_phi = (*volSoln[iphase][ivol][ilev]);
+	EBAMRPoissonOp* op = dynamic_cast<EBAMRPoissonOp* >(ebMlgSolver[iphase][ivol][ivar]->getAMROperators()[ilev]);
+
+  LevelData<EBCellFAB> column, phi01, rhs0;
+  LevelData<BaseFab<int> > gids;
+
+  IntVect idghostsPhi = a_phi.ghostVect();
+  IntVect idghostsRhs = a_rhs.ghostVect();
+  const DisjointBoxLayout &dbl = a_phi.disjointBoxLayout();
+  const EBLevelGrid eblg = op->getEBLG();
+  const EBCellFactory ebcellfact(eblg.getEBISL() );
+  column.define(dbl, 1, idghostsRhs, ebcellfact);
+  rhs0.define(dbl, 1, idghostsRhs, ebcellfact);
+  phi01.define(dbl, 1, idghostsPhi, ebcellfact);
+  gids.define(dbl, 1, idghostsRhs);
+
+  EBLevelDataOps::setVal(rhs0,  0);
+  EBLevelDataOps::setVal(phi01, 0);
+  EBLevelDataOps::setVal(column,0);
+
+  int data=0;
+  for (DataIterator dit = a_rhs.dataIterator() ; dit.ok() ; ++dit )
+	{
+		const Box &box = dbl.get(dit());
+		if (CH_SPACEDIM==3) data += box.size(0)*box.size(1)*box.size(2);
+		else data += box.size(0)*box.size(1);
+	}
+  int gid0;
+  int ierr;
+  gid0 = 0;
+  ierr = 0;
+  int gid = gid0;
+
+  //
+  // all the indexes are incremented for MATLAB
+  //
+  int precision = 17;
+  pout() << "volfrac = zeros(" << data << ");" << endl;
+  pout() << "iv = zeros(" << data << "," << data << ");" << endl;
+  for (DataIterator  dit = a_rhs.dataIterator() ; dit.ok() ; ++dit )
+	{
+		BaseFab<int> &gidsFab = gids[dit()];
+		const Box& box = dbl.get(dit());
+		BoxIterator bit(box);
+		const EBISBox& currEBISBox = vectEbis[iphase][ivol][ilev][dit()];
+		for (bit.begin(); bit.ok(); bit.next(), gid++ )
+		{
+			IntVect iv = bit();
+			double volfrac = currEBISBox.volFrac(VolIndex(iv, 0));
+			gidsFab(iv,0) = gid;
+			pout() << std::setprecision(precision) << "iv(" << (gid+1) << ")=" << (iv + IntVect::Unit) << "; volfrac(" << (gid+1) << ")=" << volfrac << ";" << endl;
+		}
+	}
+
+  IntVect lastIV = IntVect::Zero;
+  pout() << "A = zeros(" << data << "," << data << ");" << endl;
+  for (DataIterator dit = a_rhs.dataIterator(); dit.ok(); ++dit)
+  {
+		BaseFab<Real>& phi01FAB =  phi01[dit()].getSingleValuedFAB();
+		BaseFab<Real>& columnFAB = column[dit()].getSingleValuedFAB();
+		BaseFab<int> & gidsFab = gids[dit()];
+
+		const Box& box = dbl.get(dit());
+		BoxIterator bit(box);
+		for (bit.begin(); bit.ok(); bit.next())
+		{
+			IntVect iv = bit();
+			phi01FAB(lastIV,0) = 0;
+			phi01FAB(iv,0) = 1;
+			lastIV = iv;
+			EBLevelDataOps::setVal(column,0);
+			op->residual(column,phi01,rhs0); // results could be on all procs
+
+			Real v;
+			int  i,j;
+			i = gidsFab(iv,0);
+			for (DataIterator dit2 = a_rhs.dataIterator(); dit2.ok(); ++dit2)
+			{
+				const Box& box2 = dbl.get(dit2());
+				const EBISBox& dit2EBISBox = vectEbis[iphase][ivol][ilev][dit2()];
+				bool hasIrreg = false;
+				for (BoxIterator bit2(box2); bit2.ok(); bit2.next())
+				{
+					IntVect iv2 = bit2();
+					v = columnFAB(iv2,0);
+					if (v != 0)
+					{
+						double volfrac = dit2EBISBox.volFrac(VolIndex(iv2, 0));
+						if (volfrac < 1)
+						{
+							hasIrreg=true;
+							break;
+						}
+					}
+				}
+				if (!hasIrreg)
+				{
+					continue;
+				}
+
+				for (BoxIterator bit2(box2); bit2.ok(); bit2.next())
+				{
+					IntVect iv2 = bit2();
+					v = columnFAB(iv2,0);
+					j = gidsFab(iv2,0);
+					if (v != 0)
+					{
+						pout() << std::setprecision(precision) << "A(" << (j+1) << "," << (i+1) << ")=" << v << ";" << endl;
+					}
+				}
+			}
+		}
+  }
 }
