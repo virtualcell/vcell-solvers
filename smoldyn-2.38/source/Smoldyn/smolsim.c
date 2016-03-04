@@ -2022,7 +2022,11 @@ void endsimulate(simptr sim,int er) {
 /* smolsimulate */
 int smolsimulate(simptr sim) {
 	int er,qflag;
+	sim->time = 0.7;
+	simLog(sim,5,"something bad happened");
+	return 4;
 
+	/*
 	er=0;
 	qflag=strchr(sim->flags,'q')?1:0;
 	if(!qflag) simLog(sim,2,"Simulating\n");
@@ -2031,7 +2035,9 @@ int smolsimulate(simptr sim) {
 	if(!er)
 		while((er=simulatetimestep(sim))==0);
 	sim->elapsedtime+=difftime(time(NULL),sim->clockstt);
-	return er; }
+	return er;
+	*/
+}
 
 
 

@@ -78,31 +78,39 @@ struct WorkerEvent {
 		status = aWorkerEvent->status;
 		progress = aWorkerEvent->progress;
 		timepoint = aWorkerEvent->timepoint;
-		eventMessage = NULL;
-		if (aWorkerEvent->eventMessage != NULL) {
-			int len = (int)strlen(aWorkerEvent->eventMessage) + 1;
-			eventMessage = new char[len];
-			memset(eventMessage, 0, len);
-			strcpy(eventMessage, aWorkerEvent->eventMessage);
+		eventMessage = copy(aWorkerEvent->eventMessage);
+	}
+
+	WorkerEvent(int arg_status, double arg_progress, double arg_timepoint, const char *arg_eventMessage)
+		:status(arg_status),
+		progress(arg_progress),
+		timepoint(arg_timepoint),
+		eventMessage(copy(arg_eventMessage)) {}
+
+	WorkerEvent(int arg_status, double arg_progress, double arg_timepoint)
+		:status(arg_status),
+		progress(arg_progress),
+		timepoint(arg_timepoint),
+		eventMessage(0) {}
+
+
+	WorkerEvent(int arg_status, const char* arg_eventMessage)
+		:status(arg_status),
+		progress(0),
+		timepoint(0),
+		eventMessage(copy(arg_eventMessage)) {}
+private:
+	static char *copy(const char *in) {
+		if (in != 0) {
+			size_t len = strlen(in) + 1;
+			char * c = new char[len + 1];
+			memset(c, 0, len);
+			strcpy(c, in);
+			return c;
 		}
+		return 0;
 	}
-
-	WorkerEvent(int arg_status, double arg_progress, double arg_timepoint) {
-		status = arg_status;
-		progress = arg_progress;
-		timepoint = arg_timepoint;
-		eventMessage = NULL;
-	}
-
-	WorkerEvent(int arg_status, const char* arg_eventMessage) {
-		status = arg_status;
-		int len = (int)strlen(arg_eventMessage) + 1;
-		eventMessage = new char[len];
-		memset(eventMessage, 0, len);
-		strcpy(eventMessage, arg_eventMessage);
-		progress = 0.0;
-		timepoint = 0.0;
-	}
+public:
 
 	bool equals(WorkerEvent* aWorkerEvent) {
 		if (status != aWorkerEvent->status || progress != aWorkerEvent->progress || timepoint != aWorkerEvent->timepoint) {

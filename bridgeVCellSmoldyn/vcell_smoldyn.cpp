@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sstream>
 #include <VCELL/SimulationMessaging.h>
 #include "opengl2.h"
 #include "smoldyn.h"
@@ -19,6 +20,10 @@
 #include "SimpleMesh.h"
 #include "vcellhybrid.h"
 #include <iostream>
+namespace {
+	void slogger(simptr,int code,const char*, ...);
+	const char * const warnMessage( );
+}
 
 /* ***************************************************************** */
 /* ********************** main() segment *************************** */
@@ -47,6 +52,7 @@ int main(int argc,char **argv) {
 	  simptr sim;
 	try {
 		simSetThrowing(10);
+		simSetLogging(stdout,slogger);
 		SimulationMessaging::create();
 	
 	  //clear the errormesage
@@ -143,8 +149,17 @@ int main(int argc,char **argv) {
 			fflush(stderr);
 			if(tflag || !sim->graphss || sim->graphss->graphics==0) {
 				er=smolsimulate(sim);
+				WorkerEvent * we;
 				endsimulate(sim,er);
-				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1.0, sim->time));}
+				if (er <= 1) {
+					we = new WorkerEvent(JOB_COMPLETED, 1.0, sim->time);
+				}
+				else {
+					const double completeRatio = sim->time / sim->tmax;
+					we = new WorkerEvent(JOB_COMPLETED, completeRatio,sim->time,warnMessage( ));
+				}
+				SimulationMessaging::getInstVar()->setWorkerEvent(we);
+			}
 			else {
 				smolsimulategl(sim); }}
 		simfree(sim);
@@ -176,3 +191,23 @@ int main(int argc,char **argv) {
 
 	return exitCode; }
 
+namespace {
+	std::ostringstream warning;
+	void slogger(simptr, int code, const char*fmt, ...) {
+		if (code >= 5) {
+			const size_t bsize = 1024;
+			char buff[bsize];
+			va_list args;
+			va_start(args, fmt);
+			vsnprintf(buff, bsize, fmt, args);
+			va_end(args);
+			warning << buff;
+		}
+	}
+	const char * const warnMessage() {
+		warning << std::ends;
+		const char * const warn =  warning.str().c_str();
+		std::cerr << 'WARNING sent: ' << warn << std::endl;
+		return warn;
+	}
+}
