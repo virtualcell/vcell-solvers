@@ -16,9 +16,11 @@
 #include <VCELL/Membrane.h>
 #include <VCELL/VolumeVarContextExpression.h>
 #include <VCELL/MembraneVarContextExpression.h>
+#include <VCELL/FastSystemExpression.h>
 #include <VCELL/ChomboDomainBC.h>
 #include <VCELL/ChomboEBBC.h>
 #include <VCELL/ConnectedComponent.h>
+#include <VCELL/FastSystemExpression.h>
 
 #include <time.h>
 #include <sstream>
@@ -286,6 +288,12 @@ void ChomboSemiImplicitScheduler::iterate() {
 		}
 		pout() << "Solving parabolic variables complete" << endl;
 	}
+
+	if (simulation->hasFastSystem())
+	{
+		solveFastSystem();
+	}
+
 	bFirstTime = false;
 	
 	// extrapolate to get latest extrapolated values
@@ -1097,6 +1105,7 @@ void ChomboSemiImplicitScheduler::printOpMatrix()
 		}
 	}
 }
+
 void ChomboSemiImplicitScheduler::printOpMatrix(int iphase, int ivol, int ilev, int ivar, const string& varName)
 {
 	pout() << "variable=\"" << varName << "\";" << endl;
@@ -1215,4 +1224,21 @@ void ChomboSemiImplicitScheduler::printOpMatrix(int iphase, int ivol, int ilev, 
 			}
 		}
   }
+}
+
+void ChomboSemiImplicitScheduler::solveFastSystem()
+{
+	for (int iphase = 0; iphase < NUM_PHASES; ++ iphase)
+	{
+		for (int ivol = 0; ivol < phaseVolumeList[iphase].size(); ivol ++)
+		{
+			Feature* feature = phaseVolumeList[iphase][ivol]->feature;
+			FastSystemExpression* fs = feature->getFastSystem();
+			if (!fs)
+			{
+				continue;
+			}
+			fs->solve(this, iphase, ivol);
+		}
+	}
 }

@@ -38,6 +38,7 @@ OPTION(CHOMBO_COMPILE_TEST "CHOMBO_COMPILE_TEST" OFF)
 
 if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMBO_CYGWIN_BUILD)
 	set(HEADER_FILES 
+		include/VCELL/AlgebraicSystem.h
 		include/VCELL/ChomboDomainBC.h
 		include/VCELL/ChomboEBBC.h
 		include/VCELL/ChomboGeometry.h
@@ -50,6 +51,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		include/VCELL/DataGenerator.h
 		include/VCELL/DataSet.h
 		include/VCELL/Feature.h
+		include/VCELL/FastSystemExpression.h
 		include/VCELL/FVSolver.h
 		include/VCELL/JumpCondition.h
 		include/VCELL/Membrane.h
@@ -75,6 +77,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 	)
 
 	set(SRC_FILES 
+		src/AlgebraicSystem.cpp
 		src/ChomboDomainBC.cpp
 		src/ChomboEBBC.cpp
 		src/ChomboGeometry.cpp
@@ -86,6 +89,7 @@ if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_CHOMB
 		src/ChomboSpec.cpp
 		src/DataGenerator.cpp
 		src/DataSet.cpp
+		src/FastSystemExpression.cpp
 		src/Feature.cpp
 		src/FiniteVolume.cpp
 		src/FVSolver.cpp

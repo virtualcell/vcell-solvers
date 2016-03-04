@@ -25,6 +25,7 @@ SimulationExpression::SimulationExpression(SimTool* a_simTool) : simTool(a_simTo
 
 	bHasElliptic = false;
 	bHasParabolic = false;
+	bHasFastSystem = false;
 	
 	symbolTable = NULL;	
 

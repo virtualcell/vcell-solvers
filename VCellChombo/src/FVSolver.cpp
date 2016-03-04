@@ -12,6 +12,7 @@
 #include <VCELL/Feature.h>
 #include <VCELL/Membrane.h>
 #include <VCELL/SimTool.h>
+#include <VCELL/FastSystemExpression.h>
 #include <VCELL/VolumeVarContextExpression.h>
 #include <VCELL/VolumeRegionVarContextExpression.h>
 #include <VCELL/MembraneVarContextExpression.h>
@@ -322,9 +323,10 @@ void FVSolver::loadSimulation(istream& ifsInput) {
 	}
 }
 
-VCell::Expression* FVSolver::readExpression(istream& lineInput, string& var_name) {
+VCell::Expression* FVSolver::readExpression(istream& lineInput, string& var_name, string prefix) {
 	string expStr;
 	getline(lineInput, expStr);
+	expStr = prefix + expStr;
 	trimString(expStr);
 	if (expStr[expStr.size()-1] != ';') {
 		stringstream msg;
@@ -475,6 +477,230 @@ void FVSolver::loadJumpCondition(istream& ifsInput, Membrane* membrane, string& 
 }
 
 /*
+PSEUDO_CONSTANT_BEGIN
+__C0 (CaBPB + CaBP);
+__C1 ( - CaBP + CaB + Ca);
+PSEUDO_CONSTANT_END
+*/
+void FVSolver::loadPseudoConstants(istream& ifsInput, FastSystemExpression* fastSystem) {
+	//cout << "loading pseudo constants for fast system" << endl;
+	string nextToken, line;
+	int count = 0;
+	int numDep = fastSystem->getNumDependents();
+	string* vars = new string[numDep];
+	VCell::Expression **expressions = new VCell::Expression*[numDep];
+
+	while (!ifsInput.eof()) {
+		getline(ifsInput, line);
+		istringstream lineInput(line);
+
+		nextToken = "";
+		lineInput >> nextToken;
+		if (nextToken.size() == 0 || nextToken[0] == '#') {
+			continue;
+		}
+		if (nextToken == "PSEUDO_CONSTANT_END") {
+			break;
+		}
+		vars[count] = nextToken;
+		expressions[count] = readExpression(lineInput, vars[count]);
+		count ++;
+	}
+
+	fastSystem->setPseudoConstants(vars, expressions);
+	if (count != numDep) {
+		throw "In the fast system the number of pseudo constants should be the same as that of dependent variables";
+	}
+}
+
+/*
+FAST_RATE_BEGIN
+( - ((0.1 * (400.0 - (__C1 + __C0 - Ca - CaBPB)) * Ca) - (__C1 + __C0 - Ca - CaBPB)) - ((20.0 * Ca * ( - CaBPB + __C0)) - (8.6 * CaBPB)));
+ - ((20.0 * Ca * ( - CaBPB + __C0)) - (8.6 * CaBPB));
+FAST_RATE_END
+*/
+void FVSolver::loadFastRates(istream& ifsInput, FastSystemExpression* fastSystem) {
+	//cout << "loading fast rates for fast system" << endl;
+	string nextToken, line;
+	int count = 0;
+	int numIndep = fastSystem->getDimension();
+	VCell::Expression **expressions = new VCell::Expression*[numIndep];
+
+	while (!ifsInput.eof()) {
+		getline(ifsInput, line);
+		istringstream lineInput(line);
+
+		nextToken = "";
+		lineInput >> nextToken;
+		if (nextToken.size() == 0 || nextToken[0] == '#') {
+			continue;
+		}
+		if (nextToken == "FAST_RATE_END") {
+			break;
+		}
+
+		string varname("fastRate");
+		expressions[count] = readExpression(lineInput, varname, nextToken);
+		count ++;
+	}
+	if (count != numIndep) {
+		throw "In the fast system the number of fast rates should be the same as that of independent variables";
+	}
+	fastSystem->setFastRateExpressions(expressions);
+}
+
+/*
+FAST_DEPENDENCY_BEGIN
+CaB (__C1 + __C0 - Ca - CaBPB);
+CaBP ( - CaBPB + __C0);
+FAST_DEPENDENCY_END
+*/
+void FVSolver::loadFastDependencies(istream& ifsInput, FastSystemExpression* fastSystem) {
+	//cout << "loading fast dependencies for fast system" << endl;
+	string nextToken, line;
+	int count = 0;
+	int numDep = fastSystem->getNumDependents();
+	string* vars = new string[numDep];
+	VCell::Expression **expressions = new VCell::Expression*[numDep];
+
+	while (!ifsInput.eof()) {
+		getline(ifsInput, line);
+		istringstream lineInput(line);
+
+		nextToken = "";
+		lineInput >> nextToken;
+		if (nextToken.size() == 0 || nextToken[0] == '#') {
+			continue;
+		}
+		if (nextToken == "FAST_DEPENDENCY_END") {
+			break;
+		}
+
+		vars[count] = nextToken;
+		expressions[count] = readExpression(lineInput, vars[count]);
+		count ++;
+	}
+	fastSystem->setFastDependencyExpressions(vars, expressions);
+	delete[] vars;
+	if (count != numDep) {
+		throw "In the fast system the number of fast dependencies should be the same as that of dependent variables";
+	}
+}
+
+/*
+JACOBIAN_BEGIN
+( - (1.0 + (0.1 * Ca) + (0.1 * (400.0 - (__C1 + __C0 - Ca - CaBPB)))) - (20.0 * ( - CaBPB + __C0)));
+( - (1.0 + (0.1 * Ca)) - (-8.6 - (20.0 * Ca)));
+ - (20.0 * ( - CaBPB + __C0));
+ - (-8.6 - (20.0 * Ca));
+JACOBIAN_END
+*/
+void FVSolver::loadJacobians(istream& ifsInput, FastSystemExpression* fastSystem) {
+	//cout << "loading jacobians for fast system" << endl;
+	string nextToken, line;
+	int count = 0;
+	int numIndep = fastSystem->getDimension();
+	VCell::Expression **expressions = new VCell::Expression*[numIndep * numIndep];
+
+	while (!ifsInput.eof()) {
+		getline(ifsInput, line);
+		istringstream lineInput(line);
+
+		nextToken = "";
+		lineInput >> nextToken;
+		if (nextToken.size() == 0 || nextToken[0] == '#') {
+			continue;
+		}
+		if (nextToken == "JACOBIAN_END") {
+			break;
+		}
+
+		string varname("jacobian");
+		expressions[count] = readExpression(lineInput, varname, nextToken);
+		count ++;
+	}
+	if (count != numIndep * numIndep) {
+		throw "In the fast system the number of Jacobian should dim*dim";
+	}
+	fastSystem->setJacobianExpressions(expressions);
+}
+
+/*
+# fast system dimension num_dependents
+FAST_SYSTEM_BEGIN 2 2
+INDEPENDENT_VARIALBES Ca CaBPB
+DEPENDENT_VARIALBES CaB CaBP
+
+PSEUDO_CONSTANT_BEGIN
+__C0 (CaBPB + CaBP);
+__C1 ( - CaBP + CaB + Ca);
+PSEUDO_CONSTANT_END
+
+FAST_RATE_BEGIN
+( - ((0.1 * (400.0 - (__C1 + __C0 - Ca - CaBPB)) * Ca) - (__C1 + __C0 - Ca - CaBPB)) - ((20.0 * Ca * ( - CaBPB + __C0)) - (8.6 * CaBPB)));
+ - ((20.0 * Ca * ( - CaBPB + __C0)) - (8.6 * CaBPB));
+FAST_RATE_END
+
+FAST_DEPENDENCY_BEGIN
+CaB (__C1 + __C0 - Ca - CaBPB);
+CaBP ( - CaBPB + __C0);
+FAST_DEPENDENCY_END
+
+JACOBIAN_BEGIN
+( - (1.0 + (0.1 * Ca) + (0.1 * (400.0 - (__C1 + __C0 - Ca - CaBPB)))) - (20.0 * ( - CaBPB + __C0)));
+( - (1.0 + (0.1 * Ca)) - (-8.6 - (20.0 * Ca)));
+ - (20.0 * ( - CaBPB + __C0));
+ - (-8.6 - (20.0 * Ca));
+JACOBIAN_END
+
+FAST_SYSTEM_END
+*/
+void FVSolver::loadFastSystem(istream& ifsInput, FastSystemExpression* fastSystem) {
+	//cout << "loading fast system for " << feature->getName() << endl;
+	string nextToken, line;
+	int numIndep = fastSystem->getDimension();
+	int numDep = fastSystem->getNumDependents();
+
+	while (!ifsInput.eof()) {
+		getline(ifsInput, line);
+		istringstream lineInput(line);
+
+		nextToken = "";
+		lineInput >> nextToken;
+		if (nextToken.size() == 0 || nextToken[0] == '#') {
+			continue;
+		}
+		if (nextToken == "FAST_SYSTEM_END") {
+			break;
+		}
+
+		if (nextToken == "DEPENDENT_VARIALBES") {
+			string* vars = new string[numDep];
+			for (int i = 0; i < numDep; i ++) {
+				lineInput >> vars[i];
+			}
+			fastSystem->setDependentVariables(vars);
+			delete[] vars;
+		} else if (nextToken == "INDEPENDENT_VARIALBES") {
+			string* vars = new string[numIndep];
+			for (int i = 0; i < numIndep; i ++) {
+				lineInput >> vars[i];
+			}
+			fastSystem->setIndependentVariables(vars);
+			delete[] vars;
+		} else if (nextToken == "PSEUDO_CONSTANT_BEGIN") {
+			loadPseudoConstants(ifsInput, fastSystem);
+		} else if (nextToken == "FAST_RATE_BEGIN") {
+			loadFastRates(ifsInput, fastSystem);
+		} else if (nextToken == "FAST_DEPENDENCY_BEGIN") {
+			loadFastDependencies(ifsInput, fastSystem);
+		} else if (nextToken == "JACOBIAN_BEGIN") {
+			loadJacobians(ifsInput, fastSystem);
+		}
+	}
+}
+
+/*
 COMPARTMENT_BEGIN cyt
 
 BOUNDARY_CONDITIONS value value value value 
@@ -537,7 +763,12 @@ void FVSolver::loadFeature(istream& ifsInput, Feature* feature) {
 				loadVarContext(ifsInput, feature, var);
 			}
 		} else if (nextToken == "FAST_SYSTEM_BEGIN") {
-			throw "Fast system not supported";
+			simTool->getSimulation()->setHasFastSystem();
+			int dimension, num_of_dependents;
+			lineInput >> dimension >> num_of_dependents;
+			FastSystemExpression* fastSystem = new FastSystemExpression(feature, dimension, num_of_dependents, simTool->getSimulation());
+			loadFastSystem(ifsInput, fastSystem);
+			feature->setFastSystem(fastSystem);
 		}
 	}
 }
@@ -1155,4 +1386,3 @@ void FVSolver::loadPostProcessingBlock(istream& ifsInput){
 		}
 	}
 }
-

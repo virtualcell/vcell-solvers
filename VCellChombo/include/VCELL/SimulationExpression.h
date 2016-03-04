@@ -164,11 +164,14 @@ public:
 	{
 		timeIntervals.push_back(timeInterval);
 	}
+	void setHasFastSystem() { bHasFastSystem = true; }
+	bool hasFastSystem() { return bHasFastSystem; }
 	
 private:
 	int currIteration;  // first iteration is currIteration=0
   bool bHasElliptic;
 	bool bHasParabolic;
+	bool bHasFastSystem;
 
 	ChomboScheduler  *_scheduler;
 	vector<Variable*> varList;

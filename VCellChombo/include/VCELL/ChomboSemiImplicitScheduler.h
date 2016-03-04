@@ -12,6 +12,7 @@ class EBQuadCFInterp;
 class ChomboSemiImplicitScheduler : public ChomboScheduler {
 
 	friend class ChomboEBBC;
+	friend class FastSystemExpression;
 	
 public:
 	ChomboSemiImplicitScheduler(SimulationExpression* sim, ChomboSpec* chomboSpec);
@@ -55,6 +56,7 @@ private:
 	                  const IntVectSet & a_cfivs,
 	                  const DataIndex& a_dit, int iphase,
 	                  int ivol, int ilev, Real a_dx);
+	void solveFastSystem();
 
 	void printOpMatrix();
 	void printOpMatrix(int iphase, int ivol, int ilev, int ivar, const string& varName);

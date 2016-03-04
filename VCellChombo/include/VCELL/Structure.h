@@ -7,7 +7,7 @@ using std::string;
 using std::vector;
 
 class Region;
-class FastSystem;
+class FastSystemExpression;
 class Variable;
 class SimulationExpression;
 
@@ -80,6 +80,9 @@ public:
 		return numPoints;
 	}
 
+	void setFastSystem(FastSystemExpression* arg_fastSystem)	{fastSystem = arg_fastSystem; }
+	FastSystemExpression *getFastSystem(){ return fastSystem; }
+
 protected:
 	string  name;
 	vector<Variable*> definedVariableList;
@@ -87,6 +90,8 @@ protected:
 	double size;
 	double sizeFrac;
 	int numPoints;
+
+	FastSystemExpression *fastSystem;
 };
 
 #endif
