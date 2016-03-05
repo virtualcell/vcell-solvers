@@ -302,7 +302,8 @@ void FastSystemExpression::solve(ChomboSemiImplicitScheduler* scheduler, int iph
 					{
 						IntVect gridIndex(D_DECL(i + solnLo[0], j + solnLo[1], k + solnLo[2]));
 						IntVect localDataIndex(D_DECL(i, j, k));
-						if (currEBISBox.isCovered(gridIndex)) {
+						if (currEBISBox.isCovered(gridIndex) || scheduler->isInNextFinerLevel(ilev, gridIndex))
+						{
 							continue;
 						}
 						RealVect coord = EBArith::getIVLocation(gridIndex, scheduler->vectDxes[ilev], scheduler->chomboGeometry->getDomainOrigin());
