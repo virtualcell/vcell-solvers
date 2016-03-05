@@ -11,6 +11,7 @@
 #include <string.h>
 #include <time.h>
 #include <sstream>
+#include <cstdarg>
 #include <VCELL/SimulationMessaging.h>
 #include "opengl2.h"
 #include "smoldyn.h"
