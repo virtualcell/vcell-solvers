@@ -23,7 +23,7 @@
 #include <iostream>
 namespace {
 	void slogger(simptr,int code,const char*, ...);
-	const char * const warnMessage( );
+	const std::string warnMessage( );
 }
 
 /* ***************************************************************** */
@@ -145,8 +145,7 @@ int main(int argc,char **argv) {
 			strcpy(errorMsg,"Invalid input arguments");
 			exitCode = 2;
 		}
-		else {
-			fflush(stdout);
+		else {			fflush(stdout);
 			fflush(stderr);
 			if(tflag || !sim->graphss || sim->graphss->graphics==0) {
 				er=smolsimulate(sim);
@@ -157,7 +156,8 @@ int main(int argc,char **argv) {
 				}
 				else {
 					const double completeRatio = sim->time / sim->tmax;
-					we = new WorkerEvent(JOB_COMPLETED, completeRatio,sim->time,warnMessage( ));
+					const std::string warn = warnMessage( );
+					we = new WorkerEvent(JOB_COMPLETED, completeRatio,sim->time,warn.c_str());
 				}
 				SimulationMessaging::getInstVar()->setWorkerEvent(we);
 			}
@@ -205,10 +205,9 @@ namespace {
 			warning << buff;
 		}
 	}
-	const char * const warnMessage() {
+	const std::string warnMessage() {
 		warning << std::ends;
-		const char * const warn =  warning.str().c_str();
-		std::cerr << 'WARNING sent: ' << warn << std::endl;
-		return warn;
+		std::string tmp(warning.str());
+		return tmp;
 	}
 }
