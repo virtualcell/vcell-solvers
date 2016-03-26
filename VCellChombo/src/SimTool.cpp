@@ -4,6 +4,7 @@
  */
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <stdexcept>
 using std::stringstream;
@@ -505,3 +506,35 @@ void SimTool::start(bool convertChomboData)
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));
 	}
 }
+
+void SimTool::copyToPrimaryDataDir(string& file)   // no directory information
+{
+	string workingDir = string(getInstance()->baseDirName);
+	string primaryDir = getInstance()->primaryDataDir;
+	if (!primaryDir.empty() && workingDir != primaryDir)
+	{
+		string fileName = file;
+		string::size_type pos = fileName.find(workingDir);
+		if (pos != string::npos)
+		{
+			fileName.erase(0, workingDir.length());
+		}
+		string src = string(workingDir) + fileName;
+		string dest = primaryDir + fileName;
+
+		// copy file
+		std::ifstream srcStream( src.c_str(), std::ios::binary ) ;
+		std::ofstream destStream( dest.c_str(), std::ios::binary ) ;
+		if( srcStream.is_open() && srcStream.good() && destStream.is_open() && destStream.good() )
+		{
+			destStream << srcStream.rdbuf() ;
+		}
+		else
+		{
+			stringstream ss;
+			ss << "Failed to copy file " << fileName << " from " << workingDir << " to " << primaryDir;
+			throw ss.str();
+		}
+	}
+}
+

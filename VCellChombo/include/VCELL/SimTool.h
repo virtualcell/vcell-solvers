@@ -80,6 +80,13 @@ public:
 		return commSize;
 	}
 	
+	void setPrimaryDataDir(string& pd)
+	{
+		primaryDataDir = pd;
+	}
+
+	static void copyToPrimaryDataDir(string& file);
+
 //	void setKeepAtMost(int kam) { keepAtMost = kam; }
 //	void setDiscontinuityTimes(int num, double* times) {
 //		numDiscontinuityTimes = num;
@@ -127,6 +134,7 @@ private:
 	char* baseFileName;
 	int simFileCount;
 	char* baseSimName;
+	string primaryDataDir;
 	char* baseDirName;
 	int zipFileCount;
 	string solver;

@@ -910,6 +910,11 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 			getline(lineInput, basefilename);
 			trimString(basefilename);
 			simTool->setBaseFilename((char*)basefilename.c_str());
+		} else if (nextToken == "PRIMARY_DATA_DIR") {
+			string pd;
+			getline(lineInput, pd);
+			trimString(pd);
+			simTool->setPrimaryDataDir(pd);
 		} else if (nextToken == "ENDING_TIME") {
 			double end_time;
 			lineInput >> end_time;

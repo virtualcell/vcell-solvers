@@ -267,11 +267,7 @@ void ChomboSemiImplicitScheduler::iterate() {
 											double solOld = (*volSolnOld[iphase][ivol][ilev])[dit()](tinyVof, ivar);
 											double neighborOld = (*volSolnOld[iphase][ivol][ilev])[dit()](bestNeighborVof, ivar);
 											double neighborNew = (*volSolnWorkspace[iphase][ivol][ilev])[dit()](bestNeighborVof, 0);
-											double solNewAfter = neighborNew;
-											if (chomboSpec->isActivateFeatureUnderDevelopment())
-											{
-												solNewAfter = neighborNew - neighborOld + solOld;
-											}
+											double solNewAfter = neighborNew;  // use best neighbor
 											(*volSolnWorkspace[iphase][ivol][ilev])[dit()](tinyVof, 0) = solNewAfter;
 											pout() << "tiny volume@" << tinyVof << "(old=" << solOld << ", new=" << solNewBefore
 													<< "), best neighbor@" << bestNeighborVof << "(old=" << neighborOld << ", new=" << neighborNew
@@ -720,6 +716,16 @@ void ChomboSemiImplicitScheduler::getExtrapStencils(Vector<RefCountedPtr<BaseInd
 	a_destVoFs.resize(vofs.size());
 	a_stencils.resize(vofs.size());
 	IntVectSet& cfivs = (IntVectSet&)a_cfivs;
+	bool bPrintStencil = true;
+	if (iphase == 0 && ivol == 0)
+	{
+		bPrintStencil = true;
+	}
+	if (bPrintStencil)
+	{
+		pout() << setprecision(17);
+		pout() << "[iphase ivol ilev box]=[" << iphase << " " << ivol << " " << ilev << " " << grid << " " << "]"<< endl;
+	}
 	for(int ivof = 0; ivof < vofs.size(); ivof++)
 	{
 		VoFStencil  extrapStenc;
@@ -729,11 +735,56 @@ void ChomboSemiImplicitScheduler::getExtrapStencils(Vector<RefCountedPtr<BaseInd
 		RealVect dist = ebisBox.bndryCentroid(volIndex);
 		dist *= a_dx;
 
-		EBArith::getFirstOrderExtrapolationStencil(extrapStenc, dist,
-		                a_dx*RealVect::Unit,
-		                vofs[ivof], ebisBox, -1, &cfivs, 0);
+//		EBArith::getFirstOrderExtrapolationStencil(extrapStenc, dist,
+//		                a_dx*RealVect::Unit,
+//		                vofs[ivof], ebisBox, -1, &cfivs, 0);
+		Vector<VoFStencil> pointStenc;
+		Vector<Real> distance;
+		bool dropOrder = false;
+		EBArith::johanStencil(dropOrder, pointStenc, distance, vofs[ivof], ebisBox,  a_dx*RealVect::Unit, cfivs);
+		if (!dropOrder)
+		{
+			CH_assert(distance.size() >= 2);
+			CH_assert(pointStenc.size() >= 2);
+			//value at boundary is extrapolated along a ray.
+			//we have data at points (phi) and distance to those points(x)
+			//phi_boundary = (x1 phi0 - x0 phi1)/(x1-x0)
+			pointStenc[0] *=  distance[1];
+			pointStenc[1] *= -distance[0];
+			extrapStenc += pointStenc[0];  //now val = x1 phi0
+			extrapStenc += pointStenc[1];  //now val = x1 phi0 - x0 phi1
+			extrapStenc *= 1.0/(distance[1]-distance[0]);  //now val = (x1 phi0 - x0 phi1)/(x1-x0)
+		}
+		else
+		{
+			EBArith::getExtrapolationStencil(extrapStenc, dist, a_dx*RealVect::Unit, vofs[ivof], ebisBox, -1, &cfivs, 0);
+		}
+
 		a_destVoFs[ivof] = RefCountedPtr<BaseIndex  >(new   VolIndex(volIndex));
 		a_stencils[ivof] = RefCountedPtr<BaseStencil>(new VoFStencil(extrapStenc));
+
+		if (bPrintStencil)
+		{
+			double volfrac = ebisBox.volFrac(volIndex);
+			RealVect vol_center = EBArith::getVofLocation(volIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
+			const RealVect& mem_centroid = ebisBox.bndryCentroid(volIndex);
+			RealVect mem_point = mem_centroid;
+			mem_point *= vectDxes[ilev];
+			mem_point += vol_center;
+//			if (volfrac < 1e-3)
+//			{
+				int n = a_stencils[ivof]->size();
+				pout() << "stencils for " << volIndex << ", orderDropped " << dropOrder << ", memcoord=" << mem_point << ", volfrac=" << volfrac << ", #points=" << n << endl;
+				for (int n = 0; n < a_stencils[ivof]->size(); ++ n)
+				{
+					VoFStencil& vofStencil = (VoFStencil&)*a_stencils[ivof];
+					double weight = vofStencil.weight(n);
+					const VolIndex& index = vofStencil.vof(n);
+					int variable = vofStencil.variable(n);
+					pout() << index << ", weight=" << weight << ", variable=" << variable << endl;
+//				}
+			}
+		}
 	}
 }
 
