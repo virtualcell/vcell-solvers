@@ -69,7 +69,15 @@ namespace matlabBridge {
 	}
 
 	struct FigureName {
+		/**
+		* @param n name
+		*/
 		FigureName(const char *n)
+			:name(n) {}
+		/**
+		* @param n name 
+		*/
+		FigureName(std::string n)
 			:name(n) {}
 
 		void write(std::ostream &os) const {
@@ -77,7 +85,7 @@ namespace matlabBridge {
 		}
 
 	private:
-		const char * const name;
+		std::string name;
 	};
 
 	inline std::ostream & operator<<(std::ostream & in, const FigureName & fn) {
