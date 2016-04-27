@@ -4,6 +4,8 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
+#include <unordered_set>
+#include <queue>
 #include <MovingBoundaryCollections.h>
 #include <Allocator.h>
 #include <Volume.h>
@@ -295,6 +297,13 @@ namespace moving_boundary {
 		bool isOutside( ) const {
 			return !isInside( );
 		}
+		/**
+		* add operator to support storing in unordered_set
+		*@return true if same object
+		*/
+		bool operator==(const MeshElementNode &rhs) const {
+			return this == &rhs;
+		}
 
 		/**
 		* maximum offset value computed, used to eliminate unneeded recursive and computation 
@@ -320,10 +329,20 @@ namespace moving_boundary {
 		void setBoundaryOffsetValues(); 
 
 	private:
+		
+		struct IdentityHash {
+				size_t operator( )(const MeshElementNode *node) const {
+					size_t raw = reinterpret_cast<size_t>(&node);
+					return raw >> 3;
+				}
+		};
+		typedef std::unordered_set<MeshElementNode *,IdentityHash> NodeSet;
+		typedef std::queue<MeshElementNode *> NodeQueue;
+
 		/**
 		* set neighbor's offset value
 		*/
-		void propagateBoundaryValue();
+		void propagateBoundaryValue(NodeSet &, NodeQueue &);
 	public:
 
 		static BoundaryOffsetType unsetOffsetValue( ) {
@@ -810,7 +829,8 @@ namespace moving_boundary {
 		/**
 		* debug only 
 		*/
-		void genDebugPlot(std::ostream & dest, const Volume2DClass &ourVolume, const Volume2DClass & intersection, const OurType & nb);
+		void genDebugPlot(std::ostream & dest, const Volume2DClass &ourVolume, const Volume2DClass & intersection, const moving_boundary::FrontType *front);
+		void genDebugPlot(std::ostream & dest, const Volume2DClass &ourVolume, const Volume2DClass & intersection);
 
 		const Environment &env;
 

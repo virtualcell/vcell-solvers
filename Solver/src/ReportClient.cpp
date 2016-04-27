@@ -20,6 +20,9 @@
 #include <vhdf5/file.h>
 #include <vhdf5/vlen.h>
 #include <vhdf5/exception.h>
+#include <MBridge/MatlabDebug.h>
+#include <MBridge/FronTierAdapt.h>
+#include <MBridge/Figure.h>
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
 using moving_boundary::World ;
 using moving_boundary::CoordinateType;
@@ -642,6 +645,28 @@ namespace {
 				if (vOfv.size( ) > 1) {
 					//throw std::domain_error("multi region control volumes not supported yet");
 					std::cerr << "multi region warning" << std::endl;
+					{
+						static int multiCounter = 0;
+						std::string mcounter("multiregion");
+						mcounter.pop_back( ); //remove null
+						mcounter += multiCounter;
+						std::string filename(mcounter);
+						filename += ".m";
+						std::ofstream mr(filename);
+						
+						using matlabBridge::MatLabDebug;
+						matlabBridge::Scatter nbplot('b',2);
+						frontTierAdapt::copyPointInto(nbplot,e);
+						std::stringstream ss;
+						ss << e.indexOf(cX) << ',' << e.indexOf(cY);
+						mr <<  matlabBridge::FigureName(mcounter) << 
+							nbplot << matlabBridge::Text(e(cX),e(cY),ss.str( ).c_str( ));
+
+						matlabBridge::Polygons vs("-g",2);
+						frontTierAdapt::copyVectorsInto(vs,vOfv);
+						mr << vs;
+					}
+
 				}
 				Volume2DClass::PointVector & pVec = vOfv.front( );
 				er.controlVolume.resize(pVec.size( ));

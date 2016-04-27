@@ -26,8 +26,14 @@ namespace {
 			return static_cast<LocalVoronoiType>(in);
 		}
 		if (in > 0) {
+			if (in > std::numeric_limits<LocalVoronoiType>::max( )) {
+				VCELL_EXCEPTION(out_of_range, in << " > max value " << std::numeric_limits<LocalVoronoiType>::max( ) ); 
+			}
 			return static_cast<LocalVoronoiType>(in + epilson);
 		}
+			if (in < std::numeric_limits<LocalVoronoiType>::min( )) {
+				VCELL_EXCEPTION(out_of_range, in << " < min value " << std::numeric_limits<LocalVoronoiType>::min( ) ); 
+			}
 		return static_cast<LocalVoronoiType>(in - epilson);
 	}
 	struct ConvertingGhostPoint : public LocalGhostPoint {

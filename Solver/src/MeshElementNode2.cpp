@@ -1,6 +1,15 @@
 #include <MeshElementNode.h>
+#include <MovingBoundaryCollections.h>
+#include <MBridge/FronTierAdapt.h>
+#include <MBridge/Figure.h>
+#include <MBridge/MatlabDebug.h>
 using namespace moving_boundary::MeshElementStateful;
 using moving_boundary::MeshElementNode;
+using moving_boundary::FrontType;
+using moving_boundary::Volume2DClass;
+namespace {
+	std::ofstream ptrack("prop.txt");
+}
 void MeshElementNode::setInitialPos(spatial::SurfacePosition pos) {
 	if (state( ) != initial && state( ) != initialInside) {
 		badState("setInitialPos"); 
@@ -84,17 +93,24 @@ void MeshElementNode::setBoundaryOffsetValues( ) {
 		VCELL_EXCEPTION(domain_error, ident( ) << "setBoundaryOffsetValue with value " << boundaryOffset( ) );
 	}
 	bndOffset = 0;
-	propagateBoundaryValue( );
+
+	NodeSet tracker;
+	NodeQueue queue;
+
+	propagateBoundaryValue(tracker,queue);
 }
 
-void MeshElementNode::propagateBoundaryValue() {
+/**
+* @param nodeSet used to track which elements already queued for processing 
+* @param queue used to track order in which to process nodes 
+*/
+void MeshElementNode::propagateBoundaryValue(NodeSet & nodeSet, NodeQueue & queue) {
 	VCELL_LOG(verbose,  ident( ) << " propagate current " << static_cast<unsigned int>(boundaryOffset( )));
 	assert(boundaryOffset( ) != unsetOffsetValue());
 
 	//first pass, set unset neighbors and propagate call to neighbors at same offset
+	const bool emptyQueue = queue.empty( );
 	size_t setIndex = 0;
-	std::array<MeshElementNode *,4> nodesThatWereSet;
-	//std::array<MeshElementNode *,8> nodesThatWereSet;
 	/* 
 	* cap offset at maxOffset( ) to minimize unnecesary recursion / computation
 	*/
@@ -110,7 +126,11 @@ void MeshElementNode::propagateBoundaryValue() {
 				else {
 					nb.bndOffset = 0;
 				}
-				nodesThatWereSet[setIndex++] = &nb;
+				//place in queue of elements to propagate to if and only it's not there already
+				if (nodeSet.find(&nb) == nodeSet.end( )) {
+					queue.push(&nb);
+					nodeSet.insert(&nb);
+				}
 			}
 		}
 	}
@@ -131,9 +151,14 @@ void MeshElementNode::propagateBoundaryValue() {
 	}
 	*/
 
-	//second pass, tell neighbors we just set to set their unset neighbors
-	for (int i = 0; i < setIndex; i++) {
-		nodesThatWereSet[i]->propagateBoundaryValue();
+	//second pass, tell neighbors that have been set to set their neighbor if the queue was
+	//empty when we started; this prevents excessive recursion and subsequent stack overflow
+	if (emptyQueue) {
+		while (!queue.empty( )) {
+			MeshElementNode *node = queue.front( );
+			queue.pop( );
+			node->propagateBoundaryValue(nodeSet, queue);
+		}
 	}
 }
 
@@ -309,3 +334,28 @@ void MeshElementNode::DEBUG_SET_STATE(moving_boundary::MeshElementStateful::Stat
 	assert(debugSetState( ));
 }
 #endif
+
+void MeshElementNode::genDebugPlot(std::ostream & dest, const Volume2DClass &ourVolume, const Volume2DClass & intersection, const FrontType * front) {
+	using spatial::Axis;
+	matlabBridge::Scatter nbplot('b',2);
+	frontTierAdapt::copyPointInto(nbplot,*this);
+	std::stringstream ss;
+	ss << indexOf(Axis::cX) << ',' << indexOf(Axis::cY);
+	dest <<  nbplot << matlabBridge::Text( (Axis::cX),(Axis::cY),ss.str( ).c_str( ));
+	{
+		matlabBridge::Polygons vs("-g",2);
+		frontTierAdapt::copyVectorsInto(vs,ourVolume.points( ));
+		dest << vs;
+	}
+
+	{
+		matlabBridge::Polygons vi("+-r",2);
+		frontTierAdapt::copyVectorsInto(vi,intersection.points( ));
+		dest << vi;
+	}
+	if (front != nullptr) {
+		matlabBridge::Polygons ni("-m",2);
+		frontTierAdapt::copyVectorInto(ni, *front);
+		dest << ni;
+	}
+}

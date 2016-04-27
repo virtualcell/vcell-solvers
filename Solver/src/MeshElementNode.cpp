@@ -271,9 +271,11 @@ void MeshElementNode::processBoundaryNeighbors(const VoronoiMesh & vm, std::vect
 		VoronoiResult vResult;
 		VoronoiResult::GhostVector & voronoiVertices = vResult.vertices;
 		assert(voronoiVertices.empty( ));
+		if (matches(47,58))  {
+			int y = 3;
+		}
 		vm.getResult(vResult,*this);
-		/*
-		if (matches(3,2)) 
+		if (matches(47,58)) 
 		{
 		std::ofstream vp("voronoiPoly.m");
 		vp << "% " << ident( ) << std::endl;
@@ -283,7 +285,6 @@ void MeshElementNode::processBoundaryNeighbors(const VoronoiMesh & vm, std::vect
 		p.close( );
 		vp << p;
 		}
-		*/
 
 		voronoiVolume.clear( );
 		Volume2DClass::FillingIteratorType fIter = voronoiVolume.fillingIterator(voronoiVertices.size());
@@ -376,9 +377,20 @@ void MeshElementNode::formBoundaryPolygon( const FrontType & front) {
 			std::ofstream eDebug("debugEmpty.m");
 			eDebug << pFront << vs;
 		}
-		throw std::logic_error("empty boundary front");
+				throw std::logic_error("empty boundary front");
 
 	}
+	if (vol.points( ).size( ) > 1) {
+			static int multiCounter = 0;
+			std::string mcounter("multiregion");
+			mcounter += std::to_string(++multiCounter);
+			std::string filename(mcounter);
+			filename += ".m";
+			std::ofstream mr(filename);
+			mr <<  matlabBridge::FigureName(mcounter); 
+			genDebugPlot(mr,vol,voronoiVolume,&front);
+		}
+
 	VCELL_LOG(debug,this->ident( ) << " new volume " << vol.volume( )) ;
 }
 #ifdef OLD_STUFF
@@ -411,6 +423,7 @@ void MeshElementNode::findNeighborEdges() {
 
 	typedef TPoint<moving_boundary::CoordinateType,2> MeshPointType;
 	bool foundANeighbor = false;
+	bool bigSeg = false;
 	for (size_t i = 0; i < boundaryNeighbors.size( ); i++) {
 		DistanceType edgeLength = 0;
 		OurType & nb = *boundaryNeighbors[i].element;
@@ -419,11 +432,12 @@ void MeshElementNode::findNeighborEdges() {
 				nb.getControlVolume();
 			}
 		}
-		std::array<SegmentType,4> segs;
+		//std::array<SegmentType,8> segs; //this was 4, 11 Apr 2016; not sure why
+		std::vector<SegmentType> segs; //this was 4, 11 Apr 2016; not sure why
 		int trials = 0;
 		while(trials < 2) {
 			trials += 2;
-			std::set_intersection(segments( ).begin( ), segments( ).end( ), nb.segments( ).begin( ), nb.segments( ).end( ), segs.begin( ));
+			std::set_intersection(segments( ).begin( ), segments( ).end( ), nb.segments( ).begin( ), nb.segments( ).end( ), std::back_inserter(segs));
 			for (int s = 0; s< segs.size( ); ++s) {
 				if (segs[s].singular( )) {
 					if (s == 0 && spatial::taxicabDistance<int>(indexPoint( ), nb.indexPoint( ) ) == 1) {
@@ -460,6 +474,9 @@ void MeshElementNode::findNeighborEdges() {
 				VCELL_LOG(verbose,ident( ) << ',' << nb.ident( ) << " neighbor edge hit");
 				boundaryNeighbors[i].edgeLength = edgeLength; 
 			}
+		}
+		if (segs.size( ) > 7) {
+			bigSeg = true;
 		}
 	}
 #ifdef NOT_YET_NOT_YET 
@@ -499,7 +516,7 @@ void MeshElementNode::findNeighborEdges() {
 	if (!foundANeighbor) {
 		std::cout << ident( ) << " is lonely " << std::endl;
 	}
-	if (MatLabDebug::on("edgefind") ) {
+	if (MatLabDebug::on("edgefind") && bigSeg) {
 		matlabBridge::Scatter nbplot('b',2);
 		frontTierAdapt::copyPointInto(nbplot,*this);
 		for (size_t i = 0; i < boundaryNeighbors.size( ); i++) {
@@ -1153,6 +1170,7 @@ void MeshElementNode::diffuseAdvect(SOLVER &solver, unsigned int species) {
 		solver.setSolvingFor(*this,iCoefficient, concentration(species));
 	} //isInside
 }
+
 
 template void MeshElementNode::diffuseAdvect(moving_boundary::ExplicitSolver &,unsigned int species);
 

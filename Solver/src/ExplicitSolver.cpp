@@ -63,8 +63,8 @@ ExplicitSolver::ExplicitSolver(Mesh &m)
 {
 	resultStore.resize(m.numCells( ));
 	rhs.resize(m.numCells( ));
-	std::ofstream mf("map.txt");
-	std::for_each(mesh.begin( ),mesh.end( ),DocumentMapping(mesh,mf) );
+	//std::ofstream mf("map.txt");
+	//std::for_each(mesh.begin( ),mesh.end( ),DocumentMapping(mesh,mf) );
 }
 
 void ExplicitSolver::setStepAndSpecies(TimeType t, unsigned int s) {
