@@ -271,10 +271,11 @@ void MeshElementNode::processBoundaryNeighbors(const VoronoiMesh & vm, std::vect
 		VoronoiResult vResult;
 		VoronoiResult::GhostVector & voronoiVertices = vResult.vertices;
 		assert(voronoiVertices.empty( ));
-		if (matches(47,58))  {
+		/*if (matches(47,58))  {
 			int y = 3;
-		}
+		} */
 		vm.getResult(vResult,*this);
+#ifdef DEBUG_VORONOI_OUTPUT
 		if (matches(47,58)) 
 		{
 		std::ofstream vp("voronoiPoly.m");
@@ -285,6 +286,7 @@ void MeshElementNode::processBoundaryNeighbors(const VoronoiMesh & vm, std::vect
 		p.close( );
 		vp << p;
 		}
+#endif
 
 		voronoiVolume.clear( );
 		Volume2DClass::FillingIteratorType fIter = voronoiVolume.fillingIterator(voronoiVertices.size());

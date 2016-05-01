@@ -5,7 +5,6 @@
 #include <list>
 #include <iomanip>
 #include <boost/math/common_factor.hpp>
-
 using moving_boundary::Universe;
 using spatial::GeoLimit;
 using moving_boundary::WorldMax;
@@ -60,7 +59,7 @@ namespace {
 	/**
 	* common implementation for integral types
 	*/
-	template <typename WORLD_COORD, int N>
+	template <typename WORLD_COORD, int N, int SCALE_ADJUST=1>
 	struct WorldInitInteger {
 		void init(Universe<N> & universe, WORLD_COORD &maxSupported) {
 			typedef typename Universe<N>::CountType CountType;
@@ -81,6 +80,8 @@ namespace {
 			}
 			scale = maxSupported / universe.limitFor(0).span( );
 #endif
+			scale /= SCALE_ADJUST; 
+
 			WORLD_COORD divider = 1;
 			{
 				//WORLD_COORD iScale = static_cast<WORLD_COORD>(scale); #this doesn't work in cases where span < 1 
@@ -133,8 +134,11 @@ namespace {
 	template <int N>
 	struct WorldInit<int16_t,N> : public WorldInitInteger<int16_t,N> {
 	};
+	/**
+	* adjust scale by 4 to keep doubles produced by Voronoi32.cpp within range
+	*/
 	template <int N>
-	struct WorldInit<int32_t,N> : public WorldInitInteger<int32_t,N> {
+	struct WorldInit<int32_t,N> : public WorldInitInteger<int32_t,N,4> {
 	};
 	template <int N>
 	struct WorldInit<int64_t,N> : public WorldInitInteger<int64_t,N> {
