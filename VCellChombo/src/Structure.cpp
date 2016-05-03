@@ -4,11 +4,14 @@
 #include <VCELL/FastSystemExpression.h>
 
 Structure::Structure(string& Aname)
+:name(Aname),
+ definedVariableList( ),
+ boundaryType( ),
+ size(0),
+ sizeFrac(0),
+ numPoints(0),
+ fastSystem(0)
 {
-	name = Aname;
-	size = 0;
-	numPoints = 0;
-
 	for (int i = 0; i < 6; i ++)
 	{
 		boundaryType[i] = BOUNDARY_UNKNOWN;
