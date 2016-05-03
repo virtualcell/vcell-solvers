@@ -20,6 +20,8 @@ Structure::Structure(string& Aname)
 
 Structure::~Structure(void)
 {
+	//assuming this will be allocated as a single object (not array)
+	delete fastSystem;
 }
 
 void Structure::addDefinedVariable(Variable* var) {
