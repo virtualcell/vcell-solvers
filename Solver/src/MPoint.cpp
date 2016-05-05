@@ -36,6 +36,6 @@ template MeshElement<double,2>::MeshElement(std::istream &);
 
 
 
-template class IndexInfo<1>;
-template class IndexInfo<2>;
-template class IndexInfo<3>;
+template class spatial::IndexInfo<1>;
+template class spatial::IndexInfo<2>;
+template class spatial::IndexInfo<3>;

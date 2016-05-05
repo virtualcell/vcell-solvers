@@ -804,6 +804,7 @@ namespace moving_boundary {
 		* Functor advectComplete
 		*/
 		struct AdvectComplete {
+			AdvectComplete( ) {} //required by Mac OS X compiler
 			void operator( )(MeshElementNode & e) {
 				if (e.isInside( )) {
 					VCELL_LOG(trace,e.ident( ) << " advectComplete");

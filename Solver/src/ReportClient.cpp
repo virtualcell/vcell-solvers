@@ -146,6 +146,7 @@ namespace {
 		static const unsigned int STD_PRIORITY = 10;
 		TimeReport(double startTime_)
 			:startTime(startTime_) {}
+		virtual ~TimeReport( ){};
 		double getStartTime( ) const {
 			return startTime;
 		}
@@ -1021,4 +1022,6 @@ ReportClient * ReportClient::setup(const XMLElement &root, const std::string & h
 }
 
 
-template struct PODPoint<double>;
+namespace {
+	template struct PODPoint<double>;
+}

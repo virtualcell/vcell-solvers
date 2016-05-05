@@ -372,7 +372,9 @@ std::vector<std::vector<spatial::TPoint<FCT,2> > > VCellFront<FCT>::retrieveCurv
 	return rval; 
 }
 
-template class VCellFront<double>;
-template class VCellFront<int16_t>;
-template class VCellFront<int32_t>;
-template class VCellFront<int64_t>;
+template class spatial::VCellFront<double>;
+template class spatial::VCellFront<int32_t>;
+
+//these work as of 5/5/2016, but are not needed for current implementation
+//template class spatial::VCellFront<int16_t>;
+//template class spatial::VCellFront<int64_t>;

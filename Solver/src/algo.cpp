@@ -25,7 +25,7 @@ TPoint<T,N> spatial::pointThrough(const spatial::TPoint<T,N> & origin, const spa
 
 template <class T,int N>
 TPoint<T,N> spatial::pointThrough(const spatial::TPoint<T,N> & origin, const spatial::SVector<T,N> & direction, T distance) {
-	NormVector<double,N> norm(direction.convert<double>( ));
+	NormVector<double,N> norm(direction.template convert<double>( ));
 	return spatial::pointThrough(origin,norm,distance);
 }
 

@@ -59,7 +59,7 @@ namespace spatial {
 	template<typename FROM, typename TO> 
 	struct GeoLimitConvert {
 		TGeoLimit<TO> operator( )(const TGeoLimit<FROM> &in) {
-			return in.convert<TO>( );
+			return in.template convert<TO>( );
 		}
 	};
 

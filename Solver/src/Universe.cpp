@@ -92,5 +92,5 @@ void Universe<N>::registerType( ) {
 }
 
 
-template struct Universe<2>;
-template struct Universe<3>;
+template struct moving_boundary::Universe<2>;
+template struct moving_boundary::Universe<3>;
