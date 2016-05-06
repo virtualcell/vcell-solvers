@@ -157,10 +157,5 @@ namespace spatial {
 
 		static int velocityAdapter(Frontier::POINTER,Frontier::Front*,Frontier::POINT*,HYPER_SURF_ELEMENT*, HYPER_SURF*,double*);
 	};
-
-	namespace VCFrontier {
-		void saveInteriorState(Frontier::Front & front, std::ostream &);
-	}
-
 }
 #endif
