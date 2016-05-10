@@ -12,7 +12,6 @@
 #include <MovingBoundaryParabolicProblem.h>
 #include <Edge.h>
 #include <LoopIterator.h>
-#include <create.h>
 #include <stack_container.h>
 #include <vcellutil.h>
 #include <Logger.h>
