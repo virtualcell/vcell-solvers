@@ -28,14 +28,14 @@ namespace spatial {
 			component[cX] = x;
 			component[cY] = y;
 		}
-//		SVector(Angle a, T length) {
-//			static_assert(N==2, "need 2");
-//			if (length <= 0) {
-//				throw std::invalid_argument("negative length");
-//			}
-//			component[cX] = length * a.cos( );
-//			component[cY] = length * a.sin( );
-//		}
+		SVector(Angle a, T length) {
+			static_assert(N==2, "need 2");
+			if (length <= 0) {
+				throw std::invalid_argument("negative length");
+			}
+			component[cX] = length * a.cos( ); 
+			component[cY] = length * a.sin( ); 
+		}
 
 		SVector(const TPoint<T, N> & lhs, const TPoint<T, N> & rhs) {
 			for (int i = 0 ; i < N; i++) {
@@ -83,13 +83,13 @@ namespace spatial {
 			return true;
 		}
 
-//		Angle angle( ) const {
-//			static_assert(N==2, "need 2");
-//			if (isZero( ) ) {
-//				throw std::domain_error("angle called on zero vector");
-//			}
-//			return RadAngle(atan2(component[cY] , component[cX]));
-//		}
+		Angle angle( ) const {
+			static_assert(N==2, "need 2");
+			if (isZero( ) ) {
+				throw std::domain_error("angle called on zero vector");
+			}
+			return RadAngle(atan2(component[cY] , component[cX]));
+		}
 
 		/**
 		* return new vector perpendicular to *this
