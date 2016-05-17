@@ -14,6 +14,9 @@ function [ rval ] = readMovingBoundary( f )
     catch
     end
     rval.runTime = h5read(f,'/runTime');
+    rval.meshXValues = h5read(f,'/meshXvalues');
+    
+    rval.meshYValues = h5read(f,'/meshYvalues');
     
     %only read active data
     start = [1 1 1 1];
@@ -33,9 +36,7 @@ function [ rval ] = readMovingBoundary( f )
     rval.nynodes = h5readatt(f,epathname,'numY');
     rval.hx = h5readatt(f,epathname,'hx');
     rval.hy = h5readatt(f,epathname,'hy');
-    rval.x = h5readatt(f,epathname,'xvalues');
-    rval.y = h5readatt(f,epathname,'yvalues');
-        
+           
     md = cast(rval.maxT,'double');
 	
     rval.boundaries = h5read(f,'/boundaries',[1],md);
