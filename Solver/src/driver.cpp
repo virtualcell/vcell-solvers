@@ -8,6 +8,7 @@
 #include <MBridge/MatlabDebug.h>
 #include <tclap/CmdLine.h>
 #include <ReportClient.h>
+#include <TextReportClient.h>
 #include <version.h>
 /**
 * usings and typedefs
@@ -82,6 +83,7 @@ int main(int argc, char *argv[])
 	//moving_boundary::ProblemPackage package;
 	std::unique_ptr<moving_boundary::ReportClient> reportClient;
 	std::unique_ptr<moving_boundary::MovingBoundaryTimeClient> persistClient;
+	std::unique_ptr<moving_boundary::TextReportClient> textReportClient;
 	//const char * const filename = argv[1];
 	//const char * outname = argv[2];
 	if (parseOnly) {
@@ -109,6 +111,7 @@ int main(int argc, char *argv[])
 				problem = moving_boundary::MovingBoundaryParabolicProblem(mbs);
 				reportClient.reset( moving_boundary::ReportClient::setup(root, outname, problem) ); 
 				persistClient.reset( moving_boundary::StateClient::setup(root, problem,*reportClient) );
+				textReportClient.reset( moving_boundary::TextReportClient::setup(root, problem) );
 			}
 		}
 		if (!restorename.empty( )) {
@@ -128,6 +131,10 @@ int main(int argc, char *argv[])
 		problem.add(*reportClient);
 		if (configPresent) {
 			setupProgress(*doc.RootElement( ),problem);
+		}
+
+		if (textReportClient.get( ) != nullptr) {
+			problem.add(*textReportClient);
 		}
 	}
 	catch (std::exception & e) {

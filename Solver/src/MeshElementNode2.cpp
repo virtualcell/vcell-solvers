@@ -7,9 +7,6 @@ using namespace moving_boundary::MeshElementStateful;
 using moving_boundary::MeshElementNode;
 using moving_boundary::FrontType;
 using moving_boundary::Volume2DClass;
-namespace {
-	std::ofstream ptrack("prop.txt");
-}
 void MeshElementNode::setInitialPos(spatial::SurfacePosition pos) {
 	if (state( ) != initial && state( ) != initialInside) {
 		badState("setInitialPos"); 
