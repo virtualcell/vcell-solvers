@@ -38,6 +38,11 @@ if (UNIX)
   add_definitions("-fPIC")
 endif (UNIX) 
 
+if(CYGWIN)
+    add_definitions(-U__STRICT_ANSI__)
+    remove_definitions("-fPIC")
+endif(CYGWIN)
+
 include (svnversion.txt)
 message(STATUS "Operating system ${CMAKE_SYSTEM_NAME}")
 # per http://code.google.com/p/googletest/issues/detail?id=412 
