@@ -24,6 +24,7 @@ System::System(string name)
 	this->a_tot = 0;
 	current_time = 0;
 	nextReaction = 0;
+	this->useVCellCompartments = false;
 	this->useComplex = false;     // NETGEN -- is this needed?
 	// NETGEN
 	allComplexes.setSystem( this );
@@ -50,6 +51,7 @@ System::System(string name, bool useComplex)
 	current_time = 0;
 	nextReaction = 0;
 
+	this->useVCellCompartments = false;
 	this->useComplex = useComplex;    // NETGEN -- is this needed?
 	// NETGEN
 	allComplexes.setSystem( this );
@@ -75,6 +77,7 @@ System::System(string name, bool useComplex, int globalMoleculeLimit)
 	this->a_tot = 0;
 	current_time = 0;
 	nextReaction = 0;
+	this->useVCellCompartments = false;
 	this->useComplex = useComplex;  // NETGEN -- is this needed?
 	// NETGEN
 	allComplexes.setSystem( this );

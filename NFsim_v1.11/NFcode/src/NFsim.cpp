@@ -390,6 +390,12 @@ System *initSystemFromFlags(map<string,string> argMap, bool verbose)
 			{
 				if(verbose) {cout<<endl;}
 
+				//If requested, be sure to propagate location site state after each reaction
+				if (argMap.find("vcell")!=argMap.end()) {
+					s->setUsingVCellCompartments(true);
+					if(verbose) cout<<"\tVCell Compartment trick (-vcell) flag detected."<<endl<<endl;
+				}
+
 				//If requested, be sure to output the values of global functions
 				if (argMap.find("ogf")!=argMap.end()) {
 					s->turnOnGlobalFuncOut();

@@ -440,6 +440,19 @@ void ReactionClass::fire(double random_A_number) {
 		}
 	}
 
+	// if this model has vcell-compartment sites, must propagate compartment
+	// we could make this more efficient by skipping reactions where there are not location changes.
+	//
+	if (this->system->isUsingVCellCompartments()){
+		Complex * c;
+		cout << "---------------- updating complexes for reaction " << getName() << " --------------------------" << endl;
+		// we can assume that complex bookkeeping is enabled..
+		for ( complexIter = productComplexes.begin(); complexIter != productComplexes.end(); ++complexIter ) {
+			// update all species observables for this complex
+			c = *complexIter;
+			c->postProcessVCellLocation();
+		}
+	}
 
 	// If we're handling observables on the fly, tell each molecule to add itself to observables.
 	if (onTheFlyObservables) {

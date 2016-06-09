@@ -248,6 +248,8 @@ namespace NFcore
 
 			void setUniversalTraversalLimit(int utl);
 
+			bool isUsingVCellCompartments() { return useVCellCompartments; };
+			bool setUsingVCellCompartments( bool val ) { useVCellCompartments = val; };
 
 			void setEvaluateComplexScopedLocalFunctions( bool val ) { evaluateComplexScopedLocalFunctions = val; };
 			bool getEvaluateComplexScopedLocalFunctions( ) const { return evaluateComplexScopedLocalFunctions; };
@@ -376,6 +378,7 @@ namespace NFcore
 			string name;         /*!< arbitrary name of the system  */
 			// NETGEN -- is this needed?
 			bool useComplex;     /*!< sets whether or not to dynamically track complexes */
+			bool useVCellCompartments;     /*!< sets whether or not to apply vcell compartment propagation */
 			bool useBinaryOutput; /*!< set to true to turn on binary output of data */
 			bool evaluateComplexScopedLocalFunctions; /*!< set to true to turn on enable complex-scoped local functions */
 			int universalTraversalLimit; /*!< sets depth to traverse molecules when updating reactant lists */
@@ -1162,6 +1165,13 @@ namespace NFcore
 			static const int UNIFORM = 0;
 			static const int FIXED_POINT = 1;
 			static const int DIFFUSE_3D = 2;
+
+
+			static const int INDEX_VCELL_LOCATION = 0;
+			static const int INDEX_VCELL_MARK = 1;
+			static const int VALUE_VCELL_MARK_SET = 1;
+			static const int VALUE_VCELL_MARK_CLEAR = 0;
+			void postProcessVCellLocation();
 
 
 			void printDegreeDistribution();
