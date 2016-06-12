@@ -21,7 +21,7 @@ std::vector<REAL> spatial::MeshDef<REAL,N>::coordinateValues(spatial::Axis a) co
 template <typename T> 
 void spatial::MeshPosition::check( ) const {
 	if (index > std::numeric_limits<T>::max( ) ) {
-		VCELL_EXCEPTION(out_of_range, "index value " << index <<  " greater max permited by type " //<< typeid(T).name( )
+		VCELL_EXCEPTION(out_of_range, "index value " << index <<  " greater max permitted by type " //<< typeid(T).name( )
 			<< ", " << std::numeric_limits<T>::max( ) );
 	}
 }
