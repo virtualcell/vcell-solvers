@@ -84,6 +84,11 @@
  *                     This list is not guaranteed to be canonical. Filename argument is
  *                     optional (defaults to [model]_nf.species).
  *
+ *  -vcell = for Virtual Cell specific processing, assumes each molecule has two special sites
+ *           1st is for compartment location, 2nd for "mark" which is set in reaction and 
+ *           cleared for each product complex (after assigning a consistent location for
+ *           all molecules in a complex.
+ *
  *  \section devel_sec Developers
  * To begin developing and extending NFsim, the best place to start looking is in
  * the src/NFtest/simple_system directory. Here you'll find two files, simple_system.hh
@@ -660,6 +665,12 @@ void printHelp(string version)
 	cout<<"                    exact same results perhaps to compare performance"<<endl;
 	cout<<""<<endl;
 	cout<<"  -logo             prints out the ascii NFsim logo, for your viewing pleasure."<<endl;
+	cout<<""<<endl;
+	cout<<"  -vcell            for Virtual Cell specific processing, assumes each molecule"<<endl;
+	cout<<"                    has two special sites, first is for compartment location, "<<endl;
+	cout<<"                    second is to 'mark' molecules in product complexes "<<endl;
+	cout<<"                    to propagate correct compartment throughout complex "<<end;
+	cout<<"                    and then 'mark' is cleared."<<endl;
 	cout<<""<<endl;
 	cout<<""<<endl;
 }

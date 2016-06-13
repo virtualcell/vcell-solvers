@@ -58,8 +58,8 @@ void Complex::printDetails()
 
 void Complex::postProcessVCellLocation()
 {
-	cout << "---------------- updating complex in Complex::postProcessVCellLocation() -  B E G I N --------------------------" << endl;
-	printDetailsLong();
+//	cout << "---------------- updating complex in Complex::postProcessVCellLocation() -  B E G I N --------------------------" << endl;
+//	printDetailsLong();
 	//
 	// 1) search through complex until find a molecule with mark site state set to "marked".
 	// 2) store location site state for marked molecule (this is the desired location).
@@ -84,8 +84,8 @@ void Complex::postProcessVCellLocation()
 		molecule->setComponentState(INDEX_VCELL_LOCATION,markedLocationState);
 		molecule->setComponentState(INDEX_VCELL_MARK,VALUE_VCELL_MARK_CLEAR);
 	}
-	printDetailsLong();
-	cout << "---------------- updating complex in Complex::postProcessVCellLocation() -  D O N E -------------------------" << endl;
+//	printDetailsLong();
+//	cout << "---------------- updating complex in Complex::postProcessVCellLocation() -  D O N E -------------------------" << endl;
 
 }
 
