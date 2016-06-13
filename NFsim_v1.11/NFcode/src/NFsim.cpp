@@ -669,7 +669,7 @@ void printHelp(string version)
 	cout<<"  -vcell            for Virtual Cell specific processing, assumes each molecule"<<endl;
 	cout<<"                    has two special sites, first is for compartment location, "<<endl;
 	cout<<"                    second is to 'mark' molecules in product complexes "<<endl;
-	cout<<"                    to propagate correct compartment throughout complex "<<end;
+	cout<<"                    to propagate correct compartment throughout complex "<<endl;
 	cout<<"                    and then 'mark' is cleared."<<endl;
 	cout<<""<<endl;
 	cout<<""<<endl;
