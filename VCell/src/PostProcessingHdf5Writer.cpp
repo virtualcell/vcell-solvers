@@ -152,41 +152,7 @@ void PostProcessingHdf5Writer::createGroups() {
 		H5::Group dataGeneratorGroup = h5PPFile->createGroup(dataGeneratorGroupName);
 		
 		if (typeid(*dataGenerator) == typeid(VariableStatisticsDataGenerator)) {
-			// attributes : all the components, e.g. comp_0_name = varName, comp_0_unit = varUnit, comp_1_name = ... comp_1_unit = ...
-			int numVar = postProcessingBlock->simulation->getNumVariables();
-			for (int i = 0; i < numVar; i ++) {
-				Variable* var = postProcessingBlock->simulation->getVariable(i);
-				const char* varName = var->getName().c_str();
-				char attrName[64];
-				char compName[64];
-				char compUnit[64];
-
-				//write var average name and unit
-				sprintf(attrName, "comp_%d_name", 2 * i);
-				H5::Attribute attribute = dataGeneratorGroup.createAttribute(attrName, attributeNameStrType, attributeDataSpace);
-				sprintf(compName, "%s_average", varName);
-				attribute.write(attributeNameStrType, compName);
-
-				sprintf(attrName, "comp_%d_unit", 2 * i);
-				attribute = dataGeneratorGroup.createAttribute(attrName, attributeUnitStrType, attributeDataSpace);
-				if (var->getVarType() == VAR_MEMBRANE || var->getVarType() == VAR_MEMBRANE_PARTICLE || var->getVarType() == VAR_MEMBRANE_REGION){
-					sprintf(compUnit, "molecules.um-2");
-				} else{
-					sprintf(compUnit, "uM");
-				}
-				attribute.write(attributeUnitStrType, compUnit);
-
-				//write var total name and unit
-				sprintf(attrName, "comp_%d_name", 2 * i + 1);
-				attribute = dataGeneratorGroup.createAttribute(attrName, attributeNameStrType, attributeDataSpace);
-				sprintf(compName, "%s_total", varName);
-				attribute.write(attributeNameStrType, compName);
-
-				sprintf(attrName, "comp_%d_unit", 2 * i + 1);
-				attribute = dataGeneratorGroup.createAttribute(attrName, attributeUnitStrType, attributeDataSpace);
-				sprintf(compUnit, "molecules");
-				attribute.write(attributeUnitStrType, compUnit);
-			}
+			((VariableStatisticsDataGenerator*)dataGenerator)->detailGroup(h5PPFile, dataGeneratorGroup, postProcessingBlock->simulation);
 		}
 		else 
 		{
