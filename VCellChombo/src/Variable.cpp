@@ -12,6 +12,10 @@
 #include <REAL.H>
 #include <cmath>
 #include <iostream>
+#include <limits>
+
+const double Variable::double_max = std::numeric_limits<double>::max();
+const double Variable::double_min = std::numeric_limits<double>::min();
 
 Variable::Variable(string& nameStr, Structure* s, long Asize)
 {
@@ -22,6 +26,7 @@ Variable::Variable(string& nameStr, Structure* s, long Asize)
 	bElliptic = false;
 	varContext = 0;
 	curr = NULL;
+//	bVariableDiffusing = false;
 #ifndef CH_MPI
 	exactErrorVar = 0;
 	relativeErrorVar = 0;
@@ -74,6 +79,8 @@ void Variable::reset(bool bSaveVCellOutput)
 			memset(relativeErrorVar->getCurr(), 0, relativeErrorVar->getSize() * sizeof(double));
 		}
 	}
+	min = double_max;
+	max = double_min;
 	maxError = 0;
 	l2Error = 0;
 	l2Exact = 0;

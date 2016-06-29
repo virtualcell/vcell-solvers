@@ -93,26 +93,7 @@ void PostProcessingHdf5Writer::createGroups()
 		
 		if (typeid(*dataGenerator) == typeid(VariableStatisticsDataGenerator))
 		{
-			// attributes : all the components, e.g. comp_0_name = varName, comp_0_unit = varUnit, comp_1_name = ... comp_1_unit = ...
-			const vector<string>& compNames = ((VariableStatisticsDataGenerator*)dataGenerator)->getComponentNames();
-			const vector<string>& compUnits = ((VariableStatisticsDataGenerator*)dataGenerator)->getComponentUnits();
-			for (int i = 0; i < compNames.size(); i ++) {
-				char attrName[64];
-				char compName[64];
-				char compUnit[64];
-
-				sprintf(attrName, "comp_%d_name", i);
-				hid_t attribute = H5Acreate(dataGeneratorGroup, attrName, attributeStrType, attributeDataSpace, H5P_DEFAULT);
-				sprintf(compName, "%s", compNames[i].c_str());
-				H5Awrite(attribute, attributeStrType, compName);
-				H5Aclose(attribute);
-
-				sprintf(attrName, "comp_%d_unit", i);
-				attribute = H5Acreate(dataGeneratorGroup, attrName, attributeStrType, attributeDataSpace, H5P_DEFAULT);
-				sprintf(compUnit, "%s", compUnits[i].c_str());
-				H5Awrite(attribute, attributeStrType, compUnit);
-				H5Aclose(attribute);
-			}
+			((VariableStatisticsDataGenerator*)dataGenerator)->detailGroup(h5PPFile, dataGeneratorGroup, postProcessingBlock->getSimulation());
 		}
 		H5Gclose(dataGeneratorGroup);
 	}

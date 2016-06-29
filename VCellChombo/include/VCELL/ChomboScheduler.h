@@ -134,23 +134,13 @@ protected:
 private:
 	bool computeOneFaceCross(int, int, int, RealVect&, RealVect&, RealVect&, RealVect&, RealVect&);
 
-	static void fillBoxDataType(hid_t& boxType);
-	static void fillRealVectDataType(hid_t& realVectType);
-	static void fillIntVectDataType(hid_t& intVectType);
-	static void fillMembraneElementMetricsDataType(hid_t& metricsType);
-	static void fillStructureMetricsDataType(hid_t& metricsType);
-	static void fillFeaturePhaseVolDataType(hid_t& metricsType);
-	static void fillMembraneIdDataType(hid_t& metricsType);
-	static void fillVertexDataType(hid_t& metricsType);
-	static void fillSegmentDataType(hid_t& triangleType);
+	static hid_t createRealVectDataType();
+	static hid_t createIntVectDataType();
 
 #if CH_SPACEDIM == 2
 	int findNeighborMembraneIndex2D(int iphase, int ilev, const IntVect& gridIndex, int iedge,
 	const RealVect& normalizedCrossPoint, const RealVect& crossPointRealCoords, int& neighborEdge);
 #else
-	static void fillSliceViewDataType(hid_t& sliceViewType);
-	static void fillTriangleDataType(hid_t& triangleType);
-	static void fillSurfaceTriangleDataType(hid_t& triangleType);
 	bool assignEdgeVertArray(int ilev, IntVect& nGridIndex, bool isCorner, int otherEdge, int vertexIndex, int (*edgeVertArray)[21]);
 	IntVect orientVertices(RealVect* vertices, RealVect& outNormal);
 #endif

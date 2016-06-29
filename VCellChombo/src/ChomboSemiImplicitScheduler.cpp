@@ -716,16 +716,6 @@ void ChomboSemiImplicitScheduler::getExtrapStencils(Vector<RefCountedPtr<BaseInd
 	a_destVoFs.resize(vofs.size());
 	a_stencils.resize(vofs.size());
 	IntVectSet& cfivs = (IntVectSet&)a_cfivs;
-	bool bPrintStencil = true;
-	if (iphase == 0 && ivol == 0)
-	{
-		bPrintStencil = true;
-	}
-	if (bPrintStencil)
-	{
-		pout() << setprecision(17);
-		pout() << "[iphase ivol ilev box]=[" << iphase << " " << ivol << " " << ilev << " " << grid << " " << "]"<< endl;
-	}
 	for(int ivof = 0; ivof < vofs.size(); ivof++)
 	{
 		VoFStencil  extrapStenc;
@@ -762,29 +752,6 @@ void ChomboSemiImplicitScheduler::getExtrapStencils(Vector<RefCountedPtr<BaseInd
 
 		a_destVoFs[ivof] = RefCountedPtr<BaseIndex  >(new   VolIndex(volIndex));
 		a_stencils[ivof] = RefCountedPtr<BaseStencil>(new VoFStencil(extrapStenc));
-
-		if (bPrintStencil)
-		{
-			double volfrac = ebisBox.volFrac(volIndex);
-			RealVect vol_center = EBArith::getVofLocation(volIndex, vectDxes[ilev], chomboGeometry->getDomainOrigin());
-			const RealVect& mem_centroid = ebisBox.bndryCentroid(volIndex);
-			RealVect mem_point = mem_centroid;
-			mem_point *= vectDxes[ilev];
-			mem_point += vol_center;
-//			if (volfrac < 1e-3)
-//			{
-				int n = a_stencils[ivof]->size();
-				pout() << "stencils for " << volIndex << ", orderDropped " << dropOrder << ", memcoord=" << mem_point << ", volfrac=" << volfrac << ", #points=" << n << endl;
-				for (int n = 0; n < a_stencils[ivof]->size(); ++ n)
-				{
-					VoFStencil& vofStencil = (VoFStencil&)*a_stencils[ivof];
-					double weight = vofStencil.weight(n);
-					const VolIndex& index = vofStencil.vof(n);
-					int variable = vofStencil.variable(n);
-					pout() << index << ", weight=" << weight << ", variable=" << variable << endl;
-//				}
-			}
-		}
 	}
 }
 

@@ -1449,6 +1449,10 @@ void ChomboScheduler::populateVolumeSolution(int iphase, int ivol)
 							}
 							volFrac *= numRepeats;
 							double sol = solnDataPtr[getChomboBoxLocalIndex(solnSize, ivar, D_DECL(i, j, k))];
+
+							var->min = std::min<double>(var->min, sol);
+							var->max = std::max<double>(var->max, sol);
+
 							var->addTotalVCell(sol * volFrac * viewLevelUnitV);
 							double error = 0;
 							double relErr = 0;
@@ -1684,34 +1688,39 @@ void ChomboScheduler::writeData(char* filename, bool convertChomboData) {
 #define SLICE_VIEW_DATASET MESH_GROUP"/slice view"
 #endif
 
-void ChomboScheduler::fillIntVectDataType(hid_t& intVectType)
+hid_t ChomboScheduler::createIntVectDataType()
 {
+	hid_t intVectType = H5Tcreate(H5T_COMPOUND, sizeof(IntVect));
 	D_TERM(H5Tinsert(intVectType, "i", HOFFSET(IntVect, dataPtr()[0]), H5T_NATIVE_INT);,
 				 H5Tinsert(intVectType, "j", HOFFSET(IntVect, dataPtr()[1]), H5T_NATIVE_INT);,
 				 H5Tinsert(intVectType, "k", HOFFSET(IntVect, dataPtr()[2]), H5T_NATIVE_INT);)
+	return intVectType;
 }
 
-void ChomboScheduler::fillRealVectDataType(hid_t& realVectType)
+hid_t ChomboScheduler::createRealVectDataType()
 {
+	hid_t realVectType = H5Tcreate(H5T_COMPOUND, sizeof(RealVect));
 	D_TERM(H5Tinsert(realVectType, "x", HOFFSET(RealVect, dataPtr()[0]), H5T_NATIVE_DOUBLE);,
 				 H5Tinsert(realVectType, "y", HOFFSET(RealVect, dataPtr()[1]), H5T_NATIVE_DOUBLE);,
 				 H5Tinsert(realVectType, "z", HOFFSET(RealVect, dataPtr()[2]), H5T_NATIVE_DOUBLE);)
+	return realVectType;
 }
 
 struct MeshBox
 {
 	IntVect lo, hi;
+	static hid_t createH5Type()
+	{
+		hid_t boxType = H5Tcreate(H5T_COMPOUND, sizeof(MeshBox));
+		D_TERM(H5Tinsert(boxType, "lo_i", HOFFSET(MeshBox, lo[0]), H5T_NATIVE_INT);,
+					 H5Tinsert(boxType, "lo_j", HOFFSET(MeshBox, lo[1]), H5T_NATIVE_INT);,
+					 H5Tinsert(boxType, "lo_k", HOFFSET(MeshBox, lo[2]), H5T_NATIVE_INT);)
+		D_TERM(H5Tinsert(boxType, "hi_i", HOFFSET(MeshBox, hi[0]), H5T_NATIVE_INT);,
+					 H5Tinsert(boxType, "hi_j", HOFFSET(MeshBox, hi[1]), H5T_NATIVE_INT);,
+					 H5Tinsert(boxType, "hi_k", HOFFSET(MeshBox, hi[2]), H5T_NATIVE_INT);)
+		return boxType;
+	}
 };
-
-void ChomboScheduler::fillBoxDataType(hid_t& boxType)
-{
-	D_TERM(H5Tinsert(boxType, "lo_i", HOFFSET(MeshBox, lo[0]), H5T_NATIVE_INT);,
-				 H5Tinsert(boxType, "lo_j", HOFFSET(MeshBox, lo[1]), H5T_NATIVE_INT);,
-				 H5Tinsert(boxType, "lo_k", HOFFSET(MeshBox, lo[2]), H5T_NATIVE_INT);)
-	D_TERM(H5Tinsert(boxType, "hi_i", HOFFSET(MeshBox, hi[0]), H5T_NATIVE_INT);,
-				 H5Tinsert(boxType, "hi_j", HOFFSET(MeshBox, hi[1]), H5T_NATIVE_INT);,
-				 H5Tinsert(boxType, "hi_k", HOFFSET(MeshBox, hi[2]), H5T_NATIVE_INT);)
-}
 
 struct MembraneElementMetrics
 {
@@ -1722,26 +1731,29 @@ struct MembraneElementMetrics
 	double volumeFraction,areaFraction;
 	int membraneId;
 	unsigned short cornerPhaseMask;
+
+	static hid_t createH5Type()
+	{
+		hid_t metricsType = H5Tcreate(H5T_COMPOUND, sizeof(MembraneElementMetrics));
+		H5Tinsert(metricsType, "index", HOFFSET(MembraneElementMetrics, index), H5T_NATIVE_INT);
+		H5Tinsert(metricsType, "level", HOFFSET(MembraneElementMetrics, level), H5T_NATIVE_INT);
+		D_TERM(H5Tinsert(metricsType, "i", HOFFSET(MembraneElementMetrics, gridIndex[0]), H5T_NATIVE_INT);,
+					 H5Tinsert(metricsType, "j", HOFFSET(MembraneElementMetrics, gridIndex[1]), H5T_NATIVE_INT);,
+					 H5Tinsert(metricsType, "k", HOFFSET(MembraneElementMetrics, gridIndex[2]), H5T_NATIVE_INT);)
+		D_TERM(H5Tinsert(metricsType, "x", HOFFSET(MembraneElementMetrics, coord[0]), H5T_NATIVE_DOUBLE);,
+					 H5Tinsert(metricsType, "y", HOFFSET(MembraneElementMetrics, coord[1]), H5T_NATIVE_DOUBLE);,
+					 H5Tinsert(metricsType, "z", HOFFSET(MembraneElementMetrics, coord[2]), H5T_NATIVE_DOUBLE);)
+		D_TERM(H5Tinsert(metricsType, "normalX", HOFFSET(MembraneElementMetrics, normal[0]), H5T_NATIVE_DOUBLE);,
+					 H5Tinsert(metricsType, "normalY", HOFFSET(MembraneElementMetrics, normal[1]), H5T_NATIVE_DOUBLE);,
+					 H5Tinsert(metricsType, "normalZ", HOFFSET(MembraneElementMetrics, normal[2]), H5T_NATIVE_DOUBLE);)
+		H5Tinsert(metricsType, "volumeFraction", HOFFSET(MembraneElementMetrics, volumeFraction), H5T_NATIVE_DOUBLE);
+		H5Tinsert(metricsType, "areaFraction", HOFFSET(MembraneElementMetrics, areaFraction), H5T_NATIVE_DOUBLE);
+		H5Tinsert(metricsType, "membraneId", HOFFSET(MembraneElementMetrics, membraneId), H5T_NATIVE_INT);
+		H5Tinsert(metricsType, "cornerPhaseMask", HOFFSET(MembraneElementMetrics, cornerPhaseMask), H5T_NATIVE_USHORT);
+		return metricsType;
+	}
 };
 
-void ChomboScheduler::fillMembraneElementMetricsDataType(hid_t& metricsType)
-{
-	H5Tinsert(metricsType, "index", HOFFSET(MembraneElementMetrics, index), H5T_NATIVE_INT);
-	H5Tinsert(metricsType, "level", HOFFSET(MembraneElementMetrics, level), H5T_NATIVE_INT);
-	D_TERM(H5Tinsert(metricsType, "i", HOFFSET(MembraneElementMetrics, gridIndex[0]), H5T_NATIVE_INT);,
-				 H5Tinsert(metricsType, "j", HOFFSET(MembraneElementMetrics, gridIndex[1]), H5T_NATIVE_INT);,
-				 H5Tinsert(metricsType, "k", HOFFSET(MembraneElementMetrics, gridIndex[2]), H5T_NATIVE_INT);)
-	D_TERM(H5Tinsert(metricsType, "x", HOFFSET(MembraneElementMetrics, coord[0]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(metricsType, "y", HOFFSET(MembraneElementMetrics, coord[1]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(metricsType, "z", HOFFSET(MembraneElementMetrics, coord[2]), H5T_NATIVE_DOUBLE);)
-	D_TERM(H5Tinsert(metricsType, "normalX", HOFFSET(MembraneElementMetrics, normal[0]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(metricsType, "normalY", HOFFSET(MembraneElementMetrics, normal[1]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(metricsType, "normalZ", HOFFSET(MembraneElementMetrics, normal[2]), H5T_NATIVE_DOUBLE);)
-	H5Tinsert(metricsType, "volumeFraction", HOFFSET(MembraneElementMetrics, volumeFraction), H5T_NATIVE_DOUBLE);
-	H5Tinsert(metricsType, "areaFraction", HOFFSET(MembraneElementMetrics, areaFraction), H5T_NATIVE_DOUBLE);
-	H5Tinsert(metricsType, "membraneId", HOFFSET(MembraneElementMetrics, membraneId), H5T_NATIVE_INT);
-	H5Tinsert(metricsType, "cornerPhaseMask", HOFFSET(MembraneElementMetrics, cornerPhaseMask), H5T_NATIVE_USHORT);
-}
 
 struct StructureMetrics
 {
@@ -1749,57 +1761,67 @@ struct StructureMetrics
 	char type[128];
 	double size;
 	int numPoints;
+
+	static hid_t createH5Type()
+	{
+		hid_t metricsType = H5Tcreate(H5T_COMPOUND, sizeof(StructureMetrics));
+		hid_t strType = H5Tcreate(H5T_STRING, sizeof(char) * 128);
+		H5Tinsert(metricsType, "name", HOFFSET(StructureMetrics, name), strType);
+		H5Tinsert(metricsType, "type", HOFFSET(StructureMetrics, type), strType);
+		H5Tinsert(metricsType, "size", HOFFSET(StructureMetrics, size), H5T_NATIVE_DOUBLE);
+		H5Tinsert(metricsType, "numPoints", HOFFSET(StructureMetrics, numPoints), H5T_NATIVE_INT);
+		H5Tclose(strType);
+		return metricsType;
+	}
 };
 
-void ChomboScheduler::fillStructureMetricsDataType(hid_t& metricsType)
-{
-	hid_t strType = H5Tcreate(H5T_STRING, sizeof(char) * 128);
-	H5Tinsert(metricsType, "name", HOFFSET(StructureMetrics, name), strType);
-	H5Tinsert(metricsType, "type", HOFFSET(StructureMetrics, type), strType);
-	H5Tinsert(metricsType, "size", HOFFSET(StructureMetrics, size), H5T_NATIVE_DOUBLE);
-	H5Tinsert(metricsType, "numPoints", HOFFSET(StructureMetrics, numPoints), H5T_NATIVE_INT);
-	H5Tclose(strType);
-}
 struct FeaturePhaseVol
 {
 	char feature[128];
 	int iphase;
 	int ivol;
-};
 
-void ChomboScheduler::fillFeaturePhaseVolDataType(hid_t& metricsType)
-{
-	hid_t strType = H5Tcreate(H5T_STRING, sizeof(char) * 128);
-	H5Tinsert(metricsType, "feature", HOFFSET(FeaturePhaseVol, feature), strType);
-	H5Tinsert(metricsType, "iphase", HOFFSET(FeaturePhaseVol, iphase), H5T_NATIVE_INT);
-	H5Tinsert(metricsType, "ivol", HOFFSET(FeaturePhaseVol, ivol), H5T_NATIVE_INT);
-	H5Tclose(strType);
-}
+	static hid_t createH5Type()
+	{
+		hid_t metricsType = H5Tcreate(H5T_COMPOUND, sizeof(FeaturePhaseVol));
+		hid_t strType = H5Tcreate(H5T_STRING, sizeof(char) * 128);
+		H5Tinsert(metricsType, "feature", HOFFSET(FeaturePhaseVol, feature), strType);
+		H5Tinsert(metricsType, "iphase", HOFFSET(FeaturePhaseVol, iphase), H5T_NATIVE_INT);
+		H5Tinsert(metricsType, "ivol", HOFFSET(FeaturePhaseVol, ivol), H5T_NATIVE_INT);
+		H5Tclose(strType);
+		return metricsType;
+	}
+};
 
 struct MembraneId
 {
 	int id;
 	char membrane[128];
-};
 
-void ChomboScheduler::fillMembraneIdDataType(hid_t& metricsType)
-{
-	hid_t strType = H5Tcreate(H5T_STRING, sizeof(char) * 128);
-	H5Tinsert(metricsType, "id", HOFFSET(MembraneId, id), H5T_NATIVE_INT);
-	H5Tinsert(metricsType, "membrane", HOFFSET(MembraneId, membrane), strType);
-	H5Tclose(strType);
-}
+	static hid_t createH5Type()
+	{
+		hid_t metricsType = H5Tcreate(H5T_COMPOUND, sizeof(MembraneId));
+		hid_t strType = H5Tcreate(H5T_STRING, sizeof(char) * 128);
+		H5Tinsert(metricsType, "id", HOFFSET(MembraneId, id), H5T_NATIVE_INT);
+		H5Tinsert(metricsType, "membrane", HOFFSET(MembraneId, membrane), strType);
+		H5Tclose(strType);
+		return metricsType;
+	}
+};
 
 struct Vertex
 {
 	RealVect coords;
+
+	static hid_t createH5Type()
+	{
+		hid_t vertexType = H5Tcreate(H5T_COMPOUND, sizeof(Vertex));
+		D_TERM(H5Tinsert(vertexType, "x", HOFFSET(Vertex, coords[0]), H5T_NATIVE_DOUBLE);,
+					H5Tinsert(vertexType, "y", HOFFSET(Vertex, coords[1]), H5T_NATIVE_DOUBLE);,
+					H5Tinsert(vertexType, "z", HOFFSET(Vertex, coords[2]), H5T_NATIVE_DOUBLE);)
+		return vertexType;
+	}
 };
-void ChomboScheduler::fillVertexDataType(hid_t& vertexType)
-{
-	D_TERM(H5Tinsert(vertexType, "x", HOFFSET(Vertex, coords[0]), H5T_NATIVE_DOUBLE);,
-				H5Tinsert(vertexType, "y", HOFFSET(Vertex, coords[1]), H5T_NATIVE_DOUBLE);,
-				H5Tinsert(vertexType, "z", HOFFSET(Vertex, coords[2]), H5T_NATIVE_DOUBLE);)
-}
 
 #if CH_SPACEDIM == 2
 struct Segment
@@ -1812,15 +1834,18 @@ struct Segment
 		vertexIndexes[0] = vertexIndexes[1] = -1;
 		neighborIndexes[0] = neighborIndexes[1] = MEMBRANE_NEIGHBOR_UNKNOWN;
 	}
+
+	static hid_t createH5Type()
+	{
+		hid_t segmentType = H5Tcreate(H5T_COMPOUND, sizeof(Segment));
+		H5Tinsert(segmentType, "index", HOFFSET(Segment, index), H5T_NATIVE_INT);
+		H5Tinsert(segmentType, "vertex_1", HOFFSET(Segment, vertexIndexes[0]), H5T_NATIVE_INT);
+		H5Tinsert(segmentType, "vertex_2", HOFFSET(Segment, vertexIndexes[1]), H5T_NATIVE_INT);
+		H5Tinsert(segmentType, "neighbor_1", HOFFSET(Segment, neighborIndexes[0]), H5T_NATIVE_INT);
+		H5Tinsert(segmentType, "neighbor_2", HOFFSET(Segment, neighborIndexes[1]), H5T_NATIVE_INT);
+		return segmentType;
+	}
 };
-void ChomboScheduler::fillSegmentDataType(hid_t& segmentType)
-{
-	H5Tinsert(segmentType, "index", HOFFSET(Segment, index), H5T_NATIVE_INT);
-	H5Tinsert(segmentType, "vertex_1", HOFFSET(Segment, vertexIndexes[0]), H5T_NATIVE_INT);
-	H5Tinsert(segmentType, "vertex_2", HOFFSET(Segment, vertexIndexes[1]), H5T_NATIVE_INT);
-	H5Tinsert(segmentType, "neighbor_1", HOFFSET(Segment, neighborIndexes[0]), H5T_NATIVE_INT);
-	H5Tinsert(segmentType, "neighbor_2", HOFFSET(Segment, neighborIndexes[1]), H5T_NATIVE_INT);
-}
 #else
 struct Triangle
 {
@@ -1828,23 +1853,25 @@ struct Triangle
 	int face;
 	int neighborIndex;
 	RealVect triVertices[3];
-};
 
-void ChomboScheduler::fillTriangleDataType(hid_t& triangleType)
-{
-	H5Tinsert(triangleType, "index", HOFFSET(Triangle, memIndex), H5T_NATIVE_INT);
-	H5Tinsert(triangleType, "face", HOFFSET(Triangle, face), H5T_NATIVE_INT);
-	H5Tinsert(triangleType, "neighborIndex", HOFFSET(Triangle, neighborIndex), H5T_NATIVE_INT);
-	D_TERM(H5Tinsert(triangleType, "x0", HOFFSET(Triangle, triVertices[0][0]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(triangleType, "y0", HOFFSET(Triangle, triVertices[0][1]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(triangleType, "z0", HOFFSET(Triangle, triVertices[0][2]), H5T_NATIVE_DOUBLE);)
-	D_TERM(H5Tinsert(triangleType, "x1", HOFFSET(Triangle, triVertices[1][0]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(triangleType, "y1", HOFFSET(Triangle, triVertices[1][1]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(triangleType, "z1", HOFFSET(Triangle, triVertices[1][2]), H5T_NATIVE_DOUBLE);)
-	D_TERM(H5Tinsert(triangleType, "x2", HOFFSET(Triangle, triVertices[2][0]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(triangleType, "y2", HOFFSET(Triangle, triVertices[2][1]), H5T_NATIVE_DOUBLE);,
-				 H5Tinsert(triangleType, "z2", HOFFSET(Triangle, triVertices[2][2]), H5T_NATIVE_DOUBLE);)
-}
+	static hid_t createH5Type()
+	{
+		hid_t triangleType = H5Tcreate(H5T_COMPOUND, sizeof(Triangle));
+		H5Tinsert(triangleType, "index", HOFFSET(Triangle, memIndex), H5T_NATIVE_INT);
+		H5Tinsert(triangleType, "face", HOFFSET(Triangle, face), H5T_NATIVE_INT);
+		H5Tinsert(triangleType, "neighborIndex", HOFFSET(Triangle, neighborIndex), H5T_NATIVE_INT);
+		D_TERM(H5Tinsert(triangleType, "x0", HOFFSET(Triangle, triVertices[0][0]), H5T_NATIVE_DOUBLE);,
+					 H5Tinsert(triangleType, "y0", HOFFSET(Triangle, triVertices[0][1]), H5T_NATIVE_DOUBLE);,
+					 H5Tinsert(triangleType, "z0", HOFFSET(Triangle, triVertices[0][2]), H5T_NATIVE_DOUBLE);)
+		D_TERM(H5Tinsert(triangleType, "x1", HOFFSET(Triangle, triVertices[1][0]), H5T_NATIVE_DOUBLE);,
+					 H5Tinsert(triangleType, "y1", HOFFSET(Triangle, triVertices[1][1]), H5T_NATIVE_DOUBLE);,
+					 H5Tinsert(triangleType, "z1", HOFFSET(Triangle, triVertices[1][2]), H5T_NATIVE_DOUBLE);)
+		D_TERM(H5Tinsert(triangleType, "x2", HOFFSET(Triangle, triVertices[2][0]), H5T_NATIVE_DOUBLE);,
+					 H5Tinsert(triangleType, "y2", HOFFSET(Triangle, triVertices[2][1]), H5T_NATIVE_DOUBLE);,
+					 H5Tinsert(triangleType, "z2", HOFFSET(Triangle, triVertices[2][2]), H5T_NATIVE_DOUBLE);)
+		return triangleType;
+	}
+};
 
 struct SurfaceTriangle
 {
@@ -1859,50 +1886,54 @@ struct SurfaceTriangle
 		neighborIndexes[0] = neighborIndexes[1] = neighborIndexes[2] = MEMBRANE_NEIGHBOR_UNKNOWN;
 		oriented = false;
 	}
-};
 
-void ChomboScheduler::fillSurfaceTriangleDataType(hid_t& triangleType)
-{
-	H5Tinsert(triangleType, "membrane index", HOFFSET(SurfaceTriangle, memIndex), H5T_NATIVE_INT);
-	H5Tinsert(triangleType, "face", HOFFSET(SurfaceTriangle, face), H5T_NATIVE_INT);
-	H5Tinsert(triangleType, "neighbor 0", HOFFSET(SurfaceTriangle, neighborIndexes[0]), H5T_NATIVE_INT);
-	H5Tinsert(triangleType, "neighbor 1", HOFFSET(SurfaceTriangle, neighborIndexes[1]), H5T_NATIVE_INT);
-	H5Tinsert(triangleType, "neighbor 2", HOFFSET(SurfaceTriangle, neighborIndexes[2]), H5T_NATIVE_INT);
-	H5Tinsert(triangleType, "vertex 0", HOFFSET(SurfaceTriangle, triVertices[0]), H5T_NATIVE_INT);
-	H5Tinsert(triangleType, "vertex 1", HOFFSET(SurfaceTriangle, triVertices[1]), H5T_NATIVE_INT);
-	H5Tinsert(triangleType, "vertex 2", HOFFSET(SurfaceTriangle, triVertices[2]), H5T_NATIVE_INT);
-	H5Tinsert(triangleType, "oriented", HOFFSET(SurfaceTriangle, oriented), H5T_NATIVE_HBOOL);
-}
+	static hid_t createH5Type()
+	{
+		hid_t triangleType = H5Tcreate(H5T_COMPOUND, sizeof(Triangle));
+		H5Tinsert(triangleType, "membrane index", HOFFSET(SurfaceTriangle, memIndex), H5T_NATIVE_INT);
+		H5Tinsert(triangleType, "face", HOFFSET(SurfaceTriangle, face), H5T_NATIVE_INT);
+		H5Tinsert(triangleType, "neighbor 0", HOFFSET(SurfaceTriangle, neighborIndexes[0]), H5T_NATIVE_INT);
+		H5Tinsert(triangleType, "neighbor 1", HOFFSET(SurfaceTriangle, neighborIndexes[1]), H5T_NATIVE_INT);
+		H5Tinsert(triangleType, "neighbor 2", HOFFSET(SurfaceTriangle, neighborIndexes[2]), H5T_NATIVE_INT);
+		H5Tinsert(triangleType, "vertex 0", HOFFSET(SurfaceTriangle, triVertices[0]), H5T_NATIVE_INT);
+		H5Tinsert(triangleType, "vertex 1", HOFFSET(SurfaceTriangle, triVertices[1]), H5T_NATIVE_INT);
+		H5Tinsert(triangleType, "vertex 2", HOFFSET(SurfaceTriangle, triVertices[2]), H5T_NATIVE_INT);
+		H5Tinsert(triangleType, "oriented", HOFFSET(SurfaceTriangle, oriented), H5T_NATIVE_HBOOL);
+		return triangleType;
+	}
+};
 
 struct SliceView
 {
 	int index;
 	double crossPoints[3][4];
 	int vertices[3][2];
-};
 
-void ChomboScheduler::fillSliceViewDataType(hid_t& sliceViewType)
-{
-	H5Tinsert(sliceViewType, "index", HOFFSET(SliceView, index), H5T_NATIVE_INT);
-	H5Tinsert(sliceViewType, "x_y1", HOFFSET(SliceView, crossPoints[0][0]), H5T_NATIVE_DOUBLE);
-	H5Tinsert(sliceViewType, "x_z1", HOFFSET(SliceView, crossPoints[0][1]), H5T_NATIVE_DOUBLE);
-	H5Tinsert(sliceViewType, "x_y2", HOFFSET(SliceView, crossPoints[0][2]), H5T_NATIVE_DOUBLE);
-	H5Tinsert(sliceViewType, "x_z2", HOFFSET(SliceView, crossPoints[0][3]), H5T_NATIVE_DOUBLE);
-	H5Tinsert(sliceViewType, "y_x1", HOFFSET(SliceView, crossPoints[1][0]), H5T_NATIVE_DOUBLE);
-	H5Tinsert(sliceViewType, "y_z1", HOFFSET(SliceView, crossPoints[1][1]), H5T_NATIVE_DOUBLE);
-	H5Tinsert(sliceViewType, "y_x2", HOFFSET(SliceView, crossPoints[1][2]), H5T_NATIVE_DOUBLE);
-	H5Tinsert(sliceViewType, "y_z2", HOFFSET(SliceView, crossPoints[1][3]), H5T_NATIVE_DOUBLE);
-	H5Tinsert(sliceViewType, "z_x1", HOFFSET(SliceView, crossPoints[2][0]), H5T_NATIVE_DOUBLE);
-	H5Tinsert(sliceViewType, "z_y1", HOFFSET(SliceView, crossPoints[2][1]), H5T_NATIVE_DOUBLE);
-	H5Tinsert(sliceViewType, "z_x2", HOFFSET(SliceView, crossPoints[2][2]), H5T_NATIVE_DOUBLE);
-	H5Tinsert(sliceViewType, "z_y2", HOFFSET(SliceView, crossPoints[2][3]), H5T_NATIVE_DOUBLE);
-	H5Tinsert(sliceViewType, "x_v1", HOFFSET(SliceView, vertices[0][0]), H5T_NATIVE_INT);
-	H5Tinsert(sliceViewType, "x_v2", HOFFSET(SliceView, vertices[0][1]), H5T_NATIVE_INT);
-	H5Tinsert(sliceViewType, "y_v1", HOFFSET(SliceView, vertices[1][0]), H5T_NATIVE_INT);
-	H5Tinsert(sliceViewType, "y_v2", HOFFSET(SliceView, vertices[1][1]), H5T_NATIVE_INT);
-	H5Tinsert(sliceViewType, "z_v1", HOFFSET(SliceView, vertices[2][0]), H5T_NATIVE_INT);
-	H5Tinsert(sliceViewType, "z_v2", HOFFSET(SliceView, vertices[2][1]), H5T_NATIVE_INT);
-}
+	static hid_t createH5Type()
+	{
+		hid_t sliceViewType = H5Tcreate(H5T_COMPOUND, sizeof(SliceView));
+		H5Tinsert(sliceViewType, "index", HOFFSET(SliceView, index), H5T_NATIVE_INT);
+		H5Tinsert(sliceViewType, "x_y1", HOFFSET(SliceView, crossPoints[0][0]), H5T_NATIVE_DOUBLE);
+		H5Tinsert(sliceViewType, "x_z1", HOFFSET(SliceView, crossPoints[0][1]), H5T_NATIVE_DOUBLE);
+		H5Tinsert(sliceViewType, "x_y2", HOFFSET(SliceView, crossPoints[0][2]), H5T_NATIVE_DOUBLE);
+		H5Tinsert(sliceViewType, "x_z2", HOFFSET(SliceView, crossPoints[0][3]), H5T_NATIVE_DOUBLE);
+		H5Tinsert(sliceViewType, "y_x1", HOFFSET(SliceView, crossPoints[1][0]), H5T_NATIVE_DOUBLE);
+		H5Tinsert(sliceViewType, "y_z1", HOFFSET(SliceView, crossPoints[1][1]), H5T_NATIVE_DOUBLE);
+		H5Tinsert(sliceViewType, "y_x2", HOFFSET(SliceView, crossPoints[1][2]), H5T_NATIVE_DOUBLE);
+		H5Tinsert(sliceViewType, "y_z2", HOFFSET(SliceView, crossPoints[1][3]), H5T_NATIVE_DOUBLE);
+		H5Tinsert(sliceViewType, "z_x1", HOFFSET(SliceView, crossPoints[2][0]), H5T_NATIVE_DOUBLE);
+		H5Tinsert(sliceViewType, "z_y1", HOFFSET(SliceView, crossPoints[2][1]), H5T_NATIVE_DOUBLE);
+		H5Tinsert(sliceViewType, "z_x2", HOFFSET(SliceView, crossPoints[2][2]), H5T_NATIVE_DOUBLE);
+		H5Tinsert(sliceViewType, "z_y2", HOFFSET(SliceView, crossPoints[2][3]), H5T_NATIVE_DOUBLE);
+		H5Tinsert(sliceViewType, "x_v1", HOFFSET(SliceView, vertices[0][0]), H5T_NATIVE_INT);
+		H5Tinsert(sliceViewType, "x_v2", HOFFSET(SliceView, vertices[0][1]), H5T_NATIVE_INT);
+		H5Tinsert(sliceViewType, "y_v1", HOFFSET(SliceView, vertices[1][0]), H5T_NATIVE_INT);
+		H5Tinsert(sliceViewType, "y_v2", HOFFSET(SliceView, vertices[1][1]), H5T_NATIVE_INT);
+		H5Tinsert(sliceViewType, "z_v1", HOFFSET(SliceView, vertices[2][0]), H5T_NATIVE_INT);
+		H5Tinsert(sliceViewType, "z_v2", HOFFSET(SliceView, vertices[2][1]), H5T_NATIVE_INT);
+		return sliceViewType;
+	}
+};
 #endif
 
 #if CH_SPACEDIM == 2
@@ -2761,16 +2792,13 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 
 	// origin
 	pout() << "writing attribute " << MESH_ATTR_ORIGIN << "=" << chomboGeometry->getDomainOrigin() << endl;
-	hid_t realVectType = H5Tcreate(H5T_COMPOUND, sizeof(RealVect));
-	fillRealVectDataType(realVectType);
+	hid_t realVectType = createRealVectDataType();
 	attribute = H5Acreate(meshGroup, MESH_ATTR_ORIGIN, realVectType, scalarDataSpace, H5P_DEFAULT);
 	H5Awrite(attribute, realVectType, chomboGeometry->getDomainOrigin().dataPtr());
 	H5Aclose(attribute);
 
 	// extent
 	pout() << "writing attribute " << MESH_ATTR_EXTENT << "=" << chomboGeometry->getDomainSize() << endl;
-	realVectType = H5Tcreate(H5T_COMPOUND, sizeof(RealVect));
-	fillRealVectDataType(realVectType);
 	attribute = H5Acreate(meshGroup, MESH_ATTR_EXTENT, realVectType, scalarDataSpace, H5P_DEFAULT);
 	H5Awrite(attribute, realVectType, chomboGeometry->getDomainSize().dataPtr());
 	H5Aclose(attribute);
@@ -2778,8 +2806,7 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	// mesh size
 	int viewLevel = chomboSpec->getViewLevel();
 	pout() << "writing attribute " << MESH_ATTR_NX << "=" << vectNxes[viewLevel] << endl;
-	hid_t intVectType = H5Tcreate(H5T_COMPOUND, sizeof(IntVect));
-	fillIntVectDataType(intVectType);
+	hid_t intVectType = createIntVectDataType();
 	attribute = H5Acreate(meshGroup, MESH_ATTR_NX, intVectType, scalarDataSpace, H5P_DEFAULT);
 	H5Awrite(attribute, intVectType, vectNxes[viewLevel].dataPtr());
 	H5Aclose(attribute);
@@ -2824,8 +2851,7 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	{
 	pout() << "writing group " << BOXES_GROUP << endl;
 	hid_t boxesGroup = H5Gcreate(h5MeshFile, BOXES_GROUP, H5P_DEFAULT);
-	hid_t boxType = H5Tcreate(H5T_COMPOUND, sizeof(MeshBox));
-	fillBoxDataType(boxType);
+	hid_t boxType = MeshBox::createH5Type();
 	int rank = 1;
 	
 	for (int ilev = 0; ilev < numLevels; ++ ilev)
@@ -2860,8 +2886,7 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	// structures
 	{
 	pout() << "creating dataset " << STRUCTURES_DATASET << endl;
-	hid_t sType = H5Tcreate(H5T_COMPOUND, sizeof(StructureMetrics));
-	fillStructureMetricsDataType(sType);
+	hid_t sType = StructureMetrics::createH5Type();
 	VCellModel* model = SimTool::getInstance()->getModel();
 	int numStructures = model->getNumFeatures() + model->getNumMembranes();
 	
@@ -2904,8 +2929,7 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	// featurephasevols
 	{
 	pout() << "creating dataset " << FETUREPHASEVOLS_DATASET << endl;
-	hid_t sType = H5Tcreate(H5T_COMPOUND, sizeof(FeaturePhaseVol));
-	fillFeaturePhaseVolDataType(sType);
+	hid_t sType = FeaturePhaseVol::createH5Type();
 
 	int ts = phaseVolumeList[phase0].size() + phaseVolumeList[phase1].size();
 	hsize_t dim[] = {ts};   /* Dataspace dimensions */
@@ -2940,8 +2964,7 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	// membraneids
 	{
 	pout() << "creating dataset " << MEMBRANEIDS_DATASET << endl;
-	hid_t sType = H5Tcreate(H5T_COMPOUND, sizeof(MembraneId));
-	fillMembraneIdDataType(sType);
+	hid_t sType = MembraneId::createH5Type();
 
 	int ts = 0;
 	for (int ivol = 0; ivol < phaseVolumeList[phase0].size(); ++ ivol)
@@ -2983,8 +3006,7 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	// membrane metrics
 	{
 	pout() << "writing dataset " << MEMBRANE_ELEMENTS_DATASET << ", count=" << numMembranePoints << endl;
-	hid_t metricsType = H5Tcreate(H5T_COMPOUND, sizeof(MembraneElementMetrics));
-	fillMembraneElementMetricsDataType(metricsType);
+	hid_t metricsType = MembraneElementMetrics::createH5Type();
 	int rank = 1;
 	// memory dataspace dimensions
 	hsize_t dim[] = {numMembranePoints};
@@ -3025,8 +3047,7 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	
 	{
 	pout() << "writing dataset " << VERTICES_DATASET << ", count=" << vertexCount << endl;
-	hid_t vertexType = H5Tcreate(H5T_COMPOUND, sizeof(Vertex));
-	fillVertexDataType(vertexType);
+	hid_t vertexType = Vertex::createH5Type();
 	int rank = 1;
 	// memory space
 	hsize_t dim[] = {vertexCount};
@@ -3107,8 +3128,7 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	// segments
 	{
 	pout() << "writing dataset " << SEGMENTS_DATASET << ", count=" << numMembranePoints << endl;
-	hid_t segmentType = H5Tcreate(H5T_COMPOUND, sizeof(Segment));
-	fillSegmentDataType(segmentType);
+	hid_t segmentType = Segment::createH5Type();
 	int rank = 1;
 	// memory dataspace dimensions
 	hsize_t dim[] = {numMembranePoints};
@@ -3154,8 +3174,7 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	{
 	// vertices
 	pout() << "writing dataset " << SURFACE_DATASET << endl;
-	hid_t triangleType = H5Tcreate(H5T_COMPOUND, sizeof(Triangle));
-	fillTriangleDataType(triangleType);
+	hid_t triangleType = Triangle::createH5Type();
 	hsize_t dim[] = {triangleCount};   /* Dataspace dimensions */
 	int rank = 1;
 	hid_t memSpace = H5Screate_simple(rank, dim, NULL);
@@ -3235,8 +3254,7 @@ void ChomboScheduler::writeMeshHdf5(MembraneElementMetrics* metricsData, int ver
 	// slice view
 	{
 	pout() << "writing dataset " << SLICE_VIEW_DATASET << endl;
-	hid_t sliceViewType = H5Tcreate(H5T_COMPOUND, sizeof(SliceView));
-	fillSliceViewDataType(sliceViewType);
+	hid_t sliceViewType = SliceView::createH5Type();
 	hsize_t dim[] = {numMembranePoints};   /* Dataspace dimensions */
 	int rank = 1;
 	hid_t memSpace = H5Screate_simple(rank, dim, NULL);
@@ -3459,6 +3477,9 @@ void ChomboScheduler::populateMembraneSolution()
 									double sol = (*memSoln[ivol][ilev])[dit()](vof, ivar);
 									varCurr[localMemIndex] = sol;
 #ifndef CH_MPI
+									var->min = std::min<double>(var->min, sol);
+									var->max = std::max<double>(var->max, sol);
+
 									var->addTotal(sol * areaFrac * levelUnitS);
 
 									Variable* errorVar = var->getExactErrorVariable();

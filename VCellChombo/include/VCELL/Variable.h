@@ -26,11 +26,16 @@ enum VariableType {
 	VAR_CONTOUR_REGION =	6
 } ;
 class Membrane;
+class ChomboScheduler;
 
 class VarContext;
 class Variable 
 {
 public:
+	friend class ChomboScheduler;
+	static const double double_max;
+	static const double double_min;
+
 	virtual ~Variable();
 
 	double *getCurr();
@@ -67,8 +72,24 @@ public:
 	{
 		return varContext;
 	}
+//	bool isVariableDiffusing()
+//	{
+//		return bVariableDiffusing;
+//	}
+//	void setVariableDiffusing()
+//	{
+//		 bVariableDiffusing = true;
+//	}
 
 #ifndef CH_MPI
+	double getMin()
+	{
+		return min;
+	}
+	double getMax()
+	{
+		return max;
+	}
 	Variable* getExactErrorVariable()
 	{
 		return exactErrorVar;
@@ -80,11 +101,11 @@ public:
 	}
 
 	virtual void createErrorVariables()=0;
-	
+
 	void addL2Error(double d);
 	void addL2Exact(double d);
 	void addTotalVCell(double d);
-	
+
 	double getL2Error()
 	{
 		return l2Error;
@@ -119,10 +140,13 @@ protected:
 	long size;
 
 	bool bDiffusing;
+//	bool bVariableDiffusing;
 	bool bElliptic;
 	VarContext* varContext;
 
 #ifndef CH_MPI
+	double min;
+	double max;
 	Variable* exactErrorVar;
 	Variable* relativeErrorVar;
 	double l2Error;

@@ -9,6 +9,8 @@
 #include <vector>
 using std::vector;
 
+#include <hdf5.h>
+
 class VariableStatisticsDataGenerator : public DataGenerator
 {
 public:
@@ -18,19 +20,12 @@ public:
 	void resolveReferences(SimulationExpression* sim);
 	void computePPData(SimulationExpression* sim);
 
-	const vector<string>& getComponentNames()
-	{
-		return m_compNames;
-	}
-	const vector<string>& getComponentUnits()
-	{
-		return m_compUnits;
-	}
+	void detailGroup(const hid_t& h5PPFile, const hid_t& dataGeneratorGroup, SimulationExpression* sim);
 
 private:
+	void writeAttributeComponent(const hid_t& dataGeneratorGroup,
+			const char* varName, int componentIndex, const char* dataName, const string& unit);
 	static const string VariableStatistics_Name;
-	vector<string> m_compNames;
-	vector<string> m_compUnits;
 };
 
 #endif
