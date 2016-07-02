@@ -23,6 +23,9 @@
 #include <Modulo.h>
 #include <boundaryProviders.h>
 #include <Physiology.h>
+#include <CoordVect.h>
+#include <IndexVect.h>
+#include <SPoint.h>
 
 #include <ExplicitSolver.h>
 
@@ -212,11 +215,12 @@ namespace moving_boundary {
 
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs) 
 			:ValidationBase(mbs),
+			isRunning(false),
 			numSpecies(mbs.speciesSpecs.size( )),
 			world(WorldType::get( )),
 			setup_(mbs),
 			//diffusionConstant(mbs.diffusionConstant),
-			generationCount(0),
+			numIteration(0),
 			currentTime(0),
 			maxTime(mbs.maxTime),
 			//TDX			frontTimeStep(mbs.frontTimeStep),
@@ -247,7 +251,6 @@ namespace moving_boundary {
 			gainedElements(  ),
 			statusPercent(0),
 			estimateProgress(false),
-			isRunning(false),
 			timeClients( ),
 			elementClients( ),
 			percentInfo( )
@@ -294,6 +297,8 @@ namespace moving_boundary {
 				}
 				frontTimeStep = maxStep;
 			}
+
+			frontTimeStep = 0.1 / ((int)(0.1/(0.75 * frontTimeStep)) + 1);
 
 			using matlabBridge::MatLabDebug;
 			if (MatLabDebug::on("tiling")) {
@@ -520,20 +525,170 @@ namespace moving_boundary {
 			return r;
 		}
 
+		void findExtrapolationStencil(const CoordVect& thisPoint, int order, std::vector<MeshElementNode*>& stencil) const
+		{
+			static const string METHOD = "findExtrapolationStencil";
+			vcell_util::Logger::debugEntry(METHOD);
+			if (order > 1)
+			{
+				// NOT IMPLEMENTED, revert to first order
+				order = 1;
+			}
+			CoordVect scaledCoord = (thisPoint - primaryMesh.geoOrigin())/primaryMesh.Dx();
+			IndexVect gridIndex((int) (scaledCoord[0]), (int) scaledCoord[1]);
+
+			MeshElementNode* thisElement = primaryMesh.query(gridIndex);
+			if (thisElement == nullptr)
+			{
+				std::stringstream ss;
+				ss << "Point " << thisPoint << "@" << gridIndex << " is out of domain boundary";
+				throw ss.str();
+			}
+
+			MeshElementNode* selectedElement = nullptr;
+			if (thisElement->isInside())
+			{
+				selectedElement = thisElement;
+			}
+			else
+			{
+				bool bFound = true;
+
+				{   // scope the variables
+					IndexVect offset(0, 0);
+					for (int i = 0; i < offset.size(); ++i)
+					{
+						offset[i] = scaledCoord[i] < gridIndex[i] + 0.5 ? -1 : 1;
+					}
+
+					// check the following 2 neighbors
+					// (i + жд, j)
+					IndexVect neighbor1 = gridIndex + IndexVect(offset[0], 0);
+					MeshElementNode* neighbor1Element = primaryMesh.query(neighbor1);
+					bool neighbor1Inside = neighbor1Element != nullptr && neighbor1Element->isInside();
+
+					// (i, j + жд)
+					IndexVect neighbor2 = gridIndex + IndexVect(0, offset[1]);
+					MeshElementNode* neighbor2Element = primaryMesh.query(neighbor2);
+					bool neighbor2Inside = neighbor2Element != nullptr && neighbor2Element->isInside();
+
+					if (neighbor1Inside && neighbor2Inside)
+					{
+						CoordVect neighbor1Coord(neighbor1Element);
+						CoordVect neighbor2Coord(neighbor2Element);
+						double distance1 = thisPoint.distance2(neighbor1Coord);
+						double distance2 = thisPoint.distance2(neighbor2Coord);
+						selectedElement = distance1 < distance2 ? neighbor1Element : neighbor2Element;
+					}
+					else if (neighbor1Inside)
+					{
+						selectedElement = neighbor1Element;
+					}
+					else if (neighbor2Inside)
+					{
+						selectedElement = neighbor2Element;
+					}
+					else
+					{
+						// (i + жд, j + жд)
+						IndexVect diagNeighbor = gridIndex + offset;
+						MeshElementNode* diagNeighborElement = primaryMesh.query(diagNeighbor);
+						if (diagNeighborElement == nullptr || diagNeighborElement->isOutside())
+						{
+							bFound = false;
+						}
+						else
+						{
+							selectedElement = diagNeighborElement;
+						}
+					}
+				}
+
+				if (!bFound)
+				{
+					IndexVect neighborOffsets[4] = {
+							IndexVect(-1, 0),
+							IndexVect(1, 0),
+							IndexVect(0, -1),
+							IndexVect(0, 1),
+					};
+					double minDistance = std::numeric_limits<double>::max();
+					for (int n = 0; n < 4; ++ n)
+					{
+						IndexVect neighbor = gridIndex + neighborOffsets[n];
+						MeshElementNode* neighborElement = primaryMesh.query(neighbor);
+						if (neighborElement != nullptr && neighborElement->isInside())
+						{
+							bFound = true;
+							CoordVect neighborCoord(neighborElement);
+							double distance = thisPoint.distance2(neighborCoord);
+							if (distance < minDistance)
+							{
+								minDistance = distance;
+								selectedElement = neighborElement;
+							}
+						}
+					}
+				}
+
+				if (!bFound)
+				{
+						std::stringstream ss;
+						ss << "Can't find any inside neighbors for point " << thisPoint << "@" << gridIndex;
+						vcell_util::Logger::Debug(METHOD, ss.str());
+						throw ss.str();
+				}
+			}
+			/*
+			CoordVect neighborCoord(selectedElement);
+			double distance = sqrt(thisPoint.distance2(neighborCoord));
+			if (distance > primaryMesh.Dx()[0]/2)
+			{
+				VCELL_LOG_ALWAYS("Neighbor@(" << selectedElement->indexes()[cX] << "," << selectedElement->indexes()[cY] << "), distance (" << distance << ") > Dx/2 for point " << thisPoint << "@" << gridIndex;)
+			}
+			*/
+			stencil.push_back(selectedElement);
+			vcell_util::Logger::debugExit(METHOD);
+		}
+
 		/**
 		* front velocity returned in problem domain units
 		* @param x world coordinate
 		* @param y world coordinate
 		*/
 		spatial::SVector<double,2> frontVelocityProbDomain(double x, double y) const {
-			double worldValues[2] = {x,y};
+			 static const string METHOD = "frontVelocityProbDomain";
+			 vcell_util::Logger::debugEntry(METHOD);
+
+			 CoordVect vel = CoordVect::Zero;
+			 const std::array<spatial::TGeoLimit<moving_boundary::CoordinateType>, 2>& limitsWorldSystem = world.limits();
+			 if (x >= limitsWorldSystem[0].low() && x <= limitsWorldSystem[0].high()
+			   && y >= limitsWorldSystem[1].low() && y <= limitsWorldSystem[1].high())
+			 {
+					double worldValues[2] = {x,y};
+					double syms[3];
+					world.toProblemDomain(worldValues,syms);
+
+					CoordVect thisPoint(syms);
+					CoordVect normal = thisPoint.normalize();
+					double C = 1;
+					if (isRunning)
+					{
+						std::vector<MeshElementNode*> stencil;
+						findExtrapolationStencil(thisPoint, 1, stencil);
+						C = stencil[0]->priorConcentration(0);
+					}
+					vel = normal * C;
+			 }
+
+			/*
 			enum {ex = 0, ey = 1, et = 2};
-			double syms[3];
-			world.toProblemDomain(worldValues,syms);
 			syms[et] = currentTime; 
 			double vX = frontVelocityExpX.evaluateVector(syms);
 			double vY = frontVelocityExpY.evaluateVector(syms);
-			return spatial::SVector<double,2>(vX,vY);
+			*/
+			vcell_util::Logger::debugExit(METHOD);
+			return spatial::SVector<double,2>(vel[0], vel[1]);
 		}
 
 		/**
@@ -569,8 +724,8 @@ namespace moving_boundary {
 		/**
 		* @return <timeNow, timeIncrement>
 		*/
-		std::pair<double,double> times(int generationCount) { 
-			double timeNow = baselineTime + (generationCount - baselineGeneration) * frontTimeStep;
+		std::pair<double,double> times(int numIteration) {
+			double timeNow = baselineTime + (numIteration - baselineGeneration) * frontTimeStep;
 			if (timeNow > maxTime) {
 				timeNow = maxTime;
 			}
@@ -582,14 +737,14 @@ namespace moving_boundary {
 		* update front time step to ensure last step(s) do not proceed past maxTime
 		* for the simulation, and try make steps as even as possible
 		* @param desiredStep 
-		* @param generationCount for comparing to baseline 
+		* @param numIteration for comparing to baseline
 		*/
 
-		void updateTimeStep(double desiredStep, int generationCount) {
+		void updateTimeStep(double desiredStep, int numIteration) {
 			double intervalTilEnd = maxTime - baselineTime;
 			int n = ceil(intervalTilEnd / desiredStep);
 			frontTimeStep = intervalTilEnd / n;
-			baselineGeneration = generationCount;
+			baselineGeneration = numIteration;
 			baselineTime = currentTime;
 		}
 
@@ -599,7 +754,7 @@ namespace moving_boundary {
 		/**
 		* @param changed nodes have changed since last report
 		*/
-		void giveElementsToClient(MovingBoundaryElementClient & client, size_t generationCount, bool changed) {
+		void giveElementsToClient(MovingBoundaryElementClient & client, size_t numIteration, bool changed) {
 			for (MBMesh::const_iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter) {
 				//std::cout << iter->ident( ) << std::endl;
 				if (iter->isInside( )) {
@@ -612,13 +767,13 @@ namespace moving_boundary {
 		/**
 		* notify all clients that time has changed, and give the elements to those  that want them
 		*/
-		void notifyClients(size_t generationCount, bool changed) {
+		void notifyClients(size_t numIteration, bool changed) {
 			for (MovingBoundaryTimeClient *tclient: timeClients) {
 				GeometryInfo<moving_boundary::CoordinateType> gi(currentFront,changed);
-				tclient->time(currentTime, generationCount, currentTime == maxTime, gi);
+				tclient->time(currentTime, numIteration, currentTime == maxTime, gi);
 			}
 			for (MovingBoundaryElementClient *eclient: elementClients) {
-				giveElementsToClient(*eclient,generationCount,changed);
+				giveElementsToClient(*eclient,numIteration,changed);
 			}
 		}
 
@@ -912,6 +1067,15 @@ namespace moving_boundary {
 			}
 		}
 
+		std::string getOutputFiles()
+		{
+			std::string files;
+			for (MovingBoundaryTimeClient *tclient: timeClients) {
+				files += tclient->outputName() + ", ";
+			}
+			return files;
+		}
+
 		//reset a flag to false during stack unwinding
 		struct Resetter{
 			bool & flag;
@@ -943,7 +1107,7 @@ namespace moving_boundary {
 				runStartTime( ) {}
 
 			/**
-			* estimate next generation a percent should be output
+			* estimate next iteration a percent should be output
 			* assumes progressData et. al. have been set externally
 			*/
 			void calculateNextProgress(size_t currentGeneration, double frontTimeStep) {
@@ -976,7 +1140,7 @@ namespace moving_boundary {
 			if (statusPercent > 0)  {
 				percentInfo.simStartTime = currentTime;
 				percentInfo.progressDelta = statusPercent / 100.0 * maxTime;
-				percentInfo.calculateNextProgress(generationCount,frontTimeStep);
+				percentInfo.calculateNextProgress(numIteration,frontTimeStep);
 				if (estimateProgress) {
 					percentInfo.runStartTime = std::chrono::steady_clock::now( );
 				}
@@ -986,25 +1150,25 @@ namespace moving_boundary {
 			FrontType oldFront; //for debugging
 
 			try { 
-				if (generationCount == 0) {
+				if (numIteration == 0) {
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),commenceSimulation);
 				}
-				notifyClients(generationCount,true);
+				notifyClients(numIteration,true);
 				if (frontMoveTrace) {
-					debugDump(generationCount, 's');
+					debugDump(numIteration, 's');
 				}
-				generationCount++;
 
+				++ numIteration;
 				while (currentTime < maxTime) {
 					solver.begin( );
-					std::pair<double,double> nowAndStep = times(generationCount); 
+					std::pair<double,double> nowAndStep = times(numIteration);
 					//TODO -- we're approximating front velocity for time step with velocity at beginning of time step
 					FrontVelocity fv = std::for_each(currentFront.begin( ),currentFront.end( ),FrontVelocity(*this));
 					double maxVel = sqrt(fv.maxSquaredVel);
 					double maxTimeStep_ = minimimMeshInterval / (2 * maxVel);
 					if (nowAndStep.second > maxTimeStep_) {
-						updateTimeStep(maxTimeStep_,generationCount - 1);
-						nowAndStep = times(generationCount); 
+						updateTimeStep(maxTimeStep_,numIteration - 1);
+						nowAndStep = times(numIteration);
 					}
 					//currentTime = nowAndStep.first;
 					const double endOfStepTime = nowAndStep.first;
@@ -1013,8 +1177,9 @@ namespace moving_boundary {
 					ApplyVelocity mv(*this);
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),mv);
 
-					VCELL_LOG(debug, "moved to time " << endOfStepTime << " generation " << generationCount);
 					vcFront->propagateTo(endOfStepTime); 
+					VCELL_LOG_ALWAYS("t=" << currentTime << ", t_next=" << endOfStepTime << ", dt=" << timeIncr
+							<< ", iteration=" << numIteration << ", front has " << currentFront.size( ) << " points");
 					/*
 					VCellFront *vcp = dynamic_cast<VCellFront *>(vcFront);
 					if (vcp != nullptr) {
@@ -1056,7 +1221,7 @@ namespace moving_boundary {
 
 					currentTime = endOfStepTime;
 					if (frontMoveTrace) {
-						debugDump(generationCount,'b');
+						debugDump(numIteration,'b');
 					}
 
 
@@ -1075,7 +1240,7 @@ namespace moving_boundary {
 						sb << '%' << skips.mes.ident( ) << std::endl;
 						sb << oldPoly << newPoly << scatter;
 						std::cerr << "rethrowing skips" << std::endl;
-						debugDump(generationCount,'e');
+						debugDump(numIteration,'e');
 						throw;
 					}
 					//TODO: nochange
@@ -1091,12 +1256,12 @@ namespace moving_boundary {
 					boundaryElements.front( )->setBoundaryOffsetValues( );
 
 					if (frontMoveTrace) {
-						debugDump(generationCount,'a');
+						debugDump(numIteration,'a');
 					}
 
 					//tell the clients about it
-					notifyClients(++generationCount, changed);
-					if (generationCount >= percentInfo.nextProgressGeneration) {
+					notifyClients(numIteration ++, changed);
+					if (numIteration >= percentInfo.nextProgressGeneration) {
 						unsigned int percent = static_cast<unsigned int>(100 * currentTime / maxTime + 0.5);
 						if (percent < 100) { //looks silly to report 100% when still running
 							std::cout << std::setw(2) << percent << "% complete";
@@ -1127,7 +1292,7 @@ namespace moving_boundary {
 							}
 							std::cout << std::endl;
 							percentInfo.lastPercentTime = currentTime;
-							percentInfo.calculateNextProgress(generationCount,frontTimeStep);
+							percentInfo.calculateNextProgress(numIteration,frontTimeStep);
 						}
 					}
 				}
@@ -1149,7 +1314,7 @@ namespace moving_boundary {
 					client->simulationComplete( );
 				}
 			} catch (std::exception &e) {
-				VCELL_LOG(fatal,"run( ) caught " << e.what( )  << " generation " << generationCount << " time" << currentTime);
+				VCELL_LOG(fatal,"run( ) caught " << e.what( )  << " iteration " << numIteration << " time" << currentTime);
 				throw;
 			}
 		}
@@ -1259,7 +1424,7 @@ namespace moving_boundary {
 			//setup_.persist(os);
 			vcell_persist::Token::insert<MovingBoundaryParabolicProblemImpl>(os);
 			//vcell_persist::binaryWrite(os,diffusionConstant);
-			vcell_persist::binaryWrite(os,generationCount);
+			vcell_persist::binaryWrite(os,numIteration);
 			vcell_persist::binaryWrite(os,currentTime);
 			//vcell_persist::binaryWrite(os,maxTime);
 			vcell_persist::binaryWrite(os,frontTimeStep);
@@ -1283,11 +1448,12 @@ namespace moving_boundary {
 
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs, std::istream &is) 
 			:ValidationBase(mbs),
+			isRunning(false),
 			numSpecies(mbs.speciesSpecs.size( )),
 			world(WorldType::get( )),
 			setup_(mbs),
 			//diffusionConstant(mbs.diffusionConstant),
-			generationCount(0),
+			numIteration(0),
 			currentTime(0),
 			maxTime(mbs.maxTime),
 			//TDX			frontTimeStep(mbs.frontTimeStep),
@@ -1318,13 +1484,12 @@ namespace moving_boundary {
 			lostElements( ),
 			gainedElements(  ),
 			statusPercent(0),
-			estimateProgress(false),
-			isRunning(false)
+			estimateProgress(false)
 		{
 			MeshElementNode::setProblemToWorldDistanceScale(world.theScale( ));
 			vcell_persist::Token::check<MovingBoundaryParabolicProblemImpl>(is);
 			//vcell_persist::binaryRead(is,diffusionConstant);
-			vcell_persist::binaryRead(is,generationCount);
+			vcell_persist::binaryRead(is,numIteration);
 			vcell_persist::binaryRead(is,currentTime);
 			//vcell_persist::binaryRead(is,maxTime);
 			vcell_persist::binaryRead(is,frontTimeStep);
@@ -1348,12 +1513,17 @@ namespace moving_boundary {
 			voronoiMesh.setMesh(primaryMesh);
 		}
 
+		/**
+		* runtime flag (not-persistent), must be first member
+		*/
+		bool isRunning;
+
 		const int numSpecies;
 		WorldType & world;
 		const MovingBoundarySetup setup_;
 		//const double diffusionConstant;
 
-		size_t generationCount;
+		size_t numIteration;
 		/**
 		* currentTime must be set before #vcFront initialized
 		*/
@@ -1366,7 +1536,7 @@ namespace moving_boundary {
 		*/
 		double baselineTime;
 		/**
-		* generation last time step was calculated
+		* iteration last time step was calculated
 		*/
 		unsigned int baselineGeneration;
 		/**
@@ -1411,21 +1581,16 @@ namespace moving_boundary {
 		std::vector<MeshElementNode *> boundaryElements;
 		/**
 		* elements "lost" (moved outside of boundary) during transition between generations
-		* point to previous generation 
+		* point to previous iteration
 		*/
 		std::vector<const MeshElementNode *> lostElements;
 		/**
 		* elements "gained" (moved inside of boundary) during transition between generations
-		* point to next generation 
+		* point to next iteration
 		*/
 		std::vector<MeshElementNode *> gainedElements;
 		unsigned char statusPercent;
 		bool estimateProgress;
-
-		/**
-		* runtime flag (not-persistent)
-		*/
-		bool isRunning;
 
 		/**
 		* client storage; not persistent
@@ -1546,6 +1711,9 @@ namespace moving_boundary {
 	double MovingBoundaryParabolicProblem::frontTimeStep( ) const {
 		return sImpl->frontTimeStep;
 	}
+	double MovingBoundaryParabolicProblem::meshInterval() const {
+		return sImpl->minimimMeshInterval;
+	}
 	double MovingBoundaryParabolicProblem::solverTimeStep( ) const {
 		return -1; 
 	}
@@ -1569,6 +1737,9 @@ namespace moving_boundary {
 	}
 	void MovingBoundaryParabolicProblem::add(moving_boundary::MovingBoundaryElementClient & client) {
 		sImpl->add(client);
+	}
+	std::string MovingBoundaryParabolicProblem::getOutputFiles() {
+		return sImpl->getOutputFiles();
 	}
 	void MovingBoundaryParabolicProblem::run( ) {
 		sImpl->run( );
@@ -1603,6 +1774,11 @@ namespace moving_boundary {
 
 	void MovingBoundaryParabolicProblem::registerInstanceType( ) const {
 		sImpl->registerInstanceType( );
+	}
+
+	spatial::SVector<moving_boundary::VelocityType,2> MovingBoundaryParabolicProblem::velocity(spatial::TPoint<CoordinateType,2>& point) const
+	{
+		return sImpl->frontVelocity(point(cX), point(cY));
 	}
 
 }

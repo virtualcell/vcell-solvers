@@ -16,7 +16,6 @@
 using tinyxml2::XMLElement;
 using moving_boundary::MovingBoundaryElementClient;
 using moving_boundary::MovingBoundarySetup;
-using moving_boundary::MovingBoundaryParabolicProblem;
 
 namespace {
 	/**
@@ -81,9 +80,7 @@ int main(int argc, char *argv[])
 
 	moving_boundary::MovingBoundaryParabolicProblem problem;
 	//moving_boundary::ProblemPackage package;
-	std::unique_ptr<moving_boundary::ReportClient> reportClient;
-	std::unique_ptr<moving_boundary::MovingBoundaryTimeClient> persistClient;
-	std::unique_ptr<moving_boundary::TextReportClient> textReportClient;
+
 	//const char * const filename = argv[1];
 	//const char * outname = argv[2];
 	if (parseOnly) {
@@ -109,9 +106,7 @@ int main(int argc, char *argv[])
 			if (restorename.empty( )) {
 				auto mbs = MovingBoundarySetup::setupProblem(root);
 				problem = moving_boundary::MovingBoundaryParabolicProblem(mbs);
-				reportClient.reset( moving_boundary::ReportClient::setup(root, outname, problem) ); 
-				persistClient.reset( moving_boundary::StateClient::setup(root, problem,*reportClient) );
-				textReportClient.reset( moving_boundary::TextReportClient::setup(root, problem) );
+				moving_boundary::ReportClient::setup(root, outname, problem);
 			}
 		}
 		if (!restorename.empty( )) {
@@ -120,21 +115,15 @@ int main(int argc, char *argv[])
 				using moving_boundary::StateClient;
 				StateClient::ProblemState pState =  StateClient::restore(restorename);
 				problem = pState.problem;
-				reportClient.reset( pState.reportClient); 
-				persistClient.reset( pState.stateClient); 
 			}
 			catch (std::exception & e) {
 				std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << restorename << std::endl; 
 				return 6;
 			}
 		}
-		problem.add(*reportClient);
+
 		if (configPresent) {
 			setupProgress(*doc.RootElement( ),problem);
-		}
-
-		if (textReportClient.get( ) != nullptr) {
-			problem.add(*textReportClient);
 		}
 	}
 	catch (std::exception & e) {
@@ -156,16 +145,20 @@ int main(int argc, char *argv[])
 
 	try {
 		problem.run( );
+		std::cout << "MovingBoundary input " << filename << ", output " << problem.getOutputFiles() << " finished" << std::endl;
 	}
 	catch (std::exception & e) {
-		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " running " << filename << std::endl; 
+		std::cerr <<  argv[0] << " caught exception while running " << filename << ": " << e.what( ) << std::endl;
+		return 6;
+	}
+	catch (const std::string & e) {
+		std::cerr <<  argv[0] << " caught exception while running " << filename << ": " << e << std::endl;
 		return 6;
 	}
 	catch (...) {
-		std::cerr <<  argv[0] << " caught unknown exception" << " running " << filename << std::endl; 
+		std::cerr <<  argv[0] << " caught unknown exception while running " << filename << std::endl;
 		return 4;
 	}
-	std::cout << "MovingBoundary " << filename << ", " << reportClient->outputName( ) << " finished" << std::endl;
 }
 
 namespace {
@@ -174,13 +167,21 @@ namespace {
 		const tinyxml2::XMLElement *trace = root.FirstChildElement("trace");
 		if (trace != nullptr) {
 			using vcell_xml::convertChildElementWithDefault;
-			std::string tracefilename = convertChildElementWithDefault<std::string>(*trace,"traceFilename", "trace.txt");
+			std::string tracefilename = convertChildElementWithDefault<std::string>(*trace,"traceFilename", "");
 			std::string levelStr = convertChildElementWithDefault<std::string>(*trace,"level","fatal");
 
 			using vcell_util::Logger;
 			Logger & logger = Logger::get( );
-			traceFileDestination.reset(new vcell_util::FileDest(tracefilename.c_str( )) );
-			logger.setDestination(*traceFileDestination);
+			if (tracefilename.empty())
+			{
+				vcell_util::StdoutDest* stdoutDest = new vcell_util::StdoutDest();
+				logger.setDestination(*stdoutDest);
+			}
+			else
+			{
+				traceFileDestination.reset(new vcell_util::FileDest(tracefilename.c_str( )) );
+				logger.setDestination(*traceFileDestination);
+			}
 			Logger::Level level = Logger::readLevel(levelStr.c_str( ));
 			logger.set(level);
 			//set specific level keys

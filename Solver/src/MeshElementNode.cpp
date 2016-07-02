@@ -408,6 +408,8 @@ matlabBridge::Polygon pedge("-+r",2);
 #endif
 
 void MeshElementNode::findNeighborEdges() {
+	static const std::string METHOD = "findNeighborEdges";
+	vcell_util::Logger::debugEntry(METHOD);
 	switch (state( )) {
 	case bndFrontMoved:
 		VCELL_LOG(verbose,ident( ) << " findNeighborEdges");
@@ -530,6 +532,7 @@ void MeshElementNode::findNeighborEdges() {
 		os <<  nbplot << matlabBridge::Text(this->coord[cX],this->coord[cY],ss.str( ).c_str( )) 
 			<< matlabBridge::pause << matlabBridge::clearFigure;
 	}
+	vcell_util::Logger::debugExit(METHOD);
 }
 
 void MeshElementNode::updateBoundaryNeighbors(const VoronoiMesh & vm, std::vector<OurType *>  & bn) {

@@ -100,6 +100,36 @@ void Logger::set(Key key, bool on) {
 	ki.level = static_cast<Level>(on ? verbose - 1 : fatal + 1);
 }
 
+void Logger::Debug(std::string method, std::string message)
+{
+	if (instance.enabled(Logger::Level::debug) )
+	{
+		std::ostringstream oss;
+		oss << "(" << method << ")" << message << std::endl;
+		instance.report(oss.str( ).c_str( ));
+	}
+}
+
+void Logger::debugEntry(std::string method)
+{
+	if (instance.enabled(Logger::Level::debug) )
+	{
+		std::ostringstream oss;
+		oss << "Entry (" << method << ")" << std::endl;
+		instance.report(oss.str( ).c_str( ));
+	}
+}
+
+void Logger::debugExit(std::string method)
+{
+	if (instance.enabled(Logger::Level::debug) )
+	{
+		std::ostringstream oss;
+		oss << "Exit (" << method << ")" << std::endl;
+		instance.report(oss.str( ).c_str( ));
+	}
+}
+
 namespace vcell_util {
 	std::ostream &operator<<(std::ostream & os, const Logger::Level & lvl) {
 #	define CASE(x) case Logger::x: os << #x; break;

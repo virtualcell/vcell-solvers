@@ -32,6 +32,8 @@ namespace spatial {
 * implementation type definition
 */
 namespace moving_boundary {
+   static constexpr const int MAXD = 3;
+
 	//PRIMARY TYPES
 	/**
 	* type used for coordinate system of problem implementation

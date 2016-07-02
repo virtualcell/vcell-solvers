@@ -184,54 +184,55 @@ private:
 	bool &dirtyFlag;
 	std::vector<VoronoiPoint> & points;
 
-	void calculate( ) {
-	assert(dirtyFlag);
-
-	vd.clear( );
-	boost::polygon::construct_voronoi(points.begin( ),points.end( ),&vd);
-	dirtyFlag = false;
-	//CLEANUP
-	const bool dumpDebugOutput = false;
-	if (!dumpDebugOutput) {
-		return;
-	}
-
+	void calculate( )
 	{
-		std::ofstream dump("vpoint.txt");
-		for (std::vector<VoronoiPoint>::iterator iter = points.begin( ); iter != points.end( );++iter) {
-			dump <<  iter->get(spatial::cX) << ',' << iter->get(spatial::cY) << std::endl;
+		assert(dirtyFlag);
+
+		vd.clear( );
+		boost::polygon::construct_voronoi(points.begin( ),points.end( ),&vd);
+		dirtyFlag = false;
+		//CLEANUP
+		const bool dumpDebugOutput = false;
+		if (!dumpDebugOutput) {
+			return;
 		}
-	}
 
-	{
-		typedef boost::polygon::voronoi_diagram<ImplementationType>::vertex_container_type VCT;
-		std::ofstream dump("vdpoint.txt");
-		for (VCT::const_iterator iter = vd.vertices( ).begin( ); iter != vd.vertices( ).end( ); ++iter) {
-			dump << iter->x( ) << ',' << iter->y( ) << ',' << iter->is_degenerate( ) << std::endl;
+		{
+			std::ofstream dump("vpoint.txt");
+			for (std::vector<VoronoiPoint>::iterator iter = points.begin( ); iter != points.end( );++iter) {
+				dump <<  iter->get(spatial::cX) << ',' << iter->get(spatial::cY) << std::endl;
+			}
 		}
-	}
 
-	{
-		typedef boost::polygon::voronoi_diagram<ImplementationType>::cell_container_type CCT;
-		std::ofstream dump("cell.txt");
-		for (CCT::const_iterator iter = vd.cells( ).begin( ); iter != vd.cells( ).end( ); ++iter) {
-			dump << iter->source_index( )  << ',' << iter->contains_point( ) << ',' << iter->contains_segment( )
-				<< ',' << iter->source_category( ) << std::endl;
+		{
+			typedef boost::polygon::voronoi_diagram<ImplementationType>::vertex_container_type VCT;
+			std::ofstream dump("vdpoint.txt");
+			for (VCT::const_iterator iter = vd.vertices( ).begin( ); iter != vd.vertices( ).end( ); ++iter) {
+				dump << iter->x( ) << ',' << iter->y( ) << ',' << iter->is_degenerate( ) << std::endl;
+			}
 		}
-	}
 
-	{
-		typedef boost::polygon::voronoi_diagram<ImplementationType>::edge_container_type ECT;
-		std::ofstream dump("edge.txt");
-		for (ECT::const_iterator iter = vd.edges( ).begin( ); iter != vd.edges( ).end( ); ++iter) {
-			const Vertex *v0 = iter->vertex0( );
-			const Vertex *v1 = iter->vertex1( );
-			if (v0 != nullptr && v1 != nullptr) {
-				dump << v0->x( ) << ',' << v0->y( ) << ',' << v1->x( ) << ',' << v1->y( ) << std::endl;
+		{
+			typedef boost::polygon::voronoi_diagram<ImplementationType>::cell_container_type CCT;
+			std::ofstream dump("cell.txt");
+			for (CCT::const_iterator iter = vd.cells( ).begin( ); iter != vd.cells( ).end( ); ++iter) {
+				dump << iter->source_index( )  << ',' << iter->contains_point( ) << ',' << iter->contains_segment( )
+					<< ',' << iter->source_category( ) << std::endl;
+			}
+		}
+
+		{
+			typedef boost::polygon::voronoi_diagram<ImplementationType>::edge_container_type ECT;
+			std::ofstream dump("edge.txt");
+			for (ECT::const_iterator iter = vd.edges( ).begin( ); iter != vd.edges( ).end( ); ++iter) {
+				const Vertex *v0 = iter->vertex0( );
+				const Vertex *v1 = iter->vertex1( );
+				if (v0 != nullptr && v1 != nullptr) {
+					dump << v0->x( ) << ',' << v0->y( ) << ',' << v1->x( ) << ',' << v1->y( ) << std::endl;
+				}
 			}
 		}
 	}
-}
 
 	/**
 	* extract single point from edge at ; actual or ghosted

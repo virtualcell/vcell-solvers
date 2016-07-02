@@ -16,6 +16,10 @@ namespace moving_boundary {
 		*/
 		StateClient(MovingBoundaryParabolicProblem & problem, const ReportClient & reportClient, const std::string & name, double startTime, double increment);
 
+		virtual std::string outputName( ) const
+		{
+			return "";
+		}
 		virtual void time(double t, unsigned int generationCount, bool last, const GeometryInfo<moving_boundary::CoordinateType> & geometryInfo); 
 		virtual void simulationComplete( );
 		struct ProblemState {

@@ -8,6 +8,10 @@
 #include <DiffuseAdvectCache.h>
 #include <boost/iterator/iterator_facade.hpp>
 #include <persist.h>
+#include <Universe.h>
+#include <GeoLimit.h>
+#include <IndexVect.h>
+#include <CoordVect.h>
 #ifdef TRACK_STORAGE
 #define STORAGE(x) std::cout << x << std::endl;
 #else
@@ -340,6 +344,11 @@ namespace spatial {
 				new (addr) TELEMENT(env,loop.data( ) ,values.data( )); //placement new
 			}
 			while (increment(0,loop));
+
+			const std::array<spatial::GeoLimit, 2> & limits = moving_boundary::Universe<2>::get().limits( );
+			originVect = CoordVect(limits[0].low(), limits[1].low());
+			nxVect = IndexVect(this->nPoints);
+			dxVect = CoordVect(limits[0].span(), limits[1].span())/nxVect;
 		}
 
 		/*
@@ -382,6 +391,9 @@ namespace spatial {
 		}
 	private:
 
+		CoordVect originVect;
+		CoordVect dxVect;
+		IndexVect nxVect;
 
 		/**
 		* increment loop to next set of coordinates
@@ -481,6 +493,43 @@ namespace spatial {
 				}
 			}
 			return &get(position);
+		}
+
+		const CoordVect& geoOrigin() const
+		{
+			return originVect;
+		}
+
+		const CoordVect& Dx() const
+		{
+			return dxVect;
+		}
+
+		const IndexVect& Nx() const
+		{
+			return nxVect;
+		}
+
+		int getElementIndex(const IndexVect& gridIndex) const
+		{
+			return gridIndex[1] * this->nPoints[0] + gridIndex[0];
+		}
+		/**
+		* retrieve element given set of coordinates
+		* @param position ( length N ) to retrieve
+		* return null pointer if coordinates out of range
+		*/
+		TELEMENT *query(const IndexVect& gridIndex) const
+		{
+			for (int i = 0; i < N; i++)
+			{
+				if (gridIndex[i] < 0 || gridIndex[i] >= this->nPoints[i])
+				{
+					return nullptr;
+				}
+			}
+			int elementIndex = getElementIndex(gridIndex);
+			return &storage[elementIndex];
 		}
 
 

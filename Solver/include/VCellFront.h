@@ -14,6 +14,7 @@ namespace Frontier {
 	typedef ::Front Front;
 	typedef ::POINT POINT;
 	typedef ::F_BASIC_DATA F_BASIC_DATA;
+	typedef ::F_INIT_DATA F_INIT_DATA;
 	typedef ::LEVEL_FUNC_PACK LEVEL_FUNC_PACK;
 	typedef ::VELO_FUNC_PACK VELO_FUNC_PACK;
 	typedef ::BOND BOND;
@@ -21,6 +22,8 @@ namespace Frontier {
 	using ::PERIODIC_BOUNDARY;
 	using ::FIRST_PHYSICS_WAVE_TYPE;
 	using ::GENERAL_WAVE;
+	using ::VECTOR_WAVE;
+	using ::GENERAL_NODE;
 	using ::first_order_point_propagate;
 	using ::fourth_order_point_propagate;
 	/*
@@ -147,6 +150,7 @@ namespace spatial {
 			bool isAdapter);
 		Frontier::Front front;
 		Frontier::F_BASIC_DATA f_basic;
+		Frontier::F_INIT_DATA f_init_data;
 		Frontier::LEVEL_FUNC_PACK level_func_pack;
 		Frontier::VELO_FUNC_PACK velo_func_pack;
 

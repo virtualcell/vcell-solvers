@@ -105,8 +105,8 @@ StateClient::ProblemState StateClient::restore(const std::string & filename) {
 
 	tinyxml2::XMLDocument doc;
 	doc.Parse(xmlString.c_str( ));
-	rval.reportClient = ReportClient::setup(*doc.RootElement( ),std::string( ),rval.problem);
-	rval.stateClient = new StateClient(rval.problem,xmlString,in);
+	ReportClient::setup(*doc.RootElement( ),std::string( ),rval.problem);
+	rval.stateClient = new StateClient(rval.problem, xmlString, in);
 	return rval; 
 }
 

@@ -11,6 +11,8 @@ namespace moving_boundary {
 	template<int N>
 	struct WorldBase; 
 
+	template <typename COORD_TYPE, int> struct World;
+
 	/**
 	* the moving boundary Universe is, in problem domain terms,
 	* the limits of the analysis and the resolution to which

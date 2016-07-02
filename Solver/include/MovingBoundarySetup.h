@@ -47,6 +47,10 @@ namespace moving_boundary {
 	};
 
 	struct MovingBoundarySetup {
+		int Nx, Ny;
+		CoordVect extentX;
+		CoordVect extentY;
+
 		unsigned int frontToNodeRatio;
 		double maxTime;
 		/**
@@ -178,6 +182,10 @@ namespace moving_boundary {
 
 	struct MovingBoundaryTimeClient {
 		virtual ~MovingBoundaryTimeClient( ) {}
+		/**
+		 * return the name of the output if any.
+		 */
+		virtual std::string outputName( ) const = 0;
 		/**
 		* time of simulation
 		* @param t current time

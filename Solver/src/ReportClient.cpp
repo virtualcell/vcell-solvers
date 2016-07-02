@@ -11,6 +11,8 @@
 #include <World.h>
 #include <vcellxml.h>
 #include <ReportClient.h>
+#include <Universe.h>
+#include <TextReportClient.h>
 #include <version.h>
 #include <flex.h>
 #include <vhdf5/dataset.h>
@@ -310,19 +312,20 @@ namespace {
 		*/
 		static const size_t speciesIndex = 3; 
 
+		static constexpr const char* H5_FILE_EXT = ".h5";
+
 		/**
 		* @param f file to write to
 		* @param mbpp the problem 
 		* @param baseName name of dataset in HDF5 file if not default
 		*/
 		template <typename R>
-		HDF5Client(std::string xml_,H5::H5File &f, 
+		HDF5Client(std::string xml_,std::string& h5FileName,
 			WorldType & world_,
 			const moving_boundary::MovingBoundaryParabolicProblem &mbpp, 
 			const char *baseName,
 			R &timeReports) 
 			:xml(xml_),
-			file(f),
 			theProblem(mbpp), 
 			constantSim(mbpp.noReaction( )),
 			currentTime(0),
@@ -335,7 +338,6 @@ namespace {
 			moveTimes(),
 			timeStepTimes( ),
 			lastTimeStep(-1), //invalid value, to trigger recording
-			baseGroup(file),
 			elementStorage(),
 			elementDataset( ),
 			worldDim( ),
@@ -356,6 +358,9 @@ namespace {
 			nextReportControlTime(-1),
 			pointconverter(world.pointConverter( ))
 		{
+			h5File = vcellH5::VH5File(h5FileName.c_str( ), H5F_ACC_TRUNC|H5F_ACC_RDWR);
+			baseGroup = h5File;
+
 			using spatial::cX;
 			using spatial::cY;
 			int numberGenerations = mbpp.numberTimeSteps( );
@@ -817,7 +822,7 @@ namespace {
 			return xml;
 		}
 		virtual std::string outputName( ) const {
-			return file.getFileName( );
+			return h5File.getFileName( );
 		}
 
 	private:
@@ -836,7 +841,7 @@ namespace {
 		* XML used to create
 		*/
 		std::string xml;
-		H5::H5File file;
+		H5::H5File h5File;
 		double currentTime; 
 		double totalStuff;
 		double oldStuff;
@@ -917,8 +922,9 @@ namespace tinyxml2 {
 }
 
 using moving_boundary::ReportClient; 
+using moving_boundary::TextReportClient;
 using tinyxml2::XMLElement;
-ReportClient * ReportClient::setup(const XMLElement &root, const std::string & h5filename , moving_boundary::MovingBoundaryParabolicProblem &mbpp) {
+void ReportClient::setup(const XMLElement &root, const std::string & h5filename , moving_boundary::MovingBoundaryParabolicProblem &mbpp) {
 	std::string xmlCopy;
 	{
 		tinyxml2::XMLDocument doc;
@@ -934,16 +940,20 @@ ReportClient * ReportClient::setup(const XMLElement &root, const std::string & h
 		const moving_boundary::MovingBoundarySetup & mbs = mbpp.setup( );
 		const XMLElement & report = vcell_xml::get(root,"report");
 		H5::H5File output;
-		if (!h5filename.empty( )) {
-			output = vcellH5::VH5File(h5filename.c_str( ),H5F_ACC_TRUNC|H5F_ACC_RDWR);
-		}
-		else {
-			std::string filename = vcell_xml::convertChildElement<std::string>(report,"outputFilename");
-			bool deleteExisting = vcell_xml::convertChildElementWithDefault<bool>(report,"deleteExisting",false);
+		std::string h5FileName = h5filename;
+		std::string outputFilePrefix = vcell_xml::convertChildElement<std::string>(report,"outputFilePrefix");
+		const std::array<Universe<2>::CountType, 2>& numNodes = Universe<2>::get().numNodes();
+		const std::array<spatial::GeoLimit, 2>& limits = Universe<2>::get().limits();
+		std::stringstream ss;
+		ss << outputFilePrefix << "_extent=" << limits[0].low() << ","
+				<< limits[0].high() << "_N=" << numNodes[0] << "," << numNodes[1] << "_t=" << mbs.maxTime << "_dt=" << mbpp.frontTimeStep();
+		outputFilePrefix = ss.str();
+		bool deleteExisting = vcell_xml::convertChildElementWithDefault<bool>(report,"deleteExisting",false);
+		if (h5filename.empty( )) {
+			h5FileName = outputFilePrefix + HDF5Client::H5_FILE_EXT;
 			if (deleteExisting) {
-				unlink(filename.c_str( ));
+				unlink(h5FileName.c_str( ));
 			}
-			output = vcellH5::VH5File(filename.c_str( ),H5F_ACC_TRUNC|H5F_ACC_RDWR);
 		}
 		const char *datasetName = nullptr;
 		std::pair<bool,std::string> dnq = vcell_xml::queryElement<std::string>(report,"datasetName");
@@ -971,15 +981,17 @@ ReportClient * ReportClient::setup(const XMLElement &root, const std::string & h
 		}
 
 		const XMLElement * timeReport = report.FirstChildElement("timeReport"); 
+		long step = -1;
 		while(timeReport != nullptr) {
 			const int NOT_THERE = -1;
 			const double startTime = vcell_xml::convertChildElement<double>(*timeReport,"startTime");
-			const long step = vcell_xml::convertChildElementWithDefault<long>(*timeReport,"step", NOT_THERE);
+			step = vcell_xml::convertChildElementWithDefault<long>(*timeReport,"step", NOT_THERE);
 			const double interval = vcell_xml::convertChildElementWithDefault<double>(*timeReport,"interval",NOT_THERE);
 			bool quiet = timeReport->FirstChildElement("quiet") != nullptr;
 			int nsubs = 0;
 
 
+			step = (int)(0.1/(0.75*mbpp.meshInterval()*mbpp.meshInterval()/4))+1;
 			if (step != NOT_THERE) {
 				nsubs++;
 				timeReports.push_back( new TimeReportStep(startTime,step) );
@@ -999,19 +1011,31 @@ ReportClient * ReportClient::setup(const XMLElement &root, const std::string & h
 		}
 
 		moving_boundary::World<moving_boundary::CoordinateType,2> &world = moving_boundary::World<moving_boundary::CoordinateType,2>::get( );
-		HDF5Client *client =  new HDF5Client(xmlCopy,output,world,mbpp,datasetName, timeReports);
-		client->addInitial(mbs);
+		HDF5Client *hdf5Client =  new HDF5Client(xmlCopy,h5FileName,world,mbpp,datasetName, timeReports);
+		hdf5Client->addInitial(mbs);
 		const XMLElement * const annotateSection = report.FirstChildElement("annotation"); 
 		if (annotateSection != nullptr) {
 			const XMLElement *annotateElement = annotateSection->FirstChildElement( );
 			while (annotateElement != nullptr) {
 				const char *const name = annotateElement->Name( );
 				const std::string value = vcell_xml::convertElement<std::string>(*annotateElement);
-				client->annotate(name,value);
+				hdf5Client->annotate(name,value);
 				annotateElement = annotateElement->NextSiblingElement( );
 			}
 		}
-		return client;
+		mbpp.add(*hdf5Client);
+
+		const tinyxml2::XMLElement *tr = vcell_xml::query(report, "textReport");
+		if (tr != nullptr) {
+			std::string filename = outputFilePrefix + TextReportClient::TXT_FILE_EXT;
+			if (deleteExisting) {
+				unlink(filename.c_str( ));
+			}
+			const int p = vcell_xml::convertChildElementWithDefault<unsigned int>(*tr, "precision", 6);
+			const int w = vcell_xml::convertChildElementWithDefault<unsigned int>(*tr, "width", 6);
+			TextReportClient* trcClient = new TextReportClient(filename, mbpp, p, w, step);
+			mbpp.add(*trcClient);
+		}
 	} 
 	catch (H5::Exception &h5e) {
 		std::string h5Msg = h5e.getDetailMsg( );

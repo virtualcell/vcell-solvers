@@ -70,6 +70,10 @@ namespace moving_boundary {
 		*/
 		void add(MovingBoundaryElementClient &client);
 		/**
+		 * return the output files of all report clients.
+		 */
+		std::string getOutputFiles();
+		/**
 		* run the simulation
 		* @throws #TimeStepTooBig
 		*/
@@ -82,6 +86,8 @@ namespace moving_boundary {
 		* @return time step used for moving front
 		*/
 		double frontTimeStep( ) const;
+		double meshInterval() const;
+
 		/**
 		* @return time step used by implicit solver
 		*/
@@ -105,6 +111,7 @@ namespace moving_boundary {
 		void persist(std::ostream &os) const;
 
 		std::string frontDescription( ) const;
+		spatial::SVector<moving_boundary::VelocityType,2> velocity(spatial::TPoint<CoordinateType,2>& point) const;
 
 		/**
 		* return true there are no reactions (zero terms are zero)

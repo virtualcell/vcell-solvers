@@ -76,38 +76,93 @@ void VCellFront<FCT>::init(std::vector<GeoLimit> & limits, int N, double tmax,
 							  level_func_pack.func_params = this;
 						  }
 						  FT_InitIntfc(&front,&level_func_pack);
-						 						  if (dim == 2)
+						 	if (dim == 2)
 						  {
 							  FT_ClipIntfcToSubdomain(&front);
 						  }
 
 						  velo_func_pack.func_params = NULL;
 						  velo_func_pack.func = velocityFunction; 
-						  if (dim == 2)
-						  {
-							  velo_func_pack.point_propagate = Frontier::fourth_order_point_propagate;
-						  }
+//							velo_func_pack.point_propagate = Frontier::fourth_order_point_propagate;
+							velo_func_pack.point_propagate = Frontier::first_order_point_propagate;
 
 						  if (isAdapter) {
 							  velo_func_pack.func_params = this;
 						  }
 						  FT_InitVeloFunc(&front,&velo_func_pack);
 
-						  if (dim == 3)
-						  {
-							  front._point_propagate = Frontier::first_order_point_propagate;
-						  }
 
 						  front.max_time = tmax;
 						  front.max_step = 1000000;
 						  front.print_time_interval = 1000000;
 						  front.movie_frame_interval = 1000000;
 
-						  if (dim == 3)
-						  {
-							  Time_step_factor(&front) = 0.2;
-							  Frequency_of_redistribution(&front,Frontier::GENERAL_WAVE) = 1000;
-						  }
+						  int redistributionFrequency = 5;
+
+						  Frequency_of_redistribution(&front, Frontier::GENERAL_WAVE) = redistributionFrequency;
+							Frequency_of_redistribution(&front, Frontier::VECTOR_WAVE) = redistributionFrequency;
+							Frequency_of_redistribution(&front, Frontier::GENERAL_NODE) = redistributionFrequency;
+
+						  //						  enum _REDISTRIBUTION_MODE {
+						  //						  	NO_REDIST        = 0,
+						  //						  	EXPANSION_REDIST = 1,
+						  //						  	FULL_REDIST      = 2
+						  //						  };
+
+						  //						  enum _REDISTRIBUTION_VERSION { // when FULL_REDIST
+						  //						  	ORDINARY_REDISTRIBUTE  = 1,
+						  //						  	EQUI_BOND_REDISTRIBUTE = 2
+						  //						  };
+
+
+
+							/*
+						  REDISTRIBUTION_MODE redistributionMode = EXPANSION_REDIST;
+						  Redistribution_mode(front) = redistributionMode;
+							CURVE_CLEANERS Sav_cleaners;
+
+							CurveRedistributionOptions(front) = curve_redist_options(init);
+							clear_curve_redistribution_info(&Curve_redistribution_info(front));
+							if (dim == 1)
+									return;
+
+							set_dflt_cur_redist_params(front);
+							Sav_cleaners = Curve_redistribution_info(front).Cleaners;
+
+							switch (front_redist_mode(init))
+							{
+							case NO_REDIST:
+									clear_curve_redistribution_info(&Curve_redistribution_info(front));
+									Curve_redistribution_info(front).Cleaners = Sav_cleaners;
+									break;
+
+							case EXPANSION_REDIST:
+									clear_curve_redistribution_info(&Curve_redistribution_info(front));
+									Curve_redistribution_function(front) = expansion_redistribute;
+									Curve_redistribution_info(front).Cleaners = Sav_cleaners;
+									break;
+
+							case FULL_REDIST:
+									Curve_redistribution_function(front) = full_redistribute;
+									switch (full_curve_redist_version(init))
+									{
+									case ORDINARY_REDISTRIBUTE:
+											Forward_curve_redistribute_function(front) =
+													full_inc_redist_cur;
+											Backward_curve_redistribute_function(front) =
+													full_dec_redist_cur;
+											break;
+
+									case EQUI_BOND_REDISTRIBUTE:
+											Forward_curve_redistribute_function(front) =
+													equi_curve_redistribute;
+											Backward_curve_redistribute_function(front) =
+													backward_equi_curve_redistribute;
+											break;
+									}
+							}
+							*/
+
 						  FT_RedistMesh(&front);
 						  FT_ResetTime(&front);
 						  // This is a virtual propagation to get maximum front 
@@ -199,6 +254,7 @@ bool VCellFront<FCT>::propagateTo(double time) {
 			FT_Propagate(&front);
 			FT_AddTimeStepToCounter(&front);
 			FT_SetTimeStep(&front);
+			VCELL_DEBUG("FT: time=" << front.time << ", step=" << front.step << ", next dt=" << front.dt);
 		}
 		return true;
 	}

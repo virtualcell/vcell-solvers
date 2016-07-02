@@ -14,7 +14,7 @@ namespace moving_boundary {
 		 * @param filename optional override of file name in XML, may be empty string
 		 * @param mbpp problem to report on
 		 */
-		 static ReportClient *setup(const tinyxml2::XMLElement &root, const std::string & filename, MovingBoundaryParabolicProblem &mbpp); 
+		 static void setup(const tinyxml2::XMLElement &root, const std::string & filename, MovingBoundaryParabolicProblem &mbpp);
 	};
 
 

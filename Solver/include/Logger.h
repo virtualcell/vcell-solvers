@@ -97,6 +97,10 @@ namespace vcell_util {
 			return instance.logStream;
 		}
 
+		static void debugEntry(std::string method);
+		static void debugExit(std::string method);
+		static void Debug(std::string method, std::string message);
+
 	private:
 		struct KeyInfo {
 			/**
@@ -142,6 +146,16 @@ namespace vcell_util {
 		std::ofstream fstream;
 	};
 
+	struct StdoutDest: public Logger::Destination {
+		StdoutDest() {}
+		void report(const char * msg, bool newline) {
+			std::cout << msg;
+			if (newline) {
+				std::cout << std::endl;
+			}
+		}
+	};
+
 	std::ostream &operator<<(std::ostream &, const Logger::Level &);
 
 
@@ -151,6 +165,16 @@ namespace vcell_util {
 * based on some ideas in apache Log4jcxxx (BSD licensed)
 * @param level desired Logger level
 * @param x code fragment to stream 
+*/
+#define VCELL_DEBUG(x) { \
+	if (vcell_util::Logger::get( ).enabled(vcell_util::Logger::debug) ) \
+	{ std::ostringstream oss; oss << x ; vcell_util::Logger::get( ).report(oss.str( ).c_str( )); } \
+}
+
+/**
+* based on some ideas in apache Log4jcxxx (BSD licensed)
+* @param level desired Logger level
+* @param x code fragment to stream
 */
 #define VCELL_LOG(level,x) { \
 	if (vcell_util::Logger::get( ).enabled(vcell_util::Logger::level) ) \
