@@ -1,0 +1,22 @@
+// install msys2
+follow msys2 wiki for installation (https://sourceforge.net/p/msys2/wiki/MSYS2%20installation/)
+(don't forget to replace shortcuts for the .bat files to all use the same use 
+the same msys2_shell.cmd with arguments -msys or -mingw64 or -mingw32 for the 
+corresponding shells.)
+
+// install subversion
+pacman -S subversion
+
+// set up numerics workspace and build directories
+mkdir build
+mkdir build/numerics
+mkdir build/build64
+mkdir build/build32
+cd build/numerics
+svn co svn://code3.cam.uchc.edu/vcell/trunk/numerics
+pacman -S cmake
+cd ~/build/build64
+
+
+
+
