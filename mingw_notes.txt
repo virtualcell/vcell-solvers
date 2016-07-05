@@ -4,6 +4,8 @@ follow msys2 wiki for installation (https://sourceforge.net/p/msys2/wiki/MSYS2%2
 the same msys2_shell.cmd with arguments -msys or -mingw64 or -mingw32 for the 
 corresponding shells.)
 
+// another useful link: https://wiki.allegro.cc/index.php?title=Building_with_msys2
+
 // install subversion
 pacman -S subversion
 
@@ -15,7 +17,19 @@ mkdir build/build32
 cd build/numerics
 svn co svn://code3.cam.uchc.edu/vcell/trunk/numerics
 pacman -S cmake
+pacman -S git
+pacman -S make
+pacman -S mingw-w64-x86_64-extra-cmake-modules
+pacman -S mingw-w64-x86_64-gcc
+pacman -S mingw-w64-x86_64-gcc-fortran
+
+from build/build64:
+cmake -G"MSYS Makefiles" -DTARGET_SOLVER_NO_MESSAGING="True" -DCYGWIN="True" -DNEW_SMOLDYN="True" ../numerics
+make
+
 cd ~/build/build64
+PATH=/mingw64/x86_64-w64-mingw32/bin/:$PATH
+cmake -DTARGET_SOLVERS_NO_MESSAGING="On" ../numerics
 
 
 
