@@ -18,7 +18,7 @@ IndexVect::IndexVect (int a, int b)
 	vect[1] = b;
 }
 
-inline IndexVect::IndexVect (const IndexVect &iv)
+IndexVect::IndexVect (const IndexVect &iv)
 {
 	for (int i = 0; i < DIM; ++ i)
 	{

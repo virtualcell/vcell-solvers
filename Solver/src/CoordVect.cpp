@@ -40,7 +40,7 @@ CoordVect::CoordVect(moving_boundary::MeshElementNode* e)
 	moving_boundary::World<moving_boundary::CoordinateType, 2>::get().toProblemDomain(worldValues, vect);
 }
 
-inline CoordVect::CoordVect (const CoordVect &iv)
+CoordVect::CoordVect (const CoordVect &iv)
 {
 	for (int i = 0; i < DIM; ++ i)
 	{

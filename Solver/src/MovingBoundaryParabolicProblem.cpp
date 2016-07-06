@@ -297,7 +297,8 @@ namespace moving_boundary {
 				frontTimeStep = maxStep;
 			}
 
-			frontTimeStep = 0.1 / ((int)(0.1/(0.75 * frontTimeStep)) + 1);
+			double cfl = 1;
+			frontTimeStep = 0.1 / ((int)(0.1/(cfl * frontTimeStep)) + 1);
 
 			using matlabBridge::MatLabDebug;
 			if (MatLabDebug::on("tiling")) {

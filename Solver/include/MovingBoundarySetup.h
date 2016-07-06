@@ -166,7 +166,7 @@ namespace moving_boundary {
 		* @param XMLElement containing "problem" XML child
 		* @param lockUniverse lock universe from future changes -- settable to false for unit testing
 		*/
-		static MovingBoundarySetup setupProblem(const tinyxml2::XMLElement &root);
+		static MovingBoundarySetup setupProblem(const tinyxml2::XMLElement &root, int paramNx);
 
 	};
 

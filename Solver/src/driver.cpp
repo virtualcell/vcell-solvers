@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
 	std::string restorename;
 	bool parseOnly;
 	bool configPresent;
+	int Nx = -1;
 	namespace tclap = TCLAP;
 	try {
 		using namespace TCLAP; 
@@ -58,12 +59,14 @@ int main(int argc, char *argv[])
 		ValueArg<std::string> output("o","output","HDF5 output file name",false,"","string",cmd);
 		ValueArg<std::string> restore("r","restore","stored state file name",false,"","string",cmd);
 		MultiArg<std::string> ignore("i","ignore","ignore me",false,"string",cmd);
+		ValueArg<int> paramNx("n", "Nx", "Nx", false, -1, "int", cmd);
 		SwitchArg ponly("p","parseonly","Parse XML without running simulation",cmd);
 		cmd.parse(argc,argv);
 		filename = config.getValue( );
 		outname = output.getValue( );
 		restorename = restore.getValue( );
 		parseOnly = ponly.getValue( );
+		Nx = paramNx.getValue();
 		configPresent = config.isSet( );
 		if (!configPresent && !restore.isSet( ) ) { 
 			std::cerr << "error, either -" << config.getName( ) << " or -" << restore.getName( )  
@@ -104,7 +107,7 @@ int main(int argc, char *argv[])
 
 			using moving_boundary::MovingBoundarySetup;
 			if (restorename.empty( )) {
-				auto mbs = MovingBoundarySetup::setupProblem(root);
+				auto mbs = MovingBoundarySetup::setupProblem(root, Nx);
 				problem = moving_boundary::MovingBoundaryParabolicProblem(mbs);
 				moving_boundary::ReportClient::setup(root, outname, problem);
 			}

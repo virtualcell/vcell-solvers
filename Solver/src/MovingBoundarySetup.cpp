@@ -113,7 +113,7 @@ namespace {
 	}
 }
 
-moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XMLElement &root) {
+moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XMLElement &root, int paramNx) {
 	using vcell_xml::convertChildElement;
 
 	moving_boundary::MovingBoundarySetup mbSetup; 
@@ -129,8 +129,16 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 	mbSetup.extentY = CoordVect(limits[1].low(), limits[1].high());
 
 	std::array<unsigned short,2> numNodes;
-	numNodes[0]  = convertChildElement<unsigned short>(prob,"numNodesX");
-	numNodes[1]  = convertChildElement<unsigned short>(prob,"numNodesY");
+	if (paramNx == -1)
+	{
+		numNodes[0]  = convertChildElement<unsigned short>(prob,"numNodesX");
+		numNodes[1]  = convertChildElement<unsigned short>(prob,"numNodesY");
+	}
+	else
+	{
+		numNodes[0] = paramNx;
+		numNodes[1] = paramNx;
+	}
 	mbSetup.Nx = IndexVect(numNodes[0], numNodes[1]);
 
 	moving_boundary::Universe<2>::get( ).init(limits,numNodes);

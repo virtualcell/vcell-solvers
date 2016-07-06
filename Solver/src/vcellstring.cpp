@@ -1,7 +1,9 @@
 #include <sstream>
 #include <vcellstring.h>
 using std::string;
-std::string vcell_util::convertNonPrintable(const std::string &source) {
+namespace vcell_util
+{
+std::string convertNonPrintable(const std::string &source) {
 	string rval;
 	rval.reserve(source.size( ) * 4); //near worse case each character replaced with \0x--
 	for (string::const_iterator iter = source.begin( ); iter != source.end( ); ++iter) {
@@ -25,4 +27,6 @@ bool endsWith(std::string const & value, std::string const & ending)
 		return false;
 	}
 	return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
 }

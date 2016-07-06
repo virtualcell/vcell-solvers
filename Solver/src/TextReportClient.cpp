@@ -7,6 +7,7 @@
 #include <vector>
 #include <TextReportClient.h>
 #include <vcellxml.h>
+#include <vcellstring.h>
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
 using std::endl;
 using spatial::cX;
@@ -69,10 +70,11 @@ void TextReportClient::time(double t, unsigned int numIteration, bool last,
 	{
 		output << "%%%%%% MovingBoundarySolver output" << endl;
 		output << "% Mesh Size" << endl;
-		output << "Nx=" << problem.setup().Nx << ";" << endl;
+		output << "Nx=" << problem.setup().Nx[0] << ";" << endl;
 		output << "% Extent" << endl;
 		output << "DomainX=" << problem.setup().extentX << ";" << endl;
 		output << "DomainY=" << problem.setup().extentY << ";" << endl;
+		output << "Dx=" << (problem.setup().extentX[1] - problem.setup().extentX[0])/problem.setup().Nx[0] << ";" << endl;
 		output << "dT=" << problem.frontTimeStep() << ";" << endl;
 		output << "Tmax=" << problem.setup().maxTime << ";" << endl;
 		output << "precision=  " << outputPrecision << ";" << endl;
@@ -82,15 +84,22 @@ void TextReportClient::time(double t, unsigned int numIteration, bool last,
 	}
 	output << "iter= " << numIteration << ";" << endl;
 	output << "time= " << std::setw(outputWidth) << t << ";" << endl;
+
+	string variableSuffix;
 	if (lastIteration)
 	{
 		output << "%%% last iteration" << endl;
+		variableSuffix = "end";
+	}
+	else
+	{
+		variableSuffix = vcell_util::to_string<int>(iterCount);
 	}
 	output << "nodesAdjusted_" << numIteration << "= " << geometryInfo.nodesAdjusted << ";" << endl;
 	std::vector<spatial::TPoint<CoordinateType,2> > front = geometryInfo.boundary;
-	output << "front_" << numIteration << "_size=" << front.size() << ";" << endl;
+	output << "front_" << variableSuffix << "_size=" << front.size() << ";" << endl;
 	output << "%%% front=[x y Vx Vy];" << endl;
-	output << "front_" << numIteration << "=[ " << endl;
+	output << "front_" << variableSuffix << "=[ " << endl;
 	for (auto iter = front.begin(); iter != front.end(); ++iter)
 	{
 		auto simPoint = *iter;
@@ -103,7 +112,7 @@ void TextReportClient::time(double t, unsigned int numIteration, bool last,
 	}
 	output << "];" << endl << endl;
 	output << "%%% elements=[x y u v m];" << endl;
-	output << "elements_" << numIteration << "=[" << endl;
+	output << "elements_" << variableSuffix << "=[" << endl;
 }
 
 void TextReportClient::element(const MeshElementNode &e)

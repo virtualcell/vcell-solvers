@@ -945,8 +945,7 @@ void ReportClient::setup(const XMLElement &root, const std::string & h5filename 
 		const std::array<Universe<2>::CountType, 2>& numNodes = Universe<2>::get().numNodes();
 		const std::array<spatial::GeoLimit, 2>& limits = Universe<2>::get().limits();
 		std::stringstream ss;
-		ss << outputFilePrefix << "_extent=" << limits[0].low() << ","
-				<< limits[0].high() << "_N=" << numNodes[0] << "," << numNodes[1] << "_t=" << mbs.maxTime << "_dt=" << mbpp.frontTimeStep();
+		ss << outputFilePrefix << "_Nx" << numNodes[0] << "_t" << mbs.maxTime * 10;
 		outputFilePrefix = ss.str();
 		bool deleteExisting = vcell_xml::convertChildElementWithDefault<bool>(report,"deleteExisting",false);
 		if (h5filename.empty( )) {
@@ -990,8 +989,8 @@ void ReportClient::setup(const XMLElement &root, const std::string & h5filename 
 			bool quiet = timeReport->FirstChildElement("quiet") != nullptr;
 			int nsubs = 0;
 
-
-			step = (int)(0.1/(0.75*mbpp.meshInterval()*mbpp.meshInterval()/4))+1;
+			double cfl = 1;
+			step = (int)(0.1/(cfl*mbpp.meshInterval()*mbpp.meshInterval()/4))+1;
 			if (step != NOT_THERE) {
 				nsubs++;
 				timeReports.push_back( new TimeReportStep(startTime,step) );
@@ -1011,19 +1010,19 @@ void ReportClient::setup(const XMLElement &root, const std::string & h5filename 
 		}
 
 		moving_boundary::World<moving_boundary::CoordinateType,2> &world = moving_boundary::World<moving_boundary::CoordinateType,2>::get( );
-		HDF5Client *hdf5Client =  new HDF5Client(xmlCopy,h5FileName,world,mbpp,datasetName, timeReports);
-		hdf5Client->addInitial(mbs);
-		const XMLElement * const annotateSection = report.FirstChildElement("annotation"); 
-		if (annotateSection != nullptr) {
-			const XMLElement *annotateElement = annotateSection->FirstChildElement( );
-			while (annotateElement != nullptr) {
-				const char *const name = annotateElement->Name( );
-				const std::string value = vcell_xml::convertElement<std::string>(*annotateElement);
-				hdf5Client->annotate(name,value);
-				annotateElement = annotateElement->NextSiblingElement( );
-			}
-		}
-		mbpp.add(*hdf5Client);
+//		HDF5Client *hdf5Client =  new HDF5Client(xmlCopy,h5FileName,world,mbpp,datasetName, timeReports);
+//		hdf5Client->addInitial(mbs);
+//		const XMLElement * const annotateSection = report.FirstChildElement("annotation");
+//		if (annotateSection != nullptr) {
+//			const XMLElement *annotateElement = annotateSection->FirstChildElement( );
+//			while (annotateElement != nullptr) {
+//				const char *const name = annotateElement->Name( );
+//				const std::string value = vcell_xml::convertElement<std::string>(*annotateElement);
+//				hdf5Client->annotate(name,value);
+//				annotateElement = annotateElement->NextSiblingElement( );
+//			}
+//		}
+		//mbpp.add(*hdf5Client);
 
 		const tinyxml2::XMLElement *tr = vcell_xml::query(report, "textReport");
 		if (tr != nullptr) {
