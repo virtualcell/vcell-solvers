@@ -68,10 +68,17 @@ void TextReportClient::time(double t, unsigned int numIteration, bool last,
 	if (t == 0)
 	{
 		output << "%%%%%% MovingBoundarySolver output" << endl;
-		output << "Nx=" << problem.setup().maxTime << endl;
-		output << "Tmax=" << problem.setup().maxTime << endl;
+		output << "% Mesh Size" << endl;
+		output << "Nx=" << problem.setup().Nx << ";" << endl;
+		output << "% Extent" << endl;
+		output << "DomainX=" << problem.setup().extentX << ";" << endl;
+		output << "DomainY=" << problem.setup().extentY << ";" << endl;
+		output << "dT=" << problem.frontTimeStep() << ";" << endl;
+		output << "Tmax=" << problem.setup().maxTime << ";" << endl;
 		output << "precision=  " << outputPrecision << ";" << endl;
 		output << "width=  " << outputWidth << ";" << endl;
+		output << "%%%%%%%%%%%%%%%%%%%%%%" << endl;
+		output << "%%%%%%%%%%%%%%%%%%%%%%" << endl;
 	}
 	output << "iter= " << numIteration << ";" << endl;
 	output << "time= " << std::setw(outputWidth) << t << ";" << endl;

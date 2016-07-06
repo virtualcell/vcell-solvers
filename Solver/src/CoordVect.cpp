@@ -158,6 +158,6 @@ double CoordVect::distance2(CoordVect& p) const
 
 std::ostream& operator<< (std::ostream& ostr, const CoordVect& p)
 {
-  ostr << "(" << p[0] << "," << p[1] << ")" ;
+  ostr << "[" << p[0] << " " << p[1] << "]" ;
   return ostr;
 }

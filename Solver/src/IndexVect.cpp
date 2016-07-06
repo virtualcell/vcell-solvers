@@ -115,6 +115,6 @@ IndexVect& IndexVect::operator/= (int s)
 
 std::ostream& operator<< (std::ostream& ostr, const IndexVect& p)
 {
-  ostr << "(" << p[0] << "," << p[1] << ")" ;
+  ostr << "[" << p[0] << " " << p[1] << "]" ;
   return ostr;
 }

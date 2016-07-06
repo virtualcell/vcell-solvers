@@ -8,6 +8,9 @@ namespace tinyxml2 {
 	class XMLElement;
 }
 
+#include <CoordVect.h>
+#include <IndexVect.h>
+
 namespace moving_boundary {
 	struct MeshElementNode; 
 
@@ -47,7 +50,7 @@ namespace moving_boundary {
 	};
 
 	struct MovingBoundarySetup {
-		int Nx, Ny;
+		IndexVect Nx;
 		CoordVect extentX;
 		CoordVect extentY;
 
@@ -115,6 +118,9 @@ namespace moving_boundary {
 
 		MovingBoundarySetup(const MovingBoundarySetup &rhs)
 			:
+			Nx(rhs.Nx),
+			extentX(rhs.extentX),
+			extentY(rhs.extentY),
 			frontToNodeRatio(rhs.frontToNodeRatio),
 			maxTime(rhs.maxTime),
 			frontTimeStep(rhs.frontTimeStep),
@@ -132,6 +138,9 @@ namespace moving_boundary {
 		}
 
 	MovingBoundarySetup &operator= (const MovingBoundarySetup &rhs) {
+		  Nx = rhs.Nx;
+		  extentX = rhs.extentX;
+		  extentY = rhs.extentY;
 			frontToNodeRatio = rhs.frontToNodeRatio;
 			maxTime = rhs.maxTime;
 			frontTimeStep = rhs.frontTimeStep;

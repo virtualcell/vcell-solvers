@@ -122,11 +122,16 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 	std::array<spatial::GeoLimit,2> limits;
 	const tinyxml2::XMLElement & xlimits = vcell_xml::get(prob,"xLimits"); 
 	readLimits(xlimits,limits[0]);
+	mbSetup.extentX = CoordVect(limits[0].low(), limits[0].high());
+
 	const tinyxml2::XMLElement & ylimits = vcell_xml::get(prob,"yLimits"); 
 	readLimits(ylimits,limits[1]);
+	mbSetup.extentY = CoordVect(limits[1].low(), limits[1].high());
+
 	std::array<unsigned short,2> numNodes;
 	numNodes[0]  = convertChildElement<unsigned short>(prob,"numNodesX");
 	numNodes[1]  = convertChildElement<unsigned short>(prob,"numNodesY");
+	mbSetup.Nx = IndexVect(numNodes[0], numNodes[1]);
 
 	moving_boundary::Universe<2>::get( ).init(limits,numNodes);
 

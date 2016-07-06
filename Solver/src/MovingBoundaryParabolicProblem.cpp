@@ -25,7 +25,6 @@
 #include <Physiology.h>
 #include <CoordVect.h>
 #include <IndexVect.h>
-#include <SPoint.h>
 
 #include <ExplicitSolver.h>
 
