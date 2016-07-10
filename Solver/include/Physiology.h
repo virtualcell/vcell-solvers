@@ -105,8 +105,8 @@ namespace moving_boundary {
 			std::unique_ptr<SimpleSymbolTable> pSymTable;
 			bool locked;
 
-			void setTable(Species &sp) {
-				sp.setTable(*pSymTable);
+			void bindExpressions(Species &sp) {
+				sp.bindExpressions(*pSymTable);
 			}
 
 			void ibuild(const string *, size_t);

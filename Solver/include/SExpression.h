@@ -3,35 +3,29 @@
 #include <typeinfo>
 #include <Expression.h>
 #include <SimpleSymbolTable.h>
+using std::string;
+
 namespace moving_boundary {
 
 	struct SExpression {
 		/**
 		* @param exp string representation of function
 		*/
-		SExpression(std::string exp)
-			:expression(exp),
-			numSymbols(0) 
-		{ }
-
-		/**
-		* @param exp string representation of function
-		*/
-		SExpression(const char * const exp)
-			:expression(exp),
-			numSymbols(0) 
-		{ }
+		SExpression(string exp)
+			:expression(exp)
+		{
+			tryConstant();
+		}
 
 		/**
 		* @param exp string representation of function
 		* @param symTable symbol table -- must remain valid during
 		* lifetime of object
 		*/
-		SExpression(std::string exp, const SimpleSymbolTable &symTable)
-			:expression(exp,const_cast<SimpleSymbolTable &>(symTable)),
-			numSymbols(static_cast<NSym>(symTable.size( )))
+		SExpression(string exp, const SimpleSymbolTable &symTable)
+			:expression(exp,const_cast<SimpleSymbolTable &>(symTable))
 		{
-			checkSize(symTable.size());
+			tryConstant();
 		}
 		//default copy, assignment, destructor okay
 
@@ -40,14 +34,15 @@ namespace moving_boundary {
 		* lifetime of object
 		*/
 		void bindExpression(const SimpleSymbolTable &symbolTable) {
-			checkSize(symbolTable.size());
-			numSymbols = static_cast<NSym>(symbolTable.size( ));
-			expression.bindExpression(const_cast<SimpleSymbolTable *>(&symbolTable));
+			if (constValue == nullptr)
+			{
+				expression.bindExpression(const_cast<SimpleSymbolTable *>(&symbolTable));
+			}
 		}
 		/**
 		* @return new generated string representation
 		*/
-		std::string infix( ) const {
+		string infix( ) const {
 			return expression.infix( );
 		}
 
@@ -56,11 +51,16 @@ namespace moving_boundary {
 		*/
 		template <class CTR>
 		double evaluate(const CTR  &values) const {
-			if (values.size( ) == numSymbols) {
-				return expression.evaluateVector(const_cast<double *>(values.data( )));
+			return evaluate(const_cast<double *>(values.data( )));
+		}
+
+		double evaluate(double* values) const
+		{
+			if (constValue != nullptr)
+			{
+				return *constValue;
 			}
-			badContainer(typeid(CTR), values.size( ));
-			return 0;
+			return expression.evaluateVector(values);
 		}
 
 		/**
@@ -68,34 +68,19 @@ namespace moving_boundary {
 		* @return true if is
 		*/
 		bool isConstant( ) const {
-			return expression.isConstant( );
+			return constValue != nullptr;
 		}
 
 		/**
 		* return constant value
 		* @throws VCell::ExpressionException if #isConstant( ) != true
 		*/ 
-		double constantValue( ) const {
-			return expression.evaluateConstant( );
-		}
-
-		size_t numberSymbols( ) const {
-			return numSymbols;
-		}
-
-		std::vector<std::string> getSymbols( ) const {
-			std::vector<std::string> rval;
-			expression.getSymbols(rval);
-			return rval;
-		}
+		double constantValue( ) const;
 
 	private:
-		typedef unsigned short NSym;
-		void badContainer(const std::type_info &, size_t) const;
-		void checkSize(size_t) const;
-
 		mutable VCell::Expression expression;
-		NSym numSymbols;
+		double* constValue;
+		void tryConstant();
 	};
 
 }

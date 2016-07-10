@@ -36,7 +36,7 @@ namespace moving_boundary {
 
 		private:
 			friend Physiology;
-			void setTable(const SimpleSymbolTable &symTable); 
+			void bindExpressions(const SimpleSymbolTable &symTable);
 			string name_;
 			SExpression initialExp;
 			SExpression sourceExp;

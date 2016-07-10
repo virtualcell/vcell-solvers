@@ -42,7 +42,7 @@ void Physiology::ibuild(const string * data, size_t howMany) {
 	//values.resize(n);
 
 	using std::placeholders::_1;
-	std::for_each(species_.begin( ),species_.end( ), std::bind(&Physiology::setTable, this, _1) );
+	std::for_each(species_.begin( ),species_.end( ), std::bind(&Physiology::bindExpressions, this, _1) );
 }
 
 int Physiology::badName(const string &name) const {
