@@ -2,32 +2,21 @@
 #define Species_h
 #include <string>
 #include <SExpression.h>
+using std::string;
+
 namespace moving_boundary {
 	namespace biology {
 		struct Physiology;
 
 		struct Species {
-			Species(const std::string & name, const std::string & source, const std::string &diffusion)
+			Species(const string & name, const string initial, const string & source, const string &diffusion)
 				:name_(name),
+				initialExp(initial),
 				sourceExp(source),
-				diffusionExp(diffusion),
-				actDiffSpecI( )
+				diffusionExp(diffusion)
 			{}
 
-
-
-
-			/**
-			* @tparam CTR std::vector, std::array, et. al.
-			*/
-			/*
-			template <class CTR>
-			double evaluate(const CTR  &values) const {
-				return sourceExp.evaluate(values);
-			}
-			*/
-
-			const std::string & name( ) const {
+			const string & name( ) const {
 				return name_;
 			}
 
@@ -45,21 +34,14 @@ namespace moving_boundary {
 				return diffusionExp;
 			}
 
-			typedef std::vector<unsigned int> IndexContainer;
-			const IndexContainer & activeDiffusionSpeciesIndexes( ) {
-				return actDiffSpecI;
-			}
-
 		private:
 			friend Physiology;
 			void setTable(const SimpleSymbolTable &symTable); 
-			std::string name_;
+			string name_;
+			SExpression initialExp;
 			SExpression sourceExp;
 			SExpression diffusionExp;
-			IndexContainer actDiffSpecI;
-
 		};
-
 	}
 
 }

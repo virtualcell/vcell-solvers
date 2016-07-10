@@ -5,6 +5,8 @@
 #include <memory>
 #include <cassert>
 #include <Species.h>
+using std::string;
+
 namespace moving_boundary {
 	namespace biology {
 		struct Physiology {
@@ -56,7 +58,7 @@ namespace moving_boundary {
 			* lookup name in symbol table
 			* @throws std::domain_error if not locked or name invalid
 			*/
-			size_t symbolIndex(const std::string &name) const {
+			size_t symbolIndex(const string &name) const {
 				verifyLocked( );
 				auto entry =  pSymTable->getEntry(name);
 				if (entry != nullptr) {
@@ -69,14 +71,14 @@ namespace moving_boundary {
 			/**
 			* @throws std::domain_error if locked
 			*/
-			const Species & createSpecies(const std::string & name, const std::string & sourceExpression, const std::string & diffusionExpression); 
+			const Species & createSpecies(const string & name, const string& initial, const string & sourceExpression, const string & diffusionExpression);
 
 			/**
 			* build list of names for symbol table
 			* includes all species names plus those passed in
 			* @throws std::domain_error if locked
 			*/
-			void buildSymbolTable(const std::vector<std::string> &vec) {
+			void buildSymbolTable(const std::vector<string> &vec) {
 				verifyUnlocked( );
 				ibuild(vec.data( ), vec.size( ));
 			}
@@ -107,8 +109,8 @@ namespace moving_boundary {
 				sp.setTable(*pSymTable);
 			}
 
-			void ibuild(const std::string *, size_t);
-			int badName(const std::string &name) const;
+			void ibuild(const string *, size_t);
+			int badName(const string &name) const;
 			void verifyUnlocked( ) const; 
 			void verifyLocked( ) const; 
 		};

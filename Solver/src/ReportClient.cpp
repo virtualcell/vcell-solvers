@@ -989,8 +989,8 @@ void ReportClient::setup(const XMLElement &root, const std::string & h5filename 
 			bool quiet = timeReport->FirstChildElement("quiet") != nullptr;
 			int nsubs = 0;
 
-			double cfl = 1;
-			step = (int)(0.1/(cfl*mbpp.meshInterval()*mbpp.meshInterval()/4))+1;
+//			double cfl = 1;
+//			step = (int)(0.1/(cfl*mbpp.meshInterval()*mbpp.meshInterval()/4))+1;
 			if (step != NOT_THERE) {
 				nsubs++;
 				timeReports.push_back( new TimeReportStep(startTime,step) );

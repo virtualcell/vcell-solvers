@@ -262,7 +262,7 @@ namespace moving_boundary {
 			for (int i = 0; i < numSpecies; i++) {
 				const SpeciesSpecification & ss = mbs.speciesSpecs[i];
 				initialConcentrationExpressions[i] = VCell::Expression(ss.initialConcentrationStr,symTable);
-				const biology::Species & sp = physiology.createSpecies(ss.name,ss.sourceExpressionStr, ss.diffusionExpressionStr);
+				const biology::Species & sp = physiology.createSpecies(ss.name,ss.initialConcentrationStr, ss.sourceExpressionStr, ss.diffusionExpressionStr);
 				const SExpression & dt = sp.diffusionTerm( );
 				if (dt.isConstant( )) {
 					maxConstantDiffusion = std::max(maxConstantDiffusion, dt.constantValue( ));
@@ -297,8 +297,8 @@ namespace moving_boundary {
 				frontTimeStep = maxStep;
 			}
 
-			double cfl = 1;
-			frontTimeStep = 0.1 / ((int)(0.1/(cfl * frontTimeStep)) + 1);
+//			double cfl = 1;
+//			frontTimeStep = 0.1 / ((int)(0.1/(cfl * frontTimeStep)) + 1);
 
 			using matlabBridge::MatLabDebug;
 			if (MatLabDebug::on("tiling")) {
@@ -556,7 +556,7 @@ namespace moving_boundary {
 
 				{   // scope the variables
 					IndexVect offset(0, 0);
-					for (int i = 0; i < offset.size(); ++i)
+					for (int i = 0; i < DIM; ++i)
 					{
 						offset[i] = scaledCoord[i] < gridIndex[i] + 0.5 ? -1 : 1;
 					}
@@ -574,8 +574,8 @@ namespace moving_boundary {
 
 					if (neighbor1Inside && neighbor2Inside)
 					{
-						CoordVect neighbor1Coord(neighbor1Element);
-						CoordVect neighbor2Coord(neighbor2Element);
+						CoordVect neighbor1Coord(*neighbor1Element);
+						CoordVect neighbor2Coord(*neighbor2Element);
 						double distance1 = thisPoint.distance2(neighbor1Coord);
 						double distance2 = thisPoint.distance2(neighbor2Coord);
 						selectedElement = distance1 < distance2 ? neighbor1Element : neighbor2Element;
@@ -620,7 +620,7 @@ namespace moving_boundary {
 						if (neighborElement != nullptr && neighborElement->isInside())
 						{
 							bFound = true;
-							CoordVect neighborCoord(neighborElement);
+							CoordVect neighborCoord(*neighborElement);
 							double distance = thisPoint.distance2(neighborCoord);
 							if (distance < minDistance)
 							{

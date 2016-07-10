@@ -4,6 +4,7 @@
 #include <istream>
 #include <World.h>
 #include <MeshElementNode.h>
+#include <MovingBoundaryTypes.h>
 
 const CoordVect CoordVect::Unit(1.0, 1.0);
 const CoordVect CoordVect::Zero(0.0, 0.0);
@@ -22,21 +23,27 @@ CoordVect::CoordVect (double i, double j)
 	vect[1] = j;
 }
 
-CoordVect::CoordVect (double* v)
+CoordVect::CoordVect (const double* v)
 {
 	vect[0] = v[0];
 	vect[1] = v[1];
 }
 
-CoordVect::CoordVect(std::array<double, 2> p)
+CoordVect::CoordVect (const int* v)
+{
+	vect[0] = v[0];
+	vect[1] = v[1];
+}
+
+CoordVect::CoordVect(const std::array<double, DIM>& p)
 {
 	vect[0] = p[0];
 	vect[1] = p[1];
 }
 
-CoordVect::CoordVect(moving_boundary::MeshElementNode* e)
+CoordVect::CoordVect(const moving_boundary::MeshElementNode& me)
 {
-	double worldValues[2] = {(*e)(spatial::cX), (*e)(spatial::cY)};
+	double worldValues[DIM] = {me(spatial::cX), me(spatial::cY)};
 	moving_boundary::World<moving_boundary::CoordinateType, 2>::get().toProblemDomain(worldValues, vect);
 }
 
@@ -70,12 +77,18 @@ double& CoordVect::operator[] (int i)
 CoordVect CoordVect::operator+ (const CoordVect& p) const
 {
 	CoordVect v(vect[0] + p[0], vect[1] + p[1]);
-  return *this;
+  return v;
+}
+
+CoordVect CoordVect::operator+(const std::array<double, DIM>& p) const
+{
+	CoordVect v(vect[0] + p[0], vect[1] + p[1]);
+	return v;
 }
 
 CoordVect& CoordVect::operator+= (const CoordVect& p)
 {
-	for (int i = 0; i < 1; ++ i)
+	for (int i = 0; i < DIM; ++ i)
 	{
 		vect[i] += p.vect[i];
 	}
@@ -90,7 +103,7 @@ CoordVect CoordVect::operator- (const CoordVect& p) const
 
 inline CoordVect& CoordVect::operator-= (const CoordVect& p)
 {
-	for (int i = 0; i < 1; ++ i)
+	for (int i = 0; i < DIM; ++ i)
 	{
 		vect[i] -= p.vect[i];
 	}
@@ -155,6 +168,25 @@ double CoordVect::distance2(CoordVect& p) const
 	return (vect[0] - p.vect[0]) * (vect[0] - p.vect[0])
 			+ (vect[1] - p.vect[1]) * (vect[1] - p.vect[1]);
 }
+
+bool CoordVect::withinWorld()
+{
+	const std::array<spatial::TGeoLimit<moving_boundary::CoordinateType>, 2>& limits = moving_boundary::World<moving_boundary::CoordinateType, DIM>::get( ).limits();
+	for (int idir = 0; idir < DIM; ++ idir)
+	{
+		if (vect[idir] < limits[idir].low() || vect[idir] > limits[idir].high() )
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+//CoordVect CoordVect::toProblemDomain()
+//{
+//	moving_boundary::World<moving_boundary::CoordinateType, DIM>& world = moving_boundary::World<moving_boundary::CoordinateType, DIM>::get( );
+//	return world.toProblemDomain(*this);
+//}
 
 std::ostream& operator<< (std::ostream& ostr, const CoordVect& p)
 {

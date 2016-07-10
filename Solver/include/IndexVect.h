@@ -2,8 +2,8 @@
 #define _INDEXVECT_H_
 
 #include <array>
+#include <MBConstants.h>
 
-#define DIM 2
 class IndexVect
 {
 public:
@@ -13,7 +13,7 @@ public:
   IndexVect ();
   IndexVect (int a, int b);
   IndexVect (const IndexVect& rhs);
-  IndexVect(std::array<size_t, 2> p);
+  IndexVect(std::array<size_t, DIM> p);
 
   IndexVect& operator= (const IndexVect& rhs);
 
@@ -31,8 +31,6 @@ public:
 
   IndexVect operator/ (int s) const;
   IndexVect& operator/= (int s);
-
-  int size() { return 2; }
 
   friend std::ostream& operator<< (std::ostream& ostr,
                                    const IndexVect& p);

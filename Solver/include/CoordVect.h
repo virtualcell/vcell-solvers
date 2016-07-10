@@ -2,10 +2,8 @@
 #define _COORDVECT_H_
 
 #include <array>
-
-#define DIM 2
-
-class IndexVect;
+#include <MBConstants.h>
+#include <IndexVect.h>
 namespace moving_boundary
 {
 	struct MeshElementNode;
@@ -20,9 +18,10 @@ public:
   CoordVect ();
   CoordVect (double i, double j);
   CoordVect (const CoordVect& rhs);
-  CoordVect (double* v);
-  CoordVect(std::array<double, 2> p);
-  CoordVect(moving_boundary::MeshElementNode* e);
+  CoordVect (const double* v);
+  CoordVect (const int* v);
+  CoordVect(const std::array<double,DIM>& p);
+  CoordVect(const moving_boundary::MeshElementNode& me);
 
   CoordVect& operator= (const CoordVect& rhs);
 
@@ -30,6 +29,7 @@ public:
   double& operator[] (int i);
 
   CoordVect operator+ (const CoordVect& p) const;
+  CoordVect operator+ (const std::array<double, DIM>& p) const;
   CoordVect& operator+= (const CoordVect& p);
 
   CoordVect operator- (const CoordVect& p) const;
@@ -51,10 +51,17 @@ public:
 
   friend std::ostream& operator<< (std::ostream& ostr,
                                    const CoordVect& p);
+  const double* data()
+  {
+  	return vect;
+  }
+
+  bool withinWorld();
+  CoordVect toProblemDomain();
 
 private:
 
-  double vect[DIM];
+  double vect[MAX_DIM];
 
 };
 
