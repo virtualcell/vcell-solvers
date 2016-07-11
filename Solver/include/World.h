@@ -4,6 +4,7 @@
 #include <TPoint.h>
 #include <Universe.h>
 #include <SVector.h>
+#include <CoordVect.h>
 
 namespace moving_boundary {
 	//forward
@@ -82,7 +83,7 @@ namespace moving_boundary {
 		spatial::TPoint<COORD_TYPE,NUM_DIM> toWorld(const spatial::TPoint<double,NUM_DIM> & problemDomainPoint) const {
 			spatial::TPoint<COORD_TYPE,NUM_DIM> rval; 
 			for (spatial::Axis a = spatial::axisInitial; a < NUM_DIM; ++a) {
-				double v  = scale * (problemDomainPoint(a) - Universe<NUM_DIM>::get( ).inputZeroPoint[a]);
+				double v  = scale * (problemDomainPoint(a) - univ.inputZeroPoint[a]);
 				rval(a) = static_cast<COORD_TYPE>(v);
 			}
 			return rval;
@@ -94,7 +95,7 @@ namespace moving_boundary {
 		* @a axis coordinates is on
 		*/
 		double toProblemDomain(COORD_TYPE coord, spatial::Axis a) const {
-			return coord / scale + Universe<NUM_DIM>::get( ).inputZeroPoint[a];
+			return coord / scale + univ.inputZeroPoint[a];
 		}
 		/**
 		* convert interval (distance) from World coordinate to problem domain
@@ -122,8 +123,14 @@ namespace moving_boundary {
 		*/
 		void toProblemDomain(const double *source, double * destination) const {
 			for (spatial::Axis a = spatial::axisInitial; a < NUM_DIM; ++a) {
-				destination[a] = source[a] / scale + Universe<NUM_DIM>::get( ).inputZeroPoint[a];
+				destination[a] = source[a] / scale + univ.inputZeroPoint[a];
 			}
+		}
+
+		CoordVect toProblemDomain(const CoordVect& cv) const
+		{
+			CoordVect pv = cv / scale + univ.inputZeroPoint;
+			return pv;
 		}
 
 		/**

@@ -169,7 +169,7 @@ double CoordVect::distance2(CoordVect& p) const
 			+ (vect[1] - p.vect[1]) * (vect[1] - p.vect[1]);
 }
 
-bool CoordVect::withinWorld()
+bool CoordVect::withinWorld() const
 {
 	const std::array<spatial::TGeoLimit<moving_boundary::CoordinateType>, 2>& limits = moving_boundary::World<moving_boundary::CoordinateType, DIM>::get( ).limits();
 	for (int idir = 0; idir < DIM; ++ idir)
@@ -182,11 +182,11 @@ bool CoordVect::withinWorld()
 	return true;
 }
 
-//CoordVect CoordVect::toProblemDomain()
-//{
-//	moving_boundary::World<moving_boundary::CoordinateType, DIM>& world = moving_boundary::World<moving_boundary::CoordinateType, DIM>::get( );
-//	return world.toProblemDomain(*this);
-//}
+CoordVect CoordVect::toProblemDomain() const
+{
+	moving_boundary::World<moving_boundary::CoordinateType, DIM>& world = moving_boundary::World<moving_boundary::CoordinateType, DIM>::get( );
+	return world.toProblemDomain(*this);
+}
 
 std::ostream& operator<< (std::ostream& ostr, const CoordVect& p)
 {

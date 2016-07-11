@@ -621,16 +621,14 @@ namespace moving_boundary {
 		* @param x world coordinate
 		* @param y world coordinate
 		*/
-		spatial::SVector<double,2> frontVelocityProbDomain(double x, double y) const {
+		spatial::SVector<double,2> frontVelocityProbDomain(const CoordVect& coord) const {
 			 static const string METHOD = "frontVelocityProbDomain";
 			 vcell_util::Logger::debugEntry(METHOD);
 
 			 CoordVect vel = CoordVect::Zero;
-			 const std::array<spatial::TGeoLimit<moving_boundary::CoordinateType>, 2>& limitsWorldSystem = world.limits();
-			 if (x >= limitsWorldSystem[0].low() && x <= limitsWorldSystem[0].high()
-			   && y >= limitsWorldSystem[1].low() && y <= limitsWorldSystem[1].high())
+			 if (coord.withinWorld())
 			 {
-					double worldValues[2] = {x,y};
+					double worldValues[2] = {coord[0],coord[1]};
 					double syms[3];
 					world.toProblemDomain(worldValues,syms);
 
@@ -661,9 +659,9 @@ namespace moving_boundary {
 		* @param x world coordinate
 		* @param y world coordinate
 		*/
-		spatial::SVector<moving_boundary::VelocityType,2> frontVelocity(double x, double y) const {
+		spatial::SVector<moving_boundary::VelocityType,2> frontVelocity(const CoordVect& coord) const {
 			//fspy << x << ',' << y << ',' << currentTime << std::endl;
-			auto rval =  world.toWorld<moving_boundary::VelocityType>(frontVelocityProbDomain(x,y));
+			auto rval =  world.toWorld<moving_boundary::VelocityType>(frontVelocityProbDomain(coord));
 			return rval; 
 		}
 
@@ -680,7 +678,8 @@ namespace moving_boundary {
 		}
 
 		virtual int velocity(Frontier::Front*,Frontier::POINT* fpoint,HYPER_SURF_ELEMENT*, HYPER_SURF*,double* out) const {
-			const spatial::SVector<moving_boundary::VelocityType,2> & v = frontVelocity(fpoint->_coords[cX],fpoint->_coords[cY]);
+			CoordVect coord(fpoint->_coords[cX],fpoint->_coords[cY]);
+			const spatial::SVector<moving_boundary::VelocityType,2> & v = frontVelocity(coord);
 			out[cX] = v(cX); 
 			out[cY] = v(cY); 
 
@@ -879,7 +878,8 @@ namespace moving_boundary {
 				:FunctorBase(o),
 				maxSquaredVel(0){}
 			void operator( )(const spatial::TPoint<CoordinateType,2> & point) {
-				spatial::SVector<double,2> velVector = this->outer.frontVelocityProbDomain(point(cX),point(cY));
+				CoordVect coord(point(cX),point(cY));
+				spatial::SVector<double,2> velVector = this->outer.frontVelocityProbDomain(coord);
 				maxSquaredVel = std::max(maxSquaredVel,velVector.magnitudeSquared( ));
 			}
 			moving_boundary::VelocityType maxSquaredVel;
@@ -1736,10 +1736,4 @@ namespace moving_boundary {
 	void MovingBoundaryParabolicProblem::registerInstanceType( ) const {
 		sImpl->registerInstanceType( );
 	}
-
-	spatial::SVector<moving_boundary::VelocityType,2> MovingBoundaryParabolicProblem::velocity(spatial::TPoint<CoordinateType,2>& point) const
-	{
-		return sImpl->frontVelocity(point(cX), point(cY));
-	}
-
 }

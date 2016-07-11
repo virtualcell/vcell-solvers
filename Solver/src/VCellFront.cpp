@@ -428,6 +428,14 @@ std::vector<std::vector<spatial::TPoint<FCT,2> > > VCellFront<FCT>::retrieveCurv
 	return rval; 
 }
 
+template <typename FCT>
+void VCellFront<FCT>::getPointNormal(Frontier::POINT* p, double* nor)
+{
+	HYPER_SURF_ELEMENT *hse = p->hse;
+	HYPER_SURF *hs = p->hs;
+	GetFrontNormal(p, hse, hs, nor, &front);
+}
+
 template class spatial::VCellFront<double>;
 template class spatial::VCellFront<int32_t>;
 

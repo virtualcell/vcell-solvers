@@ -142,6 +142,8 @@ namespace spatial {
 
 		Frontier::Front* const c_ptr( ) { return &front; }
 
+		void getPointNormal(Frontier::POINT* p, double* normals);
+
 	private:
 		typedef spatial::TPoint<FCT,2> VCFPointType; 
 		void init(std::vector<GeoLimit> & xlimits, int N, double tmax,

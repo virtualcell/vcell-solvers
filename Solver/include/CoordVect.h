@@ -56,8 +56,8 @@ public:
   	return vect;
   }
 
-  bool withinWorld();
-  CoordVect toProblemDomain();
+  bool withinWorld() const;
+  CoordVect toProblemDomain() const;
 
 private:
 
