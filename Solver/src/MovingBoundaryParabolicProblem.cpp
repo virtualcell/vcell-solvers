@@ -628,11 +628,7 @@ namespace moving_boundary {
 			 CoordVect vel = CoordVect::Zero;
 			 if (coord.withinWorld())
 			 {
-					double worldValues[2] = {coord[0],coord[1]};
-					double syms[3];
-					world.toProblemDomain(worldValues,syms);
-
-					CoordVect thisPoint(syms);
+					CoordVect thisPoint = world.toProblemDomain(coord);
 					CoordVect normal = thisPoint.normalize();
 					double C = 1;
 					if (isRunning)
