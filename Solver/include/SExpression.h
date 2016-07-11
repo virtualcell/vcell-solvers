@@ -11,32 +11,23 @@ namespace moving_boundary {
 		/**
 		* @param exp string representation of function
 		*/
-		SExpression(string exp)
-			:expression(exp)
-		{
-			tryConstant();
-		}
+		SExpression(const string& exp);
 
 		/**
 		* @param exp string representation of function
 		* @param symTable symbol table -- must remain valid during
 		* lifetime of object
 		*/
-		SExpression(string exp, const SimpleSymbolTable &symTable)
-			:expression(exp,const_cast<SimpleSymbolTable &>(symTable))
-		{
-			tryConstant();
-		}
-		//default copy, assignment, destructor okay
+		SExpression(const string& exp, const SymbolTable &symTable);
 
 		/**
 		* @param symTable symbol table -- must remain valid during
 		* lifetime of object
 		*/
-		void bindExpression(const SimpleSymbolTable &symbolTable) {
+		void bindExpression(const SymbolTable &symbolTable) {
 			if (constValue == nullptr)
 			{
-				expression.bindExpression(const_cast<SimpleSymbolTable *>(&symbolTable));
+				expression.bindExpression(const_cast<SymbolTable *>(&symbolTable));
 			}
 		}
 		/**
@@ -54,15 +45,7 @@ namespace moving_boundary {
 			return evaluate(const_cast<double *>(values.data( )));
 		}
 
-		double evaluate(double* values) const
-		{
-			if (constValue != nullptr)
-			{
-				return *constValue;
-			}
-			return expression.evaluateVector(values);
-		}
-
+		double evaluate(double* values) const;
 		/**
 		* is expression constant?
 		* @return true if is

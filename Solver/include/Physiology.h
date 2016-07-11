@@ -12,8 +12,7 @@ namespace moving_boundary {
 		struct Physiology {
 			Physiology( )
 				:species_( ),
-				pSymTable( ),
-				locked(false)
+				pSymTable( )
 			{}
 
 			//************************************
@@ -23,7 +22,6 @@ namespace moving_boundary {
 			* @throws std::domain_error if not locked
 			*/
 			size_t numberSpecies( )  const {
-				verifyLocked( );
 				return species_.size( );
 			}
 
@@ -31,7 +29,6 @@ namespace moving_boundary {
 			* @throws std::domain_error if not locked
 			*/
 			const Species & species(size_t index) const {
-				verifyLocked( );
 				return species_[index];
 			}
 			typedef std::vector<Species>::const_iterator SpeciesIterator;
@@ -50,7 +47,6 @@ namespace moving_boundary {
 			* @throws std::domain_error if not locked
 			*/
 			size_t numberSymbols( ) const {
-				verifyLocked( );
 				return pSymTable->size( );
 			}
 
@@ -59,13 +55,10 @@ namespace moving_boundary {
 			* @throws std::domain_error if not locked or name invalid
 			*/
 			size_t symbolIndex(const string &name) const {
-				verifyLocked( );
 				auto entry =  pSymTable->getEntry(name);
 				if (entry != nullptr) {
 					return entry->getIndex( );
 				}
-				//always throws
-				return badName(name);
 			}
 
 			/**
@@ -78,41 +71,27 @@ namespace moving_boundary {
 			* includes all species names plus those passed in
 			* @throws std::domain_error if locked
 			*/
-			void buildSymbolTable(const std::vector<string> &vec) {
-				verifyUnlocked( );
-				ibuild(vec.data( ), vec.size( ));
+			void buildSymbolTable();
+
+			const SymbolTable& symbolTable()
+			{
+				return *pSymTable;
 			}
 
-			/**
-			* build list of names for symbol table
-			* includes all species names plus those passed in
-			* @throws std::domain_error if locked
-			*/
-			template <int N>
-			void buildSymbolTable(const std::array<string,N> & arr) {
-				verifyUnlocked( );
-				ibuild(arr.data( ), arr.size( ));
-			}
-
-			/**
-			* prevent further changes
-			*/
-			void lock( );
+			static const vector<string> fixedTimeSpatialSymbols;
+			int symbolIndex_t;
+			int symbolIndex_coordinate;
+			int symbolIndex_normal;
+			int symbolIndex_species;
 
 		private:
 			Physiology(const Physiology &); //not defined
 			std::vector<Species> species_;
 			std::unique_ptr<SimpleSymbolTable> pSymTable;
-			bool locked;
 
 			void bindExpressions(Species &sp) {
 				sp.bindExpressions(*pSymTable);
 			}
-
-			void ibuild(const string *, size_t);
-			int badName(const string &name) const;
-			void verifyUnlocked( ) const; 
-			void verifyLocked( ) const; 
 		};
 	}
 }

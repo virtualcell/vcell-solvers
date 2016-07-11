@@ -5,6 +5,7 @@
 #include <boost/logic/tribool.hpp>
 #include <World.h>
 #include <VoronoiMesh.h>
+#include <cstring>
 #include <sstream>
 #include <iomanip>
 #include <exception>
@@ -47,31 +48,6 @@ using spatial::cY;
 namespace {
 	//matlabBridge::Scatter scatterInside('r',2);
 	//matlabBridge::Scatter scatterOutside('b',2);
-
-	template<int NUMBER_SYMBOLS>
-	struct ConcentrationExpression {
-		/**
-		* runtime accessible #NUMBER_SYMBOLS
-		*/
-		static const int numberSymbols = NUMBER_SYMBOLS;
-
-		ConcentrationExpression(VCell::Expression &e) 
-			:exp(e) {
-				VCELL_KEY_LOG(debug,Key::concentrationExpression, "expression: " << exp.infix( ));
-		}
-
-		double conc(double x, double y) {
-			double in[NUMBER_SYMBOLS] = {x,y,0};
-			const double rval =  exp.evaluateVector(in);
-			VCELL_KEY_LOG(debug,Key::concentrationExpression, "f(" << x << ", " << y << ") = " << rval);
-			return rval;
-		}
-		VCell::Expression & exp; 
-	};
-
-	//legacy name from early development code
-	typedef ConcentrationExpression<3> ConcentrationProvider;
-
 
 	/**
 	* abstract class which validates input
@@ -227,16 +203,8 @@ namespace moving_boundary {
 			baselineGeneration(0),
 			minimimMeshInterval(0),
 
-			symTable(buildSymTable( )),
-			levelExp(mbs.levelFunctionStr,symTable), 
-			advectVelocityExpX(mbs.advectVelocityFunctionStrX,symTable), 
-			advectVelocityExpY(mbs.advectVelocityFunctionStrY,symTable), 
-			frontVelocityExpX(mbs.frontVelocityFunctionStrX,symTable), 
-			frontVelocityExpY(mbs.frontVelocityFunctionStrY,symTable), 
-			initialConcentrationExpressions(numSpecies), 
 			zeroSourceTerms(boost::logic::indeterminate),
 
-			vcFront(initFront(world, *this,mbs)),
 			currentFront( ),
 			meshDefinition(createMeshDef(world, mbs, numSpecies)),
 			physiology( ),
@@ -252,7 +220,8 @@ namespace moving_boundary {
 			estimateProgress(false),
 			timeClients( ),
 			elementClients( ),
-			percentInfo( )
+			percentInfo( ),
+			inputValues(nullptr)
 		{  
 
 			MeshElementNode::setProblemToWorldDistanceScale(world.theScale( ));
@@ -261,17 +230,22 @@ namespace moving_boundary {
 			double maxConstantDiffusion = std::numeric_limits<double>::min( );
 			for (int i = 0; i < numSpecies; i++) {
 				const SpeciesSpecification & ss = mbs.speciesSpecs[i];
-				initialConcentrationExpressions[i] = VCell::Expression(ss.initialConcentrationStr,symTable);
 				const biology::Species & sp = physiology.createSpecies(ss.name,ss.initialConcentrationStr, ss.sourceExpressionStr, ss.diffusionExpressionStr);
 				const SExpression & dt = sp.diffusionTerm( );
 				if (dt.isConstant( )) {
 					maxConstantDiffusion = std::max(maxConstantDiffusion, dt.constantValue( ));
 				}
 			}
-			std::array<std::string,3> syms = {"x","y","t"};
-			physiology.buildSymbolTable<3>(syms);
-			physiology.lock( );
+			physiology.buildSymbolTable();
+			inputValues = new double[physiology.numberSymbols()];
 
+			levelExp = new SExpression(mbs.levelFunctionStr, physiology.symbolTable());
+			advectVelocityExpX = new SExpression(mbs.advectVelocityFunctionStrX,physiology.symbolTable());
+			advectVelocityExpY = new SExpression(mbs.advectVelocityFunctionStrY,physiology.symbolTable());
+			frontVelocityExpX = new SExpression(mbs.frontVelocityFunctionStrX,physiology.symbolTable());
+			frontVelocityExpY = new SExpression(mbs.frontVelocityFunctionStrY,physiology.symbolTable());
+
+			vcFront = initFront(world, *this,mbs);
 			setInitialValues( );
 
 			//check time step
@@ -383,17 +357,21 @@ namespace moving_boundary {
 
 		~MovingBoundaryParabolicProblemImpl( ) {
 			delete vcFront;
+			delete[] inputValues;
 		}
 
 		void setInterior(MeshElementNode &e) {
 			e.setInteriorVolume(interiorVolume);
 		}
 
-		void setConcentrations( vector<ConcentrationProvider> & concExp, MeshElementNode & e) {
+		void setConcentrations(MeshElementNode & e) {
 			e.allocateSpecies();
 			ProblemDomainPoint pdp = world.toProblemDomain(e);
+			inputValues[physiology.symbolIndex_t] = 0;
 			for (int i = 0; i< numSpecies; i++) {
-				double mu = concExp[i].conc(pdp(cX),pdp(cY));
+				inputValues[physiology.symbolIndex_coordinate] = pdp(cX);
+				inputValues[physiology.symbolIndex_coordinate] = pdp(cY);
+				double mu = physiology.species(i).initialCondition().evaluate(inputValues);
 				e.setConcentration(i,mu);
 			}
 		}
@@ -403,13 +381,7 @@ namespace moving_boundary {
 		*/
 		void setInitialValues( ) {
 			using std::vector;
-			assert(initialConcentrationExpressions.size( ) == numSpecies);
 			assert(physiology.numberSpecies( ) == numSpecies);
-			vector<ConcentrationProvider> concExp;
-			for (vector<VCell::Expression>::iterator iter = initialConcentrationExpressions.begin( ); iter != initialConcentrationExpressions.end( ); ++iter) {
-				concExp.push_back(ConcentrationProvider(*iter));
-			}
-			assert(concExp.size( ) == numSpecies);
 
 			for (MeshElementNode & e: primaryMesh) {
 				e.setInteriorVolume(interiorVolume);
@@ -427,12 +399,12 @@ namespace moving_boundary {
 			moving_boundary::Positions<MeshElementNode> positions = voronoiMesh.classify2(currentFront);
 			for (vector<MeshElementNode *>::iterator iter = positions.inside.begin( ); iter != positions.inside.end( ); ++iter) {
 				MeshElementNode  & insideElement = **iter;
-				setConcentrations(concExp,insideElement);
+				setConcentrations(insideElement);
 				insideElement.getControlVolume();
 			}
 			for (vector<MeshElementNode *>::iterator iter = positions.boundary.begin( ); iter != positions.boundary.end( ); ++iter) {
 				MeshElementNode  & boundaryElement = **iter;
-				setConcentrations(concExp,boundaryElement);
+				setConcentrations(boundaryElement);
 				boundaryElements.push_back(&boundaryElement);
 				boundaryElement.findNeighborEdges();
 			}
@@ -502,18 +474,11 @@ namespace moving_boundary {
 			return rval;
 		}
 
-		/**
-		* constructor support; build SymbolTable 
-		*/
-		static SimpleSymbolTable buildSymTable( ) {
-			std::string syms[] = { "x","y","t"};
-			return SimpleSymbolTable(syms, sizeof(syms)/sizeof(syms[0]));
-		}
-
 		virtual double level(double *in) const {
 			double problemDomainValues[2];
 			world.toProblemDomain(in,problemDomainValues);
-			double r = levelExp.evaluateVector(problemDomainValues);
+			std::memcpy(inputValues + physiology.symbolIndex_coordinate, problemDomainValues, sizeof(problemDomainValues));
+			double r = levelExp->evaluate(inputValues);
 			/*
 			if (r > 0) {
 			scatterInside.add(problemDomainValues[0],problemDomainValues[1]);
@@ -705,12 +670,12 @@ namespace moving_boundary {
 		spatial::SVector<moving_boundary::VelocityType,2> advectionVelocity(double x, double y) const {
 
 			double worldValues[2] = {x,y};
-			enum {ex = 0, ey = 1, et = 2};
-			double syms[3];
+			double syms[2];
 			world.toProblemDomain(worldValues,syms);
-			syms[et] = currentTime; 
-			double vX = advectVelocityExpX.evaluateVector(syms);
-			double vY = advectVelocityExpY.evaluateVector(syms);
+			inputValues[physiology.symbolIndex_t] = currentTime;
+			std::memcpy(inputValues + physiology.symbolIndex_coordinate, syms, sizeof(syms));
+			double vX = advectVelocityExpX->evaluate(inputValues);
+			double vY = advectVelocityExpY->evaluate(inputValues);
 			return world.toWorld<moving_boundary::VelocityType>(spatial::SVector<double,2>(vX,vY)); 
 		}
 
@@ -1421,32 +1386,32 @@ namespace moving_boundary {
 		* save this. Note #MovingBoundarySetup must be saved separately by client
 		*/
 		void persist(std::ostream &os) const {
-			//setup_.persist(os);
-			vcell_persist::Token::insert<MovingBoundaryParabolicProblemImpl>(os);
-			//vcell_persist::binaryWrite(os,diffusionConstant);
-			vcell_persist::binaryWrite(os,numIteration);
-			vcell_persist::binaryWrite(os,currentTime);
-			//vcell_persist::binaryWrite(os,maxTime);
-			vcell_persist::binaryWrite(os,frontTimeStep);
-			vcell_persist::binaryWrite(os,baselineTime);
-			vcell_persist::binaryWrite(os,baselineGeneration);
-			vcell_persist::binaryWrite(os,minimimMeshInterval);
-			vcFront->persist(os);
-			vcell_persist::save(os,currentFront);
-			meshDefinition.persist(os);
-			primaryMesh.persist(os);
-			vcell_persist::binaryWrite(os,interiorVolume);
-
-			persistElementsVector(os, boundaryElements);
-			persistElementsVector(os, lostElements);
-			persistElementsVector(os, gainedElements);
-			vcell_persist::binaryWrite(os,statusPercent);
-			if (statusPercent > 0) {
-				vcell_persist::binaryWrite(os,estimateProgress);
-			}
+//			//setup_.persist(os);
+//			vcell_persist::Token::insert<MovingBoundaryParabolicProblemImpl>(os);
+//			//vcell_persist::binaryWrite(os,diffusionConstant);
+//			vcell_persist::binaryWrite(os,numIteration);
+//			vcell_persist::binaryWrite(os,currentTime);
+//			//vcell_persist::binaryWrite(os,maxTime);
+//			vcell_persist::binaryWrite(os,frontTimeStep);
+//			vcell_persist::binaryWrite(os,baselineTime);
+//			vcell_persist::binaryWrite(os,baselineGeneration);
+//			vcell_persist::binaryWrite(os,minimimMeshInterval);
+//			vcFront->persist(os);
+//			vcell_persist::save(os,currentFront);
+//			meshDefinition.persist(os);
+//			primaryMesh.persist(os);
+//			vcell_persist::binaryWrite(os,interiorVolume);
+//
+//			persistElementsVector(os, boundaryElements);
+//			persistElementsVector(os, lostElements);
+//			persistElementsVector(os, gainedElements);
+//			vcell_persist::binaryWrite(os,statusPercent);
+//			if (statusPercent > 0) {
+//				vcell_persist::binaryWrite(os,estimateProgress);
+//			}
 		}
 
-		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs, std::istream &is) 
+		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs, std::istream &is)
 			:ValidationBase(mbs),
 			isRunning(false),
 			numSpecies(mbs.speciesSpecs.size( )),
@@ -1462,13 +1427,13 @@ namespace moving_boundary {
 			baselineGeneration(0),
 			minimimMeshInterval(0),
 
-			symTable(buildSymTable( )),
-			levelExp(mbs.levelFunctionStr,symTable), 
-			advectVelocityExpX(mbs.advectVelocityFunctionStrX,symTable), 
-			advectVelocityExpY(mbs.advectVelocityFunctionStrY,symTable), 
-			frontVelocityExpX(mbs.frontVelocityFunctionStrX,symTable), 
-			frontVelocityExpY(mbs.frontVelocityFunctionStrY,symTable), 
-			initialConcentrationExpressions( ), //PERSIST TODO
+//			symTable(buildSymTable( )),
+//			levelExp(mbs.levelFunctionStr,symTable),
+//			advectVelocityExpX(mbs.advectVelocityFunctionStrX,symTable),
+//			advectVelocityExpY(mbs.advectVelocityFunctionStrY,symTable),
+//			frontVelocityExpX(mbs.frontVelocityFunctionStrX,symTable),
+//			frontVelocityExpY(mbs.frontVelocityFunctionStrY,symTable),
+//			initialConcentrationExpressions( ), //PERSIST TODO
 			zeroSourceTerms( ), //PERSIST TODO
 
 			vcFront(nullptr),
@@ -1545,18 +1510,14 @@ namespace moving_boundary {
 		double minimimMeshInterval;
 
 		/**
-		* symbol table for expressions, must be initialized prior to xxExp
-		*/
-		SimpleSymbolTable symTable;
-		/**
 		* level expression, must be created before front
 		*/
-		mutable VCell::Expression levelExp; //Expression doesn't currently support "const"
-		mutable VCell::Expression advectVelocityExpX;
-		mutable VCell::Expression advectVelocityExpY;
-		mutable VCell::Expression frontVelocityExpX;
-		mutable VCell::Expression frontVelocityExpY;
-		std::vector<VCell::Expression> initialConcentrationExpressions;
+		mutable SExpression* levelExp; //Expression doesn't currently support "const"
+		mutable SExpression* advectVelocityExpX;
+		mutable SExpression* advectVelocityExpY;
+		mutable SExpression* frontVelocityExpX;
+		mutable SExpression* frontVelocityExpY;
+		double* inputValues;
 		mutable boost::logic::tribool zeroSourceTerms; //logically const, but lazily evaluated
 		/**
 		* FronTier integration

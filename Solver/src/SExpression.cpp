@@ -5,6 +5,30 @@
 #include <limits>
 using moving_boundary::SExpression;
 
+SExpression::SExpression(const string& exp)
+	:expression(exp),
+	 constValue(nullptr)
+{
+	tryConstant();
+}
+
+SExpression::SExpression(const string& exp, const SymbolTable &symTable)
+	:expression(exp),
+	 constValue(nullptr)
+{
+	tryConstant();
+	bindExpression(symTable);
+}
+
+double SExpression::evaluate(double* values) const
+{
+	if (constValue != nullptr)
+	{
+		return *constValue;
+	}
+	return expression.evaluateVector(values);
+}
+
 void SExpression::tryConstant()
 {
 	if (expression.isConstant())

@@ -34,6 +34,10 @@ namespace moving_boundary {
 				return diffusionExp;
 			}
 
+			const SExpression& initialCondition() const {
+				return initialExp;
+			}
+
 		private:
 			friend Physiology;
 			void bindExpressions(const SimpleSymbolTable &symTable);
