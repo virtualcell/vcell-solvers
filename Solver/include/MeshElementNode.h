@@ -413,6 +413,11 @@ namespace moving_boundary {
 		moving_boundary::BioQuanType priorConcentration(size_t i) const { 
 			return concValue[i];
 		}
+
+		const moving_boundary::BioQuanType* priorConcentrations() const {
+			return concValue.data();
+		}
+
 		/**
 		* return previous concentration value;
 		* does not necessarily equal value of last call

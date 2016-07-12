@@ -11,8 +11,9 @@ namespace {
 	* convert frontier output into point, truncating if necessary
 	*/
 	template <typename T>
-	inline TPoint<T,2> convertFrontier(const double* in) {
-		return TPoint<T,2>(static_cast<T>(in[0]), static_cast<T>(in[1]));
+	inline TPoint<T,2> convertFrontier(const double* in, const double* normal) {
+		T c[2] = {static_cast<T>(in[0]), static_cast<T>(in[1])};
+		return TPoint<T,2>(c, normal);
 	}
 }
 
@@ -344,6 +345,7 @@ std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveSurf( ) {
 	rval.reserve(numPoints);
 
 	int numCurves = 0;
+	double nor[DIM];
 	curves = front.interf->curves;
 	for (CURVE * curve = *curves; curve != nullptr; ++curves, curve = *curves) { 
 		if (is_bdry(curve)) {
@@ -352,15 +354,17 @@ std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveSurf( ) {
 		for (BOND* bond = curve->first; bond != NULL; bond = bond->next) {
 			Frontier::POINT* p = bond->start;
 			if (p != NULL) {
-				VCFPointType vcPoint(convertFrontier<FCT>(p->_coords));
+				getPointNormal(p, nor);
+				VCFPointType vcPoint(convertFrontier<FCT>(p->_coords, nor));
 				rval.push_back(vcPoint);
 			}
 		}
 
 		if (curve->last != nullptr && curve->last->end != nullptr)
 		{
-			Frontier::POINT & fPoint = *(curve->last->end);
-			VCFPointType vcPoint(convertFrontier<FCT>(fPoint._coords));
+			Frontier::POINT* fPoint = curve->last->end;
+			getPointNormal(fPoint, nor);
+			VCFPointType vcPoint(convertFrontier<FCT>(fPoint->_coords, nor));
 			rval.push_back(vcPoint);
 		}
 		numCurves++;
@@ -399,6 +403,7 @@ std::vector<std::vector<spatial::TPoint<FCT,2> > > VCellFront<FCT>::retrieveCurv
 	std::vector<std::vector<VCFPointType> >rval;
 
 	int numCurves = 0;
+	double nor[DIM];
 	CURVE** curves = front.interf->curves;
 	for (CURVE * curve = *curves; curve != nullptr; ++curves, curve = *curves) { 
 		if (is_bdry(curve)) {
@@ -408,15 +413,17 @@ std::vector<std::vector<spatial::TPoint<FCT,2> > > VCellFront<FCT>::retrieveCurv
 		for (BOND* bond = curve->first; bond != NULL; bond = bond->next) {
 			Frontier::POINT* p = bond->start;
 			if (p != NULL) {
-				VCFPointType vcPoint(convertFrontier<FCT>(p->_coords));
+				getPointNormal(p, nor);
+				VCFPointType vcPoint(convertFrontier<FCT>(p->_coords, nor));
 				cv.push_back(vcPoint);
 			}
 		}
 
 		if (curve->last != nullptr && curve->last->end != nullptr)
 		{
-			Frontier::POINT & fPoint = *(curve->last->end);
-			VCFPointType vcPoint(convertFrontier<FCT>(fPoint._coords));
+			Frontier::POINT* fPoint = curve->last->end;
+			getPointNormal(fPoint, nor);
+			VCFPointType vcPoint(convertFrontier<FCT>(fPoint->_coords, nor));
 			cv.push_back(vcPoint);
 		}
 		numCurves++;

@@ -51,10 +51,12 @@ public:
 
   friend std::ostream& operator<< (std::ostream& ostr,
                                    const CoordVect& p);
-  const double* data()
+  const double* data() const
   {
   	return vect;
   }
+  double min() const;
+  double max() const;
 
   bool withinWorld() const;
   CoordVect toProblemDomain() const;

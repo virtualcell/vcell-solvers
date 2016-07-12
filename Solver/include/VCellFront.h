@@ -142,7 +142,7 @@ namespace spatial {
 
 		Frontier::Front* const c_ptr( ) { return &front; }
 
-		void getPointNormal(Frontier::POINT* p, double* normals);
+		void getPointNormal(Frontier::POINT* p, double* nor);
 
 	private:
 		typedef spatial::TPoint<FCT,2> VCFPointType; 

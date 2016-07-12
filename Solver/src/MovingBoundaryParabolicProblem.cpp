@@ -421,8 +421,8 @@ namespace moving_boundary {
 		/**
 		* constructor support; front initialization
 		*/
-		static spatial::FrontProvider<moving_boundary::CoordinateType> *initFront(const WorldType & world, const ValidationBase & base,const moving_boundary::MovingBoundarySetup &mbs)  {
-			if (mbs.alternateFrontProvider == nullptr) {
+		static spatial::VCellFront<moving_boundary::CoordinateType> *initFront(const WorldType & world, const ValidationBase & base,const moving_boundary::MovingBoundarySetup &mbs)  {
+			//if (mbs.alternateFrontProvider == nullptr) {
 				typedef spatial::TGeoLimit<moving_boundary::CoordinateType> LimitType;
 				const std::array<LimitType,2> & worldLimits = world.limits( );
 				std::vector<spatial::GeoLimit> limits(worldLimits.size( ));
@@ -431,7 +431,7 @@ namespace moving_boundary {
 				int mnode = *std::max_element(nodes.begin( ),nodes.end( ));
 				int numFrontRegions = mnode * mbs.frontToNodeRatio;
 				if (base.nFunctionPointers == 0) {
-					spatial::FrontProvider<moving_boundary::CoordinateType> *prv = 
+					spatial::VCellFront<moving_boundary::CoordinateType> *prv =
 						new spatial::VCellFront<moving_boundary::CoordinateType>(limits,numFrontRegions,mbs.maxTime,base,base);
 					//std::ofstream lc("levelcalls.m");
 					//lc << scatterInside << scatterOutside;
@@ -443,8 +443,8 @@ namespace moving_boundary {
 				return new VCellFront(limits,numFrontRegions,mbs.maxTime,
 				mbs.levelFunction,mbs.velocityFunction);
 				*/
-			}
-			return mbs.alternateFrontProvider;
+//			}
+//			return mbs.alternateFrontProvider;
 		}
 
 		/**
@@ -477,7 +477,7 @@ namespace moving_boundary {
 		virtual double level(double *in) const {
 			double problemDomainValues[2];
 			world.toProblemDomain(in,problemDomainValues);
-			std::memcpy(inputValues + physiology.symbolIndex_coordinate, problemDomainValues, sizeof(problemDomainValues));
+			std::memcpy(inputValues + physiology.symbolIndex_coordinate, problemDomainValues, DIM * sizeof(double));
 			double r = levelExp->evaluate(inputValues);
 			/*
 			if (r > 0) {
@@ -621,7 +621,7 @@ namespace moving_boundary {
 		* @param x world coordinate
 		* @param y world coordinate
 		*/
-		spatial::SVector<double,2> frontVelocityProbDomain(const CoordVect& coord) const {
+		spatial::SVector<double,2> frontVelocityProbDomain(const CoordVect& coord, const CoordVect& normal) const {
 			 static const string METHOD = "frontVelocityProbDomain";
 			 vcell_util::Logger::debugEntry(METHOD);
 
@@ -629,25 +629,47 @@ namespace moving_boundary {
 			 if (coord.withinWorld())
 			 {
 					CoordVect thisPoint = world.toProblemDomain(coord);
-					CoordVect normal = thisPoint.normalize();
-					double C = 1;
-					if (isRunning)
+					inputValues[physiology.symbolIndex_t] = currentTime;
+					std::memcpy(inputValues + physiology.symbolIndex_coordinate, thisPoint.data(), DIM * sizeof(double));
+					std::memcpy(inputValues + physiology.symbolIndex_normal, normal.data(), DIM * sizeof(double));
+					if (frontVelocityExpX->isConcentrationDependent() || frontVelocityExpX->isConcentrationDependent())
 					{
-						std::vector<MeshElementNode*> stencil;
-						findExtrapolationStencil(thisPoint, 1, stencil);
-						C = stencil[0]->priorConcentration(0);
+						if (isRunning)
+						{
+							std::vector<MeshElementNode*> stencil;
+							findExtrapolationStencil(thisPoint, 1, stencil);
+							const double* conc = stencil[0]->priorConcentrations();
+							std::memcpy(inputValues + physiology.symbolIndex_species, conc, numSpecies * sizeof(double));
+						}
+						else
+						{
+							// get concentration from from initial condition
+							for (int i = 0; i < numSpecies; ++ i)
+							{
+								inputValues[physiology.symbolIndex_species + i] = physiology.species(i).initialCondition().evaluate(inputValues);
+							}
+						}
 					}
-					vel = normal * C;
+//					double C = 1;
+//					if (isRunning)
+//					{
+//						std::vector<MeshElementNode*> stencil;
+//						findExtrapolationStencil(thisPoint, 1, stencil);
+//						C = stencil[0]->priorConcentration(0);
+//					}
+//					CoordVect n = thisPoint.normalize();
+//					vel = n * (1-currentTime);
 			 }
 
 			/*
 			enum {ex = 0, ey = 1, et = 2};
 			syms[et] = currentTime; 
-			double vX = frontVelocityExpX.evaluateVector(syms);
-			double vY = frontVelocityExpY.evaluateVector(syms);
 			*/
+			double vX = frontVelocityExpX->evaluate(inputValues);
+			double vY = frontVelocityExpY->evaluate(inputValues);
 			vcell_util::Logger::debugExit(METHOD);
-			return spatial::SVector<double,2>(vel[0], vel[1]);
+//			return spatial::SVector<double,2>(vel[0], vel[1]);
+			return spatial::SVector<double,2>(vX, vY);
 		}
 
 		/**
@@ -655,9 +677,9 @@ namespace moving_boundary {
 		* @param x world coordinate
 		* @param y world coordinate
 		*/
-		spatial::SVector<moving_boundary::VelocityType,2> frontVelocity(const CoordVect& coord) const {
+		spatial::SVector<moving_boundary::VelocityType,2> frontVelocity(const CoordVect& coord, const CoordVect& normal) const {
 			//fspy << x << ',' << y << ',' << currentTime << std::endl;
-			auto rval =  world.toWorld<moving_boundary::VelocityType>(frontVelocityProbDomain(coord));
+			auto rval =  world.toWorld<moving_boundary::VelocityType>(frontVelocityProbDomain(coord, normal));
 			return rval; 
 		}
 
@@ -667,15 +689,18 @@ namespace moving_boundary {
 			double syms[2];
 			world.toProblemDomain(worldValues,syms);
 			inputValues[physiology.symbolIndex_t] = currentTime;
-			std::memcpy(inputValues + physiology.symbolIndex_coordinate, syms, sizeof(syms));
+			std::memcpy(inputValues + physiology.symbolIndex_coordinate, syms, DIM * sizeof(double));
 			double vX = advectVelocityExpX->evaluate(inputValues);
 			double vY = advectVelocityExpY->evaluate(inputValues);
 			return world.toWorld<moving_boundary::VelocityType>(spatial::SVector<double,2>(vX,vY)); 
 		}
 
-		virtual int velocity(Frontier::Front*,Frontier::POINT* fpoint,HYPER_SURF_ELEMENT*, HYPER_SURF*,double* out) const {
+		virtual int velocity(Frontier::Front* front, Frontier::POINT* fpoint, HYPER_SURF_ELEMENT* hse, HYPER_SURF* hs, double* out) const {
 			CoordVect coord(fpoint->_coords[cX],fpoint->_coords[cY]);
-			const spatial::SVector<moving_boundary::VelocityType,2> & v = frontVelocity(coord);
+			double nor[MAXD];
+			GetFrontNormal(fpoint, hse, hs, nor,front);
+			CoordVect normal(nor);
+			const spatial::SVector<moving_boundary::VelocityType,2> & v = frontVelocity(coord, normal);
 			out[cX] = v(cX); 
 			out[cY] = v(cY); 
 
@@ -874,8 +899,9 @@ namespace moving_boundary {
 				:FunctorBase(o),
 				maxSquaredVel(0){}
 			void operator( )(const spatial::TPoint<CoordinateType,2> & point) {
-				CoordVect coord(point(cX),point(cY));
-				spatial::SVector<double,2> velVector = this->outer.frontVelocityProbDomain(coord);
+				CoordVect coord(point.getCoords());
+				CoordVect normal(point.getNormal());
+				spatial::SVector<double,2> velVector = this->outer.frontVelocityProbDomain(coord, normal);
 				maxSquaredVel = std::max(maxSquaredVel,velVector.magnitudeSquared( ));
 			}
 			moving_boundary::VelocityType maxSquaredVel;
@@ -1089,6 +1115,13 @@ namespace moving_boundary {
 			}
 		};
 
+		double getFTMaxSpeed()
+		{
+			CoordVect maxSpeed(Spfr(vcFront->c_ptr()));
+			maxSpeed = world.toProblemDomain(maxSpeed);
+			return maxSpeed.max();
+		}
+
 		void run( ) {
 			VCELL_LOG(info,"commence simulation");
 			const AdvectComplete advectComplete;
@@ -1125,7 +1158,9 @@ namespace moving_boundary {
 					std::pair<double,double> nowAndStep = times(numIteration);
 					//TODO -- we're approximating front velocity for time step with velocity at beginning of time step
 					FrontVelocity fv = std::for_each(currentFront.begin( ),currentFront.end( ),FrontVelocity(*this));
-					double maxVel = sqrt(fv.maxSquaredVel);
+					double maxVel_Gerard = sqrt(fv.maxSquaredVel);
+//					double maxVel_FT = getFTMaxSpeed();
+					double maxVel = maxVel_Gerard;
 					double maxTimeStep_ = minimimMeshInterval / (2 * maxVel);
 					if (nowAndStep.second > maxTimeStep_) {
 						updateTimeStep(maxTimeStep_,numIteration - 1);
@@ -1140,7 +1175,9 @@ namespace moving_boundary {
 
 					vcFront->propagateTo(endOfStepTime); 
 					VCELL_LOG_ALWAYS("t=" << currentTime << ", t_next=" << endOfStepTime << ", dt=" << timeIncr
-							<< ", iteration=" << numIteration << ", front has " << currentFront.size( ) << " points");
+							<< ", iteration=" << numIteration << ", front has " << currentFront.size( ) << " points"
+//							<< std::setprecision(10) << ", maxVel_gerard=" << maxVel_gerard << ",maxVel_FT="<<maxVel_FT
+					);
 					/*
 					VCellFront *vcp = dynamic_cast<VCellFront *>(vcFront);
 					if (vcp != nullptr) {
@@ -1457,7 +1494,7 @@ namespace moving_boundary {
 			vcell_persist::binaryRead(is,baselineTime);
 			vcell_persist::binaryRead(is,baselineGeneration);
 			vcell_persist::binaryRead(is,minimimMeshInterval);
-			vcFront = moving_boundary::restoreFrontProvider(is);
+//			vcFront = moving_boundary::restoreFrontProvider(is);
 			vcell_persist::restore(is,currentFront);
 			meshDefinition = MBMeshDef(is);
 			//MBMesh temp(is);
@@ -1513,12 +1550,12 @@ namespace moving_boundary {
 		mutable SExpression* advectVelocityExpY;
 		mutable SExpression* frontVelocityExpX;
 		mutable SExpression* frontVelocityExpY;
-		double* inputValues;
+		mutable double* inputValues;
 		mutable boost::logic::tribool zeroSourceTerms; //logically const, but lazily evaluated
 		/**
 		* FronTier integration
 		*/
-		spatial::FrontProvider<moving_boundary::CoordinateType> * vcFront;
+		spatial::VCellFront<moving_boundary::CoordinateType> * vcFront;
 		FrontType currentFront;
 		MBMeshDef meshDefinition;
 		biology::Physiology physiology;

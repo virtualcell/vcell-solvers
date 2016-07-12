@@ -188,6 +188,26 @@ CoordVect CoordVect::toProblemDomain() const
 	return world.toProblemDomain(*this);
 }
 
+double CoordVect::min() const
+{
+	double d = std::numeric_limits<double>::max();
+	for (int i = 0; i < DIM; ++ i)
+	{
+		d = std::min(d, vect[i]);
+	}
+	return d;
+}
+
+double CoordVect::max() const
+{
+	double d = std::numeric_limits<double>::min();
+	for (int i = 0; i < DIM; ++ i)
+	{
+		d = std::max(d, vect[i]);
+	}
+	return d;
+}
+
 std::ostream& operator<< (std::ostream& ostr, const CoordVect& p)
 {
   ostr << "[" << p[0] << " " << p[1] << "]" ;

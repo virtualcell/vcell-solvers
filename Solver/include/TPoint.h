@@ -33,6 +33,7 @@ namespace spatial {
 	class TPoint : public vcell_persist::Persistent {
 	protected:
 		std::array<T,N> coord; 
+		double normal[N];
 	public:
 		typedef T value_type; 
 		TPoint(const std::array<T,N> &val)  
@@ -69,6 +70,13 @@ namespace spatial {
 		TPoint(const T * a) {
 			for (int i = 0; i < N; i++) {
 				coord[i] = a[i];
+			}
+		}
+
+		TPoint(const T * a, const double* n) {
+			for (int i = 0; i < N; i++) {
+				coord[i] = a[i];
+				normal[i] = n[i];
 			}
 		}
 
@@ -120,7 +128,15 @@ namespace spatial {
 			}
 		}
 		
+		const T* getCoords() const
+		{
+			return coord.data();
+		}
 
+		const double* getNormal() const
+		{
+			return normal;
+		}
 
 		T operator( )(Axis a) const {
 			return coord[a];

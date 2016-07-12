@@ -24,12 +24,7 @@ namespace moving_boundary {
 		* @param symTable symbol table -- must remain valid during
 		* lifetime of object
 		*/
-		void bindExpression(const SymbolTable &symbolTable) {
-			if (constValue == nullptr)
-			{
-				expression.bindExpression(const_cast<SymbolTable *>(&symbolTable));
-			}
-		}
+		void bindExpression(const SymbolTable &symbolTable);
 		/**
 		* @return new generated string representation
 		*/
@@ -59,11 +54,16 @@ namespace moving_boundary {
 		* @throws VCell::ExpressionException if #isConstant( ) != true
 		*/ 
 		double constantValue( ) const;
+		bool isConcentrationDependent()
+		{
+			return bConcentrationDependent;
+		}
 
 	private:
 		mutable VCell::Expression expression;
 		double* constValue;
 		void tryConstant();
+		bool bConcentrationDependent;
 	};
 
 }
