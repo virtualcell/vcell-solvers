@@ -951,7 +951,7 @@ void ReportClient::setup(const XMLElement &root, const std::string & h5filename 
 		if (h5filename.empty( )) {
 			h5FileName = outputFilePrefix + HDF5Client::H5_FILE_EXT;
 			if (deleteExisting) {
-				unlink(h5FileName.c_str( ));
+				remove(h5FileName.c_str( ));
 			}
 		}
 		const char *datasetName = nullptr;
@@ -1028,7 +1028,7 @@ void ReportClient::setup(const XMLElement &root, const std::string & h5filename 
 		if (tr != nullptr) {
 			std::string filename = outputFilePrefix + TextReportClient::TXT_FILE_EXT;
 			if (deleteExisting) {
-				unlink(filename.c_str( ));
+				remove(filename.c_str( ));
 			}
 			const int p = vcell_xml::convertChildElementWithDefault<unsigned int>(*tr, "precision", 6);
 			const int w = vcell_xml::convertChildElementWithDefault<unsigned int>(*tr, "width", 6);

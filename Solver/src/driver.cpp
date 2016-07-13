@@ -10,6 +10,7 @@
 #include <ReportClient.h>
 #include <TextReportClient.h>
 #include <version.h>
+#include <Timer.h>
 /**
 * usings and typedefs
 */
@@ -43,6 +44,9 @@ int main(int argc, char *argv[])
 	std::cout 
 		<< "MovingBoundarySolver version $URL$" 
 		<< "revision " << version.svn << ' ' << version.compileDate << std::endl; 
+
+	vcell_util::Timer timer;
+	timer.start();
 
 	std::string filename;
 	std::string outname;
@@ -146,22 +150,26 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
+	int returnCode = 0;
 	try {
 		problem.run( );
 		std::cout << "MovingBoundary input " << filename << ", output " << problem.getOutputFiles() << " finished" << std::endl;
 	}
 	catch (std::exception & e) {
 		std::cerr <<  argv[0] << " caught exception while running " << filename << ": " << e.what( ) << std::endl;
-		return 6;
+		returnCode = 6;
 	}
 	catch (const std::string & e) {
 		std::cerr <<  argv[0] << " caught exception while running " << filename << ": " << e << std::endl;
-		return 6;
+		returnCode = 6;
 	}
 	catch (...) {
 		std::cerr <<  argv[0] << " caught unknown exception while running " << filename << std::endl;
-		return 4;
+		returnCode = 4;
 	}
+	timer.stop();
+	timer.show();
+	return returnCode;
 }
 
 namespace {

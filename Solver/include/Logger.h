@@ -3,6 +3,7 @@
 #include <sstream>
 #include <fstream>
 #include <array>
+#include <iostream>
 //std::ostream & EndLog(std::ostream &in); 
 namespace vcell_util {
 	struct KeyInfoSetter;
