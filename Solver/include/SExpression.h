@@ -8,6 +8,8 @@ using std::string;
 namespace moving_boundary {
 
 	struct SExpression {
+		SExpression();
+
 		/**
 		* @param exp string representation of function
 		*/

@@ -15,8 +15,8 @@ namespace {
 	* species to name functor
 	*/
 	struct SpeciesName {
-		const string & operator( )(const Species & in) {
-			return in.name( );
+		const string & operator( )(const Species* in) {
+			return in->name( );
 		}
 	};
 }
@@ -27,7 +27,7 @@ namespace {
 */
 void Physiology::buildSymbolTable() {
 	std::vector<string> names(species_.size( ) + fixedTimeSpatialSymbols.size());
-	std::transform(species_.begin( ), species_.end( ),names.begin( ),SpeciesName( ));
+	std::transform(species_.begin( ), species_.end( ),names.begin( ), SpeciesName( ));
 	std::copy(fixedTimeSpatialSymbols.begin(), fixedTimeSpatialSymbols.end(), names.begin( ) + species_.size( ));
 	symbolIndex_species = 0;
 	symbolIndex_t = numberSpecies();
@@ -43,9 +43,9 @@ void Physiology::buildSymbolTable() {
 	std::for_each(species_.begin( ),species_.end( ), std::bind(&Physiology::bindExpressions, this, _1) );
 }
 
-const Species & Physiology::createSpecies(const string & name, const string& initial, const string & source,const string & diffusion) {
+const Species* Physiology::createSpecies(const string & name, const string& initial, const string & source,const string & diffusion) {
 	try {
-		species_.push_back(Species(name, initial, source,diffusion));
+		species_.push_back(new Species(name, initial, source,diffusion));
 		return species_.back( );
 	} catch (std::exception &de) {
 		VCELL_EXCEPTION(domain_error, "error creating " << name << " with initial " << initial << ", source " << source << " and diffusion " << diffusion << ": " << de.what( ));

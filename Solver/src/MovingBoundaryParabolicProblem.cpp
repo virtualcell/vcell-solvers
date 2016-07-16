@@ -230,8 +230,8 @@ namespace moving_boundary {
 			double maxConstantDiffusion = std::numeric_limits<double>::min( );
 			for (int i = 0; i < numSpecies; i++) {
 				const SpeciesSpecification & ss = mbs.speciesSpecs[i];
-				const biology::Species & sp = physiology.createSpecies(ss.name,ss.initialConcentrationStr, ss.sourceExpressionStr, ss.diffusionExpressionStr);
-				const SExpression & dt = sp.diffusionTerm( );
+				const biology::Species* sp = physiology.createSpecies(ss.name,ss.initialConcentrationStr, ss.sourceExpressionStr, ss.diffusionExpressionStr);
+				const SExpression & dt = sp->diffusionTerm( );
 				if (dt.isConstant( )) {
 					maxConstantDiffusion = std::max(maxConstantDiffusion, dt.constantValue( ));
 				}
@@ -371,7 +371,7 @@ namespace moving_boundary {
 			for (int i = 0; i< numSpecies; i++) {
 				inputValues[physiology.symbolIndex_coordinate] = pdp(cX);
 				inputValues[physiology.symbolIndex_coordinate] = pdp(cY);
-				double mu = physiology.species(i).initialCondition().evaluate(inputValues);
+				double mu = physiology.species(i)->initialCondition().evaluate(inputValues);
 				e.setConcentration(i,mu);
 			}
 		}
@@ -646,7 +646,7 @@ namespace moving_boundary {
 							// get concentration from from initial condition
 							for (int i = 0; i < numSpecies; ++ i)
 							{
-								inputValues[physiology.symbolIndex_species + i] = physiology.species(i).initialCondition().evaluate(inputValues);
+								inputValues[physiology.symbolIndex_species + i] = physiology.species(i)->initialCondition().evaluate(inputValues);
 							}
 						}
 					}
@@ -1336,8 +1336,8 @@ namespace moving_boundary {
 		bool noReaction( ) const {
 			if (zeroSourceTerms.value == boost::logic::tribool::indeterminate_value) {
 				zeroSourceTerms = true; //assume true, test for falseness
-				for (auto iter = physiology.beginSpecies( ); iter != physiology.endSpecies( ); ++iter) {
-					SExpression sourceTerm = iter->sourceTerm( );
+				for (auto iter = physiology.beginSpecies( ); iter != physiology.endSpecies( ); ++ iter) {
+					const SExpression& sourceTerm = (*iter)->sourceTerm( );
 					if (!sourceTerm.isConstant( ) || sourceTerm.constantValue( ) != 0) {
 						zeroSourceTerms = false; 
 						break;

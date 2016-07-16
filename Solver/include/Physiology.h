@@ -28,10 +28,10 @@ namespace moving_boundary {
 			/**
 			* @throws std::domain_error if not locked
 			*/
-			const Species & species(size_t index) const {
+			const Species* species(size_t index) const {
 				return species_[index];
 			}
-			typedef std::vector<Species>::const_iterator SpeciesIterator;
+			typedef std::vector<Species*>::const_iterator SpeciesIterator;
 
 			SpeciesIterator beginSpecies( ) const {
 				return species_.begin( );
@@ -64,7 +64,7 @@ namespace moving_boundary {
 			/**
 			* @throws std::domain_error if locked
 			*/
-			const Species & createSpecies(const string & name, const string& initial, const string & sourceExpression, const string & diffusionExpression);
+			const Species* createSpecies(const string & name, const string& initial, const string & sourceExpression, const string & diffusionExpression);
 
 			/**
 			* build list of names for symbol table
@@ -86,11 +86,11 @@ namespace moving_boundary {
 
 		private:
 			Physiology(const Physiology &); //not defined
-			std::vector<Species> species_;
+			std::vector<Species*> species_;
 			std::unique_ptr<SimpleSymbolTable> pSymTable;
 
-			void bindExpressions(Species &sp) {
-				sp.bindExpressions(*pSymTable);
+			void bindExpressions(Species* sp) {
+				sp->bindExpressions(*pSymTable);
 			}
 		};
 	}

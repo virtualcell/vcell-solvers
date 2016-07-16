@@ -975,8 +975,8 @@ namespace {
 		SourceTermEvaluator (ValueVector & v)
 			:values(v) {}
 
-		moving_boundary::BioQuanType operator( )(const moving_boundary::biology::Species &sp) {
-			moving_boundary::BioQuanType r = sp.sourceTerm( ).evaluate(values);
+		moving_boundary::BioQuanType operator( )(const moving_boundary::biology::Species* sp) {
+			moving_boundary::BioQuanType r = sp->sourceTerm( ).evaluate(values);
 			return r;
 		}
 
@@ -1050,7 +1050,7 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 	std::vector <moving_boundary::BioQuanType> sourceTermConcentrations(n);
 
 	//evaluate source terms
-	std::transform(physio.beginSpecies( ), physio.endSpecies( ),sourceTermConcentrations.begin( ), SourceTermEvaluator(sourceTermValues) );
+	std::transform(physio.beginSpecies( ), physio.endSpecies( ), sourceTermConcentrations.begin( ), SourceTermEvaluator(sourceTermValues) );
 
 	//convert concentrations to mass, add to existing mass
 	assert(sourceTermValues.size( ) >= amtMass.size( ));
@@ -1080,7 +1080,7 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 		const size_t nSpecies = numSpecies( );
 		//pre-compute all diffusion constants
 		for (size_t s = 0; s < nSpecies;s++) {
-			const BioQuanType diffusionConstant = env.physiology.species(s).diffusionTerm( ).evaluate(sourceTermValues);  
+			const BioQuanType diffusionConstant = env.physiology.species(s)->diffusionTerm( ).evaluate(sourceTermValues);
 			diffusionValue[s] = diffusionConstant;
 		}
 

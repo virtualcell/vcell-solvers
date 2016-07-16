@@ -111,7 +111,12 @@ void TextReportClient::time(double t, unsigned int numIteration, bool last,
 						<< endl;
 	}
 	output << "];" << endl << endl;
-	output << "%%% elements=[x y u v m];" << endl;
+	output << "%%% elements=[x y V";
+	for (int s = 0; s < problem.physiology().numberSpecies(); ++ s)
+	{
+		output << " " << problem.physiology().species(s)->name();
+	}
+	output << "];" << endl;
 	output << "elements_" << variableSuffix << "=[" << endl;
 }
 
@@ -122,9 +127,12 @@ void TextReportClient::element(const MeshElementNode &e)
 		return;
 	}
 	auto pdPoint = pointConverter(e);
-	output << pdPoint(cX) << " " << pdPoint(cY) << " " << std::setw(outputWidth)
-			<< e.concentration(0) << " " << std::setw(outputWidth) << e.volumePD()
-			<< " " << std::setw(outputWidth) << e.mass(0) << endl;
+	output << pdPoint(cX) << " " << pdPoint(cY) << " " << std::setw(outputWidth) << e.volumePD();
+	for (int s = 0; s < e.numSpecies(); ++ s)
+	{
+		output << " " << e.concentration(s);
+	}
+	output << endl;
 }
 
 void TextReportClient::iterationComplete()

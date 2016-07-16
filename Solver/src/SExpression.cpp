@@ -6,6 +6,12 @@
 using moving_boundary::SExpression;
 using moving_boundary::biology::Physiology;
 
+SExpression::SExpression()
+	:constValue(nullptr),
+	 bConcentrationDependent(false)
+{
+}
+
 SExpression::SExpression(const string& exp)
 	:expression(exp),
 	 constValue(nullptr),
