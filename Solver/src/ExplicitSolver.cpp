@@ -35,7 +35,7 @@ namespace {
 	TimeType timeStep;
 	std::vector<CoeffData> cData;
 	std::vector<BioQuanType> resultStore;
-	typedef unsigned short MatrixIndex;
+	typedef unsigned int MatrixIndex;
 	std::map<MatrixIndex, std::map<MatrixIndex, BioQuanType> > matrix;
 	std::vector<BioQuanType> rhs;
 	size_t fileCount = 0;
@@ -75,7 +75,8 @@ void ExplicitSolver::setStepAndSpecies(TimeType t, unsigned int s) {
 	std::fill(resultStore.begin( ), resultStore.end( ), 0);
 	matrix.clear( );
 	//set diagonals to 1
-	for (MatrixIndex i = 0; i < mesh.numCells( ); ++i) {
+	int numCells = mesh.numCells( );
+	for (MatrixIndex i = 0; i < numCells; ++i) {
 		matrix[i][i] = 1;
 	}
 }

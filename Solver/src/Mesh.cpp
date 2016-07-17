@@ -38,7 +38,7 @@ namespace spatial {
 	template struct MeshDef<int32_t,2>; 
 	template struct MeshDef<int64_t,2>; 
 
-	template unsigned short MeshPosition::to<unsigned short>( ) const;
+	template unsigned int MeshPosition::to<unsigned int>( ) const;
 	template size_t MeshPosition::to<size_t>( ) const;
 	template int MeshPosition::to<int>( ) const;
 }
