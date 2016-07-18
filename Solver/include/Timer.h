@@ -12,9 +12,6 @@ namespace vcell_util {
 		void start( );
 		void stop( );
 
-		void show( ) const;
-		void showNow( );
-		double elapsedInMs() const;
 		double elapsedInS() const;
 		double elapsed() const;
 

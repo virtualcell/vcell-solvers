@@ -45,9 +45,6 @@ int main(int argc, char *argv[])
 		<< "MovingBoundarySolver version $URL$" 
 		<< "revision " << version.svn << ' ' << version.compileDate << std::endl; 
 
-	vcell_util::Timer timer;
-	timer.start();
-
 	std::string filename;
 	std::string outname;
 	std::string restorename;
@@ -167,8 +164,6 @@ int main(int argc, char *argv[])
 		std::cerr <<  argv[0] << " caught unknown exception while running " << filename << std::endl;
 		returnCode = 4;
 	}
-	timer.stop();
-	timer.show();
 	return returnCode;
 }
 
