@@ -370,7 +370,7 @@ namespace moving_boundary {
 			inputValues[physiology.symbolIndex_t] = 0;
 			for (int i = 0; i< numSpecies; i++) {
 				inputValues[physiology.symbolIndex_coordinate] = pdp(cX);
-				inputValues[physiology.symbolIndex_coordinate] = pdp(cY);
+				inputValues[physiology.symbolIndex_coordinate + 1] = pdp(cY);
 				double mu = physiology.species(i)->initialCondition().evaluate(inputValues);
 				e.setConcentration(i,mu);
 			}
