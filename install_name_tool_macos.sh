@@ -30,3 +30,13 @@ for exe in "${executables[@]}"; do
   	done
 done
 
+#
+# change path from each dylib to each other (dylibs can refer to other dylibs) from /usr/local/lib to @loader_path (same directory)
+# if there is not dependency, then ignore the errors.
+#
+for lib in "${libraries[@]}"; do
+	for  dependentlib "${libraries[@]}"; do
+  		install_name_tool -change /usr/local/lib/$dependentlib @loader_path/$dependentlib  $lib
+  	done
+done
+
