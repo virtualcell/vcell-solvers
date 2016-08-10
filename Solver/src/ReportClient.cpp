@@ -188,7 +188,7 @@ namespace {
 			:TimeReport(startTime),
 			interval(interval_) {}
 		virtual bool needReport(unsigned int generation, unsigned int lastReportGeneration, double time, double lastReportTime) const {
-			return time - lastReportTime >= interval; 
+			return std::abs(time - lastReportTime - interval) < 1e-8;
 		}
 	};
 

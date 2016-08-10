@@ -66,6 +66,10 @@ namespace moving_boundary {
 		std::string solverTimeStep;
 
 		/**
+		 * output time step
+		 */
+		std::string outputTimeStep;
+		/**
 		* if true, fail simluation if time set by #numberTimeSteps or #timeStep not numerically stable. If false, time
 		* step may be adjusted
 		*/

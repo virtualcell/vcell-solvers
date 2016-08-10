@@ -146,6 +146,12 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 
 	mbSetup.frontToNodeRatio = convertChildElement<unsigned int>(prob,"frontToNodeRatio");
 	mbSetup.maxTime = convertChildElement<double>(prob,"maxTime");
+	std::pair<bool,std::string> outputPair = vcell_xml::queryElement<std::string>(prob,"outputTimeStep");
+	if (outputPair.first)
+	{
+		mbSetup.outputTimeStep = outputPair.second;
+	}
+
 	mbSetup.advectVelocityFunctionStrX = convertChildElement<std::string>(prob,"advectVelocityFunctionX");
 	mbSetup.advectVelocityFunctionStrY = convertChildElement<std::string>(prob,"advectVelocityFunctionY");
 	//mbSetup.concentrationFunctionStr = convertChildElement<std::string>(prob,"concentrationFunction");
