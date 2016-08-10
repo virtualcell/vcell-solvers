@@ -23,7 +23,7 @@ namespace moving_boundary
 
 		static constexpr const char* TXT_FILE_EXT = ".m";
 
-		std::string filename;
+		std::string fileName;
 		std::ofstream output;
 		const MovingBoundaryParabolicProblem &problem;
 		WorldToPDPointConverter<CoordinateType, 2> pointConverter;

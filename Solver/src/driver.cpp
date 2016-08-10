@@ -11,6 +11,8 @@
 #include <TextReportClient.h>
 #include <version.h>
 #include <Timer.h>
+#include <SimulationMessaging.h>
+
 /**
 * usings and typedefs
 */
@@ -36,6 +38,55 @@ namespace {
 	* shared variables 
 	*/
 	std::auto_ptr<vcell_util::FileDest> traceFileDestination; 
+
+	struct ExecuteStatus
+	{
+		int code;
+		std::string message;
+
+		ExecuteStatus(): code(0) {}
+		ExecuteStatus(int c, const string& msg) : code(c), message(msg)
+		{
+		}
+		bool isOK() const
+		{
+			return code == 0;
+		}
+	};
+
+	void notifyExecuteStatus(const ExecuteStatus& executeStatus)
+	{
+		if (SimulationMessaging::getInstVar() == 0)
+		{
+			if (!executeStatus.isOK())
+			{
+				std::cerr << executeStatus.message << std::endl;
+			}
+		}
+		else if (!SimulationMessaging::getInstVar()->isStopRequested())
+		{
+			if (!executeStatus.isOK())
+			{
+				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_FAILURE, executeStatus.message.c_str()));
+			}
+	#ifdef USE_MESSAGING
+			if (SimTool::getInstance()->isRootRank())
+			{
+				SimulationMessaging::getInstVar()->waitUntilFinished();
+			}
+	#endif
+		}
+		delete SimulationMessaging::getInstVar();
+
+	#ifdef CH_MPI
+		if (returnCode != 0)
+		{
+			cout << "MPI::Abort starting" << endl;
+			MPI_Abort(MPI_COMM_WORLD,returnCode);
+			cout << "MPI::Abort complete" << endl;
+		}
+	#endif
+	}
 }
 
 int main(int argc, char *argv[])
@@ -48,6 +99,10 @@ int main(int argc, char *argv[])
 	std::string filename;
 	std::string outname;
 	std::string restorename;
+	ExecuteStatus executeStatus;
+
+	SimulationMessaging::create();
+
 	bool parseOnly;
 	bool configPresent;
 	int Nx = -1;
@@ -69,102 +124,129 @@ int main(int argc, char *argv[])
 		parseOnly = ponly.getValue( );
 		Nx = paramNx.getValue();
 		configPresent = config.isSet( );
-		if (!configPresent && !restore.isSet( ) ) { 
-			std::cerr << "error, either -" << config.getName( ) << " or -" << restore.getName( )  
-				<< " must be set " << std::endl;
-			std::cerr << "-h for full list of command line options" << std::endl;
-			return 4;
+		if (!configPresent && !restore.isSet( ) )
+		{
+			stringstream ss;
+			ss << "error, either -" << config.getName( ) << " or -" << restore.getName( ) << " must be set " << std::endl;
+			executeStatus = ExecuteStatus(4, ss.str());
 		}
 	} catch(tclap::ArgException  &ae) {
-		std::cerr << "error " << ae.error( ) << " arg " << ae.argId( ) << std::endl;
-		return 3;
+		stringstream ss;
+		ss << "error " << ae.error( ) << " arg " << ae.argId( ) << std::endl;
+		executeStatus = ExecuteStatus(3, ss.str());
 	} catch (tclap::ExitException &ee) {
-		return ee.getExitStatus( );
+		executeStatus = ExecuteStatus(ee.getExitStatus(), "tclap exit exception");
 	}
 
 	moving_boundary::MovingBoundaryParabolicProblem problem;
-	//moving_boundary::ProblemPackage package;
+	if (executeStatus.isOK())
+	{
+		//moving_boundary::ProblemPackage package;
 
-	//const char * const filename = argv[1];
-	//const char * outname = argv[2];
-	if (parseOnly) {
-		std::cout <<  "parse XML only mode" << std::endl;
-	}
-	try {
-		tinyxml2::XMLDocument doc;
-		if (configPresent) {
-			doc.LoadFile(filename.c_str( ));
-			if (doc.ErrorID( ) != tinyxml2::XML_SUCCESS) {
-				std::cerr <<  "Error " << doc.ErrorID( ) << " loading " << filename << std::endl;
-				return 2; 
-			}
-			const tinyxml2::XMLElement & root = *doc.RootElement( );
-			if (!strcmp(root.Name( ),XML_ROOT_NAME) == 0) {
-				std::cerr <<  "Invalid XML root identifier " << root.Name( ) << ", " << XML_ROOT_NAME << " expected" << std::endl;
-				return 3; 
-			}
-			setupTrace(root);
-			setupMatlabDebug(root);
+		//const char * const filename = argv[1];
+		//const char * outname = argv[2];
+		if (parseOnly)
+		{
+			std::cout <<  "parse XML only mode" << std::endl;
+		}
+		try
+		{
+			tinyxml2::XMLDocument doc;
+			if (configPresent)
+			{
+				doc.LoadFile(filename.c_str( ));
+				if (doc.ErrorID( ) != tinyxml2::XML_SUCCESS) {
+					std::cerr <<  "Error " << doc.ErrorID( ) << " loading " << filename << std::endl;
+					return 2;
+				}
+				const tinyxml2::XMLElement & root = *doc.RootElement( );
+				if (!strcmp(root.Name( ),XML_ROOT_NAME) == 0)
+				{
+					stringstream ss;
+					ss <<  "Invalid XML root identifier " << root.Name( ) << ", " << XML_ROOT_NAME << " expected" << std::endl;
+					executeStatus = ExecuteStatus(3, ss.str());
+				}
 
-			using moving_boundary::MovingBoundarySetup;
-			if (restorename.empty( )) {
-				auto mbs = MovingBoundarySetup::setupProblem(root, Nx);
-				problem = moving_boundary::MovingBoundaryParabolicProblem(mbs);
-				moving_boundary::ReportClient::setup(root, outname, problem);
+				if (executeStatus.isOK())
+				{
+					setupTrace(root);
+					setupMatlabDebug(root);
+
+					using moving_boundary::MovingBoundarySetup;
+					if (restorename.empty( )) {
+						auto mbs = MovingBoundarySetup::setupProblem(root, Nx);
+						problem = moving_boundary::MovingBoundaryParabolicProblem(mbs);
+						moving_boundary::ReportClient::setup(root, outname, problem);
+					}
+				}
+			}
+			if (executeStatus.isOK() && !restorename.empty( ))
+			{
+				try
+				{
+					using moving_boundary::StateClient;
+					StateClient::ProblemState pState =  StateClient::restore(restorename);
+					problem = pState.problem;
+				}
+				catch (std::exception & e)
+				{
+					stringstream ss;
+					ss << argv[0] << " caught exception " << e.what( ) << " reading " << restorename << std::endl;
+					executeStatus = ExecuteStatus(6, ss.str());
+				}
+			}
+
+			if (executeStatus.isOK() && configPresent)
+			{
+				setupProgress(*doc.RootElement( ),problem);
 			}
 		}
-		if (!restorename.empty( )) {
+		catch (std::exception & e) {
+			stringstream ss;
+			ss << argv[0] << " caught exception " << e.what( ) << " reading " << filename;
+			executeStatus = ExecuteStatus(4, ss.str());
+		}
+		catch (H5::Exception & e) {
+			stringstream ss;
+			ss << argv[0] << " caught H5 exception" << e.getCDetailMsg( ) << " reading " << filename;
+			executeStatus = ExecuteStatus(7, ss.str());
+		}
+		catch (...) {
+			stringstream ss;
+			ss << argv[0] << " caught unknown exception reading " << filename;
+			executeStatus = ExecuteStatus(5, ss.str());
+		}
+	}
 
-			try {
-				using moving_boundary::StateClient;
-				StateClient::ProblemState pState =  StateClient::restore(restorename);
-				problem = pState.problem;
+	if (executeStatus.isOK())
+	{
+		if (parseOnly) {
+			std::cout <<  filename << " validated" << std::endl;
+		}
+		else
+		{
+			try
+			{
+				problem.run( );
+				std::cout << "MovingBoundary input " << filename << ", output " << problem.getOutputFiles() << " finished" << std::endl;
 			}
-			catch (std::exception & e) {
-				std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << restorename << std::endl; 
-				return 6;
+			catch (std::exception & e)
+			{
+				executeStatus = ExecuteStatus(6, e.what());
+			}
+			catch (const std::string & e)
+			{
+				executeStatus = ExecuteStatus(6, e);
+			}
+			catch (...)
+			{
+				executeStatus = ExecuteStatus(4, "unknown error");
 			}
 		}
-
-		if (configPresent) {
-			setupProgress(*doc.RootElement( ),problem);
-		}
-	}
-	catch (std::exception & e) {
-		std::cerr <<  argv[0] << " caught exception " << e.what( ) << " reading " << filename << std::endl; 
-		return 4;
-	}
-	catch (H5::Exception & e) {
-		std::cerr <<  argv[0] << " caught H5 exception" << e.getCDetailMsg( ) << " reading " << filename << std::endl; 
-		return 7;
-	}
-	catch (...) {
-		std::cerr <<  argv[0] << " caught unknown exception reading " << filename << std::endl; 
-		return 5;
-	}
-	if (parseOnly) {
-		std::cout <<  filename << " validated" << std::endl;
-		return 0;
 	}
 
-	int returnCode = 0;
-	try {
-		problem.run( );
-		std::cout << "MovingBoundary input " << filename << ", output " << problem.getOutputFiles() << " finished" << std::endl;
-	}
-	catch (std::exception & e) {
-		std::cerr <<  argv[0] << " caught exception while running " << filename << ": " << e.what( ) << std::endl;
-		returnCode = 6;
-	}
-	catch (const std::string & e) {
-		std::cerr <<  argv[0] << " caught exception while running " << filename << ": " << e << std::endl;
-		returnCode = 6;
-	}
-	catch (...) {
-		std::cerr <<  argv[0] << " caught unknown exception while running " << filename << std::endl;
-		returnCode = 4;
-	}
-	return returnCode;
+	notifyExecuteStatus(executeStatus);
+	return executeStatus.code;
 }
 
 namespace {

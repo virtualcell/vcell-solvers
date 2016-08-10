@@ -7,6 +7,7 @@ namespace tinyxml2 {
 namespace moving_boundary {
 	class MovingBoundaryParabolicProblem;
 	struct ReportClient : public MovingBoundaryElementClient {
+		 ReportClient(const std::string& a_baseFileName) : baseFileName(a_baseFileName) {}
 		 virtual std::string getXML( ) const = 0;
 		 virtual std::string outputName( ) const = 0;
 		 /**
@@ -15,6 +16,8 @@ namespace moving_boundary {
 		 * @param mbpp problem to report on
 		 */
 		 static void setup(const tinyxml2::XMLElement &root, const std::string & filename, MovingBoundaryParabolicProblem &mbpp);
+
+		 std::string baseFileName;
 	};
 
 

@@ -28,7 +28,7 @@
 #include <IndexVect.h>
 
 #include <ExplicitSolver.h>
-
+#include <SimulationMessaging.h>
 #include <MBridge/FronTierAdapt.h>
 #include <MBridge/Figure.h>
 #include <MBridge/MBPatch.h>
@@ -1063,16 +1063,6 @@ namespace moving_boundary {
 			return files;
 		}
 
-		//reset a flag to false during stack unwinding
-		struct Resetter{
-			bool & flag;
-			Resetter(bool & flag_)
-				:flag(flag_) {}
-			~Resetter( ) {
-				flag = false;
-			}
-		};
-
 		/**
 		* package of percent progress variables for convenience / clarity
 		*/
@@ -1124,12 +1114,13 @@ namespace moving_boundary {
 
 		void run( ) {
 			VCELL_LOG(info,"commence simulation");
+
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, "Simulation started"));
+
 			const AdvectComplete advectComplete;
 			ExplicitSolver solver(primaryMesh);
 			DiffuseAdvect<ExplicitSolver> diffuseAdvect(solver);
-			Resetter r(isRunning);
 			isRunning = true;
-
 
 			if (statusPercent > 0)  {
 				percentInfo.simStartTime = currentTime;
@@ -1148,6 +1139,9 @@ namespace moving_boundary {
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),commenceSimulation);
 				}
 				notifyClients(numIteration,true);
+
+				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, 0, 0));
+
 				if (frontMoveTrace) {
 					debugDump(numIteration, 's');
 				}
@@ -1262,7 +1256,7 @@ namespace moving_boundary {
 					if (numIteration >= percentInfo.nextProgressGeneration) {
 						unsigned int percent = static_cast<unsigned int>(100 * currentTime / maxTime + 0.5);
 						if (percent < 100) { //looks silly to report 100% when still running
-							std::cout << std::setw(2) << percent << "% complete";
+							//std::cout << std::setw(2) << percent << "% complete";
 							if (estimateProgress) {
 								namespace chrono = std::chrono;
 								using chrono::steady_clock;
@@ -1291,6 +1285,8 @@ namespace moving_boundary {
 							std::cout << std::endl;
 							percentInfo.lastPercentTime = currentTime;
 							percentInfo.calculateNextProgress(numIteration,frontTimeStep);
+
+							SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percent * 1.0/100, percentInfo.lastPercentTime));
 						}
 					}
 				}
@@ -1311,6 +1307,8 @@ namespace moving_boundary {
 				for (MovingBoundaryTimeClient *client : timeClients) {
 					client->simulationComplete( );
 				}
+				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, 1.0, currentTime));
+				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1.0, currentTime));
 			} catch (std::exception &e) {
 				VCELL_LOG(fatal,"run( ) caught " << e.what( )  << " iteration " << numIteration << " time" << currentTime);
 				throw;

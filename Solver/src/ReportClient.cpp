@@ -11,6 +11,7 @@
 #include <World.h>
 #include <vcellxml.h>
 #include <ReportClient.h>
+#include <SimulationMessaging.h>
 #include <Universe.h>
 #include <TextReportClient.h>
 #include <version.h>
@@ -295,38 +296,39 @@ namespace {
 		/**
 		* worldDim, speciesDim index
 		*/
-		static const size_t timeArrayIndex = 0; 
+		static const size_t timeArrayIndex = 0;
 
 		/**
 		* worldDim, speciesDim index
 		*/
-		static const size_t xArrayIndex = 1; 
+		static const size_t xArrayIndex = 1;
 
 		/**
 		* worldDim, speciesDim index
 		*/
-		static const size_t yArrayIndex = 2; 
+		static const size_t yArrayIndex = 2;
 
 		/**
 		* speciesDim index
 		*/
-		static const size_t speciesIndex = 3; 
+		static const size_t speciesIndex = 3;
 
 		static constexpr const char* H5_FILE_EXT = ".h5";
+		static constexpr const char* LOG_FILE_EXT = ".log";
 
 		/**
 		* @param f file to write to
-		* @param mbpp the problem 
+		* @param mbpp the problem
 		* @param baseName name of dataset in HDF5 file if not default
 		*/
 		template <typename R>
-		HDF5Client(std::string xml_,std::string& h5FileName,
+		HDF5Client(std::string xml_,std::string& baseFileName,
 			WorldType & world_,
-			const moving_boundary::MovingBoundaryParabolicProblem &mbpp, 
-			const char *baseName,
-			R &timeReports) 
-			:xml(xml_),
-			theProblem(mbpp), 
+			const moving_boundary::MovingBoundaryParabolicProblem &mbpp,
+			R &timeReports)
+			: ReportClient(baseFileName),
+			xml(xml_),
+			theProblem(mbpp),
 			constantSim(mbpp.noReaction( )),
 			currentTime(0),
 			totalStuff(0),
@@ -358,6 +360,10 @@ namespace {
 			nextReportControlTime(-1),
 			pointconverter(world.pointConverter( ))
 		{
+			logFileName = baseFileName + LOG_FILE_EXT;
+			remove(logFileName.c_str());
+			string h5FileName = baseFileName + H5_FILE_EXT;
+			remove(h5FileName.c_str());
 			h5File = vcellH5::VH5File(h5FileName.c_str( ), H5F_ACC_TRUNC|H5F_ACC_RDWR);
 			baseGroup = h5File;
 
@@ -381,7 +387,7 @@ namespace {
 				//}
 				//else {
 				//	std::ostringstream oss;
-				//	oss << "result-" << numberGenerations << '-' <<  meshDef.numCells(cX)  << '-' <<meshDef.numCells(cY); 
+				//	oss << "result-" << numberGenerations << '-' <<  meshDef.numCells(cX)  << '-' <<meshDef.numCells(cY);
 				//	groupName = oss.str( );
 				//}
 				//{
@@ -403,15 +409,15 @@ namespace {
 				const size_t xSize = meshDef.numCells(cX);
 				const size_t ySize = meshDef.numCells(cY);
 				worldDim[timeArrayIndex] = timeChunkSize;
-				worldDim[xArrayIndex] = xSize; 
-				worldDim[yArrayIndex] = ySize; 
+				worldDim[xArrayIndex] = xSize;
+				worldDim[yArrayIndex] = ySize;
 				hsize_t     maxdim[3]= {H5S_UNLIMITED,xSize,ySize};
-				H5::DataSpace dataspace(3,worldDim,maxdim); 
+				H5::DataSpace dataspace(3,worldDim,maxdim);
 
 				H5::DSetCreatPropList  prop;
 				hsize_t     chunkDim[3]  = {timeChunkSize,spatialChunkSize,spatialChunkSize};
 				prop.setChunk(3, chunkDim);
-				H5::CompType dataType = ResultPoint::getType( ); 
+				H5::CompType dataType = ResultPoint::getType( );
 
 				elementDataset = baseGroup.createDataSet( "elements", dataType, dataspace ,prop);
 
@@ -423,13 +429,13 @@ namespace {
 				const double hy = world.distanceToProblemDomain( meshDef.interval(spatial::cY) );
 
 				spatial::TGeoLimit<moving_boundary::CoordinateType> limit =  world.limits( )[spatial::cX];
-				const double beginx = world.toProblemDomain (limit.low( ), spatial::cX); 
-				const double endx = world.toProblemDomain (limit.high( ), spatial::cX); 
+				const double beginx = world.toProblemDomain (limit.low( ), spatial::cX);
+				const double endx = world.toProblemDomain (limit.high( ), spatial::cX);
 				assert(beginx == startx);
 
 				limit =  world.limits( )[spatial::cY];
-				const double beginy = world.toProblemDomain (limit.low( ), spatial::cY); 
-				const double endy = world.toProblemDomain (limit.high( ), spatial::cY); 
+				const double beginy = world.toProblemDomain (limit.low( ), spatial::cY);
+				const double endy = world.toProblemDomain (limit.high( ), spatial::cY);
 				assert(beginy == starty);
 
 				vcellH5::writeAttribute(elementDataset,"startX",startx);
@@ -442,7 +448,7 @@ namespace {
 				vcellH5::writeAttribute(elementDataset,"hy",hy);
 				const std::string layout("time x X x Y (transposed in MATLAB)");
 				vcellH5::writeAttribute(elementDataset,"layout",layout);
-				std::string desc = theProblem.frontDescription( ); 
+				std::string desc = theProblem.frontDescription( );
 				vcellH5::writeAttribute(elementDataset,"front description",desc);
 			} //create element dataset
 
@@ -451,11 +457,11 @@ namespace {
 				std::vector<double> dv(xvalues.size( ));
 				WorldType::XConverter xconverter(world);
 				std::transform(xvalues.begin( ),xvalues.end( ),dv.begin( ),xconverter);
-				vcellH5::SeqFacade<std::vector<double> > axisSF(dv); 
+				vcellH5::SeqFacade<std::vector<double> > axisSF(dv);
 				vcellH5::facadeWrite(baseGroup,"meshXvalues",axisSF);
 
 				std::vector<moving_boundary::CoordinateType> yvalues = meshDef.coordinateValues(spatial::cY);
-				dv.resize(yvalues.size( )); 
+				dv.resize(yvalues.size( ));
 				WorldType::YConverter yconverter(world);
 				std::transform(yvalues.begin( ),yvalues.end( ),dv.begin( ),yconverter);
 				vcellH5::facadeWrite(baseGroup,"meshYvalues",axisSF);
@@ -465,14 +471,14 @@ namespace {
 				speciesDim[timeArrayIndex] = worldDim[timeArrayIndex];
 				speciesDim[xArrayIndex] = worldDim[xArrayIndex];
 				speciesDim[yArrayIndex] = worldDim[yArrayIndex];
-				speciesDim[speciesIndex] = numberSpecies; 
+				speciesDim[speciesIndex] = numberSpecies;
 				hsize_t     maxsdim[4] = {H5S_UNLIMITED, speciesDim[1],speciesDim[2],speciesDim[3]};
-				H5::DataSpace dataspace(4,speciesDim,maxsdim); 
+				H5::DataSpace dataspace(4,speciesDim,maxsdim);
 
 				H5::DSetCreatPropList  prop;
 				hsize_t     chunkDim[4]  = {timeChunkSize,spatialChunkSize,spatialChunkSize,numberSpecies};
 				prop.setChunk(4, chunkDim);
-				H5::CompType dataType = SpeciesData::getType( ); 
+				H5::CompType dataType = SpeciesData::getType( );
 
 				speciesDataset = baseGroup.createDataSet( "species", dataType, dataspace ,prop);
 			}
@@ -480,7 +486,7 @@ namespace {
 			{ //create boundary dataset
 				boundaryDim[0] = timeChunkSize;
 				hsize_t     maxdim[1]= {H5S_UNLIMITED};
-				H5::DataSpace dataspace(1,boundaryDim,maxdim); 
+				H5::DataSpace dataspace(1,boundaryDim,maxdim);
 
 				H5::DSetCreatPropList  prop;
 				hsize_t     chunkDim[1]  = {timeChunkSize};
@@ -493,7 +499,7 @@ namespace {
 
 
 		/**
-		* delete TimeReport objects  
+		* delete TimeReport objects
 		*/
 		~HDF5Client( ) {
 			std::for_each(reportControllers.begin( ),reportControllers.end( ),cleanup);
@@ -503,15 +509,15 @@ namespace {
 		* add information from MovingBoundarySetup; currently just the concentration string
 		*/
 		void addInitial(const moving_boundary::MovingBoundarySetup & mbs) {
-			//XRAY const std::string s = mbs.concentrationFunctionStr; 
+			//XRAY const std::string s = mbs.concentrationFunctionStr;
 			//vcellH5::writeAttribute(baseGroup,"concentrationFunction",s);
 		}
 		/**
 		* free form annotation of data set for including notes in HDF file
 		* @param attributeName
-		* @param value 
+		* @param value
 		*/
-		void annotate(const char *attributeName, const std::string & value) { 
+		void annotate(const char *attributeName, const std::string & value) {
 			vcellH5::writeAttribute(baseGroup,attributeName,value);
 		}
 
@@ -524,7 +530,7 @@ namespace {
 			//delete any expired or past time
 			while (iter != reportControllers.end( )) {
 				const TimeReport *tr = *iter;
-				std::set<const TimeReport *,TimeSorter>::iterator eraseIter(iter); 
+				std::set<const TimeReport *,TimeSorter>::iterator eraseIter(iter);
 				++iter;
 				if (tr->expired(t,generation) || (pastTime && tr->getStartTime( ) < nextReportControlTime )) {
 					const TimeReport *dtr = *eraseIter;
@@ -547,7 +553,7 @@ namespace {
 			reportControl = *iter;
 		}
 
-		virtual void time(double t, unsigned int generationCounter, bool last, const moving_boundary::GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) { 
+		virtual void time(double t, unsigned int generationCounter, bool last, const moving_boundary::GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) {
 			double ts = theProblem.frontTimeStep( );
 			if (ts != lastTimeStep) {
 				timeStepTimes.push_back(t);
@@ -572,7 +578,21 @@ namespace {
 				genTimes.push_back(t);
 				lastReportGeneration = generationCounter;
 				lastReportTime = t;
+
+				writeLogFile(generationCounter);
 			}
+		}
+
+		void writeLogFile(unsigned int iteration)
+		{
+			std::ofstream logOf(logFileName.c_str(), ios_base::app);
+			if (iteration == 0)
+			{
+				logOf << "MBSData" << std::endl;
+			}
+			logOf << iteration << " " << h5File.getFileName() << " " << currentTime << std::endl;
+			logOf.close();
+			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, currentTime/theProblem.endTime(), currentTime));
 		}
 
 		void writeBoundary(hsize_t timeIndex, const std::vector<spatial::TPoint<moving_boundary::CoordinateType,2> > & boundary) {
@@ -588,7 +608,7 @@ namespace {
 
 				const hsize_t singleTimeSlice = 1;
 				hsize_t  bufferDim[1] = {singleTimeSlice};
-				H5::DataSpace memoryspace(1,bufferDim); 
+				H5::DataSpace memoryspace(1,bufferDim);
 
 				//is dataset big enough in time dimension?
 				if (timeIndex >= boundaryDim[0]) {
@@ -608,8 +628,8 @@ namespace {
 
 
 		static PODPoint<double> convertFrontToPOD(const spatial::TPoint<moving_boundary::CoordinateType,2> &in) {
-			moving_boundary::World<moving_boundary::CoordinateType,2> world =  moving_boundary::World<moving_boundary::CoordinateType,2>::get( ); 
-			moving_boundary::WorldToPDPointConverter<moving_boundary::CoordinateType,2> converter = world.pointConverter( ); 
+			moving_boundary::World<moving_boundary::CoordinateType,2> world =  moving_boundary::World<moving_boundary::CoordinateType,2>::get( );
+			moving_boundary::WorldToPDPointConverter<moving_boundary::CoordinateType,2> converter = world.pointConverter( );
 			PODPoint<double> p = converter(in);
 			return p;
 		};
@@ -624,7 +644,7 @@ namespace {
 			case spatial::unsetPosition:
 			default:
 				assert(0);  //we don't currently expect any of these
-				return HElementRecord::inactivePosition; 
+				return HElementRecord::inactivePosition;
 			}
 		}
 
@@ -637,13 +657,13 @@ namespace {
 				using spatial::cY;
 				spatial::TPoint<size_t,2> key(e.indexOf(0),e.indexOf(1));
 				if (eRecords.find(key) == eRecords.end( )) {
-					eRecords[key] = HElementRecord( ); 
+					eRecords[key] = HElementRecord( );
 					eRecords[key].resize(numberSpecies);
 				}
 				HElementRecord & er = eRecords[key];
 				er.volume = e.volumePD( );
-				for (int i = 0; i < numberSpecies; i++) { 
-					er.mass[i] = e.mass(i); 
+				for (int i = 0; i < numberSpecies; i++) {
+					er.mass[i] = e.mass(i);
 					er.concentration[i] = e.concentration(i);
 				}
 				er.boundaryPosition = encodePosition(e);
@@ -659,13 +679,13 @@ namespace {
 						std::string filename(mcounter);
 						filename += ".m";
 						std::ofstream mr(filename);
-						
+
 						using matlabBridge::MatLabDebug;
 						matlabBridge::Scatter nbplot('b',2);
 						frontTierAdapt::copyPointInto(nbplot,e);
 						std::stringstream ss;
 						ss << e.indexOf(cX) << ',' << e.indexOf(cY);
-						mr <<  matlabBridge::FigureName(mcounter) << 
+						mr <<  matlabBridge::FigureName(mcounter) <<
 							nbplot << matlabBridge::Text(e(cX),e(cY),ss.str( ).c_str( ));
 
 						matlabBridge::Polygons vs("-g",2);
@@ -688,8 +708,8 @@ namespace {
 		*/
 		virtual void iterationComplete( ) {
 			if (reportActive) {
-				VCELL_LOG(info,"Time " << currentTime << " total mass " << totalStuff); 
-				//VCELL_LOG(info,"Time " << currentTime); 
+				VCELL_LOG(info,"Time " << currentTime << " total mass " << totalStuff);
+				//VCELL_LOG(info,"Time " << currentTime);
 				if (eRecords.size( ) > 0) {
 
 					try {
@@ -719,7 +739,7 @@ namespace {
 							if (er.boundaryPosition != HElementRecord::inactivePosition) {
 								const spatial::TPoint<size_t,2> & index = iter->first;
 								hsize_t i = index(spatial::cX);
-								hsize_t j = index(spatial::cY); 
+								hsize_t j = index(spatial::cY);
 								elementStorage[i - minI][j - minJ].set(er);
 								for (int s = 0; s < numberSpecies; ++s) {
 									speciesStorage[i - minI][j - minJ][s].set(er,s);
@@ -735,27 +755,27 @@ namespace {
 							speciesDim[timeArrayIndex] += timeChunkSize;
 							speciesDataset.extend(speciesDim);
 						}
-						{ //first write out the 3D element data 
-							hsize_t  bufferDim[3] = {singleTimeSlice,iSpan, jSpan}; 
-							H5::DataSpace memoryspace(3,bufferDim); 
+						{ //first write out the 3D element data
+							hsize_t  bufferDim[3] = {singleTimeSlice,iSpan, jSpan};
+							H5::DataSpace memoryspace(3,bufferDim);
 
 							hsize_t offset[3] = {timeIndex ,minI,minJ};
 							H5::DataSpace dataspace = elementDataset.getSpace( );
 							dataspace.selectHyperslab(H5S_SELECT_SET,bufferDim,offset);
 
-							H5::CompType dataType = ResultPoint::getType( ); 
+							H5::CompType dataType = ResultPoint::getType( );
 							elementDataset.write(elementStorage.ptr( ),dataType,memoryspace,dataspace);
 						}
 
 						{ //next the 4D species data
-							hsize_t  bufferDim[4] = {singleTimeSlice,iSpan, jSpan,numberSpecies}; 
-							H5::DataSpace memoryspace(4,bufferDim); 
+							hsize_t  bufferDim[4] = {singleTimeSlice,iSpan, jSpan,numberSpecies};
+							H5::DataSpace memoryspace(4,bufferDim);
 
 							hsize_t offset[4] = {timeIndex ,minI,minJ,0};
 							H5::DataSpace dataspace = speciesDataset.getSpace( );
 							dataspace.selectHyperslab(H5S_SELECT_SET,bufferDim,offset);
 
-							H5::CompType dataType = SpeciesData::getType( ); 
+							H5::CompType dataType = SpeciesData::getType( );
 							speciesDataset.write(speciesStorage.ptr( ),dataType,memoryspace,dataspace);
 						}
 					}
@@ -797,9 +817,9 @@ namespace {
 				vcellH5::writeAttribute(runTime,"compileTime",version.compileTime);
 
 				unsigned int lastTimeIndex = static_cast<unsigned int>(genTimes.size( ));
-				vcellH5::primitiveWrite(baseGroup,"lastTimeIndex",lastTimeIndex); 
+				vcellH5::primitiveWrite(baseGroup,"lastTimeIndex",lastTimeIndex);
 
-				VCELL_KEY_LOG(info,Key::generationTime,"logging " << genTimes.size( ) << " generation times"); 
+				VCELL_KEY_LOG(info,Key::generationTime,"logging " << genTimes.size( ) << " generation times");
 				vcellH5::SeqFacade<std::vector<double> > gt(genTimes);
 				vcellH5::facadeWrite(baseGroup,"generationTimes",gt);
 
@@ -842,19 +862,20 @@ namespace {
 		*/
 		std::string xml;
 		H5::H5File h5File;
-		double currentTime; 
+		std::string logFileName;
+		double currentTime;
 		double totalStuff;
 		double oldStuff;
 		const spatial::MeshDef<moving_boundary::CoordinateType,2> meshDef;
 		const size_t numberSpecies;
-		typedef std::map<spatial::TPoint<size_t,2>, HElementRecord> RecordMap; 
+		typedef std::map<spatial::TPoint<size_t,2>, HElementRecord> RecordMap;
 		RecordMap eRecords;
 		std::vector<double> genTimes;
 		std::vector<double> moveTimes;
 		std::vector<double> timeStepTimes;
 		std::vector<double> timeStep;
 		double lastTimeStep;
-		//H5::Group baseGroup; if we want to put individual data sets in groups 
+		//H5::Group baseGroup; if we want to put individual data sets in groups
 		H5::H5File baseGroup; //synonum for "file"
 		/**
 		* element information for a single time slice
@@ -863,7 +884,7 @@ namespace {
 		/**
 		* 3 dimensional HDF data
 		*/
-		H5::DataSet elementDataset; 
+		H5::DataSet elementDataset;
 		hsize_t worldDim[3];
 
 		/**
@@ -942,11 +963,13 @@ void ReportClient::setup(const XMLElement &root, const std::string & h5filename 
 		H5::H5File output;
 		std::string h5FileName = h5filename;
 		std::string outputFilePrefix = vcell_xml::convertChildElement<std::string>(report,"outputFilePrefix");
+#ifdef INCLUDE_DETAILS_IN_OUTPUT_FILE_NAME
 		const std::array<Universe<2>::CountType, 2>& numNodes = Universe<2>::get().numNodes();
 		const std::array<spatial::GeoLimit, 2>& limits = Universe<2>::get().limits();
 		std::stringstream ss;
 		ss << outputFilePrefix << "_Nx" << numNodes[0] << "_t" << mbs.maxTime * 10;
 		outputFilePrefix = ss.str();
+#endif
 		bool deleteExisting = vcell_xml::convertChildElementWithDefault<bool>(report,"deleteExisting",false);
 		if (h5filename.empty( )) {
 			h5FileName = outputFilePrefix + HDF5Client::H5_FILE_EXT;
@@ -954,11 +977,11 @@ void ReportClient::setup(const XMLElement &root, const std::string & h5filename 
 				remove(h5FileName.c_str( ));
 			}
 		}
-		const char *datasetName = nullptr;
-		std::pair<bool,std::string> dnq = vcell_xml::queryElement<std::string>(report,"datasetName");
-		if (dnq.first) {
-			datasetName = dnq.second.c_str( );
-		}
+//		const char *datasetName = nullptr;
+//		std::pair<bool,std::string> dnq = vcell_xml::queryElement<std::string>(report,"datasetName");
+//		if (dnq.first) {
+//			datasetName = dnq.second.c_str( );
+//		}
 
 		std::vector<TimeReport *> timeReports;
 
@@ -1010,29 +1033,25 @@ void ReportClient::setup(const XMLElement &root, const std::string & h5filename 
 		}
 
 		moving_boundary::World<moving_boundary::CoordinateType,2> &world = moving_boundary::World<moving_boundary::CoordinateType,2>::get( );
-//		HDF5Client *hdf5Client =  new HDF5Client(xmlCopy,h5FileName,world,mbpp,datasetName, timeReports);
-//		hdf5Client->addInitial(mbs);
-//		const XMLElement * const annotateSection = report.FirstChildElement("annotation");
-//		if (annotateSection != nullptr) {
-//			const XMLElement *annotateElement = annotateSection->FirstChildElement( );
-//			while (annotateElement != nullptr) {
-//				const char *const name = annotateElement->Name( );
-//				const std::string value = vcell_xml::convertElement<std::string>(*annotateElement);
-//				hdf5Client->annotate(name,value);
-//				annotateElement = annotateElement->NextSiblingElement( );
-//			}
-//		}
-		//mbpp.add(*hdf5Client);
+		HDF5Client *hdf5Client =  new HDF5Client(xmlCopy,outputFilePrefix,world,mbpp, timeReports);
+		hdf5Client->addInitial(mbs);
+		const XMLElement * const annotateSection = report.FirstChildElement("annotation");
+		if (annotateSection != nullptr) {
+			const XMLElement *annotateElement = annotateSection->FirstChildElement( );
+			while (annotateElement != nullptr) {
+				const char *const name = annotateElement->Name( );
+				const std::string value = vcell_xml::convertElement<std::string>(*annotateElement);
+				hdf5Client->annotate(name,value);
+				annotateElement = annotateElement->NextSiblingElement( );
+			}
+		}
+		mbpp.add(*hdf5Client);
 
 		const tinyxml2::XMLElement *tr = vcell_xml::query(report, "textReport");
 		if (tr != nullptr) {
-			std::string filename = outputFilePrefix + TextReportClient::TXT_FILE_EXT;
-			if (deleteExisting) {
-				remove(filename.c_str( ));
-			}
 			const int p = vcell_xml::convertChildElementWithDefault<unsigned int>(*tr, "precision", 6);
 			const int w = vcell_xml::convertChildElementWithDefault<unsigned int>(*tr, "width", 6);
-			TextReportClient* trcClient = new TextReportClient(filename, mbpp, p, w, step);
+			TextReportClient* trcClient = new TextReportClient(outputFilePrefix, mbpp, p, w, step);
 			mbpp.add(*trcClient);
 		}
 	} 

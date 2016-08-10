@@ -15,10 +15,9 @@ using spatial::cY;
 
 namespace moving_boundary
 {
-TextReportClient::TextReportClient(const std::string & a_filename, MovingBoundaryParabolicProblem &mbpp, int precision,
-		int width, long interval) :
-		filename(a_filename),
-		output(filename),
+TextReportClient::TextReportClient(const std::string & baseFileName, MovingBoundaryParabolicProblem &mbpp, int precision, int width, long interval)
+  : ReportClient(baseFileName),
+		fileName(baseFileName + TXT_FILE_EXT),
 		problem(mbpp),
 		pointConverter(World<CoordinateType, 2>::get().pointConverter()),
 		outputPrecision(precision),
@@ -27,6 +26,8 @@ TextReportClient::TextReportClient(const std::string & a_filename, MovingBoundar
 		iterCount(-1),
 		lastIteration(false)
 {
+	remove(fileName.c_str());
+	output.open(fileName.c_str());
 	output.precision(outputPrecision);
 	output.setf(std::ios_base::fixed, std::ios_base::floatfield); //fixed
 }
@@ -44,7 +45,7 @@ TextReportClient::~TextReportClient()
 }
 std::string TextReportClient::outputName( ) const
 {
-	return filename;
+	return fileName;
 }
 
 std::string TextReportClient::getXML( ) const
