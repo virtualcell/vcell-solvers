@@ -761,9 +761,9 @@ namespace moving_boundary {
 				GeometryInfo<moving_boundary::CoordinateType> gi(currentFront,changed);
 				tclient->time(currentTime, numIteration, currentTime == maxTime, gi);
 			}
-			for (MovingBoundaryElementClient *eclient: elementClients) {
-				giveElementsToClient(*eclient,numIteration,changed);
-			}
+//			for (MovingBoundaryElementClient *eclient: elementClients) {
+//				giveElementsToClient(*eclient,numIteration,changed);
+//			}
 		}
 
 		void debugDump(size_t gc, char key) {
@@ -1700,6 +1700,9 @@ namespace moving_boundary {
 
 	const spatial::MeshDef<moving_boundary::CoordinateType,2> & MovingBoundaryParabolicProblem::meshDef( ) const {
 		return sImpl->meshDef( );
+	}
+	const spatial::Mesh<moving_boundary::CoordinateType,2, MeshElementNode> & MovingBoundaryParabolicProblem::mesh( ) const {
+		return sImpl->primaryMesh;
 	}
 	const biology::Physiology  & MovingBoundaryParabolicProblem::physiology( ) const {
 		return sImpl->physiology;

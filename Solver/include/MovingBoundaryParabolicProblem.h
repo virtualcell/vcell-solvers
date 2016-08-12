@@ -8,6 +8,8 @@
 namespace spatial {
 	template<class REAL, int N>
 	struct MeshDef;
+	template<class CT, int N, class TELEMENT>
+	struct Mesh;
 }
 namespace moving_boundary {
 
@@ -81,6 +83,7 @@ namespace moving_boundary {
 		void plotPolygons(std::ostream &os) const ;
 		void plotAreas(std::ostream &os) const;
 		const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDef( ) const;
+		const spatial::Mesh<moving_boundary::CoordinateType, 2, MeshElementNode>& mesh( ) const;
 		const biology::Physiology & physiology( ) const;
 		/**
 		* @return time step used for moving front

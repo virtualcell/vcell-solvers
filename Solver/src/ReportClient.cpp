@@ -26,6 +26,7 @@
 #include <MBridge/MatlabDebug.h>
 #include <MBridge/FronTierAdapt.h>
 #include <MBridge/Figure.h>
+#include <Hdf5OutputWriter.h>
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
 using moving_boundary::World ;
 using moving_boundary::CoordinateType;
@@ -1004,11 +1005,12 @@ void ReportClient::setup(const XMLElement &root, const std::string & h5filename 
 
 		const XMLElement * timeReport = report.FirstChildElement("timeReport"); 
 		long step = -1;
+		double interval = -1;
 		while(timeReport != nullptr) {
 			const int NOT_THERE = -1;
 			const double startTime = vcell_xml::convertChildElement<double>(*timeReport,"startTime");
 			step = vcell_xml::convertChildElementWithDefault<long>(*timeReport,"step", NOT_THERE);
-			const double interval = vcell_xml::convertChildElementWithDefault<double>(*timeReport,"interval",NOT_THERE);
+			interval = vcell_xml::convertChildElementWithDefault<double>(*timeReport,"interval",NOT_THERE);
 			bool quiet = timeReport->FirstChildElement("quiet") != nullptr;
 			int nsubs = 0;
 
@@ -1033,18 +1035,7 @@ void ReportClient::setup(const XMLElement &root, const std::string & h5filename 
 		}
 
 		moving_boundary::World<moving_boundary::CoordinateType,2> &world = moving_boundary::World<moving_boundary::CoordinateType,2>::get( );
-		HDF5Client *hdf5Client =  new HDF5Client(xmlCopy,outputFilePrefix,world,mbpp, timeReports);
-		hdf5Client->addInitial(mbs);
-		const XMLElement * const annotateSection = report.FirstChildElement("annotation");
-		if (annotateSection != nullptr) {
-			const XMLElement *annotateElement = annotateSection->FirstChildElement( );
-			while (annotateElement != nullptr) {
-				const char *const name = annotateElement->Name( );
-				const std::string value = vcell_xml::convertElement<std::string>(*annotateElement);
-				hdf5Client->annotate(name,value);
-				annotateElement = annotateElement->NextSiblingElement( );
-			}
-		}
+		Hdf5OutputWriter *hdf5Client =  new Hdf5OutputWriter(xmlCopy, outputFilePrefix, step, interval,world,mbpp);
 		mbpp.add(*hdf5Client);
 
 		const tinyxml2::XMLElement *tr = vcell_xml::query(report, "textReport");

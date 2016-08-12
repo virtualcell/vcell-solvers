@@ -32,6 +32,8 @@ public:
   IndexVect operator/ (int s) const;
   IndexVect& operator/= (int s);
 
+  const int* data() const { return vect; }
+
   friend std::ostream& operator<< (std::ostream& ostr,
                                    const IndexVect& p);
 
