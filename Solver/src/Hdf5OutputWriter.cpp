@@ -19,11 +19,12 @@
 #include <MBridge/Figure.h>
 using namespace H5;
 
-Hdf5OutputWriter::Hdf5OutputWriter(std::string& a_xml, std::string& baseFileName, int steps, double interval,
+Hdf5OutputWriter::Hdf5OutputWriter(std::string& a_xml, std::string& baseFileName, H5File& a_h5File, int steps, double interval,
 	WorldType & world_,
 	const moving_boundary::MovingBoundaryParabolicProblem &mbpp)
 	: ReportClient(baseFileName),
 		xml(a_xml),
+		h5File(a_h5File),
 		outputNumSteps(steps),
 		outputTimeStep(interval),
 	theProblem(mbpp),
@@ -47,9 +48,6 @@ Hdf5OutputWriter::~Hdf5OutputWriter()
 void Hdf5OutputWriter::init()
 {
 	remove(logFileName.c_str());
-	remove(h5FileName.c_str());
-
-	h5File = H5File(h5FileName.c_str( ), H5F_ACC_TRUNC);
 
 	numElements = theProblem.meshDef().numCells();
 	numSpecies = theProblem.physiology().numberSpecies();
@@ -150,17 +148,13 @@ void Hdf5OutputWriter::initMeshGroup()
 	}
 }
 
-bool Hdf5OutputWriter::shouldReport()
-{
-	return currentIter == 0 || bLastIter || (outputNumSteps != -1 ? currentIter % outputNumSteps == 0 : std::abs(currentTime - timeList.back() - outputTimeStep) < 1e-8);
-}
-
 void Hdf5OutputWriter::time(double t, unsigned int numIter, bool last, const moving_boundary::GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) {
 		currentTime = t;
 		currentIter = numIter;
 		bLastIter = last;
+		bShouldReport = currentIter == 0 || bLastIter || (outputNumSteps != -1 ? currentIter % outputNumSteps == 0 : std::abs(currentTime - timeList.back() - outputTimeStep) < 1e-8);
 
-		if (shouldReport())
+		if (bShouldReport)
 		{
 			int timesRank = 1;
 			hsize_t timesDims = 1;

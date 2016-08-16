@@ -322,11 +322,10 @@ namespace {
 		* @param mbpp the problem
 		* @param baseName name of dataset in HDF5 file if not default
 		*/
-		template <typename R>
-		HDF5Client(std::string xml_,std::string& baseFileName,
+		//template <typename R>
+		HDF5Client(std::string xml_,std::string& baseFileName, int steps, double interval,
 			WorldType & world_,
-			const moving_boundary::MovingBoundaryParabolicProblem &mbpp,
-			R &timeReports)
+			const moving_boundary::MovingBoundaryParabolicProblem &mbpp)
 			: ReportClient(baseFileName),
 			xml(xml_),
 			theProblem(mbpp),
@@ -351,34 +350,34 @@ namespace {
 			//reportStep(calcReportStep(mbpp,startTime_,numberReports)),
 			//reportCounter(0),
 			//reportBegan(startTime_ == 0), //if beginning at zero, we've "begun" at the start
-			reportActive(true),
+//			reportActive(true),
 			timer( ),
 			world(world_),
-			reportControllers( ),
+//			reportControllers( ),
 			lastReportTime(0),
 			lastReportGeneration(0),
-			reportControl(nullptr),
+//			reportControl(nullptr),
 			nextReportControlTime(-1),
 			pointconverter(world.pointConverter( ))
 		{
-			logFileName = baseFileName + LOG_FILE_EXT;
-			remove(logFileName.c_str());
 			string h5FileName = baseFileName + H5_FILE_EXT;
 			remove(h5FileName.c_str());
 			h5File = vcellH5::VH5File(h5FileName.c_str( ), H5F_ACC_TRUNC|H5F_ACC_RDWR);
 			baseGroup = h5File;
 
+			hdf5OutputWriter = new Hdf5OutputWriter(xml_, baseFileName, h5File, steps, interval, world_, mbpp);
+
 			using spatial::cX;
 			using spatial::cY;
 			int numberGenerations = mbpp.numberTimeSteps( );
 			timer.start( );
-			reportControllers.insert(new TimeReportBegin( ));
-			reportControllers.insert(new TimeReportQuiet(0, std::numeric_limits<unsigned int>::max(  )) );
-			for (typename R::iterator iter = timeReports.begin( );iter != timeReports.end( ); ++iter) {
-				reportControllers.insert(*iter);
-			}
-			reportControllers.insert(new CollectionTail( ));
-			determineReportControl(0,0);
+//			reportControllers.insert(new TimeReportBegin( ));
+//			reportControllers.insert(new TimeReportQuiet(0, std::numeric_limits<unsigned int>::max(  )) );
+//			for (typename R::iterator iter = timeReports.begin( );iter != timeReports.end( ); ++iter) {
+//				reportControllers.insert(*iter);
+//			}
+//			reportControllers.insert(new CollectionTail( ));
+//			determineReportControl(0,0);
 
 			{ //create group
 
@@ -503,7 +502,8 @@ namespace {
 		* delete TimeReport objects
 		*/
 		~HDF5Client( ) {
-			std::for_each(reportControllers.begin( ),reportControllers.end( ),cleanup);
+//			std::for_each(reportControllers.begin( ),reportControllers.end( ),cleanup);
+			delete hdf5OutputWriter;
 		}
 
 		/**
@@ -525,6 +525,7 @@ namespace {
 		/**
 		* set #reportControl and #nextReportControlTime
 		*/
+		/*
 		void determineReportControl(double t, unsigned int generation) {
 			std::set<const TimeReport *,TimeSorter>::const_iterator iter = reportControllers.begin( );
 			bool pastTime = t>=nextReportControlTime;
@@ -553,8 +554,11 @@ namespace {
 			}
 			reportControl = *iter;
 		}
+		*/
 
 		virtual void time(double t, unsigned int generationCounter, bool last, const moving_boundary::GeometryInfo<moving_boundary::CoordinateType> & geometryInfo) {
+			hdf5OutputWriter->time(t, generationCounter, last, geometryInfo);
+
 			double ts = theProblem.frontTimeStep( );
 			if (ts != lastTimeStep) {
 				timeStepTimes.push_back(t);
@@ -564,13 +568,13 @@ namespace {
 			if (geometryInfo.nodesAdjusted) {
 				moveTimes.push_back(t);
 			}
-			if (reportControl->expired(t,generationCounter) || t >= nextReportControlTime) {
-				determineReportControl(t,generationCounter);
-			}
+//			if (reportControl->expired(t,generationCounter) || t >= nextReportControlTime) {
+//				determineReportControl(t,generationCounter);
+//			}
+//
+//			reportActive = last || reportControl->needReport(generationCounter,lastReportGeneration,t,lastReportTime);
 
-			reportActive = last || reportControl->needReport(generationCounter,lastReportGeneration,t,lastReportTime);
-
-			if (reportActive) {
+			if (hdf5OutputWriter->shouldReport()) {
 				writeBoundary(genTimes.size( ),geometryInfo.boundary);
 				currentTime = t;
 				totalStuff = 0;
@@ -579,21 +583,7 @@ namespace {
 				genTimes.push_back(t);
 				lastReportGeneration = generationCounter;
 				lastReportTime = t;
-
-				writeLogFile(generationCounter);
 			}
-		}
-
-		void writeLogFile(unsigned int iteration)
-		{
-			std::ofstream logOf(logFileName.c_str(), ios_base::app);
-			if (iteration == 0)
-			{
-				logOf << "MBSData" << std::endl;
-			}
-			logOf << iteration << " " << h5File.getFileName() << " " << currentTime << std::endl;
-			logOf.close();
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, currentTime/theProblem.endTime(), currentTime));
 		}
 
 		void writeBoundary(hsize_t timeIndex, const std::vector<spatial::TPoint<moving_boundary::CoordinateType,2> > & boundary) {
@@ -653,7 +643,7 @@ namespace {
 		* state of inside / boundary nodes
 		*/
 		virtual void element(const moving_boundary::MeshElementNode &e) {
-			if (reportActive) {
+			if (hdf5OutputWriter->shouldReport()) {
 				using spatial::cX;
 				using spatial::cY;
 				spatial::TPoint<size_t,2> key(e.indexOf(0),e.indexOf(1));
@@ -708,7 +698,7 @@ namespace {
 		* notify client they've received all elements
 		*/
 		virtual void iterationComplete( ) {
-			if (reportActive) {
+			if (hdf5OutputWriter->shouldReport()) {
 				VCELL_LOG(info,"Time " << currentTime << " total mass " << totalStuff);
 				//VCELL_LOG(info,"Time " << currentTime);
 				if (eRecords.size( ) > 0) {
@@ -863,7 +853,6 @@ namespace {
 		*/
 		std::string xml;
 		H5::H5File h5File;
-		std::string logFileName;
 		double currentTime;
 		double totalStuff;
 		double oldStuff;
@@ -900,19 +889,21 @@ namespace {
 
 		H5::DataSet boundaryDataset;
 		hsize_t boundaryDim[1];
-		bool reportActive;
+//		bool reportActive;
 		vcell_util::Timer timer;
 		const WorldType & world;
-		std::set<const TimeReport *,TimeSorter> reportControllers;
+//		std::set<const TimeReport *,TimeSorter> reportControllers;
 		double lastReportTime;
 		unsigned long lastReportGeneration;
-		const TimeReport * reportControl;
+//		const TimeReport * reportControl;
 		/**
 		* start time of next TimeReport object not currently active
 		*/
 		double nextReportControlTime;
 
 		WorldType::PointConverter pointconverter;
+
+		Hdf5OutputWriter *hdf5OutputWriter;
 	};
 
 
@@ -1006,7 +997,7 @@ void ReportClient::setup(const XMLElement &root, const std::string & h5filename 
 		const XMLElement * timeReport = report.FirstChildElement("timeReport"); 
 		long step = -1;
 		double interval = -1;
-		while(timeReport != nullptr) {
+		if(timeReport != nullptr) {
 			const int NOT_THERE = -1;
 			const double startTime = vcell_xml::convertChildElement<double>(*timeReport,"startTime");
 			step = vcell_xml::convertChildElementWithDefault<long>(*timeReport,"step", NOT_THERE);
@@ -1016,26 +1007,26 @@ void ReportClient::setup(const XMLElement &root, const std::string & h5filename 
 
 //			double cfl = 1;
 //			step = (int)(0.1/(cfl*mbpp.meshInterval()*mbpp.meshInterval()/4))+1;
-			if (step != NOT_THERE) {
-				nsubs++;
-				timeReports.push_back( new TimeReportStep(startTime,step) );
-			}
-			if (interval != NOT_THERE) {
-				nsubs++;
-				timeReports.push_back( new TimeReportInterval(startTime,interval) );
-			}
-			if (quiet) {
-				nsubs++;
-				timeReports.push_back( new TimeReportQuiet(startTime) );
-			}
-			if (nsubs != 1) {
-				throw std::invalid_argument("XML error exactly one of <step>, <interval>, or <quiet> must be specified per timeReport element");
-			}
-			timeReport = timeReport->NextSiblingElement("timeReport");
+//			if (step != NOT_THERE) {
+//				nsubs++;
+//				timeReports.push_back( new TimeReportStep(startTime,step) );
+//			}
+//			if (interval != NOT_THERE) {
+//				nsubs++;
+//				timeReports.push_back( new TimeReportInterval(startTime,interval) );
+//			}
+//			if (quiet) {
+//				nsubs++;
+//				timeReports.push_back( new TimeReportQuiet(startTime) );
+//			}
+//			if (nsubs != 1) {
+//				throw std::invalid_argument("XML error exactly one of <step>, <interval>, or <quiet> must be specified per timeReport element");
+//			}
+//			timeReport = timeReport->NextSiblingElement("timeReport");
 		}
 
 		moving_boundary::World<moving_boundary::CoordinateType,2> &world = moving_boundary::World<moving_boundary::CoordinateType,2>::get( );
-		Hdf5OutputWriter *hdf5Client =  new Hdf5OutputWriter(xmlCopy, outputFilePrefix, step, interval,world,mbpp);
+		HDF5Client *hdf5Client = new HDF5Client(xmlCopy, outputFilePrefix, (int)step, interval, world, mbpp);
 		mbpp.add(*hdf5Client);
 
 		const tinyxml2::XMLElement *tr = vcell_xml::query(report, "textReport");

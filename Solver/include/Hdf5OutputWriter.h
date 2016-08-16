@@ -59,7 +59,7 @@ struct Hdf5OutputWriter :public moving_boundary::ReportClient
 	* @param mbpp the problem
 	* @param baseName name of dataset in HDF5 file if not default
 	*/
-	Hdf5OutputWriter(std::string& a_xml, std::string& baseFileName, int steps, double interval, WorldType & world_, const moving_boundary::MovingBoundaryParabolicProblem &mbpp);
+	Hdf5OutputWriter(std::string& a_xml, std::string& baseFileName, H5::H5File& a_h5File, int steps, double interval, WorldType & world_, const moving_boundary::MovingBoundaryParabolicProblem &mbpp);
 	~Hdf5OutputWriter();
 
 	virtual void time(double t, unsigned int generationCounter, bool last, const moving_boundary::GeometryInfo<moving_boundary::CoordinateType> & geometryInfo);
@@ -80,12 +80,17 @@ struct Hdf5OutputWriter :public moving_boundary::ReportClient
 		return xml;
 	}
 
-	virtual std::string outputName( ) const {
+	virtual std::string outputName( ) const
+	{
 		return h5FileName;
 	}
 
+	bool shouldReport() const
+	{
+		return bShouldReport;
+	}
+
 private:
-	bool shouldReport();
 	void init();
 	void writeLog();
 	void writeSolution();
@@ -100,6 +105,7 @@ private:
 	* XML used to create
 	*/
 	double* solution;
+	bool bShouldReport;
 	unsigned int solutionSize;
 	unsigned int numSpecies;
 	unsigned int numElements;
