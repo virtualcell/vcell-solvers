@@ -761,9 +761,9 @@ namespace moving_boundary {
 				GeometryInfo<moving_boundary::CoordinateType> gi(currentFront,changed);
 				tclient->time(currentTime, numIteration, currentTime == maxTime, gi);
 			}
-//			for (MovingBoundaryElementClient *eclient: elementClients) {
-//				giveElementsToClient(*eclient,numIteration,changed);
-//			}
+			for (MovingBoundaryElementClient *eclient: elementClients) {
+				giveElementsToClient(*eclient,numIteration,changed);
+			}
 		}
 
 		void debugDump(size_t gc, char key) {
