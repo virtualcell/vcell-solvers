@@ -4,6 +4,7 @@
 //#include <iostream>
 //#include <MovingBoundaryTypes.h>
 #include <VCellFront.h> 
+#include <Species.h>
 namespace tinyxml2 {
 	class XMLElement;
 }
@@ -13,41 +14,6 @@ namespace tinyxml2 {
 
 namespace moving_boundary {
 	struct MeshElementNode; 
-
-	/**
-	* POD for species initialization
-	*/
-	struct SpeciesSpecification  : public vcell_persist::Persistent {
-		std::string name;
-		std::string initialConcentrationStr;
-		std::string sourceExpressionStr;
-		std::string diffusionExpressionStr;
-		
-		/**
-		* default to allow storage in vector
-		*/
-		SpeciesSpecification( )
-			:name( ),
-			initialConcentrationStr( ),
-			sourceExpressionStr( ),
-			diffusionExpressionStr( ) {}
-		/**
-		* @param n name
-		* @param i initial concentration 
-		* @param s source (reaction) 
-		* @param d diffusion  
-		*/
-		SpeciesSpecification(const std::string & n, const std::string & i, const std::string & s,const std::string  &d)
-			:name(n),
-			initialConcentrationStr(i),
-			sourceExpressionStr(s),
-			diffusionExpressionStr(d) {}
-
-
-		explicit SpeciesSpecification(std::istream &is) ;
-		void persist(std::ostream &os) const;
-		static void registerType( );
-	};
 
 	struct MovingBoundarySetup {
 		IndexVect Nx;
@@ -78,14 +44,6 @@ namespace moving_boundary {
 		//double diffusionCoefficient;
 		std::string levelFunctionStr;
 		/**
-		* velocity used for advection
-		*/
-		std::string advectVelocityFunctionStrX;
-		/**
-		* velocity used for advection
-		*/
-		std::string advectVelocityFunctionStrY;
-		/**
 		* velocity used for front; optional, default is #advectVelocityFunctionStrX 
 		*/
 		std::string frontVelocityFunctionStrX;
@@ -94,7 +52,7 @@ namespace moving_boundary {
 		*/
 		std::string frontVelocityFunctionStrY;
 
-		std::vector<SpeciesSpecification> speciesSpecs;
+		std::vector<moving_boundary::biology::Species*> species;
 		double diffusionConstant;
 		/**
 		* provide alternate to frontier; for testing / validation
@@ -111,11 +69,8 @@ namespace moving_boundary {
 			hardTime(false),
 			//diffusionCoefficient( ),
 			levelFunctionStr( ),
-			advectVelocityFunctionStrX( ),
-			advectVelocityFunctionStrY( ),
 			frontVelocityFunctionStrX( ),
 			frontVelocityFunctionStrY( ),
-			speciesSpecs( ),
 			diffusionConstant(0),
 			alternateFrontProvider(nullptr)
 		{}
@@ -132,11 +87,9 @@ namespace moving_boundary {
 			hardTime(rhs.hardTime),
 			//diffusionCoefficient( ),
 			levelFunctionStr(rhs.levelFunctionStr),
-			advectVelocityFunctionStrX(rhs.advectVelocityFunctionStrX),
-			advectVelocityFunctionStrY(rhs.advectVelocityFunctionStrY),
 			frontVelocityFunctionStrX(rhs.frontVelocityFunctionStrX),
 			frontVelocityFunctionStrY(rhs.frontVelocityFunctionStrY),
-			speciesSpecs(rhs.speciesSpecs),
+			species(rhs.species),
 			diffusionConstant(rhs.diffusionConstant),
 			alternateFrontProvider(rhs.alternateFrontProvider) {
 		}
@@ -152,11 +105,9 @@ namespace moving_boundary {
 			hardTime = rhs.hardTime;
 			//diffusionCoefficient =  ;
 			levelFunctionStr = rhs.levelFunctionStr;
-			advectVelocityFunctionStrX = rhs.advectVelocityFunctionStrX;
-			advectVelocityFunctionStrY = rhs.advectVelocityFunctionStrY;
 			frontVelocityFunctionStrX = rhs.frontVelocityFunctionStrX;
 			frontVelocityFunctionStrY = rhs.frontVelocityFunctionStrY;
-			speciesSpecs = rhs.speciesSpecs,
+			species = rhs.species,
 			diffusionConstant = rhs.diffusionConstant;
 			alternateFrontProvider = rhs.alternateFrontProvider;
 			return *this;

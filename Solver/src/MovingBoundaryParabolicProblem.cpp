@@ -85,21 +85,7 @@ namespace {
 						badset << "functions must be specified by pointers or strings, not both ";
 						break;
 					}
-#ifdef OLD_FUNCTION_POINTER_IMPLEMENTATION
-					if (mbs.velocityFunction == 0 && mbs.advectVelocityFunctionStrY.empty( )) { }
-#else
-					if (mbs.advectVelocityFunctionStrY.empty( )) {
-#endif
-						badset << "Unset Y velocity " << std::endl; 
-					}
-
 					validateSet(badset);
-					if (mbs.frontVelocityFunctionStrX.empty( )) {
-						const_cast<std::string &>(mbs.frontVelocityFunctionStrX) = mbs.advectVelocityFunctionStrX;
-					}
-					if (mbs.frontVelocityFunctionStrY.empty( )) {
-						const_cast<std::string &>(mbs.frontVelocityFunctionStrY) = mbs.advectVelocityFunctionStrY;
-					}
 		}
 
 		void checkSet(std::stringstream & badset,const double value, const char * const description) {
@@ -191,7 +177,7 @@ namespace moving_boundary {
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs) 
 			:ValidationBase(mbs),
 			isRunning(false),
-			numSpecies(mbs.speciesSpecs.size( )),
+			numSpecies(mbs.species.size( )),
 			world(WorldType::get( )),
 			setup_(mbs),
 			//diffusionConstant(mbs.diffusionConstant),
@@ -229,19 +215,16 @@ namespace moving_boundary {
 			assert(nFunctionPointers == 0); 
 			double maxConstantDiffusion = std::numeric_limits<double>::min( );
 			for (int i = 0; i < numSpecies; i++) {
-				const SpeciesSpecification & ss = mbs.speciesSpecs[i];
-				const biology::Species* sp = physiology.createSpecies(ss.name,ss.initialConcentrationStr, ss.sourceExpressionStr, ss.diffusionExpressionStr);
-				const SExpression & dt = sp->diffusionTerm( );
-				if (dt.isConstant( )) {
-					maxConstantDiffusion = std::max(maxConstantDiffusion, dt.constantValue( ));
+				const biology::Species* sp = physiology.createSpecies(mbs.species[i]);
+				const SExpression* dt = sp->getExpression(moving_boundary::biology::Species::expr_diffusion);
+				if (dt->isConstant( )) {
+					maxConstantDiffusion = std::max(maxConstantDiffusion, dt->constantValue( ));
 				}
 			}
 			physiology.buildSymbolTable();
 			inputValues = new double[physiology.numberSymbols()];
 
 			levelExp = new SExpression(mbs.levelFunctionStr, physiology.symbolTable());
-			advectVelocityExpX = new SExpression(mbs.advectVelocityFunctionStrX,physiology.symbolTable());
-			advectVelocityExpY = new SExpression(mbs.advectVelocityFunctionStrY,physiology.symbolTable());
 			frontVelocityExpX = new SExpression(mbs.frontVelocityFunctionStrX,physiology.symbolTable());
 			frontVelocityExpY = new SExpression(mbs.frontVelocityFunctionStrY,physiology.symbolTable());
 
@@ -375,7 +358,7 @@ namespace moving_boundary {
 			for (int i = 0; i< numSpecies; i++) {
 				inputValues[physiology.symbolIndex_coordinate] = pdp(cX);
 				inputValues[physiology.symbolIndex_coordinate + 1] = pdp(cY);
-				double mu = physiology.species(i)->initialCondition().evaluate(inputValues);
+				double mu = physiology.species(i)->getExpression(moving_boundary::biology::Species::expr_initial)->evaluate(inputValues);
 				e.setConcentration(i,mu);
 			}
 		}
@@ -650,7 +633,7 @@ namespace moving_boundary {
 							// get concentration from from initial condition
 							for (int i = 0; i < numSpecies; ++ i)
 							{
-								inputValues[physiology.symbolIndex_species + i] = physiology.species(i)->initialCondition().evaluate(inputValues);
+								inputValues[physiology.symbolIndex_species + i] = physiology.species(i)->getExpression(moving_boundary::biology::Species::expr_initial)->evaluate(inputValues);
 							}
 						}
 					}
@@ -687,16 +670,32 @@ namespace moving_boundary {
 			return rval; 
 		}
 
-		spatial::SVector<moving_boundary::VelocityType,2> advectionVelocity(double x, double y) const {
-
-			double worldValues[2] = {x,y};
+		void computeAdvection(MeshElementNode& e)
+		{
+			if (e.isOutside())
+			{
+				return;
+			}
+			VCELL_LOG(trace,e.indexInfo( ) <<  " computeAdvection");
+			double worldValues[2] = {e(cX), e(cY)};
 			double syms[2];
 			world.toProblemDomain(worldValues,syms);
 			inputValues[physiology.symbolIndex_t] = currentTime;
 			std::memcpy(inputValues + physiology.symbolIndex_coordinate, syms, DIM * sizeof(double));
-			double vX = advectVelocityExpX->evaluate(inputValues);
-			double vY = advectVelocityExpY->evaluate(inputValues);
-			return world.toWorld<moving_boundary::VelocityType>(spatial::SVector<double,2>(vX,vY)); 
+			const double* conc = e.priorConcentrations();
+			std::memcpy(inputValues + physiology.symbolIndex_species, conc, numSpecies * sizeof(double));
+			for (int s = 0; s < numSpecies; ++ s)
+			{
+				const moving_boundary::biology::Species* species = physiology.species(s);
+				if (species->isAdvecting())
+				{
+					double vX = physiology.species(s)->getExpression(moving_boundary::biology::Species::expr_advection_x)->evaluate(inputValues);
+					double vY = physiology.species(s)->getExpression(moving_boundary::biology::Species::expr_advection_y)->evaluate(inputValues);
+					CoordVect cv(vX, vY);
+					CoordVect v = world.toWorld(cv);
+					e.setAdvection(s, v);
+				}
+			}
 		}
 
 		virtual int velocity(Frontier::Front* front, Frontier::POINT* fpoint, HYPER_SURF_ELEMENT* hse, HYPER_SURF* hs, double* out) const {
@@ -909,23 +908,6 @@ namespace moving_boundary {
 				maxSquaredVel = std::max(maxSquaredVel,velVector.magnitudeSquared( ));
 			}
 			moving_boundary::VelocityType maxSquaredVel;
-		};
-
-		/**
-		* Functor
-		* apply velocity, record max
-		*/
-		struct ApplyVelocity : public FunctorBase {
-			ApplyVelocity (Outer &o)
-				:FunctorBase(o),
-				maxVel(0){}
-			void operator( )(MeshElementNode & e) {
-				VCELL_LOG(trace,e.indexInfo( ) <<  " set velocity");
-				spatial::SVector<moving_boundary::VelocityType,2> v = this->outer.advectionVelocity(e(cX),e(cY));
-				e.setVelocity(v);
-				maxVel = std::max(maxVel, std::max(v(cX),v(cY)));
-			}
-			moving_boundary::VelocityType maxVel;
 		};
 
 		/**
@@ -1168,8 +1150,11 @@ namespace moving_boundary {
 					const double endOfStepTime = nowAndStep.first;
 					double timeIncr = nowAndStep.second;
 
-					ApplyVelocity mv(*this);
-					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),mv);
+					for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter)
+					{
+						MeshElementNode &e = *iter;
+						computeAdvection(e);
+					}
 
 					vcFront->propagateTo(endOfStepTime); 
 					VCELL_LOG_ALWAYS("t=" << currentTime << ", t_next=" << endOfStepTime << ", dt=" << timeIncr
@@ -1339,8 +1324,8 @@ namespace moving_boundary {
 			if (zeroSourceTerms.value == boost::logic::tribool::indeterminate_value) {
 				zeroSourceTerms = true; //assume true, test for falseness
 				for (auto iter = physiology.beginSpecies( ); iter != physiology.endSpecies( ); ++ iter) {
-					const SExpression& sourceTerm = (*iter)->sourceTerm( );
-					if (!sourceTerm.isConstant( ) || sourceTerm.constantValue( ) != 0) {
+					const SExpression* sourceTerm = (*iter)->getExpression(moving_boundary::biology::Species::expr_source);
+					if (!sourceTerm->isConstant( ) || sourceTerm->constantValue( ) != 0) {
 						zeroSourceTerms = false; 
 						break;
 					}
@@ -1449,7 +1434,7 @@ namespace moving_boundary {
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs, std::istream &is)
 			:ValidationBase(mbs),
 			isRunning(false),
-			numSpecies(mbs.speciesSpecs.size( )),
+			numSpecies(mbs.species.size( )),
 			world(WorldType::get( )),
 			setup_(mbs),
 			//diffusionConstant(mbs.diffusionConstant),
@@ -1548,8 +1533,6 @@ namespace moving_boundary {
 		* level expression, must be created before front
 		*/
 		mutable SExpression* levelExp; //Expression doesn't currently support "const"
-		mutable SExpression* advectVelocityExpX;
-		mutable SExpression* advectVelocityExpY;
 		mutable SExpression* frontVelocityExpX;
 		mutable SExpression* frontVelocityExpY;
 		mutable double* inputValues;

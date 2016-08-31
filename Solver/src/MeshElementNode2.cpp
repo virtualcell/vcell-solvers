@@ -240,7 +240,7 @@ MeshElementNode::MeshElementNode(const Environment &env_,std::istream &is)
 	}
 	voronoiVolume = Volume2DClass(is);
 	vcell_persist::binaryRead(is,nOutside);
-	velocity = spatial::SVector<moving_boundary::VelocityType,2>(is);
+	//velocity = spatial::SVector<moving_boundary::VelocityType,2>(is);
 }
 namespace {
 	struct NeighborWriter {
@@ -279,7 +279,7 @@ void MeshElementNode::persist(std::ostream &os) {
 	}
 	voronoiVolume.persist(os);
 	vcell_persist::binaryWrite(os,nOutside);
-	velocity.persist(os);
+	//velocity.persist(os);
 }
 
 std::ostream & moving_boundary::operator<<(std::ostream &os ,moving_boundary::MeshElementStateful::State state) {

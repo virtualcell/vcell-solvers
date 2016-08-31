@@ -9,44 +9,40 @@ namespace moving_boundary {
 		struct Physiology;
 
 		struct Species {
-			enum expr
+			enum ExprIndex
 			{
 				expr_initial=0,
 				expr_source,
 				expr_diffusion,
+				expr_advection_x,
+				expr_advection_y,
 				expr_size,
 			};
 
-			Species(const string & name, const string& initial, const string & source, const string &diffusion);
+			Species(const string & name);
 			~Species();
 
 			const string & name( ) const {
 				return name_;
 			}
 
-			/**
-			* return expression
-			*/
-			const SExpression & sourceTerm( ) const {
-				return expressions[expr_source];
+			void setExpression(ExprIndex exprIndex, const string& expr);
+			const SExpression* getExpression(ExprIndex exprIndex ) const
+			{
+				return expressions[exprIndex];
 			}
 
-			/**
-			* return expression
-			*/
-			const SExpression & diffusionTerm( ) const {
-				return expressions[expr_diffusion];
-			}
-
-			const SExpression& initialCondition() const {
-				return expressions[expr_initial];
+			bool isAdvecting() const
+			{
+				return bAdvecting;
 			}
 
 		private:
 			friend Physiology;
+			bool bAdvecting;
 			void bindExpressions(const SimpleSymbolTable &symTable);
 			string name_;
-			SExpression* expressions;
+			SExpression** expressions;
 		};
 	}
 

@@ -147,6 +147,16 @@ namespace moving_boundary {
 		}
 
 		/**
+		* convert from problem domain coordinates to World
+		* (vector conversion does not user zero offset)
+		*/
+		CoordVect toWorld(CoordVect& cv) const
+		{
+			CoordVect pv = cv * scale;
+			return pv;
+		}
+
+		/**
 		* convert from these coordinates to other world coordinates
 		*/
 		template <typename OTHER_TYPE>

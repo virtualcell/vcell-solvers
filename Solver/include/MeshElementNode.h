@@ -4,6 +4,7 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
+#include <cstring>
 #include <unordered_set>
 #include <queue>
 #include <MovingBoundaryCollections.h>
@@ -57,15 +58,10 @@ namespace moving_boundary {
 			:element(nullptr),
 			distanceTo( ),
 			edgeLength( ),
-			halfAdvectionFlux( )
+			halfAdvectionFlux(nullptr)
 			//daAmount(unset)
 		{}
-		MeshElementNeighbor(MeshElementNode *e)
-			:element(e),
-			distanceTo( ),
-			edgeLength( ),
-			halfAdvectionFlux( )
-		{}
+		MeshElementNeighbor(MeshElementNode *e);
 		MeshElementNeighbor(std::istream & is,  const MeshElementNode & client) ;
 
 		/**
@@ -83,7 +79,7 @@ namespace moving_boundary {
 		/**
 		* non-persistent; dot product of average velocity and normal vector times edgeLength
 		*/
-		BioQuanType halfAdvectionFlux; 
+		BioQuanType* halfAdvectionFlux; 
 
 		void persist(std::ostream &os, const MeshElementNode &client) const; 
 
@@ -283,7 +279,6 @@ namespace moving_boundary {
 			cornerNeighbors(),
 			voronoiVolume( ),
 			nOutside(0),
-			velocity(0,0),
 			lastVolume(0)
 		{
 			std::fill(cornerNeighbors.begin( ),cornerNeighbors.end( ),nullptr);
@@ -482,6 +477,11 @@ namespace moving_boundary {
 			MeshElementNeighbor & iNbhr = interiorNeighbors[slot]; 
 			assert(iNbhr.element == nullptr); 
 			iNbhr.element = &other; 
+			if (iNbhr.halfAdvectionFlux == nullptr)
+			{
+				iNbhr.halfAdvectionFlux = new BioQuanType[other.numSpecies()];
+			}
+			std::memset(iNbhr.halfAdvectionFlux, 0, iNbhr.element->numSpecies() * sizeof (BioQuanType));
 			iNbhr.distanceTo = dist;
 			iNbhr.edgeLength = length;
 		}
@@ -611,12 +611,12 @@ namespace moving_boundary {
 		const Volume2DClass & getControlVolume( ) const;
 
 
-		const spatial::SVector<moving_boundary::VelocityType,2> & getVelocity( ) const {
-			return velocity;
+		const CoordVect& getAdvection(int sIndex) const {
+			return advectionValue[sIndex];
 		}
 
-		void setVelocity(const spatial::SVector<moving_boundary::VelocityType,2> & rhs) {
-			velocity = rhs;
+		void setAdvection(int sIndex, CoordVect& rhs) {
+			advectionValue[sIndex] = rhs;
 		}
 
 		/**
@@ -874,7 +874,7 @@ namespace moving_boundary {
 		vcell_util::vcarray<OurType *,4> cornerNeighbors; 
 		Volume2DClass voronoiVolume;
 		int nOutside;
-		spatial::SVector<moving_boundary::VelocityType,2> velocity; 
+		std::vector<CoordVect> advectionValue;
 		/**
 		* cached last stable volume
 		*/

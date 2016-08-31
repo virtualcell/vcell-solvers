@@ -64,7 +64,7 @@ namespace moving_boundary {
 			/**
 			* @throws std::domain_error if locked
 			*/
-			const Species* createSpecies(const string & name, const string& initial, const string & sourceExpression, const string & diffusionExpression);
+			const Species* createSpecies(Species* s);
 
 			/**
 			* build list of names for symbol table

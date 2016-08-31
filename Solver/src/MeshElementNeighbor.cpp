@@ -1,5 +1,16 @@
 #include <MeshElementNode.h>
+#include <cstring>
 using namespace moving_boundary;
+
+MeshElementNeighbor::MeshElementNeighbor(MeshElementNode *e)
+			:element(e),
+			distanceTo( ),
+			edgeLength( )
+{
+	halfAdvectionFlux = new BioQuanType[e->numSpecies()];
+	std::memset(halfAdvectionFlux, 0, e->numSpecies() * sizeof(BioQuanType));
+}
+
 MeshElementNeighbor::MeshElementNeighbor(std::istream & is,  const MeshElementNode & client)  {
 	vcell_persist::Token::check<MeshElementNeighbor>(is);
 	spatial::ElementOffset<2> eo(is);

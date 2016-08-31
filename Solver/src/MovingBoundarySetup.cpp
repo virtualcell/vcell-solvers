@@ -5,28 +5,9 @@
 #include <Logger.h>
 
 using namespace moving_boundary;
-//SpeciesSpecification
-void SpeciesSpecification::registerType( ) {
-	vcell_persist::Registrar::reg<SpeciesSpecification>("SpeciesSpecification");
-}
-
-void SpeciesSpecification::persist(std::ostream &os) const {
-	vcell_persist::Token::insert<SpeciesSpecification>(os);
-	vcell_persist::StdString<>::save(os,name);
-	vcell_persist::StdString<>::save(os,initialConcentrationStr);
-	vcell_persist::StdString<>::save(os,sourceExpressionStr);
-}
-
-SpeciesSpecification::SpeciesSpecification(std::istream &is) {
-	vcell_persist::Token::check<SpeciesSpecification>(is);
-	vcell_persist::StdString<>::restore(is,name);
-	vcell_persist::StdString<>::restore(is,initialConcentrationStr);
-	vcell_persist::StdString<>::restore(is,sourceExpressionStr);
-}
 
 //MovingBoundarySetup
 void MovingBoundarySetup::registerType( ) {
-	SpeciesSpecification::registerType( );
 	vcell_persist::Registrar::reg<MovingBoundarySetup>("Moving Boundary Setup");
 }
 
@@ -39,12 +20,9 @@ MovingBoundarySetup::MovingBoundarySetup(std::istream &is)
 	vcell_persist::binaryRead(is,solverTimeStep);
 	vcell_persist::binaryRead(is,hardTime);
 	vcell_persist::StdString<>::restore(is,levelFunctionStr);
-	vcell_persist::StdString<>::restore(is,advectVelocityFunctionStrX);
-	vcell_persist::StdString<>::restore(is,advectVelocityFunctionStrY);
 	vcell_persist::StdString<>::restore(is,frontVelocityFunctionStrX);
 	vcell_persist::StdString<>::restore(is,frontVelocityFunctionStrY);
 	vcell_persist::binaryRead(is,diffusionConstant);
-	vcell_persist::restore(is,speciesSpecs);
 	bool hasProvider;
 	vcell_persist::binaryRead(is,hasProvider);
 	if (hasProvider) {
@@ -52,7 +30,7 @@ MovingBoundarySetup::MovingBoundarySetup(std::istream &is)
 	}
 }
 MovingBoundarySetup::~MovingBoundarySetup() {
-	speciesSpecs.resize(0);
+	species.resize(0);
 }
 
 
@@ -64,12 +42,9 @@ void MovingBoundarySetup::persist(std::ostream &os) const {
 	vcell_persist::binaryWrite(os,solverTimeStep);
 	vcell_persist::binaryWrite(os,hardTime);
 	vcell_persist::StdString<>::save(os,levelFunctionStr);
-	vcell_persist::StdString<>::save(os,advectVelocityFunctionStrX);
-	vcell_persist::StdString<>::save(os,advectVelocityFunctionStrY);
 	vcell_persist::StdString<>::save(os,frontVelocityFunctionStrX);
 	vcell_persist::StdString<>::save(os,frontVelocityFunctionStrY);
 	vcell_persist::binaryWrite(os,diffusionConstant);
-	vcell_persist::save(os,speciesSpecs);
 	const bool hasProvider = ( alternateFrontProvider != nullptr );
 	vcell_persist::binaryWrite(os,hasProvider);
 	if (hasProvider) {
@@ -152,10 +127,6 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 		mbSetup.outputTimeStep = outputPair.second;
 	}
 
-	mbSetup.advectVelocityFunctionStrX = convertChildElement<std::string>(prob,"advectVelocityFunctionX");
-	mbSetup.advectVelocityFunctionStrY = convertChildElement<std::string>(prob,"advectVelocityFunctionY");
-	//mbSetup.concentrationFunctionStr = convertChildElement<std::string>(prob,"concentrationFunction");
-
 	std::pair<bool,std::string> tsPair = vcell_xml::queryElement<std::string>(prob,"timeStep");
 	if (tsPair.first) {
 		const std::string & legacyTS = tsPair.second; 
@@ -173,10 +144,8 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 	mbSetup.hardTime = convertTrueOrFalse(vcell_xml::convertChildElementWithDefault<const char *>(prob,"hardTime","false"));
 
 	using vcell_xml::convertChildElementWithDefault;
-	mbSetup.frontVelocityFunctionStrX = 
-		convertChildElementWithDefault<std::string>(prob,"frontVelocityFunctionX", mbSetup.advectVelocityFunctionStrX);
-	mbSetup.frontVelocityFunctionStrY = 
-		convertChildElementWithDefault<std::string>(prob,"frontVelocityFunctionY", mbSetup.advectVelocityFunctionStrY);
+	mbSetup.frontVelocityFunctionStrX = convertChildElement<std::string>(prob,"frontVelocityFunctionX");
+	mbSetup.frontVelocityFunctionStrY = convertChildElement<std::string>(prob,"frontVelocityFunctionY");
 
 	std::pair<bool,std::string> lvq = vcell_xml::queryElement<std::string>(prob,"levelFunction");
 	if (lvq.first) {
@@ -213,9 +182,23 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 		if (!dq.first && !defaultDiffQ.first) {
 			VCELL_EXCEPTION(domain_error, "No diffusion specified for " << name); 
 		}
-		const std::string & diffusion  = dq.first ? dq.second : defaultDiffQ.second; 
-		
-		mbSetup.speciesSpecs.push_back(SpeciesSpecification(name,init,source, diffusion));
+		const std::string & diffusion  = dq.first ? dq.second : defaultDiffQ.second;
+		moving_boundary::biology::Species* s = new moving_boundary::biology::Species(name);
+		s->setExpression(moving_boundary::biology::Species::expr_initial, init);
+		s->setExpression(moving_boundary::biology::Species::expr_source, source);
+		s->setExpression(moving_boundary::biology::Species::expr_diffusion, diffusion);
+
+		std::pair<bool,std::string> axq = vcell_xml::queryElement<std::string>(*spE,"advectVelocityFunctionX");
+		if (axq.first)
+		{
+			s->setExpression(moving_boundary::biology::Species::expr_advection_x, axq.second);
+		}
+		std::pair<bool,std::string> ayq = vcell_xml::queryElement<std::string>(*spE,"advectVelocityFunctionY");
+		if (ayq.first)
+		{
+			s->setExpression(moving_boundary::biology::Species::expr_advection_y, ayq.second);
+		}
+		mbSetup.species.push_back(s);
 
 		spE = spE->NextSiblingElement("species");
 	}

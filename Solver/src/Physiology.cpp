@@ -43,11 +43,11 @@ void Physiology::buildSymbolTable() {
 	std::for_each(species_.begin( ),species_.end( ), std::bind(&Physiology::bindExpressions, this, _1) );
 }
 
-const Species* Physiology::createSpecies(const string & name, const string& initial, const string & source,const string & diffusion) {
+const Species* Physiology::createSpecies(Species* s) {
 	try {
-		species_.push_back(new Species(name, initial, source,diffusion));
+		species_.push_back(s);
 		return species_.back( );
 	} catch (std::exception &de) {
-		VCELL_EXCEPTION(domain_error, "error creating " << name << " with initial " << initial << ", source " << source << " and diffusion " << diffusion << ": " << de.what( ));
+		VCELL_EXCEPTION(domain_error, "error creating Species " << s->name() << ": " << de.what( ));
 	}
 }
