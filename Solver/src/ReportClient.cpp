@@ -334,7 +334,7 @@ namespace {
 			totalStuff(0),
 			oldStuff(0),
 			meshDef(mbpp.meshDef( )),
-			numberSpecies(mbpp.physiology( ).numberSpecies( )),
+			numVolumeVariables(mbpp.physiology( ).numVolumeVariables( )),
 			eRecords(),
 			genTimes(),
 			moveTimes(),
@@ -471,12 +471,12 @@ namespace {
 				speciesDim[timeArrayIndex] = worldDim[timeArrayIndex];
 				speciesDim[xArrayIndex] = worldDim[xArrayIndex];
 				speciesDim[yArrayIndex] = worldDim[yArrayIndex];
-				speciesDim[speciesIndex] = numberSpecies;
+				speciesDim[speciesIndex] = numVolumeVariables;
 				hsize_t     maxsdim[4] = {H5S_UNLIMITED, speciesDim[1],speciesDim[2],speciesDim[3]};
 				H5::DataSpace dataspace(4,speciesDim,maxsdim);
 
 				H5::DSetCreatPropList  prop;
-				hsize_t     chunkDim[4]  = {timeChunkSize,spatialChunkSize,spatialChunkSize,numberSpecies};
+				hsize_t     chunkDim[4]  = {timeChunkSize,spatialChunkSize,spatialChunkSize,numVolumeVariables};
 				prop.setChunk(4, chunkDim);
 				H5::CompType dataType = SpeciesData::getType( );
 
@@ -649,11 +649,11 @@ namespace {
 				spatial::TPoint<size_t,2> key(e.indexOf(0),e.indexOf(1));
 				if (eRecords.find(key) == eRecords.end( )) {
 					eRecords[key] = HElementRecord( );
-					eRecords[key].resize(numberSpecies);
+					eRecords[key].resize(numVolumeVariables);
 				}
 				HElementRecord & er = eRecords[key];
 				er.volume = e.volumePD( );
-				for (int i = 0; i < numberSpecies; i++) {
+				for (int i = 0; i < numVolumeVariables; i++) {
 					er.mass[i] = e.mass(i);
 					er.concentration[i] = e.concentration(i);
 				}
@@ -721,7 +721,7 @@ namespace {
 						const size_t iSpan = maxI - minI + 1;
 						const size_t jSpan = maxJ - minJ + 1;
 						elementStorage.reindex(iSpan,jSpan).reset( );
-						speciesStorage.reindex(iSpan,jSpan,numberSpecies).reset( );
+						speciesStorage.reindex(iSpan,jSpan,numVolumeVariables).reset( );
 
 						size_t timeIndex = genTimes.size( ) - 1;
 
@@ -732,7 +732,7 @@ namespace {
 								hsize_t i = index(spatial::cX);
 								hsize_t j = index(spatial::cY);
 								elementStorage[i - minI][j - minJ].set(er);
-								for (int s = 0; s < numberSpecies; ++s) {
+								for (int s = 0; s < numVolumeVariables; ++s) {
 									speciesStorage[i - minI][j - minJ][s].set(er,s);
 								}
 							}
@@ -759,7 +759,7 @@ namespace {
 						}
 
 						{ //next the 4D species data
-							hsize_t  bufferDim[4] = {singleTimeSlice,iSpan, jSpan,numberSpecies};
+							hsize_t  bufferDim[4] = {singleTimeSlice,iSpan, jSpan,numVolumeVariables};
 							H5::DataSpace memoryspace(4,bufferDim);
 
 							hsize_t offset[4] = {timeIndex ,minI,minJ,0};
@@ -857,7 +857,7 @@ namespace {
 		double totalStuff;
 		double oldStuff;
 		const spatial::MeshDef<moving_boundary::CoordinateType,2> meshDef;
-		const size_t numberSpecies;
+		const size_t numVolumeVariables;
 		typedef std::map<spatial::TPoint<size_t,2>, HElementRecord> RecordMap;
 		RecordMap eRecords;
 		std::vector<double> genTimes;

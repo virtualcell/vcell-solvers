@@ -5,7 +5,7 @@
 #include <MBConstants.h>
 
 using moving_boundary::biology::Physiology;
-using moving_boundary::biology::Species;
+using moving_boundary::biology::VolumeVariable;
 using namespace std::placeholders; 
 
 const std::vector<std::string> Physiology::fixedTimeSpatialSymbols {"t", "x", "y", "z", "normalX", "normalY", "normalZ"};
@@ -14,8 +14,8 @@ namespace {
 	/**
 	* species to name functor
 	*/
-	struct SpeciesName {
-		const string & operator( )(const Species* in) {
+	struct VariableName {
+		const string & operator( )(const VolumeVariable* in) {
 			return in->name( );
 		}
 	};
@@ -26,11 +26,11 @@ namespace {
 * includes all species names plus those passed in
 */
 void Physiology::buildSymbolTable() {
-	std::vector<string> names(species_.size( ) + fixedTimeSpatialSymbols.size());
-	std::transform(species_.begin( ), species_.end( ),names.begin( ), SpeciesName( ));
-	std::copy(fixedTimeSpatialSymbols.begin(), fixedTimeSpatialSymbols.end(), names.begin( ) + species_.size( ));
+	std::vector<string> names(volumeVariables_.size( ) + fixedTimeSpatialSymbols.size());
+	std::transform(volumeVariables_.begin( ), volumeVariables_.end( ),names.begin( ), VariableName( ));
+	std::copy(fixedTimeSpatialSymbols.begin(), fixedTimeSpatialSymbols.end(), names.begin( ) + volumeVariables_.size( ));
 	symbolIndex_species = 0;
-	symbolIndex_t = numberSpecies();
+	symbolIndex_t = numVolumeVariables();
 	symbolIndex_coordinate = symbolIndex_t + 1;
 	symbolIndex_normal = symbolIndex_coordinate + MAX_DIM;
 
@@ -40,13 +40,13 @@ void Physiology::buildSymbolTable() {
 	//values.resize(n);
 
 	using std::placeholders::_1;
-	std::for_each(species_.begin( ),species_.end( ), std::bind(&Physiology::bindExpressions, this, _1) );
+	std::for_each(volumeVariables_.begin( ),volumeVariables_.end( ), std::bind(&Physiology::bindExpressions, this, _1) );
 }
 
-const Species* Physiology::createSpecies(Species* s) {
+const VolumeVariable* Physiology::createVolumeVariable(VolumeVariable* s) {
 	try {
-		species_.push_back(s);
-		return species_.back( );
+		volumeVariables_.push_back(s);
+		return volumeVariables_.back( );
 	} catch (std::exception &de) {
 		VCELL_EXCEPTION(domain_error, "error creating Species " << s->name() << ": " << de.what( ));
 	}

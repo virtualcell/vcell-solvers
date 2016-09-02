@@ -30,7 +30,7 @@ MovingBoundarySetup::MovingBoundarySetup(std::istream &is)
 	}
 }
 MovingBoundarySetup::~MovingBoundarySetup() {
-	species.resize(0);
+	volumeVariables.resize(0);
 }
 
 
@@ -183,22 +183,22 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 			VCELL_EXCEPTION(domain_error, "No diffusion specified for " << name); 
 		}
 		const std::string & diffusion  = dq.first ? dq.second : defaultDiffQ.second;
-		moving_boundary::biology::Species* s = new moving_boundary::biology::Species(name);
-		s->setExpression(moving_boundary::biology::Species::expr_initial, init);
-		s->setExpression(moving_boundary::biology::Species::expr_source, source);
-		s->setExpression(moving_boundary::biology::Species::expr_diffusion, diffusion);
+		moving_boundary::biology::VolumeVariable* s = new moving_boundary::biology::VolumeVariable(name);
+		s->setExpression(moving_boundary::biology::VolumeVariable::expr_initial, init);
+		s->setExpression(moving_boundary::biology::VolumeVariable::expr_source, source);
+		s->setExpression(moving_boundary::biology::VolumeVariable::expr_diffusion, diffusion);
 
 		std::pair<bool,std::string> axq = vcell_xml::queryElement<std::string>(*spE,"advectVelocityFunctionX");
 		if (axq.first)
 		{
-			s->setExpression(moving_boundary::biology::Species::expr_advection_x, axq.second);
+			s->setExpression(moving_boundary::biology::VolumeVariable::expr_advection_x, axq.second);
 		}
 		std::pair<bool,std::string> ayq = vcell_xml::queryElement<std::string>(*spE,"advectVelocityFunctionY");
 		if (ayq.first)
 		{
-			s->setExpression(moving_boundary::biology::Species::expr_advection_y, ayq.second);
+			s->setExpression(moving_boundary::biology::VolumeVariable::expr_advection_y, ayq.second);
 		}
-		mbSetup.species.push_back(s);
+		mbSetup.volumeVariables.push_back(s);
 
 		spE = spE->NextSiblingElement("species");
 	}

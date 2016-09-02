@@ -1,15 +1,17 @@
-#ifndef Species_h
-#define Species_h
+#ifndef VolumeVariable_h
+#define VolumeVariable_h
 #include <string>
 #include <SExpression.h>
 using std::string;
 
-namespace moving_boundary {
-	namespace biology {
-		struct Physiology;
+namespace moving_boundary
+{
+  namespace biology
+	{
+  	struct Physiology;
 
-		struct Species {
-			enum ExprIndex
+		struct VolumeVariable {
+			enum ExpressionIndex
 			{
 				expr_initial=0,
 				expr_source,
@@ -19,15 +21,15 @@ namespace moving_boundary {
 				expr_size,
 			};
 
-			Species(const string & name);
-			~Species();
+			VolumeVariable(const string & name);
+			~VolumeVariable();
 
 			const string & name( ) const {
 				return name_;
 			}
 
-			void setExpression(ExprIndex exprIndex, const string& expr);
-			const SExpression* getExpression(ExprIndex exprIndex ) const
+			void setExpression(ExpressionIndex exprIndex, const string& expr);
+			const SExpression* getExpression(ExpressionIndex exprIndex ) const
 			{
 				return expressions[exprIndex];
 			}
@@ -45,7 +47,6 @@ namespace moving_boundary {
 			SExpression** expressions;
 		};
 	}
-
 }
 
 #endif

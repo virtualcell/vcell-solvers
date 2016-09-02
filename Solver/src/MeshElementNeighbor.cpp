@@ -7,8 +7,8 @@ MeshElementNeighbor::MeshElementNeighbor(MeshElementNode *e)
 			distanceTo( ),
 			edgeLength( )
 {
-	halfAdvectionFlux = new BioQuanType[e->numSpecies()];
-	std::memset(halfAdvectionFlux, 0, e->numSpecies() * sizeof(BioQuanType));
+	halfAdvectionFlux = new BioQuanType[e->numVolumeVariables()];
+	std::memset(halfAdvectionFlux, 0, e->numVolumeVariables() * sizeof(BioQuanType));
 }
 
 MeshElementNeighbor::MeshElementNeighbor(std::istream & is,  const MeshElementNode & client)  {

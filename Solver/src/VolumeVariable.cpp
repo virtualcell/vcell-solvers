@@ -1,8 +1,8 @@
-#include <Species.h>
+#include <VolumeVariable.h>
 #include <cstring>
-using moving_boundary::biology::Species;
+using moving_boundary::biology::VolumeVariable;
 
-Species::Species(const string & name)
+VolumeVariable::VolumeVariable(const string & name)
 				:name_(name),
 				 bAdvecting(false)
 {
@@ -10,7 +10,7 @@ Species::Species(const string & name)
 	std::memset(expressions, 0, expr_size * sizeof(SExpression*));
 }
 
-Species::~Species()
+VolumeVariable::~VolumeVariable()
 {
 	for (int i = 0; i < expr_size; ++ i)
 	{
@@ -19,7 +19,7 @@ Species::~Species()
 	delete[] expressions;
 }
 
-void Species::bindExpressions(const SimpleSymbolTable &symTable) {
+void VolumeVariable::bindExpressions(const SimpleSymbolTable &symTable) {
 	for (int i = 0; i < expr_size; ++ i)
 	{
 		if (expressions[i] != nullptr)
@@ -38,7 +38,7 @@ void Species::bindExpressions(const SimpleSymbolTable &symTable) {
 	}
 }
 
-void Species::setExpression(ExprIndex exprIndex, const string& expr)
+void VolumeVariable::setExpression(ExpressionIndex exprIndex, const string& expr)
 {
 	expressions[exprIndex] = new SExpression(expr);
 }

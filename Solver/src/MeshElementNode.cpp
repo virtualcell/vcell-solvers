@@ -248,9 +248,9 @@ struct MeshElementNode::SetupBoundaryNeighbor : public std::unary_function<OurTy
 		rval.element = nb;
 		if (rval.halfAdvectionFlux == nullptr)
 		{
-			rval.halfAdvectionFlux = new BioQuanType[clientElement.numSpecies()];
+			rval.halfAdvectionFlux = new BioQuanType[clientElement.numVolumeVariables()];
 		}
-		std::memset(rval.halfAdvectionFlux, 0, rval.element->numSpecies() * sizeof (BioQuanType));
+		std::memset(rval.halfAdvectionFlux, 0, rval.element->numVolumeVariables() * sizeof (BioQuanType));
 
 		const moving_boundary::DistanceType existing = nb->distanceToNeighbor(clientElement);
 		if (existing > 0) {
@@ -768,7 +768,7 @@ void MeshElementNode::distributeMassToNeighbors() {
 			if (iVol > 0) {
 				distributed = true;
 				moving_boundary::CoordinateProductType nbVol = nb.volumePD( );
-				for (size_t s = 0; s < numSpecies( ); s++) {
+				for (size_t s = 0; s < numVolumeVariables( ); s++) {
 					moving_boundary::BioQuanType m = iVol * amtMassTransient[s] / volumeValue; 
 					VCELL_COND_LOG(debug, s == 0 , " " << this->ident( ) << " giving " <<nb.ident( ) << " mass " << m 
 						<< " has vol " << nbVol << " existing mass " << nb.amtMassTransient[0] );
@@ -797,7 +797,7 @@ void MeshElementNode::distributeMassToNeighbors() {
 		}
 	}
 	std::fill(amtMass.begin( ),amtMass.end( ),0);
-	std::fill(concValue.begin( ), concValue.begin( ) + numSpecies( ),0);
+	std::fill(concValue.begin( ), concValue.begin( ) + numVolumeVariables( ),0);
 	vol.clear( );
 	setState(outStable);
 
@@ -847,7 +847,7 @@ void MeshElementNode::collectMassFromNeighbors(const FrontType & front) {
 			assert(intersectVolume>=0);
 			if (intersectVolume > 0) {
 				moving_boundary::CoordinateProductType donorVolume = nb.volumePD( );
-				for (size_t s = 0; s < numSpecies( ); s++) {
+				for (size_t s = 0; s < numVolumeVariables( ); s++) {
 					const moving_boundary::BioQuanType mu = nb.amtMass[s] / donorVolume; 
 					VCELL_LOG(verbose,this->ident( ) << ':' << nb.ident( ) << " volume " << nb.volumePD( ) << " conc " << mu); 
 					moving_boundary::BioQuanType m =  mu * intersectVolume; 
@@ -955,7 +955,7 @@ void MeshElementNode::endOfCycle( ) {
 void MeshElementNode::allocateSpecies( ) {
 	assert(concValue == sourceTermValues); //if this is no longer term, allocate sourceTermValues separately
 
-	const size_t i = numSpecies( );
+	const size_t i = numVolumeVariables( );
 	amtMass.resize(i);
 	amtMassTransient.resize(i);
 	diffusionValue.resize( i );
@@ -982,8 +982,8 @@ namespace {
 		SourceTermEvaluator (ValueVector & v)
 			:values(v) {}
 
-		moving_boundary::BioQuanType operator( )(const moving_boundary::biology::Species* sp) {
-			moving_boundary::BioQuanType r = sp->getExpression(moving_boundary::biology::Species::expr_source)->evaluate(values);
+		moving_boundary::BioQuanType operator( )(const moving_boundary::biology::VolumeVariable* sp) {
+			moving_boundary::BioQuanType r = sp->getExpression(moving_boundary::biology::VolumeVariable::expr_source)->evaluate(values);
 			return r;
 		}
 
@@ -1052,12 +1052,11 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 	sourceTermValues[indexToTimeVariable] = time;
 	const biology::Physiology & physio = env.physiology;
 	//const std::vector<const biology::Species> & species = physiology( ).species( );
-	const size_t n = physio.numberSpecies( );
-	assert(n == numSpecies( ));
-	std::vector <moving_boundary::BioQuanType> sourceTermConcentrations(n);
+	const size_t nVolumeVariables = physio.numVolumeVariables( );
+	std::vector <moving_boundary::BioQuanType> sourceTermConcentrations(nVolumeVariables);
 
 	//evaluate source terms
-	std::transform(physio.beginSpecies( ), physio.endSpecies( ), sourceTermConcentrations.begin( ), SourceTermEvaluator(sourceTermValues) );
+	std::transform(physio.beginVolumeVariable(), physio.endVolumeVariable(), sourceTermConcentrations.begin( ), SourceTermEvaluator(sourceTermValues) );
 
 	//convert concentrations to mass, add to existing mass
 	assert(sourceTermValues.size( ) >= amtMass.size( ));
@@ -1084,10 +1083,10 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 		//DaCache::Map & diffuseAdvectMap = ourCache.diffuseAdvectMap; 
 		std::copy(amtMass.begin( ), amtMass.end( ), amtMassTransient.begin( ));
 
-		const size_t nSpecies = numSpecies( );
+		const size_t nVolumeVariables = numVolumeVariables( );
 		//pre-compute all diffusion constants
-		for (size_t s = 0; s < nSpecies;s++) {
-			const BioQuanType diffusionConstant = env.physiology.species(s)->getExpression(moving_boundary::biology::Species::expr_diffusion)->evaluate(sourceTermValues);
+		for (size_t s = 0; s < nVolumeVariables;s++) {
+			const BioQuanType diffusionConstant = env.physiology.getVolumeVariable(s)->getExpression(moving_boundary::biology::VolumeVariable::expr_diffusion)->evaluate(sourceTermValues);
 			diffusionValue[s] = diffusionConstant;
 		}
 
@@ -1122,9 +1121,9 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 				throw  ReverseLengthException(oss.str( ),*this,nb); 
 			}
 
-			for (size_t s = 0; s < nSpecies; ++ s)
+			for (size_t s = 0; s < nVolumeVariables; ++ s)
 			{
-				if (physio.species(s)->isAdvecting())
+				if (physio.getVolumeVariable(s)->isAdvecting())
 				{
 					CoordVect av = (getAdvection(s) +  nb.getAdvection(s)) / 2;
 					spatial::SVector<moving_boundary::VelocityType,2> averageVelocity(av[cX], av[cY]);
@@ -1165,7 +1164,6 @@ void MeshElementNode::diffuseAdvect(SOLVER &solver, unsigned int species) {
 			int x = 4;
 		}
 
-		const size_t nSpecies = numSpecies( );
 		BioQuanType iCoefficient = 0; //this node's coefficent 
 		CoordinateProductType ourVolume = volumePD( );
 

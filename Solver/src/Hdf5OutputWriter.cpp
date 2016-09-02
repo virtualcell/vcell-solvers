@@ -50,8 +50,8 @@ void Hdf5OutputWriter::init()
 	remove(logFileName.c_str());
 
 	numElements = theProblem.meshDef().numCells();
-	numSpecies = theProblem.physiology().numberSpecies();
-	solutionSize =  numElements * numSpecies;
+	numVolumeVariables = theProblem.physiology().numVolumeVariables();
+	solutionSize =  numElements * numVolumeVariables;
 	solution = new double[solutionSize];
 
 	initMeshGroup();
@@ -87,7 +87,7 @@ void Hdf5OutputWriter::initSolutionGroup()
 	attribute.write(PredType::NATIVE_INT, &numElements);
 
 	// add variables as attributes
-	for (int s = 0; s < theProblem.physiology().numberSpecies(); ++ s)
+	for (int s = 0; s < theProblem.physiology().numVolumeVariables(); ++ s)
 	{
 		char attrName[64];
 		char attrValue[64];
@@ -95,7 +95,7 @@ void Hdf5OutputWriter::initSolutionGroup()
 		//write name and unit
 		sprintf(attrName, "Variable_%d", s);
 		Attribute attribute = solutionGroup.createAttribute(attrName, attributeStrType, attributeDataSpace);
-		sprintf(attrValue, "%s", theProblem.physiology().species(s)->name().c_str());
+		sprintf(attrValue, "%s", theProblem.physiology().getVolumeVariable(s)->name().c_str());
 		attribute.write(attributeStrType, attrValue);
 	}
 }
@@ -188,7 +188,7 @@ void Hdf5OutputWriter::writeSolution()
 		const double* concValues = e.priorConcentrations();
 		if (concValues != nullptr)
 		{
-			for (int i = 0; i < numSpecies; ++ i)
+			for (int i = 0; i < numVolumeVariables; ++ i)
 			{
 				solution[i * numElements + elementIndex] = concValues[i];
 			}

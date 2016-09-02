@@ -107,7 +107,7 @@ private:
 	double* solution;
 	bool bShouldReport;
 	unsigned int solutionSize;
-	unsigned int numSpecies;
+	unsigned int numVolumeVariables;
 	unsigned int numElements;
 	std::string xml;
 	std::string h5FileName;

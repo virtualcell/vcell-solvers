@@ -177,7 +177,7 @@ namespace moving_boundary {
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs) 
 			:ValidationBase(mbs),
 			isRunning(false),
-			numSpecies(mbs.species.size( )),
+			numVolumeVariables(mbs.volumeVariables.size( )),
 			world(WorldType::get( )),
 			setup_(mbs),
 			//diffusionConstant(mbs.diffusionConstant),
@@ -192,7 +192,7 @@ namespace moving_boundary {
 			zeroSourceTerms(boost::logic::indeterminate),
 
 			currentFront( ),
-			meshDefinition(createMeshDef(world, mbs, numSpecies)),
+			meshDefinition(createMeshDef(world, mbs, numVolumeVariables)),
 			physiology( ),
 			meNodeEnvironment(meshDefinition,physiology),
 			interiorVolume(calculateInteriorVolume(world, meshDefinition)),
@@ -214,9 +214,9 @@ namespace moving_boundary {
 
 			assert(nFunctionPointers == 0); 
 			double maxConstantDiffusion = std::numeric_limits<double>::min( );
-			for (int i = 0; i < numSpecies; i++) {
-				const biology::Species* sp = physiology.createSpecies(mbs.species[i]);
-				const SExpression* dt = sp->getExpression(moving_boundary::biology::Species::expr_diffusion);
+			for (int i = 0; i < numVolumeVariables; i++) {
+				const biology::VolumeVariable* sp = physiology.createVolumeVariable(mbs.volumeVariables[i]);
+				const SExpression* dt = sp->getExpression(moving_boundary::biology::VolumeVariable::expr_diffusion);
 				if (dt->isConstant( )) {
 					maxConstantDiffusion = std::max(maxConstantDiffusion, dt->constantValue( ));
 				}
@@ -355,10 +355,10 @@ namespace moving_boundary {
 			e.allocateSpecies();
 			ProblemDomainPoint pdp = world.toProblemDomain(e);
 			inputValues[physiology.symbolIndex_t] = 0;
-			for (int i = 0; i< numSpecies; i++) {
+			for (int i = 0; i< numVolumeVariables; i++) {
 				inputValues[physiology.symbolIndex_coordinate] = pdp(cX);
 				inputValues[physiology.symbolIndex_coordinate + 1] = pdp(cY);
-				double mu = physiology.species(i)->getExpression(moving_boundary::biology::Species::expr_initial)->evaluate(inputValues);
+				double mu = physiology.getVolumeVariable(i)->getExpression(moving_boundary::biology::VolumeVariable::expr_initial)->evaluate(inputValues);
 				e.setConcentration(i,mu);
 			}
 		}
@@ -368,7 +368,7 @@ namespace moving_boundary {
 		*/
 		void setInitialValues( ) {
 			using std::vector;
-			assert(physiology.numberSpecies( ) == numSpecies);
+			assert(physiology.numVolumeVariables( ) == numVolumeVariables);
 
 			for (MeshElementNode & e: primaryMesh) {
 				e.setInteriorVolume(interiorVolume);
@@ -437,7 +437,7 @@ namespace moving_boundary {
 		/**
 		* constructor support; mesh initialization
 		*/
-		static MBMeshDef createMeshDef(const WorldType & world, const moving_boundary::MovingBoundarySetup &mbs, int numSpecies)  {
+		static MBMeshDef createMeshDef(const WorldType & world, const moving_boundary::MovingBoundarySetup &mbs, int numVolumeVariables)  {
 
 
 			typedef spatial::TGeoLimit<moving_boundary::CoordinateType> LimitType;
@@ -447,7 +447,7 @@ namespace moving_boundary {
 			std::array<moving_boundary::CoordinateType,2> c = arrayInit<moving_boundary::CoordinateType>(worldLimits[0].span( ),worldLimits[1].span( ) );
 			const Universe<2> & universe = world.universe( );
 			std::array<size_t,2> p = { universe.numNodes( )[0], universe.numNodes( )[1] };
-			return MBMeshDef(origin,c,p, numSpecies);
+			return MBMeshDef(origin,c,p, numVolumeVariables);
 		}
 
 		/**
@@ -626,14 +626,14 @@ namespace moving_boundary {
 							std::vector<MeshElementNode*> stencil;
 							findExtrapolationStencil(thisPoint, 1, stencil);
 							const double* conc = stencil[0]->priorConcentrations();
-							std::memcpy(inputValues + physiology.symbolIndex_species, conc, numSpecies * sizeof(double));
+							std::memcpy(inputValues + physiology.symbolIndex_species, conc, numVolumeVariables * sizeof(double));
 						}
 						else
 						{
 							// get concentration from from initial condition
-							for (int i = 0; i < numSpecies; ++ i)
+							for (int i = 0; i < numVolumeVariables; ++ i)
 							{
-								inputValues[physiology.symbolIndex_species + i] = physiology.species(i)->getExpression(moving_boundary::biology::Species::expr_initial)->evaluate(inputValues);
+								inputValues[physiology.symbolIndex_species + i] = physiology.getVolumeVariable(i)->getExpression(moving_boundary::biology::VolumeVariable::expr_initial)->evaluate(inputValues);
 							}
 						}
 					}
@@ -683,14 +683,14 @@ namespace moving_boundary {
 			inputValues[physiology.symbolIndex_t] = currentTime;
 			std::memcpy(inputValues + physiology.symbolIndex_coordinate, syms, DIM * sizeof(double));
 			const double* conc = e.priorConcentrations();
-			std::memcpy(inputValues + physiology.symbolIndex_species, conc, numSpecies * sizeof(double));
-			for (int s = 0; s < numSpecies; ++ s)
+			std::memcpy(inputValues + physiology.symbolIndex_species, conc, numVolumeVariables * sizeof(double));
+			for (int s = 0; s < numVolumeVariables; ++ s)
 			{
-				const moving_boundary::biology::Species* species = physiology.species(s);
-				if (species->isAdvecting())
+				const moving_boundary::biology::VolumeVariable* volumeVariable = physiology.getVolumeVariable(s);
+				if (volumeVariable->isAdvecting())
 				{
-					double vX = physiology.species(s)->getExpression(moving_boundary::biology::Species::expr_advection_x)->evaluate(inputValues);
-					double vY = physiology.species(s)->getExpression(moving_boundary::biology::Species::expr_advection_y)->evaluate(inputValues);
+					double vX = physiology.getVolumeVariable(s)->getExpression(moving_boundary::biology::VolumeVariable::expr_advection_x)->evaluate(inputValues);
+					double vY = physiology.getVolumeVariable(s)->getExpression(moving_boundary::biology::VolumeVariable::expr_advection_y)->evaluate(inputValues);
 					CoordVect cv(vX, vY);
 					CoordVect v = world.toWorld(cv);
 					e.setAdvection(s, v);
@@ -1191,7 +1191,7 @@ namespace moving_boundary {
 						throw;
 					}
 					primaryMesh.diffuseAdvectCache( ).start( );
-					for (unsigned s = 0; s < physiology.numberSpecies( ) ; s++) { 
+					for (unsigned s = 0; s < physiology.numVolumeVariables( ) ; s++) {
 						solver.setStepAndSpecies(timeIncr,s);
 						diffuseAdvect.speciesIdx = s;
 						std::for_each(primaryMesh.begin( ),primaryMesh.end( ), diffuseAdvect);
@@ -1323,8 +1323,8 @@ namespace moving_boundary {
 		bool noReaction( ) const {
 			if (zeroSourceTerms.value == boost::logic::tribool::indeterminate_value) {
 				zeroSourceTerms = true; //assume true, test for falseness
-				for (auto iter = physiology.beginSpecies( ); iter != physiology.endSpecies( ); ++ iter) {
-					const SExpression* sourceTerm = (*iter)->getExpression(moving_boundary::biology::Species::expr_source);
+				for (auto iter = physiology.beginVolumeVariable( ); iter != physiology.endVolumeVariable( ); ++ iter) {
+					const SExpression* sourceTerm = (*iter)->getExpression(moving_boundary::biology::VolumeVariable::expr_source);
 					if (!sourceTerm->isConstant( ) || sourceTerm->constantValue( ) != 0) {
 						zeroSourceTerms = false; 
 						break;
@@ -1434,7 +1434,7 @@ namespace moving_boundary {
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs, std::istream &is)
 			:ValidationBase(mbs),
 			isRunning(false),
-			numSpecies(mbs.species.size( )),
+			numVolumeVariables(mbs.volumeVariables.size( )),
 			world(WorldType::get( )),
 			setup_(mbs),
 			//diffusionConstant(mbs.diffusionConstant),
@@ -1503,7 +1503,7 @@ namespace moving_boundary {
 		*/
 		bool isRunning;
 
-		const int numSpecies;
+		const int numVolumeVariables;
 		WorldType & world;
 		const MovingBoundarySetup setup_;
 		//const double diffusionConstant;

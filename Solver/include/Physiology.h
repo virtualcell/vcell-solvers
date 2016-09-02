@@ -4,14 +4,14 @@
 #include <vector>
 #include <memory>
 #include <cassert>
-#include <Species.h>
+#include <VolumeVariable.h>
 using std::string;
 
 namespace moving_boundary {
 	namespace biology {
 		struct Physiology {
 			Physiology( )
-				:species_( ),
+				:volumeVariables_( ),
 				pSymTable( )
 			{}
 
@@ -21,23 +21,23 @@ namespace moving_boundary {
 			/**
 			* @throws std::domain_error if not locked
 			*/
-			size_t numberSpecies( )  const {
-				return species_.size( );
+			size_t numVolumeVariables( )  const {
+				return volumeVariables_.size( );
 			}
 
 			/**
 			* @throws std::domain_error if not locked
 			*/
-			const Species* species(size_t index) const {
-				return species_[index];
+			const VolumeVariable* getVolumeVariable(size_t index) const {
+				return volumeVariables_[index];
 			}
-			typedef std::vector<Species*>::const_iterator SpeciesIterator;
+			typedef std::vector<VolumeVariable*>::const_iterator SpeciesIterator;
 
-			SpeciesIterator beginSpecies( ) const {
-				return species_.begin( );
+			SpeciesIterator beginVolumeVariable( ) const {
+				return volumeVariables_.begin( );
 			}
-			SpeciesIterator endSpecies( ) const {
-				return species_.end( );
+			SpeciesIterator endVolumeVariable( ) const {
+				return volumeVariables_.end( );
 			}
 
 			//************************************
@@ -64,7 +64,7 @@ namespace moving_boundary {
 			/**
 			* @throws std::domain_error if locked
 			*/
-			const Species* createSpecies(Species* s);
+			const VolumeVariable* createVolumeVariable(VolumeVariable* s);
 
 			/**
 			* build list of names for symbol table
@@ -86,10 +86,10 @@ namespace moving_boundary {
 
 		private:
 			Physiology(const Physiology &); //not defined
-			std::vector<Species*> species_;
+			std::vector<VolumeVariable*> volumeVariables_;
 			std::unique_ptr<SimpleSymbolTable> pSymTable;
 
-			void bindExpressions(Species* sp) {
+			void bindExpressions(VolumeVariable* sp) {
 				sp->bindExpressions(*pSymTable);
 			}
 		};

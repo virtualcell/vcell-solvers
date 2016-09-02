@@ -360,8 +360,8 @@ namespace moving_boundary {
 			return MeshElementNodeIdent(*this);
 		};
 
-		size_t numSpecies( ) const {
-			return env.physiology.numberSpecies( );
+		size_t numVolumeVariables( ) const {
+			return env.physiology.numVolumeVariables( );
 		}
 
 		/**
@@ -385,7 +385,7 @@ namespace moving_boundary {
 				throw std::invalid_argument("setConcentration not a number");
 				std::cout << "nan" << std::endl;
 			}
-			assert (i < numSpecies( ));
+			assert (i < numVolumeVariables( ));
 			assert ( c >= 0);
 			if (c > 0) {
 				amtMass[i] = c * volumePD( );
@@ -397,7 +397,7 @@ namespace moving_boundary {
 				throw std::invalid_argument("setConcentration not a number");
 				std::cout << "nan" << std::endl;
 			}
-			assert (i < numSpecies( ));
+			assert (i < numVolumeVariables( ));
 			assert ( c >= 0);
 			if (c > 0) {
 				amtMassTransient[i] = c * volumePD( );
@@ -419,7 +419,7 @@ namespace moving_boundary {
 		* to #setConcentration
 		*/
 		moving_boundary::BioQuanType concentration(size_t i) const { 
-			assert (i < numSpecies( ));
+			assert (i < numVolumeVariables( ));
 			if (amtMass[i] > 0) {
 				return amtMass[i] / volumePD( ); 
 			}
@@ -431,7 +431,7 @@ namespace moving_boundary {
 		* see #concentration
 		*/
 		moving_boundary::BioQuanType mass(size_t i) const { 
-			assert (i < numSpecies( ));
+			assert (i < numVolumeVariables( ));
 			return amtMass[i];
 		}
 
@@ -479,9 +479,9 @@ namespace moving_boundary {
 			iNbhr.element = &other; 
 			if (iNbhr.halfAdvectionFlux == nullptr)
 			{
-				iNbhr.halfAdvectionFlux = new BioQuanType[other.numSpecies()];
+				iNbhr.halfAdvectionFlux = new BioQuanType[other.numVolumeVariables()];
 			}
-			std::memset(iNbhr.halfAdvectionFlux, 0, iNbhr.element->numSpecies() * sizeof (BioQuanType));
+			std::memset(iNbhr.halfAdvectionFlux, 0, iNbhr.element->numVolumeVariables() * sizeof (BioQuanType));
 			iNbhr.distanceTo = dist;
 			iNbhr.edgeLength = length;
 		}

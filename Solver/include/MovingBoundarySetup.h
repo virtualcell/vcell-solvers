@@ -4,7 +4,7 @@
 //#include <iostream>
 //#include <MovingBoundaryTypes.h>
 #include <VCellFront.h> 
-#include <Species.h>
+#include <VolumeVariable.h>
 namespace tinyxml2 {
 	class XMLElement;
 }
@@ -52,7 +52,7 @@ namespace moving_boundary {
 		*/
 		std::string frontVelocityFunctionStrY;
 
-		std::vector<moving_boundary::biology::Species*> species;
+		std::vector<moving_boundary::biology::VolumeVariable*> volumeVariables;
 		double diffusionConstant;
 		/**
 		* provide alternate to frontier; for testing / validation
@@ -89,7 +89,7 @@ namespace moving_boundary {
 			levelFunctionStr(rhs.levelFunctionStr),
 			frontVelocityFunctionStrX(rhs.frontVelocityFunctionStrX),
 			frontVelocityFunctionStrY(rhs.frontVelocityFunctionStrY),
-			species(rhs.species),
+			volumeVariables(rhs.volumeVariables),
 			diffusionConstant(rhs.diffusionConstant),
 			alternateFrontProvider(rhs.alternateFrontProvider) {
 		}
@@ -107,7 +107,7 @@ namespace moving_boundary {
 			levelFunctionStr = rhs.levelFunctionStr;
 			frontVelocityFunctionStrX = rhs.frontVelocityFunctionStrX;
 			frontVelocityFunctionStrY = rhs.frontVelocityFunctionStrY;
-			species = rhs.species,
+			volumeVariables = rhs.volumeVariables,
 			diffusionConstant = rhs.diffusionConstant;
 			alternateFrontProvider = rhs.alternateFrontProvider;
 			return *this;
