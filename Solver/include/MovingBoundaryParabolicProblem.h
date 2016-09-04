@@ -84,7 +84,7 @@ namespace moving_boundary {
 		void plotAreas(std::ostream &os) const;
 		const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDef( ) const;
 		const spatial::Mesh<moving_boundary::CoordinateType, 2, MeshElementNode>& mesh( ) const;
-		const biology::Physiology & physiology( ) const;
+		const Physiology* physiology( ) const;
 		/**
 		* @return time step used for moving front
 		*/

@@ -961,11 +961,11 @@ void MeshElementNode::allocateSpecies( ) {
 	diffusionValue.resize( i );
 	advectionValue.resize( i );
 
-	const biology::Physiology & physio = env.physiology;
-	concValue.resize( physio.numberSymbols( ) );
-	indexToTimeVariable = physio.symbolIndex("t");
-	const size_t xIndex = physio.symbolIndex("x");
-	const size_t yIndex = physio.symbolIndex("y");
+	const Physiology * physio = env.physiology;
+	concValue.resize( physio->numberSymbols( ) );
+	indexToTimeVariable = physio->symbolIndex("t");
+	const size_t xIndex = physio->symbolIndex("x");
+	const size_t yIndex = physio->symbolIndex("y");
 
 	World<moving_boundary::CoordinateType,2> & world = World<moving_boundary::CoordinateType,2>::get( );
 	moving_boundary::CoordinateType x = get(spatial::cX);
@@ -982,8 +982,8 @@ namespace {
 		SourceTermEvaluator (ValueVector & v)
 			:values(v) {}
 
-		moving_boundary::BioQuanType operator( )(const moving_boundary::biology::VolumeVariable* sp) {
-			moving_boundary::BioQuanType r = sp->getExpression(moving_boundary::biology::VolumeVariable::expr_source)->evaluate(values);
+		moving_boundary::BioQuanType operator( )(const moving_boundary::VolumeVariable* sp) {
+			moving_boundary::BioQuanType r = sp->evaluateExpression(moving_boundary::expr_source, values.data());
 			return r;
 		}
 
@@ -1050,13 +1050,13 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 	assert(concValue == sourceTermValues); //if this is no longer term, copy values from concValue ->sourceTermValues
 
 	sourceTermValues[indexToTimeVariable] = time;
-	const biology::Physiology & physio = env.physiology;
+	const Physiology * physio = env.physiology;
 	//const std::vector<const biology::Species> & species = physiology( ).species( );
-	const size_t nVolumeVariables = physio.numVolumeVariables( );
+	const size_t nVolumeVariables = physio->numVolumeVariables( );
 	std::vector <moving_boundary::BioQuanType> sourceTermConcentrations(nVolumeVariables);
 
 	//evaluate source terms
-	std::transform(physio.beginVolumeVariable(), physio.endVolumeVariable(), sourceTermConcentrations.begin( ), SourceTermEvaluator(sourceTermValues) );
+	std::transform(physio->beginVolumeVariable(), physio->endVolumeVariable(), sourceTermConcentrations.begin( ), SourceTermEvaluator(sourceTermValues) );
 
 	//convert concentrations to mass, add to existing mass
 	assert(sourceTermValues.size( ) >= amtMass.size( ));
@@ -1086,7 +1086,7 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 		const size_t nVolumeVariables = numVolumeVariables( );
 		//pre-compute all diffusion constants
 		for (size_t s = 0; s < nVolumeVariables;s++) {
-			const BioQuanType diffusionConstant = env.physiology.getVolumeVariable(s)->getExpression(moving_boundary::biology::VolumeVariable::expr_diffusion)->evaluate(sourceTermValues);
+			const BioQuanType diffusionConstant = env.physiology->getVolumeVariable(s)->evaluateExpression(moving_boundary::expr_diffusion, sourceTermValues.data());
 			diffusionValue[s] = diffusionConstant;
 		}
 
@@ -1123,7 +1123,7 @@ void MeshElementNode::react(moving_boundary::TimeType time, moving_boundary::Tim
 
 			for (size_t s = 0; s < nVolumeVariables; ++ s)
 			{
-				if (physio.getVolumeVariable(s)->isAdvecting())
+				if (physio->getVolumeVariable(s)->isAdvecting())
 				{
 					CoordVect av = (getAdvection(s) +  nb.getAdvection(s)) / 2;
 					spatial::SVector<moving_boundary::VelocityType,2> averageVelocity(av[cX], av[cY]);

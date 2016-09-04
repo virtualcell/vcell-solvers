@@ -4,7 +4,7 @@
 #include <vector>
 #include <algorithm>
 using moving_boundary::SExpression;
-using moving_boundary::biology::Physiology;
+using moving_boundary::Physiology;
 
 SExpression::SExpression()
 	:constValue(nullptr),

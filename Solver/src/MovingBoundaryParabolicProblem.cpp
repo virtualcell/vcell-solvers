@@ -177,7 +177,8 @@ namespace moving_boundary {
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs) 
 			:ValidationBase(mbs),
 			isRunning(false),
-			numVolumeVariables(mbs.volumeVariables.size( )),
+			physiology(mbs.physiology),
+			numVolumeVariables(mbs.physiology->numVolumeVariables()),
 			world(WorldType::get( )),
 			setup_(mbs),
 			//diffusionConstant(mbs.diffusionConstant),
@@ -193,7 +194,6 @@ namespace moving_boundary {
 
 			currentFront( ),
 			meshDefinition(createMeshDef(world, mbs, numVolumeVariables)),
-			physiology( ),
 			meNodeEnvironment(meshDefinition,physiology),
 			interiorVolume(calculateInteriorVolume(world, meshDefinition)),
 			primaryMesh(meshDefinition,meNodeEnvironment),
@@ -215,18 +215,17 @@ namespace moving_boundary {
 			assert(nFunctionPointers == 0); 
 			double maxConstantDiffusion = std::numeric_limits<double>::min( );
 			for (int i = 0; i < numVolumeVariables; i++) {
-				const biology::VolumeVariable* sp = physiology.createVolumeVariable(mbs.volumeVariables[i]);
-				const SExpression* dt = sp->getExpression(moving_boundary::biology::VolumeVariable::expr_diffusion);
-				if (dt->isConstant( )) {
-					maxConstantDiffusion = std::max(maxConstantDiffusion, dt->constantValue( ));
+				const VolumeVariable* sp = physiology->getVolumeVariable(i);
+				if (sp->isExpressionConstant(expr_diffusion)) {
+					maxConstantDiffusion = std::max(maxConstantDiffusion, sp->getExpressionConstantValue(expr_diffusion ));
 				}
 			}
-			physiology.buildSymbolTable();
-			inputValues = new double[physiology.numberSymbols()];
+			physiology->buildSymbolTable();
+			inputValues = new double[physiology->numberSymbols()];
 
-			levelExp = new SExpression(mbs.levelFunctionStr, physiology.symbolTable());
-			frontVelocityExpX = new SExpression(mbs.frontVelocityFunctionStrX,physiology.symbolTable());
-			frontVelocityExpY = new SExpression(mbs.frontVelocityFunctionStrY,physiology.symbolTable());
+			levelExp = new SExpression(mbs.levelFunctionStr, physiology->symbolTable());
+			frontVelocityExpX = new SExpression(mbs.frontVelocityFunctionStrX,physiology->symbolTable());
+			frontVelocityExpY = new SExpression(mbs.frontVelocityFunctionStrY,physiology->symbolTable());
 
 			vcFront = initFront(world, *this,mbs);
 			setInitialValues( );
@@ -354,11 +353,11 @@ namespace moving_boundary {
 		void setConcentrations(MeshElementNode & e) {
 			e.allocateSpecies();
 			ProblemDomainPoint pdp = world.toProblemDomain(e);
-			inputValues[physiology.symbolIndex_t] = 0;
+			inputValues[physiology->symbolIndex_t] = 0;
 			for (int i = 0; i< numVolumeVariables; i++) {
-				inputValues[physiology.symbolIndex_coordinate] = pdp(cX);
-				inputValues[physiology.symbolIndex_coordinate + 1] = pdp(cY);
-				double mu = physiology.getVolumeVariable(i)->getExpression(moving_boundary::biology::VolumeVariable::expr_initial)->evaluate(inputValues);
+				inputValues[physiology->symbolIndex_coordinate] = pdp(cX);
+				inputValues[physiology->symbolIndex_coordinate + 1] = pdp(cY);
+				double mu = physiology->getVolumeVariable(i)->evaluateExpression(expr_initial, inputValues);
 				e.setConcentration(i,mu);
 			}
 		}
@@ -368,7 +367,7 @@ namespace moving_boundary {
 		*/
 		void setInitialValues( ) {
 			using std::vector;
-			assert(physiology.numVolumeVariables( ) == numVolumeVariables);
+			assert(physiology->numVolumeVariables( ) == numVolumeVariables);
 
 			for (MeshElementNode & e: primaryMesh) {
 				e.setInteriorVolume(interiorVolume);
@@ -464,7 +463,7 @@ namespace moving_boundary {
 		virtual double level(double *in) const {
 			double problemDomainValues[2];
 			world.toProblemDomain(in,problemDomainValues);
-			std::memcpy(inputValues + physiology.symbolIndex_coordinate, problemDomainValues, DIM * sizeof(double));
+			std::memcpy(inputValues + physiology->symbolIndex_coordinate, problemDomainValues, DIM * sizeof(double));
 			double r = levelExp->evaluate(inputValues);
 			/*
 			if (r > 0) {
@@ -616,9 +615,9 @@ namespace moving_boundary {
 			 if (coord.withinWorld())
 			 {
 					CoordVect thisPoint = world.toProblemDomain(coord);
-					inputValues[physiology.symbolIndex_t] = currentTime;
-					std::memcpy(inputValues + physiology.symbolIndex_coordinate, thisPoint.data(), DIM * sizeof(double));
-					std::memcpy(inputValues + physiology.symbolIndex_normal, normal.data(), DIM * sizeof(double));
+					inputValues[physiology->symbolIndex_t] = currentTime;
+					std::memcpy(inputValues + physiology->symbolIndex_coordinate, thisPoint.data(), DIM * sizeof(double));
+					std::memcpy(inputValues + physiology->symbolIndex_normal, normal.data(), DIM * sizeof(double));
 					if (frontVelocityExpX->isConcentrationDependent() || frontVelocityExpX->isConcentrationDependent())
 					{
 						if (isRunning)
@@ -626,14 +625,14 @@ namespace moving_boundary {
 							std::vector<MeshElementNode*> stencil;
 							findExtrapolationStencil(thisPoint, 1, stencil);
 							const double* conc = stencil[0]->priorConcentrations();
-							std::memcpy(inputValues + physiology.symbolIndex_species, conc, numVolumeVariables * sizeof(double));
+							std::memcpy(inputValues + physiology->symbolIndex_species, conc, numVolumeVariables * sizeof(double));
 						}
 						else
 						{
 							// get concentration from from initial condition
 							for (int i = 0; i < numVolumeVariables; ++ i)
 							{
-								inputValues[physiology.symbolIndex_species + i] = physiology.getVolumeVariable(i)->getExpression(moving_boundary::biology::VolumeVariable::expr_initial)->evaluate(inputValues);
+								inputValues[physiology->symbolIndex_species + i] = physiology->getVolumeVariable(i)->evaluateExpression(expr_initial, inputValues);
 							}
 						}
 					}
@@ -680,17 +679,17 @@ namespace moving_boundary {
 			double worldValues[2] = {e(cX), e(cY)};
 			double syms[2];
 			world.toProblemDomain(worldValues,syms);
-			inputValues[physiology.symbolIndex_t] = currentTime;
-			std::memcpy(inputValues + physiology.symbolIndex_coordinate, syms, DIM * sizeof(double));
+			inputValues[physiology->symbolIndex_t] = currentTime;
+			std::memcpy(inputValues + physiology->symbolIndex_coordinate, syms, DIM * sizeof(double));
 			const double* conc = e.priorConcentrations();
-			std::memcpy(inputValues + physiology.symbolIndex_species, conc, numVolumeVariables * sizeof(double));
+			std::memcpy(inputValues + physiology->symbolIndex_species, conc, numVolumeVariables * sizeof(double));
 			for (int s = 0; s < numVolumeVariables; ++ s)
 			{
-				const moving_boundary::biology::VolumeVariable* volumeVariable = physiology.getVolumeVariable(s);
+				const VolumeVariable* volumeVariable = physiology->getVolumeVariable(s);
 				if (volumeVariable->isAdvecting())
 				{
-					double vX = physiology.getVolumeVariable(s)->getExpression(moving_boundary::biology::VolumeVariable::expr_advection_x)->evaluate(inputValues);
-					double vY = physiology.getVolumeVariable(s)->getExpression(moving_boundary::biology::VolumeVariable::expr_advection_y)->evaluate(inputValues);
+					double vX = volumeVariable->evaluateExpression(moving_boundary::expr_advection_x, inputValues);
+					double vY = volumeVariable->evaluateExpression(moving_boundary::expr_advection_y, inputValues);
 					CoordVect cv(vX, vY);
 					CoordVect v = world.toWorld(cv);
 					e.setAdvection(s, v);
@@ -1191,7 +1190,7 @@ namespace moving_boundary {
 						throw;
 					}
 					primaryMesh.diffuseAdvectCache( ).start( );
-					for (unsigned s = 0; s < physiology.numVolumeVariables( ) ; s++) {
+					for (unsigned s = 0; s < physiology->numVolumeVariables( ) ; s++) {
 						solver.setStepAndSpecies(timeIncr,s);
 						diffuseAdvect.speciesIdx = s;
 						std::for_each(primaryMesh.begin( ),primaryMesh.end( ), diffuseAdvect);
@@ -1323,9 +1322,8 @@ namespace moving_boundary {
 		bool noReaction( ) const {
 			if (zeroSourceTerms.value == boost::logic::tribool::indeterminate_value) {
 				zeroSourceTerms = true; //assume true, test for falseness
-				for (auto iter = physiology.beginVolumeVariable( ); iter != physiology.endVolumeVariable( ); ++ iter) {
-					const SExpression* sourceTerm = (*iter)->getExpression(moving_boundary::biology::VolumeVariable::expr_source);
-					if (!sourceTerm->isConstant( ) || sourceTerm->constantValue( ) != 0) {
+				for (auto iter = physiology->beginVolumeVariable( ); iter != physiology->endVolumeVariable( ); ++ iter) {
+					if ((*iter)->isExpressionNonZero(moving_boundary::expr_source)) {
 						zeroSourceTerms = false; 
 						break;
 					}
@@ -1434,7 +1432,8 @@ namespace moving_boundary {
 		MovingBoundaryParabolicProblemImpl(const moving_boundary::MovingBoundarySetup &mbs, std::istream &is)
 			:ValidationBase(mbs),
 			isRunning(false),
-			numVolumeVariables(mbs.volumeVariables.size( )),
+			physiology(mbs.physiology),
+			numVolumeVariables(physiology->numVolumeVariables()),
 			world(WorldType::get( )),
 			setup_(mbs),
 			//diffusionConstant(mbs.diffusionConstant),
@@ -1459,7 +1458,6 @@ namespace moving_boundary {
 			vcFront(nullptr),
 			currentFront( ),
 			meshDefinition( ),
-			physiology( ),
 			meNodeEnvironment(meshDefinition,physiology),
 			interiorVolume( ),
 			primaryMesh(),
@@ -1503,7 +1501,6 @@ namespace moving_boundary {
 		*/
 		bool isRunning;
 
-		const int numVolumeVariables;
 		WorldType & world;
 		const MovingBoundarySetup setup_;
 		//const double diffusionConstant;
@@ -1543,8 +1540,9 @@ namespace moving_boundary {
 		spatial::VCellFront<moving_boundary::CoordinateType> * vcFront;
 		FrontType currentFront;
 		MBMeshDef meshDefinition;
-		biology::Physiology physiology;
+		Physiology* physiology;
 		MeshElementNode::Environment meNodeEnvironment;
+		const int numVolumeVariables;
 
 		/**
 		* standard volume of inside point
@@ -1687,7 +1685,7 @@ namespace moving_boundary {
 	const spatial::Mesh<moving_boundary::CoordinateType,2, MeshElementNode> & MovingBoundaryParabolicProblem::mesh( ) const {
 		return sImpl->primaryMesh;
 	}
-	const biology::Physiology  & MovingBoundaryParabolicProblem::physiology( ) const {
+	const Physiology* MovingBoundaryParabolicProblem::physiology( ) const {
 		return sImpl->physiology;
 	}
 	double MovingBoundaryParabolicProblem::frontTimeStep( ) const {

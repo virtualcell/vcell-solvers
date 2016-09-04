@@ -30,9 +30,6 @@ namespace moving_boundary {
 	struct VoronoiMesh;
 	struct MeshElementNode;
 	struct MeshElementNodeIdent;
-	namespace biology {
-		struct Physiology;
-	}
 
 
 	/**
@@ -240,12 +237,12 @@ namespace moving_boundary {
 		class Environment {
 			const spatial::MeshDef<moving_boundary::CoordinateType,2> & md; 
 		public:
-			const biology::Physiology & physiology;
+			const Physiology * physiology;
 			const spatial::MeshDef<moving_boundary::CoordinateType,2> & mesh( ) const {
 				return md;
 			}
 			Environment( const spatial::MeshDef<moving_boundary::CoordinateType,2> & meshDefinition_,
-				const biology::Physiology & physiology_)
+				const Physiology * physiology_)
 				:md(meshDefinition_),
 				physiology(physiology_) {}
 		};
@@ -361,7 +358,7 @@ namespace moving_boundary {
 		};
 
 		size_t numVolumeVariables( ) const {
-			return env.physiology.numVolumeVariables( );
+			return env.physiology->numVolumeVariables( );
 		}
 
 		/**

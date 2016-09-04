@@ -334,7 +334,7 @@ namespace {
 			totalStuff(0),
 			oldStuff(0),
 			meshDef(mbpp.meshDef( )),
-			numVolumeVariables(mbpp.physiology( ).numVolumeVariables( )),
+			numVolumeVariables(mbpp.physiology( )->numVolumeVariables( )),
 			eRecords(),
 			genTimes(),
 			moveTimes(),

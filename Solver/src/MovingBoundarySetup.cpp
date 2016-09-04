@@ -1,4 +1,7 @@
 #include <MovingBoundarySetup.h>
+#include <Physiology.h>
+#include <VolumeSubdomain.h>
+#include <PointSubdomain.h>
 #include <boundaryProviders.h>
 #include <persistcontainer.h>
 #include <vcellxml.h>
@@ -30,7 +33,6 @@ MovingBoundarySetup::MovingBoundarySetup(std::istream &is)
 	}
 }
 MovingBoundarySetup::~MovingBoundarySetup() {
-	volumeVariables.resize(0);
 }
 
 
@@ -156,51 +158,61 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 		mbSetup.alternateFrontProvider = ::frontFromXML(*altFront);
 		std::cout << mbSetup.alternateFrontProvider->describe( ) << std::endl;
 	}
-	std::pair<bool,std::string> defaultDiffQ = vcell_xml::queryElement<std::string>(prob,"diffusionConstant");
 	const XMLElement & physiologyElement = vcell_xml::get(prob,"physiology");
-	const XMLElement *spE = physiologyElement.FirstChildElement("species");
-	size_t sNumber = 0;
-	std::ostringstream defaultNameS;
-	std::string name;
-	while (spE != nullptr) {
-		//get name, or design default
-		const char * n  = spE->Attribute("name");
-		if (n != nullptr) {
-			name = n;
-		}
-		else {
-			defaultNameS.rdbuf( )->pubseekpos(0); 
-			defaultNameS << 'u' << sNumber << std::ends;
-			name = defaultNameS.str( );
-		}
-		++sNumber;
 
-		//get other terms 
-		std::string source = vcell_xml::convertChildElement<std::string>(*spE,"source");
-		std::string init = vcell_xml::convertChildElementWithDefault<std::string>(*spE,"initial", source);
-		std::pair<bool,std::string> dq = vcell_xml::queryElement<std::string>(*spE,"diffusion");
-		if (!dq.first && !defaultDiffQ.first) {
-			VCELL_EXCEPTION(domain_error, "No diffusion specified for " << name); 
-		}
-		const std::string & diffusion  = dq.first ? dq.second : defaultDiffQ.second;
-		moving_boundary::biology::VolumeVariable* s = new moving_boundary::biology::VolumeVariable(name);
-		s->setExpression(moving_boundary::biology::VolumeVariable::expr_initial, init);
-		s->setExpression(moving_boundary::biology::VolumeVariable::expr_source, source);
-		s->setExpression(moving_boundary::biology::VolumeVariable::expr_diffusion, diffusion);
-
-		std::pair<bool,std::string> axq = vcell_xml::queryElement<std::string>(*spE,"advectVelocityFunctionX");
-		if (axq.first)
+	mbSetup.physiology = new Physiology();
+	const XMLElement* subdomainElement = physiologyElement.FirstChildElement("subdomain");
+	while (subdomainElement != nullptr)
+	{
+		Subdomain* subdomain = nullptr;
+		string domainType = subdomainElement->Attribute("type");
+		string domainName = subdomainElement->Attribute("name");
+		if (domainType == "volume")
 		{
-			s->setExpression(moving_boundary::biology::VolumeVariable::expr_advection_x, axq.second);
+			subdomain = new VolumeSubdomain(domainName);
 		}
-		std::pair<bool,std::string> ayq = vcell_xml::queryElement<std::string>(*spE,"advectVelocityFunctionY");
-		if (ayq.first)
+		else if (domainType == "point")
 		{
-			s->setExpression(moving_boundary::biology::VolumeVariable::expr_advection_y, ayq.second);
+			string posX = vcell_xml::convertChildElement<std::string>(*subdomainElement,"positionX");
+			string posY = vcell_xml::convertChildElement<std::string>(*subdomainElement,"positionY");
+			subdomain = new PointSubdomain(domainName, posX, posY);
 		}
-		mbSetup.volumeVariables.push_back(s);
+		mbSetup.physiology->addSubdomain(subdomain);
 
-		spE = spE->NextSiblingElement("species");
+		const XMLElement *spE = subdomainElement->FirstChildElement("species");
+		std::ostringstream defaultNameS;
+		while (spE != nullptr) {
+			//get name, or design default
+			string name  = spE->Attribute("name");
+			VolumeVariable* s = new VolumeVariable(name);
+
+			std::string init = vcell_xml::convertChildElement<std::string>(*spE,"initial");
+			std::string source = vcell_xml::convertChildElement<std::string>(*spE,"source");
+			s->setExpression(expr_initial, init);
+			s->setExpression(expr_source, source);
+
+			// PDE
+			std::pair<bool,std::string> dq = vcell_xml::queryElement<std::string>(*spE,"diffusion");
+			if (dq.first) {
+				const std::string & diffusion = dq.second;
+				s->setExpression(expr_diffusion, diffusion);
+			}
+			std::pair<bool,std::string> axq = vcell_xml::queryElement<std::string>(*spE,"advectVelocityFunctionX");
+			if (axq.first)
+			{
+				s->setExpression(expr_advection_x, axq.second);
+			}
+			std::pair<bool,std::string> ayq = vcell_xml::queryElement<std::string>(*spE,"advectVelocityFunctionY");
+			if (ayq.first)
+			{
+				s->setExpression(expr_advection_y, ayq.second);
+			}
+			subdomain->addVariable(s);
+			mbSetup.physiology->addVariable(s);
+
+			spE = spE->NextSiblingElement("species");
+		}
+		subdomainElement = subdomainElement->NextSiblingElement("subdomain");
 	}
 
 	return mbSetup; 

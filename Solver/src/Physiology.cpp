@@ -4,8 +4,8 @@
 #include <VCellException.h>
 #include <MBConstants.h>
 
-using moving_boundary::biology::Physiology;
-using moving_boundary::biology::VolumeVariable;
+using moving_boundary::Physiology;
+using moving_boundary::VolumeVariable;
 using namespace std::placeholders; 
 
 const std::vector<std::string> Physiology::fixedTimeSpatialSymbols {"t", "x", "y", "z", "normalX", "normalY", "normalZ"};
@@ -43,11 +43,32 @@ void Physiology::buildSymbolTable() {
 	std::for_each(volumeVariables_.begin( ),volumeVariables_.end( ), std::bind(&Physiology::bindExpressions, this, _1) );
 }
 
-const VolumeVariable* Physiology::createVolumeVariable(VolumeVariable* s) {
+void Physiology::addVariable(Variable* s) {
 	try {
-		volumeVariables_.push_back(s);
-		return volumeVariables_.back( );
+		if (s->getType() == vartype_volume)
+		{
+			volumeVariables_.push_back((VolumeVariable*)s);
+		}
+		else if (s->getType() == vartype_point)
+		{
+			_pointVariables.push_back((PointVariable*)s);
+		}
 	} catch (std::exception &de) {
-		VCELL_EXCEPTION(domain_error, "error creating Species " << s->name() << ": " << de.what( ));
+		VCELL_EXCEPTION(domain_error, "error adding Species " << s->name() << ": " << de.what( ));
+	}
+}
+
+void Physiology::addSubdomain(Subdomain* s) {
+	try {
+		if (s->getType() == subdomain_volume)
+		{
+			_volumeSubdomains.push_back((VolumeSubdomain*)s);
+		}
+		else if (s->getType() == subdomain_point)
+		{
+			_pointSubdomains.push_back((PointSubdomain*)s);
+		}
+	} catch (std::exception &de) {
+		VCELL_EXCEPTION(domain_error, "error adding subdomain " << s->name() << ": " << de.what( ));
 	}
 }

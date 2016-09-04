@@ -156,27 +156,32 @@ int main(int argc, char *argv[])
 			{
 				doc.LoadFile(filename.c_str( ));
 				if (doc.ErrorID( ) != tinyxml2::XML_SUCCESS) {
-					std::cerr <<  "Error " << doc.ErrorID( ) << " loading " << filename << std::endl;
-					return 2;
-				}
-				const tinyxml2::XMLElement & root = *doc.RootElement( );
-				if (!strcmp(root.Name( ),XML_ROOT_NAME) == 0)
-				{
 					stringstream ss;
-					ss <<  "Invalid XML root identifier " << root.Name( ) << ", " << XML_ROOT_NAME << " expected" << std::endl;
-					executeStatus = ExecuteStatus(3, ss.str());
+					ss <<  "Error " << doc.ErrorID( ) << " loading " << filename << std::endl;
+					executeStatus = ExecuteStatus(2, ss.str());
 				}
 
 				if (executeStatus.isOK())
 				{
-					setupTrace(root);
-					setupMatlabDebug(root);
+					const tinyxml2::XMLElement & root = *doc.RootElement( );
+					if (!strcmp(root.Name( ),XML_ROOT_NAME) == 0)
+					{
+						stringstream ss;
+						ss <<  "Invalid XML root identifier " << root.Name( ) << ", " << XML_ROOT_NAME << " expected" << std::endl;
+						executeStatus = ExecuteStatus(3, ss.str());
+					}
 
-					using moving_boundary::MovingBoundarySetup;
-					if (restorename.empty( )) {
-						auto mbs = MovingBoundarySetup::setupProblem(root, Nx);
-						problem = moving_boundary::MovingBoundaryParabolicProblem(mbs);
-						moving_boundary::ReportClient::setup(root, outname, problem);
+					if (executeStatus.isOK())
+					{
+						setupTrace(root);
+						setupMatlabDebug(root);
+
+						using moving_boundary::MovingBoundarySetup;
+						if (restorename.empty( )) {
+							auto mbs = MovingBoundarySetup::setupProblem(root, Nx);
+							problem = moving_boundary::MovingBoundaryParabolicProblem(mbs);
+							moving_boundary::ReportClient::setup(root, outname, problem);
+						}
 					}
 				}
 			}

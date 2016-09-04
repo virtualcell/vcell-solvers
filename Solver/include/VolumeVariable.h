@@ -7,16 +7,17 @@ using std::string;
 
 namespace moving_boundary
 {
-  namespace biology
-	{
-  	struct Physiology;
+	struct VolumeVariable : public Variable {
 
-		struct VolumeVariable : public Variable {
+		VolumeVariable(const string & name);
+		~VolumeVariable();
 
-			VolumeVariable(const string & name);
-			~VolumeVariable();
-		};
-	}
+		VariableType getType()
+		{
+			return vartype_volume;
+		}
+	};
 }
 
 #endif
+

@@ -52,7 +52,7 @@ namespace moving_boundary {
 		*/
 		std::string frontVelocityFunctionStrY;
 
-		std::vector<moving_boundary::biology::VolumeVariable*> volumeVariables;
+		Physiology* physiology;
 		double diffusionConstant;
 		/**
 		* provide alternate to frontier; for testing / validation
@@ -89,7 +89,7 @@ namespace moving_boundary {
 			levelFunctionStr(rhs.levelFunctionStr),
 			frontVelocityFunctionStrX(rhs.frontVelocityFunctionStrX),
 			frontVelocityFunctionStrY(rhs.frontVelocityFunctionStrY),
-			volumeVariables(rhs.volumeVariables),
+			physiology(rhs.physiology),
 			diffusionConstant(rhs.diffusionConstant),
 			alternateFrontProvider(rhs.alternateFrontProvider) {
 		}
@@ -107,7 +107,7 @@ namespace moving_boundary {
 			levelFunctionStr = rhs.levelFunctionStr;
 			frontVelocityFunctionStrX = rhs.frontVelocityFunctionStrX;
 			frontVelocityFunctionStrY = rhs.frontVelocityFunctionStrY;
-			volumeVariables = rhs.volumeVariables,
+			physiology = rhs.physiology,
 			diffusionConstant = rhs.diffusionConstant;
 			alternateFrontProvider = rhs.alternateFrontProvider;
 			return *this;

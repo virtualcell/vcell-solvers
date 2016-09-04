@@ -113,9 +113,9 @@ void TextReportClient::time(double t, unsigned int numIteration, bool last,
 	}
 	output << "];" << endl << endl;
 	output << "%%% elements=[x y V";
-	for (int s = 0; s < problem.physiology().numVolumeVariables(); ++ s)
+	for (int s = 0; s < problem.physiology()->numVolumeVariables(); ++ s)
 	{
-		output << " " << problem.physiology().getVolumeVariable(s)->name();
+		output << " " << problem.physiology()->getVolumeVariable(s)->name();
 	}
 	output << "];" << endl;
 	output << "elements_" << variableSuffix << "=[" << endl;
