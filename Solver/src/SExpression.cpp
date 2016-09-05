@@ -20,7 +20,7 @@ SExpression::SExpression(const string& exp)
 	tryConstant();
 }
 
-SExpression::SExpression(const string& exp, const SymbolTable &symTable)
+SExpression::SExpression(const string& exp, const SymbolTable *symTable)
 	:expression(exp),
 	 constValue(nullptr),
 	 bConcentrationDependent(false)
@@ -29,10 +29,10 @@ SExpression::SExpression(const string& exp, const SymbolTable &symTable)
 	bindExpression(symTable);
 }
 
-void SExpression::bindExpression(const SymbolTable &symbolTable) {
+void SExpression::bindExpression(const SymbolTable *symbolTable) {
 	if (constValue == nullptr)
 	{
-		expression.bindExpression(const_cast<SymbolTable *>(&symbolTable));
+		expression.bindExpression(const_cast<SymbolTable *>(symbolTable));
 		vector<std::string> symbols;
 		expression.getSymbols(symbols);
 		bConcentrationDependent = false;

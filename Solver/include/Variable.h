@@ -53,7 +53,7 @@ public:
 	protected:
 		friend Physiology;
 		bool bAdvecting;
-		void bindExpressions(const SimpleSymbolTable &symTable);
+		void bindExpressions(const SimpleSymbolTable* symTable);
 		string name_;
 		SExpression** expressions;
 

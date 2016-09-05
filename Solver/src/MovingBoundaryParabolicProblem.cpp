@@ -353,10 +353,10 @@ namespace moving_boundary {
 		void setConcentrations(MeshElementNode & e) {
 			e.allocateSpecies();
 			ProblemDomainPoint pdp = world.toProblemDomain(e);
-			inputValues[physiology->symbolIndex_t] = 0;
+			inputValues[physiology->symbolIndexOfT()] = 0;
 			for (int i = 0; i< numVolumeVariables; i++) {
-				inputValues[physiology->symbolIndex_coordinate] = pdp(cX);
-				inputValues[physiology->symbolIndex_coordinate + 1] = pdp(cY);
+				inputValues[physiology->symbolIndexOfCoordinate()] = pdp(cX);
+				inputValues[physiology->symbolIndexOfCoordinate() + 1] = pdp(cY);
 				double mu = physiology->getVolumeVariable(i)->evaluateExpression(expr_initial, inputValues);
 				e.setConcentration(i,mu);
 			}
@@ -463,7 +463,7 @@ namespace moving_boundary {
 		virtual double level(double *in) const {
 			double problemDomainValues[2];
 			world.toProblemDomain(in,problemDomainValues);
-			std::memcpy(inputValues + physiology->symbolIndex_coordinate, problemDomainValues, DIM * sizeof(double));
+			std::memcpy(inputValues + physiology->symbolIndexOfCoordinate(), problemDomainValues, DIM * sizeof(double));
 			double r = levelExp->evaluate(inputValues);
 			/*
 			if (r > 0) {
@@ -615,9 +615,9 @@ namespace moving_boundary {
 			 if (coord.withinWorld())
 			 {
 					CoordVect thisPoint = world.toProblemDomain(coord);
-					inputValues[physiology->symbolIndex_t] = currentTime;
-					std::memcpy(inputValues + physiology->symbolIndex_coordinate, thisPoint.data(), DIM * sizeof(double));
-					std::memcpy(inputValues + physiology->symbolIndex_normal, normal.data(), DIM * sizeof(double));
+					inputValues[physiology->symbolIndexOfT()] = currentTime;
+					std::memcpy(inputValues + physiology->symbolIndexOfCoordinate(), thisPoint.data(), DIM * sizeof(double));
+					std::memcpy(inputValues + physiology->symbolIndexOfNormal(), normal.data(), DIM * sizeof(double));
 					if (frontVelocityExpX->isConcentrationDependent() || frontVelocityExpX->isConcentrationDependent())
 					{
 						if (isRunning)
@@ -625,14 +625,14 @@ namespace moving_boundary {
 							std::vector<MeshElementNode*> stencil;
 							findExtrapolationStencil(thisPoint, 1, stencil);
 							const double* conc = stencil[0]->priorConcentrations();
-							std::memcpy(inputValues + physiology->symbolIndex_species, conc, numVolumeVariables * sizeof(double));
+							std::memcpy(inputValues + physiology->symbolIndexOfSpecies(), conc, numVolumeVariables * sizeof(double));
 						}
 						else
 						{
 							// get concentration from from initial condition
 							for (int i = 0; i < numVolumeVariables; ++ i)
 							{
-								inputValues[physiology->symbolIndex_species + i] = physiology->getVolumeVariable(i)->evaluateExpression(expr_initial, inputValues);
+								inputValues[physiology->symbolIndexOfSpecies() + i] = physiology->getVolumeVariable(i)->evaluateExpression(expr_initial, inputValues);
 							}
 						}
 					}
@@ -679,10 +679,10 @@ namespace moving_boundary {
 			double worldValues[2] = {e(cX), e(cY)};
 			double syms[2];
 			world.toProblemDomain(worldValues,syms);
-			inputValues[physiology->symbolIndex_t] = currentTime;
-			std::memcpy(inputValues + physiology->symbolIndex_coordinate, syms, DIM * sizeof(double));
+			inputValues[physiology->symbolIndexOfT()] = currentTime;
+			std::memcpy(inputValues + physiology->symbolIndexOfCoordinate(), syms, DIM * sizeof(double));
 			const double* conc = e.priorConcentrations();
-			std::memcpy(inputValues + physiology->symbolIndex_species, conc, numVolumeVariables * sizeof(double));
+			std::memcpy(inputValues + physiology->symbolIndexOfSpecies(), conc, numVolumeVariables * sizeof(double));
 			for (int s = 0; s < numVolumeVariables; ++ s)
 			{
 				const VolumeVariable* volumeVariable = physiology->getVolumeVariable(s);

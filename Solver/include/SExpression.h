@@ -20,13 +20,13 @@ namespace moving_boundary {
 		* @param symTable symbol table -- must remain valid during
 		* lifetime of object
 		*/
-		SExpression(const string& exp, const SymbolTable &symTable);
+		SExpression(const string& exp, const SymbolTable* symTable);
 
 		/**
 		* @param symTable symbol table -- must remain valid during
 		* lifetime of object
 		*/
-		void bindExpression(const SymbolTable &symbolTable);
+		void bindExpression(const SymbolTable* symbolTable);
 		/**
 		* @return new generated string representation
 		*/

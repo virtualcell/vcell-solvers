@@ -6,6 +6,7 @@
 
 using moving_boundary::Physiology;
 using moving_boundary::VolumeVariable;
+using moving_boundary::PointVariable;
 using namespace std::placeholders; 
 
 const std::vector<std::string> Physiology::fixedTimeSpatialSymbols {"t", "x", "y", "z", "normalX", "normalY", "normalZ"};
@@ -16,6 +17,9 @@ namespace {
 	*/
 	struct VariableName {
 		const string & operator( )(const VolumeVariable* in) {
+			return in->name( );
+		}
+		const string & operator( )(const PointVariable* in) {
 			return in->name( );
 		}
 	};
@@ -36,7 +40,7 @@ void Physiology::buildSymbolTable() {
 
 	const int n = static_cast<int>(names.size( ));
 	string *raw = const_cast<string *>(names.data( ));
-	pSymTable.reset(new SimpleSymbolTable(raw,n));
+	_symbolTable = new SimpleSymbolTable(raw,n);
 	//values.resize(n);
 
 	using std::placeholders::_1;

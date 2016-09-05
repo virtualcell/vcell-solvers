@@ -11,10 +11,13 @@
 using std::string;
 
 namespace moving_boundary {
+	struct SException;
+
 	struct Physiology {
 		Physiology( )
 			:volumeVariables_( ),
-			pSymTable( )
+			 _symbolTable(nullptr),
+			pointSymbolTable(nullptr)
 		{}
 
 		//************************************
@@ -49,7 +52,7 @@ namespace moving_boundary {
 		* @throws std::domain_error if not locked
 		*/
 		size_t numberSymbols( ) const {
-			return pSymTable->size( );
+			return _symbolTable->size( );
 		}
 
 		/**
@@ -57,7 +60,7 @@ namespace moving_boundary {
 		* @throws std::domain_error if not locked or name invalid
 		*/
 		size_t symbolIndex(const string &name) const {
-			auto entry =  pSymTable->getEntry(name);
+			auto entry =  _symbolTable->getEntry(name);
 			if (entry != nullptr) {
 				return entry->getIndex( );
 			}
@@ -78,10 +81,32 @@ namespace moving_boundary {
 		*/
 		void buildSymbolTable();
 
-		const SymbolTable& symbolTable()
+		const SymbolTable* symbolTable()
 		{
-			return *pSymTable;
+			return _symbolTable;
 		}
+
+		int symbolIndexOfT() const
+		{
+			return symbolIndex_t;
+		}
+
+		int symbolIndexOfCoordinate() const
+		{
+			return symbolIndex_coordinate;
+		}
+
+		int symbolIndexOfSpecies() const
+		{
+			return symbolIndex_species;
+		}
+
+		int symbolIndexOfNormal() const
+		{
+			return symbolIndex_normal;
+		}
+
+	private:
 
 		static const vector<string> fixedTimeSpatialSymbols;
 		int symbolIndex_t;
@@ -89,17 +114,19 @@ namespace moving_boundary {
 		int symbolIndex_normal;
 		int symbolIndex_species;
 
-	private:
 		Physiology(const Physiology &); //not defined
 		std::vector<VolumeVariable*> volumeVariables_;
 		std::vector<PointVariable*> _pointVariables;
 		std::vector<VolumeSubdomain*> _volumeSubdomains;
 		std::vector<PointSubdomain*> _pointSubdomains;
-		std::unique_ptr<SimpleSymbolTable> pSymTable;
+		SimpleSymbolTable* _symbolTable;
+		SimpleSymbolTable* pointSymbolTable;
 
 		void bindExpressions(VolumeVariable* sp) {
-			sp->bindExpressions(*pSymTable);
+			sp->bindExpressions(_symbolTable);
 		}
+
+		friend struct SExpression;
 	};
 }
 

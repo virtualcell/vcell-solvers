@@ -20,6 +20,6 @@ void PointSubdomain::bindExpressions(SymbolTable* symbolTable)
 {
 	for (int i = 0; i < DIM; ++ i)
 	{
-		pos[i]->bindExpression(*symbolTable);
+		pos[i]->bindExpression(symbolTable);
 	}
 }

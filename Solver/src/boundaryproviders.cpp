@@ -235,7 +235,7 @@ namespace {
 		//const double xVel;
 		//double time;
 		moving_boundary::FrontType baseFront;
-		SimpleSymbolTable symTable;
+		SimpleSymbolTable* symTable;
 		moving_boundary::SExpression radiusExpression;
 		double multiplier;
 		std::array<double,3> values;
@@ -259,7 +259,7 @@ namespace {
 					baseFront.push_back(pt);
 				}
 				close( );
-				assert(symTable.getEntry("t")->getIndex( ) == TIME_INDEX);
+				assert(symTable->getEntry("t")->getIndex( ) == TIME_INDEX);
 		}
 
 
@@ -314,9 +314,9 @@ namespace {
 		/*
 		* constructor support; build SymbolTable 
 		*/
-		static SimpleSymbolTable buildSymTable( ) {
+		static SimpleSymbolTable* buildSymTable( ) {
 			std::string syms[] = { "x","y","t"};
-			SimpleSymbolTable sst(syms, sizeof(syms)/sizeof(syms[0]));
+			SimpleSymbolTable* sst = new SimpleSymbolTable(syms, sizeof(syms)/sizeof(syms[0]));
 			return sst;
 		}
 

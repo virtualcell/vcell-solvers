@@ -25,7 +25,7 @@ Variable::~Variable()
 	delete[] expressions;
 }
 
-void Variable::bindExpressions(const SimpleSymbolTable &symTable) {
+void Variable::bindExpressions(const SimpleSymbolTable* symTable) {
 	forbidNullExpression(expr_initial);
 	forbidNullExpression(expr_source);
 	if (getType() == vartype_volume)
