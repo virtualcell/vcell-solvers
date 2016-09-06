@@ -8,23 +8,29 @@ using std::vector;
 
 namespace moving_boundary
 {
-struct PointSubdomain : public Subdomain
-{
-public:
-	PointSubdomain(const string & name, const string& posX, const string& posY);
-	virtual ~PointSubdomain();
-
-	SubdomainType getType()
+	struct PointSubdomain : public Subdomain
 	{
-		return subdomain_point;
-	}
+	public:
+		PointSubdomain(const string & name, Physiology* physiology, const string& posX, const string& posY);
+		virtual ~PointSubdomain();
 
-	void bindExpressions(SymbolTable* symbolTable);
+		SubdomainType getType()
+		{
+			return subdomain_point;
+		}
 
-protected:
-	string name_;
-	SExpression* pos[DIM];
-};
+		void bindExpressions(SymbolTable* symbolTable);
+		double* getPositionValues()
+		{
+			return positionValues;
+		}
+		void updatePosition(double* values);
+
+	protected:
+		string name_;
+		SExpression* positions[DIM];
+		double positionValues[DIM];
+	};
 }
 
 #endif

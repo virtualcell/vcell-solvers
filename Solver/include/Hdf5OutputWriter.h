@@ -9,6 +9,8 @@
 #include <H5Cpp.h>
 using std::vector;
 using std::string;
+using namespace H5;
+using namespace moving_boundary;
 
 using moving_boundary::World ;
 using moving_boundary::CoordinateType;
@@ -59,7 +61,7 @@ struct Hdf5OutputWriter :public moving_boundary::ReportClient
 	* @param mbpp the problem
 	* @param baseName name of dataset in HDF5 file if not default
 	*/
-	Hdf5OutputWriter(std::string& a_xml, std::string& baseFileName, H5::H5File& a_h5File, int steps, double interval, WorldType & world_, const moving_boundary::MovingBoundaryParabolicProblem &mbpp);
+	Hdf5OutputWriter(std::string& a_xml, std::string& baseFileName, H5File& a_h5File, int steps, double interval, WorldType & world_, const moving_boundary::MovingBoundaryParabolicProblem &mbpp);
 	~Hdf5OutputWriter();
 
 	virtual void time(double t, unsigned int generationCounter, bool last, const moving_boundary::GeometryInfo<moving_boundary::CoordinateType> & geometryInfo);
@@ -95,8 +97,10 @@ private:
 	void writeLog();
 	void writeSolution();
 	void initTimesDataSet();
-	void initSolutionGroup();
 	void initMeshGroup();
+	void writeVolumeSolution(Group& timeGroup);
+	void writePointSolution(Group& timeGroup);
+	void writeVariableDataSet(Group& timeGroup, const Variable* var, double* solution, int size, const string& type);
 
 	const moving_boundary::MovingBoundaryParabolicProblem &theProblem;
 	const WorldType & world;
@@ -104,17 +108,16 @@ private:
 	/**
 	* XML used to create
 	*/
-	double* solution;
+	double* volumeSolution;
 	bool bShouldReport;
-	unsigned int solutionSize;
 	unsigned int numVolumeVariables;
 	unsigned int numElements;
 	std::string xml;
 	std::string h5FileName;
-	H5::H5File h5File;
-	H5::DataSet timesDataSet;
-	H5::Group solutionGroup;
-	H5::Group meshGroup;
+	H5File h5File;
+	DataSet timesDataSet;
+	Group solutionGroup;
+	Group meshGroup;
 	std::string logFileName;
 	double currentTime;
 	int currentIter;
@@ -123,7 +126,7 @@ private:
 	unsigned int outputNumSteps;
 	double outputTimeStep;
 	vector<double> timeList;
-	H5::DataSet solutionDataSet;
+	DataSet solutionDataSet;
 
 	WorldType::PointConverter pointconverter;
 };

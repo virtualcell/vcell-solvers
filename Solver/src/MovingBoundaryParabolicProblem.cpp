@@ -207,7 +207,8 @@ namespace moving_boundary {
 			timeClients( ),
 			elementClients( ),
 			percentInfo( ),
-			inputValues(nullptr)
+			stateValues(nullptr),
+			pointStateValues(nullptr)
 		{  
 
 			MeshElementNode::setProblemToWorldDistanceScale(world.theScale( ));
@@ -221,7 +222,8 @@ namespace moving_boundary {
 				}
 			}
 			physiology->buildSymbolTable();
-			inputValues = new double[physiology->numberSymbols()];
+			stateValues = new double[physiology->numberSymbols()];
+			pointStateValues = new double[physiology->numberPointSymbols()];
 
 			levelExp = new SExpression(mbs.levelFunctionStr, physiology->symbolTable());
 			frontVelocityExpX = new SExpression(mbs.frontVelocityFunctionStrX,physiology->symbolTable());
@@ -229,6 +231,7 @@ namespace moving_boundary {
 
 			vcFront = initFront(world, *this,mbs);
 			setInitialValues( );
+			setPointInitialValues( );
 
 			//check time step
 			/* TDX
@@ -343,7 +346,7 @@ namespace moving_boundary {
 
 		~MovingBoundaryParabolicProblemImpl( ) {
 			delete vcFront;
-			delete[] inputValues;
+			delete[] stateValues;
 		}
 
 		void setInterior(MeshElementNode &e) {
@@ -353,11 +356,11 @@ namespace moving_boundary {
 		void setConcentrations(MeshElementNode & e) {
 			e.allocateSpecies();
 			ProblemDomainPoint pdp = world.toProblemDomain(e);
-			inputValues[physiology->symbolIndexOfT()] = 0;
+			stateValues[physiology->symbolIndexOfT()] = 0;
 			for (int i = 0; i< numVolumeVariables; i++) {
-				inputValues[physiology->symbolIndexOfCoordinate()] = pdp(cX);
-				inputValues[physiology->symbolIndexOfCoordinate() + 1] = pdp(cY);
-				double mu = physiology->getVolumeVariable(i)->evaluateExpression(expr_initial, inputValues);
+				stateValues[physiology->symbolIndexOfCoordinate()] = pdp(cX);
+				stateValues[physiology->symbolIndexOfCoordinate() + 1] = pdp(cY);
+				double mu = physiology->getVolumeVariable(i)->evaluateExpression(expr_initial, stateValues);
 				e.setConcentration(i,mu);
 			}
 		}
@@ -463,8 +466,8 @@ namespace moving_boundary {
 		virtual double level(double *in) const {
 			double problemDomainValues[2];
 			world.toProblemDomain(in,problemDomainValues);
-			std::memcpy(inputValues + physiology->symbolIndexOfCoordinate(), problemDomainValues, DIM * sizeof(double));
-			double r = levelExp->evaluate(inputValues);
+			std::memcpy(stateValues + physiology->symbolIndexOfCoordinate(), problemDomainValues, DIM * sizeof(double));
+			double r = levelExp->evaluate(stateValues);
 			/*
 			if (r > 0) {
 			scatterInside.add(problemDomainValues[0],problemDomainValues[1]);
@@ -615,9 +618,9 @@ namespace moving_boundary {
 			 if (coord.withinWorld())
 			 {
 					CoordVect thisPoint = world.toProblemDomain(coord);
-					inputValues[physiology->symbolIndexOfT()] = currentTime;
-					std::memcpy(inputValues + physiology->symbolIndexOfCoordinate(), thisPoint.data(), DIM * sizeof(double));
-					std::memcpy(inputValues + physiology->symbolIndexOfNormal(), normal.data(), DIM * sizeof(double));
+					stateValues[physiology->symbolIndexOfT()] = currentTime;
+					std::memcpy(stateValues + physiology->symbolIndexOfCoordinate(), thisPoint.data(), DIM * sizeof(double));
+					std::memcpy(stateValues + physiology->symbolIndexOfNormal(), normal.data(), DIM * sizeof(double));
 					if (frontVelocityExpX->isConcentrationDependent() || frontVelocityExpX->isConcentrationDependent())
 					{
 						if (isRunning)
@@ -625,14 +628,14 @@ namespace moving_boundary {
 							std::vector<MeshElementNode*> stencil;
 							findExtrapolationStencil(thisPoint, 1, stencil);
 							const double* conc = stencil[0]->priorConcentrations();
-							std::memcpy(inputValues + physiology->symbolIndexOfSpecies(), conc, numVolumeVariables * sizeof(double));
+							std::memcpy(stateValues + physiology->symbolIndexOfSpecies(), conc, numVolumeVariables * sizeof(double));
 						}
 						else
 						{
 							// get concentration from from initial condition
 							for (int i = 0; i < numVolumeVariables; ++ i)
 							{
-								inputValues[physiology->symbolIndexOfSpecies() + i] = physiology->getVolumeVariable(i)->evaluateExpression(expr_initial, inputValues);
+								stateValues[physiology->symbolIndexOfSpecies() + i] = physiology->getVolumeVariable(i)->evaluateExpression(expr_initial, stateValues);
 							}
 						}
 					}
@@ -651,8 +654,8 @@ namespace moving_boundary {
 			enum {ex = 0, ey = 1, et = 2};
 			syms[et] = currentTime; 
 			*/
-			double vX = frontVelocityExpX->evaluate(inputValues);
-			double vY = frontVelocityExpY->evaluate(inputValues);
+			double vX = frontVelocityExpX->evaluate(stateValues);
+			double vY = frontVelocityExpY->evaluate(stateValues);
 			vcell_util::Logger::debugExit(METHOD);
 //			return spatial::SVector<double,2>(vel[0], vel[1]);
 			return spatial::SVector<double,2>(vX, vY);
@@ -679,17 +682,17 @@ namespace moving_boundary {
 			double worldValues[2] = {e(cX), e(cY)};
 			double syms[2];
 			world.toProblemDomain(worldValues,syms);
-			inputValues[physiology->symbolIndexOfT()] = currentTime;
-			std::memcpy(inputValues + physiology->symbolIndexOfCoordinate(), syms, DIM * sizeof(double));
+			stateValues[physiology->symbolIndexOfT()] = currentTime;
+			std::memcpy(stateValues + physiology->symbolIndexOfCoordinate(), syms, DIM * sizeof(double));
 			const double* conc = e.priorConcentrations();
-			std::memcpy(inputValues + physiology->symbolIndexOfSpecies(), conc, numVolumeVariables * sizeof(double));
+			std::memcpy(stateValues + physiology->symbolIndexOfSpecies(), conc, numVolumeVariables * sizeof(double));
 			for (int s = 0; s < numVolumeVariables; ++ s)
 			{
 				const VolumeVariable* volumeVariable = physiology->getVolumeVariable(s);
 				if (volumeVariable->isAdvecting())
 				{
-					double vX = volumeVariable->evaluateExpression(moving_boundary::expr_advection_x, inputValues);
-					double vY = volumeVariable->evaluateExpression(moving_boundary::expr_advection_y, inputValues);
+					double vX = volumeVariable->evaluateExpression(moving_boundary::expr_advection_x, stateValues);
+					double vY = volumeVariable->evaluateExpression(moving_boundary::expr_advection_y, stateValues);
 					CoordVect cv(vX, vY);
 					CoordVect v = world.toWorld(cv);
 					e.setAdvection(s, v);
@@ -1097,6 +1100,63 @@ namespace moving_boundary {
 			return maxSpeed.max();
 		}
 
+		void populatePointStateValues()
+		{
+			pointStateValues[physiology->pointSymbolIndexOfT()] = currentTime;
+			for (int ipv = 0; ipv < physiology->numPointVariables(); ++ ipv)
+			{
+				pointStateValues[physiology->pointSymbolIndexOfSpecies() + ipv] = physiology->getPointVariable(ipv)->getCurrSol(0);
+			}
+		}
+
+		void updatePointPositions()
+		{
+			populatePointStateValues();
+			for (int ips = 0; ips < physiology->numPointSubdomains(); ++ ips)
+			{
+				PointSubdomain* ps = physiology->getPointSubdomain(ips);
+				ps->updatePosition(pointStateValues);
+			}
+		}
+
+		void setPointInitialValues()
+		{
+			// Set intial conditions of Point Variables, which we assume is a constant for now
+			for (int ips = 0; ips < physiology->numPointSubdomains(); ++ ips )
+			{
+				PointSubdomain* ps = physiology->getPointSubdomain(ips);
+				for (int ipv = 0; ipv < ps->numVariables(); ++ ipv)
+				{
+					PointVariable* pv = (PointVariable*)ps->getVariable(ipv);
+					double* currSol = pv->getCurrSol();
+					currSol[0] = pv->getExpressionConstantValue(expr_initial);
+				}
+			}
+			// with initial values of point variables, compute initial position
+			updatePointPositions();
+		}
+
+		void solvePointVariables(double dT)
+		{
+			populatePointStateValues();
+			for (int ips = 0; ips < physiology->numPointSubdomains(); ++ ips)
+			{
+				PointSubdomain* ps = physiology->getPointSubdomain(ips);
+				// one step solve for all point variables defined in this point subdomain
+				std::memcpy(pointStateValues + physiology->pointSymbolIndexOfCoordinate(), ps->getPositionValues(), DIM * sizeof(double));
+				for (int ipv = 0; ipv < ps->numVariables(); ++ ipv)
+				{
+					 // advance solution for each point variable in this pt subdomain (explicit euler)
+					PointVariable* pv = (PointVariable*)ps->getVariable(ipv);
+					double* currSol = pv->getCurrSol();
+					currSol[0] += dT * pv->evaluateExpression(expr_source, pointStateValues);
+				}
+			}
+
+			// with new values of point variables, compute position again for output and next time step
+			updatePointPositions();
+		}
+
 		void run( ) {
 			VCELL_LOG(info,"commence simulation");
 
@@ -1147,7 +1207,7 @@ namespace moving_boundary {
 					}
 					//currentTime = nowAndStep.first;
 					const double endOfStepTime = nowAndStep.first;
-					double timeIncr = nowAndStep.second;
+					double dT = nowAndStep.second;
 
 					for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter)
 					{
@@ -1156,7 +1216,7 @@ namespace moving_boundary {
 					}
 
 					vcFront->propagateTo(endOfStepTime); 
-					VCELL_LOG_ALWAYS("t=" << currentTime << ", t_next=" << endOfStepTime << ", dt=" << timeIncr
+					VCELL_LOG_ALWAYS("t=" << currentTime << ", t_next=" << endOfStepTime << ", dt=" << dT
 							<< ", iteration=" << numIteration << ", front has " << currentFront.size( ) << " points"
 //							<< std::setprecision(10) << ", maxVel_gerard=" << maxVel_gerard << ",maxVel_FT="<<maxVel_FT
 					);
@@ -1182,7 +1242,7 @@ namespace moving_boundary {
 					std::for_each(boundaryElements.begin( ),boundaryElements.end( ),MoveFront(*this));
 
 					try {
-						std::for_each(primaryMesh.begin( ),primaryMesh.end( ), React(currentTime,timeIncr) );
+						std::for_each(primaryMesh.begin( ),primaryMesh.end( ), React(currentTime,dT) );
 					} catch (ReverseLengthException &rle) {
 						std::ofstream s("rle.m");
 						rle.aElement.writeMatlab(s, nullptr,false, 20);
@@ -1191,13 +1251,15 @@ namespace moving_boundary {
 					}
 					primaryMesh.diffuseAdvectCache( ).start( );
 					for (unsigned s = 0; s < physiology->numVolumeVariables( ) ; s++) {
-						solver.setStepAndSpecies(timeIncr,s);
+						solver.setStepAndSpecies(dT,s);
 						diffuseAdvect.speciesIdx = s;
 						std::for_each(primaryMesh.begin( ),primaryMesh.end( ), diffuseAdvect);
 						solver.solve( );
 					}
 					primaryMesh.diffuseAdvectCache( ).finish( );
 					//std::for_each(primaryMesh.begin( ),primaryMesh.end( ), advectComplete);
+
+					solvePointVariables(dT);
 
 					currentTime = endOfStepTime;
 					if (frontMoveTrace) {
@@ -1532,7 +1594,8 @@ namespace moving_boundary {
 		mutable SExpression* levelExp; //Expression doesn't currently support "const"
 		mutable SExpression* frontVelocityExpX;
 		mutable SExpression* frontVelocityExpY;
-		mutable double* inputValues;
+		mutable double* stateValues;
+		double* pointStateValues;
 		mutable boost::logic::tribool zeroSourceTerms; //logically const, but lazily evaluated
 		/**
 		* FronTier integration

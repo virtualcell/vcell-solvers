@@ -1,4 +1,5 @@
 #include <Variable.h>
+#include <VCellException.h>
 #include <cstring>
 #include <sstream>
 using moving_boundary::Variable;
@@ -7,13 +8,20 @@ using std::endl;
 
 Variable::Variable(const string & name)
 				:name_(name),
-				 bAdvecting(false)
+				 bAdvecting(false),
+				 size(0),
+				 currSol(nullptr)
 {
-	expressions = new SExpression*[expr_size];
-	for (int i = 0; i < expr_size; ++ i)
-	{
-		expressions[i] = nullptr;
-	}
+	initExpressions();
+}
+
+Variable::Variable(const string & name, int a_size)
+				:name_(name),
+				 bAdvecting(false),
+				 size(a_size)
+{
+	currSol = new double[size];
+	initExpressions();
 }
 
 Variable::~Variable()
@@ -23,6 +31,16 @@ Variable::~Variable()
 		delete expressions[i];
 	}
 	delete[] expressions;
+	delete[] currSol;
+}
+
+void Variable::initExpressions()
+{
+	expressions = new SExpression*[expr_size];
+	for (int i = 0; i < expr_size; ++ i)
+	{
+		expressions[i] = nullptr;
+	}
 }
 
 void Variable::bindExpressions(const SimpleSymbolTable* symTable) {
@@ -61,7 +79,7 @@ void Variable::forbidNullExpression(ExpressionIndex exprIndex) const
 	if (expressions[exprIndex] == nullptr)
 	{
 		stringstream ss;
-		ss << "Expression for " << ExpressionDescription[exprIndex] << " is null " << endl;
+		VCELL_RUNTIME_EXCEPTION("Expression for " << ExpressionDescription[exprIndex] << " is null ");
 		throw ss.str();
 	}
 }
@@ -87,4 +105,31 @@ bool Variable::isExpressionConstant(ExpressionIndex exprIndex) const
 bool Variable::isExpressionNonZero(ExpressionIndex exprIndex) const
 {
 	return expressions[exprIndex] != nullptr && (!expressions[exprIndex]->isConstant() || expressions[exprIndex]->constantValue() != 0);
+}
+
+void Variable::setCurrSol(int index, double v)
+{
+	if (currSol == nullptr)
+	{
+		VCELL_RUNTIME_EXCEPTION("currSol for Variable " << name_ << " is not allocated. ");
+	}
+	currSol[index] = v;
+}
+
+double Variable::getCurrSol(int index)
+{
+	if (currSol == nullptr)
+	{
+		VCELL_RUNTIME_EXCEPTION("currSol for Variable " << name_ << " is not allocated. ");
+	}
+	return currSol[index];
+}
+
+double* Variable::getCurrSol()
+{
+	if (currSol == nullptr)
+	{
+		VCELL_RUNTIME_EXCEPTION("currSol for Variable " << name_ << " is not allocated. ");
+	}
+	return currSol;
 }

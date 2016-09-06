@@ -1,10 +1,9 @@
 #include <VolumeSubdomain.h>
 #include <cstring>
-using moving_boundary::Subdomain;
-using moving_boundary::VolumeSubdomain;
+using namespace moving_boundary;
 
-VolumeSubdomain::VolumeSubdomain(const string & name)
-				:Subdomain(name)
+VolumeSubdomain::VolumeSubdomain(const string & name, Physiology* physiology)
+				:Subdomain(name, physiology)
 {
 }
 

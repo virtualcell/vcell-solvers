@@ -169,13 +169,13 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 		string domainName = subdomainElement->Attribute("name");
 		if (domainType == "volume")
 		{
-			subdomain = new VolumeSubdomain(domainName);
+			subdomain = new VolumeSubdomain(domainName, mbSetup.physiology);
 		}
 		else if (domainType == "point")
 		{
 			string posX = vcell_xml::convertChildElement<std::string>(*subdomainElement,"positionX");
 			string posY = vcell_xml::convertChildElement<std::string>(*subdomainElement,"positionY");
-			subdomain = new PointSubdomain(domainName, posX, posY);
+			subdomain = new PointSubdomain(domainName, mbSetup.physiology, posX, posY);
 		}
 		mbSetup.physiology->addSubdomain(subdomain);
 
@@ -184,7 +184,17 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 		while (spE != nullptr) {
 			//get name, or design default
 			string name  = spE->Attribute("name");
-			VolumeVariable* s = new VolumeVariable(name);
+			string type  = spE->Attribute("type");
+			Variable* s = nullptr;
+
+			if (type == "volume")
+			{
+				s = new VolumeVariable(name);
+			}
+			else if (type == "point")
+			{
+				s = new PointVariable(name);
+			}
 
 			std::string init = vcell_xml::convertChildElement<std::string>(*spE,"initial");
 			std::string source = vcell_xml::convertChildElement<std::string>(*spE,"source");

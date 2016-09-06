@@ -30,6 +30,7 @@ namespace {
 * includes all species names plus those passed in
 */
 void Physiology::buildSymbolTable() {
+	{
 	std::vector<string> names(volumeVariables_.size( ) + fixedTimeSpatialSymbols.size());
 	std::transform(volumeVariables_.begin( ), volumeVariables_.end( ),names.begin( ), VariableName( ));
 	std::copy(fixedTimeSpatialSymbols.begin(), fixedTimeSpatialSymbols.end(), names.begin( ) + volumeVariables_.size( ));
@@ -45,6 +46,27 @@ void Physiology::buildSymbolTable() {
 
 	using std::placeholders::_1;
 	std::for_each(volumeVariables_.begin( ),volumeVariables_.end( ), std::bind(&Physiology::bindExpressions, this, _1) );
+	}
+
+	{
+	// point symbol table
+	std::vector<string> names(_pointVariables.size( ) + fixedTimeSpatialSymbols.size());
+	std::transform(_pointVariables.begin( ), _pointVariables.end( ),names.begin( ), VariableName( ));
+	std::copy(fixedTimeSpatialSymbols.begin(), fixedTimeSpatialSymbols.end(), names.begin( ) + _pointVariables.size( ));
+	pointSymbolIndex_species = 0;
+	pointSymbolIndex_t = _pointVariables.size();
+	pointSymbolIndex_coordinate = pointSymbolIndex_t + 1;
+	pointSymbolIndex_normal = pointSymbolIndex_coordinate + MAX_DIM;
+
+	const int n = static_cast<int>(names.size( ));
+	string *raw = const_cast<string *>(names.data( ));
+	pointSymbolTable = new SimpleSymbolTable(raw,n);
+	//values.resize(n);
+
+	using std::placeholders::_1;
+	std::for_each(_pointVariables.begin( ),_pointVariables.end( ), std::bind(&Physiology::bindPointVariables, this, _1) );
+	std::for_each(_pointSubdomains.begin( ),_pointSubdomains.end( ), std::bind(&Physiology::bindPointSubdomains, this, _1) );
+	}
 }
 
 void Physiology::addVariable(Variable* s) {
@@ -76,3 +98,4 @@ void Physiology::addSubdomain(Subdomain* s) {
 		VCELL_EXCEPTION(domain_error, "error adding subdomain " << s->name() << ": " << de.what( ));
 	}
 }
+

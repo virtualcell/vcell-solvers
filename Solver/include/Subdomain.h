@@ -15,7 +15,7 @@ enum SubdomainType
 
 struct Subdomain {
 
-	Subdomain(const string & name);
+	Subdomain(const string & name, Physiology* a_physiology);
 	virtual ~Subdomain();
 
 	const string & name( ) const {
@@ -26,10 +26,18 @@ struct Subdomain {
 	{
 		_variables.push_back(v);
 	}
-
-private:
+	int numVariables()
+	{
+		return _variables.size();
+	}
+	Variable* getVariable(int index)
+	{
+		return _variables.at(index);
+	}
+protected:
 	string name_;
 	vector<Variable*> _variables;
+	Physiology* physiology;
 };
 
 }

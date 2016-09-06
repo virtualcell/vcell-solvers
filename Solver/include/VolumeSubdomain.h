@@ -8,7 +8,7 @@ namespace moving_boundary
 {
 	struct VolumeSubdomain : public Subdomain
 	{
-		VolumeSubdomain(const string & name);
+		VolumeSubdomain(const string & name, Physiology* physiology);
 		virtual ~VolumeSubdomain();
 
 		SubdomainType getType()

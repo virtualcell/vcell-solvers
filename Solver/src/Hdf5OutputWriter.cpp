@@ -8,6 +8,7 @@
 #include <Logger.h>
 #include <Mesh.h>
 #include <MeshElementNode.h>
+#include <VolumeVariable.h>
 #include <MovingBoundaryParabolicProblem.h>
 #include <vcellxml.h>
 #include <ReportClient.h>
@@ -17,7 +18,23 @@
 #include <MBridge/MatlabDebug.h>
 #include <MBridge/FronTierAdapt.h>
 #include <MBridge/Figure.h>
-using namespace H5;
+
+namespace
+{
+	struct PointSubdomainPositionType
+	{
+		double positionX;
+		double positionY;
+
+		static H5::DataType getType( )
+		{
+			H5::CompType compType( sizeof (PointSubdomainPositionType) );
+			compType.insertMember("PositionX", HOFFSET(PointSubdomainPositionType,positionX), PredType::NATIVE_DOUBLE);
+			compType.insertMember("PositionY", HOFFSET(PointSubdomainPositionType,positionY), PredType::NATIVE_DOUBLE);
+			return compType;
+		}
+	};
+}
 
 Hdf5OutputWriter::Hdf5OutputWriter(std::string& a_xml, std::string& baseFileName, H5File& a_h5File, int steps, double interval,
 	WorldType & world_,
@@ -31,8 +48,7 @@ Hdf5OutputWriter::Hdf5OutputWriter(std::string& a_xml, std::string& baseFileName
 	world(world_),
 	lastReportIteration(0),
 	bLastIter(false),
-	solution(nullptr),
-	solutionSize(0),
+	volumeSolution(nullptr),
 	pointconverter(world.pointConverter( ))
 {
 	logFileName = baseFileName + LOG_FILE_EXT;
@@ -42,7 +58,7 @@ Hdf5OutputWriter::Hdf5OutputWriter(std::string& a_xml, std::string& baseFileName
 
 Hdf5OutputWriter::~Hdf5OutputWriter()
 {
-	delete[] solution;
+	delete[] volumeSolution;
 }
 
 void Hdf5OutputWriter::init()
@@ -51,12 +67,12 @@ void Hdf5OutputWriter::init()
 
 	numElements = theProblem.meshDef().numCells();
 	numVolumeVariables = theProblem.physiology()->numVolumeVariables();
-	solutionSize =  numElements * numVolumeVariables;
-	solution = new double[solutionSize];
+	volumeSolution = new double[numElements];
 
 	initMeshGroup();
 	initTimesDataSet();
-	initSolutionGroup();
+	// solution group
+	solutionGroup = h5File.createGroup(Group_Solution);
 }
 
 void Hdf5OutputWriter::initTimesDataSet()
@@ -73,31 +89,6 @@ void Hdf5OutputWriter::initTimesDataSet()
 	cparms.setFillValue(PredType::NATIVE_INT, &fill_val);
 	// create dataset
 	timesDataSet = h5File.createDataSet(DataSet_Times, PredType::NATIVE_DOUBLE, timesDataSpace, cparms);
-}
-
-void Hdf5OutputWriter::initSolutionGroup()
-{
-	DataSpace attributeDataSpace(H5S_SCALAR);
-	StrType attributeStrType(0, 64);
-	// solution group
-	solutionGroup = h5File.createGroup(Group_Solution);
-
-	// size
-	Attribute attribute = solutionGroup.createAttribute("size", PredType::NATIVE_INT, attributeDataSpace);
-	attribute.write(PredType::NATIVE_INT, &numElements);
-
-	// add variables as attributes
-	for (int s = 0; s < theProblem.physiology()->numVolumeVariables(); ++ s)
-	{
-		char attrName[64];
-		char attrValue[64];
-
-		//write name and unit
-		sprintf(attrName, "Variable_%d", s);
-		Attribute attribute = solutionGroup.createAttribute(attrName, attributeStrType, attributeDataSpace);
-		sprintf(attrValue, "%s", theProblem.physiology()->getVolumeVariable(s)->name().c_str());
-		attribute.write(attributeStrType, attrValue);
-	}
 }
 
 void Hdf5OutputWriter::initMeshGroup()
@@ -179,38 +170,105 @@ void Hdf5OutputWriter::time(double t, unsigned int numIter, bool last, const mov
 
 void Hdf5OutputWriter::writeSolution()
 {
-	std::memset(solution, 0, solutionSize * sizeof(double));
-	int elementIndex = 0;
-	for (spatial::Mesh<moving_boundary::CoordinateType, 2, moving_boundary::MeshElementNode>::const_iterator iter = theProblem.mesh().begin();
-			iter != theProblem.mesh().end( ); ++ iter, ++ elementIndex)
-	{
-		const moving_boundary::MeshElementNode &e = *iter;
-		const double* concValues = e.priorConcentrations();
-		if (concValues != nullptr)
-		{
-			for (int i = 0; i < numVolumeVariables; ++ i)
-			{
-				solution[i * numElements + elementIndex] = concValues[i];
-			}
-		}
-	}
-
-	char dataSetName[128];
-	sprintf(dataSetName, "time%06d", timeList.size());
-
-	// create dataspace
-	hsize_t hdf5Rank = 1;
-	hsize_t hdf5Dims = solutionSize;
-	DataSpace dataspace(hdf5Rank, &hdf5Dims);
-	DataSet dataSet = solutionGroup.createDataSet(dataSetName, PredType::NATIVE_DOUBLE, dataspace);
-
+	char timeGroupName[128];
+	sprintf(timeGroupName, "time%06d", timeList.size());
+	Group timeGroup = solutionGroup.createGroup(timeGroupName);
 	// time attribute
 	DataSpace attributeDataSpace(H5S_SCALAR);
-	Attribute attribute = dataSet.createAttribute("time", PredType::NATIVE_DOUBLE, attributeDataSpace);
+	Attribute attribute = timeGroup.createAttribute("time", PredType::NATIVE_DOUBLE, attributeDataSpace);
 	attribute.write(PredType::NATIVE_DOUBLE, &currentTime);
 
-	// write dataset
-	dataSet.write(solution, PredType::NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT);
+	// dt attribute
+	double dt = theProblem.frontTimeStep();
+	attribute = timeGroup.createAttribute("dt", PredType::NATIVE_DOUBLE, attributeDataSpace);
+	attribute.write(PredType::NATIVE_DOUBLE, &dt);
+
+	writeVolumeSolution(timeGroup);
+	writePointSolution(timeGroup);
+}
+
+void Hdf5OutputWriter::writeVolumeSolution(Group& timeGroup)
+{
+	// for each variable, we create a dataset
+	for (int ivar = 0; ivar < numVolumeVariables; ++ ivar)
+	{
+		const VolumeVariable* volVar = theProblem.physiology()->getVolumeVariable(ivar);
+		std::memset(volumeSolution, 0, numElements * sizeof(double));
+		int elementIndex = 0;
+		for (spatial::Mesh<moving_boundary::CoordinateType, 2, moving_boundary::MeshElementNode>::const_iterator iter = theProblem.mesh().begin();
+				iter != theProblem.mesh().end( ); ++ iter, ++ elementIndex)
+		{
+			const moving_boundary::MeshElementNode &e = *iter;
+			const double* concValues = e.priorConcentrations();
+			if (concValues != nullptr)
+			{
+				volumeSolution[elementIndex] = concValues[ivar];
+			}
+		}
+		writeVariableDataSet(timeGroup, volVar, volumeSolution, numElements, "Volume");
+	}
+}
+
+void Hdf5OutputWriter::writePointSolution(Group& timeGroup)
+{
+	for (int ips = 0; ips < theProblem.physiology()->numPointSubdomains(); ++ ips)
+	{
+		PointSubdomain* ps = theProblem.physiology()->getPointSubdomain(ips);
+
+		DataType type = PointSubdomainPositionType::getType();
+		hsize_t hdf5Rank = 1;
+		hsize_t hdf5Dims = 1;
+		DataSpace dataspace(hdf5Rank, &hdf5Dims);
+		DataSet dataSet = timeGroup.createDataSet(ps->name().c_str(), type, dataspace);
+
+		// Position
+		DataSpace attributeDataSpace(H5S_SCALAR);
+		StrType attributeStrType(0, 64);
+
+		// name attribute
+		Attribute attribute = dataSet.createAttribute("name", attributeStrType, attributeDataSpace);
+		attribute.write(attributeStrType, ps->name().c_str());
+
+		// type attribute
+		attribute = dataSet.createAttribute("type", attributeStrType, attributeDataSpace);
+		attribute.write(attributeStrType, "PointSubDomain");
+
+		dataSet.write(ps->getPositionValues(), type, H5S_ALL, H5S_ALL, H5P_DEFAULT);
+
+		// for each variable, we create a dataset
+		for (int ivar = 0; ivar < ps->numVariables(); ++ ivar)
+		{
+			int size = 1;
+			PointVariable* pv = (PointVariable*)ps->getVariable(ivar);
+			writeVariableDataSet(timeGroup, pv, pv->getCurrSol(), 1, "Point");
+		}
+	}
+}
+
+void Hdf5OutputWriter::writeVariableDataSet(Group& timeGroup, const Variable* var, double* solution, int size, const string& type)
+{
+		hsize_t hdf5Rank = 1;
+		hsize_t hdf5Dims = size;
+		DataSpace dataspace(hdf5Rank, &hdf5Dims);
+		DataSet dataSet = timeGroup.createDataSet(var->name().c_str(), PredType::NATIVE_DOUBLE, dataspace);
+
+		DataSpace attributeDataSpace(H5S_SCALAR);
+		StrType attributeStrType(0, 64);
+
+		// size
+		Attribute attribute = dataSet.createAttribute("size", PredType::NATIVE_INT, attributeDataSpace);
+		attribute.write(PredType::NATIVE_INT, &size);
+
+		// name attribute
+		attribute = dataSet.createAttribute("name", attributeStrType, attributeDataSpace);
+		attribute.write(attributeStrType, var->name().c_str());
+
+		// name attribute
+		attribute = dataSet.createAttribute("type", attributeStrType, attributeDataSpace);
+		attribute.write(attributeStrType, type.c_str());
+
+		// write dataset
+		dataSet.write(solution, PredType::NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT);
 }
 
 void Hdf5OutputWriter::writeLog()

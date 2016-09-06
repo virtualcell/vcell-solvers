@@ -25,9 +25,10 @@ namespace moving_boundary
 
 	const char ExpressionDescription[][50] = {"Initial", "Rate", "Diffusion", "VelocityX", "VelocityY"};
 
-	struct Variable {
+	class Variable {
 public:
 		Variable(const string & name);
+		Variable(const string & name, int size);
 		virtual ~Variable();
 
 		const string & name( ) const {
@@ -49,6 +50,9 @@ public:
 		bool isExpressionConstant(ExpressionIndex exprIndex) const;
 		bool isExpressionNonZero(ExpressionIndex exprIndex) const;
 		double getExpressionConstantValue(ExpressionIndex exprIndex) const;
+		void setCurrSol(int index, double v);
+		double* getCurrSol();
+		double getCurrSol(int index);
 
 	protected:
 		friend Physiology;
@@ -56,8 +60,11 @@ public:
 		void bindExpressions(const SimpleSymbolTable* symTable);
 		string name_;
 		SExpression** expressions;
+		int size;
+		double* currSol;
 
 	private:
+		void initExpressions();
 		void forbidNullExpression(ExpressionIndex exprIndex) const;
 	};
 }

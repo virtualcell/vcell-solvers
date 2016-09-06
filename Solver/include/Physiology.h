@@ -106,6 +106,59 @@ namespace moving_boundary {
 			return symbolIndex_normal;
 		}
 
+		// ====================
+		//   Point Symbol Table
+		// ====================
+		int pointSymbolIndexOfT() const
+		{
+			return pointSymbolIndex_t;
+		}
+
+		int pointSymbolIndexOfCoordinate() const
+		{
+			return pointSymbolIndex_coordinate;
+		}
+
+		int pointSymbolIndexOfSpecies() const
+		{
+			return pointSymbolIndex_species;
+		}
+
+		int pointSymbolIndexOfNormal() const
+		{
+			return pointSymbolIndex_normal;
+		}
+
+		size_t numberPointSymbols( ) const {
+			return pointSymbolTable->size( );
+		}
+
+		// =========================
+		// Point Variables
+		// =========================
+		int numPointVariables()
+		{
+			return _pointVariables.size();
+		}
+		PointVariable* getPointVariable(int index)
+		{
+			return _pointVariables.at(index);
+		}
+
+		// =========================
+		// Point Subdomains
+		// =========================
+		int numPointSubdomains() const
+		{
+			return _pointSubdomains.size();
+		}
+		PointSubdomain* getPointSubdomain(int index) const
+		{
+			return _pointSubdomains.at(index);
+		}
+
+		void setPointInitialConditions();
+
 	private:
 
 		static const vector<string> fixedTimeSpatialSymbols;
@@ -113,6 +166,10 @@ namespace moving_boundary {
 		int symbolIndex_coordinate;
 		int symbolIndex_normal;
 		int symbolIndex_species;
+		int pointSymbolIndex_t;
+		int pointSymbolIndex_coordinate;
+		int pointSymbolIndex_normal;
+		int pointSymbolIndex_species;
 
 		Physiology(const Physiology &); //not defined
 		std::vector<VolumeVariable*> volumeVariables_;
@@ -124,6 +181,14 @@ namespace moving_boundary {
 
 		void bindExpressions(VolumeVariable* sp) {
 			sp->bindExpressions(_symbolTable);
+		}
+
+		void bindPointVariables(PointVariable* sp) {
+			sp->bindExpressions(pointSymbolTable);
+		}
+
+		void bindPointSubdomains(PointSubdomain* sp) {
+			sp->bindExpressions(pointSymbolTable);
 		}
 
 		friend struct SExpression;
