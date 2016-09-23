@@ -251,6 +251,9 @@ namespace NFcore
 			bool isUsingVCellCompartments() { return useVCellCompartments; };
 			bool setUsingVCellCompartments( bool val ) { useVCellCompartments = val; };
 
+			bool hasVCellAnchors() { return this->bHasVCellAnchors; };
+			bool setVCellAnchors( bool val ) { this->bHasVCellAnchors = val; };
+
 			void setEvaluateComplexScopedLocalFunctions( bool val ) { evaluateComplexScopedLocalFunctions = val; };
 			bool getEvaluateComplexScopedLocalFunctions( ) const { return evaluateComplexScopedLocalFunctions; };
 
@@ -379,6 +382,7 @@ namespace NFcore
 			// NETGEN -- is this needed?
 			bool useComplex;     /*!< sets whether or not to dynamically track complexes */
 			bool useVCellCompartments;     /*!< sets whether or not to apply vcell compartment propagation */
+			bool bHasVCellAnchors;     /*!< sets whether this models has moleculeTpyes with anchors */
 			bool useBinaryOutput; /*!< set to true to turn on binary output of data */
 			bool evaluateComplexScopedLocalFunctions; /*!< set to true to turn on enable complex-scoped local functions */
 			int universalTraversalLimit; /*!< sets depth to traverse molecules when updating reactant lists */
@@ -522,6 +526,8 @@ namespace NFcore
 					vector < vector<string> > &possibleCompStates,
 					vector <bool> isIntegerComponent,
 					bool pop_type,
+					bool bHasAnchors,
+					vector <string> &anchorNames,
 					System *system);
 
 			~MoleculeType();
@@ -535,6 +541,7 @@ namespace NFcore
 			string getComponentName(int cIndex) const;
 			void getPossibleComponentStates(int cIndex, list <string> &nameList);
 			int getDefaultComponentState(int cIndex) const { return defaultCompState[cIndex]; };
+			int getNumPossibleCompStates(int cIndex) const;
 
 			int getCompIndexFromName(string cName) const;
 			string getComponentStateName(int cIndex, int cValue);
@@ -612,7 +619,9 @@ namespace NFcore
 			void removeMoleculeFromRunningSystemButDontUpdate(Molecule *&m);
 			void removeFromRxns(Molecule * m);
 
-
+			void setAnchorIndices(vector<bool> argAnchorIndices) { this->anchorIndices = argAnchorIndices; this->bHasAnchors = true; }
+			vector<bool>& getAnchorIndices() { return this->anchorIndices; }
+			bool hasAnchors() { return this->bHasAnchors; };
 
 			//Adds the basic components that this MoleculeType needs to reference
 			void addReactionClass(ReactionClass * r, int rPosition);
@@ -688,6 +697,8 @@ namespace NFcore
 				vector <string> &defaultCompState,
 				vector < vector<string> > &possibleCompStates,
 				vector <bool> isIntegerComponent,
+				bool bHasAnchors,
+				vector <string> &anchorNames,
 				System *system);
 
 
@@ -712,6 +723,8 @@ namespace NFcore
 			string **eqCompName;
 			int **eqCompIndex;
 
+			vector<bool> anchorIndices;
+			bool bHasAnchors;
 
 			//Lists and vectors of everything we need to know
 			MoleculeList * mList;
@@ -1171,7 +1184,7 @@ namespace NFcore
 			static const int INDEX_VCELL_MARK = 1;
 			static const int VALUE_VCELL_MARK_SET = 1;
 			static const int VALUE_VCELL_MARK_CLEAR = 0;
-			void postProcessVCellLocation();
+			void postProcessVCellLocation(bool checkAnchors);
 
 
 			void printDegreeDistribution();

@@ -25,6 +25,7 @@ System::System(string name)
 	current_time = 0;
 	nextReaction = 0;
 	this->useVCellCompartments = false;
+	this->bHasVCellAnchors = false;
 	this->useComplex = false;     // NETGEN -- is this needed?
 	// NETGEN
 	allComplexes.setSystem( this );
@@ -52,6 +53,7 @@ System::System(string name, bool useComplex)
 	nextReaction = 0;
 
 	this->useVCellCompartments = false;
+	this->bHasVCellAnchors = false;
 	this->useComplex = useComplex;    // NETGEN -- is this needed?
 	// NETGEN
 	allComplexes.setSystem( this );
@@ -78,6 +80,7 @@ System::System(string name, bool useComplex, int globalMoleculeLimit)
 	current_time = 0;
 	nextReaction = 0;
 	this->useVCellCompartments = false;
+	this->bHasVCellAnchors = false;
 	this->useComplex = useComplex;  // NETGEN -- is this needed?
 	// NETGEN
 	allComplexes.setSystem( this );
@@ -305,6 +308,9 @@ void System::addObservableForOutput(Observable *o) {
 int System::addMoleculeType(MoleculeType *MoleculeType)
 {
 	allMoleculeTypes.push_back(MoleculeType);
+	if (MoleculeType->hasAnchors()){
+		setVCellAnchors(true);
+	}
 	return (allMoleculeTypes.size()-1);
 }
 

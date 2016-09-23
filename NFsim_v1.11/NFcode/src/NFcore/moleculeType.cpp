@@ -17,13 +17,15 @@ MoleculeType::MoleculeType(
 	vector <string> defaultCompState;
 	vector < vector <string> > possibleCompStates;
 	vector <bool> isIntegerComponent;
+	bool bHasAnchors = false;
+	vector <string> anchorNames;
 	for(unsigned int i=0; i<compName.size(); i++) {
 		vector <string> v;
 		possibleCompStates.push_back(v);
 		defaultCompState.push_back("NO_STATE");
 		isIntegerComponent.push_back(false);
 	}
-	init(name, compName, defaultCompState, possibleCompStates, isIntegerComponent, s);
+	init(name, compName, defaultCompState, possibleCompStates, isIntegerComponent, bHasAnchors, anchorNames, s);
 
 }
 
@@ -41,7 +43,9 @@ MoleculeType::MoleculeType(
 		possibleCompStates.push_back(v);
 		isIntegerComponent.push_back(false);
 	}
-	init(name, compName, defaultCompState, possibleCompStates, isIntegerComponent, s);
+	bool bHasAnchors = false;
+	vector<string> anchorNames;
+	init(name, compName, defaultCompState, possibleCompStates, isIntegerComponent, bHasAnchors, anchorNames, s);
 }
 
 
@@ -62,7 +66,9 @@ MoleculeType::MoleculeType(
 	for(unsigned int i=0; i<compName.size(); i++) {
 		isIntegerComponent.push_back(false);
 	}
-	init(name, compName, defaultCompState, possibleCompStates, isIntegerComponent, system);
+	bool bHasAnchors = false;
+	vector <string> anchorNames;
+	init(name, compName, defaultCompState, possibleCompStates, isIntegerComponent, bHasAnchors, anchorNames, system);
 }
 
 MoleculeType::MoleculeType(
@@ -74,7 +80,9 @@ MoleculeType::MoleculeType(
 		System *system)
  : population_type( false )
 {
-	init(name, compName, defaultCompState, possibleCompStates, isIntegerComponent, system);
+	bool bHasAnchors = false;
+	vector <string> anchorNames;
+	init(name, compName, defaultCompState, possibleCompStates, isIntegerComponent, bHasAnchors, anchorNames, system);
 }
 
 
@@ -85,10 +93,12 @@ MoleculeType::MoleculeType(
 		vector < vector<string> > &possibleCompStates,
 		vector <bool> isIntegerComponent,
 		bool pop_type,
+		bool hasAnchor,
+		vector <string> &anchorNames,
 		System *system)
  : population_type( pop_type )
 {
-	init(name, compName, defaultCompState, possibleCompStates, isIntegerComponent, system);
+	init(name, compName, defaultCompState, possibleCompStates, isIntegerComponent, hasAnchor, anchorNames, system);
 }
 
 
@@ -108,8 +118,11 @@ void MoleculeType::init(
 	vector <string> &defaultCompState,
 	vector < vector<string> > &possibleCompStates,
 	vector <bool> isIntegerComponent,
+	bool hasAnchors,
+	vector <string> &anchorNames,
 	System *system)
 {
+	
 	//Basics...
 	this->name=name;
 	this->numOfComponents=compName.size();
@@ -151,6 +164,44 @@ void MoleculeType::init(
 
 	mList = new MoleculeList(this,2,system->getGlobalMoleculeLimit());
 	n_eqComp = 0;
+
+	//
+	// given the list of anchors, match them against list of locations to find the indices of the anchors.
+	//
+	this->bHasAnchors = hasAnchors;
+	if (bHasAnchors){
+		vector<string>& locationNames = possibleCompStates.at(NFcore::Complex::INDEX_VCELL_LOCATION);
+		for (size_t i=0; i<locationNames.size();i++){
+			bool bFoundInAnchorNames = false;
+			for (size_t j=0; j<anchorNames.size();j++){
+				if (anchorNames.at(j).compare(locationNames.at(i)) == 0){
+					bFoundInAnchorNames = true;
+				}
+			}
+			this->anchorIndices.push_back(bFoundInAnchorNames);
+		}
+cout << " location names " << endl;
+for (size_t i=0;i<locationNames.size();i++){
+cout << " locationNames(" << i << ") is '" << locationNames.at(i) << "'" << endl;
+}
+
+	}
+	
+cout << endl;
+cout << endl;
+cout << " anchor = " << this->bHasAnchors << endl;
+cout << " anchor names " << endl;
+for (size_t i=0;i<anchorNames.size();i++){
+cout << " anchorName(" << i << ") is '" << anchorNames.at(i) << "'" << endl;
+}
+cout << " anchor indices " << endl;
+for (size_t i=0;i<this->anchorIndices.size();i++){
+cout << " anchor(" << i << ") is index " << this->anchorIndices.at(i) << endl;
+}
+cout << endl;
+cout << endl;
+	
+
 }
 
 
@@ -309,6 +360,11 @@ string MoleculeType::getComponentStateName(int cIndex, int cValue) {
 	if(cValue>possibleCompStates.size() || cValue<0)
 		return "?-value was: "+NFutil::toString(cValue);
 	return possibleCompStates.at(cIndex).at(cValue);
+}
+
+
+int MoleculeType::getNumPossibleCompStates(int cIndex) const {
+	return possibleCompStates.at(cIndex).size();
 }
 
 

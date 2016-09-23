@@ -56,25 +56,82 @@ void Complex::printDetails()
   	cout<<endl;
 }
 
-void Complex::postProcessVCellLocation()
+void Complex::postProcessVCellLocation(bool checkAnchors)
 {
 //	cout << "---------------- updating complex in Complex::postProcessVCellLocation() -  B E G I N --------------------------" << endl;
 //	printDetailsLong();
+// cout << "--------- in Complex::postProcessVCellLocation() - checkAnchors = " << checkAnchors << endl;
 	//
 	// 1) search through complex until find a molecule with mark site state set to "marked".
 	// 2) store location site state for marked molecule (this is the desired location).
 	//
 	int markedLocationState = -1;
-	for ( molIter = complexMembers.begin(); molIter != complexMembers.end(); molIter++ ) {
-		Molecule *molecule = *molIter;
-		if (molecule->getComponentState(INDEX_VCELL_MARK)==VALUE_VCELL_MARK_SET){
-			markedLocationState = molecule->getComponentState(INDEX_VCELL_LOCATION);
-			break;
+	if (!checkAnchors){
+		for ( molIter = complexMembers.begin(); molIter != complexMembers.end(); molIter++ ) {
+			Molecule *molecule = *molIter;
+			if (molecule->getComponentState(INDEX_VCELL_MARK)==VALUE_VCELL_MARK_SET){
+				markedLocationState = molecule->getComponentState(INDEX_VCELL_LOCATION);
+				break;
+			}
+		}
+	}else{
+		//
+		// have to check for anchors
+		//
+		bool bHasAnchors = false;
+		const int MAX_NUM_COMPARTMENTS = 1000;
+		static bool allowedLocations[MAX_NUM_COMPARTMENTS];
+		size_t numLocations = getFirstMolecule()->getMoleculeType()->getNumPossibleCompStates(INDEX_VCELL_LOCATION);
+		std::memset(allowedLocations, 1, sizeof(bool)*numLocations);
+		for ( molIter = complexMembers.begin(); molIter != complexMembers.end(); molIter++ ) {
+			Molecule *molecule = *molIter;
+			if (molecule->getComponentState(INDEX_VCELL_MARK)==VALUE_VCELL_MARK_SET){
+				markedLocationState = molecule->getComponentState(INDEX_VCELL_LOCATION);
+			}
+			MoleculeType* moleculeType = molecule->getMoleculeType();
+			if (moleculeType->getAnchorIndices().size()>0){
+				bHasAnchors = true;
+				vector<bool> &anchorIndices = moleculeType->getAnchorIndices();
+				for (size_t i=0; i < numLocations; i++){
+					allowedLocations[i] = allowedLocations[i] && anchorIndices.at(i);
+				}
+			}
+		}
+		if (bHasAnchors && (markedLocationState != -1)){
+			if (!allowedLocations[markedLocationState]){
+				// currently marked state (for product) not allowed by anchors
+				// if there is only one allowed location, then we'll use it (by changing markedLocationState)
+				// if there is zero or more than one, then we throw an exception.
+				int count=0;
+				int allowedLocationIndex = -1;
+				for (size_t i=0;i<numLocations;i++){
+					if (allowedLocations[i]){
+						allowedLocationIndex = i;
+						count++;
+					}
+				}
+				if (count==1){
+					cout << "forcing location index to be " << allowedLocationIndex << " instead of " << markedLocationState << endl;
+					markedLocationState = allowedLocationIndex;
+				}else if (count==0){
+					cerr << "can't satisfy tether/anchor constraints for product complex '" << getCanonicalLabel() << "'" << endl;
+				}else if (count>1){
+					cerr << "can't choose from allowable tether/anchor constraints for product complex '" << getCanonicalLabel() << "'" << endl;
+				}
+			}
 		}
 	}
+	
 	if (markedLocationState == -1){
 		cerr << "didn't find location mark" << endl;
 	}
+	
+	//
+	// if any anchors, choose new location from allowable locations.
+	// if no locations consistent with anchors, then throw exception.
+	//
+	
+	
 	// For all molecules in the complex:
 	// 1) set location site state for all molecules to "markedLocationState"
 	// 2) set marked site state to "cleared"

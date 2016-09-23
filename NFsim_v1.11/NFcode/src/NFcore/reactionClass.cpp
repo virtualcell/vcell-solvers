@@ -444,13 +444,14 @@ void ReactionClass::fire(double random_A_number) {
 	// we could make this more efficient by skipping reactions where there are not location changes.
 	//
 	if (this->system->isUsingVCellCompartments()){
+		bool hasVCellAnchors = this->system->hasVCellAnchors();
 		Complex * c;
-		cout << "---------------- updating complexes for reaction " << getName() << " --------------------------" << endl;
+		// cout << "---------------- updating complexes for reaction " << getName() << " --------------------------" << endl;
 		// we can assume that complex bookkeeping is enabled..
 		for ( complexIter = productComplexes.begin(); complexIter != productComplexes.end(); ++complexIter ) {
 			// update all species observables for this complex
 			c = *complexIter;
-			c->postProcessVCellLocation();
+			c->postProcessVCellLocation(hasVCellAnchors);
 		}
 	}
 

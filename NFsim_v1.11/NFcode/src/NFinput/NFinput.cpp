@@ -280,6 +280,8 @@ bool NFinput::initMoleculeTypes(
 		vector <string> defaultCompState;
 		vector <vector <string> > possibleComponentStates;
 		vector <vector <string> > identicalComponents;
+		vector <bool> anchorIndices;
+		bool hasAnchor = false;
 		vector <bool> isIntegerComponent;
 		//Organized as each vector in this vector contains the set of names of components that are identical
 
@@ -321,6 +323,7 @@ bool NFinput::initMoleculeTypes(
 					if(verbose) cout << "\t\tTreating molecule type '" << typeName << "' as a population" << endl;
 				}
 			}
+			
 
 			//Get the list of components in the moleculeType
 			TiXmlElement *pListOfComp = pMoTypeEl->FirstChildElement("ListOfComponentTypes");
@@ -554,16 +557,35 @@ bool NFinput::initMoleculeTypes(
 				}
 			}
 
-
+			//Check for anchor flag  --Jim Schaff
+			bool moleculeTypeHasAnchors = false;
+			if ( pMoTypeEl->Attribute("hasAnchors") )
+			{
+				string hasAnchorsAttrString = pMoTypeEl->Attribute("hasAnchors");
+				if( hasAnchorsAttrString.compare("1") == 0 || hasAnchorsAttrString.compare("true") == 0 || hasAnchorsAttrString.compare("True") == 0)
+				{
+					moleculeTypeHasAnchors = true;
+					if(verbose) cout << "\t\tmolecule type '" << typeName << "' has anchors" << endl;
+				}
+			}
+			vector<string> anchorNames;
+			//Get the list of anchor names
+			TiXmlElement *pAnchor;
+			for ( pAnchor = pMoTypeEl->FirstChildElement("Anchor"); pAnchor != 0; pAnchor = pAnchor->NextSiblingElement("Anchor"))
+			{
+				anchorNames.push_back(pAnchor->Attribute("Name"));
+			}
 
 			//Create the moleculeType and register any symmetric sites we may have...
-			MoleculeType *mt = new MoleculeType(typeName,compLabels,defaultCompState,possibleComponentStates,isIntegerComponent,isPopulation,s);
+			MoleculeType *mt = new MoleculeType(typeName,compLabels,defaultCompState,possibleComponentStates,isIntegerComponent,isPopulation,moleculeTypeHasAnchors,anchorNames,s);
 			mt->addEquivalentComponents(identicalComponents);
 
 			//Finally, clear the states and binding site labels that we read in
 			compLabels.clear();
 			defaultCompState.clear();
 			possibleComponentStates.clear();
+			anchorIndices.clear();
+			hasAnchor = false;
 			identicalComponents.clear();
 			isIntegerComponent.clear();
 			firstSymSiteToAppend.clear();
