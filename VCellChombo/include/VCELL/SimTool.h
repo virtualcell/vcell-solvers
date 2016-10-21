@@ -12,14 +12,6 @@
 #include <string>
 using std::string;
 
-#ifndef DIRECTORY_SEPARATOR
-#if ( defined(WIN32) || defined(WIN64) || defined(CH_CYGWIN) )
-#define DIRECTORY_SEPARATOR '\\'
-#else
-#define DIRECTORY_SEPARATOR '/'
-#endif
-#endif
-
 #define CHOMBO_SEMIIMPLICIT_SOLVER "CHOMBO_SEMIIMPLICIT_SOLVER"
 
 class VCellModel;
@@ -40,12 +32,9 @@ public:
 	void setEndTimeSec(double timeSec) { simEndTime = timeSec; }
 	double getEndTime() { return simEndTime; }
 
-	void setBaseFilename(char *fname);
-	char* getBaseFileName() {
-		return baseFileName;
-	}
-	char* getBaseDirName() {
-		return baseDirName;
+	void setBaseFilename(string& fname);
+	const char* getBaseFileName() {
+		return baseFileName.c_str();
 	}
 	void setStoreEnable(bool enable) {
 		bStoreEnable = enable;
@@ -80,12 +69,9 @@ public:
 		return commSize;
 	}
 	
-	void setPrimaryDataDir(string& pd)
-	{
-		primaryDataDir = pd;
-	}
+	void setPrimaryDataDir(string& pd);
 
-	static void copyToPrimaryDataDir(string& file);
+	void copyToPrimaryDataDir();
 
 //	void setKeepAtMost(int kam) { keepAtMost = kam; }
 //	void setDiscontinuityTimes(int num, double* times) {
@@ -131,16 +117,18 @@ private:
 
 	double simEndTime, simStartTime;
 	bool bStoreEnable;
-	char* baseFileName;
+	string baseFileName;
 	int simFileCount;
-	char* baseSimName;
+	string baseSimName;
 	string primaryDataDir;
-	char* baseDirName;
+	string baseDirName;
 	int zipFileCount;
 	string solver;
 
 	int myRank;
 	int commSize;
+
+	char directorySeparator;
 
 	PostProcessingHdf5Writer* postProcessingHdf5Writer;
 

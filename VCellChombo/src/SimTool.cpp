@@ -31,6 +31,17 @@ using std::endl;
 #include "VCELL/VCellModel.h"
 #endif
 
+#define DIRECTORY_SEPARATOR_WINDOWS '\\'
+#define DIRECTORY_SEPARATOR_OTHER '/'
+
+#ifndef DIRECTORY_SEPARATOR
+#if ( defined(WIN32) || defined(WIN64) || defined(CH_CYGWIN) )
+#define DIRECTORY_SEPARATOR DIRECTORY_SEPARATOR_WINDOWS
+#else
+#define DIRECTORY_SEPARATOR DIRECTORY_SEPARATOR_OTHER
+#endif
+#endif
+
 #define ZIP_FILE_LIMIT 1E9
 
 #define SIM_FILE_EXT ".sim"
@@ -50,7 +61,6 @@ SimTool* SimTool::instance = NULL;
 int SimTool::rootRank = 0;
 extern bool bConsoleOutput;
 
-static int NUM_TOKENS_PER_LINE = 4;
 static const int numRetries = 2;
 static const int retryWaitSeconds = 5;
 
@@ -58,11 +68,8 @@ SimTool::SimTool()
 {
 	simEndTime = 0.0;
 	bStoreEnable = true;
-	baseFileName=0;
 	simFileCount=0;
 	zipFileCount = 0;
-	baseDirName = NULL;
-	baseSimName = NULL;
 
 	vcellModel = new VCellModel(this);
 	simulation = new SimulationExpression(this);
@@ -93,9 +100,6 @@ SimTool::SimTool()
 
 SimTool::~SimTool()
 {
-	delete baseSimName;
-	delete baseDirName;
-	delete baseFileName;
 	delete postProcessingHdf5Writer;
 //	delete[] discontinuityTimes;
 }
@@ -116,29 +120,48 @@ bool SimTool::checkStopRequested() {
 	 return SimulationMessaging::getInstVar()->isStopRequested();
 }
 
-void SimTool::setBaseFilename(char *fname) {
-	if (fname == 0 || strlen(fname) == 0) {
+void SimTool::setBaseFilename(string& fname) {
+	if (fname.empty()) {
 		throw "invalid base file name for data set";
 	}
-	baseFileName = new char[strlen(fname) + 1];
-	memset(baseFileName, 0, strlen(fname) + 1);
-	memcpy(baseFileName, fname, strlen(fname) * sizeof(char));
+	baseFileName = fname;
 
-	// extract directory
-	baseDirName = new char[strlen(baseFileName) + 1];
-	baseSimName = NULL;
-
-	strcpy(baseDirName, baseFileName);
-	char* p = strrchr(baseDirName, DIRECTORY_SEPARATOR);
-	if (p == NULL) {
-		baseSimName = baseDirName;
-		baseDirName = 0;
-	} else {
-		baseSimName = new char[strlen(p+1) + 1];
-		strcpy(baseSimName, p + 1);
-		*(p + 1)= 0;
+	if (baseFileName.find(DIRECTORY_SEPARATOR_OTHER) != string::npos)
+	{
+		directorySeparator = DIRECTORY_SEPARATOR_OTHER;
 	}
-	pout() << "Base Simulation Name is " << baseSimName << endl;
+	else if (baseFileName.find(DIRECTORY_SEPARATOR_WINDOWS) != string::npos)
+	{
+		directorySeparator = DIRECTORY_SEPARATOR_WINDOWS;
+	}
+	else
+	{
+		directorySeparator = DIRECTORY_SEPARATOR;
+	}
+	std::size_t p = baseFileName.rfind(directorySeparator);
+	if (p == string::npos)
+	{
+		baseDirName = "";
+		baseSimName = baseFileName;
+	}
+	else
+	{
+		baseDirName = baseFileName.substr(0, p + 1);
+		baseSimName = baseFileName.substr(p + 1);
+	}
+
+	pout() << "baseDirName=" << baseDirName << endl;
+	pout() << "baseSimName=" << baseSimName << endl;
+}
+
+void SimTool::setPrimaryDataDir(string& pd)
+{
+	primaryDataDir = pd;
+	if (!primaryDataDir.empty() && *primaryDataDir.rbegin() != directorySeparator)
+	{
+		primaryDataDir = primaryDataDir + directorySeparator;
+	}
+	pout() << "primaryDataDir=" << primaryDataDir << endl;
 }
 
 static void retryWait(int seconds) {
@@ -214,7 +237,7 @@ FILE* SimTool::lockForReadWrite()
 	}
 
 	char tidFileName[128];
-	sprintf(tidFileName,"%s%s", baseFileName, TID_FILE_EXT);
+	sprintf(tidFileName,"%s%s", baseFileName.c_str(), TID_FILE_EXT);
 
 	bool bExist = false;
 
@@ -235,7 +258,7 @@ FILE* SimTool::lockForReadWrite()
 		int numRead = fscanf(fp, "%d", &taskIDInFile);
 		if (numRead == 1) {
 			if (myTaskID < taskIDInFile) {
-				cout << "there is a new process running the simulation, exit..." << endl;
+				pout() << thisMethod << "there is a new process running the simulation, exit..." << endl;
 				exit(0);
 			}
 			if (myTaskID == taskIDInFile) { // it's me
@@ -271,28 +294,28 @@ void SimTool::writeData(double progress, double time, int iteration, bool conver
 	bool bSuccess = true;
 	char errmsg[512];
 	char hdf5SimFileName[128];
-	sprintf(hdf5SimFileName,"%s%.4d%s",baseSimName, simFileCount, SIM_HDF5_FILE_EXT);
+	sprintf(hdf5SimFileName,"%s%.4d%s",baseSimName.c_str(), simFileCount, SIM_HDF5_FILE_EXT);
 	// write VCell and/or Chombo output
 	simulation->getScheduler()->writeData(hdf5SimFileName, convertChomboData);
 
 #ifndef CH_MPI
 	if (chomboSpec->isSaveVCellOutput())
 	{
-		sprintf(logFileName,"%s%s",baseFileName, LOG_FILE_EXT);
+		sprintf(logFileName,"%s%s",baseFileName.c_str(), LOG_FILE_EXT);
 		logFP = openFileWithRetry(logFileName, "a");
 
 		if (logFP == 0) {
 			sprintf(errmsg, "%s - error opening log file <%s>", methodName, logFileName);
 			bSuccess = false;
 		} else {
-			sprintf(zipHdf5FileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_HDF5_FILE_EXT);
+			sprintf(zipHdf5FileName,"%s%.2d%s",baseFileName.c_str(), zipFileCount, ZIP_HDF5_FILE_EXT);
 			bSuccess = zipUnzipWithRetry(true, zipHdf5FileName, hdf5SimFileName, errmsg);
 			remove(hdf5SimFileName);
 
 			// write the log file
 			if (bSuccess) {					
 				char zipFileNameWithoutPath[512];
-				sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName, zipFileCount, ZIP_HDF5_FILE_EXT);
+				sprintf(zipFileNameWithoutPath,"%s%.2d%s",baseSimName.c_str(), zipFileCount, ZIP_HDF5_FILE_EXT);
 				fprintf(logFP,"%4d %s %s %.15lg\n", iteration, hdf5SimFileName, zipFileNameWithoutPath, time);
 
 				struct stat buf;
@@ -346,17 +369,17 @@ void SimTool::cleanupLastRun(bool convertChomboData)
 		char buffer[256];
 		if (!convertChomboData)
 		{
-			sprintf(buffer,"%s%s",baseFileName, MESH_HDF5_FILE_EXT);
+			sprintf(buffer,"%s%s",baseFileName.c_str(), MESH_HDF5_FILE_EXT);
 			remove(buffer);
 		}
 		for (int i = 0; i < 10; ++ i)
 		{
-			sprintf(buffer,"%s%02d%s", baseFileName, i, ZIP_HDF5_FILE_EXT);
+			sprintf(buffer,"%s%02d%s", baseFileName.c_str(), i, ZIP_HDF5_FILE_EXT);
 			remove(buffer);
 		}
-		sprintf(buffer,"%s%s",baseFileName, LOG_FILE_EXT);
+		sprintf(buffer,"%s%s",baseFileName.c_str(), LOG_FILE_EXT);
 		remove(buffer);
-		sprintf(buffer,"%s%s",baseFileName, PP_HDF5_FILE_EXT);
+		sprintf(buffer,"%s%s",baseFileName.c_str(), PP_HDF5_FILE_EXT);
 		remove(buffer);
 	}
 	pout() << "Exit " << thisMethod << endl;
@@ -373,6 +396,9 @@ void SimTool::setSolver(string& s) {
 
 void SimTool::start(bool convertChomboData)
 {
+	const char* thisMethod = "(start)";
+	pout() << "Entry " << thisMethod << endl;
+
 	if (convertChomboData)
 	{
 #ifdef CH_MPI
@@ -387,7 +413,7 @@ void SimTool::start(bool convertChomboData)
 	if (simulation->getPostProcessingBlock() != NULL)
 	{
 		char h5PPFileName[128];
-		sprintf(h5PPFileName, "%s%s", baseFileName, PP_HDF5_FILE_EXT);
+		sprintf(h5PPFileName, "%s%s", baseFileName.c_str(), PP_HDF5_FILE_EXT);
 		postProcessingHdf5Writer = new PostProcessingHdf5Writer(h5PPFileName, simulation->getPostProcessingBlock());
 	}
 #endif
@@ -395,6 +421,17 @@ void SimTool::start(bool convertChomboData)
 	simulation->initSimulation();
 	// clean up last run results
 	cleanupLastRun(convertChomboData);
+
+	if (convertChomboData)
+	{
+		// we need to convert to primary data dir
+		if (!primaryDataDir.empty() && baseDirName != primaryDataDir)
+		{
+		  baseDirName = primaryDataDir;
+			baseFileName = primaryDataDir + baseSimName;
+			pout() << thisMethod << "reset baseDirName=" << baseDirName << ", baseFileName=" << baseFileName << endl;
+		}
+	}
 
 	if (checkStopRequested()) {
 		return;
@@ -404,12 +441,12 @@ void SimTool::start(bool convertChomboData)
 		throw "NULL simulation";
 	}
 
-	if (bStoreEnable && (baseFileName == NULL || strlen(baseFileName) == 0)) {
+	if (bStoreEnable && baseFileName.empty()) {
 		throw "Invalid base file name for dataset";
 	}
 
 	char message[256];
-	sprintf(message, "simulation [%s] started", baseSimName);
+	sprintf(message, "simulation [%s] started", baseSimName.c_str());
 	if (bConsoleOutput || isRootRank())
 	{
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_STARTING, message));
@@ -500,41 +537,36 @@ void SimTool::start(bool convertChomboData)
 	if (bConsoleOutput || isRootRank())
 	{
 #ifdef CH_MPI
+		copyToPrimaryDataDir();
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, 1.0, simulation->getTime_sec()));
 #endif
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, 1.0, simulation->getTime_sec()));
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));
 	}
+	pout() << "Exit " << thisMethod << endl;
 }
 
-void SimTool::copyToPrimaryDataDir(string& file)   // no directory information
+void SimTool::copyToPrimaryDataDir()   // no directory information
 {
-	string workingDir = string(getInstance()->baseDirName);
-	string primaryDir = getInstance()->primaryDataDir;
-	if (!primaryDir.empty() && workingDir != primaryDir)
-	{
-		string fileName = file;
-		string::size_type pos = fileName.find(workingDir);
-		if (pos != string::npos)
-		{
-			fileName.erase(0, workingDir.length());
-		}
-		string src = string(workingDir) + fileName;
-		string dest = primaryDir + fileName;
+	const char* thisMethod = "(copyToPrimaryDataDir)";
+	pout() << "Entry " << thisMethod << endl;
 
-		// copy file
-		std::ifstream srcStream( src.c_str(), std::ios::binary ) ;
-		std::ofstream destStream( dest.c_str(), std::ios::binary ) ;
-		if( srcStream.is_open() && srcStream.good() && destStream.is_open() && destStream.good() )
+	if (!primaryDataDir.empty() && baseDirName != primaryDataDir)
+	{
 		{
-			destStream << srcStream.rdbuf() ;
+		stringstream cpcmd;
+		cpcmd << "cp " << baseFileName << "* " << primaryDataDir;
+		pout() << thisMethod << "Running copy command: " << cpcmd.str() << endl;
+		system(cpcmd.str().c_str());
 		}
-		else
 		{
-			stringstream ss;
-			ss << "Failed to copy file " << fileName << " from " << workingDir << " to " << primaryDir;
-			throw ss.str();
+		// delete the local files
+		stringstream rmcmd;
+		rmcmd << "rm -f " << baseFileName << "*";
+		pout() << thisMethod << "Running rm command: " << rmcmd.str() << endl;
+		system(rmcmd.str().c_str());
 		}
 	}
+	pout() << "Exit " << thisMethod << endl;
 }
 

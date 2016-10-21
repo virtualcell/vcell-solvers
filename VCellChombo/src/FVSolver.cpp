@@ -909,7 +909,7 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 			string basefilename;
 			getline(lineInput, basefilename);
 			trimString(basefilename);
-			simTool->setBaseFilename((char*)basefilename.c_str());
+			simTool->setBaseFilename(basefilename);
 		} else if (nextToken == "PRIMARY_DATA_DIR") {
 			string pd;
 			getline(lineInput, pd);
