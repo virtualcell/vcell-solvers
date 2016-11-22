@@ -261,7 +261,7 @@ namespace moving_boundary {
 			:base(n,values),
 			env(env_),
 			stateVar(State::initial),
-			bndOffset(0),
+			bndOffset_old(0),
 			interiorVolume(-1),
 			vol(0,this),
 			segments_( ),
@@ -312,13 +312,35 @@ namespace moving_boundary {
 		* some computation steps can be skipped if we know node will not be adjacent to boundary.<br>
 		*/
 		BoundaryOffsetType boundaryOffset( ) const {
+#ifdef OLD_BOUNDARY_OFFSETS
+			return bndOffset_old;
+#else
 			return bndOffset;
+#endif
 		}
+
+#ifndef OLD_BOUNDARY_OFFSETS
 		/**
-		* set offset level for boundary value (recursively sets neighbors) 
+		 * this is a newly added method so only set new bndOffset
+		 */
+		void setBoundaryOffset(unsigned char offset )
+		{
+			bndOffset = offset;
+		}
+		void compareBoundaryOffsets()
+		{
+			if (bndOffset != bndOffset_old)
+			{
+				VCELL_LOG_ALWAYS("@" << indexPoint() << " different boundary offset " << bndOffset << " " << bndOffset_old);
+			}
+		}
+#endif
+
+		/**
+		* set offset level for boundary value (recursively sets neighbors)
 		* @throws std::domain_error if #boundaryOffset( ) != #unsetOffsetValue( ) or ! #isBoundary( )
 		*/
-		void setBoundaryOffsetValues(); 
+		void setBoundaryOffsetValues();
 
 	private:
 		
@@ -840,6 +862,7 @@ namespace moving_boundary {
 		/**
 		* distance from boundary (more or less)
 		*/
+		BoundaryOffsetType bndOffset_old;
 		BoundaryOffsetType bndOffset;
 		/**
 		* volume if this is an inside element -- otherwise volume comes from vol object

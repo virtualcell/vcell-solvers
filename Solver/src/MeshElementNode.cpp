@@ -903,7 +903,7 @@ void MeshElementNode::collectMassFromNeighbors(const FrontType & front) {
 void MeshElementNode::endOfCycle( ) {
 	VCELL_LOG(verbose,this->ident( ) << " begin eoc"); 
 	bool copyMass = true;
-	bndOffset = unsetOffsetValue( );
+	bndOffset_old = unsetOffsetValue( );
 	switch (state( )) {
 	case outStable:
 		copyMass = false;

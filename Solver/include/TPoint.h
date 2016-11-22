@@ -266,11 +266,13 @@ namespace spatial {
 
 	template <class T, int N>
 	inline std::ostream &operator<<(std::ostream & os, const spatial::TPoint<T,N> & point) {
+		os << "(";
 		os << point(static_cast<Axis>(0)); 
 		for (int i = 1; i < N ;i++) {
 			const Axis a = static_cast<Axis>(i);
-			os << " , " << point(a);
+			os << "," << point(a);
 		}
+		os << ")";
 		return os;
 	}
 

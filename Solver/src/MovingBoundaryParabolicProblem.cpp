@@ -42,6 +42,13 @@
 using spatial::cX;
 using spatial::cY;
 
+static const IndexVect naturalNeighborOffsets[2 * DIM] = {
+							IndexVect(-1, 0),
+							IndexVect(1, 0),
+							IndexVect(0, -1),
+							IndexVect(0, 1),
+					};
+
 //*********************************************************
 // Validation of input to problem functors & ValidationBase 
 //*********************************************************
@@ -479,23 +486,20 @@ namespace moving_boundary {
 			return r;
 		}
 
-		void findExtrapolationStencil(const CoordVect& thisPoint, int order, std::vector<MeshElementNode*>& stencil) const
+		MeshElementNode* findNearestInsidePoint(const CoordVect& thisPoint) const
 		{
-			static const string METHOD = "findExtrapolationStencil";
+			static const string METHOD = "findNearestInsidePoint";
 			vcell_util::Logger::debugEntry(METHOD);
-			if (order > 1)
-			{
-				// NOT IMPLEMENTED, revert to first order
-				order = 1;
-			}
+
 			CoordVect scaledCoord = (thisPoint - primaryMesh.geoOrigin())/primaryMesh.Dx();
 			IndexVect gridIndex((int) (scaledCoord[0]), (int) scaledCoord[1]);
+			// !!!!!! !!!attention: deal with wall case later!!!
 
 			MeshElementNode* thisElement = primaryMesh.query(gridIndex);
 			if (thisElement == nullptr)
 			{
 				std::stringstream ss;
-				ss << "Point " << thisPoint << "@" << gridIndex << " is out of domain boundary";
+				ss << METHOD << ", Point " << thisPoint << "@" << gridIndex << " is out of domain boundary";
 				throw ss.str();
 			}
 
@@ -506,8 +510,6 @@ namespace moving_boundary {
 			}
 			else
 			{
-				bool bFound = true;
-
 				{   // scope the variables
 					IndexVect offset(0, 0);
 					for (int i = 0; i < DIM; ++i)
@@ -547,33 +549,22 @@ namespace moving_boundary {
 						// (i + жд, j + жд)
 						IndexVect diagNeighbor = gridIndex + offset;
 						MeshElementNode* diagNeighborElement = primaryMesh.query(diagNeighbor);
-						if (diagNeighborElement == nullptr || diagNeighborElement->isOutside())
-						{
-							bFound = false;
-						}
-						else
+						if (diagNeighborElement != nullptr && diagNeighborElement->isInside())
 						{
 							selectedElement = diagNeighborElement;
 						}
 					}
 				}
 
-				if (!bFound)
+				if (selectedElement == nullptr)
 				{
-					IndexVect neighborOffsets[4] = {
-							IndexVect(-1, 0),
-							IndexVect(1, 0),
-							IndexVect(0, -1),
-							IndexVect(0, 1),
-					};
 					double minDistance = std::numeric_limits<double>::max();
-					for (int n = 0; n < 4; ++ n)
+					for (int n = 0; n < 2 * DIM; ++ n)
 					{
-						IndexVect neighbor = gridIndex + neighborOffsets[n];
+						IndexVect neighbor = gridIndex + naturalNeighborOffsets[n];
 						MeshElementNode* neighborElement = primaryMesh.query(neighbor);
 						if (neighborElement != nullptr && neighborElement->isInside())
 						{
-							bFound = true;
 							CoordVect neighborCoord(*neighborElement);
 							double distance = thisPoint.distance2(neighborCoord);
 							if (distance < minDistance)
@@ -584,25 +575,10 @@ namespace moving_boundary {
 						}
 					}
 				}
+			}
 
-				if (!bFound)
-				{
-						std::stringstream ss;
-						ss << "Can't find any inside neighbors for point " << thisPoint << "@" << gridIndex;
-						vcell_util::Logger::Debug(METHOD, ss.str());
-						throw ss.str();
-				}
-			}
-			/*
-			CoordVect neighborCoord(selectedElement);
-			double distance = sqrt(thisPoint.distance2(neighborCoord));
-			if (distance > primaryMesh.Dx()[0]/2)
-			{
-				VCELL_LOG_ALWAYS("Neighbor@(" << selectedElement->indexes()[cX] << "," << selectedElement->indexes()[cY] << "), distance (" << distance << ") > Dx/2 for point " << thisPoint << "@" << gridIndex;)
-			}
-			*/
-			stencil.push_back(selectedElement);
 			vcell_util::Logger::debugExit(METHOD);
+			return selectedElement;
 		}
 
 		/**
@@ -625,9 +601,15 @@ namespace moving_boundary {
 					{
 						if (isRunning)
 						{
-							std::vector<MeshElementNode*> stencil;
-							findExtrapolationStencil(thisPoint, 1, stencil);
-							const double* conc = stencil[0]->priorConcentrations();
+							MeshElementNode* nearestInsidePoint = findNearestInsidePoint(thisPoint);
+							if (nearestInsidePoint == nullptr)
+							{
+								std::stringstream ss;
+								ss << "Can't find any inside neighbors for point " << thisPoint;
+								vcell_util::Logger::Debug(METHOD, ss.str());
+								throw ss.str();
+							}
+							const double* conc = nearestInsidePoint->priorConcentrations();
 							std::memcpy(stateValues + physiology->symbolIndexOfSpecies(), conc, numVolumeVariables * sizeof(double));
 						}
 						else
@@ -1101,7 +1083,7 @@ namespace moving_boundary {
 		}
 
 		void populatePointStateValues()
-		{
+				{
 			pointStateValues[physiology->pointSymbolIndexOfT()] = currentTime;
 			for (int ipv = 0; ipv < physiology->numPointVariables(); ++ ipv)
 			{
@@ -1156,6 +1138,77 @@ namespace moving_boundary {
 			// with new values of point variables, compute position again for output and next time step
 			updatePointPositions();
 		}
+
+#ifndef OLD_BOUNDARY_OFFSETS
+	void setBoundaryOffsetValues()
+	{
+		static bool compareOldNewBoundaryOffsets = false;
+
+		//initialize offset for all volume elements: 2 outside, 3 inside, 0 at points near membrane
+		// use outsideMaxOffset and insideMaxOffset (assume >outsideMaxOffset)
+		int outsideMaxOffset = 2;
+		int insideMaxOffset = 3;
+		assert(insideMaxOffset >= outsideMaxOffset);
+		for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter)
+		{
+			MeshElementNode &e = *iter;
+			int offset = 0;
+			if (e.isBoundary())
+			{
+				offset = 0;
+			}
+			else if (e.isInside())
+			{
+				offset = insideMaxOffset;
+			}
+			else
+			{
+				offset = outsideMaxOffset;
+			}
+			e.setBoundaryOffset(offset);
+		}
+
+		const int numNaturalNeighbors = 4;
+		for (unsigned char thisOffset = 1; thisOffset <= insideMaxOffset - 1; ++ thisOffset)
+		{
+			for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter)
+			{
+				MeshElementNode &e = *iter;
+				if (thisOffset == outsideMaxOffset  && !e.isInside())
+				{
+					continue; // for outside points, stop at offset =2
+				}
+				if (e.boundaryOffset() == thisOffset - 1)
+				{
+					IndexVect gridIndex(e.indexOf(cX), e.indexOf(cY));
+
+					for (int n = 0; n < numNaturalNeighbors; ++ n)
+					{
+						MeshElementNode* neighborElement = primaryMesh.query(gridIndex + naturalNeighborOffsets[n]);
+						if (neighborElement != nullptr)
+						{
+							neighborElement->setBoundaryOffset(std::min(thisOffset, neighborElement->boundaryOffset()));
+						}
+					}
+				}
+			}
+		}
+
+		if (compareOldNewBoundaryOffsets)
+		{
+			boundaryElements.front( )->setBoundaryOffsetValues( );
+
+			// compare old and new
+			VCELL_LOG_ALWAYS("-----------Comparing old and new boundary offsets started ");
+			for (MBMesh::iterator iter = primaryMesh.begin( ); iter != primaryMesh.end( ); ++iter)
+			{
+				MeshElementNode &e = *iter;
+				e.compareBoundaryOffsets();
+			}
+			VCELL_LOG_ALWAYS("------------Comparing old and new boundary offsets finished ");
+		}
+	}
+#endif
 
 		void run( ) {
 			VCELL_LOG(info,"commence simulation");
@@ -1295,7 +1348,12 @@ namespace moving_boundary {
 
 					std::for_each(primaryMesh.begin( ),primaryMesh.end( ),EndCycle(*this));
 
+#ifdef OLD_BOUNDARY_OFFSETS
 					boundaryElements.front( )->setBoundaryOffsetValues( );
+#else
+					setBoundaryOffsetValues();
+#endif
+
 
 					if (frontMoveTrace) {
 						debugDump(numIteration,'a');

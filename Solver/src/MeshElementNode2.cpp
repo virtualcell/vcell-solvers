@@ -86,10 +86,10 @@ spatial::SurfacePosition MeshElementNode::mPos( ) const {
 }
 
 void MeshElementNode::setBoundaryOffsetValues( ) {
-	if (!isBoundary( ) || boundaryOffset( ) != unsetOffsetValue()) {
-		VCELL_EXCEPTION(domain_error, ident( ) << "setBoundaryOffsetValue with value " << boundaryOffset( ) );
+	if (!isBoundary( ) || bndOffset_old != unsetOffsetValue()) {
+		VCELL_EXCEPTION(domain_error, ident( ) << "setBoundaryOffsetValue with value " << bndOffset_old );
 	}
-	bndOffset = 0;
+	bndOffset_old = 0;
 
 	NodeSet tracker;
 	NodeQueue queue;
@@ -102,8 +102,8 @@ void MeshElementNode::setBoundaryOffsetValues( ) {
 * @param queue used to track order in which to process nodes 
 */
 void MeshElementNode::propagateBoundaryValue(NodeSet & nodeSet, NodeQueue & queue) {
-	VCELL_LOG(verbose,  ident( ) << " propagate current " << static_cast<unsigned int>(boundaryOffset( )));
-	assert(boundaryOffset( ) != unsetOffsetValue());
+	VCELL_LOG(verbose,  ident( ) << " propagate current " << static_cast<unsigned int>(bndOffset_old));
+	assert(bndOffset_old != unsetOffsetValue());
 
 	//first pass, set unset neighbors and propagate call to neighbors at same offset
 	const bool emptyQueue = queue.empty( );
@@ -111,17 +111,17 @@ void MeshElementNode::propagateBoundaryValue(NodeSet & nodeSet, NodeQueue & queu
 	/* 
 	* cap offset at maxOffset( ) to minimize unnecesary recursion / computation
 	*/
-	const BoundaryOffsetType neighborOffset = std::min<BoundaryOffsetType>(boundaryOffset( ) + 1,maxOffset( ));
+	const BoundaryOffsetType neighborOffset = std::min<BoundaryOffsetType>(bndOffset_old + 1,maxOffset( ));
 
 	for (int i = 0; i < interiorNeighbors.ArraySize; i++) {
 		if (interiorNeighbors[i].element != nullptr) {
 			OurType & nb = *interiorNeighbors[i].element;
-			if (nb.boundaryOffset( ) == unsetOffsetValue( ) || nb.boundaryOffset( ) > neighborOffset) {
+			if (nb.bndOffset_old == unsetOffsetValue( ) || nb.bndOffset_old > neighborOffset) {
 				if (!nb.isBoundary( )) {
-					nb.bndOffset = neighborOffset;
+					nb.bndOffset_old = neighborOffset;
 				}
 				else {
-					nb.bndOffset = 0;
+					nb.bndOffset_old = 0;
 				}
 				//place in queue of elements to propagate to if and only it's not there already
 				if (nodeSet.find(&nb) == nodeSet.end( )) {
