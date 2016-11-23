@@ -1,6 +1,8 @@
 #ifndef VCellException_h
 #define VCellException_h
 #include <sstream>
+#include <stdexcept>
+
 /**
 * based on some ideas in apache Log4jcxxx (BSD licensed)
 * @param EXC std:: exception to throw 
