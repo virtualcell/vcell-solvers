@@ -1,0 +1,18 @@
+option(UNVERSIONED "Build without svn verison information" OFF)
+if (NOT ${UNVERSIONED}) 
+	execute_process(COMMAND svnversion
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		RESULT_VARIABLE RCODE 
+		OUTPUT_VARIABLE SVERSIONRAW 
+		ERROR_VARIABLE VERISON_ERROR )
+	if (NOT ${SVERSION} GREATER 0)
+		message("set option UNVERSIONED TO skip version check")
+		message(FATAL_ERROR "version not found svnversion returned ${RCODE}, ${VERSION_ERROR}")
+	endif( )
+	string(STRIP ${SVERSIONRAW} SVERSION)
+	unset(SVERSIONRAW)
+else( )
+	set(SVERSION "unversioned build")
+endif( )
+add_definitions(-DSVNVERSION="${SVERSION}")
+
