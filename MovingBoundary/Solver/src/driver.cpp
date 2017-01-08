@@ -70,10 +70,7 @@ namespace {
 				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_FAILURE, executeStatus.message.c_str()));
 			}
 	#ifdef USE_MESSAGING
-			if (SimTool::getInstance()->isRootRank())
-			{
-				SimulationMessaging::getInstVar()->waitUntilFinished();
-			}
+			SimulationMessaging::getInstVar()->waitUntilFinished();
 	#endif
 		}
 		delete SimulationMessaging::getInstVar();

@@ -11,7 +11,6 @@
 #include <World.h>
 #include <vcellxml.h>
 #include <ReportClient.h>
-#include <SimulationMessaging.h>
 #include <Universe.h>
 #include <TextReportClient.h>
 #include <version.h>
