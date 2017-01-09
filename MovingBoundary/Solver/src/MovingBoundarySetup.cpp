@@ -6,6 +6,7 @@
 #include <persistcontainer.h>
 #include <vcellxml.h>
 #include <Logger.h>
+#include <SimulationMessaging.h>
 
 using namespace moving_boundary;
 
@@ -90,8 +91,45 @@ namespace {
 	}
 }
 
-moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XMLElement &root, int paramNx) {
+moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XMLElement &root, int taskId, int paramNx) {
 	using vcell_xml::convertChildElement;
+
+#ifdef USE_MESSAGING
+	if (taskId >= 0)
+	{
+		const XMLElement & jms = vcell_xml::get(root,"jms");
+		char *broker = new char[256];
+		char *smqusername = new char[256];
+		char *password = new char[256];
+		char *qname = new char[256];
+		char *tname = new char[256];
+		char *vcusername = new char[256];
+		int simKey, jobIndex;
+
+		std::string str = vcell_xml::convertChildElement<std::string>(jms, "broker");
+		std::strcpy(broker, str.c_str());
+
+		str = vcell_xml::convertChildElement<std::string>(jms,"jmsUser");
+		std::strcpy(smqusername, str.c_str());
+
+		str = vcell_xml::convertChildElement<std::string>(jms,"jmsPassword");
+		std::strcpy(password, str.c_str());
+
+		str = vcell_xml::convertChildElement<std::string>(jms,"queue");
+		std::strcpy(qname, str.c_str());
+
+		str = vcell_xml::convertChildElement<std::string>(jms,"topic");
+		std::strcpy(tname, str.c_str());
+
+		str = vcell_xml::convertChildElement<std::string>(jms,"vcellUser");
+		std::strcpy(vcusername, str.c_str());
+
+		simKey = vcell_xml::convertChildElement<unsigned int>(jms, "simKey");
+		jobIndex = vcell_xml::convertChildElement<unsigned int>(jms, "jobIndex");
+
+		SimulationMessaging::create(broker, smqusername, password, qname, tname, vcusername, simKey, jobIndex, taskId);
+	}
+#endif
 
 	moving_boundary::MovingBoundarySetup mbSetup; 
 	const XMLElement & prob = vcell_xml::get(root,"problem");
