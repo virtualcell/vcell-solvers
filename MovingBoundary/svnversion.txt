@@ -1,5 +1,8 @@
 option(UNVERSIONED "Build without svn verison information" OFF)
 if (NOT ${UNVERSIONED}) 
+	find_program(SVNVERSION svnversion)
+endif()
+if ( (NOT ${UNVERSIONED}) AND ${SVNVERSION} )
 	execute_process(COMMAND svnversion
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 		RESULT_VARIABLE RCODE 
