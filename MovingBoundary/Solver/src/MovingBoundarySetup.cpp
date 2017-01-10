@@ -114,7 +114,7 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 			str = vcell_xml::convertChildElement<std::string>(*jms,"jmsUser");
 			std::strcpy(smqusername, str.c_str());
 
-			str = vcell_xml::convertChildElement<std::string>(*jms,"jmsPassword");
+			str = vcell_xml::convertChildElement<std::string>(*jms,"pw");
 			std::strcpy(password, str.c_str());
 
 			str = vcell_xml::convertChildElement<std::string>(*jms,"queue");
