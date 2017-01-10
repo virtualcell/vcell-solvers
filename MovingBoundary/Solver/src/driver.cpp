@@ -104,6 +104,18 @@ int main(int argc, char *argv[])
 	bool configPresent;
 	int Nx = -1;
 	int taskId = -1;
+
+	// java passes -tid which will not work, we need either -t or --tid, so change it to -t
+	for (int i = 0; i < argc; ++ i)
+	{
+		string argument = argv[i];
+		if (!strcmp(argv[i], "-tid"))
+		{
+			argv[i][2] = '\0';
+			break;
+		}
+	}
+
 	namespace tclap = TCLAP;
 	try {
 		using namespace TCLAP; 
