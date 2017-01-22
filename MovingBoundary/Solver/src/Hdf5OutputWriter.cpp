@@ -13,7 +13,6 @@
 #include <vcellxml.h>
 #include <ReportClient.h>
 #include <Physiology.h>
-#include <SimulationMessaging.h>
 #include <TextReportClient.h>
 #include <MBridge/MatlabDebug.h>
 #include <MBridge/FronTierAdapt.h>
@@ -164,7 +163,6 @@ void Hdf5OutputWriter::time(double t, unsigned int numIter, bool last, const mov
 			writeSolution();
 			writeLog();
 			timeList.push_back(currentTime);
-			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, currentTime/theProblem.endTime(), currentTime));
 		}
 }
 
@@ -273,7 +271,7 @@ void Hdf5OutputWriter::writeVariableDataSet(Group& timeGroup, const Variable* va
 
 void Hdf5OutputWriter::writeLog()
 {
-	std::ofstream logOf(logFileName.c_str(), ios_base::app);
+	std::ofstream logOf(logFileName.c_str(), std::ios_base::app);
 	if (currentIter == 0)
 	{
 		logOf << MBSDATA_IDENTIFIER << std::endl;
