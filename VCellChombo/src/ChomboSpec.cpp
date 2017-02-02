@@ -15,6 +15,7 @@ ChomboSpec::ChomboSpec()
 	relTol = 1e-9;
 	bActivateFeatureUnderDevelopment = false;
 	smallVolfracThreshold = 0;
+	blockFactor = 4;
 
 	chomboGeometry = new ChomboGeometry();
 	
@@ -70,6 +71,7 @@ void ChomboSpec::printSummary()
 	pout() << "bSaveChomboOutput=" << bSaveChomboOutput << endl;
 	pout() << "bActivateFeatureUnderDevelopment=" << bActivateFeatureUnderDevelopment << endl;
 	pout() << "smallVolfracThreshold=" << smallVolfracThreshold << endl;
+	pout() << "blockFactor=" << blockFactor << endl;
 	pout() << "Membrane ROIs: " << membraneRefinementRois.size() << endl;
 	for (vector<ChomboRefinementRoi*>::iterator it = membraneRefinementRois.begin(); it != membraneRefinementRois.end(); ++ it)
 	{

@@ -58,7 +58,6 @@
 #define IF_VAR_NAME_PREFIX "zzz_IF_"
 #define CHOMBO_OUTPUT_FILE_NAME_FORMAT "%s%06d_%s_vol%d"HDF5_FILE_EXT  // SimID_98312620_0_000000_outside_vol0.hdf5
 
-static const int blockFactor = 8;  // smallest box, 8 is recommended.
 static const int nestingRadius  = 2; //ghostPhi[0];  // should be the same as ghost phi size, but Terry used 2
 static const int maxCoarsen = -1;
 static const int numPreCondIters = 4;
@@ -900,7 +899,7 @@ void ChomboScheduler::generateMesh()
 	Vector<int> coarsestProcs;
 	Vector<Box> coarsestBoxes;
 
-	domainSplit(coarsestDomain, coarsestBoxes, chomboSpec->getMaxBoxSize(), blockFactor);
+	domainSplit(coarsestDomain, coarsestBoxes, chomboSpec->getMaxBoxSize(), chomboSpec->getBlockFactor());
 	mortonOrdering(coarsestBoxes);
 	LoadBalance(coarsestProcs, coarsestBoxes);
 
@@ -922,7 +921,7 @@ void ChomboScheduler::generateMesh()
 	if (numLevels > 1) {
 		pout() << "Starting mesh refinement (BRMeshRefine)" << endl;
 		// If there is more than one level, the finer levels need to created by "BRMeshRefine"
-		BRMeshRefine meshRefine(coarsestDomain, vectRefRatios, chomboSpec->getFillRatio(), blockFactor,
+		BRMeshRefine meshRefine(coarsestDomain, vectRefRatios, chomboSpec->getFillRatio(), chomboSpec->getBlockFactor(),
 						nestingRadius, chomboSpec->getMaxBoxSize());
 
 		// Tags for creating the finer levels

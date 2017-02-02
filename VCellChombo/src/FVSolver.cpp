@@ -1339,6 +1339,10 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 			double d = 0;
 			lineInput >> d;
 			chomboSpec->setSmallVolfracThreshold(d);
+		} else if (nextToken == "BLOCK_FACTOR") {
+			int d = 0;
+			lineInput >> d;
+			chomboSpec->setBlockFactor(d);
 		}
 	}
 

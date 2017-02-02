@@ -138,6 +138,15 @@ public:
 		return smallVolfracThreshold;
 	}
 
+	void setBlockFactor(int d)
+	{
+		blockFactor = d;
+	}
+	int getBlockFactor()
+	{
+		return blockFactor;
+	}
+
 	void printSummary();
 private:
 	ChomboGeometry* chomboGeometry;
@@ -153,6 +162,7 @@ private:
 	bool bSaveChomboOutput;
 	bool bActivateFeatureUnderDevelopment;
 	double smallVolfracThreshold;
+	int blockFactor;
 };
 
 #endif /*CHOMBOSPEC_H_*/
