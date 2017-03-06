@@ -147,6 +147,16 @@ public:
 		return blockFactor;
 	}
 
+	const int getTagsGrow()
+	{
+		return tagsGrow;
+	}
+
+	void setTagsGrow(int d)
+	{
+		tagsGrow = d;
+	}
+
 	void printSummary();
 private:
 	ChomboGeometry* chomboGeometry;
@@ -163,6 +173,7 @@ private:
 	bool bActivateFeatureUnderDevelopment;
 	double smallVolfracThreshold;
 	int blockFactor;
+	int tagsGrow;
 };
 
 #endif /*CHOMBOSPEC_H_*/

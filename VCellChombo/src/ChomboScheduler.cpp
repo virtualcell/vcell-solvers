@@ -819,6 +819,7 @@ bool ChomboScheduler::tagROIs(Vector<IntVectSet>& tags)
 					memTags |= phaseVolumeList[iphase][ivol]->volume->irregCells(depth);
 				}
 			}
+			memTags.grow(chomboSpec->getTagsGrow());
 		}
 		else
 		{
@@ -844,7 +845,6 @@ bool ChomboScheduler::tagROIs(Vector<IntVectSet>& tags)
 				} // ivol
 			} // iphase
 		}
-		memTags.grow(roi->getTagsGrow());
 		tags[tagLevel] |= memTags;
 		bCellsTagged |= !memTags.isEmpty();
 	}
@@ -879,7 +879,6 @@ bool ChomboScheduler::tagROIs(Vector<IntVectSet>& tags)
 #if CH_SPACEDIM==3
 		}
 #endif
-		volTags.grow(roi->getTagsGrow());
 		tags[tagLevel] |= volTags;
 		bCellsTagged |= !volTags.isEmpty();
 	}

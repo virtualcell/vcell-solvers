@@ -1294,14 +1294,14 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 			lineInput >> roiType >> numRois;
 			for (int i = 0; i < numRois; ++ i)
 			{
-				int level, tagsGrow;
+				int level;
 				string roi;
 				getline(ifsInput, line);
 				istringstream lineInput0(line);
-				lineInput0 >> level >> tagsGrow;
+				lineInput0 >> level;
 				getline(lineInput0, roi);
 				roi.erase(roi.find_last_not_of(" \n\r\t") + 1);
-				ChomboRefinementRoi* refinementRoi = new ChomboRefinementRoi(chomboGeometry, level, tagsGrow, roi);
+				ChomboRefinementRoi* refinementRoi = new ChomboRefinementRoi(chomboGeometry, level, roi);
 				if (roiType == "Membrane")
 				{
 					chomboSpec->addMembraneRefinementRoi(refinementRoi);
@@ -1343,6 +1343,10 @@ void FVSolver::loadChomboSpec(istream& ifsInput) {
 			int d = 0;
 			lineInput >> d;
 			chomboSpec->setBlockFactor(d);
+		} else if (nextToken == "TAGS_GROW") {
+			int d = 0;
+			lineInput >> d;
+			chomboSpec->setTagsGrow(d);
 		}
 	}
 

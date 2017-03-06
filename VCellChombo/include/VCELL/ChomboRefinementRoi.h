@@ -15,7 +15,7 @@ namespace VCell
 class ChomboRefinementRoi
 {
 public:
-	ChomboRefinementRoi(ChomboGeometry* geometry, int level, int tagsGrowSize, string& roi);
+	ChomboRefinementRoi(ChomboGeometry* geometry, int level, string& roi);
 	virtual ~ChomboRefinementRoi();
 
 	ChomboGeometry* getChomboGeometry() {
@@ -31,11 +31,6 @@ public:
 	{
 		return level;
 	}
-	
-	const int getTagsGrow()
-	{
-		return tagsGrow;
-	}
 
 	const double* getConstantValue()
 	{
@@ -45,7 +40,6 @@ private:
 	ChomboGeometry* chomboGeometry;
 	int level;
 	VCell::Expression* roi;
-	int tagsGrow;
 	double* constantValue;
 };
 

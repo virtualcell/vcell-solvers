@@ -1,8 +1,8 @@
 #include <VCELL/ChomboRefinementRoi.h>
 #include <SimpleSymbolTable.h>
 
- ChomboRefinementRoi::ChomboRefinementRoi(ChomboGeometry* geometry, int lvl, int tg, string& roiExp)
- : chomboGeometry(geometry), level(lvl), tagsGrow(tg)
+ ChomboRefinementRoi::ChomboRefinementRoi(ChomboGeometry* geometry, int lvl, string& roiExp)
+ : chomboGeometry(geometry), level(lvl)
 {
 	roi = new VCell::Expression(roiExp);
 	constantValue = 0;
