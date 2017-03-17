@@ -362,7 +362,7 @@ void SimulationExpression::createSymbolTable() {
 	// t, x, y, z, VOL, VOL_Feature1_membrane, VOL_Feature2_membrane, ... (for computing membrane flux for volume variables), 
 	// MEM, VOLREG, VOLREG_Feature1_membrane, VOLREG_Feature2_membrane, ... (for computing membrane flux for volume region variables), 
 	// MEMREG, REGIONSIZE, field data, random variables, parameters
-	int numSymbols = 4 + volVarSize * (model->getNumFeatures() + 1) + memVarSize 
+	numSymbols = 4 + volVarSize * (model->getNumFeatures() + 1) + memVarSize
 		+ volRegionVarSize * (model->getNumFeatures() + 1) + memRegionVarSize + volParticleVarSize
 		+ memParticleVarSize + numRegionSizeVars
 		+ (int)fieldDataList.size() + (int)randomVarList.size() + (int)paramList.size();
@@ -376,9 +376,11 @@ void SimulationExpression::createSymbolTable() {
 	valueProxyY = new ScalarValueProxy();
 	valueProxyZ = new ScalarValueProxy();
 
+	symbolIndexOffset_T = 0;
 	variableNames[0] = "t";
 	oldValueProxies[0] = valueProxyTime;
 
+	symbolIndexOffset_Xyz = 1;
 	variableNames[1] = "x";	
 	oldValueProxies[1] = valueProxyX;
 
@@ -389,7 +391,7 @@ void SimulationExpression::createSymbolTable() {
 	oldValueProxies[3] = valueProxyZ;
 
 	int variableIndex = 4;
-
+	symbolIndexOffset_VolVar = variableIndex;
 	// Volume PDE/ODE
 	for (int i = 0; i < volVarSize; i ++) {
 		Variable* var = volVarList[i];
@@ -405,6 +407,7 @@ void SimulationExpression::createSymbolTable() {
 		}
 	}
 
+	symbolIndexOffset_MemVar = variableIndex;
 	// Membrane ODE/PDE
 	for (int i = 0; i < memVarSize; i ++) {
 		Variable* var = memVarList[i];
@@ -412,7 +415,8 @@ void SimulationExpression::createSymbolTable() {
 		variableNames[variableIndex] = string(var->getName());
 		variableIndex ++;
 	}
-		
+
+	symbolIndexOffset_VolRegionVar = variableIndex;
 	// Volume Region
 	for (int i = 0; i < volRegionVarSize; i ++) {
 		Variable* var = volRegionVarList[i];
@@ -428,6 +432,7 @@ void SimulationExpression::createSymbolTable() {
 		}
 	} 		
 		
+	symbolIndexOffset_MemRegionVar = variableIndex;
 	// Membrane Region
 	for (int i = 0; i < memRegionVarSize; i ++) {
 		Variable* var = memRegionVarList[i];
@@ -445,6 +450,7 @@ void SimulationExpression::createSymbolTable() {
 		//	variableNames[variableIndex ++] = string(var->getName());
 		//}		
 
+	symbolIndexOffset_VolParticleVar = variableIndex;
 	// Volume Particle
 	for (int i = 0; i < volParticleVarSize; i ++) {
 		Variable* var = volParticleVarList[i];
@@ -453,6 +459,7 @@ void SimulationExpression::createSymbolTable() {
 		variableIndex ++;
 	}
 
+	symbolIndexOffset_MemParticleVar = variableIndex;
 	// Membrane Particle
 	for (int i = 0; i < memParticleVarSize; i ++) {
 		Variable* var = memParticleVarList[i];
@@ -461,6 +468,7 @@ void SimulationExpression::createSymbolTable() {
 		variableIndex ++;
 	}
 
+	symbolIndexOffset_RegionSizeVariable = variableIndex;
 	// add region size variables
 	for (int i = 0; i < numRegionSizeVars; i ++) {
 		RegionSizeVariable* var = regionSizeVarList[i];
@@ -469,6 +477,7 @@ void SimulationExpression::createSymbolTable() {
 		variableIndex ++;
 	}
 
+	symbolIndexOffset_FieldData = variableIndex;
 	// add field data
 	for (int i = 0; i < (int)fieldDataList.size(); i ++) {
 		if (fieldDataList[i]->getVariableType() == VAR_VOLUME) {
@@ -482,6 +491,7 @@ void SimulationExpression::createSymbolTable() {
 		variableIndex ++;
 	}
 
+	symbolIndexOffset_RandomVar = variableIndex;
 	// add random variable
 	if (randomVarList.size() > 0) {
 		char rvfile[512];
@@ -505,6 +515,7 @@ void SimulationExpression::createSymbolTable() {
 		}
 	}
 
+	symbolIndexOffset_Parameters = variableIndex;
 	// add parameters
 	for (int i = 0; i < (int)paramList.size(); i ++) {
 		oldValueProxies[variableIndex] = paramValueProxies[i];
@@ -512,6 +523,8 @@ void SimulationExpression::createSymbolTable() {
 		variableIndex ++;
 	}
 
+	assert(numSymbols == variableIndex);
+	numSymbols = variableIndex;
 	symbolTable = new SimpleSymbolTable(variableNames, variableIndex, oldValueProxies);
 	delete[] variableNames;	
 }   
@@ -696,5 +709,74 @@ bool SimulationExpression::isVariable(string& symbol) {
 void SimulationExpression::createPostProcessingBlock() {
 	if (postProcessingBlock == NULL) {
 		postProcessingBlock = new PostProcessingBlock(this);
+	}
+}
+
+void SimulationExpression::populateFieldValuesNew(double* darray, int index) {
+	int indexOffset = symbolIndexOffset_FieldData;
+	for (int i = 0; i < (int)fieldDataList.size(); i ++, ++ indexOffset) {
+		int dataLength = fieldDataList[i]->getDataLength();
+		if (index >= 0 && index < dataLength) {
+			darray[indexOffset] = fieldDataList[i]->getData()[index];
+		} else {
+			darray[indexOffset] = 0;
+		}
+	}
+}
+
+void SimulationExpression::populateRandomValuesNew(double* darray, int index) {
+	int indexOffset = symbolIndexOffset_RandomVar;
+	for (int i = 0; i < (int)randomVarList.size(); i ++, ++ indexOffset) {
+		RandomVariable* rv = randomVarList[i];
+
+		if (index >= 0 && index < rv->getSize()) {
+			darray[indexOffset] = rv->getRandomNumbers()[index];
+		} else {
+			darray[indexOffset] = 0;
+		}
+	}
+}
+
+void SimulationExpression::populateRegionSizeVariableValuesNew(double *darray, bool bVolumeRegion, int regionIndex) {
+	int indexOffset = symbolIndexOffset_RegionSizeVariable;
+	for (int i = 0; i < numRegionSizeVars; i ++, ++ indexOffset) {
+		RegionSizeVariable* rsv = regionSizeVarList[i];
+		if (rsv->getVarType() == VAR_VOLUME_REGION) {
+			darray[indexOffset] = bVolumeRegion ? rsv->getCurr()[regionIndex] : 0;
+		} else {
+			darray[indexOffset] = bVolumeRegion ? 0 : rsv->getCurr()[regionIndex];
+		}
+	}
+}
+
+void SimulationExpression::populateParameterValuesNew(double* darray) {
+	if (paramList.size() == 0) {
+		return;
+	}
+
+	int indexOffset = symbolIndexOffset_RandomVar;
+	for (int i = 0; i < (int)paramList.size(); i ++, ++ indexOffset) {
+		darray[indexOffset] = paramValueProxies[i]->evaluate();
+	}
+}
+
+void SimulationExpression::populateParticleVariableValuesNew(double* array, bool bVolume, int index)
+{
+	if (bVolume)
+	{
+		for (int i = 0; i < volParticleVarSize; i ++)
+		{
+			Variable* var = volParticleVarList[i];
+			array[symbolIndexOffset_VolParticleVar + i] = var->getCurr(index);
+		}
+	}
+	else
+	{
+		// Membrane Particle
+		for (int i = 0; i < memParticleVarSize; i ++)
+		{
+			Variable* var = memParticleVarList[i];
+			array[symbolIndexOffset_MemParticleVar + i] = var->getCurr(index);
+		}
 	}
 }

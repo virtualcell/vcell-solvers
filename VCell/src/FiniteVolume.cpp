@@ -9,6 +9,10 @@ using namespace std;
 #include <VCELL/SimulationMessaging.h>
 #include <Exception.h>
 #include <vcellhybrid.h>
+#ifdef VCELL_PETSC
+#include <petsc.h>
+#endif;
+
 #ifdef VCELL_HYBRID
 	bool vcellhybrid::bHybrid;
 #endif VCELL_HYBRID	
@@ -47,7 +51,10 @@ int main(int argc, char *argv[])
 	    << "Finite Volume version $URL$"VCELLSVNQUOTE(SVNVERSION) << " with smoldyn version " << VERSION 
 		<< std::endl;
 
-    
+#ifdef VCELL_PETSC
+	PetscInitialize(&argc, &argv, NULL, NULL);
+#endif
+
 	vcellhybrid::setHybrid(); //get smoldyn library in correct state
   	int returnCode = 0;
 	string errorMsg = "Exception : ";

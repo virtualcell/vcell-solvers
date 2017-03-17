@@ -59,15 +59,15 @@ int unzip32(char* zipfile, char* file, char* exdir);
 #ifdef VCELL_HYBRID	
 	void smoldynOneStep(simptr sim);
 	void vcellhybrid::smoldynOneStep(simptr sim) {
-		smoldynOneStep(sim);
+		::smoldynOneStep(sim);
 	}
 	simptr smoldynInit(SimTool* simTool, string& root);
 	simptr vcellhybrid::smoldynInit(SimTool* simTool, string& root) {
-		return smoldynInit(simTool, root);
+		return ::smoldynInit(simTool, root);
 	}
 	void smoldynEnd(simptr sim);
 	void vcellhybrid::smoldynEnd(simptr sim) {
-		smoldynEnd(sim);
+		::smoldynEnd(sim);
 	}
 #endif
 
@@ -409,7 +409,7 @@ void SimTool::loadFinal()
 							FVDataSet::read(dataFileName, simulation);
 							simulation->setCurrIteration(tempIteration);
 							// set start time on sundials
-							if (isSundialsPdeSolver()) {
+							if (isSundialsPdeSolver() || isVCellPetscSolver()) {
 								simulation->setSimStartTime(simStartTime);
 							}
 							simFileCount = tempFileCount;
@@ -698,8 +698,12 @@ bool SimTool::isSundialsPdeSolver() {
 	return solver == SUNDIALS_PDE_SOLVER;
 }
 
+bool SimTool::isVCellPetscSolver() {
+	return solver == VCELL_PETSC_SOLVER;
+}
+
 void SimTool::setSolver(string& s) {
-	if (s.length() > 0 && s != FV_SOLVER && s != SUNDIALS_PDE_SOLVER) {
+	if (s.length() > 0 && s != FV_SOLVER && s != SUNDIALS_PDE_SOLVER && s != VCELL_PETSC_SOLVER) {
 		stringstream ss;
 		ss << "unknown solver : " << s;
 		throw ss.str();

@@ -136,6 +136,27 @@ public:
 	void populateRegionSizeVariableValues(double* darray, bool bVolumeRegion, int regionIndex);
 
 	void createPostProcessingBlock();
+
+	void populateFieldValuesNew(double* darray, int index);
+	void populateRegionSizeVariableValuesNew(double* darray, bool bVolumeRegion, int regionIndex);
+	void populateParameterValuesNew(double* darray);
+	void populateRandomValuesNew(double* darray, int index);
+	void populateParticleVariableValuesNew(double* array, bool bVolume, int index);
+
+	int symbolIndexOfT() { return symbolIndexOffset_T; }
+	int symbolIndexOfXyz() { return symbolIndexOffset_Xyz; }
+	int symbolIndexOfVolVar() { return symbolIndexOffset_VolVar; }
+	int symbolIndexOfMemVar() { return symbolIndexOffset_MemVar; }
+	int symbolIndexOfVolRegionVar() { return symbolIndexOffset_VolRegionVar; }
+	int symbolIndexOfMemRegionVar() { return symbolIndexOffset_MemRegionVar; }
+	int symbolIndexOfVolParticleVar() { return symbolIndexOffset_VolParticleVar; }
+	int symbolIndexOfMemParticleVar() { return symbolIndexOffset_MemParticleVar; }
+	int symbolIndexOfRegionSizeVariable() { return symbolIndexOffset_RegionSizeVariable; }
+	int symbolIndexOfFieldData() { return symbolIndexOffset_FieldData; }
+	int symbolIndexOfRandomVar() { return symbolIndexOffset_RandomVar; }
+	int symbolIndexOfParameters() { return symbolIndexOffset_Parameters; }
+	int numOfSymbols() { return numSymbols;}
+
 private:
 	SymbolTable* symbolTable;
 
@@ -180,6 +201,20 @@ private:
 	int psfFieldDataIndex;
 
 	void reinitConstantValues();
+
+	int numSymbols;
+	int symbolIndexOffset_T;
+	int symbolIndexOffset_Xyz;
+	int symbolIndexOffset_VolVar;
+	int symbolIndexOffset_MemVar;
+	int symbolIndexOffset_VolRegionVar;
+	int symbolIndexOffset_MemRegionVar;
+	int symbolIndexOffset_VolParticleVar;
+	int symbolIndexOffset_MemParticleVar;
+	int symbolIndexOffset_RegionSizeVariable;
+	int symbolIndexOffset_FieldData;
+	int symbolIndexOffset_RandomVar;
+	int symbolIndexOffset_Parameters;
 };
 
 #endif

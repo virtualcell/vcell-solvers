@@ -17,8 +17,6 @@ extern "C"
 	#define PCGWRAPPER pcgwrapper
 	#define IDAMAX idamax
 	#define DSCAL dscal
-	//SUBROUTINE PCILU(ICODE,N,IJA,A,W,ISP,RSP)
-	#define PCILU pcilu
 	#define DAXPY daxpy
 	#if defined(FORTRAN_CAPITAL) || defined(FORTRAN_UNDERSCORE)
 		#error "Only one fortran convention should be defined"
@@ -34,7 +32,6 @@ extern "C"
 	#define PCGWRAPPER pcgwrapper_
 	#define IDAMAX idamax_
 	#define DSCAL dscal_
-	#define PCILU pcilu_
 	#define DAXPY daxpy_
 	//extern void PCGWRAPPER(...);
 	//extern void DSCAL(...);
@@ -49,7 +46,6 @@ extern "C"
 	int IDAMAX(long *, double*, int*);
 	void PCGWRAPPER(long *, long *, int *, int32 *, double *, double *, double *, double *, int *, double *, double *, double *, double*);	
 	void DSCAL(int *, double *, double *, int *); 
-	void PCILU(int *, long *, int32 *, double *, double *, double *, double *);
 	void DAXPY(long*, double*, double*, int*, double*, int*);
 }
 
@@ -67,6 +63,10 @@ void trimString(string& str);
 
 #ifndef FV_SOLVER
 #define FV_SOLVER "FV_SOLVER"
+#endif
+
+#ifndef VCELL_PETSC_SOLVER
+#define VCELL_PETSC_SOLVER "VCELL_PETSC_SOLVER"
 #endif
 
 #endif

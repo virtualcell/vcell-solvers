@@ -73,6 +73,7 @@ public:
 
 	void setSolver(string& s);
 	bool isSundialsPdeSolver();
+	bool isVCellPetscSolver();
 
 	void setDiscontinuityTimes(int num, double* times) {
 		numDiscontinuityTimes = num;

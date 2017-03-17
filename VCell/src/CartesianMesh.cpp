@@ -801,7 +801,7 @@ void CartesianMesh::showSummary(FILE *fp)
 		domainOriginX, domainOriginX+ domainSizeX, 
 		domainOriginY, domainOriginY+ domainSizeY, 
 		domainOriginZ, domainOriginZ+ domainSizeZ);
-	fprintf(fp,"                Elements  numX=%ld numY=%ld numZ=%ld\n\n",
+	fprintf(fp,"                Elements  numX=%d numY=%d numZ=%d\n\n",
 		numX,numY,numZ);
 }
 
@@ -837,7 +837,7 @@ void CartesianMesh::writeVolumeRegionsMapSubvolume(FILE *fp)
 	fprintf(fp,"\t//%8s %10s %10s\n","VolRegID","SubvolID","Volume");
 	for(int c = 0;c < numVolumeRegions;c+= 1){
 		VolumeRegion *volumeRegion = pVolumeRegions[c];
-		fprintf(fp,"\t%10ld %10ld %10.17lg //%s\n",
+		fprintf(fp,"\t%10d %10d %10.17lg //%s\n",
 			volumeRegion->getIndex(),
 			volumeRegion->getFeature()->getHandle(),
 			volumeRegion->getSize(),
@@ -895,7 +895,7 @@ void CartesianMesh::writeMembraneRegionMapVolumeRegion(FILE *fp)
 		MembraneRegion *membraneRegion = pMembraneRegions[c];
 		VolumeRegion *vr1 = membraneRegion->getVolumeRegion1();
 		VolumeRegion *vr2 = membraneRegion->getVolumeRegion2();
-		fprintf(fp,"\t%10ld %10ld %10ld %10.17lg\n",
+		fprintf(fp,"\t%10d %10d %10d %10.17lg\n",
 			membraneRegion->getIndex(),
 			vr1->getIndex(),
 			vr2->getIndex(),
@@ -907,7 +907,7 @@ void CartesianMesh::writeMembraneRegionMapVolumeRegion(FILE *fp)
 void CartesianMesh::writeCartesianMeshHeader(FILE *fp)
 {
 	fprintf(fp,"\t%s     %10s %10s %10s\n","//","X","Y","Z");
-	fprintf(fp,"\tSize   %10ld %10ld %10ld\n",numX,numY,numZ);
+	fprintf(fp,"\tSize   %10d %10d %10d\n",numX,numY,numZ);
 	fprintf(fp,"\tExtent %10.17lg %10.17lg %10.17lg\n",domainSizeX,domainSizeY,domainSizeZ);
 	fprintf(fp,"\tOrigin %10.17lg %10.17lg %10.17lg\n",domainOriginX,domainOriginY,domainOriginZ);
 }
