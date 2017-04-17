@@ -11,11 +11,11 @@ using namespace std;
 #include <vcellhybrid.h>
 #ifdef VCELL_PETSC
 #include <petsc.h>
-#endif;
+#endif
 
 #ifdef VCELL_HYBRID
 	bool vcellhybrid::bHybrid;
-#endif VCELL_HYBRID	
+#endif
 
 void vcellExit(int returnCode, string& errorMsg) {
 	if (SimulationMessaging::getInstVar() == 0) {
@@ -45,6 +45,15 @@ void printUsage() {
 #define VCELLSVNQ(x) #x
 #define VCELLSVNQUOTE(x) VCELLSVNQ(x)
 
+PetscErrorCode VCellPetscReturnErrorHandler(MPI_Comm comm,int line,const char *fun,const char *file,PetscErrorCode n,PetscErrorType p,const char *mess,void *ctx)
+{
+  stringstream ss;
+  const char *text;
+  PetscErrorMessage(n,&text,NULL);
+  ss << "PETSC ERROR: " << text << ", " << mess << "(" << fun << "() line " << line << " in " << file << ")" << endl; 
+  throw ss.str();
+}
+
 int main(int argc, char *argv[])
 {
 	std::cout
@@ -53,6 +62,7 @@ int main(int argc, char *argv[])
 
 #ifdef VCELL_PETSC
 	PetscInitialize(&argc, &argv, NULL, NULL);
+	PetscPushErrorHandler(VCellPetscReturnErrorHandler, 0);
 #endif
 
 	vcellhybrid::setHybrid(); //get smoldyn library in correct state
@@ -142,11 +152,11 @@ int main(int argc, char *argv[])
 	} catch (string& exStr){
 		errorMsg += exStr;
 		returnCode = 1;
-	} catch (std::exception & e) {
-		errorMsg += e.what(); 
-		returnCode = 1;
 	} catch (VCell::Exception& ex){
 		errorMsg += ex.getMessage();
+		returnCode = 1;
+	} catch (std::exception & e) {
+		errorMsg += e.what(); 
 		returnCode = 1;
 	} catch (...){
 		errorMsg += "unknown error";

@@ -279,16 +279,16 @@ PetscErrorCode PetscPdeScheduler::RHS_Function(TS ts, PetscReal t, Vec Y, Vec F,
 {
 	double *yinput;
 	double* rhs;
-	PetscErrorCode ierr = VecGetArrayRead(Y, (const double**)&yinput);
-	ierr = VecGetArray(F, &rhs);
+	VecGetArrayRead(Y, (const double**)&yinput);
+	VecGetArray(F, &rhs);
 
 	PetscPdeScheduler* solver = (PetscPdeScheduler*)ctx;
-	ierr = solver->rhs(t, yinput, rhs);
+	solver->rhs(t, yinput, rhs);
 
 	VecRestoreArrayRead(Y, (const PetscScalar**)&yinput);
 	VecRestoreArray(F, &rhs);
 
-	return ierr;
+	return 0;
 }
 
 /*
@@ -352,23 +352,22 @@ PetscErrorCode PetscPdeScheduler::initPetscSolver() {
 			}
 		}
 
-		PetscErrorCode ierr;
-		ierr = VecCreateSeq(PETSC_COMM_SELF, numUnknowns, &vecY);
+		VecCreateSeq(PETSC_COMM_SELF, numUnknowns, &vecY);
 		/*
-		ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);
-		ierr = TSSetProblemType(ts,TS_NONLINEAR);CHKERRQ(ierr);
-//		ierr = TSSetType(ts,TSARKIMEX);CHKERRQ(ierr);
-		ierr = TSSetType(ts, TSBEULER); CHKERRQ(ierr);
-//		ierr = TSARKIMEXSetFullyImplicit(ts,PETSC_TRUE);CHKERRQ(ierr);
+		TSCreate(PETSC_COMM_WORLD,&ts);
+		TSSetProblemType(ts,TS_NONLINEAR);
+//		TSSetType(ts,TSARKIMEX);
+		TSSetType(ts, TSBEULER);
+//		TSARKIMEXSetFullyImplicit(ts,PETSC_TRUE);
 
 
-		ierr = TSSetRHSFunction(ts, NULL, RHS_Function, this);CHKERRQ(ierr);
+		TSSetRHSFunction(ts, NULL, RHS_Function, this);
 
-		ierr = TSSetSolution(ts, vecY);CHKERRQ(ierr);
-		ierr = TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);
-		ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
+		TSSetSolution(ts, vecY);
+		TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP);
+		TSSetFromOptions(ts);
 
-		ierr = TSGetSNES(ts, &snes);CHKERRQ(ierr);
+		TSGetSNES(ts, &snes);
 */
 
 		MatCreate(PETSC_COMM_WORLD, &Pmat);
@@ -378,34 +377,34 @@ PetscErrorCode PetscPdeScheduler::initPetscSolver() {
 		computeNonZeros(nnz);
 		MatSeqAIJSetPreallocation(Pmat, PETSC_DECIDE, nnz);
 //		MatMPIAIJSetPreallocation(J, PETSC_DECIDE, NULL, PETSC_DECIDE, NULL);
-    delete[] nnz;
+        delete[] nnz;
 
-    SNESCreate(PETSC_COMM_WORLD, &snes);
+        SNESCreate(PETSC_COMM_WORLD, &snes);
 		SNESSetFromOptions(snes);
 
 		Vec r;
 		VecDuplicate(vecY, &r);
 		VecDuplicate(vecY, &oldY);
-		ierr = SNESSetFunction(snes, r, SNES_Function, this);
+		SNESSetFunction(snes, r, SNES_Function, this);
 
 		Mat Jmf;
-		ierr = MatCreateSNESMF(snes, &Jmf);   // matrix free J
-//		ierr = SNESSetJacobian(snes, Jmf, J, SNESComputeJacobianDefault, this);  //SNESComputeJacobianDefaultColor
-//		ierr = SNESSetJacobian(snes, Jmf, Pmat, MatMFFDComputeJacobian, this);
-		ierr = SNESSetJacobian(snes, Jmf, Pmat, SNES_Jacobian_Function, this);
+		MatCreateSNESMF(snes, &Jmf);   // matrix free J
+//		SNESSetJacobian(snes, Jmf, J, SNESComputeJacobianDefault, this);  //SNESComputeJacobianDefaultColor
+//		SNESSetJacobian(snes, Jmf, Pmat, MatMFFDComputeJacobian, this);
+		SNESSetJacobian(snes, Jmf, Pmat, SNES_Jacobian_Function, this);
 
-//		ierr = TSSetRHSJacobian(ts, J, J, ts_Jacobian_Function, this);
+//		TSSetRHSJacobian(ts, J, J, ts_Jacobian_Function, this);
 
 		SNESSetLagPreconditioner(snes, -2);
 		SNESSetLagPreconditionerPersists(snes, PETSC_TRUE);
 
 		KSP ksp;
 		PC pc;
-		ierr = SNESGetKSP(snes, &ksp);CHKERRQ(ierr);
+		SNESGetKSP(snes, &ksp);
 		KSPSetType(ksp, KSPGMRES);
 		KSPSetReusePreconditioner(ksp, PETSC_TRUE);
 
-		ierr = KSPGetPC(ksp, &pc);CHKERRQ(ierr);
+		KSPGetPC(ksp, &pc);
 //		PCSetType(pc, PCNONE);
 		PCSetType(pc, PCILU);
 		PCFactorSetLevels(pc, 0);
@@ -417,7 +416,7 @@ PetscErrorCode PetscPdeScheduler::initPetscSolver() {
 		PCSetFromOptions(pc);
 
 //		double initial_dt = sundialsSolverOptions.maxStep; //0.0001;
-//		ierr = TSSetInitialTimeStep(ts, currentTime, initial_dt);CHKERRQ(ierr);
+//		TSSetInitialTimeStep(ts, currentTime, initial_dt);
 	}
 
 #ifdef PRECOMPUTE_DIFFUSION_COEFFICIENT
@@ -430,7 +429,7 @@ PetscErrorCode PetscPdeScheduler::initPetscSolver() {
 	// set up initial conditions
 	int count = 0;
 	double *y_data;
-	PetscErrorCode ierr = VecGetArray(vecY, &y_data);
+	VecGetArray(vecY, &y_data);
 	if (numVolVar > 0) {
 		for (int r = 0; r < mesh->getNumVolumeRegions(); r ++) {
 			for (int ri = 0; ri < regionSizes[r]; ri ++) {
@@ -533,7 +532,7 @@ PetscErrorCode PetscPdeScheduler::solve() {
 
 void PetscPdeScheduler::updateSolutions() {
 	double *y_data;
-	PetscErrorCode ierr = VecGetArrayRead(vecY, (const PetscScalar**)&y_data);
+	VecGetArrayRead(vecY, (const PetscScalar**)&y_data);
 	int count = 0;
 
 	if (simulation->getNumVolVariables() > 0) {
@@ -2055,7 +2054,7 @@ PetscErrorCode PetscPdeScheduler::ts_buildPmat(PetscReal t, Vec Y, Mat Pmat)
 {
 	PetscErrorCode ierr;
 	double *yinput;
-	ierr = VecGetArrayRead(Y, (const double**)&yinput);
+	VecGetArrayRead(Y, (const double**)&yinput);
 
 	buildJ_Volume(t, yinput, Pmat);
 	buildJ_Membrane(t, yinput, Pmat);
@@ -2091,13 +2090,12 @@ PetscErrorCode PetscPdeScheduler::ts_buildPmat(PetscReal t, Vec Y, Mat Pmat)
 PetscErrorCode PetscPdeScheduler::TS_Jacobian_Function(TS ts, PetscReal t, Vec Y, Mat Amat, Mat Pmat, void *ctx)
 {
 	PetscPdeScheduler* solver = (PetscPdeScheduler*)ctx;
-	PetscErrorCode ierr = solver->ts_jacobian(ts, t, Y, Amat, Pmat);
-	return ierr;
+	return solver->ts_jacobian(ts, t, Y, Amat, Pmat);
 }
 
 PetscErrorCode PetscPdeScheduler::ts_jacobian(TS ts, PetscReal t, Vec Y, Mat Amat, Mat Pmat)
 {
-	PetscErrorCode ierr = ts_buildPmat(t, Y, Pmat);
+	ts_buildPmat(t, Y, Pmat);
 
 	MatAssemblyBegin(Pmat, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Pmat, MAT_FINAL_ASSEMBLY);
@@ -2113,11 +2111,11 @@ PetscErrorCode PetscPdeScheduler::ts_jacobian(TS ts, PetscReal t, Vec Y, Mat Ama
 //	char prefix[30] = "Pmat_TS";
 //	sprintf(filename, "%s_%d.m", prefix, count);
 //	PetscViewer viewer;
-//	ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD, filename, &viewer);
-//	ierr = PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
+//	PetscViewerASCIIOpen(PETSC_COMM_WORLD, filename, &viewer);
+//	PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
 //	string name = prefix;
-//	ierr = PetscObjectSetName((PetscObject)Pmat, name.c_str());
-//	ierr = MatView(Pmat, viewer);
+//	PetscObjectSetName((PetscObject)Pmat, name.c_str());
+//	MatView(Pmat, viewer);
 //	PetscViewerDestroy(&viewer);
 
 	cout << " # ts_jacobian called " << count << endl;
@@ -2127,8 +2125,7 @@ PetscErrorCode PetscPdeScheduler::ts_jacobian(TS ts, PetscReal t, Vec Y, Mat Ama
 PetscErrorCode PetscPdeScheduler::SNES_Function(SNES snes, Vec Y, Vec F, void *ctx)
 {
 	PetscPdeScheduler* solver = (PetscPdeScheduler*)ctx;
-	PetscErrorCode ierr = solver->snes_function(snes, Y, F);
-	return ierr;
+	return solver->snes_function(snes, Y, F);
 }
 
 PetscErrorCode PetscPdeScheduler::snes_function(SNES snes, Vec Y, Vec F)
@@ -2136,16 +2133,16 @@ PetscErrorCode PetscPdeScheduler::snes_function(SNES snes, Vec Y, Vec F)
 	PetscErrorCode ierr;
 	double *yinput;
 	double *f;
-	ierr = VecGetArrayRead(Y, (const double**)&yinput);
-	ierr = VecGetArray(F, (double**)&f);
+	VecGetArrayRead(Y, (const double**)&yinput);
+	VecGetArray(F, (double**)&f);
 
-	ierr = rhs(currentTime, yinput, f);
+	rhs(currentTime, yinput, f);
 
 	VecRestoreArrayRead(Y, (const PetscScalar**)&yinput);
 	VecRestoreArray(F, (PetscScalar**)&f);
 
 	double dt = simulation->getDT_sec();
-	ierr = VecAXPBY(F, 1.0 , -dt, Y);
+	VecAXPBY(F, 1.0 , -dt, Y);
 
 	return 0;
 }
@@ -2242,7 +2239,6 @@ void PetscPdeScheduler::buildPmat_Volume(double t, double gamma, double* yinput,
 				};
 
 				double neighborLambdas[6] = {lambdaZ, lambdaY, lambdaX, lambdaX, lambdaY, lambdaZ};
-				double neighborLambdaAreas[6] = {lambdaAreaZ, lambdaAreaY, lambdaAreaX, lambdaAreaX, lambdaAreaY, lambdaAreaZ};
 
 //				int numColumns = M->getColumns(vectorIndex, columns, values);
 				diagIndex = -1;
@@ -2312,21 +2308,17 @@ void PetscPdeScheduler::buildPmat_Membrane(double t, double gamma, double* yinpu
 		Membrane* membrane = pMembraneElement[mi].getMembrane();
 		for (int v = 0; v < simulation->getNumMemVariables(); v ++) {
 			MembraneVariable* var = (MembraneVariable*)simulation->getMemVariable(v);
-			// variable is not defined on this membrane
-			if (var->getStructure() != NULL && var->getStructure() != membrane) {
-				continue;
-			}
-
-			if (!var->isDiffusing()) {
-				continue;
-			}
-
-			int mask = mesh->getMembraneNeighborMask(mi);
-			if ((mask & NEIGHBOR_BOUNDARY_MASK) && (mask & BOUNDARY_TYPE_DIRICHLET)) {   // boundary and dirichlet
-				continue;
-			}
 
 			int vectorIndex = getMembraneElementVectorOffset(mi) + v;
+			int mask = mesh->getMembraneNeighborMask(mi);
+			// variable is not defined on this membrane OR ode OR boundary and dirichlet, set diagonal to be 1.
+			if ( ((var->getStructure() != NULL) && (var->getStructure() != membrane))
+					|| !var->isDiffusing()
+					|| ((mask & NEIGHBOR_BOUNDARY_MASK) && (mask & BOUNDARY_TYPE_DIRICHLET))) {
+				double value = 1.0;
+				MatSetValues(Pmat, 1, &vectorIndex, 1, &vectorIndex, &value, INSERT_VALUES);
+				continue;
+			}
 
 			int32 columns[50];
 			double values[50];
@@ -2383,7 +2375,7 @@ void PetscPdeScheduler::buildPmat_Membrane(double t, double gamma, double* yinpu
 PetscErrorCode PetscPdeScheduler::snes_buildPmat(Vec Y, Mat Pmat)
 {
 	double *yinput;
-	PetscErrorCode ierr = VecGetArrayRead(Y, (const double**)&yinput);
+	VecGetArrayRead(Y, (const double**)&yinput);
 
 	buildPmat_Volume(currentTime, simulation->getDT_sec(), yinput, Pmat);
 	buildPmat_Membrane(currentTime, simulation->getDT_sec(), yinput, Pmat);
@@ -2418,14 +2410,11 @@ PetscErrorCode PetscPdeScheduler::snes_buildPmat(Vec Y, Mat Pmat)
 PetscErrorCode PetscPdeScheduler::SNES_Jacobian_Function(SNES snes, Vec Y, Mat Amat, Mat Pmat, void *ctx)
 {
 	PetscPdeScheduler* solver = (PetscPdeScheduler*)ctx;
-	PetscErrorCode ierr = solver->snes_jacobian(snes, Y, Amat, Pmat);
-	return ierr;
+	return solver->snes_jacobian(snes, Y, Amat, Pmat);
 }
 
 PetscErrorCode PetscPdeScheduler::snes_jacobian(SNES snes, Vec Y, Mat Amat, Mat Pmat)
 {
-	PetscErrorCode ierr;
-
 	snes_buildPmat(Y, Pmat);
 
 	MatAssemblyBegin(Pmat, MAT_FINAL_ASSEMBLY);
@@ -2433,7 +2422,7 @@ PetscErrorCode PetscPdeScheduler::snes_jacobian(SNES snes, Vec Y, Mat Amat, Mat 
 	if (Pmat != Amat)
 	{
 		MatAssemblyBegin(Amat, MAT_FINAL_ASSEMBLY);
-	  MatAssemblyEnd(Amat, MAT_FINAL_ASSEMBLY);
+		MatAssemblyEnd(Amat, MAT_FINAL_ASSEMBLY);
 	}
 
 	static int count = 0;
@@ -2443,11 +2432,11 @@ PetscErrorCode PetscPdeScheduler::snes_jacobian(SNES snes, Vec Y, Mat Amat, Mat 
 	char filename[256];
 	sprintf(filename, "%s_%d.m", prefix, count);
 	PetscViewer viewer;
-	ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD, filename, &viewer);
-	ierr = PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
+	PetscViewerASCIIOpen(PETSC_COMM_WORLD, filename, &viewer);
+	PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
 	string name = prefix;
-	ierr = PetscObjectSetName((PetscObject)Pmat, name.c_str());
-	ierr = MatView(Pmat, viewer);
+	PetscObjectSetName((PetscObject)Pmat, name.c_str());
+	MatView(Pmat, viewer);
 	PetscViewerDestroy(&viewer);
 */
 	cout << " # snes_jacobian called " << count << endl;
