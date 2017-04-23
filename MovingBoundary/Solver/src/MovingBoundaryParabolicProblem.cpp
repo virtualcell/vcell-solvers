@@ -486,6 +486,35 @@ namespace moving_boundary {
 			return r;
 		}
 
+        MeshElementNode* findNearestInsidePointFromNeighbors(const CoordVect& thisPoint, const IndexVect& gridIndex, int layer) const
+        {
+            MeshElementNode* selectedElement = nullptr;
+            double minDistance = std::numeric_limits<double>::max();
+            for (int offset_i = -layer; offset_i <= layer; ++ offset_i)
+            {
+                for (int offset_j = -layer; offset_j <= layer; ++ offset_j)
+                {
+                    if (max(abs(offset_i), abs(offset_j)) < layer)
+                    {
+                        continue;
+                    }
+                    IndexVect neighbor = gridIndex + IndexVect(offset_i, offset_j);
+                    MeshElementNode* neighborElement = primaryMesh.query(neighbor);
+                    if (neighborElement != nullptr && neighborElement->isInside())
+                    {
+                        CoordVect neighborCoord(*neighborElement);
+                        double distance = thisPoint.distance2(neighborCoord);
+                        if (distance < minDistance)
+                        {
+                            minDistance = distance;
+                            selectedElement = neighborElement;
+                        }
+                    }
+                } // end for j
+            } // end for i
+            return selectedElement;
+        }
+        
 		MeshElementNode* findNearestInsidePoint(const CoordVect& thisPoint) const
 		{
 			static const string METHOD = "findNearestInsidePoint";
@@ -518,12 +547,12 @@ namespace moving_boundary {
 					}
 
 					// check the following 2 neighbors
-					// (i + жд, j)
+					// (i + delta, j)
 					IndexVect neighbor1 = gridIndex + IndexVect(offset[0], 0);
 					MeshElementNode* neighbor1Element = primaryMesh.query(neighbor1);
 					bool neighbor1Inside = neighbor1Element != nullptr && neighbor1Element->isInside();
 
-					// (i, j + жд)
+					// (i, j + delta)
 					IndexVect neighbor2 = gridIndex + IndexVect(0, offset[1]);
 					MeshElementNode* neighbor2Element = primaryMesh.query(neighbor2);
 					bool neighbor2Inside = neighbor2Element != nullptr && neighbor2Element->isInside();
@@ -546,7 +575,7 @@ namespace moving_boundary {
 					}
 					else
 					{
-						// (i + жд, j + жд)
+						// (i + delta, j + delta)
 						IndexVect diagNeighbor = gridIndex + offset;
 						MeshElementNode* diagNeighborElement = primaryMesh.query(diagNeighbor);
 						if (diagNeighborElement != nullptr && diagNeighborElement->isInside())
@@ -558,22 +587,14 @@ namespace moving_boundary {
 
 				if (selectedElement == nullptr)
 				{
-					double minDistance = std::numeric_limits<double>::max();
-					for (int n = 0; n < 2 * DIM; ++ n)
-					{
-						IndexVect neighbor = gridIndex + naturalNeighborOffsets[n];
-						MeshElementNode* neighborElement = primaryMesh.query(neighbor);
-						if (neighborElement != nullptr && neighborElement->isInside())
-						{
-							CoordVect neighborCoord(*neighborElement);
-							double distance = thisPoint.distance2(neighborCoord);
-							if (distance < minDistance)
-							{
-								minDistance = distance;
-								selectedElement = neighborElement;
-							}
-						}
-					}
+                    int layer = 1;
+                    selectedElement = findNearestInsidePointFromNeighbors(thisPoint, gridIndex, layer);
+				}
+                if (selectedElement == nullptr)
+				{
+                    int layer = 2;
+                    VCELL_LOG_ALWAYS("At t=" << currentTime << ", going into 2nd layer to find nearest inside point for point " << thisPoint);
+                    selectedElement = findNearestInsidePointFromNeighbors(thisPoint, gridIndex, layer);
 				}
 			}
 
@@ -590,7 +611,6 @@ namespace moving_boundary {
 			 static const string METHOD = "frontVelocityProbDomain";
 			 vcell_util::Logger::debugEntry(METHOD);
 
-			 CoordVect vel = CoordVect::Zero;
 			 if (coord.withinWorld())
 			 {
 					CoordVect thisPoint = world.toProblemDomain(coord);
@@ -605,7 +625,7 @@ namespace moving_boundary {
 							if (nearestInsidePoint == nullptr)
 							{
 								std::stringstream ss;
-								ss << "Can't find any inside neighbors for point " << thisPoint;
+								ss << "At t=" << currentTime << ", Can't find any inside neighbors for point " << thisPoint;
 								vcell_util::Logger::Debug(METHOD, ss.str());
 								throw ss.str();
 							}
