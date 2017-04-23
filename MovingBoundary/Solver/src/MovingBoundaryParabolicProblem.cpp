@@ -625,7 +625,7 @@ namespace moving_boundary {
 							if (nearestInsidePoint == nullptr)
 							{
 								std::stringstream ss;
-								ss << "At t=" << currentTime << ", Can't find any inside neighbors for point " << thisPoint;
+								ss << "At t=" << currentTime << ", did not find an inside neighbor to point " << thisPoint << " for extrapolation";
 								vcell_util::Logger::Debug(METHOD, ss.str());
 								throw ss.str();
 							}
