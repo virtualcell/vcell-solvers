@@ -1438,7 +1438,7 @@ namespace moving_boundary {
 				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, 1.0, currentTime));
 				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1.0, currentTime));
 			} catch (std::exception &e) {
-				VCELL_LOG(fatal,"run( ) caught " << e.what( )  << " iteration " << numIteration << " time" << currentTime);
+				VCELL_LOG(fatal,"run( ) caught " << e.what( )  << " at iteration " << numIteration << ", time " << currentTime);
 				throw;
 			}
 		}
