@@ -802,6 +802,9 @@ void MeshElementNode::distributeMassToNeighbors() {
 	setState(outStable);
 
 	if (!distributed) {
+        for (int i = 0; i < nN; i++) {
+            VCELL_LOG_ALWAYS("Neighbor " << i << " " << neighbors[i].element->ident());
+        }
 		VCELL_EXCEPTION(logic_error, this->ident( ) << " with " << nN << " neighbors has none to distribute to") ;
 	}
 }

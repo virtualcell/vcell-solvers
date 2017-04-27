@@ -425,10 +425,10 @@ namespace moving_boundary {
 				std::transform(worldLimits.begin( ),worldLimits.end( ),limits.begin( ),spatial::GeoLimitConvert<moving_boundary::CoordinateType,double>( ) );
 				const std::array<Universe<2>::CountType,2> & nodes = world.universe( ).numNodes( ); 
 				int mnode = *std::max_element(nodes.begin( ),nodes.end( ));
-				int numFrontRegions = mnode * mbs.frontToNodeRatio;
+				int gmax[2] = { nodes[0] * mbs.frontToNodeRatio, nodes[1] * mbs.frontToNodeRatio };
 				if (base.nFunctionPointers == 0) {
 					spatial::VCellFront<moving_boundary::CoordinateType> *prv =
-						new spatial::VCellFront<moving_boundary::CoordinateType>(limits,numFrontRegions,mbs.maxTime,base,base);
+						new spatial::VCellFront<moving_boundary::CoordinateType>(limits,gmax,mbs.maxTime,base,base);
 					//std::ofstream lc("levelcalls.m");
 					//lc << scatterInside << scatterOutside;
 					return prv;

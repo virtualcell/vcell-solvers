@@ -18,7 +18,7 @@ namespace {
 }
 
 template <typename FCT>
-VCellFront<FCT>::VCellFront(std::vector<GeoLimit> & limits, int N, double tmax,
+VCellFront<FCT>::VCellFront(std::vector<GeoLimit> & limits, int* gmax, double tmax,
 					   FronTierLevelFunction levelFunction,
 					   FronTierVelocityFunction velocityFunction) 
 					   :front( ),
@@ -28,11 +28,11 @@ VCellFront<FCT>::VCellFront(std::vector<GeoLimit> & limits, int N, double tmax,
 					   levelObj(0),
 					   velObj(0)
 {
-	init(limits,N,tmax,levelFunction,velocityFunction, false);
+	init(limits, gmax, tmax,levelFunction,velocityFunction, false);
 }
 
 template <typename FCT>
-VCellFront<FCT>::VCellFront(std::vector<GeoLimit> & limits, int N, double tmax,
+VCellFront<FCT>::VCellFront(std::vector<GeoLimit> & limits, int* gmax, double tmax,
 					   const FronTierLevel & level,
 					   const FronTierVelocity &vel) 
 					   :front( ),
@@ -42,11 +42,11 @@ VCellFront<FCT>::VCellFront(std::vector<GeoLimit> & limits, int N, double tmax,
 					   levelObj(&level),
 					   velObj(&vel)
 {
-	init(limits,N,tmax,levelAdapter,velocityAdapter, true);
+	init(limits, gmax, tmax,levelAdapter,velocityAdapter, true);
 }
 
 template <typename FCT>
-void VCellFront<FCT>::init(std::vector<GeoLimit> & limits, int N, double tmax,
+void VCellFront<FCT>::init(std::vector<GeoLimit> & limits, int* gmax, double tmax,
 					  FronTierLevelFunction levelFunction,
 					  FronTierVelocityFunction velocityFunction, 
 					  bool isAdapter) {
@@ -60,7 +60,7 @@ void VCellFront<FCT>::init(std::vector<GeoLimit> & limits, int N, double tmax,
 							  const GeoLimit & xlimit = limits[i];
 							  f_basic.L[i] = xlimit.low( ); 
 							  f_basic.U[i] = xlimit.high( ); 
-							  f_basic.gmax[i] = N;
+							  f_basic.gmax[i] = gmax[i];
 							  f_basic.boundary[i][0] = f_basic.boundary[i][1] = Frontier::PERIODIC_BOUNDARY;
 						  }
 
