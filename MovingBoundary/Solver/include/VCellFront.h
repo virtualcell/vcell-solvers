@@ -97,11 +97,11 @@ namespace spatial {
 	template <typename FCT>
 	class VCellFront : public FrontProvider<FCT> {
 	public:
-		VCellFront(std::vector<GeoLimit> & xlimits, int N, double tmax,
+		VCellFront(std::vector<GeoLimit> & xlimits, int* gmax, double tmax,
 			FronTierLevelFunction levelFunction,
 			FronTierVelocityFunction velocityFunction);
 
-		VCellFront(std::vector<GeoLimit> & xlimits, int N, double tmax,
+		VCellFront(std::vector<GeoLimit> & xlimits, int* gmax, double tmax,
 			const FronTierLevel & level,
 			const FronTierVelocity &vel);
 
@@ -146,7 +146,7 @@ namespace spatial {
 
 	private:
 		typedef spatial::TPoint<FCT,2> VCFPointType; 
-		void init(std::vector<GeoLimit> & xlimits, int N, double tmax,
+		void init(std::vector<GeoLimit> & xlimits, int* gmax, double tmax,
 			FronTierLevelFunction levelFunction,
 			FronTierVelocityFunction velocityFunction,
 			bool isAdapter);
