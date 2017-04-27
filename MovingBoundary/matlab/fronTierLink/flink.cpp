@@ -9,7 +9,7 @@
 #include <mexstream.h>
 #include <svnversion.h>
 #include <vcGccCompat.h>
-#include <VCellFrontierUtil.h>
+//#include <VCellFrontierUtil.h>
 using std::vector;
 namespace {
 	SVN_VERSION_TAG;
@@ -334,14 +334,17 @@ void initFront(Front *front,const matlabLink::MatlabStruct & mlStruct, std::ostr
 		f_basic.L[2] = limits[4];
 		f_basic.U[2] = limits[5];
 	}
-	int N = static_cast<int>(mlStruct.doubles("N")[0]);
-	config << " N " << N << std::endl; 
+	MData<double> gmax = mlStruct.doubles("gmax");
+	config << " gmax " << "[" << gmax[0] << " " << gmax[1];
 
-	f_basic.gmax[0] = f_basic.gmax[1] = N;
+	f_basic.gmax[0] = gmax[0];
+	f_basic.gmax[1] = gmax[1];
 	if (dim == 3)
 	{
-		f_basic.gmax[2] = N;
+		f_basic.gmax[2] = gmax[2];
+		config << " " << gmax[2];
 	}
+	config << "]" << std::endl;
 	std::string boundaryType = mlStruct.str(boundaryTypeMap.name( ),"PERIODIC_BOUNDARY");
 	int bndType = boundaryTypeMap.get(boundaryType);
 	config << "boundaryType " << boundaryType << std::endl;
@@ -362,12 +365,12 @@ void initFront(Front *front,const matlabLink::MatlabStruct & mlStruct, std::ostr
 	level_func_pack.func = level_func;
 	level_func_pack.wave_type = FIRST_PHYSICS_WAVE_TYPE;
 	FT_InitIntfc(front,&level_func_pack);
-	MData<double> redistOrder = mlStruct.doubles("redistOrder",false);
-	if (redistOrder.size > 0) {
-		int ro = redistOrder[0];
-		spatial::setRedistDefault(front,ro);
-		config << "set default redist_order to " << ro << std::endl;
-	}
+//	MData<double> redistOrder = mlStruct.doubles("redistOrder",false);
+//	if (redistOrder.size > 0) {
+//		int ro = redistOrder[0];
+//		spatial::setRedistDefault(front,ro);
+//		config << "set default redist_order to " << ro << std::endl;
+//	}
 
 	if (dim == 2)
 	{

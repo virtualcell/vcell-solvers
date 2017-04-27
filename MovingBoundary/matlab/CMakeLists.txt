@@ -23,6 +23,8 @@ else (MSVC11)
 	endif (${CMAKE_CL_64})
 endif (MSVC11)
 
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC")
+add_definitions(-DSVNVERSION="16888")
 include_directories(${MATLAB_INCLUDE_DIR})
 
 add_subdirectory(util)
