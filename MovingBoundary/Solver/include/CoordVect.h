@@ -2,11 +2,11 @@
 #define _COORDVECT_H_
 
 #include <array>
-#include <MBConstants.h>
+#include <MovingBoundaryTypes.h>
 #include <IndexVect.h>
 namespace moving_boundary
 {
-	struct MeshElementNode;
+    struct MeshElementNode;
 }
 
 class CoordVect

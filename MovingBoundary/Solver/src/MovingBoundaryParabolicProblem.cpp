@@ -418,29 +418,15 @@ namespace moving_boundary {
 		* constructor support; front initialization
 		*/
 		static spatial::VCellFront<moving_boundary::CoordinateType> *initFront(const WorldType & world, const ValidationBase & base,const moving_boundary::MovingBoundarySetup &mbs)  {
-			//if (mbs.alternateFrontProvider == nullptr) {
-				typedef spatial::TGeoLimit<moving_boundary::CoordinateType> LimitType;
-				const std::array<LimitType,2> & worldLimits = world.limits( );
-				std::vector<spatial::GeoLimit> limits(worldLimits.size( ));
-				std::transform(worldLimits.begin( ),worldLimits.end( ),limits.begin( ),spatial::GeoLimitConvert<moving_boundary::CoordinateType,double>( ) );
-				const std::array<Universe<2>::CountType,2> & nodes = world.universe( ).numNodes( ); 
-				int mnode = *std::max_element(nodes.begin( ),nodes.end( ));
-				int gmax[2] = { nodes[0] * mbs.frontToNodeRatio, nodes[1] * mbs.frontToNodeRatio };
-				if (base.nFunctionPointers == 0) {
-					spatial::VCellFront<moving_boundary::CoordinateType> *prv =
-						new spatial::VCellFront<moving_boundary::CoordinateType>(limits,gmax,mbs.maxTime,base,base);
-					//std::ofstream lc("levelcalls.m");
-					//lc << scatterInside << scatterOutside;
-					return prv;
-				}  
-				/* else */
-				throw std::domain_error("function pointers no longer supported");
-				/*
-				return new VCellFront(limits,numFrontRegions,mbs.maxTime,
-				mbs.levelFunction,mbs.velocityFunction);
-				*/
-//			}
-//			return mbs.alternateFrontProvider;
+            typedef spatial::TGeoLimit<int> LimitType;
+            const std::array<LimitType,2> & worldLimits = world.limits( );
+            std::vector<spatial::GeoLimit> limits(worldLimits.size( ));
+            std::transform(worldLimits.begin( ),worldLimits.end( ),limits.begin( ),spatial::GeoLimitConvert<int, double>( ) );
+            if (base.nFunctionPointers == 0) {
+                spatial::VCellFront<int> *prv = new spatial::VCellFront<int>(limits, mbs, base, base);
+                return prv;
+            }  
+            throw std::domain_error("function pointers no longer supported");
 		}
 
 		/**
@@ -702,12 +688,12 @@ namespace moving_boundary {
 			}
 		}
 
-		virtual int velocity(Frontier::Front* front, Frontier::POINT* fpoint, HYPER_SURF_ELEMENT* hse, HYPER_SURF* hs, double* out) const {
+		virtual int velocity(Front* front, POINT* fpoint, HYPER_SURF_ELEMENT* hse, HYPER_SURF* hs, double* out) const {
 			CoordVect coord(fpoint->_coords[cX],fpoint->_coords[cY]);
 			double nor[MAXD];
 			GetFrontNormal(fpoint, hse, hs, nor,front);
 			CoordVect normal(nor);
-			const spatial::SVector<moving_boundary::VelocityType,2> & v = frontVelocity(coord, normal);
+			const spatial::SVector<double, 2> & v = frontVelocity(coord, normal);
 			out[cX] = v(cX); 
 			out[cY] = v(cY); 
 

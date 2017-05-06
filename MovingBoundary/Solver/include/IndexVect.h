@@ -2,7 +2,7 @@
 #define _INDEXVECT_H_
 
 #include <array>
-#include <MBConstants.h>
+#include <MovingBoundaryTypes.h>
 
 class IndexVect
 {

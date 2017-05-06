@@ -4,7 +4,10 @@
 #include <Logger.h>
 #include <VCellException.h>
 #include <MBridge/FronTierAdapt.h>
+#include <MovingBoundarySetup.h>
+
 using namespace spatial;
+
 namespace {
 	/**
 	* type conversion without scaling
@@ -18,163 +21,136 @@ namespace {
 }
 
 template <typename FCT>
-VCellFront<FCT>::VCellFront(std::vector<GeoLimit> & limits, int* gmax, double tmax,
+VCellFront<FCT>::VCellFront(std::vector<GeoLimit> & worldExtents, const moving_boundary::MovingBoundarySetup &mbs,
 					   FronTierLevelFunction levelFunction,
-					   FronTierVelocityFunction velocityFunction) 
-					   :front( ),
-					   f_basic( ),
-					   level_func_pack( ),
-					   velo_func_pack( ),
+					   FronTierVelocityFunction velocityFunction) :
 					   levelObj(0),
 					   velObj(0)
 {
-	init(limits, gmax, tmax,levelFunction,velocityFunction, false);
+	init(worldExtents, mbs,levelFunction,velocityFunction, false);
 }
 
 template <typename FCT>
-VCellFront<FCT>::VCellFront(std::vector<GeoLimit> & limits, int* gmax, double tmax,
+VCellFront<FCT>::VCellFront(std::vector<GeoLimit> & worldExtents, const moving_boundary::MovingBoundarySetup &mbs,
 					   const FronTierLevel & level,
-					   const FronTierVelocity &vel) 
-					   :front( ),
-					   f_basic( ),
-					   level_func_pack( ),
-					   velo_func_pack( ),
+					   const FronTierVelocity &vel) :
 					   levelObj(&level),
 					   velObj(&vel)
 {
-	init(limits, gmax, tmax,levelAdapter,velocityAdapter, true);
+	init(worldExtents, mbs,levelAdapter,velocityAdapter, true);
+}
+
+template <class T>
+static void zeroStruct(T &t) {
+    memset(&t,0,sizeof(T));
 }
 
 template <typename FCT>
-void VCellFront<FCT>::init(std::vector<GeoLimit> & limits, int* gmax, double tmax,
-					  FronTierLevelFunction levelFunction,
-					  FronTierVelocityFunction velocityFunction, 
-					  bool isAdapter) {
-						  domainLimits[0] = limits[0];
-						  domainLimits[1] = limits[1];
-						  const size_t dim = limits.size( );
+void VCellFront<FCT>::init(std::vector<GeoLimit> &worldExtents, const moving_boundary::MovingBoundarySetup &mbs,
+        FronTierLevelFunction levelFunction,
+        FronTierVelocityFunction velocityFunction, 
+        bool isAdapter) 
+{
+    static F_BASIC_DATA f_basic;
+	static LEVEL_FUNC_PACK level_func_pack;
+	static VELO_FUNC_PACK velo_func_pack;
 
-						  f_basic.dim = static_cast<int>(dim);	
-						  FT_Init(0, 0, &f_basic);
-						  for (int i = 0; i < dim;i++) {
-							  const GeoLimit & xlimit = limits[i];
-							  f_basic.L[i] = xlimit.low( ); 
-							  f_basic.U[i] = xlimit.high( ); 
-							  f_basic.gmax[i] = gmax[i];
-							  f_basic.boundary[i][0] = f_basic.boundary[i][1] = Frontier::PERIODIC_BOUNDARY;
-						  }
+	const size_t dim = worldExtents.size( );
+    f_basic.dim = static_cast<int>(dim);
+    FT_Init(0, 0, &f_basic);
+    
+    for (int i = 0; i < dim;i++) {
+        domainLimits[i] = worldExtents[i];
+        f_basic.L[i] = worldExtents[i].low();
+        f_basic.U[i] = worldExtents[i].high(); 
+        f_basic.gmax[i] = (int)mbs.Nx[i] * mbs.frontToNodeRatio;
+        f_basic.boundary[i][0] = f_basic.boundary[i][1] = PERIODIC_BOUNDARY;
+    }
 
-						  f_basic.size_of_intfc_state = 0;
+    f_basic.size_of_intfc_state = 0;
 
-						  FT_StartUp(&front, &f_basic);
+    front = new Front();
+    FT_StartUp(front, &f_basic);
 
-						  level_func_pack.neg_component = 1;
-						  level_func_pack.pos_component = 2;
-						  level_func_pack.func_params = NULL;
-						  level_func_pack.func = levelFunction; 
-						  level_func_pack.wave_type = Frontier::FIRST_PHYSICS_WAVE_TYPE;
-						  if (isAdapter) {
-							  level_func_pack.func_params = this;
-						  }
-						  FT_InitIntfc(&front,&level_func_pack);
-						 	if (dim == 2)
-						  {
-							  FT_ClipIntfcToSubdomain(&front);
-						  }
+    level_func_pack.neg_component = 1;
+    level_func_pack.pos_component = 2;
+    level_func_pack.func_params = NULL;
+    level_func_pack.func = levelFunction; 
+    level_func_pack.wave_type = FIRST_PHYSICS_WAVE_TYPE;
+    if (isAdapter) {
+        level_func_pack.func_params = this;
+    }
+    FT_InitIntfc(front, &level_func_pack);
+    if (dim == 2)
+    {
+        FT_ClipIntfcToSubdomain(front);
+    }
 
-						  velo_func_pack.func_params = NULL;
-						  velo_func_pack.func = velocityFunction; 
-//							velo_func_pack.point_propagate = Frontier::fourth_order_point_propagate;
-							velo_func_pack.point_propagate = Frontier::first_order_point_propagate;
+    velo_func_pack.func_params = NULL;
+    velo_func_pack.func = velocityFunction; 
+//	velo_func_pack.point_propagate = fourth_order_point_propagate;
+    velo_func_pack.point_propagate = first_order_point_propagate;
 
-						  if (isAdapter) {
-							  velo_func_pack.func_params = this;
-						  }
-						  FT_InitVeloFunc(&front,&velo_func_pack);
-
-
-						  front.max_time = tmax;
-						  front.max_step = 1000000;
-						  front.print_time_interval = 1000000;
-						  front.movie_frame_interval = 1000000;
-
-						  int redistributionFrequency = 5;
-
-						  Frequency_of_redistribution(&front, Frontier::GENERAL_WAVE) = redistributionFrequency;
-							Frequency_of_redistribution(&front, Frontier::VECTOR_WAVE) = redistributionFrequency;
-							Frequency_of_redistribution(&front, Frontier::GENERAL_NODE) = redistributionFrequency;
-
-						  //						  enum _REDISTRIBUTION_MODE {
-						  //						  	NO_REDIST        = 0,
-						  //						  	EXPANSION_REDIST = 1,
-						  //						  	FULL_REDIST      = 2
-						  //						  };
-
-						  //						  enum _REDISTRIBUTION_VERSION { // when FULL_REDIST
-						  //						  	ORDINARY_REDISTRIBUTE  = 1,
-						  //						  	EQUI_BOND_REDISTRIBUTE = 2
-						  //						  };
+    if (isAdapter) {
+        velo_func_pack.func_params = this;
+    }
+    FT_InitVeloFunc(front,&velo_func_pack);
 
 
+    front->max_time = mbs.maxTime;
+    front->max_step = 1000000;
+    front->print_time_interval = 1000000;
+    front->movie_frame_interval = 1000000;
 
-							/*
-						  REDISTRIBUTION_MODE redistributionMode = EXPANSION_REDIST;
-						  Redistribution_mode(front) = redistributionMode;
-							CURVE_CLEANERS Sav_cleaners;
+    Frequency_of_redistribution(front, GENERAL_WAVE) = mbs.redistributionFrequency;
+    Frequency_of_redistribution(front, VECTOR_WAVE) = mbs.redistributionFrequency;
+    Frequency_of_redistribution(front, GENERAL_NODE) = mbs.redistributionFrequency;
 
-							CurveRedistributionOptions(front) = curve_redist_options(init);
-							clear_curve_redistribution_info(&Curve_redistribution_info(front));
-							if (dim == 1)
-									return;
+    Redistribution_mode(front) = mbs.redistributionMode;
+    CurveRedistributionOptions(front)._full_curve_redist_version = mbs.redistributionVersion;
+    
+    CURVE_CLEANERS Sav_cleaners = Curve_redistribution_info(front).Cleaners;
+    
+    switch (mbs.redistributionMode)
+    {
+    case NO_REDIST:
+            zeroStruct(Curve_redistribution_info(front));
+            Curve_redistribution_info(front).Cleaners = Sav_cleaners;
+            break;
 
-							set_dflt_cur_redist_params(front);
-							Sav_cleaners = Curve_redistribution_info(front).Cleaners;
+    case EXPANSION_REDIST:
+            zeroStruct(Curve_redistribution_info(front));
+            Curve_redistribution_function(front) = expansion_redistribute;
+            Curve_redistribution_info(front).Cleaners = Sav_cleaners;
+            break;
 
-							switch (front_redist_mode(init))
-							{
-							case NO_REDIST:
-									clear_curve_redistribution_info(&Curve_redistribution_info(front));
-									Curve_redistribution_info(front).Cleaners = Sav_cleaners;
-									break;
+    case FULL_REDIST:
+            Curve_redistribution_function(front) = full_redistribute;
+            switch (mbs.redistributionVersion)
+            {
+            case ORDINARY_REDISTRIBUTE:
+                    Forward_curve_redistribute_function(front) = full_inc_redist_cur;
+                    Backward_curve_redistribute_function(front) = full_dec_redist_cur;
+                    break;
 
-							case EXPANSION_REDIST:
-									clear_curve_redistribution_info(&Curve_redistribution_info(front));
-									Curve_redistribution_function(front) = expansion_redistribute;
-									Curve_redistribution_info(front).Cleaners = Sav_cleaners;
-									break;
+            case EQUI_BOND_REDISTRIBUTE:
+                    Forward_curve_redistribute_function(front) = equi_curve_redistribute;
+                    Backward_curve_redistribute_function(front) = backward_equi_curve_redistribute;
+                    break;
+            }
+    }
 
-							case FULL_REDIST:
-									Curve_redistribution_function(front) = full_redistribute;
-									switch (full_curve_redist_version(init))
-									{
-									case ORDINARY_REDISTRIBUTE:
-											Forward_curve_redistribute_function(front) =
-													full_inc_redist_cur;
-											Backward_curve_redistribute_function(front) =
-													full_dec_redist_cur;
-											break;
-
-									case EQUI_BOND_REDISTRIBUTE:
-											Forward_curve_redistribute_function(front) =
-													equi_curve_redistribute;
-											Backward_curve_redistribute_function(front) =
-													backward_equi_curve_redistribute;
-											break;
-									}
-							}
-							*/
-
-						  FT_RedistMesh(&front);
-						  FT_ResetTime(&front);
-						  // This is a virtual propagation to get maximum front 
-						  // speed to determine the first time step.
-						  FT_Propagate(&front);
-						  FT_SetTimeStep(&front);
-						  FT_SetOutputCounter(&front);
+    FT_RedistMesh(front);
+    FT_ResetTime(front);
+    // This is a virtual propagation to get maximum front 
+    // speed to determine the first time step.
+    FT_Propagate(front);
+    FT_SetTimeStep(front);
+    FT_SetOutputCounter(front);
 }
 
 template<int numDim>
-void movePoint(boost::multi_array<double,numDim> & array, int location, const Frontier::POINT &point) {
+void movePoint(boost::multi_array<double,numDim> & array, int location, const POINT &point) {
 	for (int d = 0; d < numDim; d++) {
 		array[location][d] = point._coords[d];
 	}
@@ -189,12 +165,8 @@ array[location][d] = point._coords[d];
 */
 
 
-static void retrievePoints_2d(Frontier::Front* front, std::vector<Frontier::POINT*>& points) 
+static void retrievePoints_2d(Front* front, std::vector<POINT*>& points) 
 {
-	using Frontier::CURVE;
-	using Frontier::BOND;
-	using Frontier::POINT;
-	//using Frontier::BDRY_MASK;
 	CURVE** curves = front->interf->curves;
 	if (curves == NULL) 
 	{
@@ -230,14 +202,14 @@ static void retrievePoints_2d(Frontier::Front* front, std::vector<Frontier::POIN
 
 template <typename FCT>
 bool VCellFront<FCT>::propagateTo(double time, std::ostream & os) {
-	if (time > front.time) { 
-		front.max_time = time;
-		while (!FT_TimeLimitReached(&front)) {
-			FT_TimeControlFilter(&front);
-			FT_Propagate(&front);
+	if (time > front->time) { 
+		front->max_time = time;
+		while (!FT_TimeLimitReached(front)) {
+			FT_TimeControlFilter(front);
+			FT_Propagate(front);
 			retrieveFront(os); //log points
-			FT_AddTimeStepToCounter(&front);
-			FT_SetTimeStep(&front);
+			FT_AddTimeStepToCounter(front);
+			FT_SetTimeStep(front);
 		}
 		return true;
 	}
@@ -246,16 +218,16 @@ bool VCellFront<FCT>::propagateTo(double time, std::ostream & os) {
 
 template <typename FCT>
 bool VCellFront<FCT>::propagateTo(double time) {
-	if (time > front.time) { 
-		front.max_time = time;
+	if (time > front->time) { 
+		front->max_time = time;
 		bool first = true; //always run at least once
-		while (first || !FT_TimeLimitReached(&front)) {
+		while (first || !FT_TimeLimitReached(front)) {
 			first = false;
-			FT_TimeControlFilter(&front);
-			FT_Propagate(&front);
-			FT_AddTimeStepToCounter(&front);
-			FT_SetTimeStep(&front);
-			VCELL_DEBUG("FT: time=" << front.time << ", step=" << front.step << ", next dt=" << front.dt);
+			FT_TimeControlFilter(front);
+			FT_Propagate(front);
+			FT_AddTimeStepToCounter(front);
+			FT_SetTimeStep(front);
+			VCELL_DEBUG("FT: time=" << front->time << ", step=" << front->step << ", next dt=" << front->dt);
 		}
 		return true;
 	}
@@ -263,7 +235,7 @@ bool VCellFront<FCT>::propagateTo(double time) {
 }
 
 template <typename FCT>
-double VCellFront<FCT>::levelAdapter(Frontier::POINTER us, double *in) {
+double VCellFront<FCT>::levelAdapter(POINTER us, double *in) {
 	assert(us != 0);
 	VCellFront * vcf = static_cast<VCellFront *>(us); 
 	assert(vcf->levelObj != 0);
@@ -271,8 +243,8 @@ double VCellFront<FCT>::levelAdapter(Frontier::POINTER us, double *in) {
 }
 
 template <typename FCT>
-int VCellFront<FCT>::velocityAdapter(Frontier::POINTER us,Frontier::Front *ft,Frontier::POINT *pt,
-								Frontier::HYPER_SURF_ELEMENT *hsf, Frontier::HYPER_SURF *hs, double *in) {
+int VCellFront<FCT>::velocityAdapter(POINTER us,Front *ft,POINT *pt,
+								HYPER_SURF_ELEMENT *hsf, HYPER_SURF *hs, double *in) {
 									assert(us != 0);
 									VCellFront * vcf = static_cast<VCellFront *>(us); 
 									assert(vcf->velObj != 0);
@@ -304,7 +276,7 @@ std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveFront(std::ostream
 
 	std::vector<spatial::TPoint<FCT,2> > rval = retrieveFront( ); 
 	for (Iterator iter = rval.begin( );iter != rval.end( );++iter) {
-		csv << front.step << comma << front.time << comma 
+		csv << front->step << comma << front->time << comma 
 			<< iter->get(cX) << comma << iter->get(cY) << std::endl;
 	}
 	return rval;
@@ -312,12 +284,8 @@ std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveFront(std::ostream
 
 template <typename FCT>
 std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveSurf( ) {
-	using Frontier::CURVE;
-	using Frontier::BOND;
-	using Frontier::POINT;
-	//using Frontier::BDRY_MASK;
 	std::vector<VCFPointType> rval;
-	CURVE** curves = front.interf->curves;
+	CURVE** curves = front->interf->curves;
 	if (curves == NULL) 
 	{
 		//return empty array
@@ -330,7 +298,7 @@ std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveSurf( ) {
 			continue;
 		}
 		for (BOND* bond = curve->first; bond != NULL; bond = bond->next) {
-			Frontier::POINT* p = bond->start;
+			POINT* p = bond->start;
 			if (p != NULL) {
 				++ numPoints;
 			}
@@ -346,13 +314,13 @@ std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveSurf( ) {
 
 	int numCurves = 0;
 	double nor[DIM];
-	curves = front.interf->curves;
+	curves = front->interf->curves;
 	for (CURVE * curve = *curves; curve != nullptr; ++curves, curve = *curves) { 
 		if (is_bdry(curve)) {
 			continue;
 		}
 		for (BOND* bond = curve->first; bond != NULL; bond = bond->next) {
-			Frontier::POINT* p = bond->start;
+			POINT* p = bond->start;
 			if (p != NULL) {
 				getPointNormal(p, nor);
 				VCFPointType vcPoint(convertFrontier<FCT>(p->_coords, nor));
@@ -362,7 +330,7 @@ std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveSurf( ) {
 
 		if (curve->last != nullptr && curve->last->end != nullptr)
 		{
-			Frontier::POINT* fPoint = curve->last->end;
+			POINT* fPoint = curve->last->end;
 			getPointNormal(fPoint, nor);
 			VCFPointType vcPoint(convertFrontier<FCT>(fPoint->_coords, nor));
 			rval.push_back(vcPoint);
@@ -372,9 +340,9 @@ std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveSurf( ) {
 		if (++numCurves > 1) {
 			VCFPointType & vcPoint = rval.front( );
 			const double x = vcPoint(cX);
-			const bool xGood = (x >= domainLimits[cX].low( ) &&  x <= domainLimits[cX].high( ));
+			const bool xGood = (x >= domainLimits[cX].low() &&  x <= domainLimits[cX].high());
 			const double y = vcPoint(cY);
-			const bool yGood = (y >= domainLimits[cY].low( ) &&  y <= domainLimits[cY].high( ));
+			const bool yGood = (y >= domainLimits[cY].low() &&  y <= domainLimits[cY].high());
 			if (!xGood || !yGood) {
 				VCELL_EXCEPTION(logic_error, "Multi curve frontier's first set, first point " << x  << ',' << y
 					<< " out of bounds X" << domainLimits[cX] << " , Y"   << domainLimits[cY] << std::endl);
@@ -396,22 +364,18 @@ std::vector<spatial::TPoint<FCT,2> > VCellFront<FCT>::retrieveSurf( ) {
 
 template <typename FCT>
 std::vector<std::vector<spatial::TPoint<FCT,2> > > VCellFront<FCT>::retrieveCurves( ) {
-	using Frontier::CURVE;
-	using Frontier::BOND;
-	using Frontier::POINT;
-	//using Frontier::BDRY_MASK;
 	std::vector<std::vector<VCFPointType> >rval;
 
 	int numCurves = 0;
 	double nor[DIM];
-	CURVE** curves = front.interf->curves;
+	CURVE** curves = front->interf->curves;
 	for (CURVE * curve = *curves; curve != nullptr; ++curves, curve = *curves) { 
 		if (is_bdry(curve)) {
 			continue;
 		}
 		std::vector<VCFPointType> cv;
 		for (BOND* bond = curve->first; bond != NULL; bond = bond->next) {
-			Frontier::POINT* p = bond->start;
+			POINT* p = bond->start;
 			if (p != NULL) {
 				getPointNormal(p, nor);
 				VCFPointType vcPoint(convertFrontier<FCT>(p->_coords, nor));
@@ -421,7 +385,7 @@ std::vector<std::vector<spatial::TPoint<FCT,2> > > VCellFront<FCT>::retrieveCurv
 
 		if (curve->last != nullptr && curve->last->end != nullptr)
 		{
-			Frontier::POINT* fPoint = curve->last->end;
+			POINT* fPoint = curve->last->end;
 			getPointNormal(fPoint, nor);
 			VCFPointType vcPoint(convertFrontier<FCT>(fPoint->_coords, nor));
 			cv.push_back(vcPoint);
@@ -436,11 +400,11 @@ std::vector<std::vector<spatial::TPoint<FCT,2> > > VCellFront<FCT>::retrieveCurv
 }
 
 template <typename FCT>
-void VCellFront<FCT>::getPointNormal(Frontier::POINT* p, double* nor)
+void VCellFront<FCT>::getPointNormal(POINT* p, double* nor)
 {
 	HYPER_SURF_ELEMENT *hse = p->hse;
 	HYPER_SURF *hs = p->hs;
-	GetFrontNormal(p, hse, hs, nor, &front);
+	GetFrontNormal(p, hse, hs, nor, front);
 }
 
 template class spatial::VCellFront<double>;

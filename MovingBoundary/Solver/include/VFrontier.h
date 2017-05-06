@@ -18,11 +18,5 @@
 #undef Error 
 #undef isnan
 #undef free 
-namespace Frontier {
-	template <class T>
-	double *Coords(const T & obj) {
-		return obj->_coords;
-	}
-}
 
 #endif

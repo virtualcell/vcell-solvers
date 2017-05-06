@@ -2,8 +2,8 @@
 #define MovingBoundarySetup_h
 //#include <stdexcept>
 //#include <iostream>
-//#include <MovingBoundaryTypes.h>
-#include <VCellFront.h> 
+#include <MovingBoundaryTypes.h>
+#include <VCellFront.h>
 #include <VolumeVariable.h>
 namespace tinyxml2 {
 	class XMLElement;
@@ -20,7 +20,12 @@ namespace moving_boundary {
 		CoordVect extentX;
 		CoordVect extentY;
 
-		unsigned int frontToNodeRatio;
+		double frontToNodeRatio;
+		REDISTRIBUTION_MODE redistributionMode;
+		REDISTRIBUTION_VERSION redistributionVersion;
+		unsigned int redistributionFrequency;
+		EXTRAPOLATION_METHOD extrapolationMethod;
+                
 		double maxTime;
 		/**
 		* front time step increment
@@ -54,11 +59,6 @@ namespace moving_boundary {
 
 		Physiology* physiology;
 		double diffusionConstant;
-		/**
-		* provide alternate to frontier; for testing / validation
-		* Must be heap allocated; will be deleted upon simulation completion
-		*/
-		spatial::FrontProvider<moving_boundary::CoordinateType> * alternateFrontProvider;
 
 		MovingBoundarySetup( ) 
 			:
@@ -71,8 +71,7 @@ namespace moving_boundary {
 			levelFunctionStr( ),
 			frontVelocityFunctionStrX( ),
 			frontVelocityFunctionStrY( ),
-			diffusionConstant(0),
-			alternateFrontProvider(nullptr)
+			diffusionConstant(0)
 		{}
 
 		MovingBoundarySetup(const MovingBoundarySetup &rhs)
@@ -90,8 +89,8 @@ namespace moving_boundary {
 			frontVelocityFunctionStrX(rhs.frontVelocityFunctionStrX),
 			frontVelocityFunctionStrY(rhs.frontVelocityFunctionStrY),
 			physiology(rhs.physiology),
-			diffusionConstant(rhs.diffusionConstant),
-			alternateFrontProvider(rhs.alternateFrontProvider) {
+			diffusionConstant(rhs.diffusionConstant)
+                {
 		}
 
 	MovingBoundarySetup &operator= (const MovingBoundarySetup &rhs) {
@@ -109,7 +108,6 @@ namespace moving_boundary {
 			frontVelocityFunctionStrY = rhs.frontVelocityFunctionStrY;
 			physiology = rhs.physiology,
 			diffusionConstant = rhs.diffusionConstant;
-			alternateFrontProvider = rhs.alternateFrontProvider;
 			return *this;
 		}
 		explicit MovingBoundarySetup(std::istream &is) ;

@@ -2,7 +2,7 @@
 #include <functional>
 #include <Physiology.h>
 #include <VCellException.h>
-#include <MBConstants.h>
+#include <MovingBoundaryTypes.h>
 
 using moving_boundary::Physiology;
 using moving_boundary::VolumeVariable;

@@ -2,7 +2,7 @@
 #define PointSubdomain_h
 #include <Subdomain.h>
 #include <SExpression.h>
-#include <MBConstants.h>
+#include <MovingBoundaryTypes.h>
 #include <vector>
 using std::vector;
 

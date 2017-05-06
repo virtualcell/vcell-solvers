@@ -16,7 +16,7 @@ void MovingBoundarySetup::registerType( ) {
 }
 
 MovingBoundarySetup::MovingBoundarySetup(std::istream &is)
-	:alternateFrontProvider(nullptr) {
+{
 	vcell_persist::Token::check<MovingBoundarySetup>(is);
 	vcell_persist::binaryRead(is,frontToNodeRatio);
 	vcell_persist::binaryRead(is,maxTime);
@@ -27,11 +27,6 @@ MovingBoundarySetup::MovingBoundarySetup(std::istream &is)
 	vcell_persist::StdString<>::restore(is,frontVelocityFunctionStrX);
 	vcell_persist::StdString<>::restore(is,frontVelocityFunctionStrY);
 	vcell_persist::binaryRead(is,diffusionConstant);
-	bool hasProvider;
-	vcell_persist::binaryRead(is,hasProvider);
-	if (hasProvider) {
-		alternateFrontProvider = restoreFrontProvider(is);
-	}
 }
 MovingBoundarySetup::~MovingBoundarySetup() {
 }
@@ -48,11 +43,6 @@ void MovingBoundarySetup::persist(std::ostream &os) const {
 	vcell_persist::StdString<>::save(os,frontVelocityFunctionStrX);
 	vcell_persist::StdString<>::save(os,frontVelocityFunctionStrY);
 	vcell_persist::binaryWrite(os,diffusionConstant);
-	const bool hasProvider = ( alternateFrontProvider != nullptr );
-	vcell_persist::binaryWrite(os,hasProvider);
-	if (hasProvider) {
-		alternateFrontProvider->persist(os);
-	}
 }
 using tinyxml2::XMLElement;
 	//MovingBoundarySetup setupProblem(const XMLElement &root); 
@@ -162,7 +152,12 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 	moving_boundary::Universe<2>::get( ).init(limits,numNodes);
 
 
-	mbSetup.frontToNodeRatio = convertChildElement<unsigned int>(prob,"frontToNodeRatio");
+	mbSetup.frontToNodeRatio = convertChildElement<double>(prob,"frontToNodeRatio");
+    mbSetup.redistributionMode = (REDISTRIBUTION_MODE)convertChildElement<unsigned int>(prob,"redistributionMode");
+    mbSetup.redistributionVersion = (REDISTRIBUTION_VERSION)convertChildElement<unsigned int>(prob,"redistributionVersion");
+    mbSetup.redistributionFrequency = convertChildElement<unsigned int>(prob,"redistributionFrequency");
+    mbSetup.extrapolationMethod = (EXTRAPOLATION_METHOD)convertChildElement<unsigned int>(prob,"extrapolationMethod");
+    
 	mbSetup.maxTime = convertChildElement<double>(prob,"maxTime");
 	std::pair<bool,std::string> outputPair = vcell_xml::queryElement<std::string>(prob,"outputTimeStep");
 	if (outputPair.first)
@@ -194,11 +189,7 @@ moving_boundary::MovingBoundarySetup MovingBoundarySetup::setupProblem(const XML
 	if (lvq.first) {
 		 mbSetup.levelFunctionStr = lvq.second;
 	}
-	const tinyxml2::XMLElement *altFront = prob.FirstChildElement("specialFront");
-	if (altFront != nullptr) {
-		mbSetup.alternateFrontProvider = ::frontFromXML(*altFront);
-		std::cout << mbSetup.alternateFrontProvider->describe( ) << std::endl;
-	}
+    
 	const XMLElement & physiologyElement = vcell_xml::get(prob,"physiology");
 
 	mbSetup.physiology = new Physiology();

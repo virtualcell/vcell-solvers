@@ -3,50 +3,28 @@
 #include <vector>
 #include <TPoint.h>
 #include <World.h> //GeoLimit
-
 #pragma warning ( disable: 4800 )
 #include <boost/multi_array.hpp>
 #include <VFrontier.h>
-namespace Frontier {
-	typedef ::HYPER_SURF HYPER_SURF; 
-	typedef ::HYPER_SURF_ELEMENT HYPER_SURF_ELEMENT; 
-	typedef ::POINTER POINTER;
-	typedef ::Front Front;
-	typedef ::POINT POINT;
-	typedef ::F_BASIC_DATA F_BASIC_DATA;
-	typedef ::F_INIT_DATA F_INIT_DATA;
-	typedef ::LEVEL_FUNC_PACK LEVEL_FUNC_PACK;
-	typedef ::VELO_FUNC_PACK VELO_FUNC_PACK;
-	typedef ::BOND BOND;
-	typedef ::CURVE CURVE;
-	using ::PERIODIC_BOUNDARY;
-	using ::FIRST_PHYSICS_WAVE_TYPE;
-	using ::GENERAL_WAVE;
-	using ::VECTOR_WAVE;
-	using ::GENERAL_NODE;
-	using ::first_order_point_propagate;
-	using ::fourth_order_point_propagate;
-	/*
-	typedef ::X X;
-	*/
+
+namespace moving_boundary
+{
+    class MovingBoundarySetup;
 }
-//#include <TPoint.h>
 #include <sstream>
 namespace spatial {
-	using Frontier::HYPER_SURF;
-	using Frontier::HYPER_SURF_ELEMENT;
 
-	typedef double (*FronTierLevelFunction)(Frontier::POINTER, double *); 
+	typedef double (*FronTierLevelFunction)(POINTER, double *); 
 
-	typedef int (*FronTierVelocityFunction)(Frontier::POINTER,
-		Frontier::Front*,Frontier::POINT*,HYPER_SURF_ELEMENT*, HYPER_SURF*,double*);
+	typedef int (*FronTierVelocityFunction)(POINTER,
+		Front*,POINT*,HYPER_SURF_ELEMENT*, HYPER_SURF*,double*);
 
 	struct FronTierLevel {
 		virtual double level(double *) const=0;
 	};
 
 	struct FronTierVelocity {
-		virtual int velocity(Frontier::Front*,Frontier::POINT*,HYPER_SURF_ELEMENT*, HYPER_SURF*,double*) const = 0;
+		virtual int velocity(Front*,POINT*,HYPER_SURF_ELEMENT*, HYPER_SURF*,double*) const = 0;
 	};
 
 	template <typename T>
@@ -97,11 +75,11 @@ namespace spatial {
 	template <typename FCT>
 	class VCellFront : public FrontProvider<FCT> {
 	public:
-		VCellFront(std::vector<GeoLimit> & xlimits, int* gmax, double tmax,
+		VCellFront(std::vector<GeoLimit> & worldExtents, const moving_boundary::MovingBoundarySetup &mbs,
 			FronTierLevelFunction levelFunction,
 			FronTierVelocityFunction velocityFunction);
 
-		VCellFront(std::vector<GeoLimit> & xlimits, int* gmax, double tmax,
+		VCellFront(std::vector<GeoLimit> & worldExtents, const moving_boundary::MovingBoundarySetup &mbs,
 			const FronTierLevel & level,
 			const FronTierVelocity &vel);
 
@@ -140,28 +118,24 @@ namespace spatial {
 
 		std::vector<std::vector<spatial::TPoint<FCT,2> > > retrieveCurves( );
 
-		Frontier::Front* const c_ptr( ) { return &front; }
+		Front* const c_ptr( ) { return front; }
 
-		void getPointNormal(Frontier::POINT* p, double* nor);
+		void getPointNormal(POINT* p, double* nor);
 
 	private:
 		typedef spatial::TPoint<FCT,2> VCFPointType; 
-		void init(std::vector<GeoLimit> & xlimits, int* gmax, double tmax,
+		void init(std::vector<GeoLimit> & worldExtents, const moving_boundary::MovingBoundarySetup &mbs,
 			FronTierLevelFunction levelFunction,
 			FronTierVelocityFunction velocityFunction,
 			bool isAdapter);
-		Frontier::Front front;
-		Frontier::F_BASIC_DATA f_basic;
-		Frontier::F_INIT_DATA f_init_data;
-		Frontier::LEVEL_FUNC_PACK level_func_pack;
-		Frontier::VELO_FUNC_PACK velo_func_pack;
-
+		Front* front;
+                
 		const FronTierLevel * const levelObj;
 		const FronTierVelocity * const velObj;
 		std::array<GeoLimit, 2> domainLimits;
-		static double levelAdapter(Frontier::POINTER, double *); 
+		static double levelAdapter(POINTER, double *); 
 
-		static int velocityAdapter(Frontier::POINTER,Frontier::Front*,Frontier::POINT*,HYPER_SURF_ELEMENT*, HYPER_SURF*,double*);
+		static int velocityAdapter(POINTER,Front*,POINT*,HYPER_SURF_ELEMENT*, HYPER_SURF*,double*);
 	};
 }
 #endif
