@@ -45,6 +45,7 @@ void printUsage() {
 #define VCELLSVNQ(x) #x
 #define VCELLSVNQUOTE(x) VCELLSVNQ(x)
 
+#ifdef VCELL_PETSC
 PetscErrorCode VCellPetscReturnErrorHandler(MPI_Comm comm,int line,const char *fun,const char *file,PetscErrorCode n,PetscErrorType p,const char *mess,void *ctx)
 {
   stringstream ss;
@@ -53,6 +54,7 @@ PetscErrorCode VCellPetscReturnErrorHandler(MPI_Comm comm,int line,const char *f
   ss << "PETSC ERROR: " << text << ", " << mess << "(" << fun << "() line " << line << " in " << file << ")" << endl; 
   throw ss.str();
 }
+#endif
 
 int main(int argc, char *argv[])
 {
