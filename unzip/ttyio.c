@@ -109,10 +109,12 @@
 #  endif
 #endif
 
+#if (!defined(MINGW))
 #if (defined(UNZIP) && !defined(FUNZIP) && defined(UNIX) && defined(MORE))
 #  include <sys/ioctl.h>
 #  define GOT_IOCTL_H
    /* int ioctl OF((int, int, zvoid *));   GRR: may need for some systems */
+#endif
 #endif
 
 #ifndef HAVE_WORKING_GETCH

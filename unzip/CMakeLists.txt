@@ -3,13 +3,13 @@ project(unzip)
 file (GLOB SRC_FILES *.c)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-if (MSVC)
-	list(APPEND SRC_FILES
-		win32/nt.c
-		win32/win32.c
-	)
-	include_directories(win32)
-else (MSVC)
+#if (MSVC)
+#	list(APPEND SRC_FILES
+#		win32/nt.c
+#		win32/win32.c
+#	)
+#	include_directories(win32)
+#else (MSVC)
 	list(APPEND SRC_FILES
 		unix/unix.c
 	)
@@ -18,7 +18,10 @@ else (MSVC)
 	if (CYGWIN)
 		add_definitions(-DCYGWIN)
 	endif()
-endif (MSVC)
+	if (MINGW)
+		add_definitions(-DMINGW -DDIRENT)
+	endif()
+#endif (MSVC)
 
 set_source_files_properties( ${SRC_FILES} PROPERTIES LANGUAGE CXX )
 add_library(unzip STATIC ${SRC_FILES})

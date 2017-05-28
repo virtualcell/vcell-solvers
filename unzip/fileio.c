@@ -2476,9 +2476,7 @@ char *plastchar(ZCONST char *ptr, extent len)
 /* Function uzmbschr() */
 /***********************/
 
-unsigned char *uzmbschr(str, c)
-    ZCONST unsigned char *str;
-    unsigned int c;
+unsigned char *uzmbschr(ZCONST unsigned char *str, unsigned int c)
 {
     while(*str != '\0'){
         if (*str == c) {return (unsigned char *)str;}
@@ -2494,9 +2492,7 @@ unsigned char *uzmbschr(str, c)
 /* Function uzmbsrchr() */
 /************************/
 
-unsigned char *uzmbsrchr(str, c)
-    ZCONST unsigned char *str;
-    unsigned int c;
+unsigned char *uzmbsrchr(ZCONST unsigned char *str, unsigned int c)
 {
     unsigned char *match = NULL;
     while(*str != '\0'){
