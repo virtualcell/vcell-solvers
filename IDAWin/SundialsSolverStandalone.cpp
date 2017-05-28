@@ -20,6 +20,7 @@
 #include <iomanip>
 #include <fstream>
 #include <sstream>
+#include <string.h>
 using std::ifstream;
 using std::stringstream;
 
