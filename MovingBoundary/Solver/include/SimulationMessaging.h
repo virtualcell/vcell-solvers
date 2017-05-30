@@ -1,6 +1,17 @@
 #ifndef _SIMULATIONMESSAGING_H_
 #define _SIMULATIONMESSAGING_H_
 
+
+//#if (defined(WIN32) || defined(WIN64) )
+//#include <windows.h>
+//#else
+#include <pthread.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <memory.h>
+//#endif
+
+
 #ifdef USE_MESSAGING
 #include <activemq/library/ActiveMQCPP.h>
 #include <decaf/lang/Thread.h>
@@ -31,15 +42,6 @@ using namespace cms;
 #endif
 
 using namespace std;
-
-#if (defined(WIN32) || defined(WIN64) )
-#include <windows.h>
-#else
-#include <pthread.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <memory.h>
-#endif
 
 #ifdef USE_MESSAGING
 #if (!defined(WIN32) && !defined(WIN64) )

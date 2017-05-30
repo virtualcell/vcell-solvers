@@ -118,7 +118,7 @@ namespace spatial {
 		using spatial::cX;
 		using spatial::cY;
 		T denom = b(cY)*d(cX) - b(cX)*d(cY);
-		if (abs(denom) < 1e-10) {
+		if (fabs(denom) < 1e-10) {
 			return std::pair<bool,T>(false,0);
 		}
 

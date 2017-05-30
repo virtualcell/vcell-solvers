@@ -83,6 +83,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <cdecs.h>
 #include <vmalloc.h>
 
+
+#ifdef __MINGW32__
+#define mkdir(A,B)  mkdir(A)
+#endif
+
 #undef	fclose
 
 struct _IOUTPUT {

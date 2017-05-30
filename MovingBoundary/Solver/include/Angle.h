@@ -93,7 +93,7 @@ namespace spatial {
 	}
 
 	inline bool operator==(const Angle &lhs, const Angle &rhs) {
-		double d = abs(lhs.radians( ) - rhs.radians( ));
+		double d = fabs(lhs.radians( ) - rhs.radians( ));
 		return d < 1e-10; //allow for roundoff error
 	}
 	/**
