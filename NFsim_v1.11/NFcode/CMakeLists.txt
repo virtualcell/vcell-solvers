@@ -90,10 +90,10 @@ endif (ARCH_64bit)
 add_executable(${exe_target} ${SRC_FILES})
 
 #vcell additions
-if (UNIX)
+if (UNIX OR MINGW)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -fpermissive")
   set(CXX_FLAGS "${CXX_FLAGS} -std=c++0x -fpermissive")
-endif (UNIX) 
+endif (UNIX OR MINGW) 
 aux_source_directory(${PROJECT_SOURCE_DIR}/../VCell/src VSRC)
 add_library(vlib STATIC ${VSRC})
 set_target_properties(vlib PROPERTIES LIBRARY_OUTPUT_DIRECTORY
