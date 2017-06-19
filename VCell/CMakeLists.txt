@@ -1,4 +1,4 @@
-project(VCell Fortran)
+project(VCell CXX Fortran)
 if (CYGWIN)
 	#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 	add_definitions(-DWIN64)
@@ -64,7 +64,7 @@ set(HEADER_FILES
 	include/VCELL/SimTypes.h
 	include/VCELL/Simulation.h
 	include/VCELL/SimulationExpression.h
-	include/VCELL/SimulationMessaging.h
+#	include/VCELL/SimulationMessaging.h
 	include/VCELL/Solver.h
 	include/VCELL/SparseLinearSolver.h
 #	include/VCELL/SparseMatrix.h
@@ -143,7 +143,7 @@ set(SRC_FILES
 	src/SimTool.cpp
 	src/Simulation.cpp
 	src/SimulationExpression.cpp
-	src/SimulationMessaging.cpp
+#	src/SimulationMessaging.cpp
 	src/Solver.cpp
 	src/SparseLinearSolver.cpp
 #	src/SparseMatrix.cpp
@@ -181,76 +181,58 @@ endif()
 set (EXE_SRC_FILES
 	src/FiniteVolume.cpp
 )
+#include_directories(include ../ExpressionParser ${HDF5_BINARY_DIR} ../${HDF_VERSION}/c++/src ../${HDF_VERSION}/src ../IDAWin)
+#include_directories(include ../bridgeVCellSmoldyn)
+#if (NOT ZLIB_FOUND)
+#	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../zlib)
+#endif()
 
-include_directories(include ../ExpressionParser ${HDF5_BINARY_DIR} ../${HDF_VERSION}/c++/src ../${HDF_VERSION}/src ../IDAWin ../sundials/include ../sundials/src ../zip)
-include_directories(include ../bridgeVCellSmoldyn)
-if (NOT ZLIB_FOUND)
-	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../zlib)
-endif()
 
+#include_directories(include ../${SMOL_DIR}/source/Smoldyn ../${SMOL_DIR}/source/lib)
+#if (APPLE)
+#	include_directories(../${SMOL_DIR}/mac)
+#elseif (LINUX)
+#	include_directories(../${SMOL_DIR}/source)
+#endif()
 
-include_directories(include ../${SMOL_DIR}/source/Smoldyn ../${SMOL_DIR}/source/lib)
-if (MSVC)
-	include_directories(../${SMOL_DIR}/windows ../glut-3.7.6/ ../zlib)
-elseif (APPLE)
-	include_directories(../${SMOL_DIR}/mac)
-elseif (LINUX)
-	include_directories(../${SMOL_DIR}/source)
-endif()
-
-if (MSVC)
-	include_directories(../${HDF_VERSION}/windows/src)
-    set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /names:lowercase")
-elseif(UNIX)
+if(UNIX)
 	set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -static")
 	if (APPLE) 
 		add_definitions(-DMACOSX)
 	else()
-		if (LINUX_64bit_BINARIES AND NOT TARGET_SOLVERS_WITH_MESSAGING AND NOT CYGWIN)
+		if (LINUX_64bit_BINARIES AND NOT TARGET_SOLVERS_WITH_MESSAGING AND NOT MINGW)
 		message("v linux64")
-			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+#			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 		endif()	
 	endif()
 endif()	
-add_library(vcell STATIC ${SRC_FILES} ${HEADER_FILES})
-add_library(pcgwrapper STATIC ${PCGWRAPPER_SRC_FILES})
 
-if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
+find_library(zlib REQUIRED)
+
+#
+# http://floooh.github.io/2016/01/12/cmake-dependency-juggling.html
+#
+add_library(pcgwrapper STATIC ${PCGWRAPPER_SRC_FILES})
+target_link_libraries(pcgwrapper PCGPack blas)
+
+add_library(vcell STATIC ${SRC_FILES} ${HEADER_FILES})
+target_link_libraries(vcell pcgwrapper sundials ExpressionParser smoldyn_static vcellsmoldynbridge hdf5_cpp hdf5 qhull vcellmessaging vcellziputils ${ZLIB_LIBRARIES})
+target_include_directories(vcell PUBLIC 
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>  # <prefix>/include
+)
+
+if (OPTION_TARGET_FV_SOLVER)
 	set(EXE_FILE FiniteVolume)
 	if (ARCH_64bit) 
 		set(EXE_FILE ${EXE_FILE}_x64)
-	elseif (MACOSX_BINARIES_ppc)
-		set(EXE_FILE ${EXE_FILE}_ppc)
 	endif()
 
-	include_directories(${JMS_INCS})
-    include_directories(${CMAKE_BINARY_DIR}/${SMOL_DIR})
-	add_definitions(${JMS_DEFS})
-	set(DEP_LIBS vcell pcgwrapper ExpressionParser hdf5_cpp hdf5 IDAWin PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials ${JMS_LIBS} zip unzip ${SMOL_LIB})
-	if (MSVC)
-		link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../smoldyn/windows/glut-3.7.6/)
-		if (ARCH_64bit)
-			list(APPEND DEP_LIBS glut64)
-		else()
-			list(APPEND DEP_LIBS glut32)
-		endif()
-	endif()
-	
-	list(APPEND DEP_LIBS blas)
-	if (ZLIB_FOUND)
-		list(APPEND DEP_LIBS ${ZLIB_LIBRARIES})
-	else()
-		list(APPEND DEP_LIBS zlib)
-	endif()
 	if (APPLE)
 		list(APPEND DEP_LIBS gfortran)
 	endif()
 	add_executable(${EXE_FILE} ${EXE_SRC_FILES})	
-	target_link_libraries(${EXE_FILE} ${DEP_LIBS})
-	add_dependencies(${EXE_FILE} vcell pcgwrapper ExpressionParser IDAWin qhull sundials sundials_nvecserial sundials_cvode sundials_ida zip unzip)
-	if (MSVC)
-		add_dependencies(${EXE_FILE} zlib)
-	endif (MSVC)
+	target_link_libraries(${EXE_FILE} vcell)
 
 	install(TARGETS ${EXE_FILE} 
             RUNTIME DESTINATION ${OPTION_EXE_DIRECTORY})

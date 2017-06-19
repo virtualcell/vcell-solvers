@@ -4,7 +4,7 @@
 #include "Exception.h"
 using namespace VCell;
 
-class ExpressionException : public Exception
+class ExpressionException : public VCell::Exception
 {
 public:
 	~ExpressionException(void) throw( );

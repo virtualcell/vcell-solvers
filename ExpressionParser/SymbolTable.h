@@ -8,7 +8,7 @@ class SymbolTableEntry;
 
 class SymbolTable {
 public:
-	virtual SymbolTableEntry* getEntry(string identifierString)=0; 
+	virtual SymbolTableEntry* getEntry(const std::string & identifier) const = 0; 
 	virtual ~SymbolTable() {}
 };
 

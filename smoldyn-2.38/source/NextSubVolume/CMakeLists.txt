@@ -4,7 +4,7 @@ set(KAIROS_SRC_FILES
 					ReactionEquation.cpp
 					NextSubvolumeMethod.cpp
 					Kairos.cpp
-					Io.cpp
+					nsv_Io.cpp
 					Geometry.cpp
 #					../lib/math2.c
 #					../lib/random2.c
@@ -17,7 +17,7 @@ set(KAIROS_HEADER_FILES Vector.h
 						NextSubvolumeMethod.h
 						Log.h
 						Kairos.h
-						Io.h
+						nsv_Io.h
 						Geometry.h
 						Constants.h
 #						../lib/math2.h

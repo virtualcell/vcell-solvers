@@ -10,6 +10,7 @@
 #include <VCELL/Simulation.h>
 #include <VCELL/VolumeParticleVariable.h>
 #include <VCELL/MembraneParticleVariable.h>
+#include <VCELL/ZipUtils.h>
 #include "SmoldynVarStatDataGenerator.h"
 #include "vcellhybrid.h"
 //#include "SmoldynROIDataGenerator.h"
@@ -23,7 +24,6 @@
 typedef int int32;
 typedef unsigned int uint32;
 
-int zip32(int filecnt, char* zipfile, ...);
 #include <sys/stat.h>
 #include <math.h>
 #include <string.h>
@@ -139,7 +139,7 @@ void VCellSmoldynOutput::parseInput(string& input) {
 	int varCount = 0;
 	while (!inputSS.eof()) {
 		getline(inputSS, line);
-		
+
 		stringstream liness(line);
 		token = "";
 		liness >> token;
@@ -219,9 +219,9 @@ void VCellSmoldynOutput::parseInput(string& input) {
 	int memCount = 0;
 	molIdentVarIndexMap = new int[numVars];
 	for (int i = 0; i < numVars; i ++) {
-		char* varName = new char[128];	
+		char* varName = new char[128];
 		int molIdent = i + 1;
-		strcpy(varName, mols->spname[molIdent]);		
+		strcpy(varName, mols->spname[molIdent]);
 		if(variables[i]->type == VAR_MEMBRANE) { // membrane variable
 			memVariables.push_back(variables[i]);
 			molIdentVarIndexMap[i] = memCount;
@@ -230,7 +230,7 @@ void VCellSmoldynOutput::parseInput(string& input) {
 			volVariables.push_back(variables[i]);
 			molIdentVarIndexMap[i] = volCount;
 			volCount ++;
-		}		
+		}
 	}
 	strcpy(fileHeader.magicString, MAGIC_STRING);
 	strcpy(fileHeader.versionString, VERSION_STRING);
@@ -313,7 +313,7 @@ void VCellSmoldynOutput::write() {	//for each save time interval
 	if (vcellhybrid::isHybrid()) {
 		return;
 	}
-	
+
 	// write sim file
 	char simFileName[256];
 	char zipFileName[256];
@@ -340,7 +340,7 @@ void VCellSmoldynOutput::write() {	//for each save time interval
 	}
 	sprintf(zipFileName, "%s%.2d.%s", baseFileName, zipFileCount, ZIP_FILE_EXT);
 
-	writeSim(simFileName, zipFileName);	
+	writeSim(simFileName, zipFileName);
 
 	// write log file
 	char logfilename[256];
@@ -370,7 +370,7 @@ void VCellSmoldynOutput::write() {	//for each save time interval
 			zipFileCount ++;
 		}
 	}
-	
+
 	if (hdf5DataWriter != 0) {
 		hdf5DataWriter->writeOutput();
 	}
@@ -418,11 +418,11 @@ double VCellSmoldynOutput::distance2(double* pos1, double* pos2) {
 		return (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]);
 	}
 	if (dimension == 2) {
-		return (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) 
+		return (pos1[0] - pos2[0]) * (pos1[0] - pos2[0])
 			+ (pos1[1] - pos2[1]) * (pos1[1] - pos2[1]);
 	}
 	if (dimension == 3) {
-		return (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) 
+		return (pos1[0] - pos2[0]) * (pos1[0] - pos2[0])
 			+ (pos1[1] - pos2[1]) * (pos1[1] - pos2[1])
 			+ (pos1[2] - pos2[2]) * (pos1[2] - pos2[2]);
 	}
@@ -461,7 +461,7 @@ void VCellSmoldynOutput::computeHistogram() {
 				int i = 0, j = 0, k = 0;
 				i = (int)((coord[0] - origin[0])/dx + 0.5);
 				center[0] = i * dx;
-				if (dimension > 1) {				
+				if (dimension > 1) {
 					j = (int)((coord[1] - origin[1])/dy + 0.5);
 					center[1] = j * dy;
 					if (dimension > 2) {
@@ -472,7 +472,7 @@ void VCellSmoldynOutput::computeHistogram() {
 
 				int volIndex = k * Nx * Ny + j * Nx + i;
 				// not in the same compartment, try to find the nearest neighbor
-				// in the same compartment, if not found, keep it in the wrong 
+				// in the same compartment, if not found, keep it in the wrong
 				// compartment
 				/*if (!isInSameCompartment(coord, center)) {
 					bool bFound = false;
@@ -567,7 +567,7 @@ void VCellSmoldynOutput::writeSim(char* simFileName, char* zipFileName) {
 	//
 	// write data blocks (describing data)
 	//
-	int blockIndex = 0;	
+	int blockIndex = 0;
 	for (unsigned int v = 0; v < volVariables.size(); v ++) {
 		DataSet::writeDataBlock(simfp, dataBlock + blockIndex);
 		blockIndex ++;
@@ -580,7 +580,7 @@ void VCellSmoldynOutput::writeSim(char* simFileName, char* zipFileName) {
 	//
 	// write data
 	//
-	blockIndex = 0;	
+	blockIndex = 0;
 	int dataOffset = fileHeader.firstBlockOffset + (volVariables.size() + memVariables.size()) * sizeof(DataBlock);
 	for (unsigned int v = 0; v < volVariables.size(); v ++) {
 		ftell_pos = ftell(simfp);
@@ -608,11 +608,12 @@ void VCellSmoldynOutput::writeSim(char* simFileName, char* zipFileName) {
 	}
 	fclose(simfp);
 
-	int retcode = zip32(1, zipFileName, simFileName);
+	addFilesToZip(zipFileName, simFileName);
+
 	remove(simFileName);
-	if (retcode != 0) {
-		char errMsg[256];
-		sprintf(errMsg, "Writing zip file <%s> failed, return code is %d", zipFileName, retcode);
-		throw errMsg;
-	}
+//	if (retcode != 0) {
+//		char errMsg[256];
+//		sprintf(errMsg, "Writing zip file <%s> failed, return code is %d", zipFileName, retcode);
+//		throw errMsg;
+//	}
 }

@@ -1,0 +1,3 @@
+SET( CMAKE_C_COMPILER /usr/local/bin/gcc-7 )
+SET( CMAKE_CXX_COMPILER  /usr/local/bin/g++-7 )
+SET( CMAKE_FORTRAN_COMPILER  /usr/local/bin/gfortran-7 )

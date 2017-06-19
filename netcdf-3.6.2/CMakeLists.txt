@@ -1,4 +1,4 @@
-project(netcdf)
+project(netcdf Fortran)
 
 include_directories(libsrc cxx)
 

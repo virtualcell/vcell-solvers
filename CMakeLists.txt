@@ -1,12 +1,17 @@
+project(numerics)
 cmake_minimum_required(VERSION 2.8.9)
+enable_language(CXX)
+enable_language(C)
+enable_language(Fortran)
 include (svnversion.txt)
-include (LocalJNI.cmake)
+#include (LocalJNI.cmake)
 
 set(RULE_MESSAGES OFF)
 set(CMAKE_COLOR_MAKEFILE OFF)
-set(HDF_VERSION "hdf5-1.8.11")
-set(ZLIB_VERSION "zlib-1.2.8")
 set(_ECLIPSE_VERSION "4.4")
+SET(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR} $(CMAKE_PREFIX_PATH))
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+
 #include (VCellCMakeShowVariables.txt)
 
 if(DEFINED CMAKE_BUILD_TYPE)
@@ -14,17 +19,7 @@ if(DEFINED CMAKE_BUILD_TYPE)
 else()
    SET(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
 endif()
-option(PARALLEL_CHOMBO_SOLVER "build parallel Chombo solver" OFF)
 
-#CMakeList.txt that comes with hdf5 switches library name if compiled with debug
-set(HDF_LIB "hdf5")
-if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-	set(HDF_LIB "hdf5_debug")
-endif( )
-
-project(numerics)
-
-option(NEW_SMOLDYN "Smoldyn 2.38" ON)
 #include (CMakeTestCCompiler)
 #include (CheckCSourceCompiles)
 #include (CheckCXXSourceCompiles)
@@ -40,70 +35,62 @@ include (FindZLIB)
 #message("extra "${CMAKE_EXTRA_GENERATOR})
 #message("system "${CMAKE_SYSTEM_NAME})
 #message("windows "${WINDOWS})
-option(CHOMBO_SOLVER "Build Chombo" on)
-option(SMOLDYN_ONLY "only smoldyn" OFF)
-set(FV_SOLVER on)
-set(STOCHASTIC_SOLVER on)
-set(NFSIM_EXE on)
-set(SUNDIALS_SOLVER on) #idawin
-set(HY3S_SOLVERS on) 
-if (NOT SMOLDYN_ONLY)
 
-if (${PARALLEL_CHOMBO_SOLVER})
-	message("parallel chombo solver")
+option(OPTION_TARGET_MESSAGING "Parallel Solver (only chombo for now)" off)
+option(OPTION_TARGET_PARALLEL "Parallel Solver (only chombo for now)" off)
+option(OPTION_TARGET_DOCS "Generate Doxygen documentation" on)
+option(OPTION_TARGET_CHOMBO2D_SOLVER "Chombo2D Solver" off)
+option(OPTION_TARGET_CHOMBO3D_SOLVER "Chombo3D Solver" off)
+option(OPTION_TARGET_SMOLDYN_SOLVER "only smoldyn" on)
+option(OPTION_TARGET_FV_SOLVER on)
+option(OPTION_TARGET_STOCHASTIC_SOLVER on)
+option(OPTION_TARGET_NFSIM_SOLVER on)
+option(OPTION_TARGET_MOVINGBOUNDARY_SOLVER on)
+option(OPTION_TARGET_SUNDIALS_SOLVER on) #idawin
+option(OPTION_TARGET_HY3S_SOLVERS on)
+ 
+                  
+if (${OPTION_TARGET_DOCS})
+#	if (DOXYGEN_FOUND AND ${CMAKE_VERSION} GREATER_EQUAL 3.9)
+#		find_package(Doxygen
+#				REQUIRED dot
+#				OPTIONAL_COMPONENTS mscgen dia)
+#		set(DOXYGEN_GENERATE_HTML YES)
+#		set(DOXYGEN_GENERATE_MAN NO)
+#		doxygen_add_docs(
+#   			doxygen
+#    		${PROJECT_SOURCE_DIR}
+#    		COMMENT "Generate man pages"
+#    	)
+#	else()
+		add_custom_target(graphviz ALL
+                  "${CMAKE_COMMAND}" "--graphviz=dependencies.dot" .
+                  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+#    endif()
+endif()
+
+      
+if (${OPTION_TARGET_PARALLEL})
 	find_package(MPI)
-	set(FV_SOLVER off)
-	set(STOCHASTIC_SOLVER off)
-	set(NFSIM_EXE off)
-	set(SUNDIALS_SOLVER off) #idawin
-	set(HY3S_SOLVERS off) 
-	set(OPTION_TARGET_SMOLDYN OFF CACHE BOOL "build smoldyn executable")
-	set(OPTION_TARGET_LIBSMOLDYN OFF CACHE BOOL "build smoldyn library")
 	set(HDF5_ENABLE_PARALLEL ON CACHE BOOL "parallel hdf5 library")
 	set(HDF5_BUILD_CPP_LIB OFF CACHE BOOL "" )
-else (${PARALLEL_CHOMBO_SOLVER})
+else (${OPTION_TARGET_PARALLEL})
 	message("serials solvers")
 	set(HDF5_BUILD_CPP_LIB ON CACHE BOOL "" )
-	set(OPTION_TARGET_LIBSMOLDYN ON CACHE BOOL "")
-endif (${PARALLEL_CHOMBO_SOLVER})
+endif (${OPTION_TARGET_PARALLEL})
 message("hdf5 cpp ${HDF5_BUILD_CPP_LIB}")
-
-if (CYGWIN) 
-	set(NETBEANS_WINDOWS TRUE)
-	set(OPTION_TARGET_SMOLDYN ON CACHE BOOL "")
-	set(OPTION_TARGET_LIBSMOLDYN ON CACHE BOOL "build smoldyn library")
-	set(OPTION_USE_OPENGL OFF CACHE BOOL "")
-	set(CMAKE_RC_FLAGS "-DGCC_WINDRES")
-	set(CLIENT_SIDE_DEFAULT TRUE)
-	set(SERVER_SIDE_DEFAULT FALSE)
-	set(HYBRID_DEFAULT FALSE)
-endif(CYGWIN)
 
 set(LINUX FALSE)
 if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
 	set(LINUX TRUE)
-	set(CLIENT_SIDE_DEFAULT FALSE)
-	set(SERVER_SIDE_DEFAULT TRUE)
-	set(HYBRID_DEFAULT FALSE)
 endif()
-
-if (APPLE) 
-	set(CLIENT_SIDE_DEFAULT TRUE)
-	set(SERVER_SIDE_DEFAULT FALSE)
-	set(HYBRID_DEFAULT FALSE)
-endif(APPLE)
-if (MSVC) 
-	set(CLIENT_SIDE_DEFAULT TRUE)
-	set(SERVER_SIDE_DEFAULT FALSE)
-	set(HYBRID_DEFAULT FALSE)
-endif(MSVC)
 
 set(WINDOWS FALSE)
 if (${CMAKE_SYSTEM_NAME} MATCHES Windows)
 	set(WINDOWS TRUE)
 	set(WIN32 TRUE)
 	if (${CMAKE_GENERATOR} MATCHES "Unix Makefiles") 
-		set(CYGWIN TRUE)
+		set(MINGW TRUE)
 	endif (${CMAKE_GENERATOR} MATCHES "Unix Makefiles") 
 endif()
 
@@ -112,107 +99,40 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 	set (ARCH_64bit TRUE)
 endif()
 
-if (NOT MSVC AND NOT APPLE AND NOT LINUX AND NOT CYGWIN)
+if (NOT APPLE AND NOT LINUX AND NOT MINGW)
 	message(FATAL_ERROR "Unsupported Operating System or C/C++ Compiler.")
 endif()
 
-if (MSVC)
-	add_definitions(-DFORTRAN_BARE)
-else( ) 
-	add_definitions(-DFORTRAN_UNDERSCORE)
-endif( )
+#---------------------------
+#  IDE SUPPORT
+#---------------------------
+if (MINGW) 
+	set(NETBEANS_WINDOWS TRUE)
+	set(CMAKE_RC_FLAGS "-DGCC_WINDRES")
+endif(MINGW)
 
-#############################################
-#
-#  Check MSVC version
-#  1200 = VS  6.0
-#  1300 = VS  7.0
-#  1310 = VS  7.1
-#  1400 = VS  8.0
-#  1500 = VS  9.0
-#  1600 = VS 10.0
-#
-##############################################
-if (MSVC)
-	if (MSVC_VERSION LESS 1600)
-    	message(FATAL_ERROR "Visual Studio 10 or higher is required.")
-	endif()
-	if (MSVC_VERSION GREATER 1600)
-		message(WARNING "Virtual Cell install program assumes VS 2010")
-	endif( )
-endif()
-
-
-#############################################
-#
-#  Options, check one and only one is selected
-#  1. server side solvers with messaging
-#  2. client side quick run solvers
-#  3. java binding
-#
-##############################################
-if (CYGWIN OR APPLE)
-	option(TARGET_SOLVERS_NO_MESSAGING "Client Side Solvers (Without Messaging)" ${CLIENT_SIDE_DEFAULT})
-else()
-	option(TARGET_SOLVERS_WITH_MESSAGING "Server Side Solvers (With Messaging)" ${SERVER_SIDE_DEFAULT})
-	option(TARGET_SOLVERS_NO_MESSAGING "Client Side Solvers (Without Messaging)" ${CLIENT_SIDE_DEFAULT})
-endif ()
-if (WINDOWS) 
-	#need MSVC and IFortran for these
-	option(TARGET_HYBRID_SOLVERS "Hybrid solvers (Without Messaging)" ${HYBRID_DEFAULT})
-endif( )
-option(TARGET_JAVA_BINDING "Java Binding" OFF)
-
-set (TARGET_COUNT 0)
-if (TARGET_SOLVERS_WITH_MESSAGING)
-	math(EXPR TARGET_COUNT "${TARGET_COUNT} + 1")
-endif()
-if (TARGET_SOLVERS_NO_MESSAGING)
-	math(EXPR TARGET_COUNT "${TARGET_COUNT} + 1")
-endif()
-if (TARGET_JAVA_BINDING)
-	math(EXPR TARGET_COUNT "${TARGET_COUNT} + 1")
-endif()
-if (TARGET_HYBRID_SOLVERS)
-	math(EXPR TARGET_COUNT "${TARGET_COUNT} + 1")
-endif()
-
-if (TARGET_COUNT GREATER 1 OR TARGET_COUNT EQUAL 0)
-	message(FATAL_ERROR "It is required to select one target, either TARGET_SOLVERS_WITH_MESSAGING, or TARGET_SOLVERS_NO_MESSAGING or TARGET_JAVA_BINDING or TARGET_HYBRID_SOLVERS")
-endif()
+add_definitions(-DFORTRAN_UNDERSCORE)
 
 #############################################
 # installation directories
 #############################################
-if (NOT TARGET_SOLVERS_WITH_MESSAGING)
+if (NOT OPTION_TARGET_MESSAGING)
 	set(OPTION_EXE_DIRECTORY "bin" CACHE PATH "installation directory")
-else (NOT TARGET_SOLVERS_WITH_MESSAGING)
+else (NOT OPTION_TARGET_MESSAGING)
 	set(OPTION_EXE_DIRECTORY "../bin" CACHE PATH "installation directory")
-endif (NOT TARGET_SOLVERS_WITH_MESSAGING)
+endif (NOT OPTION_TARGET_MESSAGING)
 
 set(OPTION_LIB_DIRECTORY "lib" CACHE PATH "library directory")
+set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
 
 
 #############################################
 #
-#  Build universal binaries on Mac
+#  Build 64bit binaries on Mac
 #
 ##############################################
 if (APPLE)
-	option(MACOSX_UNIVERSAL_BINARIES "Build Universal Binaries" OFF)
-	if (MACOSX_UNIVERSAL_BINARIES)
-		set (ARCH_64bit FALSE)
-		set(CMAKE_OSX_ARCHITECTURES "i386;x86_64")
-	endif()
-	option(MACOSX_BINARIES_32bit "Build i386 Binaries" OFF)
-	if (MACOSX_BINARIES_32bit)
-		set (ARCH_64bit FALSE)
-		set(CMAKE_OSX_ARCHITECTURES "i386")
-	endif()
-	option(MACOSX_BINARIES_64bit "Build x86_64 Binaries" OFF)
-	if (MACOSX_BINARIES_64bit) 
-		set(CMAKE_OSX_ARCHITECTURES "x86_64")
-	endif()
+	set(CMAKE_OSX_ARCHITECTURES "x86_64")
 #############################################
 #
 #  Choose 32bit or 64bit target arch on Linux
@@ -240,160 +160,38 @@ elseif (LINUX)
 	endif()	
 endif()
 
-######################################
-#
-# try to find ifort compiler
-#
-#######################################
-if (NOT TARGET_JAVA_BINDING)
-enable_language(Fortran)
-set(IFORT_EXECUTABLE NOTFOUND)
+add_definitions(-DUNIX)
 
-######################################
-#
-# on Windows you are supposed to 
-# open Intel Fortran Compiler Command Prompt
-# so it is not necessary to find ifort
-#
-#######################################
-if (MSVC)
-	set(IFORT_EXECUTABLE ifort)
-endif()
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 
-if (APPLE)
-	find_program(IFORT_EXECUTABLE ifort)
-endif()
 
-if (LINUX_32bit_BINARIES)
-	find_program(IFORT_EXECUTABLE ifort /opt/intel/fc/10.1.015/bin/)
-elseif (LINUX_64bit_BINARIES)
-	#find_program(IFORT_EXECUTABLE ifort /opt/intel/fce/10.1.015/bin/ /cm/shared/apps/intel/fce/10.1.015/bin/)
-	find_program(IFORT_EXECUTABLE ifort /opt/intel/fce/10.1.015/bin/ )
-endif()
-
-if (IFORT_EXECUTABLE MATCHES IFORT_EXECUTABLE-NOTFOUND AND NOT CYGWIN)
-	message("intel fortran compiler (ifort) not found")
-	set(HY3S_SOLVERS off) 
-endif()
-endif (NOT TARGET_JAVA_BINDING)
+if (OPTION_TARGET_MESSAGING)
+	if (APPLE OR MINGW)
+		message(FATAL_ERROR "TARGET_SOLVERS_WITH_MESSAGING is not supported on MAC OS X and MINGW")
+	endif(APPLE OR MINGW)
 	
-######################################
-#
-# set proper compiler options
-#
-#######################################
-if (MSVC)
-	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
-	
-	if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING OR TARGET_HYBRID_SOLVERS)
-		
-		######################################
-		#
-		# use /MT instead of /MD on Windows
-		#
-		#######################################	
-		foreach(flag_var
-				CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-				CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
-				CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-				CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
-				CMAKE_Fortran_FLAGS_DEBUG CMAKE_Fortran_FLAGS_RELEASE
-				CMAKE_Fortran_FLAGS_MINSIZEREL CMAKE_Fortran_FLAGS_RELWITHDEBINFO
-			)
-	
-			if(${flag_var} MATCHES "/MD")
-				string(REGEX REPLACE "/MD" "/MT" temp_var "${${flag_var}}")
-				set(${flag_var} ${temp_var} CACHE STRING "Flags used by the compiler" FORCE)
-            elseif(NOT ${flag_var} MATCHES "/MT")
-            	######################################
-				#
-				# no /MT or /MTd at all, append it
-				#
-				#######################################
-				set(temp_var "${${flag_var}}")
-            	if (flag_var MATCHES "DEBUG")
-            		set(temp_var "${temp_var} /MTd")
-            	else()
-            		set(temp_var "${temp_var} /MT")
-            	endif()
-            	set(${flag_var} ${temp_var} CACHE STRING "Flags used by the compiler" FORCE)            	
-			endif()			
-		endforeach(flag_var)
-		
-	elseif(TARGET_JAVA_BINDING)
-		######################################
-		#
-		# use /MD instead of /MT on Windows
-		#
-		#######################################	
-        foreach(flag_var
-        		CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-                CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
-                CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
-        		CMAKE_Fortran_FLAGS_DEBUG CMAKE_Fortran_FLAGS_RELEASE
-				CMAKE_Fortran_FLAGS_MINSIZEREL CMAKE_Fortran_FLAGS_RELWITHDEBINFO
-			)
-        
-            if(${flag_var} MATCHES "/MT")
-                string(REGEX REPLACE "/MT" "/MD" temp_var "${${flag_var}}")
-                set(${flag_var} ${temp_var} CACHE STRING "Flags used by the compiler" FORCE)
-			elseif(NOT ${flag_var} MATCHES "/MD")
-            	######################################
-				#
-				# no /MD or /MDd at all, append it
-				#
-				#######################################
-				set(temp_var "${${flag_var}}")
-            	if (flag_var MATCHES "DEBUG")
-            		set(temp_var "${temp_var} /MDd")
-            	else()
-            		set(temp_var "${temp_var} /MD")
-            	endif()
-            	set(${flag_var} ${temp_var} CACHE STRING "Flags used by the compiler" FORCE)
-			endif()
-		endforeach(flag_var)
-	endif()
-		
-else(MSVC)
-	
-	add_definitions(-DUNIX)
-	if (NOT CYGWIN)
-		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-	endif()
-	
-endif(MSVC)
-
-
-if (TARGET_SOLVERS_WITH_MESSAGING)
-	if (APPLE OR CYGWIN)
-		message(FATAL_ERROR "TARGET_SOLVERS_WITH_MESSAGING is not supported on MAC OS X and cygwin")
-	endif(APPLE OR CYGWIN)
 	#don't need graphics for server side solvers
 	set(OPTION_USE_OPENGL OFF CACHE BOOL "")
 	
-	set(APR_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/apr-1.4.6/include ${CMAKE_BINARY_DIR}/apr-1.4.6/include)
-	set(ACTIVEMQ_CPP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/activemq-cpp-library-3.4.4/src/main ${CMAKE_BINARY_DIR}/activemq-cpp-library-3.4.4)
-	set(JMS_INCS ${ACTIVEMQ_CPP_INCLUDE_DIR} ${APR_INCLUDE_DIR})
+	# set(APR_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/apr-1.4.6/include ${CMAKE_BINARY_DIR}/apr-1.4.6/include)
+	# set(ACTIVEMQ_CPP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/activemq-cpp-library-3.4.4/src/main ${CMAKE_BINARY_DIR}/activemq-cpp-library-3.4.4)
+	# set(JMS_INCS ${ACTIVEMQ_CPP_INCLUDE_DIR} ${APR_INCLUDE_DIR})
 
-	set(JMS_LIBS activemq-cpp aprutil-1 apriconv-1 apr-1)
-	if (MSVC)
-		add_definitions(-D_SECURE_SCL=1)
-		list(APPEND JMS_LIBS ws2_32 Mswsock Rpcrt4)
-	elseif (UNIX)
-		set(JMS_DEFS -DHAVE_CONFIG_H -DLINUX=2 -D_REENTRANT -D_GNU_SOURCE)
-		include(FindOpenSSL)
-		if (NOT OPENSSL_FOUND)
-			message(FATAL_ERROR, "OpenSSL not found.")
-		endif()
-		list(APPEND JMS_LIBS ${OPENSSL_LIBRARIES} crypt pthread)
-	endif()
-	
-	add_subdirectory(apr-1.4.6)
-	add_subdirectory(apr-iconv-1.2.1)
-	add_subdirectory(apr-util-1.4.1)
-	add_subdirectory(activemq-cpp-library-3.4.4)
+	# set(JMS_LIBS activemq-cpp aprutil-1 apriconv-1 apr-1)
+
+	# set(JMS_DEFS -DHAVE_CONFIG_H -DLINUX=2 -D_REENTRANT -D_GNU_SOURCE)
+	#include(FindOpenSSL)
+	#if (NOT OPENSSL_FOUND)
+	#	message(FATAL_ERROR, "OpenSSL not found.")
+	#endif()
+	#list(APPEND JMS_LIBS ${OPENSSL_LIBRARIES} crypt pthread)
+	include(FindActiveMQcpp)
+	find_package(activemqcpp REQUIRED)
+	# add_subdirectory(apr-1.4.6)
+	# add_subdirectory(apr-iconv-1.2.1)
+	# add_subdirectory(apr-util-1.4.1)
+	# add_subdirectory(activemq-cpp-library-3.4.4)
 	add_definitions(-DUSE_MESSAGING)
 endif()
 
@@ -402,111 +200,136 @@ endif()
 # Add subdirectories
 # 
 #######################################
+
+	if (${OPTION_TARGET_MOVINGBOUNDARY_SOLVER} OR
+		${OPTION_TARGET_FV_SOLVER} OR
+		${OPTION_TARGET_CHOMBO2D_SOLVER} OR
+		${OPTION_TARGET_CHOMBO3D_SOLVER}
+		)
+		#CMakeList.txt that comes with hdf5 switches library name if compiled with debug
+		find_package(HDF5 REQUIRED)
+		set(HDF_VERSION ${HDF5_VERSION})
+		######    ${HDF5_HL_LIBRARIES} ${HDF5_CXX_LIBRARIES}
+	   	set(_hdf5_libs hdf5 hdf5_cpp)
+    	set(HDF_LIB hdf5 hdf5_cpp)
+	endif()
+
+	add_subdirectory(VCellMessaging)
+	set(VCELLMESSAGING_INCLUDE_DIR VCellMessaging/include)
+	if (OPTION_TARGET_MESSAGING)
+		set(VCELLMESSAGING_LIBS activemq-cpp aprutil-1 apriconv-1 apr-1)
+	else()
+		set(VCELLMESSAGING_LIBS vcellmessaging)
+	endif()
  
-if (TARGET_SOLVERS_WITH_MESSAGING OR TARGET_SOLVERS_NO_MESSAGING)
+    if (${OPTION_TARGET_MOVINGBOUNDARY_SOLVER} OR 
+    	${OPTION_TARGET_NFSIM_SOLVER}
+    	)
+    	add_subdirectory(VCommons)
+    endif()
+    
+ 	if (${OPTION_TARGET_FV_SOLVER} OR
+		${OPTION_TARGET_SMOLDYN_SOLVER}
+		)
+		add_subdirectory(VCellZipUtils)
+		add_subdirectory(libzip-1.2.0)
+	endif()
 	
-	add_subdirectory(vcommons)
-	add_subdirectory(ExpressionParser)
+    if (${OPTION_TARGET_FV_SOLVER} OR 
+    	${OPTION_TARGET_SMOLDYN_SOLVER} OR
+    	${OPTION_TARGET_SUNDIALS_SOLVER} OR 
+    	${OPTION_TARGET_STOCHASTIC_SOLVER} OR 
+    	${OPTION_TARGET_MOVINGBOUNDARY_SOLVER}
+    	)
+    	message(STATUS "adding ExpressionParser")
+		add_subdirectory(ExpressionParser)
+	endif()
 	
-	set(HDF5_EXTERNALLY_CONFIGURED 1)
-	set(HDF5_LIB_DEPENDENCIES "w2_32")
-	set(H5_HAVE_GETHOSTNAME 0)
-#	if (CYGWIN) 
-#		cmake_policy(SET CMP0000 OLD)
-#	endif (CYGWIN) 
-	add_subdirectory(${HDF_VERSION})
-	if (${CHOMBO_SOLVER} AND NOT MSVC) 
-
+	if (${OPTION_TARGET_CHOMBO2D_SOLVER} OR
+		${OPTION_TARGET_CHOMBO3D_SOLVER}
+		) 
+		if (${OPTION_TARGET_CHOMBO3D_SOLVER})
+			set(CHOMBO_3D TRUE)
+		else()
+			set(CHOMBO_3D FALSE)
+		endif()
+		
 		add_subdirectory(VCellChombo)
-	endif()
-#	include_directories(${ZLIB_VERSION})
-#	include_directories(${CMAKE_BINARY_DIR}/${ZLIB_VERSION})
-	##add_subdirectory(${ZLIB_VERSION})
-
-	if (${SUNDIALS_SOLVER})
-		add_subdirectory(sundials)
-		add_subdirectory(IDAWin)
-	endif (${SUNDIALS_SOLVER})
-	#add_subdirectory(sundials)
-	if (NOT APPLE)
-		add_subdirectory(blas)
-	endif()
-
-
-	if (${HY3S_SOLVERS} AND NOT MACOSX_BINARIES_ppc AND NOT CYGWIN)
-		add_subdirectory(Hy3S)
-		add_subdirectory(netcdf-3.6.2)
-	endif()
-	if (${NFSIM_EXE} AND NOT MSVC)
-		add_subdirectory(NFsim_v1.11) 
-	endif( )
-	add_subdirectory(PCGPack) 
-	add_subdirectory(qhull)
-	if (MSVC)
-#		add_subdirectory(glut-3.7.6)
-		if (NOT ZLIB_FOUND)
-			add_subdirectory(zlib)
+		if (${OPTION_TARGET_PARALLEL})
+			set(PARALLEL_CHOMBO_SOLVER TRUE)
+#			add_subdirectory(ChomboParallel)
+		else()
+			set(PARALLEL_CHOMBO_SOLVER FALSE)
+#			add_subdirectory(Chombo)
 		endif()
 	endif()
-	if (NEW_SMOLDYN)
-		set(SMOL_DIR smoldyn-2.38)
-		set(SMOL_LIB smoldyn_static)
-		include (${CMAKE_SOURCE_DIR}/bridgeVCellSmoldyn/CMakeLists.txt)
-	else (NEW_SMOLDYN)
-		set(SMOL_DIR smoldyn)
-		set(SMOL_LIB smoldynlib)
-	endif (NEW_SMOLDYN)
-	add_subdirectory(${SMOL_DIR})
-	if (${STOCHASTIC_SOLVER})
+
+	if (${OPTION_TARGET_SUNDIALS_SOLVER} OR
+		${OPTION_TARGET_SMOLDYN_SOLVER} OR
+		${OPTION_TARGET_FV_SOLVER}
+		)
+    	message(STATUS "adding sundials")
+		add_subdirectory(sundials)
+	endif ()
+	
+	if (${OPTION_TARGET_SUNDIALS_SOLVER})
+		add_subdirectory(IDAWin)
+	endif ()
+	
+	if (${OPTION_TARGET_MOVINGBOUNDARY_SOLVER})
+    	message(STATUS "adding MovingBoundarySolver")
+		add_subdirectory(MovingBoundarySolver)
+    	message(STATUS "adding FronTierLib")
+		add_subdirectory(FronTierLib)
+	endif()
+	
+	if (${OPTION_TARGET_FV_SOLVER} OR ${OPTION_TARGET_SMOLDYN_SOLVER})
+		if (NOT APPLE)
+			add_subdirectory(blas)
+		endif()
+	endif()
+
+	if (${OPTION_TARGET_HY3S_SOLVERS})
+		if (MINGW)
+			add_definitions(-ffree-line-length-none)
+#			add_definitions(-std=legacy)
+		endif()
+		add_subdirectory(Hy3S)
+		# set (NETCDF_F90 "YES")
+		# find_package (NetCDF REQUIRED)
+		# add_subdirectory(netcdf-fortran-4.4.4/fortran)
+		add_subdirectory(netcdf-3.6.2)
+	endif()
+	
+	if (${OPTION_TARGET_NFSIM_SOLVER})
+		add_subdirectory(NFsim_v1.11) 
+	endif( )
+	
+	if (${OPTION_TARGET_STOCHASTIC_SOLVER})
 		add_subdirectory(Stochastic)
-	endif (${STOCHASTIC_SOLVER})
-	add_subdirectory(unzip) 
-	if (${FV_SOLVER})
-		add_subdirectory(VCell) 
-	endif (${FV_SOLVER})
-	add_subdirectory(zip)
-endif() 
-
-if (TARGET_JAVA_BINDING)
-	if (CYGWIN)
-		LocalJNI( )
-#		set(JAVA_INCLUDE_PATH ${CMAKE_SOURCE_DIR}/JNI/Linux/include)
-#		set(JAVA_AWT_INCLUDE_PATH ${JAVA_INCLUDE_PATH})
-	endif (CYGWIN)
-	if (LINUX)
-		find_package(JNI)
-	endif (LINUX)
-		
-
-	add_subdirectory(ExpressionParser)
-	add_subdirectory(IDAWin)
-	add_subdirectory(sundials)
-	add_subdirectory(fsqp)
-	add_subdirectory(tinyxml)
-	add_subdirectory(JavaBinding)
-	add_subdirectory(Optimization2)
-endif(TARGET_JAVA_BINDING)
-
-if (TARGET_HYBRID_SOLVERS)
-	#add_subdirectory(Hy3S)
-	#add_subdirectory(netcdf-3.6.2)
-	set(HDF5_EXTERNALLY_CONFIGURED 1)
-	#add_subdirectory(blas)
-	#add_subdirectory(zip)
-	#add_subdirectory(${HDF_VERSION})
-	#add_subdirectory(smoldyn)
-endif()
-
-else (NOT SMOLDYN_ONLY)
-	option(OPTION_VCELL "Compile Smoldyn for VCell" OFF)
-	option(OPTION_NSV "Compile Smoldyn with NextSubvolume functionality" OFF)
-	option(OPTION_USE_OPENGL "Build with OpenGL support" OFF)
-	option(OPTION_USE_ZLIB "Build with Zlib support" ON)
-	option(OPTION_USE_LIBTIFF "Build with LibTiff support" OFF)
-	option(OPTION_USE_ICONV "Build with Libiconv support" OFF)
-	SET(HAVE_ZLIB TRUE)
-	add_subdirectory(zlib)
-	add_subdirectory(smoldyn-2.38)
-endif (NOT SMOLDYN_ONLY)
-
-set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
+	endif ()
+	
+	if (OPTION_TARGET_SMOLDYN_SOLVER OR 
+		OPTION_TARGET_FV_SOLVER
+		)
+		option(OPTION_VCELL "Compile Smoldyn for VCell" ON)
+		option(OPTION_NSV "Compile Smoldyn with NextSubvolume functionality" OFF)
+		option(OPTION_USE_OPENGL "Build with OpenGL support" OFF)
+		option(OPTION_USE_ZLIB "Build with Zlib support" ON)
+		option(OPTION_USE_LIBTIFF "Build with LibTiff support" OFF)
+		option(OPTION_USE_ICONV "Build with Libiconv support" OFF)
+		SET(HAVE_ZLIB TRUE)
+		set(OPTION_TARGET_LIBSMOLDYN ON)
+		set(OPTION_VCELL ON)
+		add_subdirectory(bridgeVCellSmoldyn)
+		add_subdirectory(smoldyn-2.38)
+	endif ()
+	
+	if (${OPTION_TARGET_FV_SOLVER} OR
+		${OPTION_TARGET_SMOLDYN_SOLVER}
+		)
+		add_subdirectory(VCell)
+		add_subdirectory(PCGPack) 
+		add_subdirectory(qhull)
+	endif ()
+	

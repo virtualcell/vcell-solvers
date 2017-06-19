@@ -387,7 +387,8 @@ Real*8, Allocatable :: yrands(:)
 Logical, Allocatable :: RandMask(:)
 Integer, Allocatable :: TempIto2DIndex(:,:)
 
-if (any(BeforeFast.XOR.AfterFast)) THEN
+!!!! if (any(BeforeFast.XOR.AfterFast)) THEN
+if (any(BeforeFast.NEQV.AfterFast)) THEN
 
 
 !DEC$ If (Defined(Milstein)) !Using Milstein method (1st order error)
@@ -590,6 +591,8 @@ End Subroutine
 Subroutine SDE_Milstein_2DTerms(Fast, FastSpecies, Fast_Index, a, der_a, deltat, dW)
 IMPLICIT NONE
 
+Integer :: ii
+
 Integer, intent(in) :: Fast_Index(:)
 Real*8, intent(in) :: a(:), der_a(:,:), dW(:), deltat
 Logical, intent(in) :: Fast(:), FastSpecies(:)
@@ -649,9 +652,9 @@ Call Normal_Rand(rands, RandMask)
 
 miu = rands(1 : Mfast) 
 
-forall (i=1:p_2DIto) 
-   niu(i,:) = rands(1 + i*Mfast : (i + 1)*Mfast) 
-   zeta(i,:) = rands(1 + (i + p_2DIto)*Mfast : (i + p_2DIto + 1)*Mfast)
+forall (ii=1:p_2DIto) 
+   niu(ii,:) = rands(1 + ii*Mfast : (ii + 1)*Mfast) 
+   zeta(ii,:) = rands(1 + (ii + p_2DIto)*Mfast : (ii + p_2DIto + 1)*Mfast)
 End forall
 
 Deallocate(rands)
@@ -731,8 +734,8 @@ Ito2DTerms = Ito2DCoeff * Ito2DIntArray
 
 Ito2DSumTerms = real(0.00,8)
 
-forall (i=1:N, FastSpecies(i))
-     Ito2DSumTerms(i) = sum(Ito2DTerms, mask = Ito2DIndex(:,5) == i.AND.Ito2DIndexMask)
+forall (ii=1:N, FastSpecies(ii))
+     Ito2DSumTerms(ii) = sum(Ito2DTerms, mask = Ito2DIndex(:,5) == ii.AND.Ito2DIndexMask)
 end forall
 
 Deallocate(Ito2DCoeff, Ito2DIntArray, Ito2DInt, Ito2DTerms)

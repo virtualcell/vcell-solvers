@@ -15,7 +15,8 @@ typedef simstruct * simptr;
 /**
 * manage hybrid / standlone smolydn status
 */
-struct vcellhybrid {
+class vcellhybrid {
+	public:
 		static simptr smoldynInit(SimTool* simTool, string& fileName);
 		static void smoldynOneStep(simptr sim);
 		static void smoldynEnd(simptr sim);

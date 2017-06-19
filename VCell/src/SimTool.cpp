@@ -35,6 +35,8 @@ using std::endl;
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <VCELL/ZipUtils.h>
+
 #include <algorithm>
 using std::min;
 using std::max;
@@ -54,9 +56,8 @@ using std::max;
 #define TID_FILE_EXT ".tid"
 #define HDF5_FILE_EXT ".hdf5"
 
-int zip32(int filecnt, char* zipfile, ...);
-int unzip32(char* zipfile, char* file, char* exdir);
-#ifdef VCELL_HYBRID	
+/*
+#ifdef VCELL_HYBRID
 	void smoldynOneStep(simptr sim);
 	void vcellhybrid::smoldynOneStep(simptr sim) {
 		::smoldynOneStep(sim);
@@ -69,7 +70,9 @@ int unzip32(char* zipfile, char* file, char* exdir);
 	void vcellhybrid::smoldynEnd(simptr sim) {
 		::smoldynEnd(sim);
 	}
+}
 #endif
+*/
 
 SimTool* SimTool::instance = 0;
 
@@ -267,15 +270,17 @@ static bool zipUnzipWithRetry(bool bZip, char* zipFileName, char* simFileName, c
 	for (int retry = 0; retry < numRetries; retry ++) {
 		try {
 			if (bZip) {
-				retcode = zip32(1, zipFileName, simFileName);						
+			//	retcode = zip32(1, zipFileName, simFileName);
+				addFilesToZip(zipFileName, simFileName);
 			} else {
-				retcode = unzip32(zipFileName, simFileName, NULL);
+			//	retcode = unzip32(zipFileName, simFileName, NULL);
+				extractFileFromZip(zipFileName, simFileName);
 			}
 			break;
 		} catch (const char* ziperr) {
 			sprintf(errmsg, "%s", ziperr);
 		} catch (...) {
-			sprintf(errmsg, "SimTool::updateLog(), adding .sim to .zip failed.");						
+			sprintf(errmsg, "SimTool::updateLog(), adding .sim to .zip failed.");
 		}
 		bSuccess = false;
 		if (retry < numRetries - 1) {
@@ -392,12 +397,12 @@ void SimTool::loadFinal()
 					char errmsg[128];
 					zipUnzipWithRetry(false, zipFileAbsoluteName, dataFileName, errmsg);
 				}
-			}			
-			
+			}
+
 			if (!bStartOver) {
 				// otherwise check if sim file exists
 				if (stat(dataFileName, &buf)) {
-					cout << "SimTool::loadFinal(), unable to open sim file <" << dataFileName << ">" << endl;	
+					cout << "SimTool::loadFinal(), unable to open sim file <" << dataFileName << ">" << endl;
 					bStartOver = true;
 				} else {
 					try {
@@ -428,7 +433,7 @@ void SimTool::loadFinal()
 										}
 									}
 								}
-							} 
+							}
 						}
 					} catch (const char* msg) {
 						cout << "SimTool::loadFinal() : dataSet.read(" << dataFileName << " failed : " << msg << endl;
@@ -439,7 +444,7 @@ void SimTool::loadFinal()
 					}
 				}
 			} // if (!bStartOver)
-		}  // if (!bStartOver) 
+		}  // if (!bStartOver)
 	} // if (logFP != NULL)
 
 	// close tid file
@@ -472,7 +477,7 @@ FILE* SimTool::lockForReadWrite() {
 	if (stat(tidFileName, &buf) == 0) { // if exists
 		bExist = true;
 	}
-	
+
 	FILE* fp = openFileWithRetry(tidFileName, bExist ? "r+" : "w+");
 
 	if (fp == 0){
@@ -543,7 +548,7 @@ void SimTool::updateLog(double progress, double time, int iteration)
 		simulation->writeData(simFileName,bSimFileCompress);
 
 		sprintf(logFileName,"%s%s",baseFileName, LOG_FILE_EXT);
-	
+
 		logFP = openFileWithRetry(logFileName, "a");
 
 		if (logFP == 0) {
@@ -556,7 +561,8 @@ void SimTool::updateLog(double progress, double time, int iteration)
 				sprintf(zipFileName,"%s%.2d%s",baseFileName, zipFileCount, ZIP_FILE_EXT);
 				int retcode = 0;
 				if (stat(particleFileName, &buf) == 0) {	// has particle
-					retcode = zip32(2, zipFileName, simFileName, particleFileName);
+				//	retcode = zip32(2, zipFileName, simFileName, particleFileName);
+					addFilesToZip(zipFileName, simFileName, particleFileName);
 					remove(particleFileName);
 				} else {
 					bSuccess = zipUnzipWithRetry(true, zipFileName, simFileName, errmsg);
@@ -606,7 +612,7 @@ void SimTool::updateLog(double progress, double time, int iteration)
 		}
 
 	}
-	   
+
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_DATA, progress, time));
 }
 
@@ -627,7 +633,7 @@ void SimTool::clearLog()
 	simStartTime = 0;
 	simFileCount = 0;
 	zipFileCount = 0;
-	
+
 	if (SimTool::getInstance()->isSundialsPdeSolver()) {
 		simulation->setSimStartTime(0);
 	}
@@ -716,7 +722,7 @@ void SimTool::start() {
 		return;
 	}
 	simulation->resolveReferences();
-	if (numSerialParameterScans == 0 || SimulationMessaging::getInstVar()->getTaskID() >= 0) { // only do it when not in messaging mode	
+	if (numSerialParameterScans == 0 || SimulationMessaging::getInstVar()->getTaskID() >= 0) { // only do it when not in messaging mode
 		start1();
 	} else {
 		SimulationExpression* sim = (SimulationExpression*)simulation;
@@ -786,7 +792,7 @@ void SimTool::start1() {
 	double lastSentPercentile = percentile;
 
 	if (simulation->getCurrIteration()==0) {
-		// simulation starts from scratch, needs to 
+		// simulation starts from scratch, needs to
 		// write .mesh and .meshmetrics file
 		if (bStoreEnable){
 			FILE *fp = NULL;
@@ -853,7 +859,7 @@ void SimTool::start1() {
 		if (simulation->getCurrIteration() % keepEvery == 0 || fabs(simEndTime - simulation->getTime_sec()) < epsilon) {
 			updateLog(percentile,simulation->getTime_sec(), simulation->getCurrIteration());
         }
-		
+
 		clock_t currentTime = clock();
 		double duration = (double)(currentTime - oldTime) / CLOCKS_PER_SEC;
 		if (duration >= 2){
@@ -888,10 +894,10 @@ void SimTool::start1() {
 	}
 	if (checkStopRequested()) {
 		return;
-	} 
-	
+	}
+
 	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, 1.0, simulation->getTime_sec()));
-	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));	
+	SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, percentile, simulation->getTime_sec()));
 
 	showSummary(stdout);
 }
@@ -921,7 +927,7 @@ void SimTool::copyParticleCountsToConcentration(){ //concentration in terms of p
 					var->getCurr()[j]=0;
 				}
 			}
-		} 
+		}
 	}
 }
 

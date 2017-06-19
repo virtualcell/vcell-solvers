@@ -1,4 +1,0 @@
-
-PLATFORM = LINUX
-
-include Makefile.base

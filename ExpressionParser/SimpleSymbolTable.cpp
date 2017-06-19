@@ -15,22 +15,8 @@ SimpleSymbolTable::~SimpleSymbolTable(void)
 	steArray.clear();
 }
 
-SymbolTableEntry* SimpleSymbolTable::getEntry(string identifier)
-{
-	SymbolTableEntry* ste = getLocalEntry(identifier);
-	/*
-	if (ste != NULL){
-		return ste;
-	}
-	if (getNameScope() != NULL){
-		return getNameScope().getExternalEntry(identifier);
-	}
-	*/
-	return ste;
-}
 
-
-SymbolTableEntry* SimpleSymbolTable::getLocalEntry(string identifier)
+SymbolTableEntry* SimpleSymbolTable::getLocalEntry(const string & identifier) const
 {
 	for (unsigned int i = 0; i < steArray.size(); i++){
 		if (steArray[i]->getName() == identifier){

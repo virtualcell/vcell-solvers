@@ -27,8 +27,10 @@ public:
 	/**
 	* same as #getLocalEntry
 	*/
-	SymbolTableEntry* getEntry(string identifier);
-	SymbolTableEntry* getLocalEntry(string identifier);
+	SymbolTableEntry* getEntry(const std::string & identifier) const {
+		return getLocalEntry(identifier);
+	}
+	SymbolTableEntry* getLocalEntry(const std::string & identifier) const; 
 	/**
 	* return number of symbols in table
 	*/

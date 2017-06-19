@@ -14,9 +14,12 @@ set (F90_SRC_FILES
 )
 set_source_files_properties( ${F90_SRC_FILES} PROPERTIES LANGUAGE Fortran)
 include_directories(${CMAKE_BINARY_DIR}/netcdf-3.6.2/f90 ${JMS_INCS})
-set(DEP_LIBS netcdf_f90 netcdf_for netcdf)
+set(DEP_LIBS ${NETCDF_F90_LIBRARIES})
+#  target_link_libraries (uses_everthing ${NETCDF_LIBRARIES})
+#  target_link_libraries (only_uses_f90 ${NETCDF_F90_LIBRARIES})
 
-if (TARGET_SOLVERS_WITH_MESSAGING)
+
+if (OPTION_TARGET_MESSAGING)
 	set (C_SRC_FILES
 		src/msgwrapper.c 
 		../VCell/src/SimulationMessaging.cpp
@@ -38,15 +41,11 @@ if (TARGET_SOLVERS_WITH_MESSAGING)
 	endif()	
 endif()
 
-set (CMAKE_Fortran_COMPILER ${IFORT_EXECUTABLE})
+#set (CMAKE_Fortran_COMPILER ${IFORT_EXECUTABLE})
 if (APPLE OR LINUX)
 	#make sure preprocessor called
 	set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fpp")
 endif (APPLE OR LINUX)
-
-if (MSVC)
-	set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /iface:mixed_str_len_arg /check:bounds")
-endif()
 
 set(EXE_FILE_EM Hybrid_EM)
 if (ARCH_64bit) 

@@ -6,14 +6,14 @@
 
 ########## Basic setup ##########
 
-project(smoldyn)
+project(smoldyn C CXX)
 cmake_minimum_required(VERSION 2.6)
 set(SMOLDYN_VERSION "2.38")
 
 
 ######### Targets to build ###########
 
-option(OPTION_TARGET_SMOLDYN "Create stand-alone Smoldyn program" ON)
+option(OPTION_TARGET_SMOLDYN_SOLVER "Create stand-alone Smoldyn program" ON)
 option(OPTION_TARGET_LIBSMOLDYN "Create LibSmoldyn library" OFF)
 
 
@@ -103,22 +103,16 @@ set(SRC_FILES
 set(MAIN_FILES source/Smoldyn/smoldyn.c)
 set(SMOLDYN_EXE smoldyn)
 
-if(OPTION_VCELL)
-	include (${CMAKE_SOURCE_DIR}/bridgeVCellSmoldyn/CMakeLists.txt)
-	set(MAIN_FILES ${VCELL_SMOL_MAIN}) 
-	list(APPEND SRC_FILES
-		source/Smoldyn/smoldynhybrid.c
-		${VCELL_SMOL_SOURCES}
-		)
-	 list(APPEND HEADER_FILES ${VCELL_HEADER_FILES})
-	 list(APPEND DEP_LIBS ${VCELL_SMOL_DEP_LIBS})
-endif(OPTION_VCELL)
-		
-
 if(OPTION_TARGET_LIBSMOLDYN)
 	list(APPEND HEADER_FILES source/Smoldyn/libsmoldyn.h)
 	list(APPEND SRC_FILES source/Smoldyn/libsmoldyn.c)
 endif(OPTION_TARGET_LIBSMOLDYN)
+
+if(OPTION_VCELL)
+	list(APPEND SRC_FILES
+		source/Smoldyn/smoldynhybrid.c
+		)
+endif(OPTION_VCELL)
 
 set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CXX )
 set_source_files_properties(${MAIN_FILES} PROPERTIES LANGUAGE CXX )
@@ -158,7 +152,7 @@ if (OPTION_VCELL)
 		if (MSVC)
 			add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 			include_directories(${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
-			link_directories(${CMAKE_CURRENT_SOURCE_DIR}/source/vcell ${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
+#			link_directories(${CMAKE_CURRENT_SOURCE_DIR}/source/vcell ${CMAKE_CURRENT_SOURCE_DIR}/windows/glut-3.7.6)
 			if (ARCH_64bit)
 				list(APPEND DEP_LIBS glut64)
 			else()
@@ -447,36 +441,49 @@ endif(OPTION_NSV)
 
 ####### Targets ##########
 
-if(OPTION_TARGET_SMOLDYN)
-	add_executable(${SMOLDYN_EXE} ${SRC_FILES} ${MAIN_FILES} ${HEADER_FILES})
-	target_link_libraries(${SMOLDYN_EXE} ${DEP_LIBS})
-endif()
+#if(OPTION_TARGET_SMOLDYN_SOLVER)
+#	add_executable(${SMOLDYN_EXE} ${SRC_FILES} ${MAIN_FILES} ${HEADER_FILES})
+#	target_link_libraries(${SMOLDYN_EXE} ${DEP_LIBS})
+#endif()
 
-if(OPTION_TARGET_LIBSMOLDYN)
-	if (NOT OPTION_VCELL)
-		add_library(smoldyn_shared SHARED ${SRC_FILES} ${HEADER_FILES})
-		target_link_libraries(smoldyn_shared ${DEP_LIBS})
-	endif (NOT OPTION_VCELL)
+#if(OPTION_TARGET_LIBSMOLDYN)
+#	if (NOT OPTION_VCELL)
+#		add_library(smoldyn_shared SHARED ${SRC_FILES} ${HEADER_FILES})
+#		target_link_libraries(smoldyn_shared ${DEP_LIBS} vcellmessaging)
+#		target_include_directories(smoldyn_shared PUBLIC 
+#			$<BUILD_INTERFACE:/${CMAKE_CURRENT_SOURCE_DIR}/source/lib>
+#			$<BUILD_INTERFACE:/${CMAKE_CURRENT_SOURCE_DIR}/source/Smoldyn>
+#			$<BUILD_INTERFACE:/${CMAKE_CURRENT_SOURCE_DIR}/source/NextSubvolume>
+#			$<BUILD_INTERFACE:/${PROJECT_BINARY_DIR}/>
+#			$<INSTALL_INTERFACE:/.>
+#		)
+#	endif (NOT OPTION_VCELL)
 	add_library(smoldyn_static STATIC ${SRC_FILES} ${HEADER_FILES})
-	target_link_libraries(smoldyn_static ${DEP_LIBS})
+	target_link_libraries(smoldyn_static vcellsmoldynbridge vcellmessaging)
+	target_include_directories(smoldyn_static PUBLIC 
+		${CMAKE_CURRENT_SOURCE_DIR}/source/lib
+		${CMAKE_CURRENT_SOURCE_DIR}/source/Smoldyn
+		${CMAKE_CURRENT_SOURCE_DIR}/source/NextSubvolume
+		${CMAKE_CURRENT_BINARY_DIR}
+	)
 	if(APPLE)
 		#SET_TARGET_PROPERTIES(smoldyn_shared PROPERTIES LINK_FLAGS "-framework Glut -framework OpenGL")
 	endif(APPLE)
-endif(OPTION_TARGET_LIBSMOLDYN)
+#endif(OPTION_TARGET_LIBSMOLDYN)
 
 
 ########## install ###########
 
 if(NOT OPTION_MINGW) 
 
-	if(OPTION_TARGET_SMOLDYN)
-		if(NOT OPTION_VCELL)
-			install(TARGETS ${SMOLDYN_EXE} RUNTIME DESTINATION bin)
-		else(NOT OPTION_VCELL)
-			install(TARGETS ${SMOLDYN_EXE} RUNTIME DESTINATION
-				${OPTION_EXE_DIRECTORY})
-		endif(NOT OPTION_VCELL)
-	endif()
+#	if(OPTION_TARGET_SMOLDYN_SOLVER)
+#		if(NOT OPTION_VCELL)
+#			install(TARGETS ${SMOLDYN_EXE} RUNTIME DESTINATION bin)
+#		else(NOT OPTION_VCELL)
+#			install(TARGETS ${SMOLDYN_EXE} RUNTIME DESTINATION
+#				${OPTION_EXE_DIRECTORY})
+#		endif(NOT OPTION_VCELL)
+#	endif()
 
 	if(OPTION_TARGET_LIBSMOLDYN)
 		if(NOT OPTION_VCELL)

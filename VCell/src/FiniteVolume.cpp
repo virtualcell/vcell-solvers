@@ -13,10 +13,6 @@ using namespace std;
 #include <petsc.h>
 #endif
 
-#ifdef VCELL_HYBRID
-	bool vcellhybrid::bHybrid;
-#endif
-
 void vcellExit(int returnCode, string& errorMsg) {
 	if (SimulationMessaging::getInstVar() == 0) {
 		if (returnCode != 0) {

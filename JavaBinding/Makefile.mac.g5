@@ -1,6 +1,0 @@
-
-PLATFORM = MACOSX
-CPU = G5
-NATIVELIB=1
-
-include Makefile.base

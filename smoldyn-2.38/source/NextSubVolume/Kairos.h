@@ -32,7 +32,7 @@
 #include "ReactionEquation.h"
 #include "Vector.h"
 #if defined(HAVE_VTK)
-#include "Io.h"
+#include "nsv_Io.h"
 #endif
 
 
