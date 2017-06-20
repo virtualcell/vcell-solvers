@@ -278,7 +278,7 @@ endif()
 	
 	if (${OPTION_TARGET_MOVINGBOUNDARY_SOLVER})
     	message(STATUS "adding MovingBoundarySolver")
-		add_subdirectory(MovingBoundarySolver)
+		add_subdirectory(MBSolver)
     	message(STATUS "adding FronTierLib")
 		add_subdirectory(FronTierLib)
 	endif()
