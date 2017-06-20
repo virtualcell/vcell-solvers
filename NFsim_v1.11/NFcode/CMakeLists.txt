@@ -79,42 +79,13 @@ if (MSVC)
 	add_definitions(-DHAVE_UNISTD_H=0)
 endif()
 
-include_directories()
-
-link_directories()
-
-link_libraries()
-#	set(DEP_LIBS vcellmessaging pcgwrapper ExpressionParser hdf5_cpp hdf5 IDAWin PCGPack qhull sundials_cvode sundials_ida sundials_nvecserial sundials zip unzip)
 set(exe_target NFsim)
 if (ARCH_64bit) 
 	set(exe_target ${exe_target}_x64)
 endif (ARCH_64bit) 
 
-#if (TARGET_SOLVERS_WITH_MESSAGING)
-#	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../VCell/include)
-#	list(APPEND SRC_FILES ../VCell/src/SimulationMessaging.cpp)
-#endif()
-
 add_executable(${exe_target} ${SRC_FILES})
 target_link_libraries(${exe_target} vcommons vcellmessaging)
-
-#vcell additions
-if (UNIX OR MINGW)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -fpermissive")
-  set(CXX_FLAGS "${CXX_FLAGS} -std=c++0x -fpermissive")
-endif (UNIX OR MINGW) 
-
-#aux_source_directory(${PROJECT_SOURCE_DIR}/../VCell/src VSRC)
-#add_library(vlib STATIC ${VSRC})
-#set_target_properties(vlib PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-
-#include_directories(${PROJECT_SOURCE_DIR}/../../VCellMessaging/include)
-#include_directories(${PROJECT_SOURCE_DIR}/../../vcommons/include)
-#add_definitions(${JMS_DEFS})
-#add_dependencies(${exe_target} vcommons vcellmessaging)
-#target_link_libraries(${exe_target} vlib vcommons vcellmessaging vcommons) #order matters
-target_link_libraries(${exe_target} vcommons vcellmessaging vcommons) #order matters
-#vcell additions
 
 install(TARGETS ${exe_target} RUNTIME DESTINATION ${OPTION_EXE_DIRECTORY})
 

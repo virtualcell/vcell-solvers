@@ -5,7 +5,9 @@ add_subdirectory(src/ida)
 add_subdirectory(src/nvec_ser)
 add_subdirectory(src/sundials)
 
-add_library(sundials)
+file(WRITE ${CMAKE_BINARY_DIR}/dummy.c "")
+
+add_library(sundials ${CMAKE_BINARY_DIR}/dummy.c)
 target_link_libraries(sundials sundials_cvode sundials_ida sundials_nvecserial sundials_lib)
 target_include_directories(sundials INTERFACE 
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

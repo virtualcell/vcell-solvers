@@ -29,7 +29,7 @@ endif(MINGW)
 message(STATUS "Operating system ${CMAKE_SYSTEM_NAME}")
 message(STATUS "c++ flags ${CMAKE_CXX_FLAGS}")
 
-find_package(Boost)
+find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
 OPTION(VARIABLE_SPECIES_STORAGE "DYNAMIC SPECIES STORAGE" OFF)
