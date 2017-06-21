@@ -43,7 +43,7 @@ CoordVect::CoordVect(const std::array<double, DIM>& p)
 
 CoordVect::CoordVect(const moving_boundary::MeshElementNode& me)
 {
-	double worldValues[DIM] = {me(spatial::cX), me(spatial::cY)};
+	double worldValues[DIM] = {(double)me(spatial::cX), (double)me(spatial::cY)};
 	moving_boundary::World<moving_boundary::CoordinateType, 2>::get().toProblemDomain(worldValues, vect);
 }
 

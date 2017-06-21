@@ -109,7 +109,7 @@ void Hdf5OutputWriter::initMeshGroup()
 	{
 	const int* N = theProblem.mesh().Nx().data();
 	hsize_t hdf5Rank = 2;  // Nx, Ny
-	hsize_t hdf5Dims[2] = {1, geoDimension};
+	hsize_t hdf5Dims[2] = {1, static_cast<hsize_t>(geoDimension)};
 	DataSpace dataspace = DataSpace(hdf5Rank, hdf5Dims);
 	DataSet dataSet = meshGroup.createDataSet("size", PredType::NATIVE_INT, dataspace);
 	dataSet.write(N, PredType::NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT);
@@ -119,7 +119,7 @@ void Hdf5OutputWriter::initMeshGroup()
 	{
 	const double* origin = theProblem.mesh().geoOrigin().data();
 	hsize_t hdf5Rank = 2;  // lo, hi
-	hsize_t hdf5Dims[2] = {1, geoDimension};
+	hsize_t hdf5Dims[2] = {1, static_cast<hsize_t>(geoDimension)};
 	DataSpace dataspace = DataSpace(hdf5Rank, hdf5Dims);
 	DataSet dataSet = meshGroup.createDataSet("origin", PredType::NATIVE_DOUBLE, dataspace);
 	dataSet.write(origin, PredType::NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT);
@@ -130,7 +130,7 @@ void Hdf5OutputWriter::initMeshGroup()
 	const double* extentX = theProblem.setup().extentX.data();
 	const double* extentY = theProblem.setup().extentY.data();
 	hsize_t hdf5Rank = 2; // extentX, extentY
-	hsize_t hdf5Dims[2] = {1, geoDimension};
+	hsize_t hdf5Dims[2] = {1, static_cast<hsize_t>(geoDimension)};
 	double data[DIM] = { extentX[1] - extentX[0], extentY[1] - extentY[0]	};
 	DataSpace dataspace = DataSpace(hdf5Rank, hdf5Dims);
 	DataSet dataSet = meshGroup.createDataSet("extent", PredType::NATIVE_DOUBLE, dataspace);
@@ -169,7 +169,7 @@ void Hdf5OutputWriter::time(double t, unsigned int numIter, bool last, const mov
 void Hdf5OutputWriter::writeSolution()
 {
 	char timeGroupName[128];
-	sprintf(timeGroupName, "time%06d", timeList.size());
+	sprintf(timeGroupName, "time%06d", (int)timeList.size());
 	Group timeGroup = solutionGroup.createGroup(timeGroupName);
 	// time attribute
 	DataSpace attributeDataSpace(H5S_SCALAR);

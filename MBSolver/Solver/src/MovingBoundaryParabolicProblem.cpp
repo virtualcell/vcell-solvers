@@ -667,7 +667,7 @@ namespace moving_boundary {
 				return;
 			}
 			VCELL_LOG(trace,e.indexInfo( ) <<  " computeAdvection");
-			double worldValues[2] = {e(cX), e(cY)};
+			double worldValues[2] = {static_cast<double>(e(cX)), static_cast<double>(e(cY))};
 			double syms[2];
 			world.toProblemDomain(worldValues,syms);
 			stateValues[physiology->symbolIndexOfT()] = currentTime;

@@ -69,15 +69,23 @@ if (${OPTION_TARGET_DOCS})
 #    endif()
 endif()
 
-      
-if (${OPTION_TARGET_PARALLEL})
-	find_package(MPI)
-	set(HDF5_ENABLE_PARALLEL ON CACHE BOOL "parallel hdf5 library")
+ 
+if (${OPTION_TARGET_CHOMBO2D_SOLVER} OR ${OPTION_TARGET_CHOMBO3D_SOLVER})     
+	if (${OPTION_TARGET_PARALLEL})
+		find_package(MPI)
+		set(HDF5_ENABLE_PARALLEL ON CACHE BOOL "parallel hdf5 library")
+		set(HDF5_BUILD_CPP_LIB OFF CACHE BOOL "" )
+	else (${OPTION_TARGET_PARALLEL})
+		message("serials solvers")
+		set(HDF5_BUILD_CPP_LIB ON CACHE BOOL "" )
+	endif (${OPTION_TARGET_PARALLEL})
+else()
 	set(HDF5_BUILD_CPP_LIB OFF CACHE BOOL "" )
-else (${OPTION_TARGET_PARALLEL})
-	message("serials solvers")
-	set(HDF5_BUILD_CPP_LIB ON CACHE BOOL "" )
-endif (${OPTION_TARGET_PARALLEL})
+endif()
+
+#if (APPLE)
+#endif()
+
 message("hdf5 cpp ${HDF5_BUILD_CPP_LIB}")
 
 set(LINUX FALSE)
@@ -206,12 +214,17 @@ endif()
 		${OPTION_TARGET_CHOMBO2D_SOLVER} OR
 		${OPTION_TARGET_CHOMBO3D_SOLVER}
 		)
-		#CMakeList.txt that comes with hdf5 switches library name if compiled with debug
-		find_package(HDF5 REQUIRED)
-		set(HDF_VERSION ${HDF5_VERSION})
-		######    ${HDF5_HL_LIBRARIES} ${HDF5_CXX_LIBRARIES}
-	   	set(_hdf5_libs hdf5 hdf5_cpp)
-    	set(HDF_LIB hdf5 hdf5_cpp)
+		
+		if (${HDF5_BUILD_CPP_LIB})
+			add_subdirectory(hdf5-1.8.11)
+		else()
+			#CMakeList.txt that comes with hdf5 switches library name if compiled with debug
+			find_package(HDF5 1.8.11 REQUIRED)
+			set(HDF_VERSION ${HDF5_VERSION})
+			######    ${HDF5_HL_LIBRARIES} ${HDF5_CXX_LIBRARIES}
+		   	set(_hdf5_libs hdf5 hdf5_cpp)
+	    	set(HDF_LIB hdf5 hdf5_cpp)
+	    endif()
 	endif()
 
 	add_subdirectory(VCellMessaging)

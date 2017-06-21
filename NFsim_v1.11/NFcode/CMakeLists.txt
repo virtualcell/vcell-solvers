@@ -79,6 +79,11 @@ if (MSVC)
 	add_definitions(-DHAVE_UNISTD_H=0)
 endif()
 
+if (UNIX)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -fpermissive")
+  set(CXX_FLAGS "${CXX_FLAGS} -std=c++0x -fpermissive")
+endif (UNIX) 
+
 set(exe_target NFsim)
 if (ARCH_64bit) 
 	set(exe_target ${exe_target}_x64)
