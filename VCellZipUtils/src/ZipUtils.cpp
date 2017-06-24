@@ -78,8 +78,11 @@ read_from_file(const char *archive, int flags, zip_error_t *error)
     return zaa;
 }
 
-
-void addFilesToZip(const char *ziparchive, const char *filename1, const char *filename2)
+/**
+  adds one or two files as uncompressed entries into a zip archive (creating the archive if necessary).
+  entry names are the stripped filenames without full path.
+*/
+void addFilesToZip(const char *ziparchive, const char *filepath1, const char *filepath2)
 {
     zip_error_t error;
     zip_error_init(&error);
@@ -93,14 +96,23 @@ void addFilesToZip(const char *ziparchive, const char *filename1, const char *fi
 	char indexFirstAddedEntry [128];
 	sprintf(indexFirstAddedEntry, "%d", existingEntries);
 
+	//
+	// strip filename from filepath1
+	//
+	std::string entryName1 = filepath1;
+	std::size_t dirPos1 = entryName1.find_last_of("/\\");
+	if (dirPos1 > 0){
+		entryName1 = entryName1.substr(dirPos1+1, entryName1.length());
+	}
+	
 	const char* argv[50];	
 	int argc = 0;
 	argv[argc++] = "ziptool_main";
 	argv[argc++] = "-cn";
 	argv[argc++] = ziparchive;
 	argv[argc++] = "add_file";
-	argv[argc++] = filename1;
-	argv[argc++] = filename1;
+	argv[argc++] = entryName1.c_str();
+	argv[argc++] = filepath1;
 	argv[argc++] = "0";
 	argv[argc++] = "0";
 	argv[argc++] = "set_file_compression";
@@ -108,12 +120,21 @@ void addFilesToZip(const char *ziparchive, const char *filename1, const char *fi
 	argv[argc++] = "store";
 	argv[argc++] = "none";
 	
-	if (filename2 != NULL){
+	if (filepath2 != NULL){
+		//
+		// strip filename from filepath2
+		//
+		std::string entryName2 = filepath2;
+		std::size_t dirPos2 = entryName2.find_last_of("/\\");
+		if (dirPos2 > 0){
+			entryName2 = entryName1.substr(dirPos2+1, entryName2.length());
+		}
+		
 		char indexSecondAddedEntry [128];
 		sprintf(indexSecondAddedEntry, "%d", existingEntries + 1);
 		argv[argc++] = "add_file";
-		argv[argc++] = filename2;
-		argv[argc++] = filename2;
+		argv[argc++] = entryName2.c_str();
+		argv[argc++] = filepath2;
 		argv[argc++] = "0";
 		argv[argc++] = "0";
 		argv[argc++] = "set_file_compression";
