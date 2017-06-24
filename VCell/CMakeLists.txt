@@ -1,8 +1,4 @@
 project(VCell CXX Fortran)
-if (CYGWIN)
-	#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-	add_definitions(-DWIN64)
-endif (CYGWIN)
 
 if (NOT NEW_SMOLDYN)
 	add_definitions(-DVCELL_HYBRID)
@@ -217,8 +213,10 @@ target_link_libraries(pcgwrapper PCGPack blas)
 
 add_library(vcell STATIC ${SRC_FILES} ${HEADER_FILES})
 target_link_libraries(vcell pcgwrapper sundials ExpressionParser smoldyn_static vcellsmoldynbridge hdf5_cpp hdf5 qhull vcellmessaging vcellziputils ${ZLIB_LIBRARIES})
+
 target_include_directories(vcell PUBLIC 
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  ${HDF5_INCLUDE_DIRS}
   $<INSTALL_INTERFACE:include>  # <prefix>/include
 )
 

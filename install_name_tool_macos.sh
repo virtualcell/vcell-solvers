@@ -1,24 +1,30 @@
 #!/bin/bash
 
+shopt -s -o nounset
+
 executables=( 
   "FiniteVolume_x64" 
-  "Hybrid_EM_x64" 
-  "Hybrid_MIL_Adaptive_x64" 
-  "Hybrid_MIL_x64" 
-  "MovingBoundary" 
+  "MovingBoundary_x64" 
   "NFsim_x64" 
   "smoldyn_x64" 
   "SundialsSolverStandalone_x64" 
-  "VCellChombo2D_x64" 
-  "VCellChombo3D_x64" 
+  "testzip" 
   "VCellStoch_x64"
+  "ziptool"
 )
 
 libraries=(
-  "libstdc++.6.dylib"
-  "libgcc_s.1.dylib"
-  "libgfortran.3.dylib"
-  "libquadmath.0.dylib"
+  "/usr/local/lib/libgfortran.4.dylib"
+  "/usr/local/lib/libquadmath.0.dylib"
+  "/usr/local/Cellar/hdf5@1.8/1.8.19/lib/libhdf5_cpp.14.dylib"
+  "/usr/local/Cellar/hdf5@1.8/1.8.19/lib/libhdf5.10.dylib"
+  "/usr/local/Cellar/hdf5@1.8/1.8.19/lib/libhdf5_hl_cpp.11.dylib"
+  "/usr/local/Cellar/hdf5@1.8/1.8.19/lib/libhdf5_hl.10.dylib"
+  "/usr/local/opt/szip/lib/libsz.2.dylib"
+  "/usr/local/lib/libgcc_s.1.dylib"
+  "/vagrant_numerics/build-macos-clang/bin/libzip.3.0.dylib"
+  "/vagrant_numerics/build-macos-clang/bin/libzip.3.dylib"
+  "/vagrant_numerics/build-macos-clang/bin/libzip.dylib"
 )
 
 #
@@ -26,7 +32,11 @@ libraries=(
 #
 for exe in "${executables[@]}"; do
 	for lib in "${libraries[@]}"; do
-  		install_name_tool -change /usr/local/lib/$lib @executable_path/$lib  $exe
+		libfilename=${lib##*/}
+#  		echo install_name_tool -change $lib @executable_path/$libfilename  $exe
+  		     install_name_tool -change $lib @executable_path/$libfilename  $exe
+#  		echo install_name_tool -add_rpath "@loader_path"  $exe
+  		     install_name_tool -add_rpath "@loader_path"  $exe
   	done
 done
 
@@ -35,8 +45,12 @@ done
 # if there is not dependency, then ignore the errors.
 #
 for lib in "${libraries[@]}"; do
-	for  dependentlib "${libraries[@]}"; do
-  		install_name_tool -change /usr/local/lib/$dependentlib @loader_path/$dependentlib  $lib
+	libfilename=${lib##*/}
+# 	echo install_name_tool -id "@loader_path/$libfilename"  $libfilename
+  	     install_name_tool -id "@loader_path/$libfilename"  $libfilename
+	for dependentlib in "${libraries[@]}"; do
+		dependentlibfilename=${dependentlib##*/}
+#  		echo install_name_tool -change $dependentlib @loader_path/$dependentlibfilename  $libfilename
+  		     install_name_tool -change $dependentlib @loader_path/$dependentlibfilename  $libfilename
   	done
 done
-

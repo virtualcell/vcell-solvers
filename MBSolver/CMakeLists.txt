@@ -19,9 +19,6 @@ if (UNIX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   set(CXX_FLAGS "${CXX_FLAGS} -std=c++11")
   add_definitions("-fPIC")
-  if (APPLE)
-  	add_definitions("-stdlib=libc++")
-  endif()
 endif (UNIX) 
 
 if(MINGW)
@@ -54,9 +51,9 @@ if (ARCH_64bit)
 endif()
 
 set_source_files_properties( ${MOVINGBOUNDARY_SRC_FILES} PROPERTIES LANGUAGE CXX)
-
+message(STATUS "HDF5 VERSION IS ${HDF5_VERSION}, LIBS = ${HDF5_LIBRARIES}, HL_LIBS = ${HDF5_HL_LIBRARIES}")
 add_library(MovingBoundaryLib ${MOVINGBOUNDARY_SRC_FILES} ${MOVINGBOUNDARY_HEADER_FILES} ${MOVINGBOUNDARY_BRIDGE_HEADER_FILES})
-target_link_libraries(MovingBoundaryLib frontier ExpressionParser vcommons hdf5 hdf5_cpp vcellmessaging)
+target_link_libraries(MovingBoundaryLib frontier ExpressionParser vcommons ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES} vcellmessaging)
 target_include_directories(MovingBoundaryLib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Solver/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Solver/include/MBridge>

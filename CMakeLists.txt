@@ -1,3 +1,39 @@
+#############################################
+#
+#  Build 64bit binaries on Mac and target Macos 10.7 or later
+#
+##############################################
+if (APPLE)
+	set(CMAKE_OSX_ARCHITECTURES "x86_64")
+#	set(CMAKE_Fortran_OSX_DEPLOYMENT_TARGET_FLAG "-mmacosx-version-min=10.7" CACHE PATH "")
+	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.7" CACHE PATH "")
+#############################################
+#
+#  Choose 32bit or 64bit target arch on Linux
+#
+##############################################
+elseif (LINUX)
+	option(LINUX_32bit_BINARIES "Build 32bit Linux BINARIES" OFF)
+	option(LINUX_64bit_BINARIES "Build 64bit Linux BINARIES" ON)
+
+	if (LINUX_32bit_BINARIES AND LINUX_64bit_BINARIES)
+		message(FATAL_ERROR "It is required to select either 32bit or 64bit Linux Binaries, not both")
+	endif()
+
+	if (LINUX_32bit_BINARIES) 
+		set (ARCH_64bit FALSE)
+		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
+		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32")
+		set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -m32")
+	endif()
+	
+	if (LINUX_64bit_BINARIES) 
+		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64")
+		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64")
+		set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -m64")
+	endif()	
+endif()
+
 project(numerics)
 cmake_minimum_required(VERSION 2.8.9)
 enable_language(CXX)
@@ -11,6 +47,9 @@ set(CMAKE_COLOR_MAKEFILE OFF)
 set(_ECLIPSE_VERSION "4.4")
 SET(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR} $(CMAKE_PREFIX_PATH))
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 #include (VCellCMakeShowVariables.txt)
 
@@ -69,6 +108,10 @@ if (${OPTION_TARGET_DOCS})
 #    endif()
 endif()
 
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.7" CACHE STRING "Choose minimum deploy target for Macos machines")
+endif()
  
 if (${OPTION_TARGET_CHOMBO2D_SOLVER} OR ${OPTION_TARGET_CHOMBO3D_SOLVER})     
 	if (${OPTION_TARGET_PARALLEL})
@@ -134,40 +177,6 @@ set(OPTION_LIB_DIRECTORY "lib" CACHE PATH "library directory")
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
 
 
-#############################################
-#
-#  Build 64bit binaries on Mac
-#
-##############################################
-if (APPLE)
-	set(CMAKE_OSX_ARCHITECTURES "x86_64")
-#############################################
-#
-#  Choose 32bit or 64bit target arch on Linux
-#
-##############################################
-elseif (LINUX)
-	option(LINUX_32bit_BINARIES "Build 32bit Linux BINARIES" OFF)
-	option(LINUX_64bit_BINARIES "Build 64bit Linux BINARIES" ON)
-
-	if (LINUX_32bit_BINARIES AND LINUX_64bit_BINARIES)
-		message(FATAL_ERROR "It is required to select either 32bit or 64bit Linux Binaries, not both")
-	endif()
-	
-	if (LINUX_32bit_BINARIES) 
-		set (ARCH_64bit FALSE)
-		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
-		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32")
-		set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -m32")
-	endif()
-	
-	if (LINUX_64bit_BINARIES) 
-		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64")
-		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64")
-		set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -m64")
-	endif()	
-endif()
-
 add_definitions(-DUNIX)
 
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
@@ -219,11 +228,15 @@ endif()
 			add_subdirectory(hdf5-1.8.11)
 		else()
 			#CMakeList.txt that comes with hdf5 switches library name if compiled with debug
-			find_package(HDF5 1.8.11 REQUIRED)
+			find_package(HDF5 1.8.11 REQUIRED COMPONENTS HL CXX C)
 			set(HDF_VERSION ${HDF5_VERSION})
 			######    ${HDF5_HL_LIBRARIES} ${HDF5_CXX_LIBRARIES}
-		   	set(_hdf5_libs hdf5 hdf5_cpp)
-	    	set(HDF_LIB hdf5 hdf5_cpp)
+			if (${OPTION_TARGET_CHOMBO2D_SOLVER} OR
+				${OPTION_TARGET_CHOMBO3D_SOLVER}
+				)
+		   			set(_hdf5_libs hdf5 hdf5_cpp)
+	    			set(HDF_LIB hdf5 hdf5_cpp)
+	    	endif()
 	    endif()
 	endif()
 
