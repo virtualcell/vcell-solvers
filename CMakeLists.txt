@@ -45,7 +45,6 @@ include (svnversion.txt)
 set(RULE_MESSAGES OFF)
 set(CMAKE_COLOR_MAKEFILE OFF)
 set(_ECLIPSE_VERSION "4.4")
-SET(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR} $(CMAKE_PREFIX_PATH))
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -104,7 +103,7 @@ if (${OPTION_TARGET_DOCS})
 #	else()
 		add_custom_target(graphviz ALL
                   "${CMAKE_COMMAND}" "--graphviz=dependencies.dot" .
-                  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+                  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/graphvis")
 #    endif()
 endif()
 
@@ -153,6 +152,11 @@ endif()
 if (NOT APPLE AND NOT LINUX AND NOT MINGW)
 	message(FATAL_ERROR "Unsupported Operating System or C/C++ Compiler.")
 endif()
+
+#f (LINUX)
+#set(BUILD_SHARED_LIBRARIES OFF)
+#set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+#endif()
 
 #---------------------------
 #  IDE SUPPORT
@@ -227,6 +231,7 @@ endif()
 		if (${HDF5_BUILD_CPP_LIB})
 			add_subdirectory(hdf5-1.8.11)
 		else()
+#			set(HDF5_USE_STATIC_LIBRARIES ON)
 			#CMakeList.txt that comes with hdf5 switches library name if compiled with debug
 			find_package(HDF5 1.8.11 REQUIRED COMPONENTS HL CXX C)
 			set(HDF_VERSION ${HDF5_VERSION})

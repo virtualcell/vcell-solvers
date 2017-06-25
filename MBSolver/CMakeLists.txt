@@ -16,8 +16,8 @@ else()
 endif()
 
 if (UNIX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-  set(CXX_FLAGS "${CXX_FLAGS} -std=c++11")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fpermissive")
+  set(CXX_FLAGS "${CXX_FLAGS} -std=c++11 -fpermissive")
   add_definitions("-fPIC")
 endif (UNIX) 
 
@@ -57,6 +57,7 @@ target_link_libraries(MovingBoundaryLib frontier ExpressionParser vcommons ${HDF
 target_include_directories(MovingBoundaryLib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Solver/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Solver/include/MBridge>
+  ${HDF5_INCLUDE_DIRS}
   $<INSTALL_INTERFACE:Solver/include>  # <prefix>/Solver/include
   $<INSTALL_INTERFACE:Solver/include/MBridge>  # <prefix>/Solver/include/MBridge
 )

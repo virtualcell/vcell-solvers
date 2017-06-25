@@ -16,8 +16,8 @@ ENDIF(NOT HAVE_GETOPT)
 #TARGET_LINK_LIBRARIES(zipmerge zip)
 #INSTALL(TARGETS zipmerge RUNTIME DESTINATION bin)
 
-add_library(ziptool_lib ziptool_lib.c ${SRC_EXTRA_FILES} source_hole.c)
-target_link_libraries(ziptool_lib zip)
+add_library(ziptool_lib STATIC ziptool_lib.c ${SRC_EXTRA_FILES} source_hole.c)
+target_link_libraries(ziptool_lib zipstatic)
 target_include_directories(ziptool_lib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:>  # <prefix>
