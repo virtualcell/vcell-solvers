@@ -103,7 +103,7 @@ if (${OPTION_TARGET_DOCS})
 #	else()
 		add_custom_target(graphviz ALL
                   "${CMAKE_COMMAND}" "--graphviz=dependencies.dot" .
-                  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/graphvis")
+                  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 #    endif()
 endif()
 
