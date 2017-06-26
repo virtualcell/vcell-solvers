@@ -31,13 +31,4 @@ mkdir bin
 	-DOPTION_TARGET_HY3S_SOLVERS=OFF \
 	..
 
-#make
-
-# cp /usr/local/Cellar/hdf5@1.8/1.8.19/lib/libhdf5_cpp.14.dylib bin
-# cp /usr/local/Cellar/hdf5@1.8/1.8.19/lib/libhdf5.10.dylib bin
-# cp /usr/local/Cellar/hdf5@1.8/1.8.19/lib/libhdf5_hl_cpp.11.dylib bin
-# cp /usr/local/Cellar/hdf5@1.8/1.8.19/lib/libhdf5_hl.10.dylib bin
-# cp /usr/local/lib/libgfortran.4.dylib bin
-# cp /usr/local/lib/libquadmath.0.dylib bin
-# cp /usr/local/opt/szip/lib/libsz.2.dylib bin
-# cp /usr/local/lib/libgcc_s.1.dylib bin
+make

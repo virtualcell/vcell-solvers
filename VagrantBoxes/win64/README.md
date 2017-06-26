@@ -2,22 +2,28 @@
 build configuration for VCell numerics
 
 should be launched from a Windows host 
-currently requires connection to UCHC internal subversion repository
-requires Vagrant and Powershell 3.0 (or greater?)
+requires Vagrant and Powershell 3.0 (or greater)
 
+## on windows:
 vagrant up
-
 vagrant powershell -c \vagrant\build.ps1
+vagrant halt
 
-or on linux/mac use WinRM directly via pywinrm package
 
+## on mac or linux using VirtualBox GUI, open powershell window:
+vagrant up
+... from GUI from VirtualBox or Remote Desktop
+open Powershell window
+PS> c:\vagrant\build.ps1
+vagrant halt
+
+
+## on windows or mac using pywinrm package for WinRM support (NOT YET WORKING):
+### setup:
 pip install pywinrm
 
-'''text
->> import pywinrm
->> winrmsession = winrm.Session('192.168.50.4',auth=('vagrant','vagrant'))
->> result = winrmsession.run_ps("\vagrant\build.ps1")
->> result
-'''
 
-(also look into python-vagrant package for automation).
+### running:
+vagrant up
+python run.py
+vagrant halt

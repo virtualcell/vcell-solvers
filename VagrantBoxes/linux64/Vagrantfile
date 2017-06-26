@@ -43,14 +43,14 @@ Vagrant.configure("2") do |config|
   # the path on the host to the actual folder. The second argument is
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
-  config.vm.synced_folder "../../numerics", "/vagrant_numerics"
+  config.vm.synced_folder "../..", "/vagrant_numerics"
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
   # Example for VirtualBox:
   #
   config.vm.provider "virtualbox" do |vb|
-  	vb.name = "linux64-centos_72"
+  	vb.name = "linux64"
   #   # Display the VirtualBox GUI when booting the machine
   #   vb.gui = true
   #

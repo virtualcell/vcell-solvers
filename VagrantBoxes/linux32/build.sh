@@ -29,7 +29,7 @@ mkdir bin
 	-DOPTION_TARGET_HY3S_SOLVERS=OFF \
 	..
 
-#make
+make
 
 #cp /usr/local/hdf5/lib/libhdf5_cpp.so.14 bin
 #cp /usr/local/hdf5/lib/libhdf5.so.10 bin
