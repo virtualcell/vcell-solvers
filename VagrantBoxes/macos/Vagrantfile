@@ -95,7 +95,7 @@ Vagrant.configure("2") do |config|
      #        this brew formula pointed to hdf5 1.8.18 source archive https://support.hdfgroup.org/ftp/HDF5/current18/src/hdf5-1.8.18.tar.bz2
      #        this file didn't exist ... https://support.hdfgroup.org/ftp/HDF5/current18/src/hdf5-1.8.18.tar.bz2
      # (11) brew edit homebrew/science/hdf5@1.8
-     #        replace url with https://support.hdfgroup.org/ftp/HDF5/current18/src/hdf5-1.8.18.tar.bz2
+     #        replace url with https://support.hdfgroup.org/ftp/HDF5/current18/src/hdf5-1.8.19.tar.bz2
      # (12) brew install homebrew/science/hdf5@1.8 --c++11
      #        it will fail with a bad sha256 hash for the downloaded hdf5 file ... copy correct sha256 hash from error message
      # (13) brew edit homebrew/science/hdf5@1.8
