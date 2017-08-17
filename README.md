@@ -1,8 +1,8 @@
 # vcell-solvers
-Virtual Cell solvers provide the simulation capabilities of Virtual Cell (http://vcell.org).
+Virtual Cell solvers [virtualcell/vcell-solvers](https://github.com/virtualcell/vcell-solvers) is a collection of numerical simulation codes used in the Virtual Cell framework [virtualcell/vcell](https://github.com/virtualcell/vcell)).
 
-## Project web site
-http://vcell.org
+## The Virtual Cell Project
+The Virtual Cell is a modeling and simulation framework for computational biology.  For details see http://vcell.org and http://github.com/virtualcell.
 
 ## Building VCell Solvers
 ### Using VirtualBox and Vagrant
