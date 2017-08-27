@@ -14,7 +14,6 @@ echo "making directory ${builddir}/bin"
 mkdir bin
 
 /opt/cmake/bin/cmake \
-	-DUNVERSIONED="True" \
 	-DLINUX_64bit_BINARIES=ON \
 	-DLINUX_32bit_BINARIES=OFF \
 	-DLINUX=ON \

@@ -39,7 +39,11 @@ cmake_minimum_required(VERSION 2.8.9)
 enable_language(CXX)
 enable_language(C)
 enable_language(Fortran)
-include (svnversion.txt)
+
+set(SVERSION "unversioned build")
+message("svnversion ${SVERSION}")
+add_definitions(-DSVNVERSION=svn${SVERSION})
+
 #include (LocalJNI.cmake)
 
 set(RULE_MESSAGES OFF)

@@ -14,7 +14,6 @@ echo "making directory ${builddir}/bin"
 mkdir bin
 
 /opt/cmake/bin/cmake \
-	-DUNVERSIONED="True" \
 	-DCMAKE_PREFIX_PATH="/usr/local/hdf5" \
 	-DOPTION_TARGET_MESSAGING=OFF \
 	-DOPTION_TARGET_PARALLEL=OFF \

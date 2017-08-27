@@ -10,7 +10,6 @@ mkdir bin
 Write-Host "cmake.exe ... "
 
 cmake `
-	-DUNVERSIONED="True" `
 	-G "Unix Makefiles" `
 	-DCMAKE_BUILD_TYPE="Release" `
 	-DOPTION_TARGET_MESSAGING=OFF `

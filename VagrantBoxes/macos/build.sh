@@ -15,7 +15,6 @@ mkdir bin
 
 /usr/local/bin/cmake \
 	-G "Unix Makefiles" \
-	-DUNVERSIONED="True" \
 	-DCMAKE_PREFIX_PATH="/usr/local/opt/hdf5@1.8" \
 	-DOPTION_TARGET_MESSAGING=OFF \
 	-DOPTION_TARGET_PARALLEL=OFF \

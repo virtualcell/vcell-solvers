@@ -87,7 +87,6 @@ Vagrant.configure("2") do |config|
     /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw64/mingw-w64-x86_64-gcc-fortran
     /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw64/mingw-w64-x86_64-cmake
     /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw64/mingw-w64-x86_64-doxygen
-    /tools/msys64/usr/bin/pacman.exe --noconfirm -S msys/subversion
     /tools/msys64/usr/bin/pacman.exe --noconfirm -S msys/make
     /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw-w64-x86_64-pkg-config
     /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw-w64-x86_64-hdf5

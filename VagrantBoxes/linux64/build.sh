@@ -14,7 +14,6 @@ echo "making directory ${builddir}/bin"
 mkdir bin
 
 /opt/cmake/bin/cmake \
-	-DUNVERSIONED="True" \
 	-DOPTION_TARGET_MESSAGING=ON \
 	-DOPTION_TARGET_PARALLEL=OFF \
 	-DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
