@@ -43,5 +43,5 @@ make
 
 #cd /vagrant_numerics/${builddir}/bin
 #echo "fixing mac paths"
-#/vagrant_numerics/install_name_tool_macos.sh
+#/vagrant/install_name_tool_macos.sh
 #cd /vagrant_numerics/${builddir}
