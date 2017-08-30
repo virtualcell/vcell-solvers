@@ -1,3 +1,5 @@
 /build-linux64-server/
+/build-dockcross-win64/
 /.project
 /svnversion.txt
+/build-win64/
