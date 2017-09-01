@@ -507,38 +507,22 @@ FILE* SimTool::lockForReadWrite() {
 	return fp;
 }
 
-std::vector<std::string> splitpath(const std::string& str)
+std::string getFileName(const std::string& path)
 {
-  const std::set<char> delimiters{'\\','/'};
-  std::vector<std::string> result;
-
-  char const* pch = str.c_str();
-  char const* start = pch;
-  for(; *pch; ++pch)
-  {
-    if (delimiters.find(*pch) != delimiters.end())
-    {
-      if (start != pch)
+	size_t i = path.length() - 1;
+	while (i>0)
+	{
+      if (path[i] == '/' || path[i] == '\\')
       {
-        std::string str(start, pch);
-        result.push_back(str);
+         return path.substr(i+1);
       }
-      else
-      {
-        result.push_back("");
+      i--;
+      if (i == 0){
+      	break;
       }
-      start = pch + 1;
-    }
-  }
-  result.push_back(start);
+   }
 
-  return result;
-}
-
-std::string getFileName(const std::string& str)
-{
-  std::string fileName = splitpath(str).back();
-  return fileName;
+   return path;
 }
 
 void SimTool::updateLog(double progress, double time, int iteration)
