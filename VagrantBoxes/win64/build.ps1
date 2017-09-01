@@ -26,6 +26,3 @@ cmake `
 	..
 
 make
-
-#Write-Host "install standard mingw dlls"
-#copy c:\tools\msys64\mingw64\bin\*.dll bin

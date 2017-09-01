@@ -56,7 +56,7 @@ Vagrant.configure("2") do |config|
   # Example for VirtualBox:
   #
   config.vm.provider "virtualbox" do |vb|
-  	vb.name = "vcell-numerics-win64"
+  	vb.name = "vcell-numerics-win64-test"
   #   # Display the VirtualBox GUI when booting the machine
   #   vb.gui = true
   #
@@ -81,18 +81,6 @@ Vagrant.configure("2") do |config|
     winrm set winrm/config/client/auth @{Basic="true"}
     winrm set winrm/config/service/auth @{Basic="true"}
     winrm set winrm/config/service @{AllowUnencrypted="true"}
-    choco install -y msys2
-    /tools/msys64/usr/bin/pacman.exe --noconfirm -S msys/git
-    /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw64/mingw-w64-x86_64-gcc
-    /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw64/mingw-w64-x86_64-gcc-fortran
-    /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw64/mingw-w64-x86_64-cmake
-    /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw64/mingw-w64-x86_64-doxygen
-    /tools/msys64/usr/bin/pacman.exe --noconfirm -S msys/make
-    /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw-w64-x86_64-pkg-config
-    /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw-w64-x86_64-hdf5
-    /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw-w64-x86_64-libzip
-    /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw-w64-x86_64-boost
-    /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw-w64-x86_64-netcdf
     choco install -y dependencywalker
 SHELL
 end
