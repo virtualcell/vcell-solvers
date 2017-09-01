@@ -21,6 +21,10 @@ if (UNIX)
   add_definitions("-fPIC")
 endif (UNIX) 
 
+#if (${CMAKE_CROSSCOMPILING})
+	set(CXX_FLAGS "${CXX_FLAGS} -std=c++11 -std=gnu++11 -fpermissive")
+#endif()
+
 if(MINGW)
     add_definitions(-U__STRICT_ANSI__)
     remove_definitions("-fPIC")
