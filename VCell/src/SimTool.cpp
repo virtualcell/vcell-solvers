@@ -507,6 +507,39 @@ FILE* SimTool::lockForReadWrite() {
 	return fp;
 }
 
+std::vector<std::string> splitpath(const std::string& str)
+{
+  const std::set<char> delimiters{'\\','/'};
+  std::vector<std::string> result;
+
+  char const* pch = str.c_str();
+  char const* start = pch;
+  for(; *pch; ++pch)
+  {
+    if (delimiters.find(*pch) != delimiters.end())
+    {
+      if (start != pch)
+      {
+        std::string str(start, pch);
+        result.push_back(str);
+      }
+      else
+      {
+        result.push_back("");
+      }
+      start = pch + 1;
+    }
+  }
+  result.push_back(start);
+
+  return result;
+}
+
+std::string getFileName(const std::string& str)
+{
+  std::string fileName = splitpath(str).back();
+  return fileName;
+}
 
 void SimTool::updateLog(double progress, double time, int iteration)
 {
@@ -522,12 +555,24 @@ void SimTool::updateLog(double progress, double time, int iteration)
 		FILE* tidFP = lockForReadWrite();
 
 		struct stat buf;
-		static char* tempDir = "/tmp/";
+#if ( defined(WIN32) || defined(WIN64) ) // Windows
+		wstring TempPath;
+		wchar_t wcharPath[128];
+		if (GetTempPathW(128, wcharPath)){
+			TempPath = wcharPath;
+		}else{
+			throw "failed to obtain system temp directory";
+		}
+		std::string tempDir( TempPath.begin(), TempPath.end() );
+#else
+		std::string tempDir = "/tmp/";		
+#endif
+		std::cout << "temporary directory used is " << tempDir << std::endl;
 		static bool bUseTempDir = false;
 		static bool bFirstTimeUpdateLog = true;
 
 		if (bFirstTimeUpdateLog) {
-			if (stat(tempDir, &buf) == 0) {
+			if (stat(tempDir.c_str(), &buf) == 0) {
 				// use local temp directory for .sim files
 				// to avoid network traffic
 				if (buf.st_mode & S_IFDIR) {
@@ -539,10 +584,11 @@ void SimTool::updateLog(double progress, double time, int iteration)
 
 		// write sim files to local
 		if (bSimZip && bUseTempDir) {
-			sprintf(simFileName,"%s%s%.4d%s", tempDir, baseSimName, simFileCount, SIM_FILE_EXT);
+			sprintf(simFileName,"%s%s%.4d%s", tempDir.c_str(), getFileName(baseSimName).c_str(), simFileCount, SIM_FILE_EXT);
 		} else {
 			sprintf(simFileName,"%s%.4d%s",baseFileName, simFileCount, SIM_FILE_EXT);
 		}
+		std::cout << "sim file name is " << simFileName << std::endl;
 		sprintf(particleFileName,"%s%s",simFileName, PARTICLE_FILE_EXT);
 
 		simulation->writeData(simFileName,bSimFileCompress);
