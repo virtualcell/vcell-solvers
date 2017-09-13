@@ -53,3 +53,27 @@ $CMD_DEL_WORK_FILES = "del " + $TEST_WORK_FINITEVOLUME_DIR + '\*'
 Invoke-Expression $CMD_COPY_ALL_FILES
 Invoke-Expression $CMD_DEL_WORK_FILES
 
+#
+# Test $PROJECTDIR\build-win64\bin\MovingBoundary_x64.exe
+#
+$TEST_WORK_MOVINGBOUNDARY_DIR = $TEST_WORK_DIR + "\MovingBoundary"
+if(!(Test-Path $TEST_WORK_MOVINGBOUNDARY_DIR)){
+	mkdir $TEST_WORK_MOVINGBOUNDARY_DIR
+}
+$CMD_DEL_WORK_FILES = "del " + $TEST_WORK_MOVINGBOUNDARY_DIR + '\*'
+$CMD_COPY_INPUT_FILES = "copy " + $TEST_INPUT_DIR + '\MovingBoundary\SimID_599489767_0_* ' + $TEST_WORK_DIR + '\MovingBoundary'
+$CMD_SOLVE = $SOLVERDIR + '\MovingBoundary_x64 --config ' + $TEST_WORK_DIR + '\MovingBoundary\SimID_599489767_0_mb.xml'
+Invoke-Expression  $CMD_DEL_WORK_FILES
+Invoke-Expression  $CMD_COPY_INPUT_FILES
+Invoke-Expression  $CMD_SOLVE
+
+$TEST_ARCHIVE_WIN64_MOVINGBOUNDARY_DIR = $TEST_ARCHIVE_WIN64_DIR + '\MovingBoundary'
+if(!(Test-Path $TEST_ARCHIVE_WIN64_MOVINGBOUNDARY_DIR)){
+	mkdir $TEST_ARCHIVE_WIN64_MOVINGBOUNDARY_DIR
+}
+
+$CMD_COPY_ALL_FILES = "copy " + $TEST_WORK_DIR + '\MovingBoundary\SimID_599489767_0_* ' + $TEST_ARCHIVE_WIN64_DIR + '\MovingBoundary'
+$CMD_DEL_WORK_FILES = "del " + $TEST_WORK_MOVINGBOUNDARY_DIR + '\*'
+Invoke-Expression $CMD_COPY_ALL_FILES
+Invoke-Expression $CMD_DEL_WORK_FILES
+

@@ -28,3 +28,15 @@ mkdir -p ${archiveDir}/FiniteVolume
 cp ${workDir}/FiniteVolume/SimID_11538992_0_*  ${archiveDir}/FiniteVolume
 rm ${workDir}/FiniteVolume/*
 
+#
+# Test MovingBoundary_x64
+#
+mkdir -p ${workDir}/MovingBoundary
+rm ${workDir}/MovingBoundary/*
+cp ${inputDir}/MovingBoundary/SimID_599489767_0_* ${workDir}/MovingBoundary
+${solverDir}/MovingBoundary_x64 --config ${workDir}/MovingBoundary/SimID_599489767_0_mb.xml
+
+mkdir -p ${archiveDir}/MovingBoundary
+cp ${workDir}/MovingBoundary/SimID_599489767_0_*  ${archiveDir}/MovingBoundary
+rm ${workDir}/MovingBoundary/*
+

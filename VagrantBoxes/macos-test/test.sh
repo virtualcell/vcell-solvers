@@ -2,7 +2,7 @@
 
 shopt -s -o nounset
 
-echo "testing solvers using binaries and libraries in build-linux64/bin and tests in testFiles"
+echo "testing solvers using binaries and libraries in build-macos/bin and tests in testFiles"
 
 projectDir=/vagrant_numerics
 

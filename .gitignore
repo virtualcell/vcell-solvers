@@ -6,3 +6,4 @@
 /.DS_Store
 /build-linux64/
 /build-macos/
+/packages/
