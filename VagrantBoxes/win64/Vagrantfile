@@ -82,6 +82,7 @@ Vagrant.configure("2") do |config|
     winrm set winrm/config/service/auth @{Basic="true"}
     winrm set winrm/config/service @{AllowUnencrypted="true"}
     choco install -y msys2
+    /tools/msys64/usr/bin/pacman.exe --noconfirm -Syu
     /tools/msys64/usr/bin/pacman.exe --noconfirm -S msys/git
     /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw64/mingw-w64-x86_64-gcc
     /tools/msys64/usr/bin/pacman.exe --noconfirm -S mingw64/mingw-w64-x86_64-gcc-fortran
