@@ -77,3 +77,37 @@ $CMD_DEL_WORK_FILES = "del " + $TEST_WORK_MOVINGBOUNDARY_DIR + '\*'
 Invoke-Expression $CMD_COPY_ALL_FILES
 Invoke-Expression $CMD_DEL_WORK_FILES
 
+#
+# Test $PROJECTDIR\build-win64\bin\NFsim_x64.exe
+#
+$TEST_WORK_NFSIM_DIR = $TEST_WORK_DIR + "\NFsim"
+if(!(Test-Path $TEST_WORK_NFSIM_DIR)){
+	mkdir $TEST_WORK_NFSIM_DIR
+}
+$CMD_DEL_WORK_FILES = "del " + $TEST_WORK_NFSIM_DIR + '\*'
+$CMD_COPY_INPUT_FILES = "copy " + $TEST_INPUT_DIR + '\NFsim\SimID_119094490_0_* ' + $TEST_WORK_DIR + '\NFsim'
+$CMD_SOLVE = $SOLVERDIR + '\NFsim_x64' `
+			+ ' -seed 1565435691' `
+			+ ' -vcell' `
+			+ ' -xml ' + $TEST_WORK_DIR + '\NFsim\SimID_119094490_0_.nfsimInput' `
+			+ ' -o ' + $TEST_WORK_DIR + '\NFsim\SimID_119094490_0_.gdat' `
+			+ ' -sim 1000.0' `
+			+ ' -ss ' + $TEST_WORK_DIR + '\NFsim\SimID_119094490_0_.species' `
+			+ ' -oSteps 1000' `
+			+ ' -notf' `
+			+ ' -utl 100000' `
+			+ ' -cb'
+Invoke-Expression  $CMD_DEL_WORK_FILES
+Invoke-Expression  $CMD_COPY_INPUT_FILES
+Invoke-Expression  $CMD_SOLVE
+
+$TEST_ARCHIVE_WIN64_NFSIM_DIR = $TEST_ARCHIVE_WIN64_DIR + '\NFsim'
+if(!(Test-Path $TEST_ARCHIVE_WIN64_NFSIM_DIR)){
+	mkdir $TEST_ARCHIVE_WIN64_NFSIM_DIR
+}
+
+$CMD_COPY_ALL_FILES = "copy " + $TEST_WORK_DIR + '\NFsim\SimID_119094490_0_* ' + $TEST_ARCHIVE_WIN64_DIR + '\NFsim'
+$CMD_DEL_WORK_FILES = "del " + $TEST_WORK_NFSIM_DIR + '\*'
+Invoke-Expression $CMD_COPY_ALL_FILES
+Invoke-Expression $CMD_DEL_WORK_FILES
+

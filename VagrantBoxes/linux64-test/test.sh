@@ -40,3 +40,15 @@ mkdir -p ${archiveDir}/MovingBoundary
 cp ${workDir}/MovingBoundary/SimID_599489767_0_*  ${archiveDir}/MovingBoundary
 rm ${workDir}/MovingBoundary/*
 
+#
+# Test NFsim_x64
+#
+mkdir -p ${workDir}/NFsim
+rm ${workDir}/NFsim/*
+cp ${inputDir}/NFsim/SimID_599489767_0_* ${workDir}/NFsim
+${solverDir}/NFsim_x64 --config ${workDir}/NFsim/SimID_599489767_0_mb.xml
+
+mkdir -p ${archiveDir}/NFsim
+cp ${workDir}/NFsim/SimID_599489767_0_*  ${archiveDir}/NFsim
+rm ${workDir}/NFsim/*
+
