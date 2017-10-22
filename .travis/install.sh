@@ -11,14 +11,14 @@ then
   brew install homebrew/science/hdf5@1.8 --c++11
 else
   echo "== Installing Linux dependencies =="
-  sudo apt-get -q -y install \
-    cmake \
-    libsqlite0-dev \
-    openssl-devel \
-    hdf5-devel \
-    libboost-dev \
-    activemq-cpp-devel \
-    libhdf5-dev \
-    libgfortran-5-dev \
-    zlib1g-dev
+  sudo apt-get -qq update
+  sudo apt-get install -y cmake
+  sudo apt-get install -y libsqlite0-dev
+  sudo apt-get install -y openssl-devel
+  sudo apt-get install -y hdf5-devel
+  sudo apt-get install -y libboost-dev
+  sudo apt-get install -y activemq-cpp-devel
+  sudo apt-get install -y libhdf5-dev
+  sudo apt-get install -y libgfortran-5-dev
+  sudo apt-get install -y zlib1g-dev
 fi
