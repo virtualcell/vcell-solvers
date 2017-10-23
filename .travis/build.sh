@@ -9,13 +9,6 @@ then
 else
 	platform=linux64
 
-	builddir="build-linux64-ubuntu"
-	
-	echo "making directory ${builddir}"
-	mkdir $builddir
-	echo "cd ${builddir}"
-	cd $builddir
-	echo "making directory ${builddir}/bin"
 	mkdir bin
 	
 	/opt/cmake/bin/cmake \
