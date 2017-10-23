@@ -1,0 +1,61 @@
+version: 1.1.0-{build}
+
+image: Visual Studio 2015
+
+environment:
+  GENERATOR: MinGW Makefiles
+  PACMAN: C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\
+
+configuration: Release
+platform: x64
+
+init:
+  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
+install:
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S msys/git"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-gcc"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-gcc-fortran"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-cmake"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-doxygen"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S msys/make"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-pkg-config"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-hdf5"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-libzip"
+#  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-boost"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-netcdf"
+
+build_script:
+  - ps: $Env:Path = "c:\msys64\mingw64\bin" + ";" + "c:\msys64\usr\bin" + ";" + $Env:Path
+  - ps: Write-Host "cd to \vagrant_numerics"
+  - ps: cd \vagrant_numerics
+  - ps: Write-Host "mkdir build-win64"
+  - ps: mkdir build-win64
+  - ps: Write-Host "cd build-win64"
+  - ps: cd build-win64
+  - ps: Write-Host "mkdir bin"
+  - ps: mkdir bin
+  - ps: Write-Host "cmake.exe ... "
+
+  - ps: |
+      cmake -G "Unix Makefiles" `
+        -DCMAKE_BUILD_TYPE="Release" `
+        -DOPTION_TARGET_MESSAGING=OFF `
+        -DOPTION_TARGET_PARALLEL=OFF `
+	    -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF `
+	    -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF `
+	    -DOPTION_TARGET_SMOLDYN_SOLVER=ON `
+	    -DOPTION_TARGET_FV_SOLVER=ON `
+	    -DOPTION_TARGET_STOCHASTIC_SOLVER=ON `
+	    -DOPTION_TARGET_NFSIM_SOLVER=ON `
+	    -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF `
+	    -DOPTION_TARGET_SUNDIALS_SOLVER=ON `
+	    -DOPTION_TARGET_HY3S_SOLVERS=OFF `
+	    ..
+  - make
+  cmake --build . --config %CONFIGURATION%
+
+test_script: ctest -V .
+
+
