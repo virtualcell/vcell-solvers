@@ -16,4 +16,8 @@ branches:
   - master
   - travis
 # before_install: ".travis/install.sh"
+before_install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew tap homebrew/science; fi
+install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then ".travis/install"; fi
 script: ".travis/build.sh"
