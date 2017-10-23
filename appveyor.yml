@@ -27,16 +27,17 @@ install:
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-netcdf"
 
 build_script:
-  - ps: $Env:Path = "c:\msys64\mingw64\bin" + ";" + "c:\msys64\usr\bin" + ";" + $Env:Path
-  - ps: Write-Host "cd to \vagrant_numerics"
-  - ps: cd \vagrant_numerics
-  - ps: Write-Host "mkdir build-win64"
-  - ps: mkdir build-win64
-  - ps: Write-Host "cd build-win64"
-  - ps: cd build-win64
-  - ps: Write-Host "mkdir bin"
-  - ps: mkdir bin
-  - ps: Write-Host "cmake.exe ... "
+#  - ps: $Env:Path = "c:\msys64\mingw64\bin" + ";" + "c:\msys64\usr\bin" + ";" + $Env:Path
+#  - ps: Write-Host "cd to \vagrant_numerics"
+#  - ps: cd \vagrant_numerics
+#  - ps: Write-Host "mkdir build-win64"
+#  - ps: mkdir build-win64
+#  - ps: Write-Host "cd build-win64"
+#  - ps: cd build-win64
+#  - ps: Write-Host "mkdir bin"
+#  - ps: mkdir bin
+#  - ps: Write-Host "cmake.exe ... "
+  - ps: Write-Host $pwd
 
   - ps: |
       cmake -G "Unix Makefiles" `
