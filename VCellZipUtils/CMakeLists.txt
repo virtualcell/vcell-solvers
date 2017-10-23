@@ -1,5 +1,5 @@
 project(VCellZipUtils CXX)
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.2.2)
 
 set(HEADER_FILES 
 	include/VCELL/ZipUtils.h

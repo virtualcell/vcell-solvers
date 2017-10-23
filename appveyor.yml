@@ -1,0 +1,40 @@
+version: 1.1.0-{build}
+
+image: Visual Studio 2015
+
+environment:
+  GENERATOR: MinGW Makefiles
+  PACMAN: C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\
+
+configuration: Release
+platform: x64
+
+#init:
+#  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
+install:
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S msys/git"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-gcc"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-gcc-fortran"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-cmake"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-doxygen"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S msys/make"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-pkg-config"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-hdf5"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-libzip"
+#  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-boost"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-netcdf"
+
+build_script:
+  - ps: .\.appveyor\build.ps1
+  - cmd: dir
+  - cmd: dir \projects\vcell-solvers\build
+  - cmd: dir \projects\vcell-solvers\build\bin
+  
+  
+artifacts:
+  - path: '.\build\bin\*.exe'
+    name: Executables
+  - path: '.\build\bin\*.dll'
+    name: Libraries

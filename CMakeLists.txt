@@ -40,7 +40,7 @@ enable_language(CXX)
 enable_language(C)
 enable_language(Fortran)
 
-set(SVERSION "unversioned build")
+set(SVERSION "unversionedbuild")
 message("svnversion ${SVERSION}")
 add_definitions(-DSVNVERSION=svn${SVERSION})
 
