@@ -1,5 +1,7 @@
 INCLUDE(CheckFunctionExists)
 
+cmake_policy(SET CMP0026 OLD)
+
 INSTALL(FILES zip.h DESTINATION include)
 
 # from http://www.cmake.org/Wiki/CMakeMacroLibtoolFile
