@@ -9,8 +9,8 @@ addons:
       - libhdf5-dev 
 os:
   - linux
-# - osx
-#osx_image: xcode9
+  - osx
+osx_image: xcode9
 branches:
   only:
   - master
