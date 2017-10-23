@@ -24,9 +24,9 @@ matrix:
       
 # before_install: ".travis/install.sh"
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then curl -fsO "https://downloads.sourceforge.net/project/hpc/hpc/g95/gfortran-7.1-bin.tar.gz?r=&ts=1508458128&use_mirror=svwh"; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then gunzip gfortran-7.1-bin.tar.gz; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo tar -xvf gfortran-7.1-bin.tar -C / ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then curl -L -o gfortran-7.1-bin.tgz -fs "https://downloads.sourceforge.net/project/hpc/hpc/g95/gfortran-7.1-bin.tar.gz?r=&ts=1508458128&use_mirror=svwh"; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then gunzip gfortran-7.1-bin.tgz; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo tar -xf gfortran-7.1-bin.tar -C / ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_NO_AUTO_UPDATE=1 brew install cmake; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_NO_AUTO_UPDATE=1 brew install boost; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_NO_AUTO_UPDATE=1 brew tap homebrew/science; fi
