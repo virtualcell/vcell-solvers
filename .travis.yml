@@ -9,7 +9,7 @@ branches:
   - travis
   
 matrix:
-  inlucde:
+  include:
     - os: linux
       dist: trusty
       addons:
