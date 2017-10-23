@@ -12,13 +12,14 @@ then
 else
   echo "== Installing Linux dependencies =="
   sudo apt-get -qq update
-  sudo apt-get install -y cmake
-  sudo apt-get install -y libsqlite0-dev
-  sudo apt-get install -y openssl-devel
-  sudo apt-get install -y hdf5-devel
-  sudo apt-get install -y libboost-dev
-  sudo apt-get install -y activemq-cpp-devel
-  sudo apt-get install -y libhdf5-dev
-  sudo apt-get install -y libgfortran-5-dev
-  sudo apt-get install -y zlib1g-dev
+    sudo apt-get install -y -qq -o=Dpkg::Use-Pty=0  gfortran
+    sudo apt-get install -y -qq -o=Dpkg::Use-Pty=0  zlib1g-dev
+    sudo apt-get install -y -qq -o=Dpkg::Use-Pty=0  libhdf5-dev    
+    
+    wget https://cmake.org/files/v3.8/cmake-3.8.1.tar.gz
+    sudo tar xzf cmake-3.8.1.tar.gz
+    cd cmake-3.8.1
+    sudo ./configure --prefix=/opt/cmake
+    sudo make --quiet 
+    sudo make --quiet install
 fi

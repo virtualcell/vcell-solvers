@@ -8,9 +8,36 @@ then
 	platform=macos
 else
 	platform=linux64
+
+	builddir="build-linux64-ubuntu"
+	
+	echo "making directory ${builddir}"
+	mkdir $builddir
+	echo "cd ${builddir}"
+	cd $builddir
+	echo "making directory ${builddir}/bin"
+	mkdir bin
+	
+	/opt/cmake/bin/cmake \
+		-DCMAKE_PREFIX_PATH="/usr/lib/x86_64-linux-gnu/" \
+		-DOPTION_TARGET_MESSAGING=OFF \
+		-DOPTION_TARGET_PARALLEL=OFF \
+		-DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
+		-DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
+		-DOPTION_TARGET_SMOLDYN_SOLVER=ON \
+		-DOPTION_TARGET_FV_SOLVER=ON \
+		-DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
+		-DOPTION_TARGET_NFSIM_SOLVER=ON \
+		-DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
+		-DOPTION_TARGET_SUNDIALS_SOLVER=ON \
+		-DOPTION_TARGET_HY3S_SOLVERS=OFF \
+		..
+
+	make
+
 fi
 
-echo "== Building $platform binaries =="
+#echo "== Building $platform binaries =="
 
 # FIXME: These scripts assume /vagrant_numerics path prefix.
 # probably want to generalize those scripts into something
@@ -19,11 +46,11 @@ echo "== Building $platform binaries =="
 # Then the vagrant stuff can call them, and we can here as well.
 
 # Build the code.
-../VagrantBoxes/$platform/build.sh
+#../VagrantBoxes/$platform/build.sh
 
 # Copy dependencies.
-../VagrantBoxes/$platform/moveDependentLibraries.sh
+#../VagrantBoxes/$platform/moveDependentLibraries.sh
 
 # Tweak the executables if needed.
-installScript="../VagrantBoxes/$platform/install_name_tool_macos.sh"
-test -f "$installScript" && sh "$installScript"
+#installScript="../VagrantBoxes/$platform/install_name_tool_macos.sh"
+#test -f "$installScript" && sh "$installScript"
