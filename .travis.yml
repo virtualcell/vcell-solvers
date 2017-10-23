@@ -1,6 +1,6 @@
 language: cpp
 dist: trusty
-# sudo: required
+sudo: required
 addons:
   apt:
     packages:
@@ -17,7 +17,18 @@ branches:
   - travis
 # before_install: ".travis/install.sh"
 before_install:
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew tap homebrew/science; fi
+  - |
+    if [ "$TRAVIS_OS_NAME" == "osx" ]; 
+    then
+	  echo "== Installing macOS dependencies =="
+	  curl -fsO "https://downloads.sourceforge.net/project/hpc/hpc/g95/gfortran-7.1-bin.tar.gz?r=&ts=1508458128&use_mirror=svwh"
+	  gunzip gfortran-7.1-bin.tar.gz
+	  sudo tar -xvf gfortran-7.1-bin.tar -C / 
+	  HOMEBREW_NO_AUTO_UPDATE=1 brew install cmake
+	  HOMEBREW_NO_AUTO_UPDATE=1 brew install boost
+	  HOMEBREW_NO_AUTO_UPDATE=1 brew tap homebrew/science
+	  HOMEBREW_NO_AUTO_UPDATE=1 brew install homebrew/science/hdf5@1.8 --c++11
+    fi
 install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then ".travis/install"; fi
 script: ".travis/build.sh"
