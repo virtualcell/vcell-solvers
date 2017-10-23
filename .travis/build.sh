@@ -13,7 +13,7 @@ else
 	
 	cmake --version
 
-	make \
+	cmake \
 		-DCMAKE_PREFIX_PATH="/usr/lib/x86_64-linux-gnu/" \
 		-DOPTION_TARGET_MESSAGING=OFF \
 		-DOPTION_TARGET_PARALLEL=OFF \
