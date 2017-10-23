@@ -54,5 +54,4 @@ build_script:
         -DOPTION_TARGET_HY3S_SOLVERS=OFF `
         ..
   - make
-  cmake --build . --config %CONFIGURATION%
 
