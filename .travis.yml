@@ -1,6 +1,12 @@
 language: cpp
 dist: trusty
-sudo: required
+# sudo: required
+addons:
+  apt:
+    packages:
+      - gfortran
+      - zlib1g-dev
+      - libhdf5-dev 
 os:
   - linux
 # - osx
