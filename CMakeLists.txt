@@ -260,7 +260,7 @@ endif()
     if (${OPTION_TARGET_MOVINGBOUNDARY_SOLVER} OR 
     	${OPTION_TARGET_NFSIM_SOLVER}
     	)
-    	add_subdirectory(VCommons)
+    	add_subdirectory(vcommons)
     endif()
     
  	if (${OPTION_TARGET_FV_SOLVER} OR

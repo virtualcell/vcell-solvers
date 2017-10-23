@@ -8,9 +8,11 @@ then
 	platform=macos
 else
 	platform=linux64
-
-	mkdir bin
 	
+	echo "working dir is $PWD"
+	
+	cmake --version
+
 	/opt/cmake/bin/cmake \
 		-DCMAKE_PREFIX_PATH="/usr/lib/x86_64-linux-gnu/" \
 		-DOPTION_TARGET_MESSAGING=OFF \
