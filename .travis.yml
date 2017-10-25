@@ -29,8 +29,10 @@ before_install:
       curl -L -o gfortran-7.1-bin.tgz -fs "https://downloads.sourceforge.net/project/hpc/hpc/g95/gfortran-7.1-bin.tar.gz?r=&ts=1508458128&use_mirror=svwh"
       gunzip gfortran-7.1-bin.tgz
       sudo tar -xvf gfortran-7.1-bin.tar -C /
-      brew install szip
-      brew install hdf5@1.8 --c++11
+      sudo chown -R $(whoami) /usr/local/opt
+      sudo chown -R $(whoami) /Library/Caches/Homebrew
+      HOMEBREW_NO_AUTO_UPDATE=1 brew install szip
+      HOMEBREW_NO_AUTO_UPDATE=1 brew install hdf5@1.8 --c++11
     fi
     
 script: ".travis/build.sh"
