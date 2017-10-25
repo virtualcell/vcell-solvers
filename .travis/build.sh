@@ -11,6 +11,8 @@ then
 	cmake --version
 
 	cmake \
+		-G "Unix Makefiles" \
+		-DCMAKE_PREFIX_PATH="/usr/local/opt/hdf5@1.8" \
 		-DOPTION_TARGET_MESSAGING=OFF \
 		-DOPTION_TARGET_PARALLEL=OFF \
 		-DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
