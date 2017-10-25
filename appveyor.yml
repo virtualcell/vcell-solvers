@@ -28,9 +28,11 @@ install:
 
 build_script:
   - ps: .\.appveyor\build.ps1
+  - cmd: dir
+  - cmd: dir \projects\vcell-solvers
+  - cmd: dir \projects\vcell-solvers\*
+  
   
 artifacts:
-  - ls \projects\vcell-solvers
-  - ls \projects\vcell-solvers\*
   - path: \projects\vcell-solvers\bin
 
