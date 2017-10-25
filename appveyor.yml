@@ -30,5 +30,7 @@ build_script:
   - ps: .\.appveyor\build.ps1
   
 artifacts:
-  - path: ..\bin
+  - ls \projects\vcell-solvers
+  - ls \projects\vcell-solvers\*
+  - path: \projects\vcell-solvers\bin
 
