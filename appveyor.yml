@@ -34,7 +34,7 @@ build_script:
   
   
 artifacts:
-  - path: '.\bin\*.exe'
+  - path: '.\build\bin\*.exe'
     name: Executables
-  - path: '.\bin\*.dll'
+  - path: '.\build\bin\*.dll'
     name: Libraries
