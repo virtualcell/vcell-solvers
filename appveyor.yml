@@ -34,7 +34,7 @@ build_script:
   
   
 artifacts:
-  - path: '\projects\vcell-solvers\build\bin\*.exe'
+  - path: '.\bin\*.exe'
     name: Executables
-  - path: '\projects\vcell-solvers\build\bin\*.dll'
+  - path: '.\bin\*.dll'
     name: Libraries
