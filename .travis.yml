@@ -30,6 +30,7 @@ before_install:
       gunzip gfortran-7.1-bin.tgz
       sudo tar -xvf gfortran-7.1-bin.tar -C /
       sudo chown -R $(whoami) /usr/local/opt
+      sudo chown -R $(whoami) /usr/local/include
       sudo chown -R $(whoami) /Library/Caches/Homebrew
       HOMEBREW_NO_AUTO_UPDATE=1 brew install szip
       HOMEBREW_NO_AUTO_UPDATE=1 brew install hdf5@1.8 --c++11
