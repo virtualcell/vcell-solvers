@@ -27,25 +27,5 @@ install:
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-netcdf"
 
 build_script:
-  - ps: $Env:Path = "c:\msys64\mingw64\bin" + ";" + "c:\msys64\usr\bin" + ";" + $Env:Path
-  - ps: mkdir build
-  - ps: cd build
-  - ps: mkdir bin
-  - ps: Write-Host "calling cmake in " + $pwd
-  - ps: |
-      cmake -G "Unix Makefiles" `
-        -DCMAKE_BUILD_TYPE="Release" `
-        -DOPTION_TARGET_MESSAGING=OFF `
-        -DOPTION_TARGET_PARALLEL=OFF `
-        -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF `
-        -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF `
-        -DOPTION_TARGET_SMOLDYN_SOLVER=ON `
-        -DOPTION_TARGET_FV_SOLVER=ON `
-        -DOPTION_TARGET_STOCHASTIC_SOLVER=ON `
-        -DOPTION_TARGET_NFSIM_SOLVER=ON `
-        -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF `
-        -DOPTION_TARGET_SUNDIALS_SOLVER=ON `
-        -DOPTION_TARGET_HY3S_SOLVERS=OFF `
-        ..
-  - ps: make
+  - ps: .\.appveyor\build.ps1
 
