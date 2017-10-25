@@ -47,5 +47,5 @@ build_script:
         -DOPTION_TARGET_SUNDIALS_SOLVER=ON `
         -DOPTION_TARGET_HY3S_SOLVERS=OFF `
         ..
-  - make
+  - ps: make
 

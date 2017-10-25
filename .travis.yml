@@ -25,8 +25,7 @@ matrix:
 # before_install: ".travis/install.sh"
 before_install:
   - |
-    if [[ "$TRAVIS_OS_NAME" == "osx" ]]
-    then 
+    if [ "$TRAVIS_OS_NAME" == "osx" ]; then 
       curl -L -o gfortran-7.1-bin.tgz -fs "https://downloads.sourceforge.net/project/hpc/hpc/g95/gfortran-7.1-bin.tar.gz?r=&ts=1508458128&use_mirror=svwh"
       gunzip gfortran-7.1-bin.tgz
       sudo tar -xf gfortran-7.1-bin.tar -C /
@@ -37,8 +36,7 @@ before_install:
     
 install:
   - |
-    if [ "$TRAVIS_OS_NAME" == "osx" ]
-    then 
+    if [ "$TRAVIS_OS_NAME" == "osx" ]; then
       curl -fsO "https://downloads.sourceforge.net/project/hpc/hpc/g95/gfortran-7.1-bin.tar.gz?r=&ts=1508458128&use_mirror=svwh"
       gunzip gfortran-7.1-bin.tar.gz
       sudo tar -xvf gfortran-7.1-bin.tar -C / 
