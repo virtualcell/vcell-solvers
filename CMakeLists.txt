@@ -34,6 +34,14 @@ elseif (LINUX)
 	endif()	
 endif()
 
+SET(BUILD_SHARED_LIBS FALSE)
+IF(WIN32)
+    SET(CMAKE_FIND_LIBRARY_SUFFIXES .lib .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+ELSE(WIN32)
+    SET(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+ENDIF(WIN32)
+
+
 project(numerics)
 cmake_minimum_required(VERSION 2.8.9)
 enable_language(CXX)
@@ -235,7 +243,7 @@ endif()
 		if (${HDF5_BUILD_CPP_LIB})
 			add_subdirectory(hdf5-1.8.11)
 		else()
-#			set(HDF5_USE_STATIC_LIBRARIES ON)
+			set(HDF5_USE_STATIC_LIBRARIES ON)
 			#CMakeList.txt that comes with hdf5 switches library name if compiled with debug
 			find_package(HDF5 1.8.11 REQUIRED COMPONENTS HL CXX C)
 			set(HDF_VERSION ${HDF5_VERSION})

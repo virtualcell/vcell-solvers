@@ -106,8 +106,8 @@ ADD_DEFINITIONS("-DHAVE_CONFIG_H")
 
 # Targets
 ADD_SUBDIRECTORY(lib)
-target_include_directories(zip PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-#target_include_directories(zipstatic PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+#target_include_directories(zip PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(zipstatic PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 #ADD_SUBDIRECTORY(man)
 ADD_SUBDIRECTORY(src)
 #ADD_SUBDIRECTORY(regress)
