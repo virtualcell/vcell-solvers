@@ -14,6 +14,8 @@ echo "making directory ${builddir}/bin"
 mkdir bin
 
 /opt/cmake/bin/cmake \
+	-G "Unix Makefiles" \
+	-DUSING_TRAVIS=ON \
 	-DCMAKE_PREFIX_PATH="/usr/lib/x86_64-linux-gnu/" \
 	-DOPTION_TARGET_MESSAGING=OFF \
 	-DOPTION_TARGET_PARALLEL=OFF \
