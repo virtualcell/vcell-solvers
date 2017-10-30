@@ -32,9 +32,23 @@ build_script:
   - cmd: dir \projects\vcell-solvers\build
   - cmd: dir \projects\vcell-solvers\build\bin
   
+after_build:
+  - cmd: 7z a win64.zip %APPVEYOR_BUILD_FOLDER%\bin\*
+  
   
 artifacts:
-  - path: '.\build\bin\*.exe'
-    name: Executables
-  - path: '.\build\bin\*.dll'
-    name: Libraries
+  - path: win64.zip
+    name: win64
+    
+deploy:
+  release: solvers-v$(appveyor_build_version)
+  description: 'appveyor build for windows 64'
+  provider: GitHub
+  auth_token:
+    secure: 4uZuKhrabKUiZTYp37aP67amqnXcGjLvDEkp8G4lv4i76sL8TIm8hE/vPC5hUOUf
+  artifact: win64.zip
+  draft: false
+  prerelease: false
+  on:
+    branch: master               # release from master branch only
+    appveyor_repo_tag: false     # deploy always, not just on tag push
