@@ -30,12 +30,28 @@ before_install:
     fi
     
 script: .travis/build.sh
+
+# for osx, use otool -L to find dependencies
+# for linux, use ldd to find dependencies
+# copy dependent libraries to build/bin
+# TODO: (for mac only) edit executables and libraries using install_name_tool to make relocatable
+# create compressed tar file to deploy to github
+before_deploy:
+  - |
+    if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+      ls build/bin/*_x64 | awk '{print $1}' | xargs -I '{}' otool -L '{}' | grep ")" | awk '{print $1}' | xargs -I '{}' cp -vn '{}' build/bin || true
+      cd build/bin && tar czvf mac64.tgz && cd ../..
+    else
+      ls build/bin/*_x64 | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' build/bin || true
+      cd build/bin && tar czvf linux64.tgz && cd ../..
+    fi
+
 deploy:
   provider: releases
   api_key:
     secure: AC0CIp66mYfJckp1cNkz6Ko2lH5qg0ouE55GJjkncNgDKdRahksuHJ8OvKTQeozj4c5Jk1rNUCit+n+CfkZ63ibOupZx4YD2t/oD2enfYV78Zr6TDJ4apT4tF1yk006HmT2aIQ1zk5aJia1+jqkHSudfFC/zBg1MbdB0fhG0sECTs3KhKeC7IEzvybykNe7/o0GvlA3gXQ8joH0uoDC0urb4dbqPoAAavqoEkNh5afW6qY/gJX1fo+VDEPFTfv6ZmPTtmUUFLfLnvwhm97ALPsDpfMmbVwDj+GwQWsA8wsbb56VNDzxITXlZfflRqhCnlwpZDbCqtlbeADBbNfn9Pxw/SkU9vcuv3aiiNuY1yZvFC6yXWFBCtcPXmNMPYpJP5H8Df0mZE3Ca475Zg/1eTPOiThelePhCxDUwEs1n+ipbaB+sKZJpvz8sUlMNNQy0YWBP71vDuLB2ZL1LiI2REIbEnpkwJXRBJwP9ZSPzph8hq0CFw1AwPSodhX9w9Q9Ggro+K3vVvZm2yzEgvU91HiW7xgZAki3pq51S/50F85CnBnTFRy2OWSRXBIx1KNrN6MrwycBUx68bnwji+HlbOL6pR879vCoDyyUjt0mtHIZZPRqd+au0ZhI1fSnQfRmJuo/Jz7vl0TdZMi2gHXwmax2P5qQw3U7Vh0iUdq3tRJk=
   file_glob: true
-  file: build/bin/*
+  file: build/bin/*.tgz
   skip_cleanup: true
   on:
     repo: virtualcell/vcell-solvers
