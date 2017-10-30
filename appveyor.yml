@@ -33,12 +33,12 @@ build_script:
   - cmd: dir \projects\vcell-solvers\build\bin
   
 after_build:
-  - cmd: 7z a win64.zip %APPVEYOR_BUILD_FOLDER%\build\bin\*
+  - cmd: 7z a %APPVEYOR_BUILD_FOLDER%\build\win64.zip %APPVEYOR_BUILD_FOLDER%\build\bin\*
   
   
 artifacts:
-  - path: win64.zip
-    name: win64
+  - path: %APPVEYOR_BUILD_FOLDER%\build\win64.zip
+    name: win64_archive
     
 deploy:
   release: solvers-v$(appveyor_build_version)
@@ -46,7 +46,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: 4uZuKhrabKUiZTYp37aP67amqnXcGjLvDEkp8G4lv4i76sL8TIm8hE/vPC5hUOUf
-  artifact: win64.zip
+  artifact: win64_archive
   draft: false
   prerelease: false
   on:
