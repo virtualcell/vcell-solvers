@@ -11,7 +11,7 @@ matrix:
     addons:
       apt:
         packages:
-        - libgfortran-4.8-dev
+        - gfortran
         - zlib1g-dev
         - libhdf5-dev
   - os: osx
