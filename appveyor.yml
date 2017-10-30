@@ -33,9 +33,12 @@ build_script:
   - cmd: dir \projects\vcell-solvers\build\bin
   
 after_build:
-  - C:\msys64\usr\bin\bash -lc "cd bin && ls bin/*.exe | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true && cd .."
-  - C:\msys64\usr\bin\bash -lc "cd bin && ls bin/*.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true && cd .."
-  - C:\msys64\usr\bin\bash -lc "cd bin && ls bin/*.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true && cd .."
+  - cmd: echo              "<<BASH>> cd bin && ls bin/*.exe | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . && cd .. || true"
+  - cmd: C:\msys64\usr\bin\bash -lc "cd bin && ls bin/*.exe | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . && cd .. || true"
+  - cmd: echo              "<<BASH>> cd bin && ls bin/*.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . && cd .. || true"
+  - cmd: C:\msys64\usr\bin\bash -lc "cd bin && ls bin/*.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . && cd .. || true"
+  - cmd: echo              "<<BASH>> cd bin && ls bin/*.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . && cd .. || true"
+  - cmd: C:\msys64\usr\bin\bash -lc "cd bin && ls bin/*.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . && cd .. || true"
   - cmd: 7z a %APPVEYOR_BUILD_FOLDER%\build\win64.zip %APPVEYOR_BUILD_FOLDER%\build\bin\*
   
 artifacts:
