@@ -29,7 +29,7 @@ do
 	echo install_name_tool -id "@loader_path/$libfilename"  $libfilename
     install_name_tool -id "@loader_path/$libfilename"  $libfilename
   	
-	for dependentlibpath in `otool -L libhdf5.10.dylib | grep "/" | grep -v "System" | awk '{print $1}'`
+	for dependentlibpath in `otool -L ${libfilename} | grep "/" | grep -v "System" | awk '{print $1}'`
 	do
 		dependentlibfilename=${dependentlibpath##*/}
 		#
