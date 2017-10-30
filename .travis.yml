@@ -1,28 +1,22 @@
 language: cpp
-
-# Run jobs on a container based infrastructure, overridden by job
 sudo: false
-
 branches:
   only:
   - master
   - travis
-  
 matrix:
   include:
-    - os: linux
-      dist: trusty
-      addons:
-        apt:
-          packages:
-            - gfortran
-            - zlib1g-dev
-            - libhdf5-dev 
-    - os: osx
-      osx_image: xcode9
-      sudo: required
-      
-# before_install: ".travis/install.sh"
+  - os: linux
+    dist: trusty
+    addons:
+      apt:
+        packages:
+        - libgfortran-4.8-dev
+        - zlib1g-dev
+        - libhdf5-dev
+  - os: osx
+    osx_image: xcode9
+    sudo: required
 before_install:
   - |
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then 
@@ -35,4 +29,14 @@ before_install:
       HOMEBREW_NO_AUTO_UPDATE=1 brew install hdf5@1.8 --c++11
     fi
     
-script: ".travis/build.sh"
+script: .travis/build.sh
+deploy:
+  provider: releases
+  api_key:
+    secure: AC0CIp66mYfJckp1cNkz6Ko2lH5qg0ouE55GJjkncNgDKdRahksuHJ8OvKTQeozj4c5Jk1rNUCit+n+CfkZ63ibOupZx4YD2t/oD2enfYV78Zr6TDJ4apT4tF1yk006HmT2aIQ1zk5aJia1+jqkHSudfFC/zBg1MbdB0fhG0sECTs3KhKeC7IEzvybykNe7/o0GvlA3gXQ8joH0uoDC0urb4dbqPoAAavqoEkNh5afW6qY/gJX1fo+VDEPFTfv6ZmPTtmUUFLfLnvwhm97ALPsDpfMmbVwDj+GwQWsA8wsbb56VNDzxITXlZfflRqhCnlwpZDbCqtlbeADBbNfn9Pxw/SkU9vcuv3aiiNuY1yZvFC6yXWFBCtcPXmNMPYpJP5H8Df0mZE3Ca475Zg/1eTPOiThelePhCxDUwEs1n+ipbaB+sKZJpvz8sUlMNNQy0YWBP71vDuLB2ZL1LiI2REIbEnpkwJXRBJwP9ZSPzph8hq0CFw1AwPSodhX9w9Q9Ggro+K3vVvZm2yzEgvU91HiW7xgZAki3pq51S/50F85CnBnTFRy2OWSRXBIx1KNrN6MrwycBUx68bnwji+HlbOL6pR879vCoDyyUjt0mtHIZZPRqd+au0ZhI1fSnQfRmJuo/Jz7vl0TdZMi2gHXwmax2P5qQw3U7Vh0iUdq3tRJk=
+  file_glob: true
+  file: build/bin/*
+  skip_cleanup: true
+  on:
+    repo: virtualcell/vcell-solvers
+    branch: master
