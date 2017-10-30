@@ -33,7 +33,7 @@ build_script:
   - cmd: dir \projects\vcell-solvers\build\bin
   
 after_build:
-  - cmd: 7z a win64.zip %APPVEYOR_BUILD_FOLDER%\bin\*
+  - cmd: 7z a win64.zip %APPVEYOR_BUILD_FOLDER%\build\bin\*
   
   
 artifacts:
