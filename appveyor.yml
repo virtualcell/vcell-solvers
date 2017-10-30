@@ -37,7 +37,7 @@ after_build:
   
   
 artifacts:
-  - path: %APPVEYOR_BUILD_FOLDER%\build\win64.zip
+  - path: build\win64.zip
     name: win64_archive
     
 deploy:
