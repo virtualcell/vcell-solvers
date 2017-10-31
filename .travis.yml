@@ -68,3 +68,4 @@ deploy:
   on:
     repo: virtualcell/vcell-solvers
     branch: master
+    tags: true

@@ -51,4 +51,4 @@ deploy:
   prerelease: false
   on:
     branch: master               # release from master branch only
-    appveyor_repo_tag: false     # deploy always, not just on tag push
+    appveyor_repo_tag: true      # deploy only on tag push
