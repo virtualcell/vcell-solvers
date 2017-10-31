@@ -33,12 +33,14 @@ build_script:
   - cmd: dir \projects\vcell-solvers\build\bin
   
 after_build:
-  - cmd: echo              "export PATH=/mingw64/bin:/usr/bin:$PATH && cd bin && ls *.exe | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . && cd .. || true"
-  - cmd: C:\msys64\usr\bin\bash -lc "export PATH=/mingw64/bin:/usr/bin:$PATH && cd bin && ls *.exe | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . && cd .. || true"
-  - cmd: echo              "export PATH=/mingw64/bin:/usr/bin:$PATH && cd bin && ls *.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . && cd .. || true"
-  - cmd: C:\msys64\usr\bin\bash -lc "export PATH=/mingw64/bin:/usr/bin:$PATH && cd bin && ls *.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . && cd .. || true"
-  - cmd: echo              "export PATH=/mingw64/bin:/usr/bin:$PATH && cd bin && ls *.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . && cd .. || true"
-  - cmd: C:\msys64\usr\bin\bash -lc "export PATH=/mingw64/bin:/usr/bin:$PATH && cd bin && ls *.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . && cd .. || true"
+  - cmd: copy c:\msys64\mingw64\bin\libgcc_s_seh-1.dll %APPVEYOR_BUILD_FOLDER%\build\bin
+  - cmd: copy c:\msys64\mingw64\bin\libgfortran-4.dll %APPVEYOR_BUILD_FOLDER%\build\bin
+  - cmd: copy c:\msys64\mingw64\bin\libhdf5_cpp-0.dll %APPVEYOR_BUILD_FOLDER%\build\bin
+  - cmd: copy c:\msys64\mingw64\bin\libhdf5-0.dll %APPVEYOR_BUILD_FOLDER%\build\bin
+  - cmd: copy c:\msys64\mingw64\bin\libquadmath-0.dll %APPVEYOR_BUILD_FOLDER%\build\bin
+  - cmd: copy c:\msys64\mingw64\bin\libstdc++-6.dll %APPVEYOR_BUILD_FOLDER%\build\bin
+  - cmd: copy c:\msys64\mingw64\bin\libszip.dll %APPVEYOR_BUILD_FOLDER%\build\bin
+  - cmd: copy c:\msys64\mingw64\bin\libwinpthread-1.dll %APPVEYOR_BUILD_FOLDER%\build\bin
   - cmd: 7z a %APPVEYOR_BUILD_FOLDER%\build\win64.zip %APPVEYOR_BUILD_FOLDER%\build\bin\*
   
 artifacts:
