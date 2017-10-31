@@ -41,7 +41,6 @@ artifacts:
     name: win64_archive
     
 deploy:
-  release: solvers-v$(appveyor_build_version)
   description: 'appveyor build for windows 64'
   provider: GitHub
   auth_token:
