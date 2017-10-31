@@ -4,6 +4,7 @@ branches:
   only:
   - master
   - travis
+  - /^v\d+(\.\d+)+$/
 matrix:
   include:
   - os: linux
@@ -67,5 +68,5 @@ deploy:
   skip_cleanup: true
   on:
     repo: virtualcell/vcell-solvers
-    branch: master
     tags: true
+    all_branches: true
