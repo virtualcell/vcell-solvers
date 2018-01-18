@@ -2,6 +2,7 @@
 #include <utility>
 #include <iostream>
 #include <algorithm>
+#include <sstream>
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -9,6 +10,7 @@ using std::endl;
 #include <stdio.h>
 #ifdef USE_MESSAGING
 #if ( !defined(WIN32) && !defined(WIN64) ) // UNIX
+#include <curl/curl.h>
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -51,12 +53,6 @@ SimulationMessaging::SimulationMessaging(const char* broker, const char* smquser
 		const char* tname, const char* vcusername, int simKey, int jobIndex, int taskID, int ttl_low, int ttl_high)
 	:events( )
 {
-	connection = NULL;
-	session = NULL;
-	qProducer = NULL;
-	tConsumer = NULL;
-	bStopRequested = false;
-
 	m_broker = const_cast<char *>(broker);
 	m_smqusername = const_cast<char *>( smqusername );
 	m_password =  const_cast<char *>(passwd );
@@ -71,7 +67,7 @@ SimulationMessaging::SimulationMessaging(const char* broker, const char* smquser
 	m_ttl_lowPriority = ttl_low;
 	m_ttl_highPriority = ttl_high;
 
-	m_connActive = false;
+	curl_global_init(CURL_GLOBAL_ALL);
 
 	{
 		memset(m_hostname, 0, 256);
@@ -134,7 +130,7 @@ SimulationMessaging::~SimulationMessaging() throw()
 	pthread_mutex_destroy(&mutex_cond_workerEvent);
 	pthread_cond_destroy(&cond_workerEvent);
 #endif
-	activemq::library::ActiveMQCPP::shutdownLibrary();
+	curl_global_cleanup();
 #endif
 }
 
@@ -188,8 +184,22 @@ void SimulationMessaging::sendStatus() {
 
 		} 
 #ifdef USE_MESSAGING
-		else {
-			TextMessage* msg = initWorkerEventMessage();
+		/* get a curl handle */ 
+		CURL* curl = curl_easy_init();
+		if(curl) {
+			// First set the URL that is about to receive our POST. This URL can
+			// just as well be a https:// URL if that is what should receive the
+			// data.
+			curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:6161/message/workerevent?readTimeout=20000&type=queue");
+
+
+			// Now specify the POST data
+			std::stringstream ss;
+
+
+			//status
+			// msg->setIntProperty(WORKEREVENT_STATUS, workerEvent->status);
+			ss << WORKEREVENT_STATUS << "=" << workerEvent->status << "&";
 
 			char* revisedMsg = workerEvent->eventMessage;
 			if (revisedMsg != NULL) {
@@ -203,6 +213,7 @@ void SimulationMessaging::sendStatus() {
 					case '\r':
 					case '\n':
 					case '\'':
+					case '\"':
 						revisedMsg[i] = ' ';
 						break;
 						// these characters are not valid both in database and in messages as a property
@@ -210,61 +221,84 @@ void SimulationMessaging::sendStatus() {
 				}
 			}
 
-			//status
-			msg->setIntProperty(WORKEREVENT_STATUS, workerEvent->status);
 			//event message
 			if (revisedMsg != NULL) {
-				msg->setStringProperty(WORKEREVENT_STATUSMSG, revisedMsg);
+				//msg->setStringProperty(WORKEREVENT_STATUSMSG, revisedMsg);
+				ss << WORKEREVENT_STATUSMSG << "=" << revisedMsg << "&";
 			}
-			//progress
-			msg->setDoubleProperty(WORKEREVENT_PROGRESS, workerEvent->progress);
-			//timePoint
-			msg->setDoubleProperty(WORKEREVENT_TIMEPOINT, workerEvent->timepoint);
 
+			//progress
+			// msg->setDoubleProperty(WORKEREVENT_PROGRESS, workerEvent->progress);
+			ss << WORKEREVENT_PROGRESS << "=" << workerEvent->progress << "&";
+
+			//timePoint
+			// msg->setDoubleProperty(WORKEREVENT_TIMEPOINT, workerEvent->timepoint);
+			ss << WORKEREVENT_TIMEPOINT << "=" << workerEvent->timepoint;
+
+			//
+			// print message to stdout
+			//
 			cout << "!!!SimulationMessaging::sendStatus [" << (long)m_simKey << ":" << getStatusString(workerEvent->status);
 			if (revisedMsg != NULL) {
 				cout << ":" << revisedMsg;
 			} else {
 				cout << ":" << workerEvent->progress << ":" << workerEvent->timepoint;
 			}
-
 			cout << "]" << endl;
-			//send
-			try {
-				int timeToLive = m_ttl_highPriority;
-				int deliveryMode = DeliveryMode::PERSISTENT;
-				switch (workerEvent->status) {
-				case JOB_DATA:
-					timeToLive = m_ttl_lowPriority;
-					break;
-				case JOB_PROGRESS:
-					timeToLive = m_ttl_lowPriority;
-					deliveryMode = DeliveryMode::NON_PERSISTENT;
-					break;
-				case JOB_STARTING:
-					timeToLive = m_ttl_highPriority;
-					break;
-				case JOB_COMPLETED:
-					timeToLive = m_ttl_highPriority;
-					break;
-				case JOB_FAILURE:
-					timeToLive = m_ttl_highPriority;
-					break;
-				}
-				qProducer->send(msg, deliveryMode, DEFAULT_PRIORITY, timeToLive);
-			} catch (CMSException& e) {
-				cout << "!!!SimulationMessaging::sendStatus [" << e.getMessage() << "]" << endl;
-			}
 
-			time(&lastSentEventTime);
-			if (workerEvent->status == JOB_COMPLETED || workerEvent->status == JOB_FAILURE) {
+			// //send
+			// try {
+			// 	int timeToLive = m_ttl_highPriority;
+			// 	int deliveryMode = DeliveryMode::PERSISTENT;
+			// 	switch (workerEvent->status) {
+			// 	case JOB_DATA:
+			// 		timeToLive = m_ttl_lowPriority;
+			// 		break;
+			// 	case JOB_PROGRESS:
+			// 		timeToLive = m_ttl_lowPriority;
+			// 		deliveryMode = DeliveryMode::NON_PERSISTENT;
+			// 		break;
+			// 	case JOB_STARTING:
+			// 		timeToLive = m_ttl_highPriority;
+			// 		break;
+			// 	case JOB_COMPLETED:
+			// 		timeToLive = m_ttl_highPriority;
+			// 		break;
+			// 	case JOB_FAILURE:
+			// 		timeToLive = m_ttl_highPriority;
+			// 		break;
+			// 	}
+			// 	qProducer->send(msg, deliveryMode, DEFAULT_PRIORITY, timeToLive);
+			// } catch (CMSException& e) {
+			// 	cout << "!!!SimulationMessaging::sendStatus [" << e.getMessage() << "]" << endl;
+			// }
+
+			std::string x = ss.str();
+			const char* postfields = x.c_str();
+
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postfields); // e.g. postfields="name=daniel&project=curl"
+		 
+			// Perform the request, res will get the return code
+			CURLcode res = curl_easy_perform(curl);
+			// Check for errors
+			if(res != CURLE_OK)
+				fprintf(stderr, "curl_easy_perform() failed: %s\n",
+					curl_easy_strerror(res));
+		 
+			// always cleanup
+			curl_easy_cleanup(curl);
+		}
+
+
+
+		time(&lastSentEventTime);
+		if (workerEvent->status == JOB_COMPLETED || workerEvent->status == JOB_FAILURE) {
 #if ( defined(WIN32) || defined(WIN64) )
-				SetEvent(hMessagingThreadEndEvent);
+			SetEvent(hMessagingThreadEndEvent);
 #else // UNIX
-				cout <<  "!!!thread exiting" << endl;
-				pthread_exit(NULL);
+			cout <<  "!!!thread exiting" << endl;
+			pthread_exit(NULL);
 #endif
-			}
 		}
 #else
 			throw "OUPUT_MODE_STANDOUT must be using if not using messaging!";
@@ -332,87 +366,11 @@ void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
  * onException handler.)
  */
 void SimulationMessaging::setupConnection () { //synchronized
-	lockMessaging();
-	try
-    {
-		if(connection == NULL){
-			activemq::library::ActiveMQCPP::initializeLibrary();
-		}
-        // Create a connection factory
-        auto_ptr<ConnectionFactory> connectionFactory(
-			ConnectionFactory::createCMSConnectionFactory(m_broker) );
-
-        // Create a Connection
-        connection = connectionFactory->createConnection();
-		connection ->start();
-
-        m_connActive = true;
-    
-		//create AUTO_ACKNOWLEDGE session
-		session = connection->createSession( Session::AUTO_ACKNOWLEDGE );
-		// create  the destinations (Topic & Queue)
-		m_topic = session->createTopic(m_tname);
-		m_queue = session->createQueue(m_qname);
-       
-    } catch (CMSException& e){
-        cerr << "error: Cannot connect to Broker - " << m_broker ;
-        cerr << ".  Try again in  - " << CONNECTION_RETRY_PERIOD/1000 << " seconds." << "\n" ;
-        delay(CONNECTION_RETRY_PERIOD);
-    }
-
-    // Create producer/consumer  for queue and topic
-    try {
-        if (m_qname != NULL){
-            qProducer = session->createProducer(m_queue);
-            qProducer->setDeliveryMode( DeliveryMode::PERSISTENT );
-        }
-		if (m_tname != NULL) {
-			tConsumer = session->createConsumer(m_topic);
-            tConsumer->setMessageListener(this);
-			tConsumer->start();
-		}			
-    } catch (CMSException& e) {
-        onException(e);
-    }
-
-	unlockMessaging();
+	// lockMessaging();
+	// unlockMessaging();
 }
 
 void SimulationMessaging::cleanup(){
-
-    // Destroy resources.
-    try{
-        if(m_topic != NULL ) delete m_topic;
-		if(m_queue != NULL ) delete m_queue;
-    }catch ( CMSException& e ) { e.printStackTrace(); }
-    m_topic = NULL;
-	m_queue = NULL;
-
-    try{
-        if( qProducer != NULL ) delete qProducer;
-		if( tConsumer != NULL ) {
-			tConsumer->close();
-			delete tConsumer;
-		}
-    }catch ( CMSException& e ) { e.printStackTrace(); }
-    tConsumer = NULL;
-	qProducer = NULL;
-
-    // Close open resources.
-    try{
-        if( session != NULL ) session->close();
-        if( connection != NULL ) connection->close();
-    }catch ( CMSException& e ) { e.printStackTrace(); }
-
-    try{
-        if( session != NULL ) delete session;
-    }catch ( CMSException& e ) { e.printStackTrace(); }
-    session = NULL;
-
-    try{
-        if( connection != NULL ) delete connection;
-    }catch ( CMSException& e ) { e.printStackTrace(); }
-    connection = NULL;
 }
 
 
@@ -426,60 +384,6 @@ void SimulationMessaging::delay(int duration)
 #else // UNIX
     sleep(duration/1000);
 #endif
-}
-
-/**
- * Handle the message
- * Required by cms::MessageListener.
- */
-void SimulationMessaging::onMessage(const Message* message) throw()
-{
-	// Cast the message as a TextMessage if possible.
-    try
-    {
-		vector<string> pNames = message->getPropertyNames();
-		for(int i=0; i<pNames.size(); i++){
-			cout << pNames.at(i) << endl;
-			if(pNames.at(i).compare(SIMKEY_PROPERTY) == 0){
-				long simKey = message->getLongProperty(SIMKEY_PROPERTY);
-				cout << "simKey:" <<simKey << endl;
-			}else if(pNames.at(i).compare(MESSAGE_TYPE_PROPERTY) == 0){
-				string msgType = message->getStringProperty(MESSAGE_TYPE_PROPERTY);
-				cout << "messageType:" << msgType << endl;
-			}
-		}
-
-		string msgType = message->getStringProperty(MESSAGE_TYPE_PROPERTY);
-		if (msgType == "") {//empty string
-			return;
-		}
-		
-		long key = message->getLongProperty(SIMKEY_PROPERTY);
-
-		if (msgType.compare(MESSAGE_TYPE_STOPSIMULATION_VALUE) == 0 && key==m_simKey) {	
-			cout << "Stopped by user" << endl;
-			bStopRequested = true;
-		}
-
-    } catch(CMSException& e) {
-        onException(e);
-    }
-}
-
-/**
- * Handle the message
- * Required by cms::ExceptionListener.
- */
-void SimulationMessaging::onException(const CMSException& ex AMQCPP_UNUSED)
-{
-	cout << "!!!CMSException: " << ex.getMessage() << endl;
-	/*int dropCode = ErrorCodes_ERR_CONNECTION_DROPPED;
-	if (ErrorCodes::testException(e, dropCode)) {
-		m_connActive = false;
-		setupConnection();
-		m_connActive = true;
-		cout << "Connection restored.  Messages will now be accepted again" << endl;
-	}*/
 }
 
 bool SimulationMessaging::lockMessaging()
@@ -565,31 +469,41 @@ char* SimulationMessaging::trim(char* str) {
 	return newstr;
 }
 
-TextMessage* SimulationMessaging::initWorkerEventMessage() {
-	TextMessage* msg = session->createTextMessage();
-	// message type
-	msg->setStringProperty(MESSAGE_TYPE_PROPERTY, MESSAGE_TYPE_WORKEREVENT_VALUE);
-	//Hostname
-	msg->setStringProperty(HOSTNAME_PROPERTY, m_hostname);
-	//Username
-	msg->setStringProperty(USERNAME_PROPERTY, m_vcusername);
-	//simKey
-	msg->setLongProperty(SIMKEY_PROPERTY, m_simKey);
-	//jobIndex
-	msg->setIntProperty(JOBINDEX_PROPERTY, m_jobIndex);
-	//taskID
-	msg->setIntProperty(TASKID_PROPERTY, m_taskID);
-	return msg;
-}
-
 void SimulationMessaging::keepAlive() {
 	if (workerEventOutputMode == WORKEREVENT_OUTPUT_MODE_MESSAGING) {
-		TextMessage* msg = initWorkerEventMessage();
-		//status
-		msg->setIntProperty(WORKEREVENT_STATUS, JOB_WORKER_ALIVE);
 
-		//send
-		qProducer->send(msg, DeliveryMode::PERSISTENT, Message_DEFAULT_PRIORITY, m_ttl_lowPriority); 
+
+		CURL* curl = curl_easy_init();
+		if(curl) {
+			// First set the URL that is about to receive our POST. This URL can
+			// just as well be a https:// URL if that is what should receive the
+			// data.
+			curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:6161/message/workerevent?readTimeout=20000&type=queue");
+
+
+			// Now specify the POST data
+			std::stringstream ss;
+
+			//status
+			// msg->setIntProperty(WORKEREVENT_STATUS, JOB_WORKER_ALIVE);
+			ss << WORKEREVENT_STATUS << "=" << JOB_WORKER_ALIVE;
+
+			std::string x = ss.str();
+			const char* postfields = x.c_str();
+
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postfields); // e.g. postfields="name=daniel&project=curl"
+		 
+			// Perform the request, res will get the return code
+			CURLcode res = curl_easy_perform(curl);
+			// Check for errors
+			if(res != CURLE_OK)
+				fprintf(stderr, "curl_easy_perform() failed: %s\n",
+					curl_easy_strerror(res));
+		 
+			// always cleanup
+			curl_easy_cleanup(curl);
+		}
+
 		time(&lastSentEventTime);
 	}
 }

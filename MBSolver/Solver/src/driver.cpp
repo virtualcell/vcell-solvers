@@ -11,7 +11,7 @@
 #include <TextReportClient.h>
 #include <version.h>
 #include <Timer.h>
-#include <SimulationMessaging.h>
+#include <VCELL/SimulationMessaging.h>
 
 /**
 * usings and typedefs

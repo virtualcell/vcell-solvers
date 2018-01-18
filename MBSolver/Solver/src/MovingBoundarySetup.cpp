@@ -6,7 +6,7 @@
 #include <persistcontainer.h>
 #include <vcellxml.h>
 #include <Logger.h>
-#include <SimulationMessaging.h>
+#include <VCELL/SimulationMessaging.h>
 
 using namespace moving_boundary;
 

@@ -17,14 +17,12 @@ target_include_directories(vcellmessaging INTERFACE
 	$<INSTALL_INTERFACE:include>  # <prefix>/include
 )
 if (${OPTION_TARGET_MESSAGING})
-	message(STATUS "ACTIVEMQCPP_LIBRARIES = '${ACTIVEMQCPP_LIBRARIES}'")
-	message(STATUS "ACTIVEMQCPP_LINKDEFINITIONS = '${ACTIVEMQCPP_LINKDEFINITIONS}'")
-	message(STATUS "ACTIVEMQCPP_DEFINITIONS = '${ACTIVEMQCPP_DEFINITIONS}'")
-	message(STATUS "ACTIVEMQCPP_INCLUDE_DIR = '${ACTIVEMQCPP_INCLUDE_DIR}'")
+	message(STATUS "CURL_LIBRARIES = '${CURL_LIBRARIES}'")
+	message(STATUS "CURL_INCLUDE_DIR = '${CURL_INCLUDE_DIR}'")
 	
-	target_link_libraries(vcellmessaging ${ACTIVEMQCPP_LIBRARIES} ${ACTIVEMQCPP_LINKDEFINITIONS})
-	target_compile_definitions(vcellmessaging PUBLIC USE_MESSAGING=1 ${ACTIVEMQCPP_DEFINITIONS})
-	target_include_directories(vcellmessaging PUBLIC ${ACTIVEMQCPP_INCLUDE_DIR})
+	target_link_libraries(vcellmessaging ${CURL_LIBRARIES} Threads::Threads)
+	target_compile_definitions(vcellmessaging PUBLIC USE_MESSAGING=1)
+	target_include_directories(vcellmessaging PUBLIC ${CURL_INCLUDE_DIR})
 endif()
 
 install(TARGETS vcellmessaging

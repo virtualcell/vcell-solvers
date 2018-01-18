@@ -26,7 +26,7 @@
 #include <MBridge/FronTierAdapt.h>
 #include <MBridge/Figure.h>
 #include <Hdf5OutputWriter.h>
-#include <SimulationMessaging.h>
+#include <VCELL/SimulationMessaging.h>
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
 using moving_boundary::World ;
 using moving_boundary::CoordinateType;

@@ -199,24 +199,9 @@ if (OPTION_TARGET_MESSAGING)
 	#don't need graphics for server side solvers
 	set(OPTION_USE_OPENGL OFF CACHE BOOL "")
 	
-	# set(APR_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/apr-1.4.6/include ${CMAKE_BINARY_DIR}/apr-1.4.6/include)
-	# set(ACTIVEMQ_CPP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/activemq-cpp-library-3.4.4/src/main ${CMAKE_BINARY_DIR}/activemq-cpp-library-3.4.4)
-	# set(JMS_INCS ${ACTIVEMQ_CPP_INCLUDE_DIR} ${APR_INCLUDE_DIR})
-
-	# set(JMS_LIBS activemq-cpp aprutil-1 apriconv-1 apr-1)
-
-	# set(JMS_DEFS -DHAVE_CONFIG_H -DLINUX=2 -D_REENTRANT -D_GNU_SOURCE)
-	#include(FindOpenSSL)
-	#if (NOT OPENSSL_FOUND)
-	#	message(FATAL_ERROR, "OpenSSL not found.")
-	#endif()
-	#list(APPEND JMS_LIBS ${OPENSSL_LIBRARIES} crypt pthread)
-	include(FindActiveMQcpp)
-	find_package(activemqcpp REQUIRED)
-	# add_subdirectory(apr-1.4.6)
-	# add_subdirectory(apr-iconv-1.2.1)
-	# add_subdirectory(apr-util-1.4.1)
-	# add_subdirectory(activemq-cpp-library-3.4.4)
+	find_package(CURL REQUIRED)
+	set(THREADS_PREFER_PTHREAD_FLAG ON)
+	find_package(Threads REQUIRED)
 	add_definitions(-DUSE_MESSAGING)
 endif()
 

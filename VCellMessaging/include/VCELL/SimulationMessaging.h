@@ -3,32 +3,11 @@
 
 #include <deque>
 #ifdef USE_MESSAGING
-#include <activemq/library/ActiveMQCPP.h>
-#include <decaf/lang/Thread.h>
-#include <decaf/lang/Runnable.h>
-#include <decaf/util/concurrent/CountDownLatch.h>
-#include <decaf/lang/Integer.h>
-#include <decaf/lang/Long.h>
-#include <decaf/lang/System.h>
-#include <activemq/core/ActiveMQConnectionFactory.h>
-#include <activemq/util/Config.h>
-#include <cms/Connection.h>
-#include <cms/Session.h>
-#include <cms/TextMessage.h>
-#include <cms/BytesMessage.h>
-#include <cms/MapMessage.h>
-#include <cms/ExceptionListener.h>
-#include <cms/MessageListener.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
 #include <memory>
 
-using namespace activemq::core;
-using namespace decaf::util::concurrent;
-using namespace decaf::util;
-using namespace decaf::lang;
-using namespace cms;
 #endif
 #include <iostream>
 using namespace std;
@@ -129,11 +108,7 @@ public:
 	}
 };
 
-#ifdef USE_MESSAGING
-class SimulationMessaging : public ExceptionListener, MessageListener/*, Runnable*/
-#else
-class SimulationMessaging
-#endif
+class SimulationMessaging 
 {
 public:
     virtual ~SimulationMessaging() throw();
@@ -157,8 +132,6 @@ public:
 #ifdef USE_MESSAGING
 	static SimulationMessaging* create(const char* broker, const char* smqusername, const char* passwd, const char* qname, const char* tname,
 			const char* vcusername, int simKey, int jobIndex, int taskID, int ttl_low=DEFAULT_TTL_LOW, int ttl_high=DEFAULT_TTL_HIGH);
-    void onException(const CMSException& anException);
-	void onMessage(const Message* aMessage) throw();
 	void waitUntilFinished();
 	friend void* startMessagingThread(void* param);
 #endif
@@ -192,28 +165,8 @@ private:
 	void keepAlive();
 	static char* trim(char* str);
 	void setupConnection ();    //synchronized
-	Session& getQueueSession();
-	//Queue& getQueueSender();
-	TextMessage* initWorkerEventMessage();
 	void cleanup();
 	
-	bool m_connActive;
-	Connection* connection;
-	Session* session;
-	//always send message from queue
-	Destination* m_queue;
-	MessageProducer* qProducer;
-//	QueueConnectionRef m_qConnect;
-//	QueueSessionRef m_qSession;
-//	QueueSenderRef m_qSender;
-
-	//always receive message from topic
-	Destination* m_topic;
-	MessageConsumer* tConsumer;
-//	TopicConnectionRef m_tConnect;
-//	TopicSessionRef m_tSession;
-//	TopicSubscriberRef m_tSubscriber;
-
 	char *m_broker;
 	char *m_smqusername;
 	char *m_password;

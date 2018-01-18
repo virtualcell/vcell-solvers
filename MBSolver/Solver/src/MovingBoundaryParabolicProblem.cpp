@@ -28,7 +28,7 @@
 #include <IndexVect.h>
 
 #include <ExplicitSolver.h>
-#include <SimulationMessaging.h>
+#include <VCELL/SimulationMessaging.h>
 #include <MBridge/FronTierAdapt.h>
 #include <MBridge/Figure.h>
 #include <MBridge/MBPatch.h>
