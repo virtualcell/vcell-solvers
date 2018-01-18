@@ -7,8 +7,7 @@ then
   sudo tar -xvf gfortran-7.1-bin.tar -C / 
   brew install cmake
   brew install boost
-  brew tap homebrew/science
-  brew install homebrew/science/hdf5@1.8 --c++11
+  brew install hdf5@1.8 --c++11
 else
   echo "== Installing Linux dependencies =="
   sudo apt-get -qq update
