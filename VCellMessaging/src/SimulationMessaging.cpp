@@ -17,6 +17,12 @@ using std::endl;
 #include <errno.h>
 #endif
 
+static const char* TIMETOLIVE_PROPERTY    = "JMSTimeToLive";
+static const char* DELIVERYMODE_PROPERTY  = "JMSDeliveryMode";
+static const char* DELIVERYMODE_PERSISTENT_VALUE = "persistent";
+static const char* PRIORITY_PROPERTY      = "JMSPriority";
+static const char* PRIORITY_DEFAULT_VALUE = "5";
+
 static const char* MESSAGE_TYPE_PROPERTY	= "MessageType";
 static const char* MESSAGE_TYPE_WORKEREVENT_VALUE	= "WorkerEvent";
 static const char* MESSAGE_TYPE_STOPSIMULATION_VALUE = "StopSimulation";
@@ -187,19 +193,63 @@ void SimulationMessaging::sendStatus() {
 		/* get a curl handle */ 
 		CURL* curl = curl_easy_init();
 		if(curl) {
-			// First set the URL that is about to receive our POST. This URL can
-			// just as well be a https:// URL if that is what should receive the
-			// data.
-			curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:6161/message/workerevent?readTimeout=20000&type=queue");
+			// Documentation for the ActiveMQ restful API is missing, must see source code
+			//
+			// https://github.com/apache/activemq/blob/master/activemq-web/src/main/java/org/apache/activemq/web/MessageServlet.java
+			// https://github.com/apache/activemq/blob/master/activemq-web/src/main/java/org/apache/activemq/web/MessageServletSupport.java
+			//
+			// currently, the "web" api seems to use the same credentials as the "web console" ... defaults to admin:admin.
+			// TODO: pass in credentials, and protect them better (consider HTTPS).
+			//
+			/*
+				PROPERTIES="JMSDeliveryMode=persistent&JMSTimeToLive=3000"
+				PROPERTIES="${PROPERTIES}&SimKey=12446271133&JobIndex=0&TaskID=0&UserName=schaff"
+				PROPERTIES="${PROPERTIES}&MessageType=WorkerEvent&WorkerEvent_Status=1001&WorkerEvent_StatusMsg=Running"
+				PROPERTIES="${PROPERTIES}&WorkerEvent_TimePoint=2.0&WorkerEvent_Progress=0.4&HostName=localhost"
+				curl -XPOST "http://admin:admin@`hostname`:8165/api/message/workerEvent?type=queue&${PROPERTIES}"
+			*/
+			std::stringstream ss_url;
 
+			// ss_url << "http://" << m_smqusername << ":" << m_password << "@" << m_broker << "/api/message/workerEvent?type=queue&";
+			ss_url << "http://" << "admin" << ":" << "admin" << "@" << m_broker << "/api/message/workerEvent?type=queue&";
 
-			// Now specify the POST data
-			std::stringstream ss;
+			switch (workerEvent->status) {
+				case JOB_DATA:
+					ss_url << PRIORITY_PROPERTY << "=" << PRIORITY_DEFAULT_VALUE << "&";
+					ss_url << TIMETOLIVE_PROPERTY << "=" << m_ttl_lowPriority << "&";
+					ss_url << DELIVERYMODE_PROPERTY << "=" << DELIVERYMODE_PERSISTENT_VALUE << "&";
+					break;
+				case JOB_PROGRESS:
+					ss_url << PRIORITY_PROPERTY << "=" << PRIORITY_DEFAULT_VALUE << "&";
+					ss_url << TIMETOLIVE_PROPERTY << "=" << m_ttl_lowPriority << "&";
+					break;
+				case JOB_STARTING:
+					ss_url << PRIORITY_PROPERTY << "=" << PRIORITY_DEFAULT_VALUE << "&";
+					ss_url << TIMETOLIVE_PROPERTY << "=" << m_ttl_highPriority << "&";
+					ss_url << DELIVERYMODE_PROPERTY << "=" << DELIVERYMODE_PERSISTENT_VALUE << "&";
+					break;
+				case JOB_COMPLETED:
+					ss_url << PRIORITY_PROPERTY << "=" << PRIORITY_DEFAULT_VALUE << "&";
+					ss_url << TIMETOLIVE_PROPERTY << "=" << m_ttl_highPriority << "&";
+					ss_url << DELIVERYMODE_PROPERTY << "=" << DELIVERYMODE_PERSISTENT_VALUE << "&";
+					break;
+				case JOB_FAILURE:
+					ss_url << PRIORITY_PROPERTY << "=" << PRIORITY_DEFAULT_VALUE << "&";
+					ss_url << TIMETOLIVE_PROPERTY << "=" << m_ttl_highPriority << "&";
+					ss_url << DELIVERYMODE_PROPERTY << "=" << DELIVERYMODE_PERSISTENT_VALUE << "&";
+					break;
+			}
 
+			ss_url << MESSAGE_TYPE_PROPERTY	<< "=" << MESSAGE_TYPE_WORKEREVENT_VALUE << "&";
+			ss_url << USERNAME_PROPERTY << "=" << m_vcusername << "&";
+			ss_url << HOSTNAME_PROPERTY << "=" << m_hostname << "&";
+			ss_url << SIMKEY_PROPERTY << "=" << m_simKey << "&";
+			ss_url << TASKID_PROPERTY << "=" << m_taskID << "&";
+			ss_url << JOBINDEX_PROPERTY << "=" << m_jobIndex << "&";
 
-			//status
-			// msg->setIntProperty(WORKEREVENT_STATUS, workerEvent->status);
-			ss << WORKEREVENT_STATUS << "=" << workerEvent->status << "&";
+			ss_url << WORKEREVENT_STATUS << "=" << workerEvent->status << "&";
+			ss_url << WORKEREVENT_PROGRESS << "=" << workerEvent->progress << "&";
+			ss_url << WORKEREVENT_TIMEPOINT << "=" << workerEvent->timepoint;
 
 			char* revisedMsg = workerEvent->eventMessage;
 			if (revisedMsg != NULL) {
@@ -220,20 +270,9 @@ void SimulationMessaging::sendStatus() {
 					}
 				}
 			}
-
-			//event message
 			if (revisedMsg != NULL) {
-				//msg->setStringProperty(WORKEREVENT_STATUSMSG, revisedMsg);
-				ss << WORKEREVENT_STATUSMSG << "=" << revisedMsg << "&";
+				ss_url << WORKEREVENT_STATUSMSG << "=" << revisedMsg << "&";
 			}
-
-			//progress
-			// msg->setDoubleProperty(WORKEREVENT_PROGRESS, workerEvent->progress);
-			ss << WORKEREVENT_PROGRESS << "=" << workerEvent->progress << "&";
-
-			//timePoint
-			// msg->setDoubleProperty(WORKEREVENT_TIMEPOINT, workerEvent->timepoint);
-			ss << WORKEREVENT_TIMEPOINT << "=" << workerEvent->timepoint;
 
 			//
 			// print message to stdout
@@ -246,37 +285,18 @@ void SimulationMessaging::sendStatus() {
 			}
 			cout << "]" << endl;
 
-			// //send
-			// try {
-			// 	int timeToLive = m_ttl_highPriority;
-			// 	int deliveryMode = DeliveryMode::PERSISTENT;
-			// 	switch (workerEvent->status) {
-			// 	case JOB_DATA:
-			// 		timeToLive = m_ttl_lowPriority;
-			// 		break;
-			// 	case JOB_PROGRESS:
-			// 		timeToLive = m_ttl_lowPriority;
-			// 		deliveryMode = DeliveryMode::NON_PERSISTENT;
-			// 		break;
-			// 	case JOB_STARTING:
-			// 		timeToLive = m_ttl_highPriority;
-			// 		break;
-			// 	case JOB_COMPLETED:
-			// 		timeToLive = m_ttl_highPriority;
-			// 		break;
-			// 	case JOB_FAILURE:
-			// 		timeToLive = m_ttl_highPriority;
-			// 		break;
-			// 	}
-			// 	qProducer->send(msg, deliveryMode, DEFAULT_PRIORITY, timeToLive);
-			// } catch (CMSException& e) {
-			// 	cout << "!!!SimulationMessaging::sendStatus [" << e.getMessage() << "]" << endl;
-			// }
 
-			std::string x = ss.str();
-			const char* postfields = x.c_str();
+			std::string s_url = ss_url.str();
+			const char* messaging_http_url = s_url.c_str();
+			curl_easy_setopt(curl, CURLOPT_URL, messaging_http_url);
 
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postfields); // e.g. postfields="name=daniel&project=curl"
+
+			std::stringstream ss_body;
+			ss_body << "empty message body"; // one way to force a POST verb with libcurl, probably better ways.
+			std::string s_body = ss_body.str();
+			const char* postfields = s_body.c_str();
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postfields);
+
 		 
 			// Perform the request, res will get the return code
 			CURLcode res = curl_easy_perform(curl);
