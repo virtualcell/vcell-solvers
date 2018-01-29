@@ -248,8 +248,6 @@ void SimulationMessaging::sendStatus() {
 			ss_url << JOBINDEX_PROPERTY << "=" << m_jobIndex << "&";
 
 			ss_url << WORKEREVENT_STATUS << "=" << workerEvent->status << "&";
-			ss_url << WORKEREVENT_PROGRESS << "=" << workerEvent->progress << "&";
-			ss_url << WORKEREVENT_TIMEPOINT << "=" << workerEvent->timepoint;
 
 			char* revisedMsg = workerEvent->eventMessage;
 			if (revisedMsg != NULL) {
@@ -274,6 +272,16 @@ void SimulationMessaging::sendStatus() {
 				ss_url << WORKEREVENT_STATUSMSG << "=" << revisedMsg << "&";
 			}
 
+			ss_url << WORKEREVENT_PROGRESS << "=" << workerEvent->progress << "&";
+			ss_url << WORKEREVENT_TIMEPOINT << "=" << workerEvent->timepoint;
+
+			std::string s_url = ss_url.str();
+			const char* messaging_http_url = s_url.c_str();
+			curl_easy_setopt(curl, CURLOPT_URL, messaging_http_url);
+
+			cout << "curl -XPOST " << messaging_http_url << endl;
+
+
 			//
 			// print message to stdout
 			//
@@ -286,16 +294,12 @@ void SimulationMessaging::sendStatus() {
 			cout << "]" << endl;
 
 
-			std::string s_url = ss_url.str();
-			const char* messaging_http_url = s_url.c_str();
-			curl_easy_setopt(curl, CURLOPT_URL, messaging_http_url);
 
-
-			std::stringstream ss_body;
-			ss_body << "empty message body"; // one way to force a POST verb with libcurl, probably better ways.
-			std::string s_body = ss_body.str();
-			const char* postfields = s_body.c_str();
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postfields);
+			// std::stringstream ss_body;
+			// ss_body << "empty message body"; // one way to force a POST verb with libcurl, probably better ways.
+			// std::string s_body = ss_body.str();
+			// const char* postfields = s_body.c_str();
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
 
 		 
 			// Perform the request, res will get the return code
