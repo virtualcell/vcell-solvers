@@ -27,7 +27,7 @@ namespace vcell_util {
 				scratch << name_ << ":  ";
 			}
 			bool first = true;
-			for (auto e = begin(); e != end(); ++ e) {
+			for (auto e = this->begin(); e != this->end(); ++ e) {
 				if (!first) {
 					scratch << ", "; 
 				}

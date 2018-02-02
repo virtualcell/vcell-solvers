@@ -11,6 +11,12 @@
 #include <vcGccCompat.h>
 //#include <VCellFrontierUtil.h>
 using std::vector;
+namespace Frontier {
+	template <class T>
+	double *Coords(const T & obj) {
+		return obj->_coords;
+	}
+}
 namespace {
 	SVN_VERSION_TAG;
 
