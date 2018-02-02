@@ -9,11 +9,11 @@ RUN add-apt-repository ppa:ubuntu-desktop/ubuntu-make
 RUN	apt -y update
 RUN apt-get install -y ubuntu-make
 
-#RUN umake -v ide eclipse-cpp
+# note that \025 is Ctrl-U which should remove everything from cursor to start of line
 RUN export COMMAND="spawn umake ide eclipse-cpp;" \
     SLEEP="sleep 3;" \
     EXPECT_PROMPT="expect -re \"Choose installation path: /root/.local/share/umake/ide/eclipse-cpp\";" \
-    SEND="send \"\r\n\";" \
+    SEND="send \"\025/usr/local/opt/eclipse\r\n\";" \
     TIMEOUT="set timeout -1;" \
     EXPECT_DONE="expect -re \"Installation done\";" && \
     expect -c "$COMMAND $SLEEP $EXPECT_PROMPT $SEND $TIMEOUT $EXPECT_DONE"
@@ -21,13 +21,13 @@ RUN export COMMAND="spawn umake ide eclipse-cpp;" \
 
 RUN apt-get install -y -qq -o=Dpkg::Use-Pty=0 zlib1g-dev libhdf5-dev libcurl4-openssl-dev libboost-dev
 
-
 # RUN useradd -ms /bin/bash  developer
 # USER developer
 # ENV HOME /home/developer
-WORKDIR /workspace/build-docker
 
 VOLUME /workspace
 
-CMD /root/.local/share/umake/ide/eclipse-cpp/eclipse -data /workspace
+WORKDIR /workspace
+
+CMD /bin/bash
 
