@@ -1,0 +1,33 @@
+FROM ubuntu:xenial as build
+
+RUN apt-get -y update && apt-get install -y apt-utils && \
+    apt-get install -y -qq -o=Dpkg::Use-Pty=0 build-essential gfortran gdb cmake expect
+
+RUN apt-get install -y software-properties-common  python-software-properties
+
+RUN add-apt-repository ppa:ubuntu-desktop/ubuntu-make
+RUN	apt -y update
+RUN apt-get install -y ubuntu-make
+
+#RUN umake -v ide eclipse-cpp
+RUN export COMMAND="spawn umake ide eclipse-cpp;" \
+    SLEEP="sleep 3;" \
+    EXPECT_PROMPT="expect -re \"Choose installation path: /root/.local/share/umake/ide/eclipse-cpp\";" \
+    SEND="send \"\r\n\";" \
+    TIMEOUT="set timeout -1;" \
+    EXPECT_DONE="expect -re \"Installation done\";" && \
+    expect -c "$COMMAND $SLEEP $EXPECT_PROMPT $SEND $TIMEOUT $EXPECT_DONE"
+
+
+RUN apt-get install -y -qq -o=Dpkg::Use-Pty=0 zlib1g-dev libhdf5-dev libcurl4-openssl-dev libboost-dev
+
+
+# RUN useradd -ms /bin/bash  developer
+# USER developer
+# ENV HOME /home/developer
+WORKDIR /workspace/build-docker
+
+VOLUME /workspace
+
+CMD /root/.local/share/umake/ide/eclipse-cpp/eclipse -data /workspace
+

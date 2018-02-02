@@ -895,6 +895,7 @@ void SimTool::start1() {
 		if (duration >= 2){
 			percentile = (simulation->getTime_sec() - simStartTime)/(simEndTime - simStartTime);
 			if (percentile - lastSentPercentile >= increment) {
+				std::cout << "SimTool.start1() sending JOB_PROGRESS to SimulationMessaging: percentile=" << percentile << ", time=" << simulation->getTime_sec() << std::endl;
 				SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, simulation->getTime_sec()));
 				lastSentPercentile = percentile;
 				oldTime = currentTime;

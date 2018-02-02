@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+mkdir -p /workspace/vcell-solvers-build
+cd /workspace/vcell-solvers-build
+
+cmake \
+    -G "Eclipse CDT4 - Unix Makefiles" \
+    -DCMAKE_BUILD_TYPE="Debug" \
+    -DOPTION_TARGET_MESSAGING=ON \
+    -DOPTION_TARGET_PARALLEL=OFF \
+    -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
+    -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
+    -DOPTION_TARGET_SMOLDYN_SOLVER=OFF \
+    -DOPTION_TARGET_FV_SOLVER=ON \
+    -DOPTION_TARGET_STOCHASTIC_SOLVER=OFF \
+    -DOPTION_TARGET_NFSIM_SOLVER=OFF \
+    -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
+    -DOPTION_TARGET_SUNDIALS_SOLVER=OFF \
+    -DOPTION_TARGET_HY3S_SOLVERS=OFF \
+    ../vcell-solvers
+
+
