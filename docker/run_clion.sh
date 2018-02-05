@@ -12,6 +12,6 @@ if [[ $? -ne 0 ]]; then
 	exit 1
 fi
 
-echo "starting eclipse in running container '$container_name'"
-ECLIPSE="/usr/local/opt/eclipse/eclipse"
-docker container exec -i $container_name $ECLIPSE -data /workspace
+echo "starting clion in running container '$container_name'"
+CLION="/usr/local/opt/clion/bin/clion.sh"
+docker container exec -i $container_name $CLION

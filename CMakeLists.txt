@@ -78,7 +78,7 @@ include (FindZLIB)
 #message("system "${CMAKE_SYSTEM_NAME})
 #message("windows "${WINDOWS})
 
-option(OPTION_TARGET_MESSAGING "Parallel Solver (only chombo for now)" off)
+option(OPTION_TARGET_MESSAGING "Messaging (requires libcurl)" off)
 option(OPTION_TARGET_PARALLEL "Parallel Solver (only chombo for now)" off)
 option(OPTION_TARGET_DOCS "Generate Doxygen documentation" on)
 option(OPTION_TARGET_CHOMBO2D_SOLVER "Chombo2D Solver" off)
@@ -211,28 +211,37 @@ endif()
 # 
 #######################################
 
-	if (${OPTION_TARGET_MOVINGBOUNDARY_SOLVER} OR
-		${OPTION_TARGET_FV_SOLVER} OR
-		${OPTION_TARGET_CHOMBO2D_SOLVER} OR
-		${OPTION_TARGET_CHOMBO3D_SOLVER}
-		)
-		
-		if (${HDF5_BUILD_CPP_LIB})
-			add_subdirectory(hdf5-1.8.11)
-		else()
+if (${OPTION_TARGET_MOVINGBOUNDARY_SOLVER} OR
+	${OPTION_TARGET_FV_SOLVER} OR
+	${OPTION_TARGET_SMOLDYN_SOLVER} OR
+	${OPTION_TARGET_CHOMBO2D_SOLVER} OR
+	${OPTION_TARGET_CHOMBO3D_SOLVER}
+	)
+
+	if (${HDF5_BUILD_CPP_LIB})
+		add_subdirectory(hdf5-1.8.11)
+	else()
 #			set(HDF5_USE_STATIC_LIBRARIES ON)
-			#CMakeList.txt that comes with hdf5 switches library name if compiled with debug
-			find_package(HDF5 1.8.11 REQUIRED COMPONENTS HL CXX C)
-			set(HDF_VERSION ${HDF5_VERSION})
-			######    ${HDF5_HL_LIBRARIES} ${HDF5_CXX_LIBRARIES}
-			if (${OPTION_TARGET_CHOMBO2D_SOLVER} OR
-				${OPTION_TARGET_CHOMBO3D_SOLVER}
-				)
-		   			set(_hdf5_libs hdf5 hdf5_cpp)
-	    			set(HDF_LIB hdf5 hdf5_cpp)
-	    	endif()
-	    endif()
+		#CMakeList.txt that comes with hdf5 switches library name if compiled with debug
+		find_package(HDF5 1.8.11 REQUIRED COMPONENTS HL CXX C)
+		set(HDF_VERSION ${HDF5_VERSION})
+		######    ${HDF5_HL_LIBRARIES} ${HDF5_CXX_LIBRARIES}
+		if (${OPTION_TARGET_CHOMBO2D_SOLVER} OR
+			${OPTION_TARGET_CHOMBO3D_SOLVER}
+			)
+				set(_hdf5_libs hdf5 hdf5_cpp)
+				set(HDF_LIB hdf5 hdf5_cpp)
+		endif()
 	endif()
+endif()
+
+#if (${OPTION_TARGET_CHOMBO2D_SOLVER})
+#	include(ExternalProject)
+#    ExternalProject_Add(chombo2d 
+#        DOWNLOAD_COMMAND "mkdir -p ${CMAKE_BUILD_RPATH} && cp VCellChombo ${CMAKE_BUILD_RPATH}/Chombo2D"
+#        PREFIX ${CMAKE_BUILD_RPATH}/Chombo2D
+#        BUILD_IN_SOURCE true)
+#endif()
 
 	add_subdirectory(VCellMessaging)
 	set(VCELLMESSAGING_INCLUDE_DIR VCellMessaging/include)

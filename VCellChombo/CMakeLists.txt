@@ -1,6 +1,10 @@
 project(VCellChombo)
 message(STATUS "VCellChombo")
 
+#if (NOT DEFINED HDF_VERSION)
+#	set (HDF_VERSION ${HDF5_PACKAGE_VERSION})
+#endif ()
+
 if (NOT DEFINED HDF_VERSION) 
 	message(FATAL_ERROR "HDF_VERSION not set")
 endif (NOT DEFINED HDF_VERSION) 

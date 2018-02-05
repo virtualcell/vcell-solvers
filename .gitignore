@@ -12,3 +12,6 @@
 /build-linux64-ubuntu/
 /conan/
 /singularity/
+/cmake-build*
+/build*
+/.idea/
