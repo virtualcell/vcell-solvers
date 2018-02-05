@@ -26,9 +26,9 @@ before_install:
       sudo tar -xf gfortran-7.1-bin.tar -C /
       sudo chown -R $(whoami) /usr/local
       sudo chown -R $(whoami) /Library/Caches/Homebrew
-      brew outdated
-      HOMEBREW_NO_AUTO_UPDATE=1 brew install szip
-      HOMEBREW_NO_AUTO_UPDATE=1 brew install hdf5@1.8 --c++11
+      brew update
+      brew install szip
+      brew install hdf5@1.8 --c++11
     fi
     
 script: .travis/build.sh
