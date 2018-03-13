@@ -20,12 +20,12 @@ using std::endl;
 static const char* TIMETOLIVE_PROPERTY    = "JMSTimeToLive";
 static const char* DELIVERYMODE_PROPERTY  = "JMSDeliveryMode";
 static const char* DELIVERYMODE_PERSISTENT_VALUE = "persistent";
+static const char* DELIVERYMODE_NONPERSISTENT_VALUE = "nonpersistent";
 static const char* PRIORITY_PROPERTY      = "JMSPriority";
 static const char* PRIORITY_DEFAULT_VALUE = "5";
 
 static const char* MESSAGE_TYPE_PROPERTY	= "MessageType";
 static const char* MESSAGE_TYPE_WORKEREVENT_VALUE	= "WorkerEvent";
-static const char* MESSAGE_TYPE_STOPSIMULATION_VALUE = "StopSimulation";
 
 static const char* USERNAME_PROPERTY = "UserName";
 static const char* HOSTNAME_PROPERTY = "HostName";
@@ -37,8 +37,8 @@ static const char* WORKEREVENT_PROGRESS = "WorkerEvent_Progress";
 static const char* WORKEREVENT_TIMEPOINT = "WorkerEvent_TimePoint";
 static const char* WORKEREVENT_STATUSMSG = "WorkerEvent_StatusMsg";
 
-static const int CONNECTION_RETRY_PERIOD = 10 * ONE_SECOND;
-static const int CONNECTION_PING_PERIOD = 30 * ONE_SECOND;
+static const double WORKEREVENT_MESSAGE_MIN_TIME_SECONDS = 30.0;
+
 #endif
 
 SimulationMessaging *SimulationMessaging::m_inst = NULL;
@@ -217,11 +217,12 @@ void SimulationMessaging::sendStatus() {
 				case JOB_DATA:
 					ss_url << PRIORITY_PROPERTY << "=" << PRIORITY_DEFAULT_VALUE << "&";
 					ss_url << TIMETOLIVE_PROPERTY << "=" << m_ttl_lowPriority << "&";
-					ss_url << DELIVERYMODE_PROPERTY << "=" << DELIVERYMODE_PERSISTENT_VALUE << "&";
+					ss_url << DELIVERYMODE_PROPERTY << "=" << DELIVERYMODE_NONPERSISTENT_VALUE << "&";
 					break;
 				case JOB_PROGRESS:
 					ss_url << PRIORITY_PROPERTY << "=" << PRIORITY_DEFAULT_VALUE << "&";
 					ss_url << TIMETOLIVE_PROPERTY << "=" << m_ttl_lowPriority << "&";
+					ss_url << DELIVERYMODE_PROPERTY << "=" << DELIVERYMODE_NONPERSISTENT_VALUE << "&";
 					break;
 				case JOB_STARTING:
 					ss_url << PRIORITY_PROPERTY << "=" << PRIORITY_DEFAULT_VALUE << "&";
@@ -351,7 +352,7 @@ void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
 			const int dProgress = arg_workerEvent->progress;
 			if (dProgress % 25 != 0) {
 				time_t currTime = time(0);
-				if (currTime - lastSentEventTime < 5) {
+				if (difftime(currTime, lastSentEventTime) < WORKEREVENT_MESSAGE_MIN_TIME_SECONDS){
 					ifset = false;
 				}
 			}

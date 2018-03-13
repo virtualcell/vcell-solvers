@@ -192,9 +192,9 @@ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 
 
 if (OPTION_TARGET_MESSAGING)
-	if (APPLE OR MINGW)
-		message(FATAL_ERROR "TARGET_SOLVERS_WITH_MESSAGING is not supported on MAC OS X and MINGW")
-	endif(APPLE OR MINGW)
+#	if (APPLE OR MINGW)
+#		message(FATAL_ERROR "TARGET_SOLVERS_WITH_MESSAGING is not supported on MAC OS X and MINGW")
+#	endif(APPLE OR MINGW)
 	
 	#don't need graphics for server side solvers
 	set(OPTION_USE_OPENGL OFF CACHE BOOL "")
