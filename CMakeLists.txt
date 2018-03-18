@@ -35,10 +35,14 @@ elseif (LINUX)
 endif()
 
 project(numerics)
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.3)
 enable_language(CXX)
 enable_language(C)
 enable_language(Fortran)
+
+if(POLICY CMP0057)
+  cmake_policy(SET CMP0057 NEW)
+endif()
 
 set(SVERSION "unversionedbuild")
 message("svnversion ${SVERSION}")
@@ -49,7 +53,7 @@ add_definitions(-DSVNVERSION=svn${SVERSION})
 set(RULE_MESSAGES OFF)
 set(CMAKE_COLOR_MAKEFILE OFF)
 set(_ECLIPSE_VERSION "4.4")
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -80,6 +84,7 @@ include (FindZLIB)
 
 option(OPTION_TARGET_MESSAGING "Messaging (requires libcurl)" off)
 option(OPTION_TARGET_PARALLEL "Parallel Solver (only chombo for now)" off)
+option(OPTION_TARGET_PETSC "PETSc Solver (only FV for now)" off)
 option(OPTION_TARGET_DOCS "Generate Doxygen documentation" on)
 option(OPTION_TARGET_CHOMBO2D_SOLVER "Chombo2D Solver" off)
 option(OPTION_TARGET_CHOMBO3D_SOLVER "Chombo3D Solver" off)
@@ -203,6 +208,10 @@ if (OPTION_TARGET_MESSAGING)
 	set(THREADS_PREFER_PTHREAD_FLAG ON)
 	find_package(Threads REQUIRED)
 	add_definitions(-DUSE_MESSAGING)
+endif()
+
+if (OPTION_TARGET_PETSC)
+	find_package(PETSc REQUIRED)
 endif()
 
 ######################################

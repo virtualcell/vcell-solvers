@@ -39,6 +39,7 @@ private:
 	Vec oldY;
 	SNES snes;
 	Mat Pmat;
+	double internalDt;
 
 	void computeNonZeros(int* nnz);
 	void buildJ_Volume(double t, double* yinput, Mat Pmat);

@@ -17,7 +17,7 @@
 #include <VCELL/SerialScheduler.h>
 #include <VCELL/SundialsPdeScheduler.h>
 #ifdef VCELL_PETSC
-#include <VCELL/PetscPdeScheduler.h>
+  #include <VCELL/PetscPdeScheduler.h>
 #endif
 #include <VCELL/PostProcessingBlock.h>
 
@@ -188,7 +188,7 @@ void Simulation::initSimulation()
 #ifdef VCELL_PETSC
 			_scheduler = new PetscPdeScheduler(this);
 #else
-			throw "VCELL_PETSC_SOLVER is not supported  yet";
+			throw "VCELL_PETSC_SOLVER must be built with VCELL_PETSC flag";
 #endif
 		} else {
 			_scheduler = new SerialScheduler(this);

@@ -70,6 +70,8 @@ PetscPdeScheduler::PetscPdeScheduler(Simulation *sim) : Scheduler(sim)
 	neighborStatePointValues = 0;
 
 	diffCoeffs = 0;
+
+	internalDt = sim->getDT_sec();
 }
 
 
@@ -479,18 +481,26 @@ PetscErrorCode PetscPdeScheduler::initPetscSolver() {
 	}
 }
 
+static int numInternalIter = 32;
+static int linitsHi = 45;
+static int linitsLo = 20;
+static int maxInternalIter = numInternalIter;
+static double maxInteralIterTime = 0;
 PetscErrorCode PetscPdeScheduler::solve() {
-	static string METHOD = "PetscPdeScheduler::solve";
-	cout << "Entry " << METHOD << endl;
+	//static string METHOD = "PetscPdeScheduler::solve";
+	//cout << "Entry " << METHOD << endl;
 
+	internalDt = simulation->getDT_sec() / numInternalIter;
+	for (int iter = 0; iter < numInternalIter; ++ iter)
+	{
+		VecCopy(vecY, oldY);
+		SNESSolve(snes, oldY, vecY);
+
+		currentTime += internalDt;
+	}
 	int nonlinits, linits;
-	VecCopy(vecY, oldY);
-//	snes_buildPmat(vecY, Pmat);
-	SNESSolve(snes, oldY, vecY);
-
 	KSP ksp;
 	PC pc;
-	// collect information
 	SNESGetKSP(snes, &ksp);
 	KSPGetPC(ksp, &pc);
 	SNESGetIterationNumber(snes, &nonlinits);
@@ -505,29 +515,29 @@ PetscErrorCode PetscPdeScheduler::solve() {
 	PCFactorGetLevels(pc, &factorLevel);
 	PetscBool reuse;
 	PCGetReusePreconditioner(pc, &reuse);
-	PetscPrintf(PETSC_COMM_WORLD, "pctype %s, factor level %d, pc reuse %d, gmres restart %d, "
-			"nonlinits %D, linits %D\n", pctype, factorLevel, reuse, restart, nonlinits, linits);
-	currentTime = currentTime + simulation->getDT_sec();
-
-	/*
-	PetscInt  steps, nonlinits, linits, snesfails, rejects;
-	TSConvergedReason reason;
-	PetscReal ftime;
-
-	TSGetTimeStepNumber(ts,&steps);
-	TSGetSNESFailures(ts, &snesfails);
-  TSGetStepRejections(ts, &rejects);
-	TSGetSNESIterations(ts, &nonlinits);
-	TSGetKSPIterations(ts, &linits);
-	TSGetSolveTime(ts,&ftime);
-	TSGetConvergedReason(ts, &reason);
-
-	PetscPrintf(PETSC_COMM_WORLD, "%s at steps %D (%D rejected, %D SNES fails), ftime %g, nonlinits %D, linits %D\n",
-			TSConvergedReasons[reason], steps, rejects, snesfails,(double)ftime, nonlinits, linits);
-*/
-
+	PetscPrintf(PETSC_COMM_WORLD, "\nt %f, internalits %d, internal-dt %f, pctype %s, factor level %d, pc reuse %d, gmres restart %d, "
+			"nonlinits %D, linits %D\n", currentTime, numInternalIter, internalDt, pctype, factorLevel, reuse, restart, nonlinits, linits);
 	updateSolutions();
-	cout << "Exit " << METHOD << endl;
+
+	if (linits > linitsHi)
+	{
+		numInternalIter *= 2;
+	}
+	else if (linits < linitsLo && numInternalIter >= 2)
+	{
+		numInternalIter = numInternalIter / 2;
+	}
+	if (maxInternalIter < numInternalIter)
+	{
+		maxInternalIter = std::max(maxInternalIter, numInternalIter);
+		maxInteralIterTime = currentTime;
+	}
+
+	if (std::abs(SimTool::getInstance()->getEndTime() - simulation->getTime_sec()) < epsilon)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "\nmaxInternalIter:%d, maxInteralIterTime:%f", maxInternalIter, maxInteralIterTime);
+	}
+	//cout << "Exit " << METHOD << endl;
 }
 
 void PetscPdeScheduler::updateSolutions() {
@@ -2141,8 +2151,7 @@ PetscErrorCode PetscPdeScheduler::snes_function(SNES snes, Vec Y, Vec F)
 	VecRestoreArrayRead(Y, (const PetscScalar**)&yinput);
 	VecRestoreArray(F, (PetscScalar**)&f);
 
-	double dt = simulation->getDT_sec();
-	VecAXPBY(F, 1.0 , -dt, Y);
+	VecAXPBY(F, 1.0 , -internalDt, Y);
 
 	return 0;
 }
@@ -2377,8 +2386,8 @@ PetscErrorCode PetscPdeScheduler::snes_buildPmat(Vec Y, Mat Pmat)
 	double *yinput;
 	VecGetArrayRead(Y, (const double**)&yinput);
 
-	buildPmat_Volume(currentTime, simulation->getDT_sec(), yinput, Pmat);
-	buildPmat_Membrane(currentTime, simulation->getDT_sec(), yinput, Pmat);
+	buildPmat_Volume(currentTime, internalDt, yinput, Pmat);
+	buildPmat_Membrane(currentTime, internalDt, yinput, Pmat);
 
 	// volume region variables, diagonal = 1.0;
 	if (simulation->getNumVolRegionVariables() != 0) {
@@ -2439,7 +2448,7 @@ PetscErrorCode PetscPdeScheduler::snes_jacobian(SNES snes, Vec Y, Mat Amat, Mat 
 	MatView(Pmat, viewer);
 	PetscViewerDestroy(&viewer);
 */
-	cout << " # snes_jacobian called " << count << endl;
+	//cout << " # snes_jacobian called " << count << endl;
 	return 0;
 }
 
