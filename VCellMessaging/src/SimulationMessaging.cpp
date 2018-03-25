@@ -345,9 +345,8 @@ void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
 	else {
 		bool ifset = true;
 		bool iftry = false;
-		static int lastStatus = -1;
 		bool critical = criticalDelivery(*arg_workerEvent);
-		if (!critical && arg_workerEvent->status == lastStatus) {
+		if (!critical) {
 			iftry = true;
             //
             // for portability, if not POSIX, time_t not guaranteed to be in seconds
@@ -367,9 +366,6 @@ void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
 			{ //scope for lock
 				WorkerEventLocker locker(*this,iftry);
 				if (locker.locked) {
-					if (!critical) {
-						lastStatus = arg_workerEvent->status;
-					}
 					events.push_back(arg_workerEvent);
 				}
 			} //unlock worker event
