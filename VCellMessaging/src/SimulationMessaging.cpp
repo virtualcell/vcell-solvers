@@ -37,7 +37,7 @@ static const char* WORKEREVENT_PROGRESS = "WorkerEvent_Progress";
 static const char* WORKEREVENT_TIMEPOINT = "WorkerEvent_TimePoint";
 static const char* WORKEREVENT_STATUSMSG = "WorkerEvent_StatusMsg";
 
-static const double WORKEREVENT_MESSAGE_MIN_TIME_SECONDS = 30.0;
+static const double WORKEREVENT_MESSAGE_MIN_TIME_SECONDS = 15.0;
 
 #endif
 
@@ -349,13 +349,18 @@ void SimulationMessaging::setWorkerEvent(WorkerEvent* arg_workerEvent) {
 		bool critical = criticalDelivery(*arg_workerEvent);
 		if (!critical && arg_workerEvent->status == lastStatus) {
 			iftry = true;
-			const int dProgress = arg_workerEvent->progress;
-			if (dProgress % 25 != 0) {
-				time_t currTime = time(0);
-				if (difftime(currTime, lastSentEventTime) < WORKEREVENT_MESSAGE_MIN_TIME_SECONDS){
-					ifset = false;
-				}
-			}
+            //
+            // for portability, if not POSIX, time_t not guaranteed to be in seconds
+            // add WORKEREVENT_MESSAGE_MIN_TIME_SECONDS to last event time
+            //
+            struct tm nextMessageTime_tm = *localtime( &lastSentEventTime);
+            nextMessageTime_tm.tm_sec += WORKEREVENT_MESSAGE_MIN_TIME_SECONDS;   // add MIN_TIME seconds to the time
+            time_t nextMessageTime = mktime( &nextMessageTime_tm);      // normalize it
+            time_t currTime;
+            time(&currTime);
+            if (currTime <= nextMessageTime){
+                ifset = false;
+            }
 		}
 
 		if (ifset) {
