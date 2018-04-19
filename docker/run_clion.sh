@@ -12,6 +12,12 @@ if [[ $? -ne 0 ]]; then
 	exit 1
 fi
 
+if [ $(uname) == "Linux" ]; then
+	echo "adding xauth cookie"
+	XAUTH_COOKIE=$(xauth list | grep `hostname` | head -1)
+	docker exec -i $container_name xauth add $XAUTH_COOKIE
+fi
+
 echo "starting clion in running container '$container_name'"
 CLION="/usr/local/opt/clion/bin/clion.sh"
 docker container exec -i $container_name $CLION

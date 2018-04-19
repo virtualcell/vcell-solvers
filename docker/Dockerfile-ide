@@ -7,7 +7,7 @@ RUN apt-get install -y software-properties-common  python-software-properties
 
 RUN add-apt-repository ppa:ubuntu-desktop/ubuntu-make
 RUN	apt -y update
-RUN apt-get install -y ubuntu-make
+RUN apt-get install -y ubuntu-make xauth
 
 # note that \025 is Ctrl-U which should remove everything from cursor to start of line
 # RUN export COMMAND="spawn umake ide eclipse-cpp;" \
