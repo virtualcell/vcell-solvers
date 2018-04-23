@@ -252,25 +252,29 @@ void SimulationMessaging::sendStatus() {
 
 			char* revisedMsg = workerEvent->eventMessage;
 			if (revisedMsg != NULL) {
-				revisedMsg = trim(revisedMsg);
-				if (strlen(revisedMsg) > 2048) {
-					revisedMsg[2047] = 0; //status message is only 2048 chars long in database
-				}
+                revisedMsg = trim(revisedMsg);
+                if (strlen(revisedMsg) > 2048) {
+                    revisedMsg[2047] = 0; //status message is only 2048 chars long in database
+                }
 
-				for (int i = 0; i < (int)strlen(revisedMsg); i ++) {
-					switch (revisedMsg[i]) {
-					case '\r':
-					case '\n':
-					case '\'':
-					case '\"':
-						revisedMsg[i] = ' ';
-						break;
-						// these characters are not valid both in database and in messages as a property
-					}
-				}
-			}
-			if (revisedMsg != NULL) {
-				ss_url << WORKEREVENT_STATUSMSG << "=" << revisedMsg << "&";
+                for (int i = 0; i < (int) strlen(revisedMsg); i++) {
+                    switch (revisedMsg[i]) {
+                        case '\r':
+                        case '\n':
+                        case '\'':
+                        case '\"':
+                            revisedMsg[i] = ' ';
+                            break;
+                            // these characters are not valid both in database and in messages as a property
+                    }
+                }
+            }
+ 			if (revisedMsg != NULL) {
+                char *output = curl_easy_escape(curl, revisedMsg, strlen(revisedMsg));
+                if(output) {
+                    ss_url << WORKEREVENT_STATUSMSG << "=" << output << "&";
+                    curl_free(output);
+                }
 			}
 
 			ss_url << WORKEREVENT_PROGRESS << "=" << workerEvent->progress << "&";
