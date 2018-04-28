@@ -553,6 +553,8 @@ void SimTool::updateLog(double progress, double time, int iteration)
 		char const *folder = getenv("TMPDIR");
 		if (folder != 0)
     		tempDir = folder;		
+    	if (tempDir.at(tempDir.length()) != '/') 
+    	    tempDir += '/';
 #endif
 		std::cout << "temporary directory used is " << tempDir << std::endl;
 		static bool bUseTempDir = false;
