@@ -39,6 +39,7 @@ public:
 	void setModel(VCellModel* model);
 	void setSimulation(Simulation* sim);
 	void setTimeStep(double period);
+	void setInnerSteps(int steps);
 	void setCheckSpatiallyUniform();
 
 	bool isCheckingSpatiallyUniform() { return bCheckSpatiallyUniform; }
@@ -136,6 +137,7 @@ private:
 	double simStartTime;
 	bool bCheckSpatiallyUniform;
 	double simDeltaTime;
+	int innerSteps;
 	int keepEvery;
 	bool bStoreEnable;
 	char* baseFileName;

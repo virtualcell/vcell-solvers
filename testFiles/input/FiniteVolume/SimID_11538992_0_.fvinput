@@ -1,7 +1,7 @@
 # Simulation Parameters
 SIMULATION_PARAM_BEGIN
 SOLVER FV_SOLVER 1.0E-8
-BASE_FILE_NAME ./testFiles/working/FiniteVolume/SimID_11538992_0_
+BASE_FILE_NAME SimID_11538992_0_
 ENDING_TIME 0.1
 TIME_STEP 1.0E-4
 KEEP_EVERY 500
@@ -18,7 +18,7 @@ MODEL_END
 
 # Mesh file
 MESH_BEGIN
-VCG_FILE ./testFiles/working/FiniteVolume/SimID_11538992_0_.vcg
+VCG_FILE SimID_11538992_0_.vcg
 MESH_END
 
 # Variables : type name domain time_dependent_flag advection_flag grad_flag solve_whole_mesh_flag solve_regions

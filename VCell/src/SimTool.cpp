@@ -90,6 +90,7 @@ SimTool::SimTool()
 	simStartTime(0),
 	bCheckSpatiallyUniform(false),
 	simDeltaTime(0),
+	innerSteps(1),
 	keepEvery(100),
 	bStoreEnable(true),
 	baseFileName(0),
@@ -152,6 +153,13 @@ void SimTool::setSimulation(Simulation* sim) {
 
 void SimTool::setTimeStep(double period) {
 	simDeltaTime = period;
+}
+
+void SimTool::setInnerSteps(int steps) {
+    if(steps <= 0) {
+        throw "SimTool::setInnerSteps(), innerSteps must be a positive integer";
+    }
+    innerSteps = steps;
 }
 
 void SimTool::create() {
@@ -864,6 +872,7 @@ void SimTool::start1() {
 	}
 	double epsilon = 1e-12;
 	clock_t oldTime = clock(); // to control the output of progress, send progress every 2 seconds.
+	int innerStepsCounter = 0;
 	while (true) {
 		if (simulation->getTime_sec() - simEndTime > epsilon // currentTime past endTime
 				|| fabs(simEndTime - simulation->getTime_sec()) < epsilon) { // reached the end time
@@ -879,10 +888,12 @@ void SimTool::start1() {
 			return;
 		}
 
+		innerStepsCounter++;
 		simulation->iterate();
-		if (smoldynSim != NULL) {
+		if (smoldynSim != NULL && innerStepsCounter == innerSteps) {
 			vcellhybrid::smoldynOneStep(smoldynSim);//smoldynOneStep includes computeHistogram after each time step.
 			copyParticleCountsToConcentration();
+			innerStepsCounter = 0;
 		}
 
 		if (checkStopRequested()) {
