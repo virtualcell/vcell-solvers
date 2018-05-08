@@ -1074,10 +1074,10 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 			double time_step;
 			lineInput >> time_step;
 			simTool->setTimeStep(time_step);
-		} else if (nextToken == "INNER_STEP") {
-			int inner_step;
-			lineInput >> inner_step;
-			simTool->setInnerSteps(inner_step);
+		} else if (nextToken == "SMOLDYN_STEP_MULTIPLIER") {
+			int smoldynStepMultiplier;
+			lineInput >> smoldynStepMultiplier;
+			simTool->setSmoldynStepMultiplier(smoldynStepMultiplier);
 		} else if (nextToken == "CHECK_SPATIALLY_UNIFORM") {
 			double spatiallyUniformAbsTol = 1e-6;
 			double spatiallyUniformRelTol = 1e-3;
