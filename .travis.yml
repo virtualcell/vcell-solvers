@@ -28,7 +28,7 @@ before_install:
       #sudo chown -R $(whoami) /Library/Caches/Homebrew
       #brew update
       brew install szip
-      brew install hdf5@1.8 --c++11
+      brew install hdf5
     fi
     
 script: .travis/build.sh
