@@ -253,12 +253,6 @@ endif()
 #endif()
 
 	add_subdirectory(VCellMessaging)
-	set(VCELLMESSAGING_INCLUDE_DIR VCellMessaging/include)
-	if (OPTION_TARGET_MESSAGING)
-		set(VCELLMESSAGING_LIBS activemq-cpp aprutil-1 apriconv-1 apr-1)
-	else()
-		set(VCELLMESSAGING_LIBS vcellmessaging)
-	endif()
  
     if (${OPTION_TARGET_MOVINGBOUNDARY_SOLVER} OR 
     	${OPTION_TARGET_NFSIM_SOLVER}
