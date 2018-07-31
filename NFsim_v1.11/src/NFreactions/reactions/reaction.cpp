@@ -295,7 +295,9 @@ bool BasicRxnClass::tryToAdd(Molecule *m, unsigned int reactantPos)
 		rl->removeMappingSet(m->getRxnListMappingId(rxnIndex));
 		m->setRxnListMappingId(rxnIndex,Molecule::NOT_IN_RXN);
 	}
- 	//Try to map it!
+
+
+	//Try to map it!
 	ms = rl->pushNextAvailableMappingSet();
 	if(!reactantTemplates[reactantPos]->compare(m,rl,ms)) {
 		//we must remove, if we did not match.  This will also remove

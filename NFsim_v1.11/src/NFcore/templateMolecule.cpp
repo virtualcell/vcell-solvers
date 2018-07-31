@@ -1174,7 +1174,7 @@ bool TemplateMolecule::compare(Molecule *m, ReactantContainer *rc, MappingSet *m
 			//on this molecule
 			Molecule *potentialMatch=m2->getBondedMolecule(bondPartnerCompIndex[b]);
 			int thisBond = m2->getBondedMoleculeBindingSiteIndex(bondPartnerCompIndex[b]);
-			if(potentialMatch==NULL) {  // Molecule::NOBOND => NULL
+			if(potentialMatch==nullptr) {
 				//cout<<"potential match site has no bond"<<endl;
 				clear(); return false;
 			}
@@ -1214,6 +1214,7 @@ bool TemplateMolecule::compare(Molecule *m, ReactantContainer *rc, MappingSet *m
 		moleculeType->getEquivalencyClass(molEqComp,n_molEqComp,this->symCompName[c]);
 		for(int sc=0; sc<n_molEqComp; sc++)
 		{
+
 			//if(this->uniqueTemplateID==41)cout<<"  -to molecule comp: "<<m->getMoleculeType()->getComponentName(molEqComp[sc])<<endl;
 
 			//first make sure that we can map to this component
@@ -1279,7 +1280,7 @@ bool TemplateMolecule::compare(Molecule *m, ReactantContainer *rc, MappingSet *m
 
 					//First, make sure the opposite molecule is connected to this molecule correctly
 					Molecule *potentialMatch=m2->getBondedMolecule(symBondPartnerCompIndex[c]);
-					if(potentialMatch==NULL) {  // Molecule::NOBOND => NULL
+					if(potentialMatch==nullptr) {  // Molecule::NOBOND => NULL
 						continue;
 					} else if(potentialMatch!=matchMolecule) {
 						continue;
@@ -1314,6 +1315,7 @@ bool TemplateMolecule::compare(Molecule *m, ReactantContainer *rc, MappingSet *m
 
 	//Great, if we got here, everything matched up, all components can be mapped, and
 	//we just have to double check if our mappings are valid...
+	
 	if(this->n_symComps>1) {
 		if(!isSymMapValid()) {
 			//oh no!  we were so close, but in the end, we couldn't get a unique

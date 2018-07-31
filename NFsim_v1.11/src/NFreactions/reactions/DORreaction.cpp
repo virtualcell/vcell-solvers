@@ -102,7 +102,7 @@ DORRxnClass::DORRxnClass(
 			if((unsigned)transform->getType()==TransformationFactory::LOCAL_FUNCTION_REFERENCE) {
 				LocalFunctionReference *lfr = static_cast<LocalFunctionReference*>(transform);
 				if(lfr->getPointerName()==lfArgumentPointerNameList.at(i)) {
-//					cout<<"Found a match here!"<<endl;
+					//cout<<"Found a match here!"<<endl;
 					//cout<<"found scope should be: "<<lfr->getFunctionScope()<<endl;
 					//If we got here, we found a match, so remember the index of the transformation
 					//so we can quickly get the value of the function for any mapping object we try
@@ -278,6 +278,7 @@ bool DORRxnClass::tryToAdd(Molecule *m, unsigned int reactantPos) {
 				reactantTree->confirmPush(ms->getId(),localFunctionValue);
 				m->setRxnListMappingId(rxnIndex,ms->getId());
 			}
+
 		}
 	} else {
 

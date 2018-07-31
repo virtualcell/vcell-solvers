@@ -215,6 +215,7 @@ void CompositeFunction::finalizeInitialization(System *s)
 	this->refLfRefNames = new string[n_refLfs];
 	this->refLfScopes = new int[n_refLfs];
 	this->refLfValues = new double[n_refLfs];
+
 	for(unsigned int i=0; i<lfIndexValues.size(); i++) {
 		this->refLfInds[i]=lfIndexValues.at(i);
 		this->refLfRefNames[i]=lfReferenceName.at(i);
@@ -425,6 +426,7 @@ double CompositeFunction::evaluateOn(Molecule **molList, int *scope, int *curRea
 	//cout << "n_lfs=" << n_lfs << endl;
 	//cout << "scope[0]=" << scope[0] << endl;
 	//cout << "molList[0]" << molList[0]->getMoleculeTypeName() << endl;
+	
 	if(n_lfs>0) {
 
 		//cout<<"evaluating composite function with local dependencies."<<endl;

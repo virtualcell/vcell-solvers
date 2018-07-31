@@ -63,7 +63,7 @@
  *  -oSteps [num of steps] = specifies the number of times to output during the simulation
  *
  *  -eq [Duration in sec] = specifies the length of time to equilibrate before simulating
- *throw std::runtime_error("error in NFutil::convertToDouble(\"" + s + "\")");
+ *
  *  -o [filename] = specifies the name of the output file
  *
  *  -v = verbose output when reading an xml file and building a system
@@ -72,7 +72,7 @@
  *
  *  -utl [integer] = universal traversal limit, see manual
  *
- *  -notf = disthrow std::runtime_error("error in NFutil::convertToDouble(\"" + s + "\")");ables On the Fly Observables, see manual
+ *  -notf = disables On the Fly Observables, see manual
  *
  *  -cb = turn on complex bookkeeping, see manual
  *
@@ -98,10 +98,10 @@
  * can dive into the specific classes and functions that you need to work with.  Details
  * about how to run the simple_system example are given in these files.
  *
- * All of the throw std::runtime_error("error in NFutil::convertToDouble(\"" + s + "\")");other main classes are defined in the NFcore namespace and are found in the NFcore
+ * All of the other main classes are defined in the NFcore namespace and are found in the NFcore
  * directory and the NFreactions directory.  The NFcore directory contains the basic structure
  * of the simulation engine while the NFreactions directory contains the classes associated with
- * actually exthrow std::runtime_error("error in NFutil::convertToDouble(\"" + s + "\")");ecuting rules and transforming molecules.  NFinput contains what's needed for
+ * actually executing rules and transforming molecules.  NFinput contains what's needed for
  * the xml parser (built using the TinyXML package) and the command line parser.  NFutil also
  * contains a nice implementation of the Mersenne Twister random number generator which should
  * be used for all random number generation in NFsim.  NFoutput is more sparse as it deals only

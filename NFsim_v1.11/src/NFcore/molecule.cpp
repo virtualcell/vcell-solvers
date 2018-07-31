@@ -343,7 +343,7 @@ void Molecule::printDetails(ostream &o)
 		o<< parentMoleculeType->getComponentName(c) <<"=";
 		o<<parentMoleculeType->getComponentStateName(c,component[c]);
 		o<<"\tbond=";
-		if(bond[c]==NULL) o<<"empty"; // NOBOND
+		if(bond[c]==nullptr) o<<"empty"; // NOBOND
 		else {
 			o<<bond[c]->getMoleculeTypeName()<<"_"<<bond[c]->getUniqueID();
 			o<<"("<<bond[c]->getMoleculeType()->getComponentName(this->indexOfBond[c])<<")";
@@ -368,7 +368,7 @@ int Molecule::getDegree()
 {
 	int degree = 0;
 	for(int c=0; c<numOfComponents; c++)
-		if(bond[c]!=NULL) degree++;  // NOBOND
+		if(bond[c]!=nullptr) degree++;  // NOBOND
 	return degree;
 }
 
@@ -395,13 +395,13 @@ string Molecule::getLabel ( int cIndex ) const
 
 bool Molecule::isBindingSiteOpen(int cIndex) const
 {
-	if(bond[cIndex]==NULL) return true; // NOBOND
+	if(bond[cIndex]==nullptr) return true; // NOBOND
 	return false;
 }
 
 bool Molecule::isBindingSiteBonded(int cIndex) const
 {
-	if(bond[cIndex]==NULL) return false; // NOBOND
+	if(bond[cIndex]==nullptr) return false; // NOBOND
 	return true;
 }
 
@@ -429,7 +429,7 @@ int Molecule::getBondedMoleculeBindingSiteIndex(int cIndex) const
 
 void Molecule::bind(Molecule *m1, int cIndex1, Molecule *m2, int cIndex2)
 {
-	if(m1->bond[cIndex1]!=NULL || m2->bond[cIndex2]!=NULL) {  // NOBOND = NULL
+	if(m1->bond[cIndex1]!=nullptr || m2->bond[cIndex2]!=nullptr) {  // NOBOND = NULL
 		cerr<<endl<<endl<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
 		cerr<<"Your universal traversal limit was probably set too low, so some updates were not correct!\n\n";
 
