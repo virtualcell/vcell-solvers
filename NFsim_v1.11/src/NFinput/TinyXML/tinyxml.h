@@ -57,7 +57,7 @@ distribution.
 // new safe versions. This probably doesn't fully address the problem,
 // but it gets closer. There are too many compilers for me to fully
 // test. If you get compilation troubles, undefine TIXML_SAFE
-#define TIXML_SAFE vcell
+#define TIXML_SAFE
 
 #ifdef TIXML_SAFE
 	#if defined(_MSC_VER) && (_MSC_VER >= 1400 )
@@ -74,7 +74,7 @@ distribution.
 	#elif defined(__GNUC__) && (__GNUC__ >= 3 )
 		// GCC version 3 and higher.s
 		//#warning( "Using sn* functions." )
-//		#define TIXML_SNPRINTF snprintf VCELL gcw 3/23/2015 (for 32-bit cygwin compile)
+		#define TIXML_SNPRINTF snprintf
 		#define TIXML_SNSCANF  snscanf
 		#define TIXML_SSCANF   sscanf
 	#else

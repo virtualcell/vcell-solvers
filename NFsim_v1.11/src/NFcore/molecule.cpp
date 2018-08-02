@@ -34,7 +34,7 @@ Molecule::Molecule(MoleculeType * parentMoleculeType, int listId)
 	this->indexOfBond = new int [numOfComponents];
 	this->hasVisitedBond = new bool [numOfComponents];
 	for(int b=0; b<numOfComponents; b++) {
-		bond[b]=0; indexOfBond[b]=NULL;  // NOBOND
+		bond[b]=0; indexOfBond[b]=NOBOND;
 		hasVisitedBond[b] = false;
 	}
 
@@ -42,7 +42,7 @@ Molecule::Molecule(MoleculeType * parentMoleculeType, int listId)
 	hasVisitedMolecule = false;
 	hasEvaluatedMolecule = false;
 	isMatchedTo=0;
-	rxnListMappingId = 0;
+	rxnListMappingId2 = 0;
 	nReactions = 0;
 	useComplex = parentMoleculeType->getSystem()->isUsingComplex();
 	isPrepared = false;
@@ -72,7 +72,7 @@ Molecule::~Molecule()
 	delete [] isObservable;
 	delete [] component;
 	delete [] indexOfBond;
-	delete [] rxnListMappingId;
+	delete [] rxnListMappingId2;
 	delete [] hasVisitedBond;
 
 	if(localFunctionValues!=0)
@@ -84,9 +84,8 @@ void Molecule::prepareForSimulation()
 {
 	if(isPrepared) return;
 	nReactions = parentMoleculeType->getReactionCount();
-	this->rxnListMappingId = new int[nReactions];
-	for(int r=0; r<nReactions; r++)
-		rxnListMappingId[r] = -1;
+	this->rxnListMappingId2 = new set<int>[nReactions];
+
 	isPrepared = true;
 
 	//We do not belong to any observable... yet.
@@ -194,14 +193,20 @@ void Molecule::updateDORRxnValues()
 		if(isPrepared) {
 			//If we are in this reaction, then we have to update our value...
 			if(getRxnListMappingId(rxnIndex)>=0) {
+				//iterate over all mappings
+				set<int> tempSet = getRxnListMappingSet(rxnIndex);
+				//iterate over all agent-mappings  for the same reaction
+				for(set<int>::iterator it= tempSet.begin();it!= tempSet.end(); ++it){
+
 				//Careful here!  remember to update the propensity of this
 				//reaction in the system after we notify of the rate factor change!
 				double oldA = rxn->get_a();
-				rxn->notifyRateFactorChange(this,rxnPos,getRxnListMappingId(rxnIndex));
+					rxn->notifyRateFactorChange(this,rxnPos,*it);
 				parentMoleculeType->getSystem()->update_A_tot(rxn,oldA,rxn->update_a());
 			}
 		}
 	}
+}
 }
 
 ///////////////
@@ -335,7 +340,7 @@ void Molecule::printDetails(ostream &o)
 {
 	int degree = 0;
 	o<<"++ Molecule instance of type: " << parentMoleculeType->getName();
-	o<< " (uId="<<ID_unique << ", tId=" << ID_type << ", cId" << ID_complex<<", degree="<<degree<<")"<<endl;
+	o<< " (uId="<<ID_unique << ", tId=" << ID_type << ", cId=" << ID_complex<<", degree="<<degree<<")"<<endl;
 	o<<"      components: ";
 	for(int c=0; c<numOfComponents; c++)
 	{
@@ -343,7 +348,7 @@ void Molecule::printDetails(ostream &o)
 		o<< parentMoleculeType->getComponentName(c) <<"=";
 		o<<parentMoleculeType->getComponentStateName(c,component[c]);
 		o<<"\tbond=";
-		if(bond[c]==nullptr) o<<"empty"; // NOBOND
+		if(bond[c]==nullptr) o<<"empty";
 		else {
 			o<<bond[c]->getMoleculeTypeName()<<"_"<<bond[c]->getUniqueID();
 			o<<"("<<bond[c]->getMoleculeType()->getComponentName(this->indexOfBond[c])<<")";
@@ -368,7 +373,7 @@ int Molecule::getDegree()
 {
 	int degree = 0;
 	for(int c=0; c<numOfComponents; c++)
-		if(bond[c]!=nullptr) degree++;  // NOBOND
+		if(bond[c]!=nullptr) degree++;
 	return degree;
 }
 
@@ -395,13 +400,13 @@ string Molecule::getLabel ( int cIndex ) const
 
 bool Molecule::isBindingSiteOpen(int cIndex) const
 {
-	if(bond[cIndex]==nullptr) return true; // NOBOND
+	if(bond[cIndex]==nullptr) return true;
 	return false;
 }
 
 bool Molecule::isBindingSiteBonded(int cIndex) const
 {
-	if(bond[cIndex]==nullptr) return false; // NOBOND
+	if(bond[cIndex]==nullptr) return false;
 	return true;
 }
 
@@ -429,7 +434,7 @@ int Molecule::getBondedMoleculeBindingSiteIndex(int cIndex) const
 
 void Molecule::bind(Molecule *m1, int cIndex1, Molecule *m2, int cIndex2)
 {
-	if(m1->bond[cIndex1]!=nullptr || m2->bond[cIndex2]!=nullptr) {  // NOBOND = NULL
+	if(m1->bond[cIndex1]!=nullptr || m2->bond[cIndex2]!=nullptr) {
 		cerr<<endl<<endl<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
 		cerr<<"Your universal traversal limit was probably set too low, so some updates were not correct!\n\n";
 

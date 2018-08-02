@@ -19,6 +19,10 @@ namespace NFcore
 
 			virtual void init();
 			virtual void prepareForSimulation();
+
+			//JJT: checks if there's an existing mapping set in *m equal to *ms that maps to this reaction
+			virtual int checkForEquality(Molecule *m, MappingSet* ms,int rxnIndex, ReactantList*);
+
 			virtual bool tryToAdd(Molecule *m, unsigned int reactantPos);
 			virtual void remove(Molecule *m, unsigned int reactantPos);
 			virtual double update_a();
@@ -90,6 +94,9 @@ namespace NFcore
 
 			virtual int getDORreactantPosition() const { return DORreactantIndex; };
 
+			//JJT: checks if there's an existing mapping set in *m equal to *ms that maps to this reaction
+			virtual int checkForCollision(Molecule *m, MappingSet* ms,int rxnIndex);
+
 			virtual void notifyRateFactorChange(Molecule * m, int reactantIndex, int rxnListIndex);
 			virtual int getReactantCount(unsigned int reactantIndex) const;
 			virtual int getCorrectedReactantCount(unsigned int reactantIndex) const;
@@ -107,6 +114,8 @@ namespace NFcore
 			virtual double evaluateLocalFunctions(MappingSet *ms);
 
 			virtual void pickMappingSets(double randNumber) const;
+
+			virtual double pickLocalFunctionParameter(MappingSet *ms, int, vector <MoleculeType *>*, int*);
 
 			ReactantList **reactantLists;
 			ReactantTree *reactantTree;
