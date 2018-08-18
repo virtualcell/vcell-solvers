@@ -93,9 +93,10 @@ void addFilesToZip(const char *ziparchive, const char *filepath1, const char *fi
 	//printf("---------- using shell zip --------\n");
 	char zipcommand [1024];
 	if (filepath2 != NULL){
-		sprintf(zipcommand, "zip -0 -g %s %s %s", ziparchive, filepath1, filepath2);
+
+        sprintf(zipcommand, "zip -j -Z store -g %s %s %s", ziparchive, filepath1, filepath2);
 	}else{
-		sprintf(zipcommand, "zip -0 -g %s %s", ziparchive, filepath1);
+		sprintf(zipcommand, "zip -j -Z store -g %s %s", ziparchive, filepath1);
 	}
 	int retcode = system(zipcommand);
 	if (retcode != 0){
