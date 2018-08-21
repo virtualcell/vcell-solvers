@@ -9,14 +9,14 @@ cd $DIR
 image_name="localhost:5000/vcell-solvers-ide:dev"
 container_name="vcell-solvers-ide"
 
-docker build -f ./Dockerfile-ide --tag $image_name .
+sudo docker build -f ./Dockerfile-ide --tag $image_name .
 if [ $(uname) == "Darwin" ]; then 
 	IP=$(ifconfig en0 | grep inet | awk '$1=="inet" {print $2}')
-	docker create -it --name $container_name -v "$WORKSPACE_DIR:/workspace" -e DISPLAY=$IP:0 $image_name
+	sudo docker create -it --name $container_name -v "$WORKSPACE_DIR:/workspace" -e DISPLAY=$IP:0 $image_name
 elif [ $(uname) == "Linux" ]; then
-	docker create -it --name $container_name --net=host -v /tmp/.X11-unix -v "$WORKSPACE_DIR:/workspace" -e DISPLAY $image_name	
+	sudo docker create -it --name $container_name --net=host -v /tmp/.X11-unix -v "$WORKSPACE_DIR:/workspace" -e DISPLAY $image_name	
 fi
-docker start $container_name
+sudo docker start $container_name
 
 #
 # enabling X11 communication between this host and the Docker container:

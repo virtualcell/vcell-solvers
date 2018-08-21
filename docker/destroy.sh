@@ -2,6 +2,6 @@
 
 container_name="vcell-solvers-ide"
 
-docker stop $container_name
-docker rm $container_name
+sudo docker stop $container_name
+sudo docker rm $container_name
 
