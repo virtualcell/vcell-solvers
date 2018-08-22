@@ -31,7 +31,7 @@ before_install:
     fi
   - |
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then 
-      brew install -v --force hdf5@1.8 --c++11
+      brew install --verbose --debug --force hdf5@1.8 --c++11
     fi
     
 script: .travis/build.sh
