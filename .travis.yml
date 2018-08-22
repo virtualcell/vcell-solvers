@@ -31,6 +31,7 @@ before_install:
     fi
   - |
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then 
+      rm '/usr/local/include/c++'
       brew install --verbose --debug --force hdf5@1.8 --c++11
     fi
     
