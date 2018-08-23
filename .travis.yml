@@ -16,19 +16,21 @@ matrix:
         - zlib1g-dev
         - libhdf5-dev
   - os: osx
-    osx_image: xcode9.3
+    osx_image: xcode9.4
     sudo: required
 before_install:
-  - |
-    if [ "$TRAVIS_OS_NAME" == "osx" ]; then 
       #curl -L -o gfortran-7.1-bin.tgz -fs "https://downloads.sourceforge.net/project/hpc/hpc/g95/gfortran-7.1-bin.tar.gz?r=&ts=1508458128&use_mirror=svwh"
       #gunzip gfortran-7.1-bin.tgz
       #sudo tar -xf gfortran-7.1-bin.tar -C /
       #sudo chown -R $(whoami) /usr/local
       #sudo chown -R $(whoami) /Library/Caches/Homebrew
       #brew update
+  - |
+    if [ "$TRAVIS_OS_NAME" == "osx" ]; then 
       brew install szip
-      brew install --force hdf5
+      rm '/usr/local/include/c++'
+      #brew install --verbose --debug --force hdf5@1.8 --c++11
+      brew install hdf5@1.8 --c++11
     fi
     
 script: .travis/build.sh

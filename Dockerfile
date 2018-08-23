@@ -69,7 +69,7 @@ FROM ubuntu:xenial
 
 RUN apt-get -y update && apt-get install -y apt-utils && \
     apt-get install -y -qq -o=Dpkg::Use-Pty=0 gcc gfortran zlib1g \
-    libhdf5-10 libhdf5-cpp-11 libcurl4-openssl-dev 
+    libhdf5-10 libhdf5-cpp-11 libcurl4-openssl-dev zip
 
 COPY --from=build /vcellroot/build/bin /vcellbin
 COPY --from=build /vcellroot/build_PETSc/bin/FiniteVolume_PETSc_x64 /vcellbin/

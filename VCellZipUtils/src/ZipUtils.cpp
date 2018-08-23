@@ -84,6 +84,30 @@ read_from_file(const char *archive, int flags, zip_error_t *error)
 */
 void addFilesToZip(const char *ziparchive, const char *filepath1, const char *filepath2)
 {
+#if ( !defined(WIN32) && !defined(WIN64) && defined(USE_MESSAGING)) // UNIX
+#define USE_SHELL_ZIP 1
+#endif
+
+#ifdef USE_SHELL_ZIP
+
+	//printf("---------- using shell zip --------\n");
+	char zipcommand [1024];
+	if (filepath2 != NULL){
+
+        sprintf(zipcommand, "zip -j -Z store -g %s %s %s", ziparchive, filepath1, filepath2);
+	}else{
+		sprintf(zipcommand, "zip -j -Z store -g %s %s", ziparchive, filepath1);
+	}
+	int retcode = system(zipcommand);
+	if (retcode != 0){
+		char errmsg [2048];
+		sprintf(errmsg, "zip command failed: %s", zipcommand);
+		throw errmsg;
+	}
+
+#else
+	//printf("------- using libzip --------\n");
+
     zip_error_t error;
     zip_error_init(&error);
 
@@ -143,6 +167,7 @@ void addFilesToZip(const char *ziparchive, const char *filepath1, const char *fi
 		argv[argc++] = "none";
 	}
 	int retcode = ziptool_main(argc, argv);
+#endif
 }
 
 static zip_int64_t
