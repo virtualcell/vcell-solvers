@@ -455,7 +455,46 @@ void ReactionClass::fire(double random_A_number) {
 		}
 	}
 
-	// If we're handling observables on the fly, tell each molecule to add itself to observables.
+	for ( complexIter = productComplexes.begin(); complexIter != productComplexes.end(); ++complexIter ) {
+		// update all species observables for this complex
+		Complex* c = *complexIter;
+		set <string> complexMoleculeNames;
+		list <Molecule *>::iterator itm;
+		for( itm = c->complexMembers.begin(); itm != c->complexMembers.end(); itm++ )
+		{
+			string moleculeName = (*itm)->getMoleculeTypeName();
+			complexMoleculeNames.insert(moleculeName);
+		}
+
+		// see if any product pattern is satisfied by this complex
+		list<set<string>> listOfProductSets = this->transformationSet->getProductSets();
+		list<set<string>>::iterator it;
+		bool matchingSetFound = false;
+		for (it=listOfProductSets.begin(); it != listOfProductSets.end(); it++) {
+			set<string> productMoleculeNames = *it;
+			set<string>::iterator it;
+			bool setNamesFound = true;
+			for (it=productMoleculeNames.begin(); it != productMoleculeNames.end(); it++) {
+				string moleculeName = *it;
+				if ( complexMoleculeNames.find(moleculeName) == complexMoleculeNames.end() ) {
+					setNamesFound = false;
+					break;		// a molecule in this product pattern is not in the complex
+				}
+			}
+			if(setNamesFound == true) {
+				matchingSetFound = true; // all molecules in the product pattern found in the complex
+				break;					 // look no more
+			}
+		}
+		complexMoleculeNames.clear();
+//		cout<<endl;
+		if(matchingSetFound == false) {	 // this complex matches no product pattern, it shouldn't exist
+			cerr << "\nReaction '"<< name <<"' produced a complex that does not match any product pattern.\n"<< endl;
+			exit(1);
+		}
+	}
+
+		// If we're handling observables on the fly, tell each molecule to add itself to observables.
 	if (onTheFlyObservables) {
 
 		// molecule observables..

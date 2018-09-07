@@ -161,7 +161,13 @@ namespace NFcore
 			*/
 			bool addLocalFunctionReference(TemplateMolecule *t, string PointerName, int scope);
 
-
+			/*!
+				Adds lists of molecule names for each product pattern
+				Used to crudely verify that a generated complex matches a product pattern
+				@author Dan Vasilescu
+			*/
+			bool addProductSets(list<set<string>> &productSets);
+			list<set<string>> getProductSets() const { return this->productSets; };
 			/*!
 				Call this (in a ReactionClass) to transform the array of MappingSets (one
 				MappingSet per reactant in the correct position in the array, please!).
@@ -322,6 +328,9 @@ namespace NFcore
 
 			/*!	The array of TemplateMolecules that represent the reactants */
 			TemplateMolecule ** reactants;
+
+			/*! names of the molecules in every product pattern of the reaction	*/
+			list<set<string>> productSets;
 
 			/*!	The array of TemplateMolecules that represent the added molecules.
 			 *   Not sure if this will be used.  --Justin */

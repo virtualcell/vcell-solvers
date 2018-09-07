@@ -174,6 +174,11 @@ bool TransformationSet::addLocalFunctionReference(TemplateMolecule *t, string Po
 	return true;
 }
 
+bool TransformationSet::addProductSets(list<set<string>> &productSets) {
+	this->productSets = productSets;
+	return true;
+}
+
 
 bool TransformationSet::addIncrementStateTransform(TemplateMolecule *t, string cName)
 {

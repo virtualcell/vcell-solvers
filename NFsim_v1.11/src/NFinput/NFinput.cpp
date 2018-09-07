@@ -1113,7 +1113,6 @@ bool NFinput::initReactionRules(
 				vector <TemplateMolecule *> addmol_templates;
 
 
-
 				//  Read in the Reactant Patterns for this rule
 				TiXmlElement *pListOfReactantPatterns = pRxnRule->FirstChildElement("ListOfReactantPatterns");
 				if(!pListOfReactantPatterns) {
@@ -1149,7 +1148,51 @@ bool NFinput::initReactionRules(
 				//		cout << (*it).first << " => " << (*it).second->getMoleculeType()->getName() << endl;
 
 
-				///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                //  Read in the Product Patterns for this rule
+                list <set<string>> listOfProductSets;
+                TiXmlElement *pListOfProductPatterns = pRxnRule->FirstChildElement("ListOfProductPatterns");
+                if(pListOfProductPatterns != nullptr) {
+                    TiXmlElement *pProduct;
+                    for ( pProduct = pListOfProductPatterns->FirstChildElement("ProductPattern"); pProduct != 0; pProduct = pProduct->NextSiblingElement("ProductPattern"))
+                    {
+                        const char *productName = pProduct->Attribute("id");
+                        if(!productName) {
+                            continue;
+                        }
+                        TiXmlElement *pListOfMols = pProduct->FirstChildElement("ListOfMolecules");
+                        if(!pListOfMols) {
+                            continue;
+                        }
+                        TiXmlElement *pMol;
+                        set <string> moleculeNames;
+                        for ( pMol = pListOfMols->FirstChildElement("Molecule"); pMol != 0; pMol = pMol->NextSiblingElement("Molecule"))
+                        {
+                            string moleculeName;
+                            if(!pMol->Attribute("name")) {
+                                continue;
+                            }
+                            moleculeName = pMol->Attribute("name");
+                            if(moleculeName=="Trash" || moleculeName=="TRASH" || moleculeName=="trash") {
+                                continue;   // we ignore this, may be dealt with elsewhere
+                            }
+                            moleculeNames.insert(moleculeName);
+                        }
+                        listOfProductSets.push_back(moleculeNames);
+                    }
+                }
+
+//				list <set<string>>::iterator it;
+//                for (it=listOfProductSets.begin(); it != listOfProductSets.end(); it++) {
+//                    set<string> moleculeNames = *it;
+//                    set<string>::iterator it;
+//                    for (it=moleculeNames.begin(); it != moleculeNames.end(); it++) {
+//                        string moleculeName = *it;
+//                        cout<<moleculeName<<" ";
+//                    }
+//                    cout<<endl;
+//                }
+
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				//Read in the list of operations we need to perform in this rule
 				TiXmlElement *pListOfOperations = pRxnRule->FirstChildElement("ListOfOperations");
 				if ( !pListOfOperations )
@@ -1363,6 +1406,8 @@ bool NFinput::initReactionRules(
 				{
 					ts->setSymmetryFactor(symmetryFactor);
 				}
+
+				ts->addProductSets(listOfProductSets);
 
 
 				//Next extract out the state changes
