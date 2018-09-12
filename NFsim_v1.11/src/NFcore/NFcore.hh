@@ -288,6 +288,9 @@ namespace NFcore
 			bool hasVCellAnchors() { return this->bHasVCellAnchors; };
 			bool setVCellAnchors( bool val ) { this->bHasVCellAnchors = val; };
 
+			bool isCheckingProductMaching() { return this->bCheckingProductMatching; };
+			bool setCheckingProductMaching( bool val ) { this->bCheckingProductMatching = val; };
+
 			void setEvaluateComplexScopedLocalFunctions( bool val ) { evaluateComplexScopedLocalFunctions = val; };
 			bool getEvaluateComplexScopedLocalFunctions( ) const { return evaluateComplexScopedLocalFunctions; };
 
@@ -417,6 +420,7 @@ namespace NFcore
 			bool useComplex;     /*!< sets whether or not to dynamically track complexes */
 			bool useVCellCompartments;     /*!< sets whether or not to apply vcell compartment propagation */
 			bool bHasVCellAnchors;     /*!< sets whether this models has moleculeTpyes with anchors */
+			bool bCheckingProductMatching;   /*!< sets whether or not we verify that generated complexes match product patterns */
 			bool useBinaryOutput; /*!< set to true to turn on binary output of data */
 			bool evaluateComplexScopedLocalFunctions; /*!< set to true to turn on enable complex-scoped local functions */
 			int universalTraversalLimit; /*!< sets depth to traverse molecules when updating reactant lists */

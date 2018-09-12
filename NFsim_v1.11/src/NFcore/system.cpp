@@ -26,6 +26,7 @@ System::System(string name)
 	nextReaction = 0;
 	this->useVCellCompartments = false;
 	this->bHasVCellAnchors = false;
+	this->bCheckingProductMatching = false;
 	this->useComplex = false;     // NETGEN -- is this needed?
 	// NETGEN
 	allComplexes.setSystem( this );
@@ -54,6 +55,7 @@ System::System(string name, bool useComplex)
 
 	this->useVCellCompartments = false;
 	this->bHasVCellAnchors = false;
+	this->bCheckingProductMatching = false;
 	this->useComplex = useComplex;    // NETGEN -- is this needed?
 	// NETGEN
 	allComplexes.setSystem( this );
@@ -81,6 +83,7 @@ System::System(string name, bool useComplex, int globalMoleculeLimit)
 	nextReaction = 0;
 	this->useVCellCompartments = false;
 	this->bHasVCellAnchors = false;
+	this->bCheckingProductMatching = false;
 	this->useComplex = useComplex;  // NETGEN -- is this needed?
 	// NETGEN
 	allComplexes.setSystem( this );
