@@ -491,7 +491,7 @@ void ReactionClass::fire(double random_A_number) {
             if (matchingSetFound == false) {     // this complex matches no product pattern, it shouldn't exist
                 cerr << "\n\nReaction '" << name << "' produced a complex that does not match any product pattern.\n"
                      << endl;
-                exit(1);
+                exit(3);
             }
         }
     }
