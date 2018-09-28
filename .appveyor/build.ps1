@@ -6,7 +6,7 @@ Write-Host "calling cmake in " + $pwd
 
 whereis cmake
 
-/mingw64/bin/cmake.exe --debug-output -G "Unix Makefiles" `
+\mingw64\bin\cmake --debug-output -G "Unix Makefiles" `
     -DCMAKE_BUILD_TYPE="Release" `
     -DOPTION_TARGET_MESSAGING=OFF `
     -DOPTION_TARGET_PARALLEL=OFF `
