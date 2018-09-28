@@ -1,4 +1,4 @@
-$Env:Path = "c:\msys64\bin" + ";" + "c:\msys64\usr\bin" + ";" + $Env:Path
+$Env:Path = "c:\msys64\mingw64\bin" + ";" + "c:\mingw64\bin" + ";" + "c:\msys64\usr\bin" + ";" + $Env:Path
 mkdir build
 cd build
 mkdir bin
