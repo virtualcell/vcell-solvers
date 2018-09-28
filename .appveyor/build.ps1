@@ -1,4 +1,4 @@
-$Env:Path = "c:\msys64\mingw64\bin" + ";" + "c:\mingw64\bin" + ";" + "c:\msys64\usr\bin" + ";" + $Env:Path
+$Env:Path = "c:\msys64\mingw64\bin" + ";" + "c:\msys64\usr\bin" + ";" + $Env:Path
 mkdir build
 cd build
 mkdir bin
@@ -6,7 +6,7 @@ Write-Host "calling cmake in " + $pwd
 
 whereis cmake
 
-c:\mingw64\bin\cmake --debug-output -G "Unix Makefiles" `
+/mingw64/bin/cmake.exe --debug-output -G "Unix Makefiles" `
     -DCMAKE_BUILD_TYPE="Release" `
     -DOPTION_TARGET_MESSAGING=OFF `
     -DOPTION_TARGET_PARALLEL=OFF `
