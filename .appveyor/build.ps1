@@ -4,7 +4,9 @@ cd build
 mkdir bin
 Write-Host "calling cmake in " + $pwd
 
-cmake --debug-output -G "Unix Makefiles" `
+whereis cmake
+
+c:\mingw64\bin\cmake --debug-output -G "Unix Makefiles" `
     -DCMAKE_BUILD_TYPE="Release" `
     -DOPTION_TARGET_MESSAGING=OFF `
     -DOPTION_TARGET_PARALLEL=OFF `
