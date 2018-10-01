@@ -4,9 +4,7 @@ cd build
 mkdir bin
 Write-Host "calling cmake in " + $pwd
 #There appears to be a problem with finding cmake after the MinGW installation of it.
-ls "c:\msys64\mingw64\bin"
-ls "c:\msys64\usr\bin"
-cmake --debug-output -G "Unix Makefiles" `
+cmake -Wdev --trace-expand --debug-output -G "Unix Makefiles" `
     -DCMAKE_BUILD_TYPE="Release" `
     -DOPTION_TARGET_MESSAGING=OFF `
     -DOPTION_TARGET_PARALLEL=OFF `
