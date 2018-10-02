@@ -18,6 +18,7 @@ cmake -G "Unix Makefiles" `
     -DOPTION_TARGET_SUNDIALS_SOLVER=ON `
     -DOPTION_TARGET_HY3S_SOLVERS=OFF `
      ..
+ls
 make
 
 ldd .\build\bin\FiniteVolume_x64.exe
