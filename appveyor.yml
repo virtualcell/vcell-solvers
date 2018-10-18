@@ -17,7 +17,7 @@ install:
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S msys/git"
 #  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-gcc"
 #  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-gcc-fortran"
-  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-gcc-7.3.0-2"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -U http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-7.3.0-2-any.pkg.tar.xz"
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-gcc-fortran-7.3.0-2"
 #  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -v -S mingw64/mingw-w64-x86_64-cmake"
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -v -S mingw64/mingw-w64-x86_64-cmake-3.11.4-2"
