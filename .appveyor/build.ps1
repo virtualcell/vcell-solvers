@@ -3,6 +3,8 @@ mkdir build
 cd build
 mkdir bin
 env
+which cmake
+cmake --help
 Write-Host "calling cmake in " + $pwd
 #There appears to be a problem with cmake creating the Makefile
 cmake -G "Unix Makefiles" `
