@@ -2,11 +2,7 @@ $Env:Path = "c:\msys64\mingw64\bin" + ";" + "c:\msys64\usr\bin" + ";" + $Env:Pat
 mkdir build
 cd build
 mkdir bin
-#env
-which cmake
-/mingw64/bin/cmake --help
 Write-Host "calling cmake in " + $pwd
-#There appears to be a problem with cmake creating the Makefile
 cmake -G "Unix Makefiles" `
     -DCMAKE_BUILD_TYPE="Release" `
     -DOPTION_TARGET_MESSAGING=OFF `
