@@ -21,7 +21,7 @@ install:
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -U http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-fortran-7.3.0-2-any.pkg.tar.xz"
 #  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -v -S mingw64/mingw-w64-x86_64-cmake"
 # install cmake and dependencies
-  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -U http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-c-ares-1.14.0-1-any.pkg.tar.xz...
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -U http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-c-ares-1.14.0-1-any.pkg.tar.xz"
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -U http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-brotli-1.0.4-1-any.pkg.tar.xz"
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -U http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-libunistring-0.9.10-1-any.pkg.tar.xz"
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -U http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-libidn2-2.0.5-1-any.pkg.tar.xz"
