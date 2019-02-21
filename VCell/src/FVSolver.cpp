@@ -1034,8 +1034,31 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 				simTool->setPCGRelativeErrorTolerance(pcgRelTol);
 			} else if (solver == VCELL_PETSC_SOLVER) {
 			} else {
+				std::vector<std::string> result;
+				for (std::string s; lineInput >> s;) {
+					result.push_back(s);
+				}
 				SundialsSolverOptions sso;
-				lineInput >> sso.relTol >> sso.absTol >> sso.maxStep >> sso.maxOrderAdvection;
+				sso.relTol = std::atof(result[0].data());
+				sso.absTol = std::atof(result[1].data());
+				sso.maxStep= std::atof(result[2].data());
+				if(result.size() == 4) {
+					if (result[3].compare("true") == 0 || result[3].compare("false") == 0) {
+						bool b;
+						std::istringstream is(result[3]);
+						is >> std::boolalpha >> b;
+						sso.borderExtrapolationDisable = b;
+					} else {
+						sso.maxOrderAdvection = std::atoi(result[3].data());
+					}
+				}else if(result.size() == 5){
+					sso.maxOrderAdvection = std::atoi(result[3].data());
+					bool b;
+					std::istringstream is(result[4]);
+					is >> std::boolalpha >> b;
+					sso.borderExtrapolationDisable = b;
+				}
+//				lineInput >> sso.relTol >> sso.absTol >> sso.maxStep >> sso.maxOrderAdvection >> sso.borderExtrapolationDisable;
 				simTool->setSundialsSolverOptions(sso);
 			}
 		} else if (nextToken == "DISCONTINUITY_TIMES") {

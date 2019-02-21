@@ -2292,7 +2292,7 @@ void SundialsPdeScheduler::updateMembraneStatePointValues(MembraneElement& me, d
 			int varIndex = regionDefinedVolVariableIndexes[loRegionID][activeVarCount];
 
 			int iin = volSymbolOffset + varIndex * numSymbolsPerVolVar + 1 + pVolumeElement[me.vindexFeatureLo].getFeature()->getIndex();
-			if (vi1 < 0) {
+			if (vi1 < 0 || sundialsSolverOptions.borderExtrapolationDisable) {
 				values[iin] = yinput[vi2 + activeVarCount];
 			} else {
 				values[iin] = interp_coeff[0] * yinput[vi2 + activeVarCount] + interp_coeff[1] * yinput[vi1 + activeVarCount];
@@ -2302,7 +2302,7 @@ void SundialsPdeScheduler::updateMembraneStatePointValues(MembraneElement& me, d
 		for (int activeVarCount = 0; activeVarCount < regionDefinedVolVariableSizes[hiRegionID]; activeVarCount ++) {
 			int varIndex = regionDefinedVolVariableIndexes[hiRegionID][activeVarCount];
 			int iout = volSymbolOffset + varIndex * numSymbolsPerVolVar + 1 + pVolumeElement[me.vindexFeatureHi].getFeature()->getIndex();
-			if (vi4 < 0) {
+			if (vi4 < 0 || sundialsSolverOptions.borderExtrapolationDisable) {
 				values[iout] = yinput[vi3 + activeVarCount];
 			} else {
 				values[iout] = interp_coeff[0] * yinput[vi3 + activeVarCount] + interp_coeff[1] * yinput[vi4 + activeVarCount];
