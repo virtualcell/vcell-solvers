@@ -2316,6 +2316,26 @@ void SundialsPdeScheduler::updateMembraneStatePointValues(MembraneElement& me, d
 		memcpy(values + memSymbolOffset, yinput + membraneElementVectorOffset, simulation->getNumMemVariables() * sizeof(double));
 	}
 
+	if (simulation->getNumVolRegionVariables() > 0) {
+		// fill in volume region INSIDE and OUTSIDE values
+		MembraneRegion *mr = me.region;
+
+		VolumeRegion *vr1 = mr->getVolumeRegion1();
+		VolumeRegion *vr2 = mr->getVolumeRegion2();
+		for (int varIndex = 0; varIndex < simulation->getNumVolRegionVariables(); varIndex ++) {
+			int offset = volRegionSymbolOffset + varIndex * numSymbolsPerVolVar + 1;
+			{
+				int volumeRegionElementVectorOffset = getVolumeRegionVectorOffset(vr1->getIndex());
+				values[offset + vr1->getFeature()->getIndex()] = yinput[volumeRegionElementVectorOffset + varIndex];
+			}
+			{
+
+				int volumeRegionElementVectorOffset = getVolumeRegionVectorOffset(vr2->getIndex());
+				values[offset + vr2->getFeature()->getIndex()] = yinput[volumeRegionElementVectorOffset + varIndex];
+			}
+		}
+	}
+
 	if (simulation->getNumMemRegionVariables() > 0) {
 		// fill in membrane region variable values
 		int membraneRegionElementVectorOffset = getMembraneRegionVectorOffset(me.getRegionIndex());
