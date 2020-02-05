@@ -80,7 +80,7 @@ void NFMonitor::reportComplete() {
 }
 
 inline NFMonitor::timeUnit NFMonitor::timeDiff(clock_t end, clock_t start) {
-	assert(end > start);
+	//assert(end > start);
 	return (end - start) / CLOCKS_PER_SEC;
 }
 
