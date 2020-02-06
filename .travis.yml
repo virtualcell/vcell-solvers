@@ -9,6 +9,7 @@ branches:
 matrix:
   include:
   - os: linux
+    arch: arm64
     dist: trusty
     addons:
       apt:
@@ -17,6 +18,7 @@ matrix:
         - zlib1g-dev
         - libhdf5-dev
   - os: osx
+    arch: arm64
     osx_image: xcode10.4.4
     sudo: required
 before_install:
