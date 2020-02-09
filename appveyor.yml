@@ -13,7 +13,7 @@ platform: x64
 #  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 install:
-- C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu"
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S msys/git"
 #  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-gcc"
 #  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-gcc-fortran"
