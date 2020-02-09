@@ -4,7 +4,7 @@ cd build
 mkdir bin
 Write-Host "calling cmake in " + $pwd
 cmake -G "Unix Makefiles" `
-    -DCMAKE_BUILD_TYPE="Release" `
+    -DCMAKE_BUILD_TYPE="DEBUG" `
     -DOPTION_TARGET_MESSAGING=OFF `
     -DOPTION_TARGET_PARALLEL=OFF `
     -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF `
