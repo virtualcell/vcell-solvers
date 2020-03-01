@@ -5,6 +5,7 @@ mkdir bin
 Write-Host "calling cmake in " + $pwd
 cmake -G "Unix Makefiles" `
     -DBUILD_SHARED_LIBS=OFF `
+    -DCMAKE_FIND_LIBRARY_SUFFIXES=".a" `
     -DCMAKE_EXE_LINKER_FLAGS="-static" `
     -DOPTION_TARGET_MESSAGING=OFF `
     -DOPTION_TARGET_PARALLEL=OFF `
