@@ -21,3 +21,11 @@ cmake -G "Unix Makefiles" `
      ..
 make
 
+ldd .\build\bin\FiniteVolume_x64.exe
+ldd .\build\bin\NFsim_x64.exe
+ldd .\build\bin\smoldyn_x64.exe
+ldd .\build\bin\SundialsSolverStandalone_x64.exe
+ldd .\build\bin\testzip.exe
+ldd .\build\bin\VCellStoch_x64.exe
+ldd .\build\bin\ziptool.exe
+
