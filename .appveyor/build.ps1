@@ -22,14 +22,16 @@ cmake -G "Unix Makefiles" `
      
 make
 
-cp .\bin\* ..\tmp\
-rm *
-mkdir bin
-move ..tmp\* .\bin\
-rm .\bin\NFsim_x64.exe
-rm ..\tmp\
-# rm -rf -f !(bin)
-# rm bin/NFsim_x64.exe
+# cp .\bin\* ..\tmp\
+# rm *
+# mkdir bin
+# move ..tmp\* .\bin\
+# rm .\bin\NFsim_x64.exe
+# rm ..\tmp\
+bash
+rm -rf -f !(bin)
+rm bin/NFsim_x64.exe
+exit
 
 cmake -G "Unix Makefiles" `
     -DBUILD_SHARED_LIBS=OFF `
