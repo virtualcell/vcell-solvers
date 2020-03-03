@@ -85,12 +85,14 @@ install:
 #   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -U http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-netcdf-4.6.1-1-any.pkg.tar.xz"
 
 build_script:
-  - ps: .\.appveyor\build.ps1
+  - cmd: .\.appveyor\build.ps1
   - cmd: del .\bin\NFsim_x64.exe
-  - ps: .\.appveyor\build_nfSim.ps1
-  - cmd: dir
-  - cmd: dir \projects\vcell-solvers\build
-  - cmd: dir \projects\vcell-solvers\build\bin
+  - cmd: pwd
+  - cmd: ls
+#  - ps: .\.appveyor\build_nfSim.ps1
+#  - cmd: dir
+  - cmd: ls \projects\vcell-solvers\build
+  - cmd: ls \projects\vcell-solvers\build\bingit
   
 after_build:
   - cmd: \msys64\usr\bin\bash -lc "/c/projects/vcell-solvers/.appveyor/copyDependencies.sh"
