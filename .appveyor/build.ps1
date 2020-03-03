@@ -1,7 +1,7 @@
 $Env:Path = "c:\msys64\mingw64\bin" + ";" + "c:\msys64\usr\bin" + ";" + $Env:Path
 mkdir tmp
 mkdir build
-cd build
+Set-Location build
 mkdir bin
 Write-Host "calling cmake in " + $pwd
 
@@ -21,13 +21,19 @@ cmake -G "Unix Makefiles" `
       ..
 
 make
-
+<# Building NFSim solver seperately #>
+# rm -rf -f !(bin)
+# rm bin/NFsim_x64.exe
+Write-Host "ls all files in bin directory" + $pwd
 Get-ChildItem C:\projects\vcell-solvers\build\bin\
+Write-Host "Removing wrong build NFsim_x64" + $pwd
 Remove-Item C:\projects\vcell-solvers\build\bin\NFsim_x64.exe
 Get-ChildItem C:\projects\vcell-solvers\build\bin\
+Write-Host "Moving all solvers to tmp directory" + $pwd
 Move-Item C:\projects\vcell-solvers\build\bin\*.exe C:\projects\vcell-solvers\tmp
 Move-Item C:\projects\vcell-solvers\build\bin\*.dll C:\projects\vcell-solvers\tmp
 Get-ChildItem C:\projects\vcell-solvers\tmp\
+Write-Host "Removing everything from build directory" + $pwd
 Remove-Item C:\projects\vcell-solvers\build\* -Recurse -Force
 mkdir bin
 
@@ -49,6 +55,7 @@ cmake -G "Unix Makefiles" `
       ..
 
 make
-
-Move-Item C:\projects\vcell-solvers\tmp\* C:\projects\vcell-solvers\build\bin
+Write-Host "Moving all solvers from tmp directory to bin directory" + $pwd
+Move-Item C:\projects\vcell-solvers\tmp\*.exe C:\projects\vcell-solvers\build\bin
+Move-Item C:\projects\vcell-solvers\tmp\*.dll C:\projects\vcell-solvers\build\bin
 Remove-Item C:\projects\vcell-solvers\tmp
