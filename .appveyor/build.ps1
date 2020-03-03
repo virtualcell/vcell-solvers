@@ -22,32 +22,32 @@ cmake -G "Unix Makefiles" `
      
 make
 
-# cp .\bin\* ..\tmp\
-# rm *
-# mkdir bin
-# move ..tmp\* .\bin\
-# rm .\bin\NFsim_x64.exe
-# rm ..\tmp\
-bash
-rm -rf -f !(bin)
-rm bin/NFsim_x64.exe
-exit
-
-cmake -G "Unix Makefiles" `
-    -DBUILD_SHARED_LIBS=OFF `
-    -DCMAKE_FIND_LIBRARY_SUFFIXES=".a" `
-    -DCMAKE_EXE_LINKER_FLAGS="-static" `
-    -DOPTION_TARGET_MESSAGING=OFF `
-    -DOPTION_TARGET_PARALLEL=OFF `
-    -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF `
-    -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF `
-    -DOPTION_TARGET_SMOLDYN_SOLVER=OFF `
-    -DOPTION_TARGET_FV_SOLVER=OFF `
-    -DOPTION_TARGET_STOCHASTIC_SOLVER=OFF `
-    -DOPTION_TARGET_NFSIM_SOLVER=ON `
-    -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF `
-    -DOPTION_TARGET_SUNDIALS_SOLVER=OFF `
-    -DOPTION_TARGET_HY3S_SOLVERS=OFF `
-     ..
-     
-make
+## cp .\bin\* ..\tmp\
+## rm *
+## mkdir bin
+## move ..tmp\* .\bin\
+## rm .\bin\NFsim_x64.exe
+## rm ..\tmp\
+#bash
+#rm -rf -f !(bin)
+#rm bin/NFsim_x64.exe
+#exit
+#
+#cmake -G "Unix Makefiles" `
+#    -DBUILD_SHARED_LIBS=OFF `
+#    -DCMAKE_FIND_LIBRARY_SUFFIXES=".a" `
+#    -DCMAKE_EXE_LINKER_FLAGS="-static" `
+#    -DOPTION_TARGET_MESSAGING=OFF `
+#    -DOPTION_TARGET_PARALLEL=OFF `
+#    -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF `
+#    -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF `
+#    -DOPTION_TARGET_SMOLDYN_SOLVER=OFF `
+#    -DOPTION_TARGET_FV_SOLVER=OFF `
+#    -DOPTION_TARGET_STOCHASTIC_SOLVER=OFF `
+#    -DOPTION_TARGET_NFSIM_SOLVER=ON `
+#    -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF `
+#    -DOPTION_TARGET_SUNDIALS_SOLVER=OFF `
+#    -DOPTION_TARGET_HY3S_SOLVERS=OFF `
+#     ..
+#
+#make

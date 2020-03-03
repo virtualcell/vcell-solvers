@@ -86,6 +86,7 @@ install:
 
 build_script:
   - ps: .\.appveyor\build.ps1
+  - cmd: del .\bin\NFsim_x64.exe
   - ps: .\.appveyor\build_nfSim.ps1
   - cmd: dir
   - cmd: dir \projects\vcell-solvers\build
