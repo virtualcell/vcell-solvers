@@ -1,4 +1,5 @@
 $Env:Path = "c:\msys64\mingw64\bin" + ";" + "c:\msys64\usr\bin" + ";" + $Env:Path
+mkdir tmp
 mkdir build
 cd build
 mkdir bin
@@ -21,8 +22,14 @@ cmake -G "Unix Makefiles" `
      
 make
 
-rm -rf -f !(bin)
-rm bin/NFsim_x64.exe
+cp .\bin\* ..\tmp\
+rm *
+mkdir bin
+move ..tmp\* .\bin\
+rm .\bin\NFsim_x64.exe
+rm ..\tmp\
+# rm -rf -f !(bin)
+# rm bin/NFsim_x64.exe
 
 cmake -G "Unix Makefiles" `
     -DBUILD_SHARED_LIBS=OFF `
