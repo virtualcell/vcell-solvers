@@ -24,9 +24,11 @@ make
 
 Get-ChildItem C:\projects\vcell-solvers\build\bin\
 Remove-Item C:\projects\vcell-solvers\build\bin\NFsim_x64.exe
-ls C:\projects\vcell-solvers\build\bin\
-Move-Item C:\projects\vcell-solvers\build\bin\* C:\projects\vcell-solvers\tmp
-Remove-Item C:\projects\vcell-solvers\build\*
+Get-ChildItem C:\projects\vcell-solvers\build\bin\
+Move-Item C:\projects\vcell-solvers\build\bin\*.exe C:\projects\vcell-solvers\tmp
+Move-Item C:\projects\vcell-solvers\build\bin\*.dll C:\projects\vcell-solvers\tmp
+Get-ChildItem C:\projects\vcell-solvers\tmp\
+Remove-Item C:\projects\vcell-solvers\build\* -Recurse -Force
 mkdir bin
 
 cmake -G "Unix Makefiles" `
