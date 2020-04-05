@@ -9,6 +9,8 @@ then
 	echo "working dir is $PWD"
 	
 	cmake --version
+	which cmake
+	which c++
 
 	cmake \
 		-G "Unix Makefiles" \
