@@ -44,7 +44,7 @@
 
 #### For building all solvers via MinGW
 
-    ```bash
+    ```
     cmake -G "Unix Makefiles" \
     -DCMAKE_BUILD_TYPE="Release" \
     -DOPTION_TARGET_MESSAGING=OFF \
@@ -67,7 +67,7 @@
 
 #### For building NFSim via MinGW
 
-    `make clean`
+`make clean`
 
     ```
     cmake -G "Unix Makefiles" \
@@ -88,7 +88,7 @@
     ..
     ```
 
-    `make`
+`make`
 
 ### For building solvers manually from Powershell
 
@@ -99,7 +99,7 @@
 
 #### Building all solvers via Powershell
 
-    ```bash
+    ```
     cmake -G "Unix Makefiles" `
     -DCMAKE_BUILD_TYPE="Release" `
     -DOPTION_TARGET_MESSAGING=OFF `
@@ -122,7 +122,7 @@
 
 #### For building NFSim via Powershell
 
-    ```bash
+    ```
     cmake -G "Unix Makefiles" `
     -DBUILD_SHARED_LIBS=OFF `
     -DCMAKE_FIND_LIBRARY_SUFFIXES=".a" `
