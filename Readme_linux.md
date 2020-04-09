@@ -1,8 +1,4 @@
-<img align="left" width="32px" id="linux" src="https://raw.githubusercontent.com/virtualcell/vcell-solvers/readme_instructions/asserts/ubuntu.png">
-<h4>Ubuntu</h4>
-<br style="clear:both"/>
-
-# Requirements
+## Requirements
 
     - git 
     - cmake

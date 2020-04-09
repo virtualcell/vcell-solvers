@@ -2,11 +2,11 @@
 
 - clone the repo `git clone https://github.com/virtualcell/vcell-solvers.git`
 
-- For setting up project in Windows platform find [here](Readme_windows.md)
+- For setting up the project in Windows platform find [here](Readme_windows.md)
 
-- For setting up project in Linux platform find [here](Readme_linux.md)
+- For setting up the project in Linux platform find [here](Readme_linux.md)
 
-- For setting up project in Macos platform find [here](Readme_macos.md)
+- For setting up the project in Macos platform find [here](Readme_macos.md)
 
 ## Debugging
 
