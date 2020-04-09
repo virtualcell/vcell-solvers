@@ -11,6 +11,7 @@
 ## Debugging
 
 1. Program arguments
+    - for linux find [here](Readme_linux.md)
 
 2. Environment variables
 
