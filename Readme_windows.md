@@ -21,7 +21,7 @@
 2. Open MinGW
     - Download and install these dependencies
 
-    ```
+```
     pacman -S git
     pacman --noconfirm -Syu
     pacman --noconfirm -Syyu python mingw-w64-x86_64-gcc
@@ -34,7 +34,7 @@
     pacman --noconfirm -S mingw-w64-x86_64-hdf5
     pacman --noconfirm -S mingw-w64-x86_64-libzip
     pacman --noconfirm -S mingw-w64-x86_64-netcdf
-    ```
+```
 
 ### For building solvers manually from MinGW
 
@@ -44,7 +44,7 @@
 
 #### For building all solvers via MinGW
 
-    ```
+```
     cmake -G "Unix Makefiles" \
     -DCMAKE_BUILD_TYPE="Release" \
     -DOPTION_TARGET_MESSAGING=OFF \
@@ -59,7 +59,7 @@
     -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
     -DOPTION_TARGET_HY3S_SOLVERS=OFF \
     ..
-    ```
+```
 
 `make`
 
@@ -67,9 +67,7 @@
 
 #### For building NFSim via MinGW
 
-`make clean`
-
-    ```
+```
     cmake -G "Unix Makefiles" \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_FIND_LIBRARY_SUFFIXES=".a" \
@@ -86,7 +84,7 @@
     -DOPTION_TARGET_SUNDIALS_SOLVER=OFF \
     -DOPTION_TARGET_HY3S_SOLVERS=OFF \
     ..
-    ```
+```
 
 `make`
 
@@ -99,7 +97,7 @@
 
 #### Building all solvers via Powershell
 
-    ```
+```
     cmake -G "Unix Makefiles" `
     -DCMAKE_BUILD_TYPE="Release" `
     -DOPTION_TARGET_MESSAGING=OFF `
@@ -114,7 +112,7 @@
     -DOPTION_TARGET_SUNDIALS_SOLVER=ON `
     -DOPTION_TARGET_HY3S_SOLVERS=OFF `
     ..
-    ```
+```
 
 `make`
 
@@ -122,7 +120,7 @@
 
 #### For building NFSim via Powershell
 
-    ```
+```
     cmake -G "Unix Makefiles" `
     -DBUILD_SHARED_LIBS=OFF `
     -DCMAKE_FIND_LIBRARY_SUFFIXES=".a" `
@@ -139,6 +137,6 @@
     -DOPTION_TARGET_SUNDIALS_SOLVER=OFF `
     -DOPTION_TARGET_HY3S_SOLVERS=OFF `
     ..
-    ```
+```
 
 `make`
