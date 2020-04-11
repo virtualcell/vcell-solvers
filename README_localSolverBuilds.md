@@ -1,22 +1,22 @@
-##local solver builds
+# Compiling and building VCell-Solvers locally
 
-##Travis-CI
-Travis-CI is used for builds of standalone solvers for Linux and macOS.  
-see **<root>/.travis.yml** 
+- clone the repo `git clone https://github.com/virtualcell/vcell-solvers.git`
 
+- For setting up the project in Windows platform find [here](Readme_windows.md)
 
-###Travis-CI configuration for Linux
+- For setting up the project in Linux platform find [here](Readme_linux.md)
 
+- For setting up the project in Macos platform find [here](Readme_macos.md)
 
-###Travis-CI build debugging for Linux
+## Debugging
 
-###Travis-CI configuration for macOS
+1. Program arguments
+    - for linux find [here](Readme_linux.md)
 
-###Travis-CI build debugging for macOS
+2. Environment variables
 
-##Appveyor
-Appveyor is used for builds of standalone solvers for Windows.
+### CI/CD for all platforms
 
-###Appveyor configuration for Windows
+1. Appveyor for Windows
 
-###Appveyor debugging for Windows
+2. Travis for Mac and Linux
