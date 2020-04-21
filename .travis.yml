@@ -6,6 +6,7 @@ branches:
   - travis
   - /^v\d+(\.\d+)+$/
   - travis_build
+  - remove_hdf5
   - /test/
 matrix:
   include:
