@@ -6,6 +6,7 @@ branches:
   - travis
   - /^v\d+(\.\d+)+$/
   - travis_build
+  - remove_hdf5
   - /test/
 matrix:
   include:
@@ -32,7 +33,7 @@ before_install:
       brew install szip
       rm '/usr/local/include/c++'
       #brew install --verbose --debug --force hdf5@1.8 --c++11
-      brew install hdf5@1.8
+      # brew install hdf5@1.12
     fi
     
 script: .travis/build.sh
