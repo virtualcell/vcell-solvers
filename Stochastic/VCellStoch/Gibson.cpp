@@ -497,6 +497,7 @@ int Gibson::core()
 		savedSampleCount = finalizeSampleRow(savedSampleCount,simtime);//outfile << endl;
 	}
     //return parameter 0:ends by ending_time  1:ends by max_iteration
+    delete lastStepVals;
 	if(iterationCounter< MAX_ITERATION)
 	{
 		return 0;
