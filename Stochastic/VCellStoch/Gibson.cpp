@@ -279,6 +279,7 @@ Gibson::~Gibson()
 	listOfProcessNames.clear();
 	//delete currvals
 	delete[] currvals;
+	delete[] lastStepVals;
 }//end of destructor ~Gibson()
 
 /*
@@ -291,7 +292,7 @@ int Gibson::core()
 {
 	double outputTimer = STARTING_TIME;//time counter used for save output by save_period
 	double simtime = STARTING_TIME;//time calculated for next reaction
-	double* lastStepVals = new double[listOfIniValues.size()];//to remember the last step values, used for save output by save_period
+	lastStepVals = new double[listOfIniValues.size()];//to remember the last step values, used for save output by save_period
 	double p, r; //temp variables used for propability and random number
 	int saveIntervalCount = SAMPLE_INTERVAL; //sampling counter, for default output time spec, keep every
 	int iterationCounter=0;//counter used for termination of the loop when max_iteration is reached
@@ -497,7 +498,7 @@ int Gibson::core()
 		savedSampleCount = finalizeSampleRow(savedSampleCount,simtime);//outfile << endl;
 	}
     //return parameter 0:ends by ending_time  1:ends by max_iteration
-    delete lastStepVals;
+//    delete lastStepVals;
 	if(iterationCounter< MAX_ITERATION)
 	{
 		return 0;
