@@ -34,7 +34,6 @@ public:
 	*/
 	const static unsigned int MAX_ALLOWED_POINTS = 5000000;
 private:
-    double* lastStepVals;
 	IndexedTree *Tree; //the data structure(binary tree) to store all the processes and make each parent smaller than it's children.
 	double* currvals;//array of variable values to be used by expression parser. variables are stored in vector listOfVars.
 	ofstream outfile; //the output file stream where the results are saved.
@@ -43,6 +42,7 @@ private:
 	int finalizeSampleRow(int,double);//central location to call to complete 1 output sample to file
 	int savedSampleCount; //saved sample counter that survives certain iterations to keep overall count
 	time_t lastTime;
+    static const string MY_T_STR;
 } ;
 
 #endif
