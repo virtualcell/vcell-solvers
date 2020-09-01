@@ -9,7 +9,7 @@ branches:
     - /v\d*\.\d*\.\d*/
 
 
-image: Visual Studio 2015
+image: Visual Studio 2019
 
 environment:
   GENERATOR: MinGW Makefiles
