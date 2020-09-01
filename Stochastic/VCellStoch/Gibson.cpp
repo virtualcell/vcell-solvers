@@ -32,6 +32,7 @@ using namespace std;
 #include <VCellException.h>
 const double double_infinity = numeric_limits<double>::infinity();
 const double EPSILON = 1E-12;
+const string Gibson::MY_T_STR = "t";
 /*
  *Empty constructor of Gibson. It will use the defalt settings in StochModel.
  */
@@ -155,15 +156,13 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename)
 				//read expression from fstream
 				char exp[2000];
 				infile.getline(exp,2000);//get expression string
-				string* names=NULL;
 				//bind probExpression with symboltable including variables and "t"(put at last)
 				int lenNames=listOfVarNames.size();
-				names=new string[lenNames+1];
+				string names[lenNames+1];
 				for (int k=0;k<lenNames;k++)
 					names[k]=listOfVarNames.at(k);
-				names[lenNames]="t";
+				names[lenNames]=MY_T_STR;
 				listOfProcesses[idx]->setProbabilityExpression(exp,names,(lenNames+1));
-				delete[] names;
 				infile >> str;//"Effect"
 				if(str=="Effect")
 				{
@@ -291,7 +290,7 @@ int Gibson::core()
 {
 	double outputTimer = STARTING_TIME;//time counter used for save output by save_period
 	double simtime = STARTING_TIME;//time calculated for next reaction
-	double* lastStepVals = new double[listOfIniValues.size()];//to remember the last step values, used for save output by save_period
+	double lastStepVals[listOfIniValues.size()];//to remember the last step values, used for save output by save_period
 	double p, r; //temp variables used for propability and random number
 	int saveIntervalCount = SAMPLE_INTERVAL; //sampling counter, for default output time spec, keep every
 	int iterationCounter=0;//counter used for termination of the loop when max_iteration is reached

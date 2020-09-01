@@ -3,6 +3,8 @@
 
 #include <string>
 #include <vector>
+#include <SymbolTable.h>
+
 using std::string;
 using std::vector;
 
@@ -84,6 +86,7 @@ class Jump
 
 
     private:
+       SymbolTable* table;
        double tau;  // absolute time (from starting time)
 	   double propensity; //the propensity calculated by the probExpression, used to save old value
 	   VCell::Expression* probExpression;  // probability expression

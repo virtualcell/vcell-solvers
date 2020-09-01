@@ -83,6 +83,7 @@ Jump::~Jump()
 	for(int i=0;i<varContextList.size();i++)
 		delete varContextList[i];
 	varContextList.clear();
+	delete table;
 }//end of destructor ~Jump()
 
 /*
@@ -163,9 +164,8 @@ void Jump::addDependentJump(Jump *jump)
 void Jump::setProbabilityExpression(string exp, string* names, int numOfNames)
 {
 	probExpression=new Expression(exp);
-	SymbolTable* table=new SimpleSymbolTable(names,numOfNames);
+	table=new SimpleSymbolTable(names,numOfNames);
 	probExpression->bindExpression(table);
-	
 }//end of method setProbabilityExpression()
 
 /*
