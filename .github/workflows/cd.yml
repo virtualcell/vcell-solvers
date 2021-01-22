@@ -15,7 +15,7 @@ jobs:
           # Checking for msys64
         run: |
           mkdir build
-          Set-Location build
+          cd build
           mkdir bin
           cmake -G "Unix Makefiles" `
               -DCMAKE_BUILD_TYPE="Release" `
