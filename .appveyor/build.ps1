@@ -28,6 +28,8 @@ Write-Host "ls all files in bin directory" + $pwd
 Get-ChildItem C:\projects\vcell-solvers\build\bin\
 Write-Host "Removing wrong build NFsim_x64" + $pwd
 Remove-Item C:\projects\vcell-solvers\build\bin\NFsim_x64.exe
+Write-Host "Getting list of solvers from bin directory: "
+dir C:\projects\vcell-solvers\build\bin
 Get-ChildItem C:\projects\vcell-solvers\build\bin\
 Write-Host "Moving all solvers to tmp directory" + $pwd
 Move-Item C:\projects\vcell-solvers\build\bin\*.exe C:\projects\vcell-solvers\tmp
