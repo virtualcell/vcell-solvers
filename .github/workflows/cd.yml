@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: msys2/setup-msys2@v2
       # setup windows 
       - name: Windows setup
         if: matrix.os == 'windows-2019'
