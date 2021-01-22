@@ -11,9 +11,11 @@ jobs:
       # setup windows 
       - name: Windows setup
         shell: powershell
+        working-directory: ${{runner.workspace}}\vcell-solvers
           # Checking for msys64
         run: |
-          msys2 -c 'uname -a'
-          cmake -version
+          mkdir build
+          Set-Location build
+          mkdir bin
 
 
