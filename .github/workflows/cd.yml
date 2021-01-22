@@ -17,6 +17,7 @@ jobs:
           mkdir build
           cd build
           mkdir bin
+          cd build
           cmake -G "Unix Makefiles" `
               -DCMAKE_BUILD_TYPE="Release" `
               -DOPTION_TARGET_MESSAGING=OFF `
