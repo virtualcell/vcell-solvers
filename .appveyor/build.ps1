@@ -58,4 +58,6 @@ make
 Write-Host "Moving all solvers from tmp directory to bin directory" + $pwd
 Move-Item C:\projects\vcell-solvers\tmp\*.exe C:\projects\vcell-solvers\build\bin
 Move-Item C:\projects\vcell-solvers\tmp\*.dll C:\projects\vcell-solvers\build\bin
+Write-Host "Getting list of solvers from bin directory: "
+dir C:\projects\vcell-solvers\build\bin
 Remove-Item C:\projects\vcell-solvers\tmp
