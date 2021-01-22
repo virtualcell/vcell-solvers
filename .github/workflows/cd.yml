@@ -11,7 +11,7 @@ jobs:
       # setup windows 
       - name: Windows setup
         shell: powershell
-        # working-directory: ${{runner.workspace}}\vcell-solvers
+        working-directory: ${{runner.workspace}}\vcell-solvers\build
           # Checking for msys64
         run: |
           mkdir build
