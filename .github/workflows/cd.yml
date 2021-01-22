@@ -16,7 +16,9 @@ jobs:
           mkdir build
           cd build
           mkdir bin
-          cd bin
+      - name: run cmake
+        shell: powershell
+        run: |
           cmake -G "Unix Makefiles" `
               -DCMAKE_BUILD_TYPE="Release" `
               -DOPTION_TARGET_MESSAGING=OFF `
