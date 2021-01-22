@@ -4,19 +4,16 @@ on: [push]
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [Ubuntu-20.04, macos-latest, windows-2019]
-    runs-on: ${{ matrix.os }}
-
+    runs-on: windows-2019
+  
     steps:
       - uses: msys2/setup-msys2@v2
       # setup windows 
       - name: Windows setup
-        if: matrix.os == 'windows-2019'
         shell: powershell
           # Checking for msys64
-        run: msys2 -c 'uname -a'
+        run: |
+          msys2 -c 'uname -a'
+          cmake -version
 
 
