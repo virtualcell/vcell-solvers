@@ -11,13 +11,12 @@ jobs:
       # setup windows 
       - name: Windows setup
         shell: powershell
-        working-directory: ${{runner.workspace}}
           # Checking for msys64
         run: |
           mkdir build
           cd build
           mkdir bin
-          ls
+          dir
           cmake -G "Unix Makefiles" `
               -DCMAKE_BUILD_TYPE="Release" `
               -DOPTION_TARGET_MESSAGING=OFF `
