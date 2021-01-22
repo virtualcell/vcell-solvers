@@ -16,8 +16,8 @@ jobs:
       - uses: actions/checkout@v2
       # setup windows 
       - name: Windows setup
-      if: matrix.os == "windows-2019"
-      shell: powershell
-        # Checking for msys64
-      run: msys2 -c 'uname -a'
+        if: matrix.os == "windows-2019"
+        shell: powershell
+          # Checking for msys64
+        run: msys2 -c 'uname -a'
 
