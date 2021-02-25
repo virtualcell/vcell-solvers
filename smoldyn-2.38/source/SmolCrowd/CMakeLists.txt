@@ -7,7 +7,7 @@
 ########## Basic setup ##########
 
 project(SmolCrowd)
-cmake_minimum_required(VERSION 2.6)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 set(SMOLCROWD_VERSION "1.0")
 
 
