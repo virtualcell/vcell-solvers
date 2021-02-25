@@ -1,5 +1,5 @@
 project(MovingBoundarySolver)
-cmake_minimum_required(VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 cmake_policy(SET CMP0046 OLD) 
 
 set(SUPPORTS_MATLAB OFF)

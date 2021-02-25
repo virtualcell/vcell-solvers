@@ -7,7 +7,7 @@
 ########## Basic setup ##########
 
 project(wrl2smol)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 set(WRL2SMOL_VERSION "1.0")
 
 
