@@ -43,6 +43,16 @@ private:
 	int savedSampleCount; //saved sample counter that survives certain iterations to keep overall count
 	time_t lastTime;
     static const string MY_T_STR;
+
+    //Var dealing with multitrial-nonhisto (avg,min,max)
+    vector< vector<long double> > accumAvg;
+    vector< vector<long double> > accumMin;
+    vector< vector<long double> > accumMax;
+    bool bAppend;
+    bool bMultiButNotHisto;
+    int currMultiNonHistoIter;
+    int numMultiNonHisto;
+    void accumOrSaveInit(int varLen,double timePoint,bool bAddTab);
 } ;
 
 #endif

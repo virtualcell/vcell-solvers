@@ -68,6 +68,7 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename)
 		VCELL_EXCEPTION(runtime_error, "Unable to open file " << arg_infilename);
 	}
 	flag_savePeriod=false;
+    bMultiButNotHisto = false;
 	while(infile >> instring)
 	{
 		//load control info.
@@ -75,6 +76,10 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename)
 		{
 			infile >> STARTING_TIME;
 		}
+        else if (instring == "BMULTIBUTNOTHISTO")
+        {
+            infile >> bMultiButNotHisto;
+        }
 		else if (instring == "ENDING_TIME")
 		{
 			infile >> ENDING_TIME;
@@ -213,7 +218,7 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename)
 	}
 
 
-	if(NUM_TRIAL > 1){
+	if(NUM_TRIAL > 1 && !bMultiButNotHisto){
 		//this must be a gibson 'histogram' sim,
 		//java gui not allow setting of MAX_SAVE_POINTS and default is too low
 		//makes no sense for 'histogram' sim to have MAX_SAVE_POINTS < NUM_TRIAL
@@ -358,10 +363,22 @@ int Gibson::core()
 			{	//use EPSILON here to make sure that a double 0.99999999999995(usually happen in C) is not regarded as a number that smaller than 1. It should be 1.
 				while((outputTimer+SAVE_PERIOD+EPSILON) < ENDING_TIME)
 				{
-					outfile << outputTimer+SAVE_PERIOD << "\t";
-					for(i=0;i<varLen;i++){
-						outfile<< lastStepVals[i] << "\t";
-					}
+                    accumOrSaveInit(varLen,outputTimer + SAVE_PERIOD,true);
+                    for(i=0;i<varLen;i++){
+                        if(bMultiButNotHisto) {//Accumulate data mode
+                            //set data offset +1 to account for timepoint position
+                            accumAvg.data()[savedSampleCount].data()[i + 1] += lastStepVals[i];
+                            accumMin.data()[savedSampleCount].data()[i + 1] = min(static_cast<long double>(lastStepVals[i]),accumMin.data()[savedSampleCount].data()[i + 1]) ;
+                            accumMax.data()[savedSampleCount].data()[i + 1] = max(static_cast<long double>(lastStepVals[i]),accumMax.data()[savedSampleCount].data()[i + 1]);
+                        }else{
+                            outfile<< lastStepVals[i] << "\t";
+                        }
+                    }
+
+//                    outfile << outputTimer+SAVE_PERIOD << "\t";
+//					for(i=0;i<varLen;i++){
+//						outfile<< lastStepVals[i] << "\t";
+//					}
 					savedSampleCount = finalizeSampleRow(savedSampleCount,simtime);//outfile << endl;
 					outputTimer = outputTimer + SAVE_PERIOD;
 				}
@@ -444,10 +461,17 @@ int Gibson::core()
 				{
 					while((outputTimer+SAVE_PERIOD) < simtime)
 					{
-						outfile << outputTimer+SAVE_PERIOD << "\t";
-						for(i=0;i<varLen;i++){
-							outfile<< lastStepVals[i] << "\t";
-						}
+                        accumOrSaveInit(varLen,outputTimer + SAVE_PERIOD,true);
+                        for(i=0;i<varLen;i++){
+							if(bMultiButNotHisto) {//Accumulate data mode
+							    //set data offset +1 to account for timepoint position
+                                accumAvg.data()[savedSampleCount].data()[i + 1] += lastStepVals[i];
+                                accumMin.data()[savedSampleCount].data()[i + 1] = min(static_cast<long double>(lastStepVals[i]),accumMin.data()[savedSampleCount].data()[i + 1]);
+                                accumMax.data()[savedSampleCount].data()[i + 1] = max(static_cast<long double>(lastStepVals[i]),accumMax.data()[savedSampleCount].data()[i + 1]);
+                            }else{
+                                outfile<< lastStepVals[i] << "\t";
+							}
+                        }
 						savedSampleCount = finalizeSampleRow(savedSampleCount,simtime);//outfile << endl;
 						outputTimer = outputTimer + SAVE_PERIOD;
 					}
@@ -475,15 +499,27 @@ int Gibson::core()
 			else
 				saveIntervalCount--;
 		}//if(NUM_TRIAL ==1)
+//		else{
+//            frmprint(simtime, lastStepVals,sizeof(lastStepVals)/sizeof(lastStepVals[0]));
+//        }
 	}//end of while loop
+//    frmprint(simtime, lastStepVals,sizeof(lastStepVals)/sizeof(lastStepVals[0]));
 	//output the variable's vals at the ending time point.
 	if((simtime > ENDING_TIME) && (NUM_TRIAL == 1) && (flag_savePeriod))//SingleTrajectory_OutputInterval
 	{
-		outfile << ENDING_TIME ;
+        accumOrSaveInit(listOfVars.size(),ENDING_TIME,false);
 		for(i=0;i<listOfVars.size();i++)
 		{
-			outfile<< "\t" << *listOfVars.at(i)->getCurr();
-		}
+			if(bMultiButNotHisto) {//Accumulate data mode
+                //set data offset +1 to account for timepoint position
+                accumAvg.data()[savedSampleCount].data()[i + 1] += *listOfVars.at(i)->getCurr();
+                accumMin.data()[savedSampleCount].data()[i + 1] = min(static_cast<long double>(*listOfVars.at(i)->getCurr()),accumMin.data()[savedSampleCount].data()[i + 1]);
+                accumMax.data()[savedSampleCount].data()[i + 1] = max(static_cast<long double>(*listOfVars.at(i)->getCurr()),accumMax.data()[savedSampleCount].data()[i + 1]);
+            }else{
+                outfile<< "\t" << *listOfVars.at(i)->getCurr();
+            }
+
+        }
 		savedSampleCount = finalizeSampleRow(savedSampleCount,simtime);//outfile << endl;
 	}
 	//to save the (last-step)values of variables after one run of simulation
@@ -501,10 +537,45 @@ int Gibson::core()
 		return 0;
 	}
 	else return 1;
-}//end of method core()
+}
+
+void Gibson::accumOrSaveInit(int varLen,double timePoint,bool bAddTab) {
+    if (bMultiButNotHisto) {//Accumulate data mode
+        if (bAppend) {// first iteration from 'march' so create vectors to hold data
+            accumAvg.push_back(vector<long double>(varLen + 1));// vars length +1 for timepoint
+            accumAvg.data()[savedSampleCount].data()[0] = timePoint;// set timepoint
+            accumMin.push_back(vector<long double>(varLen + 1));// vars length +1 for timepoint
+            accumMin.data()[savedSampleCount].data()[0] = timePoint;// set timepoint
+            accumMax.push_back(vector<long double>(varLen + 1));// vars length +1 for timepoint
+            accumMax.data()[savedSampleCount].data()[0] = timePoint;// set timepoint
+        }
+    } else {
+        if(bAddTab) {
+            outfile << timePoint << "\t";
+        }else{
+            outfile << timePoint;
+        }
+    }
+}
+//end of method core()
+//void Gibson::frmprint(double simtime, const double *lastStepVals,int sizelsv) {
+//    cout << "t:";
+//    for(int i=0; i < listOfVarNames.size(); i++){
+//        cout << listOfVarNames.at(i) << ":";
+//    }
+//    cout << endl;
+//    cout << simtime <<":" << ENDING_TIME <<" ";
+//    for(int row = 0; row < sizelsv; row++) {
+//        cout << lastStepVals[row] << " ";
+//    }
+//    cout <<endl;
+//}
+
 
 int Gibson::finalizeSampleRow(int savedSampleCount,double simtime){
-	outfile << endl;
+    if(!bMultiButNotHisto) {
+        outfile << endl;
+    }
 //	cout << "savedSampleCount=" << savedSampleCount << endl;
 	if(savedSampleCount > MAX_SAVE_POINTS) {
 		VCELL_EXCEPTION(runtime_error,
@@ -514,7 +585,15 @@ int Gibson::finalizeSampleRow(int savedSampleCount,double simtime){
 	//progress no more than every 2 seconds
 	if (difftime(time(NULL),lastTime) > 2.0){
 		lastTime = time(NULL);
-		if(NUM_TRIAL > 1){//histogram
+        if(bMultiButNotHisto) {
+            double percentile =  static_cast<double>(currMultiNonHistoIter)  / static_cast<double>(numMultiNonHisto);
+#ifdef USE_MESSAGING
+            SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, currMultiNonHistoIter));
+#else
+            printf("[[[progress:%lg%%]]]", percentile * 100);
+            fflush(stdout);
+#endif
+        } else if(NUM_TRIAL > 1){//histogram
 			double percentile =  static_cast<double>(savedSampleCount)  / NUM_TRIAL;
 #ifdef USE_MESSAGING
 			SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_PROGRESS, percentile, savedSampleCount));
@@ -537,6 +616,7 @@ int Gibson::finalizeSampleRow(int savedSampleCount,double simtime){
 
 	return savedSampleCount+1;
 }
+
 /*
  *This method is the control of trials, which will be called for Gibson simulation.
  */
@@ -554,25 +634,115 @@ void Gibson::march()
 	//prepare for writing the results to output file
 	outfile.open (outfilename);//"c:/gibson_deploy/gibson_deploy/output/gibson_singleTrial.txt"
 	outfile << setprecision(10); // set precision to output file
-	if(NUM_TRIAL==1)
-	{
-		srand(SEED);
-		//output file header
-		outfile << "t:";
-		for(int i=0;i<listOfVarNames.size();i++){
-			outfile<< listOfVarNames.at(i) << ":";
-		}
-		outfile <<endl;
-		//output initial condition at STARTING_TIME
-		outfile << STARTING_TIME << "\t";
-		for(int i=0;i<listOfIniValues.size();i++){
-			outfile<< listOfIniValues.at(i) << "\t";
-		}
-		outfile << endl;
-		//run the simulation
-		core();
+    if(bMultiButNotHisto)
+    {
+        string ofMin(outfilename);
+        ofMin.append("_min");
+        string ofMax(outfilename);
+        ofMax.append("_max");
+//        size_t lastSep = ofStr.find_last_of("/");
+//        string dir = ofStr.substr(0, lastSep);
+//        string file = ofStr.substr(lastSep, ofStr.length());
+        ofstream outfileMin;
+        outfileMin.open (ofMin.c_str());
+        outfileMin << setprecision(10); // set precision to output file
+        ofstream outfileMax;
+        outfileMax.open (ofMax.c_str());
+        outfileMax << setprecision(10); // set precision to output file
 
-	}
+        numMultiNonHisto = NUM_TRIAL;
+        //int iterEnd = bMultiButNotHisto ? NUM_TRIAL+SEED : SEED+1;
+        NUM_TRIAL = 1;//set to 1 to use single trajectory logic in 'core'
+        bAppend = true;//flag to tell 'core' to populate accum vectors
+        accumAvg = vector< vector<long double> >();
+        accumMin = vector< vector<long double> >();
+        accumMax = vector< vector<long double> >();
+        //
+        //output file header description for time and variable names
+        outfile << "t:";
+        outfileMin << "t:";
+        outfileMax << "t:";
+        for (int i = 0; i < listOfVarNames.size(); i++) {
+            outfile << listOfVarNames.at(i) << ":";
+            outfileMin << listOfVarNames.at(i) << ":";
+            outfileMax << listOfVarNames.at(i) << ":";
+        }
+        outfile << endl;
+        outfileMin << endl;
+        outfileMax << endl;
+        //
+        //output STARTING_TIME(time0) and initial condition at STARTING_TIME
+        outfile << STARTING_TIME << "\t";
+        outfileMin << STARTING_TIME << "\t";
+        outfileMax << STARTING_TIME << "\t";
+        accumAvg.push_back(vector<long double>(listOfIniValues.size() + 1));
+        accumAvg.data()[0].data()[0] = STARTING_TIME;
+        accumMin.push_back(vector<long double>(listOfIniValues.size() + 1));
+        accumMin.data()[0].data()[0] = STARTING_TIME;
+        accumMax.push_back(vector<long double>(listOfIniValues.size() + 1));
+        accumMax.data()[0].data()[0] = STARTING_TIME;
+        for (int i = 0; i < listOfIniValues.size(); i++) {
+            outfile << listOfIniValues.at(i) << "\t";
+            outfileMin << listOfIniValues.at(i) << "\t";
+            outfileMax << listOfIniValues.at(i) << "\t";
+            accumAvg.data()[0].data()[i + 1] = listOfIniValues.at(i);
+            accumMin.data()[0].data()[i + 1] = listOfIniValues.at(i);
+            accumMax.data()[0].data()[i + 1] = listOfIniValues.at(i);
+        }
+        outfile << endl;
+        outfileMin << endl;
+        outfileMax << endl;
+        //Execute NUM_TRIALS of core and accumulate the results
+        for (currMultiNonHistoIter=0; currMultiNonHistoIter < numMultiNonHisto; currMultiNonHistoIter++)
+        {
+            srand(currMultiNonHistoIter+SEED);
+            //run the simulation
+            core();
+            //Turn off allocating vectors for multiNonHisto
+            bAppend = false;
+            //reset to initial values before next simulation
+            savedSampleCount = 1;
+            for(int i=0;i<listOfIniValues.size();i++){
+                listOfVars[i]->setCurr(listOfIniValues.at(i));
+            }
+            for(int i=0;i<listOfProcesses.size();i++){
+                Tree->setProcess(i,listOfProcesses.at(i));
+            }
+        }
+
+        //Calc and save averages of accumulated data
+        for (int i = 1; i < accumAvg.size(); ++i) {
+            for (int j = 0; j < accumAvg.data()[i].size(); ++j) {
+                outfile << accumAvg.data()[i].data()[j] / (j == 0 ? 1.0 : numMultiNonHisto) << "\t";
+                outfileMin << accumMin.data()[i].data()[j] << "\t";
+                outfileMax << accumMax.data()[i].data()[j] << "\t";
+            }
+            outfile << endl;
+            outfileMin << endl;
+            outfileMax << endl;
+        }
+        outfileMin.close();
+        outfileMax.close();
+    }
+	else if(NUM_TRIAL==1)
+    {
+        srand(SEED);
+        //output file header
+        outfile << "t:";
+        for(int i=0;i<listOfVarNames.size();i++){
+            outfile<< listOfVarNames.at(i) << ":";
+        }
+        outfile <<endl;
+        //output initial condition at STARTING_TIME
+        outfile << STARTING_TIME << "\t";
+        for(int i=0;i<listOfIniValues.size();i++){
+            outfile<< listOfIniValues.at(i) << "\t";
+        }
+        outfile << endl;
+        //run the simulation
+        core();
+
+    }
 	else if (NUM_TRIAL > 1)
 	{
 		//output file header
@@ -616,7 +786,7 @@ void Gibson::march()
 	ntime = (ntime2.QuadPart-ntime1.QuadPart)/(freq.QuadPart/1000);
 	cout << endl << "Total time used(ms): " << ntime;
 #endif
-	outfile.close();
+    outfile.close();
 
 #ifdef USE_MESSAGING
 	if (!SimulationMessaging::getInstVar()->isStopRequested()) {
