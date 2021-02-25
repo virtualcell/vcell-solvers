@@ -24,7 +24,7 @@ install:
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syyu python mingw-w64-x86_64-gcc"
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S msys/git"
   #- C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-gcc"
-  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-gcc-fortran"
+  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Su gcc-fortran"
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-cmake"
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-doxygen"
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S msys/make"

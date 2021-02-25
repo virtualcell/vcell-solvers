@@ -8,6 +8,8 @@ Write-Host "calling cmake in " + $pwd
 
 cmake --version
 
+gfortran --version
+
 cmake -G "Unix Makefiles" `
      -DCMAKE_Fortran_COMPILER=C:/MinGW/bin/gfortran.exe `
      -DOPTION_TARGET_MESSAGING=OFF `
