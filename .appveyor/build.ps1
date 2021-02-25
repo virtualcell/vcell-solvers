@@ -8,11 +8,8 @@ Write-Host "calling cmake in " + $pwd
 
 cmake --version
 
-cmake -DCMAKE_BUILD_TYPE="Release" `
-     -DCMAKE_C_COMPILER=C:/MinGW/bin/gcc.exe `
-     -DCMAKE_CXX_COMPILER=C:/MinGW/bin/g++.exe `
+cmake -G "Unix Makefiles" `
      -DCMAKE_Fortran_COMPILER=C:/MinGW/bin/gfortran.exe `
-     -DCMAKE_MAKE_PROGRAM=C:/MinGW/bin/mingw32-make.exe `
      -DOPTION_TARGET_MESSAGING=OFF `
      -DOPTION_TARGET_PARALLEL=OFF `
      -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF `
@@ -24,8 +21,7 @@ cmake -DCMAKE_BUILD_TYPE="Release" `
      -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF `
      -DOPTION_TARGET_SUNDIALS_SOLVER=ON `
      -DOPTION_TARGET_HY3S_SOLVERS=OFF `
-      .. -G "Unix Makefiles" `
-
+      ..
 make
 <# Building NFSim solver seperately #>
 # rm -rf -f !(bin)
