@@ -30,6 +30,7 @@ before_install:
       #brew update
   - |
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then 
+      softwareupdate --all --install --force
       brew install szip
       rm '/usr/local/include/c++'
       #brew install --verbose --debug --force hdf5@1.8 --c++11
@@ -37,6 +38,11 @@ before_install:
     fi
     
 script: .travis/build.sh
+
+# Sorting solution from issue https://github.com/travis-ci/travis-ci/issues/6861
+after_script:
+    # killing background process (because dockerized build no longer does it)
+    - kill -9 $(ps aux | grep 'selenium' | awk '{print $2}')
 
 # for osx, use otool -L to find dependencies
 # for linux, use ldd to find dependencies
