@@ -2,8 +2,14 @@
 #include <limits>
 #include <stdexcept>
 #include "Gibson.h"
-
+#include <hdf5.h>
 //#undef DEBUG
+
+////Check stats calculation, See Gibson::calcRunningStats below
+////Uncomment 'set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")' in .../vcell-solvers/Stochastic/CMakeLists.txt
+//#include <random>
+//std::default_random_engine generator;
+//std::normal_distribution<double> distribution(100.0,1.77);//arg1=mean, arg2=stddev
 
 #ifdef DEBUG
 #include <Windows.h>
@@ -363,18 +369,14 @@ int Gibson::core()
 			{	//use EPSILON here to make sure that a double 0.99999999999995(usually happen in C) is not regarded as a number that smaller than 1. It should be 1.
 				while((outputTimer+SAVE_PERIOD+EPSILON) < ENDING_TIME)
 				{
-                    accumOrSaveInit(varLen,outputTimer + SAVE_PERIOD,true);
-                    for(i=0;i<varLen;i++){
-                        if(bMultiButNotHisto) {//Accumulate data mode
-                            //set data offset +1 to account for timepoint position
-                            accumAvg.data()[savedSampleCount].data()[i + 1] += lastStepVals[i];
-                            accumMin.data()[savedSampleCount].data()[i + 1] = min(static_cast<long double>(lastStepVals[i]),accumMin.data()[savedSampleCount].data()[i + 1]) ;
-                            accumMax.data()[savedSampleCount].data()[i + 1] = max(static_cast<long double>(lastStepVals[i]),accumMax.data()[savedSampleCount].data()[i + 1]);
-                        }else{
-                            outfile<< lastStepVals[i] << "\t";
+                    if(bMultiButNotHisto) {//Accumulate data mode
+                        calcRunningStats(lastStepVals,listOfIniValues.size(),outputTimer + SAVE_PERIOD);
+                    }else {
+                        accumOrSaveInit(varLen, outputTimer + SAVE_PERIOD, true);
+                        for (i = 0; i < varLen; i++) {
+                            outfile << lastStepVals[i] << "\t";
                         }
                     }
-
 //                    outfile << outputTimer+SAVE_PERIOD << "\t";
 //					for(i=0;i<varLen;i++){
 //						outfile<< lastStepVals[i] << "\t";
@@ -461,16 +463,13 @@ int Gibson::core()
 				{
 					while((outputTimer+SAVE_PERIOD) < simtime)
 					{
-                        accumOrSaveInit(varLen,outputTimer + SAVE_PERIOD,true);
-                        for(i=0;i<varLen;i++){
-							if(bMultiButNotHisto) {//Accumulate data mode
-							    //set data offset +1 to account for timepoint position
-                                accumAvg.data()[savedSampleCount].data()[i + 1] += lastStepVals[i];
-                                accumMin.data()[savedSampleCount].data()[i + 1] = min(static_cast<long double>(lastStepVals[i]),accumMin.data()[savedSampleCount].data()[i + 1]);
-                                accumMax.data()[savedSampleCount].data()[i + 1] = max(static_cast<long double>(lastStepVals[i]),accumMax.data()[savedSampleCount].data()[i + 1]);
-                            }else{
-                                outfile<< lastStepVals[i] << "\t";
-							}
+                        if(bMultiButNotHisto) {//Accumulate data mode
+                            calcRunningStats(lastStepVals,listOfIniValues.size(),outputTimer + SAVE_PERIOD);
+                        }else {
+                            accumOrSaveInit(varLen, outputTimer + SAVE_PERIOD, true);
+                            for (i = 0; i < varLen; i++) {
+                                outfile << lastStepVals[i] << "\t";
+                            }
                         }
 						savedSampleCount = finalizeSampleRow(savedSampleCount,simtime);//outfile << endl;
 						outputTimer = outputTimer + SAVE_PERIOD;
@@ -507,18 +506,13 @@ int Gibson::core()
 	//output the variable's vals at the ending time point.
 	if((simtime > ENDING_TIME) && (NUM_TRIAL == 1) && (flag_savePeriod))//SingleTrajectory_OutputInterval
 	{
-        accumOrSaveInit(listOfVars.size(),ENDING_TIME,false);
-		for(i=0;i<listOfVars.size();i++)
-		{
-			if(bMultiButNotHisto) {//Accumulate data mode
-                //set data offset +1 to account for timepoint position
-                accumAvg.data()[savedSampleCount].data()[i + 1] += *listOfVars.at(i)->getCurr();
-                accumMin.data()[savedSampleCount].data()[i + 1] = min(static_cast<long double>(*listOfVars.at(i)->getCurr()),accumMin.data()[savedSampleCount].data()[i + 1]);
-                accumMax.data()[savedSampleCount].data()[i + 1] = max(static_cast<long double>(*listOfVars.at(i)->getCurr()),accumMax.data()[savedSampleCount].data()[i + 1]);
-            }else{
-                outfile<< "\t" << *listOfVars.at(i)->getCurr();
+        if(bMultiButNotHisto) {//Accumulate data mode
+            calcRunningStats(lastStepVals,listOfIniValues.size(),ENDING_TIME);
+        }else {
+            accumOrSaveInit(listOfVars.size(), ENDING_TIME, false);
+            for (i = 0; i < listOfVars.size(); i++) {
+                outfile << "\t" << *listOfVars.at(i)->getCurr();
             }
-
         }
 		savedSampleCount = finalizeSampleRow(savedSampleCount,simtime);//outfile << endl;
 	}
@@ -540,21 +534,10 @@ int Gibson::core()
 }
 
 void Gibson::accumOrSaveInit(int varLen,double timePoint,bool bAddTab) {
-    if (bMultiButNotHisto) {//Accumulate data mode
-        if (bAppend) {// first iteration from 'march' so create vectors to hold data
-            accumAvg.push_back(vector<long double>(varLen + 1));// vars length +1 for timepoint
-            accumAvg.data()[savedSampleCount].data()[0] = timePoint;// set timepoint
-            accumMin.push_back(vector<long double>(varLen + 1));// vars length +1 for timepoint
-            accumMin.data()[savedSampleCount].data()[0] = timePoint;// set timepoint
-            accumMax.push_back(vector<long double>(varLen + 1));// vars length +1 for timepoint
-            accumMax.data()[savedSampleCount].data()[0] = timePoint;// set timepoint
-        }
-    } else {
-        if(bAddTab) {
-            outfile << timePoint << "\t";
-        }else{
-            outfile << timePoint;
-        }
+    if(bAddTab) {
+        outfile << timePoint << "\t";
+    }else{
+        outfile << timePoint;
     }
 }
 //end of method core()
@@ -617,6 +600,33 @@ int Gibson::finalizeSampleRow(int savedSampleCount,double simtime){
 	return savedSampleCount+1;
 }
 
+
+template <typename T>
+void Gibson::calcRunningStats(T valuesFor1Time1Iteration[],int numVars,double timePoint){
+    if(mean.size() < savedSampleCount){
+        timePoints.push_back(timePoint);
+        mean.push_back(vector< double>(listOfIniValues.size(),0));
+        M2.push_back(vector< double>(listOfIniValues.size(),0));
+        variance.push_back(vector< double>(listOfIniValues.size(),0));
+        statMin.push_back(vector< double>(listOfIniValues.size(),std::numeric_limits<double>::max()));
+        statMax.push_back(vector< double>(listOfIniValues.size(),0));
+    }
+   for (int i = 0; i < numVars; i++) {
+        //mean[time][var]
+       double currVarVal = valuesFor1Time1Iteration[i];
+//// Check stats caluclation, save stats into first variable, uncomment random library at beginning of file to set expected mean,stddev
+//       if(i==0){
+//           currVarVal = distribution(generator);
+//       }
+       double delta = currVarVal - mean.data()[savedSampleCount - 1].data()[i];
+        mean.data()[savedSampleCount-1].data()[i] += delta / (currMultiNonHistoIter + 1);
+        M2.data()[savedSampleCount-1].data()[i] += delta * (currVarVal - mean.data()[savedSampleCount - 1].data()[i]);
+        variance.data()[savedSampleCount-1].data()[i] = M2.data()[savedSampleCount-1].data()[i] / (currMultiNonHistoIter + 1);
+        statMin.data()[savedSampleCount-1].data()[i] = std::min(static_cast<double>(currVarVal), statMin.data()[savedSampleCount - 1].data()[i]) ;
+        statMax.data()[savedSampleCount-1].data()[i] = std::max(static_cast<double>(currVarVal), statMax.data()[savedSampleCount - 1].data()[i]) ;
+    }
+}
+
 /*
  *This method is the control of trials, which will be called for Gibson simulation.
  */
@@ -636,70 +646,36 @@ void Gibson::march()
 	outfile << setprecision(10); // set precision to output file
     if(bMultiButNotHisto)
     {
-        string ofMin(outfilename);
-        ofMin.append("_min");
-        string ofMax(outfilename);
-        ofMax.append("_max");
-//        size_t lastSep = ofStr.find_last_of("/");
-//        string dir = ofStr.substr(0, lastSep);
-//        string file = ofStr.substr(lastSep, ofStr.length());
-        ofstream outfileMin;
-        outfileMin.open (ofMin.c_str());
-        outfileMin << setprecision(10); // set precision to output file
-        ofstream outfileMax;
-        outfileMax.open (ofMax.c_str());
-        outfileMax << setprecision(10); // set precision to output file
+//        char thebyte[1];
+//        thebyte[0]=49;//progress char "1"
+//        string ofProg(outfilename);
+//        ofProg.append("_progress");
+//        ofstream outfileProg;
+//        outfileProg.open (ofProg.c_str(),ios::out | ios::app | ios::binary);
 
         numMultiNonHisto = NUM_TRIAL;
-        //int iterEnd = bMultiButNotHisto ? NUM_TRIAL+SEED : SEED+1;
         NUM_TRIAL = 1;//set to 1 to use single trajectory logic in 'core'
-        bAppend = true;//flag to tell 'core' to populate accum vectors
-        accumAvg = vector< vector<long double> >();
-        accumMin = vector< vector<long double> >();
-        accumMax = vector< vector<long double> >();
-        //
+
         //output file header description for time and variable names
         outfile << "t:";
-        outfileMin << "t:";
-        outfileMax << "t:";
         for (int i = 0; i < listOfVarNames.size(); i++) {
             outfile << listOfVarNames.at(i) << ":";
-            outfileMin << listOfVarNames.at(i) << ":";
-            outfileMax << listOfVarNames.at(i) << ":";
         }
         outfile << endl;
-        outfileMin << endl;
-        outfileMax << endl;
         //
         //output STARTING_TIME(time0) and initial condition at STARTING_TIME
         outfile << STARTING_TIME << "\t";
-        outfileMin << STARTING_TIME << "\t";
-        outfileMax << STARTING_TIME << "\t";
-        accumAvg.push_back(vector<long double>(listOfIniValues.size() + 1));
-        accumAvg.data()[0].data()[0] = STARTING_TIME;
-        accumMin.push_back(vector<long double>(listOfIniValues.size() + 1));
-        accumMin.data()[0].data()[0] = STARTING_TIME;
-        accumMax.push_back(vector<long double>(listOfIniValues.size() + 1));
-        accumMax.data()[0].data()[0] = STARTING_TIME;
+
         for (int i = 0; i < listOfIniValues.size(); i++) {
             outfile << listOfIniValues.at(i) << "\t";
-            outfileMin << listOfIniValues.at(i) << "\t";
-            outfileMax << listOfIniValues.at(i) << "\t";
-            accumAvg.data()[0].data()[i + 1] = listOfIniValues.at(i);
-            accumMin.data()[0].data()[i + 1] = listOfIniValues.at(i);
-            accumMax.data()[0].data()[i + 1] = listOfIniValues.at(i);
         }
         outfile << endl;
-        outfileMin << endl;
-        outfileMax << endl;
         //Execute NUM_TRIALS of core and accumulate the results
         for (currMultiNonHistoIter=0; currMultiNonHistoIter < numMultiNonHisto; currMultiNonHistoIter++)
         {
             srand(currMultiNonHistoIter+SEED);
             //run the simulation
             core();
-            //Turn off allocating vectors for multiNonHisto
-            bAppend = false;
             //reset to initial values before next simulation
             savedSampleCount = 1;
             for(int i=0;i<listOfIniValues.size();i++){
@@ -708,21 +684,129 @@ void Gibson::march()
             for(int i=0;i<listOfProcesses.size();i++){
                 Tree->setProcess(i,listOfProcesses.at(i));
             }
+//            outfileProg.write((char *)&thebyte,1);
+//            outfileProg.flush();
         }
+//        outfileProg.close();
 
         //Calc and save averages of accumulated data
-        for (int i = 1; i < accumAvg.size(); ++i) {
-            for (int j = 0; j < accumAvg.data()[i].size(); ++j) {
-                outfile << accumAvg.data()[i].data()[j] / (j == 0 ? 1.0 : numMultiNonHisto) << "\t";
-                outfileMin << accumMin.data()[i].data()[j] << "\t";
-                outfileMax << accumMax.data()[i].data()[j] << "\t";
+        for (int i = 0; i < mean.size(); ++i) {
+            //timepoint
+            outfile << timePoints.data()[i] << "\t";
+            for (int j = 0; j < mean.data()[i].size(); ++j) {
+                outfile << mean.data()[i].data()[j] << "\t";
             }
             outfile << endl;
-            outfileMin << endl;
-            outfileMax << endl;
         }
-        outfileMin.close();
-        outfileMax.close();
+
+        //
+        //Create HDF5 file
+        //
+        string ofhdf5(outfilename);
+        ofhdf5.append("_hdf5");
+        try{
+            hid_t file; //file handle
+            file = H5Fcreate(ofhdf5.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+            hid_t dataspace,datatype,dataset; /* general data structure handles */
+            herr_t status;
+            hid_t doubleDataType;
+            doubleDataType = H5Tcopy (H5T_NATIVE_DOUBLE);
+
+            //
+            //Save varnames to hdf5 file
+            //
+            hid_t varLenStr;   /* variable length string datatype */
+            int rank = 1; //num dimensions
+            hsize_t varNamesDim[rank]; /*container for size of VarNames  1-d array */
+            string varName("VarNames");
+
+
+            varNamesDim[0] = listOfVarNames.size();//set size of dims in container
+            dataspace = H5Screate_simple(rank, varNamesDim, NULL);
+            varLenStr = H5Tcopy (H5T_C_S1);
+            H5Tset_size (varLenStr, H5T_VARIABLE);
+            dataset = H5Dcreate1(file, varName.c_str(), varLenStr, dataspace, H5P_DEFAULT);
+            //For variable-names, create vector of pointers to c-style strings
+            std::vector<const char*> chars;
+            for (int i=0;i < listOfVarNames.size();i++) {
+                chars.push_back(listOfVarNames[i].c_str());
+            }
+            status = H5Dwrite(dataset, varLenStr, H5S_ALL, H5S_ALL, H5P_DEFAULT, chars.data());
+
+            H5Sclose(dataspace);
+            H5Tclose(varLenStr);
+            H5Dclose(dataset);
+
+            //
+            //Save times
+            //
+            rank = 1;
+            hsize_t timesDim[rank];
+            string timeName("SimTimes");
+
+
+            timePoints.insert(timePoints.begin(),STARTING_TIME);
+            timesDim[0] = timePoints.size();//add 1 to include time 0
+            dataspace = H5Screate_simple(rank, timesDim, NULL);
+            dataset = H5Dcreate1(file, timeName.c_str(), doubleDataType, dataspace, H5P_DEFAULT);
+            status = H5Dwrite(dataset, doubleDataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, timePoints.data());
+
+            H5Sclose(dataspace);
+            //H5Tclose(varLenStr);
+            H5Dclose(dataset);
+
+            //
+            //Save Stats for all times and variables
+            //
+            rank = 2;
+            hsize_t meanDim[rank];
+            meanDim[0] = timePoints.size();
+            meanDim[1] = listOfVarNames.size();
+            dataspace = H5Screate_simple(rank, meanDim, NULL);
+            string statsNames[4];
+            int varianceIndex = 3;
+            statsNames[0]="StatMean";
+            statsNames[1]="StatMin";
+            statsNames[2]="StatMax";
+            statsNames[varianceIndex]="StatStdDev";//converted to stddev during write to file
+            vector< vector<double> > statTypes[4];
+            statTypes[0] = mean;
+            statTypes[1] = statMin;
+            statTypes[2] = statMax;
+            statTypes[varianceIndex] = variance;
+            for (int k=0;k<4;k++) {
+                dataset = H5Dcreate1(file, statsNames[k].c_str(), doubleDataType, dataspace, H5P_DEFAULT);
+                double allData[meanDim[0]][meanDim[1]];
+                for (int i = 0; i < meanDim[0]; ++i) {
+                    for (int j = 0; j < meanDim[1]; ++j) {
+                        if (i == 0) {
+                            if (k == varianceIndex) {
+                                allData[i][j] = 0;//no variance at starttime over all trials
+                            } else {
+                                allData[i][j] = listOfIniValues[j];//mean,min,max have ini vals at starttime over all trials
+                            }
+                        } else {
+                            allData[i][j] = statTypes[k][i - 1][j];
+                        }
+                        if(k==varianceIndex){//turn variance into stddev
+                            allData[i][j] = sqrt(allData[i][j]);
+                        }
+                    }
+                }
+                status = H5Dwrite(dataset, doubleDataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, allData);
+               H5Dclose(dataset);
+            }
+            H5Sclose(dataspace);
+
+            H5Fclose(file);
+        } catch (const std::exception& ex) {
+            std::cout << " Error writing HDF5 file " << ofhdf5 << " " << ex.what() << "'\n";
+        } catch (const std::string& ex) {
+            std::cout << " Error writing HDF5 file " << ofhdf5 << " " << ex << "'\n";
+        } catch (...) {
+            std::cout << " Error writing HDF5 file " << ofhdf5 << "" << "unknown exception" << "'\n";
+        }
     }
 	else if(NUM_TRIAL==1)
     {

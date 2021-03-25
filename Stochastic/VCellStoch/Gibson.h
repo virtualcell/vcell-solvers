@@ -45,14 +45,19 @@ private:
     static const string MY_T_STR;
 
     //Var dealing with multitrial-nonhisto (avg,min,max)
-    vector< vector<long double> > accumAvg;
-    vector< vector<long double> > accumMin;
-    vector< vector<long double> > accumMax;
-    bool bAppend;
     bool bMultiButNotHisto;
     int currMultiNonHistoIter;
     int numMultiNonHisto;
     void accumOrSaveInit(int varLen,double timePoint,bool bAddTab);
+    vector<vector<double> > mean;
+    vector<vector<double> > M2;
+    vector<vector<double> > variance;
+    vector<vector<double> > statMin;
+    vector<vector<double> > statMax;
+    vector<double> timePoints;
+    template <typename T>
+    void calcRunningStats(T[],int,double);
+
 } ;
 
 #endif

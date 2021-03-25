@@ -138,6 +138,7 @@ endif()
 #if (APPLE)
 #endif()
 
+#set(HDF5_BUILD_CPP_LIB ON)
 message("hdf5 cpp ${HDF5_BUILD_CPP_LIB}")
 
 set(LINUX FALSE)
