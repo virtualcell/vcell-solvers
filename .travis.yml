@@ -37,12 +37,12 @@ before_install:
       brew install hdf5@1.8
     fi
     
-script: .travis/build.sh
+script: travis_wait 30 .travis/build.sh
 
-# Sorting solution from issue https://github.com/travis-ci/travis-ci/issues/6861
-after_script:
-    # killing background process (because dockerized build no longer does it)
-    - kill -9 $(ps aux | grep 'selenium' | awk '{print $2}')
+# # Sorting solution from issue https://github.com/travis-ci/travis-ci/issues/6861
+# after_script:
+#     # killing background process (because dockerized build no longer does it)
+#     - kill -9 $(ps aux | grep 'selenium' | awk '{print $2}')
 
 # for osx, use otool -L to find dependencies
 # for linux, use ldd to find dependencies
