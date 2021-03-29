@@ -30,7 +30,7 @@ before_install:
       #brew update
   - |
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then 
-      softwareupdate --all --install --force
+      # softwareupdate --all --install --force
       brew install szip
       rm '/usr/local/include/c++'
       #brew install --verbose --debug --force hdf5@1.8 --c++11
