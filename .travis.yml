@@ -3,11 +3,6 @@ sudo: false
 branches:
   only:
   - master
-  - travis
-  - /^v\d+(\.\d+)+$/
-  - travis_build
-  - remove_hdf5
-  - /test/
 matrix:
   include:
   - os: linux
@@ -29,6 +24,7 @@ before_install:
       #sudo chown -R $(whoami) /Library/Caches/Homebrew
       #brew update
   - |
+   travis_wait
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then 
       # softwareupdate --all --install --force
       brew install szip
