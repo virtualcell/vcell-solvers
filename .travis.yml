@@ -19,7 +19,7 @@ matrix:
         - zlib1g-dev
         - libhdf5-dev
   - os: osx
-    osx_image: xcode10.4.4
+    osx_image: xcode11
     sudo: required
 before_install:
       #curl -L -o gfortran-7.1-bin.tgz -fs "https://downloads.sourceforge.net/project/hpc/hpc/g95/gfortran-7.1-bin.tar.gz?r=&ts=1508458128&use_mirror=svwh"
@@ -33,7 +33,7 @@ before_install:
       # softwareupdate --all --install --force
       brew install szip
       rm '/usr/local/include/c++'
-      #brew install --verbose --debug --force hdf5@1.8 --c++11
+      # brew install --verbose --debug --force hdf5@1.8 --c++11
       brew install hdf5@1.8
     fi
     
