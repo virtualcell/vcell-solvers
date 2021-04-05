@@ -32,10 +32,12 @@ before_install:
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then 
     wget https://support.hdfgroup.org/ftp/lib-external/szip/2.1.1/src/szip-2.1.1.tar.gz
     tar -xvzf szip-2.1.1.tar.gz
+    cd szip-2.1.1
     mkdir szip_build
     ./configure --prefix=`pwd`/szip_build
     make
     make install
+    cd ..
       # brew install szip
       rm '/usr/local/include/c++'
       #brew install --verbose --debug --force hdf5@1.8 --c++11
