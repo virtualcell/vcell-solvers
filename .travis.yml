@@ -2,7 +2,7 @@ language: cpp
 sudo: false
 branches:
   only:
-  - master
+  - travis
 matrix:
   include:
   - os: linux
