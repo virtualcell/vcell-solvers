@@ -3,6 +3,11 @@ sudo: false
 branches:
   only:
   - master
+  - travis
+  - /^v\d+(\.\d+)+$/
+  - travis_build
+  - remove_hdf5
+  - /test/
 matrix:
   include:
   - os: linux
@@ -14,7 +19,7 @@ matrix:
         - zlib1g-dev
         - libhdf5-dev
   - os: osx
-    osx_image: xcode9.3
+    osx_image: xcode10.4.4
     sudo: required
 before_install:
       #curl -L -o gfortran-7.1-bin.tgz -fs "https://downloads.sourceforge.net/project/hpc/hpc/g95/gfortran-7.1-bin.tar.gz?r=&ts=1508458128&use_mirror=svwh"
@@ -25,19 +30,13 @@ before_install:
       #brew update
   - |
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then 
-      # softwareupdate --all --install --force
       brew install szip
       rm '/usr/local/include/c++'
-      # brew install --verbose --debug --force hdf5@1.8 --c++11
-      brew install hdf5@1.8
+      #brew install --verbose --debug --force hdf5@1.8 --c++11
+      # brew install hdf5@1.12
     fi
     
 script: .travis/build.sh
-
-# # Sorting solution from issue https://github.com/travis-ci/travis-ci/issues/6861
-# after_script:
-#     # killing background process (because dockerized build no longer does it)
-#     - kill -9 $(ps aux | grep 'selenium' | awk '{print $2}')
 
 # for osx, use otool -L to find dependencies
 # for linux, use ldd to find dependencies
