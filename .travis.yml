@@ -24,7 +24,6 @@ before_install:
       #sudo chown -R $(whoami) /Library/Caches/Homebrew
       #brew update
   - |
-   travis_wait
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then 
       # softwareupdate --all --install --force
       brew install szip
@@ -33,7 +32,7 @@ before_install:
       brew install hdf5@1.8
     fi
     
-script: travis_wait .travis/build.sh
+script: .travis/build.sh
 
 # # Sorting solution from issue https://github.com/travis-ci/travis-ci/issues/6861
 # after_script:
