@@ -30,19 +30,13 @@ before_install:
       #brew update
   - |
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then 
-    # wget https://support.hdfgroup.org/ftp/lib-external/szip/2.1.1/src/szip-2.1.1.tar.gz
-    # tar -xvzf szip-2.1.1.tar.gz
-    # cd szip-2.1.1
-    # mkdir szip_build
-    # ./configure --prefix=`pwd`/szip_build
-    # make
-    # make install
-    # cd ..
     HOMEBREW_NO_AUTO_UPDATE=1 brew install szip
     HOMEBREW_NO_AUTO_UPDATE=1 brew install hdf5@1.8
+    brew info hdf5
     echo 'export PATH="/usr/local/opt/hdf5@1.8/bin:$PATH"' >> ~/.bash_profile
-    export LDFLAGS="-L/usr/local/opt/hdf5@1.8/lib"
+    export LDFLAGS="-L/usr/local/opt/hdf5@1.8/include"
     export CPPFLAGS="-I/usr/local/opt/hdf5@1.8/include"
+    ls /usr/local/opt/hdf5@1.8/include | grep -i "hdf"
       # brew install szip
       rm '/usr/local/include/c++'
       #brew install --verbose --debug --force hdf5@1.8 --c++11
