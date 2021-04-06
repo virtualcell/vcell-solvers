@@ -32,11 +32,12 @@ before_install:
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then 
     HOMEBREW_NO_AUTO_UPDATE=1 brew install szip
     HOMEBREW_NO_AUTO_UPDATE=1 brew install hdf5@1.8
+    export HOMEBREW_NO_INSTALL_CLEANUP=1
     brew info hdf5
     h5cc -show
-    # echo 'export PATH="/usr/local/opt/hdf5@1.8/bin:$PATH"' >> ~/.bash_profile
-    # export LDFLAGS="-L/usr/local/opt/hdf5@1.8/include"
-    # export CPPFLAGS="-I/usr/local/opt/hdf5@1.8/include"
+    echo 'export PATH="/usr/local/Cellar/hdf5@1.8/1.8.21_1/bin:$PATH"' >> ~/.bash_profile
+    export LDFLAGS="-L/usr/local/Cellar/hdf5@1.8/1.8.21_1/bin"
+    export CPPFLAGS="-I/usr/local/Cellar/hdf5@1.8/1.8.21_1/include"
     ls /usr/local/opt/hdf5@1.8/include | grep -i "hdf"
       # brew install szip
       rm '/usr/local/include/c++'
