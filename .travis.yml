@@ -33,9 +33,10 @@ before_install:
     HOMEBREW_NO_AUTO_UPDATE=1 brew install szip
     HOMEBREW_NO_AUTO_UPDATE=1 brew install hdf5@1.8
     brew info hdf5
-    echo 'export PATH="/usr/local/opt/hdf5@1.8/bin:$PATH"' >> ~/.bash_profile
-    export LDFLAGS="-L/usr/local/opt/hdf5@1.8/include"
-    export CPPFLAGS="-I/usr/local/opt/hdf5@1.8/include"
+    h5cc -show
+    # echo 'export PATH="/usr/local/opt/hdf5@1.8/bin:$PATH"' >> ~/.bash_profile
+    # export LDFLAGS="-L/usr/local/opt/hdf5@1.8/include"
+    # export CPPFLAGS="-I/usr/local/opt/hdf5@1.8/include"
     ls /usr/local/opt/hdf5@1.8/include | grep -i "hdf"
       # brew install szip
       rm '/usr/local/include/c++'
