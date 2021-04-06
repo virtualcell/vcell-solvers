@@ -14,6 +14,7 @@ if (ARCH_64bit)
 	set(EXE_FILE ${EXE_FILE}_x64)
 endif()
 
+find_library(hdf5)
 #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 #include_directories(${JMS_INCS})
 #add_definitions(${JMS_DEFS})
