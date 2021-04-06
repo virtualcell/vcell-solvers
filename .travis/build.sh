@@ -10,7 +10,7 @@ then
 	
 	cmake --version
 
-	cmake \
+	cmake --debug-output \
 		-G "Unix Makefiles" \
 		-DCMAKE_PREFIX_PATH="/usr/local/opt/hdf5@1.8" \
 		-DOPTION_TARGET_MESSAGING=OFF \
