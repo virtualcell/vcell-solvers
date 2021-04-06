@@ -39,6 +39,10 @@ before_install:
     # export LDFLAGS="-L/usr/local/Cellar/hdf5@1.8/1.8.21_1/include"
     # export CPPFLAGS="-I/usr/local/Cellar/hdf5@1.8/1.8.21_1/include"
     ls /usr/local/opt/hdf5@1.8/include | grep -i "hdf"
+    echo "##########################"
+    echo "##########################"
+    echo "##########################"
+    ls -la /usr/local/Cellar/hdf5/1.10.5_1/lib
       # brew install szip
       rm '/usr/local/include/c++'
       #brew install --verbose --debug --force hdf5@1.8 --c++11
