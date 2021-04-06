@@ -2,7 +2,11 @@
 #include <limits>
 #include <stdexcept>
 #include "Gibson.h"
-#include <hdf5.h>
+#ifdef __APPLE__
+	#include "/usr/local/opt/hdf5@1.8/include/hdf5.h"
+#else
+	#include <hdf5.h>
+#endif
 //#undef DEBUG
 
 ////Check stats calculation, See Gibson::calcRunningStats below
