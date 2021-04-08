@@ -25,6 +25,14 @@ endif()
 if (APPLE)
 	link_directories("/usr/local/Cellar/hdf5/1.10.5_1/lib")
 endif()
+
+# PETSC_ARCH is defined as ENV var in https://hub.docker.com/r/virtualcell/vcell-solvers/dockerfile basefile
+# we must be in the docker vcell-solvers environment if PETSC_ARCH is defined
+if (DEFINED ENV{PETSC_ARCH})
+        include_directories(/usr/include/hdf5/serial)
+        link_directories("/usr/lib/x86_64-linux-gnu/hdf5/serial")
+endif()
+
 add_executable(${EXE_FILE} ${SRC_FILES})
 #target_link_libraries(${EXE_FILE} ExpressionParser vcommons vcellmessaging ${CMAKE_SOURCE_DIR}/mylibs/libhdf5_serial.so.10)
 target_link_libraries(${EXE_FILE} ExpressionParser vcommons vcellmessaging hdf5)
