@@ -765,7 +765,11 @@ void SimTool::start() {
 		return;
 	}
 	simulation->resolveReferences();
-	if (numSerialParameterScans == 0 || SimulationMessaging::getInstVar()->getTaskID() >= 0) { // only do it when not in messaging mode
+    if (numSerialParameterScans == 0 ) { // only do it when not in messaging mode
+        start1();
+    } else if (SimulationMessaging::getInstVar()->getTaskID() >= 0) {
+        SimulationExpression* sim = (SimulationExpression*)simulation;
+        sim->setParameterValues(serialScanParameterValues[SimulationMessaging::getInstVar()->getTaskID()]);
 		start1();
 	} else {
 		SimulationExpression* sim = (SimulationExpression*)simulation;
