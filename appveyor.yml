@@ -30,7 +30,7 @@ install:
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-cmake"
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-doxygen"
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S msys/make"
-  - yes | C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-pkg-config"
+  - y | C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-pkg-config"
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-hdf5"
   - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-libzip"
   #  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-boost"
