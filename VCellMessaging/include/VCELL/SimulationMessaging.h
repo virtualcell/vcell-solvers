@@ -128,6 +128,7 @@ public:
 		return -1;
 #endif
 	}
+	int getJobIndex();
 
 #ifdef USE_MESSAGING
 	static SimulationMessaging* create(const char* broker, const char* smqusername, const char* passwd, const char* qname, const char* tname,

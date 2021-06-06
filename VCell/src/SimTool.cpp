@@ -765,13 +765,19 @@ void SimTool::start() {
 		return;
 	}
 	simulation->resolveReferences();
-    if (numSerialParameterScans == 0 ) { // only do it when not in messaging mode
+    if (numSerialParameterScans == 0 ) {
+        // Is Not paramScan, the .fvinput had no SERIAL_SCAN_PARAMETER_... section
         start1();
     } else if (SimulationMessaging::getInstVar()->getTaskID() >= 0) {
+        // Is paramScan, the .fvinput had 'SERIAL_SCAN_PARAMETER_...' section
+        // Is also a remote server (green-button) run , the .fvinput has 'JMS_PARAM_BEGIN' section
+        // Each paramScan is run as a separate job with serial jobIndex in the 'JMS_PARAM_BEGIN' section
         SimulationExpression* sim = (SimulationExpression*)simulation;
-        sim->setParameterValues(serialScanParameterValues[SimulationMessaging::getInstVar()->getTaskID()]);
+        sim->setParameterValues(serialScanParameterValues[SimulationMessaging::getInstVar()->getJobIndex()]);
 		start1();
 	} else {
+        // Is paramScan, the .fvinput had SERIAL_SCAN_PARAMETER_... section
+        // Is also a local (blue-button) run where each paramScan is run in the following loop
 		SimulationExpression* sim = (SimulationExpression*)simulation;
 		for (int scan = 0; scan < numSerialParameterScans; scan ++) {
 			if (scan > 0) {

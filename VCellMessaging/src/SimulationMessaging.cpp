@@ -666,6 +666,14 @@ void SimulationMessaging::start() {
 #endif
 }
 
+int SimulationMessaging::getJobIndex() {
+    #ifdef USE_MESSAGING
+            return m_jobIndex;
+    #else
+            return 0;
+    #endif
+}
+
 
 void* startMessagingThread(void* lpParam){	
 	SimulationMessaging::getInstVar()->setupConnection();
