@@ -13,7 +13,9 @@
 ### Requirements
 
     1. git
+        check typing git at command prompt
     2. MinGW
+        windows search for mingw, should find win 64 version
 
 ### Installing MinGW and dependencies
 
