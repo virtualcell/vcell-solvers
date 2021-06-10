@@ -128,8 +128,14 @@ public:
 		return -1;
 #endif
 	}
-	int getJobIndex();
 
+    int getJobIndex() {
+#ifdef USE_MESSAGING
+        return m_jobIndex;
+#else
+        return 0;
+#endif
+    }
 #ifdef USE_MESSAGING
 	static SimulationMessaging* create(const char* broker, const char* smqusername, const char* passwd, const char* qname, const char* tname,
 			const char* vcusername, int simKey, int jobIndex, int taskID, int ttl_low=DEFAULT_TTL_LOW, int ttl_high=DEFAULT_TTL_HIGH);
