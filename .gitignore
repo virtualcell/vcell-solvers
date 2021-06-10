@@ -16,3 +16,4 @@
 /build*
 /.idea/
 /nfsim/
+/all_solvers/*
