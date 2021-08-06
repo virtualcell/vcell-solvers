@@ -158,6 +158,7 @@ void MoleculeType::init(
 
 
 	//Register myself with the system, and get an ID number
+    this->bHasAnchors = hasAnchors;
 	this->system = system;
 	this->type_id = this->system->addMoleculeType(this);
 
@@ -168,8 +169,7 @@ void MoleculeType::init(
 	//
 	// given the list of anchors, match them against list of locations to find the indices of the anchors.
 	//
-	this->bHasAnchors = hasAnchors;
-	if (bHasAnchors){
+    if (bHasAnchors){
 		vector<string>& locationNames = possibleCompStates.at(NFcore::Complex::INDEX_VCELL_LOCATION);
 		for (size_t i=0; i<locationNames.size();i++){
 			bool bFoundInAnchorNames = false;
