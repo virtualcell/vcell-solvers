@@ -111,7 +111,7 @@ void Complex::postProcessVCellLocation(bool checkAnchors)
 					}
 				}
 				if (count==1){
-					cout << "forcing location index to be " << allowedLocationIndex << " instead of " << markedLocationState << endl;
+//					cout << "forcing location index to be " << allowedLocationIndex << " instead of " << markedLocationState << endl;
 					markedLocationState = allowedLocationIndex;
 				}else if (count==0){
 					cerr << "can't satisfy tether/anchor constraints for product complex '" << getCanonicalLabel() << "'" << endl;
