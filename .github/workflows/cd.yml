@@ -1,0 +1,20 @@
+name: CD
+
+on: [push]
+
+jobs:
+  build:
+    name:
+      ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos-latest, windows-latest, ubuntu-18.04]
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: checkout vcell-solvers repo
+        uses: actions/checkout@v2
+
+      - name: Setup tmate session
+          uses: mxschmitt/action-tmate@v3
