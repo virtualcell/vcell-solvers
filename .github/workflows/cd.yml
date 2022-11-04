@@ -26,9 +26,10 @@ jobs:
 
           brew install llvm
           echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> /Users/runner/.bash_profile
-
+          ln -s /usr/local/bin/gfortran-12 /usr/local/bin/gfortran
+          
           gcc --version
-          gfortran-12 --version
+          gfortran --version
           cmake --version
           brew info boost
           brew info hdf5
