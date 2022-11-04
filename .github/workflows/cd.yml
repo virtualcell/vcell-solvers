@@ -63,47 +63,45 @@ jobs:
           -B . -S ..
 
           ninja
-          
+
+      - name: Test Macos
+        if: matrix.platform == 'macos-latest'
+        run: |
+          platform=macos
+          echo "working dir is $PWD"
+
+          cd build
+
           ctest -VV
           
+          echo "------ running FiniteVolume_x64 ------"
           ./bin/FiniteVolume_x64 || true
+          echo
+          echo "------ running NFsim_x64 ------"
           ./bin/NFsim_x64 || true
+          echo "------ running SundialsSolverStandalone_x64 ------"
           ./bin/SundialsSolverStandalone_x64 || true
+          echo "------ running VCellStoch_x64 ------"
           ./bin/VCellStoch_x64 || true
+          echo "------ running smoldyn_x64 ------"
           ./bin/smoldyn_x64 || true
+          echo "------ running testzip ------"
           ./bin/testzip || true
+          echo "------ running ziptool ------"
           ./bin/ziptool || true
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        if: ${{ failure() || matrix.platform != 'macos-latest'}}
+        if: ${{ failure() }}
 
-#
-#      # setup windows
-#      - name: Windows setup
-#        shell: powershell
-#        # Checking for msys64
-#        run: |
-#          mkdir build
-#          cd build
-#          mkdir bin
-#      - name: run cmake
-#        shell: cmd
-#        working-directory: ${{runner.workspace}}\vcell-solvers\build
-#        run: |
-#          cd build
-#          cmake -G "Unix Makefiles" `
-#              -DCMAKE_BUILD_TYPE="Release" `
-#              -DOPTION_TARGET_MESSAGING=OFF `
-#              -DOPTION_TARGET_PARALLEL=OFF `
-#              -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF `
-#              -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF `
-#              -DOPTION_TARGET_SMOLDYN_SOLVER=ON `
-#              -DOPTION_TARGET_FV_SOLVER=ON `
-#              -DOPTION_TARGET_STOCHASTIC_SOLVER=ON `
-#              -DOPTION_TARGET_NFSIM_SOLVER=ON `
-#              -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF `
-#              -DOPTION_TARGET_SUNDIALS_SOLVER=ON `
-#              -DOPTION_TARGET_HY3S_SOLVERS=ON `
-#                ..
-#          make
+
+# Uncomment to debug Windows builds
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
+#        if: ${{ matrix.platform == 'windows-latest' }}
+
+
+# Uncomment to debug Linux builds
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
+#        if: ${{ matrix.platform == 'ubuntu-18.04' }}
