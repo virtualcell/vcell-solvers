@@ -96,9 +96,9 @@ jobs:
 
 
 # Uncomment to debug Windows builds
-#      - name: Setup tmate session
-#        uses: mxschmitt/action-tmate@v3
-#        if: ${{ matrix.platform == 'windows-latest' }}
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ matrix.platform == 'windows-latest' }}
 
 
 # Uncomment to debug Linux builds
