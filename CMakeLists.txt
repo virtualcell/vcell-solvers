@@ -6,7 +6,7 @@
 if (APPLE)
 	set(CMAKE_OSX_ARCHITECTURES "x86_64")
 #	set(CMAKE_Fortran_OSX_DEPLOYMENT_TARGET_FLAG "-mmacosx-version-min=10.7" CACHE PATH "")
-	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.7" CACHE PATH "")
+#	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.7" CACHE PATH "")
 #############################################
 #
 #  Choose 32bit or 64bit target arch on Linux
