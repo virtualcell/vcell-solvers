@@ -16,5 +16,96 @@ jobs:
       - name: checkout vcell-solvers repo
         uses: actions/checkout@v2
 
+      - name: Install MacOS dependencies
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        run: |
+          brew install boost
+          brew install hdf5
+
+          brew install llvm
+          echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> /Users/runner/.bash_profile
+
+          gcc --version
+          gfortran-12 --version
+          cmake --version
+          brew info boost
+          brew info hdf5
+
+
       - name: Setup tmate session
-          uses: mxschmitt/action-tmate@v3
+        uses: mxschmitt/action-tmate@v3
+
+#          To use the bundled libc++ please add the following LDFLAGS:
+#            LDFLAGS="-L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++"
+#
+#          llvm is keg-only, which means it was not symlinked into /usr/local,
+#          because macOS already provides this software and installing another version in
+#          parallel can cause all kinds of trouble.
+#
+#          If you need to have llvm first in your PATH, run:
+#            echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> /Users/runner/.bash_profile
+#
+#          For compilers to find llvm you may need to set:
+#            export LDFLAGS="-L/usr/local/opt/llvm/lib"
+#            export CPPFLAGS="-I/usr/local/opt/llvm/include"
+
+      - name: Build Macos
+        if: matrix.platform == 'macos-latest-dont-run'
+        run: |
+          platform=macos
+          echo "working dir is $PWD"
+
+          mkdir build
+          cd build
+
+          export PATH="/usr/local/opt/llvm/bin:$PATH"
+
+          cmake -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+          -G "Unix Makefiles" \
+          -DCMAKE_PREFIX_PATH="/usr/local/opt/hdf5@1.8" \
+          -DCMAKE_TOOLCHAIN_FILE="/Users/runner/work/vcell-solvers/vcell-solvers/cmake/toolchains/toolchain-llvm-osx.cmake" \
+          -DOPTION_TARGET_MESSAGING=OFF \
+          -DOPTION_TARGET_PARALLEL=OFF \
+          -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
+          -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
+          -DOPTION_TARGET_SMOLDYN_SOLVER=ON \
+          -DOPTION_TARGET_FV_SOLVER=ON \
+          -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
+          -DOPTION_TARGET_NFSIM_SOLVER=ON \
+          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
+          -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
+          -DOPTION_TARGET_HY3S_SOLVERS=OFF \
+          ..
+
+          make
+
+#
+#      # setup windows
+#      - name: Windows setup
+#        shell: powershell
+#        # Checking for msys64
+#        run: |
+#          mkdir build
+#          cd build
+#          mkdir bin
+#      - name: run cmake
+#        shell: cmd
+#        working-directory: ${{runner.workspace}}\vcell-solvers\build
+#        run: |
+#          cd build
+#          cmake -G "Unix Makefiles" `
+#              -DCMAKE_BUILD_TYPE="Release" `
+#              -DOPTION_TARGET_MESSAGING=OFF `
+#              -DOPTION_TARGET_PARALLEL=OFF `
+#              -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF `
+#              -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF `
+#              -DOPTION_TARGET_SMOLDYN_SOLVER=ON `
+#              -DOPTION_TARGET_FV_SOLVER=ON `
+#              -DOPTION_TARGET_STOCHASTIC_SOLVER=ON `
+#              -DOPTION_TARGET_NFSIM_SOLVER=ON `
+#              -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF `
+#              -DOPTION_TARGET_SUNDIALS_SOLVER=ON `
+#              -DOPTION_TARGET_HY3S_SOLVERS=ON `
+#                ..
+#          make
