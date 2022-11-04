@@ -62,9 +62,10 @@ jobs:
           export PATH="/usr/local/opt/llvm/bin:$PATH"
 
           cmake -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-          -G "Unix Makefiles" \
-          -DCMAKE_PREFIX_PATH="/usr/local/opt/hdf5@1.8" \
-          -DCMAKE_TOOLCHAIN_FILE="/Users/runner/work/vcell-solvers/vcell-solvers/cmake/toolchains/toolchain-llvm-osx.cmake" \
+          -T "Ninja" \
+          -DCMAKE_PREFIX_PATH="/usr/local/opt/hdf5@1.12" \
+          -DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang \
+          -DCMAKE_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++ \
           -DOPTION_TARGET_MESSAGING=OFF \
           -DOPTION_TARGET_PARALLEL=OFF \
           -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
@@ -76,7 +77,7 @@ jobs:
           -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
           -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
           -DOPTION_TARGET_HY3S_SOLVERS=OFF \
-          ..
+          -B . -S ..
 
           make
 
