@@ -63,6 +63,16 @@ jobs:
           -B . -S ..
 
           ninja
+          
+          ctest -VV
+          
+          ./bin/FiniteVolume_x64 || true
+          ./bin/NFsim_x64 || true
+          ./bin/SundialsSolverStandalone_x64 || true
+          ./bin/VCellStoch_x64 || true
+          ./bin/smoldyn_x64 || true
+          ./bin/testzip || true
+          ./bin/ziptool || true
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3

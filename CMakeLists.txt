@@ -34,9 +34,9 @@ elseif (LINUX)
 	endif()	
 endif()
 
-
+cmake_minimum_required(VERSION 3.13)
 project(numerics)
-cmake_minimum_required(VERSION 3.3)
+set(CMAKE_CXX_STANDARD 14)
 enable_language(CXX)
 enable_language(C)
 enable_language(Fortran)
@@ -366,4 +366,16 @@ endif()
 		add_subdirectory(PCGPack) 
 		add_subdirectory(qhull)
 	endif ()
-	
+
+include(FetchContent)
+FetchContent_Declare(
+		googletest
+		URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+)
+if (WINDOWS)
+	# For Windows: Prevent overriding the parent project's compiler/linker settings
+	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+endif()
+
+FetchContent_MakeAvailable(googletest)
+enable_testing()
