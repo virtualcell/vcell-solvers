@@ -45,7 +45,7 @@ namespace {
 /* main */
 int main(int argc,char **argv) {
     	std::cout 
-	    << "Smoldyn solver version " << Variant << " $URL: svn://code3.cam.uchc.edu/vcell/trunk/numerics/smoldyn/source/vcell/vcell_smoldyn.c $"VCELLSVNQUOTE(SVNVERSION) 
+	    << "Smoldyn solver version " << Variant << " $URL: svn://code3.cam.uchc.edu/vcell/trunk/numerics/smoldyn/source/vcell/vcell_smoldyn.c $" VCELLSVNQUOTE(SVNVERSION)
 	    << std::endl; 
 	const int errMsgLen = 2048;
 	char errorMsg[errMsgLen];

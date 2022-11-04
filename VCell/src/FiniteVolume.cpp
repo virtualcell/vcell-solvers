@@ -55,7 +55,7 @@ PetscErrorCode VCellPetscReturnErrorHandler(MPI_Comm comm,int line,const char *f
 int main(int argc, char *argv[])
 {
 	std::cout
-	    << "Finite Volume version $URL$"VCELLSVNQUOTE(SVNVERSION) << " with smoldyn version " << VERSION 
+	    << "Finite Volume version $URL$" VCELLSVNQUOTE(SVNVERSION) << " with smoldyn version " << VERSION
 		<< std::endl;
 
 #ifdef VCELL_PETSC

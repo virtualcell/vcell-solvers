@@ -107,7 +107,7 @@ static void errExit(int returnCode, string& errorMsg) {
 int main(int argc, char *argv[])
 {
     std::cout 
-	    << "Stochastic simulation version $URL$"VCELLSVNQUOTE(SVNVERSION) 
+	    << "Stochastic simulation version $URL$" VCELLSVNQUOTE(SVNVERSION)
 	    << std::endl; 
 	if (argc != 4 && argc != 6) {
 		cout << "Wrong arguments!" << endl;

@@ -159,8 +159,8 @@ void PostProcessingHdf5Writer::createGroups() {
 			// adding origin and extent as attributes for all variable
 			string varAttNames[6] = {"OriginX", "OriginY", "OriginZ", "ExtentX", "ExtentY", "ExtentZ"};
 			CartesianMesh* mesh = ((CartesianMesh*)postProcessingBlock->getSimulation()->getMesh());
-			float origin[3] = {mesh->getDomainOriginX(), mesh->getDomainOriginY(), mesh->getDomainOriginZ()};
-			float extent[3] = {mesh->getDomainSizeX(), mesh->getDomainSizeY(), mesh->getDomainSizeZ()};
+			float origin[3] = {(float)mesh->getDomainOriginX(), (float)mesh->getDomainOriginY(), (float)mesh->getDomainOriginZ()};
+			float extent[3] = {(float)mesh->getDomainSizeX(), (float)mesh->getDomainSizeY(), (float)mesh->getDomainSizeZ()};
 			int dim = mesh->getDimension();
 			for (int i = 0; i < dim; i ++) { // add origin
 				H5::FloatType float_type(H5::PredType::NATIVE_FLOAT);
@@ -224,7 +224,7 @@ void PostProcessingHdf5Writer::writeDataGenerator(DataGenerator* dataGenerator, 
 	H5::DataSet dataSet = h5PPFile->createDataSet(dataSetName, H5::PredType::NATIVE_DOUBLE, dataspace);
 
 	// write dataset
-	dataSet.write(dataGenerator->getData(), H5::PredType::NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT);
+	dataSet.write(dataGenerator->getData(), H5::PredType::NATIVE_DOUBLE, H5S_ALL, H5S_ALL);
 
 	// close dataset
 	dataspace.close();
