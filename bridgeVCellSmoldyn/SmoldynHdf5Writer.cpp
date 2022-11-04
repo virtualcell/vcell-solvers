@@ -182,7 +182,7 @@ void SmoldynHdf5Writer::writeDataGenerator(SmoldynDataGenerator* dataGenerator, 
 	H5::DataSet dataSet = h5PPFile->createDataSet(dataSetName, H5::PredType::NATIVE_DOUBLE, dataspace);
 
 	// write dataset
-	dataSet.write(dataGenerator->getData(), H5::PredType::NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT);
+	dataSet.write(dataGenerator->getData(), H5::PredType::NATIVE_DOUBLE, H5S_ALL, H5S_ALL);
 
 	// close dataset
 	dataspace.close();

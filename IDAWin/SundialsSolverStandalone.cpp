@@ -122,7 +122,7 @@ void errExit(int returnCode, string& errorMsg) {
 
 int main(int argc, char *argv[]) {
     	std::cout 
-	    << "Sundials Standalone version $URL$"VCELLSVNQUOTE(SVNVERSION) 
+	    << "Sundials Standalone version $URL$" VCELLSVNQUOTE(SVNVERSION)
 	    << std::endl; 
 	cout << setprecision(20);
 

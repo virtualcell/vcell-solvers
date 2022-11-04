@@ -210,9 +210,10 @@ if(UNIX)
 	endif()
 endif()	
 
-if (UNIX OR APPLE) 
-	find_library(zlib REQUIRED)
-endif()
+#if (UNIX OR APPLE)
+#	include(FindZLIB)
+#	find_library(zlib REQUIRED)
+#endif()
 
 #
 # http://floooh.github.io/2016/01/12/cmake-dependency-juggling.html

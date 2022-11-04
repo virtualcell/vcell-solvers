@@ -31,3 +31,18 @@ target_link_libraries(${EXE_FILE} IDAWin)
 
 install(TARGETS ${EXE_FILE} RUNTIME DESTINATION ${OPTION_EXE_DIRECTORY})
 install(TARGETS IDAWin ARCHIVE DESTINATION bin)
+
+
+enable_testing()
+
+add_executable(
+		hello_test
+		hello_test.cpp
+)
+target_link_libraries(
+		hello_test
+		GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(hello_test)

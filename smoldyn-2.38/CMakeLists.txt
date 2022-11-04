@@ -7,7 +7,7 @@
 ########## Basic setup ##########
 
 project(smoldyn C CXX)
-cmake_minimum_required(VERSION 2.6)
+#cmake_minimum_required(VERSION 2.6)
 set(SMOLDYN_VERSION "2.38")
 
 

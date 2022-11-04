@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include "Gibson.h"
 #ifdef __APPLE__
-	#include "/usr/local/opt/hdf5@1.8/include/hdf5.h"
+	#include "/usr/local/opt/hdf5@1.12/include/hdf5.h"
 #else
 	#include <hdf5.h>
 #endif

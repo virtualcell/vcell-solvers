@@ -16,5 +16,92 @@ jobs:
       - name: checkout vcell-solvers repo
         uses: actions/checkout@v2
 
+      - name: Install MacOS dependencies
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        run: |
+          brew install boost
+          brew install hdf5
+          brew install ninja
+
+          brew install llvm
+          echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> /Users/runner/.bash_profile
+          ln -s /usr/local/bin/gfortran-12 /usr/local/bin/gfortran
+          
+          gcc --version
+          gfortran --version
+          cmake --version
+          brew info boost
+          brew info hdf5
+
+      - name: Build Macos
+        if: matrix.platform == 'macos-latest'
+        run: |
+          platform=macos
+          echo "working dir is $PWD"
+
+          mkdir build
+          cd build
+
+          export PATH="/usr/local/opt/llvm/bin:$PATH"
+
+          cmake \
+          -G Ninja \
+          -DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang \
+          -DCMAKE_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++ \
+          -DOPTION_TARGET_MESSAGING=OFF \
+          -DOPTION_TARGET_PARALLEL=OFF \
+          -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
+          -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
+          -DOPTION_TARGET_SMOLDYN_SOLVER=ON \
+          -DOPTION_TARGET_FV_SOLVER=ON \
+          -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
+          -DOPTION_TARGET_NFSIM_SOLVER=ON \
+          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
+          -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
+          -DOPTION_TARGET_HY3S_SOLVERS=OFF \
+          -B . -S ..
+
+          ninja
+
+      - name: Test Macos
+        if: matrix.platform == 'macos-latest'
+        run: |
+          platform=macos
+          echo "working dir is $PWD"
+
+          cd build
+
+          ctest -VV
+          
+          echo "------ running FiniteVolume_x64 ------"
+          ./bin/FiniteVolume_x64 || true
+          echo
+          echo "------ running NFsim_x64 ------"
+          ./bin/NFsim_x64 || true
+          echo "------ running SundialsSolverStandalone_x64 ------"
+          ./bin/SundialsSolverStandalone_x64 || true
+          echo "------ running VCellStoch_x64 ------"
+          ./bin/VCellStoch_x64 || true
+          echo "------ running smoldyn_x64 ------"
+          ./bin/smoldyn_x64 || true
+          echo "------ running testzip ------"
+          ./bin/testzip || true
+          echo "------ running ziptool ------"
+          ./bin/ziptool || true
+
       - name: Setup tmate session
-          uses: mxschmitt/action-tmate@v3
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ failure() }}
+
+
+# Uncomment to debug Windows builds
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
+#        if: ${{ matrix.platform == 'windows-latest' }}
+
+
+# Uncomment to debug Linux builds
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
+#        if: ${{ matrix.platform == 'ubuntu-18.04' }}
