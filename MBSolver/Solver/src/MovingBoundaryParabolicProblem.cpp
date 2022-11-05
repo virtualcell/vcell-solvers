@@ -1455,7 +1455,7 @@ namespace moving_boundary {
 					}
 				}
 			}
-			return zeroSourceTerms;
+			return (bool)zeroSourceTerms;
 		}
 
 		const MovingBoundarySetup & setup( ) const {
