@@ -146,8 +146,8 @@ TEST(universe, cvt1) {
 		double temp = lossy(probe);
 		int64_t back = lossy(temp); 
 		if (probe!= back) {
-
-		std::cout << probe << " back converts to " << back << std::endl;
+            std::cout << probe << " back converts to " << back << std::endl;
+            ASSERT_TRUE(probe >= 0 && back >= 0);
 		}
 	}
 	int i = 0;
@@ -164,10 +164,10 @@ TEST(universe, cvt2) {
 		long double temp = lossy(probe);
 		int64_t back = lossy(temp); 
 		if (probe!= back) {
-
 			std::cout << "long double " << std::endl;
 			std::cout << probe << " back converts to " << back << std::endl;
-		}
+            ASSERT_TRUE(probe >= 0 && back >= 0);
+        }
 	}
 	int i = 0;
 	for (int64_t probe = std::numeric_limits<int64_t>::max( );i<100;i++, --probe) {
