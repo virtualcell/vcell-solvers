@@ -50,6 +50,7 @@ TEST(persist,mesNeighbor) {
 }
 
 TEST(persist,mes) {
+    GTEST_SKIP() << "skipping - MeshElementNode::setVelocity() no longer exists - needs test maintenance";
 	using moving_boundary::FrontPointType;
 	std::vector<GeoLimit> limits;
 	limits.push_back(GeoLimit(0,5));
@@ -70,7 +71,6 @@ TEST(persist,mes) {
 	std::array<size_t,2> s= { 3, 4}; 
 	MeshElementNode & sample = mesh.get( s );
 	MeshElementNode::registerType( );
-    GTEST_SKIP() << "skipping - MeshElementNode::setVelocity() no longer exists - needs test maintenance";
 //	SVector<moving_boundary::VelocityType,2> vel = sample.getVelocity( );
 //	vel(cX) = 3.4;
 //	vel(cY) = 9.5;
@@ -90,6 +90,7 @@ TEST(persist,mes) {
 }
 
 TEST(persist,mesh) {
+    GTEST_SKIP() << "skipping - MeshElementNode::setVelocity() no longer exists - needs test maintenance";
 	using moving_boundary::FrontPointType;
 	std::vector<GeoLimit> limits;
 	limits.push_back(GeoLimit(0,5));
@@ -110,7 +111,6 @@ TEST(persist,mesh) {
 	std::array<size_t,2> s= { 3, 4}; 
 	MeshElementNode::registerType( );
 	SVector<moving_boundary::VelocityType,2> vel(3.4,9.5);
-    GTEST_SKIP() << "skipping - MeshElementNode::setVelocity() no longer exists - needs test maintenance";
 //	{
 //		MeshElementNode & sample = mesh.get( s );
 //		sample.setVelocity(vel);
