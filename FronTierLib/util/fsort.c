@@ -58,7 +58,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <cdecs.h>
-#include <malloc.h>
+#include <stdlib.h>
+#ifndef __clang__
+# include <malloc.h>
+#endif
 
 struct _NAME_LIST {
 	const char *name;
