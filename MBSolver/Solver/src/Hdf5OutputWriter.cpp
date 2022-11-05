@@ -102,7 +102,7 @@ void Hdf5OutputWriter::initMeshGroup()
 	hsize_t hdf5Dims = 1;
 	DataSpace dataspace(hdf5Rank, &hdf5Dims);
 	DataSet dataSet = meshGroup.createDataSet("dimension", PredType::NATIVE_INT, dataspace);
-	dataSet.write(&geoDimension, PredType::NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT);
+	dataSet.write(&geoDimension, PredType::NATIVE_INT, H5S_ALL, H5S_ALL);
 	}
 
 	// size
@@ -112,7 +112,7 @@ void Hdf5OutputWriter::initMeshGroup()
 	hsize_t hdf5Dims[2] = {1, static_cast<hsize_t>(geoDimension)};
 	DataSpace dataspace = DataSpace(hdf5Rank, hdf5Dims);
 	DataSet dataSet = meshGroup.createDataSet("size", PredType::NATIVE_INT, dataspace);
-	dataSet.write(N, PredType::NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT);
+	dataSet.write(N, PredType::NATIVE_INT, H5S_ALL, H5S_ALL);
 	}
 
 	// origin
@@ -122,7 +122,7 @@ void Hdf5OutputWriter::initMeshGroup()
 	hsize_t hdf5Dims[2] = {1, static_cast<hsize_t>(geoDimension)};
 	DataSpace dataspace = DataSpace(hdf5Rank, hdf5Dims);
 	DataSet dataSet = meshGroup.createDataSet("origin", PredType::NATIVE_DOUBLE, dataspace);
-	dataSet.write(origin, PredType::NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT);
+	dataSet.write(origin, PredType::NATIVE_DOUBLE, H5S_ALL, H5S_ALL);
 	}
 
 	// extent
@@ -134,7 +134,7 @@ void Hdf5OutputWriter::initMeshGroup()
 	double data[DIM] = { extentX[1] - extentX[0], extentY[1] - extentY[0]	};
 	DataSpace dataspace = DataSpace(hdf5Rank, hdf5Dims);
 	DataSet dataSet = meshGroup.createDataSet("extent", PredType::NATIVE_DOUBLE, dataspace);
-	dataSet.write(data, PredType::NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT);
+	dataSet.write(data, PredType::NATIVE_DOUBLE, H5S_ALL, H5S_ALL);
 	}
 }
 
@@ -231,7 +231,7 @@ void Hdf5OutputWriter::writePointSolution(Group& timeGroup)
 		attribute = dataSet.createAttribute("type", attributeStrType, attributeDataSpace);
 		attribute.write(attributeStrType, "PointSubDomain");
 
-		dataSet.write(ps->getPositionValues(), type, H5S_ALL, H5S_ALL, H5P_DEFAULT);
+		dataSet.write(ps->getPositionValues(), type, H5S_ALL, H5S_ALL);
 
 		// for each variable, we create a dataset
 		for (int ivar = 0; ivar < ps->numVariables(); ++ ivar)
@@ -266,7 +266,7 @@ void Hdf5OutputWriter::writeVariableDataSet(Group& timeGroup, const Variable* va
 		attribute.write(attributeStrType, type.c_str());
 
 		// write dataset
-		dataSet.write(solution, PredType::NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT);
+		dataSet.write(solution, PredType::NATIVE_DOUBLE, H5S_ALL, H5S_ALL);
 }
 
 void Hdf5OutputWriter::writeLog()
