@@ -14,7 +14,18 @@
 			if (maxSafeV > 0)  {
 				return maxSafeV;
 			}
-			for (S s = upper( ); s <std::numeric_limits<S>::max( ) ; ++s) {
+            // for large numbers, incrementing by one is time consuming
+            // first check if max of S is safe before looping by 1
+            {
+                S s = std::numeric_limits<S>::max( );
+                D temp = static_cast<D>(s);
+                S back = static_cast<S>(temp);
+                if (s == back) {
+                    maxSafeV = s;
+                    return maxSafeV;
+                }
+            }
+            for (S s = upper( ); s <std::numeric_limits<S>::max( ) ; ++s) {
 				D temp = static_cast<D>(s);
 				S back = static_cast<S>(temp);
 				if (s != back) {
@@ -32,7 +43,7 @@
 	private:
 		S upper( ) {
 			S lastGood = 0;
-			for (S s = 255; s < std::numeric_limits<S>::max( ) && s> 0;  s = static_cast<S>(s * 1.1) ) {
+			for (S s = 255; s < std::numeric_limits<S>::max( ) && s> 0;  s = static_cast<S>(s * 1.01) ) {
 				D temp = static_cast<D>(s);
 				S back = static_cast<S>(temp);
 				if (s != back) {

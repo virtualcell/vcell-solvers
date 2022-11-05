@@ -82,7 +82,7 @@ TEST(vcellutil,dictionary) {
 	tdict["sally"] = 4;
 	std::cout << tdict.options( ) << std::endl;
 	std::cout << tdict.get("bob") << std::endl;
-	std::cout << tdict.get("jane") << std::endl;
+    ASSERT_THROW(tdict.get("jane"), std::domain_error);
 }
 
 
