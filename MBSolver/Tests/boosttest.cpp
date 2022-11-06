@@ -15,10 +15,10 @@ TEST(boost,tribool) {
 	tribool a = true;
 	tribool b = false;
 	tribool c = boost::logic::indeterminate;
-	bool ba = a;
-	bool bb = b;
-	bool bc = c;
+	bool ba = (bool)a;
+	bool bb = (bool)b;
+	bool bc = (bool)c;
 	std::cout << a  << ',' << b  << ',' << c  << std::endl; 
 	ASSERT_TRUE(a);
-	ASSERT_FALSE(b);
+    ASSERT_FALSE(b);
 }

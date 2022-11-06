@@ -47,7 +47,7 @@ namespace spatial {
 			if (indeterminate(cachedValue)) {
 				cachedValue = spatial::inside<typename CFrontType::value_type>(*front,point);
 			}
-			return cachedValue;
+			return (bool)cachedValue;
 		}
 
 		/**

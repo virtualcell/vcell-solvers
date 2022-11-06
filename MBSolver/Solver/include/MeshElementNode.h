@@ -702,7 +702,7 @@ namespace moving_boundary {
 		/**
 		* clear segments
 		*/
-		virtual void volumeChanged( ) {
+		void volumeChanged( ) override {
 			segments_.clear( );
 		}
 

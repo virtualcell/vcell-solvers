@@ -127,6 +127,8 @@ static  void test_propagate(
         double CFL;
 
 	front->max_time = 25;
+    // so test runs quickly, changing max_time to 0.005
+    front->max_time = 0.0051;
 	front->max_step = 40000;
 	front->print_time_interval = 25;
 	front->movie_frame_interval = 25;
@@ -256,7 +258,7 @@ int localMain(int argc, char **argv)
 
 	test_propagate(&front);
 
-	clean_up(0);
+	//clean_up(0);
 	return 0;
 }
 

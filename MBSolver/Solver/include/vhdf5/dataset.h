@@ -4,7 +4,7 @@
 #include <vhdf5/vlen.h>
 namespace vcellH5 {
 	template <class FACADE>
-	H5::DataSet facadeWrite(H5::CommonFG &parent, const char *dataSetName, FACADE & facade) {
+	H5::DataSet facadeWrite(H5::H5Object &parent, const char *dataSetName, FACADE & facade) {
 		if (!facade.empty( )) {
 			std::array<hsize_t,FACADE::N> dim;
 			facade.fillDim(dim);
@@ -32,7 +32,7 @@ namespace vcellH5 {
 	}
 
 	template <class T>
-	H5::DataSet primitiveWrite(H5::CommonFG &parent, const char *dataSetName, T& value) { 
+	H5::DataSet primitiveWrite(H5::H5Object &parent, const char *dataSetName, T& value) {
 		const H5::PredType predType = TPredType<T>::predType( );
 		hsize_t dim[1] = {1};
 		H5::DataSpace dataspace(1,dim);

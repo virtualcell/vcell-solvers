@@ -5,7 +5,7 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include "TPoint.h"
 #include <VCellFront.h>
 #include <cassert>
@@ -32,9 +32,9 @@ TEST(algo,midpoint) {
 	ASSERT_TRUE(bc(cY) == 13);
 }
 TEST(algo,below) {
-	Point2D left(0,0);
-	Point2D right(2,2);
-	Point2D sample(1,2);
+	Point2D left(0.0,0.0);
+	Point2D right(2.0,2.0);
+	Point2D sample(1.0,2.0);
 	ASSERT_FALSE( below(sample,left,right) );
 	ASSERT_FALSE( below(sample,right,left) );
 
@@ -76,7 +76,7 @@ TEST(algo,intersect) {
 	using spatial::intersectionLineSegment;
 	using spatial::cX;
 	using spatial::cY;
-	Point2D a(0,0);
+	Point2D a(0.0,0.0);
 	SVector2D av(1,1);
 	Point2D b(10,0);
 	SVector2D bv(-10,10);
@@ -116,7 +116,7 @@ TEST(algo,developOld) {
 	using spatial::cX;
 	using spatial::cY;
 	using spatial::Angle;
-	Point2D a(0,0);
+	Point2D a(0.0,0.0);
 	SVector2D av(6,6);
 	Point2D b(10,0);
 	SVector2D bv(-10,10);

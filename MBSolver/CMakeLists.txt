@@ -93,4 +93,8 @@ if (BUILD_INCLUDE_MATLAB_DIRS)
 	message(STATUS "Matlab link directories active")
 	add_subdirectory(matlab)
 endif (BUILD_INCLUDE_MATLAB_DIRS)
+enable_testing()
+add_subdirectory(Tests)
+
+
 

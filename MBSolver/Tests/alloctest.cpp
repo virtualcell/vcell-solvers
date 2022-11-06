@@ -102,7 +102,7 @@ namespace {
 TEST(alloc,vt) {
 	using namespace std;
 	std::vector<NoDef> nds;
-	for (int i = 0; i < 1000; i++) {
+	for (int i = 0; i < 20; i++) {
 		nds.push_back(NoDef(i, i + 3));
 		if (nds.capacity( ) != nds.size( ) ) {
 			cout << nds.capacity( ) << ',' << nds.size( ) << endl;

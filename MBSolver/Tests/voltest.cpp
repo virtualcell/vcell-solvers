@@ -300,11 +300,12 @@ TEST(volume,swaptest) {
 TEST(volume,persist) {
 	std::ofstream out("volume.dat");
 	using spatial::Volume;
+    GTEST_SKIP() << "test needs configuration (e.g. registration of spatial::Volume)";
 	Volume<double,double,2> a = randVolume(1000,20);
 	a.persist(out);
 
 	std::ifstream in("volume.dat");
-	Volume<double,double,2> back(in); 
+	Volume<double,double,2> back(in);
 
 
 }
