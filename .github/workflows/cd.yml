@@ -121,13 +121,19 @@ jobs:
           cd 7z
           Invoke-WebRequest -Uri "https://www.7-zip.org/a/7zr.exe" -OutFile "7z.exe"
           
-          # Get Strawberry Perl
+          # Get and Install Strawberry Perl
           cd ../StrawberryPerl
           Invoke-WebRequest -Uri "https://strawberryperl.com/download/5.32.1.1/strawberry-perl-5.32.1.1-64bit.zip" -OutFile "StrbPerl.zip"
           Expand-Archive StrbPerl.zip
           ./StrbPerl/relocation.pl.bat
           ./StrbPerl/update_env.pl.bat
           
+          # Get and Install Make for Windows
+          cd ../MakeForWindows
+          Invoke-WebRequest -Uri "https://downloads.sourceforge.net/project/gnuwin32/make/3.81/make-3.81.exe?ts=gAAAAABjaVOFhawYicsUd_9RyXaRqUnXHDboPTnSlMtdXve0ntccg5Rg4KNPdEkRCboxth4EPQQCoW8FXk1Y_YrDy71nh5kxMA%3D%3D&r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fgnuwin32%2Ffiles%2Fmake%2F3.81%2Fmake-3.81.exe%2Fdownload%3Fuse_mirror%3Dgigenet%26download%3D" -OutFile "make_install.exe"
+          make_install.exe  /VERYSILENT /SUPPRESSMSGBOXES /NOICONS /SP-
+          ls
+          make --help
       
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
