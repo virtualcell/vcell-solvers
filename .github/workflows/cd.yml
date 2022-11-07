@@ -130,7 +130,9 @@ jobs:
           
           # Get and Install Make for Windows
           cd ../MakeForWindows
-          Invoke-WebRequest -Uri "https://downloads.sourceforge.net/project/gnuwin32/make/3.81/make-3.81.exe?ts=gAAAAABjaVOFhawYicsUd_9RyXaRqUnXHDboPTnSlMtdXve0ntccg5Rg4KNPdEkRCboxth4EPQQCoW8FXk1Y_YrDy71nh5kxMA%3D%3D&r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fgnuwin32%2Ffiles%2Fmake%2F3.81%2Fmake-3.81.exe%2Fdownload%3Fuse_mirror%3Dgigenet%26download%3D" -OutFile "make_install.exe"
+          #Invoke-WebRequest -Uri "https://downloads.sourceforge.net/project/gnuwin32/make/3.81/make-3.81.exe?ts=gAAAAABjaVOFhawYicsUd_9RyXaRqUnXHDboPTnSlMtdXve0ntccg5Rg4KNPdEkRCboxth4EPQQCoW8FXk1Y_YrDy71nh5kxMA%3D%3D&r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fgnuwin32%2Ffiles%2Fmake%2F3.81%2Fmake-3.81.exe%2Fdownload%3Fuse_mirror%3Dgigenet%26download%3D" -OutFile "make_install.exe"
+          Start-BitsTransfer -Source "https://downloads.sourceforge.net/project/gnuwin32/make/3.81/make-3.81.exe?ts=gAAAAABjaVOFhawYicsUd_9RyXaRqUnXHDboPTnSlMtdXve0ntccg5Rg4KNPdEkRCboxth4EPQQCoW8FXk1Y_YrDy71nh5kxMA%3D%3D&r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fgnuwin32%2Ffiles%2Fmake%2F3.81%2Fmake-3.81.exe%2Fdownload%3Fuse_mirror%3Dgigenet%26download%3D" -Destination "make_install.exe"
+          ls
           & ".\make_install.exe"  /VERYSILENT /SUPPRESSMSGBOXES /NOICONS /SP-
           ls
           make --help
