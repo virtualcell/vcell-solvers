@@ -136,18 +136,24 @@ jobs:
           Expand-Archive make_dep.zip
           mv make_dep/bin/* .
           mv make_bin/bin/* .
-          ls
-          ./make.exe --help
+          # ./make.exe --help
           
           # Get and Install CMake
           cd ../CMake
           Invoke-WebRequest -Uri "https://github.com/Kitware/CMake/releases/download/v3.25.0-rc3/cmake-3.25.0-rc3-windows-x86_64.zip" -OutFile "CMake.zip"
           Expand-Archive CMake.zip
           mv ./CMake/*/bin/* .
-          ./cmake.exe --help
-          ls
+          # ./cmake.exe --help
           
-      
+          # Get and Install HDF5
+          cd ../HDF5
+          Invoke-WebRequest -Uri "https://www.hdfgroup.org/package/cmake-hdf5-1-12-1-zip/?wpdmdl=15723&refresh=6369780490cb91667856388" -OutFile "hdf5_cmake.zip"
+          Expand-Archive hdf5_cmake.zip
+          cd hdf5_cmake/*/hdf5-1.12.1
+          mkdir build
+          cd build
+          ../../../../../CMake/cmake.exe -G "Unix Makefiles" ..
+          ../../../../../MakeForWindows/make.exe
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         if: ${{ matrix.platform == 'windows-latest' }}
