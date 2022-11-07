@@ -107,15 +107,16 @@ jobs:
         run: |
           # Create Directories
           mkdir -p ./build/src
+          mkdir -p ./7z
           mkdir -p ./StrawberryPerl
           mkdir -p ./MakeForWindows
           mkdir -p ./CMake
           mkdir -p ./HDF5/build
           
-          cd ./StrawberryPerl
+          #cd ./StrawberryPerl
           
-          wget https://strawberryperl.com/download/5.32.1.1/strawberry-perl-5.32.1.1-64bit.zip
-          unzip ./strawberry-perl-5.32.1.1-64bit.zip
+          #wget https://strawberryperl.com/download/5.32.1.1/strawberry-perl-5.32.1.1-64bit.zip
+          #unzip ./strawberry-perl-5.32.1.1-64bit.zip
           
       - name: Install Windows Dependencies
         if: ${{ matrix.platform == 'windows-latest' }}
