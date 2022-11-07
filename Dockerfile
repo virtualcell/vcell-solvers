@@ -1,4 +1,4 @@
-FROM ubuntu:xenial as build
+FROM ubuntu:20.04 as build
 
 RUN apt-get -y update && apt-get install -y apt-utils && \
     apt-get install -y -qq -o=Dpkg::Use-Pty=0 build-essential gfortran zlib1g-dev \
@@ -40,7 +40,8 @@ RUN /usr/bin/cmake \
     -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
     -DOPTION_TARGET_HY3S_SOLVERS=OFF \
     .. && \
-    make
+    make && \
+    ctest
 
 #
 # build FiniteVolume with PETSc (FiniteVolume_PETSc_x64)
@@ -62,16 +63,18 @@ RUN /usr/bin/cmake \
     -DOPTION_TARGET_SUNDIALS_SOLVER=OFF \
     -DOPTION_TARGET_HY3S_SOLVERS=OFF \
     .. && \
-    make
+    make && \
+    ctest
 
 
-FROM ubuntu:xenial
+FROM ubuntu:20.04
 
 RUN apt-get -y update && apt-get install -y apt-utils && \
-    apt-get install -y -qq -o=Dpkg::Use-Pty=0 gcc gfortran zlib1g \
-    libhdf5-10 libhdf5-cpp-11 libcurl4-openssl-dev zip
+    apt-get install -y -qq -o=Dpkg::Use-Pty=0 gcc gfortran zlib1g  \
+    libhdf5-103 libhdf5-cpp-103 libcurl4-openssl-dev zip
 
 COPY --from=build /vcellroot/build/bin /vcellbin
 COPY --from=build /vcellroot/build_PETSc/bin/FiniteVolume_PETSc_x64 /vcellbin/
 WORKDIR /vcellbin
 ENV PATH=/vcellbin:$PATH
+
