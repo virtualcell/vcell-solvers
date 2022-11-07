@@ -96,9 +96,33 @@ jobs:
 
 
 # Uncomment to debug Windows builds
+      - name: Prepare Windows Workspace
+        if: ${{ matrix.platform == 'windows-latest' }}
+        shell: bash
+        run: |
+          mkdir -p ./build/src
+          mkdir -p ./StrawberryPerl
+          mkdir -p ./MakeForWindows
+          mkdir -p ./CMake
+          mkdir -p ./HDF5/build
+          
+          cd ./StrawberryPerl
+          wget https://strawberryperl.com/download/5.32.1.1/strawberry-perl-5.32.1.1-64bit.zip
+          
+      - name: Install Windows Dependencies
+        if: ${{ matrix.platform == 'windows-latest' }}
+        shell: pwsh
+        run: |
+          ls && pwd
+          
+      
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         if: ${{ matrix.platform == 'windows-latest' }}
+        
+      - name: Setup tmate session (FAILURE OCCURED!)
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ failure() }} && ${{ matrix.platform == 'windows-latest' }}
 
 
 # Uncomment to debug Linux builds
