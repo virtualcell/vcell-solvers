@@ -99,7 +99,7 @@ jobs:
       - name: Prepare Bash Software
         if: ${{ matrix.platform == 'windows-latest' }}
         shell: bash
-        run: sudo apt install wget unzip -y
+        run: apt install wget unzip -y
 
       - name: Prepare Windows Workspace
         if: ${{ matrix.platform == 'windows-latest' }}
