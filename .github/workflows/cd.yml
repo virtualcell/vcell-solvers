@@ -117,7 +117,9 @@ jobs:
         if: ${{ matrix.platform == 'windows-latest' }}
         shell: pwsh
         run: |
-          ls && pwd
+          cd 7z
+          Invoke-WebRequest -Uri "https://www.7-zip.org/a/7z2201-x64.exe" -OutFile "7z.exe"
+          ./7z.exe --help
           
       
       - name: Setup tmate session
