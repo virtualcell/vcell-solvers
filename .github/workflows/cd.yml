@@ -143,7 +143,7 @@ jobs:
           cd ../CMake
           Invoke-WebRequest -Uri "https://github.com/Kitware/CMake/releases/download/v3.25.0-rc3/cmake-3.25.0-rc3-windows-x86_64.zip" -OutFile "CMake.zip"
           Expand-Archive CMake.zip
-          mv ./CMake/bin/* .
+          mv ./CMake/*/bin/* .
           ./cmake.exe --help
           ls
           
