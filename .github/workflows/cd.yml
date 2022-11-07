@@ -117,9 +117,16 @@ jobs:
         if: ${{ matrix.platform == 'windows-latest' }}
         shell: pwsh
         run: |
+          # Get 7-zip
           cd 7z
           Invoke-WebRequest -Uri "https://www.7-zip.org/a/7zr.exe" -OutFile "7z.exe"
-          ./7z.exe --help
+          
+          # Get Strawberry Perl
+          cd ../StrawberryPerl
+          Invoke-WebRequest -Uri "https://strawberryperl.com/download/5.32.1.1/strawberry-perl-5.32.1.1-64bit.zip" -OutFile "StrbPerl.zip"
+          ../7z/7z.exe x StrbPerl.zip
+          ls
+          
           
       
       - name: Setup tmate session
