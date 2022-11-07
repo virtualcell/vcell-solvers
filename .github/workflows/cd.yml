@@ -118,7 +118,7 @@ jobs:
         shell: pwsh
         run: |
           cd 7z
-          Invoke-WebRequest -Uri "https://www.7-zip.org/a/7z2201-x64.exe" -OutFile "7z.exe"
+          Invoke-WebRequest -Uri "https://www.7-zip.org/a/7zr.exe" -OutFile "7z.exe"
           ./7z.exe --help
           
       
