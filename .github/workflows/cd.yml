@@ -96,13 +96,15 @@ jobs:
 
 
 # Uncomment to debug Windows builds
+      - name: Prepare Bash Software
+        if: ${{ matrix.platform == 'windows-latest' }}
+        shell: bash
+        run: sudo apt install wget unzip -y
+
       - name: Prepare Windows Workspace
         if: ${{ matrix.platform == 'windows-latest' }}
         shell: bash
         run: |
-          # Necessary Software
-          sudo apt install wget unzip -y
-          
           # Create Directories
           mkdir -p ./build/src
           mkdir -p ./StrawberryPerl
