@@ -125,8 +125,8 @@ jobs:
           cd ../StrawberryPerl
           Invoke-WebRequest -Uri "https://strawberryperl.com/download/5.32.1.1/strawberry-perl-5.32.1.1-64bit.zip" -OutFile "StrbPerl.zip"
           Expand-Archive StrbPerl.zip
-          ls
-          
+          ./StrbPerl/relocation.pl.bat
+          ./StrbPerl/update_env.pl.bat
           
       
       - name: Setup tmate session
