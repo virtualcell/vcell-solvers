@@ -158,14 +158,8 @@ jobs:
           cd hdf5_cmake/*/hdf5-1.12.1
           mkdir build
           cd build
-          ../../../../../CMake/CMake/*/bin/cmake.exe --version
-          cmake.exe --version
-          cmake.exe --help
-          cmake.exe -G "Unix Makefiles" ..
-          ../../../../../MakeForWindows/make_bin/bin/make.exe --version
-          make.exe --version
-          make.exe --help
-          make.exe
+          ../../../../../CMake/CMake/*/bin/cmake.exe -G "Unix Makefiles" ..
+          ../../../../../MakeForWindows/make_bin/bin/make.exe
           
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
