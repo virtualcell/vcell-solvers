@@ -134,17 +134,21 @@ jobs:
           Start-BitsTransfer -Source "https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-dep.zip/download" -Destination "make_dep.zip"
           Expand-Archive make_bin.zip
           Expand-Archive make_dep.zip
-          mv make_dep/bin/* .
-          mv make_bin/bin/* .
+          cp make_dep/bin/* make_bin/bin
+          $Path = Resolve-Path "./make_dep/bin"
+          $Path = [Environment]::GetEnvironmentVariable("PATH", "Machine") + [IO.Path]::PathSeparator + $Path
+          [Environment]::SetEnvironmentVariable( "Path", $Path, "Machine" )
+          $env:path -split ";"
           # ./make.exe --help
           
           # Get and Install CMake
           cd ../CMake
           Invoke-WebRequest -Uri "https://github.com/Kitware/CMake/releases/download/v3.25.0-rc3/cmake-3.25.0-rc3-windows-x86_64.zip" -OutFile "CMake.zip"
           Expand-Archive CMake.zip
-          $Path = Resolve-Path "./CMake/*/bin/* ."
+          $Path = Resolve-Path "./CMake/*/bin"
           $Path = [Environment]::GetEnvironmentVariable("PATH", "Machine") + [IO.Path]::PathSeparator + $Path
           [Environment]::SetEnvironmentVariable( "Path", $Path, "Machine" )
+          $env:path -split ";"
           # ./cmake.exe --help
           
           # Get and Install HDF5
@@ -154,8 +158,10 @@ jobs:
           cd hdf5_cmake/*/hdf5-1.12.1
           mkdir build
           cd build
-          ../../../../../CMake/cmake.exe -G "Unix Makefiles" ..
-          ../../../../../MakeForWindows/make.exe
+          cmake.exe --version
+          cmake.exe -G "Unix Makefiles" ..
+          make.exe --version
+          make.exe
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         if: ${{ matrix.platform == 'windows-latest' }}
