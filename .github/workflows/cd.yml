@@ -142,7 +142,9 @@ jobs:
           cd ../CMake
           Invoke-WebRequest -Uri "https://github.com/Kitware/CMake/releases/download/v3.25.0-rc3/cmake-3.25.0-rc3-windows-x86_64.zip" -OutFile "CMake.zip"
           Expand-Archive CMake.zip
-          mv ./CMake/*/bin/* .
+          $Path = Resolve-Path ./CMake/*/bin/* .
+          $Path = [Environment]::GetEnvironmentVariable("PATH", "Machine") + [IO.Path]::PathSeparator + $Path
+          [Environment]::SetEnvironmentVariable( "Path", $Path, "Machine" )
           # ./cmake.exe --help
           
           # Get and Install HDF5
