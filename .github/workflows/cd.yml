@@ -148,8 +148,8 @@ jobs:
           $Path = (Resolve-Path "./CMake/*/bin").toString() + [IO.Path]::PathSeparator + [Environment]::GetEnvironmentVariable("PATH", "Machine")
           [Environment]::SetEnvironmentVariable( "Path", $Path, "Machine" )
           Write-Output [Environment]::GetEnvironmentVariable("PATH", "Machine")
-          ./*/bin/cmake.exe --help
-          ./*/bin/cmake.exe --version
+          ./CMake/*/bin/cmake.exe --help
+          ./CMake/*/bin/cmake.exe --version
           
           # Get and Install HDF5
           cd ../HDF5
@@ -158,7 +158,7 @@ jobs:
           cd hdf5_cmake/*/hdf5-1.12.1
           mkdir build
           cd build
-          ../../../../../CMake/*/bin/cmake.exe --version
+          ../../../../../CMake/CMake/*/bin/cmake.exe --version
           cmake.exe --version
           cmake.exe --help
           cmake.exe -G "Unix Makefiles" ..
