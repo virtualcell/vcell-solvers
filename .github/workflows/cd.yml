@@ -135,7 +135,7 @@ jobs:
           Expand-Archive make_bin.zip
           Expand-Archive make_dep.zip
           cp make_dep/bin/* make_bin/bin
-          Path = (Resolve-Path "./make_dep/bin").toString()
+          $Path = (Resolve-Path "./make_dep/bin").toString()
           $Path = $Path + [IO.Path]::PathSeparator + [Environment]::GetEnvironmentVariable("PATH", "Machine")
           [Environment]::SetEnvironmentVariable( "Path", $Path, "Machine" )
           $env:path -split ";"
