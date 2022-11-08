@@ -145,7 +145,7 @@ jobs:
           cd ../CMake
           Invoke-WebRequest -Uri "https://github.com/Kitware/CMake/releases/download/v3.25.0-rc3/cmake-3.25.0-rc3-windows-x86_64.zip" -OutFile "CMake.zip"
           Expand-Archive CMake.zip
-          $Path = Resolve-Path "./CMake/*/bin"
+          $Path = (Resolve-Path "./CMake/*/bin").toString()
           $Path = $Path + [IO.Path]::PathSeparator + [Environment]::GetEnvironmentVariable("PATH", "Machine")
           [Environment]::SetEnvironmentVariable( "Path", $Path, "Machine" )
           Write-Output [Environment]::GetEnvironmentVariable("PATH", "Machine")
