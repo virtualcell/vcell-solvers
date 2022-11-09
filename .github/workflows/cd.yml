@@ -174,7 +174,7 @@ jobs:
           
           # Get and Install HDF5
           cd ../HDF5
-          Invoke-WebRequest -Uri "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.9/src/CMake-hdf5-1.10.9.zip" -OutFile "hdf5_cmake.zip"
+          Invoke-WebRequest -Uri "https://www.hdfgroup.org/package/cmake-hdf5-1-12-1-zip/?wpdmdl=15723&refresh=636be0db1998b1668014299" -OutFile "hdf5_cmake.zip"
           Expand-Archive hdf5_cmake.zip
           cd hdf5_cmake/*/hdf5-1.12.1
           ls
