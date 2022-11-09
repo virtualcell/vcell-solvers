@@ -104,6 +104,7 @@ jobs:
           mkdir -p ./build/src
           mkdir -p ./7z
           mkdir -p ./StrawberryPerl
+          mkdir -p ./Ninja
           mkdir -p ./MakeForWindows
           mkdir -p ./CMake
           mkdir -p ./HDF5/build
@@ -131,6 +132,12 @@ jobs:
           $SP_LIB_PATH=(Resolve-Path "./StrbPerl/c/include").toString() -replace '[\\]','/'
           $SP_C_COMPILER_PATH=(Resolve-Path "./StrbPerl/c/bin/gcc.exe").toString() -replace '[\\]','/'
           $SP_CXX_COMPILER_PATH=(Resolve-Path "./StrbPerl/c/bin/g++.exe").toString() -replace '[\\]','/'
+          
+          # Get Ninja
+          cd ../Ninja
+          Invoke-WebRequest -Uri "https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-win.zip" -OutFile "Ninja.zip"
+          Expand-Archive Ninja.zip
+          # Ninja comes with a precompiled binary
           
           # Get and Install Make for Windows
           cd ../MakeForWindows
@@ -163,8 +170,7 @@ jobs:
           mkdir build
           cd build
           ../../../../../CMake/CMake/*/bin/cmake.exe -G "Ninja" -D CMAKE_PREFIX_PATH="$SP_LIB_PATH" -D CMAKE_C_COMPILER="$SP_C_COMPILER_PATH" -D CMAKE_CXX_COMPILER="$SP_CXX_COMPILER_PATH" ..
-          ../../../../../MakeForWindows/make_bin/bin/make.exe
-          
+          ../../../../../Ninja/Ninja/ninja.exe      
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         if: ${{ matrix.platform == 'windows-latest' }}
