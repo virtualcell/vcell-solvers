@@ -177,7 +177,7 @@ jobs:
           Invoke-WebRequest -Uri "https://www.hdfgroup.org/package/cmake-hdf5-1-12-1-zip/?wpdmdl=15723&refresh=6369780490cb91667856388" -OutFile "hdf5_cmake.zip"
           Expand-Archive hdf5_cmake.zip
           cd hdf5_cmake/*/hdf5-1.12.1
-          
+          ls
           ./build-VS2017-64.bat
           #mkdir build
           #cd build
