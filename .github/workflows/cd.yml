@@ -162,7 +162,7 @@ jobs:
           cd hdf5_cmake/*/hdf5-1.12.1
           mkdir build
           cd build
-          ../../../../../CMake/CMake/*/bin/cmake.exe -G "Unix Makefiles" -D CMAKE_PREFIX_PATH="$SP_LIB_PATH" -D CMAKE_C_COMPILER="$SP_C_COMPILER_PATH" -D CMAKE_CXX_COMPILER="$SP_CXX_COMPILER_PATH" ..
+          ../../../../../CMake/CMake/*/bin/cmake.exe -G "Ninja" -D CMAKE_PREFIX_PATH="$SP_LIB_PATH" -D CMAKE_C_COMPILER="$SP_C_COMPILER_PATH" -D CMAKE_CXX_COMPILER="$SP_CXX_COMPILER_PATH" ..
           ../../../../../MakeForWindows/make_bin/bin/make.exe
           
       - name: Setup tmate session
