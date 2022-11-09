@@ -128,9 +128,9 @@ jobs:
           ./StrbPerl/relocation.pl.bat
           ./StrbPerl/update_env.pl.bat
           ./StrbPerl/update_env.pl.bat --nosystem
-          $SP_LIB_PATH=(Resolve-Path "./StrbPerl/c/include").toString()
-          $SP_C_COMPILER_PATH=(Resolve-Path "./StrbPerl/c/bin/gcc.exe").toString()
-          $SP_CXX_COMPILER_PATH=(Resolve-Path "./StrbPerl/c/bin/g++.exe").toString()
+          $SP_LIB_PATH=(Resolve-Path "./StrbPerl/c/include").toString() -replace '[\\]','/'
+          $SP_C_COMPILER_PATH=(Resolve-Path "./StrbPerl/c/bin/gcc.exe").toString() -replace '[\\]','/'
+          $SP_CXX_COMPILER_PATH=(Resolve-Path "./StrbPerl/c/bin/g++.exe").toString() -replace '[\\]','/'
           
           # Get and Install Make for Windows
           cd ../MakeForWindows
