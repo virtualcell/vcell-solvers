@@ -141,8 +141,18 @@ jobs:
           
           # Get and Install Make for Windows
           cd ../MakeForWindows
-          Start-BitsTransfer -Source "https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-bin.zip/download" -Destination "make_bin.zip"
-          Start-BitsTransfer -Source "https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-dep.zip/download" -Destination "make_dep.zip"
+          while ($true) {
+            try {
+              Start-BitsTransfer -Source "https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-bin.zip/download" -Destination "make_bin.zip"
+              Start-BitsTransfer -Source "https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-dep.zip/download" -Destination "make_dep.zip"
+              
+              Write-Output "Fetch from Source Forge Succeeded!"
+              break
+            } catch {
+              Write-Warning "Bit Stream Fetch from Source Forge Failed (somewhat expected; it's inconsistant); trying again..."
+            }
+          }
+          
           Expand-Archive make_bin.zip
           Expand-Archive make_dep.zip
           cp make_dep/bin/* make_bin/bin
@@ -167,10 +177,12 @@ jobs:
           Invoke-WebRequest -Uri "https://www.hdfgroup.org/package/cmake-hdf5-1-12-1-zip/?wpdmdl=15723&refresh=6369780490cb91667856388" -OutFile "hdf5_cmake.zip"
           Expand-Archive hdf5_cmake.zip
           cd hdf5_cmake/*/hdf5-1.12.1
-          mkdir build
-          cd build
-          ../../../../../CMake/CMake/*/bin/cmake.exe -G "Ninja" -D CMAKE_PREFIX_PATH="$SP_LIB_PATH" -D CMAKE_C_COMPILER="$SP_C_COMPILER_PATH" -D CMAKE_CXX_COMPILER="$SP_CXX_COMPILER_PATH" ..
-          ../../../../../Ninja/Ninja/ninja.exe      
+          
+          ./build-VS2017-64.bat
+          #mkdir build
+          #cd build
+          #../../../../../CMake/CMake/*/bin/cmake.exe -G "Ninja" -D CMAKE_PREFIX_PATH="$SP_LIB_PATH" -D CMAKE_C_COMPILER="$SP_C_COMPILER_PATH" -D CMAKE_CXX_COMPILER="$SP_CXX_COMPILER_PATH" ..
+          #../../../../../Ninja/Ninja/ninja.exe      
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         if: ${{ matrix.platform == 'windows-latest' }}
