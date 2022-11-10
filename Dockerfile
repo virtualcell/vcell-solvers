@@ -74,11 +74,13 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV LANG=en_US.UTF-8
 
 RUN apt-get update && \
-    && apt-get install -y apt-utils && \
-    apt-get install -q -y --no-install-recommends curl dnsutils python3.9 python3-pip pythbon3.9-venv && \
-    apt-get install -qq -y -o=Dpkg::Use-Pty=0 gcc gfortran zlib1g \
-    libhdf5-103 libhdf5-cpp-103 libcurl4-openssl-dev zip && \
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 20 && \
+    apt-get install -y apt-utils && \
+    apt-get install -q -y --no-install-recommends curl dnsutils python3.9 python3-pip python3.9-venv
+
+RUN apt-get install -qq -y -o=Dpkg::Use-Pty=0 gcc gfortran zlib1g \
+    libhdf5-103 libhdf5-cpp-103 libcurl4-openssl-dev zip
+
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 20 && \
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 40
 
 COPY --from=build /vcellroot/build/bin /vcellbin
