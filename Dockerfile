@@ -71,7 +71,7 @@ FROM eclipse-temurin:17 as jre-build
 
 # Create a custom Java runtime
 RUN $JAVA_HOME/bin/jlink \
-         --add-modules java.base \
+         --add-modules java.base,java.instrument,java.logging,java.management,java.desktop,java.naming,java.xml \
          --strip-debug \
          --no-man-pages \
          --no-header-files \
