@@ -3,7 +3,7 @@
 #include <time.h>
 #include <sstream>
 #include <string>
-#include "StochModel.h"
+#include "../include/StochModel.h"
 
 using namespace std;
 /*

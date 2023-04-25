@@ -23,7 +23,7 @@ class IndexedTree;
 class Gibson : public StochModel{
 public:
 	Gibson();
-	Gibson(char*, char*);
+	Gibson(const char*, const char*);
 	~Gibson();
 	int core();
 	void march();
@@ -37,7 +37,7 @@ private:
 	IndexedTree *Tree; //the data structure(binary tree) to store all the processes and make each parent smaller than it's children.
 	double* currvals;//array of variable values to be used by expression parser. variables are stored in vector listOfVars.
 	ofstream outfile; //the output file stream where the results are saved.
-	char* outfilename;//the output file name.
+	const char* outfilename;//the output file name.
 	bool flag_savePeriod;//the flag for using save period.
 	int finalizeSampleRow(int,double);//central location to call to complete 1 output sample to file
 	int savedSampleCount; //saved sample counter that survives certain iterations to keep overall count

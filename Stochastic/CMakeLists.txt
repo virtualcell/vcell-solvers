@@ -1,12 +1,22 @@
-project(Stochastic)		
+cmake_minimum_required (VERSION 3.0)
+project(Stochastic)
 
-set (SRC_FILES 
-	VCellStoch/Gibson.cpp
-	VCellStoch/IndexedTree.cpp
-	VCellStoch/Jump.cpp
-	VCellStoch/StochModel.cpp
-	VCellStoch/StochVar.cpp
-	VCellStoch/VCellStoch.cpp
+set (SRC_FILES
+		VCellStoch/src/Gibson.cpp
+		VCellStoch/src/IndexedTree.cpp
+		VCellStoch/src/Jump.cpp
+		VCellStoch/src/StochModel.cpp
+		VCellStoch/src/StochVar.cpp
+)
+
+set (SRC_MAIN_FILE VCellStoch/src/VCellStoch.cpp)
+
+set (HEADER_FILES
+		VCellStoch/include/Gibson.h
+		VCellStoch/include/IndexedTree.h
+		VCellStoch/include/Jump.h
+		VCellStoch/include/StochModel.h
+		VCellStoch/include/StochVar.h
 )
 
 set(EXE_FILE VCellStoch)
@@ -33,8 +43,19 @@ if (DEFINED ENV{PETSC_ARCH})
         link_directories("/usr/lib/x86_64-linux-gnu/hdf5/serial")
 endif()
 
-add_executable(${EXE_FILE} ${SRC_FILES})
+add_library(VCellStochLib ${SRC_FILES} ${HEADER_FILES})
+target_link_libraries(VCellStochLib ExpressionParser vcommons vcellmessaging hdf5)
+target_include_directories(VCellStochLib PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/VCellStoch/include>
+		$<INSTALL_INTERFACE:VCellStoch/include>  # <prefix>/VCellStoch/include
+		)
+
+
+add_executable(${EXE_FILE} ${SRC_MAIN_FILE} ${SRC_FILES} ${HEADER_FILES})
 #target_link_libraries(${EXE_FILE} ExpressionParser vcommons vcellmessaging ${CMAKE_SOURCE_DIR}/mylibs/libhdf5_serial.so.10)
-target_link_libraries(${EXE_FILE} ExpressionParser vcommons vcellmessaging hdf5)
+target_link_libraries(${EXE_FILE} VCellStochLib)
 #add_dependencies(${EXE_FILE} ExpressionParser)
-install(TARGETS ${EXE_FILE} RUNTIME DESTINATION ${OPTION_EXE_DIRECTORY})
+install(TARGETS VCellStochLib ${EXE_FILE} RUNTIME DESTINATION ${OPTION_EXE_DIRECTORY})
+
+enable_testing()
+add_subdirectory(Tests)

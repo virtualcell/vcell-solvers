@@ -1,7 +1,7 @@
 //#define DEBUG //enable it when debug is needed.
 #include <limits>
 #include <stdexcept>
-#include "Gibson.h"
+#include "../include/Gibson.h"
 #ifdef __APPLE__
 	#include "/usr/local/opt/hdf5@1.12/include/hdf5.h"
 #else
@@ -32,14 +32,14 @@ using namespace std;
 #include <sys/types.h>
 #include <sys/timeb.h>
 #include <time.h>
-#include "Jump.h"
-#include "StochVar.h"
-#include "IndexedTree.h"
+#include "../include/Jump.h"
+#include "../include/StochVar.h"
+#include "../include/IndexedTree.h"
 
 #ifdef USE_MESSAGING
 #include <VCELL/SimulationMessaging.h>
 #endif
-#include <VCellException.h>
+#include "VCellException.h"
 const double double_infinity = numeric_limits<double>::infinity();
 const double EPSILON = 1E-12;
 const string Gibson::MY_T_STR = "t";
@@ -61,7 +61,7 @@ Gibson::Gibson()
  *Input para: srting, the input file(name), where the model info. is read.
  *            string, the output file(name), where the results are saved.
  */
-Gibson::Gibson(char* arg_infilename, char* arg_outfilename)
+Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
 	:StochModel(),
 	savedSampleCount(1),
 	lastTime (std::numeric_limits<long>::min( ))

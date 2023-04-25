@@ -3,11 +3,11 @@
 #include <fstream>
 #include <string.h>
 #include <stdlib.h>
-#include <Exception.h>
+#include "Exception.h"
 #ifdef USE_MESSAGING
 #include <VCELL/SimulationMessaging.h>
 #endif
-#include "Gibson.h"
+#include "../include/Gibson.h"
 using namespace std;
 
 static void printUsage() {
@@ -94,6 +94,7 @@ static void errExit(int returnCode, string& errorMsg) {
 #endif
 #define VCELLSVNQ(x) #x
 #define VCELLSVNQUOTE(x) VCELLSVNQ(x)
+
 
 /* This file is the entrance of the Virtual Cell stochastic simulation package.
  * It parses the commandline arguments to load different simulators. Four parameters
@@ -185,3 +186,4 @@ int main(int argc, char *argv[])
 	errExit(returnCode, errMsg);
 	return returnCode;
 }//end of main()
+
