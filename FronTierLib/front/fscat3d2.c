@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #define DEBUG_STRING    "fscatter"
 #include <front/fdecs.h>
-#include <intfc/ilocprotos.h>
+#include <intfc/idiagnostic.h>
 
 	/* LOCAL Function Declarations */
 LOCAL	INTERFACE *cut_buf_interface2(INTERFACE*,int,int,int*,int*);
