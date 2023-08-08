@@ -224,5 +224,6 @@ IMPORT void	check_tri_and_bond(TRI*,BOND*,const char*,INTERFACE*);
 }
 #endif
 
+EXPORT boolean the_bond(BOND *b);	/* end the_bond */
 
 #endif /* !defined(_ILOCPROTOS_H) */
