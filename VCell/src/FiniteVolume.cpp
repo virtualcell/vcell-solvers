@@ -7,6 +7,7 @@ using namespace std;
 #include <sys/stat.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/SimulationMessaging.h>
+#include <VCell/GitDescribe.h>
 #include <Exception.h>
 #include <vcellhybrid.h>
 #ifdef VCELL_PETSC
@@ -35,11 +36,6 @@ void printUsage() {
 	cout << "Arguments : [-d output] [-nz] fvInputFile" <<  endl;
 #endif
 }
-#if !defined(SVNVERSION)
-#error SVNVERSION version not defined
-#endif
-#define VCELLSVNQ(x) #x
-#define VCELLSVNQUOTE(x) VCELLSVNQ(x)
 
 #ifdef VCELL_PETSC
 PetscErrorCode VCellPetscReturnErrorHandler(MPI_Comm comm,int line,const char *fun,const char *file,PetscErrorCode n,PetscErrorType p,const char *mess,void *ctx)
@@ -55,7 +51,7 @@ PetscErrorCode VCellPetscReturnErrorHandler(MPI_Comm comm,int line,const char *f
 int main(int argc, char *argv[])
 {
 	std::cout
-	    << "Finite Volume version $URL$" VCELLSVNQUOTE(SVNVERSION) << " with smoldyn version " << VERSION
+	    << "Finite Volume version " << g_GIT_DESCRIBE << " with smoldyn version " << VERSION
 		<< std::endl;
 
 #ifdef VCELL_PETSC

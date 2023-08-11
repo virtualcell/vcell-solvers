@@ -13,6 +13,7 @@ using namespace std;
 #include <VCELL/SimTool.h>
 #include <string.h>
 #include <VCELL/SimulationMessaging.h>
+#include <VCELL/GitDescribe.h>
 #include <Exception.h>
 
 #ifdef CH_MPI
@@ -88,12 +89,6 @@ void onExit()
 	}
 }
 
-#if !defined(SVNVERSION)
-#error SVNVERSION version not defined
-#endif
-#define VCELLSVNQ(x) #x
-#define VCELLSVNQUOTE(x) VCELLSVNQ(x)
-
 int main(int argc, char *argv[])
 {
 #ifdef CH_MPI
@@ -103,7 +98,7 @@ int main(int argc, char *argv[])
 #endif
 
 	pout()
-	<< "Chombo solver " << mpiStatus << VCELLSVNQUOTE(CH_SPACEDIM)"D version $URL$"VCELLSVNQUOTE(SVNVERSION)
+	<< "Chombo solver " << mpiStatus << CH_SPACEDIM << "D version " << g_GIT_DESCRIBE
 	<< std::endl;
 	printUsage();
 	

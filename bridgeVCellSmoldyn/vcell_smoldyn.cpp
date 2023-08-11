@@ -13,6 +13,7 @@
 #include <sstream>
 #include <cstdarg>
 #include <VCELL/SimulationMessaging.h>
+#include <VCELL/GitDescribe.h>
 #include "opengl2.h"
 #include "smoldyn.h"
 #include "random2.h"
@@ -29,11 +30,6 @@ namespace {
 /* ***************************************************************** */
 /* ********************** main() segment *************************** */
 /* ***************************************************************** */
-#if !defined(SVNVERSION)
-#error SVNVERSION version not defined
-#endif
-#define VCELLSVNQ(x) #x
-#define VCELLSVNQUOTE(x) VCELLSVNQ(x)
 
 
 #ifdef USE_MESSAGING
@@ -45,8 +41,9 @@ namespace {
 /* main */
 int main(int argc,char **argv) {
     	std::cout 
-	    << "Smoldyn solver version " << Variant << " $URL: svn://code3.cam.uchc.edu/vcell/trunk/numerics/smoldyn/source/vcell/vcell_smoldyn.c $" VCELLSVNQUOTE(SVNVERSION)
-	    << std::endl; 
+	    << "Smoldyn solver version " << Variant << " " << g_GIT_DESCRIBE
+	    << std::endl;
+        std::cout.flush();
 	const int errMsgLen = 2048;
 	char errorMsg[errMsgLen];
 	int exitCode = 0;
