@@ -154,6 +154,6 @@ TEST(statstest,test1) {
     }
     assert(accum_error < 10.0);  // ridiculously large error just to test execution.
 
-    delete temp_input_file_name;
-    delete temp_output_file_name;
+    delete[] temp_input_file_name;
+    delete[] temp_output_file_name;
 }

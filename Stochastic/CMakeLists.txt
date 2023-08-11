@@ -7,6 +7,7 @@ set (SRC_FILES
 		VCellStoch/src/Jump.cpp
 		VCellStoch/src/StochModel.cpp
 		VCellStoch/src/StochVar.cpp
+        VCellStoch/src/MultiTrialStats.cpp
 )
 
 set (SRC_MAIN_FILE VCellStoch/src/VCellStoch.cpp)
@@ -17,6 +18,7 @@ set (HEADER_FILES
 		VCellStoch/include/Jump.h
 		VCellStoch/include/StochModel.h
 		VCellStoch/include/StochVar.h
+        VCellStoch/include/MultiTrialStats.h
 )
 
 set(EXE_FILE VCellStoch)

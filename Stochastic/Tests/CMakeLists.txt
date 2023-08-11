@@ -6,6 +6,7 @@ enable_testing()
 
 set(SRC_FILES
 		statstest.cpp
+		MultiTrialStatsTest.cpp
 )
 
 file(GLOB HDR_FILES *h)
