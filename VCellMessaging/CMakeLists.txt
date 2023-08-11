@@ -1,12 +1,16 @@
 project(vcellmessaging CXX)
 
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/GitDescribe.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/GitDescribe.cpp" @ONLY)
+list(APPEND SOURCES  GitDescribe.h)
+
 set(HEADER_FILES 
 	include/VCELL/SimulationMessaging.h
+		include/VCELL/GitDescribe.h
 )
 
 set(SRC_FILES 
 	src/SimulationMessaging.cpp
-)
+		"${CMAKE_CURRENT_BINARY_DIR}/GitDescribe.cpp")
 
 include_directories(include)
 
