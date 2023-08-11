@@ -7,7 +7,7 @@ using namespace std;
 #include <sys/stat.h>
 #include <VCELL/SimTool.h>
 #include <VCELL/SimulationMessaging.h>
-#include <VCell/GitDescribe.h>
+#include <VCELL/GitDescribe.h>
 #include <Exception.h>
 #include <vcellhybrid.h>
 #ifdef VCELL_PETSC
