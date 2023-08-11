@@ -64,7 +64,14 @@ r0
 
 
 TEST(statstest,test1) {
-    std::string temp_input_file_name = std::tmpnam(nullptr);
+    char temp_input_file_name[200] = {0};
+    char temp_output_file_name[200] = {0};
+    const char* in_prefix = "/tmp/input_XXXXXX";
+    const char* out_prefix = "/tmp/output_XXXXXX";
+    strncpy(temp_input_file_name,in_prefix, strlen(in_prefix));
+    strncpy(temp_output_file_name,out_prefix, strlen(out_prefix));
+    assert(mkstemp(temp_input_file_name) != -1);
+    assert(mkstemp(temp_output_file_name) != -1);
     std::ofstream input_file (temp_input_file_name);
     bool bWroteFile = false;
     if (input_file.is_open()){
@@ -74,9 +81,7 @@ TEST(statstest,test1) {
     }
     ASSERT_TRUE(bWroteFile);
 
-    std::string temp_output_file_name = std::tmpnam(nullptr);
-
-    Gibson *gb= new Gibson(temp_input_file_name.c_str(), temp_output_file_name.c_str());
+    Gibson *gb= new Gibson(temp_input_file_name, temp_output_file_name);
     gb->march();
     delete gb;
 }
