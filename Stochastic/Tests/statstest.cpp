@@ -73,7 +73,7 @@ index   t	  (Var=s0_Count) s0_Count
  */
 
 const std::map<int, double> expected_S0 = {
-        {0, 0.0},       // t=0.0
+        {0, 1.0},       // t=0.0
         {50, 0.36868},  // t=1.0
         {100, 0.1349},  // t=2.0
         {150, 0.04972}, // t=3.0
@@ -116,31 +116,28 @@ TEST(statstest,test1) {
 
     Gibson *gb= new Gibson(temp_input_file_name, temp_output_file_name);
     gb->march();
-    delete gb;
 
     // verify file contents
     std::ifstream outfile(temp_output_file_name);
-    const int num_timepoints = 1/0.02 + 1;
     string line;
     getline(outfile, line); // remove header line
-    std::cout << line << std::endl;
-    std::cout.flush();
+//    std::cout << line << std::endl;
+//    std::cout.flush();
 
     std::map<int,double> results;
-    for (int i=0; i<num_timepoints; i++){
-
-        getline(outfile, line);
-        std::cout << line << std::endl;
-        std::cout.flush();
-
-        // if index found in map, compare and accumulate error
+    int i = 0;
+    while (getline(outfile, line)){
+        // if index found in expected_S0 map, store in results map
         if (expected_S0.find(i) != expected_S0.end()){
             float t, s0, s1, s2;
             // extract space separated values for t, s0, s1 and s2 from line
             std::stringstream line_stream(line);
             line_stream >> t >> s0 >> s1 >> s2;
             results[i] = s0;
+//            std::cout << line << std::endl;
+//            std::cout.flush();
         }
+        i++;
     }
     // compare the expected and actual values
     double accum_error = 0.0;
@@ -149,11 +146,14 @@ TEST(statstest,test1) {
         double s0_given = expected.second;
         double s0_computed = results[expected.first];
         double abserr = std::abs(s0_given - s0_computed);
+//        std::cout << "t=" << expected.first << " expected=" << s0_given << " computed=" << s0_computed << " abserr=" << abserr << std::endl;
         accum_error += abserr;
         max_error = std::max(max_error, abserr);
     }
-    assert(accum_error < 10.0);  // ridiculously large error just to test execution.
+    assert(accum_error < 0.015);
+    assert(max_error < 0.005);
 
+    delete gb;
     delete[] temp_input_file_name;
     delete[] temp_output_file_name;
 }

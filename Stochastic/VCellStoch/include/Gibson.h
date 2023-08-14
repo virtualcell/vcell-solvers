@@ -2,8 +2,11 @@
 #define GIBSON_H
 
 #include <fstream>
+#include <random>
 using std::ofstream;
 #include "StochModel.h"
+#include "MultiTrialStats.h"
+
 class IndexedTree;
 
 /* This class defines Gibson method which is also called Next Reaction Method.
@@ -44,20 +47,14 @@ private:
 	time_t lastTime;
     static const string MY_T_STR;
 
+    MultiTrialStats *multiTrialStats;
     //Var dealing with multitrial-nonhisto (avg,min,max)
     bool bMultiButNotHisto;
     int currMultiNonHistoIter;
     int numMultiNonHisto;
     void accumOrSaveInit(int varLen,double timePoint,bool bAddTab);
-    vector<vector<double> > mean;
-    vector<vector<double> > M2;
-    vector<vector<double> > variance;
-    vector<vector<double> > statMin;
-    vector<vector<double> > statMax;
-    vector<double> timePoints;
-    template <typename T>
-    void calcRunningStats(T[],int,double);
-
+    std::mt19937_64 *generator;
+    std::uniform_real_distribution<double> *distribution;
 } ;
 
 #endif
