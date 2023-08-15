@@ -125,30 +125,33 @@ jobs:
           echo "------ running ziptool ------"
           ./bin/ziptool || true
 
-
-      - name: Install Windows Dependencies
+      - name: install msys2
         if: matrix.platform == 'windows-latest'
-        shell: bash
-        run: |
-          bash -lc "pacman --noconfirm -S mingw-w64-x86_64-boost"
-          bash -lc "pacman --noconfirm -S mingw-w64-x86_64-hdf5"
-          bash -lc "pacman --noconfirm -S mingw-w64-x86_64-libzip"
-          bash -lc "pacman --noconfirm -S mingw-w64-x86_64-netcdf"
-          choco install ninja
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: git mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-boost mingw-w64-x86_64-hdf5 mingw-w64-x86_64-libzip mingw-w64-x86_64-netcdf
 
-          PATH="/c/Program Files/LLVM/bin:$PATH"
-
-          gcc --version
-          gfortran --version
-          cmake --version
-          bash -lc "pacman -Q mingw-w64-x86_64-boost"
-          bash -lc "pacman -Q mingw-w64-x86_64-hdf5"
-          bash -lc "pacman -Q mingw-w64-x86_64-libzip"
-          bash -lc "pacman -Q mingw-w64-x86_64-netcdf"
+#      - name: Install Windows Dependencies
+#        if: matrix.platform == 'windows-latest'
+#        shell: msys2 {0}
+#        run: |
+#          pacman --noconfirm -S mingw-w64-x86_64-boost mingw-w64-x86_64-hdf5 mingw-w64-x86_64-libzip mingw-w64-x86_64-netcdf
+#
+#          PATH="/c/Program Files/LLVM/bin:$PATH"
+#
+#          gcc --version
+#          gfortran --version
+#          cmake --version
+#          pacman -Q mingw-w64-x86_64-boost
+#          pacman -Q mingw-w64-x86_64-hdf5
+#          pacman -Q mingw-w64-x86_64-libzip
+#          pacman -Q mingw-w64-x86_64-netcdf
 
       - name: Build Windows
         if: matrix.platform == 'windows-latest'
-        shell: bash
+        shell: msys2 {0}
         run: |
           platform=windows
           echo "working dir is $PWD"
@@ -179,7 +182,7 @@ jobs:
 
       - name: Test Windows
         if: matrix.platform == 'windows-latest'
-        shell: bash
+        shell: msys2 {0}
         run: |
           platform=windows
           echo "working dir is $PWD"
