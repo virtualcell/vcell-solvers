@@ -7,36 +7,36 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push-image:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Log in to the Container registry
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+#  build-and-push-image:
+#    runs-on: ubuntu-latest
+#    permissions:
+#      contents: read
+#      packages: write
+#
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v3
+#
+#      - name: Log in to the Container registry
+#        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+#        with:
+#          registry: ${{ env.REGISTRY }}
+#          username: ${{ github.actor }}
+#          password: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: Extract metadata (tags, labels) for Docker
+#        id: meta
+#        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+#        with:
+#          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+#
+#      - name: Build and push Docker image
+#        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+#        with:
+#          context: .
+#          push: true
+#          tags: ${{ steps.meta.outputs.tags }}
+#          labels: ${{ steps.meta.outputs.labels }}
 
   native-build:
     name:
@@ -125,7 +125,7 @@ jobs:
           echo "------ running ziptool ------"
           ./bin/ziptool || true
 
-      - name: install msys2
+      - name: Install Windows Dependencies
         if: matrix.platform == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
@@ -140,22 +140,6 @@ jobs:
             mingw-w64-clang-x86_64-hdf5 
             mingw-w64-clang-x86_64-libzip 
             mingw-w64-clang-x86_64-netcdf
-
-#      - name: Install Windows Dependencies
-#        if: matrix.platform == 'windows-latest'
-#        shell: msys2 {0}
-#        run: |
-#          pacman --noconfirm -S mingw-w64-x86_64-boost mingw-w64-x86_64-hdf5 mingw-w64-x86_64-libzip mingw-w64-x86_64-netcdf
-#
-#          PATH="/c/Program Files/LLVM/bin:$PATH"
-#
-#          gcc --version
-#          gfortran --version
-#          cmake --version
-#          pacman -Q mingw-w64-x86_64-boost
-#          pacman -Q mingw-w64-x86_64-hdf5
-#          pacman -Q mingw-w64-x86_64-libzip
-#          pacman -Q mingw-w64-x86_64-netcdf
 
       - name: Build Windows
         if: matrix.platform == 'windows-latest'
@@ -186,7 +170,7 @@ jobs:
           -DOPTION_TARGET_HY3S_SOLVERS=OFF \
           -B . -S ..
 
-          ninja
+          ninja -j 1
 
       - name: Test Windows
         if: matrix.platform == 'windows-latest'

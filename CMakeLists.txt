@@ -141,7 +141,7 @@ endif()
 #if (APPLE)
 #endif()
 
-#set(HDF5_BUILD_CPP_LIB ON)
+set(HDF5_BUILD_CPP_LIB OFF CACHE BOOL "" )
 message("hdf5 cpp ${HDF5_BUILD_CPP_LIB}")
 
 set(LINUX FALSE)
@@ -152,7 +152,7 @@ endif()
 set(WINDOWS FALSE)
 if (${CMAKE_SYSTEM_NAME} MATCHES Windows)
 	set(WINDOWS TRUE)
-	set(WIN32 TRUE)
+#	set(WIN32 TRUE)
 	if (${CMAKE_GENERATOR} MATCHES "Unix Makefiles") 
 		set(MINGW TRUE)
 	endif (${CMAKE_GENERATOR} MATCHES "Unix Makefiles") 
@@ -197,8 +197,12 @@ set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
 
 add_definitions(-DUNIX)
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+#if (MINGW)
+#	add_definitions(-DWIN32)
+#endif(MINGW)
+
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 
 
 if (OPTION_TARGET_MESSAGING)
@@ -235,9 +239,9 @@ if (${OPTION_TARGET_MOVINGBOUNDARY_SOLVER} OR
 	if (${HDF5_BUILD_CPP_LIB})
 		add_subdirectory(hdf5-1.8.11)
 	else()
-#			set(HDF5_USE_STATIC_LIBRARIES ON)
+		set(HDF5_USE_STATIC_LIBRARIES ON)
 		#CMakeList.txt that comes with hdf5 switches library name if compiled with debug
-		find_package(HDF5 1.8.11 REQUIRED COMPONENTS HL CXX C)
+		find_package(HDF5 COMPONENTS HL CXX C)
 		set(HDF_VERSION ${HDF5_VERSION})
 		######    ${HDF5_HL_LIBRARIES} ${HDF5_CXX_LIBRARIES}
 		if (${OPTION_TARGET_CHOMBO2D_SOLVER} OR
@@ -382,3 +386,21 @@ endif()
 
 FetchContent_MakeAvailable(googletest)
 enable_testing()
+
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+	message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
+
+include(CMakePrintHelpers)
+cmake_print_variables(OPTION_TARGET_MESSAGING OPTION_TARGET_PARALLEL OPTION_TARGET_PETSC
+		OPTION_TARGET_DOCS OPTION_TARGET_CHOMBO2D_SOLVER OPTION_TARGET_CHOMBO3D_SOLVER
+		OPTION_TARGET_SMOLDYN_SOLVER OPTION_TARGET_FV_SOLVER OPTION_TARGET_STOCHASTIC_SOLVER
+		OPTION_TARGET_NFSIM_SOLVER OPTION_TARGET_MOVINGBOUNDARY_SOLVER OPTION_TARGET_SUNDIALS_SOLVER
+		OPTION_TARGET_HY3S_SOLVERS OPTION_TARGET_LIBSMOLDYN OPTION_TARGET_VCELL OPTION_TARGET_NSV )
+cmake_print_variables(CMAKE_CXX_FLAGS CMAKE_C_FLAGS CMAKE_Fortran_FLAGS)
+cmake_print_variables(CMAKE_SYSTEM_NAME WINDOWS WIN32 MINGW APPLE ARCH_64bit ARCH_32bit)
+cmake_print_variables(CMAKE_CPP_COMPILER CMAKE_C_COMPILER CMAKE_CXX_COMPILER CMAKE_Fortran_COMPILER)
+cmake_print_variables(HAVE_ZLIB)
+
