@@ -125,18 +125,146 @@ jobs:
           echo "------ running ziptool ------"
           ./bin/ziptool || true
 
+
+      - name: Install Windows Dependencies and LLVM
+        if: matrix.platform == 'windows-latest'
+        run: |
+          choco install llvm
+          choco install boost
+          choco install hdf5
+          choco install ninja
+
+          export PATH="/c/Program Files/LLVM/bin:$PATH"
+
+          gcc --version
+          gfortran --version
+          cmake --version
+          choco info boost
+          choco info hdf5
+
+
+      - name: Build Windows
+        if: matrix.platform == 'windows-latest'
+        run: |
+          platform=windows
+          echo "working dir is $PWD"
+
+          mkdir build
+          cd build
+
+          export PATH="/c/Program Files/LLVM/bin:$PATH"
+
+          cmake \
+          -G Ninja \
+          -DCMAKE_C_COMPILER=clang \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DOPTION_TARGET_MESSAGING=OFF \
+          -DOPTION_TARGET_PARALLEL=OFF \
+          -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
+          -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
+          -DOPTION_TARGET_SMOLDYN_SOLVER=ON \
+          -DOPTION_TARGET_FV_SOLVER=ON \
+          -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
+          -DOPTION_TARGET_NFSIM_SOLVER=ON \
+          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
+          -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
+          -DOPTION_TARGET_HY3S_SOLVERS=OFF \
+          -B . -S ..
+
+          ninja
+
+      - name: Test Windows
+        if: matrix.platform == 'windows-latest'
+        run: |
+          platform=windows
+          echo "working dir is $PWD"
+
+          cd build
+
+          ctest -VV
+          
+          echo "------ running FiniteVolume_x64 ------"
+          ./bin/FiniteVolume_x64 || true
+          echo
+          echo "------ running NFsim_x64 ------"
+          ./bin/NFsim_x64 || true
+          echo "------ running SundialsSolverStandalone_x64 ------"
+          ./bin/SundialsSolverStandalone_x64 || true
+          echo "------ running VCellStoch_x64 ------"
+          ./bin/VCellStoch_x64 || true
+          echo "------ running smoldyn_x64 ------"
+          ./bin/smoldyn_x64 || true
+          echo "------ running testzip ------"
+          ./bin/testzip || true
+          echo "------ running ziptool ------"
+          ./bin/ziptool || true
+
+      - name: Install Linux Dependencies
+        if: matrix.platform == 'ubuntu-18.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libboost-all-dev
+          sudo apt-get install -y libhdf5-dev
+          sudo apt-get install -y ninja-build
+
+          gcc --version
+          gfortran --version
+          cmake --version
+          dpkg -s libboost-all-dev
+          dpkg -s libhdf5-dev
+
+      - name: Build Linux
+        if: matrix.platform == 'ubuntu-18.04'
+        run: |
+          platform=linux
+          echo "working dir is $PWD"
+
+          mkdir build
+          cd build
+
+          cmake \
+          -G Ninja \
+          -DOPTION_TARGET_MESSAGING=OFF \
+          -DOPTION_TARGET_PARALLEL=OFF \
+          -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
+          -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
+          -DOPTION_TARGET_SMOLDYN_SOLVER=ON \
+          -DOPTION_TARGET_FV_SOLVER=ON \
+          -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
+          -DOPTION_TARGET_NFSIM_SOLVER=ON \
+          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
+          -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
+          -DOPTION_TARGET_HY3S_SOLVERS=OFF \
+          -B . -S ..
+
+          ninja
+
+      - name: Test Linux
+        if: matrix.platform == 'ubuntu-18.04'
+        run: |
+          platform=linux
+          echo "working dir is $PWD"
+
+          cd build
+
+          ctest -VV
+          
+          echo "------ running FiniteVolume_x64 ------"
+          ./bin/FiniteVolume_x64 || true
+          echo
+          echo "------ running NFsim_x64 ------"
+          ./bin/NFsim_x64 || true
+          echo "------ running SundialsSolverStandalone_x64 ------"
+          ./bin/SundialsSolverStandalone_x64 || true
+          echo "------ running VCellStoch_x64 ------"
+          ./bin/VCellStoch_x64 || true
+          echo "------ running smoldyn_x64 ------"
+          ./bin/smoldyn_x64 || true
+          echo "------ running testzip ------"
+          ./bin/testzip || true
+          echo "------ running ziptool ------"
+          ./bin/ziptool || true
+
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         if: ${{ failure() }}
-
-
-# Uncomment to debug Windows builds
-#      - name: Setup tmate session
-#        uses: mxschmitt/action-tmate@v3
-#        if: ${{ matrix.platform == 'windows-latest' }}
-
-
-# Uncomment to debug Linux builds
-#      - name: Setup tmate session
-#        uses: mxschmitt/action-tmate@v3
-#        if: ${{ matrix.platform == 'ubuntu-18.04' }}
