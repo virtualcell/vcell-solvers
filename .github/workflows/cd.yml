@@ -130,10 +130,10 @@ jobs:
         if: matrix.platform == 'windows-latest'
         shell: bash
         run: |
-          pacman --noconfirm -S mingw-w64-x86_64-boost
-          pacman --noconfirm -S mingw-w64-x86_64-hdf5
-          pacman --noconfirm -S mingw-w64-x86_64-libzip
-          pacman --noconfirm -S mingw-w64-x86_64-netcdf
+          bash -lc "pacman --noconfirm -S mingw-w64-x86_64-boost"
+          bash -lc "pacman --noconfirm -S mingw-w64-x86_64-hdf5"
+          bash -lc "pacman --noconfirm -S mingw-w64-x86_64-libzip"
+          bash -lc "pacman --noconfirm -S mingw-w64-x86_64-netcdf"
           choco install ninja
 
           PATH="/c/Program Files/LLVM/bin:$PATH"
@@ -141,10 +141,10 @@ jobs:
           gcc --version
           gfortran --version
           cmake --version
-          pacman -Q mingw-w64-x86_64-boost
-          pacman -Q mingw-w64-x86_64-hdf5
-          pacman -Q mingw-w64-x86_64-libzip
-          pacman -Q mingw-w64-x86_64-netcdf
+          bash -lc "pacman -Q mingw-w64-x86_64-boost"
+          bash -lc "pacman -Q mingw-w64-x86_64-hdf5"
+          bash -lc "pacman -Q mingw-w64-x86_64-libzip"
+          bash -lc "pacman -Q mingw-w64-x86_64-netcdf"
 
       - name: Build Windows
         if: matrix.platform == 'windows-latest'
