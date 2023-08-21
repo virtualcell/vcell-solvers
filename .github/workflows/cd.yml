@@ -44,7 +44,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, windows-latest, ubuntu-18.04]
+    #        platform: [macos-latest, windows-latest, ubuntu-18.04]
+        platform: [macos-latest]
     runs-on: ${{ matrix.platform }}
 
     steps:
@@ -267,7 +268,7 @@ jobs:
 #          ./bin/ziptool || true
 #
 
-      - name: Upload binary
+      - name: Upload ${{ matrix.os }} binaries
         uses: actions/upload-artifact@v3
         with:
           name: solvers-${{ matrix.os }}
