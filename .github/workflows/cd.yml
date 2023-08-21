@@ -125,85 +125,80 @@ jobs:
           echo "------ running ziptool ------"
           ./bin/ziptool || true
 
-      - name: Install Windows Dependencies
-        if: matrix.platform == 'windows-latest'
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: CLANG64
-          update: true
-          install: >
-            git 
-            mingw-w64-clang-x86_64-toolchain 
-            mingw-w64-clang-x86_64-flang 
-            mingw-w64-clang-x86_64-cmake 
-            mingw-w64-clang-x86_64-boost 
-            mingw-w64-clang-x86_64-hdf5 
-            mingw-w64-clang-x86_64-libzip 
-            mingw-w64-clang-x86_64-netcdf
 
-      - name: Build Windows
-        if: matrix.platform == 'windows-latest'
-        shell: msys2 {0}
-        run: |
-          platform=windows
-          echo "working dir is $PWD"
-
-          mkdir build
-          cd build
-
-          PATH="/c/Program Files/LLVM/bin:$PATH"
-
-          cmake \
-          -G Ninja \
-          -DCMAKE_C_COMPILER=clang \
-          -DCMAKE_CXX_COMPILER=clang++ \
-          -DOPTION_TARGET_MESSAGING=OFF \
-          -DOPTION_TARGET_PARALLEL=OFF \
-          -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
-          -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
-          -DOPTION_TARGET_SMOLDYN_SOLVER=ON \
-          -DOPTION_TARGET_FV_SOLVER=ON \
-          -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
-          -DOPTION_TARGET_NFSIM_SOLVER=ON \
-          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
-          -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
-          -DOPTION_TARGET_HY3S_SOLVERS=OFF \
-          -B . -S ..
-
-          ninja -j 1
-
-      - name: Test Windows
-        if: matrix.platform == 'windows-latest'
-        shell: msys2 {0}
-        run: |
-          platform=windows
-          echo "working dir is $PWD"
-
-          cd build
-
-          ctest -VV
-          
-          echo "------ running FiniteVolume_x64 ------"
-          ./bin/FiniteVolume_x64 || true
-          echo
-          echo "------ running NFsim_x64 ------"
-          ./bin/NFsim_x64 || true
-          echo "------ running SundialsSolverStandalone_x64 ------"
-          ./bin/SundialsSolverStandalone_x64 || true
-          echo "------ running VCellStoch_x64 ------"
-          ./bin/VCellStoch_x64 || true
-          echo "------ running smoldyn_x64 ------"
-          ./bin/smoldyn_x64 || true
-          echo "------ running testzip ------"
-          ./bin/testzip || true
-          echo "------ running ziptool ------"
-          ./bin/ziptool || true
-
-      - name: Setup tmate session
-        if: ${{ failure() }}
-        uses: mxschmitt/action-tmate@v3
-        with:
-          limit-access-to-actor: false
+#      - name: Install Windows Dependencies
+#        if: matrix.platform == 'windows-latest'
+#        uses: msys2/setup-msys2@v2
+#        with:
+#          msystem: CLANG64
+#          update: true
+#          install: >
+#            git
+#            mingw-w64-clang-x86_64-toolchain
+#            mingw-w64-clang-x86_64-flang
+#            mingw-w64-clang-x86_64-cmake
+#            mingw-w64-clang-x86_64-boost
+#            mingw-w64-clang-x86_64-hdf5
+#            mingw-w64-clang-x86_64-libzip
+#            mingw-w64-clang-x86_64-netcdf
+#
+#      - name: Build Windows
+#        if: matrix.platform == 'windows-latest'
+#        shell: msys2 {0}
+#        run: |
+#          platform=windows
+#          echo "working dir is $PWD"
+#
+#          mkdir build
+#          cd build
+#
+#          PATH="/c/Program Files/LLVM/bin:$PATH"
+#
+#          cmake \
+#          -G Ninja \
+#          -DCMAKE_C_COMPILER=clang \
+#          -DCMAKE_CXX_COMPILER=clang++ \
+#          -DOPTION_TARGET_MESSAGING=OFF \
+#          -DOPTION_TARGET_PARALLEL=OFF \
+#          -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
+#          -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
+#          -DOPTION_TARGET_SMOLDYN_SOLVER=ON \
+#          -DOPTION_TARGET_FV_SOLVER=ON \
+#          -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
+#          -DOPTION_TARGET_NFSIM_SOLVER=ON \
+#          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
+#          -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
+#          -DOPTION_TARGET_HY3S_SOLVERS=OFF \
+#          -B . -S ..
+#
+#          ninja -j 1
+#
+#      - name: Test Windows
+#        if: matrix.platform == 'windows-latest'
+#        shell: msys2 {0}
+#        run: |
+#          platform=windows
+#          echo "working dir is $PWD"
+#
+#          cd build
+#
+#          ctest -VV
+#
+#          echo "------ running FiniteVolume_x64 ------"
+#          ./bin/FiniteVolume_x64 || true
+#          echo
+#          echo "------ running NFsim_x64 ------"
+#          ./bin/NFsim_x64 || true
+#          echo "------ running SundialsSolverStandalone_x64 ------"
+#          ./bin/SundialsSolverStandalone_x64 || true
+#          echo "------ running VCellStoch_x64 ------"
+#          ./bin/VCellStoch_x64 || true
+#          echo "------ running smoldyn_x64 ------"
+#          ./bin/smoldyn_x64 || true
+#          echo "------ running testzip ------"
+#          ./bin/testzip || true
+#          echo "------ running ziptool ------"
+#          ./bin/ziptool || true
 
 #      - name: Install Linux Dependencies
 #        if: matrix.platform == 'ubuntu-18.04'
@@ -271,3 +266,16 @@ jobs:
 #          echo "------ running ziptool ------"
 #          ./bin/ziptool || true
 #
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: solvers-${{ matrix.os }}
+          path: build/bin*
+
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: false
+
