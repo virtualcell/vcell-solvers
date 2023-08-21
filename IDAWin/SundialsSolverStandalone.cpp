@@ -15,6 +15,7 @@
 #include "VCellIDASolver.h"
 #include "OdeResultSet.h"
 #include "StoppedByUserException.h"
+#include <VCELL/GitDescribe.h>
 
 #include <stdio.h>
 #include <iomanip>
@@ -113,16 +114,10 @@ void errExit(int returnCode, string& errorMsg) {
 	}
 #endif
 }
-#if !defined(SVNVERSION)
-#error SVNVERSION version not defined
-#endif
-#define VCELLSVNQ(x) #x
-#define VCELLSVNQUOTE(x) VCELLSVNQ(x)
-
 
 int main(int argc, char *argv[]) {
     	std::cout 
-	    << "Sundials Standalone version $URL$" VCELLSVNQUOTE(SVNVERSION)
+	    << "Sundials Standalone version " << g_GIT_DESCRIBE
 	    << std::endl; 
 	cout << setprecision(20);
 

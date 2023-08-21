@@ -27,9 +27,7 @@ using std::endl;
 using namespace std;
 struct zip;
 
-#if ( !defined(WIN32) && !defined(WIN64) ) // UNIX
 #include <unistd.h>
-#endif
 
 bool exists(const char* name){
     if (FILE *file = fopen(name, "r")) {

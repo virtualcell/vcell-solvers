@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define DEBUG_STRING "i_make_surf"
 
 #include <intfc/int.h>
+#include <intfc/iprotos.h>
 
 LOCAL   void 	assign_blk_crx(BLK_CRX*,int,int,int,const EG_CRX*,boolean);
 LOCAL	void 	assign_two_comp_domain(double (*func)(POINTER,double*),POINTER,

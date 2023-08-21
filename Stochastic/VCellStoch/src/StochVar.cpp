@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <math.h>
 #include <string>
-#include "StochVar.h"
+#include "../include/StochVar.h"
 
 /*
  *Assign the initial value to the stochastic variable.

@@ -2,8 +2,11 @@
 #define GIBSON_H
 
 #include <fstream>
+#include <random>
 using std::ofstream;
 #include "StochModel.h"
+#include "MultiTrialStats.h"
+
 class IndexedTree;
 
 /* This class defines Gibson method which is also called Next Reaction Method.
@@ -23,7 +26,7 @@ class IndexedTree;
 class Gibson : public StochModel{
 public:
 	Gibson();
-	Gibson(char*, char*);
+	Gibson(const char*, const char*);
 	~Gibson();
 	int core();
 	void march();
@@ -37,27 +40,21 @@ private:
 	IndexedTree *Tree; //the data structure(binary tree) to store all the processes and make each parent smaller than it's children.
 	double* currvals;//array of variable values to be used by expression parser. variables are stored in vector listOfVars.
 	ofstream outfile; //the output file stream where the results are saved.
-	char* outfilename;//the output file name.
+	const char* outfilename;//the output file name.
 	bool flag_savePeriod;//the flag for using save period.
 	int finalizeSampleRow(int,double);//central location to call to complete 1 output sample to file
 	int savedSampleCount; //saved sample counter that survives certain iterations to keep overall count
 	time_t lastTime;
     static const string MY_T_STR;
 
+    MultiTrialStats *multiTrialStats;
     //Var dealing with multitrial-nonhisto (avg,min,max)
     bool bMultiButNotHisto;
     int currMultiNonHistoIter;
     int numMultiNonHisto;
     void accumOrSaveInit(int varLen,double timePoint,bool bAddTab);
-    vector<vector<double> > mean;
-    vector<vector<double> > M2;
-    vector<vector<double> > variance;
-    vector<vector<double> > statMin;
-    vector<vector<double> > statMax;
-    vector<double> timePoints;
-    template <typename T>
-    void calcRunningStats(T[],int,double);
-
+    std::mt19937_64 *generator;
+    std::uniform_real_distribution<double> *distribution;
 } ;
 
 #endif

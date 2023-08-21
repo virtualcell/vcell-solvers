@@ -67,21 +67,33 @@ RUN /usr/bin/cmake \
     ctest
 
 
-FROM eclipse-temurin:11.0.17_8-jre-focal
+FROM eclipse-temurin:17 as jre-build
 
-# Setup python and java and base system
+# Create a custom Java runtime
+RUN $JAVA_HOME/bin/jlink \
+         --add-modules ALL-MODULE-PATH \
+         --strip-debug \
+         --no-man-pages \
+         --no-header-files \
+         --compress=2 \
+         --output /javaruntime
+
+# Define base image and copy in jlink created minimal Java 17 environment
+FROM python:3.9.7-slim
+ENV JAVA_HOME=/opt/java/openjdk
+ENV PATH "${JAVA_HOME}/bin:${PATH}"
+COPY --from=jre-build /javaruntime $JAVA_HOME
+
+# now we have Java 17 and Python 3.9
 ENV DEBIAN_FRONTEND noninteractive
 ENV LANG=en_US.UTF-8
 
 RUN apt-get update && \
     apt-get install -y apt-utils && \
-    apt-get install -q -y --no-install-recommends curl dnsutils python3.9 python3-pip python3.9-venv
+    apt-get install -q -y --no-install-recommends curl dnsutils
 
 RUN apt-get install -qq -y -o=Dpkg::Use-Pty=0 gcc gfortran zlib1g \
     libhdf5-103 libhdf5-cpp-103 libcurl4-openssl-dev zip
-
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 20 && \
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 40
 
 COPY --from=build /vcellroot/build/bin /vcellbin
 COPY --from=build /vcellroot/build_PETSc/bin/FiniteVolume_PETSc_x64 /vcellbin/

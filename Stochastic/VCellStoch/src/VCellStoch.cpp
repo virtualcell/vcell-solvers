@@ -3,11 +3,12 @@
 #include <fstream>
 #include <string.h>
 #include <stdlib.h>
-#include <Exception.h>
+#include "Exception.h"
 #ifdef USE_MESSAGING
 #include <VCELL/SimulationMessaging.h>
 #endif
-#include "Gibson.h"
+#include "../include/Gibson.h"
+#include <VCELL/GitDescribe.h>
 using namespace std;
 
 static void printUsage() {
@@ -89,11 +90,6 @@ static void errExit(int returnCode, string& errorMsg) {
 #endif
 	
 }
-#if !defined(SVNVERSION)
-#error SVNVERSION version not defined
-#endif
-#define VCELLSVNQ(x) #x
-#define VCELLSVNQUOTE(x) VCELLSVNQ(x)
 
 /* This file is the entrance of the Virtual Cell stochastic simulation package.
  * It parses the commandline arguments to load different simulators. Four parameters
@@ -106,8 +102,8 @@ static void errExit(int returnCode, string& errorMsg) {
  */
 int main(int argc, char *argv[])
 {
-    std::cout 
-	    << "Stochastic simulation version $URL$" VCELLSVNQUOTE(SVNVERSION)
+    std::cout
+	    << "Stochastic simulation version " << g_GIT_DESCRIBE
 	    << std::endl; 
 	if (argc != 4 && argc != 6) {
 		cout << "Wrong arguments!" << endl;
@@ -185,3 +181,4 @@ int main(int argc, char *argv[])
 	errExit(returnCode, errMsg);
 	return returnCode;
 }//end of main()
+

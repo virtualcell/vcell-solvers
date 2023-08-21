@@ -9,6 +9,7 @@
 #include <cstring>
 #include <stdexcept>
 #include <VCELL/SimulationMessaging.h>
+#include <VCELL/GitDescribe.h>
 #include <VCellException.h>
 #include <vcellxml.h>
 #include "JMSHolder.h"
@@ -38,19 +39,13 @@ namespace {
 #define NETWORK_MESSAGING(x,y) y
 #endif
 
-#if !defined(SVNVERSION)
-#error SVNVERSION version not defined
-#endif
-#define VCELLSVNQ(x) #x
-#define VCELLSVNQUOTE(x) VCELLSVNQ(x)
-
 int main(int argc, char **argv) {
 
 	std::string errorMessage = "Exception: ";
 	vcell::JMSHolder holder; //we need to keep these strings in memory until end of program
 	try {
 		std::cout
-				<< "NFsim " << NETWORK_MESSAGING( "network","console" ) << " messaging version $URL: svn://code3.cam.uchc.edu/vcell/trunk/numerics/NFsim_v1.11/VCell/src/VCellNFSim.cpp $" VCELLSVNQUOTE(SVNVERSION)
+				<< "NFsim " << NETWORK_MESSAGING( "network","console" ) << " messaging version " << g_GIT_DESCRIBE
 				<< std::endl;
 		bool isMessaging = startupMessaging(argc,argv,holder);
 		std::cout << " messaging is " << onOrOff(isMessaging) << std::endl;

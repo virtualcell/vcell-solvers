@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include <SymbolTable.h>
+#include "../../../ExpressionParser/SymbolTable.h"
 
 using std::string;
 using std::vector;

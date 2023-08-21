@@ -224,5 +224,4 @@ IMPORT void	check_tri_and_bond(TRI*,BOND*,const char*,INTERFACE*);
 }
 #endif
 
-
 #endif /* !defined(_ILOCPROTOS_H) */

@@ -1,6 +1,6 @@
 #include <assert.h>
 #include <math.h>
-#include "IndexedTree.h"
+#include "../include/IndexedTree.h"
 
 /*
  *The constructor of IndexedTree.

@@ -1,8 +1,8 @@
-#include "Jump.h"
+#include "../include/Jump.h"
 
-#include <SimpleSymbolTable.h>
-#include <Exception.h>
-#include <Expression.h>
+#include "SimpleSymbolTable.h"
+#include "Exception.h"
+#include "Expression.h"
 using VCell::Exception;
 using VCell::Expression;
 

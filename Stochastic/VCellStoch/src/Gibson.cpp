@@ -1,45 +1,28 @@
 //#define DEBUG //enable it when debug is needed.
 #include <limits>
 #include <stdexcept>
-#include "Gibson.h"
-#ifdef __APPLE__
-	#include "/usr/local/opt/hdf5@1.12/include/hdf5.h"
-#else
-	#include <hdf5.h>
-#endif
+#include "../include/Gibson.h"
 //#undef DEBUG
-
-////Check stats calculation, See Gibson::calcRunningStats below
-////Uncomment 'set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")' in .../vcell-solvers/Stochastic/CMakeLists.txt
-//#include <random>
-//std::default_random_engine generator;
-//std::normal_distribution<double> distribution(100.0,1.77);//arg1=mean, arg2=stddev
 
 #ifdef DEBUG
 #include <Windows.h>
 #endif
-#include <iostream>
-#include <sstream>
 #include <string>
 #include <iomanip>
 #include <vector>
 #include <stdint.h>
 #include <math.h>
 #include <stdlib.h>
+#include <random>
 using namespace std;
 
-#include <assert.h>
-#include <sys/types.h>
-#include <sys/timeb.h>
 #include <time.h>
-#include "Jump.h"
-#include "StochVar.h"
-#include "IndexedTree.h"
+#include "../include/IndexedTree.h"
 
 #ifdef USE_MESSAGING
 #include <VCELL/SimulationMessaging.h>
 #endif
-#include <VCellException.h>
+#include "VCellException.h"
 const double double_infinity = numeric_limits<double>::infinity();
 const double EPSILON = 1E-12;
 const string Gibson::MY_T_STR = "t";
@@ -53,6 +36,8 @@ Gibson::Gibson()
 {
 	Tree=NULL;
 	currvals=NULL;
+    generator = new std::mt19937_64();
+    distribution = new std::uniform_real_distribution<double>(0.0,1.0);
 }//end of constructor Gibson()
 
 /*
@@ -61,13 +46,15 @@ Gibson::Gibson()
  *Input para: srting, the input file(name), where the model info. is read.
  *            string, the output file(name), where the results are saved.
  */
-Gibson::Gibson(char* arg_infilename, char* arg_outfilename)
+Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
 	:StochModel(),
 	savedSampleCount(1),
 	lastTime (std::numeric_limits<long>::min( ))
 {
 	Tree=NULL;
 	currvals=NULL;
+    generator = new std::mt19937_64();
+    distribution = new std::uniform_real_distribution<double>(0.0,1.0);
 
 	outfilename=arg_outfilename;
 
@@ -237,6 +224,9 @@ Gibson::Gibson(char* arg_infilename, char* arg_outfilename)
 
 	//initialization of the double array currvals
 	currvals=new double[listOfIniValues.size()+1];
+    if (bMultiButNotHisto){
+        this->multiTrialStats = new MultiTrialStats(listOfVars.size(), MAX_SAVE_POINTS);
+    }
 #ifdef DEBUG
 	cout << "-------------------control information----------------"<<endl;
 	cout << "starting time:"<<STARTING_TIME <<endl;
@@ -293,20 +283,22 @@ Gibson::~Gibson()
 	listOfProcessNames.clear();
 	//delete currvals
 	delete[] currvals;
+    delete distribution;
+    delete generator;
 }//end of destructor ~Gibson()
 
 /*
  *The method is the core function of Gibson method, it does one run for Gibson simulation.
  *The loop will end either by ending_time or max_iteration.
  *For single trial, the values of variables against time will be output at each save_period.
- *For multiple trial, the results at the ending_time after each trial willl be stored in a the file.
+ *For multiple trial, the results at the ending_time after each trial will be stored in a the file.
  */
 int Gibson::core()
 {
 	double outputTimer = STARTING_TIME;//time counter used for save output by save_period
 	double simtime = STARTING_TIME;//time calculated for next reaction
 	double lastStepVals[listOfIniValues.size()];//to remember the last step values, used for save output by save_period
-	double p, r; //temp variables used for propability and random number
+	double p, r; //temp variables used for probability and random number
 	int saveIntervalCount = SAMPLE_INTERVAL; //sampling counter, for default output time spec, keep every
 	int iterationCounter=0;//counter used for termination of the loop when max_iteration is reached
 	int i; //loop variable
@@ -349,6 +341,13 @@ int Gibson::core()
 #endif
 	}
 	Tree->build();
+    if (bMultiButNotHisto) {
+        multiTrialStats->startNewTrial();
+        double initialValues[listOfIniValues.size()];
+        for (int k=0;k<listOfIniValues.size();k++)
+            initialValues[k]=listOfIniValues[k];
+        multiTrialStats->addSample(0, 0.0, initialValues);
+    }
 	//the while loop does one trial for simulation and ends by ending_time.
 	while(simtime < ENDING_TIME)
 	{
@@ -374,7 +373,7 @@ int Gibson::core()
 				while((outputTimer+SAVE_PERIOD+EPSILON) < ENDING_TIME)
 				{
                     if(bMultiButNotHisto) {//Accumulate data mode
-                        calcRunningStats(lastStepVals,listOfIniValues.size(),outputTimer + SAVE_PERIOD);
+                        multiTrialStats->addSample(savedSampleCount, outputTimer + SAVE_PERIOD, lastStepVals);
                     }else {
                         accumOrSaveInit(varLen, outputTimer + SAVE_PERIOD, true);
                         for (i = 0; i < varLen; i++) {
@@ -387,7 +386,7 @@ int Gibson::core()
 //					}
 					savedSampleCount = finalizeSampleRow(savedSampleCount,simtime);//outfile << endl;
 					outputTimer = outputTimer + SAVE_PERIOD;
-				}
+                }
 			}
 			break;
 		}
@@ -468,7 +467,7 @@ int Gibson::core()
 					while((outputTimer+SAVE_PERIOD) < simtime)
 					{
                         if(bMultiButNotHisto) {//Accumulate data mode
-                            calcRunningStats(lastStepVals,listOfIniValues.size(),outputTimer + SAVE_PERIOD);
+                            multiTrialStats->addSample(savedSampleCount, outputTimer + SAVE_PERIOD, lastStepVals);
                         }else {
                             accumOrSaveInit(varLen, outputTimer + SAVE_PERIOD, true);
                             for (i = 0; i < varLen; i++) {
@@ -511,7 +510,7 @@ int Gibson::core()
 	if((simtime > ENDING_TIME) && (NUM_TRIAL == 1) && (flag_savePeriod))//SingleTrajectory_OutputInterval
 	{
         if(bMultiButNotHisto) {//Accumulate data mode
-            calcRunningStats(lastStepVals,listOfIniValues.size(),ENDING_TIME);
+            multiTrialStats->addSample(savedSampleCount, ENDING_TIME, lastStepVals);
         }else {
             accumOrSaveInit(listOfVars.size(), ENDING_TIME, false);
             for (i = 0; i < listOfVars.size(); i++) {
@@ -605,32 +604,6 @@ int Gibson::finalizeSampleRow(int savedSampleCount,double simtime){
 }
 
 
-template <typename T>
-void Gibson::calcRunningStats(T valuesFor1Time1Iteration[],int numVars,double timePoint){
-    if(mean.size() < savedSampleCount){
-        timePoints.push_back(timePoint);
-        mean.push_back(vector< double>(listOfIniValues.size(),0));
-        M2.push_back(vector< double>(listOfIniValues.size(),0));
-        variance.push_back(vector< double>(listOfIniValues.size(),0));
-        statMin.push_back(vector< double>(listOfIniValues.size(),std::numeric_limits<double>::max()));
-        statMax.push_back(vector< double>(listOfIniValues.size(),0));
-    }
-   for (int i = 0; i < numVars; i++) {
-        //mean[time][var]
-       double currVarVal = valuesFor1Time1Iteration[i];
-//// Check stats caluclation, save stats into first variable, uncomment random library at beginning of file to set expected mean,stddev
-//       if(i==0){
-//           currVarVal = distribution(generator);
-//       }
-       double delta = currVarVal - mean.data()[savedSampleCount - 1].data()[i];
-        mean.data()[savedSampleCount-1].data()[i] += delta / (currMultiNonHistoIter + 1);
-        M2.data()[savedSampleCount-1].data()[i] += delta * (currVarVal - mean.data()[savedSampleCount - 1].data()[i]);
-        variance.data()[savedSampleCount-1].data()[i] = M2.data()[savedSampleCount-1].data()[i] / (currMultiNonHistoIter + 1);
-        statMin.data()[savedSampleCount-1].data()[i] = std::min(static_cast<double>(currVarVal), statMin.data()[savedSampleCount - 1].data()[i]) ;
-        statMax.data()[savedSampleCount-1].data()[i] = std::max(static_cast<double>(currVarVal), statMax.data()[savedSampleCount - 1].data()[i]) ;
-    }
-}
-
 /*
  *This method is the control of trials, which will be called for Gibson simulation.
  */
@@ -666,18 +639,11 @@ void Gibson::march()
             outfile << listOfVarNames.at(i) << ":";
         }
         outfile << endl;
-        //
-        //output STARTING_TIME(time0) and initial condition at STARTING_TIME
-        outfile << STARTING_TIME << "\t";
 
-        for (int i = 0; i < listOfIniValues.size(); i++) {
-            outfile << listOfIniValues.at(i) << "\t";
-        }
-        outfile << endl;
         //Execute NUM_TRIALS of core and accumulate the results
         for (currMultiNonHistoIter=0; currMultiNonHistoIter < numMultiNonHisto; currMultiNonHistoIter++)
         {
-            srand(currMultiNonHistoIter+SEED);
+            generator->seed(currMultiNonHistoIter+SEED);
             //run the simulation
             core();
             //reset to initial values before next simulation
@@ -694,127 +660,21 @@ void Gibson::march()
 //        outfileProg.close();
 
         //Calc and save averages of accumulated data
-        for (int i = 0; i < mean.size(); ++i) {
+        for (int timeIndex = 0; timeIndex < multiTrialStats->getNumTimePoints(); ++timeIndex) {
             //timepoint
-            outfile << timePoints.data()[i] << "\t";
-            for (int j = 0; j < mean.data()[i].size(); ++j) {
-                outfile << mean.data()[i].data()[j] << "\t";
+            outfile << multiTrialStats->getTimePoint(timeIndex) << "\t";
+            for (int varIndex = 0; varIndex < multiTrialStats->getNumVars(); ++varIndex) {
+                outfile << multiTrialStats->getMean(varIndex, timeIndex) << "\t";
             }
             outfile << endl;
         }
 
-        //
-        //Create HDF5 file
-        //
-        string ofhdf5(outfilename);
-        ofhdf5.append("_hdf5");
-        try{
-            hid_t file; //file handle
-            file = H5Fcreate(ofhdf5.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+        multiTrialStats->writeHDF5(outfilename, listOfVarNames);
 
-            hid_t dataspace,datatype,dataset; /* general data structure handles */
-            herr_t status;
-            hid_t doubleDataType;
-            doubleDataType = H5Tcopy (H5T_NATIVE_DOUBLE);
-
-            //
-            //Save varnames to hdf5 file
-            //
-            hid_t varLenStr;   /* variable length string datatype */
-            int rank = 1; //num dimensions
-            hsize_t varNamesDim[rank]; /*container for size of VarNames  1-d array */
-            string varName("VarNames");
-
-
-            varNamesDim[0] = listOfVarNames.size();//set size of dims in container
-            dataspace = H5Screate_simple(rank, varNamesDim, NULL);
-            varLenStr = H5Tcopy (H5T_C_S1);
-            H5Tset_size (varLenStr, H5T_VARIABLE);
-            dataset = H5Dcreate1(file, varName.c_str(), varLenStr, dataspace, H5P_DEFAULT);
-            //For variable-names, create vector of pointers to c-style strings
-            std::vector<const char*> chars;
-            for (int i=0;i < listOfVarNames.size();i++) {
-                chars.push_back(listOfVarNames[i].c_str());
-            }
-            status = H5Dwrite(dataset, varLenStr, H5S_ALL, H5S_ALL, H5P_DEFAULT, chars.data());
-
-            H5Sclose(dataspace);
-            H5Tclose(varLenStr);
-            H5Dclose(dataset);
-
-            //
-            //Save times
-            //
-            rank = 1;
-            hsize_t timesDim[rank];
-            string timeName("SimTimes");
-
-
-            timePoints.insert(timePoints.begin(),STARTING_TIME);
-            timesDim[0] = timePoints.size();//add 1 to include time 0
-            dataspace = H5Screate_simple(rank, timesDim, NULL);
-            dataset = H5Dcreate1(file, timeName.c_str(), doubleDataType, dataspace, H5P_DEFAULT);
-            status = H5Dwrite(dataset, doubleDataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, timePoints.data());
-
-            H5Sclose(dataspace);
-            //H5Tclose(varLenStr);
-            H5Dclose(dataset);
-
-            //
-            //Save Stats for all times and variables
-            //
-            rank = 2;
-            hsize_t meanDim[rank];
-            meanDim[0] = timePoints.size();
-            meanDim[1] = listOfVarNames.size();
-            dataspace = H5Screate_simple(rank, meanDim, NULL);
-            string statsNames[4];
-            int varianceIndex = 3;
-            statsNames[0]="StatMean";
-            statsNames[1]="StatMin";
-            statsNames[2]="StatMax";
-            statsNames[varianceIndex]="StatStdDev";//converted to stddev during write to file
-            vector< vector<double> > statTypes[4];
-            statTypes[0] = mean;
-            statTypes[1] = statMin;
-            statTypes[2] = statMax;
-            statTypes[varianceIndex] = variance;
-            for (int k=0;k<4;k++) {
-                dataset = H5Dcreate1(file, statsNames[k].c_str(), doubleDataType, dataspace, H5P_DEFAULT);
-                double allData[meanDim[0]][meanDim[1]];
-                for (int i = 0; i < meanDim[0]; ++i) {
-                    for (int j = 0; j < meanDim[1]; ++j) {
-                        if (i == 0) {
-                            if (k == varianceIndex) {
-                                allData[i][j] = 0;//no variance at starttime over all trials
-                            } else {
-                                allData[i][j] = listOfIniValues[j];//mean,min,max have ini vals at starttime over all trials
-                            }
-                        } else {
-                            allData[i][j] = statTypes[k][i - 1][j];
-                        }
-                        if(k==varianceIndex){//turn variance into stddev
-                            allData[i][j] = sqrt(allData[i][j]);
-                        }
-                    }
-                }
-                status = H5Dwrite(dataset, doubleDataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, allData);
-               H5Dclose(dataset);
-            }
-            H5Sclose(dataspace);
-
-            H5Fclose(file);
-        } catch (const std::exception& ex) {
-            std::cout << " Error writing HDF5 file " << ofhdf5 << " " << ex.what() << "'\n";
-        } catch (const std::string& ex) {
-            std::cout << " Error writing HDF5 file " << ofhdf5 << " " << ex << "'\n";
-        } catch (...) {
-            std::cout << " Error writing HDF5 file " << ofhdf5 << "" << "unknown exception" << "'\n";
-        }
     }
 	else if(NUM_TRIAL==1)
     {
-        srand(SEED);
+        generator->seed(SEED);
         //output file header
         outfile << "t:";
         for(int i=0;i<listOfVarNames.size();i++){
@@ -850,7 +710,7 @@ void Gibson::march()
 #ifdef DEBUG
 			cout << "Trial No. " << j <<endl;
 #endif
-			srand(j);
+			generator->seed(j);
 			//output trial number.  PS:results after each trial are printed in core() function.
 			outfile << j-SEED+1;//this expression should evaluate equal to 'savedSampleCount'
 			core();//this will save 1 row of data (
@@ -889,12 +749,6 @@ void Gibson::march()
  */
 double Gibson::getRandomUniform()
 {
-#ifdef WIN32
-   const long NUM_RAND = RAND_MAX+1;
-   const double RAND_TOTAL_MAX = NUM_RAND*NUM_RAND - 1.0;
-   long r = (NUM_RAND)*rand()+rand();
-   return r / RAND_TOTAL_MAX;
-#else
-	return ((double)rand()) / RAND_MAX;
-#endif
+    double uniform_sample = (*distribution)(*generator);
+    return uniform_sample;
 }//end of method getRandomUniform()
