@@ -124,12 +124,12 @@ FC            = gfortran
 #USE_CCSE      =
 #USE_HDF       =
 #----use this when building Chombo from cygwin terminal, you may want to point out the hdf5 lib if there is error. It is not needed for liye's machine though.
-HDFINCFLAGS   = -DH5_USE_16_API -I${CHOMBO_HOME}/../../numerics/hdf5-1.8.8/src/
+HDFINCFLAGS   = -DH5_USE_16_API -I${CHOMBO_HOME}/../../../../../../vcell-solvers/hdf5-1.8.11/src/
 #HDFLIBFLAGS   = -L<hdf_serial_dir>/lib -lhdf5 -lz
 #-----------------------------------------------------
 #----use this when building Chombo on linux server. Make sure that "make install" is executed to copy files to proper location
-#HDFINCFLAGS   = -DH5_USE_16_API -I${CHOMBO_HOME}/../../numerics/cmake-build/include/
-#HDFLIBFLAGS   = -L${CHOMBO_HOME}/../../numerics/cmake-build/lib/ -lhdf5 -lz
+#HDFINCFLAGS   = -DH5_USE_16_API -I${CHOMBO_HOME}/../../../../../../vcell-solvers/cmake-build/include/
+#HDFLIBFLAGS   = -L${CHOMBO_HOME}/../../../../../../vcell-solvers/cmake-build/lib/ -lhdf5 -lz
 #-----------------------------------------------------
 ## Note: don't set the HDFMPI* variables if you don't have parallel HDF installed
 #HDFMPIINCFLAGS= -I<hdf_parallel_dir>/include

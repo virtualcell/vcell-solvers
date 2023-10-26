@@ -91,14 +91,14 @@ option(OPTION_TARGET_PARALLEL "Parallel Solver (only chombo for now)" off)
 option(OPTION_TARGET_PETSC "PETSc Solver (only FV for now)" off)
 option(OPTION_TARGET_DOCS "Generate Doxygen documentation" on)
 option(OPTION_TARGET_CHOMBO2D_SOLVER "Chombo2D Solver" off)
-option(OPTION_TARGET_CHOMBO3D_SOLVER "Chombo3D Solver" off)
+option(OPTION_TARGET_CHOMBO3D_SOLVER "Chombo3D Solver" on)
 option(OPTION_TARGET_SMOLDYN_SOLVER "only smoldyn" on)
 option(OPTION_TARGET_FV_SOLVER on)
 option(OPTION_TARGET_STOCHASTIC_SOLVER on)
 option(OPTION_TARGET_NFSIM_SOLVER on)
-option(OPTION_TARGET_MOVINGBOUNDARY_SOLVER on)
+option(OPTION_TARGET_MOVINGBOUNDARY_SOLVER off)
 option(OPTION_TARGET_SUNDIALS_SOLVER on) #idawin
-option(OPTION_TARGET_HY3S_SOLVERS on)
+option(OPTION_TARGET_HY3S_SOLVERS off)
  
                   
 if (${OPTION_TARGET_DOCS})
@@ -129,20 +129,13 @@ if (${OPTION_TARGET_CHOMBO2D_SOLVER} OR ${OPTION_TARGET_CHOMBO3D_SOLVER})
 	if (${OPTION_TARGET_PARALLEL})
 		find_package(MPI)
 		set(HDF5_ENABLE_PARALLEL ON CACHE BOOL "parallel hdf5 library")
-		set(HDF5_BUILD_CPP_LIB OFF CACHE BOOL "" )
 	else (${OPTION_TARGET_PARALLEL})
 		message("serials solvers")
-		set(HDF5_BUILD_CPP_LIB ON CACHE BOOL "" )
 	endif (${OPTION_TARGET_PARALLEL})
-else()
-	set(HDF5_BUILD_CPP_LIB OFF CACHE BOOL "" )
 endif()
 
 #if (APPLE)
 #endif()
-
-set(HDF5_BUILD_CPP_LIB OFF CACHE BOOL "" )
-message("hdf5 cpp ${HDF5_BUILD_CPP_LIB}")
 
 set(LINUX FALSE)
 if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
@@ -229,39 +222,58 @@ endif()
 # 
 #######################################
 
-if (${OPTION_TARGET_MOVINGBOUNDARY_SOLVER} OR
-	${OPTION_TARGET_FV_SOLVER} OR
-	${OPTION_TARGET_SMOLDYN_SOLVER} OR
-	${OPTION_TARGET_CHOMBO2D_SOLVER} OR
-	${OPTION_TARGET_CHOMBO3D_SOLVER}
-	)
+if (OPTION_TARGET_MOVINGBOUNDARY_SOLVER OR
+		OPTION_TARGET_FV_SOLVER OR
+		OPTION_TARGET_SMOLDYN_SOLVER OR
+		OPTION_TARGET_CHOMBO2D_SOLVER OR
+		OPTION_TARGET_CHOMBO3D_SOLVER)
 
-	if (${HDF5_BUILD_CPP_LIB})
-		add_subdirectory(hdf5-1.8.11)
-	else()
-		set(HDF5_USE_STATIC_LIBRARIES ON)
-		#CMakeList.txt that comes with hdf5 switches library name if compiled with debug
-		find_package(HDF5 COMPONENTS HL CXX C)
-		set(HDF_VERSION ${HDF5_VERSION})
-		######    ${HDF5_HL_LIBRARIES} ${HDF5_CXX_LIBRARIES}
-		if (${OPTION_TARGET_CHOMBO2D_SOLVER} OR
-			${OPTION_TARGET_CHOMBO3D_SOLVER}
-			)
-				set(_hdf5_libs hdf5 hdf5_cpp)
-				set(HDF_LIB hdf5 hdf5_cpp)
-		endif()
+	message("!!!!!!!!!!!!!!!! finding hdf5 lib !!!!!!!!!!!!!!!!!!!!!")
+	set(HDF5_USE_STATIC_LIBRARIES ON)
+	find_package(HDF5 COMPONENTS HL CXX C)
+	set(HDF_VERSION ${HDF5_VERSION})
+	if (OPTION_TARGET_CHOMBO2D_SOLVER OR OPTION_TARGET_CHOMBO3D_SOLVER)
+		set(_hdf5_libs hdf5 hdf5_cpp)
+		set(HDF_LIB hdf5 hdf5_cpp)
 	endif()
 endif()
 
-#if (${OPTION_TARGET_CHOMBO2D_SOLVER})
+if (${OPTION_TARGET_CHOMBO3D_SOLVER} OR ${OPTION_TARGET_CHOMBO2D_SOLVER})
+	add_subdirectory(hdf5-1.8.11)
+
+	include(ExternalProject)
+	message("CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR}")
+	ExternalProject_Add(Chombo
+			PREFIX ${CMAKE_BINARY_DIR}/Chombo
+			URL ${CMAKE_SOURCE_DIR}/Chombo.tgz
+			BUILD_COMMAND pushd ${CMAKE_BINARY_DIR}/Chombo/src/Chombo/lib && chmod +x ../configure && ../configure && cp mk/Make.defs.local.release.3D mk/Make.defs.local && make all && popd
+			BUILD_IN_SOURCE true
+			CONFIGURE_COMMAND ""
+			INSTALL_COMMAND "")
+	add_dependencies(Chombo HDF5)
+endif()
+
+#if (${OPTION_TARGET_CHOMBO3D_SOLVER})
 #	include(ExternalProject)
-#    ExternalProject_Add(chombo2d 
-#        DOWNLOAD_COMMAND "mkdir -p ${CMAKE_BUILD_RPATH} && cp VCellChombo ${CMAKE_BUILD_RPATH}/Chombo2D"
-#        PREFIX ${CMAKE_BUILD_RPATH}/Chombo2D
-#        BUILD_IN_SOURCE true)
+#	message("CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR}")
+#	ExternalProject_Add(VCellChombo3D
+#			PREFIX ${CMAKE_BINARY_DIR}/VCellChombo3D
+#			URL ${CMAKE_SOURCE_DIR}/Chombo.tgz ${CMAKE_BINARY_DIR}/VCellChombo3D"
+#			#			SOURCE_DIR ${CMAKE_BINARY_DIR}/VCellChombo3D/src
+#			BUILD_IN_SOURCE true)
+#
 #endif()
 
-	add_subdirectory(VCellMessaging)
+#if (${OPTION_TARGET_CHOMBO2D_SOLVER})
+#	include(ExternalProject)
+#	message("CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR}")
+#	ExternalProject_Add(VCellChombo2D
+#			URL ${CMAKE_CURRENT_SOURCE_DIR}/VCellChombo
+#			PREFIX ${CMAKE_BINARY_DIR}/Chombo2D
+#			BUILD_IN_SOURCE true)
+#endif()
+
+add_subdirectory(VCellMessaging)
  
     if (${OPTION_TARGET_MOVINGBOUNDARY_SOLVER} OR 
     	${OPTION_TARGET_NFSIM_SOLVER}
