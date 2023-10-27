@@ -1987,7 +1987,7 @@ int SundialsPdeScheduler::pcSolve(realtype t, N_Vector y, N_Vector fy, N_Vector 
                                 bRetry = true;
                             } catch (...) {
                                 char errMsg[128];
-                                sprintf(errMsg, "SundialsPDESolver:: Out of Memory : pcg_workspace allocating (%ld)", nsp);
+                                snprintf(errMsg, 128, "SundialsPDESolver:: Out of Memory : pcg_workspace allocating (%ld)", nsp);
                                 throw errMsg;
                             }
                         }
