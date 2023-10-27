@@ -1182,7 +1182,7 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorConstant(int regionID, doubl
             double reactionRate = 0;
             if (bDirichlet && var->isDiffusing()) {// pde dirichlet
                 rhs[vectorIndex] = 0;
-                if (mask & (NEIGHBOR_XP_BOUNDARY || NEIGHBOR_YP_BOUNDARY || NEIGHBOR_ZP_BOUNDARY)) {
+                if (mask & (NEIGHBOR_XP_BOUNDARY | NEIGHBOR_YP_BOUNDARY | NEIGHBOR_ZP_BOUNDARY)) {
                     continue;
                 }
             } else {
@@ -1362,7 +1362,7 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, doubl
             double reactionRate = 0;
             if (bDirichlet && var->isDiffusing()) {// pde dirichlet
                 rhs[vectorIndex] = 0;
-                if (mask & (NEIGHBOR_XP_BOUNDARY || NEIGHBOR_YP_BOUNDARY || NEIGHBOR_ZP_BOUNDARY)) {
+                if (mask & (NEIGHBOR_XP_BOUNDARY | NEIGHBOR_YP_BOUNDARY | NEIGHBOR_ZP_BOUNDARY)) {
                     continue;
                 }
             } else {
