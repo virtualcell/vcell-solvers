@@ -1,6 +1,13 @@
-# vcell-solvers
-[![Build status](https://ci.appveyor.com/api/projects/status/0jqw7yaoygp47se4?svg=true)](https://ci.appveyor.com/project/virtualcell/vcell-solvers)   [![Build Status](https://travis-ci.org/virtualcell/vcell-solvers.svg?branch=master)](https://travis-ci.org/virtualcell/vcell-solvers) 
+<p align="center" width="100%">
+ <a href="https://vcell.org">
+    <img width="10%" src="https://github.com/biosimulations/biosimulations/blob/dev/docs/src/assets/images/about/partners/vcell.svg">
+ </a>
+</p>
 
+---
+![CI](https://github.com/virtualcell/vcell-solvers/actions/workflows/cd.yml/badge.svg)
+
+# vcell-solvers
 Virtual Cell solvers [virtualcell/vcell-solvers](https://github.com/virtualcell/vcell-solvers) is a collection of numerical simulation codes used in the Virtual Cell framework [virtualcell/vcell](https://github.com/virtualcell/vcell)).
 
  
