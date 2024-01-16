@@ -44,8 +44,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, windows-latest, ubuntu-18.04]
+        platform: [ubuntu-latest]
+#        platform: [macos-latest, windows-latest, ubuntu-latest]
 #        platform: [macos-latest]
+
     runs-on: ${{ matrix.platform }}
 
     steps:
@@ -202,7 +204,7 @@ jobs:
           ./bin/ziptool || true
 
       - name: Install Linux Dependencies
-        if: matrix.platform == 'ubuntu-18.04'
+        if: matrix.platform == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y libboost-all-dev
@@ -216,7 +218,7 @@ jobs:
           dpkg -s libhdf5-dev
 
       - name: Build Linux
-        if: matrix.platform == 'ubuntu-18.04'
+        if: matrix.platform == 'ubuntu-latest'
         run: |
           platform=linux
           echo "working dir is $PWD"
@@ -242,7 +244,7 @@ jobs:
           ninja
 
       - name: Test Linux
-        if: matrix.platform == 'ubuntu-18.04'
+        if: matrix.platform == 'ubuntu-latest'
         run: |
           platform=linux
           echo "working dir is $PWD"
@@ -297,7 +299,7 @@ jobs:
           fi
 
       - name: handle shared object paths for Linux native build
-        if: matrix.platform == 'ubuntu-18.04'
+        if: matrix.platform == 'ubuntu-latest'
         shell: bash
         run: |
           cd build/bin
@@ -324,7 +326,7 @@ jobs:
           path: build/upload/win64.tgz
 
       - name: Upload Linux binaries
-        if: matrix.platform == 'ubuntu-18.04'
+        if: matrix.platform == 'ubuntu-latest'
         uses: actions/upload-artifact@v3
         with:
           name: linux64.tgz
