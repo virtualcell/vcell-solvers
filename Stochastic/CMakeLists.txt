@@ -39,8 +39,8 @@ if (APPLE)
 endif()
 
 # PETSC_ARCH is defined as ENV var in https://hub.docker.com/r/virtualcell/vcell-solvers/dockerfile basefile
-# we must be in the docker vcell-solvers environment if PETSC_ARCH is defined
-if (DEFINED ENV{PETSC_ARCH})
+# so we must be in the docker vcell-solvers environment if PETSC_ARCH is defined
+if (DEFINED ENV{PETSC_ARCH} OR LINUX)
         include_directories(/usr/include/hdf5/serial)
         link_directories("/usr/lib/x86_64-linux-gnu/hdf5/serial")
 endif()
