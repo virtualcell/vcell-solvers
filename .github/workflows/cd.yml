@@ -285,31 +285,31 @@ jobs:
           ../../.github/scripts/install_name_tool_macos.sh
           tar czvf ../upload/mac64.tgz --dereference .
 
-      - name: handle shared object paths for Windows native build
-        if: matrix.platform == 'windows-latest'
-        shell: msys2 {0}
-        run: |
-          cd build/bin
-          ls *_x64   | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
-          ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
-          ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
-          chmod u+w,+x *
-          tar czvf ../linux64.tgz --dereference .
-          cd ../..
-          fi
+#      - name: handle shared object paths for Windows native build
+#        if: matrix.platform == 'windows-latest'
+#        shell: msys2 {0}
+#        run: |
+#          cd build/bin
+#          ls *_x64   | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
+#          ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
+#          ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
+#          chmod u+w,+x *
+#          tar czvf ../linux64.tgz --dereference .
+#          cd ../..
+#          # fi
 
-      - name: handle shared object paths for Linux native build
-        if: matrix.platform == 'ubuntu-latest'
-        shell: bash
-        run: |
-          cd build/bin
-          ls *_x64   | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
-          ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
-          ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
-          chmod u+w,+x *
-          tar czvf ../linux64.tgz --dereference .
-          cd ../..
-          fi
+#      - name: handle shared object paths for Linux native build
+#        if: matrix.platform == 'ubuntu-latest'
+#        shell: bash
+#        run: |
+#          cd build/bin
+#          ls *_x64   | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
+#          ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
+#          ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
+#          chmod u+w,+x *
+#          tar czvf ../linux64.tgz --dereference .
+#          cd ../..
+#          # fi
 
       - name: Upload Macos binaries
         if: matrix.platform == 'macos-latest'
