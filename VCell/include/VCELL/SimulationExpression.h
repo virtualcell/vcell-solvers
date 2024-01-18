@@ -35,7 +35,7 @@ public:
 	void advanceTimeOn();
 	void advanceTimeOff();
 
-	void writeData(char *filename, bool bCompress);
+	void writeData(const char *filename, bool bCompress);
 
 	void addFieldData(FieldData* fd) {
 		fieldDataList.push_back(fd);

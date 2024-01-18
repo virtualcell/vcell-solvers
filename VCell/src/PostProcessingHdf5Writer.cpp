@@ -11,6 +11,7 @@
 #include <H5Cpp.h>
 #include <iostream>
 #include <fstream>
+#include <utility>
 using std::cout;
 using std::endl;
 #include <sys/stat.h>
@@ -22,6 +23,13 @@ const char* PostProcessingHdf5Writer::TimesDataSetName  = POST_PROCESSING_ROOT"/
 
 PostProcessingHdf5Writer::PostProcessingHdf5Writer(char* fileName, PostProcessingBlock* ppb) {
 	this->h5PPFileName = fileName;
+	this->postProcessingBlock = ppb;
+	h5PPFile = NULL;
+	timesDataSet = NULL;
+}
+
+PostProcessingHdf5Writer::PostProcessingHdf5Writer(std::string fileName, PostProcessingBlock* ppb) {
+	this->h5PPFileName = std::move(fileName);
 	this->postProcessingBlock = ppb;
 	h5PPFile = NULL;
 	timesDataSet = NULL;
