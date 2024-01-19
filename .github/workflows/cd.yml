@@ -150,6 +150,11 @@ jobs:
             mingw-w64-clang-x86_64-libzip
             mingw-w64-clang-x86_64-netcdf
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: false
+
       - name: Build Windows
         if: matrix.platform == 'windows-latest'
         shell: msys2 {0}
