@@ -134,21 +134,26 @@ jobs:
           limit-access-to-actor: false
 
 
-      - name: Install Windows Dependencies
+      - name: Setup Msys2
         if: matrix.platform == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
           msystem: CLANG64
           update: true
-          install: >
-            git
-            mingw-w64-clang-x86_64-toolchain
-            mingw-w64-clang-x86_64-flang
-            mingw-w64-clang-x86_64-cmake
-            mingw-w64-clang-x86_64-boost
-            mingw-w64-clang-x86_64-hdf5
-            mingw-w64-clang-x86_64-libzip
-            mingw-w64-clang-x86_64-netcdf
+
+      - name: Install windows dependencies
+        if: matrix.platform == 'windows-latest'
+        shell: msys2 {0}
+        run: |
+          pacman --noconfirm -S git
+          pacman --noconfirm -S mingw-w64-clang-x86_64-toolchain
+          pacman --noconfirm -S mingw-w64-clang-x86_64-flang
+          pacman --noconfirm -S mingw-w64-clang-x86_64-cmake
+          pacman --noconfirm -S mingw-w64-clang-x86_64-boost
+          pacman --noconfirm -S mingw-w64-clang-x86_64-hdf5
+          pacman --noconfirm -S mingw-w64-clang-x86_64-libzip
+          pacman --noconfirm -S mingw-w64-clang-x86_64-netcdf
+            
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
