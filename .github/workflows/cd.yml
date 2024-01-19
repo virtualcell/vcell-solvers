@@ -128,6 +128,11 @@ jobs:
           echo "------ running ziptool ------"
           ./bin/ziptool || true
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: false
+
 
       - name: Install Windows Dependencies
         if: matrix.platform == 'windows-latest'
