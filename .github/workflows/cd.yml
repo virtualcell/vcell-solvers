@@ -155,13 +155,13 @@ jobs:
           mkdir build
           cd build
 
-          PATH="/c/msys64/clang64/bin:$PATH"
+          PATH="/c/msys64/clang64/bin:/c/Program\ Files/LLVM/bin:$PATH"
 
           cmake \
           -G Ninja \
-          -DCMAKE_C_COMPILER=/c/msys64/clang64/bin/clang.exe \
-          -DCMAKE_CXX_COMPILER=/c/msys64/clang64/bin/clang++.exe \
-          -DCMAKE_Fortran_COMPILER=C:/msys64/clang64/bin/flang.exe
+          -DCMAKE_C_COMPILER="/c/msys64/clang64/bin/clang.exe" \
+          -DCMAKE_CXX_COMPILER="/c/msys64/clang64/bin/clang++.exe" \
+          -DCMAKE_Fortran_COMPILER="/c/msys64/clang64/bin/flang.exe"
           -DOPTION_TARGET_MESSAGING=OFF \
           -DOPTION_TARGET_PARALLEL=OFF \
           -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
