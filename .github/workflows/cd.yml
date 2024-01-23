@@ -128,37 +128,32 @@ jobs:
           echo "------ running ziptool ------"
           ./bin/ziptool || true
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        with:
-          limit-access-to-actor: false
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
+#        with:
+#          limit-access-to-actor: false
 
 
-      - name: Setup Msys2
+      - name: Install Windows Dependencies
         if: matrix.platform == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
           msystem: CLANG64
           update: true
+          install: >
+            git
+            mingw-w64-clang-x86_64-toolchain
+            mingw-w64-clang-x86_64-flang
+            mingw-w64-clang-x86_64-cmake
+            mingw-w64-clang-x86_64-boost
+            mingw-w64-clang-x86_64-hdf5
+            mingw-w64-clang-x86_64-libzip
+            mingw-w64-clang-x86_64-netcdf
 
-      - name: Install windows dependencies
-        if: matrix.platform == 'windows-latest'
-        shell: msys2 {0}
-        run: |
-          pacman --noconfirm -S git
-          pacman --noconfirm -S mingw-w64-clang-x86_64-toolchain
-          pacman --noconfirm -S mingw-w64-clang-x86_64-flang
-          pacman --noconfirm -S mingw-w64-clang-x86_64-cmake
-          pacman --noconfirm -S mingw-w64-clang-x86_64-boost
-          pacman --noconfirm -S mingw-w64-clang-x86_64-hdf5
-          pacman --noconfirm -S mingw-w64-clang-x86_64-libzip
-          pacman --noconfirm -S mingw-w64-clang-x86_64-netcdf
-            
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        with:
-          limit-access-to-actor: false
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
+#        with:
+#          limit-access-to-actor: false
 
       - name: Build Windows
         if: matrix.platform == 'windows-latest'
@@ -170,13 +165,13 @@ jobs:
           mkdir build
           cd build
 
-          PATH="/c/msys64/clang64/bin:/c/Program\ Files/LLVM/bin:$PATH"
+          PATH="/c/Program\ Files/LLVM/bin:$PATH"
 
           cmake \
           -G Ninja \
-          -DCMAKE_C_COMPILER="/c/msys64/clang64/bin/clang.exe" \
-          -DCMAKE_CXX_COMPILER="/c/msys64/clang64/bin/clang++.exe" \
-          -DCMAKE_Fortran_COMPILER="/c/msys64/clang64/bin/flang.exe" \
+          -DCMAKE_C_COMPILER="clang.exe" \
+          -DCMAKE_CXX_COMPILER="clang++.exe" \
+#          -DCMAKE_Fortran_COMPILER="/c/msys64/clang64/bin/flang.exe" \
           -DOPTION_TARGET_MESSAGING=OFF \
           -DOPTION_TARGET_PARALLEL=OFF \
           -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
