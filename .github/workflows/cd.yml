@@ -151,6 +151,7 @@ jobs:
             mingw-w64-clang-x86_64-libzip
             mingw-w64-clang-x86_64-netcdf
             mingw-w64-clang-x86_64-zlib
+            mingw-w64-clang-x86_64-libaec
 
 #      - name: Setup tmate session
 #        uses: mxschmitt/action-tmate@v3
