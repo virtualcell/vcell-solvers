@@ -142,7 +142,7 @@ jobs:
           update: true
           install: >
             git
-            mingw-w64-curl
+            mingw-w64-clang-x86_64-curl
             mingw-w64-clang-x86_64-toolchain
             mingw-w64-clang-x86_64-flang
             mingw-w64-clang-x86_64-cmake
