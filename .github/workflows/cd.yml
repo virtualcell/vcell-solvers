@@ -142,6 +142,7 @@ jobs:
           update: true
           install: >
             git
+            mingw-w64-curl
             mingw-w64-clang-x86_64-toolchain
             mingw-w64-clang-x86_64-flang
             mingw-w64-clang-x86_64-cmake
@@ -149,6 +150,7 @@ jobs:
             mingw-w64-clang-x86_64-hdf5
             mingw-w64-clang-x86_64-libzip
             mingw-w64-clang-x86_64-netcdf
+            mingw-w64-clang-x86_64-zlib
 
 #      - name: Setup tmate session
 #        uses: mxschmitt/action-tmate@v3
