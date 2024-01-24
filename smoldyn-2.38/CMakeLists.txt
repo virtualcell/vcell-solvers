@@ -119,6 +119,9 @@ set_source_files_properties(${MAIN_FILES} PROPERTIES LANGUAGE CXX )
 
 include_directories(source/lib source/Smoldyn source/NextSubVolume source/vtk ${CMAKE_CURRENT_BINARY_DIR})
 
+# The following command is to signal we need to link "szip", which hdf5 uses. We should look into
+# how to disable this, or at least control it via an option.
+target_link_options(${SMOLDYN_EXE} "-lsz")
 
 ####### Build for debugging or release ##########
 
