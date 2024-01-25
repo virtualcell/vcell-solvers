@@ -97,12 +97,14 @@ const std::map<int, double> expected_S0 = {
 };
 
 TEST(statstest,test1) {
-    char *temp_input_file_name = new char[200] {0};
-    char *temp_output_file_name = new char[200] {0};
+	std::cout << "Checkpoint 0" << std::endl;
+    char *temp_input_file_name = new char[1000] {0};
+    char *temp_output_file_name = new char[1000] {0};
     std::string in_prefix = testing::TempDir() + "input_XXXXXX";
     std::string out_prefix = testing::TempDir() + "output_XXXXXX";
     strncpy(temp_input_file_name, in_prefix.c_str(), in_prefix.length());
     strncpy(temp_output_file_name, out_prefix.c_str(), out_prefix.length());
+	std::cout << "Checkpoint 1" << std::endl;
     assert(mkstemp(temp_input_file_name) != -1);
     assert(mkstemp(temp_output_file_name) != -1);
     std::ofstream input_file (temp_input_file_name);
@@ -113,10 +115,12 @@ TEST(statstest,test1) {
         bWroteFile = true;
     }
     ASSERT_TRUE(bWroteFile);
-
+	std::cout << "Checkpoint 2" << std::endl;
     Gibson *gb= new Gibson(temp_input_file_name, temp_output_file_name);
+	std::cout << "Checkpoint 3" << std::endl;
     gb->march();
 
+	std::cout << "Checkpoint 4" << std::endl;
     // verify file contents
     std::ifstream outfile(temp_output_file_name);
     string line;
@@ -124,6 +128,7 @@ TEST(statstest,test1) {
 //    std::cout << line << std::endl;
 //    std::cout.flush();
 
+	std::cout << "Checkpoint 5" << std::endl;
     std::map<int,double> results;
     int i = 0;
     while (getline(outfile, line)){
@@ -139,6 +144,7 @@ TEST(statstest,test1) {
         }
         i++;
     }
+	std::cout << "Checkpoint 6" << std::endl;
     // compare the expected and actual values
     double accum_error = 0.0;
     double max_error = 0.0;
@@ -152,8 +158,10 @@ TEST(statstest,test1) {
     }
     assert(accum_error < 0.015);
     assert(max_error < 0.005);
+	std::cout << "Checkpoint 7" << std::endl;
 
     delete gb;
     delete[] temp_input_file_name;
     delete[] temp_output_file_name;
+	std::cout << "Checkpoint 8" << std::endl;
 }
