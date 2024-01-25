@@ -121,7 +121,7 @@ include_directories(source/lib source/Smoldyn source/NextSubVolume source/vtk ${
 
 # The following command is to signal we need to link "szip", which hdf5 uses. We should look into
 # how to disable this, or at least control it via an option.
-add_link_options("${CMAKE_LINK_LIBRARY_FLAG}sz")
+# add_link_options("${CMAKE_LINK_LIBRARY_FLAG}sz")
 
 ####### Build for debugging or release ##########
 

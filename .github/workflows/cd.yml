@@ -87,6 +87,7 @@ jobs:
           -G Ninja \
           -DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang \
           -DCMAKE_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++ \
+          -DOPTION_MINGW=ON \
           -DOPTION_TARGET_MESSAGING=OFF \
           -DOPTION_TARGET_PARALLEL=OFF \
           -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
