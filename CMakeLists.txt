@@ -238,6 +238,9 @@ if (${OPTION_TARGET_MOVINGBOUNDARY_SOLVER} OR
 		add_subdirectory(hdf5-1.8.11)
 	else()
 		set(HDF5_USE_STATIC_LIBRARIES ON)
+		if(WINDOWS OR WIN32 OR WIN64)
+			set(HDF5_USE_STATIC_LIBRARIES OFF)
+		endif ()
 		#CMakeList.txt that comes with hdf5 switches library name if compiled with debug
 		find_package(HDF5 COMPONENTS HL CXX C)
 		set(HDF_VERSION ${HDF5_VERSION})
