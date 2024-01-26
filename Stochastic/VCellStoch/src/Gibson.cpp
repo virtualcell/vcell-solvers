@@ -10,13 +10,13 @@
 #include <string>
 #include <iomanip>
 #include <vector>
-#include <stdint.h>
-#include <math.h>
-#include <stdlib.h>
+#include <cstdint>
+#include <cmath>
+#include <cstdlib>
 #include <random>
 using namespace std;
 
-#include <time.h>
+#include <ctime>
 #include "../include/IndexedTree.h"
 
 #ifdef USE_MESSAGING
@@ -26,14 +26,12 @@ using namespace std;
 const double double_infinity = numeric_limits<double>::infinity();
 const double EPSILON = 1E-12;
 const string Gibson::MY_T_STR = "t";
+
 /*
  *Empty constructor of Gibson. It will use the defalt settings in StochModel.
  */
 Gibson::Gibson()
-	:StochModel(),
-	savedSampleCount(1),
-	lastTime (std::numeric_limits<long>::min( ))
-{
+	: savedSampleCount(1), lastTime (std::numeric_limits<long>::min()) {
 	Tree=NULL;
 	currvals=NULL;
     generator = new std::mt19937_64();
@@ -47,16 +45,13 @@ Gibson::Gibson()
  *            string, the output file(name), where the results are saved.
  */
 Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
-	:StochModel(),
-	savedSampleCount(1),
-	lastTime (std::numeric_limits<long>::min( ))
-{
-	Tree=NULL;
-	currvals=NULL;
-    generator = new std::mt19937_64();
-    distribution = new std::uniform_real_distribution<double>(0.0,1.0);
-
-	outfilename=arg_outfilename;
+	: savedSampleCount(1), lastTime (std::numeric_limits<long>::min( )) {
+	// TODO: Call basic constructor rather than duplicate lines
+	this->Tree = NULL;
+	this->currvals = NULL;
+    this->generator = new std::mt19937_64();
+    this->distribution = new std::uniform_real_distribution<>(0.0,1.0);
+	this->outfilename = arg_outfilename;
 
 	ifstream infile;
 	string instring;
@@ -69,56 +64,33 @@ Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
 	while(infile >> instring)
 	{
 		//load control info.
-		if (instring == "STARTING_TIME")
-		{
+		if (instring == "STARTING_TIME"){
 			infile >> STARTING_TIME;
-		}
-        else if (instring == "BMULTIBUTNOTHISTO")
-        {
+		} else if (instring == "BMULTIBUTNOTHISTO"){
             infile >> bMultiButNotHisto;
-        }
-		else if (instring == "ENDING_TIME")
-		{
+        } else if (instring == "ENDING_TIME"){
 			infile >> ENDING_TIME;
-		}
-		else if (instring == "SAVE_PERIOD")
-		{
+		} else if (instring == "SAVE_PERIOD"){
 			infile >> SAVE_PERIOD;
 			flag_savePeriod=true;
-		}
-		else if (instring == "MAX_ITERATION")
-		{
+		} else if (instring == "MAX_ITERATION"){
 			infile >> MAX_ITERATION;
-		}
-		else if (instring == "TOLERANCE")
-		{
+		} else if (instring == "TOLERANCE"){
 			infile >> TOLERANCE;
-		}
-		else if (instring == "SAMPLE_INTERVAL")
-		{
+		} else if (instring == "SAMPLE_INTERVAL"){
 			infile >> SAMPLE_INTERVAL;
-		}
-		else if (instring == "MAX_SAVE_POINTS")
-		{
+		} else if (instring == "MAX_SAVE_POINTS"){
 			infile >> MAX_SAVE_POINTS;
-		}
-		else if (instring == "NUM_TRIAL")
-		{
+		} else if (instring == "NUM_TRIAL"){
 			infile >> NUM_TRIAL;
-		}
-		else if (instring == "SEED")
-		{
+		} else if (instring == "SEED"){
 			infile >> SEED;
-		}
-		//load listofvars
-		else if (instring == "TotalVars")
-		{
+		} else if (instring == "TotalVars"){ //load listofvars
 			int varCount;
 			infile >> varCount;
 			string name;
 			double amount;
-			for(int i=0;i<varCount;i++)
-			{
+			for(int i=0;i<varCount;i++){
 				infile >> name;
 				infile >> amount;
 				listOfVarNames.push_back(name);
@@ -126,10 +98,7 @@ Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
 				StochVar *var=new StochVar((uint64_t)amount);
 				listOfVars.push_back(var);
 			}
-		}
-		//load listOfProcesses
-		else if (instring == "TotalProcesses")
-		{
+		} else if (instring == "TotalProcesses"){ //load listOfProcesses
 			int pCount;
 			infile >> pCount;
 			string name;
@@ -140,15 +109,11 @@ Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
 				Jump *jp=new Jump();
 				listOfProcesses.push_back(jp);
 			}
-		}
-		//load process description to set up processes
-		else if (instring == "TotalDescriptions")
-		{
+		} else if (instring == "TotalDescriptions") { //load process description to set up processes
 			int dCount,idx;
 			infile >> dCount;
 			string name,str;
-			for(int i=0;i<dCount;i++)//loop through each process description
-			{
+			for(int i=0;i<dCount;i++){ //loop through each process description
 				infile >> name >> name;// "process name"
 				//find the process in listOfProcesses using it's name
 				idx=getProcessIndex(name);
@@ -201,10 +166,9 @@ Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
 		}
 	}
     //setup IndexedTree
-	Tree=new IndexedTree();
-	for(int i=0;i<listOfProcesses.size();i++)
-	{
-		Tree->addProcess(listOfProcesses[i]);
+	Tree = new IndexedTree();
+	for(auto & listOfProcesse : listOfProcesses){
+		Tree->addProcess(listOfProcesse);
 	}
 	infile.close();
 	if (NUM_TRIAL > MAX_ALLOWED_POINTS) {
@@ -213,7 +177,6 @@ Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
 	if (MAX_SAVE_POINTS > MAX_ALLOWED_POINTS) {
 		VCELL_EXCEPTION(invalid_argument,"Stochastic initialization: Server save points " << MAX_SAVE_POINTS << " exceeds limit of " << MAX_ALLOWED_POINTS);
 	}
-
 
 	if(NUM_TRIAL > 1 && !bMultiButNotHisto){
 		//this must be a gibson 'histogram' sim,
@@ -270,12 +233,12 @@ Gibson::~Gibson()
 	//delete indexedTree
 	delete Tree;
 	//delete variables
-	for(int i=0;i<listOfVars.size();i++)
-		delete listOfVars[i];
+	for(auto & listOfVar : listOfVars)
+		delete listOfVar;
 	listOfVars.clear();
 	//delete proccesses
-	for(int i=0;i<listOfProcesses.size();i++)
-		delete listOfProcesses[i];
+	for(auto & listOfProcesse : listOfProcesses)
+		delete listOfProcesse;
 	listOfProcesses.clear();
 	//delete vectors
 	listOfVarNames.clear();

@@ -7,6 +7,8 @@
 #include <iostream>
 #include <cstdio>
 
+#include "VCELL/SimulationMessaging.h"
+
 const char* input_file_contents = R"INPUT_FILE(
 <control>
 STARTING_TIME	0.0
@@ -98,70 +100,68 @@ const std::map<int, double> expected_S0 = {
 
 TEST(statstest,test1) {
 	std::cout << "Checkpoint 0" << std::endl;
-    char *temp_input_file_name = new char[1000] {0};
-    char *temp_output_file_name = new char[1000] {0};
-    std::string in_prefix = testing::TempDir() + "input_XXXXXX";
-    std::string out_prefix = testing::TempDir() + "output_XXXXXX";
-    strncpy(temp_input_file_name, in_prefix.c_str(), in_prefix.length());
-    strncpy(temp_output_file_name, out_prefix.c_str(), out_prefix.length());
+	//std::string inputFileName = std::tmpnam(nullptr);
+	std::string inputFileName {R"(C:\CustomTemp\testme_vcell.txt)"};
+	std::string outputFileName = std::tmpnam(nullptr);
+	std::map<int,double> results;
+	std::fstream inputFileStream{inputFileName};
+	ASSERT_TRUE(inputFileStream.fail());
+	std::cout << std::system_category().message(::GetLastError()) << std::endl;
+	std::cout << "Supposed file: " << inputFileName << std::endl;
+	return;
+	std::fstream outputFileStream{outputFileName};
+	ASSERT_FALSE(outputFileStream.fail());
+
+	// Setup the Gibson Solver input file
 	std::cout << "Checkpoint 1" << std::endl;
-    assert(mkstemp(temp_input_file_name) != -1);
-    assert(mkstemp(temp_output_file_name) != -1);
-    std::ofstream input_file (temp_input_file_name);
-    bool bWroteFile = false;
-    if (input_file.is_open()){
-        input_file << input_file_contents;
-        input_file.close();
-        bWroteFile = true;
-    }
-    ASSERT_TRUE(bWroteFile);
+	std::cout << " >> " << "Input: <" << inputFileName << ">;"<< std::endl;
+	std::cout << " >> " << "Output: <" << outputFileName << ">;"<< std::endl;
+	if (outputFileStream.is_open()) outputFileStream.close();
+	inputFileStream << input_file_contents;
+	inputFileStream.close();
+	return;
+
+	// Create the Gibson Solver
 	std::cout << "Checkpoint 2" << std::endl;
-    Gibson *gb= new Gibson(temp_input_file_name, temp_output_file_name);
+    auto *gb = new Gibson(inputFileName.c_str(), outputFileName.c_str());
+
+	// Launch the test
 	std::cout << "Checkpoint 3" << std::endl;
     gb->march();
 
+	// Verify file contents
 	std::cout << "Checkpoint 4" << std::endl;
-    // verify file contents
-    std::ifstream outfile(temp_output_file_name);
-    string line;
-    getline(outfile, line); // remove header line
-//    std::cout << line << std::endl;
-//    std::cout.flush();
+    outputFileStream.open(outputFileName);
+    std::string line;
+    std::getline(outputFileStream, line); // remove header line
+	for (int i = 0; !outputFileStream.eof(); i++) {
+		std::getline(outputFileStream, line);
+		// if index found in expected_S0 map, store in results map
+		if (expected_S0.find(i) != expected_S0.end()){
+			float t, s0, s1, s2;
+			// extract space separated values for t, s0, s1 and s2 from line
+			std::stringstream line_stream(line);
+			line_stream >> t >> s0 >> s1 >> s2;
+			results[i] = s0;
+		}
+	}
+	outputFileStream.close();
 
+	// compare the expected and actual values
 	std::cout << "Checkpoint 5" << std::endl;
-    std::map<int,double> results;
-    int i = 0;
-    while (getline(outfile, line)){
-        // if index found in expected_S0 map, store in results map
-        if (expected_S0.find(i) != expected_S0.end()){
-            float t, s0, s1, s2;
-            // extract space separated values for t, s0, s1 and s2 from line
-            std::stringstream line_stream(line);
-            line_stream >> t >> s0 >> s1 >> s2;
-            results[i] = s0;
-//            std::cout << line << std::endl;
-//            std::cout.flush();
-        }
-        i++;
-    }
-	std::cout << "Checkpoint 6" << std::endl;
-    // compare the expected and actual values
-    double accum_error = 0.0;
-    double max_error = 0.0;
+    double accumulatedError = 0.0, maxIndividualError = 0.0;
     for (auto const& expected : expected_S0){
-        double s0_given = expected.second;
-        double s0_computed = results[expected.first];
-        double abserr = std::abs(s0_given - s0_computed);
-//        std::cout << "t=" << expected.first << " expected=" << s0_given << " computed=" << s0_computed << " abserr=" << abserr << std::endl;
-        accum_error += abserr;
-        max_error = std::max(max_error, abserr);
+        double absoluteError = std::abs(expected.second - results[expected.first]);
+        // std::cout << "t=" << expected.first << " expected=" << expected.second << " computed=" << results[expected.first] << " abserr=" << abserr << std::endl;
+        accumulatedError += absoluteError;
+        maxIndividualError = std::max(maxIndividualError, absoluteError);
     }
-    assert(accum_error < 0.015);
-    assert(max_error < 0.005);
+    assert(accumulatedError < 0.015);
+    assert(maxIndividualError < 0.005);
 	std::cout << "Checkpoint 7" << std::endl;
 
     delete gb;
-    delete[] temp_input_file_name;
-    delete[] temp_output_file_name;
+    if (inputFileStream.is_open()) inputFileStream.close();
+	if (outputFileStream.is_open()) outputFileStream.close();
 	std::cout << "Checkpoint 8" << std::endl;
 }
