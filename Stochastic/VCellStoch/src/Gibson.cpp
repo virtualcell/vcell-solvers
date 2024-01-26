@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <cmath>
 #include <cstdlib>
+#include <iostream>
 #include <random>
 using namespace std;
 
@@ -32,10 +33,13 @@ const string Gibson::MY_T_STR = "t";
  */
 Gibson::Gibson()
 	: savedSampleCount(1), lastTime (std::numeric_limits<long>::min()) {
-	Tree=NULL;
-	currvals=NULL;
+	Tree = NULL;
+	currvals = NULL;
     generator = new std::mt19937_64();
     distribution = new std::uniform_real_distribution<double>(0.0,1.0);
+#ifdef USE_MESSAGING
+	SimulationMessaging::create();
+#endif
 }//end of constructor Gibson()
 
 /*
@@ -44,13 +48,7 @@ Gibson::Gibson()
  *Input para: srting, the input file(name), where the model info. is read.
  *            string, the output file(name), where the results are saved.
  */
-Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
-	: savedSampleCount(1), lastTime (std::numeric_limits<long>::min( )) {
-	// TODO: Call basic constructor rather than duplicate lines
-	this->Tree = NULL;
-	this->currvals = NULL;
-    this->generator = new std::mt19937_64();
-    this->distribution = new std::uniform_real_distribution<>(0.0,1.0);
+Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename) : Gibson(){ // Use delegating constructor
 	this->outfilename = arg_outfilename;
 
 	ifstream infile;
@@ -691,6 +689,7 @@ void Gibson::march(){
     this->outfile.close();
 
 #ifdef USE_MESSAGING
+	std::cout << "Arrived at goalpost 6" << std::endl;
 	if (!SimulationMessaging::getInstVar()->isStopRequested()) {
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1, ENDING_TIME));
 	}
