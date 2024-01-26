@@ -14,6 +14,7 @@
 /singularity/
 /cmake-build*
 /build*
+/debug-build*
 /.idea/
 /nfsim/
 /all_solvers/*
