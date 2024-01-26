@@ -99,7 +99,6 @@ const std::map<int, double> expected_S0 = {
 };
 
 TEST(statstest,test1) {
-	std::cout << "Checkpoint 0" << std::endl;
 	std::string inputFileName = std::tmpnam(nullptr);
 	std::string outputFileName = std::tmpnam(nullptr);
 	std::map<int,double> results;
@@ -117,23 +116,17 @@ TEST(statstest,test1) {
 	}
 
 	// Setup the Gibson Solver input file
-	std::cout << "Checkpoint 1" << std::endl;
-	std::cout << " >> " << "Input: <" << inputFileName << ">;"<< std::endl;
-	std::cout << " >> " << "Output: <" << outputFileName << ">;"<< std::endl;
 	if (outputFileStream.is_open()) outputFileStream.close();
 	inputFileStream << input_file_contents;
 	inputFileStream.close();
 
 	// Create the Gibson Solver
-	std::cout << "Checkpoint 2" << std::endl;
     auto *gb = new Gibson(inputFileName.c_str(), outputFileName.c_str());
 
 	// Launch the test
-	std::cout << "Checkpoint 3" << std::endl;
     gb->march();
 
 	// Verify file contents
-	std::cout << "Checkpoint 4" << std::endl;
     outputFileStream.open(outputFileName, fstream::in);
     std::string line;
     std::getline(outputFileStream, line); // remove header line
@@ -151,7 +144,6 @@ TEST(statstest,test1) {
 	outputFileStream.close();
 
 	// compare the expected and actual values
-	std::cout << "Checkpoint 5" << std::endl;
     double accumulatedError = 0.0, maxIndividualError = 0.0;
     for (auto const& expected : expected_S0){
         double absoluteError = std::abs(expected.second - results[expected.first]);
