@@ -570,8 +570,7 @@ int Gibson::finalizeSampleRow(int savedSampleCount,double simtime){
 /*
  *This method is the control of trials, which will be called for Gibson simulation.
  */
-void Gibson::march()
-{
+void Gibson::march(){
 #ifdef DEBUG
 	// Count performance time in milliseconds for the simulation
 	int ntime=0;
@@ -582,10 +581,9 @@ void Gibson::march()
 #endif
 
 	//prepare for writing the results to output file
-	outfile.open (outfilename);//"c:/gibson_deploy/gibson_deploy/output/gibson_singleTrial.txt"
-	outfile << setprecision(10); // set precision to output file
-    if(bMultiButNotHisto)
-    {
+	this->outfile.open (this->outfilename, ofstream::out);//"c:/gibson_deploy/gibson_deploy/output/gibson_singleTrial.txt"
+	this->outfile << setprecision(10); // set precision to output file
+    if(this->bMultiButNotHisto){
 //        char thebyte[1];
 //        thebyte[0]=49;//progress char "1"
 //        string ofProg(outfilename);
@@ -593,29 +591,28 @@ void Gibson::march()
 //        ofstream outfileProg;
 //        outfileProg.open (ofProg.c_str(),ios::out | ios::app | ios::binary);
 
-        numMultiNonHisto = NUM_TRIAL;
-        NUM_TRIAL = 1;//set to 1 to use single trajectory logic in 'core'
+        this->numMultiNonHisto = this->NUM_TRIAL;
+        this->NUM_TRIAL = 1;//set to 1 to use single trajectory logic in 'core'
 
         //output file header description for time and variable names
-        outfile << "t:";
-        for (int i = 0; i < listOfVarNames.size(); i++) {
-            outfile << listOfVarNames.at(i) << ":";
+        this->outfile << "t:";
+        for (const auto & varName : this->listOfVarNames) {
+            this->outfile << varName << ":";
         }
-        outfile << endl;
+        this->outfile << endl;
 
         //Execute NUM_TRIALS of core and accumulate the results
-        for (currMultiNonHistoIter=0; currMultiNonHistoIter < numMultiNonHisto; currMultiNonHistoIter++)
-        {
-            generator->seed(currMultiNonHistoIter+SEED);
+        for (this->currMultiNonHistoIter = 0; this->currMultiNonHistoIter < this->numMultiNonHisto; this->currMultiNonHistoIter++){
+            this->generator->seed(this->currMultiNonHistoIter+SEED);
             //run the simulation
-            core();
+            this->core();
             //reset to initial values before next simulation
-            savedSampleCount = 1;
-            for(int i=0;i<listOfIniValues.size();i++){
-                listOfVars[i]->setCurr(listOfIniValues.at(i));
+            this->savedSampleCount = 1;
+            for(int i = 0; i < this->listOfIniValues.size(); i++){
+                this->listOfVars[i]->setCurr(this->listOfIniValues.at(i));
             }
-            for(int i=0;i<listOfProcesses.size();i++){
-                Tree->setProcess(i,listOfProcesses.at(i));
+            for(int i = 0; i < this->listOfProcesses.size(); i++){
+                this->Tree->setProcess(i, this->listOfProcesses.at(i));
             }
 //            outfileProg.write((char *)&thebyte,1);
 //            outfileProg.flush();
@@ -623,46 +620,42 @@ void Gibson::march()
 //        outfileProg.close();
 
         //Calc and save averages of accumulated data
-        for (int timeIndex = 0; timeIndex < multiTrialStats->getNumTimePoints(); ++timeIndex) {
+        for (int timeIndex = 0; timeIndex < this->multiTrialStats->getNumTimePoints(); ++timeIndex) {
             //timepoint
-            outfile << multiTrialStats->getTimePoint(timeIndex) << "\t";
-            for (int varIndex = 0; varIndex < multiTrialStats->getNumVars(); ++varIndex) {
-                outfile << multiTrialStats->getMean(varIndex, timeIndex) << "\t";
+            this->outfile << this->multiTrialStats->getTimePoint(timeIndex) << "\t";
+            for (int varIndex = 0; varIndex < this->multiTrialStats->getNumVars(); ++varIndex) {
+                this->outfile << this->multiTrialStats->getMean(varIndex, timeIndex) << "\t";
             }
-            outfile << endl;
+            this->outfile << endl;
         }
 
-        multiTrialStats->writeHDF5(outfilename, listOfVarNames);
+        this->multiTrialStats->writeHDF5(this->outfilename, this->listOfVarNames);
 
-    }
-	else if(NUM_TRIAL==1)
-    {
-        generator->seed(SEED);
+    } else if(this->NUM_TRIAL==1){
+        this->generator->seed(this->SEED);
         //output file header
-        outfile << "t:";
-        for(int i=0;i<listOfVarNames.size();i++){
-            outfile<< listOfVarNames.at(i) << ":";
+        this->outfile << "t:";
+        for(const auto & listOfVarName : this->listOfVarNames){
+            this->outfile << listOfVarName << ":";
         }
-        outfile <<endl;
+        this->outfile << endl;
         //output initial condition at STARTING_TIME
-        outfile << STARTING_TIME << "\t";
-        for(int i=0;i<listOfIniValues.size();i++){
-            outfile<< listOfIniValues.at(i) << "\t";
+        this->outfile << this->STARTING_TIME << "\t";
+        for(const unsigned long long listOfIniValue : this->listOfIniValues){
+            this->outfile << listOfIniValue << "\t";
         }
         outfile << endl;
         //run the simulation
         core();
 
-    }
-	else if (NUM_TRIAL > 1)
-	{
+    } else if (this->NUM_TRIAL > 1){
 		//output file header
-		outfile << "TrialNo:";
-		for(int i=0;i<listOfVarNames.size();i++){
-			outfile<< listOfVarNames.at(i) << ":";
+		this->outfile << "TrialNo:";
+		for(const auto & listOfVarName : this->listOfVarNames){
+			this->outfile<< listOfVarName << ":";
 		}
-		outfile <<endl;
-		for (long j=SEED;j<NUM_TRIAL+SEED;j++)
+		this->outfile << endl;
+		for (long j = this->SEED; j < this->NUM_TRIAL + this->SEED; j++)
 		{
 #ifdef USE_MESSAGING
 		if (SimulationMessaging::getInstVar()->isStopRequested()) {
@@ -673,21 +666,19 @@ void Gibson::march()
 #ifdef DEBUG
 			cout << "Trial No. " << j <<endl;
 #endif
-			generator->seed(j);
+			this->generator->seed(j);
 			//output trial number.  PS:results after each trial are printed in core() function.
-			outfile << j-SEED+1;//this expression should evaluate equal to 'savedSampleCount'
-			core();//this will save 1 row of data (
+			this->outfile << j - this->SEED + 1;//this expression should evaluate equal to 'savedSampleCount'
+			this->core();//this will save 1 row of data (
 			//reset to initial values before next simulation
-			for(int i=0;i<listOfIniValues.size();i++){
-				listOfVars[i]->setCurr(listOfIniValues.at(i));
+			for(int i=0; i < this->listOfIniValues.size();i++){
+				this->listOfVars[i]->setCurr(this->listOfIniValues.at(i));
 			}
-			for(int i=0;i<listOfProcesses.size();i++){
-				Tree->setProcess(i,listOfProcesses.at(i));
+			for(int i=0;i < this->listOfProcesses.size();i++){
+				this->Tree->setProcess(i, this->listOfProcesses.at(i));
 			}
 		}
-	}
-	else
-	{
+	} else {
 		VCELL_EXCEPTION(invalid_argument, "Number of trial smaller than 1!");
 	}
 #ifdef DEBUG
@@ -697,7 +688,7 @@ void Gibson::march()
 	ntime = (ntime2.QuadPart-ntime1.QuadPart)/(freq.QuadPart/1000);
 	cout << endl << "Total time used(ms): " << ntime;
 #endif
-    outfile.close();
+    this->outfile.close();
 
 #ifdef USE_MESSAGING
 	if (!SimulationMessaging::getInstVar()->isStopRequested()) {
