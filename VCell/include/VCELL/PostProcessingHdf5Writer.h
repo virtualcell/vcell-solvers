@@ -20,7 +20,6 @@ namespace H5 {
 class PostProcessingHdf5Writer
 {
 public:
-	PostProcessingHdf5Writer(char* fileName, PostProcessingBlock* postProcessingBlock);
 	PostProcessingHdf5Writer(std::string fileName, PostProcessingBlock* postProcessingBlock);
 	virtual ~PostProcessingHdf5Writer();
 

@@ -7,8 +7,6 @@
 #include <iostream>
 #include <cstdio>
 
-#include "VCELL/SimulationMessaging.h"
-
 const char* input_file_contents = R"INPUT_FILE(
 <control>
 STARTING_TIME	0.0
@@ -103,13 +101,13 @@ TEST(statstest,test1) {
 	std::string outputFileName = std::tmpnam(nullptr);
 	std::map<int,double> results;
 	std::fstream inputFileStream;
-	inputFileStream.open(inputFileName, fstream::out);
+	inputFileStream.open(inputFileName, std::fstream::out);
 	if (inputFileStream.fail()) {
 		std::perror(("File <" + inputFileName + "> could not be created.").c_str());
 		ASSERT_FALSE(inputFileStream.fail());
 	}
 	std::fstream outputFileStream;
-	outputFileStream.open(outputFileName, fstream::out);
+	outputFileStream.open(outputFileName, std::fstream::out);
 	if (outputFileStream.fail()) {
 		std::perror(("File <" + inputFileName + "> could not be created.").c_str());
 		ASSERT_FALSE(outputFileStream.fail());
@@ -127,7 +125,7 @@ TEST(statstest,test1) {
     gb->march();
 
 	// Verify file contents
-    outputFileStream.open(outputFileName, fstream::in);
+    outputFileStream.open(outputFileName, std::fstream::in);
     std::string line;
     std::getline(outputFileStream, line); // remove header line
 	for (int i = 0; !outputFileStream.eof(); i++) {

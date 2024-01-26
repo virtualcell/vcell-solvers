@@ -15,7 +15,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <random>
-using namespace std;
 
 #include <ctime>
 #include "../include/IndexedTree.h"

@@ -1,13 +1,9 @@
 #include <VCELL/SimulationMessaging.h>
-#include <utility>
 #include <iostream>
 #include <algorithm>
 #include <sstream>
-using std::cerr;
-using std::cout;
-using std::endl;
 
-#include <stdio.h>
+#include <cstdio>
 #ifdef USE_MESSAGING
 #if ( !defined(WIN32) && !defined(WIN64) ) // UNIX
 #include <curl/curl.h>
@@ -173,13 +169,13 @@ void SimulationMessaging::sendStatus() {
 				fflush(stdout);
 				break;
 			case JOB_STARTING:
-				cout<< workerEvent->eventMessage << endl;
+				std::cout<< workerEvent->eventMessage << std::endl;
 				break;
 			case JOB_COMPLETED:
-				cerr << "Simulation Complete in Main() ... " << endl;
+				std::cerr << "Simulation Complete in Main() ... " << std::endl;
 				break;
 			case JOB_FAILURE:
-				cerr << workerEvent->eventMessage << endl;
+				std::cerr << workerEvent->eventMessage << std::endl;
 				break;
 			}
 			return;
