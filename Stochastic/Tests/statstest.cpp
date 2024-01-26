@@ -100,17 +100,21 @@ const std::map<int, double> expected_S0 = {
 
 TEST(statstest,test1) {
 	std::cout << "Checkpoint 0" << std::endl;
-	//std::string inputFileName = std::tmpnam(nullptr);
-	std::string inputFileName {R"(C:\CustomTemp\testme_vcell.txt)"};
+	std::string inputFileName = std::tmpnam(nullptr);
 	std::string outputFileName = std::tmpnam(nullptr);
 	std::map<int,double> results;
-	std::fstream inputFileStream{inputFileName};
-	ASSERT_TRUE(inputFileStream.fail());
-	std::cout << std::system_category().message(::GetLastError()) << std::endl;
-	std::cout << "Supposed file: " << inputFileName << std::endl;
-	return;
-	std::fstream outputFileStream{outputFileName};
-	ASSERT_FALSE(outputFileStream.fail());
+	std::fstream inputFileStream;
+	inputFileStream.open(inputFileName, fstream::out);
+	if (inputFileStream.fail()) {
+		std::perror(("File <" + inputFileName + "> could not be created.").c_str());
+		ASSERT_FALSE(inputFileStream.fail());
+	}
+	std::fstream outputFileStream;
+	outputFileStream.open(outputFileName, fstream::out);
+	if (outputFileStream.fail()) {
+		std::perror(("File <" + inputFileName + "> could not be created.").c_str());
+		ASSERT_FALSE(outputFileStream.fail());
+	}
 
 	// Setup the Gibson Solver input file
 	std::cout << "Checkpoint 1" << std::endl;
@@ -119,7 +123,6 @@ TEST(statstest,test1) {
 	if (outputFileStream.is_open()) outputFileStream.close();
 	inputFileStream << input_file_contents;
 	inputFileStream.close();
-	return;
 
 	// Create the Gibson Solver
 	std::cout << "Checkpoint 2" << std::endl;
@@ -131,7 +134,7 @@ TEST(statstest,test1) {
 
 	// Verify file contents
 	std::cout << "Checkpoint 4" << std::endl;
-    outputFileStream.open(outputFileName);
+    outputFileStream.open(outputFileName, fstream::in);
     std::string line;
     std::getline(outputFileStream, line); // remove header line
 	for (int i = 0; !outputFileStream.eof(); i++) {
@@ -158,10 +161,8 @@ TEST(statstest,test1) {
     }
     assert(accumulatedError < 0.015);
     assert(maxIndividualError < 0.005);
-	std::cout << "Checkpoint 7" << std::endl;
 
     delete gb;
     if (inputFileStream.is_open()) inputFileStream.close();
 	if (outputFileStream.is_open()) outputFileStream.close();
-	std::cout << "Checkpoint 8" << std::endl;
 }
