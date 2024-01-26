@@ -2,6 +2,10 @@
 #include <iostream>
 #include <algorithm>
 #include <sstream>
+#include <utility>
+using std::cerr;
+using std::cout;
+using std::endl;
 
 #include <cstdio>
 #ifdef USE_MESSAGING

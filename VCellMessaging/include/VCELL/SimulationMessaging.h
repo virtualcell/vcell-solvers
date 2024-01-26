@@ -5,11 +5,11 @@
 #ifdef USE_MESSAGING
 #include <stdlib.h>
 #include <stdio.h>
-#include <iostream>
 #include <memory>
 
 #endif
 #include <iostream>
+using namespace std;
 
 #if (defined(WIN32) || defined(WIN64) )
 #include <windows.h>
