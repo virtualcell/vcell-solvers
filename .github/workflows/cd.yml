@@ -310,7 +310,7 @@ jobs:
           ls *.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | grep -iv windows | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
           ls *.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | grep -iv windows | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
           chmod u+w,+x *
-          zip ../upload/win64.tgz ./*
+          zip ../upload/win64.zip ./*
           cd ../..
           # fi
 
