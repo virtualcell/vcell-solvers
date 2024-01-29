@@ -339,7 +339,7 @@ jobs:
         if: matrix.platform == 'windows-latest'
         uses: actions/upload-artifact@v3
         with:
-          name: win64.tgz
+          name: win64.zip
           path: build/upload/win64.zip
 
       - name: Upload Linux binaries
