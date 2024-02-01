@@ -283,12 +283,6 @@ jobs:
           echo "------ running ziptool ------"
           ./bin/ziptool || true
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        with:
-          limit-access-to-actor: false
-
-
       - name: fix Macos shared object paths
         if: matrix.platform == 'macos-latest'
         shell: bash
@@ -332,6 +326,11 @@ jobs:
           chmod u+w,+x *
           tar czvf ../upload/linux64.tgz --dereference .
           cd ../..
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: false
 
       - name: Upload Macos binaries
         if: matrix.platform == 'macos-latest'
