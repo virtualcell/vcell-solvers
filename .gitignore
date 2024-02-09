@@ -2,7 +2,6 @@
 /build-dockcross-win64/
 /.project
 /.cproject
-/svnversion.txt
 /build-win64/
 /.DS_Store
 /build-linux64/

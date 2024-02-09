@@ -45,10 +45,6 @@ if(POLICY CMP0057)
   cmake_policy(SET CMP0057 NEW)
 endif()
 
-set(SVERSION "unversionedbuild")
-message("svnversion ${SVERSION}")
-add_definitions(-DSVNVERSION=svn${SVERSION})
-
 #include (LocalJNI.cmake)
 
 set(RULE_MESSAGES OFF)

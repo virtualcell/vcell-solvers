@@ -3,15 +3,12 @@
 #include <vcellxml.h>
 #include <vhdf5/file.h>
 #include <Logger.h>
-#include <boundaryProviders.h>
 #include <StateClient.h>
 #include <MBridge/MatlabDebug.h>
 #include <tclap/CmdLine.h>
 #include <ReportClient.h>
-#include <TextReportClient.h>
-#include <version.h>
-#include <Timer.h>
 #include <VCELL/SimulationMessaging.h>
+#include <VCELL/GitDescribe.h>
 
 /**
 * usings and typedefs
@@ -88,10 +85,9 @@ namespace {
 
 int main(int argc, char *argv[])
 {
-	const vcell_util::Version & version = vcell_util::Version::get( );
-	std::cout 
-		<< "MovingBoundarySolver version $URL$" 
-		<< "revision " << version.svn << ' ' << version.compileDate << std::endl; 
+    std::cout
+            << "MovingBoundarySolver version " << g_GIT_DESCRIBE
+            << std::endl;
 
 	std::string filename;
 	std::string outname;
@@ -119,7 +115,7 @@ int main(int argc, char *argv[])
 	namespace tclap = TCLAP;
 	try {
 		using namespace TCLAP; 
-		CmdLine cmd("Moving boundary solve",' ',version.svn);
+		CmdLine cmd("Moving boundary solve",' ',g_GIT_DESCRIBE);
 		cmd.setExceptionHandling(false);
 		ValueArg<std::string> config("c","config","Input XML file name",false,"","string",cmd);
 		ValueArg<std::string> output("o","output","HDF5 output file name",false,"","string",cmd);
