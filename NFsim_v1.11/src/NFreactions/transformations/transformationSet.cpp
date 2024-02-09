@@ -124,6 +124,7 @@ TransformationSet::getTemplateMolecule( unsigned int reactantIndex ) const
 	{
 		return addmol[reactantIndex-n_reactants];
 	}
+    return nullptr;
 }
 
 
