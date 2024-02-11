@@ -23,7 +23,7 @@ namespace {
 	bool startupMessaging(int argc, char **argv, vcell::JMSHolder & holder);
 	int nfsimExit(int returnCode, const std::string& errorMsg);
 	void printUsage();
-	int parseInteger(const char * input);
+	int parseTaskId(const char * input);
 	const int unsetTaskId = -1;
 	inline void noop( ) {}
 	/**
@@ -102,9 +102,9 @@ void printUsage() {
 			<< std::endl;
 }
 
-int parseInteger(const char * input) {
-	if (input != 0) {
-		const int eos = strlen(input);
+int parseTaskId(const char * input) {
+	if (input != nullptr) {
+		const size_t eos = strlen(input);
 		for (int i = 0; i < eos; i++) {
 			const char c = input[i];
 			if ((c < '0') || (c > '9')) {
@@ -114,6 +114,8 @@ int parseInteger(const char * input) {
 		}
 		return atoi(input);
 	}
+    // should never reach this code
+    return unsetTaskId;
 }
 /*
  # JMS_Paramters
@@ -166,7 +168,7 @@ bool startupMessaging(int argc, char **argv, vcell::JMSHolder & holder)  {
 		const int penultimate = argc - 1;
 		for (int i = 0; i < penultimate; i++) {
 			if (strcmp(argv[i], "-tid") == 0) {
-				taskId = parseInteger(argv[i + 1]);
+				taskId = parseTaskId(argv[i + 1]);
 			}
 			if (strcmp(argv[i], "-xml") == 0) {
 				inputFilename = argv[i + 1];

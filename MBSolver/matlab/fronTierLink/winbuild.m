@@ -3,4 +3,4 @@ mex -f build.opts -I../src -I../src/util -DWIN32  -L..\bin -L..\lib -lExpression
 
 
 %% Fei's command
-mex fronTierCmd.cpp flink.cpp ../util/matlabStruct.cpp ../util/VCDictionary.cpp ../util/mlAssert.cpp -I../util -I../../Solver/include -I../../FronTierLib -I../../FronTierLib/util -I../../vcommons/include -DSVNVERSION="16888" ../FronTierReference/FronTier_64b.lib
+mex fronTierCmd.cpp flink.cpp ../util/matlabStruct.cpp ../util/VCDictionary.cpp ../util/mlAssert.cpp -I../util -I../../Solver/include -I../../FronTierLib -I../../FronTierLib/util -I../../vcommons/include ../FronTierReference/FronTier_64b.lib

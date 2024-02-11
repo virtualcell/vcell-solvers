@@ -145,7 +145,7 @@ Solver *Simulation::getSolverFromVariable(Variable *var)
 //	globalParticleList.push_back(particle);
 //}
 
-void Simulation::readData(char *filename)
+void Simulation::readData(const char *filename)
 {
 	//
 	// all processes read data

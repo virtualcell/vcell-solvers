@@ -646,7 +646,7 @@ void SimulationExpression::populateRegionSizeVariableValues(double *darray, bool
 	}
 }
 
-void SimulationExpression::writeData(char *filename, bool bCompress)
+void SimulationExpression::writeData(const char *filename, bool bCompress)
 {
 	//bool hasParticles = false;
 	//VCellModel *model = SimTool::getInstance()->getModel();

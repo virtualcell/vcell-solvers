@@ -3,7 +3,6 @@
 
 #include <fstream>
 #include <random>
-using std::ofstream;
 #include "StochModel.h"
 #include "MultiTrialStats.h"
 
@@ -39,7 +38,7 @@ public:
 private:
 	IndexedTree *Tree; //the data structure(binary tree) to store all the processes and make each parent smaller than it's children.
 	double* currvals;//array of variable values to be used by expression parser. variables are stored in vector listOfVars.
-	ofstream outfile; //the output file stream where the results are saved.
+	std::ofstream outfile; //the output file stream where the results are saved.
 	const char* outfilename;//the output file name.
 	bool flag_savePeriod;//the flag for using save period.
 	int finalizeSampleRow(int,double);//central location to call to complete 1 output sample to file

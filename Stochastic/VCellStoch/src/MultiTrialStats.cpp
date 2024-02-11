@@ -5,6 +5,8 @@
 #include "MultiTrialStats.h"
 #include <vector>
 #include <iostream>
+#include <limits>
+#include <math.h>
 
 #ifdef __APPLE__
 #include "/usr/local/opt/hdf5/include/hdf5.h"

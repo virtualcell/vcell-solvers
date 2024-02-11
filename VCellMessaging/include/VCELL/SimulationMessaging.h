@@ -5,7 +5,6 @@
 #ifdef USE_MESSAGING
 #include <stdlib.h>
 #include <stdio.h>
-#include <iostream>
 #include <memory>
 
 #endif

@@ -122,6 +122,7 @@ private:
 	void updateLog(double progress,double time,int iteration);
 	void clearLog();
 	int	getZipCount(char* zipFileName);
+	int	getZipCount(const std::string* zipFileName);
 	void start1();
 	void copyParticleCountsToConcentration();
 

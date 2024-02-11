@@ -9,6 +9,11 @@ if (SUPPORTS_MATLAB)
 	option(BUILD_INCLUDE_MATLAB_DIRS "Include matlab integration directory" OFF)
 endif (SUPPORTS_MATLAB)
 
+if (MINGW)
+	add_definitions(-DMINGW)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMINGW")
+endif (MINGW)
+
 if(DEFINED CMAKE_BUILD_TYPE)
    SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
 else()

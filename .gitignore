@@ -2,7 +2,6 @@
 /build-dockcross-win64/
 /.project
 /.cproject
-/svnversion.txt
 /build-win64/
 /.DS_Store
 /build-linux64/
@@ -14,6 +13,7 @@
 /singularity/
 /cmake-build*
 /build*
+/debug-build*
 /.idea/
 /nfsim/
 /all_solvers/*

@@ -1,9 +1,7 @@
 #include <sstream>
 #include "matlabStruct.h"
 #include "matlabAssert.h"
-#include "svnversion.h"
 #include "vcGccCompat.h"
-SVN_VERSION_TAG
 
 using matlabLink::MatlabStruct;
 using matlabLink::MData;

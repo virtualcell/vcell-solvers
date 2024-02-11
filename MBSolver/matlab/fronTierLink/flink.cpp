@@ -7,7 +7,6 @@
 #include <VCDictionary.h>
 #include <matlabAssert.h>
 #include <mexstream.h>
-#include <svnversion.h>
 #include <vcGccCompat.h>
 //#include <VCellFrontierUtil.h>
 using std::vector;
@@ -18,7 +17,6 @@ namespace Frontier {
 	}
 }
 namespace {
-	SVN_VERSION_TAG;
 
 	//slot in
 	std::vector<Front *> fronts;
@@ -292,7 +290,7 @@ void showHelp( ) {
 	const char * const variant = "debug";
 #endif
 		
-	help << "link library " << svn_version_string << ' ' << variant << endl;
+	help << "link library " << variant << endl;
     help << std::ends;
 
 	std::string helpString = help.str( ); // create string on stack to keep c_str pointer valid until end of function

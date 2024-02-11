@@ -170,12 +170,12 @@ void VariableStatisticsDataGenerator::writeAttributeComponent(H5::Group& dataGen
 	char attrValue[64];
 
 	//write name and unit
-	sprintf(attrName, "comp_%d_name", componentIndex);
+	snprintf(attrName, 64, "comp_%d_name", componentIndex);
 	H5::Attribute attribute = dataGeneratorGroup.createAttribute(attrName, attributeStrType, attributeDataSpace);
-	sprintf(attrValue, "%s_%s", varName, dataName);
+	snprintf(attrValue, 64, "%s_%s", varName, dataName);
 	attribute.write(attributeStrType, attrValue);
 
-	sprintf(attrName, "comp_%d_unit", componentIndex);
+	snprintf(attrName, 64, "comp_%d_unit", componentIndex);
 	attribute = dataGeneratorGroup.createAttribute(attrName, attributeStrType, attributeDataSpace);
 	attribute.write(attributeStrType, unit.c_str());
 }

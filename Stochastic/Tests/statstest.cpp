@@ -97,63 +97,62 @@ const std::map<int, double> expected_S0 = {
 };
 
 TEST(statstest,test1) {
-    char *temp_input_file_name = new char[200] {0};
-    char *temp_output_file_name = new char[200] {0};
-    std::string in_prefix = testing::TempDir() + "input_XXXXXX";
-    std::string out_prefix = testing::TempDir() + "output_XXXXXX";
-    strncpy(temp_input_file_name, in_prefix.c_str(), in_prefix.length());
-    strncpy(temp_output_file_name, out_prefix.c_str(), out_prefix.length());
-    assert(mkstemp(temp_input_file_name) != -1);
-    assert(mkstemp(temp_output_file_name) != -1);
-    std::ofstream input_file (temp_input_file_name);
-    bool bWroteFile = false;
-    if (input_file.is_open()){
-        input_file << input_file_contents;
-        input_file.close();
-        bWroteFile = true;
-    }
-    ASSERT_TRUE(bWroteFile);
+	std::string inputFileName = std::tmpnam(nullptr);
+	std::string outputFileName = std::tmpnam(nullptr);
+	std::map<int,double> results;
+	std::fstream inputFileStream;
+	inputFileStream.open(inputFileName, std::fstream::out);
+	if (inputFileStream.fail()) {
+		std::perror(("File <" + inputFileName + "> could not be created.").c_str());
+		ASSERT_FALSE(inputFileStream.fail());
+	}
+	std::fstream outputFileStream;
+	outputFileStream.open(outputFileName, std::fstream::out);
+	if (outputFileStream.fail()) {
+		std::perror(("File <" + inputFileName + "> could not be created.").c_str());
+		ASSERT_FALSE(outputFileStream.fail());
+	}
 
-    Gibson *gb= new Gibson(temp_input_file_name, temp_output_file_name);
+	// Setup the Gibson Solver input file
+	if (outputFileStream.is_open()) outputFileStream.close();
+	inputFileStream << input_file_contents;
+	inputFileStream.close();
+
+	// Create the Gibson Solver
+    auto *gb = new Gibson(inputFileName.c_str(), outputFileName.c_str());
+
+	// Launch the test
     gb->march();
 
-    // verify file contents
-    std::ifstream outfile(temp_output_file_name);
-    string line;
-    getline(outfile, line); // remove header line
-//    std::cout << line << std::endl;
-//    std::cout.flush();
+	// Verify file contents
+    outputFileStream.open(outputFileName, std::fstream::in);
+    std::string line;
+    std::getline(outputFileStream, line); // remove header line
+	for (int i = 0; !outputFileStream.eof(); i++) {
+		std::getline(outputFileStream, line);
+		// if index found in expected_S0 map, store in results map
+		if (expected_S0.find(i) != expected_S0.end()){
+			float t, s0, s1, s2;
+			// extract space separated values for t, s0, s1 and s2 from line
+			std::stringstream line_stream(line);
+			line_stream >> t >> s0 >> s1 >> s2;
+			results[i] = s0;
+		}
+	}
+	outputFileStream.close();
 
-    std::map<int,double> results;
-    int i = 0;
-    while (getline(outfile, line)){
-        // if index found in expected_S0 map, store in results map
-        if (expected_S0.find(i) != expected_S0.end()){
-            float t, s0, s1, s2;
-            // extract space separated values for t, s0, s1 and s2 from line
-            std::stringstream line_stream(line);
-            line_stream >> t >> s0 >> s1 >> s2;
-            results[i] = s0;
-//            std::cout << line << std::endl;
-//            std::cout.flush();
-        }
-        i++;
-    }
-    // compare the expected and actual values
-    double accum_error = 0.0;
-    double max_error = 0.0;
+	// compare the expected and actual values
+    double accumulatedError = 0.0, maxIndividualError = 0.0;
     for (auto const& expected : expected_S0){
-        double s0_given = expected.second;
-        double s0_computed = results[expected.first];
-        double abserr = std::abs(s0_given - s0_computed);
-//        std::cout << "t=" << expected.first << " expected=" << s0_given << " computed=" << s0_computed << " abserr=" << abserr << std::endl;
-        accum_error += abserr;
-        max_error = std::max(max_error, abserr);
+        double absoluteError = std::abs(expected.second - results[expected.first]);
+        // std::cout << "t=" << expected.first << " expected=" << expected.second << " computed=" << results[expected.first] << " abserr=" << abserr << std::endl;
+        accumulatedError += absoluteError;
+        maxIndividualError = std::max(maxIndividualError, absoluteError);
     }
-    assert(accum_error < 0.015);
-    assert(max_error < 0.005);
+    assert(accumulatedError < 0.015);
+    assert(maxIndividualError < 0.005);
 
     delete gb;
-    delete[] temp_input_file_name;
-    delete[] temp_output_file_name;
+    if (inputFileStream.is_open()) inputFileStream.close();
+	if (outputFileStream.is_open()) outputFileStream.close();
 }

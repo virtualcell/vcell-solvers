@@ -12,8 +12,8 @@ class Variable;
 class FVDataSet
 {
 public:
-	static void read(char *filename, Simulation *sim);
-	static void write(char *filename, SimulationExpression *sim, bool bCompress);
+	static void read(const char *filename, Simulation *sim);
+	static void write(const char *filename, SimulationExpression *sim, bool bCompress);
 	static void convolve(Simulation* sim, Variable* var, double* values);
 	static void readRandomVariables(char* filename, SimulationExpression* sim);
 };

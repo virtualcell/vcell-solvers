@@ -13,7 +13,6 @@
 #include <ReportClient.h>
 #include <Universe.h>
 #include <TextReportClient.h>
-#include <version.h>
 #include <flex.h>
 #include <vhdf5/dataset.h>
 #include <vhdf5/attribute.h>
@@ -27,6 +26,7 @@
 #include <MBridge/Figure.h>
 #include <Hdf5OutputWriter.h>
 #include <VCELL/SimulationMessaging.h>
+#include <VCELL/GitDescribe.h>
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
 using moving_boundary::World ;
 using moving_boundary::CoordinateType;
@@ -804,11 +804,8 @@ namespace {
 				H5::DataSet runTime = vcellH5::primitiveWrite(baseGroup,"runTime",totalTime);
 				//annotate version info - we place on runTime node to allow easy exclusion when doing
 				//h5diff (see --exclude-path)
-				const vcell_util::Version & version = vcell_util::Version::get( );
-				vcellH5::writeAttribute(runTime,"svnVersion",version.svn);
-				vcellH5::writeAttribute(runTime,"compileDate",version.compileDate);
-				vcellH5::writeAttribute(runTime,"compileTime",version.compileTime);
-
+                std::string gitVersion(g_GIT_DESCRIBE);
+				vcellH5::writeAttribute(runTime,"gitVersion", gitVersion);
 				unsigned int lastTimeIndex = static_cast<unsigned int>(genTimes.size( ));
 				vcellH5::primitiveWrite(baseGroup,"lastTimeIndex",lastTimeIndex);
 

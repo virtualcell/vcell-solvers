@@ -31,8 +31,7 @@ set(SRC_FILES
 	vcellutil.cpp
 	vdemo.cpp
 	vectortest.cpp
-	versiontest.cpp
-	vi64.cpp
+        vi64.cpp
 	voltest.cpp
 	worldtest.cpp
 )

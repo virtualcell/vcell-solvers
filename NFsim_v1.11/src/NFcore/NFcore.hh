@@ -282,14 +282,14 @@ namespace NFcore
 
 			void setUniversalTraversalLimit(int utl);
 
-			bool isUsingVCellCompartments() { return useVCellCompartments; };
-			bool setUsingVCellCompartments( bool val ) { useVCellCompartments = val; };
+			bool isUsingVCellCompartments() const { return useVCellCompartments; };
+			void setUsingVCellCompartments( bool val ) { useVCellCompartments = val; };
 
-			bool hasVCellAnchors() { return this->bHasVCellAnchors; };
-			bool setVCellAnchors( bool val ) { this->bHasVCellAnchors = val; };
+			bool hasVCellAnchors() const { return this->bHasVCellAnchors; };
+			void setVCellAnchors( bool val ) { this->bHasVCellAnchors = val; };
 
-			bool isCheckingProductMaching() { return this->bCheckingProductMatching; };
-			bool setCheckingProductMaching( bool val ) { this->bCheckingProductMatching = val; };
+			bool isCheckingProductMaching() const { return this->bCheckingProductMatching; };
+			void setCheckingProductMaching( bool val ) { this->bCheckingProductMatching = val; };
 
 			void setEvaluateComplexScopedLocalFunctions( bool val ) { evaluateComplexScopedLocalFunctions = val; };
 			bool getEvaluateComplexScopedLocalFunctions( ) const { return evaluateComplexScopedLocalFunctions; };

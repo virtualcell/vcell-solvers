@@ -268,20 +268,6 @@ void findandreplace(string &source, string find, string replace) {
 	}
 }
 
-const char* itoa(int inNum) {
-	stringstream strout;
-	strout << inNum;
-	strout.flush();
-	return strout.str().data();
-}
-
-const char* dtoa(double inNum) {
-	stringstream strout;
-	strout << inNum;
-	strout.flush();
-	return strout.str().data();
-}
-
 // MPI communication routines
 void send_to_slave(int slave, int tag, int datalen, char *data) {
 	msg.src = MASTER;
@@ -333,25 +319,25 @@ void recv_from_master() {
 #endif
 }
 
-void job2str(job& j, char* p) {
-	sprintf(p, "%s,", j.filename.c_str());	p += strlen(p);	
-	sprintf(p, "%d,", j.processors);	    p += strlen(p);
+void job2str(job &j, char *p, size_t buf_size) {
+	snprintf(p, buf_size, "%s,", j.filename.c_str());	buf_size -= strlen(p); p += strlen(p);
+	snprintf(p, buf_size, "%d,", j.processors);	  buf_size -= strlen(p); p += strlen(p);
 
 	int argc = j.argument.size();
-	sprintf(p, "%d,", argc); p += strlen(p);
+	snprintf(p, buf_size, "%d,", argc);  buf_size -= strlen(p); p += strlen(p);
 	if (argc > 0) {
 	for (int i = 0; i < argc; ++i) {
-		sprintf(p, "%s,",  j.argument[i].c_str()); p += strlen(p);
-		sprintf(p, "%s,",  j.argval[i].c_str()); p += strlen(p);
+		snprintf(p, buf_size, "%s,",  j.argument[i].c_str()); buf_size -= strlen(p); p += strlen(p);
+		snprintf(p, buf_size, "%s,",  j.argval[i].c_str()); buf_size -= strlen(p); p += strlen(p);
 	}
 	}
 
 	int n = j.parameters.size();
-	sprintf(p, "%d,", n); p += strlen(p);
+	snprintf(p, buf_size, "%d,", n); buf_size -= strlen(p); p += strlen(p);
 	if (n > 0) {
 	for (int i = 0; i < n; ++i) {
-		sprintf(p, "%s,",  j.parameters[i].c_str()); p += strlen(p);
-		sprintf(p, "%lg,", j.values[i]); p += strlen(p);
+		snprintf(p, buf_size, "%s,",  j.parameters[i].c_str()); buf_size -= strlen(p); p += strlen(p);
+		snprintf(p, buf_size, "%lg,", j.values[i]); buf_size -= strlen(p); p += strlen(p);
 	}
 	}
 }
@@ -533,7 +519,7 @@ void DynamicParallel (map<string, string> argMap,int rank,int size) {
 				if (!done) {
 					printf("master: assigning work #%d to slave #%d \n", jcount, msg.src);
 					char str[MSG_DATA_SIZE];
-					job2str(jnow, str);
+                    job2str(jnow, str, MSG_DATA_SIZE);
 					slave_assignment[msg.src] = pjob;
 					send_to_slave(msg.src, cmd_job, strlen(str)+1, str);
 				} else {
@@ -577,7 +563,7 @@ void DynamicParallel (map<string, string> argMap,int rank,int size) {
 			slave_work(rank, jnow);
 
 			for (int i = 0; i < slave_filenames.size(); ++i) {
-				sprintf(str, "%d,%s", slave_buffers[i].length()+1, slave_filenames[i].c_str());
+				snprintf(str, sizeof(str), "%zu,%s", slave_buffers[i].length()+1, slave_filenames[i].c_str());
 				send_to_master(rank, rpt_pre_data, strlen(str)+1, str);
 				recv_from_master();
 				if (msg.tag != cmd_pre_data_ack) perr("Error: expecting cmd_pre_data_ack");

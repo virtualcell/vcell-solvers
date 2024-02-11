@@ -703,6 +703,7 @@ IMPORT	void	strip_bdry_curves(INTERFACE*, int);
 IMPORT	void	cut_surface(SURFACE*,boolean (*func)(POINTER,double*),POINTER,boolean);
 IMPORT	void	install_hsbdry_on_surface(SURFACE*,int);
 IMPORT	boolean	surfaces_matched(SURFACE*,SURFACE*);
+IMPORT  void    install_subdomain_bdry_curves(INTERFACE*);
 	
 	/* fscat3d2.c*/
 IMPORT	boolean	f_intfc_communication3d2(Front*);
@@ -888,6 +889,7 @@ IMPORT	void	tangent(POINT*,BOND*,CURVE*,double*,Front*);
 IMPORT	void	user_print_rp_node(RP_NODE*,RPROBLEM*);
 IMPORT	void	user_print_rproblem(RPROBLEM*);
 IMPORT	void	user_free_rp_node(RP_NODE*,RPROBLEM*);
+IMPORT  void    assign_curve_boundary_type(CURVE*,int,int*);
 
 #if defined(USE_OVERTURE)
         /* foverture_patch.c */

@@ -10,13 +10,14 @@
 #include <string>
 #include <iomanip>
 #include <vector>
-#include <stdint.h>
-#include <math.h>
-#include <stdlib.h>
+#include <cstdint>
+#include <cmath>
+#include <cstdlib>
+#include <iostream>
 #include <random>
 using namespace std;
 
-#include <time.h>
+#include <ctime>
 #include "../include/IndexedTree.h"
 
 #ifdef USE_MESSAGING
@@ -26,18 +27,19 @@ using namespace std;
 const double double_infinity = numeric_limits<double>::infinity();
 const double EPSILON = 1E-12;
 const string Gibson::MY_T_STR = "t";
+
 /*
  *Empty constructor of Gibson. It will use the defalt settings in StochModel.
  */
 Gibson::Gibson()
-	:StochModel(),
-	savedSampleCount(1),
-	lastTime (std::numeric_limits<long>::min( ))
-{
-	Tree=NULL;
-	currvals=NULL;
+	: savedSampleCount(1), lastTime (std::numeric_limits<long>::min()) {
+	Tree = NULL;
+	currvals = NULL;
     generator = new std::mt19937_64();
     distribution = new std::uniform_real_distribution<double>(0.0,1.0);
+#ifdef USE_MESSAGING
+	SimulationMessaging::create();
+#endif
 }//end of constructor Gibson()
 
 /*
@@ -46,17 +48,8 @@ Gibson::Gibson()
  *Input para: srting, the input file(name), where the model info. is read.
  *            string, the output file(name), where the results are saved.
  */
-Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
-	:StochModel(),
-	savedSampleCount(1),
-	lastTime (std::numeric_limits<long>::min( ))
-{
-	Tree=NULL;
-	currvals=NULL;
-    generator = new std::mt19937_64();
-    distribution = new std::uniform_real_distribution<double>(0.0,1.0);
-
-	outfilename=arg_outfilename;
+Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename) : Gibson(){ // Use delegating constructor
+	this->outfilename = arg_outfilename;
 
 	ifstream infile;
 	string instring;
@@ -69,56 +62,33 @@ Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
 	while(infile >> instring)
 	{
 		//load control info.
-		if (instring == "STARTING_TIME")
-		{
+		if (instring == "STARTING_TIME"){
 			infile >> STARTING_TIME;
-		}
-        else if (instring == "BMULTIBUTNOTHISTO")
-        {
+		} else if (instring == "BMULTIBUTNOTHISTO"){
             infile >> bMultiButNotHisto;
-        }
-		else if (instring == "ENDING_TIME")
-		{
+        } else if (instring == "ENDING_TIME"){
 			infile >> ENDING_TIME;
-		}
-		else if (instring == "SAVE_PERIOD")
-		{
+		} else if (instring == "SAVE_PERIOD"){
 			infile >> SAVE_PERIOD;
 			flag_savePeriod=true;
-		}
-		else if (instring == "MAX_ITERATION")
-		{
+		} else if (instring == "MAX_ITERATION"){
 			infile >> MAX_ITERATION;
-		}
-		else if (instring == "TOLERANCE")
-		{
+		} else if (instring == "TOLERANCE"){
 			infile >> TOLERANCE;
-		}
-		else if (instring == "SAMPLE_INTERVAL")
-		{
+		} else if (instring == "SAMPLE_INTERVAL"){
 			infile >> SAMPLE_INTERVAL;
-		}
-		else if (instring == "MAX_SAVE_POINTS")
-		{
+		} else if (instring == "MAX_SAVE_POINTS"){
 			infile >> MAX_SAVE_POINTS;
-		}
-		else if (instring == "NUM_TRIAL")
-		{
+		} else if (instring == "NUM_TRIAL"){
 			infile >> NUM_TRIAL;
-		}
-		else if (instring == "SEED")
-		{
+		} else if (instring == "SEED"){
 			infile >> SEED;
-		}
-		//load listofvars
-		else if (instring == "TotalVars")
-		{
+		} else if (instring == "TotalVars"){ //load listofvars
 			int varCount;
 			infile >> varCount;
 			string name;
 			double amount;
-			for(int i=0;i<varCount;i++)
-			{
+			for(int i=0;i<varCount;i++){
 				infile >> name;
 				infile >> amount;
 				listOfVarNames.push_back(name);
@@ -126,10 +96,7 @@ Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
 				StochVar *var=new StochVar((uint64_t)amount);
 				listOfVars.push_back(var);
 			}
-		}
-		//load listOfProcesses
-		else if (instring == "TotalProcesses")
-		{
+		} else if (instring == "TotalProcesses"){ //load listOfProcesses
 			int pCount;
 			infile >> pCount;
 			string name;
@@ -140,15 +107,11 @@ Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
 				Jump *jp=new Jump();
 				listOfProcesses.push_back(jp);
 			}
-		}
-		//load process description to set up processes
-		else if (instring == "TotalDescriptions")
-		{
+		} else if (instring == "TotalDescriptions") { //load process description to set up processes
 			int dCount,idx;
 			infile >> dCount;
 			string name,str;
-			for(int i=0;i<dCount;i++)//loop through each process description
-			{
+			for(int i=0;i<dCount;i++){ //loop through each process description
 				infile >> name >> name;// "process name"
 				//find the process in listOfProcesses using it's name
 				idx=getProcessIndex(name);
@@ -201,10 +164,9 @@ Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
 		}
 	}
     //setup IndexedTree
-	Tree=new IndexedTree();
-	for(int i=0;i<listOfProcesses.size();i++)
-	{
-		Tree->addProcess(listOfProcesses[i]);
+	Tree = new IndexedTree();
+	for(auto & listOfProcesse : listOfProcesses){
+		Tree->addProcess(listOfProcesse);
 	}
 	infile.close();
 	if (NUM_TRIAL > MAX_ALLOWED_POINTS) {
@@ -213,7 +175,6 @@ Gibson::Gibson(const char* arg_infilename, const char* arg_outfilename)
 	if (MAX_SAVE_POINTS > MAX_ALLOWED_POINTS) {
 		VCELL_EXCEPTION(invalid_argument,"Stochastic initialization: Server save points " << MAX_SAVE_POINTS << " exceeds limit of " << MAX_ALLOWED_POINTS);
 	}
-
 
 	if(NUM_TRIAL > 1 && !bMultiButNotHisto){
 		//this must be a gibson 'histogram' sim,
@@ -270,12 +231,12 @@ Gibson::~Gibson()
 	//delete indexedTree
 	delete Tree;
 	//delete variables
-	for(int i=0;i<listOfVars.size();i++)
-		delete listOfVars[i];
+	for(auto & listOfVar : listOfVars)
+		delete listOfVar;
 	listOfVars.clear();
 	//delete proccesses
-	for(int i=0;i<listOfProcesses.size();i++)
-		delete listOfProcesses[i];
+	for(auto & listOfProcesse : listOfProcesses)
+		delete listOfProcesse;
 	listOfProcesses.clear();
 	//delete vectors
 	listOfVarNames.clear();
@@ -607,8 +568,7 @@ int Gibson::finalizeSampleRow(int savedSampleCount,double simtime){
 /*
  *This method is the control of trials, which will be called for Gibson simulation.
  */
-void Gibson::march()
-{
+void Gibson::march(){
 #ifdef DEBUG
 	// Count performance time in milliseconds for the simulation
 	int ntime=0;
@@ -619,10 +579,9 @@ void Gibson::march()
 #endif
 
 	//prepare for writing the results to output file
-	outfile.open (outfilename);//"c:/gibson_deploy/gibson_deploy/output/gibson_singleTrial.txt"
-	outfile << setprecision(10); // set precision to output file
-    if(bMultiButNotHisto)
-    {
+	this->outfile.open (this->outfilename, ofstream::out);//"c:/gibson_deploy/gibson_deploy/output/gibson_singleTrial.txt"
+	this->outfile << setprecision(10); // set precision to output file
+    if(this->bMultiButNotHisto){
 //        char thebyte[1];
 //        thebyte[0]=49;//progress char "1"
 //        string ofProg(outfilename);
@@ -630,29 +589,28 @@ void Gibson::march()
 //        ofstream outfileProg;
 //        outfileProg.open (ofProg.c_str(),ios::out | ios::app | ios::binary);
 
-        numMultiNonHisto = NUM_TRIAL;
-        NUM_TRIAL = 1;//set to 1 to use single trajectory logic in 'core'
+        this->numMultiNonHisto = this->NUM_TRIAL;
+        this->NUM_TRIAL = 1;//set to 1 to use single trajectory logic in 'core'
 
         //output file header description for time and variable names
-        outfile << "t:";
-        for (int i = 0; i < listOfVarNames.size(); i++) {
-            outfile << listOfVarNames.at(i) << ":";
+        this->outfile << "t:";
+        for (const auto & varName : this->listOfVarNames) {
+            this->outfile << varName << ":";
         }
-        outfile << endl;
+        this->outfile << endl;
 
         //Execute NUM_TRIALS of core and accumulate the results
-        for (currMultiNonHistoIter=0; currMultiNonHistoIter < numMultiNonHisto; currMultiNonHistoIter++)
-        {
-            generator->seed(currMultiNonHistoIter+SEED);
+        for (this->currMultiNonHistoIter = 0; this->currMultiNonHistoIter < this->numMultiNonHisto; this->currMultiNonHistoIter++){
+            this->generator->seed(this->currMultiNonHistoIter+SEED);
             //run the simulation
-            core();
+            this->core();
             //reset to initial values before next simulation
-            savedSampleCount = 1;
-            for(int i=0;i<listOfIniValues.size();i++){
-                listOfVars[i]->setCurr(listOfIniValues.at(i));
+            this->savedSampleCount = 1;
+            for(int i = 0; i < this->listOfIniValues.size(); i++){
+                this->listOfVars[i]->setCurr(this->listOfIniValues.at(i));
             }
-            for(int i=0;i<listOfProcesses.size();i++){
-                Tree->setProcess(i,listOfProcesses.at(i));
+            for(int i = 0; i < this->listOfProcesses.size(); i++){
+                this->Tree->setProcess(i, this->listOfProcesses.at(i));
             }
 //            outfileProg.write((char *)&thebyte,1);
 //            outfileProg.flush();
@@ -660,46 +618,42 @@ void Gibson::march()
 //        outfileProg.close();
 
         //Calc and save averages of accumulated data
-        for (int timeIndex = 0; timeIndex < multiTrialStats->getNumTimePoints(); ++timeIndex) {
+        for (int timeIndex = 0; timeIndex < this->multiTrialStats->getNumTimePoints(); ++timeIndex) {
             //timepoint
-            outfile << multiTrialStats->getTimePoint(timeIndex) << "\t";
-            for (int varIndex = 0; varIndex < multiTrialStats->getNumVars(); ++varIndex) {
-                outfile << multiTrialStats->getMean(varIndex, timeIndex) << "\t";
+            this->outfile << this->multiTrialStats->getTimePoint(timeIndex) << "\t";
+            for (int varIndex = 0; varIndex < this->multiTrialStats->getNumVars(); ++varIndex) {
+                this->outfile << this->multiTrialStats->getMean(varIndex, timeIndex) << "\t";
             }
-            outfile << endl;
+            this->outfile << endl;
         }
 
-        multiTrialStats->writeHDF5(outfilename, listOfVarNames);
+        this->multiTrialStats->writeHDF5(this->outfilename, this->listOfVarNames);
 
-    }
-	else if(NUM_TRIAL==1)
-    {
-        generator->seed(SEED);
+    } else if(this->NUM_TRIAL==1){
+        this->generator->seed(this->SEED);
         //output file header
-        outfile << "t:";
-        for(int i=0;i<listOfVarNames.size();i++){
-            outfile<< listOfVarNames.at(i) << ":";
+        this->outfile << "t:";
+        for(const auto & listOfVarName : this->listOfVarNames){
+            this->outfile << listOfVarName << ":";
         }
-        outfile <<endl;
+        this->outfile << endl;
         //output initial condition at STARTING_TIME
-        outfile << STARTING_TIME << "\t";
-        for(int i=0;i<listOfIniValues.size();i++){
-            outfile<< listOfIniValues.at(i) << "\t";
+        this->outfile << this->STARTING_TIME << "\t";
+        for(const unsigned long long listOfIniValue : this->listOfIniValues){
+            this->outfile << listOfIniValue << "\t";
         }
         outfile << endl;
         //run the simulation
         core();
 
-    }
-	else if (NUM_TRIAL > 1)
-	{
+    } else if (this->NUM_TRIAL > 1){
 		//output file header
-		outfile << "TrialNo:";
-		for(int i=0;i<listOfVarNames.size();i++){
-			outfile<< listOfVarNames.at(i) << ":";
+		this->outfile << "TrialNo:";
+		for(const auto & listOfVarName : this->listOfVarNames){
+			this->outfile<< listOfVarName << ":";
 		}
-		outfile <<endl;
-		for (long j=SEED;j<NUM_TRIAL+SEED;j++)
+		this->outfile << endl;
+		for (long j = this->SEED; j < this->NUM_TRIAL + this->SEED; j++)
 		{
 #ifdef USE_MESSAGING
 		if (SimulationMessaging::getInstVar()->isStopRequested()) {
@@ -710,21 +664,19 @@ void Gibson::march()
 #ifdef DEBUG
 			cout << "Trial No. " << j <<endl;
 #endif
-			generator->seed(j);
+			this->generator->seed(j);
 			//output trial number.  PS:results after each trial are printed in core() function.
-			outfile << j-SEED+1;//this expression should evaluate equal to 'savedSampleCount'
-			core();//this will save 1 row of data (
+			this->outfile << j - this->SEED + 1;//this expression should evaluate equal to 'savedSampleCount'
+			this->core();//this will save 1 row of data (
 			//reset to initial values before next simulation
-			for(int i=0;i<listOfIniValues.size();i++){
-				listOfVars[i]->setCurr(listOfIniValues.at(i));
+			for(int i=0; i < this->listOfIniValues.size();i++){
+				this->listOfVars[i]->setCurr(this->listOfIniValues.at(i));
 			}
-			for(int i=0;i<listOfProcesses.size();i++){
-				Tree->setProcess(i,listOfProcesses.at(i));
+			for(int i=0;i < this->listOfProcesses.size();i++){
+				this->Tree->setProcess(i, this->listOfProcesses.at(i));
 			}
 		}
-	}
-	else
-	{
+	} else {
 		VCELL_EXCEPTION(invalid_argument, "Number of trial smaller than 1!");
 	}
 #ifdef DEBUG
@@ -734,9 +686,10 @@ void Gibson::march()
 	ntime = (ntime2.QuadPart-ntime1.QuadPart)/(freq.QuadPart/1000);
 	cout << endl << "Total time used(ms): " << ntime;
 #endif
-    outfile.close();
+    this->outfile.close();
 
 #ifdef USE_MESSAGING
+	std::cout << "Arrived at goalpost 6" << std::endl;
 	if (!SimulationMessaging::getInstVar()->isStopRequested()) {
 		SimulationMessaging::getInstVar()->setWorkerEvent(new WorkerEvent(JOB_COMPLETED, 1, ENDING_TIME));
 	}
