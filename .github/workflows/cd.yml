@@ -44,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, windows-latest, ubuntu-latest, macos-14-arm64]
+        platform: [macos-13, windows-latest, ubuntu-latest, macos-14]
 
 
     runs-on: ${{ matrix.platform }}
@@ -53,8 +53,26 @@ jobs:
       - name: checkout vcell-solvers repo
         uses: actions/checkout@v4
 
-      - name: Install MacOS dependencies
-        if: matrix.platform == 'macos-latest'
+      - name: Install Intel MacOS dependencies
+        if: matrix.platform == 'macos-13'
+        shell: bash
+        run: |
+          brew install boost
+          brew install hdf5
+          brew install ninja
+
+          brew install llvm
+          echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> /Users/runner/.bash_profile
+          source /Users/runner/.bash_profile
+          
+          gcc --version
+          gfortran --version
+          cmake --version
+          brew info boost
+          brew info hdf5
+
+      - name: Install ARM MacOS dependencies
+        if: matrix.platform == 'macos-14'
         shell: bash
         run: |
           brew install boost
@@ -72,7 +90,7 @@ jobs:
           brew info hdf5
 
       - name: Build Macos
-        if: matrix.platform == 'macos-latest'
+        if: matrix.platform == 'macos-13' || matrix.platform == 'macos-14'
         run: |
           platform=macos
           echo "working dir is $PWD"
@@ -103,7 +121,7 @@ jobs:
           ninja
 
       - name: Test Macos
-        if: matrix.platform == 'macos-latest'
+        if: matrix.platform == 'macos-13' || matrix.platform == 'macos-14'
         run: |
           platform=macos
           echo "working dir is $PWD"
@@ -285,7 +303,7 @@ jobs:
 
 
       - name: fix Macos shared object paths
-        if: matrix.platform == 'macos-latest'
+        if: matrix.platform == 'macos-13' || matrix.platform == 'macos-14'
         shell: bash
         run: |
           mkdir build/upload
@@ -328,12 +346,19 @@ jobs:
           tar czvf ../upload/linux64.tgz --dereference .
           cd ../..
 
-      - name: Upload Macos binaries
-        if: matrix.platform == 'macos-latest'
+      - name: Upload Intel Macos binaries
+        if: matrix.platform == 'macos-13'
         uses: actions/upload-artifact@v4
         with:
           name: mac64.tgz
-          path: build/upload/mac64.tgz
+          path: build/upload/macos_x86_64.tgz
+
+      - name: Upload ARM Macos binaries
+        if: matrix.platform == 'macos-14'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac64.tgz
+          path: build/upload/macos_arm64.tgz
 
       - name: Upload Windows binaries
         if: matrix.platform == 'windows-latest'
