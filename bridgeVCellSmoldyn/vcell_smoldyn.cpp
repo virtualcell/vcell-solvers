@@ -4,6 +4,10 @@
  Copyright 2003-2011 by Steven Andrews.  This work is distributed under the terms
  of the Gnu General Public License (GPL). */
 
+#include "opengl2.h"
+#include "smoldyn.h"
+#include "random2.h"
+#include "smoldynfuncs.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -14,10 +18,6 @@
 #include <cstdarg>
 #include <VCELL/SimulationMessaging.h>
 #include <VCELL/GitDescribe.h>
-#include "opengl2.h"
-#include "smoldyn.h"
-#include "random2.h"
-#include "smoldynfuncs.h"
 #include "SimpleValueProvider.h"
 #include "SimpleMesh.h"
 #include "vcellhybrid.h"
