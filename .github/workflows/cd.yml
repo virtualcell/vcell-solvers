@@ -80,8 +80,8 @@ jobs:
           brew install ninja
 
           brew install llvm
-          echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> /Users/runner/.bash_profile
-          ln -s /usr/local/bin/gfortran-12 /usr/local/bin/gfortran
+          echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> /Users/runner/.bash_profile
+          ln -s /opt/homebrew/bin/gfortran-14 /usr/local/bin/gfortran
           
           gcc --version
           gfortran --version
@@ -89,8 +89,39 @@ jobs:
           brew info boost
           brew info hdf5
 
-      - name: Build Macos
-        if: matrix.platform == 'macos-13' || matrix.platform == 'macos-14'
+      - name: Build Macos AMD
+        if: matrix.platform == 'macos-14'
+        run: |
+          platform=macos
+          echo "working dir is $PWD"
+
+          mkdir build
+          cd build
+
+          export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+
+          cmake \
+          -G Ninja \
+          -DCMAKE_C_COMPILER=/opt/homebrew/opt/llvm/bin/clang \
+          -DCMAKE_CXX_COMPILER=/opt/homebrew/opt/llvm/bin/clang++ \
+          -DOPTION_MINGW=ON \
+          -DOPTION_TARGET_MESSAGING=OFF \
+          -DOPTION_TARGET_PARALLEL=OFF \
+          -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
+          -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
+          -DOPTION_TARGET_SMOLDYN_SOLVER=ON \
+          -DOPTION_TARGET_FV_SOLVER=ON \
+          -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
+          -DOPTION_TARGET_NFSIM_SOLVER=ON \
+          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=ON \
+          -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
+          -DOPTION_TARGET_HY3S_SOLVERS=OFF \
+          -B . -S ..
+
+          ninja
+
+      - name: Build Macos Intel
+        if: matrix.platform == 'macos-13'
         run: |
           platform=macos
           echo "working dir is $PWD"

@@ -4,7 +4,17 @@
 #
 ##############################################
 if (APPLE)
-	set(CMAKE_OSX_ARCHITECTURES "x86_64")
+	execute_process(COMMAND uname -m OUTPUT_VARIABLE PROCESSOR_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
+	message("Processor Architecture: ${PROCESSOR_ARCHITECTURE}")
+	if (PROCESSOR_ARCHITECTURE STREQUAL "arm64")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__arm64__")
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__arm64__")
+		set(CMAKE_OSX_ARCHITECTURES "arm64")
+	else()
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__x86_64__")
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__x86_64__")
+		set(CMAKE_OSX_ARCHITECTURES "x86_64")
+	endif()
 #	set(CMAKE_Fortran_OSX_DEPLOYMENT_TARGET_FLAG "-mmacosx-version-min=10.7" CACHE PATH "")
 #	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.7" CACHE PATH "")
 #############################################
