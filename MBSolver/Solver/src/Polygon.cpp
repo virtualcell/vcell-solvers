@@ -1,3 +1,4 @@
+#include <limits>
 #include <cstdint>
 #include <Volume.h>
 #include <Edge.h>
@@ -16,7 +17,8 @@ namespace {
 	template <typename V>
 	struct vectorWriter {
 		std::ostream &os;
-		vectorWriter(std::ostream &os_) 
+
+		explicit vectorWriter(std::ostream &os_)
 			:os(os_) {}
 		void operator( )(V v) {
 			vcell_persist::save(os,v);
