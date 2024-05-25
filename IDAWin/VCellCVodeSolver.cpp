@@ -436,7 +436,7 @@ void VCellCVodeSolver::cvodeSolve(bool bPrintProgress, FILE* outputFile, void (*
 					if (outputCount * (NEQ + 1) * bytesPerSample > MaxFileSizeBytes){ 
 						/* if more than one gigabyte, then fail */ 
 						char msg[100];
-						sprintf(msg, "output exceeded maximum %ld bytes", MaxFileSizeBytes);
+						sprintf(msg, "output exceeded maximum %d bytes", MaxFileSizeBytes);
 						throw VCell::Exception(msg);
 					}
 					writeData(Time, outputFile);
