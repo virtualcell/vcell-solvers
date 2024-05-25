@@ -382,15 +382,15 @@ jobs:
         if: matrix.platform == 'macos-13'
         uses: actions/upload-artifact@v4
         with:
-          name: mac64.tgz
-          path: build/upload/macos_x86_64.tgz
+          name: macos_x86_64.tgz
+          path: build/upload/mac64.tgz
 
       - name: Upload ARM Macos binaries
         if: matrix.platform == 'macos-14'
         uses: actions/upload-artifact@v4
         with:
-          name: mac64.tgz
-          path: build/upload/macos_arm64.tgz
+          name: macos_arm64.tgz
+          path: build/upload/mac64.tgz
 
       - name: Upload Windows binaries
         if: matrix.platform == 'windows-latest'
