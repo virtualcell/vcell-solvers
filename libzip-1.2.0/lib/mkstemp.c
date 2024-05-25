@@ -40,6 +40,10 @@
 #include <fcntl.h>
 #ifdef _WIN32
 #include <io.h>
+#include <process.h>
+#define getpid _getpid
+#else
+#include <unistd.h>
 #endif
 #include <stdio.h>
 #include <stdlib.h>
