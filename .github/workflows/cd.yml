@@ -235,6 +235,7 @@ jobs:
           -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
           -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
           -DOPTION_TARGET_HY3S_SOLVERS=OFF \
+          -DOPTION_TARGET_DOCS=OFF \
           -B . -S ..
 
           ninja -j 1
