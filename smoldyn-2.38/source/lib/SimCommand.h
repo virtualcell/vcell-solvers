@@ -32,8 +32,8 @@ typedef struct cmdstruct {
 	} *cmdptr;
 
 typedef struct cmdsuperstruct {
-	queue cmd;						// queue of normal run-time commands
-	queue cmdi;						// queue of integer time commands
+	queue_c cmd;						// queue of normal run-time commands
+	queue_c cmdi;						// queue of integer time commands
 	enum CMDcode (*cmdfn)(void*,cmdptr,char*);	// function that runs commands
 	void *cmdfnarg;				// function argument (e.g. sim)
 	int iter;							// number of times integer commands have run
