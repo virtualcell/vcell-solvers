@@ -1182,7 +1182,7 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorConstant(int regionID, doubl
             double reactionRate = 0;
             if (bDirichlet && var->isDiffusing()) {// pde dirichlet
                 rhs[vectorIndex] = 0;
-                if (mask & (NEIGHBOR_XP_BOUNDARY || NEIGHBOR_YP_BOUNDARY || NEIGHBOR_ZP_BOUNDARY)) {
+                if (mask & (NEIGHBOR_XP_BOUNDARY | NEIGHBOR_YP_BOUNDARY | NEIGHBOR_ZP_BOUNDARY)) {
                     continue;
                 }
             } else {
@@ -1362,7 +1362,7 @@ void SundialsPdeScheduler::regionApplyVolumeOperatorVariable(int regionID, doubl
             double reactionRate = 0;
             if (bDirichlet && var->isDiffusing()) {// pde dirichlet
                 rhs[vectorIndex] = 0;
-                if (mask & (NEIGHBOR_XP_BOUNDARY || NEIGHBOR_YP_BOUNDARY || NEIGHBOR_ZP_BOUNDARY)) {
+                if (mask & (NEIGHBOR_XP_BOUNDARY | NEIGHBOR_YP_BOUNDARY | NEIGHBOR_ZP_BOUNDARY)) {
                     continue;
                 }
             } else {
@@ -1987,7 +1987,7 @@ int SundialsPdeScheduler::pcSolve(realtype t, N_Vector y, N_Vector fy, N_Vector 
                                 bRetry = true;
                             } catch (...) {
                                 char errMsg[128];
-                                sprintf(errMsg, "SundialsPDESolver:: Out of Memory : pcg_workspace allocating (%ld)", nsp);
+                                snprintf(errMsg, 128, "SundialsPDESolver:: Out of Memory : pcg_workspace allocating (%ld)", nsp);
                                 throw errMsg;
                             }
                         }

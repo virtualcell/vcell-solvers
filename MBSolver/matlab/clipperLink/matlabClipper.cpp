@@ -1,6 +1,4 @@
 #include <fstream>
-#include <version.h>
-#include "svnversion.h"
 #include "matlabStruct.h"
 #include <clipper.hpp>
 #include "explore.h"

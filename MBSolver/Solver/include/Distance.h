@@ -1,5 +1,6 @@
 #ifndef Distance_h
 #define Distance_h
+#include <limits>
 #include <cmath>
 #include <TPoint.h>
 #include <cassert>

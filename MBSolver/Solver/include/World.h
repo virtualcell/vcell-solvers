@@ -1,6 +1,7 @@
 #ifndef World_h
 #define World_h
 #include <MovingBoundaryTypes.h>
+#include <limits>
 #include <TPoint.h>
 #include <Universe.h>
 #include <SVector.h>

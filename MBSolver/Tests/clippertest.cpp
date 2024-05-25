@@ -2,6 +2,7 @@
 #include <fstream>
 #include <cassert>
 
+#include <limits>
 #include <vector>
 #include <algorithm>
 #include <Volume.h>

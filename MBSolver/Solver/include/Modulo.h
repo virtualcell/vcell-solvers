@@ -1,6 +1,8 @@
 #ifndef Modulo_h
 #define Modulo_h
 
+#include <limits>
+
 namespace vcell_util {
 	/**
 	* modulo integer type

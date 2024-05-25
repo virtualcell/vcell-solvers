@@ -38,6 +38,17 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <front/fdecs.h>
 
+#ifdef WIN64
+double drand48_windows()
+{
+	const long NUM_RAND = RAND_MAX+1;
+	const double RAND_TOTAL_MAX = NUM_RAND*NUM_RAND - 1.0;
+	long r = (NUM_RAND)*rand()+rand();
+	return r / RAND_TOTAL_MAX;
+}
+#define drand48 drand48_windows
+#endif
+
 LOCAL	boolean    track_comp_and_repair3d(int*,int*,int*,INTERFACE*,Front*);
 LOCAL	boolean	repair_intfc3d_in_box(INTERFACE*,int*,int*,Front*);
 LOCAL	boolean 	set_reconstruction_boxes(int*,int*,int**,int,RECT_BOX**,

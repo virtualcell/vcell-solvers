@@ -881,7 +881,7 @@ processnode(int *lab, int *ptn, int level, int numcells)
                                    (*dispatch.isautom)(g,workperm,digraph,M,n))
                     code = 1;
             }
-            if (code == 0)
+            if (code == 0) {
                 if (getcanon)
                 {
                     sr = 0;
@@ -910,6 +910,7 @@ processnode(int *lab, int *ptn, int level, int numcells)
                 }
                 else
                     code = 4;
+            }
         }
 
         if (code != 0 && level > stats->maxlevel) stats->maxlevel = level;

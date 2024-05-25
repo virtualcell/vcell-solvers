@@ -1,13 +1,13 @@
 #include <VCELL/SimulationMessaging.h>
-#include <utility>
 #include <iostream>
 #include <algorithm>
 #include <sstream>
+#include <utility>
 using std::cerr;
 using std::cout;
 using std::endl;
 
-#include <stdio.h>
+#include <cstdio>
 #ifdef USE_MESSAGING
 #if ( !defined(WIN32) && !defined(WIN64) ) // UNIX
 #include <curl/curl.h>
@@ -43,22 +43,18 @@ static const double WORKEREVENT_MESSAGE_MIN_TIME_SECONDS = 15.0;
 
 SimulationMessaging *SimulationMessaging::m_inst = NULL;
 
-SimulationMessaging::SimulationMessaging()
-	:events( )
-	 {
-	bStopRequested = false;
+SimulationMessaging::SimulationMessaging(){
+	this->bStopRequested = false;
 #ifdef USE_MESSAGING
-	m_taskID = -1;
-	bStarted = false;
+	this->m_taskID = -1;
+	this->bStarted = false;
 #endif
-	workerEventOutputMode = WORKEREVENT_OUTPUT_MODE_STDOUT;
+	this->workerEventOutputMode = WORKEREVENT_OUTPUT_MODE_STDOUT;
 }
 
 #ifdef USE_MESSAGING
 SimulationMessaging::SimulationMessaging(const char* broker, const char* smqusername, const char* passwd, const char*qname,
-		const char* tname, const char* vcusername, int simKey, int jobIndex, int taskID, int ttl_low, int ttl_high)
-	:events( )
-{
+		const char* tname, const char* vcusername, int simKey, int jobIndex, int taskID, int ttl_low, int ttl_high){
 	m_broker = const_cast<char *>(broker);
 	m_smqusername = const_cast<char *>( smqusername );
 	m_password =  const_cast<char *>(passwd );
@@ -177,13 +173,13 @@ void SimulationMessaging::sendStatus() {
 				fflush(stdout);
 				break;
 			case JOB_STARTING:
-				cout<< workerEvent->eventMessage << endl;
+				std::cout<< workerEvent->eventMessage << std::endl;
 				break;
 			case JOB_COMPLETED:
-				cerr << "Simulation Complete in Main() ... " << endl;
+				std::cerr << "Simulation Complete in Main() ... " << std::endl;
 				break;
 			case JOB_FAILURE:
-				cerr << workerEvent->eventMessage << endl;
+				std::cerr << workerEvent->eventMessage << std::endl;
 				break;
 			}
 			return;

@@ -100,7 +100,7 @@ static string extractVarNameFromQualifiedName(char* varName) {
 	return str;
 }
 
-void FVDataSet::read(char *filename, Simulation *sim)
+void FVDataSet::read(const char *filename, Simulation *sim)
 {
 	FILE *fp=NULL;
 	FileHeader fileHeader;
@@ -267,7 +267,7 @@ void FVDataSet::convolve(Simulation* sim, Variable* var, double* values) {
 	}			
 }
 
-void FVDataSet::write(char *filename, SimulationExpression *sim, bool bCompress)
+void FVDataSet::write(const char *filename, SimulationExpression *sim, bool bCompress)
 {
 	FILE *fp=NULL;
 	FileHeader fileHeader;

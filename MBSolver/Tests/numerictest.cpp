@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <gtest/gtest.h>
 #include <cstdlib>
+#include <limits>
 #include <NumericConvert.h>
 using std::cout;
 using std::endl;

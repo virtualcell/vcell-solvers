@@ -1,5 +1,6 @@
 #ifndef MBPatch_h
 #define MBPatch_h
+#include <limits>
 #include <vector>
 #include <iostream>
 #include <MBridge/MBMatlabGenerator.h>

@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <algorithm>
 #include <MapTable.h>
 #include <MTExpression.h>
@@ -7,7 +8,7 @@ using VCell::MTExpression;
 double MapTable::operator[](std::string name) const {
 	auto iter = values.find(name);
 	if (iter == values.end( )) {
-		throw new std::domain_error("no such name"); 
+		throw std::domain_error("no such name");
 	}
 	return iter->second;
 }

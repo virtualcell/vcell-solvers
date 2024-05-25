@@ -2,6 +2,8 @@
 #define _INDEXVECT_H_
 
 #include <array>
+#include <ostream>
+#include <cstddef>
 #include <MovingBoundaryTypes.h>
 
 class IndexVect
@@ -13,7 +15,7 @@ public:
   IndexVect ();
   IndexVect (int a, int b);
   IndexVect (const IndexVect& rhs);
-  IndexVect(std::array<size_t, DIM> p);
+  explicit IndexVect(std::array<std::size_t, DIM> p);
 
   IndexVect& operator= (const IndexVect& rhs);
 

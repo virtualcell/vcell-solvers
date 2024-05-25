@@ -1,6 +1,4 @@
 #include <fstream>
-#include <version.h>
-#include "svnversion.h"
 #include "matlabStruct.h"
 #include <intersection.h>
 #include "explore.h"
@@ -11,7 +9,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
-SVN_VERSION_TAG
 
 using spatial::Point2D;
 void mexFunctionClipper(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
@@ -39,7 +36,7 @@ void mexFunctionClipper(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
 	{
 		const bool showVer = mls.boolean("version", false);
 		if (showVer) {
-			mexPrintf("Moving Boundary version %s\n",svn_version_string);
+			mexPrintf("Moving Boundary version %s\n","unknown - integrate with github version - TODO");
 		}
 	}
 	typedef matlabLink::MData<double> DS;

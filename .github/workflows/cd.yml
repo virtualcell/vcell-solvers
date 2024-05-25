@@ -7,36 +7,36 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-#  build-and-push-image:
-#    runs-on: ubuntu-latest
-#    permissions:
-#      contents: read
-#      packages: write
-#
-#    steps:
-#      - name: Checkout repository
-#        uses: actions/checkout@v3
-#
-#      - name: Log in to the Container registry
-#        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
-#        with:
-#          registry: ${{ env.REGISTRY }}
-#          username: ${{ github.actor }}
-#          password: ${{ secrets.GITHUB_TOKEN }}
-#
-#      - name: Extract metadata (tags, labels) for Docker
-#        id: meta
-#        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
-#        with:
-#          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-#
-#      - name: Build and push Docker image
-#        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
-#        with:
-#          context: .
-#          push: true
-#          tags: ${{ steps.meta.outputs.tags }}
-#          labels: ${{ steps.meta.outputs.labels }}
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   native-build:
     name:
@@ -44,16 +44,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-    #        platform: [macos-latest, windows-latest, ubuntu-18.04]
-        platform: [macos-latest]
+        platform: [macos-13, windows-latest, ubuntu-latest, macos-14]
+
+
     runs-on: ${{ matrix.platform }}
 
     steps:
       - name: checkout vcell-solvers repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install MacOS dependencies
-        if: matrix.platform == 'macos-latest'
+      - name: Install Intel MacOS dependencies
+        if: matrix.platform == 'macos-13'
         shell: bash
         run: |
           brew install boost
@@ -62,7 +63,7 @@ jobs:
 
           brew install llvm
           echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> /Users/runner/.bash_profile
-          ln -s /usr/local/bin/gfortran-12 /usr/local/bin/gfortran
+          source /Users/runner/.bash_profile
           
           gcc --version
           gfortran --version
@@ -70,8 +71,57 @@ jobs:
           brew info boost
           brew info hdf5
 
-      - name: Build Macos
-        if: matrix.platform == 'macos-latest'
+      - name: Install ARM MacOS dependencies
+        if: matrix.platform == 'macos-14'
+        shell: bash
+        run: |
+          brew install boost
+          brew install hdf5
+          brew install ninja
+
+          brew install llvm
+          echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> /Users/runner/.bash_profile
+          ln -s /opt/homebrew/bin/gfortran-14 /usr/local/bin/gfortran
+          
+          gcc --version
+          gfortran --version
+          cmake --version
+          brew info boost
+          brew info hdf5
+
+      - name: Build Macos ARM
+        if: matrix.platform == 'macos-14'
+        run: |
+          platform=macos
+          echo "working dir is $PWD"
+
+          mkdir build
+          cd build
+
+          export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+
+          cmake \
+          -G Ninja \
+          -DCMAKE_C_COMPILER=/opt/homebrew/opt/llvm/bin/clang \
+          -DCMAKE_CXX_COMPILER=/opt/homebrew/opt/llvm/bin/clang++ \
+          -DOPTION_MINGW=ON \
+          -DOPTION_TARGET_MESSAGING=OFF \
+          -DOPTION_TARGET_PARALLEL=OFF \
+          -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
+          -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
+          -DOPTION_TARGET_SMOLDYN_SOLVER=ON \
+          -DOPTION_TARGET_FV_SOLVER=ON \
+          -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
+          -DOPTION_TARGET_NFSIM_SOLVER=ON \
+          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=ON \
+          -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
+          -DOPTION_TARGET_HY3S_SOLVERS=OFF \
+          -B . -S ..
+
+          ninja
+
+      - name: Build Macos Intel
+        if: matrix.platform == 'macos-13'
         run: |
           platform=macos
           echo "working dir is $PWD"
@@ -85,6 +135,7 @@ jobs:
           -G Ninja \
           -DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang \
           -DCMAKE_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++ \
+          -DOPTION_MINGW=ON \
           -DOPTION_TARGET_MESSAGING=OFF \
           -DOPTION_TARGET_PARALLEL=OFF \
           -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
@@ -93,7 +144,7 @@ jobs:
           -DOPTION_TARGET_FV_SOLVER=ON \
           -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
           -DOPTION_TARGET_NFSIM_SOLVER=ON \
-          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
+          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=ON \
           -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
           -DOPTION_TARGET_HY3S_SOLVERS=OFF \
           -B . -S ..
@@ -101,7 +152,7 @@ jobs:
           ninja
 
       - name: Test Macos
-        if: matrix.platform == 'macos-latest'
+        if: matrix.platform == 'macos-13' || matrix.platform == 'macos-14'
         run: |
           platform=macos
           echo "working dir is $PWD"
@@ -126,150 +177,165 @@ jobs:
           echo "------ running ziptool ------"
           ./bin/ziptool || true
 
-
-#      - name: Install Windows Dependencies
-#        if: matrix.platform == 'windows-latest'
-#        uses: msys2/setup-msys2@v2
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
 #        with:
-#          msystem: CLANG64
-#          update: true
-#          install: >
-#            git
-#            mingw-w64-clang-x86_64-toolchain
-#            mingw-w64-clang-x86_64-flang
-#            mingw-w64-clang-x86_64-cmake
-#            mingw-w64-clang-x86_64-boost
-#            mingw-w64-clang-x86_64-hdf5
-#            mingw-w64-clang-x86_64-libzip
-#            mingw-w64-clang-x86_64-netcdf
-#
-#      - name: Build Windows
-#        if: matrix.platform == 'windows-latest'
-#        shell: msys2 {0}
-#        run: |
-#          platform=windows
-#          echo "working dir is $PWD"
-#
-#          mkdir build
-#          cd build
-#
-#          PATH="/c/Program Files/LLVM/bin:$PATH"
-#
-#          cmake \
-#          -G Ninja \
-#          -DCMAKE_C_COMPILER=clang \
-#          -DCMAKE_CXX_COMPILER=clang++ \
-#          -DOPTION_TARGET_MESSAGING=OFF \
-#          -DOPTION_TARGET_PARALLEL=OFF \
-#          -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
-#          -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
-#          -DOPTION_TARGET_SMOLDYN_SOLVER=ON \
-#          -DOPTION_TARGET_FV_SOLVER=ON \
-#          -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
-#          -DOPTION_TARGET_NFSIM_SOLVER=ON \
-#          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
-#          -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
-#          -DOPTION_TARGET_HY3S_SOLVERS=OFF \
-#          -B . -S ..
-#
-#          ninja -j 1
-#
-#      - name: Test Windows
-#        if: matrix.platform == 'windows-latest'
-#        shell: msys2 {0}
-#        run: |
-#          platform=windows
-#          echo "working dir is $PWD"
-#
-#          cd build
-#
-#          ctest -VV
-#
-#          echo "------ running FiniteVolume_x64 ------"
-#          ./bin/FiniteVolume_x64 || true
-#          echo
-#          echo "------ running NFsim_x64 ------"
-#          ./bin/NFsim_x64 || true
-#          echo "------ running SundialsSolverStandalone_x64 ------"
-#          ./bin/SundialsSolverStandalone_x64 || true
-#          echo "------ running VCellStoch_x64 ------"
-#          ./bin/VCellStoch_x64 || true
-#          echo "------ running smoldyn_x64 ------"
-#          ./bin/smoldyn_x64 || true
-#          echo "------ running testzip ------"
-#          ./bin/testzip || true
-#          echo "------ running ziptool ------"
-#          ./bin/ziptool || true
+#          limit-access-to-actor: false
 
-#      - name: Install Linux Dependencies
-#        if: matrix.platform == 'ubuntu-18.04'
-#        run: |
-#          sudo apt-get update
-#          sudo apt-get install -y libboost-all-dev
-#          sudo apt-get install -y libhdf5-dev
-#          sudo apt-get install -y ninja-build
-#
-#          gcc --version
-#          gfortran --version
-#          cmake --version
-#          dpkg -s libboost-all-dev
-#          dpkg -s libhdf5-dev
-#
-#      - name: Build Linux
-#        if: matrix.platform == 'ubuntu-18.04'
-#        run: |
-#          platform=linux
-#          echo "working dir is $PWD"
-#
-#          mkdir build
-#          cd build
-#
-#          cmake \
-#          -G Ninja \
-#          -DOPTION_TARGET_MESSAGING=OFF \
-#          -DOPTION_TARGET_PARALLEL=OFF \
-#          -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
-#          -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
-#          -DOPTION_TARGET_SMOLDYN_SOLVER=ON \
-#          -DOPTION_TARGET_FV_SOLVER=ON \
-#          -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
-#          -DOPTION_TARGET_NFSIM_SOLVER=ON \
-#          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
-#          -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
-#          -DOPTION_TARGET_HY3S_SOLVERS=OFF \
-#          -B . -S ..
-#
-#          ninja
-#
-#      - name: Test Linux
-#        if: matrix.platform == 'ubuntu-18.04'
-#        run: |
-#          platform=linux
-#          echo "working dir is $PWD"
-#
-#          cd build
-#
-#          ctest -VV
-#
-#          echo "------ running FiniteVolume_x64 ------"
-#          ./bin/FiniteVolume_x64 || true
-#          echo
-#          echo "------ running NFsim_x64 ------"
-#          ./bin/NFsim_x64 || true
-#          echo "------ running SundialsSolverStandalone_x64 ------"
-#          ./bin/SundialsSolverStandalone_x64 || true
-#          echo "------ running VCellStoch_x64 ------"
-#          ./bin/VCellStoch_x64 || true
-#          echo "------ running smoldyn_x64 ------"
-#          ./bin/smoldyn_x64 || true
-#          echo "------ running testzip ------"
-#          ./bin/testzip || true
-#          echo "------ running ziptool ------"
-#          ./bin/ziptool || true
-#
+
+      - name: Install Windows Dependencies
+        if: matrix.platform == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: CLANG64
+          update: true
+          install: >
+            zip
+            git
+            mingw-w64-clang-x86_64-curl
+            mingw-w64-clang-x86_64-toolchain
+            mingw-w64-clang-x86_64-flang
+            mingw-w64-clang-x86_64-cmake
+            mingw-w64-clang-x86_64-boost
+            mingw-w64-clang-x86_64-hdf5
+            mingw-w64-clang-x86_64-libzip
+            mingw-w64-clang-x86_64-netcdf
+            mingw-w64-clang-x86_64-zlib
+            mingw-w64-clang-x86_64-libaec
+
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
+#        with:
+#          limit-access-to-actor: false
+
+      - name: Build Windows
+        if: matrix.platform == 'windows-latest'
+        shell: msys2 {0}
+        run: |
+          platform=windows
+          echo "working dir is $PWD"
+
+          mkdir build
+          cd build
+
+          PATH="/c/Program\ Files/LLVM/bin:$PATH"
+
+          cmake \
+          -G Ninja \
+          -DCMAKE_C_COMPILER="clang.exe" \
+          -DCMAKE_CXX_COMPILER="clang++.exe" \
+          -DOPTION_TARGET_MESSAGING=OFF \
+          -DOPTION_TARGET_PARALLEL=OFF \
+          -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
+          -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
+          -DOPTION_TARGET_SMOLDYN_SOLVER=ON \
+          -DOPTION_TARGET_FV_SOLVER=ON \
+          -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
+          -DOPTION_TARGET_NFSIM_SOLVER=ON \
+          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
+          -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
+          -DOPTION_TARGET_HY3S_SOLVERS=OFF \
+          -DOPTION_TARGET_DOCS=OFF \
+          -B . -S ..
+
+          ninja -j 1
+
+      - name: Test Windows
+        if: matrix.platform == 'windows-latest'
+        shell: msys2 {0}
+        run: |
+          platform=windows
+          echo "working dir is $PWD"
+
+          cd build
+
+          ctest -VV
+
+          echo "------ running FiniteVolume_x64 ------"
+          ./bin/FiniteVolume_x64 || true
+          echo
+          echo "------ running NFsim_x64 ------"
+          ./bin/NFsim_x64 || true
+          echo "------ running SundialsSolverStandalone_x64 ------"
+          ./bin/SundialsSolverStandalone_x64 || true
+          echo "------ running VCellStoch_x64 ------"
+          ./bin/VCellStoch_x64 || true
+          echo "------ running smoldyn_x64 ------"
+          ./bin/smoldyn_x64 || true
+          echo "------ running testzip ------"
+          ./bin/testzip || true
+          echo "------ running ziptool ------"
+          ./bin/ziptool || true
+
+      - name: Install Linux Dependencies
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libboost-all-dev
+          sudo apt-get install -y libhdf5-dev
+          sudo apt-get install -y ninja-build
+
+          gcc --version
+          gfortran --version
+          cmake --version
+          dpkg -s libboost-all-dev
+          dpkg -s libhdf5-dev
+
+      - name: Build Linux
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          platform=linux
+          echo "working dir is $PWD"
+
+          mkdir build
+          cd build
+
+          cmake \
+          -G Ninja \
+          -DOPTION_TARGET_MESSAGING=OFF \
+          -DOPTION_TARGET_PARALLEL=OFF \
+          -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
+          -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
+          -DOPTION_TARGET_SMOLDYN_SOLVER=ON \
+          -DOPTION_TARGET_FV_SOLVER=ON \
+          -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
+          -DOPTION_TARGET_NFSIM_SOLVER=ON \
+          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=ON \
+          -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
+          -DOPTION_TARGET_HY3S_SOLVERS=OFF \
+          -B . -S ..
+
+          ninja
+
+      - name: Test Linux
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          platform=linux
+          echo "working dir is $PWD"
+
+          cd build
+
+          ctest -VV
+
+          echo "------ running FiniteVolume_x64 ------"
+          ./bin/FiniteVolume_x64 || true
+          echo
+          echo "------ running NFsim_x64 ------"
+          ./bin/NFsim_x64 || true
+          echo "------ running SundialsSolverStandalone_x64 ------"
+          ./bin/SundialsSolverStandalone_x64 || true
+          echo "------ running VCellStoch_x64 ------"
+          ./bin/VCellStoch_x64 || true
+          echo "------ running smoldyn_x64 ------"
+          ./bin/smoldyn_x64 || true
+          echo "------ running testzip ------"
+          ./bin/testzip || true
+          echo "------ running ziptool ------"
+          ./bin/ziptool || true
+
 
       - name: fix Macos shared object paths
-        if: matrix.platform == 'macos-latest'
+        if: matrix.platform == 'macos-13' || matrix.platform == 'macos-14'
         shell: bash
         run: |
           mkdir build/upload
@@ -283,49 +349,59 @@ jobs:
           ../../.github/scripts/install_name_tool_macos.sh
           tar czvf ../upload/mac64.tgz --dereference .
 
-#      - name: handle shared object paths for Windows native build
-#        if: matrix.platform == 'windows-latest'
-#        shell: msys2 {0}
-#        run: |
-#          cd build/bin
-#          ls *_x64   | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
-#          ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
-#          ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
-#          chmod u+w,+x *
-#          tar czvf ../linux64.tgz --dereference .
-#          cd ../..
-#          fi
-#
-#      - name: handle shared object paths for Linux native build
-#        if: matrix.platform == 'ubuntu-18.04'
-#        shell: bash
-#        run: |
-#          cd build/bin
-#          ls *_x64   | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
-#          ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
-#          ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
-#          chmod u+w,+x *
-#          tar czvf ../linux64.tgz --dereference .
-#          cd ../..
-#          fi
-#
-      - name: Upload Macos binaries
-        if: matrix.platform == 'macos-latest'
-        uses: actions/upload-artifact@v3
+      - name: handle shared object paths for Windows native build
+        if: matrix.platform == 'windows-latest'
+        shell: msys2 {0}
+        run: |
+          mkdir build/upload
+          cd build/bin
+          rm hello_test TestVCellStoch testzip ziptool || true
+          ls *.exe | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | grep -iv windows | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
+          ls *.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | grep -iv windows | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
+          ls *.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | grep -iv windows | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
+          chmod u+w,+x *
+          zip ../upload/win64.zip ./*
+          cd ../..
+          # fi
+
+      - name: handle shared object paths for Linux native build
+        if: matrix.platform == 'ubuntu-latest'
+        shell: bash
+        run: |
+          mkdir build/upload
+          cd build/bin
+          rm hello_test TestVCellStoch testzip ziptool || true
+          ls *_x64   | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
+          ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
+          ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
+          chmod u+w,+x *
+          tar czvf ../upload/linux64.tgz --dereference .
+          cd ../..
+
+      - name: Upload Intel Macos binaries
+        if: matrix.platform == 'macos-13'
+        uses: actions/upload-artifact@v4
         with:
-          name: mac64.tgz
+          name: macos_x86_64.tgz
+          path: build/upload/mac64.tgz
+
+      - name: Upload ARM Macos binaries
+        if: matrix.platform == 'macos-14'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos_arm64.tgz
           path: build/upload/mac64.tgz
 
       - name: Upload Windows binaries
         if: matrix.platform == 'windows-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: win64.tgz
-          path: build/upload/win64.tgz
+          name: win64.zip
+          path: build/upload/win64.zip
 
       - name: Upload Linux binaries
-        if: matrix.platform == 'ubuntu-18.04'
-        uses: actions/upload-artifact@v3
+        if: matrix.platform == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
         with:
           name: linux64.tgz
           path: build/upload/linux64.tgz

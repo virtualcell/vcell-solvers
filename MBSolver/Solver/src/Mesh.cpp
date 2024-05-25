@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <stdexcept>
+#include <limits>
 #pragma warning ( disable: 4018 )
 #include <Mesh.h>
 #include <VCellException.h>

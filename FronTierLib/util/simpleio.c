@@ -64,6 +64,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <sys/stat.h>
 #ifndef WIN32
 #include <sys/utsname.h>
+#else
+#include <process.h>
+#define getpid _getpid
 #endif
 	static const char *scan_float_fmt = "%lf";
 

@@ -2,6 +2,7 @@
 #define _COORDVECT_H_
 
 #include <array>
+#include <ostream>
 #include <MovingBoundaryTypes.h>
 #include <IndexVect.h>
 namespace moving_boundary

@@ -50,8 +50,8 @@ public:
 	virtual void advanceTimeOn();
 	virtual void advanceTimeOff();
 
-	virtual void writeData(char *filename, bool bCompress)=0;
-	virtual void readData(char *filename);
+	virtual void writeData(const char *filename, bool bCompress)=0;
+	virtual void readData(const char *filename);
 
 	Variable* getVariable(int index);
 

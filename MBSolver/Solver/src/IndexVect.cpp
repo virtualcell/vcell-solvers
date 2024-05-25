@@ -26,7 +26,7 @@ IndexVect::IndexVect (const IndexVect &iv)
 	}
 }
 
-IndexVect::IndexVect(std::array<size_t, 2> p)
+IndexVect::IndexVect(std::array<std::size_t, 2> p)
 {
 	for (int i = 0; i < DIM; ++ i)
 	{

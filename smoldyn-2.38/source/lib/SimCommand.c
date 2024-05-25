@@ -451,7 +451,7 @@ int scmdnextcmdtime(cmdssptr cmds,double time,Q_LONGLONG iter,enum CMDcode type,
 /* scmdoutput */
 void scmdoutput(cmdssptr cmds) {
 	int fid,i;
-	queue cmdq;
+	queue_c cmdq;
 	cmdptr cmd;
 	void* voidptr;
 	char string[STRCHAR],string2[STRCHAR];

@@ -11,6 +11,7 @@
 #include <H5Cpp.h>
 #include <iostream>
 #include <fstream>
+#include <utility>
 using std::cout;
 using std::endl;
 #include <sys/stat.h>
@@ -20,8 +21,8 @@ using std::endl;
 const char* PostProcessingHdf5Writer::PPGroupName  = POST_PROCESSING_ROOT;
 const char* PostProcessingHdf5Writer::TimesDataSetName  = POST_PROCESSING_ROOT"/Times";
 
-PostProcessingHdf5Writer::PostProcessingHdf5Writer(char* fileName, PostProcessingBlock* ppb) {
-	this->h5PPFileName = fileName;
+PostProcessingHdf5Writer::PostProcessingHdf5Writer(std::string fileName, PostProcessingBlock* ppb) {
+	this->h5PPFileName = std::move(fileName);
 	this->postProcessingBlock = ppb;
 	h5PPFile = NULL;
 	timesDataSet = NULL;
@@ -67,7 +68,7 @@ bool PostProcessingHdf5Writer::loadFinal(int numTimes) {
 		// the max time in log file is numTimes
 		// hdf5 is missing times
 		if (timesDim < numTimes) {
-			cout << "post processing hdf5 times don't match" << endl;
+			std::cout << "post processing hdf5 times don't match" << std::endl;
 			return false;
 		}		
 		double* times = new double[int(timesDim)];
@@ -101,7 +102,7 @@ bool PostProcessingHdf5Writer::loadFinal(int numTimes) {
 		}
 		hdf5Copy.close();
 	} catch(H5::Exception error ) {
-		cout << "failed to reload post processing block: " << error.getDetailMsg() << endl;
+		std::cout << "failed to reload post processing block: " << error.getDetailMsg() << std::endl;
 		// recreate the file later
 	}
 

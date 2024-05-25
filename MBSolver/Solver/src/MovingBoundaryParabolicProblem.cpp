@@ -1,10 +1,12 @@
 //#pragma warning ( disable: 4996 )
 #pragma warning ( disable: 4244 )
 #pragma warning ( disable: 4267 )
+#include <VCELL/SimulationMessaging.h>
 #include <MPoint.h>
 #include <boost/logic/tribool.hpp>
 #include <World.h>
 #include <VoronoiMesh.h>
+#include <limits>
 #include <cstring>
 #include <sstream>
 #include <iomanip>
@@ -28,7 +30,6 @@
 #include <IndexVect.h>
 
 #include <ExplicitSolver.h>
-#include <VCELL/SimulationMessaging.h>
 #include <MBridge/FronTierAdapt.h>
 #include <MBridge/Figure.h>
 #include <MBridge/MBPatch.h>

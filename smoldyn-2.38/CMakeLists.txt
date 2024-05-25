@@ -119,7 +119,6 @@ set_source_files_properties(${MAIN_FILES} PROPERTIES LANGUAGE CXX )
 
 include_directories(source/lib source/Smoldyn source/NextSubVolume source/vtk ${CMAKE_CURRENT_BINARY_DIR})
 
-
 ####### Build for debugging or release ##########
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -164,10 +163,10 @@ elseif (OPTION_MINGW)
 	include_directories(${MINGWDIR}/include windows)
 	link_directories(${MINGWDIR}/lib)
 	#list(APPEND DEP_LIBS opengl32 glu32 freeglut z)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
-	set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "${CMAKE_SHARED_LIBRARY_LINK_C_FLAGS} -static -s")
- 	set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "${CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS} -static -s")
+#	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static")
+#	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
+#	set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "${CMAKE_SHARED_LIBRARY_LINK_C_FLAGS} -static -s")
+# 	set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "${CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS} -static -s")
 endif()
 
 set(APPLE_BUILD 0)
