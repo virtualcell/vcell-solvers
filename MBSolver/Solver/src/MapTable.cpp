@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <algorithm>
 #include <MapTable.h>
 #include <MTExpression.h>
