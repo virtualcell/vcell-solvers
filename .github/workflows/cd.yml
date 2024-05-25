@@ -89,7 +89,7 @@ jobs:
           brew info boost
           brew info hdf5
 
-      - name: Build Macos AMD
+      - name: Build Macos ARM
         if: matrix.platform == 'macos-14'
         run: |
           platform=macos
