@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <fstream>
+#include <limits>
 #include "Voronoi.h"
 #include "SVector.h"
 #include "algo.h"

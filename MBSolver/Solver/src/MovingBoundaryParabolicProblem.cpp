@@ -5,6 +5,7 @@
 #include <boost/logic/tribool.hpp>
 #include <World.h>
 #include <VoronoiMesh.h>
+#include <limits>
 #include <cstring>
 #include <sstream>
 #include <iomanip>

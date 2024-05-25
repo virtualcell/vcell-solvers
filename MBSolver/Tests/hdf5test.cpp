@@ -1,5 +1,6 @@
 #pragma warning ( disable : 4996 )
 #include <array>
+#include <limits>
 #include "gtest/gtest.h"
 #include <H5Cpp.h>
 #include <flex.h>

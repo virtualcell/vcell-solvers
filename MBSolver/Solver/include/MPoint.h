@@ -1,6 +1,7 @@
 #ifndef MPoint_h
 #define MPoint_h
 #pragma warning ( disable : 4996)
+#include <limits>
 #include <cassert>
 #include <array>
 #include <stdexcept>

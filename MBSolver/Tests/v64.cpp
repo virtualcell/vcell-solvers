@@ -1,6 +1,7 @@
 #ifdef LATER
 #pragma warning (disable: 4996 4267)
 #include <cmath>
+#include <limits>
 #include <boost/multiprecision/cpp_int.hpp> 
 #include <boost/multiprecision/cpp_dec_float.hpp> 
 #include <boost/polygon/detail/voronoi_ctypes.hpp>

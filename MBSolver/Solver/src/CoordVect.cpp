@@ -2,6 +2,7 @@
 #include <IndexVect.h>
 #include <math.h>
 #include <istream>
+#include <limits>
 #include <World.h>
 #include <MeshElementNode.h>
 #include <MovingBoundaryTypes.h>

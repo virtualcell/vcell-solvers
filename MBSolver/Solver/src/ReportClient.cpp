@@ -2,6 +2,7 @@
 #include <map>
 #include <set>
 #include <iomanip>
+#include <limits>
 #include <algo.h>
 #include <Mesh.h>
 #include <MeshElementNode.h>

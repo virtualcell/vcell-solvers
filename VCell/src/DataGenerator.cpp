@@ -2,6 +2,7 @@
  * (C) Copyright University of Connecticut Health Center 2001.
  * All rights reserved.
  */
+#include <limits>
 #include <VCELL/PostProcessingBlock.h>
 #include <VCELL/DataGenerator.h>
 #include <VCELL/Feature.h>

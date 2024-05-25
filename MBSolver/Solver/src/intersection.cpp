@@ -1,6 +1,7 @@
 #include <vector>
 #include <algorithm>
 #include <fstream>
+#include <limits>
 #include <intersection.h>
 #include <TPoint.h>
 #include <World.h>

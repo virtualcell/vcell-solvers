@@ -1,4 +1,5 @@
 #include <random>
+#include <limits>
 #include "gtest/gtest.h"
 #include <vcellconvert.h>
 #include <Logger.h>

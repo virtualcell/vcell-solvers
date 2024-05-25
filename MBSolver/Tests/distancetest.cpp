@@ -1,3 +1,4 @@
+#include <limits>
 #include "gtest/gtest.h"
 #include <Distance.h>
 using std::cout;

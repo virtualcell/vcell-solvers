@@ -2,6 +2,7 @@
 #include <Logger.h>
 #include <NumericConvert.h>
 #include <map>
+#include <limits>
 #include <list>
 #include <iomanip>
 #include <boost/math/common_factor.hpp>

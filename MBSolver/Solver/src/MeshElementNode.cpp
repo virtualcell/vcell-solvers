@@ -1,5 +1,6 @@
 #include <MPoint.h>
 #include <sstream>
+#include <limits>
 #include <cstring>
 #include <exception>
 #include <algorithm>
