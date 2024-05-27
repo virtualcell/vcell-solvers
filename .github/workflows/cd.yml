@@ -225,16 +225,7 @@ jobs:
           -DCMAKE_C_COMPILER="clang.exe" \
           -DCMAKE_CXX_COMPILER="clang++.exe" \
           -DOPTION_TARGET_MESSAGING=OFF \
-          -DOPTION_TARGET_PARALLEL=OFF \
-          -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
-          -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
-          -DOPTION_TARGET_SMOLDYN_SOLVER=ON \
           -DOPTION_TARGET_FV_SOLVER=ON \
-          -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
-          -DOPTION_TARGET_NFSIM_SOLVER=ON \
-          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=OFF \
-          -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
-          -DOPTION_TARGET_HY3S_SOLVERS=OFF \
           -DOPTION_TARGET_DOCS=OFF \
           -B . -S ..
 
@@ -254,14 +245,6 @@ jobs:
           echo "------ running FiniteVolume_x64 ------"
           ./bin/FiniteVolume_x64 || true
           echo
-          echo "------ running NFsim_x64 ------"
-          ./bin/NFsim_x64 || true
-          echo "------ running SundialsSolverStandalone_x64 ------"
-          ./bin/SundialsSolverStandalone_x64 || true
-          echo "------ running VCellStoch_x64 ------"
-          ./bin/VCellStoch_x64 || true
-          echo "------ running smoldyn_x64 ------"
-          ./bin/smoldyn_x64 || true
           echo "------ running testzip ------"
           ./bin/testzip || true
           echo "------ running ziptool ------"
@@ -293,16 +276,7 @@ jobs:
           cmake \
           -G Ninja \
           -DOPTION_TARGET_MESSAGING=OFF \
-          -DOPTION_TARGET_PARALLEL=OFF \
-          -DOPTION_TARGET_CHOMBO2D_SOLVER=OFF \
-          -DOPTION_TARGET_CHOMBO3D_SOLVER=OFF \
-          -DOPTION_TARGET_SMOLDYN_SOLVER=ON \
           -DOPTION_TARGET_FV_SOLVER=ON \
-          -DOPTION_TARGET_STOCHASTIC_SOLVER=ON \
-          -DOPTION_TARGET_NFSIM_SOLVER=ON \
-          -DOPTION_TARGET_MOVINGBOUNDARY_SOLVER=ON \
-          -DOPTION_TARGET_SUNDIALS_SOLVER=ON \
-          -DOPTION_TARGET_HY3S_SOLVERS=OFF \
           -B . -S ..
 
           ninja
@@ -320,14 +294,6 @@ jobs:
           echo "------ running FiniteVolume_x64 ------"
           ./bin/FiniteVolume_x64 || true
           echo
-          echo "------ running NFsim_x64 ------"
-          ./bin/NFsim_x64 || true
-          echo "------ running SundialsSolverStandalone_x64 ------"
-          ./bin/SundialsSolverStandalone_x64 || true
-          echo "------ running VCellStoch_x64 ------"
-          ./bin/VCellStoch_x64 || true
-          echo "------ running smoldyn_x64 ------"
-          ./bin/smoldyn_x64 || true
           echo "------ running testzip ------"
           ./bin/testzip || true
           echo "------ running ziptool ------"
@@ -340,14 +306,14 @@ jobs:
         run: |
           mkdir build/upload
           cd build/bin
-          rm hello_test TestVCellStoch testzip ziptool || true
+          rm testzip ziptool || true
           ls *_x64   | awk '{print $1}' | xargs -I '{}' otool -L '{}' | grep ")" | grep -v "build" | grep -v "System" | awk '{print $1}' | xargs -I '{}' cp -vn '{}' . || true
           ls *.dylib | awk '{print $1}' | xargs -I '{}' otool -L '{}' | grep ")" | grep -v "build" | grep -v "System" | awk '{print $1}' | xargs -I '{}' cp -vn '{}' . || true
           ls *.dylib | awk '{print $1}' | xargs -I '{}' otool -L '{}' | grep ")" | grep -v "build" | grep -v "System" | awk '{print $1}' | xargs -I '{}' cp -vn '{}' . || true
           chmod u+w,+x *
           tar czvf ../upload/mac64_bad_paths.tgz .
           ../../.github/scripts/install_name_tool_macos.sh
-          tar czvf ../upload/mac64.tgz --dereference .
+          tar czvf ../upload/fvsolver_mac64.tgz --dereference .
 
       - name: handle shared object paths for Windows native build
         if: matrix.platform == 'windows-latest'
@@ -355,12 +321,12 @@ jobs:
         run: |
           mkdir build/upload
           cd build/bin
-          rm hello_test TestVCellStoch testzip ziptool || true
+          rm testzip ziptool || true
           ls *.exe | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | grep -iv windows | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
           ls *.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | grep -iv windows | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
           ls *.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | grep -iv windows | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
           chmod u+w,+x *
-          zip ../upload/win64.zip ./*
+          zip ../upload/fvsolver_win64.zip ./*
           cd ../..
           # fi
 
@@ -370,41 +336,41 @@ jobs:
         run: |
           mkdir build/upload
           cd build/bin
-          rm hello_test TestVCellStoch testzip ziptool || true
+          rm testzip ziptool || true
           ls *_x64   | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
           ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
           ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
           chmod u+w,+x *
-          tar czvf ../upload/linux64.tgz --dereference .
+          tar czvf ../upload/fvsolver_linux64.tgz --dereference .
           cd ../..
 
       - name: Upload Intel Macos binaries
         if: matrix.platform == 'macos-13'
         uses: actions/upload-artifact@v4
         with:
-          name: macos_x86_64.tgz
-          path: build/upload/mac64.tgz
+          name: fvsolver_macos_x86_64.tgz
+          path: build/upload/fvsolver_mac64.tgz
 
       - name: Upload ARM Macos binaries
         if: matrix.platform == 'macos-14'
         uses: actions/upload-artifact@v4
         with:
-          name: macos_arm64.tgz
-          path: build/upload/mac64.tgz
+          name: fvsolver_macos_arm64.tgz
+          path: build/upload/fvsolver_mac64.tgz
 
       - name: Upload Windows binaries
         if: matrix.platform == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: win64.zip
-          path: build/upload/win64.zip
+          name: fvsolver_win64.zip
+          path: build/upload/fvsolver_win64.zip
 
       - name: Upload Linux binaries
         if: matrix.platform == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: linux64.tgz
-          path: build/upload/linux64.tgz
+          name: fvsolver_linux64.tgz
+          path: build/upload/fvsolver_linux64.tgz
 
       - name: Setup tmate session
         if: ${{ failure() }}
