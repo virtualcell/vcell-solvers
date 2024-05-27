@@ -86,9 +86,6 @@ set(HEADER_FILES
 	include/VCELL/VolumeVarContextExpression.h
 	include/VCELL/VolumeVariable.h	
 )
-if (OPTION_TARGET_PETSC)
-	list(APPEND HEADER_FILES  include/VCELL/PetscPdeScheduler.h)
-endif()
 
 set(SRC_FILES 
 	src/AlgebraicSystem.cpp
@@ -168,10 +165,6 @@ set(SRC_FILES
 	src/VolumeVarContextExpression.cpp
 	src/VolumeVariable.cpp	
 )
-if (OPTION_TARGET_PETSC)
-	list(APPEND SRC_FILES  src/PetscPdeScheduler.cpp)
-endif()
-
 
 set (PCGWRAPPER_SRC_FILES
 	src/pcgwrapper.f
@@ -222,29 +215,16 @@ add_library(pcgwrapper STATIC ${PCGWRAPPER_SRC_FILES})
 target_link_libraries(pcgwrapper PCGPack blas)
 
 add_library(vcell STATIC ${SRC_FILES} ${HEADER_FILES})
-if (OPTION_TARGET_PETSC)
-	target_compile_definitions(vcell PUBLIC -DVCELL_PETSC)
-	target_link_libraries(vcell pcgwrapper sundials ${PETSC_LIBRARIES} ExpressionParser smoldyn_static vcellsmoldynbridge ${HDF5_LIBRARIES} qhull vcellmessaging vcellziputils ${ZLIB_LIBRARIES})
-	target_include_directories(vcell PUBLIC 
-	  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-	  ${HDF5_INCLUDE_DIRS} ${PETSC_INCLUDES}
-	  $<INSTALL_INTERFACE:include>  # <prefix>/include
-	)
-else()
-	target_link_libraries(vcell pcgwrapper sundials ExpressionParser smoldyn_static vcellsmoldynbridge ${HDF5_LIBRARIES} qhull vcellmessaging vcellziputils ${ZLIB_LIBRARIES})
-	target_include_directories(vcell PUBLIC 
-	  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-	  ${HDF5_INCLUDE_DIRS}
-	  $<INSTALL_INTERFACE:include>  # <prefix>/include
-	)
-endif()
+target_link_libraries(vcell pcgwrapper sundials ExpressionParser smoldyn_static vcellsmoldynbridge ${HDF5_LIBRARIES} qhull vcellmessaging vcellziputils ${ZLIB_LIBRARIES})
+target_include_directories(vcell PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  ${HDF5_INCLUDE_DIRS}
+  $<INSTALL_INTERFACE:include>  # <prefix>/include
+)
 
 if (OPTION_TARGET_FV_SOLVER)
 	set(EXE_FILE FiniteVolume)
-	if (OPTION_TARGET_PETSC) 
-		set(EXE_FILE ${EXE_FILE}_PETSc)
-	endif()
-	if (ARCH_64bit) 
+	if (ARCH_64bit)
 		set(EXE_FILE ${EXE_FILE}_x64)
 	endif()
 
