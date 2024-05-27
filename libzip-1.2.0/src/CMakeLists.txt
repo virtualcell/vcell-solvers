@@ -25,9 +25,9 @@ target_include_directories(ziptool_lib PUBLIC
 )
 #install(TARGETS ziptool_lib ARCHIVE DESTINATION lib)
 
-ADD_EXECUTABLE(ziptool ziptool_main.c)
-TARGET_LINK_LIBRARIES(ziptool ziptool_lib)
-INSTALL(TARGETS ziptool RUNTIME DESTINATION bin)
+#ADD_EXECUTABLE(ziptool ziptool_main.c)
+#TARGET_LINK_LIBRARIES(ziptool ziptool_lib)
+#INSTALL(TARGETS ziptool RUNTIME DESTINATION bin)
 
 #ADD_EXECUTABLE(hole hole.c ${SRC_EXTRA_FILES} source_hole.c)
 #TARGET_LINK_LIBRARIES(hole zip)

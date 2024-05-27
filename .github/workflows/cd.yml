@@ -172,10 +172,6 @@ jobs:
           ./bin/VCellStoch_x64 || true
           echo "------ running smoldyn_x64 ------"
           ./bin/smoldyn_x64 || true
-          echo "------ running testzip ------"
-          ./bin/testzip || true
-          echo "------ running ziptool ------"
-          ./bin/ziptool || true
 
 #      - name: Setup tmate session
 #        uses: mxschmitt/action-tmate@v3
@@ -199,7 +195,6 @@ jobs:
             mingw-w64-clang-x86_64-boost
             mingw-w64-clang-x86_64-hdf5
             mingw-w64-clang-x86_64-libzip
-            mingw-w64-clang-x86_64-netcdf
             mingw-w64-clang-x86_64-zlib
             mingw-w64-clang-x86_64-libaec
 
@@ -245,10 +240,6 @@ jobs:
           echo "------ running FiniteVolume_x64 ------"
           ./bin/FiniteVolume_x64 || true
           echo
-          echo "------ running testzip ------"
-          ./bin/testzip || true
-          echo "------ running ziptool ------"
-          ./bin/ziptool || true
 
       - name: Install Linux Dependencies
         if: matrix.platform == 'ubuntu-latest'
@@ -294,10 +285,6 @@ jobs:
           echo "------ running FiniteVolume_x64 ------"
           ./bin/FiniteVolume_x64 || true
           echo
-          echo "------ running testzip ------"
-          ./bin/testzip || true
-          echo "------ running ziptool ------"
-          ./bin/ziptool || true
 
 
       - name: fix Macos shared object paths
@@ -306,7 +293,6 @@ jobs:
         run: |
           mkdir build/upload
           cd build/bin
-          rm testzip ziptool || true
           ls *_x64   | awk '{print $1}' | xargs -I '{}' otool -L '{}' | grep ")" | grep -v "build" | grep -v "System" | awk '{print $1}' | xargs -I '{}' cp -vn '{}' . || true
           ls *.dylib | awk '{print $1}' | xargs -I '{}' otool -L '{}' | grep ")" | grep -v "build" | grep -v "System" | awk '{print $1}' | xargs -I '{}' cp -vn '{}' . || true
           ls *.dylib | awk '{print $1}' | xargs -I '{}' otool -L '{}' | grep ")" | grep -v "build" | grep -v "System" | awk '{print $1}' | xargs -I '{}' cp -vn '{}' . || true
@@ -321,7 +307,6 @@ jobs:
         run: |
           mkdir build/upload
           cd build/bin
-          rm testzip ziptool || true
           ls *.exe | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | grep -iv windows | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
           ls *.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | grep -iv windows | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
           ls *.dll | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep '=> /' | grep -v build | grep -iv windows | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
@@ -336,7 +321,6 @@ jobs:
         run: |
           mkdir build/upload
           cd build/bin
-          rm testzip ziptool || true
           ls *_x64   | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
           ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true
           ls *.so    | awk '{print $1}' | xargs -I '{}' ldd '{}' | grep "=> /" | grep -v "build" | awk '{print $3}' | xargs -I '{}' cp -vn '{}' . || true

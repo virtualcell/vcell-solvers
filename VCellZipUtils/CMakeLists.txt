@@ -28,11 +28,11 @@ add_library(vcellziputils STATIC ${SRC_FILES} ${HEADER_FILES})
 target_include_directories(vcellziputils INTERFACE include)
 target_link_libraries(vcellziputils ziptool_lib)
 
-add_executable(testzip ${TEST_SRC_FILES})
-target_link_libraries(testzip vcellziputils)
+#add_executable(testzip ${TEST_SRC_FILES})
+#target_link_libraries(testzip vcellziputils)
 
 
-install(TARGETS vcellziputils testzip
+install(TARGETS vcellziputils
 	ARCHIVE DESTINATION bin
 	RUNTIME DESTINATION bin)
 	
