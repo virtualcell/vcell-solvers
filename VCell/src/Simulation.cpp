@@ -16,9 +16,6 @@
 #include <VCELL/CartesianMesh.h>
 #include <VCELL/SerialScheduler.h>
 #include <VCELL/SundialsPdeScheduler.h>
-#ifdef VCELL_PETSC
-  #include <VCELL/PetscPdeScheduler.h>
-#endif
 #include <VCELL/PostProcessingBlock.h>
 
 Simulation::Simulation(Mesh *mesh)
@@ -184,12 +181,6 @@ void Simulation::initSimulation()
 		if (simTool->isSundialsPdeSolver()) {
 			_scheduler = new SundialsPdeScheduler(this, simTool->getSundialsSolverOptions(), 
 				simTool->getNumDiscontinuityTimes(), simTool->getDiscontinuityTimes(), simTool->isSundialsOneStepOutput());
-		} else if (simTool->isVCellPetscSolver()) {
-#ifdef VCELL_PETSC
-			_scheduler = new PetscPdeScheduler(this);
-#else
-			throw "VCELL_PETSC_SOLVER must be built with VCELL_PETSC flag";
-#endif
 		} else {
 			_scheduler = new SerialScheduler(this);
 		}
@@ -203,23 +194,11 @@ double Simulation::getTime_sec() {
 	if (SimTool::getInstance()->isSundialsPdeSolver()) {
 		return ((SundialsPdeScheduler*)_scheduler)->getCurrentTime();
 	}
-	else if (SimTool::getInstance()->isVCellPetscSolver())
-	{
-#ifdef VCELL_PETSC
-		((PetscPdeScheduler*)_scheduler)->getCurrentTime();
-#endif
-	}
 	return _advanced ? (currIteration + 1) * _dT_sec : currIteration * _dT_sec;
 }
 
 void Simulation::setSimStartTime(double st) {
 	if (SimTool::getInstance()->isSundialsPdeSolver()) {
 		((SundialsPdeScheduler*)_scheduler)->setSimStartTime(st);
-	}
-	else if (SimTool::getInstance()->isVCellPetscSolver())
-	{
-#ifdef VCELL_PETSC
-		((PetscPdeScheduler*)_scheduler)->setSimStartTime(st);
-#endif
 	}
 }

@@ -423,7 +423,7 @@ void SimTool::loadFinal()
 							FVDataSet::read(dataFileName.c_str(), simulation);
 							simulation->setCurrIteration(tempIteration);
 							// set start time on sundials
-							if (isSundialsPdeSolver() || isVCellPetscSolver()) {
+							if (isSundialsPdeSolver()) {
 								simulation->setSimStartTime(simStartTime);
 							}
 							simFileCount = tempFileCount;
@@ -762,12 +762,8 @@ bool SimTool::isSundialsPdeSolver() {
 	return solver == SUNDIALS_PDE_SOLVER;
 }
 
-bool SimTool::isVCellPetscSolver() {
-	return solver == VCELL_PETSC_SOLVER;
-}
-
 void SimTool::setSolver(string& s) {
-	if (s.length() > 0 && s != FV_SOLVER && s != SUNDIALS_PDE_SOLVER && s != VCELL_PETSC_SOLVER) {
+	if (s.length() > 0 && s != FV_SOLVER && s != SUNDIALS_PDE_SOLVER) {
 		stringstream ss;
 		ss << "unknown solver : " << s;
 		throw ss.str();

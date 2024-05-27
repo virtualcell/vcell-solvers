@@ -65,8 +65,4 @@ void trimString(string& str);
 #define FV_SOLVER "FV_SOLVER"
 #endif
 
-#ifndef VCELL_PETSC_SOLVER
-#define VCELL_PETSC_SOLVER "VCELL_PETSC_SOLVER"
-#endif
-
 #endif

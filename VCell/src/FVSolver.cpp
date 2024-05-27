@@ -1032,7 +1032,6 @@ void FVSolver::loadSimulationParameters(istream& ifsInput) {
 				double pcgRelTol = 1e-8;
 				lineInput >> pcgRelTol;
 				simTool->setPCGRelativeErrorTolerance(pcgRelTol);
-			} else if (solver == VCELL_PETSC_SOLVER) {
 			} else {
 				std::vector<std::string> result;
 				for (std::string s; lineInput >> s;) {

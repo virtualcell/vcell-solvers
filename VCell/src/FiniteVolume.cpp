@@ -10,9 +10,6 @@ using namespace std;
 #include <VCELL/GitDescribe.h>
 #include <Exception.h>
 #include <vcellhybrid.h>
-#ifdef VCELL_PETSC
-#include <petsc.h>
-#endif
 
 void vcellExit(int returnCode, string& errorMsg) {
 	if (SimulationMessaging::getInstVar() == 0) {
@@ -37,27 +34,11 @@ void printUsage() {
 #endif
 }
 
-#ifdef VCELL_PETSC
-PetscErrorCode VCellPetscReturnErrorHandler(MPI_Comm comm,int line,const char *fun,const char *file,PetscErrorCode n,PetscErrorType p,const char *mess,void *ctx)
-{
-  stringstream ss;
-  const char *text;
-  PetscErrorMessage(n,&text,NULL);
-  ss << "PETSC ERROR: " << text << ", " << mess << "(" << fun << "() line " << line << " in " << file << ")" << endl; 
-  throw ss.str();
-}
-#endif
-
 int main(int argc, char *argv[])
 {
 	std::cout
 	    << "Finite Volume version " << g_GIT_DESCRIBE << " with smoldyn version " << VERSION
 		<< std::endl;
-
-#ifdef VCELL_PETSC
-	PetscInitialize(&argc, &argv, NULL, NULL);
-	PetscPushErrorHandler(VCellPetscReturnErrorHandler, 0);
-#endif
 
 	vcellhybrid::setHybrid(); //get smoldyn library in correct state
   	int returnCode = 0;
