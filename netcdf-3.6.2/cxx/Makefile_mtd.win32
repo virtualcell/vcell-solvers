@@ -1,7 +1,0 @@
-#
-# (C) Copyright University of Connecticut Health Center 2001.
-# All rights reserved.
-#
-
-VCELL_DEBUG = Multi-Threaded Debug
-!include Makefile.win32

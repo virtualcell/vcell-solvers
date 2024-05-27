@@ -1,6 +1,0 @@
-test for linux, libraries not present (libssl.so).
-
-RuntimeException-Could not execute code: /home/lafona/VCell_Alpha/localsolvers/linux64/SundialsSolverStandalone_x64: error while loading shared libraries: libssl.so.10: cannot open shared object file: No such file or directory
-
-
-(/home/lafona/VCell_Alpha/localsolvers/linux64/SundialsSolverStandalone_x64 /home/lafona/.vcell/simdata/temp/SimID_181673058_0_.cvodeInput /home/lafona/.vcell/simdata/temp/SimID_181673058_0_.ida)

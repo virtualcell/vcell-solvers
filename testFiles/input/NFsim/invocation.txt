@@ -1,5 +1,0 @@
-Executable.executeProcess("C:\Program Files\VCell_Alpha\localsolvers\win64\NFsim_x64.exe" -seed 1565435691 -vcell -xml C:\Users\achattaraj\.vcell\simdata\temp\SimID_2039075437_0_.nfsimInput -o C:\Users\achattaraj\.vcell\simdata\temp\SimID_2039075437_0_.gdat -sim 1000.0 -ss C:\Users\achattaraj\.vcell\simdata\temp\SimID_2039075437_0_.species -oSteps 1000 -notf -utl 100000 -cb) stdout:
-NFsim console messaging version $URL: svn://code3.cam.uchc.edu/vcell/trunk/numerics/NFsim_v1.11/VCell/src/VCellNFSim.cpp $svnunversioned build
-
-/share/apps/vcell3/users/Ani/SimID_119094490_0_.nfsimInput
-
