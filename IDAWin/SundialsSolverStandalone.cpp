@@ -194,6 +194,12 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 		}
+#ifdef USE_MESSAGING
+		// should only happen during testing for solver compiled with messaging but run locally.
+		if (SimulationMessaging::getInstVar() == nullptr) {
+			SimulationMessaging::create();
+		}
+#endif
 
 		if (solver.empty()) {
 			throw "Solver not defined ";
