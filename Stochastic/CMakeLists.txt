@@ -40,7 +40,7 @@ if (APPLE)
 	if (PROCESSOR_ARCHITECTURE STREQUAL "arm64")
 		link_directories("/opt/homebrew/lib")
 	else ()
-		link_directories("/usr/local/Cellar/hdf5/1.14.3_1/lib")
+		link_directories("/usr/local/lib")
 	endif()
 endif()
 

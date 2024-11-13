@@ -53,6 +53,10 @@ jobs:
       - name: checkout vcell-solvers repo
         uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
       - name: Install Intel MacOS dependencies
         if: matrix.platform == 'macos-13'
         shell: bash
@@ -69,6 +73,7 @@ jobs:
           gcc --version
           gfortran --version
           cmake --version
+          python --version
           brew info boost
           brew info hdf5
 
