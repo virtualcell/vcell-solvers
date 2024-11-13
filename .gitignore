@@ -19,3 +19,8 @@
 /all_solvers/*
 
 .DS_Store
+
+NFsim_v1.11/tests/smoke/SimID_273069657_0_.gdat
+NFsim_v1.11/tests/smoke/SimID_273069657_0_.species
+
+IDAWin/tests/smoke/SimID_1489333437_0_.ida

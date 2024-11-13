@@ -155,7 +155,10 @@ void SimulationMessaging::sendStatus() {
 			WorkerEventLocker locker(*this);
 			if (events.size( ) > 0 ) {
 				workerEvent = events.front( );
-				events.pop_front( );
+				if (!events.empty())
+				{
+					events.erase(events.begin());
+				}
 			}
 			else {
 				return;

@@ -1,7 +1,7 @@
 #ifndef _SIMULATIONMESSAGING_H_
 #define _SIMULATIONMESSAGING_H_
 
-#include <deque>
+#include <vector>
 #ifdef USE_MESSAGING
 #include <stdlib.h>
 #include <stdio.h>
@@ -145,7 +145,7 @@ public:
 private:
 	SimulationMessaging();
 	static SimulationMessaging *m_inst;
-	std::deque<WorkerEvent *> events;
+	std::vector<WorkerEvent *> events;
 	int workerEventOutputMode;
 
 	void sendStatus();

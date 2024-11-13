@@ -87,10 +87,28 @@ endif (UNIX)
 set(exe_target NFsim)
 if (ARCH_64bit) 
 	set(exe_target ${exe_target}_x64)
-endif (ARCH_64bit) 
+endif (ARCH_64bit)
 
 add_executable(${exe_target} ${SRC_FILES})
 target_link_libraries(${exe_target} vcommons vcellmessaging)
-
 install(TARGETS ${exe_target} RUNTIME DESTINATION ${OPTION_EXE_DIRECTORY})
+
+
+enable_testing()
+
+if (MINGW)
+    set(test_nfsim_exe ${CMAKE_BINARY_DIR}/bin/${exe_target}.exe)
+    set(python_cmd py)
+else (MINGW)
+    set(test_nfsim_exe ${CMAKE_BINARY_DIR}/bin/${exe_target})
+    set(python_cmd python3)
+endif (MINGW)
+set(test_dir ${CMAKE_CURRENT_SOURCE_DIR}/tests/smoke)
+
+# smoke test as a python script
+add_test(NAME ${exe_target}_smoke_python COMMAND ${python_cmd} ${test_dir}/smoke.py ${test_nfsim_exe} WORKING_DIRECTORY ${test_dir})
+
+# smoke test as a bash script
+add_test(NAME ${exe_target}_smoke_bash COMMAND bash -c "${test_dir}/smoke.sh ${test_nfsim_exe}" WORKING_DIRECTORY ${test_dir})
+
 
