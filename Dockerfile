@@ -1,4 +1,4 @@
-FROM python:3.9.7-slim AS build
+FROM python:3.10.15-slim AS build
 
 RUN apt-get -y update && apt-get install -y apt-utils && \
     apt-get install -y -qq -o=Dpkg::Use-Pty=0 build-essential gfortran zlib1g-dev \
@@ -38,12 +38,12 @@ RUN $JAVA_HOME/bin/jlink \
          --output /javaruntime
 
 # Define base image and copy in jlink created minimal Java 17 environment
-FROM python:3.9.7-slim
+FROM python:3.10.15-slim
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 COPY --from=jre-build /javaruntime $JAVA_HOME
 
-# now we have Java 17 and Python 3.9
+# now we have Java 17 and Python 3.10.15 installed
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=en_US.UTF-8
 
