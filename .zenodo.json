@@ -4,6 +4,11 @@
     "license": "mit",
     "creators": [
         {
+            "name": "Schaff, James C.",
+            "affiliation": "University of Connecticut School of Medicine",
+            "orcid": "0000-0003-3286-7736"
+        },
+        {
             "name": "Gao, Fei",
             "affiliation": "University of Connecticut School of Medicine"
         },
@@ -11,11 +16,6 @@
             "name": "Weatherby, Gerard",
             "affiliation": "University of Connecticut School of Medicine",
             "orcid": "0000-0002-0462-4633"
-        },
-        {
-            "name": "Schaff, James C.",
-            "affiliation": "University of Connecticut School of Medicine",
-            "orcid": "0000-0003-3286-7736"
         },
         {
             "name": "Resasco, Diana C.",

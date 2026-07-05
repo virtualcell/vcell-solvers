@@ -6,6 +6,10 @@ repository-code: "https://github.com/virtualcell/vcell-solvers"
 license: MIT
 doi: 10.5281/zenodo.8271504 # concept DOI (all versions)
 authors:
+  - family-names: "Schaff"
+    given-names: "James C."
+    affiliation: "University of Connecticut School of Medicine"
+    orcid: "https://orcid.org/0000-0003-3286-7736"
   - family-names: "Gao"
     given-names: "Fei"
     affiliation: "University of Connecticut School of Medicine"
@@ -13,10 +17,6 @@ authors:
     given-names: "Gerard"
     affiliation: "University of Connecticut School of Medicine"
     orcid: "https://orcid.org/0000-0002-0462-4633"
-  - family-names: "Schaff"
-    given-names: "James C."
-    affiliation: "University of Connecticut School of Medicine"
-    orcid: "https://orcid.org/0000-0003-3286-7736"
   - family-names: "Resasco"
     given-names: "Diana C."
     affiliation: "Yale University"
