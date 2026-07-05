@@ -3,7 +3,7 @@ message: "If you use this software, please cite it using these metadata."
 title: "VCell solvers"
 type: software
 repository-code: "https://github.com/virtualcell/vcell-solvers"
-license: CC-BY-4.0
+license: MIT
 doi: 10.5281/zenodo.8271504 # concept DOI (all versions)
 authors:
   - family-names: "Gao"

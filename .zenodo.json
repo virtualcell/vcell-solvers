@@ -1,7 +1,7 @@
 {
     "upload_type": "software",
     "title": "VCell solvers",
-    "license": "cc-by-4.0",
+    "license": "mit",
     "creators": [
         {
             "name": "Gao, Fei",
