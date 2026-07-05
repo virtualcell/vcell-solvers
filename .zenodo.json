@@ -1,0 +1,40 @@
+{
+    "upload_type": "software",
+    "title": "VCell solvers",
+    "license": "cc-by-4.0",
+    "creators": [
+        {
+            "name": "Gao, Fei",
+            "affiliation": "University of Connecticut School of Medicine"
+        },
+        {
+            "name": "Weatherby, Gerard",
+            "affiliation": "University of Connecticut School of Medicine",
+            "orcid": "0000-0002-0462-4633"
+        },
+        {
+            "name": "Schaff, James C.",
+            "affiliation": "University of Connecticut School of Medicine",
+            "orcid": "0000-0003-3286-7736"
+        },
+        {
+            "name": "Resasco, Diana C.",
+            "affiliation": "Yale University"
+        },
+        {
+            "name": "Novak, Igor L.",
+            "affiliation": "University of Connecticut School of Medicine"
+        },
+        {
+            "name": "Slepchenko, Boris M.",
+            "affiliation": "University of Connecticut School of Medicine"
+        },
+        {
+            "name": "Moraru, Ion I.",
+            "affiliation": "University of Connecticut School of Medicine",
+            "orcid": "0000-0002-3746-9676"
+        }
+    ],
+    "description": "<p>The native numerical solver suite for Virtual Cell (VCell): the standalone simulation codes (PDE, ODE, stochastic, and hybrid solvers) that the VCell framework invokes to run spatial and non-spatial biological models. See <a href=\"https://vcell.org\">vcell.org</a>.</p>",
+    "related_identifiers": []
+}
