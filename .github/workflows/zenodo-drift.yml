@@ -1,5 +1,7 @@
 name: Zenodo drift check
 
+# Releases wait up to a month for the rollup (zenodo-archive), so drift means one has waited
+# longer than that: the rollup stopped.
 on:
   schedule:
     - cron: "0 12 * * 1"
@@ -8,3 +10,5 @@ on:
 jobs:
   drift:
     uses: virtualcell/zenodo-maint/.github/workflows/drift.reusable.yml@v1
+    with:
+      max_lag_days: 35

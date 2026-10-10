@@ -1,13 +1,26 @@
 name: Archive release to Zenodo
 
+# Monthly rollup (virtualcell/zenodo-maint v1.8): archives the latest release if it is not on
+# Zenodo yet. Frequent releases become at most one Zenodo version a month instead of one per
+# tag, and a tag that is already archived is skipped. A schedule also does not depend on
+# `release` events, which never fire for releases created with GITHUB_TOKEN.
+# Run it by hand to archive now (e.g. for a paper); `tag` defaults to the latest release.
+
 on:
-  release:
-    types: [published]
+  schedule:
+    - cron: '0 11 1 * *' # 1st of the month, 11:00 UTC
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to archive (default: the latest release)'
+        required: false
+        default: 'latest'
+        type: string
 
 jobs:
   archive:
     uses: virtualcell/zenodo-maint/.github/workflows/archive.reusable.yml@v1
     with:
-      tag: ${{ github.event.release.tag_name }}
+      tag: ${{ inputs.tag || 'latest' }}
     secrets:
       ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
